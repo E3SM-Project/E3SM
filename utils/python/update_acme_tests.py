@@ -116,7 +116,7 @@ def get_test_suite(suite, machine=None, compiler=None):
     expect(suite in _TEST_SUITES, "Unknown test suite: '%s'" % suite)
 
     machine = cime_util.probe_machine_name() if machine is None else machine
-    compiler = cime_util.get_machine_info("COMPILERS", machine=machine)[0] if compiler is None else compiler
+    compiler = cime_util.get_machine_info("COMPILER", machine=machine)[0] if compiler is None else compiler
 
     inherits_from, tests_raw = _TEST_SUITES[suite]
     tests = []

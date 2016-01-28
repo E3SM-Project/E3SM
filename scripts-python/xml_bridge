@@ -1,5 +1,10 @@
 #! /usr/bin/env perl
 
+#
+# Allows python codes to call ConfigCase perl module through
+# the shell.
+#
+
 use File::Basename;
 use Cwd 'abs_path';
 

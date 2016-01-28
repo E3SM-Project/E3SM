@@ -39,14 +39,17 @@ class CreateTest(object):
         self._test_root      = test_root     if test_root is not None else cime_util.get_machine_info("CESMSCRATCHROOT")
         self._test_id        = test_id       if test_id is not None else cime_util.get_utc_timestamp()
         self._project        = project       if project is not None else cime_util.get_machine_project()
-        self._baseline_root  = baseline_root if baseline_root is not None else cime_util.get_machine_info("CCSM_BASELINE", project=self._project)
+        self._baseline_root  = baseline_root if baseline_root is not None else cime_util.get_machine_info("CCSM_BASELINE")
         self._baseline_name  = None
-        self._compiler       = compiler      if compiler is not None else cime_util.get_machine_info("COMPILERS")[0]
+        self._compiler       = compiler      if compiler is not None else cime_util.get_machine_info("COMPILER")
         self._clean          = clean
         self._compare        = compare
         self._generate       = generate
         self._namelists_only = namelists_only
         self._parallel_jobs  = parallel_jobs if parallel_jobs is not None else min(len(self._test_names), int(cime_util.get_machine_info("MAX_TASKS_PER_NODE")))
+
+        if (self._project is not None):
+            self._baseline_root = self._baseline_root.replace("$PROJECT", self._project)
 
         # Oversubscribe by 1/4
         pes = int(cime_util.get_machine_info("MAX_TASKS_PER_NODE"))
@@ -208,7 +211,9 @@ class CreateTest(object):
         if (compiler != self._compiler):
             raise StandardError("Test '%s' has compiler that does not match instance compliler '%s'" % (test_name, self._compiler))
         if (self._parallel_jobs == 1):
-            scratch_dir = cime_util.get_machine_info("CESMSCRATCHROOT", machine=machine, project=self._project)
+            scratch_dir = cime_util.get_machine_info("CESMSCRATCHROOT", machine=machine)
+            if (self._project is not None):
+                scratch_dir = scratch_dir.replace("$PROJECT", self._project)
             sharedlibroot = os.path.join(scratch_dir, "sharedlibroot.%s" % self._test_id)
         else:
             # Parallelizing builds introduces potential sync problems with sharedlibroot
@@ -347,7 +352,11 @@ class CreateTest(object):
     def _run_phase(self, test_name):
     ###########################################################################
         test_dir = self._get_test_dir(test_name)
-        return self._run_phase_command(test_name, "./case.submit", RUN_PHASE, from_dir=test_dir)
+        # TODO: Submit should work in either case.
+        if (self._no_batch):
+            return self._run_phase_command(test_name, "./case.test", RUN_PHASE, from_dir=test_dir)
+        else:
+            return self._run_phase_command(test_name, "./case.submit", RUN_PHASE, from_dir=test_dir)
 
     ###########################################################################
     def _update_test_status_file(self, test_name):

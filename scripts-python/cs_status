@@ -5,12 +5,10 @@ List test results based on TestStatus files. Returns True if
 no errors occured (not based on test statuses).
 """
 
-import add_util_path
-import cime_util
-cime_util.check_minimum_python_version(2, 7)
+from standard_script_setup import *
 import wait_for_tests
 
-import argparse, sys, os
+import argparse, sys, os, logging
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -32,14 +30,13 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    parser.add_argument("paths", nargs="+", help="Paths to TestStatus files.")
+    cime_util.setup_standard_logging_options(parser)
 
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Print extra information")
+    parser.add_argument("paths", nargs="+", help="Paths to TestStatus files.")
 
     args = parser.parse_args(args[1:])
 
-    cime_util.set_verbosity(args.verbose)
+    cime_util.handle_standard_logging_options(args)
 
     return args.paths
 

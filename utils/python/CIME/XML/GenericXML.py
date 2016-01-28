@@ -31,7 +31,7 @@ class GenericXML:
             self.filename = infile
             self.root = ET.Element(infile)
             self.root.set('version','1.0')
-            
+
     def read(self,infile):
         """
         Read and parse an xml file into the object
@@ -49,7 +49,7 @@ class GenericXML:
             self.tree.write(infile)
         else:
             self.tree.write(self.filename)
-    
+
     def get_node(self, nodename, attributes=None, root=None):
         """
         Get an xml element matching nodename with optional attributes
@@ -84,11 +84,16 @@ class GenericXML:
         get_value is expected to be defined by the derived classes, if you get here it is an error.
         """
         logging.debug("Get Value for "+item)
+        result = None
         if item in self.lookups.keys():
-            return self.lookups[item] 
+            result = self.lookups[item]
         if item in os.environ:
-            return os.environ.get(item)
-#        expect(False, "Not implemented")
+            result = os.environ.get(item)
+
+        if (result is None):
+            logging.warning("No value availble for item '%s'" % item)
+
+        return result
 
     def get_resolved_value(self, raw_value):
         """
@@ -102,11 +107,14 @@ class GenericXML:
         >>> obj.get_resolved_value("one $ENV{FOO} two $ENV{BAZ} three")
         'one BAR two BARF three'
         """
-        logging.debug("raw_value "+raw_value)
+        logging.debug("raw_value %s" % raw_value)
         reference_re = re.compile(r'\$(\w+)')
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
         item_data = raw_value
-        logging.debug(" item_data "+item_data)
+
+        if (item_data is None):
+            return None
+
         for m in env_ref_re.finditer(item_data):
             logging.debug("look for "+item_data+ " in env")
             env_var = m.groups()[0]
@@ -119,6 +127,6 @@ class GenericXML:
             ref = self.get_value(var)
             if(ref is not None):
                 logging.debug("resolve: "+ref)
-                item_data = item_data.replace(m.group(), ref)
+                item_data = item_data.replace(m.group(), self.get_resolved_value(ref))
 
         return item_data

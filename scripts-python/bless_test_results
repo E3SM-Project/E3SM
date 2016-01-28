@@ -10,15 +10,13 @@ Be aware that restart test will overwrite the original namelist files
 with versions of the files that you should not bless.
 """
 
-import add_util_path
-import cime_util
-cime_util.check_minimum_python_version(2, 7)
-
-import argparse, sys, os, glob, doctest, time
+from standard_script_setup import *
 
 import wait_for_tests, compare_namelists, simple_compare, create_test_impl
 from cime_util import run_cmd
 from CIME.utils import expect
+
+import argparse, sys, os, glob, doctest, time
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -49,12 +47,11 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
     default_baseline_name = cime_util.get_current_branch(repo=cime_util.get_cime_root())
-    default_compiler      = cime_util.get_machine_info("COMPILERS")[0]
+    default_compiler      = cime_util.get_machine_info("COMPILER")
     scratch_root          = cime_util.get_machine_info("CESMSCRATCHROOT")
     default_testroot      = os.path.join(scratch_root)
 
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Print extra information")
+    cime_util.setup_standard_logging_options(parser)
 
     parser.add_argument("-n", "--namelists-only", action="store_true",
                         help="Only analyze namelists.")
@@ -85,12 +82,12 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
+    cime_util.handle_standard_logging_options(args)
+
     expect(not (args.report_only and args.force),
            "Makes no sense to use -r and -f simultaneously")
     expect(not (args.namelists_only and args.hist_only),
            "Makes no sense to use --namelists-only and --hist-only simultaneously")
-
-    cime_util.set_verbosity(args.verbose)
 
     return args.baseline_name, args.test_root, args.compiler, args.test_id, args.namelists_only, args.hist_only, args.report_only, args.force, args.bless_tests
 
@@ -135,8 +132,7 @@ def bless_namelists(test_name, baseline_dir_for_test, testcase_dir_for_test, rep
 def bless_history(test_name, baseline_tag, baseline_dir_for_test, testcase_dir_for_test, report_only, force):
 ###############################################################################
     # Get user that test was run as (affects loc of hist files)
-    user = run_cmd("./xmlquery USER -value", from_dir=testcase_dir_for_test)
-    acme_root = cime_util.get_machine_info("CESMSCRATCHROOT", user=user)
+    acme_root = run_cmd("./xmlquery CESMSCRATCHROOT -value", from_dir=testcase_dir_for_test)
 
     case = os.path.basename(testcase_dir_for_test)
     cime_root = cime_util.get_cime_root()
@@ -180,8 +176,8 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
     baseline_area = os.path.join(baseline_root, baseline_tag)
 
     # The env_mach_specific script may need these to be defined
-    os.environ["COMPILER"] = cime_util.get_machine_info("COMPILERS")[0] # this MUST match compiler that cprnc was built with
-    os.environ["MPILIB"] = cime_util.get_machine_info("MPILIBS")[0]
+    os.environ["COMPILER"] = cime_util.get_machine_info("COMPILER") # this MUST match compiler that cprnc was built with
+    os.environ["MPILIB"] = cime_util.get_machine_info("MPILIB")
 
     broken_blesses = []
     for test_status_file in test_status_files:
