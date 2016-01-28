@@ -112,6 +112,29 @@ module EcophysConType
      real(r8)              :: lamda_ptase              ! critical value that incur biochemical production
      real(r8), allocatable :: i_vc(:)                  ! intercept of photosynthesis vcmax ~ leaf n content regression model
      real(r8), allocatable :: s_vc(:)                  ! slope of photosynthesis vcmax ~ leaf n content regression model
+
+     real(r8), allocatable :: fnr(:)              !fraction of nitrogen in RuBisCO
+     real(r8), allocatable :: act25(:)
+     real(r8), allocatable :: kcha(:)             !Activation energy for kc
+     real(r8), allocatable :: koha(:)             !Activation energy for ko
+     real(r8), allocatable :: cpha(:)             !Activation energy for cp
+     real(r8), allocatable :: vcmaxha(:)          !Activation energy for vcmax
+     real(r8), allocatable :: jmaxha(:)           !Activation energy for jmax
+     real(r8), allocatable :: tpuha(:)            !Activation energy for tpu
+     real(r8), allocatable :: lmrha(:)            !Acitivation energy for lmr
+     real(r8), allocatable :: vcmaxhd(:)          !Deactivation energy for vcmax
+     real(r8), allocatable :: jmaxhd(:)           !Deactivation energy for jmax
+     real(r8), allocatable :: tpuhd(:)            !Deactivation energy for tpu
+     real(r8), allocatable :: lmrhd(:)            !Deacitivation energy for lmr
+     real(r8), allocatable :: lmrse(:)            !SE for lmr
+     real(r8), allocatable :: qe(:)               !Quantum efficiency
+     real(r8), allocatable :: theta_cj(:)         !
+     real(r8), allocatable :: bbbopt(:)           !Ball-Berry stomatal conductance intercept
+     real(r8), allocatable :: mbbopt(:)           !Ball-Berry stomatal conductance slope
+     real(r8), allocatable :: nstor(:)            !Nitrogen storage pool timescale 
+     real(r8)              :: tc_stress           !Critial temperature for moisture stress
+
+
   end type Ecophyscon_type
 
   type(ecophyscon_type), public :: ecophyscon ! patch ecophysiological constants structure
@@ -141,7 +164,9 @@ contains
     use pftvarcon , only : i_vc, s_vc
     use pftvarcon , only : leafcn_obs, frootcn_obs, livewdcn_obs, deadwdcn_obs
     use pftvarcon , only : leafcp_obs, frootcp_obs, livewdcp_obs, deadwdcp_obs
-    
+    use pftvarcon , only : fnr, act25, kcha, koha, cpha, vcmaxha, jmaxha, tpuha
+    use pftvarcon , only : lmrha, vcmaxhd, jmaxhd, tpuhd, lmrse, qe, theta_cj
+    use pftvarcon , only : bbbopt, mbbopt, nstor, tc_stress, lmrhd 
     !
     ! !LOCAL VARIABLES:
     integer :: m, ib, j
@@ -219,7 +244,26 @@ contains
     allocate( ecophyscon%vmax_ptase_vr(1:nlevdecomp))                  ; ecophyscon%vmax_ptase_vr(:)         =nan
     allocate( ecophyscon%i_vc(0:numpft))                               ; ecophyscon%i_vc(:)                  =nan
     allocate( ecophyscon%s_vc(0:numpft))                               ; ecophyscon%s_vc(:)                  =nan
-    
+    allocate( ecophyscon%fnr(0:numpft))                                ; ecophyscon%fnr(:)                   =nan
+    allocate( ecophyscon%act25(0:numpft))                              ; ecophyscon%act25(:)                 =nan
+    allocate( ecophyscon%kcha(0:numpft))                               ; ecophyscon%kcha(:)                  =nan
+    allocate( ecophyscon%koha(0:numpft))                               ; ecophyscon%koha(:)                  =nan
+    allocate( ecophyscon%cpha(0:numpft))                               ; ecophyscon%cpha(:)                  =nan
+    allocate( ecophyscon%vcmaxha(0:numpft))                            ; ecophyscon%vcmaxha(:)               =nan
+    allocate( ecophyscon%jmaxha(0:numpft))                             ; ecophyscon%jmaxha(:)                =nan
+    allocate( ecophyscon%tpuha(0:numpft))                              ; ecophyscon%tpuha(:)                 =nan
+    allocate( ecophyscon%lmrha(0:numpft))                              ; ecophyscon%lmrha(:)                 =nan
+    allocate( ecophyscon%vcmaxhd(0:numpft))                            ; ecophyscon%vcmaxhd(:)               =nan
+    allocate( ecophyscon%jmaxhd(0:numpft))                             ; ecophyscon%jmaxhd(:)                =nan
+    allocate( ecophyscon%tpuhd(0:numpft))                              ; ecophyscon%tpuhd(:)                 =nan
+    allocate( ecophyscon%lmrhd(0:numpft))                              ; ecophyscon%lmrhd(:)                 =nan
+    allocate( ecophyscon%lmrse(0:numpft))                              ; ecophyscon%lmrse(:)                 =nan
+    allocate( ecophyscon%qe(0:numpft))                                 ; ecophyscon%qe(:)                    =nan
+    allocate( ecophyscon%theta_cj(0:numpft))                           ; ecophyscon%theta_cj(:)              =nan
+    allocate( ecophyscon%bbbopt(0:numpft))                             ; ecophyscon%bbbopt(:)                =nan
+    allocate( ecophyscon%mbbopt(0:numpft))                             ; ecophyscon%mbbopt(:)                =nan
+    allocate( ecophyscon%nstor(0:numpft))                              ; ecophyscon%nstor(:)                 =nan
+
     do m = 0,numpft
 
        if (m <= ntree) then
@@ -283,6 +327,25 @@ contains
        ecophyscon%livewdcp(m)     = livewdcp(m)
        ecophyscon%deadwdcp(m)     = deadwdcp(m)
        ecophyscon%graincp(m)      = graincp(m)
+       ecophyscon%fnr(m)          = fnr(m)
+       ecophyscon%act25(m)        = act25(m)
+       ecophyscon%kcha(m)         = kcha(m)
+       ecophyscon%koha(m)         = koha(m)
+       ecophyscon%cpha(m)         = cpha(m)
+       ecophyscon%vcmaxha(m)      = vcmaxha(m)
+       ecophyscon%jmaxha(m)       = jmaxha(m)
+       ecophyscon%tpuha(m)        = tpuha(m)
+       ecophyscon%lmrha(m)        = lmrha(m)
+       ecophyscon%vcmaxhd(m)      = vcmaxhd(m)
+       ecophyscon%jmaxhd(m)       = jmaxhd(m)
+       ecophyscon%tpuhd(m)        = tpuhd(m)
+       ecophyscon%lmrhd(m)        = lmrhd(m)
+       ecophyscon%lmrse(m)        = lmrse(m)
+       ecophyscon%qe(m)           = qe(m)
+       ecophyscon%theta_cj(m)     = theta_cj(m)
+       ecophyscon%bbbopt(m)       = bbbopt(m)
+       ecophyscon%mbbopt(m)       = mbbopt(m)
+       ecophyscon%nstor(m)        = nstor(m)
 
     end do
     
@@ -329,6 +392,7 @@ contains
     ecophyscon%km_ptase      = km_ptase
     ecophyscon%lamda_ptase   = lamda_ptase
 
+    ecophyscon%tc_stress     = tc_stress
     do j = 1 , nlevdecomp
        ecophyscon%vmax_ptase_vr(j) = vmax_ptase_vr(j)
     end do
