@@ -870,9 +870,9 @@ contains
        ! Update the aggregated state variables
        !-----------------------------------------------------------------
 
-       call mpas_timer_start("Column update state")
+       call mpas_timer_start("Column predyn update state")
        call cice_column_update_state(domain, "thermodynamics", config_dt, config_dt)
-       call mpas_timer_stop("Column update state")
+       call mpas_timer_stop("Column predyn update state")
 
     endif
 
