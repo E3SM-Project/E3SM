@@ -93,9 +93,17 @@ class GenericXML:
             result = os.environ.get(item)
 
         if (result is None):
-            logging.warning("No value availble for item '%s'" % item)
+            logging.info("No value available for item '%s'" % item)
 
         return result
+
+    def set_value(self,vid, value):
+        valnodes = self.get_node(vid)
+        if(valnodes):
+            for node in valnodes:
+                node.text = value
+        else:
+            self.lookups[vid] = value
 
     def get_resolved_value(self, raw_value):
         """
