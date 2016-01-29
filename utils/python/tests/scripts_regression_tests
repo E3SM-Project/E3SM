@@ -473,7 +473,12 @@ class TestCreateTestImpl(TestCreateTestCommon):
         run_fail_test   = tests[1]
         pass_test       = tests[2]
 
-        ct.create_test()
+        try:
+            sys.stdout = open("/dev/null", "w")
+            ct.create_test()
+        finally:
+            sys.stdout = sys.__stdout__
+
         if (cime_util.does_machine_have_batch()):
             run_cmd("%s/wait_for_tests *%s*/TestStatus*" % (SCRIPT_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
 
@@ -683,12 +688,12 @@ class FullSystemTest(TestCreateTestCommon):
     def test_full_system(self):
     ###########################################################################
         stat, output, errput = run_cmd("%s/create_test cime_developer -t %s" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True)
-        self.assetEqual(stat, 0,
-                        msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+        self.assertEqual(stat, 0,
+                         msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
         stat, output, errput = run_cmd("%s/cs_status.%s" % (self._testroot, self._baseline_name), ok_to_fail=True)
-        self.assetEqual(stat, 0,
-                        msg="COMMAND SHOULD HAVE WORKED\cs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+        self.assertEqual(stat, 0,
+                         msg="COMMAND SHOULD HAVE WORKED\cs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 if (__name__ == "__main__"):
-    unittest.main()
+    unittest.main(verbosity=2)
