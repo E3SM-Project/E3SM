@@ -3287,8 +3287,8 @@
 
   <entry id="TIMER_DETAIL" 
          type="integer"
-         valid_values="0,1,2"  
-         value="1" 
+         valid_values="0,1,2,3,4,5,6,7,8,9,10,11,12"
+         value="2" 
          group="run_flags"
          sdesc="timer output detail"
          ></entry>
