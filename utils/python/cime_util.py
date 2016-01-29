@@ -279,21 +279,4 @@ def get_utc_timestamp(timestamp_format="%Y%m%d_%H%M%S"):
     return time.strftime(timestamp_format, utc_time_tuple)
 
 ###############################################################################
-def setup_standard_logging_options(parser):
-###############################################################################
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Print extra information")
-
-    parser.add_argument("-d", "--debug", action="store_true",
-                        help="Print debug information (very verbose)")
-
-###############################################################################
-def handle_standard_logging_options(args):
-###############################################################################
-    root_logger = logging.getLogger()
-
-    if (args.verbose == True):
-        root_logger.setLevel(logging.INFO)
-    if (args.debug == True):
-        root_logger.setLevel(logging.DEBUG)
 >>>>>>> master

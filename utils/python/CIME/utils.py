@@ -28,7 +28,7 @@ def expect(condition, error_msg):
     """
     if (not condition):
         raise SystemExit('ERROR: '+error_msg)
-    
+
 def read_cime_config_file():
     global _CIMECONFIG
     cimeconfigfile = os.path.abspath(os.path.join(os.path.expanduser("~"),
@@ -83,15 +83,15 @@ def get_model():
     if(_CIMECONFIG.has_option('main','MODEL')):
         model = _CIMECONFIG.get('main','MODEL')
     else:
-        model = os.environ.get("CIME_MODEL") 
+        model = os.environ.get("CIME_MODEL")
         if(model is not None):
             set_model(model)
         else:
             modelroot = os.path.join(get_cime_root(), "cime_config")
             models = os.listdir(modelroot)
             msg = "Environment variable CIME_MODEL must be set to one of: "
-            msg += ", ".join([model for model in models 
-                              if os.path.isdir(os.path.join(modelroot,model)) 
+            msg += ", ".join([model for model in models
+                              if os.path.isdir(os.path.join(modelroot,model))
                               and model != "xml_schemas"])
             expect(False, msg)
 
@@ -139,7 +139,7 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
                             stderr=arg_stderr,
                             stdin=stdin,
                             cwd=from_dir)
-    
+
     output, errput = proc.communicate(input_str)
     output = output.strip() if output is not None else output
     errput = errput.strip() if errput is not None else errput
@@ -424,22 +424,39 @@ def get_project():
     """
     project = os.environ.get("PROJECT")
     if(project is not None):
-        return
+        logging.warn("project from env PROJECT "+project)
+        return project
     project = os.environ.get("ACCOUNT")
     if(project is not None):
-        return
+        logging.warn("project from env ACCOUNT "+project)
+        return project
     if(_CIMECONFIG is None):
         read_cime_config_file()
     if(_CIMECONFIG.has_option('main','PROJECT')):
         project = _CIMECONFIG.get('main','PROJECT')
         if(project is not None):
-            return
+            logging.warn("project from .cime/config "+project)
+            return project
         projectfile = os.path.abspath(os.path.join(os.path.expanduser("~"),
                                                    ".cesm_proj"))
         if(os.path.isfile(projectfile)):
             with open(projectfile,'r') as myfile:
                 project = myfile.read()
                 _CIMECONFIG.set('main','PROJECT',project)
-                
+
     return project
-           
+
+def setup_standard_logging_options(parser):
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Print extra information")
+
+    parser.add_argument("-d", "--debug", action="store_true",
+                        help="Print debug information (very verbose)")
+
+def handle_standard_logging_options(args):
+    root_logger = logging.getLogger()
+
+    if (args.verbose == True):
+        root_logger.setLevel(logging.INFO)
+    if (args.debug == True):
+        root_logger.setLevel(logging.DEBUG)

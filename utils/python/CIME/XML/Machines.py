@@ -144,7 +144,6 @@ class Machines(GenericXML):
         if(self.get_field_from_list('MPILIBS',mpilib) is not None):
             return True
         return False
-<<<<<<< HEAD
 
     def has_batch_system(self):
         """
@@ -152,7 +151,3 @@ class Machines(GenericXML):
         """
         batch_system = self.get_node("batch_system")
         return not (batch_system is None or batch_system[0].get('type') == "none")
-
-
-=======
->>>>>>> master
