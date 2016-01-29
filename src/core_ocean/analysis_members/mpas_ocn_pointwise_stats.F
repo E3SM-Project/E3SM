@@ -7,45 +7,17 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_TEM_PLATE
+!  ocn_pointwise_stats
 !
-!> \brief MPAS ocean analysis mode member: TEM_PLATE
-!> \author FILL_IN_AUTHOR
-!> \date   FILL_IN_DATE
+!> \brief MPAS ocean analysis mode member: pointwise_stats
+!> \author Mark Petersen
+!> \date   Jan 2016
 !> \details
-!>  MPAS ocean analysis mode member: TEM_PLATE
-!>  In order to add a new analysis member, do the following:
-!>  1. Copy these to your new analysis member name:
-!>     cp mpas_ocn_TEMPLATE.F mpas_ocn_your_new_name.F
-!>     cp Registry_ocn_TEMPLATE.xml Registry_ocn_your_new_name.xml
-!>
-!>  2. In those two new files, replace the following text:
-!>     temPlate, TEM_PLATE, FILL_IN_AUTHOR, FILL_IN_DATE
-!>     Typically temPlate uses camel case (variable names), like yourNewName,
-!>     while TEM_PLATE uses underscores (subroutine names), like your_new_name.
-!>     note: do not replace 'filename_template' in Registry_ocn_yourNewName.xml
-!>
-!>  3. Add a #include line for your registry to
-!>     Registry_analysis_members.xml
-!>
-!>  4. In mpas_ocn_analysis_driver.F, add a use statement for your new analysis member.
-!>     In addition, add lines for your analysis member, and replace TEM_PLATE
-!>     and temPlate as described in step 2. There should be 5 places that need additions:
-!>      - Adding the analysis member name to the analysis member list
-!>      - Adding an init if test can subroutine call
-!>      - Adding a compute if test can subroutine call
-!>      - Adding a restart if test can subroutine call
-!>      - Adding a finalize if test can subroutine call
-!>
-!>  5. In src/core_ocean/analysis_members/Makefile, add your
-!>     new analysis member to the list of members. See another analysis member
-!>     in that file for an example.
-!>     NOTE: If your analysis member depends on other files, add a dependency
-!>           line for the member and list them there. See okubo weiss for an example.
+!>  MPAS ocean analysis mode member: pointwise_stats
 !>
 !-----------------------------------------------------------------------
 
-module ocn_TEM_PLATE
+module ocn_pointwise_stats
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -72,10 +44,10 @@ module ocn_TEM_PLATE
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_init_TEM_PLATE, &
-             ocn_compute_TEM_PLATE, &
-             ocn_restart_TEM_PLATE, &
-             ocn_finalize_TEM_PLATE
+   public :: ocn_init_pointwise_stats, &
+             ocn_compute_pointwise_stats, &
+             ocn_restart_pointwise_stats, &
+             ocn_finalize_pointwise_stats
 
    !--------------------------------------------------------------------
    !
@@ -83,24 +55,26 @@ module ocn_TEM_PLATE
    !
    !--------------------------------------------------------------------
 
+   integer :: nLocalCellPoints
+
 !***********************************************************************
 
 contains
 
 !***********************************************************************
 !
-!  routine ocn_init_TEM_PLATE
+!  routine ocn_init_pointwise_stats
 !
 !> \brief   Initialize MPAS-Ocean analysis member
-!> \author  FILL_IN_AUTHOR
-!> \date    FILL_IN_DATE
+!> \author  Mark Petersen
+!> \date    Jan 2016
 !> \details
 !>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_TEM_PLATE(domain, err)!{{{
+   subroutine ocn_init_pointwise_stats(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -130,24 +104,91 @@ contains
       !
       !-----------------------------------------------------------------
 
+      type (mpas_pool_type), pointer :: pointwiseStatsAMPool
+      type (dm_info) :: dminfo
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: pointwiseStatsAM
+
+      integer, pointer :: nCells, nCellsSolve, nPoints, nVertLevels
+      integer :: iCell, iPoint, i
+      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: indexToCellID,pointCellGlobalID, pointCellLocalID, pointMaxLevelCell, &
+           indexToPointCellLocalID
+      integer, dimension(:), allocatable :: pointMaxLevelCellLocal
+
       err = 0
 
-   end subroutine ocn_init_TEM_PLATE!}}}
+      dminfo = domain % dminfo
+
+      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nPoints', nPoints)
+      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevels', nVertLevels)
+      allocate(pointMaxLevelCellLocal(nPoints))
+
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+
+         call mpas_pool_get_subpool(block % structs, 'pointwiseStatsAM', pointwiseStatsAMPool)
+         call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
+         call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+         call mpas_pool_get_array(meshPool, 'indexToCellID',indexToCellID)
+         call mpas_pool_get_array(pointwiseStatsAMPool,'pointCellGlobalID',pointCellGlobalID)
+         call mpas_pool_get_array(pointwiseStatsAMPool,'pointMaxLevelCell',pointMaxLevelCell)
+         call mpas_pool_get_array(pointwiseStatsAMPool,'pointCellLocalID',pointCellLocalID)
+         call mpas_pool_get_array(pointwiseStatsAMPool,'indexToPointCellLocalID',indexToPointCellLocalID)
+
+         ! Hard wire points that are recorded.  Change to reading in points from a file later.
+         ! When that occurs, need remove definition from registry_pointwise_stats in
+         !		<dim name="nPoints" units="unitless" definition="10"
+         do iPoint = 1,nPoints
+            pointCellGlobalID(iPoint) = iPoint*10
+         end do
+         ! end: hard wire points
+
+         pointCellLocalID = nCells + 1
+         pointMaxLevelCellLocal = 0
+         indexToPointCellLocalID = 0
+         
+         ! Initialize index arrays to record pointwise data.
+         i = 0
+         do iCell = 1,nCellsSolve
+            do iPoint = 1,nPoints
+               if (indexToCellID(iCell).eq.pointCellGlobalID(iPoint)) then
+                  pointCellLocalID(iPoint) = iCell
+                  pointMaxLevelCellLocal(iPoint) = maxLevelCell(iCell)
+                  i = i + 1
+                  indexToPointCellLocalID(i) = iPoint
+               endif
+            end do
+         end do
+         nLocalCellPoints = i
+
+         block => block % next
+      end do
+
+      ! Collect data over processors by summing array.  Only owned cells are nonzero.
+      call mpas_dmpar_sum_int_array(dminfo, nPoints, pointMaxLevelCellLocal, pointMaxLevelCell)
+
+      deallocate(pointMaxLevelCellLocal)
+
+   end subroutine ocn_init_pointwise_stats!}}}
 
 !***********************************************************************
 !
-!  routine ocn_compute_TEM_PLATE
+!  routine ocn_compute_pointwise_stats
 !
 !> \brief   Compute MPAS-Ocean analysis member
-!> \author  FILL_IN_AUTHOR
-!> \date    FILL_IN_DATE
+!> \author  Mark Petersen
+!> \date    Jan 2016
 !> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_compute_TEM_PLATE(domain, timeLevel, err)!{{{
+   subroutine ocn_compute_pointwise_stats(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -179,97 +220,78 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: temPlateAMPool
+      type (mpas_pool_type), pointer :: pointwiseStatsAMPool
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: scratchPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
-      type (mpas_pool_type), pointer :: temPlateAM
+      type (mpas_pool_type), pointer :: pointwiseStatsAM
 
-      ! Here are some example variables which may be needed for your analysis member
-      integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_tracers
-      integer :: iTracer, k, iCell
-      integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelVertexBot
+      integer, pointer :: nPoints, nVertLevels
+      integer :: iPoint, i
+      integer, dimension(:), pointer :: pointCellGlobalID, pointCellLocalID, indexToPointCellLocalID
 
-      real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge
+      ! Doug replace these when you iterate over stream variables:
+      real (kind=RKIND), dimension(:,:), pointer :: layerThicknessPointValue, layerThickness
+      real (kind=RKIND), dimension(:,:), allocatable :: sumLayerThicknessPointValue
 
       err = 0
 
       dminfo = domain % dminfo
 
+      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nPoints', nPoints)
+      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevels', nVertLevels)
+      allocate(sumLayerThicknessPointValue(nVertLevels,nPoints))
+
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_subpool(block % structs, 'temPlateAM', temPlateAMPool)
 
-         ! Here are some example variables which may be needed for your analysis member
-         call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
+         call mpas_pool_get_subpool(block % structs, 'pointwiseStatsAM', pointwiseStatsAMPool)
+         call mpas_pool_get_dimension(block % dimensions, 'nPoints', nPoints)
+         call mpas_pool_get_array(pointwiseStatsAMPool,'pointCellGlobalID',pointCellGlobalID)
+         call mpas_pool_get_array(pointwiseStatsAMPool,'pointCellLocalID',pointCellLocalID)
+         call mpas_pool_get_array(pointwiseStatsAMPool,'indexToPointCellLocalID',indexToPointCellLocalID)
 
-         call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
-         call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
-         call mpas_pool_get_dimension(block % dimensions, 'nEdgesSolve', nEdgesSolve)
-         call mpas_pool_get_dimension(block % dimensions, 'nVerticesSolve', nVerticesSolve)
+         ! Doug: replace these when you iterate over stream variables:
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+         call mpas_pool_get_array(pointwiseStatsAMPool,'layerThicknessPointValue',layerThicknessPointValue) ! mrp dont need this in init
 
-         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-         call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
-
-         ! Computations which are functions of nCells, nEdges, or nVertices
-         ! must be placed within this block loop
-         ! Here are some example loops
-         do iCell = 1,nCellsSolve
-            do k = 1, maxLevelCell(iCell)
-               do iTracer = 1, num_tracers
-               ! computations on tracers(iTracer,k, iCell)
-               end do
-            end do
+         ! Doug: loop over names in stream rather than layerThickness
+         layerThicknessPointValue = 0.0_RKIND
+         do i = 1,nLocalCellPoints
+            layerThicknessPointValue(:,indexToPointCellLocalID(i)) = &
+                 layerThickness(:,pointCellLocalID(indexToPointCellLocalID(i)))
          end do
+         !end do
 
          block => block % next
       end do
 
-      ! mpi gather/scatter calls may be placed here.
-      ! Here are some examples.  See mpas_ocn_global_stats.F for further details.
-!      call mpas_dmpar_sum_real_array(dminfo, nVariables, sumSquares(1:nVariables), reductions(1:nVariables))
-!      call mpas_dmpar_min_real_array(dminfo, nMins, mins(1:nMins), reductions(1:nMins))
-!      call mpas_dmpar_max_real_array(dminfo, nMaxes, maxes(1:nMaxes), reductions(1:nMaxes))
+      ! Collect data over processors by summing array.  Only owned cells are nonzero.
+      call mpas_dmpar_sum_real_array(dminfo, nVertLevels*nPoints, layerThicknessPointValue, sumLayerThicknessPointValue)
 
-      ! Even though some variables do not include an index that is decomposed amongst
-      ! domain partitions, we assign them within a block loop so that all blocks have the
-      ! correct values for writing output.
-      block => domain % blocklist
-      do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'temPlateAM', temPlateAMPool)
+      layerThicknessPointValue = sumLayerThicknessPointValue
 
-         ! assignment of final temPlateAM variables could occur here.
+      deallocate(sumLayerThicknessPointValue)
 
-         block => block % next
-      end do
-
-   end subroutine ocn_compute_TEM_PLATE!}}}
+    end subroutine ocn_compute_pointwise_stats!}}}
 
 !***********************************************************************
 !
-!  routine ocn_restart_TEM_PLATE
+!  routine ocn_restart_pointwise_stats
 !
 !> \brief   Save restart for MPAS-Ocean analysis member
-!> \author  FILL_IN_AUTHOR
-!> \date    FILL_IN_DATE
+!> \author  Mark Petersen
+!> \date    Jan 2016
 !> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_restart_TEM_PLATE(domain, err)!{{{
+   subroutine ocn_restart_pointwise_stats(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -301,22 +323,22 @@ contains
 
       err = 0
 
-   end subroutine ocn_restart_TEM_PLATE!}}}
+   end subroutine ocn_restart_pointwise_stats!}}}
 
 !***********************************************************************
 !
-!  routine ocn_finalize_TEM_PLATE
+!  routine ocn_finalize_pointwise_stats
 !
 !> \brief   Finalize MPAS-Ocean analysis member
-!> \author  FILL_IN_AUTHOR
-!> \date    FILL_IN_DATE
+!> \author  Mark Petersen
+!> \date    Jan 2016
 !> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_finalize_TEM_PLATE(domain, err)!{{{
+   subroutine ocn_finalize_pointwise_stats(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -348,8 +370,8 @@ contains
 
       err = 0
 
-   end subroutine ocn_finalize_TEM_PLATE!}}}
+   end subroutine ocn_finalize_pointwise_stats!}}}
 
-end module ocn_TEM_PLATE
+end module ocn_pointwise_stats
 
 ! vim: foldmethod=marker
