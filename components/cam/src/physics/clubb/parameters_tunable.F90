@@ -357,6 +357,7 @@ module parameters_tunable
     clubb_gamma_coef = init_value
     clubb_mu = init_value
     clubb_nu1 = init_value
+    clubb_c_K10 = init_value
 
     if (masterproc) then
       iunit = getunit()
