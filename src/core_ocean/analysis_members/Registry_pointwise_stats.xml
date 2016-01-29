@@ -24,7 +24,7 @@
 		<package name="pointwiseStatsAMPKG" description="This package includes variables required for the pointwiseStats analysis member."/>
 	</packages>
 	<dims>
-		<dim name="nPoints" units="unitless" definition="10"
+		<dim name="nPoints" units="unitless" 
 			 description="The number of points for AM_pointwiseStats"
 		/>
 	</dims>
@@ -46,6 +46,15 @@
 		/>
 	</var_struct>
 	<streams>
+		<stream name="pointwiseStatsInput"
+				type="input"
+				filename_template="points.nc"
+				input_interval="initial_only"
+				runtime_format="single_file"
+				mode="forward;analysis">
+			<var name="pointCellGlobalID"/>
+		</stream>
+
 		<stream name="pointwiseStatsOutput" type="output"
 				mode="forward;analysis"
 				filename_template="analysis_members/pointwiseStats.$Y-$M-$D.nc"
