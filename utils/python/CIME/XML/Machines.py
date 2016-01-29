@@ -69,7 +69,7 @@ class Machines(GenericXML):
         if(self.machine is not None and self.name is not machine):
             self.machine = None
         mach_nodes = self.get_node('machine',{'MACH':machine})
-        expect(mach_nodes is not None,"No machine %s found" % machine)
+        expect(mach_nodes, "No machine %s found" % machine)
         self.machine = mach_nodes[0]
         self.name = machine
 

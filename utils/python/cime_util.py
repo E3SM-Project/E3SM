@@ -189,11 +189,11 @@ def get_machine_info(items, machine=None):
     >>> get_machine_info(["NODENAME_REGEX", "TESTS"], machine="skybridge")
     ['skybridge-login', 'acme_integration']
 
-    >>> get_machine_info("CESMSCRATCHROOT", machine="melvin").replace(getpass.getuser(), "USER")
-    '/home/USER/acme/scratch'
+    >>> get_machine_info("CESMSCRATCHROOT", machine="melvin").replace(os.environ["HOME"], "HOME")
+    'HOME/acme/scratch'
 
-    >>> get_machine_info("EXEROOT", machine="melvin").replace(getpass.getuser(), "USER")
-    '/home/USER/acme/scratch/$CASE/bld'
+    >>> get_machine_info("EXEROOT", machine="melvin").replace(os.environ["HOME"], "HOME")
+    'HOME/acme/scratch/$CASE/bld'
     """
     parse_config_machines()
 
