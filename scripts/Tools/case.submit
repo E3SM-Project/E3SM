@@ -1,13 +1,13 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 
 use strict;
 use XML::LibXML;
 use Getopt::Long;
 
-my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml"); 
-my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
+my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml");
+my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]");
 my $cimeroot = $nodes[0]->getAttribute('value');
-my %opts=(loglevel=>"INFO");
+my %opts=(loglevel=>"DEBUG");
 $ENV{CIMEROOT}=$cimeroot;
 unshift @INC, "$cimeroot/utils/perl5lib";
 require Log::Log4perl;
@@ -43,9 +43,6 @@ sub main
     my $case	= $config{'CASE'};
     my $model       = $config{'MODEL'};
     my $debug       = $config{'DEBUG'};
-
-
-
     # Check the case only once..
     if(!$opts{resubmit}){
 	$logger->info( "checking the case..");
@@ -57,11 +54,11 @@ sub main
 	}
     }
 
-    my $moduleloader = Module::ModuleLoader->new(machine  => $machine, 
-						 compiler => $compiler, 
-						 mpilib   => $mpilib, 
-						 debug    => $debug, 
-						 caseroot => $caseroot, 
+    my $moduleloader = Module::ModuleLoader->new(machine  => $machine,
+						 compiler => $compiler,
+						 mpilib   => $mpilib,
+						 debug    => $debug,
+						 caseroot => $caseroot,
 						 cimeroot => $cimeroot,
 						 model    => $model);
 
@@ -79,37 +76,47 @@ sub main
 	$job = "run";
     }
     $logger->debug( "Job = $job");
-    my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case	   => $case, 
-							      caseconfig   => \%config, 
-							      caseroot	   => $caseroot, 
-							      cimeroot	   => $cimeroot, 
-							      compiler	   => $compiler, 
-							      machine	   => $machine, 
-							      machroot	   => $machroot, 
+    my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case	   => $case,
+							      caseconfig   => \%config,
+							      caseroot	   => $caseroot,
+							      cimeroot	   => $cimeroot,
+							      compiler	   => $compiler,
+							      machine	   => $machine,
+							      machroot	   => $machroot,
 							      mpilib	   => $mpilib,
-	                                                      job                => $job); 
-    
-    
+	                                                      job                => $job);
+
+
     if(defined $opts{'resubmit'})
     {
+	if( $batchutils->{batchtype} eq 'none'){
+	    exit;
+	}
+
         if(! defined $opts{'scriptname'})
         {
             $logger->logdie ("$config{'CASE'}.submit: resubmit option given without scriptname provided, aborting!");
         }
-        else
-        {
-            `./xmlchange -noecho -loglevel $opts{loglevel} RUN_WITH_SUBMIT=TRUE`;
-            $config{RUN_WITH_SUBMIT}='TRUE';
-            $batchutils->doResubmit($opts{'scriptname'});
-        }
+	`./xmlchange -noecho -loglevel $opts{loglevel} RUN_WITH_SUBMIT=TRUE`;
+	$config{RUN_WITH_SUBMIT}='TRUE';
+	$batchutils->doResubmit($opts{'scriptname'});
     }
     else
     {
         $batchutils->dependencyCheck();
-        check_DA_settings();
-        `./xmlchange -noecho -loglevel $opts{loglevel} RUN_WITH_SUBMIT=TRUE`;
-	$config{RUN_WITH_SUBMIT}='TRUE';
-        $batchutils->submitJobs();
+	my $loopcnt=1;
+	if($batchutils->{batchtype} eq 'none'){
+	    $loopcnt = $config{RESUBMIT}+1;
+	}
+	for(my $resub=0; $resub < $loopcnt; $resub++){
+	    check_DA_settings();
+	    `./xmlchange -noecho -loglevel $opts{loglevel} RUN_WITH_SUBMIT=TRUE`;
+	    $config{RUN_WITH_SUBMIT}='TRUE';
+	    $batchutils->submitJobs();
+	    if($batchutils->{batchtype} eq 'none'){
+		$batchutils->_decrementResubmitCounter(\%config);
+	    }
+	}
     }
 
 }
@@ -139,7 +146,7 @@ sub doResubmit()
                                                               machroot => $config{'MACHDIR'},
                                                               mpilib   => $config{'MPILIB'},
 	                                                      job => $job);
-    
+
     $batchutils->doResubmit($scriptname);
 }
 
