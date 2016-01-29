@@ -147,6 +147,7 @@
 <profile_detail_limit TIMER_DETAIL="pos">$TIMER_DETAIL</profile_detail_limit>
 
 <profile_ovhd_measurement>.false.</profile_ovhd_measurement>
+<profile_add_detail>.false.</profile_add_detail>
 <profile_outpe_num>1</profile_outpe_num>
 <profile_papi_enable>.false.</profile_papi_enable>
 
