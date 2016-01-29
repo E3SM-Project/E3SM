@@ -138,7 +138,8 @@ module shr_stream_mod
       character(SHR_KIND_CL) :: domFileName       ! domain file: name
       character(SHR_KIND_CS) :: domTvarName       ! domain file: time-dim var name
       character(SHR_KIND_CS) :: domXvarName       ! domain file: x-dim var name
-      character(SHR_KIND_CS) :: domYvarName       ! domain file: y-dim var ame
+      character(SHR_KIND_CS) :: domYvarName       ! domain file: y-dim var name
+      character(SHR_KIND_CS) :: domZvarName       ! domain file: z-dim var name
       character(SHR_KIND_CS) :: domAreaName       ! domain file: area  var name
       character(SHR_KIND_CS) :: domMaskName       ! domain file: mask  var name
 
@@ -505,6 +506,17 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
          call shr_string_listGetName (fldListFile,n,substr,rc)
          strm%domYvarName = subStr
       endif
+      !--- get vertical variable name ---
+      n = shr_string_listGetIndexF(fldListModel,"hgt")
+      if (n==0) then
+!         rCode = 1
+!         write(s_logunit,F00) "ERROR: no input field names"
+!         call shr_stream_abort(subName//"ERROR: no lat variable name")
+         strm%domZvarName = 'unknownname'
+      else
+         call shr_string_listGetName (fldListFile,n,substr,rc)
+         strm%domZvarName = subStr
+      endif
       !--- get area variable name ---
       n = shr_string_listGetIndexF(fldListModel,"area")
       if (n==0) then
@@ -632,7 +644,8 @@ end subroutine shr_stream_init
 
 subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
                           fldListFile,fldListModel,domFilePath,domFileName, &
-                          domTvarName,domXvarName,domYvarName,domAreaName,domMaskName, &
+                          domTvarName,domXvarName,domYvarName,domZvarName,  &
+                          domAreaName,domMaskName, &
                           filePath,filename,dataSource,rc)
 
 ! !INPUT/OUTPUT PARAMETERS:
@@ -649,7 +662,8 @@ subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
    character(*)          ,optional,intent(in)    :: domFileName  ! domain file name
    character(*)          ,optional,intent(in)    :: domTvarName  ! domain time dim name
    character(*)          ,optional,intent(in)    :: domXvarName  ! domain x dim name
-   character(*)          ,optional,intent(in)    :: domYvarName  ! domain y dim nam
+   character(*)          ,optional,intent(in)    :: domYvarName  ! domain y dim name
+   character(*)          ,optional,intent(in)    :: domZvarName  ! domain z dim name
    character(*)          ,optional,intent(in)    :: domAreaName  ! domain area name
    character(*)          ,optional,intent(in)    :: domMaskName  ! domain mask name
    character(*)          ,optional,intent(in)    :: filePath   ! path for filenames
@@ -712,6 +726,9 @@ subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
    endif
    if (present(domYvarName)) then
       strm%domYvarName = trim(domYvarName)
+   endif
+   if (present(domZvarName)) then
+      strm%domZvarName = trim(domZvarName)
    endif
    if (present(domAreaName)) then
       strm%domAreaName = trim(domAreaName)
@@ -812,6 +829,7 @@ subroutine shr_stream_default(strm,rc)
    strm%domTvarName      = ' '
    strm%domXvarName      = ' '
    strm%domYvarName      = ' '
+   strm%domZvarName      = ' '
    strm%domAreaName      = ' '
    strm%domMaskName      = ' '
 
@@ -1993,7 +2011,7 @@ end subroutine shr_stream_getCalendar
 !
 ! !INTERFACE: ------------------------------------------------------------------  
 
-subroutine shr_stream_getDomainInfo(strm,filePath,fileName,timeName,lonName,latName,maskName,areaName)
+subroutine shr_stream_getDomainInfo(strm,filePath,fileName,timeName,lonName,latName,hgtName,maskName,areaName)
 
 ! !INPUT/OUTPUT PARAMETERS:
 
@@ -2003,6 +2021,7 @@ subroutine shr_stream_getDomainInfo(strm,filePath,fileName,timeName,lonName,latN
    character(*)               ,intent(out) :: timeName ! domain time var name
    character(*)               ,intent(out) ::  lonName ! domain lon  var name
    character(*)               ,intent(out) ::  latName ! domain lat  var name
+   character(*)               ,intent(out) ::  hgtName ! domain hgt  var name
    character(*)               ,intent(out) :: maskName ! domain mask var name
    character(*)               ,intent(out) :: areaName ! domain area var name
  
@@ -2017,6 +2036,7 @@ subroutine shr_stream_getDomainInfo(strm,filePath,fileName,timeName,lonName,latN
    timeName = strm%domTvarName 
     lonName = strm%domXvarName 
     latName = strm%domYvarName 
+    hgtName = strm%domZvarName 
    maskName = strm%domMaskName 
    areaName = strm%domAreaName 
 
@@ -2441,7 +2461,8 @@ subroutine  shr_stream_restWrite(strm,fileName,caseName,caseDesc,nstrms,rc)
       write(nUnit) strm(k)%domFilePath  ! domain file: path
       write(nUnit) strm(k)%domTvarName  ! domain file: time-dim var name
       write(nUnit) strm(k)%domXvarName  ! domain file: x-dim var name
-      write(nUnit) strm(k)%domYvarName  ! domain file: y-dim var ame
+      write(nUnit) strm(k)%domYvarName  ! domain file: y-dim var name
+      write(nUnit) strm(k)%domZvarName  ! domain file: z-dim var name
       write(nUnit) strm(k)%domAreaName  ! domain file: area  var name
       write(nUnit) strm(k)%domMaskName  ! domain file: mask  var name
 
@@ -2661,7 +2682,8 @@ subroutine  shr_stream_restRead(strm,fileName,nstrms,rc)
       read(nUnit) inpcl !  domFilePath  ! domain file: path
       read(nUnit) inpcs !  domTvarName  ! domain file: time-dim var name
       read(nUnit) inpcs !  domXvarName  ! domain file: x-dim var name
-      read(nUnit) inpcs !  domYvarName  ! domain file: y-dim var ame
+      read(nUnit) inpcs !  domYvarName  ! domain file: y-dim var name
+      read(nUnit) inpcs !  domZvarName  ! domain file: z-dim var name
       read(nUnit) inpcs !  domAreaName  ! domain file: area  var name
       read(nUnit) inpcs !  domMaskName  ! domain file: mask  var name
 
@@ -2744,6 +2766,7 @@ subroutine shr_stream_dataDump(strm)
    write(s_logunit,F00) "domTvarName  = ", trim(strm%domTvarName)
    write(s_logunit,F00) "domXvarName  = ", trim(strm%domXvarName)
    write(s_logunit,F00) "domYvarName  = ", trim(strm%domYvarName)
+   write(s_logunit,F00) "domZvarName  = ", trim(strm%domZvarName)
    write(s_logunit,F00) "domAreaName  = ", trim(strm%domAreaName)
    write(s_logunit,F00) "domMaskName  = ", trim(strm%domMaskName)
 
@@ -3089,6 +3112,7 @@ subroutine shr_stream_bcast(stream,comm,rc)
    call shr_mpi_bcast(stream%domTvarName ,comm,subName)
    call shr_mpi_bcast(stream%domXvarName ,comm,subName)
    call shr_mpi_bcast(stream%domYvarName ,comm,subName)
+   call shr_mpi_bcast(stream%domZvarName ,comm,subName)
    call shr_mpi_bcast(stream%domMaskName ,comm,subName)
    call shr_mpi_bcast(stream%calendar    ,comm,subName)
 
