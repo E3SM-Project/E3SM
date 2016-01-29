@@ -8,11 +8,8 @@ this file to create new test entries, and then inserts these entries
 into the XML file.
 """
 
-import add_util_path
-import cime_util
+from standard_script_setup import *
 from cime_util import expect
-cime_util.check_minimum_python_version(2, 7)
-
 import update_acme_tests
 
 import sys, argparse, os
@@ -41,6 +38,8 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
+    cime_util.setup_standard_logging_options(parser)
+
     parser.add_argument("test_list_path", help="The path to test lists XML file")
 
     parser.add_argument("categories", nargs="*",
@@ -49,12 +48,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-p", "--platform",
                         help="Only add tests for a specific platform, format=machine,compiler. Useful for adding new platforms.")
 
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Print extra information")
-
     args = parser.parse_args(args[1:])
 
-    cime_util.set_verbosity(args.verbose)
+    cime_util.handle_standard_logging_options(args)
 
     expect(os.path.isfile(args.test_list_path),
            "'%s' is not a valid file" % args.test_list_path)
@@ -75,8 +71,6 @@ def _main_func(description):
         return
 
     categories, test_list_path, platform = parse_command_line(sys.argv, description)
-
-    cime_util.stop_buffering_output()
 
     update_acme_tests.update_acme_tests(test_list_path, categories, platform)
 

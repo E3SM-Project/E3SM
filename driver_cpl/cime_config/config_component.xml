@@ -541,7 +541,7 @@
 
   <entry id="BATCHREDIRECT">
     <type>char</type>
-    <default_value>UNSET</default_value>
+    <default_value></default_value>
     <group>run_machine</group>
     <file>env_case.xml</file>
     <desc>Batch redirect character</desc>

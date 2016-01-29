@@ -50,6 +50,9 @@ class CreateTest(object):
         self._namelists_only = namelists_only
         self._parallel_jobs  = parallel_jobs
 
+        if (self._project is not None):
+            self._baseline_root = self._baseline_root.replace("$PROJECT", self._project)
+
         # Oversubscribe by 1/4
 
         pes = int(self._machobj.get_value("MAX_TASKS_PER_NODE"))
@@ -212,6 +215,8 @@ class CreateTest(object):
             raise StandardError("Test '%s' has compiler that does not match instance compliler '%s'" % (test_name, self._compiler))
         if (self._parallel_jobs == 1):
             scratch_dir = self._machobj.get_resolved_value(self._machobj.get_value("CESMSCRATCHROOT"))
+            if (self._project is not None):
+                scratch_dir = scratch_dir.replace("$PROJECT", self._project)
             sharedlibroot = os.path.join(scratch_dir, "sharedlibroot.%s" % self._test_id)
         else:
             # Parallelizing builds introduces potential sync problems with sharedlibroot

@@ -16,8 +16,9 @@ class Machines(GenericXML):
             infile = files.get_resolved_value(
                 files.get_value('MACHINES_SPEC_FILE'))
         logging.info("Open file "+infile)
-        self.machine = None
         GenericXML.__init__(self,infile)
+        self.machine = None
+        self.name = None
 
     def get_node(self,nodename,attributes=None,root=None):
         if(self.machine is not None and root is None and nodename is not "machine"):
@@ -36,7 +37,7 @@ class Machines(GenericXML):
             mach = node.get("MACH")
             machines.append(mach)
         return machines
-    
+
     def probe_machine_name(self):
         """
         Find a matching regular expression for hostname
@@ -80,7 +81,7 @@ class Machines(GenericXML):
         value = None
         """
         COMPILER and MPILIB are special, if called without arguments they get the default value from the
-        COMPILERS and MPILIBS lists in the file. 
+        COMPILERS and MPILIBS lists in the file.
         """
         if(name == "COMPILER"):
             value = self.get_default_compiler()
@@ -98,9 +99,9 @@ class Machines(GenericXML):
         return value
 
     def get_field_from_list(self, listname, reqval=None):
-        """ 
+        """
         Some of the fields have lists of valid values in the xml, parse these
-        lists and return the first value if reqval is not provided and reqval 
+        lists and return the first value if reqval is not provided and reqval
         if it is a valid setting for the machine
         """
         expect(self.machine is not None, "Machine object has no machine defined")
@@ -118,7 +119,7 @@ class Machines(GenericXML):
 
     def get_default_compiler(self):
         """
-        Get the compiler to use from the list of COMPILERS 
+        Get the compiler to use from the list of COMPILERS
         """
         return self.get_field_from_list('COMPILERS')
 
@@ -143,12 +144,15 @@ class Machines(GenericXML):
         if(self.get_field_from_list('MPILIBS',mpilib) is not None):
             return True
         return False
+<<<<<<< HEAD
 
     def has_batch_system(self):
         """
         Return if this machine has a batch system
         """
         batch_system = self.get_node("batch_system")
-        return not (batch_system is None or batch_system[0].get('type') == "none")        
+        return not (batch_system is None or batch_system[0].get('type') == "none")
 
 
+=======
+>>>>>>> master

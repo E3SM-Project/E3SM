@@ -9,16 +9,12 @@ The easiest way to test this script is to keep a set of create_test
 results laying around somewhere so you don't have to wait for tests
 to run to test this script.
 """
-import logging
-import add_util_path
-import cime_util
-cime_util.check_minimum_python_version(2, 7)
+
+from standard_script_setup import *
+
 import wait_for_tests
 
 import argparse, sys, os
-
-logging.basicConfig()
-rootlogger = logging.getLogger()
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -44,10 +40,9 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    parser.add_argument("paths", default=".", nargs="*", help="Paths to test directories or status file. Pwd default.")
+    cime_util.setup_standard_logging_options(parser)
 
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Print extra information")
+    parser.add_argument("paths", default=".", nargs="*", help="Paths to test directories or status file. Pwd default.")
 
     parser.add_argument("-n", "--no-wait", action="store_true",
                         help="Do not wait for tests to finish")
@@ -61,7 +56,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-i", "--ignore-namelist-diffs", action="store_true",
                         help="Do not fail a test if the only problem is diffing namelists")
 
-    parser.add_argument("-d", "--cdash-build-name",
+    parser.add_argument("-b", "--cdash-build-name",
                         help="Build name, implies you want results send to Cdash")
 
     parser.add_argument("-p", "--cdash-project", default=wait_for_tests.ACME_MAIN_CDASH,
@@ -72,8 +67,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    if(args.verbose == True):
-        rootlogger.setLevel(logging.INFO)
+    cime_util.handle_standard_logging_options(args)
 
     return args.paths, args.no_wait, args.check_throughput, args.check_memory, args.ignore_namelist_diffs, args.cdash_build_name, args.cdash_project, args.cdash_build_group
 
@@ -83,8 +77,6 @@ def _main_func(description):
     if ("--test" in sys.argv):
         cime_util.run_cmd("python -m doctest %s/wait_for_tests.py -v" % cime_util.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
         return
-
-    cime_util.stop_buffering_output()
 
     test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, cdash_build_name, cdash_project, cdash_build_group = \
         parse_command_line(sys.argv, description)

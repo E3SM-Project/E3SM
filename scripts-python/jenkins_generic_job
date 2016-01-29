@@ -6,23 +6,17 @@ test suite. Essentially, a wrapper around create_test and
 wait_for_tests that handles cleanup of old test results and
 ensures that the batch system is left in a clean state.
 """
-import logging
-import add_util_path
-import cime_util
-cime_util.check_minimum_python_version(2, 7)
+
+from standard_script_setup import *
 import wait_for_tests
+from CIME.utils import expect
 
 import argparse, sys, os, shutil, glob, doctest, time, signal
-
-from CIME.utils import expect
 
 SENTINEL_FILE = "ONGOING_TEST"
 
 # Don't know if this belongs here longterm
 MACHINES_THAT_MAINTAIN_BASELINES = ("redsky", "melvin", "skybridge")
-
-logging.basicConfig()
-rootlogger = logging.getLogger()
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -52,8 +46,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     default_test_suite = cime_util.get_machine_info("TESTS")
     default_maintain_baselines = machine in MACHINES_THAT_MAINTAIN_BASELINES
 
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Print extra information")
+    cime_util.setup_standard_logging_options(parser)
 
     parser.add_argument("-g", "--generate-baselines", action="store_true",
                         help="Generate baselines")
@@ -61,7 +54,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--baseline-compare", action="store", choices=("yes", "no"), default=("yes" if default_maintain_baselines else "no"),
                         help="Do baseline comparisons")
 
-    parser.add_argument("-d", "--submit-to-cdash", action="store_true",
+    parser.add_argument("-s", "--submit-to-cdash", action="store_true",
                         help="Send results to CDash")
 
     parser.add_argument("-c", "--cdash-build-name",
@@ -81,15 +74,14 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    if(args.verbose == True):
-        rootlogger.setLevel(logging.INFO)
+    cime_util.handle_standard_logging_options(args)
 
     expect(not (args.submit_to_cdash and args.generate_baselines),
-           "Does not make sense to use -g and -d together")
+           "Does not make sense to use -g and -s together")
     expect(not (args.cdash_build_name is not None and not args.submit_to_cdash),
-           "Does not make sense to use --cdash-build-name without -d")
+           "Does not make sense to use --cdash-build-name without -s")
     expect(not (args.cdash_project is not wait_for_tests.ACME_MAIN_CDASH and not args.submit_to_cdash),
-           "Does not make sense to use -p without -d")
+           "Does not make sense to use -p without -s")
 
     return args.generate_baselines, args.submit_to_cdash, args.baseline_name, args.cdash_build_name, args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare
 
@@ -120,9 +112,8 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
     start_time = time.time()
 
     use_batch = cime_util.does_machine_have_batch()
-    compilers, test_suite, scratch_root, proxy = \
-        cime_util.get_machine_info(["COMPILERS", "TESTS", "CESMSCRATCHROOT", "PROXY"])
-    compiler = compilers[0]
+    compiler, test_suite, scratch_root, proxy = \
+        cime_util.get_machine_info(["COMPILER", "TESTS", "CESMSCRATCHROOT", "PROXY"])
     test_suite = test_suite if arg_test_suite is None else arg_test_suite
     test_root = os.path.join(scratch_root, "jenkins")
 
@@ -259,8 +250,6 @@ def _main_func(description):
     if ("--test" in sys.argv):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
-
-    cime_util.stop_buffering_output()
 
     generate_baselines, submit_to_cdash, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare = \
         parse_command_line(sys.argv, description)

@@ -5,16 +5,11 @@ Compare namelists. Should be called by an ACME test. Designed
 to not be sensitive to order or whitespace.
 """
 
-import add_util_path
-import cime_util
-cime_util.check_minimum_python_version(2, 7)
-
-import logging
-import argparse, sys, os
-
+from standard_script_setup import *
 import compare_namelists
-
 from CIME.utils import expect
+
+import argparse, sys, os
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -36,6 +31,8 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
+    cime_util.setup_standard_logging_options(parser)
+
     parser.add_argument("gold_file", help="Path to gold file")
 
     parser.add_argument("new_file", help="Path to file to compare against gold")
@@ -43,12 +40,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-c", "--case", action="store", dest="case", default=None,
                         help="The case base id (<TESTCASE>.<GRID>.<COMPSET>). Helps us normalize data.")
 
-    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
-                        help="Print extra information")
-
     args = parser.parse_args(args[1:])
 
-    cime_util.set_verbosity(args.verbose)
+    cime_util.handle_standard_logging_options(args)
 
     # Normalize case
     if (args.case is not None):
@@ -62,8 +56,6 @@ def _main_func(description):
     if ("--test" in sys.argv):
         cime_util.run_cmd("python -m doctest %s/compare_namelists.py -v" % cime_util.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
         return
-
-    cime_util.stop_buffering_output()
 
     gold_file, compare_file, case = \
         parse_command_line(sys.argv, description)
