@@ -2151,6 +2151,12 @@ Switch to control whether MG microphysics performs a uniform calculation or not
 Default: .false.
 </entry>
 
+<entry id="ice_sed_ai" type="real" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Fall speed parameter for cloud ice
+Default: 700.0
+</entry>
+
 <entry id="micro_mg_dcs" type="real" category="microphys"
        group="micro_mg_nl" valid_values="" >
 Autoconversion size threshold for cloud ice to snow (m)
@@ -2716,6 +2722,32 @@ Default: FALSE
 Switch for CLUBBND_CAM
 Default: FALSE
 </entry>
+
+<entry id="clubb_liq_deep" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+clubb liquid deep convection factor
+Default: 8.e-6
+</entry>
+
+<entry id="clubb_liq_sh" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+clubb liquid shallow convection factor
+Default: 10.e-6
+</entry>
+
+<entry id="clubb_ice_deep" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+clubb  ice deep convection factor
+Default: 25.e-6
+</entry>
+
+<entry id="clubb_ice_sh" type="real" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+clubb ice shallow convection factor
+Default: 50.e-6
+</entry>
+
+
 
 <!-- Clubb tunable parameters -->
 

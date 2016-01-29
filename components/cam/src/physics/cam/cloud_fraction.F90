@@ -186,7 +186,7 @@ end subroutine cldfrc_getparams
 
 !===============================================================================
 
-subroutine cldfrc_init
+subroutine cldfrc_init(dp1_out)
 
    ! Initialize cloud fraction run-time parameters
 
@@ -197,6 +197,9 @@ subroutine cldfrc_init
    !use chemistry,     only:  chem_is
    use phys_control,  only:  phys_getopts
    
+   ! args
+   real(r8), intent(out) :: dp1_out
+   
    ! horizontal grid specifier
    character(len=32) :: hgrid
 
@@ -205,6 +208,9 @@ subroutine cldfrc_init
 
    integer :: k
    !-----------------------------------------------------------------------------
+
+   !for passing dp1 to clubb
+   dp1_out = dp1
 
    call phys_getopts(shallow_scheme_out = shallow_scheme ,&
                      eddy_scheme_out    = eddy_scheme    ,&

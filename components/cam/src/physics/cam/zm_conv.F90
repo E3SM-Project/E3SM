@@ -3234,6 +3234,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
    integer k
    integer msg
    integer n
+   integer bot_layer
 
    real(r8) rd
    real(r8) rl
@@ -3273,7 +3274,9 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 ! search for this level stops at planetary boundary layer top.
 !
 #ifdef PERGRO
-   do k = pver,msg + 1,-1
+   bot_layer = pver -1
+   if(pver == 30)bot_layer = pver !BSINGH - special case for 30 layer model
+   do k = bot_layer,msg + 1,-1
       do i = 1,ncol
          hmn(i) = cp*t(i,k) + grav*z(i,k) + rl*q(i,k)
 !
@@ -3487,7 +3490,9 @@ integer i,k,ii   ! Loop counters.
 !
 
 nit_lheat = 2 ! iterations for ds,dq changes from condensation freezing.
-dmpdz=-1.e-3_r8        ! Entrainment rate. (-ve for /m)
+dmpdz=-1.e-3_r8 * 0.5_r8        ! Entrainment rate. (-ve for /m)
+!BSINGH - special case for 30 layer model
+if(pver == 30)dmpdz=-1.e-3_r8        ! Entrainment rate. (-ve for /m)
 !dmpdpc = 3.e-2_r8   ! In cloud entrainment rate (/mb).
 lwmax = 1.e-3_r8    ! Need to put formula in for this.
 tscool = 0.0_r8   ! Temp at which water loading freezes in the cloud.
