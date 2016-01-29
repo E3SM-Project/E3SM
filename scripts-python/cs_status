@@ -53,8 +53,6 @@ def cs_status(test_paths):
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    cime_util.stop_buffering_output()
-
     test_paths = parse_command_line(sys.argv, description)
 
     cs_status(test_paths)

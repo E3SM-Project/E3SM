@@ -84,8 +84,6 @@ def _main_func(description):
 
     thing_to_list, categories = parse_command_line(sys.argv, description)
 
-    cime_util.stop_buffering_output()
-
     list_tests(thing_to_list, categories)
 
 if __name__ == "__main__":

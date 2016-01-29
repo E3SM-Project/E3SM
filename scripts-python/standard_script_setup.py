@@ -10,6 +10,6 @@ sys.path.append(_LIB_DIR)
 
 import cime_util
 cime_util.check_minimum_python_version(2, 7)
+cime_util.stop_buffering_output()
 
 logging.basicConfig()
-

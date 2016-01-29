@@ -78,8 +78,6 @@ def _main_func(description):
         cime_util.run_cmd("python -m doctest %s/wait_for_tests.py -v" % cime_util.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
         return
 
-    cime_util.stop_buffering_output()
-
     test_paths, no_wait, check_throughput, check_memory, ignore_namelist_diffs, cdash_build_name, cdash_project, cdash_build_group = \
         parse_command_line(sys.argv, description)
 

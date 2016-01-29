@@ -267,8 +267,6 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    cime_util.stop_buffering_output()
-
     baseline_name, test_root, compiler, test_id, namelists_only, hist_only, report_only, force, bless_tests = \
         parse_command_line(sys.argv, description)
 
