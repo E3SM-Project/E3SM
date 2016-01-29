@@ -4,12 +4,13 @@ import unittest, sys, os, tempfile, shutil, re, threading, time, signal, glob, s
 
 LIB_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(LIB_DIR)
-from cime_util import run_cmd
-import cime_util, update_acme_tests, create_test_impl, wait_for_tests
+from CIME.utils import run_cmd
+import CIME.utils, update_acme_tests, wait_for_tests
+from  CIME.CreateTest import CreateTest
 from  CIME.XML.Machines import Machines
 from CIME.XML.Files import Files
 
-SCRIPT_DIR = cime_util.get_acme_scripts_root()
+SCRIPT_DIR = CIME.utils.get_acme_scripts_root()
 
 DART_CONFIG = "DartConfiguration.tcl"
 DART_BACKUP = "temp_dart_backup"
@@ -51,9 +52,9 @@ class RunUnitTests(unittest.TestCase):
         self.assertTrue(os.path.isfile(machinefile),
                         msg="Path did not resolve to existing file %s" % machinefile)
 
-    def test_cime_util_unit_test(self):
+    def test_CIMEutils_unit_test(self):
         # A little different since this is a library, not an executable
-        stat, output, _ = run_cmd("python -m doctest cime_util.py 2>&1", ok_to_fail=True, from_dir=LIB_DIR)
+        stat, output, _ = run_cmd("python -m doctest CIME.utils.py 2>&1", ok_to_fail=True, from_dir=os.path.join(LIB_DIR,"CIME"))
         self.assertEqual(stat, 0, msg=output)
 
 ###############################################################################
@@ -73,7 +74,7 @@ def parse_test_status(line):
 def kill_subprocesses(name=None, sig=signal.SIGKILL, expected_num_killed=None, tester=None):
 ###############################################################################
     # Kill all subprocesses
-    proc_ids = cime_util.find_proc_id(proc_name=name, children_only=True)
+    proc_ids = CIME.utils.find_proc_id(proc_name=name, children_only=True)
     if (expected_num_killed is not None):
         tester.assertEqual(len(proc_ids), expected_num_killed,
                            msg="Expected to find %d processes to kill, found %d" % (expected_num_killed, len(proc_ids)))
@@ -108,9 +109,10 @@ def assert_dashboard_has_build(tester, build_name, expected_count=1):
 def setup_proxy():
 ###############################################################################
     if ("http_proxy" not in os.environ):
-        machine = cime_util.probe_machine_name()
-        if (machine is not None):
-            proxy = cime_util.get_machine_info("PROXY")
+        machine = Machines()
+        mach_name = machine.probe_machine_name()
+        if (mach_name is not None):
+            proxy = machine.get_value('PROXY')
             if (proxy is not None):
                 os.environ["http_proxy"] = proxy
                 return True
@@ -168,7 +170,7 @@ class TestWaitForTests(unittest.TestCase):
         if (expected_results == ["PASS"]*len(expected_results)):
             self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s" % (output, errput))
         else:
-            self.assertEqual(stat, cime_util.TESTS_FAILED_ERR_CODE,
+            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE,
                              msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\nwait_for_tests output:\n%s\n\nerrput:\n%s" % (output, errput))
 
         lines = [line for line in output.splitlines() if line.startswith("Test '")]
@@ -302,14 +304,15 @@ class TestCreateTestCommon(unittest.TestCase):
     ###########################################################################
     def setUp(self):
     ###########################################################################
+        machine = Machines()
         self._thread_error      = None
         self._unset_proxy       = setup_proxy()
-        self._baseline_name     = "fake_testing_only_%s" % cime_util.get_utc_timestamp()
-        self._baseline_area     = cime_util.get_machine_info("CCSM_BASELINE")
-        self._testroot          = cime_util.get_machine_info("CESMSCRATCHROOT")
+        self._baseline_name     = "fake_testing_only_%s" % CIME.utils.get_utc_timestamp()
+        self._machine           = machine.probe_machine_name()
+        self._baseline_area     = machine.get_value("CCSM_BASELINE")
+        self._testroot          = machine.get_resolved_value(machine.get_value("CESMSCRATCHROOT"))
         self._jenkins_root      = os.path.join(self._testroot, "jenkins")
-        self._machine           = cime_util.probe_machine_name()
-        self._compiler          = cime_util.get_machine_info("COMPILER")
+        self._compiler          = machine.get_default_compiler()
 
         # wait_for_tests could blow away our dart config, need to back it up
         if (os.path.exists(DART_CONFIG)):
@@ -348,16 +351,16 @@ class TestCreateTest(TestCreateTestCommon):
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
         else:
-            self.assertEqual(stat, cime_util.TESTS_FAILED_ERR_CODE, msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\ncreate_test output:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (output, errput, stat))
+            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE, msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\ncreate_test output:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (output, errput, stat))
 
     ###############################################################################
     def test_create_test_rebless_namelist(self):
     ###############################################################################
         # Generate some namelist baselines
-        self.simple_test(True, "-g -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, cime_util.get_utc_timestamp()))
+        self.simple_test(True, "-g -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
         # Basic namelist compare
-        self.simple_test(True, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, cime_util.get_utc_timestamp()))
+        self.simple_test(True, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
         # Modify namelist
         fake_nl = """
@@ -365,8 +368,8 @@ class TestCreateTest(TestCreateTestCommon):
    fake_item = 'fake'
    fake = .true.
 /"""
-        baseline_area = cime_util.get_machine_info("CCSM_BASELINE")
-        compiler      = cime_util.get_machine_info("COMPILER")
+        baseline_area = CIME.utils.get_machine_info("CCSM_BASELINE")
+        compiler      = CIME.utils.get_machine_info("COMPILER")
         baseline_glob = glob.glob(os.path.join(baseline_area, compiler, self._baseline_name, "TEST*"))
         self.assertEqual(len(baseline_glob), 3, msg="Expected three matches, got:\n%s" % "\n".join(baseline_glob))
 
@@ -380,13 +383,13 @@ class TestCreateTest(TestCreateTestCommon):
             nl_file.write(fake_nl)
 
         # Basic namelist compare should now fail
-        self.simple_test(False, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, cime_util.get_utc_timestamp()))
+        self.simple_test(False, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
         # Regen
-        self.simple_test(True, "-g -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, cime_util.get_utc_timestamp()))
+        self.simple_test(True, "-g -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
         # Basic namelist compare should now pass again
-        self.simple_test(True, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, cime_util.get_utc_timestamp()))
+        self.simple_test(True, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
 ###############################################################################
 class TestCreateTestImpl(TestCreateTestCommon):
@@ -396,7 +399,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
     def test_phases(self):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
-        ct = create_test_impl.CreateTest(tests)
+        ct = CreateTest(tests)
 
         build_fail_test = tests[0]
         run_fail_test   = tests[1]
@@ -408,10 +411,10 @@ class TestCreateTestImpl(TestCreateTestCommon):
 
         for idx, phase in enumerate(ct._phases):
             for test in tests:
-                if (phase == create_test_impl.INITIAL_PHASE):
+                if (phase == ct.INITIAL_PHASE):
                     continue
 
-                elif (phase == create_test_impl.BUILD_PHASE):
+                elif (phase == ct.BUILD_PHASE):
                     ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
 
                     if (test == build_fail_test):
@@ -423,7 +426,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
                         self.assertFalse(ct._is_broken(test))
                         self.assertTrue(ct._work_remains(test))
 
-                elif (phase == create_test_impl.RUN_PHASE):
+                elif (phase == ct.RUN_PHASE):
                     if (test == build_fail_test):
                         with self.assertRaises(SystemExit):
                             ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
@@ -466,15 +469,15 @@ class TestCreateTestImpl(TestCreateTestCommon):
     def test_full(self):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
-        test_id="%s-%s" % (self._baseline_name, cime_util.get_utc_timestamp())
-        ct = create_test_impl.CreateTest(tests, test_id=test_id)
+        test_id="%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
+        ct = CreateTest(tests, test_id=test_id)
 
         build_fail_test = tests[0]
         run_fail_test   = tests[1]
         pass_test       = tests[2]
 
         ct.create_test()
-        if (cime_util.does_machine_have_batch()):
+        if (CIME.utils.does_machine_have_batch()):
             run_cmd("%s/wait_for_tests *%s*/TestStatus*" % (SCRIPT_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
 
         test_statuses = glob.glob("%s/*%s*/TestStatus" % (self._testroot, test_id))
@@ -483,12 +486,12 @@ class TestCreateTestImpl(TestCreateTestCommon):
         for test_status in test_statuses:
             status, test_name = wait_for_tests.parse_test_status_file(test_status)
             if (test_name == build_fail_test):
-                self.assertEqual(status[create_test_impl.BUILD_PHASE], wait_for_tests.TEST_FAIL_STATUS)
+                self.assertEqual(status[ct.BUILD_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             elif (test_name == run_fail_test):
-                self.assertEqual(status[create_test_impl.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
+                self.assertEqual(status[ct.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             else:
                 self.assertEqual(test_name, pass_test)
-                self.assertEqual(status[create_test_impl.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
+                self.assertEqual(status[ct.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
 
 ###############################################################################
 class TestJenkinsGenericJob(TestCreateTestCommon):
@@ -501,7 +504,7 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (output, errput))
         else:
-            self.assertEqual(stat, cime_util.TESTS_FAILED_ERR_CODE, msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (output, errput))
+            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE, msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (output, errput))
 
     ###########################################################################
     def threaded_test(self, expect_works, extra_args):
@@ -547,7 +550,7 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
         self.simple_test(True, "-t acme_test_only_pass -g -b %s" % self._baseline_name)
         self.assert_num_leftovers()
 
-        build_name = "jenkins_generic_job_pass_%s" % cime_util.get_utc_timestamp()
+        build_name = "jenkins_generic_job_pass_%s" % CIME.utils.get_utc_timestamp()
         self.simple_test(True, "-t acme_test_only_pass -p ACME_test -b %s -s -c %s --cdash-build-group=Nightly" % (self._baseline_name, build_name))
         self.assert_num_leftovers() # jenkins_generic_job should have automatically cleaned up leftovers from prior run
         self.assert_no_sentinel()
@@ -556,7 +559,7 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def test_jenkins_generic_job_kill(self):
     ###########################################################################
-        build_name = "jenkins_generic_job_kill_%s" % cime_util.get_utc_timestamp()
+        build_name = "jenkins_generic_job_kill_%s" % CIME.utils.get_utc_timestamp()
         run_thread = threading.Thread(target=self.threaded_test, args=(False, " -t acme_test_only_slow_pass -p ACME_test -b master --baseline-compare=no -s -c %s --cdash-build-group=Nightly" % build_name))
         run_thread.daemon = True
         run_thread.start()
@@ -585,33 +588,33 @@ class TestBlessTestResults(TestCreateTestCommon):
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
         else:
-            self.assertEqual(stat, cime_util.TESTS_FAILED_ERR_CODE, msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\ncreate_test output:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (output, errput, stat))
+            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE, msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\ncreate_test output:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (output, errput, stat))
 
     ###############################################################################
     def test_create_test_rebless_namelist(self):
     ###############################################################################
         # Generate some namelist baselines
-        self.simple_test(True, "-g -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, cime_util.get_utc_timestamp()))
+        self.simple_test(True, "-g -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
         # Change baseline
-        baseline_area = cime_util.get_machine_info("CCSM_BASELINE")
-        compiler      = cime_util.get_machine_info("COMPILER")
+        baseline_area = CIME.utils.get_machine_info("CCSM_BASELINE")
+        compiler      = CIME.utils.get_machine_info("COMPILER")
         baseline_glob = glob.glob(os.path.join(baseline_area, compiler, self._baseline_name, "%s*" % self._test_name))
         self.assertEqual(len(baseline_glob), 1, msg="Expected one match, got:\n%s" % "\n".join(baseline_glob))
 
         baseline_dir = baseline_glob[0]
         os.remove(os.path.join(baseline_dir, "cpl.hi.nc"))
-        shutil.copy(os.path.join(cime_util.get_python_libs_root(), "tests", "cpl.hi2.nc.test"), os.path.join(baseline_dir, "cpl.hi.nc"))
+        shutil.copy(os.path.join(CIME.utils.get_python_libs_root(), "tests", "cpl.hi2.nc.test"), os.path.join(baseline_dir, "cpl.hi.nc"))
 
         # Hist compare should now fail
-        test_id = "%s-%s" % (self._baseline_name, cime_util.get_utc_timestamp())
+        test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
         self.simple_test(False, "-c -b %s -t %s" % (self._baseline_name, test_id))
 
         # Bless
         run_cmd("%s/bless_test_results --hist-only --force -b %s -t %s" % (SCRIPT_DIR, self._baseline_name, test_id))
 
         # Hist compare should now pass again
-        self.simple_test(True, "-c -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, cime_util.get_utc_timestamp()))
+        self.simple_test(True, "-c -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
 
 # Disabling this test until we figure out how to integrate ACME tests and
@@ -625,7 +628,7 @@ class TestBlessTestResults(TestCreateTestCommon):
 #     def setUp(self):
 #     ###########################################################################
 #         # Grab all active tests
-#         self._testlist_allactive = os.path.join(cime_util.get_model_config_root(), "allactive", "testlist_allactive.xml")
+#         self._testlist_allactive = os.path.join(CIME.utils.get_model_config_root(), "allactive", "testlist_allactive.xml")
 #         shutil.copy2(self._testlist_allactive, ".")
 
 #     ###########################################################################
