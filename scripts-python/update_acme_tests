@@ -72,8 +72,6 @@ def _main_func(description):
 
     categories, test_list_path, platform = parse_command_line(sys.argv, description)
 
-    cime_util.stop_buffering_output()
-
     update_acme_tests.update_acme_tests(test_list_path, categories, platform)
 
 if __name__ == "__main__":

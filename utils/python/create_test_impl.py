@@ -352,11 +352,7 @@ class CreateTest(object):
     def _run_phase(self, test_name):
     ###########################################################################
         test_dir = self._get_test_dir(test_name)
-        # TODO: Submit should work in either case.
-        if (self._no_batch):
-            return self._run_phase_command(test_name, "./case.test", RUN_PHASE, from_dir=test_dir)
-        else:
-            return self._run_phase_command(test_name, "./case.submit", RUN_PHASE, from_dir=test_dir)
+        return self._run_phase_command(test_name, "./case.submit", RUN_PHASE, from_dir=test_dir)
 
     ###########################################################################
     def _update_test_status_file(self, test_name):

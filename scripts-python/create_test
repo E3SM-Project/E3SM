@@ -251,8 +251,6 @@ def _main_func(description):
         cime_util.run_cmd("python -m doctest %s/create_test_impl.py -v" % cime_util.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
         return
 
-    cime_util.stop_buffering_output()
-
     testargs, compiler, no_run, no_build, no_batch, test_root, baseline_root, clean, \
         compare, generate, baseline_name, namelists_only, project, test_id, old, parallel_jobs, \
         = parse_command_line(sys.argv, description)

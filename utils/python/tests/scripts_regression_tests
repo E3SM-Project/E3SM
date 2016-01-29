@@ -676,15 +676,19 @@ class TestBlessTestResults(TestCreateTestCommon):
 #         self.assertTrue("ERS.f19_g16_rx1.E.melvin_gnu" in tests)
 
 ###############################################################################
-class FullSystemTest(unittest.TestCase):
+class FullSystemTest(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
     def test_full_system(self):
     ###########################################################################
-        stat, output, errput = run_cmd("%s/create_test cime_developer" % SCRIPT_DIR, ok_to_fail=True)
+        stat, output, errput = run_cmd("%s/create_test cime_developer -t %s" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True)
         self.assetEqual(stat, 0,
                         msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+
+        stat, output, errput = run_cmd("%s/cs_status.%s" % (self._testroot, self._baseline_name), ok_to_fail=True)
+        self.assetEqual(stat, 0,
+                        msg="COMMAND SHOULD HAVE WORKED\cs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 if (__name__ == "__main__"):
     unittest.main()
