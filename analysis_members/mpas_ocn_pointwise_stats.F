@@ -139,14 +139,6 @@ contains
          call mpas_pool_get_array(pointwiseStatsAMPool,'pointCellLocalID',pointCellLocalID)
          call mpas_pool_get_array(pointwiseStatsAMPool,'indexToPointCellLocalID',indexToPointCellLocalID)
 
-         ! Hard wire points that are recorded.  Change to reading in points from a file later.
-         ! When that occurs, need remove definition from registry_pointwise_stats in
-         !		<dim name="nPoints" units="unitless" definition="10"
-         do iPoint = 1,nPoints
-            pointCellGlobalID(iPoint) = iPoint*10
-         end do
-         ! end: hard wire points
-
          pointCellLocalID = nCells + 1
          pointMaxLevelCellLocal = 0
          indexToPointCellLocalID = 0
@@ -156,10 +148,10 @@ contains
          do iCell = 1,nCellsSolve
             do iPoint = 1,nPoints
                if (indexToCellID(iCell).eq.pointCellGlobalID(iPoint)) then
-                  pointCellLocalID(iPoint) = iCell
-                  pointMaxLevelCellLocal(iPoint) = maxLevelCell(iCell)
                   i = i + 1
                   indexToPointCellLocalID(i) = iPoint
+                  pointCellLocalID(iPoint) = iCell
+                  pointMaxLevelCellLocal(iPoint) = maxLevelCell(iCell)
                endif
             end do
          end do
@@ -256,7 +248,7 @@ contains
 
          ! Doug: replace these when you iterate over stream variables:
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
-         call mpas_pool_get_array(pointwiseStatsAMPool,'layerThicknessPointValue',layerThicknessPointValue) ! mrp dont need this in init
+         call mpas_pool_get_array(pointwiseStatsAMPool,'layerThicknessPointValue',layerThicknessPointValue)
 
          ! Doug: loop over names in stream rather than layerThickness
          layerThicknessPointValue = 0.0_RKIND
