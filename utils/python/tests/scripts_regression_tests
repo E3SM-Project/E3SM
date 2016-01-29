@@ -700,6 +700,25 @@ def _main_func():
 ###############################################################################
     if (len(sys.argv) == 1):
         suite = unittest.TestLoader().loadTestsFromModule(sys.modules[__name__])
+    elif ("-h" in sys.argv or "--help" in sys.argv):
+        print \
+"""
+Usage: scripts_regression_tests [options] [test] [...]
+
+Options:
+  -h, --help       Show this message
+  -v, --verbose    Verbose output
+  -q, --quiet      Minimal output
+  -f, --failfast   Stop on first failure
+  -c, --catch      Catch control-C and display results
+  -b, --buffer     Buffer stdout and stderr during test runs
+
+Examples:
+  scripts_regression_tests                               - run default set of tests
+  scripts_regression_tests MyTestSuite                   - run suite 'MyTestSuite'
+  scripts_regression_tests MyTestCase.testSomething      - run MyTestCase.testSomething
+  scripts_regression_tests MyTestCase                    - run all 'test*' test methods in MyTestCase
+"""
     else:
         suite = unittest.TestLoader().loadTestsFromNames(sys.argv[1:], module=sys.modules[__name__])
     unittest.TextTestRunner(verbosity=2).run(suite)
