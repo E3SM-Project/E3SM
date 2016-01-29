@@ -2877,7 +2877,7 @@ write(0,*) 'USING ECMWF TERRAIN...'
                                         * (ter(cellsOnCell(j,iCell))-ter(iCell))
                end do
             end if
-            hs(iCell) = ter(iCell) + 0.125*hs(iCell)
+            hs(iCell) = ter(iCell) + 0.216*hs(iCell)
          end do
 
          do iCell=1,nCells
@@ -2889,8 +2889,7 @@ write(0,*) 'USING ECMWF TERRAIN...'
                                           * (hs(cellsOnCell(j,iCell))-hs(iCell))
                end do
             end if
-!           ter(iCell) = hs(iCell) - 0.25*ter(iCell)
-            ter(iCell) = hs(iCell) - 0.125*ter(iCell)
+            ter(iCell) = hs(iCell) - 0.216*ter(iCell)
          end do
 
          ! note that ther variable ter used throughout this section is a pointer to grid % ter % array, here we are passing ter's parent field
