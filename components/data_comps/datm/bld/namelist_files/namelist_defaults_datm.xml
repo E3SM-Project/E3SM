@@ -45,7 +45,8 @@ Currently the following streams are supported (term definitions precede the stre
     CORE2_NYF       = CORE2 normal year forcing (for forcing POP and CICE)
     CORE2_IAF       = CORE2 intra-annual year forcing (for forcing POP and CICE)
     CPLHIST3HrWx    = Run with CESM 3-hourly coupler history output
-    presaero        = Prescribed aerosol forcing 
+    presaero        = Prescribed aerosol forcing
+    topo            = Surface topography
     co2tseries      = Time series of prescribed CO2 forcing
     Anomaly.Forcing = Time series of correction terms
     BC              = Bias Correction for a stream to a given set of observations
@@ -135,6 +136,8 @@ Currently the following streams are supported (term definitions precede the stre
     presaero.rcp4.5
     presaero.rcp6.0
     presaero.rcp8.5
+
+    topo.observed
 
     WW3
 
@@ -2462,6 +2465,35 @@ af.rlds.ccsm4.rcp45.2006-2300.nc
 <strm_domfil     stream="presaero.rcp8.5">aerosoldep_rcp8.5_monthly_1849-2104_1.9x2.5_c100201.nc</strm_domfil>
 <strm_datdir     stream="presaero.rcp8.5">$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/aero</strm_datdir>
 <strm_datfil     stream="presaero.rcp8.5">aerosoldep_rcp8.5_monthly_1849-2104_1.9x2.5_c100201.nc</strm_datfil>
+
+<!-- =========================================  -->
+<!-- Surface topographic height                 -->
+<!-- =========================================  -->
+
+<strm_offset   stream="topo.observed">0</strm_offset>
+<!-- tintalgo is arbitrary here since we only have one time slice; however, note
+     that setting this to 'linear' gives roundoff-level differences between time
+     steps, which is undesirable unless we truly want linear interpolation
+     between multiple input values -->
+<strm_tintalgo stream="topo.observed">lower</strm_tintalgo>
+<strm_domvar   stream="topo.observed">
+   time   time
+   LONGXY lon
+   LATIXY lat
+   area   area
+   mask   mask
+</strm_domvar>
+<strm_datvar stream="topo.observed">
+   TOPO topo
+</strm_datvar>
+
+<strm_year_start stream="topo.observed">1</strm_year_start>
+<strm_year_end   stream="topo.observed">1</strm_year_end>
+<strm_year_align stream="topo.observed">1</strm_year_align>
+<strm_domdir     stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</strm_domdir>
+<strm_domfil     stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</strm_domfil>
+<strm_datdir     stream="topo.observed">$DIN_LOC_ROOT/atm/datm7/topo_forcing</strm_datdir>
+<strm_datfil     stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</strm_datfil>
 
 <!-- =========================================  -->
 <!-- Other stream variables                     -->

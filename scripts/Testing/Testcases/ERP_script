@@ -16,24 +16,24 @@ endif
 # Reset beginning test settings
 if ( -e env_mach_pes.xml.1 )  then
   cp -f env_mach_pes.xml.1   env_mach_pes.xml
-  cp -f env_mach_pes.xml.1   LockedFiles/env_mach_pes.xml.locked
+  cp -f env_mach_pes.xml.1   LockedFiles/env_mach_pes.xml
   rm    $EXEROOT/cesm.exe >& /dev/null
   cp -f $EXEROOT/cesm.exe.1 $EXEROOT/cesm.exe || exit -9
   cp -f env_build.xml.1      env_build.xml
-  cp -f env_build.xml.1      LockedFiles/env_build.xml.locked
+  cp -f env_build.xml.1      LockedFiles/env_build.xml
 else
   echo " ERROR: env_mach_pes.xml.1 does not exist" 
-  echo "   this would been produced in the build - must run $CASE.test_build"
+  echo "   this would been produced in the build - must run case.test_build"
   exit -1
 endif
 
 # note - if you change the env_mach_pes.xml file - should always
-# rerun the following two cesm_setup commands to ensure that the right
+# rerun the following two case_setup commands to ensure that the right
 # settings are in the run script
 # note that the following two commands will eliminate all the batch files except
 # for the test file and copy the env_mach_pes.xml to the LockedFiles directory
-./cesm_setup -clean -testmode
-./cesm_setup
+./case.setup -clean -testmode
+./case.setup
 
 set STOP_N      = `./xmlquery STOP_N      -value`
 set STOP_OPTION = `./xmlquery STOP_OPTION -value`
@@ -65,9 +65,9 @@ echo "initial: doing a ${stopn1} ${STOP_OPTION} initial test writing a restart a
 ./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
 ./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -115,14 +115,14 @@ cp -f env_mach_pes.xml.2 LockedFiles/env_mach_pes.xml
 rm $EXEROOT/cesm.exe >& /dev/null
 cp -f $EXEROOT/cesm.exe.2 $EXEROOT/cesm.exe || exit -9
 cp -f env_build.xml.2    env_build.xml
-cp -f env_build.xml.2    LockedFiles/env_build.xml.locked
+cp -f env_build.xml.2    LockedFiles/env_build.xml
 
-./cesm_setup -clean -testmode
-./cesm_setup
+./case.setup -clean -testmode
+./case.setup
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 

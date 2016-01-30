@@ -1,0 +1,291 @@
+#!/usr/bin/env perl 
+#-----------------------------------------------------------------------------------------------
+#
+# configure
+#
+# This utility allows the CIME utilities user to specify configuration
+# options via a commandline interface.
+#
+#-----------------------------------------------------------------------------------------------
+
+use strict;
+#use warnings;
+#use diagnostics;
+
+use Cwd qw( getcwd abs_path chdir);
+use English;
+use Getopt::Long;
+use IO::File;
+use IO::Handle;
+use File::Copy;
+
+
+# Check for manditory case input if not just listing valid values
+my $model;
+my $mach;
+my $compiler;
+my $mpilib;
+my $output_format='make';
+my $cimeroot;
+my $machdir;
+my $eol="\n";
+my $layout = '%m%n';
+
+
+#-----------------------------------------------------------------------------------------------
+# Set the directory that contains the CCSM configuration scripts.  If the create_newcase command was
+# issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
+# command was issued from the current working directory.
+
+(my $ProgName = $0) =~ s!(.*)/!!;      # name of this script
+my $ProgDir = $1;                      # name of directory containing this script -- may be a
+                                       # relative or absolute path, or null if the script is in
+                                       # the user's PATH
+
+
+#-----------------------------------------------------------------------------------------------
+if ($#ARGV == -1) {
+    usage();
+}
+
+#-----------------------------------------------------------------------------------------------
+
+sub usage {
+	die <<EOF;
+SYNOPSIS
+     configure [options]
+OPTIONS
+     User supplied values are denoted in angle brackets (<>).  Any value that contains
+     white-space must be quoted.  Long option names may be supplied with either single
+     or double leading dashes.  A consequence of this is that single letter options may
+     NOT be bundled.
+
+     -cimeroot            Specify the toplevel cime directory.
+                          default: use CIMEROOT environment variable
+     -model <name>        Specify the CIME component model to test.
+                          default: cesm
+     -mach <name>         Specify a machine (required).
+     -compiler <name>     Specify a compiler for the target machine (optional)
+                          default: default compiler for the target machine
+     -mpilib <name>       Specify a mpi library for the target machine (optional)
+                          default:  mpi-serial 
+     -mach_dir <path>     Specify the locations of the Machines directory (optional).
+
+     -output_dir <path>   default: current working directory
+     -output_format <value> Output format can be make or cmake.
+                          default: make
+     -help [or -h]        Print usage to STDOUT (optional).
+     -loglevel <level>    Set the message level for perl 
+                          valid: FATAL ERROR WARN INFO DEBUG
+			  default: INFO 
+     
+EXAMPLES
+
+  ./configure -mach bluefire -compiler ibm
+  ./configure -mach generic_CNL -compiler cray
+
+EOF
+}
+
+#-----------------------------------------------------------------------------------------------
+# Save commandline
+my $commandline = "configure @ARGV";
+
+#-----------------------------------------------------------------------------------------------
+# Parse command-line options.
+my %opts = (
+    mpilib => "mpi-serial",
+    model => "cesm",
+    loglevel => "INFO",
+    max_tasks_per_node => 1,
+    );
+GetOptions(
+    "cimeroot=s"                => \$opts{'cimeroot'},
+    "compiler=s"                => \$opts{'compiler'},  
+    "model=s"                   => \$opts{'model'},
+    "mpilib=s"                  => \$opts{'mpilib'},  
+    "h|help"                    => \$opts{'help'},
+    "list"                      => \$opts{'list'},
+    "mach=s"                    => \$opts{'mach'},
+    "mach_dir=s"                => \$opts{'mach_dir'},
+    "output_dir=s"              => \$opts{'output_dir'},
+    "output_format=s"           => \$opts{'output_format'},
+    "loglevel=s"                => \$opts{'loglevel'},
+    "scratchroot=s"             => \$opts{'scratchroot'},
+    "din_loc_root=s"            => \$opts{'din_loc_root'},
+    "max_tasks_per_node=i"      => \$opts{'max_tasks_per_node'},
+    )  or usage();
+
+# Give usage message.
+usage() if $opts{'help'};
+
+
+# Check for unparsed argumentss
+if (@ARGV) {
+    print "ERROR: unrecognized arguments: @ARGV\n";
+    usage();
+}
+
+
+if($opts{'cimeroot'}) {
+    $cimeroot = $opts{'cimeroot'};
+}else{
+    $cimeroot = abs_path($ENV{CIMEROOT}) if(defined $ENV{CIMEROOT});
+}
+if(! -d "$cimeroot"){
+    #use die here because Log needs cimeroot
+    die("Cannot find cimeroot directory \"$cimeroot\" \n") ;
+}
+
+
+#-----------------------------------------------------------------------------------------------
+my @dirs = ("$cimeroot/utils/perl5lib","$cimeroot/utils/perl5lib/Config" );
+
+unshift @INC, @dirs;
+require SetupTools;
+require Module::ModuleLoader;
+require ConfigMachine;
+require ConfigCase;
+require Log::Log4perl;
+
+my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
+Log::Log4perl->easy_init({level=>$level,
+			  layout=>$layout});
+
+
+my $logger = Log::Log4perl::get_logger();
+
+
+if (!$opts{'list'}) {
+    # Check for manditory machine input
+    if ($opts{'mach'}) {
+	$mach = $opts{'mach'};
+    } else {	
+	$logger->fatal("ERROR: configure must include the input argument, -mach \n");
+	exit();
+    }
+    if ($opts{'compiler'}) {
+	$compiler = $opts{'compiler'};
+    }
+    if ($opts{'model'}) {
+	$model = $opts{'model'};
+    } 
+    if ($opts{'mpilib'}) {
+	$mpilib = $opts{'mpilib'};
+    }
+    if($opts{'output_format'}){
+	$output_format = $opts{'output_format'};
+    }
+
+    if($opts{'mach_dir'}){
+	$machdir = $opts{'mach_dir'};
+    } else {
+	$machdir  = "$cimeroot/cime_config/${model}/machines" unless defined($machdir);
+    }
+    if (! -d "$machdir") {
+	$logger->fatal(" Cannot find machines directory \"$machdir\"  ");
+    } 
+}
+
+
+my $output_dir = ".";
+$output_dir = $opts{output_dir} if defined( $opts{output_dir} );
+#
+# Make sure the output_dir exists or can be created
+# 
+if(! -d "$output_dir") {    
+  unless( mkpath $output_dir, "0755"){
+      $logger->fatal("Could not find or create $output_dir");
+  }
+}
+ 
+#-----------------------------------------------------------------------------------------------
+# Make sure we can find required perl modules and configuration files.
+# Look for them in the directory that contains the configure script.
+
+# Machines definition file.
+my $machine_file = 'config_machines.xml';
+if(! -f "$machdir/$machine_file"){
+    $logger->fatal("Cannot find machine parameters file \"$machine_file\" in directory \"$machdir\"");
+    exit;
+}
+
+# Compiler definition file.
+my $compiler_file = 'config_compilers.xml';
+if(! -f "$machdir/$compiler_file"){
+    $logger->fatal("Cannot find compiler parameters file \"$compiler_file\" in directory \"$machdir\"");
+    exit;
+}
+
+
+#-----------------------------------------------------------------------------------------------
+# If just listing valid values then exit after completion of lists
+if ($opts{'list'}) {
+    #TODO add this correctly - since there is no longer a print_machines in ConfigCase
+    #    ConfigCase::print_machines("$machdir/$machine_file");
+    # to do - add print_compilers
+    $logger->info( "finished listing valid values, now exiting $eol");
+    exit;
+}
+
+#-----------------------------------------------------------------------------------------------
+# Create new config object if not just listing valid values
+my $config = ConfigCase->new(""); 
+my $files_spec_file = "$cimeroot/cime_config/${model}/config_files.xml";
+# srcroot is not used here
+my $srcroot = "";
+$config->add_config_variables($files_spec_file, $srcroot, $cimeroot, $model);
+# todo:
+#$config->set('MACHDIR', "$machdir");
+my $file = $config->get('CONFIG_DRV_FILE');
+
+$config->add_config_variables($file, $srcroot, $cimeroot, $model);
+
+ConfigMachine::setMachineValues($file, "", $mach, $config);
+
+
+# This will be the compiler argument passed in or the default if not provided
+$compiler = $config->get('COMPILER');
+
+$logger->info( "Machine specifier: $mach.$eol");
+
+# Copy Depends files if they exist
+if( -e "$machdir/Depends.$mach" ) {
+    unless(copy("$machdir/Depends.$mach",$output_dir)){
+	$logger->logdie( "ERROR:  copy $machdir/Depends.$mach $output_dir failed$eol");
+	exit;
+    }
+}
+if( -e "$machdir/Depends.$compiler" ) {
+    unless(copy("$machdir/Depends.$compiler",$output_dir)){
+	$logger->logdie( "ERROR:  copy $machdir/Depends.$compiler $output_dir failed$eol");
+    }
+}
+
+my $dbug = $config->get("DEBUG");
+
+my $moduleloader = Module::ModuleLoader->new(machine  => $mach, 
+					     compiler => $compiler, 
+					     mpilib   => $mpilib, 
+					     caseroot => $output_dir,
+					     debug    => $dbug, 
+					     cimeroot => $cimeroot,
+					     model    => $model);
+
+$moduleloader->moduleInit();
+$moduleloader->writeXMLFileForCase();
+
+
+
+$moduleloader->writeCshModuleFile();
+$moduleloader->writeShModuleFile();
+
+
+SetupTools::set_compiler($config->get('OS'),"$machdir/$compiler_file",$compiler, 
+			 $mach, $mpilib, "$output_dir/Macros.$output_format", $output_format);
+
+$logger->info("Successfully created auxilary build files for $mach $eol");
+
+exit 0;
+
+

@@ -8,18 +8,18 @@ cd $CASEROOT
 # Reset beginning test settings
 if ( -e env_mach_pes.xml.1 )  then
   cp -f env_mach_pes.xml.1   env_mach_pes.xml
-  cp -f env_mach_pes.xml.1   LockedFiles/env_mach_pes.xml.locked
+  cp -f env_mach_pes.xml.1   LockedFiles/env_mach_pes.xml
 else
   cp -f env_mach_pes.xml     env_mach_pes.xml.1
 endif
 
 # note - if you change the env_mach_pes.xml file - should always
-# rerun the following two cesm_setup commands to ensure that the right
+# rerun the following two case.setup commands to ensure that the right
 # settings are in the run script
 # note that the following two commands will eliminate all the batch files except
 # for the test file and copy the env_mach_pes.xml to the LockedFiles directory
-./cesm_setup -clean -testmode
-./cesm_setup
+./case.setup -clean -testmode
+./case.setup
 
 set STOP_N      = `./xmlquery STOP_N      -value`
 set STOP_OPTION = `./xmlquery STOP_OPTION -value`
@@ -36,9 +36,9 @@ set STOP_OPTION = `./xmlquery STOP_OPTION -value`
 cd $CASEROOT
 echo "doing a ${STOP_N} ${STOP_OPTION} initial test with default layout" >>& $TESTSTATUS_LOG 
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -79,11 +79,11 @@ echo "doing a second a ${STOP_N} ${STOP_OPTION} with all rootpes set to 0" >>& $
 ./xmlchange -file env_mach_pes.xml -id ROOTPE_ICE -val 0
 ./xmlchange -file env_mach_pes.xml -id ROOTPE_CPL -val 0
 
-cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
+cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 

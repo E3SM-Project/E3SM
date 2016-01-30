@@ -29,13 +29,14 @@ null :=
 CURDIR = .
 EXENAME = ../gen_domain
 RM = rm
+MACROS = Macros.make
 
 default: $(EXENAME)
 
-Macros:
-	@echo "use the configure script located in the Machines directory to create the Makefile Macros file"
+$(MACROS):
+	@echo "use the configure script located in the Machines directory to create the Makefile $(MACROS) file"
 
--include Macros
+-include $(MACROS)
 # Check for the netcdf library and include directories 
 ifdef NETCDF_PATH
   LIB_NETCDF:=$(NETCDF_PATH)/lib
@@ -96,7 +97,7 @@ else
   FPPDEFS := $(CPPDEFS)
 endif
 #Primary Target: build the tool
-all: $(EXENAME) Macros
+all: $(EXENAME) $(MACROS)
 
 OBJS := gen_domain.o 
 
@@ -133,6 +134,6 @@ clean:
 	$(RM) -f $(OBJS) $(EXENAME) *.mod 
 
 veryclean:
-	$(RM) -f $(OBJS) $(EXENAME) *.mod Macros env_mach* build*
+	$(RM) -f $(OBJS) $(EXENAME) *.mod $(MACROS) env_mach* Depends* .env_mach*
 
 gen_domain.o : gen_domain.F90

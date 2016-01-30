@@ -43,16 +43,16 @@ while ($cnt < $cntmax && $found == 1)
 
   if (-e env_build.xml.${acnt}) then
     cp -f env_build.xml.${acnt} env_build.xml
-    cp -f env_build.xml LockedFiles/env_build.xml.locked
+    cp -f env_build.xml LockedFiles/env_build.xml
     cp -f $EXEROOT/cesm.exe.${acnt} $EXEROOT/cesm.exe
 
     foreach maskhalo (T F)
       cd $CASEROOT
       cp -f user_nl_cice.mh${maskhalo} user_nl_cice
 
-      ./$CASE.run
+      ./case.run
       if ($status != 0) then
-	  echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+	  echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
 	  exit -1
       endif
 

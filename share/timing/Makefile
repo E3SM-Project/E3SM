@@ -88,6 +88,7 @@ clean:
 
 
 install: libgptl.a
+	cp -p $(GPTL_DIR)/gptl.h $(SHAREDPATH)/include
 	cp -p *.$(MOD_SUFFIX) $(SHAREDPATH)/include
 	cp -p libgptl.a $(SHAREDPATH)/lib
 

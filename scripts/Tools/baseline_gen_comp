@@ -252,12 +252,12 @@ for testcase in $tests; do
 
     if [ -n "$compare_tag" ]; then
 	echo "--- Baseline Comparison ---: "
-	${tools_dir}/component_compgen_baseline.sh -baseline_dir ${baselineroot}/${compare_tag}/${testcase_base} -test_dir ${rundir} -testcase_base ${testcase_base} -compare_tag ${compare_tag} -cprnc_exe ${cprnc_path}
+	${tools_dir}/component_compgen_baseline.sh -baseline_dir ${baselineroot}/${compare_tag}/${testcase_base} -test_dir ${rundir} -testcase ${testcase} -testcase_base ${testcase_base} -compare_tag ${compare_tag} -cprnc_exe ${cprnc_path}
     fi
 
     if [ -n "$generate_tag" ]; then
 	echo "--- Baseline Generation ---: "
-	${tools_dir}/component_compgen_baseline.sh -baseline_dir ${baselineroot}/${generate_tag}/${testcase_base} -test_dir ${rundir} -testcase_base ${testcase_base} -generate_tag ${generate_tag} -cprnc_exe ${cprnc_path}
+	${tools_dir}/component_compgen_baseline.sh -baseline_dir ${baselineroot}/${generate_tag}/${testcase_base} -test_dir ${rundir} -testcase ${testcase} -testcase_base ${testcase_base} -generate_tag ${generate_tag} -cprnc_exe ${cprnc_path}
     fi
 
     echo ""

@@ -1,11 +1,12 @@
 #!/bin/csh -f
+setenv CIMEROOT `./xmlquery CIMEROOT    -value`
 
 ./Tools/check_lockedfiles || exit -1
 
 # NOTE - Are assumming that are already in $CASEROOT here
 set CASE     = `./xmlquery CASE    -value`
 
-./$CASE.build
+./case.build
 if ($status != 0) then
    echo "Error: build failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus

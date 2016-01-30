@@ -58,6 +58,7 @@ module shr_string_mod
    public :: shr_string_listGetName     ! get k-th field name
    public :: shr_string_listIntersect   ! get intersection of two field lists
    public :: shr_string_listUnion       ! get union of two field lists
+   public :: shr_string_listDiff        ! get set difference of two field lists
    public :: shr_string_listMerge       ! merge two lists to form third
    public :: shr_string_listAppend      ! append list at end of another
    public :: shr_string_listPrepend     ! prepend list in front of another
@@ -65,6 +66,7 @@ module shr_string_mod
    public :: shr_string_listGetDel      ! Get field delimiter in lists
    public :: shr_string_listCreateField ! return colon delimited field list
                                         ! given number of fields N and a base string
+   public :: shr_string_listAddSuffix   ! add a suffix to every field in a field list
    public :: shr_string_setAbort        ! set local abort flag
    public :: shr_string_setDebug        ! set local debug flag
 
@@ -1109,6 +1111,70 @@ end subroutine shr_string_listUnion
 !===============================================================================
 !BOP ===========================================================================
 !
+! !IROUTINE: shr_string_listDiff -- Get set difference of two field lists
+!
+! !DESCRIPTION:
+!     Get set difference of two fields lists, write into third list
+!     \newline
+!     call shr\_string\_listDiff(list1,list2,listout)
+!     \newline
+!     listout will contain all elements in list1 but not in list2
+!
+! !REVISION HISTORY:
+!     2015-April-24 - W. Sacks
+!
+! !INTERFACE: ------------------------------------------------------------------
+
+subroutine shr_string_listDiff(list1,list2,listout,rc)
+
+   implicit none
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   character(*)                 ,intent(in)  :: list1   ! list/string
+   character(*)                 ,intent(in)  :: list2   ! list/string
+   character(*)                 ,intent(out) :: listout ! list/string
+   integer(SHR_KIND_IN),optional,intent(out) :: rc      ! return code
+
+!EOP
+
+   !----- local -----
+   integer(SHR_KIND_IN)   :: num_fields, index1, index2
+   character(SHR_KIND_CS) :: name     ! field name
+   integer(SHR_KIND_IN)   :: rCode    ! return code
+   integer(SHR_KIND_IN)   :: t01 = 0  ! timer
+   
+   !----- formats -----
+   character(*),parameter :: subName =   "(shr_string_listDiff) "
+   
+!-------------------------------------------------------------------------------
+! Notes:
+!-------------------------------------------------------------------------------
+
+   if (debug>1 .and. t01<1) call shr_timer_get(t01,subName)
+   if (debug>1) call shr_timer_start(t01)
+   
+   rCode = 0
+
+   num_fields = shr_string_listGetNum(list1)
+   call shr_string_clean(listout)
+   do index1 = 1,num_fields
+     call shr_string_listGetName(list1,index1,name,rCode)
+     index2 = shr_string_listGetIndexF(list2,name)
+     if (index2 <= 0) then
+       call shr_string_listAppend(listout,name)
+     endif
+   enddo
+
+   if (present(rc)) rc = rCode
+   if (debug>1) call shr_timer_stop (t01)
+
+end subroutine shr_string_listDiff
+   
+
+!===============================================================================
+!BOP ===========================================================================
+!
 ! !IROUTINE: shr_string_listMerge -- Merge lists two list to third
 !
 ! !DESCRIPTION:
@@ -1698,6 +1764,42 @@ function shr_string_listCreateField( numFields, strBase ) result ( retString )
 
 end function shr_string_listCreateField
 
+!===============================================================================
+!
+! shr_string_listAddSuffix
+!
+!   Given an existing list and a suffix, returns a new list with that suffix added to the
+!   end of every field in the list.
+!
+!   call shr_string_listAddSuffix('a:b:c', '00', new_list)
+!     gives new_list = 'a00:b00:c00'
+!
+!===============================================================================
+subroutine shr_string_listAddSuffix(list, suffix, new_list)
+
+  implicit none
+
+  character(len=*), intent(in)  :: list
+  character(len=*), intent(in)  :: suffix
+  character(len=*), intent(out) :: new_list
+
+  integer :: num_fields
+  integer :: field_num
+  character(SHR_KIND_CS) :: this_field
+  character(len(this_field) + len(suffix)) :: this_field_with_suffix
+  character(len(new_list)) :: temp_list
+  
+  num_fields = shr_string_listGetNum(list)
+  new_list = ' '
+  
+  do field_num = 1, num_fields
+     call shr_string_listGetName(list, field_num, this_field)
+     this_field_with_suffix = trim(this_field) // suffix
+     temp_list = new_list
+     call shr_string_listMerge(temp_list, this_field_with_suffix, new_list)
+  end do
+end subroutine shr_string_listAddSuffix
+     
 !===============================================================================
 !BOP ===========================================================================
 !

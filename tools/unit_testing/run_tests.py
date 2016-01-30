@@ -99,6 +99,10 @@ parser.add_option(
 runs "make clean"."""
     )
 parser.add_option(
+    "--cmake-args", dest="cmake_args",
+    help="""Additional arguments to pass to CMake."""
+    )
+parser.add_option(
     "--color", dest="color", action="store_true",
     default=sys.stdout.isatty(),
     help="""Turn on colorized output."""
@@ -128,6 +132,20 @@ parser.add_option(
 
 In a CESM checkout this option is unnecessary, because this script can
 autodetect this location."""
+    )
+parser.add_option(
+    "--mpilib", dest="mpilib",
+    help="""MPI Library to use in build.
+
+Required argument (until we can get this from config_machines)
+Must match an MPILIB option in config_compilers.xml.
+e.g., for yellowstone, can use 'mpich2'."""
+    )
+parser.add_option(
+    "--mpirun-command", dest="mpirun_command", default="",
+    help="""Command to use to run an MPI executable.
+
+If not specified, does not use any mpirun prefix to run executables."""
     )
 parser.add_option(
     "--test-spec-dir", dest="test_spec_dir",
@@ -178,6 +196,13 @@ if options.test_spec_dir is None and options.xml_test_list is None:
         )
     raise Exception("Missing required argument.")
 
+if options.mpilib is None:
+    parser.print_help()
+    output.print_error(
+        "You must specify --mpilib."
+        )
+    raise Exception("Missing required argument.")
+
 #=================================================
 # Find directory and file paths.
 #=================================================
@@ -219,7 +244,7 @@ else:
     machines_guesses = []
 
     if cesm_root_dir is not None:
-        machines_guesses.append(os.path.join(cesm_root_dir, "cime", "machines"))
+        machines_guesses.append(os.path.join(cesm_root_dir, "cime", "cime_config", "cesm", "machines"))
 
     machines_guesses.append(os.path.abspath("machines"))
 
@@ -278,6 +303,7 @@ if machines_dir is not None:
 
     mach_settings = MachineCompilerSettings(options.compiler.lower(),
                                             compiler_xml,
+                                            mpilib=options.mpilib,
                                             use_env_compiler=options.use_env_compiler,
                                             use_openmp=options.use_openmp)
     mach_settings.set_compiler_env()
@@ -312,6 +338,7 @@ def cmake_stage(name, test_spec_dir):
             test_spec_dir,
             "-DCESM_CMAKE_MODULE_DIRECTORY="+cesm_cmake_dir,
             "-DCMAKE_BUILD_TYPE="+options.build_type,
+            "-DPFUNIT_MPIRUN="+options.mpirun_command,
             ]
 
         if options.verbose:
@@ -328,6 +355,9 @@ def cmake_stage(name, test_spec_dir):
         if not options.color:
             cmake_command.append("-DUSE_COLOR=OFF")
 
+        if options.cmake_args is not None:
+            cmake_command.extend(options.cmake_args.split(" "))
+            
         macros_path = os.path.abspath("CESM_Macros.cmake")
 
         if machines_dir is not None:

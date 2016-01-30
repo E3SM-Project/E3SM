@@ -29,7 +29,9 @@ function Usage {
     echo ""
     echo "     -test_dir <path>      Path to the given test's run directory (required)"
     echo ""
-    echo "     -testcase_base <name> Name of test case, used for printing results (required)"
+    echo "     -testcase <name>      Full name of case including testid (required)"
+    echo ""
+    echo "     -testcase_base <name> Name of test case without testid, used for printing results (required)"
     echo ""
     echo "     -generate_tag <tag>   Tag to use for baseline generation (optional)"
     echo ""
@@ -96,6 +98,7 @@ function print_status {
 # Begin main script
 #======================================================================
 
+progname=`basename $0`
 tools_dir=`dirname $0`
 
 #----------------------------------------------------------------------
@@ -123,6 +126,10 @@ while [ $# -gt 0 ]; do
 	    ;;
 	-test_dir )
 	    test_dir=$2
+	    shift
+	    ;;
+	-testcase )
+	    testcase=$2
 	    shift
 	    ;;
 	-testcase_base )
@@ -167,6 +174,10 @@ if [ -z "$test_dir" ]; then
     echo "$progname: test_dir must be provided" >&2
     error=1
 fi
+if [ -z "$testcase" ]; then
+    echo "$progname: testcase must be provided" >&2
+    error=1
+fi
 if [ -z "$testcase_base" ]; then
     echo "$progname: testcase_base must be provided" >&2
     error=1
@@ -206,7 +217,7 @@ fi
 overall_compare_status='PASS'
 overall_generate_status='PASS'
 
-models=( cam cice cism clm2 cpl pop )
+models=( cam cice cism clm2 cpl pop rtm mosart)
 for model in ${models[*]}; do
     if [ "$model" = "cism" ]; then
 	extensions=(h)
@@ -220,6 +231,10 @@ for model in ${models[*]}; do
 	extensions=(h0 h1 h2 h3 h4 h5 h6 h7)
     elif [ "$model" = "pop" ]; then
 	extensions=(h)
+    elif [ "$model" = "rtm" ]; then
+	extensions=(h0 h1 h2)
+    elif [ "$model" = "mosart" ]; then
+	extensions=(h0 h1 h2)
     fi
 
     #------------------------------------------------------------------
@@ -242,7 +257,7 @@ for model in ${models[*]}; do
         # Note that we need a * after ${model} to capture multi-instance
         # output
 
-	test_hist=`cd $test_dir; ls -1 *.${model}*.${extension}.*.nc.base 2>/dev/null | tail -1`
+	test_hist=`cd $test_dir; ls -1 ${testcase}.${model}*.${extension}.*.nc.base 2>/dev/null | tail -1`
 
 	if [ -n "$test_hist" ]; then
 

@@ -1,4 +1,5 @@
 #!/bin/csh -f
+setenv CIMEROOT `./xmlquery CIMEROOT    -value`
 
 ./Tools/check_lockedfiles || exit -1
 
@@ -6,13 +7,13 @@
 set CASE     = `./xmlquery CASE    -value`
 set EXEROOT  = `./xmlquery EXEROOT -value`
 
-./xmlchange -file env_build.xml -id USE_ESMF_LIB   -val TRUE
+./xmlchange USE_ESMF_LIB=TRUE
 
 #------------------------------------------------------------
-./xmlchange -file env_build.xml -id COMP_INTERFACE -val MCT
-./$CASE.clean_build
+./xmlchange COMP_INTERFACE=MCT
+./case.clean_build
 
-./$CASE.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build for MCT failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus
@@ -23,10 +24,10 @@ mv -f $EXEROOT/cesm.exe $EXEROOT/cesm.exe.mct
 cp -f env_build.xml      env_build.xml.mct
 
 #------------------------------------------------------------
-./xmlchange -file env_build.xml -id COMP_INTERFACE -val ESMF
-./$CASE.clean_build
+./xmlchange COMP_INTERFACE=ESMF
+./case.clean_build
 
-./$CASE.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build for ESMF failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus

@@ -99,8 +99,6 @@
 
 <info_debug>$INFO_DBUG</info_debug>
 <cpl_decomp>$CPL_DECOMP</cpl_decomp>
-<flux_epbal>$CPL_EPBAL</flux_epbal>
-<flux_albav>.$CPL_ALBAV.</flux_albav> 
 <wall_time_limit>-1.0</wall_time_limit> 
 <force_stop_at>month</force_stop_at> 
 <flux_diurnal>.false.</flux_diurnal> 
@@ -151,6 +149,7 @@
 <pio_typename         >$PIO_TYPENAME</pio_typename>
 <pio_debug_level      >$PIO_DEBUG_LEVEL</pio_debug_level>
 <pio_blocksize        >$PIO_BLOCKSIZE</pio_blocksize>
+<pio_rearranger>$PIO_REARRANGER</pio_rearranger>
 <pio_buffer_size_limit>$PIO_BUFFER_SIZE_LIMIT</pio_buffer_size_limit>
 <pio_async_interface PIO_ASYNC_INTERFACE="TRUE">.true.</pio_async_interface>
 <pio_async_interface PIO_ASYNC_INTERFACE="FALSE">.false.</pio_async_interface>
@@ -174,6 +173,10 @@
 <rof2ocn_fmapname>$ROF2OCN_FMAPNAME</rof2ocn_fmapname>
 <glc2ocn_rmapname>$GLC2OCN_RMAPNAME</glc2ocn_rmapname>
 <glc2ice_rmapname>$GLC2ICE_RMAPNAME</glc2ice_rmapname>
+<lnd2glc_fmapname>$LND2GLC_FMAPNAME</lnd2glc_fmapname>
+<lnd2glc_smapname>$LND2GLC_SMAPNAME</lnd2glc_smapname>
+<glc2lnd_fmapname>$GLC2LND_FMAPNAME</glc2lnd_fmapname>
+<glc2lnd_smapname>$GLC2LND_SMAPNAME</glc2lnd_smapname>
 <atm2wav_smapname>$ATM2WAV_SMAPNAME</atm2wav_smapname>
 <ocn2wav_smapname>$OCN2WAV_SMAPNAME</ocn2wav_smapname>
 <ice2wav_smapname>$ICE2WAV_SMAPNAME</ice2wav_smapname>
@@ -192,8 +195,12 @@
 <rof2lnd_fmaptype>Y</rof2lnd_fmaptype>
 <rof2ocn_fmaptype>Y</rof2ocn_fmaptype>
 <rof2ocn_rmaptype>Y</rof2ocn_rmaptype>
-<glc2ocn_rmaptype>X</glc2ocn_rmaptype>
-<glc2ice_rmaptype>X</glc2ice_rmaptype>
+<glc2ocn_rmaptype>Y</glc2ocn_rmaptype>
+<glc2ice_rmaptype>Y</glc2ice_rmaptype>
+<lnd2glc_fmaptype>X</lnd2glc_fmaptype>
+<lnd2glc_smaptype>X</lnd2glc_smaptype>
+<glc2lnd_fmaptype>Y</glc2lnd_fmaptype>
+<glc2lnd_smaptype>Y</glc2lnd_smaptype>
 <atm2wav_smaptype>Y</atm2wav_smaptype>
 <ocn2wav_smaptype>Y</ocn2wav_smaptype>
 <ice2wav_smaptype>Y</ice2wav_smaptype>
@@ -214,6 +221,10 @@
 <rof2ocn_rmaptype BFBFLAG="TRUE">X</rof2ocn_rmaptype>
 <glc2ocn_rmaptype BFBFLAG="TRUE">X</glc2ocn_rmaptype>
 <glc2ice_rmaptype BFBFLAG="TRUE">X</glc2ice_rmaptype>
+<lnd2glc_fmaptype BFBFLAG="TRUE">X</lnd2glc_fmaptype>
+<lnd2glc_smaptype BFBFLAG="TRUE">X</lnd2glc_smaptype>
+<glc2lnd_fmaptype BFBFLAG="TRUE">X</glc2lnd_fmaptype>
+<glc2lnd_smaptype BFBFLAG="TRUE">X</glc2lnd_smaptype>
 <atm2wav_smaptype BFBFLAG="TRUE">X</atm2wav_smaptype>
 <ocn2wav_smaptype BFBFLAG="TRUE">X</ocn2wav_smaptype>
 <ice2wav_smaptype BFBFLAG="TRUE">X</ice2wav_smaptype>
