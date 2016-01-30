@@ -163,9 +163,10 @@ sub submitJobs()
 		{
 			my $islastjob = 0;
 			$islastjob = 1 if ($jobnum == $lastjobseqnum);
-			$depjobid = $self->submitSingleJob($jobname, $depjobid, $islastjob, $sta_ok);
+            $depjobid = $self->submitSingleJob($jobname, $depjobid, $islastjob, $sta_ok);
 		}
 	}
+    die;
 }
 
 #==============================================================================
@@ -282,29 +283,45 @@ sub doResubmit()
 #==============================================================================
 sub dependencyCheck()
 {
-	my $self = shift;
-	my $sta_ok;
-	my %config = %{$self->{'caseconfig'}};
-	# we always want to run the CESM test or run again..
-	if(-e "$config{'CASE'}.test")
-	{
-		my $jobname = "$config{'CASE'}.test";
-		$self->addDependentJob($jobname);
+    my $self = shift;
+    my $sta_ok;
+    my %config = %{$self->{'caseconfig'}};
+    # we always want to run the CESM test or run again..
+    if(-e "$config{'CASE'}.test")
+    {
+        my $jobname = "$config{'CASE'}.test";
+        $self->addDependentJob($jobname);
         return;
-	}
-	else
-	{
-		my $jobname = "$config{'CASE'}.run";
-		$self->addDependentJob($jobname);
-	}
-	
-	# do we add the short-term archiver to the dependency queue? 
-	if($config{'DOUT_S'} eq 'TRUE')
-	{
-		my $jobname = "$config{'CASE'}.st_archive";
-		$self->addDependentJob($jobname);
-	}
-	
+    }
+    else
+    {
+        my $queuedJobs = 1;
+        if (defined $config{'RESUBMIT_QUEUED'}) {
+            $queuedJobs = $config{'RESUBMIT_QUEUED'};
+            if ($queuedJobs < 0) {
+                die "error: RESUBMIT_QUEUED, if set, should be >= 0";
+            }
+        }
+        if ($queuedJobs > 0) {
+            my $newresubmit= 0;
+            `./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
+        }
+
+        while ($queuedJobs > 0) {
+
+            my $jobname = "$config{'CASE'}.run";
+            $self->addDependentJob($jobname);
+
+            # do we add the short-term archiver to the dependency queue?
+            if($config{'DOUT_S'} eq 'TRUE')
+            {
+                my $jobname = "$config{'CASE'}.st_archive";
+                $self->addDependentJob($jobname);
+            }
+
+            $queuedJobs-=1;
+        }
+    }
 }
 
 #==============================================================================
