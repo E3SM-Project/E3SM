@@ -457,7 +457,6 @@ module shr_strdata_mod
      call mct_aVect_init(SDAT%avFUB(n),rlist=fldList,lsize=SDAT%lsize)
      call mct_aVect_init(SDAT%avRLB(n),rlist=fldList,lsize=SDAT%lsizeR(n))
      call mct_aVect_init(SDAT%avRUB(n),rlist=fldList,lsize=SDAT%lsizeR(n))
-     write(logunit,*) 'tcx fldlist = ',n,trim(fldlist),SDAT%lsize,SDAT%lsizeR(n)
      if (trim(SDAT%tintalgo(n)) == 'coszen') then
         call mct_aVect_init(SDAT%avCoszen(n),rlist="tavCosz",lsize=SDAT%lsize)
      endif
