@@ -841,7 +841,6 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
         rcode = pio_inq_varid(pioid,trim(sfldName),varid)
         frame = nt
         call pio_setframe(pioid,varid,frame)
-        write(logunit,*) subname,' read ',trim(sfldName),k
         call pio_read_darray(pioid,varid,pio_iodesc,av%rattr(k,:),rcode)
      enddo
 
