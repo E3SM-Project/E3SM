@@ -3830,6 +3830,16 @@
 
 	 ></entry>
 
+  <entry id="RESUBMIT_QUEUED"
+	 type="integer"
+	 valid_values=""
+	 value="0"
+	 group="run_rest"
+	 sdesc="Sends N number of jobs to the queue"
+     ldesc="Sends N number of jobs to the queue. This is independent on
+        SUBMIT. This actaully sets SUBMIT to 0"
+	 ></entry>
+
   <entry id="CHECK_TIMING" 
 	 type="logical"
 	 valid_values="TRUE,FALSE"  
