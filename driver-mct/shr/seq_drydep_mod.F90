@@ -29,14 +29,14 @@ module seq_drydep_mod
 
   ! !PUBLIC MEMBER FUNCTIONS
 
-  public :: seq_drydep_read         ! Read namelist
+  public :: seq_drydep_readnl       ! Read namelist
   public :: seq_drydep_init         ! Initialization of drydep data
   public :: seq_drydep_setHCoeff    ! Calculate Henry's law coefficients
 
   ! !PRIVATE ARRAY SIZES
 
   integer, private, parameter :: maxspc = 100              ! Maximum number of species
-  integer, public,  parameter :: n_species_table = 56      ! Number of species to work with
+  integer, public,  parameter :: n_species_table = 68      ! Number of species to work with
   integer, private, parameter :: NSeas = 5                 ! Number of seasons
   integer, private, parameter :: NLUse = 11                ! Number of land-use types
 
@@ -280,6 +280,18 @@ module seq_drydep_mod
              ,1.e-36_r8 & ! HCN
              ,1.e-36_r8 & ! CH3CN
              ,1.e-36_r8 & ! SO2
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
             /) 
 !EOP
 
@@ -354,6 +366,18 @@ module seq_drydep_mod
                            ,'HCN     '                       &
                            ,'CH3CN   '                       &
                            ,'SO2     '                       &
+                           ,'SOAGff0 '                       &
+                           ,'SOAGff1 '                       &
+                           ,'SOAGff2 '                       &
+                           ,'SOAGff3 '                       &
+                           ,'SOAGff4 '                       &
+                           ,'SOAGbg0 '                       &
+                           ,'SOAGbg1 '                       &
+                           ,'SOAGbg2 '                       &
+                           ,'SOAGbg3 '                       &
+                           ,'SOAGbg4 '                       &
+                           ,'IVOCbb  '                       &
+                           ,'IVOCff  '                       &
                            /)
 
   !--- data for effective Henry's Law coefficient ---
@@ -414,6 +438,18 @@ module seq_drydep_mod
              ,1.20e+01_r8, 5000._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,5.00e+01_r8, 4000._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,1.23e+00_r8, 3120._r8,1.23e-02_r8,1960._r8,0._r8     ,    0._r8  &
+             ,1.3e+07_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,3.2e+05_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,4.0e+05_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,1.3e+05_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,1.6e+05_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,7.9e+11_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,6.3e+10_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,3.2e+09_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,6.3e+08_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,3.2e+07_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,1.e+03_r8,      0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,1.e+03_r8,      0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
             /)
 
   real(r8), private, parameter :: wh2o = SHR_CONST_MWWV
@@ -429,7 +465,10 @@ module seq_drydep_mod
           58.0768013_r8, 76.0910034_r8, 31.9988003_r8, 33.0061989_r8, 222.000000_r8, &
           68.1141968_r8, 70.0877991_r8, 70.0877991_r8, 46.0657997_r8, 147.125946_r8, &
           119.074341_r8, 162.117935_r8, 100.112999_r8, 27.0256_r8   , 41.0524_r8   , &
-          64.064800_r8 /)
+          64.064800_r8,  250._r8,       250._r8,       250._r8,       250._r8,       &
+          250._r8,       250._r8,       250._r8,       250._r8,       250._r8,       &
+          250._r8,       170.3_r8,      170.3_r8 /)
+ 
 
 !===============================================================================
 CONTAINS
@@ -437,7 +476,7 @@ CONTAINS
 
 !====================================================================================
 
-  subroutine seq_drydep_read(NLFilename, seq_drydep_fields)
+  subroutine seq_drydep_readnl(NLFilename, ID, seq_drydep_fields)
 
     !========================================================================
     ! reads drydep_inparm namelist and sets up CCSM driver list of fields for 
@@ -449,10 +488,13 @@ CONTAINS
     
     use shr_file_mod,only : shr_file_getUnit, shr_file_freeUnit
     use shr_log_mod, only : s_logunit => shr_log_Unit
+    use seq_comm_mct,only : seq_comm_iamroot, seq_comm_setptrs
+    use shr_mpi_mod, only : shr_mpi_bcast
 
     implicit none
 
     character(len=*), intent(in)  :: NLFilename ! Namelist filename
+    integer         , intent(in)  :: ID         ! seq_comm ID
     character(len=*), intent(out) :: seq_drydep_fields	
 
     !----- local -----
@@ -461,6 +503,7 @@ CONTAINS
     integer :: ierr             ! error code
     logical :: exists           ! if file exists or not
     character(len=8) :: token   ! dry dep field name to add
+    integer :: mpicom           ! MPI communicator
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_drydep_read) ' 
@@ -478,22 +521,27 @@ CONTAINS
     if ( len_trim(NLFilename) == 0  )then
        call shr_sys_abort( subName//'ERROR: nlfilename not set' )
     end if
-    inquire( file=trim(NLFileName), exist=exists)
-    if ( exists ) then
-       unitn = shr_file_getUnit()
-       open( unitn, file=trim(NLFilename), status='old' )
-       if ( s_loglev > 0 ) write(s_logunit,F00) &
-            'Read in drydep_inparm namelist from: ', trim(NLFilename)
-       ierr = 1
-       do while ( ierr /= 0 )
-          read(unitn, drydep_inparm, iostat=ierr)
-          if (ierr < 0) then
-             call shr_sys_abort( subName//'ERROR: encountered end-of-file on namelist read' )
-          endif
-       end do
-       close( unitn )
-       call shr_file_freeUnit( unitn )
+    call seq_comm_setptrs(ID,mpicom=mpicom)
+    if (seq_comm_iamroot(ID)) then
+       inquire( file=trim(NLFileName), exist=exists)
+       if ( exists ) then
+          unitn = shr_file_getUnit()
+          open( unitn, file=trim(NLFilename), status='old' )
+          if ( s_loglev > 0 ) write(s_logunit,F00) &
+               'Read in drydep_inparm namelist from: ', trim(NLFilename)
+          ierr = 1
+          do while ( ierr /= 0 )
+             read(unitn, drydep_inparm, iostat=ierr)
+             if (ierr < 0) then
+                call shr_sys_abort( subName//'ERROR: encountered end-of-file on namelist read' )
+             endif
+          end do
+          close( unitn )
+          call shr_file_freeUnit( unitn )
+       end if
     end if
+    call shr_mpi_bcast( drydep_list, mpicom )
+    call shr_mpi_bcast( drydep_method, mpicom )
 
     n_drydep = 0
 
@@ -537,7 +585,7 @@ CONTAINS
     ! Need to explicitly add Sl_ based on naming convention
 333 format ('Sl_dd',i3.3)
 
-  end subroutine seq_drydep_read
+  end subroutine seq_drydep_readnl
 
 !====================================================================================
 
@@ -608,18 +656,38 @@ CONTAINS
           select case( trim(test_name) )
           case( 'H2' )
              test_name = 'CO'
-          case( 'HYAC', 'CH3COOH', 'EOOH' )
+          case( 'HYAC', 'CH3COOH', 'EOOH', 'IEPOX' )
              test_name = 'CH2O'
           case( 'O3S', 'O3INERT', 'MPAN' )
              test_name = 'OX'
           case( 'ISOPOOH', 'MACROOH', 'Pb', 'XOOH', 'H2SO4' )
              test_name = 'HNO3'
-          case( 'ALKOOH', 'MEKOOH', 'TOLOOH', 'BENOOH', 'XYLOOH', 'TERPOOH','SOGM','SOGI','SOGT','SOGB','SOGX' )
+          case( 'ALKOOH', 'MEKOOH', 'TOLOOH', 'BENOOH', 'XYLOOH', 'SOGM','SOGI','SOGT','SOGB','SOGX' )
                 test_name = 'CH3OOH'
           case( 'SOA', 'SO4', 'CB1', 'CB2', 'OC1', 'OC2', 'NH3', 'NH4', 'SA1', 'SA2', 'SA3', 'SA4','HCN','CH3CN','HCOOH' )
              test_name = 'OX'  ! this is just a place holder. values are explicitly set below
           case( 'SOAM', 'SOAI', 'SOAT', 'SOAB', 'SOAX' )
              test_name = 'OX'  ! this is just a place holder. values are explicitly set below
+          case( 'SOAGbb0' )
+             test_name = 'SOAGff0'
+          case( 'SOAGbb1' )
+             test_name = 'SOAGff1'
+          case( 'SOAGbb2' )
+             test_name = 'SOAGff2'
+          case( 'SOAGbb3' )
+             test_name = 'SOAGff3'
+          case( 'SOAGbb4' )
+             test_name = 'SOAGff4'
+          case( 'NOA', 'ALKNIT', 'ISOPNITA', 'ISOPNITB', 'HONITR', 'ISOPNOOH', 'NC4CHO', 'NC4CH2OH', 'TERPNIT', 'NTERPOOH' )
+                test_name = 'H2O2'
+          case( 'PHENOOH', 'BENZOOH', 'C6H5OOH', 'BZOOH', 'XYLOLOOH', 'XYLENOOH', 'HPALD' )
+                test_name = 'CH3OOH'
+          case( 'TERPOOH', 'TERP2OOH', 'MBOOOH' )
+                test_name = 'HNO3'
+          case( 'TERPROD1', 'TERPROD2' )
+                test_name = 'CH2O'
+          case( 'HMPROP' )
+                test_name = 'GLYALD'
           case( 'O3A', 'XMPAN' )
              test_name = 'OX'
           case( 'XPAN' )
@@ -638,7 +706,6 @@ CONTAINS
              test_name = 'HO2NO2'
           case( 'XNH4NO3' )
              test_name = 'HNO3'
-
           case( 'COhc','COme')
                 test_name = 'CO'  ! this is just a place holder. values are set in drydep_fromlnd
           case( 'CO01','CO02','CO03','CO04','CO05','CO06','CO07','CO08','CO09','CO10' )
@@ -651,7 +718,6 @@ CONTAINS
                 test_name = 'CO'  ! this is just a place holder. values are set in drydep_fromlnd
           case( 'CO41','CO42','CO43','CO44','CO45','CO46','CO47','CO48','CO49','CO50' )
                 test_name = 'CO'  ! this is just a place holder. values are set in drydep_fromlnd
-
           case( 'NH4NO3' )
              test_name = 'HNO3'
           case default

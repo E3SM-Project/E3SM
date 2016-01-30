@@ -428,7 +428,8 @@ module cesm_comp_mod
    character(CL) :: hist_a2x_flds     = 'Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf'
 !  character(CL) :: hist_a2x24hr_flds = 'all'
    character(CL) :: hist_a2x3hrp_flds = 'Faxa_rainc:Faxa_rainl:Faxa_snowc:Faxa_snowl'
-   character(CL) :: hist_a2x3hr_flds  = 'Sa_z:Sa_u:Sa_v:Sa_tbot:Sa_ptem:Sa_shum:Sa_dens:Sa_pbot:Sa_pslv:Faxa_lwdn:&
+   character(CL) :: hist_a2x3hr_flds  = &
+        'Sa_z:Sa_topo:Sa_u:Sa_v:Sa_tbot:Sa_ptem:Sa_shum:Sa_dens:Sa_pbot:Sa_pslv:Faxa_lwdn:&
         &Faxa_rainc:Faxa_rainl:Faxa_snowc:Faxa_snowl:&
         &Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf'
 
@@ -1449,10 +1450,6 @@ subroutine cesm_init()
       call shr_sys_abort(subname//' ERROR: samegrid_oi is false')
    endif
 
-   if (.not. samegrid_lg) then
-      call shr_sys_abort(subname//' ERROR: samegrid_lg is false')
-   endif
-
    !----------------------------------------------------------
    !| Check instances of prognostic components
    !----------------------------------------------------------
@@ -1508,7 +1505,8 @@ subroutine cesm_init()
    if (iamin_CPLID) then
       if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-      call component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, samegrid_ro)
+      call component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, &
+           samegrid_ro, samegrid_lg)
 
       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
    endif ! iamin_CPLID
@@ -1530,7 +1528,7 @@ subroutine cesm_init()
 
          call seq_domain_check( infodata,                                             &
               atm(ens1), ice(ens1), lnd(ens1), ocn(ens1), rof(ens1), glc(ens1),       &
-              samegrid_al, samegrid_ao, samegrid_ro)
+              samegrid_al, samegrid_ao, samegrid_ro, samegrid_lg)
 
       endif
       if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -2699,9 +2697,9 @@ end subroutine cesm_init
                call prep_glc_accum_avg(timer='CPL:glcprep_avg')
 
                ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
-               call prep_glc_calc_l2x_gx(timer='CPL:glcprep_lnd2glc')
+               call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
 
-               call prep_glc_mrg(infodata, timer_mrg='CPL:glcprep_mrgx2g')
+               call prep_glc_mrg(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
 
                call component_diag(infodata, glc, flow='x2c', comment='send glc', &
                     info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
@@ -2836,7 +2834,7 @@ end subroutine cesm_init
                  infodata=infodata, infodata_string='ice2cpl_run', &
                  mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
                  timer_barrier='CPL:I2C_BARRIER', timer_comp_exch='CPL:I2C', &
-                 timer_map_exch='CPL:i2c_icei2icex', timer_infodata_exch='CPL:r2c_infoexch')
+                 timer_map_exch='CPL:i2c_icei2icex', timer_infodata_exch='CPL:i2c_infoexch')
          endif
 
          !----------------------------------------------------------

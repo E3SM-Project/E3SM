@@ -33,7 +33,7 @@
      input_pathname
           Only include this attribute to indicate that the variable
           contains the pathname of an input dataset that resides in the
-          CESM inputdata directory tree.  
+          CIME inputdata directory tree.  
 
 	  The recognized values are 
            "abs"  - an absolute  pathname is required
@@ -115,6 +115,23 @@ Number of cism elevation classes.
 Set by the xml variable GLC_NEC in env_run.xml
 </entry>
 
+<entry
+id="ice_ncat"
+type="integer"
+category="seq_flds"
+group="seq_cplflds_inparm" >
+Number of sea ice thickness categories. 
+Set by the xml variable ICE_NCAT in env_build.xml
+</entry>
+
+<entry
+id="seq_flds_i2o_per_cat"
+type="logical"
+category="seq_flds"
+group="seq_cplflds_inparm" >
+.true. if select per ice thickness category fields are passed to the ocean.
+Set by the xml variable CPL_I2O_PER_CAT in env_run.xml
+</entry>
 
 <!-- =========================== -->
 <!-- -group seq_cplflds_custom   -->
@@ -1885,6 +1902,14 @@ io task root in pio used generically, component based value takes precedent.
 </entry>
 
 <entry 
+id="pio_rearranger"
+type="integer"
+category="pio" 
+group="pio_default_inparm">
+Rearranger method for pio 1=box, 2=subset.
+</entry>
+
+<entry 
 id="pio_numiotasks"
 type="integer"
 category="pio" 
@@ -2367,6 +2392,90 @@ runoff to ocn nearest neighbor plus smoothing conservative mapping file
 
 <entry 
 id="rof2ocn_rmaptype"
+type="char*256"
+category="mapping" 
+group="seq_maps">
+The type of mapping desired, either "source" or "destination" mapping.
+X is associated with rearrangement of the source grid to the
+destination grid and then local mapping.  Y is associated with mapping
+on the source grid and then rearrangement and sum to the destination
+grid.
+</entry>
+
+<entry 
+id="lnd2glc_fmapname"
+type="char*256"
+category="mapping" 
+input_pathname="abs"
+group="seq_maps">
+land to glc mapping file for fluxes
+</entry>
+
+<entry 
+id="lnd2glc_fmaptype"
+type="char*256"
+category="mapping" 
+group="seq_maps">
+The type of mapping desired, either "source" or "destination" mapping.
+X is associated with rearrangement of the source grid to the
+destination grid and then local mapping.  Y is associated with mapping
+on the source grid and then rearrangement and sum to the destination
+grid.
+</entry>
+
+<entry 
+id="lnd2glc_smapname"
+type="char*256"
+category="mapping" 
+input_pathname="abs"
+group="seq_maps">
+land to glc mapping file for states
+</entry>
+
+<entry 
+id="lnd2glc_smaptype"
+type="char*256"
+category="mapping" 
+group="seq_maps">
+The type of mapping desired, either "source" or "destination" mapping.
+X is associated with rearrangement of the source grid to the
+destination grid and then local mapping.  Y is associated with mapping
+on the source grid and then rearrangement and sum to the destination
+grid.
+</entry>
+
+<entry 
+id="glc2lnd_fmapname"
+type="char*256"
+category="mapping" 
+input_pathname="abs"
+group="seq_maps">
+glc to land mapping file for fluxes
+</entry>
+
+<entry 
+id="glc2lnd_fmaptype"
+type="char*256"
+category="mapping" 
+group="seq_maps">
+The type of mapping desired, either "source" or "destination" mapping.
+X is associated with rearrangement of the source grid to the
+destination grid and then local mapping.  Y is associated with mapping
+on the source grid and then rearrangement and sum to the destination
+grid.
+</entry>
+
+<entry 
+id="glc2lnd_smapname"
+type="char*256"
+category="mapping" 
+input_pathname="abs"
+group="seq_maps">
+glc to land mapping file for states
+</entry>
+
+<entry 
+id="glc2lnd_smaptype"
 type="char*256"
 category="mapping" 
 group="seq_maps">
