@@ -3,13 +3,7 @@
 #
 # build-namelist
 #
-# This is the build-namelist script for the CESM datm (Data ATmosphere Model).
-# This is normally run under the covers as part of the CESM scripts.
-#
-# Date        Contributor      Modification
-# -------------------------------------------------------------------------------------------
-# 2010-05-04  Kluzek           Original version
-# 2012-03-10  Vertenstein      Updated for cesm1.1
+# This is the build-namelist script for the CIME datm (Data Atmosphere Model).
 #--------------------------------------------------------------------------------------------
 
 use strict;
@@ -45,7 +39,7 @@ OPTIONS
                                       namelist XML files (usually your SourceMods/src.datm directory)
                                       (such as namelist_definition_datm.xml, or namelist_defaults_datm.xml)
      -caseroot                     CASEROOT directory variable
-     -scriptsroot                  SCRIPTSROOT directory variable
+     -cimeroot                     CIMEROOT directory variable
      -inst_string                  INST_STRING variable
 
 Note: The precedence for setting the values of namelist variables is (highest to lowest):
@@ -56,7 +50,8 @@ Note: The precedence for setting the values of namelist variables is (highest to
 
 NOTE: The following xml variables are REQUIRED (they are already set by scripts in the env_*.xml files)
          RUN_TYPE    DIN_LOC_ROOT  ATM_DOMAIN_FILE   ATM_DOMAIN_PATH
-	 DATM_MODE   DATM_PRESAERO DATM_CO2_TSERIES  ATM_GRID          GRID                     
+	 DATM_MODE   DATM_PRESAERO DATM_TOPO         DATM_CO2_TSERIES
+         ATM_GRID    GRID                     
 EOF
 }
 
@@ -90,7 +85,7 @@ my %opts = ( help        => 0,
              debug       => 0,
 	     test        => 0,
 	     caseroot    => undef,
-	     scriptsroot => abs_path( "$cfgdir/../../../../scripts" ),
+	     cimeroot    => abs_path( "$cfgdir/../../../../" ),
 	     inst_string => undef,
              user_xml_dir=> undef,
 	    );
@@ -103,7 +98,7 @@ GetOptions(
     "debug"          => \$opts{'debug'},
     "test"           => \$opts{'test'},
     "caseroot=s"     => \$opts{'caseroot'},
-    "scriptsroot=s"  => \$opts{'scriptsroot'},
+    "cimeroot=s"     => \$opts{'cimeroot'},
     "inst_string=s"  => \$opts{'inst_string'},	   
     "user_xml_dir=s" => \$opts{'user_xml_dir'},
 )  or usage();
@@ -147,11 +142,12 @@ EOF
 }
 
 my $CASEROOT    = $opts{'caseroot'};
-my $SCRIPTSROOT = $opts{'scriptsroot'};
+my $CIMEROOT    = $opts{'cimeroot'};
 my $INST_STRING = $opts{'inst_string'}; 
 
 #-----------------------------------------------------------------------------------------------
 my $bldconfdir = "$CASEROOT/Buildconf/datmconf";
+
 if ( $opts{'debug'} ) {
    my $cmd = "mkdir -p $bldconfdir";
    print "Execute: $cmd\n";
@@ -180,8 +176,8 @@ EOF
 
 # The root directory for the input data files must be specified.
 
-#The root directory to cesm utils Tools
-my $cimeroot   = abs_path( "${SCRIPTSROOT}/../" );
+#The root directory to utils Tools
+my $cimeroot   = abs_path($CIMEROOT);
 my $perl5lib   = "$cimeroot/utils/perl5lib";
 
 # The XML::Lite module is required to parse the XML files.
@@ -257,7 +253,7 @@ EOF
 
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
-my @dirs = ( "$cfgdir/..", "$perl5lib", "$CASEROOT/Tools");
+my @dirs = ( "$cfgdir/..", "$perl5lib");
 unshift @INC, @dirs;
 
 require XML::Lite;
@@ -266,7 +262,7 @@ require Build::NamelistDefinition;
 require Build::NamelistDefaults;
 require Build::Namelist;
 require Streams::TemplateGeneric;
-require SetupTools;
+require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the DATM config_cache.xml file. 
@@ -352,7 +348,8 @@ foreach my $attr (keys %xmlvars) {
     $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars); 
 }
 foreach my $var ( "RUN_TYPE", "DIN_LOC_ROOT", "ATM_DOMAIN_FILE", "ATM_DOMAIN_PATH", 
-		  "DATM_MODE", "DATM_PRESAERO", "DATM_CO2_TSERIES", "ATM_GRID", "GRID" ) {
+		  "DATM_MODE", "DATM_PRESAERO", "DATM_TOPO", "DATM_CO2_TSERIES",
+                  "ATM_GRID", "GRID" ) {
     if ( $print > 1 ) { print "$var = $xmlvars{$var}\n"; }
     if ( ! defined($xmlvars{$var})  || $xmlvars{$var} =~ /^(UNSET|)$/ ) {
 	die "** $ProgName - $var is NOT set  ** \n"
@@ -365,6 +362,7 @@ my $ATM_DOMAIN_FILE = $xmlvars{'ATM_DOMAIN_FILE'};
 my $ATM_DOMAIN_PATH = $xmlvars{'ATM_DOMAIN_PATH'};
 my $DATM_MODE       = $xmlvars{'DATM_MODE'};   
 my $DATM_PRESAERO   = $xmlvars{'DATM_PRESAERO'};    
+my $DATM_TOPO       = $xmlvars{'DATM_TOPO'};    
 my $DATM_CO2_TSERIES= $xmlvars{'DATM_CO2_TSERIES'};
 my $ATM_GRID        = $xmlvars{'ATM_GRID'};    
 my $GRID            = $xmlvars{'GRID'};     
@@ -374,24 +372,15 @@ my $CLM_USRDAT_NAME = $xmlvars{'CLM_USRDAT_NAME'};
 if ( $DATM_MODE =~ /CLM/ && $DATM_PRESAERO eq "none" ) {
    die "${nm}:: A DATM_MODE for CLM is incompatible with DATM_PRESAERO=none\n";
 }
+if ( $DATM_MODE =~ /CLM/ && $DATM_TOPO eq "none" ) {
+   die "${nm}:: A DATM_MODE for CLM is incompatible with DATM_TOPO=none\n";
+}
 
 if ( $GRID eq "CLM_USRDAT" && $CLM_USRDAT_NAME =~ /^(UNSET|)$/ ) {
    die <<"EOF";
 ** $ProgName - GRID=CLM_USRDAT and CLM_USRDAT_NAME is NOT set  **
 EOF
 }
-
-(-d $DIN_LOC_ROOT)  or  die <<"EOF";
-** $ProgName - CESM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
-EOF
-if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
-
-if ($opts{'test'}) {
-    (-d $DIN_LOC_ROOT)  or  die <<"EOF";
-** $ProgName - CESM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
-EOF
-}
-my $test_files = $opts{'test'};
 
 my $var   = "DATM_MODE";
 my $group = $definition->get_group_name($var);
@@ -409,8 +398,9 @@ $nl->set_variable_value( $group, $var, "\'$xmlvars{$var}\'" );
 
 if ($print>=1) { print "  datm mode is $DATM_MODE \n"; }
 if ($print>=1) { print "  datm presaero mode is $DATM_PRESAERO \n"; }
-if ($print>=1) { print "  datm cesm grid is $GRID \n"; }
-if ($print>=1) { print "  datm atm grid is $ATM_GRID \n" };
+if ($print>=1) { print "  datm topo mode is $DATM_TOPO \n"; }
+if ($print>=1) { print "  datm model grid is $GRID \n"; }
+if ($print>=1) { print "  datm atm   grid is $ATM_GRID \n" };
 
 # Create input data list (written to later)
 my $fh_out = new IO::File;
@@ -435,6 +425,9 @@ if ($DATM_PRESAERO ne "none") {
     } else {
 	push (@streams, "presaero.$DATM_PRESAERO");
     }
+ }
+if ($DATM_TOPO ne "none") {
+   push (@streams, "topo.$DATM_TOPO");
 }
 
 if ($DATM_CO2_TSERIES ne "none") {
@@ -716,7 +709,7 @@ sub add_default {
 # ***** N.B. ***** This routine assumes the following variables are in package main::
 #  $definition        -- the namelist definition object
 #  $defaults          -- the namelist defaults object
-#  $DIN_LOC_ROOT      -- CESM inputdata root directory
+#  $DIN_LOC_ROOT      -- inputdata root directory
 
     my $nl = shift;     # namelist object
     my $var = shift;    # name of namelist variable
@@ -773,14 +766,14 @@ sub add_default {
 
        # The default values for input pathnames are relative.  If the namelist
        # variable is defined to be an absolute pathname, then prepend
-       # the CESM inputdata root directory.
+       # the inputdata root directory.
        if (not defined $opts{'no_abspath'}) {
 	   if (defined $opts{'set_abspath'}) {
 	       $val = set_abs_filepath($val, $opts{'set_abspath'});
 	   } else {
 	       if ($is_input_pathname eq 'abs') {
 		   $val = set_abs_filepath($val, $DIN_LOC_ROOT);
-                   if ( $test_files ) {
+                   if ( $opts{'test'} ) {
                       if ($print>=2) { print "Test that $val exists$eol"; }
                       if ( ($val !~ /null/) and (! -f "$val") ) {
                          die "$ProgName - file not found: $var = $val\n";
