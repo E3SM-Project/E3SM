@@ -105,9 +105,9 @@
 		            description="Defines the ice thickness below which ice calves (for thickness_threshold option)."
 		            possible_values="Any positive real value"
 		/>
-		<nml_option name="config_data_calving" type="character" default_value="false" units="unitless"
+		<nml_option name="config_data_calving" type="logical" default_value=".false." units="unitless"
 		            description="Select whether or not to configure calving in a 'data' model mode (calc. calving flux but do not update ice geometry)"
-		            possible_values="'true', 'false'"
+		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_calving_timescale" type="real" default_value="0.0" units="s"
 		            description="Defines the timescale for calving. The fraction of eligible ice that calves is max(dt/calving_timescale, 1.0). A value of 0 means that all eligible ice calves."

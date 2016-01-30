@@ -105,8 +105,8 @@ module li_calving
       type (mpas_pool_type), pointer :: velocityPool
 
       ! calving-relevant config options
-      character (len=StrKIND), pointer :: config_calving, config_data_calving
-      logical, pointer :: config_print_calving_info
+      character (len=StrKIND), pointer :: config_calving
+      logical, pointer :: config_print_calving_info, config_data_calving
 
       real(kind=RKIND), pointer :: config_calving_topography, &
                                    config_calving_thickness, &
@@ -392,13 +392,13 @@ module li_calving
 
             ! Calve ice in ocean cells that are not on the protected inactive margin
 
-            where (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. trim(config_data_calving) =='false')
+            where (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. .not. config_data_calving )
 
                calvingThickness = thickness * calvingFraction
                thickness = thickness - calvingThickness
 
             ! Allow for 'data' calving option that does NOT update geometry
-            elsewhere (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. trim(config_data_calving) =='true')
+            elsewhere (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. config_data_calving )
 
                calvingThickness = thickness * calvingFraction
 
@@ -453,21 +453,15 @@ module li_calving
             ! Calve ice where specified by the calving law.
             ! If the calving timescale > 0, then will calve only a fraction of the thickness in each calving cell.
 
-            where (calvingLawMask == 1)
+            where (calvingLawMask == 1 .and. .not. config_data_calving )
 
                calvingThickness = thickness * calvingFraction
+               thickness = thickness - calvingThickness
 
-               where (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. trim(config_data_calving) =='false')
+            ! Allow for 'data' calving option that does NOT update geometry
+            elsewhere (calvingLawMask == 1 .and. config_data_calving )
 
-                  calvingThickness = thickness * calvingFraction
-                  thickness = thickness - calvingThickness
-
-               ! Allow for 'data' calving option that does NOT update geometry
-               elsewhere (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. trim(config_data_calving) =='true')
-
-                  calvingThickness = thickness * calvingFraction
-
-               endwhere
+               calvingThickness = thickness * calvingFraction
 
             endwhere
 
