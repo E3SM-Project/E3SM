@@ -153,7 +153,7 @@ sub submitJobs()
 {
 	my $self = shift;
 	my $sta_ok = shift;
-	my $depjobid = undef;
+	my $depjobid = shift;
 	
 	my %depqueue = %{$self->{dependencyqueue}};
 	my $lastjobseqnum = (sort {$b <=> $a } keys %depqueue)[0];
@@ -166,7 +166,6 @@ sub submitJobs()
             $depjobid = $self->submitSingleJob($jobname, $depjobid, $islastjob, $sta_ok);
 		}
 	}
-    die;
 }
 
 #==============================================================================
@@ -184,7 +183,9 @@ sub submitSingleJob()
 	my %config = %{$self->{'caseconfig'}};
 	my $dependarg = '';
 	my $submitargs = '';
+
     $submitargs = $self->getSubmitArguments($scriptname, $dependentJobId);
+
 	if(! defined $submitargs && length($submitargs) <= 0)
 	{
 	    $submitargs = '' ;
@@ -295,14 +296,20 @@ sub dependencyCheck()
     }
     else
     {
-        my $queuedJobs = 1;
+        my $submit = $config{'RESUBMIT'};
+        my $resubmit_queued = 1;
         if (defined $config{'RESUBMIT_QUEUED'}) {
-            $queuedJobs = $config{'RESUBMIT_QUEUED'};
-            if ($queuedJobs < 0) {
-                die "error: RESUBMIT_QUEUED, if set, should be >= 0";
-            }
+            $resubmit_queued = $config{'RESUBMIT_QUEUED'};
         }
-        if ($queuedJobs > 0) {
+
+        if ($resubmit_queued < 0) {
+            die "error: RESUBMIT_QUEUED, if set, should be >= 0";
+        }
+
+        my $queuedJobs = 1 > $resubmit_queued ? 1 : $resubmit_queued;
+
+        if ($queuedJobs >= 2 && $submit > 0) {
+            print "warning: RESUBMIT_QUEUED is >= 2 which sets RESUBMIT to 0";
             my $newresubmit= 0;
             `./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
         }
