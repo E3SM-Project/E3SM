@@ -1309,6 +1309,9 @@ contains
 
   subroutine surface_tilt(domain)
 
+    use cice_constants, only: &
+         ciceGravity
+
     type(domain_type), intent(inout) :: &
          domain
 
@@ -1318,7 +1321,8 @@ contains
     type(MPAS_pool_type), pointer :: &
          icestatePool, &
          velocitySolverPool, &
-         meshPool
+         meshPool, &
+         oceanCouplingPool
 
     real(kind=RKIND), dimension(:), pointer:: &
          surfaceTiltForceU, &
@@ -1326,13 +1330,16 @@ contains
          uOceanVelocityVertex, &
          vOceanVelocityVertex, &
          totalMassVertex, &
-         fVertex
+         fVertex, &
+         seaSurfaceTiltU, &
+         seaSurfaceTiltV
 
     integer, dimension(:), pointer :: &
          solveVelocity
 
     logical, pointer :: &
-         configUseSurfaceTilt
+         configUseSurfaceTilt, &
+         configGeostrophicSurfaceTilt
 
     integer, pointer :: &
          nVerticesSolve
@@ -1350,35 +1357,64 @@ contains
        call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
        call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
 
        call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceU", surfaceTiltForceU)
        call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceV", surfaceTiltForceV)
 
        if (configUseSurfaceTilt) then
 
-          call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
-          call MPAS_pool_get_array(velocitySolverPool, "uOceanVelocityVertex", uOceanVelocityVertex)
-          call MPAS_pool_get_array(velocitySolverPool, "vOceanVelocityVertex", vOceanVelocityVertex)
+          call MPAS_pool_get_config(block % configs, "config_geostrophic_surface_tilt", configGeostrophicSurfaceTilt)
 
+          call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
           call MPAS_pool_get_array(icestatePool, "totalMassVertex", totalMassVertex)
 
-          call MPAS_pool_get_array(meshPool, "fVertex", fVertex)
+          if (configGeostrophicSurfaceTilt) then
+             ! calculate surface tilt force from geostrophic currents
 
-          do iVertex = 1, nVerticesSolve
+             call MPAS_pool_get_array(velocitySolverPool, "uOceanVelocityVertex", uOceanVelocityVertex)
+             call MPAS_pool_get_array(velocitySolverPool, "vOceanVelocityVertex", vOceanVelocityVertex)
+             call MPAS_pool_get_array(meshPool, "fVertex", fVertex)
 
-             if (solveVelocity(iVertex) == 1) then
+             do iVertex = 1, nVerticesSolve
 
-                surfaceTiltForceU(iVertex) = -fVertex(iVertex) * totalMassVertex(iVertex) * vOceanVelocityVertex(iVertex)
-                surfaceTiltForceV(iVertex) =  fVertex(iVertex) * totalMassVertex(iVertex) * uOceanVelocityVertex(iVertex)
+                if (solveVelocity(iVertex) == 1) then
 
-             else
+                   surfaceTiltForceU(iVertex) = -fVertex(iVertex) * totalMassVertex(iVertex) * vOceanVelocityVertex(iVertex)
+                   surfaceTiltForceV(iVertex) =  fVertex(iVertex) * totalMassVertex(iVertex) * uOceanVelocityVertex(iVertex)
 
-                surfaceTiltForceU(iVertex) = 0.0_RKIND
-                surfaceTiltForceV(iVertex) = 0.0_RKIND
+                else
 
-             endif ! solveVelocity
+                   surfaceTiltForceU(iVertex) = 0.0_RKIND
+                   surfaceTiltForceV(iVertex) = 0.0_RKIND
 
-          enddo ! iVertex
+                endif ! solveVelocity
+
+             enddo ! iVertex
+
+          else
+             ! calculate surface tilt from sea surface gradient
+
+             call MPAS_pool_get_array(oceanCouplingPool, "seaSurfaceTiltU", seaSurfaceTiltU)
+             call MPAS_pool_get_array(oceanCouplingPool, "seaSurfaceTiltV", seaSurfaceTiltV)
+
+             do iVertex = 1, nVerticesSolve
+
+                if (solveVelocity(iVertex) == 1) then
+
+                   surfaceTiltForceU(iVertex) = -ciceGravity * totalMassVertex(iVertex) * seaSurfaceTiltU(iVertex)
+                   surfaceTiltForceV(iVertex) = -ciceGravity * totalMassVertex(iVertex) * seaSurfaceTiltV(iVertex)
+
+                else
+
+                   surfaceTiltForceU(iVertex) = 0.0_RKIND
+                   surfaceTiltForceV(iVertex) = 0.0_RKIND
+
+                endif ! solveVelocity
+
+             enddo ! iVertex
+
+          endif
 
        else
 
