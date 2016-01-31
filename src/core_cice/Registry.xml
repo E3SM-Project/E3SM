@@ -128,6 +128,7 @@
 		<nml_option name="config_use_air_stress"                 type="logical"	   default_value="true"       possible_values="true or false"/>
 		<nml_option name="config_use_ocean_stress"                 type="logical"	   default_value="true"       possible_values="true or false"/>
 		<nml_option name="config_use_surface_tilt"                 type="logical"	   default_value="true"       possible_values="true or false"/>
+		<nml_option name="config_geostrophic_surface_tilt"         type="logical"	   default_value="true"       possible_values="true or false"/>
 	</nml_record>
 
 	<nml_record name="advection" in_defaults="true">
