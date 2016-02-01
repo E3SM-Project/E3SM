@@ -480,7 +480,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
             sys.stdout = sys.__stdout__
 
         if (cime_util.does_machine_have_batch()):
-            run_cmd("%s/wait_for_tests *%s*/TestStatus*" % (SCRIPT_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
+            run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
 
         test_statuses = glob.glob("%s/*%s*/TestStatus" % (self._testroot, test_id))
         self.assertEqual(len(tests), len(test_statuses))
@@ -587,10 +587,16 @@ class TestBlessTestResults(TestCreateTestCommon):
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
         stat, output, errput = run_cmd("%s/create_test %s %s" % (SCRIPT_DIR, self._test_name, extra_args), ok_to_fail=True)
-        if (expect_works):
+
+        if (cime_util.does_machine_have_batch()):
             self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+            test_id = extra_args.split()[extra_args.split().index("-t") + 1]
+            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
+
+        if (expect_works):
+            self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\nOutput:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
         else:
-            self.assertEqual(stat, cime_util.TESTS_FAILED_ERR_CODE, msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\ncreate_test output:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (output, errput, stat))
+            self.assertEqual(stat, cime_util.TESTS_FAILED_ERR_CODE, msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\nOutput:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (output, errput, stat))
 
     ###############################################################################
     def test_create_test_rebless_namelist(self):
@@ -690,6 +696,12 @@ class FullSystemTest(TestCreateTestCommon):
         stat, output, errput = run_cmd("%s/create_test cime_developer -t %s" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True)
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+
+        if (cime_util.does_machine_have_batch()):
+            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True, from_dir=self._testroot)
+            self.assertEqual(stat, 0,
+                             msg="COMMAND SHOULD HAVE WORKED\wait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+
 
         stat, output, errput = run_cmd("%s/cs_status.%s" % (self._testroot, self._baseline_name), ok_to_fail=True)
         self.assertEqual(stat, 0,

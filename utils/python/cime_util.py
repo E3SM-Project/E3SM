@@ -407,7 +407,7 @@ def find_proc_id(proc_name=None,
 ###############################################################################
 def get_batch_system(machine=None):
 ###############################################################################
-    return _MACHINE_INFO.get_value("BATCH_SYSTEM")
+    return _MACHINE_INFO.get_value("batch_system")
 
 ###############################################################################
 def get_my_queued_jobs():
@@ -417,6 +417,7 @@ def get_my_queued_jobs():
     """
     batch_system = get_batch_system()
     expect(batch_system is not None, "Failed to probe batch system")
+    expect(batch_system in BATCH_INFO, "No batch info for batch system '%s'" % batch_system)
 
     list_cmd = BATCH_INFO[batch_system][0].replace("USER", getpass.getuser())
     return run_cmd(list_cmd).split()
