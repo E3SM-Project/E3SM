@@ -177,9 +177,6 @@ def get_full_test_names(testargs, machine, compiler):
     >>> get_full_test_names(["acme_tiny"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu', 'NCK.f19_g16_rx1.A.melvin_gnu']
 
-    >>> get_full_test_names(["acme_tiny"], "melvin", "intel")
-    ['ERS.f19_g16_rx1.A.melvin_intel', 'NCK.f19_g16_rx1.A.melvin_intel']
-
     >>> get_full_test_names(["acme_tiny", "PEA_P1_M.f45_g37_rx1.A"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu', 'NCK.f19_g16_rx1.A.melvin_gnu', 'PEA_P1_M.f45_g37_rx1.A.melvin_gnu']
 
@@ -228,7 +225,7 @@ def find_all_supported_platforms():
     platform_set = set()
 
     for machine in machines:
-        compilers, mpilibs = cime_util.get_machine_info(["COMPILERS", "MPILIBS"], machine=machine)
+        compilers, mpilibs = CIME.utils.get_machine_info(["COMPILERS", "MPILIBS"], machine=machine)
         for compiler in compilers:
             for mpilib in mpilibs:
                 platform_set.add((machine, compiler, mpilib))
@@ -286,7 +283,7 @@ def update_acme_tests(xml_file, categories, platform=None):
                 logging.info("pruning unsupported platform %s"%repr(p))
         platforms = [p for p in platforms if p in supported_platforms]
 
-    manage_xml_entries = os.path.join(cime_util.get_cime_root(), "scripts", "manage_testlists")
+    manage_xml_entries = os.path.join(CIME.utils.get_cime_root(), "scripts", "manage_testlists")
 
     expect(os.path.isfile(manage_xml_entries),
            "Couldn't find manage_testlists, expected it to be here: '%s'" % manage_xml_entries)
@@ -294,15 +291,15 @@ def update_acme_tests(xml_file, categories, platform=None):
     for category in categories:
         # Remove any existing acme test category from the file.
         if (platform is None):
-            cime_util.run_cmd("%s -model acme -component allactive -removetests -category %s" % (manage_xml_entries, category))
+            CIME.utils.run_cmd("%s -model acme -component allactive -removetests -category %s" % (manage_xml_entries, category))
         else:
-            cime_util.run_cmd("%s -model acme -component allactive -removetests -category %s -machine %s -compiler %s"
+            CIME.utils.run_cmd("%s -model acme -component allactive -removetests -category %s -machine %s -compiler %s"
                               % (manage_xml_entries, category, platforms[0][0], platforms[0][1]))
 
         # Generate a list of test entries corresponding to our suite at the top
         # of the file.
         new_test_file = generate_acme_test_entries(category, platforms)
-        cime_util.run_cmd("%s -model acme -component allactive -addlist -file %s -category %s" %
+        CIME.utils.run_cmd("%s -model acme -component allactive -addlist -file %s -category %s" %
                           (manage_xml_entries, new_test_file, category))
         os.unlink(new_test_file)
 

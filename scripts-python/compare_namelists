@@ -31,7 +31,7 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    cime_util.setup_standard_logging_options(parser)
+    CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("gold_file", help="Path to gold file")
 
@@ -42,11 +42,11 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    cime_util.handle_standard_logging_options(args)
+    CIME.utils.handle_standard_logging_options(args)
 
     # Normalize case
     if (args.case is not None):
-        args.case = cime_util.normalize_case_id(args.case)
+        args.case = CIME.utils.normalize_case_id(args.case)
 
     return args.gold_file, args.new_file, args.case
 
@@ -54,7 +54,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def _main_func(description):
 ###############################################################################
     if ("--test" in sys.argv):
-        cime_util.run_cmd("python -m doctest %s/compare_namelists.py -v" % cime_util.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
+        CIME.utils.run_cmd("python -m doctest %s/compare_namelists.py -v" % CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
         return
 
     gold_file, compare_file, case = \

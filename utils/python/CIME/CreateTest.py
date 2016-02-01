@@ -7,6 +7,7 @@ import sys, os, shutil, traceback, stat, glob, threading, time, thread, logging
 import compare_namelists
 import CIME.utils
 from CIME.utils import expect, run_cmd
+import wait_for_tests
 from wait_for_tests import TEST_PASS_STATUS, TEST_FAIL_STATUS, TEST_PENDING_STATUS, TEST_STATUS_FILENAME, NAMELIST_FAIL_STATUS, RUN_PHASE, NAMELIST_PHASE
 from CIME.XML.Machines import Machines
 
@@ -235,7 +236,7 @@ class CreateTest(object):
                 self._log_output(test_name, "Missing testmod file '%s'" % test_mod_file)
                 return False
             create_newcase_cmd += " -user_mods_dir %s" % test_mod_file
-
+        logging.warn("Calling create_newcase: "+create_newcase_cmd)
         return self._run_phase_command(test_name, create_newcase_cmd, CREATE_NEWCASE_PHASE)
 
     ###########################################################################

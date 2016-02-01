@@ -602,8 +602,10 @@ class TestBlessTestResults(TestCreateTestCommon):
         self.simple_test(True, "-g -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
         # Change baseline
-        baseline_area = CIME.utils.get_machine_info("CCSM_BASELINE")
-        compiler      = CIME.utils.get_machine_info("COMPILER")
+        machobj = Machines()
+        machobj.probe_machine_name()
+        baseline_area = machobj.get_value("CCSM_BASELINE")
+        compiler      = machobj.get_default_compiler()
         baseline_glob = glob.glob(os.path.join(baseline_area, compiler, self._baseline_name, "%s*" % self._test_name))
         self.assertEqual(len(baseline_glob), 1, msg="Expected one match, got:\n%s" % "\n".join(baseline_glob))
 
@@ -683,20 +685,6 @@ class TestBlessTestResults(TestCreateTestCommon):
 #         self.assertTrue("ERS.f19_g16_rx1.D.melvin_gnu" in tests)
 #         self.assertTrue("ERS.f19_g16_rx1.E.melvin_gnu" in tests)
 
-###############################################################################
-class FullSystemTest(TestCreateTestCommon):
-###############################################################################
-
-    ###########################################################################
-    def test_full_system(self):
-    ###########################################################################
-        stat, output, errput = run_cmd("%s/create_test cime_developer -t %s" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True)
-        self.assertEqual(stat, 0,
-                         msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
-
-        stat, output, errput = run_cmd("%s/cs_status.%s" % (self._testroot, self._baseline_name), ok_to_fail=True)
-        self.assertEqual(stat, 0,
-                         msg="COMMAND SHOULD HAVE WORKED\cs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 if (__name__ == "__main__"):
     unittest.main(verbosity=2)

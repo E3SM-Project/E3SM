@@ -24,12 +24,19 @@ def expect(condition, error_msg):
     >>> expect(False, "error2")
     Traceback (most recent call last):
         ...
-    SystemExit: FAIL: error2
+    SystemExit: ERROR: error2
     """
     if (not condition):
         raise SystemExit('ERROR: '+error_msg)
 
 def read_cime_config_file():
+    """
+    READ the config file in ~/.cime, this file may contain
+    [main]
+    CIMEROOT=/path/to/cime
+    CIME_MODEL=acme,cesm
+    PROJECT=someprojectnumber
+    """
     global _CIMECONFIG
     cimeconfigfile = os.path.abspath(os.path.join(os.path.expanduser("~"),
                                                   ".cime","config"))
@@ -70,12 +77,22 @@ def get_cime_root():
 
 
 def set_model(model):
+    """
+    Set the model to be used in this session
+    """
     if(_CIMECONFIG is None):
         read_cime_config_file()
     _CIMECONFIG.set('main','MODEL',model)
 
 
 def get_model():
+    """
+    Get the currently configured model value
+
+    >>> set_model('rocky')
+    >>> print get_model()
+    rocky
+    """
     global _CIMECONFIG
     model = None
     if(_CIMECONFIG is None):

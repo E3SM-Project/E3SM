@@ -6,7 +6,7 @@ list tested grids, compsets, etc.
 """
 
 from standard_script_setup import *
-from cime_util import expect
+from CIME.utils import expect
 import update_acme_tests
 
 import sys, argparse, os, doctest
@@ -35,7 +35,7 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    cime_util.setup_standard_logging_options(parser)
+    CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("thing_to_list", choices=("compsets", "grids", "testcases", "tests"),
                         help="The thing you want to list")
@@ -45,7 +45,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    cime_util.handle_standard_logging_options(args)
+    CIME.utils.handle_standard_logging_options(args)
 
     if (not args.categories):
         args.categories = update_acme_tests.get_test_suites()
@@ -59,7 +59,7 @@ def list_tests(thing_to_list, categories):
     for category in categories:
         tests = update_acme_tests.get_test_suite(category)
         for test in tests:
-            testcase, _, grid, compset = cime_util.parse_test_name(test)[:4]
+            testcase, _, grid, compset = CIME.utils.parse_test_name(test)[:4]
             if (thing_to_list == "compsets"):
                 things.add(compset)
             elif (thing_to_list == "grids"):
