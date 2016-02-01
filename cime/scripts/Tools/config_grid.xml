@@ -1517,6 +1517,9 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <gridmap rof_grid="r05" ocn_grid="gx1v6" >
   <ROF2OCN_FMAPNAME>cpl/cpl6/map_r05_TO_g16_aave.120920.nc</ROF2OCN_FMAPNAME>
 </gridmap>
+<gridmap rof_grid="r05" ocn_grid="oEC60to30" >
+  <ROF2OCN_FMAPNAME>cpl/cpl6/map_r05_TO_oEC60to30_nn.151209.nc</ROF2OCN_FMAPNAME>
+</gridmap>
 <XROF_FLOOD_MODE lnd_grid="1.9x2.5" rof_grid="r05" ocn_grid="gx1v6" >ACTIVE</XROF_FLOOD_MODE>
 
 <gridmap rof_grid="rx1" ocn_grid="gx3v7" >
