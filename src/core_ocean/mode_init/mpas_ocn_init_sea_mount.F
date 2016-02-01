@@ -251,7 +251,7 @@ contains
 
            ! Set bottomDepth.  See Beckmann and Haidvogel 1993 eqn 12, Shchepetkin 2003 eqn 4.2
            bottomDepth(iCell) = config_sea_mount_bottom_depth - config_sea_mount_height &
-                              * exp(-(max(radius-config_sea_mount_radius,0.0))**2 / config_sea_mount_width**2)
+                              * exp(-(max(radius-config_sea_mount_radius, 0.0_RKIND))**2 / config_sea_mount_width**2)
 
            ! Set maxLevelCell and layerThickness
            if ( trim(config_sea_mount_layer_type) == 'z-level' ) then
