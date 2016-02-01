@@ -67,8 +67,8 @@ module load cray-mpich
 module load pmi
 
 if ( $MPILIB == "mpi-serial") then
-  module load cray-hdf5/1.8.11
-  module load cray-netcdf/4.3.0
+  module load cray-hdf5/1.8.14
+  module load cray-netcdf/4.3.3.1
 else
   module load cray-netcdf-hdf5parallel
   module load cray-hdf5-parallel
