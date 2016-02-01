@@ -18,6 +18,12 @@ echo "DEBUG=$DEBUG"
 
 if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh
+
+  #ndk 1/28/16  As loading/unloading craype is heavy-weight, let's get this straight upfront.
+  # we had some issues where module commands were ill-behaved when craype was unloaded.
+  module rm craype
+  module load craype/2.5.0
+
   module rm PrgEnv-intel
   module rm PrgEnv-cray
   module rm PrgEnv-gnu
@@ -34,7 +40,6 @@ if (-e /opt/modules/default/init/csh) then
   module rm cray-parallel-netcdf
   module rm craype-sandybridge
   module rm craype-ivybridge
-  module rm craype
   module rm cray-libsci
   module rm papi
   module rm cmake
@@ -42,7 +47,6 @@ if (-e /opt/modules/default/init/csh) then
   module rm esmf
 endif
 
-module load craype/2.5.0
 module load craype-ivybridge
 module load cray-libsci/13.0.3
 module load pmi/5.0.10-1.0000.11050.0.0.ari
