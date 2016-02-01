@@ -77,8 +77,10 @@ class EntryID(GenericXML):
         else:
             nodes = self.get_node("entry",{"id":vid})
             if(len(nodes) == 0):
-                return GenericXML.get_value(self,vid)
-            node = nodes[0]
+                val = GenericXML.get_value(self,vid,resolved)
+                return val
+            else:
+                node = nodes[0]
 
         if(attribute is not None):
             valnodes = self.get_node("value",attribute)
@@ -91,7 +93,10 @@ class EntryID(GenericXML):
 
         if(val is None):
             """ if all else fails """
-            val = GenericXML.get_value(self,vid)
+            val = GenericXML.get_value(self,vid,resolved)
+
+        if(resolved):
+            val = self.get_resolved_value(val)
 
         return val
 

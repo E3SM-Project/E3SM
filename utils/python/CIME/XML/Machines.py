@@ -19,8 +19,7 @@ class Machines(GenericXML):
         if(infile is None):
             if(files is None):
                 files = Files()
-            infile = files.get_resolved_value(
-                files.get_value('MACHINES_SPEC_FILE'))
+            infile = files.get_value('MACHINES_SPEC_FILE',resolved=True)
         logging.info("Open file "+infile)
         GenericXML.__init__(self,infile)
         self.machine = None
