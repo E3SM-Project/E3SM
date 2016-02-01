@@ -1231,6 +1231,20 @@
     <PES_LEVEL>2cmp</PES_LEVEL>
 </pes>
 
+<!-- We use less number of tasks for the acme dev tests (this allows us to fit
+     all tests in the cetus queue, i.e., < 1024 node hrs) --->
+<pes MACH="cetus" TEST="^.+$">
+<NTASKS_ATM>64</NTASKS_ATM> <NTHRDS_ATM>16</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
+<NTASKS_LND>64</NTASKS_LND> <NTHRDS_LND>16</NTHRDS_LND> <ROOTPE_LND>0</ROOTPE_LND>
+<NTASKS_ICE>64</NTASKS_ICE> <NTHRDS_ICE>16</NTHRDS_ICE> <ROOTPE_ICE>0</ROOTPE_ICE>
+<NTASKS_ROF>64</NTASKS_ROF> <NTHRDS_ROF>16</NTHRDS_ROF> <ROOTPE_ROF>0</ROOTPE_ROF>
+<NTASKS_OCN>64</NTASKS_OCN> <NTHRDS_OCN>16</NTHRDS_OCN> <ROOTPE_OCN>0</ROOTPE_OCN>
+<NTASKS_GLC>64</NTASKS_GLC> <NTHRDS_GLC>16</NTHRDS_GLC> <ROOTPE_GLC>0</ROOTPE_GLC> <NINST_GLC>1</NINST_GLC>
+<NTASKS_WAV>64</NTASKS_WAV> <NTHRDS_WAV>16</NTHRDS_WAV> <ROOTPE_WAV>0</ROOTPE_WAV> <NINST_WAV>1</NINST_WAV>
+<NTASKS_CPL>64</NTASKS_CPL> <NTHRDS_CPL>16</NTHRDS_CPL> <ROOTPE_CPL>0</ROOTPE_CPL>
+<PES_LEVEL>1m</PES_LEVEL>
+</pes>
+
 <!-- -----------------------------------------------------------------------------
   tasks/thread setup - special case - GRID for CLM single-point regional grids
   These ONLY can be used for I compsets CCSM_LCOMPSET=DATM.+CLM
