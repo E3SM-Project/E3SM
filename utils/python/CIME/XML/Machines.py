@@ -86,6 +86,10 @@ class Machines(GenericXML):
                 node = nodes[0]
                 expect(node is not None,"No match found for %s in machine %s" % (name,self.name))
                 value = node.text
+                # HACK! TODO FIXME
+                if (name == "batch_system"):
+                    value = node.attrib["type"]
+
         if(value is None):
             """ if all else fails """
             value = GenericXML.get_value(self,name)
