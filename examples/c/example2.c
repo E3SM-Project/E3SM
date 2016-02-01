@@ -21,6 +21,7 @@
  * </pre>
  */
 
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -437,6 +438,8 @@ int main(int argc, char* argv[])
     /** Needed for command line processing. */
     int c;
 
+    int ret;
+
     /* Parse command line. */
     while ((c = getopt(argc, argv, "v")) != -1)
 	switch (c)
@@ -450,7 +453,6 @@ int main(int argc, char* argv[])
 
 #ifdef TIMING    
     /* Initialize the GPTL timing library. */
-    int ret;
     if ((ret = GPTLinitialize ()))
 	return ret;
 #endif    
