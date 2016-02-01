@@ -53,7 +53,7 @@ class RunUnitTests(unittest.TestCase):
 
     def test_resolve_variable_name(self):
         files = Files()
-        machinefile = files.get_value("MACHINES_SPEC_FILE",True)
+        machinefile = files.get_value("MACHINES_SPEC_FILE",resolved=True)
         self.assertTrue(os.path.isfile(machinefile),
                         msg="Path did not resolve to existing file %s" % machinefile)
 
@@ -319,8 +319,8 @@ class TestCreateTestCommon(unittest.TestCase):
         self._unset_proxy       = setup_proxy()
         self._baseline_name     = "fake_testing_only_%s" % CIME.utils.get_utc_timestamp()
         self._machine           = machine.probe_machine_name()
-        self._baseline_area     = machine.get_value("CCSM_BASELINE",True)
-        self._testroot          = machine.get_value("CESMSCRATCHROOT",True)
+        self._baseline_area     = machine.get_value("CCSM_BASELINE",resolved=True)
+        self._testroot          = machine.get_value("CESMSCRATCHROOT",resolved=True)
         self._jenkins_root      = os.path.join(self._testroot, "jenkins")
         self._compiler          = machine.get_default_compiler()
 
@@ -614,7 +614,7 @@ class TestBlessTestResults(TestCreateTestCommon):
         # Change baseline
         machobj = Machines()
         machobj.probe_machine_name()
-        baseline_area = machobj.get_value("CCSM_BASELINE",True)
+        baseline_area = machobj.get_value("CCSM_BASELINE",resolved=True)
         compiler      = machobj.get_default_compiler()
         baseline_glob = glob.glob(os.path.join(baseline_area, compiler, self._baseline_name, "%s*" % self._test_name))
         self.assertEqual(len(baseline_glob), 1, msg="Expected one match, got:\n%s" % "\n".join(baseline_glob))

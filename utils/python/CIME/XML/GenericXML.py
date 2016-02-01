@@ -81,7 +81,7 @@ class GenericXML:
             root = self.root
         self.tree.insert(root, node)
 
-    def get_value(self, item):
+    def get_value(self, item,resolved=False):
         """
         get_value is expected to be defined by the derived classes, if you get here it is an error.
         """
@@ -94,6 +94,8 @@ class GenericXML:
 
         if (result is None):
             logging.info("No value available for item '%s'" % item)
+        elif(resolved):
+            result = self.get_resolved_value(result)
 
         return result
 
