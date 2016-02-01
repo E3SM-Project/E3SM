@@ -120,12 +120,9 @@ def get_test_suite(suite, machine=None, compiler=None):
     else:
         machobj.set_machine(machine)
     if(compiler is None):
-        compiler = machobj.get_default_compiler()
-    else:
-        if(machobj.is_valid_compiler(compiler)):
-            machobj.set_value('COMPILER',compiler)
-        else:
-            expect(FALSE,"Compiler %s not supported for machine %s" %(compiler,machine))
+        compiler = machine.get_default_compiler()
+    expect(machine.is_valid_compiler(compiler),"Compiler %s not valid for machine %s" %
+           (compiler,machine))
 
     inherits_from, tests_raw = _TEST_SUITES[suite]
     tests = []

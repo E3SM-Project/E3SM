@@ -159,19 +159,19 @@ class TestWaitForTests(unittest.TestCase):
             shutil.move(DART_CONFIG, DART_BACKUP)
 
     ###########################################################################
-#    def tearDown(self):
+    def tearDown(self):
     ###########################################################################
-#        shutil.rmtree(self._testdir_all_pass)
-#        shutil.rmtree(self._testdir_with_fail)
-#        shutil.rmtree(self._testdir_unfinished)
+        shutil.rmtree(self._testdir_all_pass)
+        shutil.rmtree(self._testdir_with_fail)
+        shutil.rmtree(self._testdir_unfinished)
 
-#        kill_subprocesses()
+        kill_subprocesses()
 
-#        if (self._unset_proxy):
-#            del os.environ["http_proxy"]
+        if (self._unset_proxy):
+            del os.environ["http_proxy"]
 
-#        if (os.path.exists(DART_BACKUP)):
-#            shutil.move(DART_BACKUP, DART_CONFIG)
+        if (os.path.exists(DART_BACKUP)):
+            shutil.move(DART_BACKUP, DART_CONFIG)
 
     ###########################################################################
     def simple_test(self, testdir, expected_results, extra_args=""):
@@ -329,26 +329,26 @@ class TestCreateTestCommon(unittest.TestCase):
             shutil.move(DART_CONFIG, DART_BACKUP)
 
     ###########################################################################
-#    def tearDown(self):
+    def tearDown(self):
     ###########################################################################
-#        kill_subprocesses()
+        kill_subprocesses()
 
-#        if (self._unset_proxy):
-#            del os.environ["http_proxy"]
+        if (self._unset_proxy):
+            del os.environ["http_proxy"]
 
-#        baselines = os.path.join(self._baseline_area, self._compiler, self._baseline_name)
-#        if (os.path.isdir(baselines)):
-#            shutil.rmtree(baselines)
+        baselines = os.path.join(self._baseline_area, self._compiler, self._baseline_name)
+        if (os.path.isdir(baselines)):
+            shutil.rmtree(baselines)
 
-#        for root in [self._testroot, self._jenkins_root]:
-#            for test_id in ["master", self._baseline_name]:
-#                for leftover in glob.glob(os.path.join(root, "*%s*/" % test_id)):
-#                    shutil.rmtree(leftover)
-#                for leftover in glob.glob(os.path.join(root, "*%s*" % test_id)):
-#                    os.remove(leftover)
+        for root in [self._testroot, self._jenkins_root]:
+            for test_id in ["master", self._baseline_name]:
+                for leftover in glob.glob(os.path.join(root, "*%s*/" % test_id)):
+                    shutil.rmtree(leftover)
+                for leftover in glob.glob(os.path.join(root, "*%s*" % test_id)):
+                    os.remove(leftover)
 
-#        if (os.path.exists(DART_BACKUP)):
-#            shutil.move(DART_BACKUP, DART_CONFIG)
+        if (os.path.exists(DART_BACKUP)):
+            shutil.move(DART_BACKUP, DART_CONFIG)
 
 ###############################################################################
 class TestCreateTest(TestCreateTestCommon):
@@ -480,7 +480,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
-        ct = CreateTest(tests, test_id=test_id)
+        ct = CreateTest(tests, self._machine, test_id=test_id)
 
         build_fail_test = tests[0]
         run_fail_test   = tests[1]
