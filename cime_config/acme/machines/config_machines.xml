@@ -395,7 +395,7 @@
       </arguments>
     </mpirun>
     <module_system type="module">
-      <init_path lang="perl">usr/share/Modules/init/perl.pm</init_path>
+      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
       <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
       <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
       <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
@@ -415,47 +415,73 @@
 </machine>
 
 <machine MACH="skybridge">
-         <DESC>SNL clust</DESC>
-         <NODENAME_REGEX>skybridge-login</NODENAME_REGEX>
-         <PROXY>wwwproxy.sandia.gov:80</PROXY>
-         <TESTS>acme_integration</TESTS>
-	 <COMPILERS>intel</COMPILERS>
-	 <MPILIBS>openmpi,mpi-serial</MPILIBS>
-         <OS>LINUX</OS>
-         <CESMSCRATCHROOT>/gscratch/$USER/acme_scratch/skybridge</CESMSCRATCHROOT>
-         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
-         <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
-         <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
-         <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
-         <CCSM_BASELINE>/projects/ccsm/ccsm_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/projects/ccsm/cprnc/build/cprnc</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
-         <BATCHQUERY>qstat</BATCHQUERY>
-         <BATCHSUBMIT>sbatch</BATCHSUBMIT>
-         <BATCHREDIRECT></BATCHREDIRECT>
-         <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
-         <GMAKE_J>4</GMAKE_J>
-         <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-	 <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
-         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-         <batch_system type="slurm" version="x.y">
-           <queues>
-             <queue jobmin="1" jobmax="480" default="true">ec</queue>
-           </queues>
-           <walltimes>
-             <walltime default="true">0:50:00</walltime>
-             <walltime ccsm_estcost="0">1:50:00</walltime>
-             <walltime ccsm_estcost="1">5:00:00</walltime>
-           </walltimes>
-         </batch_system>
-         <mpirun mpilib="default">
-           <executable>mpirun</executable>
-           <arguments>
-             <arg name="num_tasks"> -np {{ num_tasks }}</arg>
-             <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
-           </arguments>
-         </mpirun>
+  <DESC>SNL clust</DESC>
+  <NODENAME_REGEX>skybridge-login</NODENAME_REGEX>
+  <PROXY>wwwproxy.sandia.gov:80</PROXY>
+  <TESTS>acme_integration</TESTS>
+  <COMPILERS>intel</COMPILERS>
+  <MPILIBS>openmpi,mpi-serial</MPILIBS>
+  <OS>LINUX</OS>
+  <CESMSCRATCHROOT>/gscratch/$USER/acme_scratch/skybridge</CESMSCRATCHROOT>
+  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+  <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
+  <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+  <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>               <!-- complete path to a short term archiving directory -->
+  <DOUT_L_MSROOT>USERDEFINED_optional_run</DOUT_L_MSROOT>           <!-- complete path to a long term archiving directory -->
+  <CCSM_BASELINE>/projects/ccsm/ccsm_baselines</CCSM_BASELINE>
+  <CCSM_CPRNC>/projects/ccsm/cprnc/build/cprnc</CCSM_CPRNC>                <!-- path to the cprnc tool used to compare netcdf history files in testing -->
+  <BATCHQUERY>qstat</BATCHQUERY>
+  <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+  <BATCHREDIRECT></BATCHREDIRECT>
+  <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
+  <GMAKE_J>4</GMAKE_J>
+  <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+  <PES_PER_NODE>8</PES_PER_NODE>
+  <PIO_BUFFER_SIZE_LIMIT>1</PIO_BUFFER_SIZE_LIMIT>
+  <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+  <batch_system type="slurm" version="x.y">
+    <queues>
+      <queue jobmin="1" jobmax="480" default="true">ec</queue>
+    </queues>
+    <walltimes>
+      <walltime default="true">0:50:00</walltime>
+      <walltime ccsm_estcost="0">1:50:00</walltime>
+      <walltime ccsm_estcost="1">5:00:00</walltime>
+    </walltimes>
+  </batch_system>
+  <mpirun mpilib="default">
+    <executable>mpirun</executable>
+    <arguments>
+      <arg name="num_tasks"> -np {{ num_tasks }}</arg>
+      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+    </arguments>
+  </mpirun>
+  <module_system type="module">
+    <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+    <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+    <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+    <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+    <cmd_path lang="csh">module</cmd_path>
+    <cmd_path lang="sh">module</cmd_path>
+    <modules>
+      <command name="purge"/>
+      <command name="unload">intel</command>
+      <command name="unload">openmpi-intel</command>
+      <command name="use">/projects/ccsm/tpl/modules/skybridge/acme/tpl</command>
+      <command name="load">gnu/4.9.2</command>
+      <command name="load">intel/intel-15.0.3.187</command>
+      <command name="load">openmpi-intel/1.6</command>
+      <command name="load">libraries/intel-mkl-15.0.2.164</command>
+      <command name="load">libraries/intel-mkl-15.0.2.164</command>
+      <command name="load">hdf5/1.8.11/intel/13.0.1/openmpi/1.6.5</command>
+      <command name="load">netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5</command>
+    </modules>
+  </module_system>
+  <environment_variables>
+    <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env>
+    <env name="PNETCDFROOT">$SEMS_NETCDF_ROOT</env>
+  </environment_variables>
 </machine>
 
 <machine MACH="redsky">
