@@ -173,6 +173,13 @@
       REAL pi, rhopart(npart)
       REAL polpart(npart,5)  ! polynomial coefficients derived for spherical and non spherical
                              ! particules
+      
+      real, parameter :: TAUTOT_SMALL = 1.0e-8 ! smallest layer tau value in calculating beta_perp
+                                               ! to avoid divide by zero error.
+                                               ! This value works for double precision
+      real, parameter :: TAUTOT_MAX = -0.5*log(tiny(TAUTOT_SMALL)) ! maximum allowed attenuation from
+                                           ! one layer to TOA in beta_perp calculations to avoid 
+                                           ! float underflow
 
 !   grid-box variables:
       REAL rad_part(npoints,nlev,npart)
@@ -533,14 +540,24 @@ pnorm_perp_tot(:,:)=0
             & / (1.-exp(-2.0*tautot_ice(:,nlev)))
 
       DO k= nlev-1, 1, -1
-        tautot_lay_ice(:) = tautot_ice(:,k)-tautot_ice(:,k+1)
-        WHERE (tautot_lay_ice(:).GT.0.)
-         beta_perp_ice(:,k) = pnorm_perp_ice(:,k)/ EXP(-2.0*tautot_ice(:,k+1)) * (2.*tautot_lay_ice(:)) &
-            & / (1.-exp(-2.0*tautot_lay_ice(:)))
+         tautot_lay_ice(:) = tautot_ice(:,k)-tautot_ice(:,k+1)
+         where (tautot_ice(:,k+1) .LT. TAUTOT_MAX)
+            WHERE (tautot_lay_ice(:).GT.TAUTOT_SMALL)
+               ! Need to compare against TAUTOT_SMALL because when
+               ! tautot_lay_ice gets small enough, value of 
+               ! [(1.-exp(-2.0*tautot_lay_ice(:))] approaches zero
+               beta_perp_ice(:,k) = pnorm_perp_ice(:,k)/ EXP(-2.0*tautot_ice(:,k+1)) * (2.*tautot_lay_ice(:)) &
+                                    & / (1.-exp(-2.0*tautot_lay_ice(:)))
 
-        ELSEWHERE
-         beta_perp_ice(:,k)=pnorm_perp_ice(:,k)/EXP(-2.0*tautot_ice(:,k+1))
-        END WHERE
+            ELSEWHERE
+               beta_perp_ice(:,k)=pnorm_perp_ice(:,k)/EXP(-2.0*tautot_ice(:,k+1))
+            END WHERE
+         else where
+            ! If attenuation to TOA is too large, exp(-2.0*tautot_ice(:,k+1))
+            ! goes to zero and the above code has a divide by zero error. A
+            ! simple fix is to set the beta values of such layers to zero.
+            beta_perp_ice(:,k) = 0
+         end where
       ENDDO
 
 !     Liquid only
@@ -550,13 +567,23 @@ pnorm_perp_tot(:,:)=0
 
       DO k= nlev-1, 1, -1
           tautot_lay_liq(:) = tautot_liq(:,k)-tautot_liq(:,k+1) 
-        WHERE (tautot_lay_liq(:).GT.0.)
-         beta_perp_liq(:,k) = pnorm_perp_liq(:,k)/ EXP(-2.0*tautot_liq(:,k+1)) * (2.*tautot_lay_liq(:)) &
-            & / (1.-exp(-2.0*tautot_lay_liq(:)))
-
-        ELSEWHERE
-         beta_perp_liq(:,k)=pnorm_perp_liq(:,k)/EXP(-2.0*tautot_liq(:,k+1))
-        END WHERE
+          where (tautot_liq(:,k+1) .LT. TAUTOT_MAX) 
+              WHERE (tautot_lay_liq(:).GT. TAUTOT_SMALL)
+              ! Need to compare against TAUTOT_SMALL because when
+              ! tautot_lay_liq gets small enough, value of 
+              ! [(1.-exp(-2.0*tautot_lay_liq(:))] approaches zero
+                 beta_perp_liq(:,k) = pnorm_perp_liq(:,k)/ EXP(-2.0*tautot_liq(:,k+1)) * (2.*tautot_lay_liq(:)) &
+                                      & / (1.-exp(-2.0*tautot_lay_liq(:)))
+   
+              ELSEWHERE
+                 beta_perp_liq(:,k)=pnorm_perp_liq(:,k)/EXP(-2.0*tautot_liq(:,k+1))
+              END WHERE
+           else where
+              ! If attenuation to TOA is too large, exp(-2.0*tautot_liq(:,k+1))
+              ! goes to zero and the above code has a divide by zero error. A
+              ! simple fix is to set the beta values of such layers to zero.
+              beta_perp_liq(:,k) = 0
+           end where
       ENDDO
 
 
