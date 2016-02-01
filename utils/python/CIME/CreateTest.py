@@ -236,7 +236,7 @@ class CreateTest(object):
                 self._log_output(test_name, "Missing testmod file '%s'" % test_mod_file)
                 return False
             create_newcase_cmd += " -user_mods_dir %s" % test_mod_file
-        logging.warn("Calling create_newcase: "+create_newcase_cmd)
+        logging.info("Calling create_newcase: "+create_newcase_cmd)
         return self._run_phase_command(test_name, create_newcase_cmd, CREATE_NEWCASE_PHASE)
 
     ###########################################################################
@@ -275,7 +275,7 @@ class CreateTest(object):
         xml_bridge_cmd += " GENERATE_BASELINE,%s" % ("TRUE" if self._generate else "FALSE")
         xml_bridge_cmd += " COMPARE_BASELINE,%s" % ("TRUE" if self._compare else "FALSE")
 
-        xml_bridge_cmd += " CCSM_CPRNC,%s" % self._machobj.get_value("CCSM_CPRNC")
+        xml_bridge_cmd += " CCSM_CPRNC,%s" % self._machobj.get_resolved_value(self._machobj.get_value("CCSM_CPRNC"))
 
         return self._run_phase_command(test_name, xml_bridge_cmd, XML_PHASE)
 

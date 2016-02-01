@@ -17,6 +17,11 @@ DART_BACKUP = "temp_dart_backup"
 
 logging.basicConfig()
 
+#def load_tests(loader, tests, ignore):
+#    tests.addTests(doctest.DocTestSuite(os.path.join))
+#    return tests
+
+
 ###############################################################################
 class RunUnitTests(unittest.TestCase):
 ###############################################################################
@@ -48,13 +53,18 @@ class RunUnitTests(unittest.TestCase):
 
     def test_resolve_variable_name(self):
         files = Files()
-        machinefile = files.get_resolved_value(files.get_value("MACHINES_SPEC_FILE"))
+        machinefile = files.get_value("MACHINES_SPEC_FILE",True)
         self.assertTrue(os.path.isfile(machinefile),
                         msg="Path did not resolve to existing file %s" % machinefile)
 
-    def test_CIMEutils_unit_test(self):
-        # A little different since this is a library, not an executable
-        stat, output, _ = run_cmd("python -m doctest CIME.utils.py 2>&1", ok_to_fail=True, from_dir=os.path.join(LIB_DIR,"CIME"))
+    def test_CIME_unit_tests(self):
+        # Find and run all the unit tests in the CIME directory tree
+        stat, output, _ = run_cmd("python -m doctest *.py 2>&1", ok_to_fail=True, from_dir=os.path.join(LIB_DIR,"CIME"))
+        self.assertEqual(stat, 0, msg=output)
+
+    def test_CIMEXML_unit_tests(self):
+        # Find and run all the unit tests in the CIME directory tree
+        stat, output, _ = run_cmd("python -m doctest *.py 2>&1", ok_to_fail=True, from_dir=os.path.join(LIB_DIR,"CIME","XML"))
         self.assertEqual(stat, 0, msg=output)
 
 ###############################################################################
@@ -149,19 +159,19 @@ class TestWaitForTests(unittest.TestCase):
             shutil.move(DART_CONFIG, DART_BACKUP)
 
     ###########################################################################
-    def tearDown(self):
+#    def tearDown(self):
     ###########################################################################
-        shutil.rmtree(self._testdir_all_pass)
-        shutil.rmtree(self._testdir_with_fail)
-        shutil.rmtree(self._testdir_unfinished)
+#        shutil.rmtree(self._testdir_all_pass)
+#        shutil.rmtree(self._testdir_with_fail)
+#        shutil.rmtree(self._testdir_unfinished)
 
-        kill_subprocesses()
+#        kill_subprocesses()
 
-        if (self._unset_proxy):
-            del os.environ["http_proxy"]
+#        if (self._unset_proxy):
+#            del os.environ["http_proxy"]
 
-        if (os.path.exists(DART_BACKUP)):
-            shutil.move(DART_BACKUP, DART_CONFIG)
+#        if (os.path.exists(DART_BACKUP)):
+#            shutil.move(DART_BACKUP, DART_CONFIG)
 
     ###########################################################################
     def simple_test(self, testdir, expected_results, extra_args=""):
@@ -309,8 +319,8 @@ class TestCreateTestCommon(unittest.TestCase):
         self._unset_proxy       = setup_proxy()
         self._baseline_name     = "fake_testing_only_%s" % CIME.utils.get_utc_timestamp()
         self._machine           = machine.probe_machine_name()
-        self._baseline_area     = machine.get_value("CCSM_BASELINE")
-        self._testroot          = machine.get_resolved_value(machine.get_value("CESMSCRATCHROOT"))
+        self._baseline_area     = machine.get_value("CCSM_BASELINE",True)
+        self._testroot          = machine.get_value("CESMSCRATCHROOT",True)
         self._jenkins_root      = os.path.join(self._testroot, "jenkins")
         self._compiler          = machine.get_default_compiler()
 
@@ -319,26 +329,26 @@ class TestCreateTestCommon(unittest.TestCase):
             shutil.move(DART_CONFIG, DART_BACKUP)
 
     ###########################################################################
-    def tearDown(self):
+#    def tearDown(self):
     ###########################################################################
-        kill_subprocesses()
+#        kill_subprocesses()
 
-        if (self._unset_proxy):
-            del os.environ["http_proxy"]
+#        if (self._unset_proxy):
+#            del os.environ["http_proxy"]
 
-        baselines = os.path.join(self._baseline_area, self._compiler, self._baseline_name)
-        if (os.path.isdir(baselines)):
-            shutil.rmtree(baselines)
+#        baselines = os.path.join(self._baseline_area, self._compiler, self._baseline_name)
+#        if (os.path.isdir(baselines)):
+#            shutil.rmtree(baselines)
 
-        for root in [self._testroot, self._jenkins_root]:
-            for test_id in ["master", self._baseline_name]:
-                for leftover in glob.glob(os.path.join(root, "*%s*/" % test_id)):
-                    shutil.rmtree(leftover)
-                for leftover in glob.glob(os.path.join(root, "*%s*" % test_id)):
-                    os.remove(leftover)
+#        for root in [self._testroot, self._jenkins_root]:
+#            for test_id in ["master", self._baseline_name]:
+#                for leftover in glob.glob(os.path.join(root, "*%s*/" % test_id)):
+#                    shutil.rmtree(leftover)
+#                for leftover in glob.glob(os.path.join(root, "*%s*" % test_id)):
+#                    os.remove(leftover)
 
-        if (os.path.exists(DART_BACKUP)):
-            shutil.move(DART_BACKUP, DART_CONFIG)
+#        if (os.path.exists(DART_BACKUP)):
+#            shutil.move(DART_BACKUP, DART_CONFIG)
 
 ###############################################################################
 class TestCreateTest(TestCreateTestCommon):
@@ -604,7 +614,7 @@ class TestBlessTestResults(TestCreateTestCommon):
         # Change baseline
         machobj = Machines()
         machobj.probe_machine_name()
-        baseline_area = machobj.get_value("CCSM_BASELINE")
+        baseline_area = machobj.get_value("CCSM_BASELINE",True)
         compiler      = machobj.get_default_compiler()
         baseline_glob = glob.glob(os.path.join(baseline_area, compiler, self._baseline_name, "%s*" % self._test_name))
         self.assertEqual(len(baseline_glob), 1, msg="Expected one match, got:\n%s" % "\n".join(baseline_glob))

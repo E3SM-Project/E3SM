@@ -9,10 +9,16 @@ from Files import Files
 from CIME.utils import expect
 
 class Machines(GenericXML):
-    def __init__(self,infile=None):
-        """ initialize an object """
+    def __init__(self,infile=None,files=None):
+        """
+        initialize an object
+        if a filename is provided it will be used,
+        otherwise if a files object is provided it will be used
+        otherwise create a files object from default values
+        """
         if(infile is None):
-            files = Files()
+            if(files is None):
+                files = Files()
             infile = files.get_resolved_value(
                 files.get_value('MACHINES_SPEC_FILE'))
         logging.info("Open file "+infile)
@@ -65,6 +71,14 @@ class Machines(GenericXML):
     def set_machine(self,machine):
         """
         Sets the machine block in the Machines object
+
+        >>> machobj = Machines()
+        >>> machobj.set_machine('melvin')
+        'melvin'
+        >>> machobj.set_machine('trump')
+        Traceback (most recent call last):
+        ...
+        SystemExit: ERROR: No machine trump found
         """
         if(self.machine is not None and self.name is not machine):
             self.machine = None
@@ -72,8 +86,9 @@ class Machines(GenericXML):
         expect(mach_nodes, "No machine %s found" % machine)
         self.machine = mach_nodes[0]
         self.name = machine
+        return machine
 
-    def get_value(self,name):
+    def get_value(self,name,resolved=False):
         """
         Get Value of fields in the config_machines.xml file
         """
@@ -96,6 +111,8 @@ class Machines(GenericXML):
         if(value is None):
             """ if all else fails """
             value = GenericXML.get_value(self,name)
+        if(resolved):
+            value = self.get_resolved_value(value)
         return value
 
     def get_field_from_list(self, listname, reqval=None):
@@ -132,6 +149,17 @@ class Machines(GenericXML):
     def is_valid_compiler(self,compiler):
         """
         Check the compiler is valid for the current machine
+
+        >>> machobj = Machines()
+        >>> name = machobj.set_machine('edison')
+        >>> machobj.get_default_compiler()
+        'intel'
+        >>> machobj.is_valid_compiler('cray')
+        True
+        >>> machobj.is_valid_compiler('nag')
+        Traceback (most recent call last):
+        ...
+        SystemExit: ERROR: COMPILERS value nag not supported for machine edison
         """
         if(self.get_field_from_list('COMPILERS',compiler) is not None):
             return True
@@ -140,6 +168,11 @@ class Machines(GenericXML):
     def is_valid_MPIlib(self, mpilib):
         """
         Check the MPILIB is valid for the current machine
+
+        >>> machobj = Machines()
+        >>> name = machobj.probe_machine_name()
+        >>> machobj.is_valid_MPIlib('mpi-serial')
+        True
         """
         if(self.get_field_from_list('MPILIBS',mpilib) is not None):
             return True
@@ -148,6 +181,17 @@ class Machines(GenericXML):
     def has_batch_system(self):
         """
         Return if this machine has a batch system
+
+        >>> machobj = Machines()
+        >>> machobj.set_machine('edison')
+        'edison'
+        >>> machobj.has_batch_system()
+        True
+        >>> machobj.set_machine('melvin')
+        'melvin'
+        >>> machobj.has_batch_system()
+        False
         """
+
         batch_system = self.get_node("batch_system")
         return not (batch_system is None or batch_system[0].get('type') == "none")
