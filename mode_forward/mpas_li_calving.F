@@ -243,7 +243,9 @@ module li_calving
          ! initialize
          calvingThickness = 0.0_RKIND
 
-         ! compute calving based on the calving_config option
+         ! compute calvingThickness based on the calving_config option
+         ! the calvingThickness field gets applied to the thickness state field
+         ! after this if-construct
 
          if (trim(config_calving) == 'none') then
 
@@ -392,16 +394,8 @@ module li_calving
 
             ! Calve ice in ocean cells that are not on the protected inactive margin
 
-            where (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. .not. config_data_calving )
-
+            where (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND)
                calvingThickness = thickness * calvingFraction
-               thickness = thickness - calvingThickness
-
-            ! Allow for 'data' calving option that does NOT update geometry
-            elsewhere (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND .and. config_data_calving )
-
-               calvingThickness = thickness * calvingFraction
-
             endwhere
 
             ! clean up
@@ -453,13 +447,7 @@ module li_calving
             ! Calve ice where specified by the calving law.
             ! If the calving timescale > 0, then will calve only a fraction of the thickness in each calving cell.
 
-            where (calvingLawMask == 1 .and. .not. config_data_calving )
-
-               calvingThickness = thickness * calvingFraction
-               thickness = thickness - calvingThickness
-
-            ! Allow for 'data' calving option that does NOT update geometry
-            elsewhere (calvingLawMask == 1 .and. config_data_calving )
+            where (calvingLawMask == 1)
 
                calvingThickness = thickness * calvingFraction
 
@@ -468,6 +456,14 @@ module li_calving
             call mpas_deallocate_scratch_field(calvingLawMaskField, .true.)
 
          endif   ! config_calving
+
+         ! Now that calvingThickness has been calculated, apply it to the thickness field,
+         ! unless we are in a data calving mode.  In data calving mode we just calculate
+         ! what should be calved but don't actually calve it.
+         if (.not. config_data_calving) then
+            thickness = thickness - calvingThickness
+         endif
+
 
          ! Optionally, print a list of cells with calving
             
