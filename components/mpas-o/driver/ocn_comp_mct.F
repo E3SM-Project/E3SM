@@ -1740,6 +1740,7 @@ contains
    type (mpas_pool_type), pointer :: meshPool,             &
                                      forcingPool,          &
                                      statePool,            &
+                                     tracersPool,          &
                                      ecosysSeaIceCoupling, &
                                      DMSSeaIceCoupling,    &
                                      MacroMoleculesSeaIceCoupling
@@ -1759,8 +1760,11 @@ contains
  
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, avgSSHGradient, &
                                                  oceanSurfacePhytoC, &
-                                                 oceanSurfaceDOC
+                                                 oceanSurfaceDOC, layerThickness
 
+   real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+
+   integer, pointer :: indexTemperature
    logical, pointer :: frazilIceActive,          &
                        config_use_ecosysTracers, &
                        config_use_DMSTracers,    &
@@ -1781,6 +1785,8 @@ contains
      call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
      call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
 
+     call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+
      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
      call mpas_pool_get_dimension(forcingPool, 'index_avgTemperatureSurfaceValue', index_temperatureSurfaceValue)
@@ -1789,6 +1795,10 @@ contains
      call mpas_pool_get_dimension(forcingPool, 'index_avgSurfaceVelocityMeridional', index_avgMeridionalSurfaceVelocity)
      call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientZonal', index_avgZonalSSHGradient)
      call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientMeridional', index_avgMeridionalSSHGradient)
+
+     call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+     call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+     call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
 
      call mpas_pool_get_array(forcingPool, 'avgTracersSurfaceValue', avgTracersSurfaceValue)
      call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
@@ -1839,6 +1849,10 @@ contains
        o2x_o % rAttr(index_o2x_So_dhdx, n) = avgSSHGradient(index_avgZonalSSHGradient, i)
        o2x_o % rAttr(index_o2x_So_dhdy, n) = avgSSHGradient(index_avgMeridionalSSHGradient, i)
        if ( frazilIceActive ) then
+          ! negative when frazil ice can be melted
+          seaIceEnergy(i) = min( rho_sw * cp_sw * layerThickness(1, i) * ( -1.8_RKIND &
+                          - activeTracers(indexTemperature, 1, i) ), 0.0_RKIND )
+
           o2x_o % rAttr(index_o2x_Fioo_meltp, n)  = seaIceEnergy(i) / ocn_cpl_dt
           o2x_o % rAttr(index_o2x_Fioo_frazil, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
 
