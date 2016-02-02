@@ -40,6 +40,8 @@ module test_core
       character(len=*), intent(out) :: startTimeStamp
    
       type (MPAS_Time_Type) :: startTime
+      type (mpas_pool_type), pointer :: modelPool
+      character (len=StrKIND), pointer :: xtime
       integer :: iErr
 
 
@@ -55,6 +57,10 @@ module test_core
       !
       startTime = mpas_get_clock_time(clock, MPAS_START_TIME, iErr)
       call mpas_get_time(startTime, dateTimeString=startTimeStamp) 
+
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'model', modelPool)
+      call mpas_pool_get_array(modelPool, 'xtime', xtime)
+      xtime = startTimeStamp
 
       call mpas_stream_mgr_read(domain % streamManager, ierr=iErr)
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=iErr)
