@@ -324,6 +324,7 @@ class TestCreateTestCommon(unittest.TestCase):
         self._jenkins_root      = os.path.join(self._testroot, "jenkins")
         self._compiler          = machine.get_default_compiler()
         self._hasbatch       = machine.has_batch_system()
+        self._compiler        = machine.get_value('COMPILER')
         # wait_for_tests could blow away our dart config, need to back it up
         if (os.path.exists(DART_CONFIG)):
             shutil.move(DART_CONFIG, DART_BACKUP)
@@ -378,8 +379,8 @@ class TestCreateTest(TestCreateTestCommon):
    fake_item = 'fake'
    fake = .true.
 /"""
-        baseline_area = CIME.utils.get_machine_info("CCSM_BASELINE")
-        compiler      = CIME.utils.get_machine_info("COMPILER")
+        baseline_area = self._baseline_area
+        compiler      = self._compiler
         baseline_glob = glob.glob(os.path.join(baseline_area, compiler, self._baseline_name, "TEST*"))
         self.assertEqual(len(baseline_glob), 3, msg="Expected three matches, got:\n%s" % "\n".join(baseline_glob))
 
