@@ -27,23 +27,13 @@ try:
     if nVertLevels != 5:
          print 'nVerLevels in the supplied file was ', nVertLevels, '.  5 levels are typically used with this test case.'
     # Get variables
-    xCell = gridfile.variables['xCell']
-    yCell = gridfile.variables['yCell']
-    xEdge = gridfile.variables['xEdge']
-    yEdge = gridfile.variables['yEdge']
-    xVertex = gridfile.variables['xVertex']
-    yVertex = gridfile.variables['yVertex']
-    thickness = gridfile.variables['thickness']
-    bedTopography = gridfile.variables['bedTopography']
-    beta = gridfile.variables['beta']
-    layerThicknessFractions = gridfile.variables['layerThicknessFractions']
-    temperature = gridfile.variables['temperature']
-    cellsOnCell= gridfile.variables['cellsOnCell']
-    # Get b.c. variables
-    kinbcmask = gridfile.variables['dirichletVelocityMask']
-    uvel = gridfile.variables['uReconstructX']
-    vvel = gridfile.variables['uReconstructY']
-    SMB = gridfile.variables['sfcMassBal']
+    xCell = gridfile.variables['xCell'][:]
+    yCell = gridfile.variables['yCell'][:]
+    xEdge = gridfile.variables['xEdge'][:]
+    yEdge = gridfile.variables['yEdge'][:]
+    xVertex = gridfile.variables['xVertex'][:]
+    yVertex = gridfile.variables['yVertex'][:]
+    cellsOnCell= gridfile.variables['cellsOnCell'][:]
 except:
     sys.exit('Error: The grid file specified is either missing or lacking needed dimensions/variables.')
 
@@ -72,6 +62,13 @@ if xVertex[:].min() == 0.0:
    xVertex[:] = xVertex[:] + xShift
    yVertex[:] = yVertex[:] + yShift
 
+   gridfile.variables['xCell'][:] = xCell[:]
+   gridfile.variables['yCell'][:] = yCell[:]
+   gridfile.variables['xEdge'][:] = xEdge[:]
+   gridfile.variables['yEdge'][:] = yEdge[:]
+   gridfile.variables['xVertex'][:] = xVertex[:]
+   gridfile.variables['yVertex'][:] = yVertex[:]
+
 #   print np.array(sorted(list(set(yCell[:]))))
 
 # Make a square ice mass
@@ -92,14 +89,23 @@ for c in range(nCells):
 # but remove the south side extension
 shelfMaskWithGround[ np.nonzero(yCell[:]<0.0)[0] ] = 0
 
+thickness = gridfile.variables['thickness'][:]
 thickness[:] = 0.0  # initialize to 0.0
 thickness[0, np.nonzero(shelfMaskWithGround==1)[0] ] = 500.0
+gridfile.variables['thickness'][:] = thickness[:]
+gridfile.sync()
+del thickness
 
 # flat bed at -2000 m everywhere but grounded around the edges
+bedTopography = gridfile.variables['bedTopography'][0,:]
 bedTopography[np.nonzero(shelfMask==1)[0]] = -2000.0
 bedTopography[np.nonzero(shelfMask==0)[0]] = -440.0
+gridfile.variables['bedTopography'][0,:] = bedTopography[:]
+gridfile.sync()
+del bedTopography
 
 # Dirichlet velocity mask
+kinbcmask = gridfile.variables['dirichletVelocityMask'][:]
 kinbcmask[:] = 0
 #kinbcmask[:, np.nonzero(shelfMask==0)[0], :] = 1
 kinbcmask[:, np.nonzero(np.logical_and(shelfMask==0, shelfMaskWithGround==1))[0], :] = 1
@@ -109,24 +115,31 @@ theSides = Counter(xCell[ np.nonzero(kinbcmask[0,:])[0] ]).most_common(4)  # nee
 for side in theSides:
     thesideindices = np.nonzero( np.logical_and( xCell[:] == side[0] , yCell[:] <= 0.0 ) )[0]
     kinbcmask[:, thesideindices] = 1
+gridfile.variables['dirichletVelocityMask'][:] = kinbcmask[:]
+gridfile.sync()
+del kinbcmask
 
 # Dirichlet velocity values
-uvel[:] = 0
-vvel[:] = 0
+gridfile.variables['uReconstructX'][:] = 0.0
+gridfile.variables['uReconstructY'][:] = 0.0
 
 # beta is 0 everywhere (strictly speaking it should not be necessary to set this)
-beta[:] = 0.
+gridfile.variables['beta'][:] = 0.0
 
 # constant, arbitrary temperature, degrees C
-temperature[:] = 273.15 
+gridfile.variables['temperature'][:] = 273.15
 
 # Setup layerThicknessFractions
-layerThicknessFractions[:] = 1.0 / nVertLevels
+gridfile.variables['layerThicknessFractions'][:] = 1.0 / nVertLevels
 
 # boundary conditions
+SMB = gridfile.variables['sfcMassBal'][:]
 SMB[:] = 0.0  # m/yr
 # Convert from units of m/yr to kg/m2/s using an assumed ice density
 SMB[:] = SMB[:] *910.0/(3600.0*24.0*365.0)
+gridfile.variables['sfcMassBal'][:] = SMB[:]
+gridfile.sync()
+del SMB
 
 gridfile.close()
 

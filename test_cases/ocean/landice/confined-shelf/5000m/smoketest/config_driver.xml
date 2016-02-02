@@ -1,4 +1,4 @@
-<driver_script name="setup_and_run_circular_shelf_testcase.py">
+<driver_script name="setup_and_run_confined_shelf_testcase.py">
         <case name="setup_mesh">
                 <step executable="./setup_mesh.py" quiet="false" pre_message=" * Running setup_mesh step" post_message="     Complete"/>
         </case>
