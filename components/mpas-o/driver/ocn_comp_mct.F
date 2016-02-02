@@ -1486,7 +1486,8 @@ contains
            rainFlux(i) = x2o_o % rAttr(index_x2o_Faxa_rain, n)
         end if
         if ( seaSurfacePressureField % isActive ) then
-           seaSurfacePressure(i) = x2o_o % rAttr(index_x2o_Sa_pslv, n)
+           seaSurfacePressure(i) = x2o_o % rAttr(index_x2o_Sa_pslv,   n) &
+                                 + x2o_o % rAttr(index_x2o_Si_bpress, n)
         end if
         if ( iceFractionField % isActive ) then
            iceFraction(i) = x2o_o % rAttr(index_x2o_Si_ifrac, n)
