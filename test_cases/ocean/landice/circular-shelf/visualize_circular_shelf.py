@@ -31,13 +31,15 @@ f = NetCDFFile(options.filename,'r')
 times = f.variables['xtime']
 thickness = f.variables['thickness']
 dcedge = f.variables['dcEdge']
-bedTopography = f.variables['bedTopography']  # not needed
+try:
+   bedTopography = f.variables['bedTopography']  # not needed
+except:
+   print "bedTopography not in file.  Continuing without it."
 xCell = f.variables['xCell'][:]/1000.0
 yCell = f.variables['yCell'][:]/1000.0
 xEdge = f.variables['xEdge'][:]/1000.0
 yEdge = f.variables['yEdge'][:]/1000.0
 angleEdge = f.variables['angleEdge']
-temperature = f.variables['temperature']
 lowerSurface = f.variables['lowerSurface']
 upperSurface = f.variables['upperSurface']
 normalVelocity = f.variables['normalVelocity']
@@ -98,7 +100,10 @@ cbar.set_label('speed (m/yr)', rotation=270)
 
 plt.plot(xCell[indXsectIce], upperSurface[time_slice, indXsectIce], 'ro-', label="Upper surface")
 plt.plot(xCell[indXsectIce], lowerSurface[time_slice, indXsectIce], 'bo-', label="Lower surface")
-plt.plot(xCell[indXsect], bedTopography[indXsect], 'go-', label="Bed topography")
+try:
+   plt.plot(xCell[indXsect], bedTopography[indXsect], 'go-', label="Bed topography")
+except:
+   print "Skipping plotting of bedTopography."
 plt.plot(xCell[indXsect], xCell[indXsect] * 0.0, ':k', label="sea level")
 plt.legend(loc='best')
 plt.title('cross-section at y=0' )
