@@ -943,21 +943,22 @@ contains
        ! Print state and movie output
        ! ========================================
     end if  ! runtype
-
+#endif
 !$OMP MASTER
-    tl%nstep0=2   ! This will be the first full leapfrog step
+    tl%nstep0=2                   ! compute diagnostics starting with step 2 if LEAPFROG
+    if (tstep_type>0) tl%nstep0=1 ! compute diagnostics starting with step 1 if RK
     if (runtype==1) then
-       tl%nstep0=tl%nstep+1            ! restart run: first step = first first full leapfrog step
+       tl%nstep0=tl%nstep+1       ! compute diagnostics after 1st step, leapfrog or RK
     endif
     if (runtype==2) then
        ! branch run
        ! reset time counters to zero since timestep may have changed
-       nEndStep = nEndStep-tl%nstep ! restart set this to nmax + tl%nstep
+       nEndStep = nEndStep-tl%nstep ! used by standalone HOMME.  restart code set this to nmax + tl%nstep
        tl%nstep=0
     endif
 !$OMP END MASTER
 !$OMP BARRIER
-#endif
+
 
     ! For new runs, and branch runs, convert state variable to (Qdp)
     ! because initial conditon reads in Q, not Qdp
