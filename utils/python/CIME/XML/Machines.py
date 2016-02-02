@@ -19,7 +19,7 @@ class Machines(GenericXML):
         if(infile is None):
             if(files is None):
                 files = Files()
-            infile = files.get_value('MACHINES_SPEC_FILE',resolved=True)
+            infile = files.get_value('MACHINES_SPEC_FILE')
         logging.info("Open file "+infile)
         GenericXML.__init__(self,infile)
         self.machine = None
@@ -87,7 +87,7 @@ class Machines(GenericXML):
         self.name = machine
         return machine
 
-    def get_value(self,name,resolved=False):
+    def get_value(self,name,resolved=True):
         """
         Get Value of fields in the config_machines.xml file
         """
@@ -194,3 +194,15 @@ class Machines(GenericXML):
 
         batch_system = self.get_node("batch_system")
         return not (batch_system is None or batch_system[0].get('type') == "none")
+
+    def get_batch_system_type(self):
+        """
+        Return the batch system using on this machine
+
+        >>> machobj = Machines()
+        >>> name = machobj.set_machine('edison')
+        >>> machobj.get_batch_system_type()
+        'slurm'
+        """
+        batch_system = self.get_node("batch_system")
+        return batch_system[0].get('type')

@@ -116,12 +116,12 @@ def get_test_suite(suite, machine=None, compiler=None):
     expect(suite in _TEST_SUITES, "Unknown test suite: '%s'" % suite)
     machobj = Machines()
     if(machine is None):
-        machobj.probe_machine_name()
+        machine = machobj.probe_machine_name()
     else:
         machobj.set_machine(machine)
     if(compiler is None):
         compiler = machine.get_default_compiler()
-    expect(machine.is_valid_compiler(compiler),"Compiler %s not valid for machine %s" %
+    expect(machobj.is_valid_compiler(compiler),"Compiler %s not valid for machine %s" %
            (compiler,machine))
 
     inherits_from, tests_raw = _TEST_SUITES[suite]
@@ -183,6 +183,10 @@ def get_full_test_names(testargs, machine, compiler):
     >>> get_full_test_names(["acme_tiny", "^NCK.f19_g16_rx1.A"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu']
     """
+    import pdb
+    pdb.set_trace()
+    expect(machine is not None,"Must define a machine")
+    expect(compiler is not None,"Must define a compiler")
     acme_test_suites = get_test_suites()
 
     tests_to_run = set()

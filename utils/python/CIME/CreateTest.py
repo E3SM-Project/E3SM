@@ -7,7 +7,7 @@ import sys, os, shutil, traceback, stat, glob, threading, time, thread, logging
 import compare_namelists
 import CIME.utils
 from CIME.utils import expect, run_cmd
-import wait_for_tests
+import wait_for_tests, update_acme_tests
 from wait_for_tests import TEST_PASS_STATUS, TEST_FAIL_STATUS, TEST_PENDING_STATUS, TEST_STATUS_FILENAME, NAMELIST_FAIL_STATUS, RUN_PHASE, NAMELIST_PHASE
 from CIME.XML.Machines import Machines
 
@@ -25,15 +25,14 @@ class CreateTest(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self, machobj, test_names,
+    def __init__(self, test_names,
                  no_run=False, no_build=False, no_batch=None,
                  test_root=None, test_id=None,
-                 compiler=None,
+                 machine_name=None,compiler=None,
                  baseline_root=None, baseline_name=None,
                  clean=False,compare=False, generate=False, namelists_only=False,
                  project=None, parallel_jobs=None):
     ###########################################################################
-        self._machobj = machobj
         self._cime_root      = CIME.utils.get_cime_root()
         self._test_names     = test_names
         self._no_build       = no_build
@@ -43,16 +42,62 @@ class CreateTest(object):
         self._test_id        = test_id
         self._project        = project
         self._baseline_root  = baseline_root
-        self._baseline_name  = None
+        self._baseline_name  = baseline_name
         self._compiler       = compiler
         self._clean          = clean
         self._compare        = compare
         self._generate       = generate
         self._namelists_only = namelists_only
-        self._parallel_jobs  = parallel_jobs
+        self._parallel_jobs = parallel_jobs
+        self._machobj = Machines()
+        if(machine_name is not None):
+            self._machobj.set_machine(machine_name)
+        else:
+            machine_name = self._machobj.probe_machine_name()
+
+        if(self._test_root is None):
+            self._test_root = self._machobj.get_value("CESMSCRATCHROOT")
+        if(self._baseline_root is None):
+            self._baseline_root = self._machobj.get_value("CCSM_BASELINE")
+        # Convert path-based options to absolute paths
+        self._test_root = os.path.abspath(self._test_root)
+        self._baseline_root = os.path.abspath(self._baseline_root)
+
+        if(self._compiler is None):
+            self._compiler = self._machobj.get_default_compiler()
+        expect(self._machobj.is_valid_compiler(self._compiler),"Compiler %s not valid for machine %s" %
+           (self._compiler,machine_name))
+
+        if(self._project is None):
+            self._project = CIME.utils.get_project()
+            if(self._project is None):
+                self._project = self._machobj.get_value('PROJECT')
 
         if (self._project is not None):
             self._baseline_root = self._baseline_root.replace("$PROJECT", self._project)
+
+        if(self._parallel_jobs is None):
+            self._parallel_jobs  = min(len(test_names), int(self._machobj.get_value("MAX_TASKS_PER_NODE")))
+
+        if (not self._no_batch and not self._machobj.has_batch_system()):
+            self._no_batch = True
+
+        expect(len(test_names) > 0, "No tests to run")
+        test_names = update_acme_tests.get_full_test_names(test_names, machine_name, self._compiler)
+        print "HERE test_names are "+test_names
+
+        # If comparing against baselines
+        if (self._compare or self._generate):
+            expect(self._baseline_name is not None,
+               "Must provide baseline name if doing compare/generate")
+        self._baseline_name = os.path.join(self._compiler, self._baseline_name)
+        if (self._compare):
+            full_baseline_dir = os.path.join(self._baseline_root, self._baseline_name)
+            expect(os.path.isdir(full_baseline_dir),
+                   "Missing baseline comparison directory %s" % full_baseline_dir)
+
+
+
 
         # Oversubscribe by 1/4
 

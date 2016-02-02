@@ -12,7 +12,7 @@ class Files(EntryID):
         initialize an object
 
         >>> files = Files()
-        >>> files.get_value('CASEFILE_HEADERS')
+        >>> files.get_value('CASEFILE_HEADERS',resolved=False)
         '$CIMEROOT/cime_config/config_headers.xml'
         """
         infile = os.path.join(get_cime_root(),"cime_config",get_model(),"config_files.xml")

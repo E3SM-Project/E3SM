@@ -64,7 +64,7 @@ class EntryID(GenericXML):
             node.set("value",value)
         return val
 
-    def get_value(self, vid, attribute=None, resolved=False):
+    def get_value(self, vid, attribute=None, resolved=True):
         """
         get a value for entry with id attribute vid.
         or from the values field if the attribute argument is provided

@@ -609,11 +609,10 @@ class TestBlessTestResults(TestCreateTestCommon):
     def test_create_test_rebless_namelist(self):
     ###############################################################################
         # Generate some namelist baselines
-        self.simple_test(True, "-g -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
-
-        # Change baseline
         machobj = Machines()
         machobj.probe_machine_name()
+        self.simple_test(True, "-g -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
+        # Change baseline
         baseline_area = machobj.get_value("CCSM_BASELINE",resolved=True)
         compiler      = machobj.get_default_compiler()
         baseline_glob = glob.glob(os.path.join(baseline_area, compiler, self._baseline_name, "%s*" % self._test_name))
@@ -638,63 +637,65 @@ class TestBlessTestResults(TestCreateTestCommon):
 # CIME xml files.
 
 # ###############################################################################
-# class TestUpdateACMETests(unittest.TestCase):
+class TestUpdateACMETests(unittest.TestCase):
 # ###############################################################################
 
 #     ###########################################################################
-#     def setUp(self):
+    def setUp(self):
 #     ###########################################################################
 #         # Grab all active tests
-#         self._testlist_allactive = os.path.join(CIME.utils.get_model_config_root(), "allactive", "testlist_allactive.xml")
-#         shutil.copy2(self._testlist_allactive, ".")
+        self._testlist_allactive = os.path.join(CIME.utils.get_model_config_root(), "allactive", "testlist_allactive.xml")
+        shutil.copy2(self._testlist_allactive, ".")
 
 #     ###########################################################################
-#     def tearDown(self):
+    def tearDown(self):
 #     ###########################################################################
-#         shutil.copy2("testlist_allactive.xml", self._testlist_allactive)
+        shutil.copy2("testlist_allactive.xml", self._testlist_allactive)
 
 #     ###########################################################################
-#     def test_update_acme_tests(self):
+    def test_update_acme_tests(self):
 #     ###########################################################################
 #         # Add some testable stuff to acme tests
-#         update_acme_tests._TEST_SUITES["acme_tiny"] = \
-#             (None, (("ERS.f19_g16_rx1.A", "jgftestmodtest/test_mod"),
-#                     ("NCK.f19_g16_rx1.A", "jgftestmodtest/test_mod"))
-#              )
+#       update_acme_tests._TEST_SUITES["acme_tiny"] = \
+#            (None, (("ERS.f19_g16_rx1.A", "jgftestmodtest/test_mod"),
+#                    ("NCK.f19_g16_rx1.A", "jgftestmodtest/test_mod"))
+#             )
 
-#         try:
-#             update_acme_tests.update_acme_tests(os.path.basename(self._testlist_allactive), update_acme_tests.get_test_suites())
-#         except:
-#             traceback.print_tb(sys.exc_info()[2])
-#             self.assertTrue(False, str(sys.exc_info()[1]))
+        try:
+            update_acme_tests.update_acme_tests(os.path.basename(self._testlist_allactive), update_acme_tests.get_test_suites())
+        except:
+            traceback.print_tb(sys.exc_info()[2])
+            self.assertTrue(False, str(sys.exc_info()[1]))
 
-#         stat = run_cmd("grep 'jgftestmodtest/test_mod' %s" % os.path.basename(self._testlist_allactive), ok_to_fail=True)[0]
-#         self.assertEqual(stat, 0, msg="update_acme_tests did not update XML")
+        stat = run_cmd("grep 'jgftestmodtest/test_mod' %s" % os.path.basename(self._testlist_allactive), ok_to_fail=True)[0]
+        self.assertEqual(stat, 0, msg="update_acme_tests did not update XML")
 
 #     ###########################################################################
-#     def test_update_acme_tests_test_mods(self):
+    def test_update_acme_tests_test_mods(self):
 #     ###########################################################################
-#         machine = "melvin"
-#         not_my_machine = "%s_jgftest" % machine
+        machine = "melvin"
+        not_my_machine = "%s_jgftest" % machine
 
 #         # Add some testable stuff to acme tests
-#         update_acme_tests._TEST_SUITES["acme_tiny"] = \
-#             (None, (("ERS.f19_g16_rx1.A", "test_mod"),
-#                     ("ERS.f19_g16_rx1.B", "test_mod", machine),
-#                     ("ERS.f19_g16_rx1.C", "test_mod", (machine, not_my_machine)),
-#                     ("ERS.f19_g16_rx1.D", "test_mod", not_my_machine),
-#                     "ERS.f19_g16_rx1.E")
-#              )
+        update_acme_tests._TEST_SUITES["acme_tiny"] = \
+            (None, (("ERS.f19_g16_rx1.A", "test_mod"),
+                    ("ERS.f19_g16_rx1.B", "test_mod", machine),
+                    ("ERS.f19_g16_rx1.C", "test_mod", (machine, not_my_machine)),
+                    ("ERS.f19_g16_rx1.D", "test_mod", not_my_machine),
+                    "ERS.f19_g16_rx1.E")
+             )
 
-#         tests = update_acme_tests.get_test_suite("acme_tiny", compiler="gnu")
 
-#         self.assertEqual(5, len(tests))
-#         self.assertTrue("ERS.f19_g16_rx1.A.melvin_gnu.test_mod" in tests)
-#         self.assertTrue("ERS.f19_g16_rx1.B.melvin_gnu.test_mod" in tests)
-#         self.assertTrue("ERS.f19_g16_rx1.C.melvin_gnu.test_mod" in tests)
-#         self.assertTrue("ERS.f19_g16_rx1.D.melvin_gnu" in tests)
-#         self.assertTrue("ERS.f19_g16_rx1.E.melvin_gnu" in tests)
+        tests = update_acme_tests.get_test_suite("acme_tiny", compiler="gnu")
+
+        self.assertEqual(5, len(tests))
+        self.assertTrue("ERS.f19_g16_rx1.A.melvin_gnu.test_mod" in tests)
+        self.assertTrue("ERS.f19_g16_rx1.B.melvin_gnu.test_mod" in tests)
+        self.assertTrue("ERS.f19_g16_rx1.C.melvin_gnu.test_mod" in tests)
+        self.assertTrue("ERS.f19_g16_rx1.D.melvin_gnu" in tests)
+        self.assertTrue("ERS.f19_g16_rx1.E.melvin_gnu" in tests)
 
 
 if (__name__ == "__main__"):
     unittest.main(verbosity=2)
+###########################################################################
