@@ -7,7 +7,6 @@
                 <option name="config_velocity_solver">"FO"</option>
                 <option name="config_ice_density">910.0</option>
                 <option name="config_dynamic_thickness">10.0</option>
-                <option name="config_default_flowParamA">4.3905866e-24</option>
         </namelist>
 
         <streams>
@@ -30,7 +29,6 @@
                                 <member name="uReconstructY" type="var"/>
                                 <member name="lowerSurface" type="var"/>
                                 <member name="upperSurface" type="var"/>
-                                <member name="bedTopography" type="var"/>
                         </add_contents>
                 </stream>
 
