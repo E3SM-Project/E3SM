@@ -144,6 +144,7 @@ module basic_tests
       integer,          dimension(1) :: dims
       type(io_desc_t)                :: iodesc_nCells
       integer                        :: pio_dim
+      integer :: unlimdimid
       type(var_desc_t)               :: pio_var
 
       err_msg = "no_error"
@@ -260,7 +261,6 @@ module basic_tests
         data_buffer = -1
         call PIO_read_darray(pio_file, pio_var, iodesc_nCells,  data_buffer, ret_val)
         call mpi_barrier(MPI_COMM_WORLD,ret_val)
-        
 
         if (ret_val.ne.PIO_NOERR) then
           ! Error in PIO_read_darray
@@ -276,6 +276,13 @@ module basic_tests
           call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
 
+        ret_val = PIO_inq_unlimdim(pio_file, unlimdimid)
+        if(unlimdimid /= -1) then
+           err_msg = "Error in inq_unlimdim"
+           call PIO_closefile(pio_file)
+           print *,__FILE__,__LINE__,iotype, trim(err_msg)
+           call mpi_abort(MPI_COMM_WORLD,0,ret_val)
+        end if
 
         
 

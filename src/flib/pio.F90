@@ -47,6 +47,7 @@ module pio
        PIO_inq_dimid ,      &
        PIO_inq_dimname ,  &
        PIO_inq_dimlen ,    &
+       PIO_inq_unlimdim, &
        PIO_def_dim   ,        &
        PIO_def_var   ,        &
        PIO_redef     ,          &

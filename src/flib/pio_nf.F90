@@ -26,6 +26,7 @@ module pio_nf
        pio_inq_dimname                                      , &
        pio_inq_dimlen                                       , &
        pio_inq_dimid                                        , &
+       pio_inq_unlimdim                                , &
        pio_inquire                                          , &
        pio_enddef                                           , &
        pio_redef
@@ -509,7 +510,7 @@ contains
        end function PIOc_inq_unlimdim
     end interface
     ierr = PIOc_inq_unlimdim(ncid                           ,unlimdim)
-    unlimdim=unlimdim+1
+    if(unlimdim>=0) unlimdim=unlimdim+1
   end function inq_unlimdim_id
 
 !>

@@ -149,14 +149,12 @@ Program pio_unit_test_driver
         if (master_task) write(*,"(3x,A,1x)") "testing PIO_createfile..."
         call test_create(test_id, err_msg)
         call parse(err_msg, fail_cnt)
-           print *,__FILE__,__LINE__,fail_cnt
 
         ! test_open()
 
         if (master_task) write(*,"(3x,A,I3)", advance="no") "testing PIO_openfile...",test_id
         call test_open(test_id, err_msg)
         call parse(err_msg, fail_cnt)
-           print *,__FILE__,__LINE__,fail_cnt
 
         call mpi_barrier(mpi_comm_world,ierr)
         ! netcdf-specific tests
@@ -165,12 +163,10 @@ Program pio_unit_test_driver
            if (master_task) write(*,"(3x,A,1x)", advance="no") "testing PIO_redef..."
            call test_redef(test_id, err_msg)
            call parse(err_msg, fail_cnt)
-           print *,__FILE__,__LINE__,fail_cnt
 
            if (master_task) write(*,"(3x,A,1x)", advance="no") "testing PIO_enddef..."
            call test_enddef(test_id, err_msg)
            call parse(err_msg, fail_cnt)
-           print *,__FILE__,__LINE__,fail_cnt
         end if
 
 
