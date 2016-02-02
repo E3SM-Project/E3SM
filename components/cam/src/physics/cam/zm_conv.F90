@@ -3273,9 +3273,9 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 ! set "launching" level(mx) to be at maximum moist static energy.
 ! search for this level stops at planetary boundary layer top.
 !
-#ifdef PERGRO
    bot_layer = pver -1
    if(pver == 30)bot_layer = pver !BSINGH - special case for 30 layer model
+#ifdef PERGRO
    do k = bot_layer,msg + 1,-1
       do i = 1,ncol
          hmn(i) = cp*t(i,k) + grav*z(i,k) + rl*q(i,k)
@@ -3290,7 +3290,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
       end do
    end do
 #else
-   do k = pver,msg + 1,-1
+   do k = bot_layer,msg + 1,-1
       do i = 1,ncol
          hmn(i) = cp*t(i,k) + grav*z(i,k) + rl*q(i,k)
          if (k >= nint(pblt(i)) .and. k <= lon(i) .and. hmn(i) > hmax(i)) then
