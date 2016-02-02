@@ -20,7 +20,7 @@ if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh
 
   module rm craype
-  module load craype/2.5.0
+  module load craype/2.4.2
 
   module rm PrgEnv-intel
   module rm PrgEnv-cray
@@ -47,7 +47,7 @@ if (-e /opt/modules/default/init/csh) then
 endif
 
 module load craype-haswell
-module load pmi/5.0.10-1.0000.11050.0.0.ari
+module load pmi/5.0.9-1.0000.10911.0.0.ari
 
 if ( $COMPILER == "intel" ) then
     module load PrgEnv-intel/5.2.82
