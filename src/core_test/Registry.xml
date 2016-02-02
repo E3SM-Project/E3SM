@@ -121,6 +121,7 @@
 		<var name="cellPersistReal3D" type="real" dimensions="vertexDegree maxEdges nCells"/>
 		<var name="cellPersistReal2D" type="real" dimensions="maxEdges nCells"/>
 		<var name="cellPersistReal1D" type="real" dimensions="nCells"/>
+		<var name="cellPersistReal0D" type="real" dimensions=""/>
 		<var name="cellPersistInt3D" type="integer" dimensions="vertexDegree maxEdges nCells"/>
 		<var name="cellPersistInt2D" type="integer" dimensions="maxEdges nCells"/>
 		<var name="cellPersistInt1D" type="integer" dimensions="nCells"/>
