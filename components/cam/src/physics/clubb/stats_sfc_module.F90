@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: stats_sfc_module.F90 7315 2014-09-30 20:49:54Z schemena@uwm.edu $
+! $Id: stats_sfc_module.F90 7561 2015-03-20 04:58:59Z bmg2@uwm.edu $
 !===============================================================================
 module stats_sfc_module
 
@@ -46,7 +46,8 @@ module stats_sfc_module
         iz_inversion, & 
         iprecip_rate_sfc, & 
         irain_flux_sfc, & 
-        irrm_sfc
+        irrm_sfc, &
+        iprecip_frac_tol
 
     use stats_variables, only: &
         iwpthlp_sfc, &
@@ -236,6 +237,17 @@ module stats_sfc_module
         call stat_assign( var_index=irrm_sfc, var_name="rrm_sfc", &
              var_description="Surface rain water mixing ratio [kg/kg]", var_units="kg/kg", &
              l_silhs=.false., grid_kind=stats_sfc )
+        k = k + 1
+
+      case ('precip_frac_tol')
+        iprecip_frac_tol = k
+
+        call stat_assign( var_index=iprecip_frac_tol, &
+                          var_name="precip_frac_tol", &
+                          var_description="Smallest allowable precipitation " &
+                          // "fraction when hydrometeors are present [-]", &
+                          var_units="-", &
+                          l_silhs=.false., grid_kind=stats_sfc )
         k = k + 1
 
       case ( 'morr_snow_rate' )

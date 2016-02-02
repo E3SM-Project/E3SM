@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: variables_prognostic_module.F90 7309 2014-09-20 17:06:28Z betlej@uwm.edu $
+! $Id: variables_prognostic_module.F90 7544 2015-03-15 06:01:40Z bmg2@uwm.edu $
 !===============================================================================
 module variables_prognostic_module
 
@@ -48,8 +48,6 @@ module variables_prognostic_module
     rtp2,    & ! rt'^2                         [(kg/kg)^2]
     thlp2,   & ! thl'^2                        [K^2]
     rtpthlp    ! rt'thl'                       [kg/kg K]
-!$omp   threadprivate( temp_clubb)
-
 #else
   real( kind = core_rknd ), target, allocatable, dimension(:), public :: & 
     um,      & ! u wind                        [m/s]
@@ -157,7 +155,6 @@ module variables_prognostic_module
 #ifdef GFDL
   real( kind = core_rknd ), target, allocatable, dimension( : , : , : ), public :: & 
     RH_crit  ! critical relative humidity for droplet and ice nucleation
-!$omp   threadprivate(RH_crit)
 #endif
 !<--- h1g, 2010-06-16
 
@@ -360,79 +357,83 @@ module variables_prognostic_module
     sigma_sqd_w           = 0.0_core_rknd ! PDF width parameter (momentum levels)
 
     ! Variables for PDF closure scheme
-    pdf_params(:)%w_1              = zero
-    pdf_params(:)%w_2              = zero
-    pdf_params(:)%varnce_w_1       = zero
-    pdf_params(:)%varnce_w_2       = zero
-    pdf_params(:)%rt_1              = zero
-    pdf_params(:)%rt_2              = zero
-    pdf_params(:)%varnce_rt_1       = zero
-    pdf_params(:)%varnce_rt_2       = zero
-    pdf_params(:)%thl_1             = zero
-    pdf_params(:)%thl_2             = zero
-    pdf_params(:)%varnce_thl_1      = zero
-    pdf_params(:)%varnce_thl_2      = zero
-    pdf_params(:)%rrtthl           = zero
-    pdf_params(:)%alpha_thl        = zero
-    pdf_params(:)%alpha_rt         = zero
-    pdf_params(:)%crt_1             = zero
-    pdf_params(:)%crt_2             = zero
-    pdf_params(:)%cthl_1            = zero
-    pdf_params(:)%cthl_2            = zero
-    pdf_params(:)%chi_1            = zero
-    pdf_params(:)%chi_2            = zero
-    pdf_params(:)%stdev_chi_1      = zero
-    pdf_params(:)%stdev_chi_2      = zero
-    pdf_params(:)%stdev_eta_1      = zero
-    pdf_params(:)%stdev_eta_2      = zero
-    pdf_params(:)%covar_chi_eta_1  = zero
-    pdf_params(:)%covar_chi_eta_2  = zero
-    pdf_params(:)%corr_chi_eta_1   = zero
-    pdf_params(:)%corr_chi_eta_2   = zero
-    pdf_params(:)%rsatl_1           = zero
-    pdf_params(:)%rsatl_2           = zero
-    pdf_params(:)%rc_1              = zero
-    pdf_params(:)%rc_2              = zero
-    pdf_params(:)%cloud_frac_1     = zero
-    pdf_params(:)%cloud_frac_2     = zero
-    pdf_params(:)%mixt_frac        = zero
+    pdf_params(:)%w_1                 = zero
+    pdf_params(:)%w_2                 = zero
+    pdf_params(:)%varnce_w_1          = zero
+    pdf_params(:)%varnce_w_2          = zero
+    pdf_params(:)%rt_1                = zero
+    pdf_params(:)%rt_2                = zero
+    pdf_params(:)%varnce_rt_1         = zero
+    pdf_params(:)%varnce_rt_2         = zero
+    pdf_params(:)%thl_1               = zero
+    pdf_params(:)%thl_2               = zero
+    pdf_params(:)%varnce_thl_1        = zero
+    pdf_params(:)%varnce_thl_2        = zero
+    pdf_params(:)%rrtthl              = zero
+    pdf_params(:)%alpha_thl           = zero
+    pdf_params(:)%alpha_rt            = zero
+    pdf_params(:)%crt_1               = zero
+    pdf_params(:)%crt_2               = zero
+    pdf_params(:)%cthl_1              = zero
+    pdf_params(:)%cthl_2              = zero
+    pdf_params(:)%chi_1               = zero
+    pdf_params(:)%chi_2               = zero
+    pdf_params(:)%stdev_chi_1         = zero
+    pdf_params(:)%stdev_chi_2         = zero
+    pdf_params(:)%stdev_eta_1         = zero
+    pdf_params(:)%stdev_eta_2         = zero
+    pdf_params(:)%covar_chi_eta_1     = zero
+    pdf_params(:)%covar_chi_eta_2     = zero
+    pdf_params(:)%corr_chi_eta_1      = zero
+    pdf_params(:)%corr_chi_eta_2      = zero
+    pdf_params(:)%rsatl_1             = zero
+    pdf_params(:)%rsatl_2             = zero
+    pdf_params(:)%rc_1                = zero
+    pdf_params(:)%rc_2                = zero
+    pdf_params(:)%cloud_frac_1        = zero
+    pdf_params(:)%cloud_frac_2        = zero
+    pdf_params(:)%mixt_frac           = zero
+    pdf_params(:)%ice_supersat_frac_1 = zero
+    pdf_params(:)%ice_supersat_frac_2 = zero
 
-    pdf_params_frz(:)%w_1               = zero
-    pdf_params_frz(:)%w_2               = zero
-    pdf_params_frz(:)%varnce_w_1        = zero
-    pdf_params_frz(:)%varnce_w_2        = zero
-    pdf_params_frz(:)%rt_1              = zero
-    pdf_params_frz(:)%rt_2              = zero
-    pdf_params_frz(:)%varnce_rt_1       = zero
-    pdf_params_frz(:)%varnce_rt_2       = zero
-    pdf_params_frz(:)%thl_1             = zero
-    pdf_params_frz(:)%thl_2             = zero
-    pdf_params_frz(:)%varnce_thl_1      = zero
-    pdf_params_frz(:)%varnce_thl_2      = zero
-    pdf_params_frz(:)%rrtthl           = zero
-    pdf_params_frz(:)%alpha_thl        = zero
-    pdf_params_frz(:)%alpha_rt         = zero
-    pdf_params_frz(:)%crt_1             = zero
-    pdf_params_frz(:)%crt_2             = zero
-    pdf_params_frz(:)%cthl_1            = zero
-    pdf_params_frz(:)%cthl_2            = zero
-    pdf_params_frz(:)%chi_1            = zero
-    pdf_params_frz(:)%chi_2            = zero
-    pdf_params_frz(:)%stdev_chi_1      = zero
-    pdf_params_frz(:)%stdev_chi_2      = zero
-    pdf_params_frz(:)%stdev_eta_1      = zero
-    pdf_params_frz(:)%stdev_eta_2      = zero
-    pdf_params_frz(:)%covar_chi_eta_1  = zero
-    pdf_params_frz(:)%covar_chi_eta_2  = zero
-    pdf_params_frz(:)%corr_chi_eta_1    = zero
-    pdf_params_frz(:)%corr_chi_eta_2    = zero
+    pdf_params_frz(:)%w_1                 = zero
+    pdf_params_frz(:)%w_2                 = zero
+    pdf_params_frz(:)%varnce_w_1          = zero
+    pdf_params_frz(:)%varnce_w_2          = zero
+    pdf_params_frz(:)%rt_1                = zero
+    pdf_params_frz(:)%rt_2                = zero
+    pdf_params_frz(:)%varnce_rt_1         = zero
+    pdf_params_frz(:)%varnce_rt_2         = zero
+    pdf_params_frz(:)%thl_1               = zero
+    pdf_params_frz(:)%thl_2               = zero
+    pdf_params_frz(:)%varnce_thl_1        = zero
+    pdf_params_frz(:)%varnce_thl_2        = zero
+    pdf_params_frz(:)%rrtthl              = zero
+    pdf_params_frz(:)%alpha_thl           = zero
+    pdf_params_frz(:)%alpha_rt            = zero
+    pdf_params_frz(:)%crt_1               = zero
+    pdf_params_frz(:)%crt_2               = zero
+    pdf_params_frz(:)%cthl_1              = zero
+    pdf_params_frz(:)%cthl_2              = zero
+    pdf_params_frz(:)%chi_1               = zero
+    pdf_params_frz(:)%chi_2               = zero
+    pdf_params_frz(:)%stdev_chi_1         = zero
+    pdf_params_frz(:)%stdev_chi_2         = zero
+    pdf_params_frz(:)%stdev_eta_1         = zero
+    pdf_params_frz(:)%stdev_eta_2         = zero
+    pdf_params_frz(:)%covar_chi_eta_1     = zero
+    pdf_params_frz(:)%covar_chi_eta_2     = zero
+    pdf_params_frz(:)%corr_chi_eta_1      = zero
+    pdf_params_frz(:)%corr_chi_eta_2      = zero
     pdf_params_frz(:)%rsatl_1             = zero
     pdf_params_frz(:)%rsatl_2             = zero
-    pdf_params_frz(:)%rc_1              = zero
-    pdf_params_frz(:)%rc_2              = zero
-    pdf_params_frz(:)%cloud_frac_1      = zero
-    pdf_params_frz(:)%cloud_frac_2      = zero
-    pdf_params_frz(:)%mixt_frac        = zero
+    pdf_params_frz(:)%rc_1                = zero
+    pdf_params_frz(:)%rc_2                = zero
+    pdf_params_frz(:)%cloud_frac_1        = zero
+    pdf_params_frz(:)%cloud_frac_2        = zero
+    pdf_params_frz(:)%mixt_frac           = zero
+    pdf_params_frz(:)%ice_supersat_frac_1 = zero
+    pdf_params_frz(:)%ice_supersat_frac_2 = zero
 
     ! Surface fluxes
     wpthlp_sfc = 0.0_core_rknd

@@ -193,6 +193,11 @@ subroutine diag_init()
    end if
    call addfld ('TTEND_TOT   ','K/s' ,pver, 'A','Total temperature tendency'   ,phys_decomp)
   
+   ! Debugging negative water output fields
+   call addfld ('INEGCLPTEND ','kg/kg/s',pver, 'A', 'Cloud ice tendency due to clipping neg values after microp',phys_decomp)
+   call addfld ('LNEGCLPTEND ','kg/kg/s',pver, 'A', 'Cloud liq tendency due to clipping neg values after microp',phys_decomp)
+   call addfld ('VNEGCLPTEND ','kg/kg/s',pver, 'A', 'Vapor tendency due to clipping neg values after microp', phys_decomp)
+
    ! column burdens for all constituents except water vapor
    call constituent_burden_init
 

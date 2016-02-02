@@ -25,7 +25,7 @@ module endian
 
   private ! Default scope
   ! External
-  intrinsic :: selected_real_kind, selected_int_kind, ichar, transfer
+  intrinsic :: selected_int_kind, ichar, transfer
 
   ! Parameters
   integer, parameter :: &
@@ -92,7 +92,7 @@ module endian
 
     IMPLICIT NONE
 
-    REAL(KIND=selected_real_kind(6)), INTENT(INOUT):: realInOut      ! a single 32 bit, 4 byte
+    REAL(KIND=4), INTENT(INOUT):: realInOut      ! a single 32 bit, 4 byte
                                                    ! REAL data element
 !   Modified 8/1/05 
 !   I found transfer does not work on pgf90 when -r8 is used and the mold
@@ -138,12 +138,12 @@ module endian
     ! External
     intrinsic :: mvbits, transfer
 
-    real(kind=selected_real_kind(12)), intent(inout) :: realInOut   ! a single 64 bit, 8 byte
+    real(kind=8), intent(inout) :: realInOut   ! a single 64 bit, 8 byte
                                                    ! REAL data element
     ! Local variables (generic 64 bit INTEGER spaces):
 
-    integer(kind=selected_int_kind(13)) :: i_element
-    integer(kind=selected_int_kind(13)) :: i_element_br
+    integer(kind=8) :: i_element
+    integer(kind=8) :: i_element_br
 
 !-------------------------------------------------------------------------------
 

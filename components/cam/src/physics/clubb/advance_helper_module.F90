@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------
-! $Id: advance_helper_module.F90 7381 2014-11-11 23:59:39Z schemena@uwm.edu $
+! $Id: advance_helper_module.F90 7893 2015-08-26 19:03:58Z raut@uwm.edu $
 !===============================================================================
 module advance_helper_module
 
@@ -156,7 +156,7 @@ module advance_helper_module
   end subroutine set_boundary_conditions_rhs
 
   !===============================================================================
-  function calc_stability_correction( thlm, Lscale, em ) &
+  function calc_stability_correction( thvm, Lscale, em ) &
     result ( stability_correction )
       !
       ! Description:
@@ -168,6 +168,9 @@ module advance_helper_module
 
       use parameters_model, only: &
         T0 ! Variables(s)
+
+      use parameters_tunable, only: &
+        lambda0_stability_coef ! Variable(s)
 
       use constants_clubb, only: &
         zero, & ! Constant(s)
@@ -187,25 +190,18 @@ module advance_helper_module
       real( kind = core_rknd ), intent(in), dimension(gr%nz) :: &
         Lscale,          & ! Turbulent mixing length                   [m]
         em,              & ! Turbulent Kinetic Energy (TKE)            [m^2/s^2]
-        thlm               ! th_l (thermo. levels)                     [K]
+        thvm               ! th_l (thermo. levels)                     [K]
 
       ! Result
       real( kind = core_rknd ), dimension(gr%nz) :: &
         stability_correction
-
-      ! Local Variables
-      real( kind = core_rknd ) :: &
-        lambda0_stability_coef ! []
 
       real( kind = core_rknd ), dimension(gr%nz) :: &
         brunt_vaisala_freq, & !  []
         lambda0_stability
 
       !------------ Begin Code --------------
-      ! lambda0_stability_coef = 0.025_core_rknd
-      ! changed to 0.030 to provide a simulation similar to track02 simulation
-      lambda0_stability_coef = 0.030_core_rknd
-      brunt_vaisala_freq = ( grav / T0 ) * ddzt( thlm )
+      brunt_vaisala_freq = ( grav / thvm ) * ddzt( thvm )
       lambda0_stability = merge( lambda0_stability_coef, zero, brunt_vaisala_freq > zero )
 
       stability_correction = 1.0_core_rknd &

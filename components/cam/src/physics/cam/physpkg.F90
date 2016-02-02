@@ -1797,7 +1797,7 @@ subroutine tphysbc (ztodt,               &
     integer ierr
 
     integer  i,k,m                             ! Longitude, level, constituent indices
-    integer :: ixcldice, ixcldliq              ! constituent indices for cloud liquid and ice water.
+    integer :: ixcldice, ixcldliq, ixq         ! constituent indices for cloud liquid and ice water.
     ! for macro/micro co-substepping
     integer :: macmic_it                       ! iteration variables
     real(r8) :: cld_macmic_ztodt               ! modified timestep
@@ -1863,6 +1863,12 @@ subroutine tphysbc (ztodt,               &
     real(r8) :: flx_heat(pcols)
     type(check_tracers_data):: tracerint             ! energy integrals and cummulative boundary fluxes
     real(r8) :: zero_tracers(pcols,pcnst)
+    real(r8) :: preclipice(pcols,pver)         ! Debugging output to look at ice tendencies due to hard
+    real(r8) :: icecliptend(pcols,pver)        ! clipping negative values
+    real(r8) :: preclipliq(pcols,pver)
+    real(r8) :: liqcliptend(pcols,pver)
+    real(r8) :: preclipvap(pcols,pver)
+    real(r8) :: vapcliptend(pcols,pver)
 
     logical   :: lq(pcnst)
 
@@ -1931,6 +1937,10 @@ subroutine tphysbc (ztodt,               &
 
     nstep = get_nstep()
 
+    ! Initialize to zero
+    liqcliptend(:,:) = 0._r8
+    icecliptend(:,:) = 0._r8
+    vapcliptend(:,:) = 0._r8
 
     ! Associate pointers with physics buffer fields
     itim_old = pbuf_old_tim_idx()
@@ -1938,7 +1948,7 @@ subroutine tphysbc (ztodt,               &
     call pbuf_get_field(pbuf, ifld, cld, (/1,1,itim_old/),(/pcols,pver,1/))
 
 !<songxl 2011-09-20---------------------------
-!   if(trigmem)then
+    if(trigmem)then
 #ifdef USE_UNICON
 #else
       ifld = pbuf_get_index('TM1')
@@ -1946,7 +1956,7 @@ subroutine tphysbc (ztodt,               &
       ifld = pbuf_get_index('QM1')
       call pbuf_get_field(pbuf, ifld, qm1, (/1,1/),(/pcols,pver/))
 #endif
-!   endif
+    endif
 !>songxl 2011-09-20---------------------------
 
     call pbuf_get_field(pbuf, teout_idx, teout, (/1,itim_old/), (/pcols,1/))
@@ -1967,6 +1977,10 @@ subroutine tphysbc (ztodt,               &
     tend %dTdt(:ncol,:pver)  = 0._r8
     tend %dudt(:ncol,:pver)  = 0._r8
     tend %dvdt(:ncol,:pver)  = 0._r8
+
+    call cnst_get_ind('CLDLIQ', ixcldliq)
+    call cnst_get_ind('CLDICE', ixcldice)
+    call cnst_get_ind('Q', ixq)
 
     !
     ! Make sure that input tracers are all positive (otherwise,
@@ -2018,8 +2032,6 @@ if (l_bc_energy_fix) then
     ! Save state for convective tendency calculations.
     call diag_conv_tend_ini(state, pbuf)
 
-    call cnst_get_ind('CLDLIQ', ixcldliq)
-    call cnst_get_ind('CLDICE', ixcldice)
     qini     (:ncol,:pver) = state%q(:ncol,:pver,       1)
     cldliqini(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
     cldiceini(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
@@ -2344,6 +2356,21 @@ end if
           ! (see above note for macrophysics).
           call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
 
+          preclipliq(:ncol,:) = state%q(:ncol,:,ixcldliq)+(ptend%q(:ncol,:,ixcldliq)*ztodt)
+          preclipice(:ncol,:) = state%q(:ncol,:,ixcldice)+(ptend%q(:ncol,:,ixcldice)*ztodt)
+          preclipvap(:ncol,:) = state%q(:ncol,:,ixq)+(ptend%q(:ncol,:,ixq)*ztodt)
+          call physics_update(state, ptend, ztodt, tend, do_hole_fill=.true.)
+          vapcliptend(:ncol,:) = (state%q(:ncol,:,ixq)-preclipvap(:ncol,:))*rtdt
+          icecliptend(:ncol,:) = (state%q(:ncol,:,ixcldice)-preclipice(:ncol,:))*rtdt   
+          liqcliptend(:ncol,:) = (state%q(:ncol,:,ixcldliq)-preclipliq(:ncol,:))*rtdt
+
+          call check_energy_chng(state, tend, "microp_tend", nstep, ztodt, &
+               zero, prec_str/cld_macmic_num_steps, &
+               snow_str/cld_macmic_num_steps, zero) 
+ 
+          call outfld('INEGCLPTEND', icecliptend, pcols, lchnk   )
+          call outfld('LNEGCLPTEND', liqcliptend, pcols, lchnk   )
+          call outfld('VNEGCLPTEND', vapcliptend, pcols, lchnk   )
           call physics_update (state, ptend, ztodt, tend)
           call check_energy_chng(state, tend, "microp_tend", nstep, ztodt, &
                zero, prec_str/cld_macmic_num_steps, &

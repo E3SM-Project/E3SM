@@ -1,5 +1,5 @@
 !---------------------------------------------------------------------------
-! $Id: hydromet_pdf_parameter_module.F90 7284 2014-09-11 02:52:58Z bmg2@uwm.edu $
+! $Id: hydromet_pdf_parameter_module.F90 7587 2015-03-26 04:26:42Z bmg2@uwm.edu $
 !===============================================================================
 module hydromet_pdf_parameter_module
 
@@ -26,8 +26,8 @@ module hydromet_pdf_parameter_module
   type hydromet_pdf_parameter
 
     real( kind = core_rknd ), dimension(max_hydromet_dim) :: &
-      hm1,           & ! Mean of hydrometeor, hm (1st PDF component)   [un vary]
-      hm2,           & ! Mean of hydrometeor, hm (2nd PDF component)   [un vary]
+      hm_1,          & ! Mean of hydrometeor, hm (1st PDF component)   [un vary]
+      hm_2,          & ! Mean of hydrometeor, hm (2nd PDF component)   [un vary]
       mu_hm_1,       & ! Mean of hm (1st PDF component) in-precip (ip) [un vary]
       mu_hm_2,       & ! Mean of hm (2nd PDF component) ip             [un vary]
       sigma_hm_1,    & ! Standard deviation of hm (1st PDF comp.) ip   [un vary]
@@ -38,6 +38,10 @@ module hydromet_pdf_parameter_module
       corr_chi_hm_2, & ! Correlation of chi and hm (2nd PDF component) ip    [-]
       corr_eta_hm_1, & ! Correlation of eta and hm (1st PDF component) ip    [-]
       corr_eta_hm_2    ! Correlation of eta and hm (2nd PDF component) ip    [-]
+
+    real( kind = core_rknd ), dimension(max_hydromet_dim,max_hydromet_dim) :: &
+      corr_hmx_hmy_1, & ! Correlation of hmx and hmy (1st PDF component) ip  [-]
+      corr_hmx_hmy_2    ! Correlation of hmx and hmy (2nd PDF component) ip  [-]
 
     real( kind = core_rknd ) :: &
       mu_Ncn_1,    & ! Mean of Ncn (1st PDF component)                  [num/kg]
@@ -73,8 +77,8 @@ contains
       hydromet_pdf_params    ! Hydrometeor PDF parameters      [units vary]
 
     ! Initialize hydromet_pdf_params.
-    hydromet_pdf_params%hm1 = zero
-    hydromet_pdf_params%hm2 = zero
+    hydromet_pdf_params%hm_1 = zero
+    hydromet_pdf_params%hm_2 = zero
     hydromet_pdf_params%mu_hm_1 = zero
     hydromet_pdf_params%mu_hm_2 = zero
     hydromet_pdf_params%sigma_hm_1 = zero
@@ -85,6 +89,9 @@ contains
     hydromet_pdf_params%corr_chi_hm_2 = zero
     hydromet_pdf_params%corr_eta_hm_1 = zero
     hydromet_pdf_params%corr_eta_hm_2 = zero
+
+    hydromet_pdf_params%corr_hmx_hmy_1 = zero
+    hydromet_pdf_params%corr_hmx_hmy_2 = zero
 
     hydromet_pdf_params%mu_Ncn_1 = zero
     hydromet_pdf_params%mu_Ncn_2 = zero

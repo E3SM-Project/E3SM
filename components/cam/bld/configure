@@ -948,6 +948,10 @@ my $clubb_do_adv = $cfg_ref->get('clubb_do_adv');
 if ($print>=2) { print "clubb_do_deep=',$clubb_do_deep,$eol"; }
 if ($print>=2) { print "clubb_do_adv=',$clubb_do_adv,$eol"; }
 
+if ( $clubb_do_deep == 1 ) {
+   #force to set microphys to mg1 for current version of SILHS
+    $microphys_pkg = 'mg1';
+}
 #-----------------------------------------------------------------------------------------------
 # Macro-physics package
 

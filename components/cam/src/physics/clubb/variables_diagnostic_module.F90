@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------
-! $Id: variables_diagnostic_module.F90 7376 2014-11-09 02:55:23Z bmg2@uwm.edu $
+! $Id: variables_diagnostic_module.F90 7802 2015-07-08 21:20:43Z weberjk@uwm.edu $
 !===============================================================================
 module variables_diagnostic_module
 
@@ -32,6 +32,10 @@ module variables_diagnostic_module
     sigma_sqd_w_zt, & ! PDF width parameter interpolated to t-levs.  [-]
     Skw_zm,         & ! Skewness of w on momentum levels             [-]
     Skw_zt,         & ! Skewness of w on thermodynamic levels        [-]
+    Skthl_zm,       & ! Skewness of w on momentum levels             [-]
+    Skthl_zt,       & ! Skewness of w on thermodynamic levels        [-]
+    Skrt_zm,        & ! Skewness of w on momentum levels             [-]
+    Skrt_zt,        & ! Skewness of w on thermodynamic levels        [-]
     ug,             & ! u geostrophic wind                           [m/s]
     vg,             & ! v geostrophic wind                           [m/s]
     um_ref,         & ! Initial u wind; Michael Falk                 [m/s]
@@ -43,8 +47,8 @@ module variables_diagnostic_module
 !!! Important Note !!!
 ! Do not indent the omp comments, they need to be in the first 4 columns
 !!! End Important Note !!!
-!$omp threadprivate(sigma_sqd_w_zt, Skw_zm, Skw_zt, ug, vg, &
-!$omp   um_ref, vm_ref, thlm_ref, rtm_ref, thvm )
+!$omp threadprivate(sigma_sqd_w_zt, Skw_zm, Skw_zt, Skthl_zm, Skthl_zt, Skrt_zm,  &
+!$omp Skrt_zt, ug, vg, um_ref, vm_ref, thlm_ref, rtm_ref, thvm )
 
   real( kind = core_rknd ), target, allocatable, dimension(:), public :: & 
     rsat ! Saturation mixing ratio  ! Brian
@@ -83,10 +87,14 @@ module variables_diagnostic_module
     wp2rtp,    & ! w'^2rt'     [m^2 kg/kg]
     wprtpthlp, & ! w'rt'thl'   [m kg K/kg s]
     wp2rcp,    & ! w'^2 rc'    [m^2 kg/kg s^2]
-    wp3_zm       ! w'^3        [m^3/s^3]
+    wp3_zm,    & ! w'^3        [m^3/s^3]
+    thlp3,     & ! thl'^3      [K^3]
+    thlp3_zm,  & ! thl'^3      [K^3]
+    rtp3,      & ! rt'^3       [kg^3/kg^3]
+    rtp3_zm      ! rt'^3       [kg^3/kg^3]
 
 !$omp threadprivate(wpthlp2, wp2thlp, wprtp2, wp2rtp, &
-!$omp   wprtpthlp, wp2rcp, wp3_zm )
+!$omp   wprtpthlp, wp2rcp, wp3_zm, thlp3, thlp3_zm, rtp3, rtp3_zm )
 
 ! Fourth order moments
   real( kind = core_rknd ), target, allocatable, dimension(:), public :: & 
@@ -249,6 +257,10 @@ module variables_diagnostic_module
     allocate( sigma_sqd_w_zt(1:nz) ) ! PDF width parameter interp. to t-levs.
     allocate( Skw_zm(1:nz) )         ! Skewness of w on momentum levels
     allocate( Skw_zt(1:nz) )         ! Skewness of w on thermodynamic levels
+    allocate( Skthl_zm(1:nz) )       ! Skewness of thl on momentum levels
+    allocate( Skthl_zt(1:nz) )       ! Skewness of thl on thermodynamic levels
+    allocate( Skrt_zm(1:nz) )        ! Skewness of rt on momentum levels
+    allocate( Skrt_zt(1:nz) )        ! Skewness of rt on thermodynamic levels
     allocate( ug(1:nz) )             ! u geostrophic wind
     allocate( vg(1:nz) )             ! v geostrophic wind
     allocate( um_ref(1:nz) )         ! Reference u wind for nudging; Michael Falk, 17 Oct 2007
@@ -287,6 +299,12 @@ module variables_diagnostic_module
     allocate( wp2rcp(1:nz) )    ! w'^2rc'
 
     allocate( wp3_zm(1:nz) )    ! w'^3
+
+    allocate( thlp3(1:nz) )     ! thl'^3
+    allocate( thlp3_zm(1:nz) )  ! thl'^3
+
+    allocate( rtp3(1:nz) )      ! rt'^3
+    allocate( rtp3_zm(1:nz) )   ! rt'^3
 
     ! Fourth order moments
 
@@ -370,6 +388,10 @@ module variables_diagnostic_module
     sigma_sqd_w_zt = 0.0_core_rknd ! PDF width parameter interp. to t-levs.
     Skw_zm         = 0.0_core_rknd ! Skewness of w on momentum levels
     Skw_zt         = 0.0_core_rknd ! Skewness of w on thermodynamic levels
+    Skthl_zm       = 0.0_core_rknd ! Skewness of thl on momentum levels
+    Skthl_zt       = 0.0_core_rknd ! Skewness of thl on thermodynamic levels
+    Skrt_zm        = 0.0_core_rknd ! Skewness of rt on momentum levels
+    Skrt_zt        = 0.0_core_rknd ! Skewness of rt on thermodynamic levels
     ug             = 0.0_core_rknd ! u geostrophic wind
     vg             = 0.0_core_rknd ! v geostrophic wind
     um_ref         = 0.0_core_rknd
@@ -478,6 +500,12 @@ module variables_diagnostic_module
 
     wp3_zm    = 0.0_core_rknd
 
+    thlp3     = 0.0_core_rknd
+    thlp3_zm  = 0.0_core_rknd
+
+    rtp3      = 0.0_core_rknd
+    rtp3_zm   = 0.0_core_rknd
+
     ! Fourth order moments
     wp4 = 0.0_core_rknd
 
@@ -572,6 +600,10 @@ module variables_diagnostic_module
     deallocate( sigma_sqd_w_zt ) ! PDF width parameter interp. to t-levs.
     deallocate( Skw_zm )         ! Skewness of w on momentum levels
     deallocate( Skw_zt )         ! Skewness of w on thermodynamic levels
+    deallocate( Skthl_zm )       ! Skewness of thl on momentum levels
+    deallocate( Skthl_zt )       ! Skewness of thl on thermodynamic levels
+    deallocate( Skrt_zm )        ! Skewness of rt on momentum levels
+    deallocate( Skrt_zt )        ! Skewness of rt on thermodynamic levels
     deallocate( ug )             ! u geostrophic wind
     deallocate( vg )             ! v geostrophic wind
     deallocate( um_ref )         ! u initial
@@ -610,6 +642,12 @@ module variables_diagnostic_module
     deallocate( wp2rcp )    ! w'^2rc'
 
     deallocate( wp3_zm )
+
+    deallocate( thlp3 )     ! thl'^3
+    deallocate( thlp3_zm )  ! thl'^3
+
+    deallocate( rtp3 )      ! rt'^3
+    deallocate( rtp3_zm )   ! rt'^3
 
     ! Fourth order moments
 

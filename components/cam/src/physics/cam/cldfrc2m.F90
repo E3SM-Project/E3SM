@@ -866,7 +866,11 @@ end subroutine aist_single
 
 !================================================================================================
 
-subroutine aist_vector(qv_in, T_in, p_in, qi_in, ni_in, landfrac_in, snowh_in, aist_out, ncol, &
+subroutine aist_vector(qv_in, T_in, p_in, qi_in, ni_in, &
+#ifdef CLUBB_SGS
+                       do_icesuper, &
+#endif
+                       landfrac_in, snowh_in, aist_out, ncol, &
                        rhmaxi_in, rhmini_in, rhminl_in, rhminl_adj_land_in, rhminh_in )
 
    ! --------------------------------------------------------- !
@@ -890,6 +894,10 @@ subroutine aist_vector(qv_in, T_in, p_in, qi_in, ni_in, landfrac_in, snowh_in, a
    real(r8), optional, intent(in)  :: rhminl_adj_land_in(pcols) ! Adjustment drop of rhminl over the land
    real(r8), optional, intent(in)  :: rhminh_in(pcols)          ! Critical relative humidity for high-level liquid stratus
 
+#ifdef CLUBB_SGS
+   logical, intent(in)   :: do_icesuper
+#endif
+
    ! Local variables
 
    real(r8) qv                              ! Grid-mean water vapor[kg/kg]
@@ -911,8 +919,14 @@ subroutine aist_vector(qv_in, T_in, p_in, qi_in, ni_in, landfrac_in, snowh_in, a
    real(r8) rhmin                           ! Critical RH
    real(r8) rhwght
 
-   real(r8) a,b,c,as,bs,cs,ah,bh,ch         ! Fit parameters
+   real(r8) a,b,c,as,bs,cs                  ! Fit parameters
+
+#ifdef CLUBB_SGS
+   real(r8) aist2
+   real(r8) ah,bh,ch                        ! Fit parameters
    real(r8) nil
+#endif
+
    real(r8) Kc                              ! Constant for ice cloud calc (wood & field)
    real(r8) ttmp                            ! Limited temperature
    real(r8) icicval                         ! Empirical IWC value [ kg/kg ]
@@ -964,6 +978,16 @@ subroutine aist_vector(qv_in, T_in, p_in, qi_in, ni_in, landfrac_in, snowh_in, a
      rhminl_adj_land = rhminl_adj_land_const
      rhminh          = rhminh_const
 
+#ifdef CLUBB_SGS
+     ah= 6.73834e-12_r8   !  6.73834e-08_r8
+     bh= 0.0533110_r8
+     ch= 0.3493813_r8
+
+     if (do_icesuper) then
+       iceopt = 7
+     endif
+#endif
+
    ! ---------------- !
    ! Main computation !
    ! ---------------- !
@@ -976,6 +1000,10 @@ subroutine aist_vector(qv_in, T_in, p_in, qi_in, ni_in, landfrac_in, snowh_in, a
           esat_in(1:ncol), qsat_in(1:ncol))
      
      do i = 1, ncol
+
+#ifdef CLUBB_SGS
+     ni = ni_in(i)
+#endif
 
      landfrac = landfrac_in(i)     
      snowh = snowh_in(i)   
@@ -1088,6 +1116,36 @@ subroutine aist_vector(qv_in, T_in, p_in, qi_in, ni_in, landfrac_in, snowh_in, a
            endif
 
         endif
+     elseif (iceopt.eq.6) then 
+        !----- ICE CLOUD OPTION 5: fit based on T and Number (Gettelman: based on Heymsfield obs)
+        ! Use observations from Heymsfield et al 2012 of IWC and Ni v. Temp
+        ! Multivariate fit follows form of Boudala 2002: ICIWC = a * exp(b*T) * N^c
+        ! a=6.73e-8, b=0.05, c=0.349
+        ! N is #/L, so need to convert Ni_L=N*rhoa/1000.
+        rho=p/(rair*T)
+        nil=ni*rho/1000._r8
+        icicval = ah * exp(bh*T) * nil**ch
+        !result is in g m-3, convert to kg H2O / kg air (icimr...)
+        icicval = icicval / rho / 1000._r8
+        aist =  max(0._r8,min(qi/icicval,1._r8))
+        aist =  min(aist,1._r8)
+
+     elseif (iceopt .eq. 7) then
+     
+        rho=p/(rair*T)
+        nil=ni*rho/1000.
+        icicval = ah * exp(bh*T) * nil**ch
+        !result is in g m-3, convert to kg H2O / kg air (icimr...)
+        icicval = icicval / rho / 1000.
+        aist =  max(0._r8,min(qi/icicval,1._r8))
+        aist =  min(aist,1._r8)
+
+        rhi= (qv+qi)/qs * (esl/esi)
+        rhdif= (rhi-rhmini) / (rhmaxi - rhmini)
+        aist2 = min(1.0_r8, max(rhdif,0._r8)**2)
+  
+        !aist = max(aist,aist2)	
+        aist = min(aist,aist2)	
      endif 
 
    ! 0.999_r8 is added to prevent infinite 'ql_st' at the end of instratus_condensate

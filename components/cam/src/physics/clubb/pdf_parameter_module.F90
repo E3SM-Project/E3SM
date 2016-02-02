@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: pdf_parameter_module.F90 7309 2014-09-20 17:06:28Z betlej@uwm.edu $
+! $Id: pdf_parameter_module.F90 7544 2015-03-15 06:01:40Z bmg2@uwm.edu $
 !===============================================================================
 module pdf_parameter_module
 ! Description:
@@ -18,6 +18,7 @@ module pdf_parameter_module
   public :: pdf_parameter
 
   type pdf_parameter
+
     real( kind = core_rknd ) :: &
       w_1,             & ! Mean of w (1st PDF component)                   [m/s]
       w_2,             & ! Mean of w (2nd PDF component)                   [m/s]
@@ -55,13 +56,18 @@ module pdf_parameter_module
       cloud_frac_1,    & ! Cloud fraction (1st PDF component)                [-]
       cloud_frac_2,    & ! Cloud fraction (2nd PDF component)                [-]
       mixt_frac          ! Weight of 1st PDF component (Sk_w dependent)      [-]
+
+    real( kind = core_rknd ) :: &
+      ice_supersat_frac_1, & ! Ice supersaturation fraction (1st PDF comp.)  [-]
+      ice_supersat_frac_2    ! Ice supersaturation fraction (2nd PDF comp.)  [-]
+
   end type pdf_parameter
 
 #ifdef CLUBB_CAM /* Code for storing pdf_parameter structs in pbuf as array */
 
   public :: pack_pdf_params, unpack_pdf_params
 
-  integer, public, parameter :: num_pdf_params = 36
+  integer, public, parameter :: num_pdf_params = 38
 
   !-------
   contains
@@ -194,9 +200,12 @@ module pdf_parameter_module
       	   get_param_at_ind = pp_struct%cloud_frac_2
       CASE (36)
       	   get_param_at_ind = pp_struct%mixt_frac
+      CASE (37)
+      	   get_param_at_ind = pp_struct%ice_supersat_frac_1
+      CASE (38)
+      	   get_param_at_ind = pp_struct%ice_supersat_frac_2
       CASE DEFAULT
-!          NAG compiler does not like divide by zero - commented out
-!      	   get_param_at_ind = 0.0/0.0 !NaN - watch out!
+      	   get_param_at_ind = 0.0/0.0 !NaN - watch out!
     END SELECT
 
     RETURN
@@ -281,6 +290,10 @@ module pdf_parameter_module
       	   pp_struct%cloud_frac_2 = val
       CASE (36)
       	   pp_struct%mixt_frac = val
+      CASE (37)
+      	   pp_struct%ice_supersat_frac_1 = val
+      CASE (38)
+      	   pp_struct%ice_supersat_frac_2 = val
       CASE DEFAULT
       	   ! do nothing !
     END SELECT

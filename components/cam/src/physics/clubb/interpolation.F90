@@ -11,8 +11,7 @@ module interpolation
   private ! Default Scope
 
   public :: lin_interpolate_two_points, binary_search, zlinterp_fnc, & 
-    lin_interpolate_on_grid, linear_interp_factor, mono_cubic_interp, plinterp_fnc, &
-    pvertinterp
+    lin_interpolate_on_grid, linear_interp_factor, mono_cubic_interp, plinterp_fnc
 
   contains
 
@@ -509,66 +508,6 @@ module interpolation
 
     return
   end function zlinterp_fnc
-
-!-------------------------------------------------------------------------------
-  subroutine pvertinterp & 
-             ( nlev, pmid, pout, arrin, arrout )
-	     
-    implicit none
-    
-    !------------------------------Arguments--------------------------------
-    integer , intent(in)  :: nlev              ! vertical dimension
-    real( kind = core_rknd ), intent(in)  :: pmid(nlev)        ! input level pressure levels
-    real( kind = core_rknd ), intent(in)  :: pout              ! output pressure level
-    real( kind = core_rknd ), intent(in)  :: arrin(nlev)       ! input  array
-    real( kind = core_rknd ), intent(out) :: arrout            ! output array (interpolated)   
-    
-    !---------------------------Local variables-----------------------------
-    integer i,k               ! indices
-    integer kupper            ! Level indices for interpolation
-    real( kind = core_rknd ) dpu              ! upper level pressure difference
-    real( kind = core_rknd ) dpl              ! lower level pressure difference
-    logical found             ! true if input levels found   	
-    logical error             ! true if error     
-    !-----------------------------------------------------------------
-    !
-    ! Initialize index array and logical flags
-    !
-
-    found = .false.
-    kupper = 1
-
-    error = .false.
-    !
-    ! Store level indices for interpolation.
-    ! If all indices for this level have been found,
-    ! do the interpolation
-    !
-    do k=1,nlev-1
-      if ((.not. found) .and. pmid(k)>pout .and. pout>=pmid(k+1)) then
-        found = .true.
-        kupper = k
-      end if
-    end do
-    !
-    ! If we've fallen through the k=1,nlev-1 loop, we cannot interpolate and
-    ! must extrapolate from the bottom or top data level for at least some
-    ! of the longitude points.
-    !
-    if (pout >= pmid(1)) then
-      arrout = arrin(1)
-    else if (pout <= pmid(nlev)) then
-      arrout = arrin(nlev)
-    else if (found) then
-      dpu = pmid(kupper) - pout
-      dpl = pout - pmid(kupper+1)
-      arrout = (arrin(kupper)*dpl + arrin(kupper+1)*dpu)/(dpl + dpu)
-    else
-      error = .true.
-    end if   
-	     
-    return
-  end subroutine pvertinterp
 
 !-------------------------------------------------------------------------------
   subroutine lin_interpolate_on_grid & 

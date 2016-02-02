@@ -304,6 +304,9 @@ end subroutine macrop_driver_readnl
 
     call addfld ('CLDST    ', 'fraction', pver, 'A', 'Stratus cloud fraction'                                  ,phys_decomp)
     call addfld ('CONCLD   ', 'fraction', pver, 'A', 'Convective cloud cover'                                  ,phys_decomp)
+
+    ! Eric Raut added a call to addfld for RHO
+    call addfld('RHO', 'fraction', pver, 'A', 'Density before CLUBB', phys_decomp)
  
     call addfld ('CLR_LIQ',   'fraction', pver, 'A', 'Clear sky fraction for liquid stratus'  , phys_decomp)
     call addfld ('CLR_ICE',   'fraction', pver, 'A', 'Clear sky fraction for ice stratus'     , phys_decomp)
@@ -440,7 +443,7 @@ end subroutine macrop_driver_readnl
   use cam_history,      only: outfld
   use constituents,     only: cnst_get_ind, pcnst
   use cldwat2m_macro,   only: mmacro_pcond
-  use physconst,        only: cpair, tmelt, gravit
+  use physconst,        only: cpair, tmelt, gravit, rair
   use time_manager,     only: get_nstep, is_first_step 
 
   use ref_pres,         only: top_lev => trop_cloud_top_lev
@@ -640,6 +643,9 @@ end subroutine macrop_driver_readnl
   ! CloudSat equivalent ice mass mixing ratio (kg/kg)
   real(r8) :: cldsice(pcols,pver)
 
+  ! Eric Raut added a variable for density, rho.
+  real(r8) :: rho(pcols,pver)
+
   ! ======================================================================
 
   if (micro_do_icesupersat) then 
@@ -648,6 +654,10 @@ end subroutine macrop_driver_readnl
 
   lchnk = state%lchnk
   ncol  = state%ncol
+
+  ! Eric Raut added code to output rho
+  rho(:,:) = state%pmid(:ncol,:pver)/(rair*state%t(:ncol,:pver))
+  call outfld('RHO', rho, pcols, lchnk)
 
   call physics_state_copy(state, state_loc)            ! Copy state to local state_loc.
 

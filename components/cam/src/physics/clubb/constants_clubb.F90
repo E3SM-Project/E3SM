@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------------
-! $Id: constants_clubb.F90 7140 2014-07-31 19:14:05Z betlej@uwm.edu $
+! $Id: constants_clubb.F90 7893 2015-08-26 19:03:58Z raut@uwm.edu $
 !=============================================================================
 module constants_clubb
 
@@ -134,6 +134,10 @@ module constants_clubb
   real( kind = dp ), parameter, public :: &
     radians_per_deg_dp = pi_dp / 180._dp
 #endif
+
+  real( kind = dp ), parameter, public :: &
+    sqrt_2pi_dp = 2.5066282746310005024_dp, &  ! sqrt(2*pi)
+    sqrt_2_dp   = 1.4142135623730950488_dp     ! sqrt(2)
 
   real( kind = core_rknd ), parameter, public :: &
     sqrt_2pi = 2.5066282746310005024_core_rknd, &  ! sqrt(2*pi)
@@ -290,7 +294,7 @@ module constants_clubb
   real( kind = core_rknd ), parameter, public ::  & 
     w_tol        = 2.e-2_core_rknd, & ! [m/s]
     thl_tol      = 1.e-2_core_rknd, & ! [K]
-    rt_tol       = 1.e-8_core_rknd, & ! [kg/kg]
+    rt_tol       = 1.e-18_core_rknd, & ! [kg/kg]
     chi_tol = 1.e-8_core_rknd, & ! [kg/kg]
     eta_tol = chi_tol       ! [kg/kg]
 
@@ -322,7 +326,7 @@ module constants_clubb
   ! still officially have a cloud at that level.  This is figured to be about
   ! 1.0_core_rknd x 10^-7 kg/kg.  Brian; February 10, 2007.
   real( kind = core_rknd ), parameter, public :: & 
-    rc_tol  = 1.0E-6_core_rknd, & ! Tolerance value for r_c  [kg/kg]
+    rc_tol  = 1.0E-15_core_rknd, & ! Tolerance value for r_c  [kg/kg]
     Nc_tol  = 1.0E+2_core_rknd, & ! Tolerance value for N_c  [#/kg]
     Ncn_tol = 1.0E+2_core_rknd    ! Tolerance value for N_cn [#/kg]
 
@@ -334,10 +338,10 @@ module constants_clubb
 
   ! Precipitating hydrometeor tolerances for mixing ratios.
   real( kind = core_rknd ), parameter, public :: & 
-    rr_tol = 1.0E-10_core_rknd, & ! Tolerance value for r_r [kg/kg]
-    ri_tol = 1.0E-10_core_rknd, & ! Tolerance value for r_i [kg/kg]
-    rs_tol = 1.0E-10_core_rknd, & ! Tolerance value for r_s [kg/kg]
-    rg_tol = 1.0E-10_core_rknd    ! Tolerance value for r_g [kg/kg]
+    rr_tol = 1.0E-18_core_rknd, & ! Tolerance value for r_r [kg/kg]
+    ri_tol = 1.0E-18_core_rknd, & ! Tolerance value for r_i [kg/kg]
+    rs_tol = 1.0E-18_core_rknd, & ! Tolerance value for r_s [kg/kg]
+    rg_tol = 1.0E-18_core_rknd    ! Tolerance value for r_g [kg/kg]
 
   ! Maximum allowable values for the average mean volume radius of the various
   ! hydrometeor species.

@@ -2680,6 +2680,9 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    }
    add_default($nl, 'clubb_history');
    add_default($nl, 'clubb_rad_history');
+   if ($nl->get_value('clubb_history') =~ "true" &&  $nl->get_value('atm_nthreads') > 1) {
+     die "$ProgName - ERROR: clubb_history = .true. with multiple threads is not supported. \n";
+   }
 
    # Check compatibility of clubb_do_deep (if set) with deep_scheme
    my $clubb_do_deep = $nl->get_value('clubb_do_deep');
@@ -2693,9 +2696,11 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_expldiff');
    add_default($nl, 'clubb_rainevap_turb');
    add_default($nl, 'clubb_cloudtop_cooling');
-   add_default($nl, 'clubb_timestep');
-   add_default($nl, 'clubb_rnevap_effic');
-   add_default($nl, 'clubb_stabcorrect');
+
+# following not used in clubb_silhs implementation
+#  add_default($nl, 'clubb_timestep');
+#  add_default($nl, 'clubb_rnevap_effic');
+#  add_default($nl, 'clubb_stabcorrect');
 }
 
 #in-cloud scav tuning for cloud-borne aerosol

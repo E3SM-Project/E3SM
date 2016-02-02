@@ -1,5 +1,5 @@
 !--------------------------------------------------------------------------------------------------
-! $Id: clubb_api_module.F90 7361 2014-11-04 21:51:02Z bmg2@uwm.edu $
+! $Id: clubb_api_module.F90 7802 2015-07-08 21:20:43Z weberjk@uwm.edu $
 !==================================================================================================
 !
 !       ########  ###       ###    ### #########  #########           ###     ######### ###########
@@ -95,21 +95,23 @@ module clubb_api_module
     w_tol_sqd ! [m^2/s^2]
 
   use corr_varnce_module, only : &
-    corr_array_cloud, & !
-    corr_array_below, &
-    d_variables, &
-    iiPDF_chi, &
-    iiPDF_rr, &
-    iiPDF_w, &
-    iiPDF_Nr, &
-    iiPDF_ri, &
-    iiPDF_Ni, &
-    iiPDF_Ncn, &
-    iiPDF_rs, &
-    iiPDF_Ns, &
-    iiPDF_rg, &
-    iiPDF_Ng, &
-    sigma2_on_mu2_ratios_type
+      corr_array_n_cloud, & ! Variable(s)
+      corr_array_n_below, &
+      d_variables,        &
+      iiPDF_chi,          &
+      iiPDF_rr,           &
+      iiPDF_w,            &
+      iiPDF_Nr,           &
+      iiPDF_ri,           &
+      iiPDF_Ni,           &
+      iiPDF_Ncn,          &
+      iiPDF_rs,           &
+      iiPDF_Ns,           &
+      iiPDF_rg,           &
+      iiPDF_Ng,           &
+      hmp2_ip_on_hmm2_ip, &
+      Ncnp2_on_Ncnm2,     &
+      hmp2_ip_on_hmm2_ip_ratios_type
 
   use error_code, only : &
     clubb_no_error ! Enum representing that no errors have occurred in CLUBB
@@ -263,20 +265,23 @@ module clubb_api_module
     genrand_srepr, &
     genrand_intg, &
     ! To use the results, you will need these variables:
-    corr_array_cloud, &
-    corr_array_below, &
-    d_variables, &
-    iiPDF_chi, &
-    iiPDF_rr, &
-    iiPDF_w, &
-    iiPDF_Nr, &
-    iiPDF_ri, &
-    iiPDF_Ni, &
-    iiPDF_Ncn, &
-    iiPDF_rs, &
-    iiPDF_Ns, &
-    iiPDF_rg, &
-    iiPDF_Ng
+    corr_array_n_cloud, &
+    corr_array_n_below, &
+    d_variables,        &
+    iiPDF_chi,          &
+    iiPDF_rr,           &
+    iiPDF_w,            &
+    iiPDF_Nr,           &
+    iiPDF_ri,           &
+    iiPDF_Ni,           &
+    iiPDF_Ncn,          &
+    iiPDF_rs,           &
+    iiPDF_Ns,           &
+    iiPDF_rg,           &
+    iiPDF_Ng,           &
+    hmp2_ip_on_hmm2_ip, &
+    Ncnp2_on_Ncnm2,     &
+    hmp2_ip_on_hmm2_ip_ratios_type
 
   public &
     ! To Interact With CLUBB's Grid:
@@ -390,7 +395,6 @@ module clubb_api_module
     stats_rad_zm, &
     stats_rad_zt
     public &
-    sigma2_on_mu2_ratios_type, &
     nparams, &
     setup_parameters_api, &
     stats_sfc, &
@@ -442,7 +446,7 @@ contains
     host_dx, host_dy, &                                     ! intent(in)
     um, vm, upwp, vpwp, up2, vp2, &                         ! intent(inout)
     thlm, rtm, wprtp, wpthlp, &                             ! intent(inout)
-    wp2, wp3, rtp2, thlp2, rtpthlp, &                       ! intent(inout)
+    wp2, wp3, rtp2, rtp3, thlp2, thlp3, rtpthlp, &          ! intent(inout)
     sclrm,   &
 #ifdef GFDL
                sclrm_trsport_only,  &  ! h1g, 2010-06-16    ! intent(inout)
@@ -509,8 +513,6 @@ contains
       thv_ds_zt,       & ! Dry, base-state theta_v on thermo. levs.  [K]
       rfrzm              ! Total ice-phase water mixing ratio        [kg/kg]
 
-      logical :: do_expldiff
-
     real( kind = core_rknd ), dimension(gr%nz,hydromet_dim), intent(in) :: &
       hydromet           ! Collection of hydrometeors                [units vary]
 
@@ -548,9 +550,6 @@ contains
       host_dx,  & ! East-West horizontal grid spacing     [m]
       host_dy     ! North-South horizontal grid spacing   [m]
 
-#ifdef CLUBBND_CAM
-    real( kind = core_rknd ) :: varmu
-#endif
 
     !!! Input/Output Variables
     ! These are prognostic or are planned to be in the future
@@ -566,7 +565,9 @@ contains
       thlm,    & ! liq. water pot. temp., th_l (thermo. levels)   [K]
       wpthlp,  & ! w' th_l' (momentum levels)                     [(m/s) K]
       rtp2,    & ! r_t'^2 (momentum levels)                       [(kg/kg)^2]
+      rtp3,    & ! r_t'^3 (thermodynamic levels)                  [(kg/kg)^3]
       thlp2,   & ! th_l'^2 (momentum levels)                      [K^2]
+      thlp3,   & ! th_l'^3 (thermodynamic levels)                 [K^3]
       rtpthlp, & ! r_t' th_l' (momentum levels)                   [(kg/kg) K]
       wp2,     & ! w'^2 (momentum levels)                         [m^2/s^2]
       wp3        ! w'^3 (thermodynamic levels)                    [m^3/s^3]
@@ -607,8 +608,6 @@ contains
       khzm          ! eddy diffusivity on momentum levels
 #endif
 
-    real( kind = core_rknd), dimension(gr%nz) :: thlprcp_out
-
 #ifdef CLUBB_CAM
     real( kind = core_rknd), intent(out), dimension(gr%nz) :: &
       qclvar        ! cloud water variance
@@ -634,15 +633,11 @@ contains
       p_in_Pa, rho_zm, rho, exner, &                          ! intent(in)
       rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &                ! intent(in)
       invrs_rho_ds_zt, thv_ds_zm, thv_ds_zt, hydromet, &      ! intent(in)
-      rfrzm, radf,do_expldiff, & 
-#ifdef CLUBBND_CAM
-          varmu, &
-#endif      
-      wphydrometp, wp2hmp, rtphmp, thlphmp, &    ! intent(in)
+      rfrzm, radf, wphydrometp, wp2hmp, rtphmp, thlphmp, &    ! intent(in)
       host_dx, host_dy, &                                     ! intent(in)
       um, vm, upwp, vpwp, up2, vp2, &                         ! intent(inout)
       thlm, rtm, wprtp, wpthlp, &                             ! intent(inout)
-      wp2, wp3, rtp2, thlp2, rtpthlp, &                       ! intent(inout)
+      wp2, wp3, rtp2, rtp3, thlp2, thlp3, rtpthlp, &          ! intent(inout)
       sclrm,   &
 #ifdef GFDL
                sclrm_trsport_only,  &  ! h1g, 2010-06-16               ! intent(inout)
@@ -656,7 +651,7 @@ contains
       rcm, wprcp, cloud_frac, ice_supersat_frac, &            ! intent(out)
       rcm_in_layer, cloud_cover, &                            ! intent(out)
 #if defined(CLUBB_CAM) || defined(GFDL)
-               khzm, khzt, thlprcp_out, &                                           ! intent(out)
+               khzm, khzt, &                                           ! intent(out)
 #endif
 #ifdef CLUBB_CAM
                qclvar, &                                               ! intent(out)
@@ -911,9 +906,9 @@ contains
   !================================================================================================
 
   subroutine setup_corr_varnce_array_api( &
-    input_file_cloud, input_file_below, iunit, sigma2_on_mu2_ratios )
+    input_file_cloud, input_file_below, iunit )
 
-    use corr_varnce_module, only : setup_corr_varnce_array, sigma2_on_mu2_ratios_type
+    use corr_varnce_module, only : setup_corr_varnce_array
 
     implicit none
 
@@ -928,11 +923,8 @@ contains
       input_file_cloud, &  ! Path to the in cloud correlation file
       input_file_below     ! Path to the out of cloud correlation file
 
-    type(sigma2_on_mu2_ratios_type), intent(in) :: &
-      sigma2_on_mu2_ratios ! Prescribed sigma^2/mu^2 ratios
-
     call setup_corr_varnce_array( &
-      input_file_cloud, input_file_below, iunit, sigma2_on_mu2_ratios )
+      input_file_cloud, input_file_below, iunit )
 
   end subroutine setup_corr_varnce_array_api
 
@@ -1484,10 +1476,10 @@ contains
   !================================================================================================
 
   subroutine setup_pdf_parameters_api( &
-    nz, d_variables, dt, rho, &                 ! Intent(in)
+    nz, d_variables, dt, &                      ! Intent(in)
     Nc_in_cloud, rcm, cloud_frac, &             ! Intent(in)
     ice_supersat_frac, hydromet, wphydrometp, & ! Intent(in)
-    corr_array_cloud, corr_array_below, &       ! Intent(in)
+    corr_array_n_cloud, corr_array_n_below, &   ! Intent(in)
     pdf_params, l_stats_samp, &                 ! Intent(in)
     hydrometp2, &                               ! Intent(inout)
     mu_x_1_n, mu_x_2_n, &                       ! Intent(out)
@@ -1516,8 +1508,8 @@ contains
       clip_wphydrometp    ! Variables(s)
 
     use stats_variables, only: &
-      ihm1,           & ! Variable(s)
-      ihm2,           &
+      ihm_1,          & ! Variable(s)
+      ihm_2,          &
       iprecip_frac,   &
       iprecip_frac_1, &
       iprecip_frac_2, &
@@ -1539,10 +1531,7 @@ contains
       dt    ! Model timestep                                           [s]
 
     real( kind = core_rknd ), dimension(nz), intent(in) :: &
-      rho,         & ! Density                                         [kg/m^3]
-      Nc_in_cloud    ! Mean (in-cloud) cloud droplet concentration     [num/kg]
-
-    real( kind = core_rknd ), dimension(nz), intent(in) :: &
+      Nc_in_cloud,       & ! Mean (in-cloud) cloud droplet conc.       [num/kg]
       rcm,               & ! Mean cloud water mixing ratio, < r_c >    [kg/kg]
       cloud_frac,        & ! Cloud fraction                            [-]
       ice_supersat_frac    ! Ice supersaturation fraction              [-]
@@ -1553,8 +1542,8 @@ contains
 
     real( kind = core_rknd ), dimension(d_variables,d_variables), &
       intent(in) :: &
-      corr_array_cloud, & ! Prescribed correlation array in cloud      [-]
-      corr_array_below    ! Prescribed correlation array below cloud   [-]
+      corr_array_n_cloud, & ! Prescribed norm. space corr. array in cloud    [-]
+      corr_array_n_below    ! Prescribed norm. space corr. array below cloud [-]
 
     type(pdf_parameter), dimension(nz), intent(in) :: &
       pdf_params    ! PDF parameters                               [units vary]
@@ -1567,30 +1556,30 @@ contains
       hydrometp2    ! Variance of a hydrometeor (overall) (m-levs.)   [units^2]
 
     ! Output Variables
+    real( kind = core_rknd ), dimension(d_variables, nz), intent(out) :: &
+      mu_x_1_n,    & ! Mean array (normal space): PDF vars. (comp. 1) [un. vary]
+      mu_x_2_n,    & ! Mean array (normal space): PDF vars. (comp. 2) [un. vary]
+      sigma_x_1_n, & ! Std. dev. array (normal space): PDF vars (comp. 1) [u.v.]
+      sigma_x_2_n    ! Std. dev. array (normal space): PDF vars (comp. 2) [u.v.]
+
     real( kind = core_rknd ), dimension(d_variables,d_variables,nz), &
       intent(out) :: &
-      corr_array_1_n, & ! Corr. array (normalized) of PDF vars. (comp. 1)    [-]
-      corr_array_2_n    ! Corr. array (normalized) of PDF vars. (comp. 2)    [-]
-
-    real( kind = core_rknd ), dimension(d_variables, nz), intent(out) :: &
-      mu_x_1_n,    & ! Mean array (normalized) of PDF vars. (comp. 1) [un. vary]
-      mu_x_2_n,    & ! Mean array (normalized) of PDF vars. (comp. 2) [un. vary]
-      sigma_x_1_n, & ! Std. dev. array (normalized) of PDF vars (comp. 1) [u.v.]
-      sigma_x_2_n    ! Std. dev. array (normalized) of PDF vars (comp. 2) [u.v.]
-
-    type(hydromet_pdf_parameter), dimension(nz), intent(out) :: &
-      hydromet_pdf_params    ! Hydrometeor PDF parameters        [units vary]
+      corr_array_1_n, & ! Corr. array (normal space):  PDF vars. (comp. 1)   [-]
+      corr_array_2_n    ! Corr. array (normal space):  PDF vars. (comp. 2)   [-]
 
     real( kind = core_rknd ), dimension(d_variables,d_variables,nz), &
       intent(out) :: &
       corr_cholesky_mtx_1, & ! Transposed corr. cholesky matrix, 1st comp. [-]
       corr_cholesky_mtx_2    ! Transposed corr. cholesky matrix, 2nd comp. [-]
 
+    type(hydromet_pdf_parameter), dimension(nz), intent(out) :: &
+      hydromet_pdf_params    ! Hydrometeor PDF parameters        [units vary]
+
     call setup_pdf_parameters( &
-      nz, d_variables, dt, rho, &                 ! Intent(in)
+      nz, d_variables, dt, &                      ! Intent(in)
       Nc_in_cloud, rcm, cloud_frac, &             ! Intent(in)
       ice_supersat_frac, hydromet, wphydrometp, & ! Intent(in)
-      corr_array_cloud, corr_array_below, &       ! Intent(in)
+      corr_array_n_cloud, corr_array_n_below, &   ! Intent(in)
       pdf_params, l_stats_samp, &                 ! Intent(in)
       hydrometp2, &                               ! Intent(inout)
       mu_x_1_n, mu_x_2_n, &                       ! Intent(out)

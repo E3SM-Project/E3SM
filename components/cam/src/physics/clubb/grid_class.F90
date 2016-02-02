@@ -1,5 +1,5 @@
 !------------------------------------------------------------------------
-! $Id: grid_class.F90 7200 2014-08-13 15:15:12Z betlej@uwm.edu $
+! $Id: grid_class.F90 7480 2015-02-05 15:49:45Z schemena@uwm.edu $
 !===============================================================================
 module grid_class
 
@@ -176,6 +176,7 @@ module grid_class
     !   pointers are always allocated rather than assigned and nullified
     !   like real pointers).  Note that these must be de-allocated to prevent
     !   memory leaks.
+    
     real( kind = core_rknd ), pointer, dimension(:) :: &
       zm, & ! Momentum grid
       zt    ! Thermo grid
@@ -209,7 +210,7 @@ module grid_class
   type (grid) gr
 
 !   Modification for using CLUBB in a host model (i.e. one grid per column)
-!$omp   threadprivate(gr)
+!$omp threadprivate(gr)
 
   ! Interfaces provided for function overloading
 
@@ -899,8 +900,9 @@ module grid_class
         stop
       endif
 
+!$omp critical
       ! Open the file zt_grid_fname.
-      open( unit=file_unit, file=zt_grid_fname,  & 
+      open( unit=file_unit, file=zt_grid_fname,  &
             status='old', action='read' )
 
       ! Find the number of thermodynamic level altitudes listed
@@ -917,6 +919,7 @@ module grid_class
 
       ! Close the file zt_grid_fname.
       close( unit=file_unit )
+!$omp end critical
 
       ! Check that the number of thermodynamic grid altitudes in the input file
       ! matches the declared number of CLUBB grid levels (nzmax).

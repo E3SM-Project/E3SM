@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: advance_xm_wpxp_module.F90 7373 2014-11-08 00:44:20Z dschanen@uwm.edu $
+! $Id: advance_xm_wpxp_module.F90 7480 2015-02-05 15:49:45Z schemena@uwm.edu $
 !===============================================================================
 module advance_xm_wpxp_module
 
@@ -813,6 +813,7 @@ module advance_xm_wpxp_module
       if( l_stats_samp ) then
         call stat_begin_update( irtm_sdmp, rtm / dt, stats_zt )
       end if
+
       rtm(1:gr%nz) = sponge_damp_xm( dt, rtm_ref(1:gr%nz), rtm(1:gr%nz), &
                                        rtm_sponge_damp_profile )
 

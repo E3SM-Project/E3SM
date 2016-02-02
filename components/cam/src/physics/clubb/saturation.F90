@@ -71,8 +71,6 @@ module saturation
     22723.592_core_rknd, 23779.273_core_rknd, 24876.709_core_rknd, 26017.258_core_rknd,         &
     27202.3_core_rknd, 28433.256_core_rknd, 29711.578_core_rknd, 31038.766_core_rknd /
 
-!$omp threadprivate(svp_liq_lookup_table)
-
   contains
 
 !-------------------------------------------------------------------------

@@ -129,40 +129,38 @@ contains
       ! number of subcolumns to vary within a run.  Cannot be done in init as ngrdcol is not known
       ! at init
       !----------------------
-      ! Test differing number of subcolumns by setting columns > 45 degrees to
-      ! have 1 subcolumn, columns < -45 to 2 subcolumns and others to 3 subcols
+      ! Set two subcolumns to 1 to test random number of subcols
+      ! Index logic is arithmetic as some compilers balk when hardcoded larger than pcols
       if (is_first_step()) then
-         nsubcol = 0
-         do i = 1, ngrdcol
-            if (state%lat(i) > 0.7854_r8) then
-               nsubcol(i) = 1
-            else if (state%lat(i) < -0.7854_r8) then
-               nsubcol(i) = 2
-            else
-               nsubcol(i) = psubcols
-            end if
-         end do
+         nsubcol(:) = psubcols  ! For test, set all to max number of sub-columns, then reset a few values
+         indx1      = anint(pcols/2._r8)
+         indx2      = anint(pcols/5._r8)
+         if (pcols >= 6) nsubcol(indx1) = 1
+         if (pcols >= 11) nsubcol(indx2) = 1
+         if (ngrdcol+1 <= pcols) nsubcol(ngrdcol+1:) = 0
       else
          call subcol_get_nsubcol(state%lchnk, nsubcol)
          ! Since this is a test generator, check for nsubcol correctness.
+         indx1      = anint(pcols/2._r8)
+         indx2      = anint(pcols/5._r8)
 10       format(a,i3,a,i5)
          do i = 1, pcols
-            if (i > ngrdcol) then
-               if (nsubcol(i) /= 0) then
-                  write(errmsg, 10) 'subcol_gen_tstcp: Bad value for nsubcol(',&
-                       i,') = ',nsubcol(i),', /= 0'
-                  call endrun(errmsg)
-               end if
-            else if (state%lat(i) > 0.7854_r8) then
+            if ((pcols >= 11) .and. (i == indx2)) then
                if (nsubcol(i) /= 1) then
                   write(errmsg, 10) 'subcol_gen_tstcp: Bad value for nsubcol(',&
-                       i,') = ',nsubcol(i),', /= 1'
+                       i,') = ',nsubcol(i)
                   call endrun(errmsg)
                end if
-            else if (state%lat(i) < -0.7854_r8) then
-               if (nsubcol(i) /= 2) then
+            else if ((pcols >= 6) .and. (i == indx1)) then
+               if (nsubcol(i) /= 1) then
                   write(errmsg, 10) 'subcol_gen_tstcp: Bad value for nsubcol(',&
-                       i,') = ',nsubcol(i),', /= 2'
+                       i,') = ',nsubcol(i)
+                  call endrun(errmsg)
+               end if
+            else if (i > ngrdcol) then
+               if (nsubcol(i) /= 0) then
+                  write(errmsg, 10) 'subcol_gen_tstcp: Bad value for nsubcol(',&
+                       i,') = ',nsubcol(i)
                   call endrun(errmsg)
                end if
             else

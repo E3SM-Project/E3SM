@@ -472,7 +472,7 @@ contains
    !-----------------------------------------------------------------------
    ! Copy all of state to subcolumns in state_sc, allocating state_sc if necessary
    !-----------------------------------------------------------------------
-      type(physics_state), intent(in)    :: state
+      type(physics_state), intent(inout)    :: state
       type(physics_state), intent(inout) :: state_sc        ! subcolumn state
 
       !
@@ -481,7 +481,7 @@ contains
       integer :: i, j, k, m, ngrdcol, indx
 
       if (.not. allocated(state_sc%lat)) then
-         call endrun('subcol_state_copy: user must allocate state_sc prior to calling this routine')
+         call physics_state_alloc(state_sc, state%lchnk, state%psetcols)
       end if
 
       ngrdcol       = state%ngrdcol
@@ -526,7 +526,7 @@ contains
    ! Propogate nsubcol information to common areas such as state, tend,
    ! nsubcol2d, and indcol2d
    !-----------------------------------------------------------------------
-      type(physics_state), intent(in)    :: state
+      type(physics_state), intent(inout)    :: state
       type(physics_tend),  intent(inout) :: tend
       integer,             intent(in)    :: nsubcol(pcols)
       type(physics_state), intent(inout) :: state_sc        ! subcolumn state
@@ -598,7 +598,7 @@ contains
    !-----------------------------------------------------------------------
    ! Initialize the subcolumn state header variables
    !----------------------------------------------------------------------
-      type(physics_state), intent(in)    :: state
+      type(physics_state), intent(inout)    :: state
       type(physics_state), intent(inout) :: state_sc        ! subcolumn state
 
       integer :: i, j, indx, isize
