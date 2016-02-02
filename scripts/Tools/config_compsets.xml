@@ -1739,7 +1739,7 @@ DOCN%COPY => docn copy mode
 <CPL_SEQ_OPTION compset="_DATM.*_DLND.*_DICE.*_DOCN">CESM1_MOD</CPL_SEQ_OPTION>
 <CPL_SEQ_OPTION compset="_XATM.*_XLND.*_XICE.*_XOCN">CESM1_MOD</CPL_SEQ_OPTION>
 <CPL_SEQ_OPTION compset="_SOCN"                     >CESM1_MOD</CPL_SEQ_OPTION>
-<CPL_SEQ_OPTION compset="_MPASO"                    >CESM1_MOD_TIGHT</CPL_SEQ_OPTION>
+<CPL_SEQ_OPTION compset="_MPASO"                    >CESM1_MOD</CPL_SEQ_OPTION>
 
 <ROF_NCPL compset=".+"  >8</ROF_NCPL> 
 <ROF_NCPL compset="_DATM.*_POP2"            >$ATM_NCPL</ROF_NCPL>
