@@ -33,7 +33,12 @@ _TEST_SUITES = {
                     "TESTRUNPASS_P1.f19_g16_rx1.A")
                    ),
 
-    "acme_land_developer" : (None,
+    "acme_runoff_developer" : (None,
+                             ("SMS.f19_f19.IM1850CLM45CN",
+                              "SMS.f19_f19.IMCLM45")
+                             ),
+
+    "acme_land_developer" : ("acme_runoff_developer",
                              ("SMS.f19_f19.I1850CLM45CN",
                               "SMS.f09_g16.I1850CLM45CN",
                               "SMS.hcru_hcru.I1850CRUCLM45CN")
