@@ -88,6 +88,7 @@ module test_core
       use mpas_timer
       use mpas_vector_operations
       use mpas_geometry_utils
+      use test_core_streams, only : test_core_streams_test
    
       implicit none
    
@@ -119,6 +120,13 @@ module test_core
          write(stderrUnit, *) ' * Halo Exchange Test: SUCCESS'
       else
          write(stderrUnit, *) ' * Halo Exchange Test: FAILURE'
+      end if
+
+      call test_core_streams_test(domain, threadErrs, iErr)
+      if ( iErr == 0 ) then
+         write(stderrUnit, *) 'Stream I/O tests: SUCCESS'
+      else
+         write(stderrUnit, *) 'Stream I/O tests: FAILURE'
       end if
 
       deallocate(threadErrs)
