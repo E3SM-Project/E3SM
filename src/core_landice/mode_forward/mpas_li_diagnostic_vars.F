@@ -639,6 +639,7 @@ contains
       ! This information is only needed for some external dycores.
       if (trim(config_velocity_solver) /= 'sia') then
          procDynamicVertexMaskChanged = 0
+         procDirichletMaskChanged = 0
 
          ! Note: External dycores don't support multiple blocks per proc., but checking across
          !  blocks anyway, in case some day they do.
