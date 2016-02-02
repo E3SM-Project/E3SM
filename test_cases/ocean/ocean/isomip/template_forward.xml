@@ -59,8 +59,6 @@
 				<member name="xtime" type="var"/>
 				<member name="normalVelocity" type="var"/>
 				<member name="layerThickness" type="var"/>
-				<member name="ssh" type="var"/>
-				<member name="seaSurfacePressure" type="var"/>
 				<member name="tracersSurfaceValue" type="var_array"/>
 				<member name="surfaceVelocity" type="var_array"/>
 				<member name="tracersSurfaceFlux" type="var_struct"/>
@@ -68,14 +66,6 @@
 				<member name="surfaceThicknessFlux" type="var"/>
 				<member name="velocityX" type="var"/>
 				<member name="velocityY" type="var"/>
-				<member name="landIceInterfaceTracers" type="var"/>
-				<member name="landIceBoundaryLayerTracers" type="var"/>
-				<member name="landIceFraction" type="var"/>
-				<member name="landIceFrictionVelocity" type="var"/>
-				<member name="topDragMagnitude" type="var"/>
-				<member name="landIceFreshwaterFlux" type="var"/>
-				<member name="landIceHeatFlux" type="var"/>
-				<member name="heatFluxToLandIce" type="var"/>
 			</add_contents>
 		</stream>
 	</streams>
