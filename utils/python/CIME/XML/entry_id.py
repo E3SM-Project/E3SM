@@ -5,7 +5,7 @@ be used by other XML interface modules and not directly.
 """
 from standard_module_setup import *
 from CIME.utils import expect
-from GenericXML import GenericXML
+from generic_xml import GenericXML
 
 
 class EntryID(GenericXML):

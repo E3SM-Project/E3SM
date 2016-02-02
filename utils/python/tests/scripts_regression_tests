@@ -6,9 +6,10 @@ LIB_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(LIB_DIR)
 from CIME.utils import run_cmd
 import CIME.utils, update_acme_tests, wait_for_tests
-from  CIME.CreateTest import CreateTest
-from  CIME.XML.Machines import Machines
-from CIME.XML.Files import Files
+import CIME.create_test
+from  CIME.create_test import CreateTest
+from  CIME.XML.machines import Machines
+from CIME.XML.files import Files
 
 SCRIPT_DIR = CIME.utils.get_acme_scripts_root()
 
@@ -422,10 +423,10 @@ class TestCreateTestImpl(TestCreateTestCommon):
 
         for idx, phase in enumerate(ct._phases):
             for test in tests:
-                if (phase == ct.INITIAL_PHASE):
+                if (phase == CIME.create_test.INITIAL_PHASE):
                     continue
 
-                elif (phase == ct.BUILD_PHASE):
+                elif (phase == CIME.create_test.BUILD_PHASE):
                     ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
 
                     if (test == build_fail_test):
@@ -437,7 +438,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
                         self.assertFalse(ct._is_broken(test))
                         self.assertTrue(ct._work_remains(test))
 
-                elif (phase == ct.RUN_PHASE):
+                elif (phase == CIME.create_test.RUN_PHASE):
                     if (test == build_fail_test):
                         with self.assertRaises(SystemExit):
                             ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
@@ -481,7 +482,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
-        ct = CreateTest(tests, self._machine, test_id=test_id)
+        ct = CreateTest(tests, test_id=test_id)
 
         build_fail_test = tests[0]
         run_fail_test   = tests[1]
@@ -493,7 +494,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
         finally:
             sys.stdout = sys.__stdout__
 
-        if (CIME.utils.does_machine_have_batch()):
+        if (self._hasbatch):
             run_cmd("%s/wait_for_tests *%s*/TestStatus*" % (SCRIPT_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
 
         test_statuses = glob.glob("%s/*%s*/TestStatus" % (self._testroot, test_id))
@@ -502,12 +503,12 @@ class TestCreateTestImpl(TestCreateTestCommon):
         for test_status in test_statuses:
             status, test_name = wait_for_tests.parse_test_status_file(test_status)
             if (test_name == build_fail_test):
-                self.assertEqual(status[ct.BUILD_PHASE], wait_for_tests.TEST_FAIL_STATUS)
+                self.assertEqual(status[CIME.create_test.BUILD_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             elif (test_name == run_fail_test):
-                self.assertEqual(status[ct.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
+                self.assertEqual(status[CIME.create_test.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             else:
                 self.assertEqual(test_name, pass_test)
-                self.assertEqual(status[ct.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
+                self.assertEqual(status[CIME.create_test.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
 
 ###############################################################################
 class TestJenkinsGenericJob(TestCreateTestCommon):
@@ -645,73 +646,73 @@ class TestBlessTestResults(TestCreateTestCommon):
 # CIME xml files.
 
 # ###############################################################################
-class TestUpdateACMETests(unittest.TestCase):
-# ###############################################################################
+# class TestUpdateACMETests(unittest.TestCase):
+# # ###############################################################################
 
-#     ###########################################################################
-    def setUp(self):
-#     ###########################################################################
-#         # Grab all active tests
-        self._testlist_allactive = os.path.join(CIME.utils.get_model_config_root(), "allactive", "testlist_allactive.xml")
-        shutil.copy2(self._testlist_allactive, ".")
+# #     ###########################################################################
+#     def setUp(self):
+# #     ###########################################################################
+# #         # Grab all active tests
+#         self._testlist_allactive = os.path.join(CIME.utils.get_model_config_root(), "allactive", "testlist_allactive.xml")
+#         shutil.copy2(self._testlist_allactive, ".")
 
-#     ###########################################################################
-    def tearDown(self):
-#     ###########################################################################
-        shutil.copy2("testlist_allactive.xml", self._testlist_allactive)
+# #     ###########################################################################
+#     def tearDown(self):
+# #     ###########################################################################
+#         shutil.copy2("testlist_allactive.xml", self._testlist_allactive)
 
-#     ###########################################################################
-    def test_update_acme_tests(self):
-#     ###########################################################################
-#         # Add some testable stuff to acme tests
-        update_acme_tests._TEST_SUITES["acme_tiny"] = \
-            (None, (("ERS.f19_g16_rx1.A", "jgftestmodtest/test_mod"),
-                    ("NCK.f19_g16_rx1.A", "jgftestmodtest/test_mod"))
-             )
+# #     ###########################################################################
+#     def test_update_acme_tests(self):
+# #     ###########################################################################
+# #         # Add some testable stuff to acme tests
+#         update_acme_tests._TEST_SUITES["acme_tiny"] = \
+#             (None, (("ERS.f19_g16_rx1.A", "jgftestmodtest/test_mod"),
+#                     ("NCK.f19_g16_rx1.A", "jgftestmodtest/test_mod"))
+#              )
 
-        try:
-            update_acme_tests.update_acme_tests(os.path.basename(self._testlist_allactive), update_acme_tests.get_test_suites())
-        except:
-            traceback.print_tb(sys.exc_info()[2])
-            self.assertTrue(False, str(sys.exc_info()[1]))
+#         try:
+#             update_acme_tests.update_acme_tests(os.path.basename(self._testlist_allactive), update_acme_tests.get_test_suites())
+#         except:
+#             traceback.print_tb(sys.exc_info()[2])
+#             self.assertTrue(False, str(sys.exc_info()[1]))
 
-        stat = run_cmd("grep 'jgftestmodtest/test_mod' %s" % os.path.basename(self._testlist_allactive), ok_to_fail=True)[0]
-        self.assertEqual(stat, 0, msg="update_acme_tests did not update XML")
+#         stat = run_cmd("grep 'jgftestmodtest/test_mod' %s" % os.path.basename(self._testlist_allactive), ok_to_fail=True)[0]
+#         self.assertEqual(stat, 0, msg="update_acme_tests did not update XML")
 
-#     ###########################################################################
-    def test_update_acme_tests_test_mods(self):
-#     ###########################################################################
-        machine = "melvin"
-        not_my_machine = "%s_jgftest" % machine
+# #     ###########################################################################
+#     def test_update_acme_tests_test_mods(self):
+# #     ###########################################################################
+#         machine = "melvin"
+#         not_my_machine = "%s_jgftest" % machine
 
-#         # Add some testable stuff to acme tests
-        update_acme_tests._TEST_SUITES["acme_tiny"] = \
-            (None, (("ERS.f19_g16_rx1.A", "test_mod"),
-                    ("ERS.f19_g16_rx1.B", "test_mod", machine),
-                    ("ERS.f19_g16_rx1.C", "test_mod", (machine, not_my_machine)),
-                    ("ERS.f19_g16_rx1.D", "test_mod", not_my_machine),
-                    "ERS.f19_g16_rx1.E")
-             )
-
-
-        tests = update_acme_tests.get_test_suite("acme_tiny", compiler="gnu")
-
-        self.assertEqual(5, len(tests))
-        self.assertTrue("ERS.f19_g16_rx1.A.melvin_gnu.test_mod" in tests)
-        self.assertTrue("ERS.f19_g16_rx1.B.melvin_gnu.test_mod" in tests)
-        self.assertTrue("ERS.f19_g16_rx1.C.melvin_gnu.test_mod" in tests)
-        self.assertTrue("ERS.f19_g16_rx1.D.melvin_gnu" in tests)
-        self.assertTrue("ERS.f19_g16_rx1.E.melvin_gnu" in tests)
-
-        if (CIME.utils.does_machine_have_batch()):
-            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True, from_dir=self._testroot)
-            self.assertEqual(stat, 0,
-                             msg="COMMAND SHOULD HAVE WORKED\wait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+# #         # Add some testable stuff to acme tests
+#         update_acme_tests._TEST_SUITES["acme_tiny"] = \
+#             (None, (("ERS.f19_g16_rx1.A", "test_mod"),
+#                     ("ERS.f19_g16_rx1.B", "test_mod", machine),
+#                     ("ERS.f19_g16_rx1.C", "test_mod", (machine, not_my_machine)),
+#                     ("ERS.f19_g16_rx1.D", "test_mod", not_my_machine),
+#                     "ERS.f19_g16_rx1.E")
+#              )
 
 
-        stat, output, errput = run_cmd("%s/cs_status.%s" % (self._testroot, self._baseline_name), ok_to_fail=True)
-        self.assertEqual(stat, 0,
-                         msg="COMMAND SHOULD HAVE WORKED\cs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+#         tests = update_acme_tests.get_test_suite("acme_tiny", compiler="gnu")
+
+#         self.assertEqual(5, len(tests))
+#         self.assertTrue("ERS.f19_g16_rx1.A.melvin_gnu.test_mod" in tests)
+#         self.assertTrue("ERS.f19_g16_rx1.B.melvin_gnu.test_mod" in tests)
+#         self.assertTrue("ERS.f19_g16_rx1.C.melvin_gnu.test_mod" in tests)
+#         self.assertTrue("ERS.f19_g16_rx1.D.melvin_gnu" in tests)
+#         self.assertTrue("ERS.f19_g16_rx1.E.melvin_gnu" in tests)
+
+#         if (CIME.utils.does_machine_have_batch()):
+#             stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True, from_dir=self._testroot)
+#             self.assertEqual(stat, 0,
+#                              msg="COMMAND SHOULD HAVE WORKED\wait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+
+
+#         stat, output, errput = run_cmd("%s/cs_status.%s" % (self._testroot, self._baseline_name), ok_to_fail=True)
+#         self.assertEqual(stat, 0,
+#                          msg="COMMAND SHOULD HAVE WORKED\cs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 
 if (__name__ == "__main__"):

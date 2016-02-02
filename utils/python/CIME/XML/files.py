@@ -3,7 +3,7 @@ Interface to the config_files.xml file.  This class inherits from EntryID.py
 """
 from standard_module_setup import *
 
-from EntryID import EntryID
+from entry_id import EntryID
 from CIME.utils import expect, get_cime_root, get_model
 
 class Files(EntryID):

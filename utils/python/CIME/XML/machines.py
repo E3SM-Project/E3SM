@@ -3,8 +3,8 @@ Interface to the config_machines.xml file.  This class inherits from GenericXML.
 """
 from standard_module_setup import *
 import socket
-from GenericXML import GenericXML
-from Files import Files
+from generic_xml import GenericXML
+from files import Files
 from CIME.utils import expect
 
 class Machines(GenericXML):

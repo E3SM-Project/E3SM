@@ -13,10 +13,10 @@ If this tool is missing any feature that you need, please notify jgfouca@sandia.
 from standard_script_setup import *
 
 import update_acme_tests
-from CIME.CreateTest import CreateTest
+from CIME.create_test import CreateTest
 from CIME.utils import expect
-from CIME.XML.Machines import Machines
-from CIME.XML.Files import Files
+from CIME.XML.machines import Machines
+from CIME.XML.files import Files
 
 import argparse, doctest, tempfile
 

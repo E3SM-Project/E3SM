@@ -8,7 +8,7 @@ import CIME.utils
 from CIME.utils import expect, run_cmd
 import wait_for_tests, update_acme_tests
 from wait_for_tests import TEST_PASS_STATUS, TEST_FAIL_STATUS, TEST_PENDING_STATUS, TEST_STATUS_FILENAME, NAMELIST_FAIL_STATUS, RUN_PHASE, NAMELIST_PHASE
-from CIME.XML.Machines import Machines
+from CIME.XML.machines import Machines
 
 INITIAL_PHASE = "INIT"
 CREATE_NEWCASE_PHASE = "CREATE_NEWCASE"
@@ -88,11 +88,15 @@ class CreateTest(object):
             self._no_batch = True
 
 
-        # If comparing against baselines
-        if (self._compare or self._generate):
-            expect(self._baseline_name is not None,
-               "Must provide baseline name if doing compare/generate")
-        self._baseline_name = os.path.join(self._compiler, self._baseline_name)
+        if (baseline_name is None):
+            branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
+            expect(branch_name is not None, "Could not determine baseline name from branch, please use -b option")
+            self._baseline_name = os.path.join(self._compiler, branch_name)
+        else:
+            self._baseline_name  = baseline_name
+            if (not self._baseline_name.startswith("%s/" % self._compiler)):
+                self._baseline_name = os.path.join(self._compiler, self._baseline_name) 
+
         if (self._compare):
             full_baseline_dir = os.path.join(self._baseline_root, self._baseline_name)
             expect(os.path.isdir(full_baseline_dir),
@@ -122,17 +126,6 @@ class CreateTest(object):
 
         if (not self._compare and not self._generate):
             self._phases.remove(NAMELIST_PHASE)
-        else:
-            if (baseline_name is None):
-                branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
-                expect(branch_name is not None, "Could not determine baseline name from branch, please use -b option")
-                self._baseline_name = os.path.join(self._compiler, branch_name)
-            else:
-                self._baseline_name  = baseline_name
-                if (not self._baseline_name.startswith("%s/" % self._compiler)):
-                    self._baseline_name = os.path.join(self._compiler, self._baseline_name)
-
-        # Validate any assumptions that were not caught by the arg parser
 
         # None of the test directories should already exist.
         for test in self._test_names:
@@ -520,10 +513,7 @@ class CreateTest(object):
             work_to_do = False
             num_threads_launched_this_iteration = 0
             for test_name in self._test_names:
-                logging.warn("test_name: "+test_name)
-                for mys in self._test_states:
-                    print mys
-                print "THERE"
+                logging.info("test_name: "+test_name)
                 # If we have no workers available, immediately wait
                 if (len(threads_in_flight) == self._parallel_jobs):
                     self._wait_for_something_to_finish(threads_in_flight)
@@ -618,7 +608,7 @@ class CreateTest(object):
         rv = True
         for idx, test_name in enumerate(self._test_names):
             phase, status = self._test_states[idx]
-            logging.warn("phase %s status %s" %(phase,status))
+            logging.debug("phase %s status %s" %(phase,status))
             if (status == TEST_PASS_STATUS and phase == RUN_PHASE):
                 # Be cautious about telling the user that the test passed. This
                 # status should match what they would see on the dashboard. Our

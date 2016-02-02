@@ -1,7 +1,7 @@
 import os, tempfile, logging
 import CIME.utils
 from CIME.utils import expect
-from CIME.XML.Machines import Machines
+from CIME.XML.machines import Machines
 
 # Here are the tests belonging to acme suites. Format is
 # <test>.<grid>.<compset>.
