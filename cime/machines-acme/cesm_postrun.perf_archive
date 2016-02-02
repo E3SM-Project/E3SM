@@ -63,13 +63,13 @@ if ($app_jobid == 'unknown') then
 
     set app_jobid = $PBS_JOBID
 
+  else if (($machine == 'edison') || ($machine == 'corip1')) then
+
+    set app_jobid = $SLURM_JOB_ID
+
   else if ($machine == 'mira') then
 
     set app_jobid = $COBALT_JOBID
-
-  else if ($machine == 'edison') then
-
-    set app_jobid = $SLURM_JOB_ID
 
   endif
 endif
@@ -83,16 +83,8 @@ if ($app_jobid != 'unknown') then
   endif
 
   if ($syslog_jobid != 0) then
-    if ($machine == 'mira') then
-
-      if { kill -0 $syslog_jobid } then 
-        kill $syslog_jobid
-      endif
-
-    else
-
+    if { kill -0 $syslog_jobid } then 
       kill $syslog_jobid
-
     endif
   endif
 
@@ -132,7 +124,7 @@ if (($save_timing == 'TRUE') || ($save_timing == 'true')) then
 
     cd $caseroot
 
-    if (($machine == 'edison') || ($machine == 'titan')) then
+    if ($machine == 'titan') then
 
       set string = `ls $app_jobid*OU`
       cp -p $string $save_timing_dir/performance_archive/$user/$case/$lid/$string.$lid
@@ -145,6 +137,12 @@ if (($save_timing == 'TRUE') || ($save_timing == 'true')) then
       chmod a+r $save_timing_dir/performance_archive/$user/$case/$lid/$string.$lid
 
       set string = `ls $app_jobid*cobaltlog`
+      cp -p $string $save_timing_dir/performance_archive/$user/$case/$lid/$string.$lid
+      chmod a+r $save_timing_dir/performance_archive/$user/$case/$lid/$string.$lid
+
+    else if (($machine == 'edison') || ($machine == 'corip1')) then
+
+      set string = `ls $case`
       cp -p $string $save_timing_dir/performance_archive/$user/$case/$lid/$string.$lid
       chmod a+r $save_timing_dir/performance_archive/$user/$case/$lid/$string.$lid
 
