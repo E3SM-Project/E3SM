@@ -319,11 +319,11 @@ class TestCreateTestCommon(unittest.TestCase):
         self._unset_proxy       = setup_proxy()
         self._baseline_name     = "fake_testing_only_%s" % CIME.utils.get_utc_timestamp()
         self._machine           = machine.probe_machine_name()
-        self._baseline_area     = machine.get_value("CCSM_BASELINE",resolved=True)
-        self._testroot          = machine.get_value("CESMSCRATCHROOT",resolved=True)
+        self._baseline_area     = machine.get_value("CCSM_BASELINE")
+        self._testroot          = machine.get_value("CESMSCRATCHROOT")
         self._jenkins_root      = os.path.join(self._testroot, "jenkins")
         self._compiler          = machine.get_default_compiler()
-
+        self._hasbatch       = machine.has_batch_system()
         # wait_for_tests could blow away our dart config, need to back it up
         if (os.path.exists(DART_CONFIG)):
             shutil.move(DART_CONFIG, DART_BACKUP)
@@ -600,7 +600,9 @@ class TestBlessTestResults(TestCreateTestCommon):
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
         stat, output, errput = run_cmd("%s/create_test  %s %s" % (SCRIPT_DIR, self._test_name, extra_args), ok_to_fail=True)
-        if (expect_works):
+
+        
+        if (self._hasbatch):
             self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
             test_id = extra_args.split()[extra_args.split().index("-t") + 1]
             stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
@@ -661,10 +663,10 @@ class TestUpdateACMETests(unittest.TestCase):
     def test_update_acme_tests(self):
 #     ###########################################################################
 #         # Add some testable stuff to acme tests
-#       update_acme_tests._TEST_SUITES["acme_tiny"] = \
-#            (None, (("ERS.f19_g16_rx1.A", "jgftestmodtest/test_mod"),
-#                    ("NCK.f19_g16_rx1.A", "jgftestmodtest/test_mod"))
-#             )
+        update_acme_tests._TEST_SUITES["acme_tiny"] = \
+            (None, (("ERS.f19_g16_rx1.A", "jgftestmodtest/test_mod"),
+                    ("NCK.f19_g16_rx1.A", "jgftestmodtest/test_mod"))
+             )
 
         try:
             update_acme_tests.update_acme_tests(os.path.basename(self._testlist_allactive), update_acme_tests.get_test_suites())

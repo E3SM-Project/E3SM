@@ -1,9 +1,8 @@
 """
 Implementation of create_test functionality from CIME
 """
-
-import sys, os, shutil, traceback, stat, glob, threading, time, thread, logging
-
+import shutil, traceback, stat, glob, threading, time, thread
+from XML.standard_module_setup import *
 import compare_namelists
 import CIME.utils
 from CIME.utils import expect, run_cmd
@@ -171,8 +170,6 @@ class CreateTest(object):
     def _get_test_data(self, test_name):
     ###########################################################################
         state_idx = self._test_names.index(test_name)
-        expect(state_idx < len(self._test_states),"test states missing %s %s" %
-               (state_idx,len(self._test_states)))
         return self._test_states[state_idx]
 
     ###########################################################################

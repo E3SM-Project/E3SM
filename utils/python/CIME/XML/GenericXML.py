@@ -2,9 +2,7 @@
 Common interface to XML files, this is an abstract class and is expected to
 be used by other XML interface modules and not directly.
 """
-
-import xml.etree.ElementTree as ET
-import sys, os, logging, re, doctest
+from standard_module_setup import *
 
 from CIME.utils import expect, get_cime_root
 

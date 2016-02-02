@@ -1,8 +1,7 @@
 """
 Interface to the config_machines.xml file.  This class inherits from GenericXML.py
 """
-import logging
-import re
+from standard_module_setup import *
 import socket
 from GenericXML import GenericXML
 from Files import Files
@@ -48,23 +47,27 @@ class Machines(GenericXML):
         Find a matching regular expression for hostname
         in the NODENAME_REGEX field in the file.   First match wins.
         """
+        machine = None
         nametomatch = socket.gethostname().split(".")[0]
         nodes = self.get_node('machine')
         for node in nodes:
-            machine = node.get('MACH')
-            logging.info("machine is "+machine)
-            self.set_machine(machine)
+            machtocheck = node.get('MACH')
+            logging.debug("machine is "+machtocheck)
+            self.set_machine(machtocheck)
             regex_str_nodes =  self.get_node('NODENAME_REGEX',root=self.machine)
+            
             if(len(regex_str_nodes)>0):
                 regex_str = regex_str_nodes[0].text
-                if (regex_str is not None):
-                    logging.info("machine regex string is "+ regex_str)
-                    regex = re.compile(regex_str)
-                    if (regex.match(nametomatch)):
-                        logging.info("Found machine: "+machine)
-                        return machine
-
-        return None
+            else:
+                regex_str = machtocheck
+            if (regex_str is not None):
+                logging.debug("machine regex string is "+ regex_str)
+                regex = re.compile(regex_str)
+                if (regex.match(nametomatch)):
+                    logging.info("Found machine: %s matches %s" %(machtocheck,nametomatch))
+                    machine = machtocheck
+                    break
+        return machine
 
 
     def set_machine(self,machine):
@@ -191,9 +194,12 @@ class Machines(GenericXML):
         >>> machobj.has_batch_system()
         False
         """
-
+        result = False
         batch_system = self.get_node("batch_system")
-        return not (batch_system is None or batch_system[0].get('type') == "none")
+        if(batch_system):
+            result = (batch_system[0].get('type') != "none")
+        logging.debug("Machine %s has batch: %s" %(self.name,result))
+        return result
 
     def get_batch_system_type(self):
         """

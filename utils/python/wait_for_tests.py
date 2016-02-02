@@ -352,6 +352,7 @@ def interpret_status(file_contents, check_throughput=False, check_memory=False, 
     ('testname', 'DIFF')
     """
     statuses, test_name = parse_test_status(file_contents)
+    logging.warning("status %s test_name %s" %(statuses, test_name))
     reduced_status = reduce_stati(statuses, check_throughput, check_memory, ignore_namelists)
 
     if (RUN_PHASE not in statuses.keys() and reduced_status != TEST_FAIL_STATUS):
