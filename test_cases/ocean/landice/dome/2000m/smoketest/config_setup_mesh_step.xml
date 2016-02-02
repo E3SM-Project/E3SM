@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config case="setuptest_step">
+<config case="setup_mesh">
 
         <get_file hash="x1rci5xkun" dest_path="mesh_database" file_name="periodic_hex_30x34_2000m.nc">
                 <mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_landice/test_cases/"/>
@@ -12,7 +12,7 @@
         <add_link source_path="script_configuration_dir" source="setup_dome_initial_conditions.py" dest="setup_dome_initial_conditions.py"/>
         <add_link source="make_graph_file.py" source_path="utility_scripts" dest="make_graph_file.py"/>
 
-        <run_script name="setuptest.py">
+        <run_script name="setup_mesh.py">
 
                 <!-- Convert from basic MPAS mesh to MPASLI mesh -->
                 <step executable="./create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
