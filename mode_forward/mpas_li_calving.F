@@ -106,7 +106,7 @@ module li_calving
 
       ! calving-relevant config options
       character (len=StrKIND), pointer :: config_calving
-      logical, pointer :: config_print_calving_info
+      logical, pointer :: config_print_calving_info, config_data_calving
 
       real(kind=RKIND), pointer :: config_calving_topography, &
                                    config_calving_thickness, &
@@ -173,6 +173,7 @@ module li_calving
       ! get config options
       dminfo => domain % dminfo
       call mpas_pool_get_config(liConfigs, 'config_calving', config_calving)
+      call mpas_pool_get_config(liConfigs, 'config_data_calving', config_data_calving)
       call mpas_pool_get_config(liConfigs, 'config_calving_thickness', config_calving_thickness)
       call mpas_pool_get_config(liConfigs, 'config_calving_topography', config_calving_topography)
       call mpas_pool_get_config(liConfigs, 'config_calving_timescale', config_calving_timescale)
@@ -242,7 +243,9 @@ module li_calving
          ! initialize
          calvingThickness = 0.0_RKIND
 
-         ! compute calving based on the calving_config option
+         ! compute calvingThickness based on the calving_config option
+         ! the calvingThickness field gets applied to the thickness state field
+         ! after this if-construct
 
          if (trim(config_calving) == 'none') then
 
@@ -393,7 +396,6 @@ module li_calving
 
             where (oceanMask == 1 .and. inactiveMarginMask == 0 .and. thickness > 0.0_RKIND)
                calvingThickness = thickness * calvingFraction
-               thickness = thickness - calvingThickness
             endwhere
 
             ! clean up
@@ -448,13 +450,20 @@ module li_calving
             where (calvingLawMask == 1)
 
                calvingThickness = thickness * calvingFraction
-               thickness = thickness - calvingThickness
 
             endwhere
 
             call mpas_deallocate_scratch_field(calvingLawMaskField, .true.)
 
          endif   ! config_calving
+
+         ! Now that calvingThickness has been calculated, apply it to the thickness field,
+         ! unless we are in a data calving mode.  In data calving mode we just calculate
+         ! what should be calved but don't actually calve it.
+         if (.not. config_data_calving) then
+            thickness = thickness - calvingThickness
+         endif
+
 
          ! Optionally, print a list of cells with calving
             
