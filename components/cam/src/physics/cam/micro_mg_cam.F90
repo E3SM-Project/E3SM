@@ -127,6 +127,8 @@ character(len=16) :: micro_mg_precip_frac_method = 'max_overlap' ! type of preci
 
 real(r8)          :: micro_mg_berg_eff_factor    = 1.0_r8        ! berg efficiency factor
 
+real(r8)          :: ice_sed_ai                  = 700.0_r8      ! Fall speed parameter for cloud ice
+
 logical, public :: do_cldliq ! Prognose cldliq flag
 logical, public :: do_cldice ! Prognose cldice flag
 
@@ -266,7 +268,7 @@ subroutine micro_mg_cam_readnl(nlfile)
   character(len=*), parameter :: subname = 'micro_mg_cam_readnl'
 
   namelist /micro_mg_nl/ micro_mg_version, micro_mg_sub_version, &
-       micro_mg_do_cldice, micro_mg_do_cldliq, micro_mg_num_steps, &
+       micro_mg_do_cldice, micro_mg_do_cldliq, micro_mg_num_steps, ice_sed_ai,&
 !!== KZ_DCS
        micro_mg_dcs_tdep, & 
 !!== KZ_DCS
@@ -329,6 +331,7 @@ subroutine micro_mg_cam_readnl(nlfile)
   call mpibcast(microp_uniform,              1, mpilog, 0, mpicom)
   call mpibcast(micro_mg_dcs,                1, mpir8,  0, mpicom)
   call mpibcast(micro_mg_berg_eff_factor,    1, mpir8,  0, mpicom)
+  call mpibcast(ice_sed_ai,                  1, mpir8,  0, mpicom)
   call mpibcast(micro_mg_precip_frac_method, 16, mpichar,0, mpicom)
 
 #endif
@@ -633,7 +636,7 @@ subroutine micro_mg_cam_init(pbuf2d)
       case (0)
          ! MG 1 does not initialize micro_mg_utils, so have to do it here.
          call micro_mg_utils_init(r8, rh2o, cpair, tmelt, latvap, latice, &
-              micro_mg_dcs, errstring)
+              micro_mg_dcs, ice_sed_ai, errstring)
          call handle_errmsg(errstring, subname="micro_mg_utils_init")
 
          call micro_mg_init1_0( &
@@ -644,7 +647,7 @@ subroutine micro_mg_cam_init(pbuf2d)
       case (5)
          ! MG 1 does not initialize micro_mg_utils, so have to do it here.
          call micro_mg_utils_init(r8, rh2o, cpair, tmelt, latvap, latice, &
-              micro_mg_dcs, errstring)
+              micro_mg_dcs, ice_sed_ai, errstring)
          call handle_errmsg(errstring, subname="micro_mg_utils_init")
 
          call micro_mg_init1_5( &
@@ -668,7 +671,7 @@ subroutine micro_mg_cam_init(pbuf2d)
               micro_mg_dcs_tdep,             &
               microp_uniform, do_cldice, use_hetfrz_classnuc, &
               micro_mg_precip_frac_method, micro_mg_berg_eff_factor, &
-              allow_sed_supersat, errstring)
+              allow_sed_supersat, ice_sed_ai, errstring)
       end select
    end select
 

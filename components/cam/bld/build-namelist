@@ -3316,6 +3316,7 @@ if ($cfg->get('microphys') =~ /^mg/) {
     add_default($nl, 'micro_mg_berg_eff_factor');
 }
 add_default($nl, 'micro_mg_dcs');
+add_default($nl, 'ice_sed_ai');
 
 # Sub-column switches for physics packages
 # Check that a subcol_scheme is specified if use_subcol_microp is turned on (true)
@@ -3388,6 +3389,10 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_timestep');
    add_default($nl, 'clubb_rnevap_effic');
    add_default($nl, 'clubb_stabcorrect');
+   add_default($nl, 'clubb_liq_deep');
+   add_default($nl, 'clubb_liq_sh');
+   add_default($nl, 'clubb_ice_deep');
+   add_default($nl, 'clubb_ice_sh');
 }
 
 #in-cloud scav tuning for cloud-borne aerosol
