@@ -28,6 +28,8 @@ model = FULL_PATH_TO_MODEL
 mesh_converter = FULL_PATH_TO_MESH_CONVERTER
 cell_culler = FULL_PATH_TO_CELL_CULLER
 metis = FULL_PATH_TO_METIS
+grid_to_li_grid = FULL_PATH_TO_create_landice_grid_from_generic_MPAS_grid.py
+periodic_hex = FULL_PATH_TO_PERIODIC_HEX
 
 
 # The paths section describes paths that are used within the landice core test
@@ -39,4 +41,4 @@ metis = FULL_PATH_TO_METIS
 # some test cases might download data into them, which will then be reused if
 # the test case is run again later.
 mesh_database = FULL_PATH_TO_LOCAL_MESH_DATABASE
-initial_condition_database = FULL_PATH_TO_LOCAL_INITIAL_CONDITION_DATABASE
+initial_condition_database = NOT_CURRENTLY_USED
