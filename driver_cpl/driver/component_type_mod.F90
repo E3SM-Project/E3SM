@@ -11,7 +11,7 @@ module component_type_mod
   use seq_comm_mct     , only: seq_comm_namelen
   use seq_comm_mct     , only: num_inst_atm, num_inst_lnd, num_inst_rof
   use seq_comm_mct     , only: num_inst_ocn, num_inst_ice, num_inst_glc
-  use seq_comm_mct     , only: num_inst_wav
+  use seq_comm_mct     , only: num_inst_wav, num_inst_esp
   use mct_mod            
   use ESMF
 
@@ -121,8 +121,9 @@ module component_type_mod
   type(component_type), target :: ice(num_inst_ice)
   type(component_type), target :: glc(num_inst_glc)
   type(component_type), target :: wav(num_inst_wav)
+  type(component_type), target :: esp(num_inst_esp)
 
-  public :: atm, lnd, rof, ocn, ice, glc, wav
+  public :: atm, lnd, rof, ocn, ice, glc, wav, esp
 
   !===============================================================================
 

@@ -35,6 +35,7 @@ OPTIONS
    -i Cleans the ice objects
    -r Cleans the rof objects
    -l Cleans the lnd objects
+   -e Cleans the wav objects
    -m Cleans the mct library
    -s Cleans the shr library
    -p Cleans the pio library
@@ -55,6 +56,7 @@ GetOptions(
     "i" => \$opts{ice},
     "r" => \$opts{rof},
     "l" => \$opts{lnd},
+    "e" => \$opts{esp},
     "m" => \$opts{mct},
     "s" => \$opts{csmshare},
     "t" => \$opts{gptl},
@@ -86,6 +88,7 @@ if( $cnt==0){
     $opts{glc} = 1;
     $opts{ice} = 1;
     $opts{rof} = 1;
+    $opts{esp} = 1;
 
     # Do not clean shared land library in a test case unless explicitly
     # requested. This is for the sake of test suites: We don't want tests that

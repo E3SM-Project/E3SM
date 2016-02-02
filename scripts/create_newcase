@@ -326,7 +326,7 @@ foreach my $element (@elements) {
 
 # Given the compset components, determine the full pathname of each component definition file
 # (all have the generic name config_component.xml) and the directories each component's buildlib and buildnml files
-foreach my $comp ('ATM', 'LND', 'ROF', 'ICE', 'OCN', 'GLC', 'WAV', 'DRV') {
+foreach my $comp ('ATM', 'LND', 'ROF', 'ICE', 'OCN', 'GLC', 'WAV', 'ESP', 'DRV') {
     FOUND1: foreach my $component (@compset_components) {
 	my $name = "CONFIG_" . $comp . "_FILE";
 	my @nodes = $xml->findnodes(".//entry[\@id=\"$name\"]/values/value[\@component=\"$component\"]");
@@ -399,7 +399,7 @@ ConfigCompsetGrid::setGridMaps($file, $config);
 
 my @setup_comp_files;
 foreach my $name ('CONFIG_ATM_FILE', 'CONFIG_ICE_FILE', 'CONFIG_GLC_FILE', 'CONFIG_LND_FILE',
-		  'CONFIG_ROF_FILE', 'CONFIG_OCN_FILE', 'CONFIG_WAV_FILE') {
+		  'CONFIG_ROF_FILE', 'CONFIG_OCN_FILE', 'CONFIG_WAV_FILE', 'CONFIG_ESP_FILE') {
     my $file = $config->get($name);
     (-f $file) || die "ERROR create_newcase: config_file $file does not exist";
     $config->add_config_variables($file, $srcroot, $cimeroot);
@@ -753,6 +753,7 @@ sub _set_confopts
 	$config->set('NINST_GLC', $nopt);
 	$config->set('NINST_ROF', $nopt);
 	$config->set('NINST_WAV', $nopt);
+	$config->set('NINST_ESP', $nopt);
 	$logger->info("    confopts instances set to $nopt ");
     }
     if ($coptions =~ "_CG") {
@@ -786,7 +787,8 @@ sub _set_mpi_library
 	if ($config->get('NTASKS_ATM') == 1 && $config->get('NTASKS_LND') == 1 &&
 	    $config->get('NTASKS_OCN') == 1 && $config->get('NTASKS_ICE') == 1 &&
 	    $config->get('NTASKS_ROF') == 1 && $config->get('NTASKS_GLC') == 1 &&
-	    $config->get('NTASKS_WAV') == 1 && $config->get('NTASKS_CPL') == 1)
+            $config->get('NTASKS_WAV') == 1 && $config->get('NTASKS_ESP') == 1 &&
+            $config->get('NTASKS_CPL') == 1)
 	{
 	    $mpilib = "mpi-serial";
 	}else{
@@ -1033,7 +1035,8 @@ sub _create_caseroot_sourcemods
     my $comps_glc  = $config->get("COMP_GLC");
     my $comps_rof  = $config->get("COMP_ROF");
     my $comps_wav  = $config->get("COMP_WAV");
-    my @comps  = ($comps_atm, $comps_lnd, $comps_ocn, $comps_ice, $comps_glc, $comps_rof, $comps_wav);
+    my $comps_esp  = $config->get("COMP_ESP");
+    my @comps  = ($comps_atm, $comps_lnd, $comps_ocn, $comps_ice, $comps_glc, $comps_rof, $comps_wav, $comps_esp);
 
     # Create sourcemods
     foreach my $comp (@comps)  {
@@ -1097,5 +1100,3 @@ sub _clean
     $name =~ s/\s+$//; # strip any trailing whitespace
     return ($name);
 }
-
-

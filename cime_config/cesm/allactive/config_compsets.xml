@@ -10,7 +10,7 @@
     atm, lnd, ice, ocn, river, glc wave cesm-options
 
     The notation for the compset longname is
-    TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_BGC%phys]
+    TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_ESP%phys][_BGC%phys]
     Where for the CAM specific compsets below the following is supported
     TIME = Time period (e.g. 2000, HIST, RCP8...)
     ATM  = [CAM4, CAM5]
@@ -20,6 +20,7 @@
     ROF  = [RTM, MOSART, SROF]
     GLC  = [CISM1, CISM2, SGLC]
     WAV  = [WW3, DWAV, XWAV, SWAV]
+    ESP  = [SESP]
     BGC  = optional BGC scenario
 
     The OPTIONAL %phys attributes specify submodes of the given system
