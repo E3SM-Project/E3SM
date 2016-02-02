@@ -183,8 +183,6 @@ def get_full_test_names(testargs, machine, compiler):
     >>> get_full_test_names(["acme_tiny", "^NCK.f19_g16_rx1.A"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu']
     """
-    import pdb
-    pdb.set_trace()
     expect(machine is not None,"Must define a machine")
     expect(compiler is not None,"Must define a compiler")
     acme_test_suites = get_test_suites()

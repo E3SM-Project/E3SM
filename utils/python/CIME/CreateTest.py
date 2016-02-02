@@ -83,8 +83,7 @@ class CreateTest(object):
             self._no_batch = True
 
         expect(len(test_names) > 0, "No tests to run")
-        test_names = update_acme_tests.get_full_test_names(test_names, machine_name, self._compiler)
-        print "HERE test_names are "+test_names
+        self._test_names = update_acme_tests.get_full_test_names(test_names, machine_name, self._compiler)
 
         # If comparing against baselines
         if (self._compare or self._generate):
@@ -172,6 +171,8 @@ class CreateTest(object):
     def _get_test_data(self, test_name):
     ###########################################################################
         state_idx = self._test_names.index(test_name)
+        expect(state_idx < len(self._test_states),"test states missing %s %s" %
+               (state_idx,len(self._test_states)))
         return self._test_states[state_idx]
 
     ###########################################################################
@@ -616,7 +617,7 @@ class CreateTest(object):
         rv = True
         for idx, test_name in enumerate(self._test_names):
             phase, status = self._test_states[idx]
-
+            logging.warn("phase %s status %s" %(phase,status))
             if (status == TEST_PASS_STATUS and phase == RUN_PHASE):
                 # Be cautious about telling the user that the test passed. This
                 # status should match what they would see on the dashboard. Our

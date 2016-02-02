@@ -357,7 +357,7 @@ class TestCreateTest(TestCreateTestCommon):
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
-        stat, output, errput = run_cmd("%s/create_test acme_test_only_pass %s" % (SCRIPT_DIR, extra_args), ok_to_fail=True)
+        stat, output, errput = run_cmd("%s/create_test -v acme_test_only_pass %s" % (SCRIPT_DIR, extra_args), ok_to_fail=True)
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
         else:
@@ -599,7 +599,7 @@ class TestBlessTestResults(TestCreateTestCommon):
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
-        stat, output, errput = run_cmd("%s/create_test %s %s" % (SCRIPT_DIR, self._test_name, extra_args), ok_to_fail=True)
+        stat, output, errput = run_cmd("%s/create_test -v %s %s" % (SCRIPT_DIR, self._test_name, extra_args), ok_to_fail=True)
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
         else:
