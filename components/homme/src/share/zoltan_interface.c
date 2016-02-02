@@ -57,7 +57,13 @@ void zoltanpart_(int *nelem, int *xadj,int *adjncy,double *adjwgt,double *vwgt, 
   zoltan_partition_problem(nelem, xadj,adjncy,adjwgt,vwgt, nparts, c_comm,
       xcoord, ycoord, zcoord, result_parts, partmethod);
 #else
-  printf("Zoltan cannot be used since it is not compiled with Trilinos.");
+  int mype2, size2;
+  MPI_Comm_rank(c_comm, &mype2);
+  MPI_Comm_size(c_comm, &size2);
+  if (mype2 == 0) {
+
+    printf("Zoltan cannot be used since it is not compiled with Trilinos.");
+  }
   exit(1);
 #endif
 

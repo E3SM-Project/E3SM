@@ -171,11 +171,11 @@ void zoltan_partition_problem(
 
 
   RCP<xcrsGraph_problem_t> homme_partition_problem (new xcrsGraph_problem_t(ia.getRawPtr(),&zoltan2_parameters,tcomm));
-  if (tcomm->getRank() == 0)
-    std::cout << "calling solve" << std::endl;
+  //if (tcomm->getRank() == 0)
+  //  std::cout << "calling solve" << std::endl;
 
 
-  std::cout << " tcomm->getRank():" << tcomm->getRank() << " numMyElements:" << numMyElements << std::endl;
+  //std::cout << " tcomm->getRank():" << tcomm->getRank() << " numMyElements:" << numMyElements << std::endl;
 
 
 
