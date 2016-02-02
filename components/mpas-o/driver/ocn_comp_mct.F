@@ -1762,9 +1762,6 @@ contains
                                                  oceanSurfacePhytoC, &
                                                  oceanSurfaceDOC, layerThickness
 
-   real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
-
-   integer, pointer :: indexTemperature
    logical, pointer :: frazilIceActive,          &
                        config_use_ecosysTracers, &
                        config_use_DMSTracers,    &
@@ -1797,8 +1794,6 @@ contains
      call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientMeridional', index_avgMeridionalSSHGradient)
 
      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
-     call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
-     call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
 
      call mpas_pool_get_array(forcingPool, 'avgTracersSurfaceValue', avgTracersSurfaceValue)
      call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
@@ -1851,7 +1846,7 @@ contains
        if ( frazilIceActive ) then
           ! negative when frazil ice can be melted
           seaIceEnergy(i) = min( rho_sw * cp_sw * layerThickness(1, i) * ( -1.8_RKIND &
-                          - activeTracers(indexTemperature, 1, i) ), 0.0_RKIND )
+                          - avgTracersSurfaceValue(index_temperatureSurfaceValue, i) ), 0.0_RKIND )
 
           o2x_o % rAttr(index_o2x_Fioo_meltp, n)  = seaIceEnergy(i) / ocn_cpl_dt
           o2x_o % rAttr(index_o2x_Fioo_frazil, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
