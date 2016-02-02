@@ -951,6 +951,8 @@ if ($print>=2) { print "clubb_do_adv=',$clubb_do_adv,$eol"; }
 if ( $clubb_do_deep == 1 ) {
    #force to set microphys to mg1 for current version of SILHS
     $microphys_pkg = 'mg1';
+    $cfg_ref->set('microphys', $microphys_pkg);
+    if ($print>=2) { print "Reset Microphysics package: $microphys_pkg$eol"; }
 }
 #-----------------------------------------------------------------------------------------------
 # Macro-physics package
