@@ -53,6 +53,15 @@
 		<dim name="nVertLevelsP1" definition="nVertLevels+1" units="unitless"
 			 description="The number of interfaces in the vertical direction."
 		/>
+		<dim name="nPoints" definition="1" units="unitless"
+			 description="The number of points for AM_pointwiseStats"
+		/>
+		<dim name="nPointGroups" definition="1" units="unitless"
+			 description="The number of points groups"
+		/>
+		<dim name="maxPointsInGroup" definition="1" units="unitless"
+			 description="The maximum number of points in any group."
+		/>
 	</dims>
 
 	<!--*************************************-->
@@ -1541,6 +1550,17 @@
 			<var name="GMStreamFuncX"/>
 			<var name="GMStreamFuncY"/>
 		</stream>
+
+		<stream name="pointLocationsInput"
+				type="input"
+				filename_template="points.nc"
+				input_interval="initial_only"
+				runtime_format="single_file"
+				mode="forward;analysis">
+
+			<var name="pointCellGlobalID"/>
+		</stream>
+
 	</streams>
 
 	<var_struct name="state" time_levs="2">
@@ -3002,6 +3022,44 @@
 			persistence="scratch"
 			type="real" dimensions="nCells" units="unitless"
 			description="the linearly interpolated level at which z=-bottomDepth in a z-level coordinate, used to prevent vertical grid from getting too squashed."
+		/>
+	</var_struct>
+	<var_struct name="pointLocations" time_levs="1">
+		<var name="pointCellGlobalID" type="integer" dimensions="nPoints" units="unitless"
+			 description="List of global cell IDs in point set."
+		/>
+		<var name="pointCellLocalID" type="integer" dimensions="nPoints" units="unitless"
+			 description="List of local cell IDs in point set."
+		/>
+		<var name="indexToPointCellLocalID" type="integer" dimensions="nPoints" units="unitless"
+			 description="Index to list of local cell IDs in point set."
+		/>
+		<var name="pointNames" type="text" dimensions="nPoints" units="unitless"
+			 description="The names of each point."
+		/>
+		<var name="pointGroupNames" type="text" dimensions="nPointGroups" units="unitless"
+			 description="The names of each point group."
+		/>
+		<var name="nPointsInGroup" type="integer" dimensions="nPointGroups" units="unitless"
+			 description="The number of points in each point group."
+		/>
+		<var name="pointsInGroup" type="integer" dimensions="maxPointsInGroup nPointGroups" units="unitless"
+			 description="The indices of each point in a each group."
+		/>
+		<var name="xPoint" type="real" dimensions="nPoints" units="unitless"
+			 description="X Coordinate in cartesian space of point locations."
+		/>
+		<var name="yPoint" type="real" dimensions="nPoints" units="unitless"
+			 description="Y Coordinate in cartesian space of point locations."
+		/>
+		<var name="zPoint" type="real" dimensions="nPoints" units="unitless"
+			 description="Z Coordinate in cartesian space of point locations."
+		/>
+		<var name="latPoint" type="real" dimensions="nPoints" units="radians"
+			 description="Latitude of point locations."
+		/>
+		<var name="lonPoint" type="real" dimensions="nPoints" units="radians"
+			 description="Longitude of point locations."
 		/>
 	</var_struct>
 

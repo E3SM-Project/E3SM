@@ -913,6 +913,8 @@ contains
       !   call ocn_bootstrap_test_compute_interval(domain, err_tmp)
       if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
          call ocn_bootstrap_time_series_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
+         call ocn_bootstrap_pointwise_stats(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       end if

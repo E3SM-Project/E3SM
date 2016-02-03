@@ -23,38 +23,7 @@
 	<packages>
 		<package name="pointwiseStatsAMPKG" description="This package includes variables required for the pointwiseStats analysis member."/>
 	</packages>
-	<dims>
-		<dim name="nPoints" units="unitless" 
-			 description="The number of points for AM_pointwiseStats"
-		/>
-	</dims>
-	<var_struct name="pointwiseStatsAM" time_levs="1" packages="pointwiseStatsAMPKG">
-		<var name="pointCellGlobalID" type="integer" dimensions="nPoints" units="unitless"
-			 description="List of global cell IDs in point set."
-		/>
-		<var name="pointCellLocalID" type="integer" dimensions="nPoints" units="unitless"
-			 description="List of local cell IDs in point set."
-		/>
-		<var name="indexToPointCellLocalID" type="integer" dimensions="nPoints" units="unitless"
-			 description="Index to list of local cell IDs in point set."
-		/>
-		<var name="pointMaxLevelCell" type="integer" dimensions="nPoints" units="unitless"
-			 description="Index to the last active ocean cell in each column."
-		/>
-		<var name="layerThicknessPointValue" type="real" dimensions="nVertLevels nPoints Time" units="m"
-			 description="point value of layer thickness"
-		/>
-	</var_struct>
 	<streams>
-		<stream name="pointwiseStatsInput"
-				type="input"
-				filename_template="points.nc"
-				input_interval="initial_only"
-				runtime_format="single_file"
-				mode="forward;analysis">
-			<var name="pointCellGlobalID"/>
-		</stream>
-
 		<stream name="pointwiseStatsOutput" type="output"
 				mode="forward;analysis"
 				filename_template="analysis_members/pointwiseStats.$Y-$M-$D.nc"
@@ -64,9 +33,5 @@
 				packages="pointwiseStatsAMPKG"
 				clobber_mode="truncate"
 				runtime_format="single_file">
-			<var name="xtime"/> 
-			<var name="pointCellGlobalID"/> 
-			<var name="pointMaxLevelCell"/> 
-			<var name="layerThicknessPointValue"/> 
 		</stream>
 	</streams>
