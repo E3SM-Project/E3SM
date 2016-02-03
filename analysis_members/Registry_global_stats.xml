@@ -72,7 +72,8 @@
 				clobber_mode="truncate"
 				runtime_format="single_file">
 			<var name="xtime"/> 
-			<var name="totalIceVolume"/> 
+                        <var name="daysSinceStart"/>
+                        <var name="totalIceVolume"/>
 			<var name="totalIceArea"/> 
 			<var name="floatingIceVolume"/> 
 			<var name="floatingIceArea"/> 

@@ -62,6 +62,7 @@ module li_core
       use li_velocity
       use li_thermal
       use li_setup
+      use li_constants
 !!!      use mpas_tracer_advection
 !!!      use li_global_diagnostics
    
@@ -100,7 +101,9 @@ module li_core
       real (kind=RKIND) :: dtSeconds
       type (MPAS_Pool_type), pointer :: meshPool
       type (MPAS_TimeInterval_type) :: timeStepInterval
-      character (len=StrKIND), pointer :: xtime
+      character (len=StrKIND), pointer :: xtime, simulationStartTime
+      real (kind=RKIND), pointer :: daysSinceStart
+      type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
 
       type(field3DReal), pointer :: &
            coeffsReconstructField   ! field for reconstruction coefficients
@@ -151,6 +154,24 @@ module li_core
          ! Assign initial time stamp
          call mpas_pool_get_array(meshPool, 'xtime', xtime)
          xtime = startTimeStamp
+
+         ! Set simulationStartTime on a cold start only - it should have been read from restart otherwise
+         call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
+         if (trim(simulationStartTime)=="no_date_available") then
+            if (config_do_restart) then
+               write(stderrUnit,*) "Warning: simulationStartTime is undefined but this is a restart, so setting its value to the current start time which may be incorrect."
+            endif
+            simulationStartTime = startTimeStamp
+         elseif ((trim(simulationStartTime)/="no_date_available") .and. (.not. config_do_restart)) then
+            write(stderrUnit,*) "Warning: This is a cold start but simulationStartTime is already defined, so its value may be incorrect."
+         endif
+
+         ! compute time since start of simulation, in days
+         call mpas_pool_get_array(meshPool, 'daysSinceStart',daysSinceStart)
+         call mpas_set_time(xtime_timeType, dateTimeString=xtime)
+         call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
+         call mpas_get_timeInterval(xtime_timeType - simulationStartTime_timeType,dt=daysSinceStart)
+         daysSinceStart = daysSinceStart / seconds_per_day
 
          ! Initialize dt in seconds
          call mpas_pool_get_array(meshPool, 'deltat', deltat_output)
