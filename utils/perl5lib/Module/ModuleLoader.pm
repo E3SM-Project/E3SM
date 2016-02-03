@@ -70,7 +70,8 @@ sub loadModules()
 	#};
 	#eval qx($self->{cmdpath} $cmd);
 
-	if(defined $ENV{CIME_MODULES_LOADED}) {return $self};
+	# Disable check - check will cause problem if scheduler is changing env - better reload 
+	#if(defined $ENV{CIME_MODULES_LOADED}) {return $self};
 
 	my %oldenv = %ENV;
 	my $envfile = $self->{'caseroot'} . "/env_mach_specific";
