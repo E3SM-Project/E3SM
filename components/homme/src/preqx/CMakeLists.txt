@@ -11,6 +11,7 @@ SET(SRC_DIR         ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR   ${HOMME_SOURCE_DIR}/src/share)
 SET(PHYSICS_DIR     ${HOMME_SOURCE_DIR}/physics)
 SET(UTILS_TIMING_DIR ${CMAKE_BINARY_DIR}/utils/timing)
+SET(TRILINOS_ZOLTAN_DIR ${HOMME_SOURCE_DIR}/src/zoltan)
 
 # Make INCLUDE_DIRS global so the tests can access it
 SET (PREQX_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
@@ -98,7 +99,7 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/prim_advection_mod.F90 
   ${SRC_DIR}/forcing_mod.F90 
   ${SRC_SHARE_DIR}/metis_mod.F90 
-  ${SRC_SHARE_DIR}/zoltan_mod.F90
+  ${TRILINOS_ZOLTAN_DIR}/zoltan_mod.F90
   ${SRC_SHARE_DIR}/prim_driver_mod.F90 
   ${SRC_DIR}/vertical_mod.F90 
   ${SRC_DIR}/prim_movie_mod.F90 
@@ -119,12 +120,12 @@ SET(PREQX_SRCS_F90
 SET(PREQX_SRCS_C
   ${UTILS_SHARE_DIR}/shr_vmath_fwrap.c
   ${SRC_DIR}/jrio.c
-  ${SRC_SHARE_DIR}/zoltan_interface.c 
+  ${TRILINOS_ZOLTAN_DIR}/zoltan_interface.c 
 )
 
 IF (${HOMME_USE_TRILINOS})
-SET (PREQX_SRCS_CPP ${SRC_SHARE_DIR}/zoltan_cppinterface.cpp)
-SET_SOURCE_FILES_PROPERTIES( ${SRC_SHARE_DIR}/zoltan_cppinterface.cpp PROPERTIES LANGUAGE CXX )
+SET (PREQX_SRCS_CPP ${TRILINOS_ZOLTAN_DIR}/zoltan_cppinterface.cpp)
+SET_SOURCE_FILES_PROPERTIES( ${TRILINOS_ZOLTAN_DIR}/zoltan_cppinterface.cpp PROPERTIES LANGUAGE CXX )
 ENDIF()
 
 
