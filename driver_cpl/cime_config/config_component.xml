@@ -4,6 +4,22 @@
 
 <entries>
 
+<!-- The list of component classes that this coupler/driver knows how
+     to deal with.  Stub and data models for each component class
+     should be provided by the driver. This list should follow the same order
+     as compset longnames follows -->
+
+  <components>
+    <comp>DRV</comp>
+    <comp>ATM</comp>
+    <comp>LND</comp>
+    <comp>ICE</comp>
+    <comp>OCN</comp>
+    <comp>ROF</comp>
+    <comp>GLC</comp>
+    <comp>WAV</comp>
+  </components>
+
   <entry id="COMP_CPL"> 
     <type>char</type>
     <valid_values>cpl</valid_values>

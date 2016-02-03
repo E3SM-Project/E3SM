@@ -27,8 +27,11 @@ class GenericXML:
             # if file does not exist create a root xml element
             # and set it's id to file
             self.filename = infile
-            self.root = ET.Element(infile)
-            self.root.set('version','1.0')
+            root = ET.Element("xml")
+            root.set('version','1.0')
+            self.root = ET.SubElement(root,"file")
+            self.root.set('id',infile)
+            self.tree = ET.ElementTree(root)
 
     def read(self,infile):
         """
@@ -42,7 +45,7 @@ class GenericXML:
         """
         Write an xml file from data in self
         """
-        logging.debug("write: "+ infile)
+        logging.info("write: "+ infile)
         if(infile != None):
             self.tree.write(infile)
         else:
@@ -77,7 +80,7 @@ class GenericXML:
         """
         if(root is None):
             root = self.root
-        self.tree.insert(root, node)
+        self.root.append(node)
 
     def get_value(self, item,resolved=False):
         """

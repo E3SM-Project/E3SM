@@ -11,6 +11,7 @@ from generic_xml import GenericXML
 class EntryID(GenericXML):
     def __init__(self, infile=None):
         GenericXML.__init__(self,infile)
+        self.groups={}
 
     def set_default_value(self, vid, attributes=None):
         """
@@ -20,7 +21,7 @@ class EntryID(GenericXML):
         value = None
         if(type(vid) != type(str())):
             node = vid
-            vid = node.attrib("id")
+            vid = node.attrib["id"]
         else:
             nodes = self.get_node("entry",{"id":vid})
             if(nodes is None):
@@ -38,7 +39,7 @@ class EntryID(GenericXML):
         if(value is None):
             value = self.get_node("default_value",root=node)
         if(value is not None):
-            node.set("value",value)
+            node.set("value",value[0].text)
             return value[0].text
 
     def set_value(self, vid, value):
@@ -54,7 +55,7 @@ class EntryID(GenericXML):
             nodes = self.get_node("entry",{"id":vid})
             if(nodes is None):
                 return
-            expect(len(nodes) == 0,"More than one match found for id " + vid)
+            expect(len(nodes) == 1,"More than one match found for id " + vid)
             node = nodes[0]
         if(node is not None):
             val = value
@@ -80,7 +81,7 @@ class EntryID(GenericXML):
                 node = nodes[0]
 
         if(attribute is not None):
-            valnodes = self.get_node("value",attribute)
+            valnodes = self.get_node("value",attribute,root=node)
             if(valnodes is not None and len(valnodes) == 1):
                 val = valnodes[0].text
         elif(node.get("value") is not None):
@@ -118,4 +119,49 @@ class EntryID(GenericXML):
                 values[vatt] = valnode.text
         return values
 
+    def get_child_content(self,id,childname):
+        val = None
+        node = self.get_node("entry",{"id":id})
+        if(node):
+            childmatch  = self.get_node(childname, root=node[0])
+            if(len(childmatch) == 1):
+                val = childmatch[0].text
+        return val
 
+    def get_elements_from_child_content(self, childname, childcontent):
+        nodes = self.get_node("entry")
+        elements = []
+        for node in nodes:
+            childnodes = self.get_node(childname,root=node)
+            expect(len(childnodes)==1,"Unexpected number of matchs for %s in %s"%(childname, node.get("id")))
+            content = childnodes[0].text
+            if(content == childcontent):
+                elements.append( node)
+
+        return elements
+
+    def add_elements_by_group(self, srcobj, attlist, infile):
+        nodelist = srcobj.get_elements_from_child_content('file',infile)
+        for node in nodelist:
+            gnode = node.find(".//group")
+            gname = gnode.text
+            if(gname not in self.groups.keys()):
+                newgroup = ET.Element("group")
+                newgroup.set("id",gname)
+                self.add_child(newgroup)
+                self.groups[gname] = newgroup
+            self.set_default_value(node, attlist)
+            node = self.cleanupnode(node)
+            self.groups[gname].append(node)
+            logging.info ("Adding to group "+gname)
+        return nodelist
+
+    def cleanupnode(self,node):
+        fnode = node.find(".//file")
+        gnode = node.find(".//group")
+        node.remove(fnode)
+        node.remove(gnode)
+        vnode = node.find(".//values")
+        if(vnode):
+            node.remove(vnode)
+        return node

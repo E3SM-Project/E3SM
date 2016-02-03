@@ -9,6 +9,9 @@ from CIME.utils import expect, run_cmd
 import wait_for_tests, update_acme_tests
 from wait_for_tests import TEST_PASS_STATUS, TEST_FAIL_STATUS, TEST_PENDING_STATUS, TEST_STATUS_FILENAME, NAMELIST_FAIL_STATUS, RUN_PHASE, NAMELIST_PHASE
 from CIME.XML.machines import Machines
+from CIME.XML.env_test import EnvTest
+from CIME.XML.files import Files
+from CIME.XML.component import Component
 
 INITIAL_PHASE = "INIT"
 CREATE_NEWCASE_PHASE = "CREATE_NEWCASE"
@@ -280,41 +283,40 @@ class CreateTest(object):
     def _xml_phase(self, test_name):
     ###########################################################################
         test_case = CIME.utils.parse_test_name(test_name)[0]
-
         xml_file = os.path.join(self._get_test_dir(test_name), "env_test.xml")
-        xml_bridge_cmd = os.path.join(CIME.utils.get_acme_scripts_root(), "xml_bridge")
+        envtest = EnvTest()
 
-        xml_bridge_cmd += " %s" % xml_file
-        xml_bridge_cmd += " TESTCASE,%s" % test_case
-        xml_bridge_cmd += " TEST_TESTID,%s" % self._test_id
+        files = Files()
+        drv_config_file = files.get_value("CONFIG_DRV_FILE")
+        logging.info("Found drv_config_file %s" % drv_config_file)
+        
+        drv_comp = Component(drv_config_file)
+        envtest.add_elements_by_group(drv_comp, {}   ,'env_test.xml')
+        envtest.set_value("TESTCASE",test_case)
+        envtest.set_value("TEST_TESTID",self._test_id)
+        envtest.set_value("CASEBASEID",test_name)
 
         test_argv = "-testname %s -testroot %s" % (test_name, self._test_root)
         if (self._generate):
             test_argv += " -generate %s" % self._baseline_name
+            envtest.set_value("BASELINE_NAME_GEN",self._baseline_name)
+            envtest.set_value("BASEGEN_CASE",os.path.join(self._baseline_name,test_name))
         if (self._compare):
             test_argv += " -compare %s" % self._baseline_name
-        xml_bridge_cmd += " 'TEST_ARGV,%s'" % test_argv
+            envtest.set_value("BASELINE_NAME_CMP",self._baseline_name)
+            envtest.set_value("BASECMP_CASE",os.path.join(self._baseline_name,test_name))
 
-        xml_bridge_cmd += " CASEBASEID,%s" % test_name
-
-        if (self._generate):
-            xml_bridge_cmd += " BASELINE_NAME_GEN,%s" % self._baseline_name
-            xml_bridge_cmd += " BASEGEN_CASE,%s" % os.path.join(self._baseline_name, test_name)
-        if (self._compare):
-            xml_bridge_cmd += " BASELINE_NAME_CMP,%s" % self._baseline_name
-            xml_bridge_cmd += " BASECMP_CASE,%s" % os.path.join(self._baseline_name, test_name)
-
-        xml_bridge_cmd += " CLEANUP,%s" % ("TRUE" if self._clean else "FALSE")
+        envtest.set_value("TEST_ARGV",test_argv)
+        envtest.set_value("CLEANUP",("TRUE" if self._clean else "FALSE"))
 
         if (self._generate or self._compare):
-            xml_bridge_cmd += " BASELINE_ROOT,%s" % self._baseline_root
+            envtest.set_value("BASELINE_ROOT",self._baseline_root)
 
-        xml_bridge_cmd += " GENERATE_BASELINE,%s" % ("TRUE" if self._generate else "FALSE")
-        xml_bridge_cmd += " COMPARE_BASELINE,%s" % ("TRUE" if self._compare else "FALSE")
-
-        xml_bridge_cmd += " CCSM_CPRNC,%s" % self._machobj.get_resolved_value(self._machobj.get_value("CCSM_CPRNC"))
-
-        return self._run_phase_command(test_name, xml_bridge_cmd, XML_PHASE)
+        envtest.set_value("GENERATE_BASELINE", ("TRUE" if self._generate else "FALSE"))
+        envtest.set_value("COMPARE_BASELINE", ("TRUE" if self._compare else "FALSE"))
+        envtest.set_value("CCSM_CPRNC",self._machobj.get_value("CCSM_CPRNC",resolved=False))
+        envtest.write(xml_file)
+        return True
 
     ###########################################################################
     def _setup_phase(self, test_name):
