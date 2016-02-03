@@ -404,7 +404,6 @@
 				input_interval="initial_only">
 
 			<stream name="basicmesh"/>
-			<var name="layerThicknessFractions"/>
 			<var name="thickness"/>
 			<var name="bedTopography"/>
 			<var name="temperature"/>
@@ -445,7 +444,6 @@
 				clobber_mode="replace_files">
 
 			<stream name="basicmesh"/>
-			<var name="layerThicknessFractions"/>
 			<var name="xtime"/>
 			<var name="thickness"/>
 			<var name="temperature"/>
@@ -476,7 +474,6 @@
 				<!-- Note: I had set the default precision to 'single', but MpasDraw currently only supports double precision files -->
 
 			<stream name="basicmesh"/>
-			<var name="layerThicknessFractions"/>
 			<var name="layerCenterSigma"/>
 			<var name="layerInterfaceSigma"/>
 			<var name="xtime"/>
