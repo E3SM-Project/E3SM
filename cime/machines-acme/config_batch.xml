@@ -111,17 +111,15 @@
      <batch_directive>#SBATCH</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>
      <depend_string> --dependency=afterok:jobid</depend_string>
-     <submit_args>
-       <arg flag="--time" name="wall_time"/>
-       <arg flag="-p" name="queue"/>
-       <arg flag="--account" name="project"/>
-     </submit_args>
      <directives>
        <directive> --job-name={{ job_id }}</directive>
        <directive> --nodes={{ num_nodes }}</directive>
        <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
        <directive> --output={{ output_error_path }}   </directive>
        <directive> --exclusive                        </directive>
+       <directive> --time={{ wall_time }}</directive>
+       <directive> --partition={{ queue }}</directive>
+       <directive> --account={{ project }}</directive>
      </directives>
    </batch_system>
 
@@ -133,21 +131,14 @@
       </directives>
     </batch_system> 
 
-    <!-- edison is PBS -->
-    <batch_system MACH="edison" version="x.y">
-      <directives>
-	<directive>-l mppwidth={{ mppwidth }}</directive>
-      <directive> -A {{ account }} </directive>
-      </directives>
-    </batch_system> 
-
-     <!-- skybridge is slurm -->
-
-   <batch_system MACH="skybridge" version="x.y">
-     <directives>
-       <directive>--account={{ project }}</directive>
-       <directive>--partition={{ queue }}</directive>
-     </directives>
+    <!-- eos is PBS -->
+    <batch_system MACH="eos" version="x.y">
+    <jobid_pattern>^(\d+)</jobid_pattern>
+    <directives>
+      <directive>-A {{ project }}</directive>
+      <directive>-l mppwidth={{ mppwidth }}</directive>
+      <directive>-l  nodes={{ num_nodes }}</directive>
+    </directives>
    </batch_system>
 
    <!-- Constance is slurm -->
@@ -160,13 +151,6 @@
        <directive>--output=slurm.out</directive>
        <directive>--error=slurm.err</directive>
     </directives>
-   </batch_system>
-
-   <batch_system MACH="redsky" version="x.y">
-     <directives>
-       <directive>--account={{ project }}</directive>
-       <directive>--partition={{ queue }}</directive>
-     </directives>
    </batch_system>
 
    <batch_system MACH="mustang" version="x.y">
@@ -182,6 +166,18 @@
 		<directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
 	</directives>
     </batch_system>
+
+   <batch_system MACH="oic2" version="x.y">
+         <directives>
+                 <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+         </directives>
+   </batch_system>
+
+   <batch_system MACH="oic5" version="x.y">
+         <directives>
+                 <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+         </directives>
+   </batch_system>
 
    <batch_system MACH="titan" version="x.y">
      <jobid_pattern>(\d+)</jobid_pattern>

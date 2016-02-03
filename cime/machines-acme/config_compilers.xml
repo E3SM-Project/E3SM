@@ -109,7 +109,7 @@ for mct, etc.
   <ADD_CFLAGS DEBUG="FALSE"> -O3  </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -qsmp=omp </ADD_FFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -qsmp=omp </ADD_CFLAGS>
-  <ADD_LDFLAGS compile_threaded="true"> -qsmp=omp </ADD_LDFLAGS>
+  <!--ADD_LDFLAGS compile_threaded="true"> -qsmp=omp </ADD_LDFLAGS-->
   <FC_AUTO_R8> -qrealsize=8 </FC_AUTO_R8>
   <ADD_FFLAGS DEBUG="TRUE"> -qinitauto=7FF7FFFF -qflttrap=ov:zero:inv:en </ADD_FFLAGS>
   <ADD_FFLAGS DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </ADD_FFLAGS>
@@ -304,7 +304,6 @@ for mct, etc.
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
 
-  <ADD_FFLAGS MPILIB="mpi-serial"> -mcmodel medium </ADD_FFLAGS>
   <ADD_FFLAGS OS="Linux"> -mcmodel medium -shared-intel </ADD_FFLAGS>
 
 </compiler>
@@ -575,7 +574,19 @@ for mct, etc.
   <MPICC> cc </MPICC>
   <MPICXX> CC </MPICXX>
   <PETSC_PATH>$(PETSC_DIR)</PETSC_PATH>
-  <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos_09232015/Albany/build/install</ALBANY_PATH>
+  <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+</compiler>
+
+<compiler COMPILER="intel" MACH="eos">
+  <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
+  <ADD_SLIBS> ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm </ADD_SLIBS>
+  <ADD_GPTL_CPPDEFS> -DHAVE_PAPI </ADD_GPTL_CPPDEFS>
+  <MPIFC> ftn </MPIFC>
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
 </compiler>
 
 <compiler COMPILER="gnu" MACH="mac">
@@ -598,6 +609,8 @@ for mct, etc.
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -lblas -llapack</ADD_SLIBS>
   <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
+  <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
+  <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="intel" MACH="skybridge">
@@ -617,6 +630,7 @@ for mct, etc.
   <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
+  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="intel" MACH="redsky">
@@ -636,6 +650,7 @@ for mct, etc.
   <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
+  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="gnu" MACH="penn">
@@ -697,8 +712,12 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <ADD_SLIBS> $(shell nf-config --flibs) </ADD_SLIBS>  
   <TRILINOS_PATH>/lustre/atlas/world-shared/cli900/cesm/software/Trilinos/Trilinos-11.10.2_gptl/titan-pgi-ci-nophal/install</TRILINOS_PATH>
-  <CXX_LIBS> -lfmpich -lmpichf90_pgi $(PGI_PATH)/linux86-64/$(PGI_VERSION)/lib/f90main.o </CXX_LIBS>
+  <CXX_LIBS> -lfmpich -lmpichf90_pgi $(PGI_PATH)/linux86-64/$(PGI_VERSION)/lib/f90main.o /opt/gcc/default/snos/lib64/libstdc++.a  </CXX_LIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <MPIFC> ftn </MPIFC>
+  <MPICC> cc </MPICC>
+  <MPICXX> /opt/cray/craype/2.4.0/bin/CC </MPICXX>
+  <ALBANY_PATH>/ccs/proj/cli106/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="pgicuda" MACH="titan">
@@ -774,14 +793,20 @@ for mct, etc.
   <MPICC> mpixlc_r </MPICC>
   <!-- This LD is a workaround for darshan initialization on mira (Darshan does -->
   <!-- not run if f90 or higher is used for linking -->
-   <LD> mpixlf77_r </LD>
+  <LD> mpixlf77_r </LD>
   <NETCDF_PATH>/soft/libraries/netcdf/4.3.3-f4.4.1/cnk-xl/current/</NETCDF_PATH>
   <PNETCDF_PATH>/soft/libraries/pnetcdf/1.6.0/cnk-xl/current/</PNETCDF_PATH>
   <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_IBM</PFUNIT_PATH>
   <HDF5_PATH>/soft/libraries/hdf5/1.8.14/cnk-xl/current/ </HDF5_PATH>
-   <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.14/cnk-xl/current/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
+  <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.14/cnk-xl/current/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
+  <ADD_SLIBS compile_threaded="true"> -L$(IBM_MAIN_DIR)/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$(IBM_MAIN_DIR)/xlsmp/bg/3.1/bglib64 -lxlsmp </ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <PETSC_PATH>/soft/libraries/petsc/3.5.3.1</PETSC_PATH>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CXX_LINKER>CXX</CXX_LINKER>
+  <ADD_CPPDEFS> -DMPASLI_EXTERNAL_INTERFACE_DISABLE_MANGLING </ADD_CPPDEFS>
+  <MPICXX> /soft/compilers/bgclang/mpi/bgclang/bin/mpic++11 </MPICXX>
+  <ALBANY_PATH>/home/agsalin/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 
@@ -795,8 +820,14 @@ for mct, etc.
   <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_IBM</PFUNIT_PATH>
   <ADD_LDFLAGS>-L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5 -lhdf5_hl </ADD_LDFLAGS>
    <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.10/cnk-xl/current/lib -lhdf5 -lhdf5_hl -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
+  <ADD_SLIBS compile_threaded="true"> -L$(IBM_MAIN_DIR)/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$(IBM_MAIN_DIR)/xlsmp/bg/3.1/bglib64 -lxlsmp </ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <PETSC_PATH>/soft/libraries/petsc/3.5.3.1</PETSC_PATH>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CXX_LINKER>CXX</CXX_LINKER>
+  <ADD_CPPDEFS> -DMPASLI_EXTERNAL_INTERFACE_DISABLE_MANGLING </ADD_CPPDEFS>
+  <MPICXX> /soft/compilers/bgclang/mpi/bgclang/bin/mpic++11 </MPICXX>
+  <ALBANY_PATH>/home/agsalin/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="blues">
@@ -804,13 +835,15 @@ for mct, etc.
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
   <MPI_PATH MPILIB="openmpi">/soft/openmpi/1.8.2/pgi-13.9</MPI_PATH>
   <MPI_PATH MPILIB="mpich">/soft/mpich2/1.4.1-pgi-13.9/</MPI_PATH>
+  <MPI_LIB_NAME MPILIB="mvapich"> mpi</MPI_LIB_NAME>
   <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
   <MPI_LIB_NAME MPILIB="mpich">mpich</MPI_LIB_NAME>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
+  <ADD_SLIBS> -rpath $(NETCDFROOT)/lib </ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
 
-<compiler COMPILER="intel" MACH="blues">
+<compiler COMPILER="intel13" MACH="blues">
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
   <MPI_PATH MPILIB="openmpi">/soft/openmpi/1.8.2/intel-13.1</MPI_PATH>
@@ -828,13 +861,28 @@ for mct, etc.
   <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
 </compiler>
 
+<compiler COMPILER="intel" MACH="blues">
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
+  <MPI_PATH MPILIB="mvapich">/soft/mvapich2/2.2b_psm/intel-15.0</MPI_PATH>
+  <MPI_LIB_NAME MPILIB="mvapich">mpi</MPI_LIB_NAME>
+  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas </ADD_SLIBS>
+  <ADD_SLIBS> -Wl,-rpath -Wl,$(NETCDFROOT)/lib </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
+  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+</compiler>
+
 <compiler COMPILER="gnu" MACH="blues">
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
-  <MPI_PATH MPILIB="openmpi">/soft/openmpi/1.6.5-gcc-4.7.2</MPI_PATH>
-  <MPI_PATH MPILIB="mpich">/soft/mpich2/1.4.1-gcc-4.7.2/</MPI_PATH>
-  <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
-  <MPI_LIB_NAME MPILIB="mpich">mpich</MPI_LIB_NAME>
+  <MPI_PATH MPILIB="mvapich">/soft/mvapich2/2.2b_psm/gnu-5.2/</MPI_PATH>
+  <MPI_LIB_NAME MPILIB="mvapich">mpi</MPI_LIB_NAME>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
@@ -1026,6 +1074,7 @@ for mct, etc.
 	<SCC>gcc</SCC>
 	<SCXX>g++</SCXX>
 	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+        <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
 	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
 	<ALBANY_PATH>$(ALBANY_PATH)</ALBANY_PATH>
 </compiler>
@@ -1067,6 +1116,7 @@ for mct, etc.
 	<SCC>gcc</SCC>
 	<SCXX>g++</SCXX>
 	<ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+        <CXX_LIBS>-lstdc++ -lmpi_cxx</CXX_LIBS>
 	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
 	<ALBANY_PATH>$(ALBANY_PATH)</ALBANY_PATH>
 </compiler>
