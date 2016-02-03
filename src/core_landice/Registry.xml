@@ -179,7 +179,7 @@
 		            description="Defines the value of the Glen flow law exponent, n."
 		            possible_values="Any real value"
 		/>
-		<nml_option name="config_dynamic_thickness" type="real" default_value="100.0" units="m of ice"
+		<nml_option name="config_dynamic_thickness" type="real" default_value="10.0" units="m of ice"
 		            description="Defines the ice thickness below which dynamics are not calculated."
 		            possible_values="Any positive real value"
 		/>
