@@ -124,7 +124,7 @@
 		            description="Selection of the method for the vertical thermal solver."
 		            possible_values="'none', 'temperature', 'enthalpy'"
 		/>
-		<nml_option name="config_temperature_init" type="character" default_value="linear" units="unitless"
+		<nml_option name="config_temperature_init" type="character" default_value="file" units="unitless"
 		            description="Selection of the method for initializing the ice temperature."
 		            possible_values="'linear', 'file'"
 		/>
