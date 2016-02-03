@@ -150,7 +150,7 @@
 		/>
 		<nml_option name="config_basal_mass_bal_float" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for computing the basal mass balance of floating ice"
-		            possible_values="'none', 'constant', 'mismip'"
+		            possible_values="'none', 'data', 'constant', 'mismip'"
 		/>
 	</nml_record>
 
