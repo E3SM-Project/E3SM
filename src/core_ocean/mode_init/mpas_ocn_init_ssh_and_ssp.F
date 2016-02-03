@@ -287,18 +287,19 @@ contains
            end if
          end do !iCell
 
-         if(.not. initRx1WithSSH) then !pbcs are handled differently for the Haney-number-constrained coordinate
-           do iCell = 1, nCells
-             call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
+         do iCell = 1, nCells
+           if(initRx1WithSSH .and. (modifySSHMask(iCell) == 1)) then
+             !pbcs are handled differently for the Haney-number-constrained coordinate
+             cycle
+           end if
 
+           call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
              if(iErr .ne. 0) then
                write(stderrUnit,*) 'ERROR: ocn_alter_bottomDepth_for_pbcs failed.'
-               return
-             end if
+             return
+           end if
 
-           end do
-         end if
-
+         end do
          block_ptr => block_ptr % next
        end do !block_ptr
      end if
