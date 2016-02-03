@@ -132,7 +132,7 @@
 		            description="Defines the minimum thickness for thermal calculations"
 		            possible_values="Any positive real value"
 		/>
-		<nml_option name="config_surface_air_temperature_source" type="character" default_value="constant" units="unitless"
+		<nml_option name="config_surface_air_temperature_source" type="character" default_value="file" units="unitless"
 		            description="Selection of the method for setting the surface air temperature."
 		            possible_values="'constant', 'file'"
 		/>
@@ -140,7 +140,7 @@
 		            description="Constant value of the surface air temperature."
 		            possible_values="Any positive real value"
 		/>
-		<nml_option name="config_basal_heat_flux_source" type="character" default_value="constant" units="unitless"
+		<nml_option name="config_basal_heat_flux_source" type="character" default_value="file" units="unitless"
 		            description="Selection of the method for setting the basal heat flux."
 		            possible_values="'constant', 'file'"
 		/>
@@ -408,7 +408,9 @@
 			<var name="bedTopography"/>
 			<var name="temperature"/>
 			<var name="sfcMassBal"/>
-			<var name="floatingBasalMassBal"/>
+                        <var name="floatingBasalMassBal"/>
+                        <var name="surfaceAirTemperature"/>
+                        <var name="basalHeatFlux"/>
 <!-- The following variables are used by HO only, and only enabled by the higherOrderVelocity package. -->
 <!-- They do not need to be in the input file for the SIA dycore, and will be ignored if they are. -->
 			<var name="beta" packages="higherOrderVelocity"/>
