@@ -287,7 +287,7 @@
 
 
 	<nml_record name="decomposition" in_defaults="true">
-		<nml_option name="config_num_halos" type="integer" default_value="3" units="unitless"
+		<nml_option name="config_num_halos" type="integer" default_value="2" units="unitless"
 		            description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection."
 		            possible_values="Any positive interger value."
 		/>
