@@ -1022,6 +1022,10 @@
 					description="The minimum number of layers in the ocean column in the smoothed region."
 					possible_values="a positive integer"
 		/>
+		<nml_option name="config_rx1_min_layer_thickness" type="real" default_value="1.0" units="m"
+					description="The minimum layer thickness in the smoothed region."
+					possible_values="an positive value"
+		/>
 	</nml_record>
 	<packages>
 		<package name="variableShortwave" description="This package includes variables required to compute spatially variable shortwave extinction coefficients"/>
