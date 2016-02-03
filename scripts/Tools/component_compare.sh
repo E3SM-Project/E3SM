@@ -22,7 +22,7 @@
 # this script with model=cpl to do the comparisons after the baseline
 # generation completes (but first you will need to copy the cpl.hi.nc
 # files in each baseline directory to cpl.h.nc).
-# 
+#
 # cprnc should be in your path, but if it isn't, the script tries to
 # find cprnc in its yellowstone location
 #
@@ -37,11 +37,11 @@
 #
 # - Missing arguments
 #   - return status should be "UNDEF"
-# 
+#
 # - test_hist='', no baseline
 #   - return status should be "BFAIL_NA"
 #   - example: tst=`component_compare.sh -baseline_dir /glade/scratch/sacks/cesm_baselines/test_script/ERI44y.f09_g16.TGRCP85.bluefire_ibm -baseline_hist DOES_NOT_EXIST -test_dir /ptmp/sacks/ERI44y.f09_g16.TGRCP85.bluefire_ibm.C.114029/run -test_hist ''`
-# 
+#
 # - Given test history file doesn't exist, no baseline
 #   - return status should be "BFAIL_NA"
 #   - example: tst=`component_compare.sh -baseline_dir /glade/scratch/sacks/cesm_baselines/test_script/ERI44y.f09_g16.TGRCP85.bluefire_ibm -baseline_hist DOES_NOT_EXIST -test_dir /ptmp/sacks/ERI44y.f09_g16.TGRCP85.bluefire_ibm.C.114029/run -test_hist DOES_NOT_EXIST`
@@ -143,8 +143,8 @@ function absolute_path {
 function print_result {
     status="$1"
     info="$2"
-    
-    echo "${status}:${info}"
+
+    echo "${status}:COMPCOMPARE${info}"
 }
 
 #======================================================================
@@ -155,7 +155,7 @@ progname=`basename $0`
 
 # need absolute path (rather than relative path) because we use this
 # path after we have cd'ed to another location
-tools_dir=$(absolute_path `dirname $0`)  
+tools_dir=$(absolute_path `dirname $0`)
 
 #----------------------------------------------------------------------
 # Set default return values
@@ -215,7 +215,7 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
-	    
+
 
 #----------------------------------------------------------------------
 # Exit if required command-line arguments weren't provided
@@ -306,7 +306,7 @@ fi
 # Put output in a file named ${test_dir}/${test_hist}.cprnc.out
 #----------------------------------------------------------------------
 
-# We cd to test_dir so that $testhist.out.out is put there 
+# We cd to test_dir so that $testhist.out.out is put there
 # (note that this assumes that the user has write permission in test_dir)
 
 curdir=`pwd`

@@ -2,9 +2,7 @@
 Common interface to XML files, this is an abstract class and is expected to
 be used by other XML interface modules and not directly.
 """
-
-import xml.etree.ElementTree as ET
-import sys, os, logging, re, doctest
+from standard_module_setup import *
 
 from CIME.utils import expect, get_cime_root
 
@@ -40,7 +38,7 @@ class GenericXML:
         self.tree = ET.parse(infile)
         self.root = self.tree.getroot()
 
-    def write(self, cimeroot, infile):
+    def write(self, infile=None):
         """
         Write an xml file from data in self
         """
@@ -73,13 +71,15 @@ class GenericXML:
         nodes = root.findall(xpath)
         return nodes
 
-    def add_child(self, node):
+    def add_child(self, node, root=None):
         """
         Add element node to self at root
         """
-        self.tree.insert(self.root, node)
+        if(root is None):
+            root = self.root
+        self.tree.insert(root, node)
 
-    def get_value(self, item):
+    def get_value(self, item,resolved=False):
         """
         get_value is expected to be defined by the derived classes, if you get here it is an error.
         """
@@ -91,9 +91,19 @@ class GenericXML:
             result = os.environ.get(item)
 
         if (result is None):
-            logging.warning("No value availble for item '%s'" % item)
+            logging.info("No value available for item '%s'" % item)
+        elif(resolved):
+            result = self.get_resolved_value(result)
 
         return result
+
+    def set_value(self,vid, value):
+        valnodes = self.get_node(vid)
+        if(valnodes):
+            for node in valnodes:
+                node.text = value
+        else:
+            self.lookups[vid] = value
 
     def get_resolved_value(self, raw_value):
         """

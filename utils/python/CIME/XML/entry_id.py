@@ -1,24 +1,21 @@
 """
-Common interface to XML files which follow the entry id format, 
-this is an abstract class and is expected to 
-be used by other XML interface modules and not directly. 
+Common interface to XML files which follow the entry id format,
+this is an abstract class and is expected to
+be used by other XML interface modules and not directly.
 """
-
-import xml.etree.ElementTree as ET
-import os.path
-import logging
-import re
-from GenericXML import GenericXML
+from standard_module_setup import *
 from CIME.utils import expect
+from generic_xml import GenericXML
+
 
 class EntryID(GenericXML):
     def __init__(self, infile=None):
         GenericXML.__init__(self,infile)
-        
+
     def set_default_value(self, vid, attributes=None):
-        """ 
+        """
         Set the value of an entry to the default value for that entry
-        vid can be an xml node pointer or a string identifier of a node 
+        vid can be an xml node pointer or a string identifier of a node
         """
         value = None
         if(type(vid) != type(str())):
@@ -58,16 +55,16 @@ class EntryID(GenericXML):
             if(nodes is None):
                 return
             expect(len(nodes) == 0,"More than one match found for id " + vid)
-            node = nodes[0] 
+            node = nodes[0]
         if(node is not None):
             val = value
             node.set("value",value)
         return val
 
-    def get_value(self, vid, attribute=None):
+    def get_value(self, vid, attribute=None, resolved=True):
         """
         get a value for entry with id attribute vid.
-        or from the values field if the attribute argument is provided 
+        or from the values field if the attribute argument is provided
         and matches
         """
         val = None
@@ -77,8 +74,10 @@ class EntryID(GenericXML):
         else:
             nodes = self.get_node("entry",{"id":vid})
             if(len(nodes) == 0):
-                return GenericXML.get_value(self,vid)
-            node = nodes[0]
+                val = GenericXML.get_value(self,vid,resolved)
+                return val
+            else:
+                node = nodes[0]
 
         if(attribute is not None):
             valnodes = self.get_node("value",attribute)
@@ -91,7 +90,10 @@ class EntryID(GenericXML):
 
         if(val is None):
             """ if all else fails """
-            val = GenericXML.get_value(self,vid)
+            val = GenericXML.get_value(self,vid,resolved)
+
+        if(resolved):
+            val = self.get_resolved_value(val)
 
         return val
 
@@ -116,4 +118,4 @@ class EntryID(GenericXML):
                 values[vatt] = valnode.text
         return values
 
-    
+

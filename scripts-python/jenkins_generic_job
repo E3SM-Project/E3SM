@@ -42,11 +42,11 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    machine = cime_util.probe_machine_name()
-    default_test_suite = cime_util.get_machine_info("TESTS")
+    machine = CIME.utils.probe_machine_name()
+    default_test_suite = CIME.utils.get_machine_info("TESTS")
     default_maintain_baselines = machine in MACHINES_THAT_MAINTAIN_BASELINES
 
-    cime_util.setup_standard_logging_options(parser)
+    CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("-g", "--generate-baselines", action="store_true",
                         help="Generate baselines")
@@ -63,7 +63,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-p", "--cdash-project", default=wait_for_tests.ACME_MAIN_CDASH,
                         help="The name of the CDash project where results should be uploaded")
 
-    parser.add_argument("-b", "--baseline-name", default=cime_util.get_current_branch(repo=cime_util.get_cime_root()),
+    parser.add_argument("-b", "--baseline-name", default=CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root()),
                         help="Baseline name for baselines to use. Also impacts dashboard job name. Useful for testing a branch other than next or master")
 
     parser.add_argument("-t", "--test-suite", default=default_test_suite,
@@ -74,7 +74,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    cime_util.handle_standard_logging_options(args)
+    CIME.utils.handle_standard_logging_options(args)
 
     expect(not (args.submit_to_cdash and args.generate_baselines),
            "Does not make sense to use -g and -s together")
@@ -91,12 +91,12 @@ def cleanup_queue(set_of_jobs_we_created):
     """
     Delete all jobs left in the queue
     """
-    current_jobs = set(cime_util.get_my_queued_jobs())
+    current_jobs = set(CIME.utils.get_my_queued_jobs())
     jobs_to_delete = set_of_jobs_we_created & current_jobs
 
     if (jobs_to_delete):
         logging.warning("Found leftover batch jobs that need to be deleted: %s" % ", ".join(jobs_to_delete))
-        stat = cime_util.delete_jobs(jobs_to_delete)[0]
+        stat = CIME.utils.delete_jobs(jobs_to_delete)[0]
         if (stat != 0):
             logging.warning("FAILED to clean up leftover jobs!")
 
@@ -111,14 +111,14 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
     """
     start_time = time.time()
 
-    use_batch = cime_util.does_machine_have_batch()
+    use_batch = CIME.utils.does_machine_have_batch()
     compiler, test_suite, scratch_root, proxy = \
-        cime_util.get_machine_info(["COMPILER", "TESTS", "CESMSCRATCHROOT", "PROXY"])
+        CIME.utils.get_machine_info(["COMPILER", "TESTS", "CESMSCRATCHROOT", "PROXY"])
     test_suite = test_suite if arg_test_suite is None else arg_test_suite
     test_root = os.path.join(scratch_root, "jenkins")
 
     if (use_batch):
-        batch_system = cime_util.get_batch_system()
+        batch_system = CIME.utils.get_batch_system()
         expect(batch_system is not None, "Bad XML. Batch machine has no batch_system configuration.")
 
     #
@@ -132,7 +132,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
     # Update submodules (Jenkins is struggling with this at the moment)
     #
 
-    cime_util.run_cmd("git submodule update --init", from_dir=cime_util.get_cime_root())
+    CIME.utils.run_cmd("git submodule update --init", from_dir=CIME.utils.get_cime_root())
 
     #
     # Cleanup previous test leftovers. Code beyond here assumes that
@@ -185,7 +185,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
         #
 
         if (use_batch):
-            preexisting_queued_jobs = cime_util.get_my_queued_jobs()
+            preexisting_queued_jobs = CIME.utils.get_my_queued_jobs()
 
         #
         # Set up create_test command and run it
@@ -197,15 +197,15 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
         elif (baseline_compare == "yes"):
             baseline_args = "-c -b %s" % baseline_name
 
-        test_id = "%s_%s" % (test_id_root, cime_util.get_utc_timestamp())
+        test_id = "%s_%s" % (test_id_root, CIME.utils.get_utc_timestamp())
         create_test_cmd = "./create_test %s --test-root %s -t %s %s" % \
                           (test_suite, test_root, test_id, baseline_args)
 
         if (not wait_for_tests.SIGNAL_RECEIVED):
-            create_test_stat = cime_util.run_cmd(create_test_cmd, from_dir=cime_util.get_acme_scripts_root(),
+            create_test_stat = CIME.utils.run_cmd(create_test_cmd, from_dir=CIME.utils.get_acme_scripts_root(),
                                                  verbose=True, arg_stdout=None, arg_stderr=None, ok_to_fail=True)[0]
             # Create_test should have either passed, detected failing tests, or timed out
-            expect(create_test_stat in [0, cime_util.TESTS_FAILED_ERR_CODE, -signal.SIGTERM],
+            expect(create_test_stat in [0, CIME.utils.TESTS_FAILED_ERR_CODE, -signal.SIGTERM],
                    "Create_test script FAILED with error code '%d'!" % create_test_stat)
 
         if (use_batch):
@@ -215,7 +215,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
             # previous implementation which just assumed all queued jobs for this
             # user came from create_test.
             # TODO: change this to probe test_root for jobs ids
-            our_jobs = set(cime_util.get_my_queued_jobs()) - set(preexisting_queued_jobs)
+            our_jobs = set(CIME.utils.get_my_queued_jobs()) - set(preexisting_queued_jobs)
 
         #
         # Wait for tests
@@ -255,7 +255,7 @@ def _main_func(description):
         parse_command_line(sys.argv, description)
 
     sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare)
-             else cime_util.TESTS_FAILED_ERR_CODE)
+             else CIME.utils.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################
 

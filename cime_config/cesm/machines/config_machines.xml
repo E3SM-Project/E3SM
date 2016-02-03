@@ -913,6 +913,7 @@
 
   <machine MACH="hobart">
     <DESC>"NCAR CGD Linux Cluster 48 pes/node, batch system is PBS"</DESC>
+    <NODENAME_REGEX>hobart</NODENAME_REGEX>
     <COMPILERS>intel,pgi,nag,gnu</COMPILERS>
     <MPILIBS>mvapich2,openmpi,mpi-serial</MPILIBS>
     <RUNDIR>/scratch/cluster/$USER/$CASE/run</RUNDIR>

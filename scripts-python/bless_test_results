@@ -12,9 +12,10 @@ with versions of the files that you should not bless.
 
 from standard_script_setup import *
 
-import wait_for_tests, compare_namelists, simple_compare, create_test_impl
-from cime_util import run_cmd
-from CIME.utils import expect
+import wait_for_tests, compare_namelists, simple_compare
+from CIME.create_test import NAMELIST_PHASE
+from CIME.utils import run_cmd, expect
+from CIME.XML.machines import Machines
 
 import argparse, sys, os, glob, doctest, time
 
@@ -46,12 +47,14 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    default_baseline_name = cime_util.get_current_branch(repo=cime_util.get_cime_root())
-    default_compiler      = cime_util.get_machine_info("COMPILER")
-    scratch_root          = cime_util.get_machine_info("CESMSCRATCHROOT")
+    default_baseline_name = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
+    machobj = Machines()
+    machobj.probe_machine_name()
+    default_compiler      = machobj.get_default_compiler()
+    scratch_root          = machobj.get_resolved_value(machobj.get_value("CESMSCRATCHROOT"))
     default_testroot      = os.path.join(scratch_root)
 
-    cime_util.setup_standard_logging_options(parser)
+    CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("-n", "--namelists-only", action="store_true",
                         help="Only analyze namelists.")
@@ -82,7 +85,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     args = parser.parse_args(args[1:])
 
-    cime_util.handle_standard_logging_options(args)
+    CIME.utils.handle_standard_logging_options(args)
 
     expect(not (args.report_only and args.force),
            "Makes no sense to use -r and -f simultaneously")
@@ -126,7 +129,7 @@ def bless_namelists(test_name, baseline_dir_for_test, testcase_dir_for_test, rep
 
     # Update namelist files
     if (namelist_files):
-        cime_util.safe_copy(testcase_dir_for_test, baseline_dir_for_test, namelist_files)
+        CIME.utils.safe_copy(testcase_dir_for_test, baseline_dir_for_test, namelist_files)
 
 ###############################################################################
 def bless_history(test_name, baseline_tag, baseline_dir_for_test, testcase_dir_for_test, report_only, force):
@@ -135,11 +138,13 @@ def bless_history(test_name, baseline_tag, baseline_dir_for_test, testcase_dir_f
     acme_root = run_cmd("./xmlquery CESMSCRATCHROOT -value", from_dir=testcase_dir_for_test)
 
     case = os.path.basename(testcase_dir_for_test)
-    cime_root = cime_util.get_cime_root()
+    cime_root = CIME.utils.get_cime_root()
     compgen = os.path.join(cime_root, "scripts", "Tools", "component_compgen_baseline.sh")
     machine_env = os.path.join(testcase_dir_for_test, ".env_mach_specific.sh")
     run_dir = os.path.join(acme_root, case, "run")
-    cprnc_loc = cime_util.get_machine_info("CPRNC_ROOT")
+    machobj = Machines()
+    machobj.probe_machine_name()
+    cprnc_loc = machobj.get_resolved_value(machobj.get_value("CCSM_CPRNC"))
     compgen_cmd = "source %s && %s -baseline_dir %s -testcase %s -testcase_base %s -test_dir %s -cprnc_exe %s -generate_tag %s" % \
                   (machine_env, compgen, baseline_dir_for_test, case, test_name, run_dir, cprnc_loc, baseline_tag)
 
@@ -171,24 +176,26 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
     test_status_files = glob.glob("%s/%s/TestStatus" % (test_root, test_id_glob))
     expect(test_status_files, "No matching test cases found in for %s/%s/TestStatus" % (test_root, test_id_glob))
 
-    baseline_root = cime_util.get_machine_info("CCSM_BASELINE")
+    machobj = Machines()
+    machobj.probe_machine_name()
+    baseline_root = machobj.get_resolved_value(machobj.get_value("CCSM_BASELINE"))
     baseline_tag  = os.path.join(compiler, baseline_name)
     baseline_area = os.path.join(baseline_root, baseline_tag)
 
     # The env_mach_specific script may need these to be defined
-    os.environ["COMPILER"] = cime_util.get_machine_info("COMPILER") # this MUST match compiler that cprnc was built with
-    os.environ["MPILIB"] = cime_util.get_machine_info("MPILIB")
+    os.environ["COMPILER"] = machobj.get_default_compiler() # this MUST match compiler that cprnc was built with
+    os.environ["MPILIB"] = machobj.get_default_MPIlib()
 
     broken_blesses = []
     for test_status_file in test_status_files:
         test_result, test_name = wait_for_tests.parse_test_status_file(test_status_file)
-        if (bless_tests in [[], None] or cime_util.match_any(test_name, bless_tests)):
+        if (bless_tests in [[], None] or CIME.utils.match_any(test_name, bless_tests)):
             overall_result = wait_for_tests.reduce_stati(test_result)
 
             # Compute namelists status, False implies it diffed
             if (not hist_only):
-                if (create_test_impl.NAMELIST_PHASE in test_result):
-                    nl_no_bless = test_result[create_test_impl.NAMELIST_PHASE] == wait_for_tests.TEST_PASS_STATUS
+                if (NAMELIST_PHASE in test_result):
+                    nl_no_bless = test_result[NAMELIST_PHASE] == wait_for_tests.TEST_PASS_STATUS
                 else:
                     logging.warning("Test '%s' did not make it to namelist phase" % test_name)
                     broken_blesses.append(test_name)

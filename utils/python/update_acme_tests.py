@@ -1,7 +1,7 @@
 import os, tempfile, logging
-
-import cime_util
+import CIME.utils
 from CIME.utils import expect
+from CIME.XML.machines import Machines
 
 # Here are the tests belonging to acme suites. Format is
 # <test>.<grid>.<compset>.
@@ -114,9 +114,15 @@ def get_test_suite(suite, machine=None, compiler=None):
     Return a list of FULL test names for a suite.
     """
     expect(suite in _TEST_SUITES, "Unknown test suite: '%s'" % suite)
-
-    machine = cime_util.probe_machine_name() if machine is None else machine
-    compiler = cime_util.get_machine_info("COMPILER", machine=machine)[0] if compiler is None else compiler
+    machobj = Machines()
+    if(machine is None):
+        machine = machobj.probe_machine_name()
+    else:
+        machobj.set_machine(machine)
+    if(compiler is None):
+        compiler = machine.get_default_compiler()
+    expect(machobj.is_valid_compiler(compiler),"Compiler %s not valid for machine %s" %
+           (compiler,machine))
 
     inherits_from, tests_raw = _TEST_SUITES[suite]
     tests = []
@@ -139,7 +145,7 @@ def get_test_suite(suite, machine=None, compiler=None):
                 if (machine in test_mod_machines):
                     test_mod = item[1]
 
-        tests.append(cime_util.get_full_test_name(test_name, machine, compiler, testmod=test_mod))
+        tests.append(CIME.utils.get_full_test_name(test_name, machine, compiler, testmod=test_mod))
 
     if (inherits_from is not None):
         inherited_tests = get_test_suite(inherits_from, machine, compiler)
@@ -168,9 +174,6 @@ def get_full_test_names(testargs, machine, compiler):
     >>> get_full_test_names(["acme_tiny"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu', 'NCK.f19_g16_rx1.A.melvin_gnu']
 
-    >>> get_full_test_names(["acme_tiny"], "melvin", "intel")
-    ['ERS.f19_g16_rx1.A.melvin_intel', 'NCK.f19_g16_rx1.A.melvin_intel']
-
     >>> get_full_test_names(["acme_tiny", "PEA_P1_M.f45_g37_rx1.A"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu', 'NCK.f19_g16_rx1.A.melvin_gnu', 'PEA_P1_M.f45_g37_rx1.A.melvin_gnu']
 
@@ -180,6 +183,8 @@ def get_full_test_names(testargs, machine, compiler):
     >>> get_full_test_names(["acme_tiny", "^NCK.f19_g16_rx1.A"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu']
     """
+    expect(machine is not None,"Must define a machine")
+    expect(compiler is not None,"Must define a compiler")
     acme_test_suites = get_test_suites()
 
     tests_to_run = set()
@@ -191,16 +196,16 @@ def get_full_test_names(testargs, machine, compiler):
         elif (testarg in acme_test_suites):
             tests_to_run.update(get_test_suite(testarg, machine, compiler))
         else:
-            tests_to_run.add(cime_util.get_full_test_name(testarg, machine, compiler))
+            tests_to_run.add(CIME.utils.get_full_test_name(testarg, machine, compiler))
 
     for negation in negations:
         if (negation in acme_test_suites):
             for test, testmod in get_test_suite(negation, machine, compiler):
-                fullname = cime_util.get_full_test_name(test, machine, compiler, testmod)
+                fullname = CIME.utils.get_full_test_name(test, machine, compiler, testmod)
                 if (fullname in tests_to_run):
                     tests_to_run.remove(fullname)
         else:
-            fullname = cime_util.get_full_test_name(negation, machine, compiler)
+            fullname = CIME.utils.get_full_test_name(negation, machine, compiler)
             if (fullname in tests_to_run):
                 tests_to_run.remove(fullname)
 
@@ -215,11 +220,11 @@ def find_all_supported_platforms():
     tree. A platform is defined by a triple (machine name, compiler,
     mpi library).
     """
-    machines = cime_util.get_machines()
+    machines = CIME.utils.get_machines()
     platform_set = set()
 
     for machine in machines:
-        compilers, mpilibs = cime_util.get_machine_info(["COMPILERS", "MPILIBS"], machine=machine)
+        compilers, mpilibs = CIME.utils.get_machine_info(["COMPILERS", "MPILIBS"], machine=machine)
         for compiler in compilers:
             for mpilib in mpilibs:
                 platform_set.add((machine, compiler, mpilib))
@@ -277,7 +282,7 @@ def update_acme_tests(xml_file, categories, platform=None):
                 logging.info("pruning unsupported platform %s"%repr(p))
         platforms = [p for p in platforms if p in supported_platforms]
 
-    manage_xml_entries = os.path.join(cime_util.get_cime_root(), "scripts", "manage_testlists")
+    manage_xml_entries = os.path.join(CIME.utils.get_cime_root(), "scripts", "manage_testlists")
 
     expect(os.path.isfile(manage_xml_entries),
            "Couldn't find manage_testlists, expected it to be here: '%s'" % manage_xml_entries)
@@ -285,15 +290,15 @@ def update_acme_tests(xml_file, categories, platform=None):
     for category in categories:
         # Remove any existing acme test category from the file.
         if (platform is None):
-            cime_util.run_cmd("%s -model acme -component allactive -removetests -category %s" % (manage_xml_entries, category))
+            CIME.utils.run_cmd("%s -model acme -component allactive -removetests -category %s" % (manage_xml_entries, category))
         else:
-            cime_util.run_cmd("%s -model acme -component allactive -removetests -category %s -machine %s -compiler %s"
+            CIME.utils.run_cmd("%s -model acme -component allactive -removetests -category %s -machine %s -compiler %s"
                               % (manage_xml_entries, category, platforms[0][0], platforms[0][1]))
 
         # Generate a list of test entries corresponding to our suite at the top
         # of the file.
         new_test_file = generate_acme_test_entries(category, platforms)
-        cime_util.run_cmd("%s -model acme -component allactive -addlist -file %s -category %s" %
+        CIME.utils.run_cmd("%s -model acme -component allactive -addlist -file %s -category %s" %
                           (manage_xml_entries, new_test_file, category))
         os.unlink(new_test_file)
 
