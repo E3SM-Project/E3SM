@@ -124,7 +124,7 @@
 		            description="Selection of the method for the vertical thermal solver."
 		            possible_values="'none', 'temperature', 'enthalpy'"
 		/>
-		<nml_option name="config_temperature_init" type="character" default_value="linear" units="unitless"
+		<nml_option name="config_temperature_init" type="character" default_value="file" units="unitless"
 		            description="Selection of the method for initializing the ice temperature."
 		            possible_values="'linear', 'file'"
 		/>
@@ -132,25 +132,25 @@
 		            description="Defines the minimum thickness for thermal calculations"
 		            possible_values="Any positive real value"
 		/>
-		<nml_option name="config_surface_air_temperature_source" type="character" default_value="constant" units="unitless"
+		<nml_option name="config_surface_air_temperature_source" type="character" default_value="file" units="unitless"
 		            description="Selection of the method for setting the surface air temperature."
-		            possible_values="'constant', 'file'"
+		            possible_values="'constant', 'file'  'constant' uses the value set by config_surface_air_temperature_value.  'file' reads the field from an input or forcing file or ESM coupler."
 		/>
 		<nml_option name="config_surface_air_temperature_value" type="real" default_value="273.15" units="Kelvin"
 		            description="Constant value of the surface air temperature."
 		            possible_values="Any positive real value"
 		/>
-		<nml_option name="config_basal_heat_flux_source" type="character" default_value="constant" units="unitless"
+		<nml_option name="config_basal_heat_flux_source" type="character" default_value="file" units="unitless"
 		            description="Selection of the method for setting the basal heat flux."
-		            possible_values="'constant', 'file'"
+		            possible_values="'constant', 'file'  'constant' uses the value set by config_basal_heat_flux_value.  'file' reads the field from an input or forcing file or ESM coupler."
 		/>
 		<nml_option name="config_basal_heat_flux_value" type="real" default_value="0.0" units="W m^{-2}"
 		            description="Constant value of the basal heat flux (positive upward)."
 		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_basal_mass_bal_float" type="character" default_value="none" units="unitless"
-		            description="Selection of the method for computing the basal mass balance of floating ice"
-		            possible_values="'none', 'constant', 'mismip'"
+		            description="Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant' and 'mismip' use hardcoded fields defined in the code."
+		            possible_values="'none', 'file', 'constant', 'mismip'"
 		/>
 	</nml_record>
 
@@ -179,7 +179,7 @@
 		            description="Defines the value of the Glen flow law exponent, n."
 		            possible_values="Any real value"
 		/>
-		<nml_option name="config_dynamic_thickness" type="real" default_value="100.0" units="m of ice"
+		<nml_option name="config_dynamic_thickness" type="real" default_value="10.0" units="m of ice"
 		            description="Defines the ice thickness below which dynamics are not calculated."
 		            possible_values="Any positive real value"
 		/>
@@ -287,8 +287,8 @@
 
 
 	<nml_record name="decomposition" in_defaults="true">
-		<nml_option name="config_num_halos" type="integer" default_value="3" units="unitless"
-		            description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection."
+		<nml_option name="config_num_halos" type="integer" default_value="2" units="unitless"
+		            description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). Default FO advection requires a minimum of 2.  Note that a minimum of 3 is required for incremental remapping advection on a quad mesh or for FCT advection, neither of which is currently fully supported."
 		            possible_values="Any positive interger value."
 		/>
 		<nml_option name="config_block_decomp_file_prefix" type="character" default_value="graph.info.part." units="unitless"
@@ -404,12 +404,13 @@
 				input_interval="initial_only">
 
 			<stream name="basicmesh"/>
-			<var name="layerThicknessFractions"/>
 			<var name="thickness"/>
 			<var name="bedTopography"/>
 			<var name="temperature"/>
 			<var name="sfcMassBal"/>
-			<var name="floatingBasalMassBal"/>
+                        <var name="floatingBasalMassBal"/>
+                        <var name="surfaceAirTemperature"/>
+                        <var name="basalHeatFlux"/>
 <!-- The following variables are used by HO only, and only enabled by the higherOrderVelocity package. -->
 <!-- They do not need to be in the input file for the SIA dycore, and will be ignored if they are. -->
 			<var name="beta" packages="higherOrderVelocity"/>
@@ -445,8 +446,8 @@
 				clobber_mode="replace_files">
 
 			<stream name="basicmesh"/>
-			<var name="layerThicknessFractions"/>
-			<var name="xtime"/>
+                        <var name="xtime"/>
+                        <var name="simulationStartTime"/>
 			<var name="thickness"/>
 			<var name="temperature"/>
 			<var name="cellMask"/>
@@ -476,10 +477,11 @@
 				<!-- Note: I had set the default precision to 'single', but MpasDraw currently only supports double precision files -->
 
 			<stream name="basicmesh"/>
-			<var name="layerThicknessFractions"/>
 			<var name="layerCenterSigma"/>
 			<var name="layerInterfaceSigma"/>
-			<var name="xtime"/>
+                        <var name="xtime"/>
+                        <var name="simulationStartTime"/>
+                        <var name="daysSinceStart"/>
 			<var name="thickness"/>
 			<var name="lowerSurface"/>
 			<var name="upperSurface"/>
@@ -668,7 +670,13 @@ is the value of that variable from the *previous* time level!
 		/>
 		<var name="allowableDtDCFL" type="real" time_levs="1" dimensions="Time" units="s"
 		     description="The maximum allowable time step based on the diffusive CFL condition.  Value on a given time is the value appropriate for  between the previous time level and the current time level."
-		/>
+                />
+                <var name="simulationStartTime" type="text" dimensions="" units="unitless" default_value="'no_date_available'"
+                     description="start time of first simulation, with format 'YYYY-MM-DD_HH:MM:SS'"
+                />
+                <var name="daysSinceStart" type="real" dimensions="Time" units="days"
+                     description="Time since simulationStartTime in days, for plotting"
+                />
 	</var_struct>
 
 <!-- ================ -->

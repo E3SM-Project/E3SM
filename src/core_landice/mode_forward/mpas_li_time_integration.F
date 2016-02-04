@@ -28,6 +28,7 @@ module li_time_integration
    use mpas_timekeeping
    use li_time_integration_fe
    use li_setup
+   use li_constants
 
    implicit none
    private
@@ -97,17 +98,23 @@ module li_time_integration
       ! local variables
       !
       !-----------------------------------------------------------------
+      ! Pools pointers
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
       character (len=StrKIND), pointer :: xtime
+      real (kind=RKIND), pointer :: daysSinceStart
+      character (len=StrKIND), pointer :: simulationStartTime
       character (len=StrKIND), pointer :: config_time_integration
       logical, pointer :: config_adaptive_timestep
       real (kind=RKIND), pointer :: deltat_output !< variable used for output, in seconds
 
+      ! Other local variables
       type (MPAS_TimeInterval_type) :: timeStepInterval !< the current time step as an interval
       real (kind=RKIND) :: dtSeconds !< the current time step in seconds
       type (MPAS_Time_Type) :: currTime  !< current time as time type
       character(len=StrKIND) :: timeStamp !< current time as a string
+      type (MPAS_Time_type) :: simulationStartTime_timeType
+
       integer :: err_tmp
 
       err = 0
@@ -196,6 +203,13 @@ module li_time_integration
 
          call mpas_pool_get_array(meshPool, 'deltat', deltat_output)
          deltat_output = dtSeconds
+
+         ! compute time since start of simulation, in days
+         call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
+         call mpas_pool_get_array(meshPool, 'daysSinceStart',daysSinceStart)
+         call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
+         call mpas_get_timeInterval(currTime - simulationStartTime_timeType, dt=daysSinceStart)
+         daysSinceStart = daysSinceStart / seconds_per_day
 
          block => block % next
       end do

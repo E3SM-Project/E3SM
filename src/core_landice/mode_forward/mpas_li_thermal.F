@@ -2605,16 +2605,22 @@ module li_thermal
 
       ! Compute melt rate for floating ice
 
-      floatingBasalMassBal(:) = 0.0_RKIND
-
       if (trim(config_basal_mass_bal_float) == 'none') then
 
-         ! nothing to do; bmlt_float already set to zero
+         ! Set floating BMB to 0 to have 'none'
+         floatingBasalMassBal(:) = 0.0_RKIND
+
+      elseif (trim(config_basal_mass_bal_float) == 'file') then
+
+         ! Do nothing in this routine - use whatever value was input as data
 
       elseif (trim(config_basal_mass_bal_float) == 'constant') then
 
+         floatingBasalMassBal(:) = 0.0_RKIND
+
          do iCell = 1, nCellsSolve
             if (iceMask(iCell) == 1 .and. floatingMask(iCell) == 1) then  ! ice is present and floating
+
 
                ! Provided xCell > bmlt_float_xlimit, prescribe a uniform basal melt rate
                ! For MISMIP+, the default value of xlimit is 480 km
@@ -2624,6 +2630,9 @@ module li_thermal
 
             endif   ! ice is present and floating
          enddo   ! iCell
+
+         ! change units from m/s to kg/m2/s
+         floatingBasalMassBal(:) = floatingBasalMassBal(:) * rhoi
 
       elseif (trim(config_basal_mass_bal_float) == 'mismip') then
 
@@ -2641,6 +2650,8 @@ module li_thermal
          !WHL - debug
 !!         write(stdoutUnit,*) 'iCell, lowerSurface, hCavity, tanh, zDraft, dzdraft, mass bal (m/yr):'
 
+         floatingBasalMassBal(:) = 0.0_RKIND
+
          do iCell = 1, nCellsSolve
             if (iceMask(iCell) == 1 .and. floatingMask(iCell) == 1) then  ! ice is present and floating
 
@@ -2653,10 +2664,16 @@ module li_thermal
             endif   ! ice is present and floating
          enddo   ! iCell
 
+         ! change units from m/s to kg/m2/s
+         floatingBasalMassBal(:) = floatingBasalMassBal(:) * rhoi
+
+      else
+
+         write(stderrUnit,*) 'ERROR: Unknown option selected for config_basal_mass_bal_float:', trim(config_basal_mass_bal_float)
+         ! TODO: Actually throw an error and abort the model!
+
       endif   ! config_basal_mass_bal_float
 
-      ! change units from m/s to kg/m2/s
-      floatingBasalMassBal(:) = floatingBasalMassBal(:) * rhoi
       
     end subroutine basal_melt_floating_ice
 
