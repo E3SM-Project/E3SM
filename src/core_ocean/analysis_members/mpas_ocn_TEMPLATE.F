@@ -20,8 +20,8 @@
 !>     cp Registry_ocn_TEMPLATE.xml Registry_ocn_your_new_name.xml
 !>
 !>  2. In those two new files, replace the following text:
-!>     tempLate, TEM_PLATE, FILL_IN_AUTHOR, FILL_IN_DATE
-!>     Typically tempLate uses camel case (variable names), like yourNewName,
+!>     temPlate, TEM_PLATE, FILL_IN_AUTHOR, FILL_IN_DATE
+!>     Typically temPlate uses camel case (variable names), like yourNewName,
 !>     while TEM_PLATE uses underscores (subroutine names), like your_new_name.
 !>     note: do not replace 'filename_template' in Registry_ocn_yourNewName.xml
 !>
@@ -237,7 +237,7 @@ contains
       end do
 
       ! mpi gather/scatter calls may be placed here.
-      ! Here are some examples.  See mpas_oac_global_stats.F for further details.
+      ! Here are some examples.  See mpas_ocn_global_stats.F for further details.
 !      call mpas_dmpar_sum_real_array(dminfo, nVariables, sumSquares(1:nVariables), reductions(1:nVariables))
 !      call mpas_dmpar_min_real_array(dminfo, nMins, mins(1:nMins), reductions(1:nMins))
 !      call mpas_dmpar_max_real_array(dminfo, nMaxes, maxes(1:nMaxes), reductions(1:nMaxes))

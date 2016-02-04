@@ -40,6 +40,7 @@ module ocn_analysis_driver
    use ocn_eliassen_palm
    use ocn_mixed_layer_depths
    use ocn_time_series_stats
+   use ocn_pointwise_stats
 !   use ocn_TEM_PLATE
 
    implicit none
@@ -159,6 +160,7 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'eliassenPalm', 1)
       call mpas_pool_add_config(analysisMemberList, 'mixedLayerDepths', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStats', 1)
+      call mpas_pool_add_config(analysisMemberList, 'pointwiseStats', 1)
 !     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
 
       ! DON'T EDIT BELOW HERE
@@ -911,6 +913,8 @@ contains
       !   call ocn_bootstrap_test_compute_interval(domain, err_tmp)
       if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
          call ocn_bootstrap_time_series_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
+         call ocn_bootstrap_pointwise_stats(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       end if
@@ -969,6 +973,8 @@ contains
          call ocn_init_mixed_layer_depths(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
          call ocn_init_time_series_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
+         call ocn_init_pointwise_stats(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       end if
@@ -1028,6 +1034,8 @@ contains
          call ocn_compute_mixed_layer_depths(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
          call ocn_compute_time_series_stats(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
+         call ocn_compute_pointwise_stats(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_compute_TEM_PLATE(domain, timeLevel, err_tmp)
       end if
@@ -1086,6 +1094,8 @@ contains
          call ocn_restart_mixed_layer_depths(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
          call ocn_restart_time_series_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
+         call ocn_restart_pointwise_stats(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_restart_TEM_PLATE(domain, err_tmp)
       end if
@@ -1144,6 +1154,8 @@ contains
          call ocn_finalize_mixed_layer_depths(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
          call ocn_finalize_time_series_stats(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
+         call ocn_finalize_pointwise_stats(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_finalize_TEM_PLATE(domain, err_tmp)
       end if
