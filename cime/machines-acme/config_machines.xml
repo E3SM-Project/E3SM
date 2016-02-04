@@ -778,7 +778,7 @@
          <DESC>ORNL XK6, os is CNL, 16 pes/node, batch system is PBS</DESC>
          <NODENAME_REGEX>titan</NODENAME_REGEX>
          <TESTS>acme_developer</TESTS>
-	 <COMPILERS>pgi,pgicuda,intel,cray</COMPILERS>
+	 <COMPILERS>pgi,pgi_acc,intel,cray</COMPILERS>
 	 <MPILIBS>mpich,mpi-serial</MPILIBS>
          <CESMSCRATCHROOT>$ENV{HOME}/acme_scratch/$PROJECT</CESMSCRATCHROOT>
          <RUNDIR>$ENV{MEMBERWORK}/$PROJECT/$CASE/run</RUNDIR>
