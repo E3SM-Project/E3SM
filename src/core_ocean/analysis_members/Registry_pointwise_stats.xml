@@ -33,5 +33,15 @@
 				packages="pointwiseStatsAMPKG"
 				clobber_mode="truncate"
 				runtime_format="single_file">
+
+			<var name="pointCellGlobalID"/>
+			<var name="xtime"/>
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="maxLevelCell"/>
+			<var name="layerThickness"/>
+			<var_struct name="tracers"/>
+			<var_struct name="tracersSurfaceFlux"/>
+
 		</stream>
 	</streams>
