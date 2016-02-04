@@ -101,16 +101,13 @@ module li_core_interface
 
       logical, pointer :: higherOrderVelocityActive
       logical, pointer :: SIAvelocityActive
-      logical, pointer :: calcDiffusivityActive
 
       ierr = 0
 
       call mpas_pool_get_config(configPool, 'config_velocity_solver', config_velocity_solver)
-      call mpas_pool_get_config(configPool, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
 
       call mpas_pool_get_package(packagePool, 'SIAvelocityActive', SIAvelocityActive)
       call mpas_pool_get_package(packagePool, 'higherOrderVelocityActive', higherOrderVelocityActive)
-      call mpas_pool_get_package(packagePool, 'calcDiffusivityActive', calcDiffusivityActive)
 
       if (trim(config_velocity_solver) == 'sia') then
          SIAvelocityActive = .true.
@@ -119,11 +116,6 @@ module li_core_interface
          higherOrderVelocityActive = .true.
          write (stdoutUnit,*) "The 'higherOrderVelocity' package and associated variables have been enabled because a higher-order velocity solver is selected."
       end if
-
-      if (config_adaptive_timestep_include_DCFL) then
-         calcDiffusivityActive = .true.
-         write (stdoutUnit,*) "The 'calcDiffusivity' package and associated variables have been enabled because 'config_adaptive_timestep_include_DCFL' is set to .true."
-      endif
 
       ! call setup packages in analysis driver
       call li_analysis_setup_packages(configPool, packagePool, ierr) 
