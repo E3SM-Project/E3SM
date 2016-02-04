@@ -114,13 +114,11 @@ def get_test_suite(suite, machine=None, compiler=None):
     Return a list of FULL test names for a suite.
     """
     expect(suite in _TEST_SUITES, "Unknown test suite: '%s'" % suite)
-    machobj = Machines()
-    if(machine is None):
-        machine = machobj.probe_machine_name()
-    else:
-        machobj.set_machine(machine)
+    machobj = Machines(machine=machine)
+    machine = machobj.get_machine_name()
+
     if(compiler is None):
-        compiler = machine.get_default_compiler()
+        compiler = machobj.get_default_compiler()
     expect(machobj.is_valid_compiler(compiler),"Compiler %s not valid for machine %s" %
            (compiler,machine))
 
@@ -183,8 +181,8 @@ def get_full_test_names(testargs, machine, compiler):
     >>> get_full_test_names(["acme_tiny", "^NCK.f19_g16_rx1.A"], "melvin", "gnu")
     ['ERS.f19_g16_rx1.A.melvin_gnu']
     """
-    expect(machine is not None,"Must define a machine")
-    expect(compiler is not None,"Must define a compiler")
+    expect(machine is not None, "Must define a machine")
+    expect(compiler is not None, "Must define a compiler")
     acme_test_suites = get_test_suites()
 
     tests_to_run = set()
@@ -221,10 +219,12 @@ def find_all_supported_platforms():
     mpi library).
     """
     machines = CIME.utils.get_machines()
+    machobj = Machines(machine=machine)
     platform_set = set()
 
     for machine in machines:
-        compilers, mpilibs = CIME.utils.get_machine_info(["COMPILERS", "MPILIBS"], machine=machine)
+        machobj.set_machine(machine)
+        compilers, mpilibs = machobj.get_value("COMPILERS"), machobj.get_value("MPILIBS")
         for compiler in compilers:
             for mpilib in mpilibs:
                 platform_set.add((machine, compiler, mpilib))

@@ -79,7 +79,7 @@ class GenericXML:
             root = self.root
         self.tree.insert(root, node)
 
-    def get_value(self, item,resolved=False):
+    def get_value(self, item,resolved=True):
         """
         get_value is expected to be defined by the derived classes, if you get here it is an error.
         """

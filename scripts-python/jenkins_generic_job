@@ -10,6 +10,7 @@ ensures that the batch system is left in a clean state.
 from standard_script_setup import *
 import wait_for_tests
 from CIME.utils import expect
+from CIME.XML.machines import Machines
 
 import argparse, sys, os, shutil, glob, doctest, time, signal
 
@@ -17,6 +18,8 @@ SENTINEL_FILE = "ONGOING_TEST"
 
 # Don't know if this belongs here longterm
 MACHINES_THAT_MAINTAIN_BASELINES = ("redsky", "melvin", "skybridge")
+
+_MACHINE = Machines()
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -42,8 +45,8 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    machine = CIME.utils.probe_machine_name()
-    default_test_suite = CIME.utils.get_machine_info("TESTS")
+    machine = _MACHINE.get_machine_name()
+    default_test_suite = _MACHINE.get_value("TESTS")
     default_maintain_baselines = machine in MACHINES_THAT_MAINTAIN_BASELINES
 
     CIME.utils.setup_standard_logging_options(parser)
@@ -111,14 +114,16 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
     """
     start_time = time.time()
 
-    use_batch = CIME.utils.does_machine_have_batch()
-    compiler, test_suite, scratch_root, proxy = \
-        CIME.utils.get_machine_info(["COMPILER", "TESTS", "CESMSCRATCHROOT", "PROXY"])
+    use_batch = _MACHINE.has_batch_system()
+    compiler = _MACHINE.get_default_compiler()
+    test_suite = _MACHINE.get_value("TESTS")
+    scratch_root = _MACHINE.get_value("CESMSCRATCHROOT")
+    proxy = _MACHINE.get_value("PROXY")
     test_suite = test_suite if arg_test_suite is None else arg_test_suite
     test_root = os.path.join(scratch_root, "jenkins")
 
     if (use_batch):
-        batch_system = CIME.utils.get_batch_system()
+        batch_system = _MACHINE.get_batch_system_type()
         expect(batch_system is not None, "Bad XML. Batch machine has no batch_system configuration.")
 
     #

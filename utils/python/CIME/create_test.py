@@ -32,44 +32,36 @@ class CreateTest(object):
                  clean=False,compare=False, generate=False, namelists_only=False,
                  project=None, parallel_jobs=None):
     ###########################################################################
-        self._cime_root      = CIME.utils.get_cime_root()
-        self._machobj = Machines()
-        if(machine_name is not None):
-            self._machobj.set_machine(machine_name)
-        else:
-            machine_name = self._machobj.probe_machine_name()
+        self._cime_root = CIME.utils.get_cime_root()
 
-        self._no_build       = no_build
-        self._no_run         = no_run
-        self._no_batch       = no_batch
-        if(test_root is None):
-            self._test_root = self._machobj.get_value("CESMSCRATCHROOT")
+        self._machobj   = Machines(machine=machine_name)
+        machine_name    = self._machobj.get_machine_name()
+
+        self._no_build = no_build      if not namelists_only else True
+        self._no_run   = no_run        if not self._no_build else True
+
+        # Figure out what project to use
+        if (project is None):
+            self._project = CIME.utils.get_project()
+            if (self._project is None):
+                self._project = self._machobj.get_value("PROJECT")
         else:
-            self._test_root      = test_root
+            self._project = project
+
+        # We will not use batch system if user asked for no_batch or if current
+        # machine is not a batch machine
+        self._no_batch = no_batch or not self._machobj.has_batch_system()
+
+        self._test_root = test_root if test_root is not None else self._machobj.get_value("CESMSCRATCHROOT")
+        if (self._project is not None):
+            self._test_root = self._test_root.replace("$PROJECT", self._project)
         self._test_root = os.path.abspath(self._test_root)
 
-        self._test_id        = test_id
-        if(project is None):
-            self._project = CIME.utils.get_project()
-            if(self._project is None):
-                self._project = self._machobj.get_value('PROJECT')
-        else:
-            self._project        = project
+        self._test_id = test_id if test_id is not None else CIME.utils.get_utc_timestamp()
 
-        if(baseline_root is None):
-            self._baseline_root = self._machobj.get_value("CCSM_BASELINE")
-        else:
-            self._baseline_root  = baseline_root
-        if (self._project is not None):
-            self._baseline_root = self._baseline_root.replace("$PROJECT", self._project)
-        self._baseline_root = os.path.abspath(self._baseline_root)
-        self._baseline_name  = baseline_name
-        if(compiler is None):
-            self._compiler = self._machobj.get_default_compiler()
-        else:
-            self._compiler = compiler
-        expect(self._machobj.is_valid_compiler(self._compiler),"Compiler %s not valid for machine %s" %
-           (self._compiler,machine_name))
+        self._compiler = compiler if compiler is not None else self._machobj.get_default_compiler()
+        expect(self._machobj.is_valid_compiler(self._compiler),
+               "Compiler %s not valid for machine %s" % (self._compiler,machine_name))
 
         self._clean          = clean
         self._compare        = compare
@@ -79,38 +71,41 @@ class CreateTest(object):
         expect(len(test_names) > 0, "No tests to run")
         self._test_names = update_acme_tests.get_full_test_names(test_names, machine_name, self._compiler)
 
-        if(parallel_jobs is None):
-            self._parallel_jobs  = min(len(test_names), int(self._machobj.get_value("MAX_TASKS_PER_NODE")))
+        if (parallel_jobs is None):
+            self._parallel_jobs  = min(len(self._test_names), int(self._machobj.get_value("MAX_TASKS_PER_NODE")))
         else:
             self._parallel_jobs = parallel_jobs
 
-        if (not self._no_batch and not self._machobj.has_batch_system()):
-            self._no_batch = True
+        if (self._compare or self._generate):
 
+            # Figure out what baseline name to use
+            if (baseline_name is None):
+                branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
+                expect(branch_name is not None, "Could not determine baseline name from branch, please use -b option")
+                self._baseline_name = os.path.join(self._compiler, branch_name)
+            else:
+                self._baseline_name  = baseline_name
+                if (not self._baseline_name.startswith("%s/" % self._compiler)):
+                    self._baseline_name = os.path.join(self._compiler, self._baseline_name)
 
-        if (baseline_name is None):
-            branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
-            expect(branch_name is not None, "Could not determine baseline name from branch, please use -b option")
-            self._baseline_name = os.path.join(self._compiler, branch_name)
-        else:
-            self._baseline_name  = baseline_name
-            if (not self._baseline_name.startswith("%s/" % self._compiler)):
-                self._baseline_name = os.path.join(self._compiler, self._baseline_name) 
+            # Compute baseline_root
+            self._baseline_root = baseline_root if baseline_root is not None else self._machobj.get_value("CCSM_BASELINE")
+            if (self._project is not None):
+                self._baseline_root = self._baseline_root.replace("$PROJECT", self._project)
+            self._baseline_root = os.path.abspath(self._baseline_root)
 
-        if (self._compare):
-            full_baseline_dir = os.path.join(self._baseline_root, self._baseline_name)
-            expect(os.path.isdir(full_baseline_dir),
-                   "Missing baseline comparison directory %s" % full_baseline_dir)
-
-        # Oversubscribe by 1/4
-
-        pes = int(self._machobj.get_value("MAX_TASKS_PER_NODE"))
+            if (self._compare):
+                full_baseline_dir = os.path.join(self._baseline_root, self._baseline_name)
+                expect(os.path.isdir(full_baseline_dir),
+                       "Missing baseline comparison directory %s" % full_baseline_dir)
 
         # This is the only data that multiple threads will simultaneously access
         # Each test has it's own index and setting/retrieving items from a list
         # is atomic, so this should be fine to use without mutex
-        self._test_states    = [ (INITIAL_PHASE, TEST_PASS_STATUS) ] * len(self._test_names)
+        self._test_states = [ (INITIAL_PHASE, TEST_PASS_STATUS) ] * len(self._test_names)
 
+        # Oversubscribe by 1/4
+        pes = int(self._machobj.get_value("MAX_TASKS_PER_NODE"))
         self._proc_pool = int(pes * 1.25)
 
         # Since the name-list phase can fail without aborting later phases, we
@@ -123,7 +118,6 @@ class CreateTest(object):
             self._phases.remove(BUILD_PHASE)
         if (no_run):
             self._phases.remove(RUN_PHASE)
-
         if (not self._compare and not self._generate):
             self._phases.remove(NAMELIST_PHASE)
 
@@ -136,7 +130,6 @@ class CreateTest(object):
         # instead, errors will be placed in the TestStatus files for the various
         # tests cases
 
-
     ###########################################################################
     def _log_output(self, test_name, output):
     ###########################################################################
@@ -146,7 +139,7 @@ class CreateTest(object):
             # if this is run before.
             os.makedirs(test_dir)
 
-        with open(os.path.join(test_dir, "TestStatus.log"), 'a') as fd:
+        with open(os.path.join(test_dir, "TestStatus.log"), "a") as fd:
             fd.write(output)
 
     ###########################################################################
@@ -252,7 +245,7 @@ class CreateTest(object):
         if (compiler != self._compiler):
             raise StandardError("Test '%s' has compiler that does not match instance compliler '%s'" % (test_name, self._compiler))
         if (self._parallel_jobs == 1):
-            scratch_dir = self._machobj.get_resolved_value(self._machobj.get_value("CESMSCRATCHROOT"))
+            scratch_dir = self._machobj.get_value("CESMSCRATCHROOT")
             if (self._project is not None):
                 scratch_dir = scratch_dir.replace("$PROJECT", self._project)
             sharedlibroot = os.path.join(scratch_dir, "sharedlibroot.%s" % self._test_id)
@@ -312,7 +305,7 @@ class CreateTest(object):
         xml_bridge_cmd += " GENERATE_BASELINE,%s" % ("TRUE" if self._generate else "FALSE")
         xml_bridge_cmd += " COMPARE_BASELINE,%s" % ("TRUE" if self._compare else "FALSE")
 
-        xml_bridge_cmd += " CCSM_CPRNC,%s" % self._machobj.get_resolved_value(self._machobj.get_value("CCSM_CPRNC"))
+        xml_bridge_cmd += " CCSM_CPRNC,%s" % self._machobj.get_value("CCSM_CPRNC")
 
         return self._run_phase_command(test_name, xml_bridge_cmd, XML_PHASE)
 
@@ -385,7 +378,6 @@ class CreateTest(object):
     ###########################################################################
     def _build_phase(self, test_name):
     ###########################################################################
-        case_id = self._get_case_id(test_name)
         test_dir = self._get_test_dir(test_name)
         return self._run_phase_command(test_name, "./case.test_build", BUILD_PHASE, from_dir=test_dir)
 
