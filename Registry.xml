@@ -134,7 +134,7 @@
 		/>
 		<nml_option name="config_surface_air_temperature_source" type="character" default_value="file" units="unitless"
 		            description="Selection of the method for setting the surface air temperature."
-		            possible_values="'constant', 'file'"
+		            possible_values="'constant', 'file'  'constant' uses the value set by config_surface_air_temperature_value.  'file' reads the field from an input or forcing file or ESM coupler."
 		/>
 		<nml_option name="config_surface_air_temperature_value" type="real" default_value="273.15" units="Kelvin"
 		            description="Constant value of the surface air temperature."
@@ -142,15 +142,15 @@
 		/>
 		<nml_option name="config_basal_heat_flux_source" type="character" default_value="file" units="unitless"
 		            description="Selection of the method for setting the basal heat flux."
-		            possible_values="'constant', 'file'"
+		            possible_values="'constant', 'file'  'constant' uses the value set by config_basal_heat_flux_value.  'file' reads the field from an input or forcing file or ESM coupler."
 		/>
 		<nml_option name="config_basal_heat_flux_value" type="real" default_value="0.0" units="W m^{-2}"
 		            description="Constant value of the basal heat flux (positive upward)."
 		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_basal_mass_bal_float" type="character" default_value="none" units="unitless"
-		            description="Selection of the method for computing the basal mass balance of floating ice"
-		            possible_values="'none', 'data', 'constant', 'mismip'"
+		            description="Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant' and 'mismip' use hardcoded fields defined in the code."
+		            possible_values="'none', 'file', 'constant', 'mismip'"
 		/>
 	</nml_record>
 
@@ -288,7 +288,7 @@
 
 	<nml_record name="decomposition" in_defaults="true">
 		<nml_option name="config_num_halos" type="integer" default_value="2" units="unitless"
-		            description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection."
+		            description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). Default FO advection requires a minimum of 2.  Note that a minimum of 3 is required for incremental remapping advection on a quad mesh or for FCT advection, neither of which is currently fully supported."
 		            possible_values="Any positive interger value."
 		/>
 		<nml_option name="config_block_decomp_file_prefix" type="character" default_value="graph.info.part." units="unitless"

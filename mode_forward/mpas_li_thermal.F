@@ -2610,7 +2610,7 @@ module li_thermal
          ! Set floating BMB to 0 to have 'none'
          floatingBasalMassBal(:) = 0.0_RKIND
 
-      elseif (trim(config_basal_mass_bal_float) == 'data') then
+      elseif (trim(config_basal_mass_bal_float) == 'file') then
 
          ! Do nothing in this routine - use whatever value was input as data
 
@@ -2666,6 +2666,11 @@ module li_thermal
 
          ! change units from m/s to kg/m2/s
          floatingBasalMassBal(:) = floatingBasalMassBal(:) * rhoi
+
+      else
+
+         write(stderrUnit,*) 'ERROR: Unknown option selected for config_basal_mass_bal_float:', trim(config_basal_mass_bal_float)
+         ! TODO: Actually throw an error and abort the model!
 
       endif   ! config_basal_mass_bal_float
 
