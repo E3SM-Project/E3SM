@@ -4,6 +4,7 @@ import xml.etree.ElementTree as xmlet
 
 import CIME.utils
 from CIME.utils import expect
+from CIME.XML.machines import Machines
 from collections import OrderedDict
 
 TEST_STATUS_FILENAME      = "TestStatus"
@@ -216,7 +217,7 @@ def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group
     utc_time_tuple = time.gmtime(start_time)
     cdash_timestamp = time.strftime("%H:%M:%S", utc_time_tuple)
 
-    hostname = CIME.utils.probe_machine_name()
+    hostname = Machines().get_machine_name()
     if (hostname is None):
         hostname = socket.gethostname().split(".")[0]
         logging.warning("Could not convert hostname '%s' into an ACME machine name" % (hostname))
@@ -352,7 +353,6 @@ def interpret_status(file_contents, check_throughput=False, check_memory=False, 
     ('testname', 'DIFF')
     """
     statuses, test_name = parse_test_status(file_contents)
-    logging.warning("status %s test_name %s" %(statuses, test_name))
     reduced_status = reduce_stati(statuses, check_throughput, check_memory, ignore_namelists)
 
     if (RUN_PHASE not in statuses.keys() and reduced_status != TEST_FAIL_STATUS):

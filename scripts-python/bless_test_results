@@ -19,6 +19,8 @@ from CIME.XML.machines import Machines
 
 import argparse, sys, os, glob, doctest, time
 
+_MACHINE = Machines()
+
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
@@ -48,10 +50,8 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
     default_baseline_name = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
-    machobj = Machines()
-    machobj.probe_machine_name()
-    default_compiler      = machobj.get_default_compiler()
-    scratch_root          = machobj.get_resolved_value(machobj.get_value("CESMSCRATCHROOT"))
+    default_compiler      = _MACHINE.get_default_compiler()
+    scratch_root          = _MACHINE.get_value("CESMSCRATCHROOT")
     default_testroot      = os.path.join(scratch_root)
 
     CIME.utils.setup_standard_logging_options(parser)
@@ -142,9 +142,7 @@ def bless_history(test_name, baseline_tag, baseline_dir_for_test, testcase_dir_f
     compgen = os.path.join(cime_root, "scripts", "Tools", "component_compgen_baseline.sh")
     machine_env = os.path.join(testcase_dir_for_test, ".env_mach_specific.sh")
     run_dir = os.path.join(acme_root, case, "run")
-    machobj = Machines()
-    machobj.probe_machine_name()
-    cprnc_loc = machobj.get_resolved_value(machobj.get_value("CCSM_CPRNC"))
+    cprnc_loc = _MACHINE.get_value("CCSM_CPRNC")
     compgen_cmd = "source %s && %s -baseline_dir %s -testcase %s -testcase_base %s -test_dir %s -cprnc_exe %s -generate_tag %s" % \
                   (machine_env, compgen, baseline_dir_for_test, case, test_name, run_dir, cprnc_loc, baseline_tag)
 
@@ -176,15 +174,13 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
     test_status_files = glob.glob("%s/%s/TestStatus" % (test_root, test_id_glob))
     expect(test_status_files, "No matching test cases found in for %s/%s/TestStatus" % (test_root, test_id_glob))
 
-    machobj = Machines()
-    machobj.probe_machine_name()
-    baseline_root = machobj.get_resolved_value(machobj.get_value("CCSM_BASELINE"))
+    baseline_root = _MACHINE.get_value("CCSM_BASELINE")
     baseline_tag  = os.path.join(compiler, baseline_name)
     baseline_area = os.path.join(baseline_root, baseline_tag)
 
     # The env_mach_specific script may need these to be defined
-    os.environ["COMPILER"] = machobj.get_default_compiler() # this MUST match compiler that cprnc was built with
-    os.environ["MPILIB"] = machobj.get_default_MPIlib()
+    os.environ["COMPILER"] = _MACHINE.get_default_compiler() # this MUST match compiler that cprnc was built with
+    os.environ["MPILIB"] = _MACHINE.get_default_MPIlib()
 
     broken_blesses = []
     for test_status_file in test_status_files:

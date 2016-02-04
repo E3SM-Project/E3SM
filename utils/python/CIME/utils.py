@@ -6,12 +6,12 @@ import logging
 import sys
 import os
 import time
+import re
 if sys.version_info[0] == 2:
     from ConfigParser import SafeConfigParser as config_parser
 else:
     from configparser import ConfigParser as config_parser
 
-_CIMECONFIG=None
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 165
 
@@ -27,9 +27,13 @@ def expect(condition, error_msg):
     SystemExit: ERROR: error2
     """
     if (not condition):
-        raise SystemExit('ERROR: '+error_msg)
+        # Uncomment these to bring up a debugger when an expect fails
+        # import pdb
+        # pdb.set_trace()
+        raise SystemExit("ERROR: %s" % error_msg)
 
-def read_cime_config_file():
+# Should only be called from get_cime_config()
+def _read_cime_config_file():
     """
     READ the config file in ~/.cime, this file may contain
     [main]
@@ -37,15 +41,24 @@ def read_cime_config_file():
     CIME_MODEL=acme,cesm
     PROJECT=someprojectnumber
     """
-    global _CIMECONFIG
-    cimeconfigfile = os.path.abspath(os.path.join(os.path.expanduser("~"),
+    cime_config_file = os.path.abspath(os.path.join(os.path.expanduser("~"),
                                                   ".cime","config"))
-    _CIMECONFIG = config_parser()
-    if(os.path.isfile(cimeconfigfile)):
-        _CIMECONFIG.read(cimeconfigfile)
+    cime_config = config_parser()
+    if(os.path.isfile(cime_config_file)):
+        cime_config.read(cime_config_file)
     else:
-        logging.warning("File %s not found" % cimeconfigfile)
-        _CIMECONFIG.add_section('main')
+        logging.warning("File %s not found" % cime_config_file)
+        cime_config.add_section('main')
+
+    return cime_config
+
+_CIMECONFIG = None
+def get_cime_config():
+    global _CIMECONFIG
+    if (not _CIMECONFIG):
+        _CIMECONFIG = _read_cime_config_file()
+
+    return _CIMECONFIG
 
 def get_python_libs_location_within_cime():
     """
@@ -60,10 +73,9 @@ def get_cime_root():
     >>> os.path.isdir(os.path.join(get_cime_root(), get_acme_scripts_location_within_cime()))
     True
     """
-    if(_CIMECONFIG is None):
-        read_cime_config_file()
-    if(_CIMECONFIG.has_option('main','CIMEROOT')):
-        cimeroot = _CIMECONFIG.get('main','CIMEROOT')
+    cime_config = get_cime_config()
+    if(cime_config.has_option('main','CIMEROOT')):
+        cimeroot = cime_config.get('main','CIMEROOT')
     else:
         try:
             cimeroot = os.environ["CIMEROOT"]
@@ -71,19 +83,16 @@ def get_cime_root():
             script_absdir = os.path.abspath(os.path.join(os.path.dirname(__file__),".."))
             assert script_absdir.endswith(get_python_libs_location_within_cime()), script_absdir
             cimeroot = os.path.abspath(os.path.join(script_absdir,"..",".."))
-        _CIMECONFIG.set('main','CIMEROOT',cimeroot)
+        cime_config.set('main','CIMEROOT',cimeroot)
     logging.info( "CIMEROOT is " + cimeroot)
     return cimeroot
-
 
 def set_model(model):
     """
     Set the model to be used in this session
     """
-    if(_CIMECONFIG is None):
-        read_cime_config_file()
-    _CIMECONFIG.set('main','MODEL',model)
-
+    cime_config = get_cime_config()
+    cime_config.set('main','MODEL',model)
 
 def get_model():
     """
@@ -93,15 +102,13 @@ def get_model():
     >>> print get_model()
     rocky
     """
-    global _CIMECONFIG
+    cime_config = get_cime_config()
     model = None
-    if(_CIMECONFIG is None):
-        read_cime_config_file()
-    if(_CIMECONFIG.has_option('main','MODEL')):
-        model = _CIMECONFIG.get('main','MODEL')
+    if (cime_config.has_option('main','MODEL')):
+        model = cime_config.get('main','MODEL')
     else:
         model = os.environ.get("CIME_MODEL")
-        if(model is not None):
+        if (model is not None):
             set_model(model)
         else:
             modelroot = os.path.join(get_cime_root(), "cime_config")
@@ -115,7 +122,6 @@ def get_model():
     return model
 
 _hack=object()
-
 def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
             arg_stdout=_hack, arg_stderr=_hack):
     """
@@ -440,26 +446,26 @@ def get_project():
     5 config_machines.xml
     """
     project = os.environ.get("PROJECT")
-    if(project is not None):
+    if (project is not None):
         logging.warn("project from env PROJECT "+project)
         return project
     project = os.environ.get("ACCOUNT")
-    if(project is not None):
+    if (project is not None):
         logging.warn("project from env ACCOUNT "+project)
         return project
-    if(_CIMECONFIG is None):
-        read_cime_config_file()
-    if(_CIMECONFIG.has_option('main','PROJECT')):
-        project = _CIMECONFIG.get('main','PROJECT')
-        if(project is not None):
+
+    cime_config = get_cime_config()
+    if (cime_config.has_option('main','PROJECT')):
+        project = cime_config.get('main','PROJECT')
+        if (project is not None):
             logging.warn("project from .cime/config "+project)
             return project
         projectfile = os.path.abspath(os.path.join(os.path.expanduser("~"),
                                                    ".cesm_proj"))
-        if(os.path.isfile(projectfile)):
+        if (os.path.isfile(projectfile)):
             with open(projectfile,'r') as myfile:
                 project = myfile.read()
-                _CIMECONFIG.set('main','PROJECT',project)
+                cime_config.set('main','PROJECT',project)
 
     return project
 

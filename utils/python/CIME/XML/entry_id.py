@@ -7,10 +7,10 @@ from standard_module_setup import *
 from CIME.utils import expect
 from generic_xml import GenericXML
 
-
 class EntryID(GenericXML):
+
     def __init__(self, infile=None):
-        GenericXML.__init__(self,infile)
+        GenericXML.__init__(self, infile)
 
     def set_default_value(self, vid, attributes=None):
         """
@@ -18,27 +18,29 @@ class EntryID(GenericXML):
         vid can be an xml node pointer or a string identifier of a node
         """
         value = None
-        if(type(vid) != type(str())):
+        if (type(vid) != type(str())):
             node = vid
             vid = node.attrib("id")
         else:
-            nodes = self.get_node("entry",{"id":vid})
-            if(nodes is None):
+            nodes = self.get_node("entry", {"id":vid})
+            if (nodes is None):
                 return
-            expect(len(nodes) == 1,"More than one match found for id " + vid)
+            expect(len(nodes) == 1, "More than one match found for id " + vid)
             node = nodes[0]
+
         valnodes = self.get_node("value",root=node)
-        if(valnodes is not None):
+        if (valnodes is not None):
             for valnode in valnodes:
                 for att in valnode.attributes:
-                    if(att.key in attributes):
-                        if(re.search(attributes[att.key],att.text)):
+                    if (att.key in attributes):
+                        if (re.search(attributes[att.key],att.text)):
                             value = valnode.text
                             logging.info("id %s value %s" % (vid, valnode.text))
-        if(value is None):
-            value = self.get_node("default_value",root=node)
-        if(value is not None):
-            node.set("value",value)
+
+        if (value is None):
+            value = self.get_node("default_value", root=node)
+        if (value is not None):
+            node.set("value", value)
             return value[0].text
 
     def set_value(self, vid, value):
@@ -47,18 +49,20 @@ class EntryID(GenericXML):
         Returns the value or None if not found
         """
         val = None
-        if(type(vid) != type(str())):
+        if (type(vid) != type(str())):
             node = vid
             vid = node.attrib("id")
         else:
-            nodes = self.get_node("entry",{"id":vid})
-            if(nodes is None):
-                return
-            expect(len(nodes) == 0,"More than one match found for id " + vid)
+            nodes = self.get_node("entry", {"id":vid})
+            if (nodes is None):
+                return None
+            expect(len(nodes) == 0, "More than one match found for id " + vid)
             node = nodes[0]
-        if(node is not None):
+
+        if (node is not None):
             val = value
             node.set("value",value)
+
         return val
 
     def get_value(self, vid, attribute=None, resolved=True):
@@ -68,54 +72,56 @@ class EntryID(GenericXML):
         and matches
         """
         val = None
-        if(type(vid) != type(str())):
+        if (type(vid) != type(str())):
             node = vid
             vid = node.attrib("id")
         else:
-            nodes = self.get_node("entry",{"id":vid})
-            if(len(nodes) == 0):
-                val = GenericXML.get_value(self,vid,resolved)
+            nodes = self.get_node("entry", {"id":vid})
+            if (len(nodes) == 0):
+                val = GenericXML.get_value(self, vid, resolved)
                 return val
             else:
                 node = nodes[0]
 
-        if(attribute is not None):
-            valnodes = self.get_node("value",attribute)
-            if(valnodes is not None and len(valnodes) == 1):
+        if (attribute is not None):
+            valnodes = self.get_node("value", attribute)
+            if (valnodes is not None and len(valnodes) == 1):
                 val = valnodes[0].text
-        elif(node.get("value") is not None):
+        elif (node.get("value") is not None):
             val = node.get("value")
         else:
             val = self.set_default_value(vid)
 
-        if(val is None):
-            """ if all else fails """
+        if (val is None):
+            # if all else fails
             val = GenericXML.get_value(self,vid,resolved)
 
-        if(resolved):
+        if (resolved):
             val = self.get_resolved_value(val)
 
         return val
 
-    def get_values(self,vid,att):
+    def get_values(self, vid, att):
         """
         If an entry includes a list of values return a dict matching each
         attribute to its associated value
         """
         values = {}
-        if(type(vid) != type(str())):
+        if (type(vid) != type(str())):
             node = vid
             vid = node.attrib("id")
         else:
-            nodes = self.get_node("entry",{"id":vid})
-            if(nodes is None):
+            nodes = self.get_node("entry", {"id":vid})
+            if (nodes is None):
                 return
             node = nodes[0]
-        valnodes = self.get_node("value",node=node)
-        if(valnodes is not None):
+
+        valnodes = self.get_node("value", node=node)
+        if (valnodes is not None):
             for valnode in valnodes:
                 vatt = valnode.attrib(att)
                 values[vatt] = valnode.text
+
         return values
 
 
