@@ -37,14 +37,13 @@ if ( $MPILIB == "mpi-serial") then
     setenv NETCDFROOT /projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/base
 else
     setenv NETCDFROOT /projects/ccsm/tpl/netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5
+    setenv PNETCDFROOT $NETCDFROOT
 endif
 
 setenv PATH $NETCDFROOT/bin:$PATH
 setenv LD_LIBRARY_PATH $NETCDFROOT/lib:$LD_LIBRARY_PATH
 setenv NETCDF_INCLUDES $NETCDFROOT/include
 setenv NETCDF_LIBS $NETCDFROOT/lib
-
-setenv PNETCDFROOT $NETCDFROOT
 
 if ( $?PERL ) then
    printenv
