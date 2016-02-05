@@ -23,13 +23,6 @@ if experiment in ('a','b','c','d','f'):
 else:
     sys.exit("Error: Invalid experiment specified.  Please specify an experiment between 'a' and 'f', excluding 'd'")
 
-# Move to requested directory
-try:
-   os.chdir("experiment_" + experiment)
-except:
-   sys.exit("Error: unable to move to experiment directory experiment_" + experiment)
-
-
 
 # Setup dictionaries of parameter values for each experiment
 a_params = {'Mmax':0.5,  'Sb':10.0**-2, 'Rel':450.0, 'Tmin':238.15, 'ST':1.67e-2}
@@ -45,53 +38,30 @@ scyr = 3600.0*24.0*365.0
 exp_params = {'a':a_params, 'b':b_params, 'c':c_params, 'd':d_params, 'f':f_params}
 
 # Some experiments start from scratch, others start from the SS of a previous experiment
-filename = 'eismint2' + experiment + '.input.nc'
+#filename = 'eismint2' + experiment + '.input.nc'
+filename = 'landice_grid.nc'
 # experiments that start from scratch
 if experiment in ('a', 'f'):
-    # get a empty land ice grid to use from the parent directory
-    try:
-      shutil.copy("../landice_grid.nc", filename)
-      for file in glob.glob('../graph.info*'):
-          shutil.copy(file, '.')
-    except:
-      sys.exit("Error: problem copying ../landice_grid.nc and/or graph.info* to this directory")
-else:
+    pass  # we will build the mesh from scratch
+else:  # todo: how to handle this?!
     # use the final state of experiment A
     try:
-      stat = os.system('ncks -O -d Time,-1 ../experiment_a/eismint2a.output.nc ./' + filename) 
+      stat = os.system('ncks -O -d Time,-1 ../experiment_a/eismint2a.output.nc ./' + filename)
       if stat != 0:
          raise error('ncks error')
     except:
       sys.exit("Error: problem building initial condition file from final state of Experiment A.  Make sure Experiment A has completed successfully before running tests B, C, or D.")
 
-# setup graph.info files
-try:
-  for filepath in glob.glob('../graph.info.part.*'):
-      #os.symlink(filepath, os.path.basename(filepath))
-      shutil.copy(filepath, '.')
-except:
-  sys.exit("Error: problem copying graph.info.part.* files to experiment directory")
-
 # Open the new input file, get needed dimensions & variables
-try:
-    gridfile = NetCDFFile(filename,'r+')
-    nVertLevels = len(gridfile.dimensions['nVertLevels'])
-    # Get variables
-    xCell = gridfile.variables['xCell']
-    yCell = gridfile.variables['yCell']
-    xEdge = gridfile.variables['xEdge']
-    yEdge = gridfile.variables['yEdge']
-    xVertex = gridfile.variables['xVertex']
-    yVertex = gridfile.variables['yVertex']
-    thickness = gridfile.variables['thickness']
-    bedTopography = gridfile.variables['bedTopography']
-    normalVelocity = gridfile.variables['normalVelocity']
-    layerThicknessFractions = gridfile.variables['layerThicknessFractions']
-    temperature = gridfile.variables['temperature']
-    # Get b.c. variables
-    SMB = gridfile.variables['sfcMassBal']
-except:
-    sys.exit('Error: The grid file specified is either missing or lacking needed dimensions/variables.')
+gridfile = NetCDFFile(filename,'r+')
+nVertLevels = len(gridfile.dimensions['nVertLevels'])
+# Get variables
+xCell = gridfile.variables['xCell'][:]
+yCell = gridfile.variables['yCell'][:]
+xEdge = gridfile.variables['xEdge'][:]
+yEdge = gridfile.variables['yEdge'][:]
+xVertex = gridfile.variables['xVertex'][:]
+yVertex = gridfile.variables['yVertex'][:]
 
 # ===================
 # initial conditions
@@ -117,18 +87,23 @@ if experiment in ('a', 'f'):
     yEdge[:] = yEdge[:] + yShift
     xVertex[:] = xVertex[:] + xShift
     yVertex[:] = yVertex[:] + yShift
+    gridfile.variables['xCell'][:] = xCell[:]
+    gridfile.variables['yCell'][:] = yCell[:]
+    gridfile.variables['xEdge'][:] = xEdge[:]
+    gridfile.variables['yEdge'][:] = yEdge[:]
+    gridfile.variables['xVertex'][:] = xVertex[:]
+    gridfile.variables['yVertex'][:] = yVertex[:]
 
     # Assign initial condition variable values for EISMINT-2 experiment
     # Start with no ice
-    thickness[:] = 0.0
-    # zero velocity everywhere (only needed for HO solvers)
-    normalVelocity[:] = 0.0
+    gridfile.variables['thickness'][:] = 0.0
     # flat bed at sea level
-    bedTopography[:] = 0.0
+    gridfile.variables['bedTopography'][:] = 0.0
     # constant, arbitrary temperature, degrees C (doesn't matter since there is no ice initially)
-    temperature[:] = 0.0 
+    gridfile.variables['temperature'][:] = 0.0
     # Setup layerThicknessFractions
-    layerThicknessFractions[:] = 1.0 / nVertLevels
+    gridfile.variables['layerThicknessFractions'][:] = 1.0 / nVertLevels
+
 # Now update/set origin location and distance array
 r = ((xCell[:] - xsummit)**2 + (yCell[:] - ysummit)**2)**0.5
 
@@ -142,10 +117,14 @@ params = exp_params[experiment]
 # SMB field specified by EISMINT, constant in time for EISMINT-2
 # It is a function of geographical position (not elevation)
 Mmax = params['Mmax']  # [m/yr] maximum accumulation rate
-Sb = params['Sb']      # gradient of accumulation rate change with horizontal distance  [m/a/km] 
+Sb = params['Sb']      # gradient of accumulation rate change with horizontal distance  [m/a/km]
 Rel = params['Rel']    # [km]  accumulation rate 0 position
-smb=numpy.minimum(Mmax, Sb * (Rel - r/1000.0)) # [m ice/yr]
-SMB[:] = smb * rhoi / scyr  # in kg/m2/s
+
+SMB = gridfile.variables['sfcMassBal'][0,:]
+SMB = numpy.minimum(Mmax, Sb * (Rel - r/1000.0)) # [m ice/yr]
+SMB = SMB * rhoi / scyr  # in kg/m2/s
+gridfile.variables['sfcMassBal'][0,:] = SMB
+
 
 # Basal heat flux should be -4.2e-2
 #G[:] = -4.2e-2  # [W/m2]
