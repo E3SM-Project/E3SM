@@ -342,8 +342,6 @@
 
 		<package name="higherOrderVelocity" description="This package includes variables required for higher order velocity solvers."/>
 
-		<package name="calcDiffusivity" description="Variables only needed for calculation of apparent diffusivity."/>
-
 	</packages>
 
 
@@ -482,6 +480,9 @@
                         <var name="xtime"/>
                         <var name="simulationStartTime"/>
                         <var name="daysSinceStart"/>
+                        <var name="deltat"/>
+                        <var name="allowableDtACFL"/>
+                        <var name="allowableDtDCFL"/>
 			<var name="thickness"/>
 			<var name="lowerSurface"/>
 			<var name="upperSurface"/>
@@ -732,24 +733,23 @@ is the value of that variable from the *previous* time level!
 		/>
 		<var name="restoreThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
 		     description="thickness of ice added to restore the calving front to its initial position"
+                />
+                <!-- Variables only needed for calculating diffusivity at cell centers - this is always done now so no package is attached here -->
+		<var name="normalSlopeEdge"            type="real"     dimensions="nEdges Time"
+		     units="m m^{-1}"  description="normal surface slope on edges"
 		/>
-		<!-- Variables only needed by SIA solver or for calculating diffusivity -->
+                <var name="apparentDiffusivity" type="real" dimensions="nCells Time"
+                        units="m^2 s^{-1}"  description="apparent diffusivity at cell centers"
+		/>
+		<!-- Variables only needed by SIA solver -->
 		<var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
 		     description="elevation at top of ice on vertices" packages="SIAvelocity"
-		/>
-		<var name="normalSlopeEdge"            type="real"     dimensions="nEdges Time"
-		     units="m m^{-1}"  description="normal surface slope on edges" packages="SIAvelocity;calcDiffusivity"
 		/>
 		<var name="tangentSlopeEdge"            type="real"     dimensions="nEdges Time"
 		     units="m m^{-1}"  description="tangent surface slope on edges" packages="SIAvelocity"
 		/>
 		<var name="slopeEdge"            type="real"     dimensions="nEdges Time"
 		     units="m m^{-1}"  description="surface slope magnitude on edges" packages="SIAvelocity"
-		/>
-
-		<!-- Variables only needed for calculating diffusivity at cell centers -->
-                <var name="apparentDiffusivity" type="real" dimensions="nCells Time" packages="calcDiffusivity"
-                        units="m^2 s^{-1}"  description="apparent diffusivity at cell centers"
 		/>
 	</var_struct>
 

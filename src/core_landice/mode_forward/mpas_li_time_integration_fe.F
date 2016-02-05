@@ -255,7 +255,7 @@ module li_time_integration_fe
 
       integer :: &
            allowableDiffDtProcNumberHere, &
-           allowableDiffDtProcNumber  
+           allowableDiffDtProcNumber
 
       real (kind=RKIND) :: &
            allowableDiffDt, &
@@ -319,10 +319,13 @@ module li_time_integration_fe
          allowableAdvecDtOnProc = min(allowableAdvecDtOnProc, allowableAdvecDt)
 
          ! Calculate diffusive CFL timestep, if needed
-         if (config_adaptive_timestep_include_DCFL) then
-            call li_calculate_apparent_diffusivity(meshPool, velocityPool, scratchPool, geometryPool, allowableDiffDt)
-            allowableDiffDtOnProc = min(allowableDiffDtOnProc, allowableDiffDt)
-         endif
+         ! This used to be only calculated if (config_adaptive_timestep_include_DCFL) but for simplicity,
+         ! now it is always calculated.  That allows assessment of the DCFL even when it is not being obeyed
+         ! by the adaptive time stepper.  Timer is added here to monitor if this unnecessary calculation becomes significant.
+         call mpas_timer_start("calculate apparent diffusivity")
+         call li_calculate_apparent_diffusivity(meshPool, velocityPool, scratchPool, geometryPool, allowableDiffDt)
+         allowableDiffDtOnProc = min(allowableDiffDtOnProc, allowableDiffDt)
+         call mpas_timer_stop("calculate apparent diffusivity")
 
          ! Note: The ACFL and DCFL timesteps could be calculated in
          ! diagnostic_variables_solve_after_velocity.  In that case, we could also add
@@ -352,61 +355,65 @@ module li_time_integration_fe
 
 
       ! Local diffusive CFL info
-      if (config_adaptive_timestep_include_DCFL) then
-          call mpas_set_timeInterval(allowableDiffDtOnProcInterval, dt=allowableDiffDtOnProc, ierr=err_tmp)
-          err = ior(err,err_tmp)
-          call mpas_get_timeInterval(allowableDiffDtOnProcInterval, timeString=allowableDiffDtOnProcString, ierr=err_tmp)
-          err = ior(err,err_tmp)
+      ! This used to be only calculated if (config_adaptive_timestep_include_DCFL) but for simplicity,
+      ! now it is always calculated.  That allows assessment of the DCFL even when it is not being obeyed
+      ! by the adaptive time stepper.
+      call mpas_set_timeInterval(allowableDiffDtOnProcInterval, dt=allowableDiffDtOnProc, ierr=err_tmp)
+      err = ior(err,err_tmp)
+      call mpas_get_timeInterval(allowableDiffDtOnProcInterval, timeString=allowableDiffDtOnProcString, ierr=err_tmp)
+      err = ior(err,err_tmp)
 
-          if (config_print_thickness_advection_info) then
-             write(stdoutUnit,*) '  Maximum allowable time step on THIS processor based on diffusive CFL is (Days_hhh:mmm:sss):   ' // trim(allowableDiffDtOnProcString)
-          endif
+      if (config_print_thickness_advection_info) then
+         write(stdoutUnit,*) '  Maximum allowable time step on THIS processor based on diffusive CFL is (Days_hhh:mmm:sss):   ' // trim(allowableDiffDtOnProcString)
       endif
 
 
-      ! If we are printing advection debug information or adaptive timestepping,
-      ! then find out what the global CFL limit is.  Don't do this otherwise because
-      ! it requires 2 unnecessary MPI communications.
-      if (config_print_thickness_advection_info .or. config_adaptive_timestep) then
+      ! These calculation could be (and used to be) restricted to only if we are
+      ! printing advection debug information or adaptive timestepping, because
+      ! it requires 2 unnecessary MPI communications for each of the ACFL and DCFL
+      ! However, those communications are probably small relative to other costs in
+      ! the model, so now they always happen.  The timer has been added to allow
+      ! assessment of that assumption.
+      call mpas_timer_start("calculate global CFL limits")
 
-          ! Determine ACFL limit on all procs
-          call mpas_dmpar_min_real(dminfo, allowableAdvecDtOnProc, allowableAdvecDtAllProcs)
+      ! Determine ACFL limit on all procs
+      call mpas_dmpar_min_real(dminfo, allowableAdvecDtOnProc, allowableAdvecDtAllProcs)
 
-          ! Determine which processor has the limiting CFL
-          if (allowableAdvecDtOnProc == allowableAdvecDtAllProcs) then
-            allowableAdvecDtProcNumberHere = dminfo % my_proc_id
-          else 
-            allowableAdvecDtProcNumberHere = -1
-          endif
+      ! Determine which processor has the limiting CFL
+      if (allowableAdvecDtOnProc == allowableAdvecDtAllProcs) then
+        allowableAdvecDtProcNumberHere = dminfo % my_proc_id
+      else
+        allowableAdvecDtProcNumberHere = -1
+      endif
 
-          call mpas_dmpar_max_int(dminfo, allowableAdvecDtProcNumberHere, allowableAdvecDtProcNumber)
-          call mpas_set_timeInterval(allowableAdvecDtAllProcsInterval, dt=allowableAdvecDtAllProcs, ierr=err_tmp)
-          err = ior(err,err_tmp)
-          call mpas_get_timeInterval(allowableAdvecDtAllProcsInterval, timeString=allowableAdvecDtAllProcsString, ierr=err_tmp)
-          err = ior(err,err_tmp)
+      call mpas_dmpar_max_int(dminfo, allowableAdvecDtProcNumberHere, allowableAdvecDtProcNumber)
+      call mpas_set_timeInterval(allowableAdvecDtAllProcsInterval, dt=allowableAdvecDtAllProcs, ierr=err_tmp)
+      err = ior(err,err_tmp)
+      call mpas_get_timeInterval(allowableAdvecDtAllProcsInterval, timeString=allowableAdvecDtAllProcsString, ierr=err_tmp)
+      err = ior(err,err_tmp)
 
-          ! Repeat for diffusive CFL
-          if (config_adaptive_timestep_include_DCFL) then
+      ! Repeat for diffusive CFL
+      ! This used to be only calculated if (config_adaptive_timestep_include_DCFL) but for simplicity,
+      ! now it is always calculated.  That allows assessment of the DCFL even when it is not being obeyed
+      ! by the adaptive time stepper.
 
-              ! Determine DCFL limit on all procs
-              call mpas_dmpar_min_real(dminfo, allowableDiffDtOnProc, allowableDiffDtAllProcs)
+      ! Determine DCFL limit on all procs
+      call mpas_dmpar_min_real(dminfo, allowableDiffDtOnProc, allowableDiffDtAllProcs)
 
-              ! Determine which processor has the limiting CFL
-              if (allowableDiffDtOnProc == allowableDiffDtAllProcs) then
-                allowableDiffDtProcNumberHere = dminfo % my_proc_id
-              else 
-                allowableDiffDtProcNumberHere = -1
-              endif
+      ! Determine which processor has the limiting CFL
+      if (allowableDiffDtOnProc == allowableDiffDtAllProcs) then
+        allowableDiffDtProcNumberHere = dminfo % my_proc_id
+      else
+        allowableDiffDtProcNumberHere = -1
+      endif
 
-              call mpas_dmpar_max_int(dminfo, allowableDiffDtProcNumberHere, allowableDiffDtProcNumber)
-              call mpas_set_timeInterval(allowableDiffDtAllProcsInterval, dt=allowableDiffDtAllProcs, ierr=err_tmp)
-              err = ior(err,err_tmp)
-              call mpas_get_timeInterval(allowableDiffDtAllProcsInterval, timeString=allowableDiffDtAllProcsString, ierr=err_tmp)
-              err = ior(err,err_tmp)
+      call mpas_dmpar_max_int(dminfo, allowableDiffDtProcNumberHere, allowableDiffDtProcNumber)
+      call mpas_set_timeInterval(allowableDiffDtAllProcsInterval, dt=allowableDiffDtAllProcs, ierr=err_tmp)
+      err = ior(err,err_tmp)
+      call mpas_get_timeInterval(allowableDiffDtAllProcsInterval, timeString=allowableDiffDtAllProcsString, ierr=err_tmp)
+      err = ior(err,err_tmp)
 
-          endif
-
-      endif  ! config_print_thickness_advection_info or config_adaptive_timestep
+      call mpas_timer_stop("calculate global CFL limits")
 
 
       ! Write messages if they are turned on
@@ -443,14 +450,10 @@ module li_time_integration_fe
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         if (config_print_thickness_advection_info .or. config_adaptive_timestep) then
-            call mpas_pool_get_array(meshPool, 'allowableDtACFL', allowableDtACFL)
-            allowableDtACFL = allowableAdvecDtAllProcs
-            if (config_adaptive_timestep_include_DCFL) then
-               call mpas_pool_get_array(meshPool, 'allowableDtDCFL', allowableDtDCFL)
-               allowableDtDCFL = allowableDiffDtAllProcs
-            endif
-         endif
+         call mpas_pool_get_array(meshPool, 'allowableDtACFL', allowableDtACFL)
+         allowableDtACFL = allowableAdvecDtAllProcs
+         call mpas_pool_get_array(meshPool, 'allowableDtDCFL', allowableDtDCFL)
+         allowableDtDCFL = allowableDiffDtAllProcs
 
          block => block % next
       end do
