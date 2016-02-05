@@ -2361,6 +2361,11 @@
 			 description="The global maximum Haney number (rx1)."
 			 packages="initMode"
 		/>
+		<!-- diagnostic fields for Haney number constrained init -->
+		<var name="rx1InitSmoothingMask" type="integer" dimensions="nCells Time" units="unitless"
+			description="A mask indicating where layer interface and thickness smoothing is to be performed during Haney number constrained initializaiton."
+			 packages="initMode"
+		/>
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
 		<!-- **********************************************************************
@@ -3006,11 +3011,6 @@
 			persistence="scratch"
 			type="real" dimensions="nCells" units="m"
 			description="updated location of the lower layer used to compute the Haney number (rx1), needed so update is agnostic to the order in which cells are accessed"
-		/>
-		<var name="smoothingMaskScratch"
-			persistence="scratch"
-			type="integer" dimensions="nCells" units="unitless"
-			description="a mask indicating where smoothing is to be performed."
 		/>
 		<var name="smoothingMaskNewScratch"
 			persistence="scratch"

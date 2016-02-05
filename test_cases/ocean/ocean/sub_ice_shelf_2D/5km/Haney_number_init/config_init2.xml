@@ -46,6 +46,7 @@
 				<member name="rx1MaxCell" type="var"/>
 				<member name="rx1MaxEdge" type="var"/>
 				<member name="globalRx1Max" type="var"/>
+				<member name="rx1InitSmoothingMask" type="var"/>
 			</add_contents>
 		</stream>
 		<stream name="forcing_data_init">
