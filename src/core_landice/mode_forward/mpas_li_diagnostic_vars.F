@@ -246,6 +246,7 @@ contains
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
+      logical, pointer :: config_print_thickness_advection_info
       real (kind=RKIND), dimension(:), pointer :: normalSlopeEdge
       type (field1dReal), pointer :: slopeReconstructXField, slopeReconstructYField, slopeReconstructZField  !< Only needed for calling mpas_reconstruct, but not actually used here
       type (field1dReal), pointer :: slopeCellAxis1Field
@@ -276,6 +277,7 @@ contains
       ! calculations for now.
 
       ! get needed variables
+      call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
@@ -346,7 +348,7 @@ contains
          allowableDiffDt = min(allowableDiffDt, allowableDtHere)
       enddo
 
-      if (divideSingularityFound) then
+      if (divideSingularityFound .and. config_print_thickness_advection_info) then
          write (stderrUnit,*) 'Notice: In calculating apparentDiffusivity, one or more cells have been ignored due to flat slope and low velocity (assumed to be a divide where diffusivity is undefined).'
       endif
 
