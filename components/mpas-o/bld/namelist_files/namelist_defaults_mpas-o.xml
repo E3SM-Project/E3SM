@@ -234,7 +234,7 @@
 <config_density0>1026.0</config_density0>
 
 <!-- pressure_gradient -->
-<config_pressure_gradient_type>'pressure_and_zmid'</config_pressure_gradient_type>
+<config_pressure_gradient_type>'Jacobian_from_TS'</config_pressure_gradient_type>
 <config_common_level_weight>0.5</config_common_level_weight>
 
 <!-- eos -->
@@ -307,6 +307,7 @@
 <config_rx1_vert_smooth_weight>0.5</config_rx1_vert_smooth_weight>
 <config_rx1_horiz_smooth_open_ocean_cells>20</config_rx1_horiz_smooth_open_ocean_cells>
 <config_rx1_min_levels>3</config_rx1_min_levels>
+<config_rx1_min_layer_thickness>1.0</config_rx1_min_layer_thickness>
 
 <!-- baroclinic_channel -->
 <config_baroclinic_channel_vert_levels>20</config_baroclinic_channel_vert_levels>
@@ -701,7 +702,7 @@
 <config_use_MacroMoleculesTracers_surface_value>.false.</config_use_MacroMoleculesTracers_surface_value>
 
 <!-- AM_globalStats -->
-<config_AM_globalStats_enable>.false.</config_AM_globalStats_enable>
+<config_AM_globalStats_enable>.true.</config_AM_globalStats_enable>
 <config_AM_globalStats_compute_interval>'output_interval'</config_AM_globalStats_compute_interval>
 <config_AM_globalStats_compute_on_startup>.false.</config_AM_globalStats_compute_on_startup>
 <config_AM_globalStats_write_on_startup>.false.</config_AM_globalStats_write_on_startup>
@@ -710,7 +711,7 @@
 <config_AM_globalStats_output_stream>'globalStatsOutput'</config_AM_globalStats_output_stream>
 
 <!-- AM_surfaceAreaWeightedAverages -->
-<config_AM_surfaceAreaWeightedAverages_enable>.false.</config_AM_surfaceAreaWeightedAverages_enable>
+<config_AM_surfaceAreaWeightedAverages_enable>.true.</config_AM_surfaceAreaWeightedAverages_enable>
 <config_AM_surfaceAreaWeightedAverages_compute_on_startup>.true.</config_AM_surfaceAreaWeightedAverages_compute_on_startup>
 <config_AM_surfaceAreaWeightedAverages_write_on_startup>.true.</config_AM_surfaceAreaWeightedAverages_write_on_startup>
 <config_AM_surfaceAreaWeightedAverages_compute_interval>'output_interval'</config_AM_surfaceAreaWeightedAverages_compute_interval>
@@ -728,9 +729,9 @@
 <config_AM_waterMassCensus_maxSalinity>37.0</config_AM_waterMassCensus_maxSalinity>
 
 <!-- AM_layerVolumeWeightedAverage -->
-<config_AM_layerVolumeWeightedAverage_enable>.false.</config_AM_layerVolumeWeightedAverage_enable>
+<config_AM_layerVolumeWeightedAverage_enable>.true.</config_AM_layerVolumeWeightedAverage_enable>
 <config_AM_layerVolumeWeightedAverage_compute_interval>'output_interval'</config_AM_layerVolumeWeightedAverage_compute_interval>
-<config_AM_layerVolumeWeightedAverage_compute_on_startup>.false.</config_AM_layerVolumeWeightedAverage_compute_on_startup>
+<config_AM_layerVolumeWeightedAverage_compute_on_startup>.true.</config_AM_layerVolumeWeightedAverage_compute_on_startup>
 <config_AM_layerVolumeWeightedAverage_write_on_startup>.false.</config_AM_layerVolumeWeightedAverage_write_on_startup>
 <config_AM_layerVolumeWeightedAverage_output_stream>'layerVolumeWeightedAverageOutput'</config_AM_layerVolumeWeightedAverage_output_stream>
 
@@ -759,7 +760,7 @@
 <config_AM_okuboWeiss_eddy_min_cells>20</config_AM_okuboWeiss_eddy_min_cells>
 
 <!-- AM_meridionalHeatTransport -->
-<config_AM_meridionalHeatTransport_enable>.false.</config_AM_meridionalHeatTransport_enable>
+<config_AM_meridionalHeatTransport_enable>.true.</config_AM_meridionalHeatTransport_enable>
 <config_AM_meridionalHeatTransport_compute_interval>'output_interval'</config_AM_meridionalHeatTransport_compute_interval>
 <config_AM_meridionalHeatTransport_compute_on_startup>.true.</config_AM_meridionalHeatTransport_compute_on_startup>
 <config_AM_meridionalHeatTransport_write_on_startup>.true.</config_AM_meridionalHeatTransport_write_on_startup>
@@ -821,7 +822,7 @@
 <config_AM_eliassenPalm_rhomax_buoycoor>1080</config_AM_eliassenPalm_rhomax_buoycoor>
 
 <!-- AM_mixedLayerDepths -->
-<config_AM_mixedLayerDepths_enable>.false.</config_AM_mixedLayerDepths_enable>
+<config_AM_mixedLayerDepths_enable>.true.</config_AM_mixedLayerDepths_enable>
 <config_AM_mixedLayerDepths_compute_interval>'output_interval'</config_AM_mixedLayerDepths_compute_interval>
 <config_AM_mixedLayerDepths_output_stream>'mixedLayerDepthsOutput'</config_AM_mixedLayerDepths_output_stream>
 <config_AM_mixedLayerDepths_write_on_startup>.true.</config_AM_mixedLayerDepths_write_on_startup>
@@ -838,7 +839,7 @@
 <config_AM_mixedLayerDepths_interp_method>1</config_AM_mixedLayerDepths_interp_method>
 
 <!-- AM_timeSeriesStats -->
-<config_AM_timeSeriesStats_enable>.false.</config_AM_timeSeriesStats_enable>
+<config_AM_timeSeriesStats_enable>.true.</config_AM_timeSeriesStats_enable>
 <config_AM_timeSeriesStats_compute_on_startup>.false.</config_AM_timeSeriesStats_compute_on_startup>
 <config_AM_timeSeriesStats_write_on_startup>.false.</config_AM_timeSeriesStats_write_on_startup>
 <config_AM_timeSeriesStats_compute_interval>'dt'</config_AM_timeSeriesStats_compute_interval>
@@ -849,6 +850,13 @@
 <config_AM_timeSeriesStats_reference_times>'initial_time'</config_AM_timeSeriesStats_reference_times>
 <config_AM_timeSeriesStats_duration_intervals>'repeat_interval'</config_AM_timeSeriesStats_duration_intervals>
 <config_AM_timeSeriesStats_repeat_intervals>'reset_interval'</config_AM_timeSeriesStats_repeat_intervals>
-<config_AM_timeSeriesStats_reset_intervals>'00-00-01_00:00:00'</config_AM_timeSeriesStats_reset_intervals>
+<config_AM_timeSeriesStats_reset_intervals>'00-01-00_00:00:00'</config_AM_timeSeriesStats_reset_intervals>
+
+<!-- AM_pointwiseStats -->
+<config_AM_pointwiseStats_enable>.false.</config_AM_pointwiseStats_enable>
+<config_AM_pointwiseStats_compute_interval>'output_interval'</config_AM_pointwiseStats_compute_interval>
+<config_AM_pointwiseStats_output_stream>'pointwiseStatsOutput'</config_AM_pointwiseStats_output_stream>
+<config_AM_pointwiseStats_compute_on_startup>.true.</config_AM_pointwiseStats_compute_on_startup>
+<config_AM_pointwiseStats_write_on_startup>.true.</config_AM_pointwiseStats_write_on_startup>
 
 </namelist_defaults>

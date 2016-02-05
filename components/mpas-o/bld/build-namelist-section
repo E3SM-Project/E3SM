@@ -412,6 +412,7 @@ add_default($nl, 'config_rx1_horiz_smooth_weight');
 add_default($nl, 'config_rx1_vert_smooth_weight');
 add_default($nl, 'config_rx1_horiz_smooth_open_ocean_cells');
 add_default($nl, 'config_rx1_min_levels');
+add_default($nl, 'config_rx1_min_layer_thickness');
 
 ######################################
 # Namelist group: baroclinic_channel #
@@ -1054,4 +1055,14 @@ add_default($nl, 'config_AM_timeSeriesStats_reference_times');
 add_default($nl, 'config_AM_timeSeriesStats_duration_intervals');
 add_default($nl, 'config_AM_timeSeriesStats_repeat_intervals');
 add_default($nl, 'config_AM_timeSeriesStats_reset_intervals');
+
+#####################################
+# Namelist group: AM_pointwiseStats #
+#####################################
+
+add_default($nl, 'config_AM_pointwiseStats_enable');
+add_default($nl, 'config_AM_pointwiseStats_compute_interval');
+add_default($nl, 'config_AM_pointwiseStats_output_stream');
+add_default($nl, 'config_AM_pointwiseStats_compute_on_startup');
+add_default($nl, 'config_AM_pointwiseStats_write_on_startup');
 
