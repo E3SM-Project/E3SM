@@ -508,6 +508,14 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_geostrophic_surface_tilt" type="logical"
+	category="velocity_solver" group="velocity_solver">
+MISSING DESCRIPTION
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- advection -->
 
