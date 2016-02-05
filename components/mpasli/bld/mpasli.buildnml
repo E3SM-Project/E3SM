@@ -220,7 +220,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpasli/$STREAM_NAME" ) {
 	print $stream_file "    <var name=" . '"daysSinceStart"' . "/>\n";
 	print $stream_file "    <var name=" . '"simulationStartTime"' . "/>\n";
 	print $stream_file "    <var name=" . '"allowableDtACFL"' . "/>\n";
-#	print $stream_file "    <var name=" . '"allowableDtDCFL"' . "/>\n";  # Currently this will only be calculated if it is to be used to set the adaptive timestep.
+	print $stream_file "    <var name=" . '"allowableDtDCFL"' . "/>\n";
 	print $stream_file "\n";
 	print $stream_file "</stream>\n";
 	print $stream_file "\n";
