@@ -230,9 +230,6 @@ CONTAINS
        TimeLevel%nstep = get_nstep()*se_nsplit*qsplit*rsplit
     endif
 
-    ! initial SE (subcycled) nstep
-    TimeLevel%nstep0 = 0
-
     ! Define the CAM grids (this has to be after dycore spinup).
     ! Physics-grid will be defined later by phys_grid_init
     call define_cam_grids()

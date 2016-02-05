@@ -112,7 +112,7 @@ module interpolate_mod
   ! gridtype = 3       equally spaced, no poles (FV staggered velocity)
   ! Seven possible history files, last one is inithist and should be native grid
 #ifndef CAM
-  logical, public :: interpolate_analysis(8) = (/.true.,.false.,.false.,.false.,.false.,false.,.false.,.false./)
+  logical, public :: interpolate_analysis(8) = (/.true.,.false.,.false.,.false.,.false.,.false.,.false.,.false./)
 #endif
   integer :: nlat,nlon
   real (kind=real_kind), pointer, public   :: lat(:)     => NULL()
