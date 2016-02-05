@@ -102,7 +102,7 @@ class EntryID(GenericXML):
 
         return val
 
-    def get_values(self, vid, att):
+    def get_values(self, vid, att, resolved=True):
         """
         If an entry includes a list of values return a dict matching each
         attribute to its associated value
@@ -117,11 +117,15 @@ class EntryID(GenericXML):
                 return
             node = nodes[0]
 
-        valnodes = self.get_node("value", node=node)
+        valnodes = self.get_node("value", root=node)
         if (valnodes is not None):
             for valnode in valnodes:
-                vatt = valnode.attrib(att)
-                values[vatt] = valnode.text
+                vatt = valnode.attrib[att]
+                if(resolved):
+                    values[vatt] = self.get_resolved_value(valnode.text)
+                else:
+                    values[vatt] = valnode.text
+
 
         return values
 

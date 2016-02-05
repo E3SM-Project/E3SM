@@ -70,7 +70,7 @@ class GenericXML:
                 xpath += "@%s=\'%s\'" % (key,attributes[key])
                 cnt=cnt+1
             xpath += "]"
-        logging.info("xpath = "+ xpath)
+        logging.warn("xpath = "+ xpath)
         nodes = root.findall(xpath)
         return nodes
 

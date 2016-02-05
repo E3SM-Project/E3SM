@@ -15,8 +15,6 @@ from standard_script_setup import *
 import update_acme_tests
 from CIME.create_test import CreateTest
 from CIME.utils import expect
-from CIME.XML.machines import Machines
-from CIME.XML.files import Files
 
 import argparse, doctest, tempfile
 
@@ -25,6 +23,8 @@ def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
         usage="""\n%s <TEST|SUITE> [<TEST|SUITE> ...] [--verbose]
+OR
+%s --xml_category [CATEGORY] [--xml_machine ...]
 OR
 %s --help
 OR
@@ -48,7 +48,7 @@ OR
 
     \033[1;32m# Run all tests in a suite except for tests that are in another suite \033[0m
     > %s <SUITE1> ^<SUITE2>
-""" % ((os.path.basename(args[0]), ) * 9),
+""" % ((os.path.basename(args[0]), ) * 10),
 
 description=description,
 
@@ -59,7 +59,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("testargs", nargs="+", help="Tests or test suites to run. Testnames expect in form CASE.GRID.COMPSET")
+    parser.add_argument("testargs", nargs="*", help="Tests or test suites to run. Testnames expect in form CASE.GRID.COMPSET")
 
     parser.add_argument("--no-run", action="store_true",
                         help="Do not run generated tests")
@@ -99,7 +99,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument("-m", "--machine",
                         help="The machine for which to build tests, this machine must be defined in the "
-                        "config_mahines.xml file for the given model. Default is to match the name of the "
+                        "config_machines.xml file for the given model. Default is to match the name of the "
                         "machine in the test name or the name of the machine "
                         "this script is run on to the NODENAME_REGEX field in config_machines.xml"  )
 
@@ -120,6 +120,13 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-j", "--parallel-jobs", type=int, default=None,
                         help="Number of tasks create_test should perform simultaneously. Default "
                         "will be min(num_cores, num_tests).")
+
+
+    parser.add_argument("--xml_machine",help="Use this machine key in the lookup in testlist.xml")
+    parser.add_argument("--xml_compiler",help="Use this compiler key in the lookup in testlist.xml")
+    parser.add_argument("--xml_category",help="Use this category key in the lookup in testlist.xml")
+    parser.add_argument("--xml_testlist",help="Use this testlist to lookup tests")
+
 
     args = parser.parse_args(args[1:])
 
@@ -149,12 +156,14 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     return args.testargs, args.compiler, args.machine, args.no_run, args.no_build, args.no_batch, \
         args.test_root, args.baseline_root, args.clean, args.compare, args.generate, args.baseline_name, \
-        args.namelists_only, args.project, args.test_id, args.parallel_jobs
+        args.namelists_only, args.project, args.test_id, args.parallel_jobs, args.xml_machine, args.xml_compiler,\
+        args.xml_category, args.xml_testlist
 
 ###############################################################################
 def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, test_root,
                 baseline_root, clean, compare, generate,
-                baseline_name, namelists_only, project, test_id, parallel_jobs):
+                baseline_name, namelists_only, project, test_id, parallel_jobs,
+                xml_machine, xml_compiler, xml_category, xml_testlist):
 ###############################################################################
     impl = CreateTest(testargs,
                       no_run=no_run, no_build=no_build, no_batch=no_batch,
@@ -162,7 +171,9 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
                       baseline_root=baseline_root, baseline_name=baseline_name,
                       clean=clean, machine_name=machine_name, compiler=compiler,
                       compare=compare, generate=generate, namelists_only=namelists_only,
-                      project=project, parallel_jobs=parallel_jobs)
+                      project=project, parallel_jobs=parallel_jobs,
+                      xml_machine=xml_machine,xml_compiler=xml_compiler,
+                      xml_category=xml_category,xml_testlist=xml_testlist)
     return 0 if impl.create_test() else CIME.utils.TESTS_FAILED_ERR_CODE
 
 ###############################################################################
@@ -174,11 +185,12 @@ def _main_func(description):
 
     testargs, compiler, machine_name, no_run, no_build, no_batch, test_root, baseline_root, clean, \
         compare, generate, baseline_name, namelists_only, project, test_id, parallel_jobs, \
+        xml_machine, xml_compiler, xml_category, xml_testlist\
         = parse_command_line(sys.argv, description)
 
     sys.exit(create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, test_root,
                          baseline_root, clean, compare, generate, baseline_name, namelists_only,
-                         project, test_id, parallel_jobs))
+                         project, test_id, parallel_jobs, xml_machine, xml_compiler, xml_category, xml_testlist))
 
 ###############################################################################
 

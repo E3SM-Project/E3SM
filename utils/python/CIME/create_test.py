@@ -12,6 +12,7 @@ from CIME.XML.machines import Machines
 from CIME.XML.env_test import EnvTest
 from CIME.XML.files import Files
 from CIME.XML.component import Component
+from CIME.XML.testlist import Testlist
 
 INITIAL_PHASE = "INIT"
 CREATE_NEWCASE_PHASE = "CREATE_NEWCASE"
@@ -33,7 +34,8 @@ class CreateTest(object):
                  machine_name=None,compiler=None,
                  baseline_root=None, baseline_name=None,
                  clean=False,compare=False, generate=False, namelists_only=False,
-                 project=None, parallel_jobs=None):
+                 project=None, parallel_jobs=None,
+                 xml_machine=None, xml_compiler=None, xml_category=None,xml_testlist=None):
     ###########################################################################
         self._cime_root = CIME.utils.get_cime_root()
 
@@ -71,8 +73,13 @@ class CreateTest(object):
         self._generate       = generate
         self._namelists_only = namelists_only
 
-        expect(len(test_names) > 0, "No tests to run")
-        self._test_names = update_acme_tests.get_full_test_names(test_names, machine_name, self._compiler)
+        # If xml options are provided get tests from xml file, otherwise use acme dictionary
+        if(not test_names and (xml_machine is not None or xml_category is not None or xml_compiler is not None or xml_testlist is not None)):
+            self._test_names = self._get_tests_from_xml(xml_machine,xml_category,xml_compiler, xml_testlist)
+        else:
+            expect(len(test_names) > 0, "No tests to run")
+            self._test_names = update_acme_tests.get_full_test_names(test_names, machine_name, self._compiler)
+
 
         if (parallel_jobs is None):
             self._parallel_jobs  = min(len(self._test_names), int(self._machobj.get_value("MAX_TASKS_PER_NODE")))
@@ -627,3 +634,24 @@ class CreateTest(object):
         print "create_test took", time.time() - start_time, "seconds"
 
         return rv
+
+    def  _get_tests_from_xml(self,xml_machine=None,xml_category=None,xml_compiler=None, xml_testlist=None):
+        """
+        Parse testlists for a list of tests
+        """
+        test_names = {}
+        testlistfiles = []
+        if(xml_testlist is not None):
+             expect(os.path.isfile(xml_testlist), "Testlist not found or not readable "+xml_testlist)
+             testlistfiles[0] = xml_testlist
+        else:
+            files = Files()
+            test_spec_files = files.get_values("TESTS_SPEC_FILE","component")
+            for spec_file in test_spec_files.viewvalues():
+                if(os.path.isfile(spec_file)):
+                    testlistfiles.append(spec_file)
+
+        for testlistfile in testlistfiles:
+            thistestlistfile = Testlist(testlistfile)
+            thistestlistfile.get_tests(xml_machine, xml_category, xml_compiler)
+
