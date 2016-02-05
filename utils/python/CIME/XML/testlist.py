@@ -14,7 +14,7 @@ class Testlist(GenericXML):
         GenericXML.__init__(self,infile)
 
     def get_tests(self, machine=None, category=None, compiler=None):
-        tests = {}
+        tests = []
         testnodes = self.get_node("test")
         machatts = {}
         if(machine is not None):
@@ -29,10 +29,12 @@ class Testlist(GenericXML):
 
             if(machnodes):
                 teststr = "%s.%s.%s"%(tnode.attrib["name"],tnode.attrib["grid"],tnode.attrib["compset"])
-
+                thistest = {}
                 for mach in machnodes:
-                    thistest = "%s.%s_%s"%(teststr, mach.attrib["name"],mach.attrib["compiler"])
-                    print "Found "+thistest
+                    thistest["name"] = "%s.%s_%s"%(teststr, mach.attrib["name"],mach.attrib["compiler"])
                     optionnodes = self.get_node("option")
-
+                    for onode in optionnodes:
+                       thistest[onode.attrib['name']]=onode.text
+                    tests.append(thistest)
+        return tests
 

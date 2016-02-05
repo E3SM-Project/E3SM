@@ -38,7 +38,6 @@ class CreateTest(object):
                  xml_machine=None, xml_compiler=None, xml_category=None,xml_testlist=None):
     ###########################################################################
         self._cime_root = CIME.utils.get_cime_root()
-
         self._machobj   = Machines(machine=machine_name)
         machine_name    = self._machobj.get_machine_name()
 
@@ -639,7 +638,7 @@ class CreateTest(object):
         """
         Parse testlists for a list of tests
         """
-        test_names = {}
+        test_names = []
         testlistfiles = []
         if(xml_testlist is not None):
              expect(os.path.isfile(xml_testlist), "Testlist not found or not readable "+xml_testlist)
@@ -653,5 +652,6 @@ class CreateTest(object):
 
         for testlistfile in testlistfiles:
             thistestlistfile = Testlist(testlistfile)
-            thistestlistfile.get_tests(xml_machine, xml_category, xml_compiler)
+            test_names.append(thistestlistfile.get_tests(xml_machine, xml_category, xml_compiler))
 
+        return test_names
