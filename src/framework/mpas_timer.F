@@ -69,9 +69,7 @@
 
            type (domain_type), intent(in) :: domain
 
-#ifdef MPAS_NATIVE_TIMERS
-            timer_root => domain % timer_root
-#endif
+           timer_root => domain % timer_root
 
         end subroutine mpas_timer_set_context!}}}
 
@@ -500,11 +498,9 @@
 
           integer :: iErr
 
-#ifdef MPAS_NATIVE_TIMERS
           allocate(domain % timer_root)
           timer_root => domain % timer_root
           timer_root % dminfo => domain % dminfo
-#endif
 
 #ifdef MPAS_GPTL_TIMERS
           iErr = gptlsetoption(gptloverhead, 0)
@@ -545,6 +541,8 @@
           deallocate(domain % timer_root % root_timer % running)
           deallocate(domain % timer_root % root_timer)
 #endif
+
+          deallocate(domain % timer_root)
 
         end subroutine mpas_timer_finalize!}}}
 
