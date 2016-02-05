@@ -25,6 +25,7 @@ add_default($nl, 'config_tracer_advection');
 add_default($nl, 'config_calving');
 add_default($nl, 'config_calving_topography');
 add_default($nl, 'config_calving_thickness');
+add_default($nl, 'config_data_calving');
 add_default($nl, 'config_calving_timescale');
 add_default($nl, 'config_restore_calving_front');
 
