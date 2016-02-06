@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<testlist>
+<testlist version="2.0">
   <test name="CME_Ld3" grid="f45_g37_rx1" compset="A">
     <machines>
       <machine name="yellowstone" compiler="intel" category="prealpha">
