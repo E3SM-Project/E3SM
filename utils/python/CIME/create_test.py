@@ -77,8 +77,8 @@ class CreateTest(object):
             self._test_names = self._get_tests_from_xml(xml_machine,xml_category,xml_compiler, xml_testlist)
         else:
             expect(len(test_names) > 0, "No tests to run")
-            self._test_names = update_acme_tests.get_full_test_names(test_names, machine_name, self._compiler)
-
+            test_names = update_acme_tests.get_full_test_names(test_names, machine_name, self._compiler)
+            self._test_names  = self._convert_testlist_to_dict(test_names)
 
         if (parallel_jobs is None):
             self._parallel_jobs  = min(len(self._test_names), int(self._machobj.get_value("MAX_TASKS_PER_NODE")))
@@ -111,7 +111,9 @@ class CreateTest(object):
         # This is the only data that multiple threads will simultaneously access
         # Each test has it's own index and setting/retrieving items from a list
         # is atomic, so this should be fine to use without mutex
-        self._test_states = [ (INITIAL_PHASE, TEST_PASS_STATUS) ] * len(self._test_names)
+        for test in self._test_names:
+            test["phase"] = INITIAL_PHASE
+            test["status"] = TEST_PASS_STATUS
 
         # Oversubscribe by 1/4
         pes = int(self._machobj.get_value("MAX_TASKS_PER_NODE"))
@@ -119,7 +121,7 @@ class CreateTest(object):
 
         # Since the name-list phase can fail without aborting later phases, we
         # need some extra state to remember tests that had namelist problems
-        self._tests_with_nl_problems = [None] * len(test_names)
+#        self._tests_with_nl_problems = [None] * len(test_names)
 
         # Setup phases
         self._phases = list(PHASES)
@@ -132,8 +134,8 @@ class CreateTest(object):
 
         # None of the test directories should already exist.
         for test in self._test_names:
-            expect(not os.path.exists(self._get_test_dir(test)),
-                   "Cannot create new case in directory '%s', it already exists. Pick a different test-id" % self._get_test_dir(test))
+            expect(not os.path.exists(self._get_test_dir(test["name"])),
+                   "Cannot create new case in directory '%s', it already exists. Pick a different test-id" % self._get_test_dir(test["name"]))
 
         # By the end of this constructor, this program should never hard abort,
         # instead, errors will be placed in the TestStatus files for the various
@@ -163,10 +165,11 @@ class CreateTest(object):
         return os.path.join(self._test_root, self._get_case_id(test_name))
 
     ###########################################################################
-    def _get_test_data(self, test_name):
+    def _get_test_data(self, test):
     ###########################################################################
-        state_idx = self._test_names.index(test_name)
-        return self._test_states[state_idx]
+        return (test["phase"],test["status"])
+#        state_idx = self._test_names.index(test_name)
+#        return self._test_states[state_idx]
 
     ###########################################################################
     def _is_broken(self, test_name):
@@ -175,9 +178,9 @@ class CreateTest(object):
         return status not in CONTINUE and status != TEST_PENDING_STATUS
 
     ###########################################################################
-    def _work_remains(self, test_name):
+    def _work_remains(self, test):
     ###########################################################################
-        test_phase, test_status = self._get_test_data(test_name)
+        test_phase, test_status = self._get_test_data(test)
         return (test_status in CONTINUE or test_status == TEST_PENDING_STATUS) and test_phase != self._phases[-1]
 
     ###########################################################################
@@ -200,11 +203,11 @@ class CreateTest(object):
         return self._get_test_data(test_name)[0]
 
     ###########################################################################
-    def _update_test_status(self, test_name, phase, status):
+    def _update_test_status(self, test, phase, status):
     ###########################################################################
-        state_idx = self._test_names.index(test_name)
+#        state_idx = self._test_names.index(test_name)
         phase_idx = self._phases.index(phase)
-        old_phase, old_status = self._test_states[state_idx]
+        old_phase, old_status = self._get_test_data(test)
 
         if (old_phase == phase):
             expect(old_status == TEST_PENDING_STATUS,
@@ -218,8 +221,8 @@ class CreateTest(object):
                    "New phase should be set to pending status")
             expect(self._phases.index(old_phase) == phase_idx - 1,
                    "Skipped phase?")
-
-        self._test_states[state_idx] = (phase, status)
+        test["phase"] = phase
+        test["status"] = status
 
     ###########################################################################
     def _run_phase_command(self, test_name, cmd, phase, from_dir=None):
@@ -246,8 +249,9 @@ class CreateTest(object):
         return rc == 0
 
     ###########################################################################
-    def _create_newcase_phase(self, test_name):
+    def _create_newcase_phase(self, test):
     ###########################################################################
+        test_name = test["name"]
         test_dir = self._get_test_dir(test_name)
 
         test_case, case_opts, grid, compset, machine, compiler, test_mods = CIME.utils.parse_test_name(test_name)
@@ -390,10 +394,10 @@ class CreateTest(object):
         return self._run_phase_command(test_name, "./case.test_build", BUILD_PHASE, from_dir=test_dir)
 
     ###########################################################################
-    def _run_phase(self, test_name):
+    def _run_phase(self, test):
     ###########################################################################
-        test_dir = self._get_test_dir(test_name)
-        return self._run_phase_command(test_name, "./case.submit", RUN_PHASE, from_dir=test_dir)
+        test_dir = self._get_test_dir(test["name"])
+        return self._run_phase_command(test, "./case.submit", RUN_PHASE, from_dir=test_dir)
 
     ###########################################################################
     def _update_test_status_file(self, test_name):
@@ -419,14 +423,14 @@ class CreateTest(object):
             fd.write(str_to_write)
 
     ###########################################################################
-    def _run_catch_exceptions(self, test_name, phase, run):
+    def _run_catch_exceptions(self, test, phase, run):
     ###########################################################################
         try:
-            return run(test_name)
+            return run(test)
         except Exception as e:
             exc_tb = sys.exc_info()[2]
-            errput = "Test '%s' failed in phase '%s' with exception '%s'" % (test_name, phase, str(e))
-            self._log_output(test_name, errput)
+            errput = "Test '%s' failed in phase '%s' with exception '%s'" % (test["name"], phase, str(e))
+            self._log_output(test, errput)
             logging.warning("Caught exception: %s" % str(e))
             traceback.print_tb(exc_tb)
             return False
@@ -489,20 +493,20 @@ class CreateTest(object):
             del threads_in_flight[finished_test]
 
     ###########################################################################
-    def _consumer(self, test_name, test_phase, phase_method):
+    def _consumer(self, test, test_phase, phase_method):
     ###########################################################################
         before_time = time.time()
-        success = self._run_catch_exceptions(test_name, test_phase, phase_method)
+        success = self._run_catch_exceptions(test, test_phase, phase_method)
         elapsed_time = time.time() - before_time
         status  = (TEST_PENDING_STATUS if test_phase == RUN_PHASE and not self._no_batch else TEST_PASS_STATUS) if success else TEST_FAIL_STATUS
 
         if (status != TEST_PENDING_STATUS):
-            self._update_test_status(test_name, test_phase, status)
-        self._handle_test_status_file(test_name, test_phase, success)
+            self._update_test_status(test, test_phase, status)
+        self._handle_test_status_file(test, test_phase, success)
 
-        status_str = "Finished %s for test %s in %f seconds (%s)\n" % (test_phase, test_name, elapsed_time, status)
+        status_str = "Finished %s for test %s in %f seconds (%s)\n" % (test_phase, test["name"], elapsed_time, status)
         if (not success):
-            status_str += "    Case dir: %s\n" % self._get_test_dir(test_name)
+            status_str += "    Case dir: %s\n" % self._get_test_dir(test["name"])
         sys.stdout.write(status_str)
 
     ###########################################################################
@@ -512,16 +516,20 @@ class CreateTest(object):
         while (True):
             work_to_do = False
             num_threads_launched_this_iteration = 0
-            for test_name in self._test_names:
+            for test in self._test_names:
+                if (type(test) == type(dict())):
+                    test_name = test["name"]
+                else:
+                    test_name = test
                 logging.info("test_name: "+test_name)
                 # If we have no workers available, immediately wait
                 if (len(threads_in_flight) == self._parallel_jobs):
                     self._wait_for_something_to_finish(threads_in_flight)
 
-                if (self._work_remains(test_name)):
+                if (self._work_remains(test)):
                     work_to_do = True
                     if (test_name not in threads_in_flight):
-                        test_phase, test_status = self._get_test_data(test_name)
+                        test_phase, test_status = self._get_test_data(test)
                         expect(test_status != TEST_PENDING_STATUS, test_name)
                         next_phase = self._phases[self._phases.index(test_phase) + 1]
                         procs_needed = self._get_procs_needed(test_name, next_phase)
@@ -532,9 +540,9 @@ class CreateTest(object):
                             # Necessary to print this way when multiple threads printing
                             sys.stdout.write("Starting %s for test %s with %d procs\n" % (next_phase, test_name, procs_needed))
 
-                            self._update_test_status(test_name, next_phase, TEST_PENDING_STATUS)
+                            self._update_test_status(test, next_phase, TEST_PENDING_STATUS)
                             t = threading.Thread(target=self._consumer,
-                                                 args=(test_name, next_phase, getattr(self, "_%s_phase" % next_phase.lower()) ))
+                                                 args=(test, next_phase, getattr(self, "_%s_phase" % next_phase.lower()) ))
                             threads_in_flight[test_name] = (t, procs_needed)
                             t.start()
                             num_threads_launched_this_iteration += 1
@@ -591,9 +599,12 @@ class CreateTest(object):
 
         # Tell user what will be run
         print "RUNNING TESTS:"
-        for test_name in self._test_names:
+        for test in self._test_names:
+            if (type(test) == type(dict())):
+                test_name = test["name"]
+            else:
+                test_name = test
             print " ", test_name
-
         # TODO - documentation
 
         self._producer()
@@ -638,11 +649,11 @@ class CreateTest(object):
         """
         Parse testlists for a list of tests
         """
-        test_names = []
+        listoftests = []
         testlistfiles = []
         if(xml_testlist is not None):
              expect(os.path.isfile(xml_testlist), "Testlist not found or not readable "+xml_testlist)
-             testlistfiles[0] = xml_testlist
+             testlistfiles.append(xml_testlist)
         else:
             files = Files()
             test_spec_files = files.get_values("TESTS_SPEC_FILE","component")
@@ -652,6 +663,14 @@ class CreateTest(object):
 
         for testlistfile in testlistfiles:
             thistestlistfile = Testlist(testlistfile)
-            test_names.append(thistestlistfile.get_tests(xml_machine, xml_category, xml_compiler))
+            listoftests += thistestlistfile.get_tests(xml_machine, xml_category, xml_compiler)
 
-        return test_names
+        return listoftests
+
+    def _convert_testlist_to_dict(self,test_names):
+        listoftests = []
+        test = {}
+        for name in test_names:
+            test["name"] = name
+            listoftests.append(test)
+        return listoftests
