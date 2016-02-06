@@ -37,9 +37,15 @@ class GenericXML:
         """
         Read and parse an xml file into the object
         """
-        logging.debug("read: "+infile)
+        logging.info("read: "+infile)
         self.tree = ET.parse(infile)
         self.root = self.tree.getroot()
+        if ("version" in self.root.attrib):
+            self.version = self.root.attrib["version"]
+        else:
+            self.version = "1.0"
+        logging.info("File version is "+self.version)
+
 
     def write(self, infile=None):
         """

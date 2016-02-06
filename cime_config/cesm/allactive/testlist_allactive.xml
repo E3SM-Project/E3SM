@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<testlist>
+<testlist version="2.0">
   <test name="CME_D_Ld5" grid="f19_g16" compset="B1850" testmods="allactive/defaultio">
     <machines>
       <machine name="yellowstone" compiler="intel" category="prebeta">
