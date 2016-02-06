@@ -249,9 +249,6 @@ module ocn_forward_mode
       call ocn_sea_ice_init(nVertLevels, err_tmp)
       ierr = ior(ierr, err_tmp)
 
-      call ocn_analysis_init(domain, err_tmp)
-      ierr = ior(ierr, err_tmp)
-
       if(ierr.eq.1) then
           call mpas_dmpar_global_abort('ERROR: An error was encountered while initializing the MPAS-Ocean forward mode')
       endif
