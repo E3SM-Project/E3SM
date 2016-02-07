@@ -1,0 +1,164 @@
+#!/usr/bin/env python
+
+"""
+Check (and optionally download) input data files.
+
+Should be run from case.
+"""
+from standard_script_setup import *
+
+from CIME.utils import expect, get_model, run_cmd
+from CIME.XML.machines import Machines
+from CIME.case import Case
+
+import argparse, doctest, fnmatch
+
+# Should probably be in XML somewhere
+SVN_LOCS = {
+    "acme" : "https://acme-svn2.ornl.gov/acme-repo/acme/inputdata",
+    "cesm" : "https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata"
+}
+
+MACHINE = Machines()
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [--download] [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Download input data \033[0m
+    > %s --download
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("-s", "--svn-loc", default=SVN_LOCS[get_model()],
+                        help="The input data repository from which to download data.")
+
+    parser.add_argument("-i", "--input-data-root", default=MACHINE.get_value("DIN_LOC_ROOT"),
+                        help="The root directory where input data goes")
+
+    parser.add_argument("--data-list-dir", default="Buildconf",
+                        help="Where to find list of input files")
+
+    parser.add_argument("--download", action="store_true",
+                        help="Attempt to download missing input files")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.svn_loc, args.input_data_root, args.data_list_dir, args.download
+
+###############################################################################
+def find_files(rootdir, pattern):
+###############################################################################
+    result = []
+    for root, dirs, files in os.walk(rootdir):
+        for filename in files:
+            if (fnmatch.fnmatch(filename, pattern)):
+                result.append(os.path.join(root, filename))
+
+    return result
+
+###############################################################################
+def download_if_in_repo(svn_loc, input_data_root, rel_path):
+###############################################################################
+    full_url = os.path.join(svn_loc, rel_path)
+    full_path = os.path.join(input_data_root, rel_path)
+    logging.info("Trying to download file: '%s' to path '%s'" % (full_url, full_path))
+
+    stat = run_cmd("svn --non-interactive --trust-server-cert ls %s" % full_url, ok_to_fail=True)
+    if (stat != 0):
+        logging.warning("SVN repo '%s' does not have file '%s'" % (svn_loc, rel_path))
+        return False
+    else:
+        stat, output, errput = \
+            run_cmd("svn --non-interactive --trust-server-cert export %s %s" % (full_url, full_path))
+        if (stat != 0):
+            logging.warning("svn export failed with output: %s and errput %s" % (output, errput))
+            return False
+        else:
+            return True
+
+###############################################################################
+def check_input_data(svn_loc, input_data_root, data_list_dir, download):
+###############################################################################
+    """
+    Return True if no files missing
+    """
+    expect(os.path.isdir(input_data_root), "Invalid input_data_root directory: '%s'" % input_data_root)
+    expect(os.path.isdir(data_list_dir), "Invalid data_list_dir directory: '%s'" % data_list_dir)
+
+    data_list_files = find_files(data_list_dir, "*.input_data_list")
+    expect(data_list_files, "No .input_data_list files found in dir '%s'" % data_list_dir)
+
+    case = Case()
+    no_files_missing = True
+
+    for data_list_file in data_list_files:
+        logging.info("Loading input file: '%s'" % data_list_file)
+        with open(data_list_file, "r") as fd:
+            lines = fd.readlines()
+
+        for line in lines:
+            line = line.strip()
+            if (line and not line.startswith("#")):
+                tokens = line.split()
+                expect(len(tokens) == 3,
+                       "Expected three tokens in line '%s' in file '%s'" % (line, data_list_file))
+                expect(tokens[1] == "=",
+                       "Expected format 'a = b' in line '%s' in file '%s'" % (line, data_list_file))
+
+                description, full_path = tokens[0], tokens[2]
+
+                # expand xml variables
+                full_path = case.get_resolved_value(full_path)
+                rel_path  = full_path.replace(input_data_root, "")
+
+                if (not os.path.exists(full_path)):
+                    logging.warning("Missing file '%s'" % full_path)
+
+                    if (download):
+                        success = download_if_in_repo(svn_loc, input_data_root, rel_path)
+                        if (not success):
+                            # If ACME, try CESM repo as backup
+                            if (get_model() == "acme" and svn_loc != SVN_LOCS["cesm"]):
+                                success = download_if_in_repo(SVN_LOCS["cesm"], input_data_root, rel_path)
+                                if (not success):
+                                    no_files_missing = False
+                            else:
+                                no_files_missing = False
+                    else:
+                        no_files_missing = False
+                else:
+                    logging.info("Already had input file: '%s'" % full_path)
+
+    return no_files_missing
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    svn_loc, input_data_root, data_list_file, download = parse_command_line(sys.argv, description)
+
+    sys.exit(0 if check_input_data(svn_loc, input_data_root, data_list_file, download) else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

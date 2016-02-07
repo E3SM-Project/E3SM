@@ -272,8 +272,6 @@ foreach my $file (values (%id_file))
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file); 
 
     my $fh = IO::File->new($file, '>' ) or $logger->logdie ("can't open file: $file");
-    print $fh "<?xml version=\"1.0\"?> \n";
-    print $fh "\n";
     print $fh "<config_definition> \n";
     print $fh "\n";
 

@@ -31,7 +31,7 @@ endif
 #----------------------------
 
 ./case.clean_build
-./case.build -testmode
+./case.build --testmode
 if ($status != 0) then
    exit -1    
 endif 
@@ -50,7 +50,7 @@ mv -f Macros Macros.1
 ./case.setup
 
 ./case.clean_build
-./case.build -testmode
+./case.build --testmode
 if ($status != 0) then
    exit -1    
 endif 

@@ -60,7 +60,7 @@ foreach my $lockedfile (@lockedfiles) {
     if (!-f $file) {
 	$logger->logdie ("Locked file $file cannot be found");
     }
-    my $sysmod = "cmp -s $lockedfile $file ";
+    my $sysmod = "diff -w $lockedfile $file ";
     if (system($sysmod) != 0) {
 	$logger->warn( "$file has been modified and is different than the LockedFiles version ");
 	if ($file =~ /env_build/ ) {

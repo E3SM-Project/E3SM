@@ -226,7 +226,7 @@ class Machines(GenericXML):
 
     def get_batch_system_type(self):
         """
-        Return the batch system using on this machine
+        Return the batch system used on this machine
 
         >>> machobj = Machines()
         >>> name = machobj.set_machine("edison")
@@ -235,3 +235,33 @@ class Machines(GenericXML):
         """
         batch_system = self.get_node("batch_system")
         return batch_system[0].get("type")
+
+    def get_module_system_type(self):
+        """
+        Return the module system used on this machine
+
+        >>> machobj = Machines()
+        >>> name = machobj.set_machine("edison")
+        >>> machobj.get_module_system_type()
+        'module'
+        """
+        module_system = self.get_node("module_system")
+        return module_system[0].get("type")
+
+    def get_module_system_init_paths(self):
+        result = {}
+        init_nodes = self.get_node("init_path")
+        for init_node in init_nodes:
+            lang = init_node.get("lang")
+            result[lang] = init_node.text
+
+        return result
+
+    def get_module_system_cmd_paths(self):
+        result = {}
+        cmd_nodes = self.get_node("cmd_path")
+        for cmd_node in cmd_nodes:
+            lang = cmd_node.get("lang")
+            result[lang] = cmd_node.text
+
+        return result

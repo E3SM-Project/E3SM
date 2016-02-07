@@ -16,7 +16,7 @@ endif
 ./case.setup -clean
 ./case.setup
 
-./case.build -testmode
+./case.build --testmode
 if ($status != 0) then
    exit -1    
 endif 
@@ -70,7 +70,7 @@ endif
 ./case.setup -clean -testmode
 ./case.setup
 
-./case.build -testmode
+./case.build --testmode
 if ($status != 0) then
    exit -1    
 endif 

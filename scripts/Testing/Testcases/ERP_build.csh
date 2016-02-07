@@ -28,7 +28,7 @@ endif
 
 ./xmlchange -file env_build.xml -id SMP_BUILD -val 0
 
-./case.build -testmode
+./case.build --testmode
 if ($status != 0) then
    exit -1    
 endif 
@@ -164,7 +164,7 @@ endif
 
 ./xmlchange -file env_build.xml -id SMP_BUILD -val 0
 
-./case.build -testmode
+./case.build --testmode
 if ($status != 0) then
    exit -1    
 endif 

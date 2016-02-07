@@ -35,7 +35,7 @@ setenv CIMEROOT `./xmlquery CIMEROOT    -value`
 # NOTE - Are assumming that are already in $CASEROOT here
 set CASE     = `./xmlquery CASE    -value`
 
-./case.build -testmode
+./case.build --testmode
 if ($status != 0) then
    echo "Error: build failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus

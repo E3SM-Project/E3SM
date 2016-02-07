@@ -875,7 +875,6 @@ sub _create_caseroot_tools
     my @files = (
 	"$cimeroot/scripts/Tools/case.setup", 
 	"$cimeroot/scripts/Tools/testcase.setup", 
-	"$cimeroot/scripts/Tools/check_input_data", 
 	"$cimeroot/scripts/Tools/archive_metadata.sh", 
 	"$cimeroot/scripts/Tools/check_case", 
 	"$cimeroot/scripts/Tools/create_production_test", 
@@ -938,7 +937,9 @@ sub _create_caseroot_files
     }
 
     # Create $caseroot/Buildconf/build.pl
-    $sysmod = "cp $cimeroot/scripts/Tools/case.build  $caseroot/case.build";
+    $sysmod = "ln -s $cimeroot/scripts-python/check_input_data $caseroot/check_input_data";
+    system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+    $sysmod = "ln -s $cimeroot/scripts-python/case.build  $caseroot/case.build";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
     $sysmod = "chmod 755 $caseroot/case.build";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}

@@ -65,7 +65,7 @@ cp -f env_mach_pes.xml env_mach_pes.xml.1
 ./case.setup -clean 
 ./case.setup 
 
-./case.build -testmode
+./case.build --testmode
 if ($status != 0) then
    exit -1    
 endif 

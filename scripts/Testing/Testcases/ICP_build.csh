@@ -151,7 +151,7 @@ foreach bx ($bxvals)
       cp env_build.xml LockedFiles/env_build.xml
 
       if ($precheck == 0) then
-        ./case.build -testmode
+        ./case.build --testmode
         if ($status != 0) then
           exit -1    
         endif 

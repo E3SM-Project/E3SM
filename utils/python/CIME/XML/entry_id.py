@@ -55,14 +55,14 @@ class EntryID(GenericXML):
             vid = node.attrib("id")
         else:
             nodes = self.get_node("entry", {"id":vid})
-            if (nodes is None):
+            if (not nodes):
                 return
             expect(len(nodes) == 1, "More than one match found for id " + vid)
             node = nodes[0]
 
         if (node is not None):
             val = value
-            node.set("value",value)
+            node.set("value", value)
 
         return val
 

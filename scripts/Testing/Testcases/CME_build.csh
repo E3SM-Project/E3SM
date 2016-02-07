@@ -13,7 +13,7 @@ set EXEROOT  = `./xmlquery EXEROOT -value`
 ./xmlchange COMP_INTERFACE=MCT
 ./case.clean_build
 
-./case.build -testmode
+./case.build --testmode
 if ($status != 0) then
    exit -1    
 endif 
@@ -25,7 +25,7 @@ cp -f env_build.xml      env_build.xml.mct
 ./xmlchange COMP_INTERFACE=ESMF
 ./case.clean_build
 
-./case.build -testmode
+./case.build --testmode
 if ($status != 0) then
    exit -1    
 endif 

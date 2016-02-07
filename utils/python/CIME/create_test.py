@@ -276,8 +276,7 @@ class CreateTest(object):
     def _xml_phase(self, test_name):
     ###########################################################################
         test_case = CIME.utils.parse_test_name(test_name)[0]
-        xml_file = os.path.join(self._get_test_dir(test_name), "env_test.xml")
-        envtest = EnvTest()
+        envtest = EnvTest(self._get_test_dir(test_name))
 
         files = Files()
         drv_config_file = files.get_value("CONFIG_DRV_FILE")
@@ -308,7 +307,7 @@ class CreateTest(object):
         envtest.set_value("GENERATE_BASELINE", "TRUE" if self._generate else "FALSE")
         envtest.set_value("COMPARE_BASELINE", "TRUE" if self._compare else "FALSE")
         envtest.set_value("CCSM_CPRNC", self._machobj.get_value("CCSM_CPRNC",resolved=False))
-        envtest.write(xml_file)
+        envtest.write()
         return True
 
     ###########################################################################

@@ -6,7 +6,7 @@ from standard_module_setup import *
 
 from CIME.utils import expect, get_cime_root
 
-class GenericXML:
+class GenericXML(object):
 
     def __init__(self, infile=None):
         """
@@ -33,7 +33,7 @@ class GenericXML:
             self.root.set('id',infile)
             self.tree = ET.ElementTree(root)
 
-    def read(self,infile):
+    def read(self, infile):
         """
         Read and parse an xml file into the object
         """
@@ -41,15 +41,12 @@ class GenericXML:
         self.tree = ET.parse(infile)
         self.root = self.tree.getroot()
 
-    def write(self, infile=None):
+    def write(self, outfile=None):
         """
         Write an xml file from data in self
         """
-        logging.info("write: "+ infile)
-        if(infile != None):
-            self.tree.write(infile)
-        else:
-            self.tree.write(self.filename)
+        logging.info("write: %s" % outfile if outfile is not None else self.filename)
+        self.tree.write(outfile if outfile is not None else self.filename)
 
     def get_node(self, nodename, attributes=None, root=None):
         """

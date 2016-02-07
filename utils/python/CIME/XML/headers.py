@@ -22,8 +22,8 @@ class Headers(EntryID):
         EntryID.__init__(self,infile)
 
     def get_header_node(self,fname):
-        fnode=self.get_node("file",{"name":fname})
-        expect(len(fnode)==1,"Invalid match count in headers")
+        fnode=self.get_node("file", attributes={"name":fname})
+        expect(len(fnode)==1,"Invalid match count in headers for filename '%s'" % fname)
         headernode = self.get_node('header',root=fnode[0])
-        expect(len(headernode)==1,"Invalid match count in headers")
+        expect(len(headernode)==1,"Invalid match count in headers for filename '%s'" % fname)
         return headernode[0]
