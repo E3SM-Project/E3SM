@@ -250,10 +250,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfCell', vertViscTopOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
 
-      !$omp workshare
-      vertViscTopOfCell = 0.0_RKIND
-      vertDiffTopOfCell = 0.0_RKIND
-      !$omp end workshare
 
       !
       ! set pointers for nonlocal flux and intialize to zero
@@ -261,18 +257,24 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
       call mpas_pool_get_dimension(diagnosticsPool, 'index_vertNonLocalFluxTemp', index_vertNonLocalFluxTemp)
 
-      !$omp workshare
-      vertNonLocalFlux = 0.0_RKIND
-      !$omp end workshare
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         vertViscTopOfCell(:, iCell) = 0.0_RKIND
+         vertDiffTopOfCell(:, iCell) = 0.0_RKIND
+         vertNonLocalFlux(:, :, iCell) = 0.0_RKIND
+      end do
+      !$omp end do
 
       !
       ! start by adding the mininum background values to the visocity/diffusivity arrays
       !
       if (cvmixBackgroundOn) then
-         !$omp workshare
-         vertViscTopOfCell(:,:) = vertViscTopOfCell(:,:) + config_cvmix_background_viscosity
-         vertDiffTopOfCell(:,:) = vertDiffTopOfCell(:,:) + config_cvmix_background_diffusion
-         !$omp end workshare
+         !$omp do schedule(runtime)
+         do iCell = 1, nCells
+            vertViscTopOfCell(:, iCell) = vertViscTopOfCell(:, iCell) + config_cvmix_background_viscosity
+            vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + config_cvmix_background_diffusion
+         end do
+         !$omp end do
       endif
 
       !
