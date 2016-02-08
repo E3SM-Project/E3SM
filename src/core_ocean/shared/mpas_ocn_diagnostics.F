@@ -241,9 +241,11 @@ contains
       !
 
       ! initialize layerThicknessEdge to avoid divide by zero and NaN problems.
-      !$omp workshare
-      layerThicknessEdge = -1.0e34_RKIND
-      !$omp end workshare
+      !$omp do schedule(runtime)
+      do iEdge = 1, nEdges
+         layerThicknessEdge(:, iEdge) = -1.0e34_RKIND
+      end do
+      !$omp end do
       coef_3rd_order = config_coef_3rd_order
 
       !$omp do schedule(runtime) private(cell1, cell2, k)
@@ -261,29 +263,36 @@ contains
       !    used -1e34 so error clearly occurs if these values are used.
       !
 
-      !$omp workshare
+      !$omp single
       normalVelocity(:,nEdges+1) = -1e34
       layerThickness(:,nCells+1) = -1e34
       activeTracers(indexTemperature,:,nCells+1) = -1e34
       activeTracers(indexSalinity,:,nCells+1) = -1e34
+      !$omp end single
 
-      divergence(:,:) = 0.0_RKIND
-      vertVelocityTop(:,:)=0.0_RKIND
-      kineticEnergyCell(:,:) = 0.0_RKIND
-      tangentialVelocity(:,:) = 0.0_RKIND
-      !$omp end workshare
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         divergence(:, iCell) = 0.0_RKIND
+         vertVelocityTop(:, iCell) = 0.0_RKIND
+         kineticEnergyCell(:, iCell) = 0.0_RKIND
+      end do
+      !$omp end do
+
+      !$omp do schedule(runtime)
+      do iEdge = 1, nEdges
+         tangentialVelocity(:, iEdge) = 0.0_RKIND
+      end do
+      !$omp end do
 
       call mpas_threading_barrier()
 
       call ocn_relativeVorticity_circulation(relativeVorticity, circulation, meshPool, normalVelocity, err)
 
       call mpas_threading_barrier()
-      !$omp workshare
-      relativeVorticityCell(:,:) = 0.0_RKIND
-      !$omp end workshare
 
       !$omp do schedule(runtime) private(invAreaCell1, i, j, k, iVertex)
       do iCell = 1, nCells
+        relativeVorticityCell(:,iCell) = 0.0_RKIND
         invAreaCell1 = 1.0_RKIND / areaCell(iCell)
 
         do i = 1, nEdgesOnCell(iCell)
@@ -360,12 +369,9 @@ contains
       kineticEnergyVertex         => kineticEnergyVertexField % array
       kineticEnergyVertexOnCells  => kineticEnergyVertexOnCellsField % array
 
-      !$omp workshare
-      kineticEnergyVertex(:,:) = 0.0_RKIND;
-      kineticEnergyVertexOnCells(:,:) = 0.0_RKIND
-      !$omp end workshare
       !$omp do schedule(runtime) private(i, iEdge, r_tmp, k)
       do iVertex = 1, nVertices*ke_vertex_flag
+        kineticEnergyVertex(:, iVertex) = 0.0_RKIND
         do i = 1, vertexDegree
           iEdge = edgesOnVertex(i, iVertex)
           r_tmp = dcEdge(iEdge) * dvEdge(iEdge) * 0.25_RKIND / areaTriangle(iVertex)
@@ -378,6 +384,7 @@ contains
 
       !$omp do schedule(runtime) private(invAreaCell1, i, j, iVertex, k)
       do iCell = 1, nCells*ke_vertex_flag
+        kineticEnergyVertexOnCells(:, iCell) = 0.0_RKIND
         invAreaCell1 = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
           j = kiteIndexOnCell(i, iCell)
@@ -435,12 +442,10 @@ contains
       end do
       !$omp end do
 
-      !$omp workshare
-      normalizedRelativeVorticityEdge(:,:) = 0.0_RKIND
-      normalizedPlanetaryVorticityEdge(:,:) = 0.0_RKIND
-      !$omp end workshare
       !$omp do schedule(runtime) private(vertex1, vertex2, k)
       do iEdge = 1, nEdges
+        normalizedRelativeVorticityEdge(:, iEdge) = 0.0_RKIND
+        normalizedPlanetaryVorticityEdge(:, iEdge) = 0.0_RKIND
         vertex1 = verticesOnEdge(1, iEdge)
         vertex2 = verticesOnEdge(2, iEdge)
         do k = 1, maxLevelEdgeBot(iEdge)
@@ -452,11 +457,9 @@ contains
       end do
       !$omp end do
 
-      !$omp workshare
-      normalizedRelativeVorticityCell(:,:) = 0.0_RKIND
-      !$omp end workshare
       !$omp do schedule(runtime) private(invAreaCell1, i, j, iVertex, k)
       do iCell = 1, nCells
+        normalizedRelativeVorticityCell(:, iCell) = 0.0_RKIND
         invAreaCell1 = 1.0_RKIND / areaCell(iCell)
 
         do i = 1, nEdgesOnCell(iCell)
@@ -682,21 +685,31 @@ contains
       ! at present, just copy k=1 tracer values onto surface values
       ! field will be updated below is better approximations are available
 
-      !$omp workshare
 !TDR need to consider how to handel tracersSurfaceValues
-      tracersSurfaceValue(:,:) = activeTracers(:,1,:)
-      normalVelocitySurfaceLayer(:) = normalVelocity(1,:)
-      !$omp end workshare
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         tracersSurfaceValue(:, iCell) = activeTracers(:,1, iCell)
+      end do
+      !$omp end do
+
+      !$omp do schedule(runtime)
+      do iEdge = 1, nEdges
+         normalVelocitySurfaceLayer(iEdge) = normalVelocity(1, iEdge)
+      end do
+      !$omp end do
 
       !
       ! average tracer values over the ocean surface layer
       ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
       if(config_use_cvmix_kpp) then
 
-        !$omp workshare
+        !$omp do schedule(runtime)
+        do iCell = 1, nCells
         tracersSurfaceLayerValue(:,:) = 0.0_RKIND
         indexSurfaceLayerDepth(:) = -9.e30
-        !$omp end workshare
+        end do
+        !$omp end do
+
         !$omp do schedule(runtime) private(surfaceLayerDepth, sumSurfaceLayer, k, rSurfaceLayer)
         do iCell=1,nCells
           surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
@@ -725,9 +738,12 @@ contains
         ! average normal velocity values over the ocean surface layer
         ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
         !
-        !$omp workshare
-        normalVelocitySurfaceLayer(:) = 0.0_RKIND
-        !$omp end workshare
+        !$omp do schedule(runtime)
+        do iEdge = 1, nEdges
+           normalVelocitySurfaceLayer(iEdge) = 0.0_RKIND
+        end do
+        !$omp end do
+
         !$omp do schedule(runtime) private(cell1, cell2, surfaceLayerDepth, sumSurfaceLayer, k, rSurfaceLayer)
         do iEdge=1,nEdges
           cell1=cellsOnEdge(1,iEdge)
@@ -763,9 +779,11 @@ contains
       endif
 
       ! compute the attenuation coefficient for surface fluxes
-      !$omp workshare
-      surfaceFluxAttenuationCoefficient(:) = config_flux_attenuation_coefficient
-      !$omp end workshare
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         surfaceFluxAttenuationCoefficient(iCell) = config_flux_attenuation_coefficient
+      end do
+      !$omp end do
 
       !
       !  compute fields needed to compute land-ice fluxes, either in the ocean model or in the coupler
