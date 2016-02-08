@@ -3027,7 +3027,7 @@ contains
                this%decomp_npools_leached_col(c,l)
        end do
     end do
-    
+
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%smin_no3_to_plant_col(c) = 0._r8
@@ -3035,10 +3035,6 @@ contains
        this%plant_to_litter_nflux(c) = 0._r8
        this%plant_to_cwd_nflux(c) = 0._r8
        do j = 1, nlevdecomp
-          this%smin_no3_to_plant_col(c)= this%smin_no3_to_plant_col(c) + & 
-               this%smin_no3_to_plant_vr_col(c,j) * dzsoi_decomp(j)
-          this%smin_nh4_to_plant_col(c)= this%smin_nh4_to_plant_col(c) + & 
-               this%smin_nh4_to_plant_vr_col(c,j) * dzsoi_decomp(j) 
           this%plant_to_litter_nflux(c) = &
                this%plant_to_litter_nflux(c)  + &
                this%phenology_n_to_litr_met_n_col(c,j)* dzsoi_decomp(j) + &
@@ -3056,6 +3052,18 @@ contains
                this%fire_mortality_n_to_cwdn_col(c,j)* dzsoi_decomp(j)
        end do
     end do
+
+    if (use_nitrif_denitrif) then
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          do j = 1, nlevdecomp
+             this%smin_no3_to_plant_col(c)= this%smin_no3_to_plant_col(c) + & 
+                  this%smin_no3_to_plant_vr_col(c,j) * dzsoi_decomp(j)
+             this%smin_nh4_to_plant_col(c)= this%smin_nh4_to_plant_col(c) + & 
+                  this%smin_nh4_to_plant_vr_col(c,j) * dzsoi_decomp(j) 
+          enddo
+       enddo
+    endif
 
     ! bgc interface & pflotran
     !----------------------------------------------------------------
