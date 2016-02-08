@@ -515,7 +515,6 @@ add_default($nl, 'config_revised_evp');
 add_default($nl, 'config_use_air_stress');
 add_default($nl, 'config_use_ocean_stress');
 add_default($nl, 'config_use_surface_tilt');
-add_default($nl, 'config_geostrophic_surface_tilt');
 
 #############################
 # Namelist group: advection #

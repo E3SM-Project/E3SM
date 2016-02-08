@@ -138,14 +138,6 @@ Valid values: Any positive real value
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_data_calving" type="logical"
-	category="calving" group="calving">
-Select whether or not to configure calving in a 'data' model mode (calc. calving flux but do not update ice geometry)
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_calving_timescale" type="real"
 	category="calving" group="calving">
 Defines the timescale for calving. The fraction of eligible ice that calves is max(dt/calving_timescale, 1.0). A value of 0 means that all eligible ice calves.
@@ -193,7 +185,7 @@ Default: Defined in namelist_defaults.xml
 	category="thermal_solver" group="thermal_solver">
 Selection of the method for setting the surface air temperature.
 
-Valid values: 'constant', 'file'  'constant' uses the value set by config_surface_air_temperature_value.  'file' reads the field from an input or forcing file or ESM coupler.
+Valid values: 'constant', 'file'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -209,7 +201,7 @@ Default: Defined in namelist_defaults.xml
 	category="thermal_solver" group="thermal_solver">
 Selection of the method for setting the basal heat flux.
 
-Valid values: 'constant', 'file'  'constant' uses the value set by config_basal_heat_flux_value.  'file' reads the field from an input or forcing file or ESM coupler.
+Valid values: 'constant', 'file'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -223,9 +215,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_basal_mass_bal_float" type="char*1024"
 	category="thermal_solver" group="thermal_solver">
-Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant' and 'mismip' use hardcoded fields defined in the code.
+Selection of the method for computing the basal mass balance of floating ice
 
-Valid values: 'none', 'file', 'constant', 'mismip'
+Valid values: 'none', 'constant', 'mismip'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -478,7 +470,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_num_halos" type="integer"
 	category="decomposition" group="decomposition">
-Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). Default FO advection requires a minimum of 2.  Note that a minimum of 3 is required for incremental remapping advection on a quad mesh or for FCT advection, neither of which is currently fully supported.
+Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection.
 
 Valid values: Any positive interger value.
 Default: Defined in namelist_defaults.xml

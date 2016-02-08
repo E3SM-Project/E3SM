@@ -4,7 +4,7 @@
 
 
 <!-- cice_model -->
-<config_dt>3600.0</config_dt>
+<config_dt>1800.00</config_dt>
 <config_calendar_type>'gregorian_noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
@@ -74,7 +74,6 @@
 <config_use_air_stress>true</config_use_air_stress>
 <config_use_ocean_stress>true</config_use_ocean_stress>
 <config_use_surface_tilt>true</config_use_surface_tilt>
-<config_geostrophic_surface_tilt>false</config_geostrophic_surface_tilt>
 
 <!-- advection -->
 <config_advection_type>'incremental_remap'</config_advection_type>
@@ -184,7 +183,7 @@
 <config_boundary_layer_iteration_number>5</config_boundary_layer_iteration_number>
 
 <!-- ocean -->
-<config_use_ocean_mixed_layer>false</config_use_ocean_mixed_layer>
+<config_use_ocean_mixed_layer>true</config_use_ocean_mixed_layer>
 <config_min_friction_velocity>0.0005</config_min_friction_velocity>
 <config_ocean_heat_transfer_type>'constant'</config_ocean_heat_transfer_type>
 <config_sea_freezing_temperature_type>'mushy'</config_sea_freezing_temperature_type>
@@ -204,7 +203,7 @@
 <config_AM_temperatures_write_on_startup>.false.</config_AM_temperatures_write_on_startup>
 
 <!-- AM_regionalStatistics -->
-<config_AM_regionalStatistics_enable>.true.</config_AM_regionalStatistics_enable>
+<config_AM_regionalStatistics_enable>.false.</config_AM_regionalStatistics_enable>
 <config_AM_regionalStatistics_compute_interval>'output_interval'</config_AM_regionalStatistics_compute_interval>
 <config_AM_regionalStatistics_output_stream>'regionalStatisticsOutput'</config_AM_regionalStatistics_output_stream>
 <config_AM_regionalStatistics_compute_on_startup>.false.</config_AM_regionalStatistics_compute_on_startup>
@@ -212,7 +211,7 @@
 <config_AM_regionalStatistics_ice_extent_limit>0.15</config_AM_regionalStatistics_ice_extent_limit>
 
 <!-- AM_ridgingDiagnostics -->
-<config_AM_ridgingDiagnostics_enable>.true.</config_AM_ridgingDiagnostics_enable>
+<config_AM_ridgingDiagnostics_enable>.false.</config_AM_ridgingDiagnostics_enable>
 <config_AM_ridgingDiagnostics_compute_interval>'dt'</config_AM_ridgingDiagnostics_compute_interval>
 <config_AM_ridgingDiagnostics_output_stream>'output'</config_AM_ridgingDiagnostics_output_stream>
 <config_AM_ridgingDiagnostics_compute_on_startup>.false.</config_AM_ridgingDiagnostics_compute_on_startup>
@@ -227,7 +226,7 @@
 <config_AM_conservationCheck_write_to_logfile>.true.</config_AM_conservationCheck_write_to_logfile>
 
 <!-- AM_geographicalVectors -->
-<config_AM_geographicalVectors_enable>.true.</config_AM_geographicalVectors_enable>
+<config_AM_geographicalVectors_enable>.false.</config_AM_geographicalVectors_enable>
 <config_AM_geographicalVectors_compute_interval>'dt'</config_AM_geographicalVectors_compute_interval>
 <config_AM_geographicalVectors_output_stream>'output'</config_AM_geographicalVectors_output_stream>
 <config_AM_geographicalVectors_compute_on_startup>.false.</config_AM_geographicalVectors_compute_on_startup>
@@ -250,28 +249,28 @@
 <config_AM_maximumIcePresence_start_time>'0000-00-00_00:00:00'</config_AM_maximumIcePresence_start_time>
 
 <!-- AM_miscellaneous -->
-<config_AM_miscellaneous_enable>.true.</config_AM_miscellaneous_enable>
+<config_AM_miscellaneous_enable>.false.</config_AM_miscellaneous_enable>
 <config_AM_miscellaneous_compute_interval>'dt'</config_AM_miscellaneous_compute_interval>
 <config_AM_miscellaneous_output_stream>'none'</config_AM_miscellaneous_output_stream>
 <config_AM_miscellaneous_compute_on_startup>.false.</config_AM_miscellaneous_compute_on_startup>
 <config_AM_miscellaneous_write_on_startup>.false.</config_AM_miscellaneous_write_on_startup>
 
 <!-- AM_areaVariables -->
-<config_AM_areaVariables_enable>.true.</config_AM_areaVariables_enable>
+<config_AM_areaVariables_enable>.false.</config_AM_areaVariables_enable>
 <config_AM_areaVariables_compute_interval>'dt'</config_AM_areaVariables_compute_interval>
 <config_AM_areaVariables_output_stream>'none'</config_AM_areaVariables_output_stream>
 <config_AM_areaVariables_compute_on_startup>.false.</config_AM_areaVariables_compute_on_startup>
 <config_AM_areaVariables_write_on_startup>.false.</config_AM_areaVariables_write_on_startup>
 
 <!-- AM_pondDiagnostics -->
-<config_AM_pondDiagnostics_enable>.true.</config_AM_pondDiagnostics_enable>
+<config_AM_pondDiagnostics_enable>.false.</config_AM_pondDiagnostics_enable>
 <config_AM_pondDiagnostics_compute_interval>'dt'</config_AM_pondDiagnostics_compute_interval>
 <config_AM_pondDiagnostics_output_stream>'none'</config_AM_pondDiagnostics_output_stream>
 <config_AM_pondDiagnostics_compute_on_startup>.false.</config_AM_pondDiagnostics_compute_on_startup>
 <config_AM_pondDiagnostics_write_on_startup>.false.</config_AM_pondDiagnostics_write_on_startup>
 
 <!-- AM_icePresent -->
-<config_AM_icePresent_enable>.true.</config_AM_icePresent_enable>
+<config_AM_icePresent_enable>.false.</config_AM_icePresent_enable>
 <config_AM_icePresent_compute_interval>'dt'</config_AM_icePresent_compute_interval>
 <config_AM_icePresent_output_stream>'none'</config_AM_icePresent_output_stream>
 <config_AM_icePresent_compute_on_startup>.false.</config_AM_icePresent_compute_on_startup>
@@ -292,7 +291,7 @@
 <config_AM_timeSeriesStatsDaily_reset_intervals>'00-00-01_00:00:00'</config_AM_timeSeriesStatsDaily_reset_intervals>
 
 <!-- AM_timeSeriesStatsMonthly -->
-<config_AM_timeSeriesStatsMonthly_enable>.true.</config_AM_timeSeriesStatsMonthly_enable>
+<config_AM_timeSeriesStatsMonthly_enable>.false.</config_AM_timeSeriesStatsMonthly_enable>
 <config_AM_timeSeriesStatsMonthly_compute_on_startup>.false.</config_AM_timeSeriesStatsMonthly_compute_on_startup>
 <config_AM_timeSeriesStatsMonthly_write_on_startup>.false.</config_AM_timeSeriesStatsMonthly_write_on_startup>
 <config_AM_timeSeriesStatsMonthly_compute_interval>'dt'</config_AM_timeSeriesStatsMonthly_compute_interval>
@@ -306,7 +305,7 @@
 <config_AM_timeSeriesStatsMonthly_reset_intervals>'00-01-00_00:00:00'</config_AM_timeSeriesStatsMonthly_reset_intervals>
 
 <!-- AM_timeSeriesStatsClimatology -->
-<config_AM_timeSeriesStatsClimatology_enable>.true.</config_AM_timeSeriesStatsClimatology_enable>
+<config_AM_timeSeriesStatsClimatology_enable>.false.</config_AM_timeSeriesStatsClimatology_enable>
 <config_AM_timeSeriesStatsClimatology_compute_on_startup>.false.</config_AM_timeSeriesStatsClimatology_compute_on_startup>
 <config_AM_timeSeriesStatsClimatology_write_on_startup>.false.</config_AM_timeSeriesStatsClimatology_write_on_startup>
 <config_AM_timeSeriesStatsClimatology_compute_interval>'dt'</config_AM_timeSeriesStatsClimatology_compute_interval>
@@ -314,9 +313,9 @@
 <config_AM_timeSeriesStatsClimatology_restart_stream>'timeSeriesStatsClimatologyRestart'</config_AM_timeSeriesStatsClimatology_restart_stream>
 <config_AM_timeSeriesStatsClimatology_add_mesh>.true.</config_AM_timeSeriesStatsClimatology_add_mesh>
 <config_AM_timeSeriesStatsClimatology_operation>'avg'</config_AM_timeSeriesStatsClimatology_operation>
-<config_AM_timeSeriesStatsClimatology_reference_times>'00-01-01_00:00:00;00-04-01_00:00:00;00-07-01_00:00:00;00-10-01_00:00:00;00-03-01_00:00:00;00-06-01_00:00:00;00-09-01_00:00:00;00-12-01_00:00:00'</config_AM_timeSeriesStatsClimatology_reference_times>
-<config_AM_timeSeriesStatsClimatology_duration_intervals>'00-03-00_00:00:00;00-03-00_00:00:00;00-03-00_00:00:00;00-03-00_00:00:00;00-03-00_00:00:00;00-03-00_00:00:00;00-03-00_00:00:00;00-03-00_00:00:00'</config_AM_timeSeriesStatsClimatology_duration_intervals>
-<config_AM_timeSeriesStatsClimatology_repeat_intervals>'01-00-00_00:00:00;01-00-00_00:00:00;01-00-00_00:00:00;01-00-00_00:00:00;01-00-00_00:00:00;01-00-00_00:00:00;01-00-00_00:00:00;01-00-00_00:00:00'</config_AM_timeSeriesStatsClimatology_repeat_intervals>
-<config_AM_timeSeriesStatsClimatology_reset_intervals>'10-00-00_00:00:00;10-00-00_00:00:00;10-00-00_00:00:00;10-00-00_00:00:00;10-00-00_00:00:00;10-00-00_00:00:00;10-00-00_00:00:00;10-00-00_00:00:00'</config_AM_timeSeriesStatsClimatology_reset_intervals>
+<config_AM_timeSeriesStatsClimatology_reference_times>''</config_AM_timeSeriesStatsClimatology_reference_times>
+<config_AM_timeSeriesStatsClimatology_duration_intervals>''</config_AM_timeSeriesStatsClimatology_duration_intervals>
+<config_AM_timeSeriesStatsClimatology_repeat_intervals>''</config_AM_timeSeriesStatsClimatology_repeat_intervals>
+<config_AM_timeSeriesStatsClimatology_reset_intervals>''</config_AM_timeSeriesStatsClimatology_reset_intervals>
 
 </namelist_defaults>

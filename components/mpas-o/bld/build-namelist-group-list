@@ -69,5 +69,4 @@ my @groups = qw(run_modes
                 am_eliassenpalm
                 am_mixedlayerdepths
                 am_timeseriesstats
-                am_pointwisestats
                 );

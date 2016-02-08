@@ -92,7 +92,7 @@ module glc_comp_mct
   integer :: itimestep, &  ! time step number for MPAS
              glc_cpl_dt    ! length of coupling interval in seconds - set by coupler/ESMF
   character (len=*), parameter :: coupleAlarmID = 'coupling'  ! the MPAS alarm for coupling intervals
-  integer :: glcStdErrUnit, glcStdOutUnit
+  integer, save :: glcStdErrUnit, glcStdOutUnit
 
 !=======================================================================
 

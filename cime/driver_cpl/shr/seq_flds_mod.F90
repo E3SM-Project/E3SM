@@ -1300,15 +1300,6 @@ module seq_flds_mod
      attname  = 'Si_ifrac'
      call metadata_set(attname, longname, stdname, units)
 
-     ! Sea ice basal pressure
-     call seq_flds_add(i2x_states,"Si_bpress")
-     call seq_flds_add(x2o_states,"Si_bpress")
-     longname = 'Sea ice basal pressure'
-     stdname  = 'cice_basal_pressure'
-     units    = 'Pa'
-     attname  = 'Si_bpress'
-     call metadata_set(attname, longname, stdname, units)
-
      ! Ocean melt and freeze potential -- ONLY used by data models
      call seq_flds_add(o2x_fluxes,"Fioo_q")
      call seq_flds_add(x2i_fluxes,"Fioo_q")
@@ -1334,6 +1325,14 @@ module seq_flds_mod
      stdname  = 'ocean_frazil_ice_production'
      units    = 'kg m-2 s-1'
      attname  = 'Fioo_frazil'
+     call metadata_set(attname, longname, stdname, units)
+
+     ! Sea ice basal pressure
+     call seq_flds_add(i2x_states,"Si_bpress")
+     longname = 'Sea ice basal pressure'
+     stdname  = 'cice_basal_pressure'
+     units    = 'Pa'
+     attname  = 'Si_bpress'
      call metadata_set(attname, longname, stdname, units)
 
      ! Heat flux from melting
