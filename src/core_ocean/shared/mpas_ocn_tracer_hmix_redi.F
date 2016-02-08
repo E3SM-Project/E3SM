@@ -196,13 +196,20 @@ contains
       dTracerdZTopOfEdge => dTracerdZTopOfEdgeField % array
       areaCellSum => areaCellSumField % array
 
-      !$omp workshare
-      gradTracerEdge = 0.0_RKIND
-      gradTracerTopOfEdge = 0.0_RKIND
-      gradHTracerSlopedTopOfCell = 0.0_RKIND
-      dTracerdZTopOfCell = 0.0_RKIND
-      dTracerdZTopOfEdge = 0.0_RKIND
-      !$omp end workshare
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+        gradHTracerSlopedTopOfCell(:, iCell) = 0.0_RKIND
+        dTracerdZTopOfCell(:, iCell) = 0.0_RKIND
+      end do
+      !$omp end do
+
+      !$omp do schedule(runtime)
+      do iEdge = 1, nEdges
+         gradTracerEdge(:, iEdge) = 0.0_RKIND
+         gradTracerTopOfEdge(:, iEdge) = 0.0_RKIND
+         dTracerdZTopOfEdge(:, iEdge) = 0.0_RKIND
+      end do
+      !$omp end do
 
       ! this is the "standard" del2 term, but forced to use config_redi_kappa
       if(.not.config_disable_redi_horizontal_term1) then
@@ -325,15 +332,13 @@ contains
          endif
 
          ! Compute dz * d(relativeSlope\cdot\nabla\phi)/dz  (so the dz cancel out)
-         !$omp workshare
-         gradHTracerSlopedTopOfCell = 0.0_RKIND
-         !$omp end workshare
 
          ! Compute relativeSlope\cdot\nabla\phi (variable gradHTracerSlopedTopOfCell) at non-boundary edges
          areaCellSum = 1.0e-34_RKIND
 
          !$omp do schedule(runtime) private(i, iedge, areaEdge, k, r_tmp)
          do iCell = 1, nCells
+            gradHTracerSlopedTopOfCell(:, iCell) = 0.0_RKIND
             do i = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i, iCell)
                areaEdge = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
