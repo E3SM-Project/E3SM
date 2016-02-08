@@ -173,13 +173,10 @@ contains
 
       delsq_tracer => delsq_tracerField % array
 
-      !$omp workshare
-      delsq_tracer(:,:,:) = 0.0_RKIND
-      !$omp end workshare
-
       ! first del2: div(h \nabla \phi) at cell center
       !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, invdcEdge, cell1, cell2, k, iTracer, r_tmp1, r_tmp2)
       do iCell = 1, nCells
+        delsq_tracer(:, :, iCell) = 0.0_RKIND
         invAreaCell1 = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
