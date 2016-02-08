@@ -318,7 +318,7 @@ class TestCreateTestCommon(unittest.TestCase):
         self._jenkins_root      = os.path.join(self._testroot, "jenkins")
         self._compiler          = _MACHINE.get_default_compiler()
         self._hasbatch          = _MACHINE.has_batch_system()
-        self._compiler          = _MACHINE.get_value('COMPILER')
+
         # wait_for_tests could blow away our dart config, need to back it up
         if (os.path.exists(DART_CONFIG)):
             shutil.move(DART_CONFIG, DART_BACKUP)
@@ -415,7 +415,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
         self.assertTrue("RUNPASS" in pass_test, msg="Wrong test '%s'" % pass_test)
 
         for idx, phase in enumerate(ct._phases):
-            for test in tests:
+            for test in ct._tests:
                 if (phase == CIME.create_test.INITIAL_PHASE):
                     continue
 

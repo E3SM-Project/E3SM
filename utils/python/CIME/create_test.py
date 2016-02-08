@@ -3,6 +3,7 @@ Implementation of create_test functionality from CIME
 """
 import shutil, traceback, stat, glob, threading, time, thread
 from XML.standard_module_setup import *
+from copy import deepcopy
 import compare_namelists
 import CIME.utils
 from CIME.utils import expect, run_cmd
@@ -116,7 +117,7 @@ class CreateTest(object):
             test["status"] = TEST_PASS_STATUS
 
         # Oversubscribe by 1/4
-        pes = int(self._machobj.get_value("MAX_TASKS_PER_NODE"))
+        pes = int(self._machobj.get_value("PES_PER_NODE"))
         self._proc_pool = int(pes * 1.25)
 
         # Since the name-list phase can fail without aborting later phases, we
@@ -400,6 +401,7 @@ class CreateTest(object):
         test_dir = self._get_test_dir(test["name"])
         if ('wallclock' in test):
             out = run_cmd("./xmlchange JOB_WALLCLOCK_TIME=%s"%test["wallclock"], from_dir=test_dir)
+
         return self._run_phase_command(test, "./case.submit", RUN_PHASE, from_dir=test_dir)
 
     ###########################################################################
@@ -688,9 +690,10 @@ class CreateTest(object):
         return listoftests
 
     def _convert_testlist_to_dict(self,test_names):
+        from copy import deepcopy
         listoftests = []
         test = {}
         for name in test_names:
             test["name"] = name
-            listoftests.append(test)
+            listoftests.append(deepcopy(test))
         return listoftests
