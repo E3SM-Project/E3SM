@@ -423,9 +423,11 @@ contains
       endif ! bulkThicknessFluxOn
 
       ! convert short wave heat flux to a temperature flux
-      !$omp workshare
-      penetrativeTemperatureFlux = shortWaveHeatFlux * hflux_factor
-      !$omp end workshare
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         penetrativeTemperatureFlux(iCell) = shortWaveHeatFlux(iCell) * hflux_factor
+      end do
+      !$omp end do
 
    end subroutine ocn_surface_bulk_forcing_active_tracers!}}}
 
