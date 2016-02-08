@@ -187,6 +187,9 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(out) :: vertViscTopOfEdge !< Output: vertical viscosity
 
+      integer :: iEdge
+      integer, pointer :: nEdges
+
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
@@ -199,9 +202,13 @@ contains
 
       if ( .not. constViscOn ) return
 
-      !$omp workshare
-      vertViscTopOfEdge = vertViscTopOfEdge + constVisc
-      !$omp end workshare
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
+      !$omp do schedule(runtime)
+      do iEdge = 1, nEdges
+         vertViscTopOfEdge(:, iEdge) = vertViscTopOfEdge(:, iEdge) + constVisc
+      end do
+      !$omp end do
 
    !--------------------------------------------------------------------
 
@@ -244,6 +251,9 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(out) :: vertDiffTopOfCell !< Output: Vertical diffusion
 
+      integer :: iCell
+      integer, pointer :: nCells
+
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
@@ -256,9 +266,13 @@ contains
 
       if ( .not. constDiffOn ) return
 
-      !$omp workshare
-      vertDiffTopOfCell = vertDiffTopOfCell + constDiff
-      !$omp end workshare
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + constDiff
+      end do
+      !$omp end do
 
    !--------------------------------------------------------------------
 
