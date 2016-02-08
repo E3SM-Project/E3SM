@@ -126,12 +126,19 @@ module ocn_tracer_advection_std
       ! Loop over tracers. One tracer is advected at a time. It is copied into a temporary array in order to improve locality
       do iTracer = 1, num_tracers
         ! Initialize variables for use in this iTracer iteration
-        !$omp workshare
-        tracer_cur(:, :) = tracers(iTracer, :, :)
+        !$omp do schedule(runtime)
+        do iCell = 1, nCells
+           tracer_cur(:, iCell) = tracers(iTracer, :, iCell)
 
-        high_order_vert_flux = 0.0_RKIND
-        high_order_horiz_flux = 0.0_RKIND
-        !$omp end workshare
+           high_order_vert_flux(:, iCell) = 0.0_RKIND
+        end do
+        !$omp end do
+
+        !$omp do schedule(runtime)
+        do iEdge = 1, nEdges
+           high_order_horiz_flux(:, iEdge) = 0.0_RKIND
+        end do
+        !$omp end do
 
         !  Compute the high order vertical flux. Also determine bounds on tracer_cur.
         !$omp do schedule(runtime) private(k, verticalWeightK, verticalWeightKm1)
