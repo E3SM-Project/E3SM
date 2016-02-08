@@ -127,6 +127,9 @@ contains
       integer :: err1, err2, err3, err4, err5
       integer :: timeLevel
 
+      integer :: iEdge, iCell
+      integer, pointer :: nEdges, nCells
+
       real (kind=RKIND), dimension(:,:), pointer :: vertViscTopOfEdge, vertDiffTopOfCell
 
       !-----------------------------------------------------------------
@@ -143,12 +146,23 @@ contains
          timeLevel = 1
       end if
 
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
       call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfEdge', vertViscTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
-      !$omp workshare
-      vertViscTopOfEdge = 0.0_RKIND
-      vertDiffTopOfCell = 0.0_RKIND
-      !$omp end workshare
+
+      !$omp do schedule(runtime)
+      do iEdge = 1, nEdges
+         vertViscTopOfEdge(:, iEdge) = 0.0_RKIND
+      end do
+      !$omp end do
+
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         vertDiffTopOfCell(:, iCell) = 0.0_RKIND
+      end do
+      !$omp end do
 
       call mpas_timer_start('coef const build', .false.)
       call ocn_vmix_coefs_const_build(meshPool, statePool, diagnosticsPool, err1, timeLevel)
@@ -507,11 +521,9 @@ contains
       if ( config_use_cvmix ) then
 
       call mpas_timer_start('CVMix avg', .false.)
-      !$omp workshare
-      vertViscTopOfEdge(:,:) = 0.0_RKIND
-      !$omp end workshare
       !$omp do schedule(runtime) private(cell1, cell2, k)
       do iEdge=1,nEdges
+         vertViscTopOfEdge(:, iedge) = 0.0_RKIND
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          do k=1,maxLevelEdgeTop(iEdge)
