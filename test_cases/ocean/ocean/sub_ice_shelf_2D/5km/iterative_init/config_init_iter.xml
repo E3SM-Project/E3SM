@@ -3,9 +3,7 @@
 	<add_link source="../init_step1/culled_mesh.nc" dest="mesh.nc"/>
 	<add_link source="../init_step1/culled_graph.info" dest="graph.info"/>
 
-	<add_link source="../init_step2/ocean.nc" dest="ocean.nc"/>
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
-	<add_link source="../init_step2/init_mode_forcing_data.nc" dest="init_mode_forcing_data.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
 	<add_executable source="metis" dest="metis"/>
