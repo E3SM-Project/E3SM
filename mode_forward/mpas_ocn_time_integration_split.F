@@ -291,9 +291,11 @@ module ocn_time_integration_split
          end do
          !$omp end do
 
-         !$omp workshare
-         sshNew(:) = sshCur(:)
-         !$omp end workshare
+         !$omp do schedule(runtime)
+         do iCell = 1, nCells
+            sshNew(iCell) = sshCur(iCell)
+         end do
+         !$omp end do
 
          !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
@@ -328,15 +330,19 @@ module ocn_time_integration_split
 
 
          if (associated(highFreqThicknessNew)) then
-            !$omp workshare
-            highFreqThicknessNew(:,:) = highFreqThicknessCur(:,:)
-            !$omp end workshare
+            !$omp do schedule(runtime)
+            do iCell = 1, nCells
+               highFreqThicknessNew(:, iCell) = highFreqThicknessCur(:, iCell)
+            end do
+            !$omp end do
          end if
 
          if (associated(lowFreqDivergenceNew)) then
-            !$omp workshare
-            lowFreqDivergenceNew(:,:) = lowFreqDivergenceCur(:,:)
-            !$omp end workshare
+            !$omp do schedule(runtime)
+            do iCell = 1, nCells
+               lowFreqDivergenceNew(:, iCell) = lowFreqDivergenceCur(:, iCell)
+            end do
+            !$omp end do
          endif
 
          block => block % next
@@ -625,10 +631,12 @@ module ocn_time_integration_split
                ! For Split_Explicit unsplit, simply set normalBarotropicVelocityNew=0, normalBarotropicVelocitySubcycle=0, and
                ! uNew=normalBaroclinicVelocityNew
 
-               !$omp workshare
-               normalBarotropicVelocityNew(:) = 0.0_RKIND
-               normalVelocityNew(:,:)  = normalBaroclinicVelocityNew(:,:)
-               !$omp end workshare
+               !$omp do schedule(runtime)
+               do iEdge = 1, nEdges
+                  normalBarotropicVelocityNew(iEdge) = 0.0_RKIND
+                  normalVelocityNew(:, iEdge)  = normalBaroclinicVelocityNew(:, iEdge)
+               end do
+               !$omp end do
 
                !$omp do schedule(runtime) private(k)
                do iEdge = 1, nEdges
@@ -672,9 +680,11 @@ module ocn_time_integration_split
                call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocityNew, 2)
 
                if (config_filter_btr_mode) then
-                  !$omp workshare
-                  barotropicForcing(:) = 0.0_RKIND
-                  !$omp end workshare
+                  !$omp do schedule(runtime)
+                  do iEdge = 1, nEdges
+                     barotropicForcing(iEdge) = 0.0_RKIND
+                  end do
+                  !$omp end do
                endif
 
                !$omp do schedule(runtime)
@@ -815,9 +825,11 @@ module ocn_time_integration_split
 
                 call mpas_pool_get_array(diagnosticsPool, 'barotropicThicknessFlux', barotropicThicknessFlux)
 
-                !$omp workshare
-                sshTend(:) = 0.0_RKIND
-                !$omp end workshare
+                !$omp do schedule(runtime)
+                do iCell = 1, nCells
+                   sshTend(iCell) = 0.0_RKIND
+                end do
+                !$omp end do
 
                 if (config_btr_solve_SSH2) then
                    ! If config_btr_solve_SSH2=.true., then do NOT accumulate barotropicThicknessFlux in this SSH predictor
@@ -950,9 +962,11 @@ module ocn_time_integration_split
                    call mpas_threading_barrier()
                    btrvel_temp => btrvel_tempField % array
 
-                   !$omp workshare
-                   btrvel_temp(:) = normalBarotropicVelocitySubcycleNew(:)
-                   !$omp end workshare
+                   !$omp do schedule(runtime)
+                   do iEdge = 1, nEdges
+                      btrvel_temp(iEdge) = normalBarotropicVelocitySubcycleNew(iEdge)
+                   end do
+                   !$omp end do
 
                    !$omp do schedule(runtime) private(cell1, cell2, eoe, CoriolisTerm, i, sshCell1, sshCell2)
                    do iEdge = 1, nEdges
@@ -1038,9 +1052,11 @@ module ocn_time_integration_split
                                             newBtrSubcycleTime)
 
                    call mpas_pool_get_array(diagnosticsPool, 'barotropicThicknessFlux', barotropicThicknessFlux)
-                   !$omp workshare
-                   sshTend(:) = 0.0_RKIND
-                   !$omp end workshare
+                   !$omp do schedule(runtime)
+                   do iCell = 1, nCells
+                      sshTend(iCell) = 0.0_RKIND
+                   end do
+                   !$omp end do
 
                    ! config_btr_gam3_velWt2 sets the forward weighting of velocity in the SSH computation
                    ! config_btr_gam3_velWt2=  1     flux = normalBarotropicVelocityNew*H
@@ -1718,6 +1734,9 @@ module ocn_time_integration_split
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
+         call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
+         call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
+
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityNew, 2)
          call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
@@ -1746,15 +1765,19 @@ module ocn_time_integration_split
          call mpas_pool_get_dimension(diagnosticsPool, 'index_SSHGradientMeridional', indexSSHGradientMeridional)
 
          if (config_prescribe_velocity) then
-            !$omp workshare
-            normalVelocityNew(:,:) = normalVelocityCur(:,:)
-            !$omp end workshare
+            !$omp do schedule(runtime)
+            do iEdge = 1, nEdges
+               normalVelocityNew(:, iEdge) = normalVelocityCur(:, iEdge)
+            end do
+            !$omp end do
          end if
 
          if (config_prescribe_thickness) then
-            !$omp workshare
-            layerThicknessNew(:,:) = layerThicknessCur(:,:)
-            !$omp end workshare
+            !$omp do schedule(runtime)
+            do iCell = 1, nCells
+               layerThicknessNew(:, iCell) = layerThicknessCur(:, iCell)
+            end do
+            !$omp end do
          end if
 
          call mpas_timer_start('se final diag solve', .false.)
@@ -1787,13 +1810,15 @@ module ocn_time_integration_split
          call mpas_threading_barrier()
          call mpas_timer_stop('se final mpas reconstruct')
 
-         !$omp workshare
-         surfaceVelocity(indexSurfaceVelocityZonal, :) = velocityZonal(1, :)
-         surfaceVelocity(indexSurfaceVelocityMeridional, :) = velocityMeridional(1, :)
+         !$omp do schedule(runtime)
+         do iCell = 1, nCells
+            surfaceVelocity(indexSurfaceVelocityZonal, iCell) = velocityZonal(1, iCell)
+            surfaceVelocity(indexSurfaceVelocityMeridional, iCell) = velocityMeridional(1, iCell)
 
-         SSHGradient(indexSSHGradientZonal, :) = gradSSHZonal(1, :)
-         SSHGradient(indexSSHGradientMeridional, :) = gradSSHMeridional(1, :)
-         !$omp end workshare
+            SSHGradient(indexSSHGradientZonal, iCell) = gradSSHZonal(1, iCell)
+            SSHGradient(indexSSHGradientMeridional, iCell) = gradSSHMeridional(1, iCell)
+         end do
+         !$omp end do
 
          call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 2)
          call mpas_threading_barrier()
