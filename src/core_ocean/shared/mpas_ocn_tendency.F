@@ -116,11 +116,14 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, layerThicknessEdge, &
          vertAleTransportTop, tend_layerThickness, normalTransportVelocity, fractionAbsorbed
 
-      integer :: err
+      integer, pointer :: nCells
+      integer :: err, iCell
 
       logical, pointer :: config_disable_thick_all_tend
 
       call mpas_pool_get_config(ocnConfigs, 'config_disable_thick_all_tend', config_disable_thick_all_tend)
+
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
@@ -134,10 +137,12 @@ contains
       !
       ! height tendency: start accumulating tendency terms
       !
-      !$omp workshare
-      tend_layerThickness(:,:) = 0.0_RKIND
-      surfaceThicknessFlux(:) = 0.0_RKIND
-      !$omp end workshare
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         tend_layerThickness(:, iCell) = 0.0_RKIND
+         surfaceThicknessFlux(iCell) = 0.0_RKIND
+      end do
+      !$omp end do
 
       if(config_disable_thick_all_tend) return
 
@@ -227,8 +232,8 @@ contains
 
       integer :: timeLevel
 
-      integer :: err
-      integer, pointer :: indexTemperature, indexSalinity
+      integer :: err, iEdge, iCell
+      integer, pointer :: indexTemperature, indexSalinity, nEdges, nCells
 
       logical, pointer :: config_disable_vel_all_tend
       character (len=StrKIND), pointer :: config_pressure_gradient_type
@@ -241,6 +246,9 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_all_tend', config_disable_vel_all_tend)
       call mpas_pool_get_config(ocnConfigs, 'config_pressure_gradient_type', config_pressure_gradient_type)
+
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
@@ -274,11 +282,18 @@ contains
       !
       ! velocity tendency: start accumulating tendency terms
       !
-      !$omp workshare
-      tend_normalVelocity(:,:) = 0.0_RKIND
-      surfaceStress(:) = 0.0_RKIND
-      surfaceStressMagnitude(:) = 0.0_RKIND
-      !$omp end workshare
+      !$omp do schedule(runtime)
+      do iEdge = 1, nEdges
+         tend_normalVelocity(:, iEdge) = 0.0_RKIND
+         surfaceStress(iEdge) = 0.0_RKIND
+      end do
+      !$omp end do
+
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         surfaceStressMagnitude(iCell) = 0.0_RKIND
+      end do
+      !$omp end do
 
       if(config_disable_vel_all_tend) return
 
@@ -445,7 +460,7 @@ contains
       !
       ! local integers/reals/logicals
       !
-      integer :: err, iEdge, k, timeLevel, nTracersEcosys
+      integer :: err, iCell, iEdge, k, timeLevel, nTracersEcosys
 
       !
       ! set time level of optional argument is present
@@ -564,10 +579,12 @@ contains
                !
                ! initialize tracer surface flux and tendency to zero.
                !
-               !$omp workshare
-               tracerGroupTend(:,:,:) = 0.0_RKIND
-               tracerGroupSurfaceFlux(:,:) = 0.0_RKIND
-               !$omp end workshare
+               !$omp do schedule(runtime)
+               do iCell = 1, nCells
+                 tracerGroupTend(:,:, iCell) = 0.0_RKIND
+                 tracerGroupSurfaceFlux(:, iCell) = 0.0_RKIND
+               end do
+               !$omp end do
 
                !
                ! fill components of surface tracer flux
@@ -862,10 +879,6 @@ contains
       !
       ! Low Frequency Divergence and high frequency thickness Tendency
       !
-      !$omp workshare
-      tend_lowFreqDivergence = 0.0_RKIND
-      tend_highFreqThickness = 0.0_RKIND
-      !$omp end workshare
 
       ! Convert restore time from days to seconds
       thickness_filter_timescale_sec = config_thickness_filter_timescale*86400.0_RKIND
@@ -873,8 +886,10 @@ contains
 
       allocate(div_hu(nVertLevels))
 
-      !$omp do schedule(runtime) private(div_hu_btr, invAreaCell, i, iEdge, k, totalThickness)
+      !$omp do schedule(runtime) private(div_hu_btr, invAreaCell, i, iEdge, k, totalThickness, flux)
       do iCell = 1, nCells
+        tend_lowFreqDivergence(:, iCell) = 0.0_RKIND
+        tend_highFreqThickness(:, iCell) = 0.0_RKIND
         div_hu(:) = 0.0_RKIND
         div_hu_btr = 0.0_RKIND
         invAreaCell = 1.0_RKIND / areaCell(iCell)
