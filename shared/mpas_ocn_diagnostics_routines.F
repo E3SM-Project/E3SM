@@ -120,13 +120,10 @@ contains
 
       err = 0
 
-      !$omp workshare
-      circulation(:,:) = 0.0_RKIND
-      relativeVorticity(:,:) = 0.0_RKIND
-      !$omp end workshare
-
       !$omp do schedule(runtime) private(invAreaTri1, i, iEdge, k, r_tmp)
       do iVertex = 1, nVertices
+         circulation(:, iVertex) = 0.0_RKIND
+         relativeVorticity(:, iVertex) = 0.0_RKIND
          invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
          do i = 1, vertexDegree
             iEdge = edgesOnVertex(i, iVertex)
