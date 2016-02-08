@@ -558,7 +558,7 @@ int PIOc_inq_varname (int ncid, int varid, char *name)
     if(name != NULL){
       int slen;
       if(ios->iomaster)
-        slen = (int) strlen(name);
+        slen = (int) strlen(name) + 1;
       mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);
       mpierr = MPI_Bcast(name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);
     }
@@ -1826,7 +1826,7 @@ int PIOc_inq_attname (int ncid, int varid, int attnum, char *name)
     if(name != NULL){
       int slen;
       if(ios->iomaster)
-        slen = (int) strlen(name);
+        slen = (int) strlen(name) + 1;
       mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);
       mpierr = MPI_Bcast(name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);
     }
@@ -3267,7 +3267,7 @@ int PIOc_inq_dimname (int ncid, int dimid, char *name)
     if(name != NULL){
       int slen;
       if(ios->iomaster)
-        slen = (int) strlen(name);
+        slen = (int) strlen(name) + 1;
       mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);
       mpierr = MPI_Bcast(name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);
     }
