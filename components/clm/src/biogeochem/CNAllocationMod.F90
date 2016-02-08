@@ -538,7 +538,7 @@ contains
          cpool_to_gresp_storage       => carbonflux_vars%cpool_to_gresp_storage_patch          , & ! Output: [real(r8) (:)   ]  allocation to growth respiration storage (gC/m2/s)
          cpool_to_grainc              => carbonflux_vars%cpool_to_grainc_patch                 , & ! Output: [real(r8) (:)   ]  allocation to grain C (gC/m2/s)         
          cpool_to_grainc_storage      => carbonflux_vars%cpool_to_grainc_storage_patch         , & ! Output: [real(r8) (:)   ]  allocation to grain C storage (gC/m2/s) 
-         
+        
          sminn_vr                     => nitrogenstate_vars%sminn_vr_col                       , & ! Input:  [real(r8) (:,:) ]  (gN/m3) soil mineral N                
          retransn                     => nitrogenstate_vars%retransn_patch                     , & ! Input:  [real(r8) (:)   ]  (gN/m2) plant pool of retranslocated N  
          smin_nh4_vr                  => nitrogenstate_vars%smin_nh4_vr_col                    , & ! Output: [real(r8) (:,:) ]  (gN/m3) soil mineral NH4              
@@ -1022,6 +1022,7 @@ contains
          else
             retransn_to_npool(p) = plant_ndemand(p)
          end if
+
          plant_ndemand(p) = plant_ndemand(p) - retransn_to_npool(p)
 
          if (plant_pdemand(p) > avail_retransp(p)) then
@@ -2930,6 +2931,7 @@ contains
     real(r8) cng                                                     !C:N ratio for grain (= cnlw for now; slevis)
 
     !! Local P variables
+    real(r8):: rc_npool, rc, r                                               !Factors for nitrogen pool
     real(r8):: cpl,cpfr,cplw,cpdw,cpg                                    !C:N ratios for leaf, fine root, and wood
     real(r8):: puptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
 
@@ -2996,6 +2998,8 @@ contains
          cpool_to_gresp_storage       => carbonflux_vars%cpool_to_gresp_storage_patch        , & ! Output: [real(r8) (:)   ]  allocation to growth respiration storage (gC/m2/s)
          cpool_to_grainc              => carbonflux_vars%cpool_to_grainc_patch               , & ! Output: [real(r8) (:)   ]  allocation to grain C (gC/m2/s)
          cpool_to_grainc_storage      => carbonflux_vars%cpool_to_grainc_storage_patch       , & ! Output: [real(r8) (:)   ]  allocation to grain C storage (gC/m2/s)
+
+         npool                        => nitrogenstate_vars%npool_patch                        , & ! Input:  [real(r8) (:)   ]  (gN/m3) plant N pool storage
 
          plant_ndemand                => nitrogenflux_vars%plant_ndemand_patch               , & ! Output: [real(r8) (:)   ]  N flux required to support initial GPP (gN/m2/s)
          plant_nalloc                 => nitrogenflux_vars%plant_nalloc_patch                , & ! Output: [real(r8) (:)   ]  total allocated N flux (gN/m2/s)
@@ -3163,8 +3167,15 @@ contains
 
              sminn_to_npool(p) = plant_ndemand(p) * fpg(c)
              sminp_to_ppool(p) = plant_pdemand(p) * fpg_p(c)
-             
-             plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p)
+
+             if (ecophyscon%nstor(pft%itype(p)) > 1e-6_r8) then 
+               rc = ecophyscon%nstor(pft%itype(p)) * max(annsum_npp(p) * n_allometry(p) / c_allometry(p), 0.01_r8)
+               r  = max(1._r8,rc/max(npool(p), 1e-9_r8))
+               plant_nalloc(p) = (plant_ndemand(p) + retransn_to_npool(p)) / r
+             else
+               plant_nalloc(p) = sminn_to_npool(p) + retransn_to_npool(p)
+             end if
+
              plant_palloc(p) = sminp_to_ppool(p) + retransp_to_ppool(p)
 
              ! calculate the associated carbon allocation, and the excess

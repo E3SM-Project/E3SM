@@ -208,7 +208,27 @@ module pftvarcon
   real(r8), allocatable :: frootcp_obs(:)      !fine root C:P (gC/gP)
   real(r8), allocatable :: livewdcp_obs(:)     !live wood (phloem and ray parenchyma) C:P (gC/gP)
   real(r8), allocatable :: deadwdcp_obs(:)     !dead wood (xylem and heartwood) C:P (gC/gP)
-  
+  ! Photosynthesis parameters
+  real(r8), allocatable :: fnr(:)              !fraction of nitrogen in RuBisCO
+  real(r8), allocatable :: act25(:)           
+  real(r8), allocatable :: kcha(:)             !Activation energy for kc
+  real(r8), allocatable :: koha(:)             !Activation energy for ko
+  real(r8), allocatable :: cpha(:)             !Activation energy for cp
+  real(r8), allocatable :: vcmaxha(:)          !Activation energy for vcmax
+  real(r8), allocatable :: jmaxha(:)           !Activation energy for jmax
+  real(r8), allocatable :: tpuha(:)            !Activation energy for tpu
+  real(r8), allocatable :: lmrha(:)            !Acitivation energy for lmr
+  real(r8), allocatable :: vcmaxhd(:)          !Deactivation energy for vcmax
+  real(r8), allocatable :: jmaxhd(:)           !Deactivation energy for jmax
+  real(r8), allocatable :: tpuhd(:)            !Deactivation energy for tpu
+  real(r8), allocatable :: lmrhd(:)            !Deacitivation energy for lmr
+  real(r8), allocatable :: lmrse(:)            !SE for lmr
+  real(r8), allocatable :: qe(:)               !Quantum efficiency
+  real(r8), allocatable :: theta_cj(:)         !
+  real(r8), allocatable :: bbbopt(:)           !Ball-Berry stomatal conductance intercept
+  real(r8), allocatable :: mbbopt(:)           !Ball-Berry stomatal conductance slope
+  real(r8), allocatable :: nstor(:)            !Nitrogen storage pool timescale 
+  real(r8)              :: tc_stress           !Critial temperature for moisture stress
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: pftconrd ! Read and initialize vegetation (PFT) constants
@@ -420,7 +440,26 @@ contains
     allocate( frootcp_obs        (0:mxpft) )   
     allocate( livewdcp_obs       (0:mxpft) )
     allocate( deadwdcp_obs       (0:mxpft) ) 
-
+    ! Photosynthesis
+    allocate( fnr                (0:mxpft) )
+    allocate( act25              (0:mxpft) )
+    allocate( kcha               (0:mxpft) )
+    allocate( koha               (0:mxpft) )
+    allocate( cpha               (0:mxpft) )
+    allocate( vcmaxha            (0:mxpft) )
+    allocate( jmaxha             (0:mxpft) )
+    allocate( tpuha              (0:mxpft) )
+    allocate( lmrha              (0:mxpft) )
+    allocate( vcmaxhd            (0:mxpft) )
+    allocate( jmaxhd             (0:mxpft) )
+    allocate( tpuhd              (0:mxpft) )
+    allocate( lmrhd              (0:mxpft) )
+    allocate( lmrse              (0:mxpft) )
+    allocate( qe                 (0:mxpft) )
+    allocate( theta_cj           (0:mxpft) )
+    allocate( bbbopt             (0:mxpft) )
+    allocate( mbbopt             (0:mxpft) )
+    allocate( nstor              (0:mxpft) )
   
     ! Set specific vegetation type values
 
@@ -725,7 +764,46 @@ contains
         call ncd_io('deadwdcp_obs',deadwdcp_obs, 'read', ncid, readvar=readv, posNOTonfile=.true.)
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     end if
-    
+    call ncd_io('fnr', fnr, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('act25', act25, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__)) 
+    call ncd_io('kcha', kcha, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__)) 
+    call ncd_io('koha', koha, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__)) 
+    call ncd_io('cpha', cpha, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))  
+    call ncd_io('vcmaxha', vcmaxha, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('jmaxha', jmaxha, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('tpuha', tpuha, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('lmrha', lmrha, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('vcmaxhd', vcmaxhd, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('jmaxhd', jmaxhd, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('tpuhd', tpuhd, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pftdata'//errMsg(__FILE__,__LINE__))
+    call ncd_io('lmrhd', lmrhd, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('lmrse', lmrse, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('qe', qe, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('theta_cj', theta_cj, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('bbbopt', bbbopt, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('mbbopt', mbbopt, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('nstor', nstor, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('tc_stress', tc_stress, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
     !
     ! ED variables
     !

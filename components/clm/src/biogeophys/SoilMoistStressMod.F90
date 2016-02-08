@@ -357,7 +357,7 @@ contains
     associate(                                                &
          smpso         => ecophyscon%smpso                  , & ! Input:  [real(r8) (:)   ]  soil water potential at full stomatal opening (mm)                    
          smpsc         => ecophyscon%smpsc                  , & ! Input:  [real(r8) (:)   ]  soil water potential at full stomatal closure (mm)                    
-
+         tc_stress     => ecophyscon%tc_stress              , & ! Input:  [real(r8)       ]  critical soil temperature for soil water stress (C)    
          t_soisno      => temperature_vars%t_soisno_col     , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)                    
 
          watsat        => soilstate_vars%watsat_col         , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)   (constant)                     
@@ -383,7 +383,7 @@ contains
 
             ! Root resistance factors
             ! rootr effectively defines the active root fraction in each layer      
-            if (h2osoi_liqvol(c,j) .le. 0._r8 .or. t_soisno(c,j) .le. tfrz-2._r8) then
+            if (h2osoi_liqvol(c,j) .le. 0._r8 .or. t_soisno(c,j) .le. tfrz + tc_stress) then
                rootr(p,j) = 0._r8
             else
                s_node = max(h2osoi_liqvol(c,j)/eff_porosity(c,j),0.01_r8)
