@@ -876,35 +876,34 @@ contains
       err = 0
 
       call mpas_timer_start("totalLPT")
-      call mpas_timer_start("restartLPT")
 
       ! do restart if this is a restart step
       if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='lagrPartTrackRestart', &
           direction=MPAS_STREAM_OUTPUT, ierr=err)) then
         call mpas_timer_start("restartLPT")
 
-      LIGHT_DEBUG_WRITE('start ocn_restart_lagrangian_particle_tracking')
-      ! transfer particles to their appropriate blocks (ioBlock) via MPI
-      ! note, don't necessarily need to have g_ionSend and g_ionRecv comeout
-      call mpas_particle_list_build_halos(domain, err, 'ioBlock', g_ioProcNeighs)
-      call mpas_particle_list_transfer_particles_from_block_to_named_block(domain, err, .True., .True., 'ioBlock', &
-        g_ioProcNeighs)
-      deallocate(g_ioProcNeighs)
+        LIGHT_DEBUG_WRITE('start ocn_restart_lagrangian_particle_tracking')
+        ! transfer particles to their appropriate blocks (ioBlock) via MPI
+        ! note, don't necessarily need to have g_ionSend and g_ionRecv comeout
+        call mpas_particle_list_build_halos(domain, err, 'ioBlock', g_ioProcNeighs)
+        call mpas_particle_list_transfer_particles_from_block_to_named_block(domain, err, .True., .True., 'ioBlock', &
+          g_ioProcNeighs)
+        deallocate(g_ioProcNeighs)
 
-      ! write out all the data, sorting to make sure that shuffled particles
-      ! are ouptut correctly (done separately in each function, could be
-      ! pulled out as an optimization)
-      ! write halo data out, but don't need nonhalo data because it is
-      ! computed for output (diagnostic, not prognostic)
-      call mpas_particle_list_write_halo_data(domain, err)
-      !call mpas_particle_list_write_nonhalo_data(domain, err)
+        ! write out all the data, sorting to make sure that shuffled particles
+        ! are ouptut correctly (done separately in each function, could be
+        ! pulled out as an optimization)
+        ! write halo data out, but don't need nonhalo data because it is
+        ! computed for output (diagnostic, not prognostic)
+        call mpas_particle_list_write_halo_data(domain, err)
+        !call mpas_particle_list_write_nonhalo_data(domain, err)
 
-      ! need to now remove the io particles (remove particles that don't have the
-      ! correct currentBlock)
-      call mpas_particle_list_remove_particles_not_on_current_block(domain,err)
+        ! need to now remove the io particles (remove particles that don't have the
+        ! correct currentBlock)
+        call mpas_particle_list_remove_particles_not_on_current_block(domain,err)
 
-      LIGHT_DEBUG_WRITE('end ocn_restart_lagrangian_particle_tracking')
-      call mpas_timer_stop("restartLPT")
+        LIGHT_DEBUG_WRITE('end ocn_restart_lagrangian_particle_tracking')
+        call mpas_timer_stop("restartLPT")
       end if
 
       call mpas_timer_stop("totalLPT")
