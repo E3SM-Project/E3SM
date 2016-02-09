@@ -39,6 +39,8 @@ class CreateTest(object):
                  xml_machine=None, xml_compiler=None, xml_category=None,xml_testlist=None):
     ###########################################################################
         self._cime_root = CIME.utils.get_cime_root()
+        # needed for perl interface
+        os.environ["CIMEROOT"] = self._cime_root
         self._machobj   = Machines(machine=machine_name)
         machine_name    = self._machobj.get_machine_name()
 
@@ -338,8 +340,9 @@ class CreateTest(object):
         return self._run_phase_command(test, "./case.setup", SETUP_PHASE, from_dir=test_dir)
 
     ###########################################################################
-    def _nlcomp_phase(self, test_name):
+    def _nlcomp_phase(self, test):
     ###########################################################################
+        test_name = test["name"]
         test_dir          = self._get_test_dir(test_name)
         casedoc_dir       = os.path.join(test_dir, "CaseDocs")
         baseline_dir      = os.path.join(self._baseline_root, self._baseline_name, test_name)
@@ -466,7 +469,6 @@ class CreateTest(object):
             # the CIME scripts never got a chance to set the state.
             elif (test_phase == RUN_PHASE and not success):
                 test_status_file = os.path.join(self._get_test_dir(test_name), TEST_STATUS_FILENAME)
-
                 statuses = wait_for_tests.parse_test_status_file(test_status_file)[0]
                 if ( RUN_PHASE not in statuses or
                      statuses[RUN_PHASE] in [TEST_PASS_STATUS, TEST_PENDING_STATUS] ):
