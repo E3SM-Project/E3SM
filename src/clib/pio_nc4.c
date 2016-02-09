@@ -96,7 +96,7 @@ int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
     /* Check the netCDF return code, and broadcast it to all tasks. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free the error string if there is no error. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -191,7 +191,7 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
     /* Check the netCDF return code, and broadcast it to all tasks. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free the error string if there is no error. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -290,7 +290,7 @@ int PIOc_inq_var_szip(int ncid, int varid, int *options_maskp,
     /* Check for netCDF error. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free unused error string. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -393,7 +393,7 @@ int PIOc_def_var_fletcher32(int ncid, int varid, int fletcher32)
     /* Check for netCDF error. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free unused error string. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -484,7 +484,7 @@ int PIOc_inq_var_fletcher32(int ncid, int varid, int *fletcher32p)
     /* Check the netCDF return code, and broadcast it to all tasks. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free the error string if there is no error. */
+    /* Free the error stringif it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -584,7 +584,7 @@ int PIOc_def_var_chunking(int ncid, int varid, int storage,
     /* Check for netCDF error. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free unused error string. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -681,7 +681,7 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizes
     /* Check the netCDF return code, and broadcast it to all tasks. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free the error string if there is no error. */
+    /* Free the error stringif it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -783,7 +783,7 @@ int PIOc_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
     /* Check for netCDF error. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free unused error string. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -878,7 +878,7 @@ int PIOc_def_var_endian(int ncid, int varid, int endian)
     /* Check for netCDF error. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free unused error string. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -969,7 +969,7 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
     /* Check the netCDF return code, and broadcast it to all tasks. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free the error string if there is no error. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -1062,7 +1062,7 @@ int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size,
     /* Check for netCDF error. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free unused error string. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -1157,7 +1157,7 @@ int PIOc_get_chunk_cache(int iotype, int io_rank, size_t *sizep,
     /* Check for netCDF error. */
     /* ierr = check_netcdf(file, ierr, errstr,__LINE__);*/
 
-    /* Free unused error string. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -1263,7 +1263,7 @@ int PIOc_set_var_chunk_cache(int ncid, int varid, size_t size, size_t nelems,
     /* Check for netCDF error. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free unused error string. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -1359,7 +1359,7 @@ int PIOc_get_var_chunk_cache(int ncid, int varid, size_t *sizep, size_t *nelemsp
     /* Check the netCDF return code, and broadcast it to all tasks. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free the error string if there is no error. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
