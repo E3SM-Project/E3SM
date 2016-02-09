@@ -14,12 +14,16 @@ class TestSpec(GenericXML):
         initialize an object
         """
         GenericXML.__init__(self,infile)
-
-        if(not os.path.isfile(infile)):
+        self._testnodes = {}
+        if(os.path.isfile(infile)):
+            testnodes = self.get_node('test')
+            for node in testnodes:
+                self._testnodes[node.attrib["name"]] = node
+        else:
             self.root.set('version',_VERSION)
-            self._testnodes = {}
 
-    def set_header(self, testroot, machine, tagname, baselinetag=None,baselineroot=None):
+
+    def set_header(self, testroot, machine, testid, baselinetag=None,baselineroot=None):
         tlelem = ET.Element('testlist')
         elem = ET.Element('testroot')
         elem.text = testroot
@@ -27,8 +31,8 @@ class TestSpec(GenericXML):
         elem = ET.Element('machine')
         elem.text = machine
         tlelem.append(elem)
-        elem = ET.Element('tagname')
-        elem.text = tagname
+        elem = ET.Element('testid')
+        elem.text = testid
         tlelem.append(elem)
         if(baselinetag is not None):
             elem = ET.Element('baselinetag')
@@ -38,9 +42,8 @@ class TestSpec(GenericXML):
             elem = ET.Element('baselineroot')
             elem.text = baselineroot
             tlelem.append(elem)
-
         self.add_child(tlelem)
-
+        self._testlist_node = tlelem
 
     def add_test(self,compiler, mpilib, testname):
         expect(testname not in self._testnodes,"Test %s already in testlist" % testname)
@@ -52,7 +55,7 @@ class TestSpec(GenericXML):
         elem = ET.Element("mpilib")
         elem.text=mpilib
         telem.append(elem)
-        self.add_child(telem)
+        self.add_child(telem, root=self._testlist_node)
         self._testnodes[testname] = telem
 
     def update_test_status(self, testname, phase, status):

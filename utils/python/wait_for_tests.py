@@ -429,6 +429,12 @@ def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check
 
     return test_results
 
+def update_testspec_xml(test_results):
+    for test_name, test_data in sorted(test_results.iteritems()):
+        print test_name
+
+
+
 ###############################################################################
 def wait_for_tests(test_paths,
                    no_wait=False,
@@ -455,5 +461,9 @@ def wait_for_tests(test_paths,
 
     if (cdash_build_name):
         create_cdash_xml(test_results, cdash_build_name, cdash_project, cdash_build_group, start_time)
+
+    if (CIME.utils.get_model() == "cesm"):
+        update_testspec_xml(test_results)
+
 
     return all_pass

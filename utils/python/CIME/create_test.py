@@ -144,7 +144,7 @@ class CreateTest(object):
                    "Cannot create new case in directory '%s', it already exists. Pick a different test-id" % self._get_test_dir(test["name"]))
         if(self._cime_model == "cesm"):
             self._testspec = TestSpec(os.path.join(self._test_root,"testspec_%s.xml" % self._test_id))
-            self._testspec.set_header(self._test_root, machine_name, "need to get tag",baselineroot=self._baseline_root)
+            self._testspec.set_header(self._test_root, machine_name,self._test_id,baselineroot=self._baseline_root)
 
 
         # By the end of this constructor, this program should never hard abort,
