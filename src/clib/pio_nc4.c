@@ -578,12 +578,6 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizes
 		if ((ierr = nc_inq_varndims(file->fh, varid, &ndims)))
 		    return ierr;
 	    }
-	    if ((ierr = MPI_Bcast(&ndims, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-		return PIO_EIO;
-	    if ((ierr = MPI_Bcast(storagep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-		return PIO_EIO;
-	    if ((ierr = MPI_Bcast(chunksizesp, ndims, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm)))
-		return PIO_EIO;
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
