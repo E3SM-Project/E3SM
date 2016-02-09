@@ -262,6 +262,13 @@ int PIOc_inq_var_szip(int ncid, int varid, int *options_maskp,
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
+    if (options_maskp)
+	if((ierr = MPI_Bcast(options_maskp, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	    return PIO_EIO;
+    if (pixels_per_blockp)
+	if((ierr = MPI_Bcast(pixels_per_blockp, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	    return PIO_EIO;
+	
     if(errstr != NULL) free(errstr);
     return ierr;
 }    
@@ -427,6 +434,9 @@ int PIOc_inq_var_fletcher32(int ncid, int varid, int *fletcher32p)
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
+    if (fletcher32p)
+	if((ierr = MPI_Bcast(fletcher32p, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	    return PIO_EIO;
     if(errstr != NULL) free(errstr);
     return ierr;
 }    
@@ -599,10 +609,12 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizes
     }
     if ((ierr = MPI_Bcast(&ndims, 1, MPI_INT, ios->ioroot, ios->my_comm)))
 	return PIO_EIO;
-    if ((ierr = MPI_Bcast(storagep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-	return PIO_EIO;
-    if ((ierr = MPI_Bcast(chunksizesp, ndims, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm)))
-	return PIO_EIO;
+    if (storagep)
+	if ((ierr = MPI_Bcast(storagep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	    return PIO_EIO;
+    if (chunksizesp)
+	if ((ierr = MPI_Bcast(chunksizesp, ndims, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm)))
+	    return PIO_EIO;
 
     if(errstr != NULL) free(errstr);
     return ierr;
@@ -850,6 +862,9 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
+    if (endianp)
+	if((ierr = MPI_Bcast(endianp, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	    return PIO_EIO;
     if(errstr != NULL) free(errstr);
     return ierr;
 }    
@@ -1016,6 +1031,16 @@ int PIOc_get_chunk_cache(int iotype, int io_rank, size_t *sizep,
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
+    /* if (sizep) */
+    /* 	if ((ierr = MPI_Bcast(sizep, 1, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm))) */
+    /* 	    return PIO_EIO; */
+    /* if (nelemsp) */
+    /* 	if ((ierr = MPI_Bcast(nelemsp, 1, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm))) */
+    /* 	    return PIO_EIO; */
+    /* if (preemptionp) */
+    /* 	if ((ierr = MPI_Bcast(preemptionp, 1, MPI_FLOAT, ios->ioroot, ios->my_comm))) */
+    /* 	    return PIO_EIO; */
+
     if(errstr != NULL) free(errstr);
     return ierr;
 }
@@ -1186,6 +1211,15 @@ int PIOc_get_var_chunk_cache(int ncid, int varid, size_t *sizep, size_t *nelemsp
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
+    if (sizep)
+	if ((ierr = MPI_Bcast(sizep, 1, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm)))
+	    return PIO_EIO;
+    if (nelemsp)
+	if ((ierr = MPI_Bcast(nelemsp, 1, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm)))
+	    return PIO_EIO;
+    if (preemptionp)
+	if ((ierr = MPI_Bcast(preemptionp, 1, MPI_FLOAT, ios->ioroot, ios->my_comm)))
+	    return PIO_EIO;
     if(errstr != NULL) free(errstr);
     return ierr;
 }    
