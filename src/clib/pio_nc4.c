@@ -151,12 +151,6 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
 	case PIO_IOTYPE_NETCDF4C:
 	    if(ios->io_rank == 0)
 		ierr = nc_inq_var_deflate(file->fh, varid, shufflep, deflatep, deflate_levelp);
-	    if ((ret = MPI_Bcast(shufflep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-		return PIO_EIO;
-	    if ((ret = MPI_Bcast(deflatep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-		return PIO_EIO;
-	    if ((ret = MPI_Bcast(deflate_levelp, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-		return PIO_EIO;
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
@@ -178,6 +172,15 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
+    if (shufflep)
+	if((ret = MPI_Bcast(shufflep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	    return PIO_EIO;
+    if (deflatep)
+	if ((ret = MPI_Bcast(deflatep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	    return PIO_EIO;
+    if (deflate_levelp)
+	if ((ret = MPI_Bcast(deflate_levelp, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	    return PIO_EIO;
     if(errstr != NULL) free(errstr);
     return ierr;
 }    
@@ -573,12 +576,6 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizes
 		if ((ierr = nc_inq_varndims(file->fh, varid, &ndims)))
 		    return ierr;
 	    }
-	    if ((ierr = MPI_Bcast(&ndims, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-		return PIO_EIO;
-	    if ((ierr = MPI_Bcast(storagep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-		return PIO_EIO;
-	    if ((ierr = MPI_Bcast(chunksizesp, ndims, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm)))
-		return PIO_EIO;
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
@@ -600,6 +597,13 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizes
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
+    if ((ierr = MPI_Bcast(&ndims, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	return PIO_EIO;
+    if ((ierr = MPI_Bcast(storagep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	return PIO_EIO;
+    if ((ierr = MPI_Bcast(chunksizesp, ndims, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm)))
+	return PIO_EIO;
+
     if(errstr != NULL) free(errstr);
     return ierr;
 }
