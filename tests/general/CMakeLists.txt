@@ -41,22 +41,6 @@ endif ()
 # Test Timeout (4 min = 240 sec)
 set (DEFAULT_TEST_TIMEOUT 240)
 
-add_executable (test_fillval EXCLUDE_FROM_ALL test_fillval.c)
-target_link_libraries (test_fillval pioc)
-add_dependencies (tests test_fillval)
-
-if (PIO_USE_MPISERIAL)
-    add_test(NAME test_fillval
-        COMMAND test_fillval)
-    set_tests_properties(test_fillval
-        PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
-else ()
-    add_mpi_test(test_fillval
-        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/test_fillval
-        NUMPROCS 4
-        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
-endif ()
-
 #===== pio_init_finalize =====
 add_executable (pio_init_finalize EXCLUDE_FROM_ALL 
     pio_init_finalize.F90
