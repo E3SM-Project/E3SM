@@ -324,26 +324,26 @@ class TestCreateTestCommon(unittest.TestCase):
             shutil.move(DART_CONFIG, DART_BACKUP)
 
     ###########################################################################
-    # def tearDown(self):
-    # ###########################################################################
-    #     kill_subprocesses()
+    def tearDown(self):
+    ###########################################################################
+        kill_subprocesses()
 
-    #     if (self._unset_proxy):
-    #         del os.environ["http_proxy"]
+        if (self._unset_proxy):
+            del os.environ["http_proxy"]
 
-    #     baselines = os.path.join(self._baseline_area, self._compiler, self._baseline_name)
-    #     if (os.path.isdir(baselines)):
-    #         shutil.rmtree(baselines)
+        baselines = os.path.join(self._baseline_area, self._compiler, self._baseline_name)
+        if (os.path.isdir(baselines)):
+            shutil.rmtree(baselines)
 
-    #     for root in [self._testroot, self._jenkins_root]:
-    #         for test_id in ["master", self._baseline_name]:
-    #             for leftover in glob.glob(os.path.join(root, "*%s*/" % test_id)):
-    #                 shutil.rmtree(leftover)
-    #             for leftover in glob.glob(os.path.join(root, "*%s*" % test_id)):
-    #                 os.remove(leftover)
+        for root in [self._testroot, self._jenkins_root]:
+            for test_id in ["master", self._baseline_name]:
+                for leftover in glob.glob(os.path.join(root, "*%s*/" % test_id)):
+                    shutil.rmtree(leftover)
+                for leftover in glob.glob(os.path.join(root, "*%s*" % test_id)):
+                    os.remove(leftover)
 
-    #     if (os.path.exists(DART_BACKUP)):
-    #         shutil.move(DART_BACKUP, DART_CONFIG)
+        if (os.path.exists(DART_BACKUP)):
+            shutil.move(DART_BACKUP, DART_CONFIG)
 
 ###############################################################################
 class TestCreateTest(TestCreateTestCommon):
@@ -701,7 +701,7 @@ class TestBlessTestResults(TestCreateTestCommon):
 #                              msg="COMMAND SHOULD HAVE WORKED\wait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 
-#         stat, output, errput = run_cmd("%s/cs_status.%s" % (self._testroot, self._baseline_name), ok_to_fail=True)
+#         stat, output, errput = run_cmd("%s/cs.status.%s" % (self._testroot, self._baseline_name), ok_to_fail=True)
 #         self.assertEqual(stat, 0,
 #                          msg="COMMAND SHOULD HAVE WORKED\cs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
@@ -722,7 +722,7 @@ class FullSystemTest(TestCreateTestCommon):
                              msg="COMMAND SHOULD HAVE WORKED\wait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 
-        stat, output, errput = run_cmd("%s/cs_status.%s" % (self._testroot, self._baseline_name), ok_to_fail=True)
+        stat, output, errput = run_cmd("%s/cs.status.%s" % (self._testroot, self._baseline_name), ok_to_fail=True)
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\cs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
