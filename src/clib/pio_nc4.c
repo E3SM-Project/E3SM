@@ -485,13 +485,11 @@ int PIOc_def_var_chunking(int ncid, int varid, int storage,
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
 	    ierr = nc_def_var_chunking(file->fh, varid, storage, chunksizesp);
-	    printf("parallel ierr = %d\n", ierr);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
 	    if(ios->io_rank==0){
 		ierr = nc_def_var_chunking(file->fh, varid, storage, chunksizesp);
 	    }
-	    printf("serial ierr = %d\n", ierr);
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
