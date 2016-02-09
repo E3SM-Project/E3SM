@@ -14,6 +14,7 @@ module ncdf_tests
 
   public :: test_redef
   public :: test_enddef
+  public :: test_nc4
 
 Contains
 
@@ -249,4 +250,184 @@ Contains
 
   End Subroutine test_enddef
 
+  Subroutine test_nc4(test_id, err_msg)
+    ! test_nc4():
+    ! * Tests netCDF-4 function pio_def_var_deflate().
+    ! * Open file, enter define mode, add dimension / variable / attribute
+    !   * Set deflate on the variable.
+    ! * Leave define mode, close file
+    ! * Re-open file and check that deflate value is correct.
+    ! Routines used in test: PIO_initdecomp, PIO_openfile, PIO_def_dim,
+    !                        PIO_def_var, PIO_def_var_deflate, PIO_enddef,
+    !                        PIO_write_darray, PIO_closefile, PIO_freedecomp
+
+    ! Input / Output Vars
+    integer,                intent(in)  :: test_id
+    character(len=str_len), intent(out) :: err_msg
+
+    ! Local Vars
+    character(len=str_len) :: filename
+    integer                :: iotype, ret_val
+    integer                :: ret_val1
+
+    ! Data used to test writing
+    integer,          dimension(2) :: data_to_write, compdof
+    integer,          dimension(1) :: dims
+    type(io_desc_t)                :: iodesc_nCells
+    integer                        :: pio_dim
+    type(var_desc_t)               :: pio_var
+
+    integer :: shuffle
+    integer :: deflate
+    integer :: deflate_level
+
+    shuffle = 0
+    deflate = 1
+    deflate_level = 4
+    err_msg = "no_error"
+
+    dims(1) = 2*ntasks
+    compdof = 2*my_rank+(/1,2/)  ! Where in the global array each task writes
+    data_to_write = 1+my_rank
+
+    print *, 'calling PIO_initdecomp'
+    call PIO_initdecomp(pio_iosystem, PIO_int, dims, compdof, iodesc_nCells)
+
+    filename = fnames(test_id)
+    iotype   = iotypes(test_id)
+
+    ! Open existing file, write data to it
+    print *, 'calling PIO_openfile'
+    ret_val = PIO_openfile(pio_iosystem, pio_file, iotype, filename, PIO_write)
+    if (ret_val .ne. PIO_NOERR) then
+       ! Error in PIO_openfile
+       err_msg = "Could not open " // trim(filename) // " in write mode"
+       return
+    end if
+
+    ! Enter define mode
+    print *, 'calling PIO_redef'
+    ret_val = PIO_redef(pio_file)
+    if (ret_val .ne. PIO_NOERR) then
+       ! Error in PIO_redef
+       err_msg = "Could not enter define mode"
+       call PIO_closefile(pio_file)
+       return
+    end if
+
+    ! Define a new dimension M1.
+    print *, 'calling PIO_def_dim'
+    ret_val = PIO_def_dim(pio_file, 'M111222', int(2*ntasks,pio_offset_kind), pio_dim)
+    if (ret_val .ne. PIO_NOERR) then
+       err_msg = "Could not define dimension M111222"
+       print *, ret_val
+       call PIO_closefile(pio_file)
+       return
+    end if
+
+    ! Define a new variable
+    print *, 'calling PIO_def_va'
+    ret_val = PIO_def_var(pio_file, 'foo2222', PIO_int, &
+         (/pio_dim/), pio_var)
+    if (ret_val .ne. PIO_NOERR) then
+       ! Error in PIO_def_var
+       err_msg = "Could not define variable foo2222"
+       call PIO_closefile(pio_file)
+       return
+    end if
+
+    ! Try to turn on compression for this variable.
+    print *, 'calling PIO_def_var_deflate ', pio_file%fh, pio_var%varid, shuffle, deflate, deflate_level
+    ret_val = PIO_def_var_deflate(pio_file, pio_var, shuffle, deflate, &
+         deflate_level)
+    print *, 'PIO_def_var_deflate returned ', ret_val
+
+    ! Should not have worked except for netCDF-4/HDF5 serial.
+    if (iotype .eq. PIO_iotype_netcdf4c .and. ret_val .ne. PIO_NOERR) then
+       err_msg = "Could not turn on compression for variable foo2222"
+       call PIO_closefile(pio_file)
+       return
+    else if (iotype .eq. PIO_iotype_pnetcdf .and. ret_val .eq. PIO_NOERR) then
+       err_msg = "Did not get expected error when trying to turn deflate on for pnetcdf file"
+       call PIO_closefile(pio_file)
+       return
+    else if (iotype .eq. PIO_iotype_netcdf .and. ret_val .eq. PIO_NOERR) then
+       err_msg = "Did not get expected error when trying to turn deflate on for netcdf classic file"
+       call PIO_closefile(pio_file)
+       return
+    else if (iotype .eq. PIO_iotype_netcdf4p .and. ret_val .eq. PIO_NOERR) then
+       err_msg = "Did not get expected error when trying to turn deflate on for parallel netcdf-4 file"
+       call PIO_closefile(pio_file)
+       return
+    end if
+
+    print *, 'calling PIO_put_att'
+    ret_val = PIO_put_att(pio_file, pio_var, "max_val", ntasks)
+    if (ret_val .ne. PIO_NOERR) then
+       ! Error in PIO_put_att
+       err_msg = "Could not define max_val attribute for foo2"
+       call PIO_closefile(pio_file)
+       return
+    end if
+
+    print *, 'calling PIO_put_att'
+    ret_val = PIO_put_att(pio_file, PIO_global, "created_by", "PIO unit tests")
+    if (ret_val .ne. PIO_NOERR) then
+       ! Error in PIO_put_att
+       err_msg = "Could not define global attribute"
+       call PIO_closefile(pio_file)
+       return
+    end if
+
+    ! Leave define mode
+    print *, 'calling PIO_enddef'
+    ret_val = PIO_enddef(pio_file)
+    if (ret_val .ne. PIO_NOERR) then
+       ! Error in PIO_enddef
+       print *,__FILE__,__LINE__,ret_val
+       err_msg = "Could not end define mode"
+       return
+    end if
+
+    ! Check the compression settings of the variables.
+    ! ret_val = PIO_inq_vardeflate(pio_file, pio_var, shuffle, deflate, deflate_level)
+
+    ! ! Should not have worked except for netCDF-4/HDF5 serial.
+    ! if (iotype .eq. PIO_iotype_netcdf4c .and. ret_val .ne. PIO_NOERR) then
+    !    err_msg = "Could not turn on compression for variable foo2222"
+    !    call PIO_closefile(pio_file)
+    !    return
+    ! else if (iotype .eq. PIO_iotype_pnetcdf .and. ret_val .eq. PIO_NOERR) then
+    !    err_msg = "Did not get expected error when trying to turn deflate on for non-netcdf-4 file"
+    !    call PIO_closefile(pio_file)
+    !    return
+    ! else if (iotype .eq. PIO_iotype_netcdf .and. ret_val .eq. PIO_NOERR) then
+    !    err_msg = "Did not get expected error when trying to turn deflate on for non-netcdf-4 file"
+    !    call PIO_closefile(pio_file)
+    !    return
+    ! else if (iotype .eq. PIO_iotype_netcdf4p .and. ret_val .ne. PIO_NOERR) then
+    !    err_msg = "Did not get expected error when trying to turn deflate on for parallel netcdf-4 file"
+    !    call PIO_closefile(pio_file)
+    !    return
+    ! end if
+
+    ! Write foo2
+    print *, 'calling PIO_write_darray'
+    call PIO_write_darray(pio_file, pio_var, iodesc_nCells, data_to_write, ret_val)
+    if (ret_val .ne. PIO_NOERR) then
+       ! Error in PIO_write_darray
+       err_msg = "Could not write data"
+       return
+    end if
+
+    ! Close file
+    print *, 'calling PIO_closefile'
+    call PIO_closefile(pio_file)
+
+    ! Free decomp
+    print *, 'calling PIO_freedecomp'
+    call PIO_freedecomp(pio_iosystem, iodesc_nCells)
+    call mpi_barrier(MPI_COMM_WORLD,ret_val)
+    
+  End Subroutine test_nc4
 end module ncdf_tests
