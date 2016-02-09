@@ -51,7 +51,7 @@ module cice_core
 
       logical, pointer :: config_do_restart
       real (kind=RKIND), pointer :: config_dt
-      character (len=StrKIND), pointer :: xtime
+      character (len=StrKIND), pointer :: xtime, simulationStartTime
       type (MPAS_Time_Type) :: startTime
       integer :: ierr
 
@@ -100,9 +100,6 @@ module cice_core
       call MPAS_stream_mgr_read(domain % streamManager, ierr=ierr)
       call MPAS_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=ierr)
 
-      ! initialize analysis members
-      call cice_analysis_init(domain, ierr)
-
       !
       ! Initialize core
       !
@@ -112,11 +109,22 @@ module cice_core
       do while (associated(block))
 
          call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnosticsPool)
+
+         ! current time
          call MPAS_pool_get_array(diagnosticsPool, "xtime", xtime)
          xtime = startTimeStamp
 
+         ! simulation start time
+         if (.not. config_do_restart) then
+            call MPAS_pool_get_array(diagnosticsPool, "simulationStartTime", simulationStartTime)
+            simulationStartTime = startTimeStamp
+         endif
+
          block => block % next
       end do
+
+      ! initialize analysis members
+      call cice_analysis_init(domain, ierr)
 
       call mpas_init_block(domain, dt)
 

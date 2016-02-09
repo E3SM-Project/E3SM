@@ -321,6 +321,7 @@
 		  immutable="true">    
 	    <stream name="mesh"/>
 	    <var name="xtime"/>
+	    <var name="simulationStartTime"/>
 	    <var name="fVertex"/>
 	    <var name="iceAreaCategory"/>
 	    <var name="iceVolumeCategory"/>
@@ -1807,6 +1808,7 @@
 	<!-- Diagnostics -->
 	<var_struct name="diagnostics" time_levs="1">
 	        <var name="xtime"                             type="text"     dimensions="Time"/>
+		<var name="simulationStartTime"                             type="text"     dimensions=""/>
 	        <var name="meltOnset"                         type="real"     dimensions="nCells"              name_in_code="meltOnset"/>
 	        <var name="freezeOnset"                       type="real"     dimensions="nCells"              name_in_code="freezeOnset"/>
 	        <var name="iceAreaTendencyTransport"          type="real"     dimensions="nCells"              name_in_code="iceAreaTendencyTransport"/>

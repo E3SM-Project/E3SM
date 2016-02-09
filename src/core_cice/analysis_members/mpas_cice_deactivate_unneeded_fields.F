@@ -102,7 +102,8 @@ contains
                 do while (MPAS_stream_mgr_get_next_field(domain % streamManager, streamID, fieldName, isActive))
 
                    ! see if area field is in stream
-                   if (trim(fieldName) == trim(poolItr % memberName)) then
+                   if (trim(fieldName) == trim(poolItr % memberName) .or. &
+                      index(trim(fieldName), "_"//trim(poolItr % memberName)//"_") /= 0) then
 
                       fieldInStream = .true.
 
