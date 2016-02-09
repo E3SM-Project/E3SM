@@ -14,6 +14,7 @@ from CIME.XML.env_test import EnvTest
 from CIME.XML.files import Files
 from CIME.XML.component import Component
 from CIME.XML.testlist import Testlist
+from CIME.XML.testspec import TestSpec
 
 INITIAL_PHASE = "INIT"
 CREATE_NEWCASE_PHASE = "CREATE_NEWCASE"
@@ -39,6 +40,7 @@ class CreateTest(object):
                  xml_machine=None, xml_compiler=None, xml_category=None,xml_testlist=None):
     ###########################################################################
         self._cime_root = CIME.utils.get_cime_root()
+        self._cime_model = CIME.utils.get_model()
         # needed for perl interface
         os.environ["CIMEROOT"] = self._cime_root
         self._machobj   = Machines(machine=machine_name)
@@ -110,7 +112,8 @@ class CreateTest(object):
                 full_baseline_dir = os.path.join(self._baseline_root, self._baseline_name)
                 expect(os.path.isdir(full_baseline_dir),
                        "Missing baseline comparison directory %s" % full_baseline_dir)
-
+        else:
+            self._baseline_root = None
         # This is the only data that multiple threads will simultaneously access
         # Each test has it's own index and setting/retrieving items from a list
         # is atomic, so this should be fine to use without mutex
@@ -139,6 +142,10 @@ class CreateTest(object):
         for test in self._tests:
             expect(not os.path.exists(self._get_test_dir(test["name"])),
                    "Cannot create new case in directory '%s', it already exists. Pick a different test-id" % self._get_test_dir(test["name"]))
+        if(self._cime_model == "cesm"):
+            self._testspec = TestSpec(os.path.join(self._test_root,"testspec_%s.xml" % self._test_id))
+            self._testspec.set_header(self._test_root, machine_name, "need to get tag",baselineroot=self._baseline_root)
+
 
         # By the end of this constructor, this program should never hard abort,
         # instead, errors will be placed in the TestStatus files for the various
@@ -223,7 +230,8 @@ class CreateTest(object):
                    "Skipped phase?")
         test["phase"] = phase
         test["status"] = status
-
+        if(self._cime_model == "cesm"):
+            self._testspec.update_test_status(test["name"],phase,status)
     ###########################################################################
     def _run_phase_command(self, test, cmd, phase, from_dir=None):
     ###########################################################################
@@ -267,10 +275,9 @@ class CreateTest(object):
             # Parallelizing builds introduces potential sync problems with sharedlibroot
             # Just let every case build it's own
             sharedlibroot = os.path.join(test_dir, "sharedlibroot.%s" % self._test_id)
-        model = CIME.utils.get_model()
         create_newcase_cmd = "%s -model %s -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -nosavetiming -sharedlibroot %s" % \
                               (os.path.join(self._cime_root,"scripts", "create_newcase"),
-                               model,test_dir, grid, machine, compiler, compset, test_case, self._project,
+                               self._cime_model,test_dir, grid, machine, compiler, compset, test_case, self._project,
                                sharedlibroot)
         if (case_opts is not None):
             create_newcase_cmd += " -confopts _%s" % ("_".join(case_opts))
@@ -612,6 +619,8 @@ class CreateTest(object):
             else:
                 test_name = test
             print " ", test_name
+            if(self._cime_model == "cesm"):
+                self._testspec.add_test(self._compiler, 'trythis', test_name)
         # TODO - documentation
 
         self._producer()
@@ -649,6 +658,9 @@ class CreateTest(object):
             print "    Case dir: %s" % self._get_test_dir(test["name"])
 
         print "create_test took", time.time() - start_time, "seconds"
+
+        if(self._cime_model == "cesm"):
+            self._testspec.write()
 
         return rv
 

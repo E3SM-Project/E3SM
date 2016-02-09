@@ -3,7 +3,7 @@ Common interface to XML files, this is an abstract class and is expected to
 be used by other XML interface modules and not directly.
 """
 from standard_module_setup import *
-
+from xml.dom import minidom
 from CIME.utils import expect, get_cime_root
 
 class GenericXML:
@@ -51,11 +51,12 @@ class GenericXML:
         """
         Write an xml file from data in self
         """
+        if(infile is None):
+            infile = self.filename
         logging.info("write: "+ infile)
-        if(infile != None):
-            self.tree.write(infile)
-        else:
-            self.tree.write(self.filename)
+        doc = minidom.parseString(ET.tostring(self.root))
+        with open(infile,'w') as xmlout:
+            doc.writexml(xmlout,addindent='  ',newl='\n')
 
     def get_node(self, nodename, attributes=None, root=None):
         """
