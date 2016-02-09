@@ -299,21 +299,40 @@ main(int argc, char **argv)
 	    if ((ret = PIOc_def_dim(ncid, dim_name[d], (PIO_Offset)dim_len[d], &dimids[d])))
 		ERR(ret);
 	}
+	if (verbose)
+	    printf("rank: %d Defining netCDF variable %s, ndims %d\n", my_rank, VAR_NAME, NDIM);
 	if ((ret = PIOc_def_var(ncid, VAR_NAME, PIO_FLOAT, NDIM, dimids, &varid)))
 	    ERR(ret);
 
 	/* For netCDF-4 files, set the chunksize to improve performance. */
 	if (format[fmt] == PIO_IOTYPE_NETCDF4C || format[fmt] == PIO_IOTYPE_NETCDF4P)
 	{
+	    if (verbose)
+		printf("rank: %d Defining chunksizes\n", my_rank);
 	    if ((ret = PIOc_def_var_chunking(ncid, 0, NC_CHUNKED, chunksize)))
 		ERR(ret);
 
+	    /** Check that the inq_varname function works. */
+	    char varname[15];
+	    if (verbose)
+	    	printf("rank: %d Checking varname\n", my_rank);
+	    ret = PIOc_inq_varname(ncid, 0, &varname);
+	    printf("rank: %d ret: %d varname: %s\n", my_rank, ret, varname);
+	    
 	    /** Check that the inq_var_chunking function works. */
+	    if (verbose)
+		printf("rank: %d Checking chunksizes\n");
 	    if ((ret = PIOc_inq_var_chunking(ncid, 0, &storage, my_chunksize)))
 	    	ERR(ret);
+	    if (verbose)
+	    {
+		printf("rank: %d ret: %d storage: %d\n", my_rank, ret, storage);
+		for (d1 = 0; d1 < NDIM; d1++)
+		    printf("chunksize[%d]=%d\n", d1, my_chunksize[d1]);
+	    }
 	    
 	    /** For serial netCDF-4, only processor rank 0 gets the answers. */
-	    if (format[fmt] == PIO_IOTYPE_NETCDF4C && !my_rank ||
+	    if (format[fmt] == PIO_IOTYPE_NETCDF4C ||
 		format[fmt] == PIO_IOTYPE_NETCDF4P)
 	    {
 		if (storage != NC_CHUNKED)

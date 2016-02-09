@@ -57,7 +57,12 @@ int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
 #ifdef _NETCDF
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_def_var_deflate(file->fh, varid, shuffle, deflate, deflate_level);
+	    /* Versions of netCDF 4.4 and earlier do not return an
+	     * error when attempting to turn on deflation with
+	     * parallel I.O. But this is not allowed by HDF5. So
+	     * return the correct error code. */
+	    ierr = NC_EINVAL;
+	    //ierr = nc_def_var_deflate(file->fh, varid, shuffle, deflate, deflate_level);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
 	    if (!ios->io_rank)
@@ -65,12 +70,12 @@ int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 	default:
@@ -120,6 +125,7 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
     iosystem_desc_t *ios;
     file_desc_t *file;
     char *errstr;
+    int ret;
 
     errstr = NULL;
     ierr = PIO_NOERR;
@@ -127,7 +133,7 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
     if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
     ios = file->iosystem;
-    msg = PIO_MSG_INQ_VAR_CHUNKING;
+    msg = PIO_MSG_INQ_VAR_DEFLATE;
 
     if(ios->async_interface && ! ios->ioproc){
 	if(ios->compmaster) 
@@ -143,9 +149,14 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
 	    ierr = nc_inq_var_deflate(file->fh, varid, shufflep, deflatep, deflate_levelp);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
-	    if(ios->io_rank==0){
+	    if(ios->io_rank == 0)
 		ierr = nc_inq_var_deflate(file->fh, varid, shufflep, deflatep, deflate_levelp);
-	    }
+	    if ((ret = MPI_Bcast(shufflep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+		return PIO_EIO;
+	    if ((ret = MPI_Bcast(deflatep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+		return PIO_EIO;
+	    if ((ret = MPI_Bcast(deflate_levelp, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+		return PIO_EIO;
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
@@ -531,6 +542,7 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizes
     iosystem_desc_t *ios;
     file_desc_t *file;
     char *errstr;
+    int ndims;
 
     errstr = NULL;
     ierr = PIO_NOERR;
@@ -554,9 +566,19 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizes
 	    ierr = nc_inq_var_chunking(file->fh, varid, storagep, chunksizesp);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
-	    if(ios->io_rank==0){
-		ierr = nc_inq_var_chunking(file->fh, varid, storagep, chunksizesp);
+	    if (ios->io_rank == 0)
+	    {
+		if ((ierr = nc_inq_var_chunking(file->fh, varid, storagep, chunksizesp)))
+		    return ierr;
+		if ((ierr = nc_inq_varndims(file->fh, varid, &ndims)))
+		    return ierr;
 	    }
+	    if ((ierr = MPI_Bcast(&ndims, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+		return PIO_EIO;
+	    if ((ierr = MPI_Bcast(storagep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+		return PIO_EIO;
+	    if ((ierr = MPI_Bcast(chunksizesp, ndims, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm)))
+		return PIO_EIO;
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
