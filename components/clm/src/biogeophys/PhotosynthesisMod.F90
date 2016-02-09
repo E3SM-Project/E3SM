@@ -309,37 +309,6 @@ contains
       ! Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
       !==============================================================================!
 
-      ! vcmax25 parameters, from CN
-
-      fnr = 7.16_r8
-      act25 = 3.6_r8   !umol/mgRubisco/min
-      ! Convert rubisco activity units from umol/mgRubisco/min -> umol/gRubisco/s
-      act25 = act25 * 1000.0_r8 / 60.0_r8
-
-      ! Activation energy, from:
-      ! Bernacchi et al (2001) Plant, Cell and Environment 24:253-259
-      ! Bernacchi et al (2003) Plant, Cell and Environment 26:1419-1430
-      ! except TPU from: Harley et al (1992) Plant, Cell and Environment 15:271-282
-
-      kcha    = 79430._r8
-      koha    = 36380._r8
-      cpha    = 37830._r8
-      vcmaxha = 72000._r8
-      jmaxha  = 50000._r8
-      tpuha   = 72000._r8
-      lmrha   = 46390._r8
-
-      ! High temperature deactivation, from:
-      ! Leuning (2002) Plant, Cell and Environment 25:1205-1210
-      ! The factor "c" scales the deactivation to a value of 1.0 at 25C
-
-      vcmaxhd = 200000._r8
-      jmaxhd  = 200000._r8
-      tpuhd   = 200000._r8
-      lmrhd   = 150650._r8
-      lmrse   = 490._r8
-      lmrc    = fth25 (lmrhd, lmrse)
-
       ! Miscellaneous parameters, from Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
 
       fnps = 0.15_r8
@@ -349,6 +318,39 @@ contains
       do f = 1, fn
          p = filterp(f)
          c = pft%column(p)
+
+         ! vcmax25 parameters, from CN
+
+         fnr   = ecophyscon%fnr(pft%itype(p))   !7.16_r8
+         act25 = ecophyscon%act25(pft%itype(p)) !3.6_r8   !umol/mgRubisco/min
+         ! Convert rubisco activity units from umol/mgRubisco/min ->
+         ! umol/gRubisco/s
+         act25 = act25 * 1000.0_r8 / 60.0_r8
+
+         ! Activation energy, from:
+         ! Bernacchi et al (2001) Plant, Cell and Environment 24:253-259
+         !  Bernacchi et al (2003) Plant, Cell and Environment 26:1419-1430
+         ! except TPU from: Harley et al (1992) Plant, Cell and Environment
+         ! 15:271-282
+
+         kcha    = ecophyscon%kcha(pft%itype(p)) !79430._r8
+         koha    = ecophyscon%koha(pft%itype(p)) !36380._r8
+         cpha    = ecophyscon%cpha(pft%itype(p)) !37830._r8
+         vcmaxha = ecophyscon%vcmaxha(pft%itype(p)) !72000._r8
+         jmaxha  = ecophyscon%jmaxha(pft%itype(p)) !50000._r8
+         tpuha   = ecophyscon%tpuha(pft%itype(p))  !72000._r8
+         lmrha   = ecophyscon%lmrha(pft%itype(p))  !46390._r8
+
+         ! High temperature deactivation, from:
+         ! Leuning (2002) Plant, Cell and Environment 25:1205-1210
+         ! The factor "c" scales the deactivation to a value of 1.0 at 25C
+
+         vcmaxhd = ecophyscon%vcmaxhd(pft%itype(p)) !200000._r8
+         jmaxhd  = ecophyscon%jmaxhd(pft%itype(p))  !200000._r8
+         tpuhd   = ecophyscon%tpuhd(pft%itype(p))   !200000._r8
+         lmrhd   = ecophyscon%lmrhd(pft%itype(p))   !150650._r8
+         lmrse   = ecophyscon%lmrse(pft%itype(p))   !490._r8
+         lmrc    = fth25 (lmrhd, lmrse)
 
          ! C3 or C4 photosynthesis logical variable
 
@@ -361,15 +363,15 @@ contains
          ! C3 and C4 dependent parameters
 
          if (c3flag(p)) then
-            qe(p) = 0._r8
-            theta_cj(p) = 0.98_r8
-            bbbopt(p) = 10000._r8
-            mbbopt(p) = 9._r8
+            qe(p)       = ecophyscon%qe(pft%itype(p))       !0._r8
+            theta_cj(p) = ecophyscon%theta_cj(pft%itype(p)) !0.98_r8
+            bbbopt(p)   = ecophyscon%bbbopt(pft%itype(p))   !10000._r8
+            mbbopt(p)   = ecophyscon%mbbopt(pft%itype(p))   !9._r8
          else
-            qe(p) = 0.05_r8
-            theta_cj(p) = 0.80_r8
-            bbbopt(p) = 40000._r8
-            mbbopt(p) = 4._r8
+            qe(p)       = ecophyscon%qe(pft%itype(p))       !0.05_r8
+            theta_cj(p) = ecophyscon%theta_cj(pft%itype(p)) !0.80_r8
+            bbbopt(p)   = ecophyscon%bbbopt(pft%itype(p))   !40000._r8
+            mbbopt(p)   = ecophyscon%mbbopt(pft%itype(p))   !4._r8
          end if
 
          ! Soil water stress applied to Ball-Berry parameters

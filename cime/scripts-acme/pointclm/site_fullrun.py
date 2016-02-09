@@ -59,26 +59,18 @@ parser.add_option("--C14", dest="C14", default=False, \
                   help = 'Use C14 as C13 (no decay)', action="store_true")
 parser.add_option("--ninst", dest="ninst", default=1, \
                       help = 'number of land model instances')
-parser.add_option("--npoolmod", action="store_true", dest="npoolmod", default=False, \
-                    help="To turn on nitrogen pool modifications")
-parser.add_option("--cpoolmod", action="store_true", dest="cpoolmod", default=False, \
-                    help="To turn on carbon pool modifications")
-parser.add_option("--q10wbmod", action="store_true", dest="q10wbmod", default=False, \
-                    help="To turn on Woodrow-Berry Q10 curve")
-parser.add_option("--tfmod", action="store_true", dest="tfmod", default=False, \
-                    help="To set temperature threshold (0 degC) for plant wilting factor")
 parser.add_option("--harvmod", action="store_true", dest='harvmod', default=False, \
                     help="turn on harvest modification:  All harvest at first timestep")
-parser.add_option("--humhol", action="store_true", dest="humhol", \
-                      default=False, help = "SPRUCE Hummock/Hollow modification")
+parser.add_option("--bulk_denitrif", dest="nitrif", default=False, \
+                  help = 'To turn on BGC nitrification-denitrification', action="store_true")
+parser.add_option("--no_dynroot", dest="no_dynroot", default=False, \
+                  help = 'Turn off dynamic root distribution', action="store_true")
 parser.add_option("--vertsoilc", dest="vsoilc", default=False, \
                   help = 'To turn on CN with multiple soil layers, excluding CENTURY C module (CLM4ME on as well)', action="store_true")
 parser.add_option("--centbgc", dest="centbgc", default=False, \
                   help = 'To turn on CN with multiple soil layers, CENTURY C module (CLM4ME on as well)', action="store_true")
 parser.add_option("--CH4", dest="CH4", default=False, \
                   help = 'To turn on CN with CLM4me', action="store_true")
-parser.add_option("--MICROBE", dest="MICROBE", default=False, \
-                  help = 'To turn on MICROBE with CN', action="store_true")
 parser.add_option("--makemetdata", action="store_true", dest="makemet", default=False, \
                     help="generate site meteorology")
 parser.add_option("--refcase", dest="refcase" , default='none', \
@@ -123,6 +115,13 @@ for row in AFdatareader:
 
         site_endyear = int(row[7])
         ncycle   = endyear-startyear+1   #number of years in met cycle
+        if (int(options.ny_ad) % ncycle != 0):
+          #AD spinup and final spinup lengths must be multiples of met data cyle.
+          options.ny_ad = str(int(options.ny_ad) + ncycle - (int(options.ny_ad) % ncycle))
+        if (int(options.nyears_final_spinup) % ncycle !=0):
+          options.nyears_final_spinup = str(int(options.nyears_final_spinup) + ncycle - \
+                (int(options.nyears_final_spinup) % ncycle))
+
         if (translen == -1):
           translen = endyear-1850+1        #length of transient run
 	  if (options.cpl_bypass):
@@ -136,18 +135,11 @@ for row in AFdatareader:
             else:
                 options.parm_file = ''
 
-        if (not options.cpl_bypass):
-          for i in range(0,ncycle+1):  #figure out length of final spinup run
-              fsplen = int(options.nyears_final_spinup)+i
-              if ((fsplen+translen) % ncycle == 0):
-                  break
-        else:
-          fsplen = int(options.nyears_final_spinup)
+        fsplen = int(options.nyears_final_spinup)
  
-        print(fsplen, translen, endyear)
+        #get align_year
+        year_align = (endyear-1850+1) % ncycle
 
-        #get align_year for transient run
-        year_align = (startyear-1850) % ncycle
         #print year_align, fsplen
         basecmd = 'python pointCLM.py --site '+site+' --ccsm_input '+ \
             os.path.abspath(ccsm_input)+' --rmold --no_submit --sitegroup ' + \
@@ -172,22 +164,16 @@ for row in AFdatareader:
             basecmd = basecmd+' --C14 '
         if (options.ninst > 1):
             basecmd = basecmd+' --ninst '+str(options.ninst)
-        if (options.npoolmod):
-            basecmd = basecmd+' --npoolmod '
-        if (options.cpoolmod):
-            basecmd = basecmd+' --cpoolmod '
-        if (options.q10wbmod):
-            basecmd = basecmd+' --q10wbmod '
-        if (options.tfmod):
-            basecmd = basecmd+' --tfmod '
         if (options.refcase != 'none'):
             basecmd = basecmd+' --refcase '+options.refcase
         if (options.nofire):
             basecmd = basecmd+' --nofire'
-        if (options.humhol):
-            basecmd = basecmd+' --humhol'
         if (options.harvmod):
             basecmd = basecmd+' --harvmod'
+        if (options.no_dynroot):
+            basecmd = basecmd+' --no_dynroot'
+        if (options.bulk_denitrif):
+            basecmd = basecmd+' --bulk_denitrif'
         if (options.vsoilc):
             basecmd = basecmd+' --vertsoilc'
         if (options.centbgc):
@@ -213,7 +199,7 @@ for row in AFdatareader:
         #AD spinup
         cmd_adsp = basecmd+' --ad_spinup --nyears_ad_spinup '+ \
             str(options.ny_ad)+' --hist_mfilt 1 --hist_nhtfrq -'+ \
-            str((endyear-startyear+1)*8760)
+            str((endyear-startyear+1)*8760)+' --align_year '+str(year_align+1)
         if (options.clm40):
             cmd_adsp = cmd_adsp+' --compset I1850CN'
         elif (options.cpl_bypass):
@@ -259,7 +245,7 @@ for row in AFdatareader:
             cmd_fnsp = basecmd+' --finidat_case '+basecase+'_ad_spinup '+ \
                 '--finidat_year '+str(int(options.ny_ad)+1)+' --run_units nyears --run_n '+ \
                 str(fsplen)+' --hist_mfilt 1 --hist_nhtfrq -'+ \
-                str((endyear-startyear+1)*8760)
+                str((endyear-startyear+1)*8760)+' --align_year '+str(year_align+1)
         if (options.clm40):
             cmd_fnsp = cmd_fnsp+' --compset I1850CN'
         elif (options.cpl_bypass):
@@ -322,11 +308,13 @@ for row in AFdatareader:
         #make site-specific pbs script
 
         if (options.cpl_bypass):
-          input = open('../../'+basecase+"_I1850CLM45CBCN"+'/'+basecase+"_I1850CLM45CBCN"+'.run')
+          input = open('../../scripts/'+basecase+"_I1850CLM45CBCN"+'/'+basecase+"_I1850CLM45CBCN"+'.run')
         else:
-          input = open('../../'+basecase+"_I1850CLM45CN"+'/'+basecase+"_I1850CLM45CN"+'.run')
+          input = open('../../scripts/'+basecase+"_I1850CLM45CN"+'/'+basecase+"_I1850CLM45CN"+'.run')
         for s in input:
-            if ("#PBS" in s or "#!" in s):
+            if ("perl" in s):
+                output.write("#!/bin/csh -f\n")
+            elif ("#PBS" in s or "#!" in s):
                 output.write(s)
         input.close()
         output.write("\n")
@@ -339,11 +327,11 @@ for row in AFdatareader:
         basecase = site
         if (mycaseid != ''):
                 basecase = mycaseid+'_'+site
-        output.write("cd "+os.path.abspath("../../"+basecase+"_I1850"+modelst+"_ad_spinup\n"))
+        output.write("cd "+os.path.abspath("../../scripts/"+basecase+"_I1850"+modelst+"_ad_spinup\n"))
         output.write("./"+basecase+"_I1850"+modelst+"_ad_spinup.run\n")
-        output.write("cd "+os.path.abspath("../../"+basecase+"_I1850"+modelst+"\n"))
+        output.write("cd "+os.path.abspath("../../scripts/"+basecase+"_I1850"+modelst+"\n"))
         output.write("./"+basecase+"_I1850"+modelst+".run\n")
-        output.write("cd "+os.path.abspath("../../"+basecase+"_I20TR"+modelst+"\n"))
+        output.write("cd "+os.path.abspath("../../scripts/"+basecase+"_I20TR"+modelst+"\n"))
         output.write("./"+basecase+"_I20TR"+modelst+".run\n")
         output.close()
 
