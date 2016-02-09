@@ -418,7 +418,8 @@ class TestCreateTestImpl(TestCreateTestCommon):
         for idx, phase in enumerate(ct._phases):
             for test in ct._tests:
                 if (phase == CIME.create_test.INITIAL_PHASE):
-                    continue
+                    if (ct._cime_model == "cesm"):
+                        ct._testspec.add_test(ct._compiler,'fill in later', test["name"])
 
                 elif (phase == CIME.create_test.BUILD_PHASE):
                     ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
