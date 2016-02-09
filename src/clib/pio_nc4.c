@@ -130,10 +130,6 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
     errstr = NULL;
     ierr = PIO_NOERR;
 
-    /* No null pointers please! */
-    if (!shufflep || !deflatep || !deflate_levelp)
-	return PIO_EINVAL;
-
     if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
     ios = file->iosystem;
@@ -176,12 +172,15 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
-    if((ret = MPI_Bcast(shufflep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-	return PIO_EIO;
-    if ((ret = MPI_Bcast(deflatep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-	return PIO_EIO;
-    if ((ret = MPI_Bcast(deflate_levelp, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-	return PIO_EIO;
+    if (shufflep)
+	if((ret = MPI_Bcast(shufflep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	    return PIO_EIO;
+    if (deflatep)
+	if ((ret = MPI_Bcast(deflatep, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	    return PIO_EIO;
+    if (deflate_levelp)
+	if ((ret = MPI_Bcast(deflate_levelp, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	    return PIO_EIO;
     if(errstr != NULL) free(errstr);
     return ierr;
 }    
