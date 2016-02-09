@@ -16,21 +16,22 @@
 <config_tracer_advection>'none'</config_tracer_advection>
 
 <!-- calving -->
-<config_calving>'none'</config_calving>
+<config_calving>'thickness_threshold'</config_calving>
 <config_calving_topography>-500.0</config_calving_topography>
-<config_calving_thickness>100.0</config_calving_thickness>
+<config_calving_thickness>300.0</config_calving_thickness>
+<config_data_calving>.false.</config_data_calving>
 <config_calving_timescale>0.0</config_calving_timescale>
-<config_restore_calving_front>.false.</config_restore_calving_front>
+<config_restore_calving_front>.true.</config_restore_calving_front>
 
 <!-- thermal_solver -->
 <config_thermal_solver>'none'</config_thermal_solver>
-<config_temperature_init>'linear'</config_temperature_init>
+<config_temperature_init>'file'</config_temperature_init>
 <config_thermal_thickness>1.0</config_thermal_thickness>
-<config_surface_air_temperature_source>'constant'</config_surface_air_temperature_source>
+<config_surface_air_temperature_source>'file'</config_surface_air_temperature_source>
 <config_surface_air_temperature_value>273.15</config_surface_air_temperature_value>
-<config_basal_heat_flux_source>'constant'</config_basal_heat_flux_source>
+<config_basal_heat_flux_source>'file'</config_basal_heat_flux_source>
 <config_basal_heat_flux_value>0.0</config_basal_heat_flux_value>
-<config_basal_mass_bal_float>'none'</config_basal_mass_bal_float>
+<config_basal_mass_bal_float>'file'</config_basal_mass_bal_float>
 
 <!-- physical_parameters -->
 <config_ice_density>910.0</config_ice_density>
@@ -45,7 +46,7 @@
 <config_dt>'0000-00-01_00:00:00'</config_dt>
 <config_time_integration>'forward_euler'</config_time_integration>
 <config_adaptive_timestep>.false.</config_adaptive_timestep>
-<config_min_adaptive_timestep>0.0</config_min_adaptive_timestep>
+<config_min_adaptive_timestep>3600.0</config_min_adaptive_timestep>
 <config_max_adaptive_timestep>3.15e9</config_max_adaptive_timestep>
 <config_adaptive_timestep_CFL_fraction>0.25</config_adaptive_timestep_CFL_fraction>
 <config_adaptive_timestep_include_DCFL>.false.</config_adaptive_timestep_include_DCFL>
@@ -71,7 +72,7 @@
 <config_output_external_velocity_solver_data>.false.</config_output_external_velocity_solver_data>
 
 <!-- decomposition -->
-<config_num_halos>3</config_num_halos>
+<config_num_halos>2</config_num_halos>
 <config_block_decomp_file_prefix>'mpasli.graph.info.part.'</config_block_decomp_file_prefix>
 <config_number_of_blocks>0</config_number_of_blocks>
 <config_explicit_proc_decomp>.false.</config_explicit_proc_decomp>
@@ -85,7 +86,7 @@
 <config_print_velocity_cleanup_details>.false.</config_print_velocity_cleanup_details>
 
 <!-- AM_globalStats -->
-<config_AM_globalStats_enable>.false.</config_AM_globalStats_enable>
+<config_AM_globalStats_enable>.true.</config_AM_globalStats_enable>
 <config_AM_globalStats_compute_interval>'output_interval'</config_AM_globalStats_compute_interval>
 <config_AM_globalStats_stream_name>'globalStatsOutput'</config_AM_globalStats_stream_name>
 <config_AM_globalStats_compute_on_startup>.true.</config_AM_globalStats_compute_on_startup>
