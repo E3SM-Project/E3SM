@@ -487,14 +487,21 @@ contains
       du2TopOfEdge => du2TopOfEdgeField % array
 
       ! ddensityTopOfCell(k) = $\rho^*_{k-1}-\rho_k$, where $\rho^*$ has been adiabatically displaced to level k.
-      !$omp workshare
-      ddensityTopOfCell = 0.0_RKIND
-      ddensityTopOfEdge = 0.0_RKIND
-      du2TopOfEdge=0.0_RKIND
-      du2TopOfCell = 0.0_RKIND
-      RiTopOfEdge = 0.0_RKIND
-      RiTopOfCell = 0.0_RKIND
-      !$omp end workshare
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         ddensityTopOfCell(:, iCell) = 0.0_RKIND
+         du2TopOfCell(:, iCell) = 0.0_RKIND
+         RiTopOfCell(:, iCell) = 0.0_RKIND
+      end do
+      !$omp end do
+
+      !$omp do schedule(runtime)
+      do iEdge = 1, nEdges
+         ddensityTopOfEdge(:, iEdge) = 0.0_RKIND
+         du2TopOfEdge(:, iEdge) = 0.0_RKIND
+         RiTopOfEdge(:, iEdge) = 0.0_RKIND
+      end do
+      !$omp end do
 
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells

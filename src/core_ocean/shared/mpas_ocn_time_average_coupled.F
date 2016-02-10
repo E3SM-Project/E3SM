@@ -49,20 +49,31 @@ module ocn_time_average_coupled
                                                       avgLandIceBoundaryLayerTracers, avgLandIceTracerTransferVelocities
 
         real (kind=RKIND), dimension(:), pointer :: avgEffectiveDensityInLandIce
-      character (len=StrKIND), pointer :: config_land_ice_flux_mode
+        character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
-        integer, pointer :: nAccumulatedCoupled
+        integer :: iEdge, iCell
+        integer, pointer :: nAccumulatedCoupled, nEdges, nCells
+
+        call mpas_pool_get_dimension(forcingPool, 'nCells', nCells)
+        call mpas_pool_get_dimension(forcingPool, 'nEdges', nEdges)
 
         call mpas_pool_get_array(forcingPool, 'avgTracersSurfaceValue', avgTracersSurfaceValue)
         call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
         call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
         call mpas_pool_get_array(forcingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
 
-        !$omp workshare
-        avgTracersSurfaceValue(:,:) = 0.0_RKIND
-        avgSurfaceVelocity(:,:) = 0.0_RKIND
-        avgSSHGradient(:,:) = 0.0_RKIND
-        !$omp end workshare
+        !$omp do schedule(runtime)
+        do iEdge = 1, nEdges
+           avgSurfaceVelocity(:, iEdge) = 0.0_RKIND
+        end do
+        !$omp end do
+
+        !$omp do schedule(runtime)
+        do iCell = 1, nCells
+           avgTracersSurfaceValue(:, iCell) = 0.0_RKIND
+           avgSSHGradient(:, iCell) = 0.0_RKIND
+        end do
+        !$omp end do
 
         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
         if(trim(config_land_ice_flux_mode) == 'coupled') then
@@ -70,11 +81,13 @@ module ocn_time_average_coupled
            call mpas_pool_get_array(forcingPool, 'avgLandIceTracerTransferVelocities', avgLandIceTracerTransferVelocities)
            call mpas_pool_get_array(forcingPool, 'avgEffectiveDensityInLandIce', avgEffectiveDensityInLandIce)
 
-           !$omp workshare
-           avgLandIceBoundaryLayerTracers(:,:) = 0.0_RKIND
-           avgLandIceTracerTransferVelocities(:,:) = 0.0_RKIND
-           avgEffectiveDensityInLandIce(:) = 0.0_RKIND
-           !$omp end workshare
+           !$omp do schedule(runtime)
+           do iCell = 1, nCells
+              avgLandIceBoundaryLayerTracers(:, iCell) = 0.0_RKIND
+              avgLandIceTracerTransferVelocities(:, iCell) = 0.0_RKIND
+              avgEffectiveDensityInLandIce(iCell) = 0.0_RKIND
+           end do
+           !$omp end do
         end if
 
         nAccumulatedCoupled = 0
@@ -102,7 +115,8 @@ module ocn_time_average_coupled
         real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue, avgTracersSurfaceValue
         real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
         real (kind=RKIND), dimension(:,:), pointer :: gradSSHZonal, gradSSHMeridional
-        integer, pointer :: index_temperature, index_SSHzonal, index_SSHmeridional, nAccumulatedCoupled
+        integer :: iCell
+        integer, pointer :: index_temperature, index_SSHzonal, index_SSHmeridional, nAccumulatedCoupled, nCells
         real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers, landIceTracerTransferVelocities, &
                                                       avgLandIceBoundaryLayerTracers, avgLandIceTracerTransferVelocities
         real (kind=RKIND), dimension(:), pointer :: effectiveDensityInLandIce, avgEffectiveDensityInLandIce
@@ -117,25 +131,28 @@ module ocn_time_average_coupled
         call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
         call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
 
+        call mpas_pool_get_dimension(forcingPool, 'nCells', nCells)
         call mpas_pool_get_dimension(forcingPool, 'index_avgTemperatureSurfaceValue', index_temperature)
         call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientZonal', index_SSHzonal)
         call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientMeridional', index_SSHmeridional)
 
         call mpas_pool_get_array(forcingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
 
-        !$omp workshare
-        avgTracersSurfaceValue(:,:) = avgTracersSurfaceValue(:,:) * nAccumulatedCoupled + tracersSurfaceValue(:,:)
-        avgTracersSurfaceValue(index_temperature,:) = avgTracersSurfaceValue(index_temperature,:) + T0_Kelvin
-        avgTracersSurfaceValue(:,:) = avgTracersSurfaceValue(:,:) / ( nAccumulatedCoupled + 1 )
+        !$omp do schedule(runtime)
+        do iCell = 1, nCells
+           avgTracersSurfaceValue(:, iCell) = avgTracersSurfaceValue(:, iCell) * nAccumulatedCoupled &
+                                            + tracersSurfaceValue(:, iCell)
+           avgTracersSurfaceValue(index_temperature, iCell) = avgTracersSurfaceValue(index_temperature, iCell) + T0_Kelvin
+           avgTracersSurfaceValue(:, iCell) = avgTracersSurfaceValue(:, iCell) / ( nAccumulatedCoupled + 1 )
 
-        avgSurfaceVelocity(:,:) = ( avgSurfaceVelocity(:,:) * nAccumulatedCoupled + surfaceVelocity(:,:) ) &
-                                / ( nAccumulatedCoupled + 1 )
-
-        avgSSHGradient(index_SSHzonal,:) = ( avgSSHGradient(index_SSHzonal,:)      * nAccumulatedCoupled + gradSSHZonal(1,:) ) &
-                                         / ( nAccumulatedCoupled + 1 )
-        avgSSHGradient(index_SSHmeridional,:) = ( avgSSHGradient(index_SSHmeridional,:) * nAccumulatedCoupled &
-                                              + gradSSHMeridional(1,:) ) / ( nAccumulatedCoupled + 1 )
-        !$omp end workshare
+           avgSSHGradient(index_SSHzonal, iCell) = ( avgSSHGradient(index_SSHzonal, iCell) * nAccumulatedCoupled &
+                                                 + gradSSHZonal(1, iCell) ) / ( nAccumulatedCoupled + 1 )
+           avgSSHGradient(index_SSHmeridional, iCell) = ( avgSSHGradient(index_SSHmeridional, iCell) * nAccumulatedCoupled &
+                                                 + gradSSHMeridional(1, iCell) ) / ( nAccumulatedCoupled + 1 )
+           avgSurfaceVelocity(:, iCell) = ( avgSurfaceVelocity(:, iCell) * nAccumulatedCoupled + surfaceVelocity(:, iCell) ) &
+                                        / ( nAccumulatedCoupled + 1 )
+        end do
+        !$omp end do
 
         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
         if(trim(config_land_ice_flux_mode) == 'coupled') then
@@ -147,14 +164,16 @@ module ocn_time_average_coupled
            call mpas_pool_get_array(forcingPool, 'avgLandIceTracerTransferVelocities', avgLandIceTracerTransferVelocities)
            call mpas_pool_get_array(forcingPool, 'avgEffectiveDensityInLandIce', avgEffectiveDensityInLandIce)
 
-           !$omp workshare
-           avgLandIceBoundaryLayerTracers(:,:) = ( avgLandIceBoundaryLayerTracers(:,:) * nAccumulatedCoupled &
-              + landIceBoundaryLayerTracers(:,:) ) / ( nAccumulatedCoupled + 1 )
-           avgLandIceTracerTransferVelocities(:,:) = ( avgLandIceTracerTransferVelocities(:,:) * nAccumulatedCoupled &
-              + landIceTracerTransferVelocities(:,:) ) / ( nAccumulatedCoupled + 1)
-           avgEffectiveDensityInLandIce(:) = ( avgEffectiveDensityInLandIce(:) * nAccumulatedCoupled &
-              + effectiveDensityInLandIce(:) ) / ( nAccumulatedCoupled + 1)
-           !$omp end workshare
+           !$omp do schedule(runtime)
+           do iCell = 1, nCells
+              avgLandIceBoundaryLayerTracers(:, iCell) = ( avgLandIceBoundaryLayerTracers(:, iCell) * nAccumulatedCoupled &
+                 + landIceBoundaryLayerTracers(:, iCell) ) / ( nAccumulatedCoupled + 1 )
+              avgLandIceTracerTransferVelocities(:, iCell) = ( avgLandIceTracerTransferVelocities(:, iCell) * nAccumulatedCoupled &
+                 + landIceTracerTransferVelocities(:, iCell) ) / ( nAccumulatedCoupled + 1)
+              avgEffectiveDensityInLandIce(iCell) = ( avgEffectiveDensityInLandIce(iCell) * nAccumulatedCoupled &
+                 + effectiveDensityInLandIce(iCell) ) / ( nAccumulatedCoupled + 1)
+           end do
+           !$omp end do
         end if
 
         nAccumulatedCoupled = nAccumulatedCoupled + 1

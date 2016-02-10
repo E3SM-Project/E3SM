@@ -173,6 +173,9 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in)    :: vertRediDiff !< Output: Vertical diffusion
 
+      integer :: iCell
+      integer, pointer :: nCells
+
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
@@ -185,9 +188,11 @@ contains
 
       if(.not.rediDiffOn) return
 
-      !$omp workshare
-      vertDiffTopOfCell = vertDiffTopOfCell + vertRediDiff
-      !$omp end workshare
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + vertRediDiff(:, iCell)
+      end do
+      !$omp end do
 
    !--------------------------------------------------------------------
 

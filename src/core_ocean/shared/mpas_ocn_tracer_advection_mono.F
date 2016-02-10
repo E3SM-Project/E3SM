@@ -166,6 +166,7 @@ module ocn_tracer_advection_mono
         ! Initialize variables for use in this iTracer iteration
         !$omp do schedule(runtime) private(k)
         do iCell = 1, nCells
+          high_order_vert_flux(:, iCell) = 0.0_RKIND
           do k=1, maxLevelCell(iCell)
             tracer_cur(k,iCell) = tracers(iTracer,k,iCell)
             upwind_tendency(k, iCell) = 0.0_RKIND
@@ -178,10 +179,11 @@ module ocn_tracer_advection_mono
         end do ! iCell loop
         !$omp end do
 
-        !$omp workshare
-        high_order_vert_flux = 0.0_RKIND
-        high_order_horiz_flux = 0.0_RKIND
-        !$omp end workshare
+        !$omp do schedule(runtime)
+        do iEdge = 1, nEdges
+           high_order_horiz_flux(:, iEdge) = 0.0_RKIND
+        end do
+        !$omp end do
 
         !  Compute the high order vertical flux. Also determine bounds on tracer_cur.
         !$omp do schedule(runtime) private(k, verticalWeightK, verticalWeightKm1, i)
