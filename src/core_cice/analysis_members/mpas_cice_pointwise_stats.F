@@ -165,7 +165,8 @@ contains
 
                         ! Check for nCells as a dimension, since that's all we can use for now...
                         do iDim = 1, fieldInfo % nDims
-                           if ( trim(ptr1DReal % dimNames(iDim)) == 'nCells' ) then
+                           if ( trim(ptr1DReal % dimNames(iDim)) == 'nCells' .or. &
+                                trim(ptr1DReal % dimNames(iDim)) == 'nVertices') then
                               keepField = .true.
                            end if
                         end do
@@ -194,8 +195,9 @@ contains
 
                            ! Swap out nCells with nPoints
                            do iDim = 1, fieldInfo % nDims
-                              if ( trim(ptr1DRealNew % dimNames(iDim)) == 'nCells' ) then
-                                 PWAM_DEBUG_WRITE(' -- Changing nCells to nPoints')
+                              if ( trim(ptr1DRealNew % dimNames(iDim)) == 'nCells' .or. &
+                                   trim(ptr1DRealNew % dimNames(iDim)) == 'nVertices') then
+                                 PWAM_DEBUG_WRITE(' -- Changing nCells/nVertices to nPoints')
                                  ptr1DRealNew % dimNames(iDim) = 'nPoints'
                                  ptr1DRealNew % dimSizes(iDim) = nPoints
                               end if
@@ -746,22 +748,23 @@ contains
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: pointPool
 
-      integer, pointer :: nCells, nCellsSolve, nPoints, nVertLevels
+      integer, pointer :: nCells, nCellsSolve, nVertices, nVerticesSolve, nPoints
       integer :: iCell, iPoint, i
       integer, dimension(:), pointer :: indexToCellID,pointCellGlobalID, pointCellLocalID, indexToPointCellLocalID
+      integer, dimension(:), pointer :: indexToVertexID,pointVertexGlobalID, pointVertexLocalID, indexToPointVertexLocalID
 
       err = 0
 
       dminfo = domain % dminfo
 
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nPoints', nPoints)
-      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevels', nVertLevels)
 
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
          call mpas_pool_get_subpool(block % structs, 'pointLocations', pointPool)
+
          call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
@@ -769,10 +772,17 @@ contains
          call mpas_pool_get_array(pointPool, 'pointCellLocalID', pointCellLocalID)
          call mpas_pool_get_array(pointPool, 'indexToPointCellLocalID', indexToPointCellLocalID)
 
+         call mpas_pool_get_dimension(block % dimensions, 'nVertices', nVertices)
+         call mpas_pool_get_dimension(block % dimensions, 'nVerticesSolve', nVerticesSolve)
+         call mpas_pool_get_array(meshPool, 'indexToVertexID', indexToVertexID)
+         call mpas_pool_get_array(pointPool, 'pointVertexGlobalID', pointVertexGlobalID)
+         call mpas_pool_get_array(pointPool, 'pointVertexLocalID', pointVertexLocalID)
+         call mpas_pool_get_array(pointPool, 'indexToPointVertexLocalID', indexToPointVertexLocalID)
+
          pointCellLocalID = nCells + 1
          indexToPointCellLocalID = 0
 
-         ! Initialize index arrays to record pointwise data.
+         ! Initialize nCells index arrays to record pointwise data.
          i = 0
          do iCell = 1,nCellsSolve
             do iPoint = 1,nPoints
@@ -780,6 +790,21 @@ contains
                   i = i + 1
                   indexToPointCellLocalID(i) = iPoint
                   pointCellLocalID(iPoint) = iCell
+               endif
+            end do
+         end do
+
+         pointVertexLocalID = nVertices + 1
+         indexToPointVertexLocalID = 0
+
+         ! Initialize nVertices index arrays to record pointwise data.
+         i = 0
+         do iVertex = 1,nVerticesSolve
+            do iPoint = 1,nPoints
+               if (indexToVertexID(iVertex).eq.pointVertexGlobalID(iPoint)) then
+                  i = i + 1
+                  indexToPointVertexLocalID(i) = iPoint
+                  pointVertexLocalID(iPoint) = iVertex
                endif
             end do
          end do
@@ -987,20 +1012,38 @@ contains
             block => domain % blocklist
             do while ( associated(block) )
                call mpas_pool_get_subpool(block % structs, 'pointLocations', pointPool)
+
                call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
                call mpas_pool_get_array(pointPool, 'pointCellLocalID', pointCellLocalID)
+
+               call mpas_pool_get_dimension(block % dimensions, 'nVertices', nVertices)
+               call mpas_pool_get_array(pointPool, 'pointVertexLocalID', pointVertexLocalID)
 
                if ( fieldInfo % fieldType == MPAS_POOL_REAL ) then
                   if ( fieldInfo % nDims == 0 ) then
                      ! Can't do 0D reals currently...
                   else if ( fieldInfo % nDims == 1 ) then
-                     call mpas_pool_get_array(block % allFields, poolItr % memberName, ptr1DReal1, fieldTimeLevel)
 
-                     do iPoint = 1, nPoints
-                        if ( pointCellLocalID(iPoint) < nCells + 1 ) then
-                           ptr1DReal2(iPoint) = ptr1DReal1( pointCellLocalID(iPoint) )
-                        end if
-                     end do
+                     call mpas_pool_get_field(block % allFields, poolItr % memberName, ptr1DReal1, fieldTimeLevel)
+                     nCellsField = .false.
+                     do iDim = 1, fieldInfo % nDims
+                        if (trim(ptr1DReal1 % dimNames(iDim)) == "nCells") nCellsField = .true.
+                     enddo ! iDim
+
+                     if (nCellsField) then
+                        do iPoint = 1, nPoints
+                           if ( pointCellLocalID(iPoint) < nCells + 1 ) then
+                              ptr1DReal2(iPoint) = ptr1DReal1 % array( pointCellLocalID(iPoint) )
+                           end if
+                        end do
+                     else
+                        do iPoint = 1, nPoints
+                           if ( pointVertexLocalID(iPoint) < nVertices + 1 ) then
+                              ptr1DReal2(iPoint) = ptr1DReal1 % array( pointVertexLocalID(iPoint) )
+                           end if
+                        end do
+                     endif
+
                   else if ( fieldInfo % nDims == 2 ) then
                      call mpas_pool_get_array(block % allFields, poolItr % memberName, ptr2DReal1, fieldTimeLevel)
 
