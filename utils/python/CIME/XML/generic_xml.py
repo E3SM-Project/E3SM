@@ -37,9 +37,15 @@ class GenericXML:
         """
         Read and parse an xml file into the object
         """
-        logging.debug("read: "+infile)
+        logging.info("read: "+infile)
         self.tree = ET.parse(infile)
         self.root = self.tree.getroot()
+        if ("version" in self.root.attrib):
+            self.version = self.root.attrib["version"]
+        else:
+            self.version = "1.0"
+        logging.info("File version is "+self.version)
+
 
     def write(self, infile=None):
         """
@@ -57,21 +63,27 @@ class GenericXML:
         """
         if(root is None):
             root = self.root
-
+        nodes = []
         xpath = ".//"+nodename
         if(attributes is not None):
             keys = list(attributes.keys())
-            cnt = 0
+            # xml.etree has limited support for xpath and does not allow more than
+            # one attribute in an xpath query so we query seperately for each attribute
+            # and create a result with the intersection of those lists
             for key in keys:
-                if(cnt == 0):
-                    xpath += "["
+                xpath = ".//%s[@%s=\'%s\']" % (nodename,key,attributes[key])
+                newnodes = root.findall(xpath)
+                if(not nodes):
+                    nodes = newnodes
                 else:
-                    xpath += " and "
-                xpath += "@%s=\'%s\'" % (key,attributes[key])
-                cnt=cnt+1
-            xpath += "]"
-        logging.info("xpath = "+ xpath)
-        nodes = root.findall(xpath)
+                    for node in nodes[:]:
+                        if (node not in newnodes):
+                            nodes.remove(node)
+                if(not nodes):
+                    return []
+        else:
+            nodes = root.findall(xpath)
+
         return nodes
 
     def add_child(self, node, root=None):

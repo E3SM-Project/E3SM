@@ -318,7 +318,6 @@ class TestCreateTestCommon(unittest.TestCase):
         self._jenkins_root      = os.path.join(self._testroot, "jenkins")
         self._compiler          = MACHINE.get_default_compiler()
         self._hasbatch          = MACHINE.has_batch_system()
-        self._compiler          = MACHINE.get_value('COMPILER')
         # wait_for_tests could blow away our dart config, need to back it up
         if (os.path.exists(DART_CONFIG)):
             shutil.move(DART_CONFIG, DART_BACKUP)
@@ -415,7 +414,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
         self.assertTrue("RUNPASS" in pass_test, msg="Wrong test '%s'" % pass_test)
 
         for idx, phase in enumerate(ct._phases):
-            for test in tests:
+            for test in ct._tests:
                 if (phase == CIME.create_test.INITIAL_PHASE):
                     continue
 
@@ -633,7 +632,6 @@ class TestBlessTestResults(TestCreateTestCommon):
         self.simple_test(True, "-c -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
 
-
 ###############################################################################
 @unittest.skip("Disabling this test until we figure out how to integrate ACME tests and CIME xml files.")
 class TestUpdateACMETests(unittest.TestCase):
@@ -694,6 +692,16 @@ class TestUpdateACMETests(unittest.TestCase):
         self.assertTrue("ERS.f19_g16_rx1.D.melvin_gnu" in tests)
         self.assertTrue("ERS.f19_g16_rx1.E.melvin_gnu" in tests)
 
+        if (CIME.utils.does_machine_have_batch()):
+            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True, from_dir=self._testroot)
+            self.assertEqual(stat, 0,
+                             msg="COMMAND SHOULD HAVE WORKED\wait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+
+
+        stat, output, errput = run_cmd("%s/cs.status.%s" % (self._testroot, self._baseline_name), ok_to_fail=True)
+        self.assertEqual(stat, 0,
+                         msg="COMMAND SHOULD HAVE WORKED\cs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+
 ###############################################################################
 class FullSystemTest(TestCreateTestCommon):
 ###############################################################################
@@ -715,7 +723,7 @@ class FullSystemTest(TestCreateTestCommon):
                              msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 
-        stat, output, errput = run_cmd("%s/cs_status.%s" % (self._testroot, self._baseline_name), ok_to_fail=True)
+        stat, output, errput = run_cmd("%s/cs.status.%s" % (self._testroot, self._baseline_name), ok_to_fail=True)
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\ncs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
