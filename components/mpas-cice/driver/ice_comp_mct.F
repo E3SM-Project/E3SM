@@ -1447,7 +1447,7 @@ contains
 
       do i = 1, nCellsSolve
         n = n + 1
-        seaSurfaceTemperature(i)       = x2i_i % rAttr(index_x2i_So_t, n) - Tffresh
+        seaSurfaceTemperature(i)       = x2i_i % rAttr(index_x2i_So_t, n)
         seaSurfaceSalinity(i)          = x2i_i % rAttr(index_x2i_So_s, n)
         uOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_u, n)
         vOceanVelocity(i)              = x2i_i % rAttr(index_x2i_So_v, n)
