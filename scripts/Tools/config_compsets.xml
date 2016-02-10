@@ -948,6 +948,7 @@ CLM50%[^_]*BGC   => clm5.0 BGC (CN with vertically resolved soil BGC, based on C
 
 <CICE_MODE compset="CICE_">prognostic</CICE_MODE>
 <CICE_MODE compset="CICE%PRES_">prescribed</CICE_MODE>
+<CICE_CONFIG_OPTS compset="CICE%PRES_WISO">-ntr_iso 3</CICE_CONFIG_OPTS>
 
 <CICE_NAMELIST_OPTS compset="_CAM4">cam4=.true.</CICE_NAMELIST_OPTS>  
 <CICE_NAMELIST_OPTS compset="CICE%WISO">tr_iso=.true.</CICE_NAMELIST_OPTS>
