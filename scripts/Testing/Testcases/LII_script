@@ -29,7 +29,7 @@ endif
 
 cd $CASEROOT
 
-echo "doing an ${STOP_N} ${STOP_OPTION} test with use_init_interp false" >>& $TESTSTATUS_LOG 
+echo "doing an ${STOP_N} ${STOP_OPTION} test with use_init_interp false" >>& $TESTSTATUS_LOG
 
 cp user_nl_nointerp/* .
 
@@ -44,10 +44,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -69,7 +69,7 @@ $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -su
 
 cd $CASEROOT
 
-echo "doing an ${STOP_N} ${STOP_OPTION} test with use_init_interp true" >>& $TESTSTATUS_LOG 
+echo "doing an ${STOP_N} ${STOP_OPTION} test with use_init_interp true" >>& $TESTSTATUS_LOG
 
 cp user_nl_interp/* .
 
@@ -84,10 +84,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -110,7 +110,7 @@ set CPLLOG = $CplLogFile
 
 if ! ( $?IOP_ON ) then
     echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTSTATUS_OUT
-    echo "--- Test Functionality  ---:" >>& $TESTSTATUS_OUT
+#    echo "--- Test Functionality  ---:" >>& $TESTSTATUS_OUT
 endif
 
 echo "DONE ${CASEBASEID} : ($msg finished, successful coupler log) " >>& $TESTSTATUS_LOG

@@ -3,7 +3,6 @@ Implementation of create_test functionality from CIME
 """
 import shutil, traceback, stat, glob, threading, time, thread
 from XML.standard_module_setup import *
-from copy import deepcopy
 import compare_namelists
 import CIME.utils
 from CIME.utils import expect, run_cmd
@@ -15,6 +14,7 @@ from CIME.XML.files import Files
 from CIME.XML.component import Component
 from CIME.XML.testlist import Testlist
 from CIME.XML.testspec import TestSpec
+import test_utils
 
 INITIAL_PHASE = "INIT"
 CREATE_NEWCASE_PHASE = "CREATE_NEWCASE"
@@ -79,11 +79,11 @@ class CreateTest(object):
 
         # If xml options are provided get tests from xml file, otherwise use acme dictionary
         if(not test_names and (xml_machine is not None or xml_category is not None or xml_compiler is not None or xml_testlist is not None)):
-            self._tests = self._get_tests_from_xml(xml_machine,xml_category,xml_compiler, xml_testlist,machine_name ,compiler)
+            self._tests = test_utils._get_tests_from_xml(xml_machine,xml_category,xml_compiler, xml_testlist,machine_name ,compiler)
         else:
             expect(len(test_names) > 0, "No tests to run")
             test_names = update_acme_tests.get_full_test_names(test_names, machine_name, self._compiler)
-            self._tests  = self._convert_testlist_to_dict(test_names)
+            self._tests  = test_utils._convert_testlist_to_dict(test_names)
 
         if (parallel_jobs is None):
             self._parallel_jobs  = min(len(self._tests), int(self._machobj.get_value("MAX_TASKS_PER_NODE")))
@@ -91,16 +91,32 @@ class CreateTest(object):
             self._parallel_jobs = parallel_jobs
 
         if (self._compare or self._generate):
-
+            logging.warn("compare is %s generate is %s"%(self._compare,self._generate))
             # Figure out what baseline name to use
             if (baseline_name is None):
+                if(self._compare is not None and self._compare == str(self._compare)):
+                    self._baseline_cmp_name = self._compare
+                if(self._generate is not None and self._generate == str(self._generate)):
+                    self._baseline_gen_name = self._generate
+
                 branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
                 expect(branch_name is not None, "Could not determine baseline name from branch, please use -b option")
-                self._baseline_name = os.path.join(self._compiler, branch_name)
+                if(self._compare and self._baseline_cmp_name is None):
+                    self._baseline_cmp_name = os.path.join(self._compiler, branch_name)
+                if(self._generate and self._baseline_gen_name is None):
+                    self._baseline_gen_name = os.path.join(self._compiler, branch_name)
             else:
-                self._baseline_name  = baseline_name
-                if (not self._baseline_name.startswith("%s/" % self._compiler)):
-                    self._baseline_name = os.path.join(self._compiler, self._baseline_name)
+                if(self._compare):
+                    self._baseline_cmp_name  = baseline_name
+                    if (not self._baseline_cmp_name.startswith("%s/" % self._compiler)):
+                        self._baseline_cmp_name = os.path.join(self._compiler, self._baseline_cmp_name)
+                if(self._generate):
+                    self._baseline_gen_name  = baseline_name
+                    if (not self._baseline_gen_name.startswith("%s/" % self._compiler)):
+                        self._baseline_gen_name = os.path.join(self._compiler, self._baseline_gen_name)
+
+
+
 
             # Compute baseline_root
             self._baseline_root = baseline_root if baseline_root is not None else self._machobj.get_value("CCSM_BASELINE")
@@ -109,7 +125,7 @@ class CreateTest(object):
             self._baseline_root = os.path.abspath(self._baseline_root)
 
             if (self._compare):
-                full_baseline_dir = os.path.join(self._baseline_root, self._baseline_name)
+                full_baseline_dir = os.path.join(self._baseline_root, self._baseline_cmp_name)
                 expect(os.path.isdir(full_baseline_dir),
                        "Missing baseline comparison directory %s" % full_baseline_dir)
         else:
@@ -117,9 +133,11 @@ class CreateTest(object):
         # This is the only data that multiple threads will simultaneously access
         # Each test has it's own index and setting/retrieving items from a list
         # is atomic, so this should be fine to use without mutex
+        self._test_states = [ (INITIAL_PHASE, TEST_PASS_STATUS) ] * len(self._tests)
+        idx = 0
         for test in self._tests:
-            test["phase"] = INITIAL_PHASE
-            test["status"] = TEST_PASS_STATUS
+            test["state_idx"] = idx
+            idx += 1
 
         # Oversubscribe by 1/4
         pes = int(self._machobj.get_value("PES_PER_NODE"))
@@ -177,7 +195,7 @@ class CreateTest(object):
     ###########################################################################
     def _get_test_data(self, test):
     ###########################################################################
-        return (test["phase"],test["status"])
+        return self._test_states[test["state_idx"]]
 
     ###########################################################################
     def _is_broken(self, test):
@@ -228,10 +246,10 @@ class CreateTest(object):
                    "New phase should be set to pending status")
             expect(self._phases.index(old_phase) == phase_idx - 1,
                    "Skipped phase?")
-        test["phase"] = phase
-        test["status"] = status
+        self._test_states[test["state_idx"]] = (phase, status)
         if(self._cime_model == "cesm"):
             self._testspec.update_test_status(test["name"],phase,status)
+
     ###########################################################################
     def _run_phase_command(self, test, cmd, phase, from_dir=None):
     ###########################################################################
@@ -310,13 +328,13 @@ class CreateTest(object):
 
         test_argv = "-testname %s -testroot %s" % (test_name, self._test_root)
         if (self._generate):
-            test_argv += " -generate %s" % self._baseline_name
-            envtest.set_value("BASELINE_NAME_GEN",self._baseline_name)
-            envtest.set_value("BASEGEN_CASE",os.path.join(self._baseline_name,test_name))
+            test_argv += " -generate %s" % self._baseline_gen_name
+            envtest.set_value("BASELINE_NAME_GEN",self._baseline_gen_name)
+            envtest.set_value("BASEGEN_CASE",os.path.join(self._baseline_gen_name,test_name))
         if (self._compare):
-            test_argv += " -compare %s" % self._baseline_name
-            envtest.set_value("BASELINE_NAME_CMP",self._baseline_name)
-            envtest.set_value("BASECMP_CASE",os.path.join(self._baseline_name,test_name))
+            test_argv += " -compare %s" % self._baseline_cmp_name
+            envtest.set_value("BASELINE_NAME_CMP",self._baseline_cmp_name)
+            envtest.set_value("BASECMP_CASE",os.path.join(self._baseline_cmp_name,test_name))
 
         envtest.set_value("TEST_ARGV",test_argv)
         envtest.set_value("CLEANUP",("TRUE" if self._clean else "FALSE"))
@@ -352,7 +370,7 @@ class CreateTest(object):
         test_name = test["name"]
         test_dir          = self._get_test_dir(test_name)
         casedoc_dir       = os.path.join(test_dir, "CaseDocs")
-        baseline_dir      = os.path.join(self._baseline_root, self._baseline_name, test_name)
+        baseline_dir      = os.path.join(self._baseline_root, self._baseline_cmp_name, test_name)
         baseline_casedocs = os.path.join(baseline_dir, "CaseDocs")
         compare_nl        = os.path.join(CIME.utils.get_acme_scripts_root(), "compare_namelists")
         simple_compare    = os.path.join(CIME.utils.get_acme_scripts_root(), "simple_compare")
@@ -409,6 +427,8 @@ class CreateTest(object):
     def _run_phase(self, test):
     ###########################################################################
         test_dir = self._get_test_dir(test["name"])
+        # wallclock is an optional field in the version 2.0 testlist.xml file
+        # setting wallclock time close to the expected test time will help queue throughput
         if ('wallclock' in test):
             out = run_cmd("./xmlchange JOB_WALLCLOCK_TIME=%s"%test["wallclock"], from_dir=test_dir)
 
@@ -531,10 +551,7 @@ class CreateTest(object):
             work_to_do = False
             num_threads_launched_this_iteration = 0
             for test in self._tests:
-                if (type(test) == type(dict())):
-                    test_name = test["name"]
-                else:
-                    test_name = test
+                test_name = test["name"]
                 logging.info("test_name: "+test_name)
                 # If we have no workers available, immediately wait
                 if (len(threads_in_flight) == self._parallel_jobs):
@@ -614,13 +631,10 @@ class CreateTest(object):
         # Tell user what will be run
         print "RUNNING TESTS:"
         for test in self._tests:
-            if (type(test) == type(dict())):
-                test_name = test["name"]
-            else:
-                test_name = test
-            print " ", test_name
             if(self._cime_model == "cesm"):
-                self._testspec.add_test(self._compiler, 'trythis', test_name)
+                self._testspec.add_test(self._compiler, 'trythis', test["name"])
+            print " ", test["name"]
+
         # TODO - documentation
 
         self._producer()
@@ -664,50 +678,3 @@ class CreateTest(object):
 
         return rv
 
-    def  _get_tests_from_xml(self,xml_machine=None,xml_category=None,xml_compiler=None, xml_testlist=None,
-                             machine=None, compiler=None):
-        """
-        Parse testlists for a list of tests
-        """
-        listoftests = []
-        testlistfiles = []
-        if(machine is not None):
-            thismach=machine
-        if(compiler is not None):
-            thiscompiler = compiler
-
-        if(xml_testlist is not None):
-             expect(os.path.isfile(xml_testlist), "Testlist not found or not readable "+xml_testlist)
-             testlistfiles.append(xml_testlist)
-        else:
-            files = Files()
-            test_spec_files = files.get_values("TESTS_SPEC_FILE","component")
-            for spec_file in test_spec_files.viewvalues():
-                if(os.path.isfile(spec_file)):
-                    testlistfiles.append(spec_file)
-
-        for testlistfile in testlistfiles:
-            thistestlistfile = Testlist(testlistfile)
-            newtests =  thistestlistfile.get_tests(xml_machine, xml_category, xml_compiler)
-            for test in newtests:
-                if(machine is None):
-                    thismach = test["machine"]
-                if(compiler is None):
-                    thiscompiler = test["compiler"]
-                test["name"] = "%s.%s.%s.%s_%s"%(test["testname"],test["grid"],test["compset"],thismach,thiscompiler)
-                if ("testmods" in test):
-                    (moddir, modname) = test["testmods"].split("/")
-                    test["name"] += ".%s_%s"%(moddir, modname)
-                logging.info("Adding test "+test["name"])
-            listoftests += newtests
-
-        return listoftests
-
-    def _convert_testlist_to_dict(self,test_names):
-        from copy import deepcopy
-        listoftests = []
-        test = {}
-        for name in test_names:
-            test["name"] = name
-            listoftests.append(deepcopy(test))
-        return listoftests

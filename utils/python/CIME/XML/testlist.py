@@ -1,5 +1,6 @@
 """
-Interface to the config_files.xml file.  This class inherits from EntryID.py
+Interface to the config_files.xml file.  This class inherits from generic_xml.py
+It supports versions 1.0 and 2.0 of the testlist.xml file
 """
 from standard_module_setup import *
 

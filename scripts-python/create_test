@@ -3,10 +3,8 @@
 """
 Script to run CIME tests.
 
-Runs single tests or test suites based on either the input list or the testname.
-
-This is currently a wrapper around cime perl create_test, but this will eventually replace
-that tool entirely.
+Runs single tests or test suites based on either the input list or the testname or based
+on an xml testlist if the xml suboption is provided.
 
 If this tool is missing any feature that you need, please notify jgfouca@sandia.gov.
 """
@@ -24,7 +22,7 @@ def parse_command_line(args, description):
     parser = argparse.ArgumentParser(
         usage="""\n%s <TEST|SUITE> [<TEST|SUITE> ...] [--verbose]
 OR
-%s --xml_category [CATEGORY] [--xml_machine ...]
+%s xml --category [CATEGORY] [--machine ...] [--compiler ...] [ --testlist ...]
 OR
 %s --help
 OR
@@ -48,7 +46,11 @@ OR
 
     \033[1;32m# Run all tests in a suite except for tests that are in another suite \033[0m
     > %s <SUITE1> ^<SUITE2>
-""" % ((os.path.basename(args[0]), ) * 10),
+
+    \033[1;32m# Run all tests in the xml prealpha category and yellowstone machine \033[0m
+    > %s --xml_machine yellowstone --xml_category prealpha
+
+""" % ((os.path.basename(args[0]), ) * 11),
 
 description=description,
 
@@ -82,10 +84,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Specifies if tests should be cleaned after run. If set, "
                         "all object executables, and data files will be removed after tests are run")
 
-    parser.add_argument("-c", "--compare", action="store_true",
+    parser.add_argument("-c", "--compare", const=True,nargs="?",
                         help="While testing, compare baselines")
 
-    parser.add_argument("-g", "--generate", action="store_true",
+    parser.add_argument("-g", "--generate", const=True,nargs="?",
                         help="While testing, generate baselines")
 
     parser.add_argument("-b", "--baseline-name", default=default_baseline_name,
@@ -121,7 +123,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Number of tasks create_test should perform simultaneously. Default "
                         "will be min(num_cores, num_tests).")
 
-
     parser.add_argument("--xml_machine",help="Use this machine key in the lookup in testlist.xml")
     parser.add_argument("--xml_compiler",help="Use this compiler key in the lookup in testlist.xml")
     parser.add_argument("--xml_category",help="Use this category key in the lookup in testlist.xml")
@@ -132,8 +133,11 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.handle_standard_logging_options(args)
 
-    expect(not (args.generate and args.compare),
-           "Cannot generate and compare baselines at the same time")
+# generate and compare flags may not point to the same directory
+
+    if(args.generate is not None):
+        expect(not (args.generate == args.compare),
+               "Cannot generate and compare baselines at the same time")
     expect(not (args.baseline_name != default_baseline_name and (not args.compare and not args.generate)),
            "Provided baseline name but did not specify compare or generate")
     expect(not (args.namelists_only and not (args.generate or args.compare)),
@@ -141,6 +145,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     if (args.parallel_jobs is not None):
         expect(args.parallel_jobs > 0,
                "Invalid value for parallel_jobs: %d" % args.parallel_jobs)
+    if(args.xml_testlist is not None):
+        expect(not (args.xml_machine is None and args.xml_compiler is  None and args.xml_category is None),
+                "If an xml_testlist is present at least one of --xml_machine, --xml_compiler, --xml_category must also be present")
 
     if (args.no_build):
         args.no_run = True
