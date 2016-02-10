@@ -577,6 +577,9 @@ module shr_strdata_mod
 
   if (.not.ltimers) call t_adj_detailf(tadj)
 
+  call t_barrierf(trim(lstr)//trim(timname)//'_total_BARRIER',mpicom)
+  call t_startf(trim(lstr)//trim(timname)//'_total')
+
   call MPI_COMM_SIZE(mpicom,npes,ierr)
   call MPI_COMM_RANK(mpicom,my_task,ierr)
 
@@ -886,6 +889,7 @@ module shr_strdata_mod
 
   endif    ! nstreams > 0
   
+  call t_stopf(trim(lstr)//trim(timname)//'_total')
   if (.not.ltimers) call t_adj_detailf(-tadj)
 
   end subroutine shr_strdata_advance

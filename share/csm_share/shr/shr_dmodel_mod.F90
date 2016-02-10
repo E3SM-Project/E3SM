@@ -631,7 +631,7 @@ subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,
         call t_stopf(trim(lstr)//'_LB_copy')
      else
         if (my_task == master_task) then
-           write(logunit,F02) 'reading file: ',trim(path),trim(fn_lb),n_lb
+           write(logunit,F02) 'file lb: ',trim(path),trim(fn_lb),n_lb
            call shr_sys_flush(logunit)
         endif
         call shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gsMap, avLB, mpicom, &
@@ -642,7 +642,7 @@ subroutine shr_dmodel_readLBUB(stream,pio_subsystem,pio_iotype,pio_iodesc,mDate,
   if (mDateUB /= oDateUB .or. mSecUB /= oSecUB) then
      newdata = .true.
      if (my_task == master_task) then
-        write(logunit,F02) 'reading file: ',trim(path),trim(fn_ub),n_ub
+        write(logunit,F02) 'file ub: ',trim(path),trim(fn_ub),n_ub
         call shr_sys_flush(logunit)
      endif
      call shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gsMap, avUB, mpicom, &
@@ -723,6 +723,8 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
   character(CL) :: sfldName
   type(mct_avect) :: avtmp
   character(len=32) :: lstr
+  logical :: fileopen
+  character(CL) :: currfile
 
   integer(in) :: ndims
   integer(in),pointer :: dimid(:)
@@ -817,7 +819,28 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
      call t_startf(trim(lstr)//'_readpio')
      call shr_mpi_bcast(sfldName,mpicom,'sfldName')
      call shr_mpi_bcast(filename,mpicom,'filename')
-     rcode = pio_openfile(pio_subsystem, pioid, pio_iotype, trim(filename), pio_nowrite)
+
+     call shr_stream_getCurrFile(stream,fileopen=fileopen,currfile=currfile,currpioid=pioid)
+
+     if (fileopen .and. currfile==filename) then
+        ! don't reopen file, all good
+     else
+        ! otherwise close the old file if open and open new file
+        if (fileopen) then
+           if (my_task == master_task) then
+              write(logunit,F00) 'close  : ',trim(currfile)
+              call shr_sys_flush(logunit)
+           endif
+           call pio_closefile(pioid)
+        endif
+        if (my_task == master_task) then
+           write(logunit,F00) 'open   : ',trim(filename)
+           call shr_sys_flush(logunit)
+        endif
+        rcode = pio_openfile(pio_subsystem, pioid, pio_iotype, trim(filename), pio_nowrite)
+        call shr_stream_setCurrFile(stream,fileopen=.true.,currfile=trim(filename),currpioid=pioid)
+     endif
+
      call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
 
      rcode = pio_inq_varid(pioid,trim(sfldName),varid)
@@ -844,7 +867,6 @@ subroutine shr_dmodel_readstrm(stream, pio_subsystem, pio_iotype, pio_iodesc, gs
         call pio_read_darray(pioid,varid,pio_iodesc,av%rattr(k,:),rcode)
      enddo
 
-     call pio_closefile(pioid)
      call t_stopf(trim(lstr)//'_readpio')
 
   endif

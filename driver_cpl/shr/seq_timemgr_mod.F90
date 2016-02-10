@@ -108,6 +108,7 @@ module seq_timemgr_mod
 !      seq_timemgr_alarm_ocnnext
 !      seq_timemgr_alarm_tprof
 !      seq_timemgr_alarm_histavg
+!      seq_timemgr_alarm_barrier
 
 !EOP
 
@@ -163,7 +164,7 @@ module seq_timemgr_mod
       (/'drv     ','atm     ','lnd     ','ocn     ', &
         'ice     ','glc     ','wav     ','rof     '/)
 
-   integer(SHR_KIND_IN),private,parameter :: max_alarms = 15
+   integer(SHR_KIND_IN),private,parameter :: max_alarms = 16
    character(len=*),public,parameter :: &
       seq_timemgr_alarm_restart = 'seq_timemgr_alarm_restart ', &
       seq_timemgr_alarm_run     = 'seq_timemgr_alarm_run     ', &
@@ -179,7 +180,8 @@ module seq_timemgr_mod
       seq_timemgr_alarm_tprof   = 'seq_timemgr_alarm_tprof   ', &
       seq_timemgr_alarm_histavg = 'seq_timemgr_alarm_histavg ', &
       seq_timemgr_alarm_rofrun  = 'seq_timemgr_alarm_rofrun  ', &
-      seq_timemgr_alarm_wavrun  = 'seq_timemgr_alarm_wavrun  '
+      seq_timemgr_alarm_wavrun  = 'seq_timemgr_alarm_wavrun  ', &
+      seq_timemgr_alarm_barrier = 'seq_timemgr_alarm_barrier '
    integer(SHR_KIND_IN),private,parameter :: &
       seq_timemgr_nalarm_restart = 1, &
       seq_timemgr_nalarm_run     = 2, &
@@ -195,7 +197,8 @@ module seq_timemgr_mod
       seq_timemgr_nalarm_tprof   =12, &
       seq_timemgr_nalarm_histavg =13, &
       seq_timemgr_nalarm_rofrun  =14, &
-      seq_timemgr_nalarm_wavrun  =15
+      seq_timemgr_nalarm_wavrun  =15, &
+      seq_timemgr_nalarm_barrier =16
 
    type EClock_pointer     ! needed for array of pointers
       type(ESMF_Clock),pointer :: EClock => null()
@@ -291,6 +294,9 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     character(SHR_KIND_CS)  :: histavg_option        ! Histavg option units
     integer(SHR_KIND_IN)    :: histavg_n             ! Number until histavg interval
     integer(SHR_KIND_IN)    :: histavg_ymd           ! Histavg date (YYYYMMDD)
+    character(SHR_KIND_CS)  :: barrier_option        ! Barrier option units
+    integer(SHR_KIND_IN)    :: barrier_n             ! Number until barrier interval
+    integer(SHR_KIND_IN)    :: barrier_ymd           ! Barrier date (YYYYMMDD)
     character(SHR_KIND_CS)  :: tprof_option          ! tprof option units
     integer(SHR_KIND_IN)    :: tprof_n               ! Number until tprof interval
     integer(SHR_KIND_IN)    :: tprof_ymd             ! tprof date (YYYYMMDD)
@@ -327,6 +333,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
          restart_option, restart_n, restart_ymd,         &
          history_option, history_n, history_ymd,         &
          histavg_option, histavg_n, histavg_ymd,         &
+         barrier_option, barrier_n, barrier_ymd,         &
          tprof_option, tprof_n, tprof_ymd,               &
          start_ymd, start_tod, ref_ymd, ref_tod,         &
          atm_cpl_dt, ocn_cpl_dt, ice_cpl_dt, lnd_cpl_dt, &
@@ -372,6 +379,9 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        histavg_option   = seq_timemgr_optNever
        histavg_n        = -1
        histavg_ymd      = -1
+       barrier_option   = seq_timemgr_optNever
+       barrier_n        = -1
+       barrier_ymd      = -1
        tprof_option     = seq_timemgr_optNever
        tprof_n          = -1
        tprof_ymd        = -1
@@ -505,6 +515,9 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
        write(logunit,F0A) trim(subname),' histavg_option = ',trim(histavg_option)
        write(logunit,F0I) trim(subname),' histavg_n      = ',histavg_n
        write(logunit,F0I) trim(subname),' histavg_ymd    = ',histavg_ymd
+       write(logunit,F0A) trim(subname),' barrier_option = ',trim(barrier_option)
+       write(logunit,F0I) trim(subname),' barrier_n      = ',barrier_n
+       write(logunit,F0I) trim(subname),' barrier_ymd    = ',barrier_ymd
        write(logunit,F0A) trim(subname),' tprof_option   = ',trim(tprof_option)
        write(logunit,F0I) trim(subname),' tprof_n        = ',tprof_n
        write(logunit,F0I) trim(subname),' tprof_ymd      = ',tprof_ymd
@@ -584,6 +597,9 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     call shr_mpi_bcast( histavg_option, mpicom )
     call shr_mpi_bcast( histavg_ymd,    mpicom )
     call shr_mpi_bcast( tprof_n,        mpicom )
+    call shr_mpi_bcast( barrier_n,      mpicom )
+    call shr_mpi_bcast( barrier_option, mpicom )
+    call shr_mpi_bcast( barrier_ymd,    mpicom )
     call shr_mpi_bcast( tprof_option,   mpicom )
     call shr_mpi_bcast( tprof_ymd,      mpicom )
     call shr_mpi_bcast( start_ymd,      mpicom )
@@ -732,6 +748,14 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
           opt_ymd = histavg_ymd,         &
           RefTime = StartTime,           &
           alarmname = trim(seq_timemgr_alarm_histavg))
+
+       call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
+          EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_barrier),  &
+          option  = barrier_option,      &
+          opt_n   = barrier_n,           &
+          opt_ymd = barrier_ymd,         &
+          RefTime = CurrTime,            &
+          alarmname = trim(seq_timemgr_alarm_barrier))
 
        call seq_timemgr_alarmInit(SyncClock%ECP(n)%EClock, &
           EAlarm  = SyncClock%EAlarm(n,seq_timemgr_nalarm_tprof),  &

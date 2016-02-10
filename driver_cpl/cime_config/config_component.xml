@@ -359,6 +359,38 @@
     </desc>
   </entry>
 
+  <entry id="BARRIER_OPTION"> 
+    <type>char</type>
+    <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
+    <default_value>never</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      sets frequency of full model barrier (same options as STOP_OPTION) for synchronization with BARRIER_N and BARRIER_DATE
+    </desc>
+  </entry>
+
+  <entry id="BARRIER_N"> 
+    <type>char</type>
+    <default_value>1</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc> 
+      sets periodic model barriers with BARRIER_OPTION and BARRIER_DATE for synchronization
+    </desc>
+  </entry>
+
+  <entry id="BARRIER_DATE"> 
+    <type>char</type>
+    <default_value>-999</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Alternative date in yyyymmdd format
+      sets periodic model barriers with BARRIER_OPTION and BARRIER_N for synchronization
+    </desc>
+  </entry>
+
   <entry id="CONTINUE_RUN"> 
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
