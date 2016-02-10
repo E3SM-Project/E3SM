@@ -28,6 +28,13 @@
       <support>Non-standard grid for testing of the interpolation in DATM rather than coupler</support>
     </grid>
 
+    <grid compset="DATM.+DROF">
+      <lname>a%01col_l%01col_oi%01col_r%null_m%01col_g%null_w%null</lname>
+      <sname>01col_01col</sname>
+      <alias>1D_1D</alias>
+      <support>Non-standard grid for running POP in true 1D mode</support>
+    </grid>
+
     <grid compset="DATM.+CLM">
       <sname>CLM_USRDAT</sname>
       <lname>a%CLM_USRDAT_l%CLM_USRDAT_oi%CLM_USRDAT_r%null_m%reg_g%null_w%null</lname>
@@ -562,6 +569,13 @@
       <!-- null grid -->
       <nx>0</nx> <ny>0</ny>    
       <desc>null is no grid: </desc>
+    </domain>
+
+    <domain name="01col">
+      <nx>1</nx> <ny>1</ny>
+      <file lnd_mask="01col">domain.ocn.01col.ArcticOcean.20150824.nc</file>
+      <file ocn_mask="01col">domain.ocn.01col.ArcticOcean.20150824.nc</file>
+      <desc>01col is a single-column grid for datm and POP:</desc>
     </domain>
 
     <domain name="CLM_USRDAT">  

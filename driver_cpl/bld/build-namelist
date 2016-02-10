@@ -576,6 +576,10 @@ add_default($nl, 'histavg_option');
 add_default($nl, 'histavg_n');
 add_default($nl, 'histavg_ymd');
 
+add_default($nl, 'barrier_option');
+add_default($nl, 'barrier_n');
+add_default($nl, 'barrier_ymd');
+
 add_default($nl, 'tprof_option');
 add_default($nl, 'tprof_n');  
 add_default($nl, 'tprof_ymd');
