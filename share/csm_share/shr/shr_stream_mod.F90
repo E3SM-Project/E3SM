@@ -41,6 +41,7 @@ module shr_stream_mod
    use shr_log_mod, only : s_loglev   => shr_log_Level
    use shr_log_mod, only : s_logunit  => shr_log_Unit
    use shr_log_mod, only : OOBMsg => shr_log_OOBMsg
+   use pio, only : file_desc_t
    use perf_mod
 
    implicit none
@@ -72,6 +73,8 @@ module shr_stream_mod
    public :: shr_stream_getFile           ! acquire file, return name of file to open
    public :: shr_stream_getNFiles         ! get the number of files in a stream
    public :: shr_stream_getCalendar       ! get the stream calendar
+   public :: shr_stream_getCurrFile       ! get the currfile, fileopen, and currpioid
+   public :: shr_stream_setCurrFile       ! set the currfile, fileopen, and currpioid
    public :: shr_stream_dataDump          ! internal stream data for debugging
    public :: shr_stream_restWrite         ! write a streams restart file
    public :: shr_stream_restRead          ! read  a streams restart file
@@ -135,6 +138,11 @@ module shr_stream_mod
       logical              :: found_lvd           ! T <=> k_lvd,n_lvd have been set
       integer(SHR_KIND_IN) :: k_gvd,n_gvd         ! file/sample of greatest valid date
       logical              :: found_gvd           ! T <=> k_gvd,n_gvd have been set
+
+      !---- for keeping files open
+      logical                 :: fileopen         ! is current file open
+      character(SHR_KIND_CL)  :: currfile         ! current filename
+      type(file_desc_t)       :: currpioid        ! current pio file desc
 
       !--- stream data not used by stream module itself ---
       character(SHR_KIND_CXX):: fldListFile       ! field list: file's  field names
@@ -746,8 +754,10 @@ subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
       strm%filePath = trim(filePath)
    endif
    if (present(filename)) then
-      write(s_logunit,F01) "size of filename = ",size(filename)
-      write(s_logunit,F00) "filename = ",filename
+      if (debug>1 .and. s_loglev > 0) then
+         write(s_logunit,F01) "size of filename = ",size(filename)
+         write(s_logunit,F00) "filename = ",filename
+      endif
 
       do n = 1,size(filename)
          ! Ignore null file names.
@@ -827,6 +837,9 @@ subroutine shr_stream_default(strm,rc)
    strm%k_gvd            = -1 
    strm%n_gvd            = -1 
    strm%found_gvd        = .false.
+
+   strm%fileopen         = .false.
+   strm%currfile         = ''
 
    strm%fldListFile      = ' '
    strm%fldListModel     = ' '
@@ -2007,6 +2020,86 @@ end subroutine shr_stream_getCalendar
 !===============================================================================
 !BOP ===========================================================================
 !
+! !IROUTINE: shr_stream_getCurrFile -- return open file information
+!
+! !DESCRIPTION:
+!    returns current file information
+!
+! !REVISION HISTORY:
+!     2015-Nov-24 - T. Craig
+!
+! !INTERFACE: ------------------------------------------------------------------  
+
+subroutine shr_stream_getCurrFile(strm,fileopen,currfile,currpioid)
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   type(shr_stream_streamType),intent(in)  :: strm     ! data stream
+   logical           ,optional,intent(out) :: fileopen ! file open flag
+   character(*)      ,optional,intent(out) :: currfile ! current filename
+   type(file_desc_t) ,optional,intent(out) :: currpioid ! current pioid
+ 
+!EOP
+
+!-------------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+
+   if (present(fileopen)) then
+      fileopen = strm%fileopen
+   endif
+   if (present(currfile)) then
+      currfile = strm%currfile
+   endif
+   if (present(currpioid)) then
+      currpioid = strm%currpioid
+   endif
+
+end subroutine shr_stream_getCurrFile
+
+!===============================================================================
+!BOP ===========================================================================
+!
+! !IROUTINE: shr_stream_setCurrFile -- return open file information
+!
+! !DESCRIPTION:
+!    returns current file information
+!
+! !REVISION HISTORY:
+!     2015-Nov-24 - T. Craig
+!
+! !INTERFACE: ------------------------------------------------------------------  
+
+subroutine shr_stream_setCurrFile(strm,fileopen,currfile,currpioid)
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   type(shr_stream_streamType),intent(inout) :: strm     ! data stream
+   logical           ,optional,intent(in) :: fileopen ! file open flag
+   character(*)      ,optional,intent(in) :: currfile ! current filename
+   type(file_desc_t) ,optional,intent(in) :: currpioid ! current pioid
+ 
+!EOP
+
+!-------------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+
+   if (present(fileopen)) then
+      strm%fileopen = fileopen
+   endif
+   if (present(currfile)) then
+      strm%currfile = currfile
+   endif
+   if (present(currpioid)) then
+      strm%currpioid = currpioid
+   endif
+
+end subroutine shr_stream_setCurrFile
+
+!===============================================================================
+!BOP ===========================================================================
+!
 ! !IROUTINE: shr_stream_getDomainInfo -- return domain information
 !
 ! !DESCRIPTION:
@@ -3111,6 +3204,8 @@ subroutine shr_stream_bcast(stream,comm,rc)
    call shr_mpi_bcast(stream%k_gvd       ,comm,subName)
    call shr_mpi_bcast(stream%n_gvd       ,comm,subName)
    call shr_mpi_bcast(stream%found_gvd   ,comm,subName)
+   call shr_mpi_bcast(stream%fileopen    ,comm,subName)
+   call shr_mpi_bcast(stream%currfile    ,comm,subName)
    call shr_mpi_bcast(stream%fldListFile ,comm,subName)
    call shr_mpi_bcast(stream%fldListModel,comm,subName)
    call shr_mpi_bcast(stream%domFileName ,comm,subName)
