@@ -403,6 +403,8 @@ class CreateTest(object):
     def _run_phase(self, test):
     ###########################################################################
         test_dir = self._get_test_dir(test["name"])
+        # wallclock is an optional field in the version 2.0 testlist.xml file
+        # setting wallclock time close to the expected test time will help queue throughput
         if ('wallclock' in test):
             out = run_cmd("./xmlchange JOB_WALLCLOCK_TIME=%s"%test["wallclock"], from_dir=test_dir)
 
