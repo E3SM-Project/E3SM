@@ -76,6 +76,14 @@ value of RUN_STARTDATE will be date2.
 <!-- SECTION: All possible supported compsets -->
 <!-- ================================================================================== -->
 
+<!-- ACME v1 science compsets -->
+<COMPSET sname="ACME_WCYCL2000"                alias="A_WCYCL2000" >2000_CAM5%AV1C_CLM45%SPBC_MPASCICE%SSMI_MPASO_MOSART_SGLC_SWAV</COMPSET>
+<COMPSET sname="ACME_WCYCL1850"                alias="A_WCYCL1850" >1850_CAM5%AV1C_CLM45%SPBC_MPASCICE%SSMI_MPASO_MOSART_SGLC_SWAV</COMPSET>
+<COMPSET sname="ACME_WCYCL20TR"                alias="A_WCYCL20TR" >20TR_CAM5%AV1C_CLM45%SPBC_MPASCICE%SSMI_MPASO_MOSART_SGLC_SWAV</COMPSET>
+
+<COMPSET sname="ACME_CRYO"                alias="A_CRYO" >2000_CAM5%AV1C_CLM45%SPBC_MPASCICE%SSMI_MPASO_RTM_MPASLIALB_SWAV</COMPSET>
+
+
 <!-- compset A assumes an rx1 grid -->
 <COMPSET sname="A2000"    alias="A"  grid="r%rx1">2000_DATM%NYF_DLND%NULL_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV</COMPSET>
 <COMPSET sname="AIAF"    alias="AIAF"  grid="r%rx1">2000_DATM%IAF_SLND_DICE%SIAF_DOCN%IAF_DROF%IAF_SGLC_SWAV</COMPSET>
