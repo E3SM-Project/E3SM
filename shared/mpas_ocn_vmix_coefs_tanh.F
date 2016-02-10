@@ -187,8 +187,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: k
-      integer, pointer :: nVertLevels
+      integer :: k, iEdge
+      integer, pointer :: nVertLevels, nEdges
 
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
       real (kind=RKIND), pointer :: config_max_visc_tanh, config_min_visc_tanh, config_ZMid_tanh
@@ -203,20 +203,23 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_ZMid_tanh', config_ZMid_tanh)
       call mpas_pool_get_config(ocnConfigs, 'config_zWidth_tanh', config_zWidth_tanh)
 
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
 
       ! refBottomDepth is used here for simplicity.  Using zMid and h, which
       ! vary in time, would give the exact location of the top, but it
       ! would only change the diffusion value very slightly.
-      do k = 2, nVertLevels
-         !$omp workshare
-         vertViscTopOfEdge(k,:) = vertViscTopOfEdge(k,:) - (config_max_visc_tanh - config_min_visc_tanh) / 2.0_RKIND &
-            * tanh((refBottomDepth(k-1) + config_ZMid_tanh) &
-                  / config_zWidth_tanh) &
-            + (config_max_visc_tanh + config_min_visc_tanh) / 2
-          !$omp end workshare
+      !$omp do schedule(runtime)
+      do iEdge = 1, nEdges
+         do k = 2, nVertLevels
+            vertViscTopOfEdge(k, iEdge) = vertViscTopOfEdge(k, iEdge) - (config_max_visc_tanh - config_min_visc_tanh) / 2.0_RKIND &
+               * tanh((refBottomDepth(k-1) + config_ZMid_tanh) &
+                     / config_zWidth_tanh) &
+               + (config_max_visc_tanh + config_min_visc_tanh) / 2
+         end do
       end do
+      !$omp end do
 
 
    !--------------------------------------------------------------------
@@ -268,8 +271,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: k
-      integer, pointer :: nVertLevels
+      integer :: k, iCell
+      integer, pointer :: nVertLevels, nCells
 
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
 
@@ -285,20 +288,23 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_ZMid_tanh', config_ZMid_tanh)
       call mpas_pool_get_config(ocnConfigs, 'config_zWidth_tanh', config_zWidth_tanh)
 
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
 
       ! refBottomDepth is used here for simplicity.  Using zMid and h, which
       ! vary in time, would give the exact location of the top, but it
       ! would only change the diffusion value very slightly.
-      do k=2,nVertLevels
-         !$omp workshare
-         vertDiffTopOfCell(k,:) = vertDiffTopOfCell(k,:) - (config_max_diff_tanh - config_min_diff_tanh) / 2.0_RKIND &
-            * tanh((refBottomDepth(k-1) + config_ZMid_tanh) &
-                  / config_zWidth_tanh) &
-            + (config_max_diff_tanh + config_min_diff_tanh) / 2
-         !$omp end workshare
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         do k=2,nVertLevels
+            vertDiffTopOfCell(k, iCell) = vertDiffTopOfCell(k, iCell) - (config_max_diff_tanh - config_min_diff_tanh) / 2.0_RKIND &
+               * tanh((refBottomDepth(k-1) + config_ZMid_tanh) &
+                     / config_zWidth_tanh) &
+               + (config_max_diff_tanh + config_min_diff_tanh) / 2
+         end do
       end do
+      !$omp end do
 
 
    !--------------------------------------------------------------------

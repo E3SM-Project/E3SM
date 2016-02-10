@@ -176,21 +176,27 @@ contains
 
       ! Assign a huge value to the scratch variables which may manifest itself when
       ! there is a bug.
-      !$omp workshare
-      gradDensityEdge(:,:) = huge(0D0)
-      gradDensityTopOfEdge(:,:) = huge(0D0)
-      dDensityDzTopOfCell(:,:) = huge(0D0)
-      dDensityDzTopOfEdge(:,:) = huge(0D0)
-      gradZMidEdge(:,:) = huge(0D0)
-      gradZMidTopOfEdge(:,:) = huge(0D0)
+      !$omp do schedule(runtime)
+      do iEdge = 1, nEdges
+         gradDensityEdge(:,:) = huge(0D0)
+         gradDensityTopOfEdge(:,:) = huge(0D0)
+         dDensityDzTopOfEdge(:,:) = huge(0D0)
+         gradZMidEdge(:,:) = huge(0D0)
+         gradZMidTopOfEdge(:,:) = huge(0D0)
+         relativeSlopeTopOfEdge(:,:) = 0.0_RKIND
+         relativeSlopeTapering(:,:) = 0.0_RKIND
+         normalGMBolusVelocity(:,:) = 0.0_RKIND
+      end do
+      !$omp end do
 
-      relativeSlopeTopOfEdge(:,:) = 0.0_RKIND
-      relativeSlopeTopOfCell(:,:) = 0.0_RKIND
-      relativeSlopeTapering(:,:) = 0.0_RKIND
-      relativeSlopeTaperingCell(:,:) = 0.0_RKIND
-      k33(:,:) = 0.0_RKIND
-      normalGMBolusVelocity(:,:) = 0.0_RKIND
-      !$omp end workshare
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         dDensityDzTopOfCell(:,:) = huge(0D0)
+         k33(:,:) = 0.0_RKIND
+         relativeSlopeTopOfCell(:,:) = 0.0_RKIND
+         relativeSlopeTaperingCell(:,:) = 0.0_RKIND
+      end do
+      !$omp end do
 
       !--------------------------------------------------------------------
       !
@@ -300,12 +306,9 @@ contains
 
       ! Compute relativeSlopeTopOfEdge at edge and layer interface
       ! set relativeSlopeTopOfEdge to zero for horizontal land/water edges.
-      !$omp workshare
-      relativeSlopeTopOfEdge = 0.0_RKIND
-      !$omp end workshare
-
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
+        relativeSlopeTopOfEdge(:, iEdge) = 0.0_RKIND
 
          ! Beside a full land cell (e.g. missing cell) maxLevelEdgeTop=0, so relativeSlopeTopOfEdge at that edge will remain zero.
          do k = 2, maxLevelEdgeTop(iEdge)
@@ -327,17 +330,20 @@ contains
 
       ! slope can be unbounded in regions of neutral stability, reset to the large, but bounded, value
       ! values is hardwrite to 1.0, this is equivalent to a slope of 45 degrees
-      !$omp workshare
-      where(relativeSlopeTopOfEdge < -1.0_RKIND) relativeSlopeTopOfEdge = -1.0_RKIND
-      where(relativeSlopeTopOfEdge >  1.0_RKIND) relativeSlopeTopOfEdge =  1.0_RKIND
+      !$omp do schedule(runtime)
+      do iEdge = 1, nEdges
+         do k = 1, nVertLevels
+            relativeSlopeTopOfEdge(k, iEdge) = max( min( relativeSlopeTopOfEdge(k, iEdge), 1.0_RKIND), -1.0_RKIND)
+         end do
+      end do
+      !$omp end do
 
       ! average relative slope to cell centers
       ! do this by computing (relative slope)^2, then taking sqrt
-      areaCellSum = 1.0e-34_RKIND
-      !$omp end workshare
 
       !$omp do schedule(runtime) private(i, iEdge, areaEdge, rtmp)
       do iCell = 1, nCells
+         areaCellSum(:, iCell) = 1.0e-34_RKIND
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
 
@@ -363,16 +369,17 @@ contains
       ! Compute tapering function
       ! Compute k33 at cell center and layer interface
 
-      !$omp workshare
-      k33(:,:) = 0.0_RKIND
-      !$omp end workshare
-
       !$omp do schedule(runtime) private(k)
       do iCell=1,nCells
+        k33(:, iCell) = 0.0_RKIND
         do k = 2, maxLevelCell(iCell)
           relativeSlopeTaperingCell(k,iCell) = min(1.0_RKIND, config_max_relative_slope**2 &
                                              / (relativeSlopeTopOfCell(k,iCell)**2+epsGM))
           k33(k,iCell) = relativeSlopeTaperingCell(k,iCell) * (relativeSlopeTopOfCell(k,iCell))**2
+
+          ! k33 is still non-dimensional measuring the limited (relative slope)^2 of neutral surfaces.
+          ! scale k33 by config_Redi_kappa so it has units of diffusivity
+          k33(k,iCell) = config_Redi_kappa * k33(k, iCell)
         end do
       end do
       !$omp end do
@@ -388,17 +395,13 @@ contains
       enddo
       !$omp end do
 
-      ! k33 is still non-dimensional measuring the limited (relative slope)^2 of neutral surfaces.
-      ! scale k33 by config_Redi_kappa so it has units of diffusivity
-      !$omp workshare
-      k33 = config_Redi_kappa * k33
-      !$omp end workshare
-
       ! allow disabling of K33 for testing
       if(config_disable_redi_k33) then
-        !$omp workshare
-        k33=0.0_RKIND
-        !$omp end workshare
+        !$omp do schedule(runtime)
+        do iCell = 1, nCells
+           k33(:, iCell) = 0.0_RKIND
+        end do
+        !$omp end do
       end if
 
       !--------------------------------------------------------------------
@@ -407,17 +410,14 @@ contains
       !
       !--------------------------------------------------------------------
 
-      !$omp workshare
-      gmStreamFuncTopOfEdge(:,:) = 0.0_RKIND
-      !$omp end workshare
-
       c = config_gravWaveSpeed_trunc**2
 
       !$omp do schedule(runtime) private(cell1, cell2, k, BruntVaisalaFreqTopEdge, N)
       do iEdge = 1, nEdges
-
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
+
+         gmStreamFuncTopOfEdge(:, iEdge) = 0.0_RKIND
 
          ! Construct the tridiagonal matrix
          if (maxLevelEdgeTop(iEdge) .GE. 3) then
@@ -475,9 +475,11 @@ contains
       !$omp end do
 
       ! Interpolate gmStreamFuncTopOfEdge to cell centers for visualization
-      !$omp workshare
-      gmStreamFuncTopOfCell(:,:) = 0.0_RKIND
-      !$omp end workshare
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         gmStreamFuncTopOfCell(:, iCell) = 0.0_RKIND
+      end do
+      !$omp end do
 
       !$omp do schedule(runtime) private(cell1, cell2, areaEdge, k, rtmp)
       do iEdge = 1, nEdges

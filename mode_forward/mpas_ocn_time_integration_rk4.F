@@ -87,7 +87,7 @@ module ocn_time_integration_rk4
       type (domain_type), intent(inout) :: domain !< Input/Output: domain information
       real (kind=RKIND), intent(in) :: dt !< Input: timestep
 
-      integer :: iCell, k, i, err
+      integer :: iCell, iEdge, k, i, err
       type (block_type), pointer :: block
 
       type (mpas_pool_type), pointer :: tendPool
@@ -255,15 +255,19 @@ module ocn_time_integration_rk4
          end do
 
          if (associated(highFreqThicknessCur)) then
-              !$omp workshare
-              highFreqThicknessNew(:,:) = highFreqThicknessCur(:,:)
-              !$omp end workshare
+              !$omp do schedule(runtime)
+              do iCell = 1, nCells
+                 highFreqThicknessNew(:, iCell) = highFreqThicknessCur(:, iCell)
+              end do
+              !$omp end do
          end if
 
          if (associated(lowFreqDivergenceCur)) then
-              !$omp workshare
-              lowFreqDivergenceNew(:,:) = lowFreqDivergenceCur(:,:)
-              !$omp end workshare
+              !$omp do schedule(runtime)
+              do iCell = 1, nCells
+                 lowFreqDivergenceNew(:, iCell) = lowFreqDivergenceCur(:, iCell)
+              end do
+              !$omp end do
          end if
 
          block => block % next
@@ -415,9 +419,13 @@ module ocn_time_integration_rk4
               call mpas_pool_get_array(provisStatePool, 'highFreqThickness', highFreqThicknessProvis, 1)
               call mpas_pool_get_array(tendPool, 'highFreqThickness', highFreqThicknessTend)
 
-              !$omp workshare
-              highFreqThicknessProvis(:,:) = highFreqThicknessCur(:,:) + rk_substep_weights(rk_step) * highFreqThicknessTend(:,:)
-              !$omp end workshare
+              call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
+
+              !$omp do schedule(runtime)
+              do iCell = 1, nCells
+                 highFreqThicknessProvis(:, iCell) = highFreqThicknessCur(:, iCell) + rk_substep_weights(rk_step) * highFreqThicknessTend(:, iCell)
+              end do
+              !$omp end do
               call mpas_threading_barrier()
               block => block % next
            end do
@@ -534,6 +542,7 @@ module ocn_time_integration_rk4
            block => domain % blocklist
            do while (associated(block))
               call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
+              call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
 
               call mpas_pool_get_subpool(block % structs, 'state', statePool)
               call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
@@ -607,22 +616,28 @@ module ocn_time_integration_rk4
               end do
 
               if (associated(lowFreqDivergenceCur)) then
-                 !$omp workshare
-                 lowFreqDivergenceProvis(:,:) = lowFreqDivergenceCur(:,:) + rk_substep_weights(rk_step) &
-                                              * lowFreqDivergenceTend(:,:)
-                 !$omp end workshare
+                 !$omp do schedule(runtime)
+                 do iCell = 1, nCells
+                    lowFreqDivergenceProvis(:, iCell) = lowFreqDivergenceCur(:, iCell) + rk_substep_weights(rk_step) &
+                                                      * lowFreqDivergenceTend(:, iCell)
+                 end do
+                 !$omp end do
               end if
 
               if (config_prescribe_velocity) then
-                 !$omp workshare
-                 normalVelocityProvis(:,:) = normalVelocityCur(:,:)
-                 !$omp end workshare
+                 !$omp do schedule(runtime)
+                 do iEdge = 1, nEdges
+                    normalVelocityProvis(:, iEdge) = normalVelocityCur(:, iEdge)
+                 end do
+                 !$omp end do
               end if
 
               if (config_prescribe_thickness) then
-                 !$omp workshare
-                 layerThicknessProvis(:,:) = layerThicknessCur(:,:)
-                 !$omp end workshare
+                 !$omp do schedule(runtime)
+                 do iCell = 1, nCells
+                    layerThicknessProvis(:, iCell) = layerThicknessCur(:, iCell)
+                 end do
+                 !$omp end do
               end if
               call mpas_threading_barrier()
 
@@ -632,9 +647,11 @@ module ocn_time_integration_rk4
               ! ------------------------------------------------------------------
               ! Accumulating various parametrizations of the transport velocity
               ! ------------------------------------------------------------------
-              !$omp master    ! FIXME: workshare causes seg fault
-              normalTransportVelocity(:,:) = normalVelocityProvis(:,:)
-              !$omp end master
+              !$omp do schedule(runtime)
+              do iEdge = 1, nEdges
+                 normalTransportVelocity(:, iEdge) = normalVelocityProvis(:, iEdge)
+              end do
+              !$omp end do
               call mpas_threading_barrier()
 
               ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
@@ -644,9 +661,11 @@ module ocn_time_integration_rk4
               call mpas_threading_barrier()
 
               if (config_use_standardGM) then
-                 !$omp workshare
-                 normalTransportVelocity(:,:) = normalTransportVelocity(:,:) + normalGMBolusVelocity(:,:)
-                 !$omp end workshare
+                 !$omp do schedule(runtime)
+                 do iEdge = 1, nEdges
+                    normalTransportVelocity(:, iEdge) = normalTransportVelocity(:, iEdge) + normalGMBolusVelocity(:,iEdge)
+                 end do
+                 !$omp end do
               end if
               call mpas_threading_barrier()
               ! ------------------------------------------------------------------
@@ -670,6 +689,7 @@ module ocn_time_integration_rk4
         block => domain % blocklist
         do while (associated(block))
            call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
+           call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
 
            call mpas_pool_get_subpool(block % structs, 'state', statePool)
            call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
@@ -695,12 +715,17 @@ module ocn_time_integration_rk4
 
            call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-           !$omp do schedule(runtime) private(k)
+           !$omp do schedule(runtime)
            do iCell = 1, nCells
               do k = 1, maxLevelCell(iCell)
-                 normalVelocityNew(k, iCell) = normalVelocityNew(k, iCell) + rk_weights(rk_step) * normalVelocityTend(k, iCell)
                  layerThicknessNew(k, iCell) = layerThicknessNew(k, iCell) + rk_weights(rk_step) * layerThicknessTend(k, iCell)
               end do
+           end do
+           !$omp end do
+
+           !$omp do schedule(runtime)
+           do iEdge = 1, nEdges
+              normalVelocityNew(:, iEdge) = normalVelocityNew(:, iEdge) + rk_weights(rk_step) * normalVelocityTend(k, iEdge)
            end do
            !$omp end do
 
@@ -730,15 +755,19 @@ module ocn_time_integration_rk4
            end do
 
            if (associated(highFreqThicknessNew)) then
-              !$omp workshare
-              highFreqThicknessNew(:,:) = highFreqThicknessNew(:,:) + rk_weights(rk_step) * highFreqThicknessTend(:,:)
-              !$omp end workshare
+              !$omp do schedule(runtime)
+              do iCell = 1, nCells
+                 highFreqThicknessNew(:, iCell) = highFreqThicknessNew(:, iCell) + rk_weights(rk_step) * highFreqThicknessTend(:, iCell)
+              end do
+              !$omp end do
            end if
 
            if (associated(lowFreqDivergenceNew)) then
-              !$omp workshare
-              lowFreqDivergenceNew(:,:) = lowFreqDivergenceNew(:,:) + rk_weights(rk_step) * lowFreqDivergenceTend(:,:)
-              !$omp end workshare
+              !$omp do schedule(runtime)
+              do iCell = 1, nCells
+                 lowFreqDivergenceNew(:, iCell) = lowFreqDivergenceNew(:, iCell) + rk_weights(rk_step) * lowFreqDivergenceTend(:, iCell)
+              end do
+              !$omp end do
            end if
 
            block => block % next
@@ -814,6 +843,8 @@ module ocn_time_integration_rk4
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityNew, 2)
          call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
 
+         call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
         ! Call ocean diagnostic solve in preparation for vertical mixing.  Note
         ! it is called again after vertical mixing, because u and tracers change.
         ! For Richardson vertical mixing, only density, layerThicknessEdge, and kineticEnergyCell need to
@@ -829,9 +860,11 @@ module ocn_time_integration_rk4
         ! ------------------------------------------------------------------
         ! Accumulating various parametrizations of the transport velocity
         ! ------------------------------------------------------------------
-        !$omp master    ! FIXME: workshare causes seg fault
-        normalTransportVelocity(:,:) = normalVelocityNew(:,:)
-        !$omp end master
+        !$omp do schedule(runtime)
+        do iEdge = 1, nEdges
+           normalTransportVelocity(:, iEdge) = normalVelocityNew(:, iEdge)
+        end do
+        !$omp end do
 
         ! Compute normalGMBolusVelocity, slopeRelative and RediDiffVertCoef if respective flags are turned on
         ! QC Note: this routine is called here to get updated k33. normalTransportVelocity probably does not need to be
@@ -842,9 +875,11 @@ module ocn_time_integration_rk4
         call mpas_threading_barrier()
 
         if (config_use_standardGM) then
-           !$omp workshare
-           normalTransportVelocity(:,:) = normalTransportVelocity(:,:) + normalGMBolusVelocity(:,:)
-           !$omp end workshare
+           !$omp do schedule(runtime)
+           do iEdge = 1, nEdges
+              normalTransportVelocity(:, iEdge) = normalTransportVelocity(:, iEdge) + normalGMBolusVelocity(:, iEdge)
+           end do
+           !$omp end do
         end if
         ! ------------------------------------------------------------------
         ! End: Accumulating various parametrizations of the transport velocity
@@ -889,6 +924,9 @@ module ocn_time_integration_rk4
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityNew, 2)
          call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
@@ -917,15 +955,19 @@ module ocn_time_integration_rk4
 
 
          if (config_prescribe_velocity) then
-            !$omp workshare
-            normalVelocityNew(:,:) = normalVelocityCur(:,:)
-            !$omp end workshare
+            !$omp do schedule(runtime)
+            do iEdge = 1, nEdges
+               normalVelocityNew(:, iEdge) = normalVelocityCur(:, iEdge)
+            end do
+            !$omp end do
          end if
 
          if (config_prescribe_thickness) then
-            !$omp workshare
-            layerThicknessNew(:,:) = layerThicknessCur(:,:)
-            !$omp end workshare
+            !$omp do schedule(runtime)
+            do iCell = 1, nCells
+               layerThicknessNew(:, iCell) = layerThicknessCur(:, iCell)
+            end do
+            !$omp end do
          end if
 
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
@@ -937,9 +979,11 @@ module ocn_time_integration_rk4
          ! ------------------------------------------------------------------
          ! Accumulating various parameterizations of the transport velocity
          ! ------------------------------------------------------------------
-         !$omp master   ! FIXME: workshare causes seg fault
-         normalTransportVelocity(:,:) = normalVelocityNew(:,:)
-         !$omp end master
+         !$omp do schedule(runtime)
+         do iEdge = 1, nEdges
+            normalTransportVelocity(:, iEdge) = normalVelocityNew(:, iEdge)
+         end do
+         !$omp end do
          call mpas_threading_barrier()
 
          ! Compute normalGMBolusVelocity and the tracer transport velocity
@@ -949,9 +993,11 @@ module ocn_time_integration_rk4
          call mpas_threading_barrier()
 
          if (config_use_standardGM) then
-            !$omp workshare
-            normalTransportVelocity(:,:) = normalTransportVelocity(:,:) + normalGMBolusVelocity(:,:)
-            !$omp end workshare
+            !$omp do schedule(runtime)
+            do iEdge = 1, nEdges
+               normalTransportVelocity(:, iEdge) = normalTransportVelocity(:, iEdge) + normalGMBolusVelocity(:, iEdge)
+            end do
+            !$omp end do
          end if
          ! ------------------------------------------------------------------
          ! End: Accumulating various parameterizations of the transport velocity
@@ -969,13 +1015,15 @@ module ocn_time_integration_rk4
          !$omp end master
          call mpas_threading_barrier()
 
-         !$omp workshare
-         surfaceVelocity(indexSurfaceVelocityZonal, :) = velocityZonal(1, :)
-         surfaceVelocity(indexSurfaceVelocityMeridional, :) = velocityMeridional(1, :)
+         !$omp do schedule(runtime)
+         do iCell = 1, nCells
+            surfaceVelocity(indexSurfaceVelocityZonal, iCell) = velocityZonal(1, iCell)
+            surfaceVelocity(indexSurfaceVelocityMeridional, iCell) = velocityMeridional(1, iCell)
 
-         SSHGradient(indexSSHGradientZonal, :) = gradSSHZonal(1, :)
-         SSHGradient(indexSSHGradientMeridional, :) = gradSSHMeridional(1, :)
-         !$omp end workshare
+            SSHGradient(indexSSHGradientZonal, iCell) = gradSSHZonal(1, iCell)
+            SSHGradient(indexSSHGradientMeridional, iCell) = gradSSHMeridional(1, iCell)
+         end do
+         !$omp end do
 
          call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 2)
 
