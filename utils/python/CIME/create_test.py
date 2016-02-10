@@ -3,7 +3,6 @@ Implementation of create_test functionality from CIME
 """
 import shutil, traceback, stat, glob, threading, time, thread
 from XML.standard_module_setup import *
-from copy import deepcopy
 import compare_namelists
 import CIME.utils
 from CIME.utils import expect, run_cmd
@@ -14,6 +13,7 @@ from CIME.XML.env_test import EnvTest
 from CIME.XML.files import Files
 from CIME.XML.component import Component
 from CIME.XML.testlist import Testlist
+import test_utils
 
 INITIAL_PHASE = "INIT"
 CREATE_NEWCASE_PHASE = "CREATE_NEWCASE"
@@ -77,11 +77,11 @@ class CreateTest(object):
 
         # If xml options are provided get tests from xml file, otherwise use acme dictionary
         if(not test_names and (xml_machine is not None or xml_category is not None or xml_compiler is not None or xml_testlist is not None)):
-            self._tests = self._get_tests_from_xml(xml_machine,xml_category,xml_compiler, xml_testlist,machine_name ,compiler)
+            self._tests = test_utils._get_tests_from_xml(xml_machine,xml_category,xml_compiler, xml_testlist,machine_name ,compiler)
         else:
             expect(len(test_names) > 0, "No tests to run")
             test_names = update_acme_tests.get_full_test_names(test_names, machine_name, self._compiler)
-            self._tests  = self._convert_testlist_to_dict(test_names)
+            self._tests  = test_utils._convert_testlist_to_dict(test_names)
 
         if (parallel_jobs is None):
             self._parallel_jobs  = min(len(self._tests), int(self._machobj.get_value("MAX_TASKS_PER_NODE")))
@@ -115,6 +115,10 @@ class CreateTest(object):
         # Each test has it's own index and setting/retrieving items from a list
         # is atomic, so this should be fine to use without mutex
         self._test_states = [ (INITIAL_PHASE, TEST_PASS_STATUS) ] * len(self._tests)
+        idx = 0
+        for test in self._tests:
+            test["state_idx"] = idx
+            idx += 1
 
         # Oversubscribe by 1/4
         pes = int(self._machobj.get_value("PES_PER_NODE"))
@@ -521,10 +525,7 @@ class CreateTest(object):
             work_to_do = False
             num_threads_launched_this_iteration = 0
             for test in self._tests:
-                if (type(test) == type(dict())):
-                    test_name = test["name"]
-                else:
-                    test_name = test
+                test_name = test["name"]
                 logging.info("test_name: "+test_name)
                 # If we have no workers available, immediately wait
                 if (len(threads_in_flight) == self._parallel_jobs):
@@ -604,11 +605,7 @@ class CreateTest(object):
         # Tell user what will be run
         print "RUNNING TESTS:"
         for test in self._tests:
-            if (type(test) == type(dict())):
-                test_name = test["name"]
-            else:
-                test_name = test
-            print " ", test_name
+            print " ", test["name"]
         # TODO - documentation
 
         self._producer()
@@ -649,50 +646,3 @@ class CreateTest(object):
 
         return rv
 
-    def  _get_tests_from_xml(self,xml_machine=None,xml_category=None,xml_compiler=None, xml_testlist=None,
-                             machine=None, compiler=None):
-        """
-        Parse testlists for a list of tests
-        """
-        listoftests = []
-        testlistfiles = []
-        if(machine is not None):
-            thismach=machine
-        if(compiler is not None):
-            thiscompiler = compiler
-
-        if(xml_testlist is not None):
-             expect(os.path.isfile(xml_testlist), "Testlist not found or not readable "+xml_testlist)
-             testlistfiles.append(xml_testlist)
-        else:
-            files = Files()
-            test_spec_files = files.get_values("TESTS_SPEC_FILE","component")
-            for spec_file in test_spec_files.viewvalues():
-                if(os.path.isfile(spec_file)):
-                    testlistfiles.append(spec_file)
-
-        for testlistfile in testlistfiles:
-            thistestlistfile = Testlist(testlistfile)
-            newtests =  thistestlistfile.get_tests(xml_machine, xml_category, xml_compiler)
-            for test in newtests:
-                if(machine is None):
-                    thismach = test["machine"]
-                if(compiler is None):
-                    thiscompiler = test["compiler"]
-                test["name"] = "%s.%s.%s.%s_%s"%(test["testname"],test["grid"],test["compset"],thismach,thiscompiler)
-                if ("testmods" in test):
-                    (moddir, modname) = test["testmods"].split("/")
-                    test["name"] += ".%s_%s"%(moddir, modname)
-                logging.info("Adding test "+test["name"])
-            listoftests += newtests
-
-        return listoftests
-
-    def _convert_testlist_to_dict(self,test_names):
-        from copy import deepcopy
-        listoftests = []
-        test = {}
-        for name in test_names:
-            test["name"] = name
-            listoftests.append(deepcopy(test))
-        return listoftests
