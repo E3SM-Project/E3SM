@@ -114,9 +114,7 @@ class CreateTest(object):
         # This is the only data that multiple threads will simultaneously access
         # Each test has it's own index and setting/retrieving items from a list
         # is atomic, so this should be fine to use without mutex
-        for test in self._tests:
-            test["phase"] = INITIAL_PHASE
-            test["status"] = TEST_PASS_STATUS
+        self._test_states = [ (INITIAL_PHASE, TEST_PASS_STATUS) ] * len(self._tests)
 
         # Oversubscribe by 1/4
         pes = int(self._machobj.get_value("PES_PER_NODE"))
@@ -170,7 +168,7 @@ class CreateTest(object):
     ###########################################################################
     def _get_test_data(self, test):
     ###########################################################################
-        return (test["phase"],test["status"])
+        return self._test_states[test["state_idx"]]
 
     ###########################################################################
     def _is_broken(self, test):
@@ -221,8 +219,7 @@ class CreateTest(object):
                    "New phase should be set to pending status")
             expect(self._phases.index(old_phase) == phase_idx - 1,
                    "Skipped phase?")
-        test["phase"] = phase
-        test["status"] = status
+        self._test_states[test["state_idx"]] = (phase, status)
 
     ###########################################################################
     def _run_phase_command(self, test, cmd, phase, from_dir=None):
