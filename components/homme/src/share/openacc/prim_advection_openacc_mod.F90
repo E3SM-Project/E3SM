@@ -28,6 +28,7 @@ module prim_advection_openacc_mod
   integer,parameter :: DSSdiv_vdp_ave = 3
   integer,parameter :: DSSno_var = -1
   real(kind=real_kind), allocatable :: data_pack(:,:,:,:), data_pack2(:,:,:,:)
+  logical :: first_time = .true.
 
   public :: Prim_Advec_Tracers_remap
   public :: prim_advec_init1
@@ -111,6 +112,7 @@ contains
     use filter_mod    , only: filter_t
     use time_mod      , only: TimeLevel_t, TimeLevel_Qdp
     use control_mod   , only: limiter_option, nu_p, qsplit
+    use bndry_openacc_mod, only: bndry_exchangeV_timing
     implicit none
     type (element_t)     , intent(inout) :: elem(:)
     type (derivative_t)  , intent(in   ) :: deriv
@@ -121,6 +123,13 @@ contains
     type (TimeLevel_t)   , intent(inout) :: tl
     integer              , intent(in   ) :: nets
     integer              , intent(in   ) :: nete
+    integer :: i
+    if (first_time) then
+      do i = 1 , 100
+        call bndry_exchangeV_timing(hybrid,edgeAdv)
+      enddo
+      first_time = .false.
+    endif
     call Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , flt , hybrid , dt , tl , nets , nete )
   end subroutine Prim_Advec_Tracers_remap
 
