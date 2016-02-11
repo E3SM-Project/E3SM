@@ -705,8 +705,8 @@ contains
 
         !$omp do schedule(runtime)
         do iCell = 1, nCells
-        tracersSurfaceLayerValue(:,:) = 0.0_RKIND
-        indexSurfaceLayerDepth(:) = -9.e30
+           tracersSurfaceLayerValue(:, iCell) = 0.0_RKIND
+           indexSurfaceLayerDepth( iCell) = -9.e30
         end do
         !$omp end do
 

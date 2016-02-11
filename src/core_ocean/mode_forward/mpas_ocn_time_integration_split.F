@@ -1908,8 +1908,10 @@ module ocn_time_integration_split
          if (trim(config_time_integrator) == 'unsplit_explicit') then
             call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocity)
 
-            normalBarotropicVelocity(:) = 0.0_RKIND
-            normalBaroclinicVelocity(:,:) = normalVelocity(:,:)
+            do iEdge = 1, nEdges
+               normalBarotropicVelocity(iEdge) = 0.0_RKIND
+               normalBaroclinicVelocity(:, iEdge) = normalVelocity(:, iEdge)
+            end do
 
          elseif (trim(config_time_integrator) == 'split_explicit') then
 

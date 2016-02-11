@@ -178,23 +178,23 @@ contains
       ! there is a bug.
       !$omp do schedule(runtime)
       do iEdge = 1, nEdges
-         gradDensityEdge(:,:) = huge(0D0)
-         gradDensityTopOfEdge(:,:) = huge(0D0)
-         dDensityDzTopOfEdge(:,:) = huge(0D0)
-         gradZMidEdge(:,:) = huge(0D0)
-         gradZMidTopOfEdge(:,:) = huge(0D0)
-         relativeSlopeTopOfEdge(:,:) = 0.0_RKIND
-         relativeSlopeTapering(:,:) = 0.0_RKIND
-         normalGMBolusVelocity(:,:) = 0.0_RKIND
+         gradDensityEdge(:, iEdge) = huge(0D0)
+         gradDensityTopOfEdge(:, iEdge) = huge(0D0)
+         dDensityDzTopOfEdge(:, iEdge) = huge(0D0)
+         gradZMidEdge(:, iEdge) = huge(0D0)
+         gradZMidTopOfEdge(:, iEdge) = huge(0D0)
+         relativeSlopeTopOfEdge(:, iEdge) = 0.0_RKIND
+         relativeSlopeTapering(:, iEdge) = 0.0_RKIND
+         normalGMBolusVelocity(:, iEdge) = 0.0_RKIND
       end do
       !$omp end do
 
       !$omp do schedule(runtime)
       do iCell = 1, nCells
-         dDensityDzTopOfCell(:,:) = huge(0D0)
-         k33(:,:) = 0.0_RKIND
-         relativeSlopeTopOfCell(:,:) = 0.0_RKIND
-         relativeSlopeTaperingCell(:,:) = 0.0_RKIND
+         dDensityDzTopOfCell(:,  iCell) = huge(0D0)
+         k33(:, iCell) = 0.0_RKIND
+         relativeSlopeTopOfCell(:, iCell) = 0.0_RKIND
+         relativeSlopeTaperingCell(:, iCell) = 0.0_RKIND
       end do
       !$omp end do
 
