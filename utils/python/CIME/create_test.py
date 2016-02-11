@@ -13,7 +13,6 @@ from CIME.XML.env_test import EnvTest
 from CIME.XML.files import Files
 from CIME.XML.component import Component
 from CIME.XML.testlist import Testlist
-from CIME.XML.testspec import TestSpec
 import CIME.test_utils
 
 
@@ -167,10 +166,6 @@ class CreateTest(object):
         for test in self._tests:
             expect(not os.path.exists(self._get_test_dir(test)),
                    "Cannot create new case in directory '%s', it already exists. Pick a different test-id" % self._get_test_dir(test))
-        if(self._cime_model == "cesm"):
-            self._testspec = TestSpec(os.path.join(self._test_root,"testspec_%s.xml" % self._test_id))
-            self._testspec.set_header(self._test_root, machine_name,self._test_id,baselineroot=self._baseline_root)
-
         # By the end of this constructor, this program should never hard abort,
         # instead, errors will be placed in the TestStatus files for the various
         # tests cases
@@ -253,8 +248,6 @@ class CreateTest(object):
                    "New phase should be set to pending status")
             expect(self._phases.index(old_phase) == phase_idx - 1,
                    "Skipped phase?")
-        if(self._cime_model == "cesm"):
-            self._testspec.update_test_status(test,phase,status)
         # Must be atomic
         self._tests[test] = (phase, status, old_nl_fail)
 
@@ -643,8 +636,6 @@ class CreateTest(object):
         # Tell user what will be run
         print "RUNNING TESTS:"
         for test in self._tests:
-            if(self._cime_model == "cesm"):
-                self._testspec.add_test(self._compiler, 'trythis', test)
             print " ", test
 
         # TODO - documentation
@@ -684,8 +675,5 @@ class CreateTest(object):
             print "    Case dir: %s" % self._get_test_dir(test)
 
         print "create_test took", time.time() - start_time, "seconds"
-
-        if(self._cime_model == "cesm"):
-            self._testspec.write()
 
         return rv
