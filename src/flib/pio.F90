@@ -45,6 +45,7 @@ module pio
        PIO_inq_vardimid ,&
        PIO_inq_varnatts ,&
        PIO_inq_var_deflate ,&
+       PIO_inq_var_szip ,&
        PIO_inq_dimid ,      &
        PIO_inq_dimname ,  &
        PIO_inq_dimlen ,    &

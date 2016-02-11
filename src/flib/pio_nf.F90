@@ -23,6 +23,7 @@ module pio_nf
        pio_inq_vardimid                                     ,   &
        pio_inq_varnatts                                     ,   &
        pio_inq_var_deflate                                   ,    &       
+       pio_inq_var_szip                                   ,    &       
        pio_inquire_variable                                 , &
        pio_inquire_dimension                                , &
        pio_inq_dimname                                      , &
@@ -109,6 +110,12 @@ module pio_nf
           inq_var_deflate_desc                                 , &
           inq_var_deflate_vid                                  , &
           inq_var_deflate_id
+  end interface
+  interface pio_inq_var_szip
+     module procedure &
+          inq_var_szip_desc                                 , &
+          inq_var_szip_vid                                  , &
+          inq_var_szip_id
   end interface
   interface pio_inquire_dimension
      module procedure &
@@ -1078,6 +1085,68 @@ contains
 
     ierr = PIOc_inq_var_deflate(ncid, varid-1, shuffle, deflate, deflate_level)
   end function inq_var_deflate_id
+  
+!>
+!!  @defgroup PIO_inq_var PIO_inq_var_szip
+!<
+!>
+!! @public 
+!! @ingroup PIO_inq_var_szip
+!! @brief Gets metadata information for netcdf file.
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param type : The type of variable
+!! @retval ierr @copydoc error_return
+!<
+  integer function inq_var_szip_desc(File, vardesc, options_mask, pixels_per_block) result(ierr)
+
+    type (File_desc_t), intent(in) :: File
+    type (Var_desc_t), intent(in) :: vardesc
+    integer, intent(out) :: options_mask
+    integer, intent(out) :: pixels_per_block
+
+    ierr = pio_inq_var_szip(File%fh, vardesc%varid, options_mask, pixels_per_block)
+  end function inq_var_szip_desc
+
+!>
+!! @public 
+!! @ingroup PIO_inq_var_szip
+!! @brief Gets metadata information for netcdf file.
+!<
+  integer function inq_var_szip_vid(File, varid, options_mask, pixels_per_block) result(ierr)
+
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    integer, intent(out) :: options_mask
+    integer, intent(out) :: pixels_per_block
+
+    ierr = pio_inq_var_szip(File%fh, varid, options_mask, pixels_per_block)
+  end function inq_var_szip_vid
+!>
+!! @public 
+!! @ingroup PIO_inq_var_szip
+!! @brief Gets metadata information for netcdf file.
+!<
+  integer function inq_var_szip_id(ncid, varid, options_mask, pixels_per_block) result(ierr)
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    integer, intent(out) :: options_mask
+    integer, intent(out) :: pixels_per_block
+
+    interface
+       integer(C_INT) function PIOc_inq_var_szip(ncid, varid, options_mask, pixels_per_block) &
+            bind(C, name="PIOc_inq_var_szip")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         integer(C_INT) :: options_mask
+         integer(C_INT) :: pixels_per_block
+       end function PIOc_inq_var_szip
+    end interface
+
+    ierr = PIOc_inq_var_szip(ncid, varid-1, options_mask, pixels_per_block)
+  end function inq_var_szip_id
   
 !>
 !! @defgroup PIO_inq_varname
