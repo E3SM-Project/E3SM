@@ -546,6 +546,7 @@
 		  input_interval="initial_only"
 		  runtime_format="single_file">
 	    <var name="pointCellGlobalID"/>
+	    <var name="pointVertexGlobalID"/>
 	  </stream>
 
 	</streams>
@@ -1841,6 +1842,15 @@
 		/>
 		<var name="indexToPointCellLocalID" type="integer" dimensions="nPoints" units="unitless"
 			 description="Index to list of local cell IDs in point set."
+		/>
+		<var name="pointVertexGlobalID" type="integer" dimensions="nPoints" units="unitless"
+			 description="List of global vertex IDs in point set."
+		/>
+		<var name="pointVertexLocalID" type="integer" dimensions="nPoints" units="unitless"
+			 description="List of local vertex IDs in point set."
+		/>
+		<var name="indexToPointVertexLocalID" type="integer" dimensions="nPoints" units="unitless"
+			 description="Index to list of local vertex IDs in point set."
 		/>
 		<var name="pointNames" type="text" dimensions="nPoints" units="unitless"
 			 description="The names of each point."

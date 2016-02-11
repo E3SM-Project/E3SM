@@ -231,7 +231,8 @@ contains
 
                         ! Check for nCells as a dimension, since that's all we can use for now...
                         do iDim = 1, fieldInfo % nDims
-                           if ( trim(ptr2DReal % dimNames(iDim)) == 'nCells' ) then
+                           if ( trim(ptr2DReal % dimNames(iDim)) == 'nCells' .or. &
+                                trim(ptr2DReal % dimNames(iDim)) == 'nVertices') then
                               keepField = .true.
                            end if
                         end do
@@ -260,8 +261,9 @@ contains
 
                            ! Swap out nCells with nPoints
                            do iDim = 1, fieldInfo % nDims
-                              if ( trim(ptr2DRealNew % dimNames(iDim)) == 'nCells' ) then
-                                 PWAM_DEBUG_WRITE(' -- Changing nCells to nPoints')
+                              if ( trim(ptr2DRealNew % dimNames(iDim)) == 'nCells' .or. &
+                                   trim(ptr2DRealNew % dimNames(iDim)) == 'nVertices') then
+                                 PWAM_DEBUG_WRITE(' -- Changing nCells/nVertices to nPoints')
                                  ptr2DRealNew % dimNames(iDim) = 'nPoints'
                                  ptr2DRealNew % dimSizes(iDim) = nPoints
                               end if
@@ -295,7 +297,8 @@ contains
 
                         ! Check for nCells as a dimension, since that's all we can use for now...
                         do iDim = 1, fieldInfo % nDims
-                           if ( trim(ptr3DReal % dimNames(iDim)) == 'nCells' ) then
+                           if ( trim(ptr3DReal % dimNames(iDim)) == 'nCells' .or. &
+                                trim(ptr3DReal % dimNames(iDim)) == 'nVertices') then
                               keepField = .true.
                            end if
                         end do
@@ -323,8 +326,9 @@ contains
 
                            ! Swap out nCells with nPoints
                            do iDim = 1, fieldInfo % nDims
-                              if ( trim(ptr3DRealNew % dimNames(iDim)) == 'nCells' ) then
-                                 PWAM_DEBUG_WRITE(' -- Changing nCells to nPoints')
+                              if ( trim(ptr3DRealNew % dimNames(iDim)) == 'nCells' .or. &
+                                   trim(ptr3DRealNew % dimNames(iDim)) == 'nVertices') then
+                                 PWAM_DEBUG_WRITE(' -- Changing nCells/nVertices to nPoints')
                                  ptr3DRealNew % dimNames(iDim) = 'nPoints'
                                  ptr3DRealNew % dimSizes(iDim) = nPoints
                               end if
@@ -359,7 +363,8 @@ contains
 
                         ! Check for nCells as a dimension, since that's all we can use for now...
                         do iDim = 1, fieldInfo % nDims
-                           if ( trim(ptr4DReal % dimNames(iDim)) == 'nCells' ) then
+                           if ( trim(ptr4DReal % dimNames(iDim)) == 'nCells' .or. &
+                                trim(ptr4DReal % dimNames(iDim)) == 'nVertices') then
                               keepField = .true.
                            end if
                         end do
@@ -387,8 +392,9 @@ contains
 
                            ! Swap out nCells with nPoints
                            do iDim = 1, fieldInfo % nDims
-                              if ( trim(ptr4DRealNew % dimNames(iDim)) == 'nCells' ) then
-                                 PWAM_DEBUG_WRITE(' -- Changing nCells to nPoints')
+                              if ( trim(ptr4DRealNew % dimNames(iDim)) == 'nCells' .or. &
+                                   trim(ptr4DRealNew % dimNames(iDim)) == 'nVertices') then
+                                 PWAM_DEBUG_WRITE(' -- Changing nCells/nVertices to nPoints')
                                  ptr4DRealNew % dimNames(iDim) = 'nPoints'
                                  ptr4DRealNew % dimSizes(iDim) = nPoints
                               end if
@@ -423,7 +429,8 @@ contains
 
                         ! Check for nCells as a dimension, since that's all we can use for now...
                         do iDim = 1, fieldInfo % nDims
-                           if ( trim(ptr5DReal % dimNames(iDim)) == 'nCells' ) then
+                           if ( trim(ptr5DReal % dimNames(iDim)) == 'nCells' .or. &
+                                trim(ptr5DReal % dimNames(iDim)) == 'nVertices') then
                               keepField = .true.
                            end if
                         end do
@@ -451,8 +458,9 @@ contains
 
                            ! Swap out nCells with nPoints
                            do iDim = 1, fieldInfo % nDims
-                              if ( trim(ptr5DRealNew % dimNames(iDim)) == 'nCells' ) then
-                                 PWAM_DEBUG_WRITE(' -- Changing nCells to nPoints')
+                              if ( trim(ptr5DRealNew % dimNames(iDim)) == 'nCells' .or. &
+                                   trim(ptr5DRealNew % dimNames(iDim)) == 'nVertices') then
+                                 PWAM_DEBUG_WRITE(' -- Changing nCells/nVertices to nPoints')
                                  ptr5DRealNew % dimNames(iDim) = 'nPoints'
                                  ptr5DRealNew % dimSizes(iDim) = nPoints
                               end if
@@ -492,7 +500,8 @@ contains
 
                         ! Check for nCells as a dimension, since that's all we can use for now...
                         do iDim = 1, fieldInfo % nDims
-                           if ( trim(ptr1DInt % dimNames(iDim)) == 'nCells' ) then
+                           if ( trim(ptr1DInt % dimNames(iDim)) == 'nCells' .or. &
+                                trim(ptr1DInt % dimNames(iDim)) == 'nVertices') then
                               keepField = .true.
                            end if
                         end do
@@ -520,8 +529,9 @@ contains
 
                            ! Swap out nCells with nPoints
                            do iDim = 1, fieldInfo % nDims
-                              if ( trim(ptr1DIntNew % dimNames(iDim)) == 'nCells' ) then
-                                 PWAM_DEBUG_WRITE(' -- Changing nCells to nPoints')
+                              if ( trim(ptr1DIntNew % dimNames(iDim)) == 'nCells' .or. &
+                                   trim(ptr1DIntNew % dimNames(iDim)) == 'nVertices') then
+                                 PWAM_DEBUG_WRITE(' -- Changing nCells/nVertices to nPoints')
                                  ptr1DIntNew % dimNames(iDim) = 'nPoints'
                                  ptr1DIntNew % dimSizes(iDim) = nPoints
                               end if
@@ -555,7 +565,8 @@ contains
 
                         ! Check for nCells as a dimension, since that's all we can use for now...
                         do iDim = 1, fieldInfo % nDims
-                           if ( trim(ptr2DInt % dimNames(iDim)) == 'nCells' ) then
+                           if ( trim(ptr2DInt % dimNames(iDim)) == 'nCells' .or. &
+                                trim(ptr2DInt % dimNames(iDim)) == 'nVertices') then
                               keepField = .true.
                            end if
                         end do
@@ -583,8 +594,9 @@ contains
 
                            ! Swap out nCells with nPoints
                            do iDim = 1, fieldInfo % nDims
-                              if ( trim(ptr2DIntNew % dimNames(iDim)) == 'nCells' ) then
-                                 PWAM_DEBUG_WRITE(' -- Changing nCells to nPoints')
+                              if ( trim(ptr2DIntNew % dimNames(iDim)) == 'nCells' .or. &
+                                   trim(ptr2DIntNew % dimNames(iDim)) == 'nVertices') then
+                                 PWAM_DEBUG_WRITE(' -- Changing nCells/nVertices to nPoints')
                                  ptr2DIntNew % dimNames(iDim) = 'nPoints'
                                  ptr2DIntNew % dimSizes(iDim) = nPoints
                               end if
@@ -618,7 +630,8 @@ contains
 
                         ! Check for nCells as a dimension, since that's all we can use for now...
                         do iDim = 1, fieldInfo % nDims
-                           if ( trim(ptr3DInt % dimNames(iDim)) == 'nCells' ) then
+                           if ( trim(ptr3DInt % dimNames(iDim)) == 'nCells' .or. &
+                                trim(ptr3DInt % dimNames(iDim)) == 'nVertices') then
                               keepField = .true.
                            end if
                         end do
@@ -646,8 +659,9 @@ contains
 
                            ! Swap out nCells with nPoints
                            do iDim = 1, fieldInfo % nDims
-                              if ( trim(ptr3DIntNew % dimNames(iDim)) == 'nCells' ) then
-                                 PWAM_DEBUG_WRITE(' -- Changing nCells to nPoints')
+                              if ( trim(ptr3DIntNew % dimNames(iDim)) == 'nCells' .or. &
+                                   trim(ptr3DIntNew % dimNames(iDim)) == 'nVertices') then
+                                 PWAM_DEBUG_WRITE(' -- Changing nCells/nVertices to nPoints')
                                  ptr3DIntNew % dimNames(iDim) = 'nPoints'
                                  ptr3DIntNew % dimSizes(iDim) = nPoints
                               end if
@@ -749,7 +763,7 @@ contains
       type (mpas_pool_type), pointer :: pointPool
 
       integer, pointer :: nCells, nCellsSolve, nVertices, nVerticesSolve, nPoints
-      integer :: iCell, iPoint, i
+      integer :: iCell, iVertex, iPoint, i
       integer, dimension(:), pointer :: indexToCellID,pointCellGlobalID, pointCellLocalID, indexToPointCellLocalID
       integer, dimension(:), pointer :: indexToVertexID,pointVertexGlobalID, pointVertexLocalID, indexToPointVertexLocalID
 
@@ -921,17 +935,29 @@ contains
 
       character (len=*), parameter :: AMName = 'pointwiseStats'
 
-      real (kind=RKIND), pointer :: ptr0DReal1, ptr0DReal2
-      real (kind=RKIND), dimension(:), pointer :: ptr1DReal1, ptr1DReal2
-      real (kind=RKIND), dimension(:, :), pointer :: ptr2DReal1, ptr2DReal2
-      real (kind=RKIND), dimension(:, :, :), pointer :: ptr3DReal1, ptr3DReal2
-      real (kind=RKIND), dimension(:, :, :, :), pointer :: ptr4DReal1, ptr4DReal2
-      real (kind=RKIND), dimension(:, :, :, :, :), pointer :: ptr5DReal1, ptr5DReal2
+      type(field0DReal), pointer :: ptr0DReal1
+      type(field1DReal), pointer :: ptr1DReal1
+      type(field2DReal), pointer :: ptr2DReal1
+      type(field3DReal), pointer :: ptr3DReal1
+      type(field4DReal), pointer :: ptr4DReal1
+      type(field5DReal), pointer :: ptr5DReal1
 
-      integer, pointer :: ptr0DInt1, ptr0DInt2
-      integer, dimension(:), pointer :: ptr1DInt1, ptr1DInt2
-      integer, dimension(:, :), pointer :: ptr2DInt1, ptr2DInt2
-      integer, dimension(:, :, :), pointer :: ptr3DInt1, ptr3DInt2
+      real (kind=RKIND), pointer :: ptr0DReal2
+      real (kind=RKIND), dimension(:), pointer :: ptr1DReal2
+      real (kind=RKIND), dimension(:, :), pointer :: ptr2DReal2
+      real (kind=RKIND), dimension(:, :, :), pointer :: ptr3DReal2
+      real (kind=RKIND), dimension(:, :, :, :), pointer :: ptr4DReal2
+      real (kind=RKIND), dimension(:, :, :, :, :), pointer :: ptr5DReal2
+
+      type(field0DInteger), pointer :: ptr0DInt1
+      type(field1DInteger), pointer :: ptr1DInt1
+      type(field2DInteger), pointer :: ptr2DInt1
+      type(field3DInteger), pointer :: ptr3DInt1
+
+      integer, pointer :: ptr0DInt2
+      integer, dimension(:), pointer :: ptr1DInt2
+      integer, dimension(:, :), pointer :: ptr2DInt2
+      integer, dimension(:, :, :), pointer :: ptr3DInt2
 
       character (len=StrKIND), pointer :: mappedName
       type (mpas_pool_type), pointer :: AMFieldMapping, pointPool
@@ -942,7 +968,7 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: tempRealArrLocal, tempRealArrGlobal
       integer, dimension(:), pointer :: tempIntArrLocal, tempIntArrGlobal
-      integer :: iElement, iDim1, iDim2, iDim3, iDim4, iDim5
+      integer :: iDim, iElement, iDim1, iDim2, iDim3, iDim4, iDim5
       integer :: fieldTimeLevel
 
       err = 0
@@ -1037,65 +1063,149 @@ contains
                      end do
 
                   else if ( fieldInfo % nDims == 2 ) then
-                     call mpas_pool_get_array(block % allFields, poolItr % memberName, ptr2DReal1, fieldTimeLevel)
+
+                     call mpas_pool_get_field(block % allFields, poolItr % memberName, ptr2DReal1, fieldTimeLevel)
+
+                     do iDim = 1, fieldInfo % nDims
+                        if (trim(ptr2DReal1 % dimNames(iDim)) == "nCells") then
+                           call mpas_pool_get_dimension(block % dimensions, 'nCells', maxDim)
+                           call mpas_pool_get_array(pointPool, 'pointCellLocalID', pointLocalElementID)
+                        else if (trim(ptr2DReal1 % dimNames(iDim)) == "nVertices") then
+                           call mpas_pool_get_dimension(block % dimensions, 'nVertices', maxDim)
+                           call mpas_pool_get_array(pointPool, 'pointVertexLocalID', pointLocalElementID)
+                        end if
+                     enddo ! iDim
 
                      do iPoint = 1, nPoints
-                        if ( pointCellLocalID(iPoint) < nCells + 1 ) then
-                           ptr2DReal2(:, iPoint) = ptr2DReal1(:, pointCellLocalID(iPoint) )
+                        if ( pointLocalElementID(iPoint) < maxDim + 1 ) then
+                           ptr2DReal2(:, iPoint) = ptr2DReal1 % array(:, pointLocalElementID(iPoint) )
                         end if
                      end do
+
                   else if ( fieldInfo % nDims == 3 ) then
-                     call mpas_pool_get_array(block % allFields, poolItr % memberName, ptr3DReal1, fieldTimeLevel)
+
+                     call mpas_pool_get_field(block % allFields, poolItr % memberName, ptr3DReal1, fieldTimeLevel)
+
+                     do iDim = 1, fieldInfo % nDims
+                        if (trim(ptr3DReal1 % dimNames(iDim)) == "nCells") then
+                           call mpas_pool_get_dimension(block % dimensions, 'nCells', maxDim)
+                           call mpas_pool_get_array(pointPool, 'pointCellLocalID', pointLocalElementID)
+                        else if (trim(ptr3DReal1 % dimNames(iDim)) == "nVertices") then
+                           call mpas_pool_get_dimension(block % dimensions, 'nVertices', maxDim)
+                           call mpas_pool_get_array(pointPool, 'pointVertexLocalID', pointLocalElementID)
+                        end if
+                     enddo ! iDim
 
                      do iPoint = 1, nPoints
-                        if ( pointCellLocalID(iPoint) < nCells + 1 ) then
-                           ptr3DReal2(:, :, iPoint) = ptr3DReal1(:, :, pointCellLocalID(iPoint) )
+                        if ( pointLocalElementID(iPoint) < maxDim + 1 ) then
+                           ptr3DReal2(:, :, iPoint) = ptr3DReal1 % array(:, :, pointLocalElementID(iPoint) )
                         end if
                      end do
+
                   else if ( fieldInfo % nDims == 4 ) then
-                     call mpas_pool_get_array(block % allFields, poolItr % memberName, ptr4DReal1, fieldTimeLevel)
+
+                     call mpas_pool_get_field(block % allFields, poolItr % memberName, ptr4DReal1, fieldTimeLevel)
+
+                     do iDim = 1, fieldInfo % nDims
+                        if (trim(ptr4DReal1 % dimNames(iDim)) == "nCells") then
+                           call mpas_pool_get_dimension(block % dimensions, 'nCells', maxDim)
+                           call mpas_pool_get_array(pointPool, 'pointCellLocalID', pointLocalElementID)
+                        else if (trim(ptr4DReal1 % dimNames(iDim)) == "nVertices") then
+                           call mpas_pool_get_dimension(block % dimensions, 'nVertices', maxDim)
+                           call mpas_pool_get_array(pointPool, 'pointVertexLocalID', pointLocalElementID)
+                        end if
+                     enddo ! iDim
 
                      do iPoint = 1, nPoints
-                        if ( pointCellLocalID(iPoint) < nCells + 1 ) then
-                           ptr4DReal2(:, :, :, iPoint) = ptr4DReal1(:, :, :, pointCellLocalID(iPoint) )
+                        if ( pointLocalElementID(iPoint) < maxDim + 1 ) then
+                           ptr4DReal2(:, :, :, iPoint) = ptr4DReal1 % array(:, :, :, pointLocalElementID(iPoint) )
                         end if
                      end do
+
                   else if ( fieldInfo % nDims == 5 ) then
-                     call mpas_pool_get_array(block % allFields, poolItr % memberName, ptr5DReal1, fieldTimeLevel)
+
+                     call mpas_pool_get_field(block % allFields, poolItr % memberName, ptr5DReal1, fieldTimeLevel)
+
+                     do iDim = 1, fieldInfo % nDims
+                        if (trim(ptr5DReal1 % dimNames(iDim)) == "nCells") then
+                           call mpas_pool_get_dimension(block % dimensions, 'nCells', maxDim)
+                           call mpas_pool_get_array(pointPool, 'pointCellLocalID', pointLocalElementID)
+                        else if (trim(ptr5DReal1 % dimNames(iDim)) == "nVertices") then
+                           call mpas_pool_get_dimension(block % dimensions, 'nVertices', maxDim)
+                           call mpas_pool_get_array(pointPool, 'pointVertexLocalID', pointLocalElementID)
+                        end if
+                     enddo ! iDim
 
                      do iPoint = 1, nPoints
-                        if ( pointCellLocalID(iPoint) < nCells + 1 ) then
-                           ptr5DReal2(:, :, :, :, iPoint) = ptr5DReal1(:, :, :, :, pointCellLocalID(iPoint) )
+                        if ( pointLocalElementID(iPoint) < maxDim + 1 ) then
+                           ptr5DReal2(:, :, :, :, iPoint) = ptr5DReal1 % array(:, :, :, :, pointLocalElementID(iPoint) )
                         end if
                      end do
+
                   end if
                else if ( fieldInfo % fieldType == MPAS_POOL_INTEGER ) then
                   if ( fieldInfo % nDims == 0 ) then
                      ! Can't do 0D ints currently...
                   else if ( fieldInfo % nDims == 1 ) then
-                     call mpas_pool_get_array(block % allFields, poolItr % memberName, ptr1DInt1, fieldTimeLevel)
+
+                     call mpas_pool_get_field(block % allFields, poolItr % memberName, ptr1DInt1, fieldTimeLevel)
+
+                     do iDim = 1, fieldInfo % nDims
+                        if (trim(ptr1DInt1 % dimNames(iDim)) == "nCells") then
+                           call mpas_pool_get_dimension(block % dimensions, 'nCells', maxDim)
+                           call mpas_pool_get_array(pointPool, 'pointCellLocalID', pointLocalElementID)
+                        else if (trim(ptr1DInt1 % dimNames(iDim)) == "nVertices") then
+                           call mpas_pool_get_dimension(block % dimensions, 'nVertices', maxDim)
+                           call mpas_pool_get_array(pointPool, 'pointVertexLocalID', pointLocalElementID)
+                        end if
+                     enddo ! iDim
 
                      do iPoint = 1, nPoints
-                        if ( pointCellLocalID(iPoint) < nCells + 1 ) then
-                           ptr1DInt2(iPoint) = ptr1DInt1( pointCellLocalID(iPoint) )
+                        if ( pointLocalElementID(iPoint) < maxDim + 1 ) then
+                           ptr1DInt2(iPoint) = ptr1DInt1 % array( pointLocalElementID(iPoint) )
                         end if
                      end do
+
                   else if ( fieldInfo % nDims == 2 ) then
-                     call mpas_pool_get_array(block % allFields, poolItr % memberName, ptr2DInt1, fieldTimeLevel)
+
+                     call mpas_pool_get_field(block % allFields, poolItr % memberName, ptr2DInt1, fieldTimeLevel)
+
+                     do iDim = 1, fieldInfo % nDims
+                        if (trim(ptr2DInt1 % dimNames(iDim)) == "nCells") then
+                           call mpas_pool_get_dimension(block % dimensions, 'nCells', maxDim)
+                           call mpas_pool_get_array(pointPool, 'pointCellLocalID', pointLocalElementID)
+                        else if (trim(ptr2DInt1 % dimNames(iDim)) == "nVertices") then
+                           call mpas_pool_get_dimension(block % dimensions, 'nVertices', maxDim)
+                           call mpas_pool_get_array(pointPool, 'pointVertexLocalID', pointLocalElementID)
+                        end if
+                     enddo ! iDim
 
                      do iPoint = 1, nPoints
-                        if ( pointCellLocalID(iPoint) < nCells + 1 ) then
-                           ptr2DInt2(:, iPoint) = ptr2DInt1(:, pointCellLocalID(iPoint) )
+                        if ( pointLocalElementID(iPoint) < maxDim + 1 ) then
+                           ptr2DInt2(:, iPoint) = ptr2DInt1 % array(:, pointLocalElementID(iPoint) )
                         end if
                      end do
+
                   else if ( fieldInfo % nDims == 3 ) then
-                     call mpas_pool_get_array(block % allFields, poolItr % memberName, ptr3DInt1, fieldTimeLevel)
+
+                     call mpas_pool_get_field(block % allFields, poolItr % memberName, ptr3DInt1, fieldTimeLevel)
+
+                     do iDim = 1, fieldInfo % nDims
+                        if (trim(ptr3DInt1 % dimNames(iDim)) == "nCells") then
+                           call mpas_pool_get_dimension(block % dimensions, 'nCells', maxDim)
+                           call mpas_pool_get_array(pointPool, 'pointCellLocalID', pointLocalElementID)
+                        else if (trim(ptr3DInt1 % dimNames(iDim)) == "nVertices") then
+                           call mpas_pool_get_dimension(block % dimensions, 'nVertices', maxDim)
+                           call mpas_pool_get_array(pointPool, 'pointVertexLocalID', pointLocalElementID)
+                        end if
+                     enddo ! iDim
 
                      do iPoint = 1, nPoints
-                        if ( pointCellLocalID(iPoint) < nCells + 1 ) then
-                           ptr3DInt2(:, :, iPoint) = ptr3DInt1(:, :, pointCellLocalID(iPoint) )
+                        if ( pointLocalElementID(iPoint) < maxDim + 1 ) then
+                           ptr3DInt2(:, :, iPoint) = ptr3DInt1 % array(:, :, pointLocalElementID(iPoint) )
                         end if
                      end do
+
                   end if
                end if
                block => block % next
