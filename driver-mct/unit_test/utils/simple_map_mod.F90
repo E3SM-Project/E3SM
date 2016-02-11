@@ -33,7 +33,15 @@ module simple_map_mod
      module procedure constructor
   end interface simple_map_type
 
+  ! Note: This could be written as a constructor, but instead is made a module-level
+  ! routine so that it can be called with a more meaningful name.
+  public :: create_simple_map_with_one_source  ! create a simple_map_type instance with a single source cell
+  
 contains
+
+  ! ========================================================================
+  ! Constructors and creation methods
+  ! ========================================================================
 
   !-----------------------------------------------------------------------
   function constructor(source_indices, dest_indices, overlap_weights) result(this)
@@ -69,6 +77,42 @@ contains
     ! Perform some error-checking
     call this%check_okay()
   end function constructor
+
+  !-----------------------------------------------------------------------
+  function create_simple_map_with_one_source(ndest) result(simple_map)
+    !
+    ! !DESCRIPTION:
+    ! Create a simple_map_type instance with a single source cell.
+    !
+    ! Assumes that all destination cells are fully contained within this single source cell.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(simple_map_type) :: simple_map ! function return value
+    integer, intent(in) :: ndest        ! number of destination cells
+    !
+    ! !LOCAL VARIABLES:
+    integer :: dest_index
+    integer :: source_indices(ndest)
+    integer :: dest_indices(ndest)
+    real(r8) :: overlap_weights(ndest)
+    
+    character(len=*), parameter :: subname = 'create_simple_map_with_one_source'
+    !-----------------------------------------------------------------------
+
+    source_indices(:) = 1
+    dest_indices = [(dest_index, dest_index = 1, ndest)]
+    overlap_weights(:) = 1._r8
+    simple_map = simple_map_type(source_indices=source_indices, dest_indices=dest_indices,&
+         overlap_weights=overlap_weights)
+    
+  end function create_simple_map_with_one_source
+
+
+  ! ========================================================================
+  ! Class methods
+  ! ========================================================================
 
   !-----------------------------------------------------------------------
   function get_n_overlaps(this) result(n_overlaps)
