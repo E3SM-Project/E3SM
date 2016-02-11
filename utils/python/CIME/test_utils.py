@@ -1,10 +1,10 @@
 # Utility functions used in create_test.py
 from XML.standard_module_setup import *
-from copy import deepcopy
 from CIME.XML.testlist import Testlist
+import CIME.utils
 
-def  _get_tests_from_xml(xml_machine=None,xml_category=None,xml_compiler=None, xml_testlist=None,
-                         machine=None, compiler=None):
+def get_tests_from_xml(xml_machine=None,xml_category=None,xml_compiler=None, xml_testlist=None,
+                       machine=None, compiler=None):
     """
     Parse testlists for a list of tests
     """
@@ -33,20 +33,9 @@ def  _get_tests_from_xml(xml_machine=None,xml_category=None,xml_compiler=None, x
                 thismach = test["machine"]
             if(compiler is None):
                 thiscompiler = test["compiler"]
-            test["name"] = "%s.%s.%s.%s_%s"%(test["testname"],test["grid"],test["compset"],thismach,thiscompiler)
-            if ("testmods" in test):
-                (moddir, modname) = test["testmods"].split("/")
-                test["name"] += ".%s_%s"%(moddir, modname)
+            test["name"] = CIME.utils.get_full_test_name(test["testname"], test["grid"], test["compset"], thismach, thiscompiler,
+                                                         None if "testmods" not in test else test["testmods"])
             logging.info("Adding test "+test["name"])
         listoftests += newtests
 
-    return listoftests
-
-def _convert_testlist_to_dict(test_names):
-    from copy import deepcopy
-    listoftests = []
-    test = {}
-    for name in test_names:
-        test["name"] = name
-        listoftests.append(deepcopy(test))
     return listoftests

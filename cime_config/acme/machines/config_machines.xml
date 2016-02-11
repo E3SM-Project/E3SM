@@ -383,7 +383,7 @@
 <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
     <GMAKE_J>32</GMAKE_J>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>32</PES_PER_NODE>
+    <PES_PER_NODE>64</PES_PER_NODE>
     <batch_system type="none" version="x.y">
       <queues>
       </queues>

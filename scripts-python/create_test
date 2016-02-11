@@ -48,7 +48,7 @@ OR
     > %s <SUITE1> ^<SUITE2>
 
     \033[1;32m# Run all tests in the xml prealpha category and yellowstone machine \033[0m
-    > %s --xml_machine yellowstone --xml_category prealpha
+    > %s --xml-machine yellowstone --xml-category prealpha
 
 """ % ((os.path.basename(args[0]), ) * 11),
 
@@ -123,11 +123,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Number of tasks create_test should perform simultaneously. Default "
                         "will be min(num_cores, num_tests).")
 
-    parser.add_argument("--xml_machine",help="Use this machine key in the lookup in testlist.xml")
-    parser.add_argument("--xml_compiler",help="Use this compiler key in the lookup in testlist.xml")
-    parser.add_argument("--xml_category",help="Use this category key in the lookup in testlist.xml")
-    parser.add_argument("--xml_testlist",help="Use this testlist to lookup tests")
-
+    parser.add_argument("--xml-machine",  help="Use this machine key in the lookup in testlist.xml")
+    parser.add_argument("--xml-compiler", help="Use this compiler key in the lookup in testlist.xml")
+    parser.add_argument("--xml-category", help="Use this category key in the lookup in testlist.xml")
+    parser.add_argument("--xml-testlist", help="Use this testlist to lookup tests")
 
     args = parser.parse_args(args[1:])
 
@@ -147,7 +146,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                "Invalid value for parallel_jobs: %d" % args.parallel_jobs)
     if(args.xml_testlist is not None):
         expect(not (args.xml_machine is None and args.xml_compiler is  None and args.xml_category is None),
-                "If an xml_testlist is present at least one of --xml_machine, --xml_compiler, --xml_category must also be present")
+                "If an xml-testlist is present at least one of --xml-machine, --xml-compiler, --xml-category must also be present")
 
     if (args.no_build):
         args.no_run = True
