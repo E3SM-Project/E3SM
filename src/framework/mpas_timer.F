@@ -69,9 +69,7 @@
 
            type (domain_type), intent(in) :: domain
 
-#ifdef MPAS_NATIVE_TIMERS
-            timer_root => domain % timer_root
-#endif
+           timer_root => domain % timer_root
 
         end subroutine mpas_timer_set_context!}}}
 
@@ -425,20 +423,24 @@
                 current_timer % avg_time(1) = global_time / timer_root % dminfo % nprocs
 
                 ! Compute percent of run time
-                if ( timer_root % root_timer % total_time(1) /= 0.0 ) then
+                if ( timer_root % root_timer % total_time(1) /= 0.0_RKIND ) then
                    percent_inc = current_timer % total_time(1) / timer_root % root_timer % total_time(1)
                 else
-                   percent_inc = 0.0
+                   percent_inc = 0.0_RKIND
                 end if
 
                 if ( associated(current_timer % parent) ) then
                    percent_exc = current_timer % total_time(1) / current_timer % parent % total_time(1)
                 else
-                   percent_exc = 0.0
+                   percent_exc = 0.0_RKIND
                 end if
 
                 ! Compute efficiency
-                efficiency = global_ave_total / global_max_total
+                if ( global_max_total /= 0.0_RKIND ) then
+                   efficiency = global_ave_total / global_max_total
+                else
+                   efficiency = 1.0_RKIND
+                end if
 
                 ! Print current_timer
                 write(stdoutUnit,'(i2, 1x, a45, f15.5, i10, 3f15.5, 1x, f8.2, 3x, f8.2, 3x, f8.2)') levels, indentation(1:levels-1) // &
@@ -496,11 +498,9 @@
 
           integer :: iErr
 
-#ifdef MPAS_NATIVE_TIMERS
           allocate(domain % timer_root)
           timer_root => domain % timer_root
           timer_root % dminfo => domain % dminfo
-#endif
 
 #ifdef MPAS_GPTL_TIMERS
           iErr = gptlsetoption(gptloverhead, 0)
@@ -541,6 +541,8 @@
           deallocate(domain % timer_root % root_timer % running)
           deallocate(domain % timer_root % root_timer)
 #endif
+
+          deallocate(domain % timer_root)
 
         end subroutine mpas_timer_finalize!}}}
 
