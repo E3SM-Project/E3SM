@@ -626,7 +626,9 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       ! ------------------------------------------------------------------
       ! Accumulating various parametrizations of the transport velocity
       ! ------------------------------------------------------------------
-      normalTransportVelocity(:,:) = normalVelocity(:,:)
+      do iEdge = 1, nEdges
+         normalTransportVelocity(:, iEdge) = normalVelocity(:, iEdge)
+      end do
 
 
       ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
@@ -637,7 +639,9 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       end if
 
       if (config_use_standardGM) then
-         normalTransportVelocity(:,:) = normalTransportVelocity(:,:) + normalGMBolusVelocity(:,:)
+         do iEdge = 1, nEdges
+            normalTransportVelocity(:, iEdge) = normalTransportVelocity(:, iEdge) + normalGMBolusVelocity(:, iEdge)
+         end do
        end if
 
       ! ------------------------------------------------------------------
