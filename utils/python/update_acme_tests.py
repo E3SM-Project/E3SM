@@ -143,7 +143,7 @@ def get_test_suite(suite, machine=None, compiler=None):
                 if (machine in test_mod_machines):
                     test_mod = item[1]
 
-        tests.append(CIME.utils.get_full_test_name(test_name, machine, compiler, testmod=test_mod))
+        tests.append(CIME.utils.get_full_test_name(test_name, machine=machine, compiler=compiler, testmod=test_mod))
 
     if (inherits_from is not None):
         inherited_tests = get_test_suite(inherits_from, machine, compiler)
@@ -194,16 +194,16 @@ def get_full_test_names(testargs, machine, compiler):
         elif (testarg in acme_test_suites):
             tests_to_run.update(get_test_suite(testarg, machine, compiler))
         else:
-            tests_to_run.add(CIME.utils.get_full_test_name(testarg, machine, compiler))
+            tests_to_run.add(CIME.utils.get_full_test_name(testarg, machine=machine, compiler=compiler))
 
     for negation in negations:
         if (negation in acme_test_suites):
             for test, testmod in get_test_suite(negation, machine, compiler):
-                fullname = CIME.utils.get_full_test_name(test, machine, compiler, testmod)
+                fullname = CIME.utils.get_full_test_name(test, machine=machine, compiler=compiler, testmod=testmod)
                 if (fullname in tests_to_run):
                     tests_to_run.remove(fullname)
         else:
-            fullname = CIME.utils.get_full_test_name(negation, machine, compiler)
+            fullname = CIME.utils.get_full_test_name(negation, machine=machine, compiler=compiler)
             if (fullname in tests_to_run):
                 tests_to_run.remove(fullname)
 

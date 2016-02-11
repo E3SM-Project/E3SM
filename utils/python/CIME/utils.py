@@ -215,6 +215,10 @@ def parse_test_name(test_name):
     Given a CIME test name TESTCASE[_CASEOPTS].GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]],
     return each component of the testname with machine and compiler split
 
+    >>> parse_test_name('ERS')
+    ['ERS', None, None, None, None, None, None]
+    >>> parse_test_name('ERS.fe12_123')
+    ['ERS', None, 'fe12_123', None, None, None, None]
     >>> parse_test_name('ERS.fe12_123.JGF')
     ['ERS', None, 'fe12_123', 'JGF', None, None, None]
     >>> parse_test_name('ERS_D.fe12_123.JGF')
@@ -228,7 +232,7 @@ def parse_test_name(test_name):
     """
     rv = [None] * 6
     num_dots = test_name.count(".")
-    expect(num_dots >= 2 and num_dots <= 4,
+    expect(num_dots <= 4,
            "'%s' does not look like a CIME test name, expect TESTCASE.GRID.COMPSET[.MACHINE_COMPILER[.TESTMODS]]" % test_name)
 
     rv[0:num_dots+1] = test_name.split(".")
@@ -250,30 +254,54 @@ def parse_test_name(test_name):
 
     return rv
 
-def get_full_test_name(test, machine, compiler, testmod=None):
+def get_full_test_name(partial_test, grid=None, compset=None, machine=None, compiler=None, testmod=None):
     """
-    Given a CIME test name, return in form TESTCASE.GRID.COMPSET.MACHINE_COMPILER[.TESTMODS]
-    Use the machine, compiler, and testmod provided to fill out the name if needed
+    Given a partial CIME test name, return in form TESTCASE.GRID.COMPSET.MACHINE_COMPILER[.TESTMODS]
+    Use the additional args to fill out the name if needed
 
-    >>> get_full_test_name("ERS.ne16_fe16.JGF", "melvin", "gnu")
+    >>> get_full_test_name("ERS", grid="ne16_fe16", compset="JGF", machine="melvin", compiler="gnu")
     'ERS.ne16_fe16.JGF.melvin_gnu'
-    >>> get_full_test_name("ERS.ne16_fe16.JGF.melvin_gnu.mods", "melvin", "gnu")
+    >>> get_full_test_name("ERS.ne16_fe16", compset="JGF", machine="melvin", compiler="gnu")
+    'ERS.ne16_fe16.JGF.melvin_gnu'
+    >>> get_full_test_name("ERS.ne16_fe16.JGF", machine="melvin", compiler="gnu")
+    'ERS.ne16_fe16.JGF.melvin_gnu'
+    >>> get_full_test_name("ERS.ne16_fe16.JGF.melvin_gnu.mods", machine="melvin", compiler="gnu")
     'ERS.ne16_fe16.JGF.melvin_gnu.mods'
-    >>> get_full_test_name("ERS.ne16_fe16.JGF", "melvin", "gnu", "mods/test")
+    >>> get_full_test_name("ERS.ne16_fe16.JGF", machine="melvin", compiler="gnu", testmod="mods/test")
     'ERS.ne16_fe16.JGF.melvin_gnu.mods-test'
     """
-    if (test.count(".") == 2):
-        return "%s.%s_%s%s" % (test, machine, compiler, "" if testmod is None else ".%s" % testmod.replace("/", "-"))
-    else:
-        _, _, _, _, test_machine, test_compiler, test_testmod = parse_test_name(test)
-        expect(machine == test_machine,
-               "Found testname/machine mismatch, test is '%s', your current machine is '%s'" % (test, machine))
-        expect(compiler == test_compiler,
-               "Found testname/compiler mismatch, test is '%s', your current compiler is '%s'" % (test, compiler))
-        if (test_testmod is None):
-            return "%s%s" % (test, "" if testmod is None else ".%s" % testmod.replace("/", "-"))
+    _, _, partial_grid, partial_compset, partial_machine, partial_compiler, partial_testmod = parse_test_name(partial_test)
+
+    required_fields = [
+        (partial_grid, grid, "grid"),
+        (partial_compset, compset, "compset"),
+        (partial_machine, machine, "machine"),
+        (partial_compiler, compiler, "compiler"),
+        ]
+
+    result = partial_test
+
+    for partial_val, arg_val, name in required_fields:
+        if (partial_val is None):
+            # Add to result based on args
+            expect(arg_val is not None,
+                   "Could not fill-out test name, partial string '%s' had no %s information and you did not provide any" % (partial_test, name))
+            result = "%s%s%s" % (result, "_" if name == "compiler" else ".", arg_val)
+        elif (arg_val is not None):
+            expect(arg_val == partial_val,
+                   "Mismatch in field %s, partial string '%s' indicated it should be '%s' but you provided '%s'" % (name, partial_test, partial_val, arg_val))
+
+    if (partial_testmod is None):
+        if (testmod is None):
+            # No testmod for this test and that's OK
+            pass
         else:
-            return test
+            result += ".%s" % testmod.replace("/", "-")
+    elif (testmod is not None):
+        expect(arg_val == partial_val,
+               "Mismatch in field testmod, partial string '%s' indicated it should be '%s' but you provided '%s'" % (partial_test, partial_testmod, testmod))
+
+    return result
 
 def get_current_branch(repo=None):
     """
