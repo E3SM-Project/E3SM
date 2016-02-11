@@ -188,6 +188,8 @@ contains
 
       if(.not.rediDiffOn) return
 
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
       !$omp do schedule(runtime)
       do iCell = 1, nCells
          vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + vertRediDiff(:, iCell)
