@@ -393,22 +393,37 @@ Contains
     ret_val = PIO_inq_vardeflate(pio_file, pio_var, shuffle, deflate, deflate_level)
 
     ! Should not have worked except for netCDF-4/HDF5 serial.
-    if (iotype .eq. PIO_iotype_netcdf4c .and. ret_val .ne. PIO_NOERR) then
-       err_msg = "Could not turn on compression for variable foo2222"
+    if (iotype .eq. PIO_iotype_netcdf4c) then
+       if (ret_val .ne. PIO_NOERR) then
+          err_msg = "Got error trying to inquire about deflate on for serial netcdf-4 file"
+          call PIO_closefile(pio_file)
+          return
+       else
+          if (shuffle .ne. 0 .or. deflate .ne. 1 .or. deflate_level .ne. 4) then
+             err_msg = "Wrong values for deflate and shuffle for serial netcdf-4 file"
+             call PIO_closefile(pio_file)
+             return
+          end if
+       end if
+       err_msg = "Could not turn inquire about compression for variable foo2222"
        call PIO_closefile(pio_file)
        return
-    else if (iotype .eq. PIO_iotype_pnetcdf .and. ret_val .eq. PIO_NOERR) then
-       err_msg = "Did not get expected error when trying to turn deflate on for non-netcdf-4 file"
+    else if (iotype .eq. PIO_iotype_pnetcdf .or. iotype .eq. PIO_iotype_netcdf .and. ret_val .eq. PIO_NOERR) then
+       err_msg = "Did not get expected error when trying to check deflate for non-netcdf-4 file"
        call PIO_closefile(pio_file)
        return
-    else if (iotype .eq. PIO_iotype_netcdf .and. ret_val .eq. PIO_NOERR) then
-       err_msg = "Did not get expected error when trying to turn deflate on for non-netcdf-4 file"
-       call PIO_closefile(pio_file)
-       return
-    else if (iotype .eq. PIO_iotype_netcdf4p .and. ret_val .ne. PIO_NOERR) then
-       err_msg = "Did not get expected error when trying to turn deflate on for parallel netcdf-4 file"
-       call PIO_closefile(pio_file)
-       return
+    else if (iotype .eq. PIO_iotype_netcdf4p) then
+       if (ret_val .ne. PIO_NOERR) then
+          err_msg = "Got error trying to inquire about deflate on for parallel netcdf-4 file"
+          call PIO_closefile(pio_file)
+          return
+       else
+          if (shuffle .ne. 0 .or. deflate .ne. 0) then
+             err_msg = "Wrong values for deflate and shuffle for parallel netcdf-4 file"
+             call PIO_closefile(pio_file)
+             return
+          end if
+       end if
     end if
 
     ! Write foo2
