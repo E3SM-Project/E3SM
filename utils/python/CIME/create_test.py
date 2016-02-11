@@ -74,8 +74,6 @@ class CreateTest(object):
                "Compiler %s not valid for machine %s" % (self._compiler,machine_name))
 
         self._clean          = clean
-        self._compare        = compare
-        self._generate       = generate
         self._namelists_only = namelists_only
 
         # Extra data associated with tests, do not modify after construction
@@ -100,16 +98,18 @@ class CreateTest(object):
 
         self._baseline_cmp_name = None
         self._baseline_gen_name = None
-
-        if (self._compare or self._generate):
-            logging.warn("compare is %s generate is %s"%(self._compare,self._generate))
+        self._compare = False
+        self._generate = False
+        if (compare or generate):
+            logging.info("compare is %s generate is %s"%(compare,generate))
             # Figure out what baseline name to use
             if (baseline_name is None):
-                if(self._compare is not None and self._compare == str(self._compare)):
-                    self._baseline_cmp_name = self._compare
-                if(self._generate is not None and self._generate == str(self._generate)):
-                    self._baseline_gen_name = self._generate
-
+                if(compare is not None and compare == str(compare)):
+                    self._baseline_cmp_name = compare
+                    self._compare = True
+                if(generate is not None and generate == str(generate)):
+                    self._baseline_gen_name = generate
+                    self._generate = True
                 branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
                 expect(branch_name is not None, "Could not determine baseline name from branch, please use -b option")
                 if(self._compare and self._baseline_cmp_name is None):
@@ -117,11 +117,13 @@ class CreateTest(object):
                 if(self._generate and self._baseline_gen_name is None):
                     self._baseline_gen_name = os.path.join(self._compiler, branch_name)
             else:
-                if(self._compare):
+                if(compare):
+                    self._compare = True
                     self._baseline_cmp_name  = baseline_name
                     if (not self._baseline_cmp_name.startswith("%s/" % self._compiler)):
                         self._baseline_cmp_name = os.path.join(self._compiler, self._baseline_cmp_name)
-                if(self._generate):
+                if(generate):
+                    self._generate = True
                     self._baseline_gen_name  = baseline_name
                     if (not self._baseline_gen_name.startswith("%s/" % self._compiler)):
                         self._baseline_gen_name = os.path.join(self._compiler, self._baseline_gen_name)
@@ -313,7 +315,10 @@ class CreateTest(object):
         if (case_opts is not None):
             create_newcase_cmd += " -confopts _%s" % ("_".join(case_opts))
         if (test_mods is not None):
-            test_mod_file = os.path.join(self._cime_root, "scripts", "Testing", "Testlistxml", "testmods_dirs", test_mods)
+            files = Files()
+            (component, mods) = test_mods.split('/')
+            testmods_dir = files.get_value("TESTS_MODS_DIR",{"component": component})
+            test_mod_file = os.path.join(testmods_dir, component, mods)
             if (not os.path.exists(test_mod_file)):
                 self._log_output(test, "Missing testmod file '%s'" % test_mod_file)
                 return False

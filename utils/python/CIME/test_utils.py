@@ -1,6 +1,7 @@
 # Utility functions used in create_test.py
 from XML.standard_module_setup import *
 from CIME.XML.testlist import Testlist
+from CIME.XML.files import Files
 import CIME.utils
 
 def get_tests_from_xml(xml_machine=None,xml_category=None,xml_compiler=None, xml_testlist=None,
