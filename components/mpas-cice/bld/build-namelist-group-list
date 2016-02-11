@@ -29,6 +29,7 @@ my @groups = qw(cice_model
                 am_miscellaneous
                 am_areavariables
                 am_ponddiagnostics
+                am_pointwisestats
                 am_icepresent
                 am_timeseriesstatsdaily
                 am_timeseriesstatsmonthly
