@@ -163,14 +163,14 @@ if (!$opts{'list'}) {
     if($opts{'output_format'}){
 	$output_format = $opts{'output_format'};
     }
-    if($opts{'cimeroot'}){
-	$cimeroot = $opts{'cimeroot'};
-    }
     if($opts{'mach_dir'}){
 	$machdir = $opts{'mach_dir'};
     }
 }
 
+if($opts{'cimeroot'}){
+$cimeroot = $opts{'cimeroot'};
+}
 $cimeroot = absolute_path($ENV{CIMEROOT}) unless defined($cimeroot);
 (-d "$cimeroot")  or  die <<"EOF";
 ** Cannot find cimeroot directory \"$cimeroot\"  

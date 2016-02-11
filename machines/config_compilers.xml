@@ -274,9 +274,11 @@ for mct, etc.
        system-level. (Note: I could not add this in the yellowstone-specific section,
        beacuse apparently that overrides rather than adds to this ADD_FFLAGS list.) -->
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </ADD_FFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
-  <FFLAGS>  -no-opt-dynamic-align  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </FFLAGS>
-  <CFLAGS> -O2  -no-opt-dynamic-align -fp-model precise </CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_CFLAGS>
+  <ADD_CFLAGS DEBUG="TRUE"> -O0 -g </ADD_CFLAGS>
+  <FFLAGS> -no-opt-dynamic-align  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source -mcmodel medium -shared-intel </FFLAGS>
+  <CFLAGS>  -no-opt-dynamic-align -fp-model precise -mcmodel medium -shared-intel </CFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -openmp </ADD_FFLAGS_NOOPT>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
@@ -340,9 +342,13 @@ for mct, etc.
   <FIXEDFLAGS>  -ffixed-form </FIXEDFLAGS>
   <FREEFLAGS> -ffree-form </FREEFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -g -Wall </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="TRUE"> -g -Wall </ADD_CFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O </ADD_CFLAGS>
   <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS 
        so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
-  <FFLAGS> -O -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </FFLAGS>
+  <FFLAGS> -mcmodel=medium -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </FFLAGS>
+  <CFLAGS> -mcmodel=medium </CFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
   <FC_AUTO_R8> -fdefault-real-8 </FC_AUTO_R8>
   <SFC> gfortran </SFC>
@@ -389,7 +395,7 @@ for mct, etc.
   <!-- interfaces from certain argument checks. Should not be necessary in   -->
   <!-- libraries that only use the F90 module interface. mpibcast and        -->
   <!-- mpiscatterv are actually CAM wrappers for MPI.                        -->
-  <FFLAGS      > -Wp,-macro=no_com -kind=byte -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,mpi_file_write_all,mpibcast,mpiscatterv    -convert=BIG_ENDIAN </FFLAGS>
+  <FFLAGS      > -Wp,-macro=no_com -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,mpi_file_write_all,mpibcast,mpiscatterv    -convert=BIG_ENDIAN </FFLAGS>
   <FFLAGS_NOOPT> $(FFLAGS) </FFLAGS_NOOPT>
 
   <!-- DEBUG vs. non-DEBUG runs.                                             -->
@@ -465,6 +471,7 @@ for mct, etc.
 
 <compiler COMPILER="gnu" MACH="yellowstone">
   <LAPACK_LIBDIR> /glade/apps/opt/lib </LAPACK_LIBDIR>
+  <PIO_TYPENAME>netcdf</PIO_TYPENAME>
 </compiler>
 
 
@@ -493,13 +500,13 @@ for mct, etc.
   <TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
   <PAPI_INC> /glade/apps/opt/papi/5.3.0/intel/12.1.5/include/</PAPI_INC>
   <PAPI_LIB>/glade/apps/opt/papi/5.3.0/intel/12.1.5/lib64 </PAPI_LIB>
-  <ADD_SLIBS> -Wl,-rpath $(PAPI_LIB) -L$(PAPI_LIB) -lpapi</ADD_SLIBS>
+  <ADD_SLIBS> -Wl,-rpath ${PAPI_LIB} -L${PAPI_LIB} -lpapi</ADD_SLIBS>
 </compiler>
 
 
 
 <compiler MACH="yellowstone" COMPILER="intel">
-  <PFUNIT_PATH>/glade/u/home/sacks/pFUnit/pFUnit3.0.1_Intel14.0.2_Serial</PFUNIT_PATH>
+  <PFUNIT_PATH>/glade/u/home/sacks/pFUnit/pFUnit3.1_Intel15.0.1_MPI</PFUNIT_PATH>
 </compiler>
 
 <compiler MACH="yellowstone" COMPILER="pgi">
@@ -814,6 +821,42 @@ for mct, etc.
  <ADD_LDFLAGS> -Wl,-R$(NETCDF_PATH)/lib</ADD_LDFLAGS>
  <ADD_LDFLAGS> -Wl,-R$(COMPILER_PATH)/lib</ADD_LDFLAGS>
  <ADD_LDFLAGS> -Wl,-R$(COMPILER_PATH)/libso</ADD_LDFLAGS>
+</compiler>
+
+<compiler MACH="hobart">
+ <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
+ <MPI_LIB_NAME MPILIB="mvapich2"> mpich</MPI_LIB_NAME>
+ <LAPACK_LIBDIR> /usr/lib64 </LAPACK_LIBDIR>
+ <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
+<GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="hobart">
+ <ADD_LDFLAGS> -lquadmath </ADD_LDFLAGS>
+ <ADD_LDFLAGS> -Wl,-rpath,$(NETCDF_PATH)/lib </ADD_LDFLAGS>
+ <ADD_LDFLAGS> -Wl,-rpath,$(COMPILER_PATH)/lib/intel64 </ADD_LDFLAGS>
+ <ADD_LDFLAGS> -Wl,-rpath,$(COMPILER_PATH)/mkl/lib/intel64 </ADD_LDFLAGS>
+ <ADD_LDFLAGS> -Wl,-rpath,$(MPI_PATH)/lib</ADD_LDFLAGS>
+ <ADD_SLIBS MPILIB="mvapich2"> -mkl=cluster </ADD_SLIBS>
+ <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_Intel_3_0</PFUNIT_PATH>
+</compiler>
+
+<compiler COMPILER="pgi" MACH="hobart">
+ <ADD_CFLAGS DEBUG="FALSE"> -O0 </ADD_CFLAGS>
+ <ADD_FFLAGS DEBUG="FALSE"> -O0 </ADD_FFLAGS>
+ <ADD_LDFLAGS> -lgomp </ADD_LDFLAGS>
+ <ADD_LDFLAGS> -Wl,-R$(NETCDF_PATH)/lib</ADD_LDFLAGS>
+ <ADD_LDFLAGS> -Wl,-R$(COMPILER_PATH)/lib</ADD_LDFLAGS>
+ <ADD_LDFLAGS> -Wl,-R$(COMPILER_PATH)/libso</ADD_LDFLAGS>
+</compiler>
+
+<compiler COMPILER="nag" MACH="hobart">
+ <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_NAG_3_0</PFUNIT_PATH>
+ <!-- needed for nag pio build.. -->
+ <ADD_CPPDEFS> -DNO_C_SIZEOF </ADD_CPPDEFS>
+ <ADD_LDFLAGS> -lpthread</ADD_LDFLAGS>
+ <!-- Experimental wrapper for OpenMP. -->
+ <!-- <ADD_LDFLAGS compile_threaded="true"> -L/home/santos/lib/fake_omp -lfake_omp -Wl,-Wl,,rpath=/home/santos/lib/fake_omp  -->
 </compiler>
 
 <compiler MACH="logan">

@@ -758,7 +758,8 @@ contains
 
   !===============================================================================
 
-  subroutine component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, samegrid_ro)
+  subroutine component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, &
+       samegrid_ro, samegrid_lg)
 
     !---------------------------------------------------------------
     ! Description
@@ -768,7 +769,7 @@ contains
     use prep_ocn_mod,       only : prep_ocn_get_mapper_Fa2o
     use prep_lnd_mod,       only : prep_lnd_get_mapper_Sa2l
     use prep_ice_mod,       only : prep_ice_get_mapper_SFo2i
-    use prep_glc_mod,       only : prep_glc_get_mapper_SFl2g
+    use prep_glc_mod,       only : prep_glc_get_mapper_Sl2g
     use component_type_mod, only : atm, lnd, ice, ocn, rof, glc
     !
     ! Arguments
@@ -777,6 +778,7 @@ contains
     logical                  , intent(in)    :: samegrid_ao
     logical                  , intent(in)    :: samegrid_al
     logical                  , intent(in)    :: samegrid_ro
+    logical                  , intent(in)    :: samegrid_lg  ! lnd & glc on same grid
     !
     ! Local variables
     type(mct_gsmap), pointer :: gsmap_s, gsmap_d
@@ -784,7 +786,7 @@ contains
     type(seq_map)  , pointer :: mapper_Fa2o
     type(seq_map)  , pointer :: mapper_Sa2l
     type(seq_map)  , pointer :: mapper_SFo2i
-    type(seq_map)  , pointer :: mapper_SFl2g
+    type(seq_map)  , pointer :: mapper_Sl2g
     logical                  :: atm_present ! atm present flag
     logical                  :: lnd_present ! lnd present flag
     logical                  :: ocn_present ! ocn present flag
@@ -800,7 +802,7 @@ contains
     mapper_Fa2o  => prep_ocn_get_mapper_Fa2o()
     mapper_Sa2l  => prep_lnd_get_mapper_Sa2l()
     mapper_SFo2i => prep_ice_get_mapper_SFo2i()
-    mapper_SFl2g => prep_glc_get_mapper_SFl2g()
+    mapper_Sl2g  => prep_glc_get_mapper_Sl2g()
 
     call seq_infodata_GetData( infodata, &
          atm_present=atm_present,        &
@@ -866,10 +868,19 @@ contains
     end if
 
     if (lnd_present .and. glc_present) then
-       dom_s  => component_get_dom_cx(lnd(1))   !dom_lx
-       dom_d  => component_get_dom_cx(glc(1))   !dom_gx
+       if (samegrid_lg) then
+          dom_s  => component_get_dom_cx(lnd(1))   !dom_lx
+          dom_d  => component_get_dom_cx(glc(1))   !dom_gx
 
-       call seq_map_map(mapper_SFl2g, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+          call seq_map_map(mapper_Sl2g, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+       else
+          gsmap_d => component_get_gsmap_cx(glc(1)) ! gsmap_gx
+          dom_d   => component_get_dom_cx(glc(1))   ! dom_gx
+
+          call seq_map_readdata('seq_maps.rc','lnd2glc_fmapname:',mpicom_CPLID, CPLID, &
+               gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
+               string='lnd2glc aream initialization')
+       endif
     endif
 
   end subroutine component_init_aream

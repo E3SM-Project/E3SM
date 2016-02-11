@@ -112,7 +112,7 @@
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
          <PES_PER_NODE>16</PES_PER_NODE>
-         <batch_system name="pbs" version="x.y">
+         <batch_system type="pbs" version="x.y">
            <queues>
              <queue walltimemax="10:00:00" jobmin="1" jobmax="9999" default="true">regular</queue>
            </queues>
@@ -153,7 +153,7 @@
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>192</MAX_TASKS_PER_NODE>
          <PES_PER_NODE>60</PES_PER_NODE>
-         <batch_system name="pbs" version="x.y">
+         <batch_system type="pbs" version="x.y">
            <queues>
              <queue walltimemax="04:00:00" jobmin="1" jobmax="9999" default="true">regular</queue>
            </queues>
@@ -230,7 +230,7 @@
          <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>1</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-         <batch_system name="pbs" version="x.y">
+         <batch_system type="pbs" version="x.y">
            <queues>
              <queue walltimemax="00:59:00" jobmin="1" jobmax="9999" default="true">batch</queue>
            </queues>
@@ -276,7 +276,7 @@
          <SUPPORTED_BY>tcraig -at- ucar.edu</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-         <batch_system name="slurm" version="x.y">
+         <batch_system type="slurm" version="x.y">
            <queues>
              <queue jobmin="1" jobmax="9999" default="true">batch</queue>
            </queues>
@@ -496,6 +496,46 @@
          <BATCHREDIRECT></BATCHREDIRECT>
          <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+         <batch_system type="pbs" version="x.y">
+           <queues>
+             <queue walltimemax="01:00:00" jobmin="1" jobmax="16">short</queue>
+             <queue walltimemax="24:00:00" jobmin="1" jobmax="16" default="true">long</queue>
+           </queues>
+           <walltimes>
+             <walltime default="true">02:00:00</walltime>
+           </walltimes>
+         </batch_system>
+         <mpirun mpilib="default">
+           <executable>mpiexec</executable>
+           <arguments>
+             <arg name="machine_file">--machinefile $ENV{'PBS_NODEFILE'}</arg>
+             <arg name="num_tasks"> -n {{ num_tasks }} </arg>
+           </arguments>
+         </mpirun>
+</machine>
+
+<machine MACH="hobart">
+         <DESC>"NCAR CGD Linux Cluster 48 pes/node, batch system is PBS"</DESC>
+         <COMPILERS>intel,pgi,nag,gnu</COMPILERS>
+         <MPILIBS>mvapich2,openmpi,mpi-serial</MPILIBS>
+         <RUNDIR>/scratch/cluster/$CCSMUSER/$CASE/run</RUNDIR>
+         <EXEROOT>/scratch/cluster/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/scratch/cluster/$USER</CESMSCRATCHROOT>
+         <OBJROOT>$EXEROOT</OBJROOT>
+         <INCROOT>$EXEROOT/lib/include</INCROOT>
+         <DIN_LOC_ROOT>/fs/cgd/csm/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/project/tss</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/scratch/cluster/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>/`echo $CCSMUSER | tr '[a-z]' '[A-Z]'`/csm/$CASE</DOUT_L_MSROOT>
+         <CCSM_BASELINE>/fs/cgd/csm/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/fs/cgd/csm/tools/cprnc_64/cprnc</CCSM_CPRNC>
+         <OS>LINUX</OS>
+         <BATCHQUERY>qstat</BATCHQUERY>
+         <BATCHREDIRECT></BATCHREDIRECT>
+         <BATCHSUBMIT>qsub </BATCHSUBMIT>
+         <GMAKE_J>4</GMAKE_J>
+         <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
+         <PES_PER_NODE>24</PES_PER_NODE>
          <batch_system type="pbs" version="x.y">
            <queues>
              <queue walltimemax="01:00:00" jobmin="1" jobmax="16">short</queue>
@@ -1065,7 +1105,7 @@
         <SUPPORTED_BY>cseg</SUPPORTED_BY>
         <GMAKE_J>8</GMAKE_J>
         <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>
-        <PES_PER_NODE>16</PES_PER_NODE>
+         <PES_PER_NODE>16</PES_PER_NODE>
         <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
         <batch_system type="lsf" version="9.1">
         <queues>

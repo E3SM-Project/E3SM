@@ -9,8 +9,8 @@
     </grid>
     <grid name="f45_g37">
       <test name="PEA_P1_M">
-        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">goldbach</machine>
-        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">goldbach</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">hobart</machine>
+        <machine compiler="pgi" testtype="prebeta" testmods="allactive/default">hobart</machine>
       </test>
     </grid>
   </compset>
@@ -204,7 +204,7 @@
   <compset name="BGC5L45BGC">
     <grid name="T31_g37">
       <test name="SMS_D_Ld5">
-        <machine compiler="nag" testtype="prebeta" testmods="allactive/cism/test_coupling">goldbach</machine>
+        <machine compiler="nag" testtype="prebeta" testmods="allactive/cism/test_coupling">hobart</machine>
       </test>
     </grid>
     <grid name="f19_g16">
@@ -267,7 +267,7 @@
         <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
       </test>
       <test name="ERS_N2_Ld7">
-        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">goldbach</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/default">hobart</machine>
       </test>
     </grid>
   </compset>

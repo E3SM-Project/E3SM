@@ -1,37 +1,98 @@
-#! /bin/csh -f
+#!/usr/bin/env perl
+use strict;
+use Getopt::Long;
+use File::Path;
 
-set CASE	    = `./xmlquery  CASE		  -value `
-set EXEROOT	    = `./xmlquery  EXEROOT        -value `
-set LIBROOT	    = `./xmlquery  LIBROOT	  -value `
-set SHAREDLIBROOT   = `./xmlquery  SHAREDLIBROOT  -value `
-set COMP_INTERFACE  = `./xmlquery  COMP_INTERFACE -value `
-set NINST_VALUE	    = `./xmlquery  NINST_VALUE	  -value `
+my $CASE   = `./xmlquery  CASE		  -value `;
+my $GMAKE	    = `./xmlquery  GMAKE	  -value `;
+my $CASETOOLS  = `./xmlquery  CASETOOLS -value `;
+# these are needed by the makefile and need to be in the environment
 
-if ( "X$1" == "Xall") then
-  echo "cleaning $EXEROOT"
-  rm -rf $EXEROOT
-  echo "cleaning $SHAREDLIBROOT"
-  rm -rf $SHAREDLIBROOT
-else
-  rm -r -f $EXEROOT/*/obj        >& /dev/null
-  rm -r -f $EXEROOT/*/source     >& /dev/null
-  rm -r -f $LIBROOT              >& /dev/null
-  rm    -f $EXEROOT/cesm.exe     >& /dev/null
-  rm    -f $EXEROOT/config.cache >& /dev/null
-  rm   -rf $SHAREDLIBROOT/$COMP_INTERFACE/$NINST_VALUE
+$ENV{CASEROOT} = `./xmlquery  CASEROOT -value `;
 
-# need to remove the whole glc directory, to get rid of CMake-related stuff
-  rm -r -f $EXEROOT/glc          >& /dev/null
-endif
 
-rm -f LockedFiles/env_build*  >& /dev/null
+sub usage {
+    die <<EOF;
+    
+SYNOPSIS
+    $CASE.clean_build [options]
+    Removes existing CESM object files and libraries  
 
-./xmlchange -noecho -file env_build.xml -id SMP_BUILD	   -val 0
-./xmlchange -noecho -file env_build.xml -id NINST_BUILD	   -val 0
-./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE
-./xmlchange -noecho -file env_build.xml -id BUILD_STATUS   -val 0
+OPTIONS
+  all Cleans all objects
+   no arguments implies -a -c -o -w -g -i -r -l
+   -a Cleans the atm objects 
+   -c Cleans the cpl objects
+   -o Cleans the ocn objects
+   -w Cleans the wav objects
+   -g Cleans the glc objects
+   -i  Cleans the ice objects
+   -r  Cleans the rof objects
+   -l  Cleans the lnd objects
+  -m Cleans the mct library
+  -s   Cleans the shr library
+  -p  Cleans the pio library
+  -t  Cleans the timing library (gptl)
+  -h  Print Usage and exit.
+EOF
+}
+my %opts;
 
-echo "CESM $CASE clean_build FINISHED SUCCESSFULLY"
 
-exit 0
+GetOptions(
+    "h|help" => \$opts{help},
+    "a" => \$opts{atm},
+    "c" => \$opts{cpl},
+    "o" => \$opts{ocn},
+    "w" => \$opts{wav},
+    "g" => \$opts{glc},
+    "i" => \$opts{ice},
+    "r" => \$opts{rof},
+    "l" => \$opts{lnd},
+    "m" => \$opts{mct},
+    "s" => \$opts{csmshare},
+    "t" => \$opts{gptl},
+    "p" => \$opts{pio},
+) or usage();    
 
+usage() if($opts{help});
+
+my @opts = keys %opts;
+my $cnt=0;
+foreach(@opts){
+    $cnt += $opts{$_};
+}
+
+# Set defaults - look for 'all' if no arguments provided, this preserves legacy functionality
+if( $cnt==0){
+    my $all = shift;
+    print "$all\n";
+    if($all eq 'all'){
+	$opts{mct}=1;
+	$opts{pio}=1;
+	$opts{gptl}=1;
+	$opts{csmshare}=1;
+    }
+    $opts{atm} = 1;
+    $opts{cpl} = 1;
+    $opts{ocn} = 1;
+    $opts{wav} = 1;
+    $opts{glc} = 1;
+    $opts{ice} = 1;
+    $opts{rof} = 1;
+    $opts{lnd} = 1;
+}
+
+my $sysmod = "$GMAKE -f $CASETOOLS/Makefile ";
+
+foreach my $lib (@opts){
+    if($opts{$lib}==1){
+	$sysmod .= "clean$lib ";
+    }
+}
+system($sysmod) == 0 or die "$sysmod failed: $?\n";
+my @lockedfiles = glob("LockedFiles/env_build*");
+foreach my $lf (@lockedfiles) {
+    unlink($lf);
+}
+system("./xmlchange SMP_BUILD=0,NINST_BUILD=0,BUILD_COMPLETE=FALSE,BUILD_STATUS=0");

@@ -7,7 +7,6 @@ module mct_wrapper_mod
   
   implicit none
   private
-  save
 
 #include <mpif.h>
 

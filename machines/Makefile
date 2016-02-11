@@ -13,7 +13,9 @@ null  :=
 comma := ,
 
 # Load dependency search path.
-dirs := . $(shell cat Filepath)
+dirs := . 
+dirs += $(shell cat Filepath)
+
 cpp_dirs := $(dirs)
 # Add INCROOT to path for Depends and Include
 MINCROOT := 
@@ -104,6 +106,26 @@ else
 endif
 ifeq ($(compile_threaded), true)
   CPPDEFS += -DTHREADED_OMP
+endif
+
+ifeq (,$(EXEROOT))
+	EXEROOT = $(shell ./xmlquery EXEROOT -value)
+endif
+ifeq (,$(LIBROOT))
+	LIBROOT = $(shell ./xmlquery LIBROOT -value)
+endif
+ifeq (,$(SHAREDLIBROOT))
+	SHAREDLIBROOT = $(shell ./xmlquery SHAREDLIBROOT -value)
+endif
+ifeq (,$(COMPILER))
+	COMPILER = $(shell ./xmlquery COMPILER -value)
+endif
+ifeq (,$(MPILIB))
+	MPILIB = $(shell ./xmlquery MPILIB -value)
+endif
+
+ifeq (,$(SHAREDPATH))
+	SHAREDPATH = $(SHAREDLIBROOT)/$(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
 endif
 
 include $(CASEROOT)/Macros
@@ -295,7 +317,7 @@ else
        # get the base path to the compiler without any 
        # acrobatics.
        CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
-       SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf53
+       SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf60rts
     endif
   endif
 endif
@@ -709,25 +731,63 @@ $(LIBROOT)/libcvmix.a:
 %.F90: %.F90.in
 	$(CIMEROOT)/externals/genf90/genf90.pl $< > $@
 
+cleanatm:
+	$(RM) -f $(LIBROOT)/libatm.a
+	cd $(EXEROOT)/atm/obj;  $(RM) -f *.o *.mod
 
-mostlyclean:
-	$(RM) -f *.f *.f90 
+cleancpl:
+	cd $(EXEROOT)/cpl/obj;  $(RM) -f *.o *.mod
 
-clean: mostlyclean
-	$(RM) -f *.d *.$(MOD_SUFFIX) $(OBJS) Srcfiles Filepath Deppath Depends
+cleanocn: 
+	$(RM) -f $(LIBROOT)/libocn.a $(LIBROOT)/libcvmix.a
+	cd $(EXEROOT)/ocn/obj ; $(RM) -f *.o *.mod
 
-realclean: clean
-	$(RM) -f $(EXEC_SE)
+cleanwav: 
+	$(RM) -f $(LIBROOT)/libwav.a
+	cd $(EXEROOT)/wav/obj ; $(RM) -f *.o *.mod
+
+cleanglc: 
+	$(RM) -f $(LIBROOT)/libglc.a
+	$(RM) -fr $(EXEROOT)/glc 
+
+cleanice: 
+	$(RM) -f $(LIBROOT)/libice.a
+	cd $(EXEROOT)/ice/obj ; $(RM) -f *.o *.mod
+
+cleanrof: 
+	$(RM) -f $(LIBROOT)/librof.a
+	cd $(EXEROOT)/rof/obj ; $(RM) -f *.o *.mod
+
+cleanlnd: 
+	$(RM) -f $(LIBROOT)/liblnd.a
+	cd $(EXEROOT)/lnd/obj ; $(RM) -f *.o *.mod
+
+cleancsmshare:
+	$(RM) -f $(CSMSHARELIB)
+	$(RM) -fr $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share
+
+cleanpio:
+	$(RM) -f $(PIOLIB)
+	$(RM) -fr $(PIO_LIBDIR)
+
+cleanmct:
+	$(RM) -f $(MCTLIBS)
+	$(RM) -fr $(MCT_LIBDIR)
+
+cleangptl:
+	$(RM) -f $(GPTLLIB)
+	$(RM) -fr $(GPTL_LIBDIR)
+
+clean: cleanatm cleanocn cleanwav cleanglc cleanice cleanrof cleanlnd
+
+realclean: clean cleancsmshare cleanpio cleanmct cleangptl
+
 
 # the if-tests prevent DEPS files from being created when they're not needed
 ifneq ($(MAKECMDGOALS), db_files)
 ifneq ($(MAKECMDGOALS), db_flags)
-ifneq ($(MAKECMDGOALS), mostlyclean)
-ifneq ($(MAKECMDGOALS), clean)
-ifneq ($(MAKECMDGOALS), realclean)
+ifeq (,$(findstring clean,$(MAKECMDGOALS)))
     -include $(CURDIR)/Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH)
-endif
-endif
 endif
 endif
 endif

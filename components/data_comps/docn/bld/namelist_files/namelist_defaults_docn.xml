@@ -48,6 +48,7 @@ Currently the following docn modes are supported
 <datamode docn_mode="null"       >NULL</datamode>
 <datamode docn_mode="prescribed" >SSTDATA</datamode>
 <datamode docn_mode="som"        >SOM</datamode>
+<datamode docn_mode="interannual">IAF</datamode>
 <datamode docn_mode="copyall"    >COPYALL</datamode>
 
 <!-- =========================================  -->
@@ -56,6 +57,7 @@ Currently the following docn modes are supported
 
 <streamslist docn_mode="prescribed" >prescribed</streamslist>
 <streamslist docn_mode="som"        >som</streamslist>
+<streamslist docn_mode="interannual">interannual</streamslist>
 <streamslist docn_mode="copyall"    >copyall</streamslist>
 
 <!-- ===================================================  -->
@@ -182,6 +184,26 @@ Currently the following docn modes are supported
   dhdy  dhdy
   hblt  h
   qdp   qbot
+</strm_datvar>
+
+<!-- ===================================================  -->
+<!--- stream: interannual                                         -->
+<!-- ===================================================  -->
+
+<strm_year_align stream="interannual">1</strm_year_align>
+<strm_year_start stream="interannual">1850</strm_year_start>
+<strm_year_end   stream="interannual">2014</strm_year_end>
+<strm_domdir     stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</strm_domdir>
+<strm_domfil     stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</strm_domfil>
+<strm_datdir     stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</strm_datdir>
+<strm_datfil     stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</strm_datfil>
+<strm_domvar     stream="interannual">
+  time    time
+  lon      lon
+  lat      lat
+</strm_domvar>
+<strm_datvar     stream="interannual"> 
+  SST_cpl  t
 </strm_datvar>
 
 <!-- =========================================  -->

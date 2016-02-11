@@ -7,6 +7,7 @@ use Getopt::Long;
 use IO::File;
 use IO::Handle;
 
+
 sub usage {
     die <<EOF;
 
@@ -52,6 +53,28 @@ my $COMP_OCN		= `./xmlquery  COMP_OCN		-value`;
 my $COMP_GLC		= `./xmlquery  COMP_GLC		-value`;
 my $COMP_WAV		= `./xmlquery  COMP_WAV		-value`;
 my $COMP_ROF		= `./xmlquery  COMP_ROF		-value`;
+my $CIMEROOT             	= `./xmlquery  CIMEROOT		-value`;
+my $COMPILER             	= `./xmlquery  COMPILER		-value`;
+my $CIMEROOT             	= `./xmlquery  CIMEROOT		-value`;
+my $MACH             	        = `./xmlquery  MACH		-value`;
+my $MPILIB             	= `./xmlquery  MPILIB		-value`;
+my $DEBUG             	= `./xmlquery  DEBUG		-value`;
+# ------------------------------------------
+#  Load Modules
+# ------------------------------------------
+
+
+my $perl5lib = "$CIMEROOT/utils/perl5lib";
+push(@INC, $perl5lib);
+require Module::ModuleLoader;
+
+my $moduleloader = new Module::ModuleLoader(machine => "$MACH", compiler => "$COMPILER",
+	                                    mpilib => $MPILIB, debug => $DEBUG, 
+	                                    scriptsroot => "$CIMEROOT/scripts", caseroot => "$CASEROOT");
+$moduleloader->loadModules();
+
+
+
 
 # -------------------------------------------------------------------------
 # Make necessary directories

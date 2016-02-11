@@ -1247,7 +1247,7 @@ NAME:
 
     my $atm_grid, my $lnd_grid, my $ice_grid, my $ocn_grid;
     my $rof_grid, my $glc_grid, my $wav_grid;
-    my $cism_grid, my $mask_grid; 
+    my $mask_grid; 
 
     # first determine if there is any compset attribute for this grid
     $found = 0;
@@ -1314,15 +1314,12 @@ NAME:
     }
 
     $grid_longname =~ /(a%)(.+)(_l%)/ ; $atm_grid  = $2;
-    $grid_longname =~ /(l%)(.+)(_oi%)/; $lnd_grid  = $2; $glc_grid = $2;
+    $grid_longname =~ /(l%)(.+)(_oi%)/; $lnd_grid  = $2;
     $grid_longname =~ /(oi%)(.+)(_r%)/; $ocn_grid  = $2; $ice_grid = $2;
     $grid_longname =~ /(r%)(.+)(_m%)/ ; $rof_grid  = $2; 
     $grid_longname =~ /(m%)(.+)(_g%)/ ; $mask_grid = $2; 
-    $grid_longname =~ /(g%)(.+)(_w%)/ ; $cism_grid = $2; 
+    $grid_longname =~ /(g%)(.+)(_w%)/ ; $glc_grid  = $2; 
     $grid_longname =~ /(w%)(.+)$/     ; $wav_grid  = $2; 
-    if ($cism_grid ne 'null') {
-	$cfg_ref->set('CISM_GRID',$cism_grid);
-    }
 
     # ========================================================
     # check that compset is supported for target grid
@@ -1417,9 +1414,6 @@ NAME:
 	if ($mask_grid eq $hgrid) {
 	    $cfg_ref->set('MASK_GRID',$gridname);
 	}
-	if ($cism_grid eq $hgrid) {
-	    $cfg_ref->set('CISM_GRID',$gridname);
-	}
     }
 
     my $atm_grid = $cfg_ref->get('ATM_GRID');
@@ -1503,6 +1497,8 @@ NAME:
 	if ($attr{'atm_grid'} && $attr{'lnd_grid'}) {$found = 1;}
 	if ($attr{'rof_grid'} && $attr{'lnd_grid'}) {$found = 1;}
 	if ($attr{'rof_grid'} && $attr{'ocn_grid'}) {$found = 1;}
+        if ($attr{'lnd_grid'} && $attr{'glc_grid'}) {$found = 1;}
+        if ($attr{'ocn_grid'} && $attr{'glc_grid'}) {$found = 1;}
 	unless ($found) {
 	    die "ERROR in config_grid.xml gridmap element attributes \n";
 	}
@@ -1530,6 +1526,20 @@ NAME:
 	    }
 	    if ($attr{'rof_grid'} && $attr{'ocn_grid'}) {
 		if ($rof_grid eq $attr{'rof_grid'} && $ocn_grid eq $attr{'ocn_grid'}) {
+		    my $name = clean($child->get_name());
+		    my $val  = clean($child->get_text());
+		    $cfg_ref->set($name, $val);
+		}
+	    }
+	    if ($attr{'lnd_grid'} && $attr{'glc_grid'}) {
+		if ($lnd_grid eq $attr{'lnd_grid'} && $glc_grid eq $attr{'glc_grid'}) {
+		    my $name = clean($child->get_name());
+		    my $val  = clean($child->get_text());
+		    $cfg_ref->set($name, $val);
+		}
+	    }
+	    if ($attr{'ocn_grid'} && $attr{'glc_grid'}) {
+		if ($ocn_grid eq $attr{'ocn_grid'} && $glc_grid eq $attr{'glc_grid'}) {
 		    my $name = clean($child->get_name());
 		    my $val  = clean($child->get_text());
 		    $cfg_ref->set($name, $val);
@@ -1729,11 +1739,6 @@ NAME:
     $grg = $cfg_ref->get('GLC_GRID');
     $nxw = $cfg_ref->get('WAV_NX'); $nyw= $cfg_ref->get('WAV_NY'); 
     $grw = $cfg_ref->get('WAV_GRID');
-
-    if ($compset_longname =~ /CISM/) {
-	$grid = $cfg_ref->get('CISM_GRID');
-	if ($print) {print "  CISM_GRID = $grid \n";}
-    }
 
     if ($print) {
 	# output to standard out

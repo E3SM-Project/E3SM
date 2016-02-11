@@ -129,6 +129,13 @@
       </test>
     </grid>
   </compset>
+  <compset name="AIAF">
+    <grid name="T62_g16">
+      <test name="ERS_Lm3">
+        <machine compiler="intel" testtype="prealpha">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
   <compset name="X">
     <grid name="T31_g37">
       <test name="PEA_P1_M_Ld3">

@@ -260,18 +260,6 @@
 	 sdesc="CESM grid - DO NOT EDIT (for experts only)"
 	 ></entry>
 
-  <entry id="CISM_GRID" 
-	 type="char"
-	 valid_values="gland20,gland10,gland5,gland5UM,gland4,null"  
-	 value="gland5UM" 
-	 group="run_component_cism"
-	 sdesc="Glacier model grid"
-	 ldesc="The glimmer-cism grid for coupling is assumed to be identical to the land grid. 
-		CISM_GRID determines the specific local internal grid that CISM will use for 
-		internal calculations. 
-		The default is gland5UM (5km grid)."
-	 ></entry> 
-
   <entry id="ATM_GRID" 
 	 type="char"
 	 valid_values="" 
@@ -394,10 +382,10 @@
 
   <entry id="GLC_GRID" 
 	 type="char"
-	 valid_values=""
+         valid_values="gland20,gland10,gland5,gland5UM,gland4,null"  
 	 value="UNSET" 
 	 group="build_grid"
-	 sdesc="river runoff (glc) grid"
+         sdesc="glacier (glc) grid - DO NOT EDIT (for experts only)"
 	 ></entry>
 
   <entry id="GLC_NX" 
@@ -964,6 +952,78 @@
 	    sdesc="glc2ice runoff mapping file decomp type"
 	    ></entry>
      -->
+
+  <entry id="LND2GLC_FMAPNAME" 
+         type="char"
+         valid_values="" 
+         value="idmap" 
+         group="run_domain"
+         sdesc="lnd2glc flux mapping file"
+         ></entry>
+
+  <!---
+      <entry id="LND2GLC_FMAPTYPE" 
+      type="char"
+      valid_values="X,Y" 
+      value="X" 
+      group="run_domain"
+      sdesc="lnd2glc flux mapping file decomp type"
+      ></entry>
+  -->
+
+  <entry id="LND2GLC_SMAPNAME" 
+         type="char"
+         valid_values="" 
+         value="idmap" 
+         group="run_domain"
+         sdesc="lnd2glc state mapping file"
+         ></entry>
+  
+  <!---
+      <entry id="LND2GLC_SMAPTYPE" 
+      type="char"
+      valid_values="X,Y" 
+      value="X" 
+      group="run_domain"
+      sdesc="lnd2glc state mapping file decomp type"
+      ></entry>
+  -->
+
+  <entry id="GLC2LND_FMAPNAME" 
+         type="char"
+         valid_values="" 
+         value="idmap" 
+         group="run_domain"
+         sdesc="glc2lnd flux mapping file"
+         ></entry>
+  
+  <!---
+      <entry id="GLC2LND_FMAPTYPE" 
+             type="char"
+             valid_values="X,Y" 
+             value="Y" 
+             group="run_domain"
+             sdesc="glc2lnd flux mapping file decomp type"
+             ></entry>
+      -->
+
+  <entry id="GLC2LND_SMAPNAME" 
+         type="char"
+         valid_values="" 
+         value="idmap" 
+         group="run_domain"
+         sdesc="glc2lnd state mapping file"
+         ></entry>
+
+  <!---
+      <entry id="GLC2LND_SMAPTYPE" 
+      type="char"
+      valid_values="X,Y" 
+      value="Y" 
+      group="run_domain"
+      sdesc="glc2lnd state mapping file decomp type"
+      ></entry>
+  -->
 
   <entry id="ATM2WAV_SMAPNAME" 
 	 type="char"
@@ -1973,7 +2033,7 @@
 
   <entry id="DOCN_MODE" 
 	 type="char"
-	 valid_values="prescribed,som,copyall,null" 
+	 valid_values="prescribed,som,copyall,interannual,null" 
 	 value="prescribed"
 	 group="run_component_docn"
 	 sdesc="DOCN mode"

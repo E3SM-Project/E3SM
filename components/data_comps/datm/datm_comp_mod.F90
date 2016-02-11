@@ -29,6 +29,7 @@ module datm_comp_mod
   use seq_comm_mct     , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
   use seq_flds_mod     , only: seq_flds_a2x_fields, &
                                seq_flds_x2a_fields
+  use shr_precip_mod   , only: shr_precip_partition_rain_snow_ramp
 !
 ! !PUBLIC TYPES:
   implicit none
@@ -1253,9 +1254,7 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
          endif
 
          !--- split precip between rain & snow ---
-         !--- note: aribitrarily small negative values cause CLM to crash ---
-         frac = (tbot - tkFrz)*0.5_R8                  ! ramp near freezing
-         frac = min(1.0_R8,max(0.0_R8,frac))           ! bound in [0,1]
+         call shr_precip_partition_rain_snow_ramp(tbot, frac)
          a2x%rAttr(ksc,n) = max(0.0_R8, a2x%rAttr(krc,n)*(1.0_R8 - frac) )
          a2x%rAttr(ksl,n) = max(0.0_R8, a2x%rAttr(krl,n)*(1.0_R8 - frac) )
          a2x%rAttr(krc,n) = max(0.0_R8, a2x%rAttr(krc,n)*(         frac) )

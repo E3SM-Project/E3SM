@@ -97,6 +97,8 @@ sub new
 
 }
 
+sub max ($$) { $_[$_[0] < $_[1]] }
+sub min ($$) { $_[$_[0] > $_[1]] }
 
 #==============================================================================
 # get a new ConfigCase object, resolve the case values. 
@@ -242,7 +244,11 @@ sub _computeValues
 		{
 			print "self Max_TASKS_PER_NODE: $self->{'MAX_TASKS_PER_NODE'}\n";
 			print "threadcount $threadcount\n";
-			$taskpernode = $self->{'MAX_TASKS_PER_NODE'} / $threadcount;
+			if(defined $self->{'PES_PER_NODE'}){
+			    $taskpernode = min($self->{'PES_PER_NODE'},$self->{'MAX_TASKS_PER_NODE'} / $threadcount);
+			}else{
+			    $taskpernode = $self->{'MAX_TASKS_PER_NODE'} / $threadcount;
+			}
 			$taskpernode = ($taskpernode > $taskcount) ? $taskcount : $taskpernode;
 			$aprun = $aprun . " -n $taskcount  -N $taskpernode -d $threadcount \${$self->{'EXEROOT'}/cesm.exe";
 			my $nodecount = $taskcount / $taskpernode;
@@ -260,7 +266,7 @@ sub _computeValues
 	$self->{'fullsum'} = $fullsum;
 	$taskgeom = $taskgeom.")";
 	$self->{'taskgeom'} = $taskgeom;
-	$taskpernode = $self->{'MAX_TASKS_PER_NODE'} / $threadcount;
+	$taskpernode = min($self->{'PES_PER_NODE'},$self->{'MAX_TASKS_PER_NODE'} / $threadcount);
 	$taskpernode = ($taskpernode > $taskcount) ? $taskcount : $taskpernode;
 	if($self->{'COMPILER'} eq "intel" && $taskpernode > 1)
 	{
@@ -475,4 +481,6 @@ sub document()
 	
 	return $doc;
 }
+    
+
 1;

@@ -38,7 +38,7 @@
 <entry>CFAIL SSP_Ld10.f19_g16.I1850CLM45BGC.yellowstone_pgi</entry>
 
 <entry>RUN ERS_N2_Ld7.f19_g16.BHISTC5CN.yellowstone_gnu.allactive-default</entry>
-<entry>RUN ERP_P15x2_D_Ld5.f10_f10.I1850CLM45BGC.yellowstone_pgi.clm-ciso</entry>
+
 <entry>RUN ERS_D_Ld7.f19_g16.BTSC4L40CCMIS2R45.yellowstone_intel.allactive-default</entry>
 <entry>RUN NCK_Ld5.f19_g16.BGC5L45BGC.yellowstone_intel.allactive-cism-test_coupling</entry>
 <entry>RUN ERS.f09_g16.B1850C5CN.bluewaters_pgi</entry>
@@ -83,7 +83,6 @@
 <entry>RUN ERS_Ld5.f09_g16.ETEST.mira_ibm.cice-default</entry>
 <entry>RUN ERS_Ld7.f09_g16.B1850RMCN.mira_ibm.allactive-default</entry>
 <entry>RUN ERS_Ld9.ne120_g16.B1850C5L45BGC.mira_ibm.allactive-default</entry>
-<entry>RUN ERS.f09_g16.B1850C5CN.mira_ibm.allactive-default</entry>
 
 <entry> FAIL ERP_Ld9.f19_f19.FSTRATSOA.yellowstone_gnu.cam-outfrq9s.cpl.hi.nc : baseline compare cpl.hi (baseline: compare .base file with debug_b18base file) </entry>
 <entry> FAIL ERP_Ln9.ne30_ne30.FAMIPC5L60.yellowstone_intel.cam-outfrq9s.cpl.hi.nc : baseline compare cpl.hi (baseline: compare .base file with debug_b18base file) </entry>
