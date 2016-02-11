@@ -390,7 +390,7 @@ Contains
     end if
 
     ! Check the compression settings of the variables.
-    ret_val = PIO_inq_vardeflate(pio_file, pio_var, shuffle, deflate, deflate_level)
+    ret_val = PIO_inq_var_deflate(pio_file, pio_var, shuffle, deflate, deflate_level)
 
     ! Should not have worked except for netCDF-4/HDF5 serial.
     if (iotype .eq. PIO_iotype_netcdf4c) then
