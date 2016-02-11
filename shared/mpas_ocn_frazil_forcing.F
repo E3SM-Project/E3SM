@@ -531,24 +531,6 @@ contains
 
 !***********************************************************************
 !
-!  function ocn_freezing_temperature
-!
-!> \brief   Computes the freezing temperature of the ocean.
-!> \author  Todd Ringler
-!> \date    10/29/2015
-!> \details
-!>  This routine computes the freezing temperature of the ocean at a given
-!>  salinity value.
-!
-!-----------------------------------------------------------------------
-    real (kind=RKIND) function ocn_freezing_temperature(salinity)!{{{
-      real (kind=RKIND) :: salinity !< Input: Salinity value of water for freezing temperature
-      ocn_freezing_temperature = -1.8_RKIND
-    end function ocn_freezing_temperature!}}}
-
-
-!***********************************************************************
-!
 !  routine ocn_frazil_forcing_init
 !
 !> \brief   Initializes ocean frazil ice module.
