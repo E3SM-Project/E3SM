@@ -418,7 +418,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
             for test in ct._tests:
                 if (phase == CIME.create_test.INITIAL_PHASE):
                     if (ct._cime_model == "cesm"):
-                        ct._testspec.add_test(ct._compiler,'fill in later', test["name"])
+                        ct._testspec.add_test(ct._compiler,'fill in later', test)
 
                 elif (phase == CIME.create_test.BUILD_PHASE):
                     ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
@@ -505,6 +505,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
                 self.assertEqual(status[CIME.create_test.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
 
 ###############################################################################
+@unittest.skipIf(CIME.utils.get_model() == 'cesm', "skip Jenkins tests in cesm")
 class TestJenkinsGenericJob(TestCreateTestCommon):
 ###############################################################################
 

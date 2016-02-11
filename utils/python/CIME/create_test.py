@@ -380,13 +380,13 @@ class CreateTest(object):
     ###########################################################################
         test_dir          = self._get_test_dir(test)
         casedoc_dir       = os.path.join(test_dir, "CaseDocs")
-        baseline_dir      = os.path.join(self._baseline_root, self._baseline_cmp_name, test)
-        baseline_casedocs = os.path.join(baseline_dir, "CaseDocs")
         compare_nl        = os.path.join(CIME.utils.get_acme_scripts_root(), "compare_namelists")
         simple_compare    = os.path.join(CIME.utils.get_acme_scripts_root(), "simple_compare")
 
         if (self._compare):
             has_fails = False
+            baseline_dir      = os.path.join(self._baseline_root, self._baseline_cmp_name, test)
+            baseline_casedocs = os.path.join(baseline_dir, "CaseDocs")
 
             # Start off by comparing everything in CaseDocs except a few arbitrary files (ugh!)
             # TODO: Namelist files should have consistent suffix
@@ -412,7 +412,9 @@ class CreateTest(object):
             if (has_fails):
                 self._test_has_nl_problem(test)
 
-        elif (self._generate):
+        if (self._generate):
+            baseline_dir      = os.path.join(self._baseline_root, self._baseline_gen_name, test)
+            baseline_casedocs = os.path.join(baseline_dir, "CaseDocs")
             if (not os.path.isdir(baseline_dir)):
                 os.makedirs(baseline_dir, stat.S_IRWXU | stat.S_IRWXG | stat.S_IXOTH | stat.S_IROTH)
 
