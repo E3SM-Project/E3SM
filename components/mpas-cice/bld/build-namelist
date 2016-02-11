@@ -777,6 +777,16 @@ add_default($nl, 'config_AM_pondDiagnostics_output_stream');
 add_default($nl, 'config_AM_pondDiagnostics_compute_on_startup');
 add_default($nl, 'config_AM_pondDiagnostics_write_on_startup');
 
+#####################################
+# Namelist group: AM_pointwiseStats #
+#####################################
+
+add_default($nl, 'config_AM_pointwiseStats_enable');
+add_default($nl, 'config_AM_pointwiseStats_compute_interval');
+add_default($nl, 'config_AM_pointwiseStats_output_stream');
+add_default($nl, 'config_AM_pointwiseStats_compute_on_startup');
+add_default($nl, 'config_AM_pointwiseStats_write_on_startup');
+
 #################################
 # Namelist group: AM_icePresent #
 #################################
@@ -875,6 +885,7 @@ my @groups = qw(cice_model
                 am_miscellaneous
                 am_areavariables
                 am_ponddiagnostics
+                am_pointwisestats
                 am_icepresent
                 am_timeseriesstatsdaily
                 am_timeseriesstatsmonthly
