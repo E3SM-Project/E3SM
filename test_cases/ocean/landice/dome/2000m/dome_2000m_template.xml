@@ -21,6 +21,7 @@
                                 <member name="xtime" type="var"/>
                                 <member name="normalVelocity" type="var"/>
                                 <member name="thickness" type="var"/>
+                                <member name="daysSinceStart" type="var"/>
                         </add_contents>
                 </stream>
 
