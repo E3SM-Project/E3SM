@@ -91,8 +91,8 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-b", "--baseline-name",
                         help="If comparing or generating baselines with default paths, use this directory under baseline root. "
                         "Default will be current branch name. Do NOT add the compiler to this argument "
-                        "That will be done for you.  If you provide directories in the generate and or compare argument do
-                         not use this option.")
+                        "That will be done for you.  If you provide directories in the generate and or compare argument do"
+                         " not use this option.")
 
     parser.add_argument("--compiler",
                         help="Compiler to use to build cime.  Default will be the name in the Testnames"
@@ -136,7 +136,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     if(args.generate is not None):
         expect(not (args.generate == args.compare),
                "Cannot generate and compare baselines at the same time")
-    expect(not (args.baseline_name != default_baseline_name and (not args.compare and not args.generate)),
+    expect(not (args.baseline_name is not None and (not args.compare and not args.generate)),
            "Provided baseline name but did not specify compare or generate")
     expect(not (args.namelists_only and not (args.generate or args.compare)),
            "Must provide either --compare or --generate with --namelists-only")
