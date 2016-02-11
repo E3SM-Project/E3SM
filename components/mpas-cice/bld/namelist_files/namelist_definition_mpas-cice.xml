@@ -1783,6 +1783,49 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- AM_pointwiseStats -->
+
+<entry id="config_AM_pointwiseStats_enable" type="logical"
+	category="AM_pointwiseStats" group="AM_pointwiseStats">
+If true, ocean analysis member pointwiseStats is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_pointwiseStats_compute_interval" type="char*1024"
+	category="AM_pointwiseStats" group="AM_pointwiseStats">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_pointwiseStats_output_stream" type="char*1024"
+	category="AM_pointwiseStats" group="AM_pointwiseStats">
+Name of the stream that the pointwiseStats analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_pointwiseStats_compute_on_startup" type="logical"
+	category="AM_pointwiseStats" group="AM_pointwiseStats">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_pointwiseStats_write_on_startup" type="logical"
+	category="AM_pointwiseStats" group="AM_pointwiseStats">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- AM_icePresent -->
 
 <entry id="config_AM_icePresent_enable" type="logical"
