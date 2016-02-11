@@ -56,6 +56,9 @@
 		<dim name="nzAerosolsLayers"   definition="nBioLayersP3*nzAerosols"/>
 		<dim name="nZBGCTracers"       definition="29"/>
 		<dim name="nRegions"       definition="3"/>
+		<dim name="nPoints" definition="1" units="unitless" description="The number of points for AM_pointwiseStats"/>
+		<dim name="nPointGroups" definition="1" units="unitless" description="The number of points groups"/>
+		<dim name="maxPointsInGroup" definition="1" units="unitless" description="The maximum number of points in any group."/>
 	</dims>
 	<nml_record name="cice_model" in_defaults="true">
 		<nml_option name="config_dt"                         type="real"          default_value="3600.0"/>
@@ -537,6 +540,14 @@
 	    <var name="modalSingleScatterAlbedo"/>
 	  </stream>
 
+	  <stream name="pointLocationsInput"
+		  type="input"
+		  filename_template="points.nc"
+		  input_interval="initial_only"
+		  runtime_format="single_file">
+	    <var name="pointCellGlobalID"/>
+	    <var name="pointVertexGlobalID"/>
+	  </stream>
 
 	</streams>
 
@@ -1819,6 +1830,55 @@
 	        <var name="iceAgeTendencyThermodynamics"           type="real"     dimensions="nCells"              name_in_code="iceAgeTendencyThermodynamics"/>
 	        <var name="freezingMeltingPotentialInitial"           type="real"     dimensions="nCells"              name_in_code="freezingMeltingPotentialInitial"/>
 	        <var name="timeAverageTestVariable"           type="real"     dimensions="Time"              name_in_code="timeAverageTestVariable"/>
+	</var_struct>
+
+	<!-- Point diagnostics -->
+	<var_struct name="pointLocations" time_levs="1">
+		<var name="pointCellGlobalID" type="integer" dimensions="nPoints" units="unitless"
+			 description="List of global cell IDs in point set."
+		/>
+		<var name="pointCellLocalID" type="integer" dimensions="nPoints" units="unitless"
+			 description="List of local cell IDs in point set."
+		/>
+		<var name="indexToPointCellLocalID" type="integer" dimensions="nPoints" units="unitless"
+			 description="Index to list of local cell IDs in point set."
+		/>
+		<var name="pointVertexGlobalID" type="integer" dimensions="nPoints" units="unitless"
+			 description="List of global vertex IDs in point set."
+		/>
+		<var name="pointVertexLocalID" type="integer" dimensions="nPoints" units="unitless"
+			 description="List of local vertex IDs in point set."
+		/>
+		<var name="indexToPointVertexLocalID" type="integer" dimensions="nPoints" units="unitless"
+			 description="Index to list of local vertex IDs in point set."
+		/>
+		<var name="pointNames" type="text" dimensions="nPoints" units="unitless"
+			 description="The names of each point."
+		/>
+		<var name="pointGroupNames" type="text" dimensions="nPointGroups" units="unitless"
+			 description="The names of each point group."
+		/>
+		<var name="nPointsInGroup" type="integer" dimensions="nPointGroups" units="unitless"
+			 description="The number of points in each point group."
+		/>
+		<var name="pointsInGroup" type="integer" dimensions="maxPointsInGroup nPointGroups" units="unitless"
+			 description="The indices of each point in a each group."
+		/>
+		<var name="xPoint" type="real" dimensions="nPoints" units="unitless"
+			 description="X Coordinate in cartesian space of point locations."
+		/>
+		<var name="yPoint" type="real" dimensions="nPoints" units="unitless"
+			 description="Y Coordinate in cartesian space of point locations."
+		/>
+		<var name="zPoint" type="real" dimensions="nPoints" units="unitless"
+			 description="Z Coordinate in cartesian space of point locations."
+		/>
+		<var name="latPoint" type="real" dimensions="nPoints" units="radians"
+			 description="Latitude of point locations."
+		/>
+		<var name="lonPoint" type="real" dimensions="nPoints" units="radians"
+			 description="Longitude of point locations."
+		/>
 	</var_struct>
 
 #include "analysis_members/Registry_cice_analysis_members.xml"

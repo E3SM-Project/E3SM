@@ -38,6 +38,7 @@ module cice_analysis_driver
    use cice_pond_diagnostics
    use cice_ice_present
    use cice_time_series_stats
+   use cice_pointwise_stats
 !   use cice_TEMP_LATE
 
    implicit none
@@ -153,6 +154,7 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'miscellaneous', 1)
       call mpas_pool_add_config(analysisMemberList, 'areaVariables', 1)
       call mpas_pool_add_config(analysisMemberList, 'pondDiagnostics', 1)
+      call mpas_pool_add_config(analysisMemberList, 'pointwiseStats', 1)
       call mpas_pool_add_config(analysisMemberList, 'icePresent', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsDaily', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsMonthly', 1)
@@ -1020,6 +1022,8 @@ contains
          call cice_bootstrap_area_variables(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
          call cice_bootstrap_pond_diagnostics(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
+         call cice_bootstrap_pointwise_stats(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_bootstrap_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
@@ -1082,6 +1086,8 @@ contains
          call cice_init_area_variables(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
          call cice_init_pond_diagnostics(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
+         call cice_init_pointwise_stats(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_init_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
@@ -1145,6 +1151,8 @@ contains
          call cice_precompute_area_variables(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
          call cice_precompute_pond_diagnostics(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
+         call cice_precompute_pointwise_stats(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_precompute_ice_present(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
@@ -1208,6 +1216,8 @@ contains
          call cice_compute_area_variables(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
          call cice_compute_pond_diagnostics(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
+         call cice_compute_pointwise_stats(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_compute_ice_present(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
@@ -1270,6 +1280,8 @@ contains
          call cice_restart_area_variables(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
          call cice_restart_pond_diagnostics(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
+         call cice_restart_pointwise_stats(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_restart_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
@@ -1332,6 +1344,8 @@ contains
          call cice_finalize_area_variables(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pondDiagnostics' ) then
          call cice_finalize_pond_diagnostics(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
+         call cice_finalize_pointwise_stats(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call cice_finalize_ice_present(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then

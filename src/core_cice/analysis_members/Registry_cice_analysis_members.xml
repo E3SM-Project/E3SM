@@ -9,5 +9,6 @@
 #include "Registry_cice_miscellaneous.xml"
 #include "Registry_cice_area_variables.xml"
 #include "Registry_cice_pond_diagnostics.xml"
+#include "Registry_cice_pointwise_stats.xml"
 #include "Registry_cice_ice_present.xml"
 #include "Registry_cice_time_series_stats.xml"
