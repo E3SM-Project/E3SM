@@ -57,8 +57,6 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    default_baseline_name = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
-
     CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("testargs", nargs="*", help="Tests or test suites to run. Testnames expect in form CASE.GRID.COMPSET")
@@ -85,15 +83,16 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         "all object executables, and data files will be removed after tests are run")
 
     parser.add_argument("-c", "--compare", const=True,nargs="?",
-                        help="While testing, compare baselines")
+                        help="While testing, compare baselines, optionally provide a compare directory ")
 
     parser.add_argument("-g", "--generate", const=True,nargs="?",
-                        help="While testing, generate baselines")
+                        help="While testing, generate baselines, optionally provide a generate directory")
 
-    parser.add_argument("-b", "--baseline-name", default=default_baseline_name,
-                        help="If comparing or generating baselines, use this directory under baseline root. "
+    parser.add_argument("-b", "--baseline-name",
+                        help="If comparing or generating baselines with default paths, use this directory under baseline root. "
                         "Default will be current branch name. Do NOT add the compiler to this argument "
-                        "That will be done for you.")
+                        "That will be done for you.  If you provide directories in the generate and or compare argument do
+                         not use this option.")
 
     parser.add_argument("--compiler",
                         help="Compiler to use to build cime.  Default will be the name in the Testnames"

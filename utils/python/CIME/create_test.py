@@ -98,6 +98,9 @@ class CreateTest(object):
         else:
             self._parallel_jobs = parallel_jobs
 
+        self._baseline_cmp_name = None
+        self._baseline_gen_name = None
+
         if (self._compare or self._generate):
             logging.warn("compare is %s generate is %s"%(self._compare,self._generate))
             # Figure out what baseline name to use
@@ -122,9 +125,6 @@ class CreateTest(object):
                     self._baseline_gen_name  = baseline_name
                     if (not self._baseline_gen_name.startswith("%s/" % self._compiler)):
                         self._baseline_gen_name = os.path.join(self._compiler, self._baseline_gen_name)
-
-
-
 
             # Compute baseline_root
             self._baseline_root = baseline_root if baseline_root is not None else self._machobj.get_value("CCSM_BASELINE")
