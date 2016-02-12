@@ -100,13 +100,12 @@ class CreateTest(object):
         self._compare = False
         self._generate = False
         if (compare or generate):
-            logging.info("compare is %s generate is %s"%(compare,generate))
             # Figure out what baseline name to use
             if (baseline_name is None):
-                if(compare is not None and compare == str(compare)):
+                if(compare is not None and isinstance(compare,str)):
                     self._baseline_cmp_name = compare
                     self._compare = True
-                if(generate is not None and generate == str(generate)):
+                if(generate is not None and isinstance(generate,str)):
                     self._baseline_gen_name = generate
                     self._generate = True
                 branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
