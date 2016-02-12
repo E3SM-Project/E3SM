@@ -28,13 +28,15 @@ class Case(object):
         self._env_files = []
         self._env_files_that_need_rewrite = set()
 
-        self._env_files.append(EnvTest(case_root))
+        self._env_files.append(EnvRun(case_root))
         self._env_files.append(EnvMachSpecific(case_root))
         self._env_files.append(EnvCase(case_root))
         self._env_files.append(EnvMachPes(case_root))
         self._env_files.append(EnvBuild(case_root))
         self._env_files.append(EnvArchive(case_root))
         self._env_files.append(EnvBatch(case_root))
+        if(os.path.isfile(os.path.join(case_root,"env_test.xml")):
+               self._env_files.append(EnvTest(case_root))
 
     def __del__(self):
         self.flush()
@@ -78,3 +80,6 @@ class Case(object):
 
         logging.warning("Not able to set value for item '%s'" % item)
 
+    def test_reset(self):
+        for env_file in self._env_files:
+            env_file.test_reset()
