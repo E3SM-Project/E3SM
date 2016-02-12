@@ -15,6 +15,7 @@ from CIME.XML.component import Component
 from CIME.XML.testlist import Testlist
 import CIME.test_utils
 
+
 INITIAL_PHASE = "INIT"
 CREATE_NEWCASE_PHASE = "CREATE_NEWCASE"
 XML_PHASE   = "XML"
@@ -39,6 +40,7 @@ class CreateTest(object):
                  xml_machine=None, xml_compiler=None, xml_category=None,xml_testlist=None):
     ###########################################################################
         self._cime_root = CIME.utils.get_cime_root()
+        self._cime_model = CIME.utils.get_model()
         # needed for perl interface
         os.environ["CIMEROOT"] = self._cime_root
         self._machobj   = Machines(machine=machine_name)
@@ -71,8 +73,6 @@ class CreateTest(object):
                "Compiler %s not valid for machine %s" % (self._compiler,machine_name))
 
         self._clean          = clean
-        self._compare        = compare
-        self._generate       = generate
         self._namelists_only = namelists_only
 
         # Extra data associated with tests, do not modify after construction
@@ -95,17 +95,36 @@ class CreateTest(object):
         else:
             self._parallel_jobs = parallel_jobs
 
-        if (self._compare or self._generate):
-
+        self._baseline_cmp_name = None
+        self._baseline_gen_name = None
+        self._compare = False
+        self._generate = False
+        if (compare or generate):
             # Figure out what baseline name to use
             if (baseline_name is None):
+                if(compare is not None and isinstance(compare,str)):
+                    self._baseline_cmp_name = compare
+                    self._compare = True
+                if(generate is not None and isinstance(generate,str)):
+                    self._baseline_gen_name = generate
+                    self._generate = True
                 branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
                 expect(branch_name is not None, "Could not determine baseline name from branch, please use -b option")
-                self._baseline_name = os.path.join(self._compiler, branch_name)
+                if(self._compare and self._baseline_cmp_name is None):
+                    self._baseline_cmp_name = os.path.join(self._compiler, branch_name)
+                if(self._generate and self._baseline_gen_name is None):
+                    self._baseline_gen_name = os.path.join(self._compiler, branch_name)
             else:
-                self._baseline_name  = baseline_name
-                if (not self._baseline_name.startswith("%s/" % self._compiler)):
-                    self._baseline_name = os.path.join(self._compiler, self._baseline_name)
+                if(compare):
+                    self._compare = True
+                    self._baseline_cmp_name  = baseline_name
+                    if (not self._baseline_cmp_name.startswith("%s/" % self._compiler)):
+                        self._baseline_cmp_name = os.path.join(self._compiler, self._baseline_cmp_name)
+                if(generate):
+                    self._generate = True
+                    self._baseline_gen_name  = baseline_name
+                    if (not self._baseline_gen_name.startswith("%s/" % self._compiler)):
+                        self._baseline_gen_name = os.path.join(self._compiler, self._baseline_gen_name)
 
             # Compute baseline_root
             self._baseline_root = baseline_root if baseline_root is not None else self._machobj.get_value("CCSM_BASELINE")
@@ -114,10 +133,11 @@ class CreateTest(object):
             self._baseline_root = os.path.abspath(self._baseline_root)
 
             if (self._compare):
-                full_baseline_dir = os.path.join(self._baseline_root, self._baseline_name)
+                full_baseline_dir = os.path.join(self._baseline_root, self._baseline_cmp_name)
                 expect(os.path.isdir(full_baseline_dir),
                        "Missing baseline comparison directory %s" % full_baseline_dir)
-
+        else:
+            self._baseline_root = None
         # This is the only data that multiple threads will simultaneously access
         # Each test has it's own value and setting/retrieving items from a dict
         # is atomic, so this should be fine to use without mutex.
@@ -145,7 +165,6 @@ class CreateTest(object):
         for test in self._tests:
             expect(not os.path.exists(self._get_test_dir(test)),
                    "Cannot create new case in directory '%s', it already exists. Pick a different test-id" % self._get_test_dir(test))
-
         # By the end of this constructor, this program should never hard abort,
         # instead, errors will be placed in the TestStatus files for the various
         # tests cases
@@ -228,9 +247,9 @@ class CreateTest(object):
                    "New phase should be set to pending status")
             expect(self._phases.index(old_phase) == phase_idx - 1,
                    "Skipped phase?")
-
         # Must be atomic
         self._tests[test] = (phase, status, old_nl_fail)
+
 
     ###########################################################################
     def _test_has_nl_problem(self, test):
@@ -281,15 +300,17 @@ class CreateTest(object):
             # Parallelizing builds introduces potential sync problems with sharedlibroot
             # Just let every case build it's own
             sharedlibroot = os.path.join(test_dir, "sharedlibroot.%s" % self._test_id)
-        model = CIME.utils.get_model()
         create_newcase_cmd = "%s -model %s -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -nosavetiming -sharedlibroot %s" % \
                               (os.path.join(self._cime_root,"scripts", "create_newcase"),
-                               model,test_dir, grid, machine, compiler, compset, test_case, self._project,
+                               self._cime_model,test_dir, grid, machine, compiler, compset, test_case, self._project,
                                sharedlibroot)
         if (case_opts is not None):
             create_newcase_cmd += " -confopts _%s" % ("_".join(case_opts))
         if (test_mods is not None):
-            test_mod_file = os.path.join(self._cime_root, "scripts", "Testing", "Testlistxml", "testmods_dirs", test_mods)
+            files = Files()
+            (component, mods) = test_mods.split('/')
+            testmods_dir = files.get_value("TESTS_MODS_DIR",{"component": component})
+            test_mod_file = os.path.join(testmods_dir, component, mods)
             if (not os.path.exists(test_mod_file)):
                 self._log_output(test, "Missing testmod file '%s'" % test_mod_file)
                 return False
@@ -316,13 +337,13 @@ class CreateTest(object):
 
         test_argv = "-testname %s -testroot %s" % (test, self._test_root)
         if (self._generate):
-            test_argv += " -generate %s" % self._baseline_name
-            envtest.set_value("BASELINE_NAME_GEN", self._baseline_name)
-            envtest.set_value("BASEGEN_CASE", os.path.join(self._baseline_name, test))
+            test_argv += " -generate %s" % self._baseline_gen_name
+            envtest.set_value("BASELINE_NAME_GEN",self._baseline_gen_name)
+            envtest.set_value("BASEGEN_CASE",os.path.join(self._baseline_gen_name,test))
         if (self._compare):
-            test_argv += " -compare %s" % self._baseline_name
-            envtest.set_value("BASELINE_NAME_CMP", self._baseline_name)
-            envtest.set_value("BASECMP_CASE", os.path.join(self._baseline_name, test))
+            test_argv += " -compare %s" % self._baseline_cmp_name
+            envtest.set_value("BASELINE_NAME_CMP",self._baseline_cmp_name)
+            envtest.set_value("BASECMP_CASE",os.path.join(self._baseline_cmp_name,test))
 
         envtest.set_value("TEST_ARGV",test_argv)
         envtest.set_value("CLEANUP", ("TRUE" if self._clean else "FALSE"))
@@ -356,13 +377,13 @@ class CreateTest(object):
     ###########################################################################
         test_dir          = self._get_test_dir(test)
         casedoc_dir       = os.path.join(test_dir, "CaseDocs")
-        baseline_dir      = os.path.join(self._baseline_root, self._baseline_name, test)
-        baseline_casedocs = os.path.join(baseline_dir, "CaseDocs")
         compare_nl        = os.path.join(CIME.utils.get_acme_scripts_root(), "compare_namelists")
         simple_compare    = os.path.join(CIME.utils.get_acme_scripts_root(), "simple_compare")
 
         if (self._compare):
             has_fails = False
+            baseline_dir      = os.path.join(self._baseline_root, self._baseline_cmp_name, test)
+            baseline_casedocs = os.path.join(baseline_dir, "CaseDocs")
 
             # Start off by comparing everything in CaseDocs except a few arbitrary files (ugh!)
             # TODO: Namelist files should have consistent suffix
@@ -388,7 +409,9 @@ class CreateTest(object):
             if (has_fails):
                 self._test_has_nl_problem(test)
 
-        elif (self._generate):
+        if (self._generate):
+            baseline_dir      = os.path.join(self._baseline_root, self._baseline_gen_name, test)
+            baseline_casedocs = os.path.join(baseline_dir, "CaseDocs")
             if (not os.path.isdir(baseline_dir)):
                 os.makedirs(baseline_dir, stat.S_IRWXU | stat.S_IRWXG | stat.S_IXOTH | stat.S_IROTH)
 
@@ -613,6 +636,7 @@ class CreateTest(object):
         print "RUNNING TESTS:"
         for test in self._tests:
             print " ", test
+
         # TODO - documentation
 
         self._producer()

@@ -57,8 +57,6 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    default_baseline_name = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
-
     CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("testargs", nargs="*", help="Tests or test suites to run. Testnames expect in form CASE.GRID.COMPSET")
@@ -84,16 +82,17 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Specifies if tests should be cleaned after run. If set, "
                         "all object executables, and data files will be removed after tests are run")
 
-    parser.add_argument("-c", "--compare", action="store_true",
-                        help="While testing, compare baselines")
+    parser.add_argument("-c", "--compare", const=True,nargs="?",
+                        help="While testing, compare baselines, optionally provide a compare directory ")
 
-    parser.add_argument("-g", "--generate", action="store_true",
-                        help="While testing, generate baselines")
+    parser.add_argument("-g", "--generate", const=True,nargs="?",
+                        help="While testing, generate baselines, optionally provide a generate directory")
 
-    parser.add_argument("-b", "--baseline-name", default=default_baseline_name,
-                        help="If comparing or generating baselines, use this directory under baseline root. "
+    parser.add_argument("-b", "--baseline-name",
+                        help="If comparing or generating baselines with default paths, use this directory under baseline root. "
                         "Default will be current branch name. Do NOT add the compiler to this argument "
-                        "That will be done for you.")
+                        "That will be done for you.  If you provide directories in the generate and or compare argument do"
+                         " not use this option.")
 
     parser.add_argument("--compiler",
                         help="Compiler to use to build cime.  Default will be the name in the Testnames"
@@ -132,9 +131,12 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.handle_standard_logging_options(args)
 
-    expect(not (args.generate and args.compare),
-           "Cannot generate and compare baselines at the same time")
-    expect(not (args.baseline_name != default_baseline_name and (not args.compare and not args.generate)),
+# generate and compare flags may not point to the same directory
+
+    if(args.generate is not None):
+        expect(not (args.generate == args.compare),
+               "Cannot generate and compare baselines at the same time")
+    expect(not (args.baseline_name is not None and (not args.compare and not args.generate)),
            "Provided baseline name but did not specify compare or generate")
     expect(not (args.namelists_only and not (args.generate or args.compare)),
            "Must provide either --compare or --generate with --namelists-only")
