@@ -322,8 +322,8 @@ class CreateTest(object):
     def _xml_phase(self, test):
     ###########################################################################
 
-        test_case = CIME.utils.parse_test_name(test_name)[0]
-        envtest = EnvTest(self._get_test_dir(test_name))
+        test_case = CIME.utils.parse_test_name(test)[0]
+        envtest = EnvTest(self._get_test_dir(test))
 
         files = Files()
         drv_config_file = files.get_value("CONFIG_DRV_FILE")

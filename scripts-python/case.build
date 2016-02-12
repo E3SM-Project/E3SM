@@ -121,7 +121,7 @@ def build_checks(case, build_threaded, comp_interface, use_esmf_lib, mpilib,
     ninst_wav    = int(case.get_value("NINST_WAV"))
     ninst_rof    = int(case.get_value("NINST_ROF"))
     ninst_value  = case.get_value("NINST_VALUE")
-    smp_build    = int(case.get_value("SMP_BUILD"))
+    smp_build    = case.get_value("SMP_BUILD")
     build_status = int(case.get_value("BUILD_STATUS"))
 
     atmstr = 1 if (build_threaded == "TRUE" or nthrds_atm > 1) else 0

@@ -52,7 +52,7 @@ class Case(object):
             if (result is not None):
                 return self.get_resolved_value(result)
 
-        logging.warning("Not able to retreive value for item '%s'" % item)
+        logging.info("Not able to retreive value for item '%s'" % item)
 
     def get_resolved_value(self, item):
         # TODO HACK - surely there is a better way?

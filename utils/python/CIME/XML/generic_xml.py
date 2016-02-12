@@ -51,11 +51,11 @@ class GenericXML(object):
         """
         Write an xml file from data in self
         """
-        if(infile is None):
-            infile = self.filename
-        logging.info("write: "+ infile)
+        if(outfile is None):
+            outfile = self.filename
+        logging.info("write: "+ outfile)
         doc = minidom.parseString(ET.tostring(self.root))
-        with open(infile,'w') as xmlout:
+        with open(outfile,'w') as xmlout:
             doc.writexml(xmlout,addindent='  ',newl='\n')
 
 
