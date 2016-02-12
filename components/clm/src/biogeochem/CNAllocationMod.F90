@@ -1941,7 +1941,7 @@ contains
             end if
 
             ! calculate the fraction of immobilization realized (for diagnostic purposes)
-            if (potential_immob(c) > 0.0_r8) then
+            if (potential_immob_p(c) > 0.0_r8) then
                fpi_p(c) = actual_immob_p(c) / potential_immob_p(c)
             else
                fpi_p(c) = 1.0_r8
@@ -2846,7 +2846,7 @@ contains
             end if
 
             ! calculate the fraction of immobilization realized (for diagnostic purposes)
-            if (potential_immob(c) > 0.0_r8) then
+            if (potential_immob_p(c) > 0.0_r8) then
                fpi_p(c) = actual_immob_p(c) / potential_immob_p(c)
             else
                fpi_p(c) = 1.0_r8
@@ -3442,6 +3442,8 @@ contains
               call p2c(bounds,num_soilc,filter_soilc, &
                   sminp_to_ppool(bounds%begp:bounds%endp), &
                   sminp_to_plant(bounds%begc:bounds%endc))
+
+              call calc_puptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, phosphorusstate_vars, puptake_prof)
 
               do j = 1, nlevdecomp
                   do fc=1,num_soilc
