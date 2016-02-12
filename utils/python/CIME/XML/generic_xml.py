@@ -3,7 +3,7 @@ Common interface to XML files, this is an abstract class and is expected to
 be used by other XML interface modules and not directly.
 """
 from standard_module_setup import *
-
+from xml.dom import minidom
 from CIME.utils import expect, get_cime_root
 
 class GenericXML(object):
@@ -37,16 +37,27 @@ class GenericXML(object):
         """
         Read and parse an xml file into the object
         """
-        logging.debug("read: "+infile)
+        logging.info("read: "+infile)
         self.tree = ET.parse(infile)
         self.root = self.tree.getroot()
+        if ("version" in self.root.attrib):
+            self.version = self.root.attrib["version"]
+        else:
+            self.version = "1.0"
+        logging.info("File version is "+self.version)
+
 
     def write(self, outfile=None):
         """
         Write an xml file from data in self
         """
-        logging.info("write: %s" % outfile if outfile is not None else self.filename)
-        self.tree.write(outfile if outfile is not None else self.filename)
+        if(infile is None):
+            infile = self.filename
+        logging.info("write: "+ infile)
+        doc = minidom.parseString(ET.tostring(self.root))
+        with open(infile,'w') as xmlout:
+            doc.writexml(xmlout,addindent='  ',newl='\n')
+
 
     def get_node(self, nodename, attributes=None, root=None):
         """
@@ -54,21 +65,27 @@ class GenericXML(object):
         """
         if(root is None):
             root = self.root
-
+        nodes = []
         xpath = ".//"+nodename
         if(attributes is not None):
             keys = list(attributes.keys())
-            cnt = 0
+            # xml.etree has limited support for xpath and does not allow more than
+            # one attribute in an xpath query so we query seperately for each attribute
+            # and create a result with the intersection of those lists
             for key in keys:
-                if(cnt == 0):
-                    xpath += "["
+                xpath = ".//%s[@%s=\'%s\']" % (nodename,key,attributes[key])
+                newnodes = root.findall(xpath)
+                if(not nodes):
+                    nodes = newnodes
                 else:
-                    xpath += " and "
-                xpath += "@%s=\'%s\'" % (key,attributes[key])
-                cnt=cnt+1
-            xpath += "]"
-        logging.info("xpath = "+ xpath)
-        nodes = root.findall(xpath)
+                    for node in nodes[:]:
+                        if (node not in newnodes):
+                            nodes.remove(node)
+                if(not nodes):
+                    return []
+        else:
+            nodes = root.findall(xpath)
+
         return nodes
 
     def add_child(self, node, root=None):

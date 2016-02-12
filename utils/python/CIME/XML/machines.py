@@ -93,8 +93,8 @@ class Machines(GenericXML):
         """
         Sets the machine block in the Machines object
 
-        >>> machobj = Machines()
-        >>> machobj.set_machine("melvin")
+        >>> machobj = Machines(machine="melvin")
+        >>> machobj.get_machine_name()
         'melvin'
         >>> machobj.set_machine("trump")
         Traceback (most recent call last):
@@ -175,8 +175,7 @@ class Machines(GenericXML):
         """
         Check the compiler is valid for the current machine
 
-        >>> machobj = Machines()
-        >>> name = machobj.set_machine("edison")
+        >>> machobj = Machines(machine="edison")
         >>> machobj.get_default_compiler()
         'intel'
         >>> machobj.is_valid_compiler("cray")
@@ -194,8 +193,7 @@ class Machines(GenericXML):
         """
         Check the MPILIB is valid for the current machine
 
-        >>> machobj = Machines()
-        >>> name = machobj.probe_machine_name()
+        >>> machobj = Machines(machine="edison")
         >>> machobj.is_valid_MPIlib("mpi-serial")
         True
         """
@@ -207,9 +205,7 @@ class Machines(GenericXML):
         """
         Return if this machine has a batch system
 
-        >>> machobj = Machines()
-        >>> machobj.set_machine("edison")
-        'edison'
+        >>> machobj = Machines(machine="edison")
         >>> machobj.has_batch_system()
         True
         >>> machobj.set_machine("melvin")
@@ -228,8 +224,7 @@ class Machines(GenericXML):
         """
         Return the batch system used on this machine
 
-        >>> machobj = Machines()
-        >>> name = machobj.set_machine("edison")
+        >>> machobj = Machines(machine="edison")
         >>> machobj.get_batch_system_type()
         'slurm'
         """

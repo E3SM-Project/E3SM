@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 List test results based on TestStatus files. Returns True if
 no errors occured (not based on test statuses).
@@ -7,8 +6,9 @@ no errors occured (not based on test statuses).
 
 from standard_script_setup import *
 import wait_for_tests
-
 import argparse, sys, os, logging
+from CIME.XML.testspec import TestSpec
+from CIME.utils import expect
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -41,21 +41,34 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     return args.paths
 
 ###############################################################################
-def cs_status(test_paths):
+def cs_status(test_paths, model):
 ###############################################################################
+    testspecobjs = {}
     for test_path in test_paths:
         statuses, test_name = wait_for_tests.parse_test_status_file(test_path)
         summary = wait_for_tests.reduce_stati(statuses)
+        if (model == "cesm"):
+            testid = CIME.utils.run_cmd("./xmlquery TEST_TESTID -value", from_dir=os.path.dirname(test_path))
+            testspec_file = os.path.join(os.path.dirname(os.path.dirname(test_path)),"testspec_%s.xml" %testid)
+            expect(os.path.isfile(testspec_file),"Could not find expected testspec file %s"%testspec_file)
+            if(testspec_file in testspecobjs):
+                this_testspec = testspecobjs[testspec_file]
+            else:
+                testspecobjs[testspec_file] = TestSpec(testspec_file)
+                this_testspec = testspecobjs[testspec_file]
         print "%s (Overall: %s), details:" % (test_name, summary)
         for phase, status in statuses.iteritems():
             print "  %s %s" % (status, phase)
+            if(model == "cesm"):
+                this_testspec.update_test_status(test_name,phase,status)
+    for key in testspecobjs:
+        testspecobjs[key].write()
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
     test_paths = parse_command_line(sys.argv, description)
-
-    cs_status(test_paths)
+    cs_status(test_paths,CIME.utils.get_model())
 
 ###############################################################################
 
