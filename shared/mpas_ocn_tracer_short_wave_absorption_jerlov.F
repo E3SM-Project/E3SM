@@ -75,7 +75,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, forcingPool, index_temperature, layerThickness, &
-                                                           penetrativeTemperatureFlux, tend, err)!{{{
+                                        penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -88,6 +88,9 @@ contains
 
       real (kind=RKIND), dimension(:), intent(in) :: &
         penetrativeTemperatureFlux !< Input: penetrative temperature flux through the surface
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+        penetrativeTemperatureFluxOBL
 
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Layer thicknesses
 
@@ -116,12 +119,13 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k
+      integer :: iCell, k, depLev
       integer, pointer :: nCells, nVertLevels
 
       integer, dimension(:), pointer :: maxLevelCell
 
       real (kind=RKIND) :: depth
+      real (kind=RKIND), pointer :: config_surface_buoyancy_depth
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
       real (kind=RKIND), dimension(:), allocatable :: weights
 
@@ -132,6 +136,8 @@ contains
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+      call mpas_pool_get_config(ocnConfigs, 'config_surface_buoyancy_depth', config_surface_buoyancy_depth)
+
       allocate(weights(nVertLevels+1))
       weights = 0.0_RKIND
       weights(1) = 1.0_RKIND
@@ -146,6 +152,20 @@ contains
             tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell) &
                                               * (weights(k) - weights(k+1))
          end do
+
+         depth = 0.0_RKIND
+         do k=1,maxLevelCell(iCell)
+           depth = depth + layerThickness(k,iCell)
+           if(depth > abs(config_surface_buoyancy_depth)) exit
+         enddo
+
+         if(k == maxLevelCell(iCell) .or. k == 1) then
+           depLev=2
+         else
+           depLev=k
+         endif
+         penetrativeTemperatureFluxOBL(iCell)=penetrativeTemperatureFlux(iCell)*weights(depLev)
+
       end do
       !$omp end do
 
