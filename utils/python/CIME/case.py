@@ -29,6 +29,7 @@ class Case(object):
         self._env_files_that_need_rewrite = set()
 
         self._env_files.append(EnvTest(case_root))
+        self._env_files.append(EnvRun(case_root))
         self._env_files.append(EnvMachSpecific(case_root))
         self._env_files.append(EnvCase(case_root))
         self._env_files.append(EnvMachPes(case_root))
