@@ -629,7 +629,7 @@ contains
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(cnstate_type)      , intent(in)    :: cnstate_vars
+    type(cnstate_type)      , intent(inout) :: cnstate_vars
     type(carbonflux_type)   , intent(inout) :: carbonflux_vars
     type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
     type(temperature_type)  , intent(inout) :: temperature_vars
