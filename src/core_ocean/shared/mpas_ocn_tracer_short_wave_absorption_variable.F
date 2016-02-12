@@ -71,7 +71,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_short_wave_absorption_variable_tend(meshPool, swForcingPool, forcingPool, index_temperature, & !{{{
-                                                             layerThickness, penetrativeTemperatureFlux, tend, err)
+                                  layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tend, err)
 
       !-----------------------------------------------------------------
       !
@@ -87,6 +87,9 @@ contains
 
       real (kind=RKIND), dimension(:), intent(in) :: &
         penetrativeTemperatureFlux !< Input: penetrative temperature flux through the surface
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+        penetrativeTemperatureFluxOBL
 
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Layer thicknesses
 
@@ -115,11 +118,12 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k
+      integer :: iCell, k, depLev
       integer, pointer :: nCells, nVertLevels
 
       integer, dimension(:), pointer :: maxLevelCell
 
+      real (kind=RKIND), pointer :: config_surface_buoyancy_depth
       real (kind=RKIND) :: depth
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
       real (kind=RKIND), dimension(:), allocatable :: weights
@@ -135,6 +139,7 @@ contains
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+      call mpas_pool_get_config(ocnConfigs, 'config_surface_buoyancy_depth', config_surface_buoyancy_depth)
 
       allocate(weights(nVertLevels+1))
       weights = 0.0_RKIND
@@ -145,28 +150,40 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
       call mpas_pool_get_array(swForcingPool,'chlorophyllData',chlorophyllA)
 
-      select case ( trim(config_sw_absorption_type) )
-      case('ohlmann00')
-         call mpas_pool_get_array(swForcingPool,'zenithAngle',zenithAngle)
-         call mpas_pool_get_array(swForcingPool,'clearSkyRadiation',clearSkyRadiation)
-         !$omp do schedule(runtime) private(depth, k)
-         do iCell = 1, nCells
-           depth = 0.0_RKIND
-           cloudRatio = min(1.0_RKIND, 1.0_RKIND - penetrativeTemperatureFlux(iCell)/hflux_factor/clearSkyRadiation(iCell))
-           cloudRatio = max(0.0_RKIND, cloudRatio)
+      call mpas_pool_get_array(swForcingPool,'zenithAngle',zenithAngle)
+      call mpas_pool_get_array(swForcingPool,'clearSkyRadiation',clearSkyRadiation)
+      !$omp do schedule(runtime) private(depth, k)
+      do iCell = 1, nCells
+        depth = 0.0_RKIND
+        cloudRatio = min(1.0_RKIND, 1.0_RKIND - penetrativeTemperatureFlux(iCell)/hflux_factor/clearSkyRadiation(iCell))
+        cloudRatio = max(0.0_RKIND, cloudRatio)
 
-           call ocn_get_os00_coeffs(chlorophyllA(iCell),zenithAngle(iCell),cloudRatio,Avals, Kvals)
+        call ocn_get_os00_coeffs(chlorophyllA(iCell),zenithAngle(iCell),cloudRatio,Avals, Kvals)
 
-           do k = 1, maxLevelCell(iCell)
-             depth = depth + layerThickness(k, iCell)
+        do k = 1, maxLevelCell(iCell)
+          depth = depth + layerThickness(k, iCell)
 
-             call ocn_get_variable_sw_fraction(depth, weights(k+1), Avals, Kvals)
-             tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell) &
-                                               * (weights(k) - weights(k+1) )
-           end do
-         end do
-         !$omp end do
-      end select
+          call ocn_get_variable_sw_fraction(depth, weights(k+1), Avals, Kvals)
+          tend(index_temperature, k, iCell) = tend(index_temperature, k, iCell) + penetrativeTemperatureFlux(iCell) &
+                                            * (weights(k) - weights(k+1) )
+        end do
+
+        depth = 0.0_RKIND
+        do k=1,maxLevelCell(iCell)
+           depth = depth + layerThickness(k,iCell)
+           if(depth > abs(config_surface_buoyancy_depth)) exit
+        enddo
+
+        if(k == maxLevelCell(iCell) .or. k == 1) then
+           depLev=2
+        else
+           depLev=k
+        endif
+        penetrativeTemperatureFluxOBL(iCell)=penetrativeTemperatureFlux(iCell)*weights(depLev)
+
+      end do
+      !$omp end do
+
 
       deallocate(weights)
 

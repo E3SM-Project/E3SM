@@ -353,8 +353,32 @@ contains
          cvmix_variables % SurfaceBuoyancyForcing = surfaceBuoyancyForcing(iCell)
          cvmix_variables % BulkRichardson_cntr => bulkRichardsonNumber(:, iCell)
 
+         if (config_use_cvmix_shear) then
+
+            cvmix_variables % Mdiff_iface(:)=0.0_RKIND
+            cvmix_variables % Tdiff_iface(:)=0.0_RKIND
+            call cvmix_coeffs_shear( &
+                 cvmix_variables, &
+                 cvmix_shear_params)
+            ! add shear mixing to vertical viscosity/diffusivity
+            ! at present, shear mixing adds in background values when using PP, but background is
+            ! accounted for seperately. so remove bac    kground from shear mixing values
+
+            if(config_cvmix_shear_mixing_scheme=='PP') then
+               cvmix_variables % Mdiff_iface(:) = cvmix_variables % Mdiff_iface(:) - config_cvmix_background_viscosity
+               cvmix_variables % Tdiff_iface(:) = cvmix_variables % Tdiff_iface(:) - config_cvmix_background_diffusion
+            endif
+
+            vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % Mdiff_iface(:)
+            vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % Tdiff_iface(:)
+
+         endif ! if (config_use_cvmix_shear)
          ! call kpp ocean mixed layer scheme
          if (cvmixKPPOn) then
+
+            if (config_cvmix_kpp_matching.eq."MatchBoth") then
+               write(stderrUnit,*) "Use of MatchBoth for KPP matching is not encouraged"
+            endif
 
             ! copy data into cvmix_variables
             cvmix_variables % Mdiff_iface(:)=vertViscTopOfCell(:,iCell)
@@ -527,34 +551,6 @@ contains
                vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % Tdiff_iface(:)
             endif
          endif  ! if (config_use_cvmix_convection)
-
-         ! call shear-based mixing scheme
-         if (config_use_cvmix_shear) then
-            cvmix_variables % Mdiff_iface(:)=0.0_RKIND
-            cvmix_variables % Tdiff_iface(:)=0.0_RKIND
-            call cvmix_coeffs_shear( &
-                 cvmix_variables, &
-                 cvmix_shear_params)
-
-            ! add shear mixing to vertical viscosity/diffusivity
-            ! at present, shear mixing adds in background values when using PP, but background is accounted for seperately.
-            ! so remove background from shear mixing values
-            if(config_cvmix_shear_mixing_scheme=='PP') then
-               cvmix_variables % Mdiff_iface(:) = cvmix_variables % Mdiff_iface(:) - config_cvmix_background_viscosity
-               cvmix_variables % Tdiff_iface(:) = cvmix_variables % Tdiff_iface(:) - config_cvmix_background_diffusion
-            endif
-
-            if(config_use_cvmix_kpp) then
-               do k = int(indexBoundaryLayerDepth(iCell)) + 1, maxLevelCell(iCell)
-                  vertViscTopOfCell(k,iCell) = vertViscTopOfCell(k,iCell) + cvmix_variables % Mdiff_iface(k)
-                  vertDiffTopOfCell(k,iCell) = vertDiffTopOfCell(k,iCell) + cvmix_variables % Tdiff_iface(k)
-               enddo
-            else
-               vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % Mdiff_iface(:)
-               vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % Tdiff_iface(:)
-            endif
-
-         endif ! if (config_use_cvmix_shear)
 
          !
          ! put tidal mixing here
