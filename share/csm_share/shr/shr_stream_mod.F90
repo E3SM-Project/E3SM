@@ -97,8 +97,13 @@ module shr_stream_mod
       character(SHR_KIND_CL)             :: name = shr_stream_file_null ! the file name
       logical                            :: haveData = .false. ! has t-coord data been read in?
       integer  (SHR_KIND_IN)             :: nt = 0             ! size of time dimension
+#ifdef CPRCRAY
+      integer  (SHR_KIND_IN),pointer :: date(:)            ! t-coord date: yyyymmdd
+      integer  (SHR_KIND_IN),pointer :: secs(:)            ! t-coord secs: elapsed on date
+#else
       integer  (SHR_KIND_IN),allocatable :: date(:)            ! t-coord date: yyyymmdd
       integer  (SHR_KIND_IN),allocatable :: secs(:)            ! t-coord secs: elapsed on date
+#endif
    end type shr_stream_fileType
 
 ! Define a dynamic vector for shr_stream_fileType
@@ -413,6 +418,7 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
    strm%nFiles = fileVec%vsize()
    ! Move the vector's internal array out into strm%file.
    call fileVec%move_out(strm%file)
+
    if (strm%nFiles==0) then
       rCode = 1
       write(s_logunit,F00) "ERROR: no input file names"
