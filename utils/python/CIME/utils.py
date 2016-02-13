@@ -195,17 +195,21 @@ def check_minimum_python_version(major, minor):
 
 def normalize_case_id(case_id):
     """
-    Given a CIME case_id, return it in form TESTCASE.GRID.COMPSET.PLATFORM
+    Given a case_id, return it in form TESTCASE.GRID.COMPSET.PLATFORM
 
     >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel')
     'ERT.ne16_g37.B1850C5.skybridge_intel'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel.test-mod')
+    'ERT.ne16_g37.B1850C5.skybridge_intel.test-mod'
     >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel.G.20151121')
     'ERT.ne16_g37.B1850C5.skybridge_intel'
+    >>> normalize_case_id('ERT.ne16_g37.B1850C5.skybridge_intel.test-mod.G.20151121')
+    'ERT.ne16_g37.B1850C5.skybridge_intel.test-mod'
     """
     sep_count = case_id.count(".")
-    expect(sep_count in [3, 5],
-           "Case needs to be in form: TESTCASE.GRID.COMPSET.PLATFORM  or  TESTCASE.GRID.COMPSET.PLATFORM.GC.TESTID")
-    if (sep_count == 5):
+    expect(sep_count >= 3 and sep_count <= 6,
+           "Case '%s' needs to be in form: TESTCASE.GRID.COMPSET.PLATFORM[.TESTMOD]  or  TESTCASE.GRID.COMPSET.PLATFORM[.TESTMOD].GC.TESTID" % case_id)
+    if (sep_count in [5, 6]):
         return ".".join(case_id.split(".")[:-2])
     else:
         return case_id
