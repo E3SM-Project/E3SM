@@ -39,7 +39,6 @@ subroutine seq_map_esmf_register(comp, rc)
 
     rc = ESMF_SUCCESS
 
-    print *, "In seq map register routine"
     ! Register the callback routines.
 
     call ESMF_GridCompSetEntryPoint(comp, ESMF_METHOD_INITIALIZE, &

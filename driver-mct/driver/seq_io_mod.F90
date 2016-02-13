@@ -395,7 +395,7 @@ end function seq_io_sec2hms
     integer(in),pointer :: dimid(:)
     type(var_desc_t) :: varid
     type(io_desc_t) :: iodesc
-    integer(kind=Pio_Offset_Kind) :: frame=-1
+    integer(kind=Pio_Offset_Kind) :: frame
     type(mct_string) :: mstring     ! mct char type
     character(CL)    :: itemc       ! string converted to char
     character(CL)    :: name1       ! var name
@@ -411,6 +411,8 @@ end function seq_io_sec2hms
     character(*),parameter :: subName = '(seq_io_write_av) '
     integer :: lbnum
     integer, pointer :: Dof(:)
+
+    real(r8), allocatable :: tmpdata(:)
 
     !-------------------------------------------------------------------------------
     !
@@ -450,7 +452,7 @@ end function seq_io_sec2hms
        write(logunit,*) subname,' ERROR: nf = ',nf,trim(dname)
        call shr_sys_abort()
     endif
-
+    frame = -1
     if (present(nt)) then
        frame = nt
     endif
@@ -505,8 +507,9 @@ end function seq_io_sec2hms
     if (lwdata) then
        call mct_gsmap_OrderedPoints(gsmap, iam, Dof)
        call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof, iodesc)
+       ns = size(dof)
        deallocate(dof)
-
+       allocate(tmpdata(ns))
        do k = 1,nf
           call mct_aVect_getRList(mstring,k,AV)
           itemc = mct_string_toChar(mstring)
@@ -514,9 +517,10 @@ end function seq_io_sec2hms
           name1 = trim(lpre)//'_'//trim(itemc)
           rcode = pio_inq_varid(cpl_io_file,trim(name1),varid)
           call pio_setframe(cpl_io_file,varid,frame)
-          call pio_write_darray(cpl_io_file, varid, iodesc, av%rattr(k,:), rcode, fillval=lfillvalue)
+          tmpdata = av%rattr(k,:)
+          call pio_write_darray(cpl_io_file, varid, iodesc, tmpdata, rcode, fillval=lfillvalue)
        enddo
-
+       deallocate(tmpdata)
        call pio_freedecomp(cpl_io_file, iodesc)
 
     end if
@@ -567,7 +571,7 @@ end function seq_io_sec2hms
     integer(in),pointer :: dimid(:)
     type(var_desc_t) :: varid
     type(io_desc_t) :: iodesc
-    integer(kind=Pio_Offset_Kind) :: frame=-1
+    integer(kind=Pio_Offset_Kind) :: frame
     type(mct_string) :: mstring     ! mct char type
     character(CL)    :: itemc       ! string converted to char
     character(CL)    :: name1       ! var name
@@ -627,6 +631,7 @@ end function seq_io_sec2hms
        write(logunit,*) subname,' ERROR: nf = ',nf,trim(dname)
        call shr_sys_abort()
     endif
+    frame = -1
     if (present(nt)) then
        frame = nt
     endif
@@ -700,10 +705,8 @@ end function seq_io_sec2hms
           allocate(dofn(ns*ni))
           n = 0
           do k1 = 1,ni
-          do k2 = 1,ns
-             n = n + 1
-             dofn(n) = (k1-1)*ng + dof(k2)
-          enddo
+             dofn(n+1:n+ns) = (k1-1)*ng + dof(:)
+             n = n + ns
           enddo
           call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny,ni/), dofn, iodesc)
           deallocate(dofn)
@@ -721,13 +724,11 @@ end function seq_io_sec2hms
           call pio_setframe(cpl_io_file,varid,frame)
           n = 0
           do k1 = 1,ni
-          do k2 = 1,ns
-             n = n + 1
-             data(n) = AVS(k1)%rAttr(k,k2)
+             data(n+1:n+ns) = AVS(k1)%rAttr(k,:)
+             n = n + ns
           enddo
-          enddo
-!          call pio_write_darray(cpl_io_file, varid, iodesc, av%rattr(k,:), rcode, fillval=lfillvalue)
-          call pio_write_darray(cpl_io_file, varid, iodesc, data, rcode, fillval=lfillvalue)
+         call pio_write_darray(cpl_io_file, varid, iodesc, data, rcode, fillval=lfillvalue)
+         call pio_setdebuglevel(0)
        enddo
 
        deallocate(data)
@@ -784,7 +785,7 @@ end function seq_io_sec2hms
     integer(in),pointer      :: dimid(:)
     type(var_desc_t)         :: varid
     type(io_desc_t)          :: iodesc
-    integer(kind=Pio_Offset_Kind) :: frame=-1
+    integer(kind=Pio_Offset_Kind) :: frame
     type(mct_string)         :: mstring     ! mct char type
     character(CL)            :: itemc       ! string converted to char
     character(CL)            :: name1       ! var name
@@ -821,6 +822,7 @@ end function seq_io_sec2hms
     lwdata = .true.
     if (present(whead)) lwhead = whead
     if (present(wdata)) lwdata = wdata
+    frame = -1
     if (present(nt)) then
        frame = nt
     endif
