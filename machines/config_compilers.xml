@@ -277,8 +277,8 @@ for mct, etc.
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O2 -debug minimal </ADD_CFLAGS>
   <ADD_CFLAGS DEBUG="TRUE"> -O0 -g </ADD_CFLAGS>
-  <FFLAGS> -no-opt-dynamic-align  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source -mcmodel medium -shared-intel </FFLAGS>
-  <CFLAGS>  -no-opt-dynamic-align -fp-model precise -mcmodel medium -shared-intel </CFLAGS>
+  <FFLAGS> -no-opt-dynamic-align  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source  </FFLAGS>
+  <CFLAGS>  -no-opt-dynamic-align -fp-model precise </CFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -openmp </ADD_FFLAGS_NOOPT>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
@@ -298,7 +298,10 @@ for mct, etc.
   <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpi-serial"> -mkl </ADD_SLIBS>
+
   <ADD_FFLAGS MPILIB="mpi-serial"> -mcmodel medium </ADD_FFLAGS>
+  <ADD_FFLAGS OS="Linux"> -mcmodel medium -shared-intel </ADD_FFLAGS>
+
 </compiler>
 
 <compiler COMPILER="intelmic">
@@ -369,12 +372,13 @@ for mct, etc.
   <ADD_CPPDEFS MODEL="pop"> -DDIR=NOOP </ADD_CPPDEFS>
   <ADD_CFLAGS compile_threaded="false"> -h noomp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="false"> -h noomp </ADD_FFLAGS>
-  <ADD_LDFLAGS compile_threaded="false"> -h noomp </ADD_LDFLAGS>
   <ADD_CPPDEFS MODEL="moby"> -DDIR=NOOP </ADD_CPPDEFS>
-  <ADD_FFLAGS DEBUG="TRUE"> -g -K trap=fp  -m1 </ADD_FFLAGS>
-  <FFLAGS> -O2  -f free -N 255  -h byteswapio -x dir </FFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -O0 -K trap=fp  -m1 </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2,ipa2 -em </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="TRUE"> -g -O0 </ADD_CFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <FFLAGS> -f free -N 255  -h byteswapio -x dir </FFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
-  <ADD_FFLAGS_NOOPT compile_threaded="false"> -h noomp </ADD_FFLAGS_NOOPT>
   <FC_AUTO_R8> -s real64 </FC_AUTO_R8>
   <LDFLAGS> -Wl,--allow-multiple-definition -h byteswapio </LDFLAGS>  
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
@@ -456,8 +460,7 @@ for mct, etc.
   <NETCDF_PATH>$(NETCDF_DIR)</NETCDF_PATH>
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
   <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY  </GPTL_CPPDEFS>
-<!--   <CMAKE_OPTS> -DCMAKE_SHARED_LIBRARY_LINK_C_FLAGS=" "
-      -DCMAKE_SHARED_LIBRARY_LINK_Fortran_FLAGS=" " </CMAKE_OPTS> -->
+  <CMAKE_OPTS> -DCMAKE_SYSTEM_NAME=Catamount</CMAKE_OPTS> -->
 </compiler>
 
 
@@ -506,7 +509,7 @@ for mct, etc.
 
 
 <compiler MACH="yellowstone" COMPILER="intel">
-  <PFUNIT_PATH>/glade/u/home/sacks/pFUnit/pFUnit3.1_Intel15.0.1_MPI</PFUNIT_PATH>
+  <PFUNIT_PATH>$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.1_Intel15.0.1_MPI</PFUNIT_PATH>
 </compiler>
 
 <compiler MACH="yellowstone" COMPILER="pgi">
@@ -659,6 +662,8 @@ for mct, etc.
   <HDF5_PATH>/soft/libraries/hdf5/1.8.14/cnk-xl/current/ </HDF5_PATH>
    <ADD_SLIBS>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf -L/soft/libraries/hdf5/1.8.14/cnk-xl/current/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+  <ADD_FFLAGS>-qfloat=nomaf</ADD_FFLAGS>
+  <ADD_CFLAGS>-qfloat=nomaf</ADD_CFLAGS>
 </compiler>
 
 
@@ -884,6 +889,7 @@ for mct, etc.
  <MPI_PATH MPILIB="openmpi"> /usr/local/openmpi-gcc-nag</MPI_PATH>
  <PFUNIT_PATH>/home/santos/pFUnit/pFUnit_NAG_3_0</PFUNIT_PATH>
  <!-- needed for nag pio build.. -->
+ <ADD_FFLAGS> -kind=byte </ADD_FFLAGS>
  <ADD_CPPDEFS> -DNO_C_SIZEOF </ADD_CPPDEFS>
  <!-- Experimental wrapper for OpenMP. -->
  <ADD_LDFLAGS compile_threaded="true"> -L/home/santos/lib/fake_omp -lfake_omp -Wl,-Wl,,--rpath=/home/santos/lib/fake_omp </ADD_LDFLAGS>

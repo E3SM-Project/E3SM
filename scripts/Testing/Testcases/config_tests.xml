@@ -74,6 +74,13 @@
           CCSM_TCOST="4"
           DOUT_L_MS="TRUE" />
 
+<ccsmtest NAME="LII"
+          DESC="CLM initial condition interpolation test (requires configuration with non-blank finidat)"
+          INFO_DBUG="1"
+          CCSM_TCOST="0"
+          REST_OPTION="none"
+          DOUT_S="FALSE" />
+
 <ccsmtest NAME="PEA"
           DESC="single pe bfb test (default length)"
           INFO_DBUG="1"

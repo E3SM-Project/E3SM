@@ -149,9 +149,12 @@ if (! $clean ) {
     }
 
     my $ninst_fail = 0;    
+    my $build_threaded = $xmlvars{BUILD_THREADED};
+
     foreach my $comp (qw(ATM LND ROF OCN ICE GLC WAV)){
 	my $ninst = "NINST_".$comp;
 	my $ntasks = "NTASKS_".$comp;
+	my $nthrds = "NTHRDS_".$comp;
 	if ($xmlvars{$ninst} > $xmlvars{$ntasks}) {
 	    if($xmlvars{$ntasks}==1){
 		system("./xmlchange -noecho $ntasks=$xmlvars{$ninst}");
@@ -160,7 +163,18 @@ if (! $clean ) {
 		die "ERROR cesm_setup: $comp NINST value greater than $comp NTASKS";
 	    }
 	}
+	if($xmlvars{$nthrds} > 1){
+	    $build_threaded = "TRUE";
+	}
     }
+
+    if ($build_threaded eq "TRUE" and $xmlvars{"COMPILER"} eq "nag") {
+        die "ERROR cesm_setup: it is not possible to run with OpenMP if using the NAG Fortran compiler\n";
+    }
+
+    my $sysmod = "./xmlchange BUILD_THREADED=$build_threaded";
+    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+
 
     if (-f "$caseroot/$case.run") {
 	print "Machine/Decomp/Pes configuration has already been done ...skipping$eol ";
@@ -173,6 +187,7 @@ if (! $clean ) {
 	my $pestot = `$caseroot/Tools/taskmaker.pl -sumonly`;
 	$sysmod = "./xmlchange -noecho -file env_mach_pes.xml -id TOTALPES -val $pestot";
 	system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
+    wait;
 	
         # Compute cost based on PE count
 	my $pval = 1;
@@ -229,7 +244,8 @@ if (! $clean ) {
                                                   scriptsroot => $xmlvars{'SCRIPTSROOT'},
                                                   machroot => $xmlvars{'CCSM_MACHDIR'},
                                                   machine => $xmlvars{'MACH'},
-                                                  compiler => $xmlvars{'COMPILER'});
+                                                  compiler => $xmlvars{'COMPILER'},
+                                                  threaded => $build_threaded);
 	
     my $inputbatchscript = "$xmlvars{'CCSM_MACHDIR'}/template.cesmrun";
     my $outputbatchscript = "$xmlvars{'CASEROOT'}/$case.run";
@@ -256,28 +272,18 @@ if (! $clean ) {
     if (!-f "./user_nl_cpl") {
 	print "Creating user_nl_xxx files for components and cpl$eol";
     }
-    my @models = qw( ATM LND ICE OCN GLC ROF WAV );
-    my @multi_support = qw(cam datm clm dlnd cice dice pop docn rtm drof cism ww3);
+    my @models = qw( ATM LND ICE OCN GLC ROF WAV CPL);
     # loop over target models
     foreach my $model (@models) {
 	# what is component for target model
 	my $comp = $xmlvars{"COMP_${model}"};
-
-	# loop over components 
-	foreach my $comp_multi (@multi_support) {
-	    # determine if component is one that has multi-instance support and 
-	    # if have multi-instance support - then create appropriate user_nl_fiels
-	    if ($comp eq $comp_multi) {
-		build_usernl_files($caseroot, $model, $comp);
-		last;
-	    }
-	}
+	build_usernl_files($caseroot, $model, $comp);
 	if ($comp eq "cism")  {
 	    my $sysmod = "$caseroot/Buildconf/cism.template $caseroot";
 	    system($sysmod) == 0 or die "ERROR cesm_setup: $sysmod failed: $?\n";
 	}
     }
-    build_usernl_files($caseroot, "drv", "cpl");
+
 
     #--------------------------------------------------------------------------
     # Run preview namelists for scripts

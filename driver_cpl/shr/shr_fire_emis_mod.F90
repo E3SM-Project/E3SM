@@ -11,7 +11,6 @@ module shr_fire_emis_mod
   use shr_kind_mod,only : CL => SHR_KIND_CL, CX => SHR_KIND_CX, CS => SHR_KIND_CS
   use shr_sys_mod, only : shr_sys_abort
   use shr_log_mod, only : loglev  => shr_log_Level
-  use shr_log_mod, only : logunit => shr_log_Unit
 
   implicit none
   save
@@ -88,17 +87,21 @@ contains
   !     corresponding chemical tracers.
   !
   !-------------------------------------------------------------------------
-  subroutine shr_fire_emis_readnl( NLFileName, emis_fields )
+  subroutine shr_fire_emis_readnl( NLFileName, ID, emis_fields )
 
     use shr_nl_mod,     only : shr_nl_find_group_name
     use shr_file_mod,   only : shr_file_getUnit, shr_file_freeUnit
+    use seq_comm_mct,   only : seq_comm_iamroot, seq_comm_setptrs, logunit
+    use shr_mpi_mod,    only : shr_mpi_bcast
 
-    character(len=*), intent(in)  :: NLFileName
-    character(len=*), intent(out) :: emis_fields	
+    character(len=*), intent(in)  :: NLFileName  ! name of namelist file
+    integer         , intent(in)  :: ID          ! seq_comm ID
+    character(len=*), intent(out) :: emis_fields ! emis flux fields
 
     integer :: unitn            ! namelist unit number
     integer :: ierr             ! error code
     logical :: exists           ! if file exists or not
+    integer :: mpicom           ! MPI communicator
 
     integer, parameter :: maxspc = 100
 
@@ -111,37 +114,42 @@ contains
 
     namelist /fire_emis_nl/ fire_emis_specifier, fire_emis_factors_file, fire_emis_elevated
 
-    inquire( file=trim(NLFileName), exist=exists)
+    call seq_comm_setptrs(ID,mpicom=mpicom)
+    if (seq_comm_iamroot(ID)) then
 
-    if ( exists ) then
+       inquire( file=trim(NLFileName), exist=exists)
 
-       unitn = shr_file_getUnit()
-       open( unitn, file=trim(NLFilename), status='old' )
-       if ( loglev > 0 ) write(logunit,F00) &
-            'Read in fire_emis_readnl namelist from: ', trim(NLFilename)
+       if ( exists ) then
 
-       call shr_nl_find_group_name(unitn, 'fire_emis_nl', status=ierr)
-       ! If ierr /= 0, no namelist present.
+          unitn = shr_file_getUnit()
+          open( unitn, file=trim(NLFilename), status='old' )
+          if ( loglev > 0 ) write(logunit,F00) &
+               'Read in fire_emis_readnl namelist from: ', trim(NLFilename)
 
-       if (ierr == 0) then
-          read(unitn, fire_emis_nl, iostat=ierr)
+          call shr_nl_find_group_name(unitn, 'fire_emis_nl', status=ierr)
+          ! If ierr /= 0, no namelist present.
 
-          if (ierr > 0) then
-             call shr_sys_abort( 'problem on read of fire_emis_nl namelist in shr_fire_emis_readnl' )
+          if (ierr == 0) then
+             read(unitn, fire_emis_nl, iostat=ierr)
+
+             if (ierr > 0) then
+                call shr_sys_abort( 'problem on read of fire_emis_nl namelist in shr_fire_emis_readnl' )
+             endif
           endif
-       endif
 
-       shr_fire_emis_factors_file = fire_emis_factors_file
-
-       ! parse the namelist info and initialize the module data
-       call shr_fire_emis_init( fire_emis_specifier, emis_fields )
-
-       close( unitn )
-       call shr_file_freeUnit( unitn )
-
-       shr_fire_emis_elevated = fire_emis_elevated
-
+          close( unitn )
+          call shr_file_freeUnit( unitn )
+       end if
     end if
+    call shr_mpi_bcast( fire_emis_specifier, mpicom)
+    call shr_mpi_bcast( fire_emis_factors_file, mpicom)
+    call shr_mpi_bcast( fire_emis_elevated, mpicom)
+
+    shr_fire_emis_factors_file = fire_emis_factors_file
+    shr_fire_emis_elevated = fire_emis_elevated
+
+    ! parse the namelist info and initialize the module data
+    call shr_fire_emis_init( fire_emis_specifier, emis_fields )
 
   end subroutine shr_fire_emis_readnl
 
@@ -150,60 +158,59 @@ contains
   !------------------------------------------------------------------------
   subroutine shr_fire_emis_init( specifier, emis_fields )
 
-    use shr_expr_parser_mod, only : shr_exp_parse, shr_exp_item_t, shr_exp_maxitems
+    use shr_expr_parser_mod, only : shr_exp_parse, shr_exp_item_t, shr_exp_list_destroy
 
     character(len=*), intent(in) :: specifier(:)
     character(len=*), intent(out) :: emis_fields	
 
     integer :: n_entries
     integer :: i, j, k
-    integer :: spc_len
 
-    type(shr_exp_item_t) :: items(shr_exp_maxitems)
-
+    type(shr_exp_item_t), pointer :: items_list, item
     character(len=12) :: token   ! fire emis field name to add
 
     nullify(shr_fire_emis_linkedlist)
 
-    items = shr_exp_parse( specifier, nitems=n_entries ) 
+    items_list => shr_exp_parse( specifier, nitems=n_entries ) 
 
     allocate(shr_fire_emis_mechcomps(n_entries))
     shr_fire_emis_mechcomps(:)%n_emis_comps = 0
 
     emis_fields = ''
 
-    do i = 1,n_entries
-       spc_len=len_trim(specifier(i))
-       if ( spc_len > 0 ) then
+    item => items_list
+    i = 1
+    do while(associated(item))
 
-          do k=1,shr_fire_emis_mechcomps_n
-             if ( trim(shr_fire_emis_mechcomps(k)%name) == trim(items(i)%name) ) then
-                call shr_sys_abort( 'shr_fire_emis_init : multiple emissions definitions specified for : '//trim(items(i)%name))
-             endif
-          enddo
-
-          shr_fire_emis_mechcomps(i)%name = items(i)%name
-          shr_fire_emis_mechcomps(i)%n_emis_comps = items(i)%n_terms
-          allocate(shr_fire_emis_mechcomps(i)%emis_comps(items(i)%n_terms))
-
-          do j = 1,items(i)%n_terms
-             shr_fire_emis_mechcomps(i)%emis_comps(j)%ptr => add_emis_comp( items(i)%vars(j), items(i)%coeffs(j) )
-          enddo
-          shr_fire_emis_mechcomps_n = shr_fire_emis_mechcomps_n+1
-
-          write(token,333) shr_fire_emis_mechcomps_n
-
-          if ( shr_fire_emis_mechcomps_n == 1 ) then
-             ! no not prepend ":" to the string for the first token
-             emis_fields = trim(token)
-             shr_fire_emis_fields_token = token
-          else
-             emis_fields = trim(emis_fields)//':'//trim(token)                 
+       do k=1,shr_fire_emis_mechcomps_n
+          if ( trim(shr_fire_emis_mechcomps(k)%name) == trim(item%name) ) then
+             call shr_sys_abort( 'shr_fire_emis_init : multiple emissions definitions specified for : '//trim(item%name))
           endif
+       enddo
 
+       shr_fire_emis_mechcomps(i)%name = item%name
+       shr_fire_emis_mechcomps(i)%n_emis_comps = item%n_terms
+       allocate(shr_fire_emis_mechcomps(i)%emis_comps(item%n_terms))
+
+       do j = 1,item%n_terms
+          shr_fire_emis_mechcomps(i)%emis_comps(j)%ptr => add_emis_comp( item%vars(j), item%coeffs(j) )
+       enddo
+       shr_fire_emis_mechcomps_n = shr_fire_emis_mechcomps_n+1
+
+       write(token,333) shr_fire_emis_mechcomps_n
+
+       if ( shr_fire_emis_mechcomps_n == 1 ) then
+          ! do not prepend ":" to the string for the first token
+          emis_fields = trim(token)
+          shr_fire_emis_fields_token = token
+       else
+          emis_fields = trim(emis_fields)//':'//trim(token)                 
        endif
 
+       item => item%next_item
+       i = i+1
     enddo
+    if (associated(items_list)) call shr_exp_list_destroy(items_list)
 
     ! Need to explicitly add Fl_ based on naming convention
 333 format ('Fall_fire',i3.3)

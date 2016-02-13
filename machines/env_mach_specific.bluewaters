@@ -30,7 +30,7 @@ endif
 
 if ( $COMPILER == "pgi" ) then
     module load PrgEnv-pgi
-    module switch pgi pgi/14.2.0     
+    module switch pgi pgi/14.9.0     
 endif
 
 if ( $COMPILER == "gnu" ) then

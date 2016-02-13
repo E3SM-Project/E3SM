@@ -58,7 +58,7 @@ if ( $COMPILER == "pgi" ) then
   module load pgi/15.1
 endif
 if ( $COMPILER == "gnu" ) then
-  module load gnu/5.1.0
+  module load gnu/5.2.0
 endif
 
 if ( $MPILIB == "mpi-serial") then
@@ -69,7 +69,7 @@ else
 endif
 
 module load ncarcompilers/1.0
-module load cmake/2.8.10.2
+module load cmake/3.0.2
 
 # -------------------------------------------------------------------------
 # Build and runtime environment variables - edit before the initial build 
@@ -107,6 +107,11 @@ if ( $DEBUG == "TRUE" ) then
 else
   setenv MP_EUIDEVELOP min
 endif
+# We want MP_EAGER_LIMIT to ALWAYS be set to 
+# 0.  The reason is that there is a memory leak in 
+# Yellowstone's POE that causes a memory leak if 
+# this variable is set to anything other than 0. 
+setenv MP_EAGER_LIMIT 0
 
 #
 #  We need to turn off system level job monitor if

@@ -48,12 +48,14 @@
 #       - Defaults to CMAKE_CURRENT_BINARY_DIR
 #       - Needs to be given if you have multiple separate pFUnit tests defined in the same directory
 #    COMMAND - Command to run the pFUnit test
-#       - Defaults to executable_name
+#       - Defaults to ./executable_name
 #       - Needs to be given if you need more on the command line than just the executable
 #         name, such as setting the number of threads
 #       - A multi-part command should NOT be enclosed in quotes (see example below)
 #       - COMMAND should NOT contain the mpirun command: this is specified
 #         separately, via the PFUNIT_MPIRUN CMake variable
+#       - The name of the executable should be prefixed with ./ for this to work
+#         when dot is not in your path (e.g., ./foo_exe rather than simply foo_exe)
 #
 # Non-standard CMake variables used:
 #    PFUNIT_MPIRUN - If executables need to be prefixed with an mpirun command,
@@ -68,7 +70,7 @@
 # Example, specifying values for the optional arguments:
 # create_pFUnit_test(mytest mytest_exe "${pfunit_sources}" "${test_sources}"
 #   GEN_OUTPUT_DIRECTORY mytest_dir
-#   COMMAND env OMP_NUM_THREADS=3 mytest_exe)
+#   COMMAND env OMP_NUM_THREADS=3 ./mytest_exe)
 #
 #==========================================================================
 
@@ -209,7 +211,7 @@ function(create_pFUnit_test test_name executable_name pf_file_list fortran_sourc
 
   # Give default values to optional arguments that aren't present
   if (NOT MY_COMMAND)
-    set(MY_COMMAND ${executable_name})
+    set(MY_COMMAND ./${executable_name})
   endif()
 
   # Prefix command with an mpirun command

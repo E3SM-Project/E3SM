@@ -15,7 +15,7 @@ echo " .... building model executable (calling ./Buildconf/cesm_build.pl) "
 
 ./Buildconf/cesm_build.pl $CASEROOT || exit -1
 
-echo " .... successfully build model executable"
+echo " .... successfully built model executable"
 
 exit 0;
 

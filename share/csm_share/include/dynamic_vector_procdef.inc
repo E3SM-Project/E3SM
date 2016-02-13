@@ -123,7 +123,11 @@ PURE function get_range_vec(self, begin, end, stride) result(items)
   end if
 
   if (present(stride)) then
-     allocate(items(end+1-begin/stride))
+     ! For strided access, the number of elements is the size over the
+     ! stride, but rounded up, rather than down as in typical integer
+     ! division. The shortcut for this is that (x-1)/y + 1 is the same as
+     ! x/y rounded up.
+     allocate(items((end-begin)/stride + 1))
      items = self%data(begin:end:stride)
   else
      allocate(items(end+1-begin))

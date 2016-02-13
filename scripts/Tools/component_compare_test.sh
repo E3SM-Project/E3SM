@@ -231,7 +231,7 @@ for model in ${models[*]}; do
 	    hist2_0001=`cd $rundir; ls -1 ${testcase}.${model}_0001.${extension}.*.nc.${suffix2} 2>/dev/null | tail -1`
 	    hist2_0002=`cd $rundir; ls -1 ${testcase}.${model}_0002.${extension}.*.nc.${suffix2} 2>/dev/null | tail -1`
 
-	    if  [[ -f ${hist1} ]] && [[ -f ${hist2_0001} ]] && [[ -f ${hist2_0001} ]] ; then
+	    if  [[ -f ${hist1} ]] && [[ -f ${hist2_0001} ]] && [[ -f ${hist2_0002} ]] ; then
 
 		if [ "$model" != "cpl" ]; then
 		    # do all model comparisons except for cpl, since cpl history does not write out all instances - but just instance 1
@@ -262,7 +262,7 @@ for model in ${models[*]}; do
 	    hist1_0002=`cd $rundir; ls -1 ${testcase}.${model}_0002.${extension}.*.nc.${suffix1} 2>/dev/null | tail -1`
 	    hist2_0002=`cd $rundir; ls -1 ${testcase}.${model}_0002.${extension}.*.nc.${suffix2} 2>/dev/null | tail -1`
 
-	    if  [[ -f ${hist1_0001} ]] && [[ -f ${hist1_0002} ]] && [[ -f ${hist2_0001} ]] && [[ -f ${hist2_0001} ]] ; then
+	    if  [[ -f ${hist1_0001} ]] && [[ -f ${hist1_0002} ]] && [[ -f ${hist2_0001} ]] && [[ -f ${hist2_0002} ]] ; then
 
 		compare_result=`${tools_dir}/component_compare.sh -baseline_dir "$rundir" -test_dir "$rundir" -baseline_hist "$hist1_0001" -test_hist "$hist1_0002" -cprnc_exe "$cprnc_exe"`
 		compare_status=`get_status "$compare_result"`

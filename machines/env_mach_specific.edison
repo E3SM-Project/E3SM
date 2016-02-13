@@ -39,8 +39,8 @@ endif
 
 if ( $COMPILER == "intel" ) then
     module load PrgEnv-intel 
-#    module switch intel      intel/14.0.2.144  
-     module switch intel intel/15.0.1.133
+    
+    module switch intel intel/15.0.1.133
     module rm cray-libsci
     module use /global/project/projectdirs/ccsm1/modulefiles/edison
     if( $DEBUG == "TRUE" ) then
@@ -51,7 +51,7 @@ if ( $COMPILER == "intel" ) then
 endif    
 if ( $COMPILER == "cray" ) then
     module load PrgEnv-cray
-    module switch cce      cce/8.3.7
+    module switch cce      cce/8.4.0.219
 endif    
 if ( $COMPILER == "gnu" ) then
     module load PrgEnv-gnu
@@ -63,16 +63,16 @@ module load craype-ivybridge
 if( $COMPILER != "intel" ) then
   module load cray-libsci/13.0.1
 endif
-module load cray-mpich/7.1.1
+module load cray-mpich/7.2.1
 module load pmi/5.0.6-1.0000.10439.140.2.ari
 
 if ( $MPILIB == "mpi-serial") then
-  module load cray-hdf5/1.8.11
-  module load cray-netcdf/4.3.0
+  module load cray-hdf5/1.8.14
+  module load cray-netcdf/4.3.3.1
 else
-  module load cray-netcdf-hdf5parallel/4.3.2
-  module load cray-hdf5-parallel/1.8.13
-  module load cray-parallel-netcdf/1.5.0
+  module load cray-netcdf-hdf5parallel/4.3.3.1
+  module load cray-hdf5-parallel/1.8.14
+  module load cray-parallel-netcdf/1.6.0
 endif
 
 module load perl/5.20.0

@@ -123,7 +123,7 @@ module seq_flds_mod
  
    use shr_kind_mod,   only : CX => shr_kind_CX, CXX => shr_kind_CXX
    use shr_sys_mod,    only : shr_sys_abort
-   use seq_drydep_mod, only : seq_drydep_init, seq_drydep_read, lnd_drydep
+   use seq_drydep_mod, only : seq_drydep_init, seq_drydep_readnl, lnd_drydep
    use seq_comm_mct,   only : seq_comm_iamroot, seq_comm_setptrs, logunit
    use shr_megan_mod,  only : shr_megan_readnl, shr_megan_mechcomps_n
    use shr_fire_emis_mod,  only : shr_fire_emis_readnl, shr_fire_emis_mechcomps_n, shr_fire_emis_ztop_token
@@ -2456,7 +2456,7 @@ module seq_flds_mod
      ! (emissions fluxes)
      !-----------------------------------------------------------------------------
 
-     call shr_megan_readnl(nlfilename='drv_flds_in', megan_fields=megan_voc_fields)
+     call shr_megan_readnl(nlfilename='drv_flds_in', ID=ID, megan_fields=megan_voc_fields)
      if (shr_megan_mechcomps_n>0) then
         call seq_flds_add(l2x_fluxes, trim(megan_voc_fields))
         call seq_flds_add(x2a_fluxes, trim(megan_voc_fields))
@@ -2468,7 +2468,7 @@ module seq_flds_mod
      ! (emissions fluxes)
      !-----------------------------------------------------------------------------
 
-     call shr_fire_emis_readnl(nlfilename='drv_flds_in', emis_fields=fire_emis_fields)
+     call shr_fire_emis_readnl(nlfilename='drv_flds_in', ID=ID, emis_fields=fire_emis_fields)
      if (shr_fire_emis_mechcomps_n>0) then
         call seq_flds_add(l2x_fluxes, trim(fire_emis_fields))
         call seq_flds_add(x2a_fluxes, trim(fire_emis_fields))
@@ -2485,7 +2485,7 @@ module seq_flds_mod
      ! Note: CAM and CLM will then call seq_drydep_setHCoeff
      !-----------------------------------------------------------------------------
 
-     call seq_drydep_read(nlfilename="drv_flds_in", seq_drydep_fields=seq_drydep_fields)
+     call seq_drydep_readnl(nlfilename="drv_flds_in", ID=ID, seq_drydep_fields=seq_drydep_fields)
      if ( lnd_drydep ) then
         call seq_flds_add(l2x_states, trim(seq_drydep_fields))
         call seq_flds_add(x2a_states, trim(seq_drydep_fields))

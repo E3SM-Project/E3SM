@@ -9,45 +9,43 @@
 use strict;
 use warnings;
 package Batch::BatchUtils;
-use Data::Dumper;
 use Cwd;
 use Exporter qw(import);
 use XML::LibXML;
 require Batch::BatchMaker;
 use lib '.';
 #==============================================================================
-# Base class constructor.  required args are the case name, caseroot, cime/cesmroot, 
-# compiler, machine, machine root directory, the mpi library, and the scriptsroot.  
+# Base class constructor.  required args are the case name, caseroot, cime root, 
+# compiler, machine, machine root directory, the mpi library,
 # get the paths to the config_machines and config_batch xml files, and figure out 
 # the batch system type. 
 #==============================================================================
 sub new
 {
-	my ($class, %params) = @_;
-	my $self = {
-		case => $params{'case'}     || undef,
-		caseconfig => $params{'caseconfig'} || undef,
-		caseroot => $params{'caseroot'}     || undef,
-		ccsmroot => $params{'ccsmroot'}     || undef,
-		compiler => $params{'compiler'}  || undef,
-		machine => $params{'machine'}  || undef,
-		machroot => $params{'machroot'}  || undef,
-		mpilib => $params{'mpilib'}  || undef,
-		scriptsroot => $params{'scriptsroot'}  || undef,
-	};
-	bless $self, $class;
+    my ($class, %params) = @_;
+    my $self = {
+	case		=> $params{'case'}		|| undef,
+	caseconfig	=> $params{'caseconfig'}	|| undef,
+	caseroot	=> $params{'caseroot'}		|| undef,
+	cimeroot	=> $params{'cimeroot'}		|| undef,
+	compiler	=> $params{'compiler'}		|| undef,
+	machine		=> $params{'machine'}		|| undef,
+	machroot	=> $params{'machroot'}		|| undef,
+	mpilib		=> $params{'mpilib'}		|| undef,
+    };
+    bless $self, $class;
 
     my $perl5libdir = undef;
-	my $configbatch = $self->{'machroot'} . "/config_batch.xml";
-	$self->{'configbatch'} = $configbatch;
-	my $configmachines = $self->{'machroot'} . "/config_machines.xml";
-	$self->{'configmachines'} = $configmachines;
+    my $configbatch = $self->{'machroot'} . "/config_batch.xml";
+    $self->{'configbatch'} = $configbatch;
+    my $configmachines = $self->{'machroot'} . "/config_machines.xml";
+    $self->{'configmachines'} = $configmachines;
     my $casetoolsdir = $self->{'caseroot'} . "/Tools";
     push(@INC, $casetoolsdir);
     my $xml = XML::LibXML->new(no_blanks => 1);
     my $machineconfig = $xml->parse_file($configmachines);
     my $root = $machineconfig->getDocumentElement();
-	
+    
     my @batchtypes = $root->findnodes("/config_machines/machine[\@MACH=\'$self->{machine}\']/batch_system");
     if(! @batchtypes)
     {
@@ -55,9 +53,10 @@ sub new
     }
     $self->{'batchtype'} = $batchtypes[0]->getAttribute('type');
 
-	$self->{dependencyqueue} = undef;
-	return $self;
+    $self->{dependencyqueue} = undef;
+    return $self;
 }
+
 sub _check()
 {
     my $self = shift;
@@ -183,7 +182,7 @@ sub submitSingleJob()
 	my %config = %{$self->{'caseconfig'}};
 	my $dependarg = '';
 	my $submitargs = '';
-    $submitargs = $self->getSubmitArguments($scriptname, $dependentJobId);
+	$submitargs = $self->getSubmitArguments($scriptname, $dependentJobId);
 	if(! defined $submitargs && length($submitargs) <= 0)
 	{
 	    $submitargs = '' ;
@@ -208,8 +207,9 @@ sub submitSingleJob()
 		#$ENV{'sta_ok'} = 'FALSE';
 		delete $ENV{'sta_ok'};
 	}
-	print "Submitting CESM job script: $scriptname\n";
+	print "Submitting job script: $scriptname\n";
 	#my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname $sta_argument";
+	chdir $config{'CASEROOT'};
 	my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname ";
 	print ": $runcmd\n";    
 	my $output;
@@ -240,10 +240,8 @@ sub submitSingleJob()
 #==============================================================================
 sub doResubmit()
 {
-	my $self = shift;
-    my $islastjob = shift;
-    my $resubmit = shift;
-	my $sta_ok = shift;
+    my ($self, $islastjob, $resubmit, $scriptname, $sta_ok) = @_;
+
 	
     # If the islastjob flag is true, and resubmit is > 0,  do the dependency
     # check and job resubmission again 
@@ -255,6 +253,10 @@ sub doResubmit()
 	    my $newresubmit = $config{'RESUBMIT'} - 1;
 	    my $owd = getcwd;
 	    chdir $config{'CASEROOT'};
+	    if ($config{COMP_RUN_BARRIERS} ne "TRUE"){
+		`./xmlchange CONTINUE_RUN=TRUE`;
+	    }
+
 	    `./xmlchange -file env_run.xml -id RESUBMIT -val $newresubmit`;
 	    if($?)
 	    {
@@ -270,16 +272,16 @@ sub doResubmit()
 }
 
 #==============================================================================
-# If we need to resubmit a CESM job + post-run jobs, this subroutine will check the 
+# If we need to resubmit a job + post-run jobs, this subroutine will check the 
 # env*.xml variables to see which jobs need to be resubmitted.  
-# For now, we are only handling cesm runs and the short-term archiver. 
+# For now, we are only handling runs and the short-term archiver. 
 #==============================================================================
 sub dependencyCheck()
 {
 	my $self = shift;
 	my $sta_ok;
 	my %config = %{$self->{'caseconfig'}};
-	# we always want to run the CESM test or run again..
+	# we always want to run the test or run again..
 	if(-e "$config{'CASE'}.test")
 	{
 		my $jobname = "$config{'CASE'}.test";
@@ -351,11 +353,14 @@ sub getSubmitArguments()
     my $scriptname = shift;
     my $dependentjobid = shift;
 
-	# Get a BatchMaker instance, we need its instance data. 
-    my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, case => $self->{case},
-                                                  mpilib => $self->{mpilib}, scriptsroot => $self->{scriptsroot},
-                                                  machroot => $self->{machroot}, machine => $self->{machine},
-                                                  compiler => $self->{compiler} );
+    # Get a BatchMaker instance, we need its instance data. 
+    my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, 
+							 cimeroot => $self->{cimeroot},
+							 case => $self->{case},
+							 mpilib => $self->{mpilib}, 
+							 machroot => $self->{machroot}, 
+							 machine => $self->{machine},
+							 compiler => $self->{compiler} );
 
 
     # Find the submit arguments for this particular batch system.
@@ -417,19 +422,20 @@ sub getSubmitArguments()
 package Batch::BatchUtilsFactory;
 use Exporter qw(import);
 use XML::LibXML;
-use Data::Dumper;
+
 sub getBatchUtils
 {
     my (%params) = @_;
     
     # We need a machine to be defined
     my $machine = $params{'machine'};
-	if(!defined $machine)
-	{
-		die "BatchUtilsFactory: machine must be defined!";
-	}
+    if(!defined $machine)
+    {
+	die "BatchUtilsFactory: machine must be defined!";
+    }
+    
     # Find the batch system type based on the machine. 
-	my $batchtype = getBatchSystemType($params{'machine'}, $params{'machroot'}, $params{'caseroot'});
+    my $batchtype = getBatchSystemType($params{'machine'}, $params{'machroot'}, $params{'caseroot'});
 
     # Make a new base class 
     my $batchutils = Batch::BatchUtils->new(%params);
@@ -456,9 +462,9 @@ sub getBatchUtils
         return $batchutils;
     }
     else
-	{
-		bless $batchutils, "Batch::BatchUtils";
-	}
+    {
+	bless $batchutils, "Batch::BatchUtils";
+    }
 
     # Now try to create the batch-system specific class. 
     $rv = eval 
@@ -515,18 +521,18 @@ sub getBatchSystemType()
 # Mira/ALCF specific BatchUtils class, since the workflow for ALCF has to be 
 # completely different. 
 # Current workflow: 
-# Run the CESM run on Mira or Cetus.  When done, ssh over to tukeylogin1 and submit 
+# Run on Mira or Cetus.  When done, ssh over to tukeylogin1 and submit 
 # the short-term archive run.  If we need to continue and resubmit, we will then 
-# ssh back to either Mira or Cetus and resubmit the CESM run.  
+# ssh back to either Mira or Cetus and resubmit the run.  
 #==============================================================================
 package Batch::BatchUtils_mira;
 use base qw( Batch::BatchUtils );
-use Data::Dumper;
+
 use Cwd;
 
 #==============================================================================
 # Overridden submitJobs() method for Mira. 
-# For ALCF, we really only want this method to submit the CESM run. 
+# For ALCF, we really only want this method to submit the run. 
 # The short-term archiver and resubmission will be handled elsewhere. 
 #==============================================================================
 sub submitJobs()
@@ -544,14 +550,14 @@ sub submitJobs()
     # Get the first job name. 
     my $firstjobname = $$firstjobarray[0];
 
-    # submit the CESM run, and nothing else. 
+    # submit the run, and nothing else. 
     $depjobid = $self->submitSingleJob($firstjobname, $depjobid, 0, $sta_ok);
 }
 
 #==============================================================================
 # ALCF-specific single job submission. 
 # The trick with ALCF is when we need to know which machine to ssh back to 
-# to resubmit the CESM run.
+# to resubmit the run.
 # So, write a 'workflowhostfile' which contains the hostname we need to ssh back to 
 # to resubmit the run. 
 # mira submitSingleJob
@@ -597,7 +603,7 @@ sub submitSingleJob()
         $submitargs .= " --env islastjob=TRUE ";
     }
     
-    print "Submitting CESM job script $scriptname\n";
+    print "Submitting job script $scriptname\n";
     my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname";
     print "Runcmd: $runcmd\n";
     
@@ -619,17 +625,13 @@ sub submitSingleJob()
     return undef;
 }
 #==============================================================================
-# Mira-specific doResubmit call.  If this is called from the cesm run, then we 
+# Mira-specific doResubmit call.  If this is called from the run, then we 
 # have to ssh over to tukey and run the short-term archiver. 
 # If called from the short-term archiver, 
 #==============================================================================
 sub doResubmit()
 {
-    my $self = shift;
-    my $islastjob = shift;
-    my $resubmit = shift;
-    my $scriptname = shift;
-    my $sta_ok = shift;
+    my ($self, $islastjob, $resubmit, $scriptname, $sta_ok) = @_;
 
     my %config = %{$self->{'caseconfig'}};
     if(defined $sta_ok)
@@ -709,7 +711,7 @@ sub doResubmit()
         }
             
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $starchivescript";
-        #my $cmd = "ssh tukeylogin1 qsub  -A CESM_Atmos -t 60 -n 1 -q default --mode script ./$starchivescript";
+        #my $cmd = "ssh tukeylogin1 qsub  -A Atmos -t 60 -n 1 -q default --mode script ./$starchivescript";
         my $runcmd = "ssh tukeylogin1 $submitstuff";
         qx($runcmd) or die "could not exec cmd $runcmd, $!";
     }
@@ -786,10 +788,12 @@ sub getSubmitArguments()
     my $dependentjobid = shift;
     my $sta_ok = shift;
 
-    my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, case => $self->{case},
-                                                  mpilib => $self->{mpilib}, scriptsroot => $self->{scriptsroot},
-                                                  machroot => $self->{machroot}, machine => $self->{machine},
-                                                  compiler => $self->{compiler} );
+    my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, 
+							 case => $self->{case},
+							 mpilib => $self->{mpilib}, 
+							 machroot => $self->{machroot}, 
+							 machine => $self->{machine},
+							 compiler => $self->{compiler} );
     
     # Set the node count to 1 if this is the short-term archive script. 
     if(defined $scriptname && $scriptname =~ /archive/)

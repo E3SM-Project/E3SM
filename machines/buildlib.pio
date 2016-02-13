@@ -15,8 +15,9 @@ cd $pio_dir
 # Set options to cmake
 # ----------------------------------------------------------------------
 # Note that some other generic CMAKE options are set in the Makefile
-set cmake_opts=" -D USER_CMAKE_MODULE_PATH=$CIMEROOT/externals/CMake"
-set cmake_opts="$cmake_opts -D GENF90_PATH=$CIMEROOT/externals/genf90"
+#set cmake_opts=" -D USER_CMAKE_MODULE_PATH=$CIMEROOT/externals/CMake"
+#set cmake_opts="$cmake_opts -D GENF90_PATH=$CIMEROOT/externals/genf90"
+set cmake_opts=" -D GENF90_PATH=$CIMEROOT/externals/genf90"
 
 # ----------------------------------------------------------------------
 # create the pio makefile by running cmake (done via a rule
@@ -31,8 +32,9 @@ $GMAKE  $pio_dir/Makefile MODEL=pio USER_CMAKE_OPTS="$cmake_opts" \
 # ----------------------------------------------------------------------
 $GMAKE -j $GMAKE_J || exit 2
 if ( -d "$pio_dir/src" ) then
-  cp -p src/lib*.a $BLDROOT/lib
-  cp -p src/*.h src/*.mod $BLDROOT/include
+  cp -p $pio_dir/src/clib/libpioc.* $BLDROOT/lib
+  cp -p $pio_dir/src/flib/libpiof.* $BLDROOT/lib
+  cp -p $pio_dir/src/clib/*.h $pio_dir/src/flib/*.mod $BLDROOT/include
 else
   if( -d "$pio_dir/pio" ) then
     cd pio
