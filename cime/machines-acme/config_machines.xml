@@ -814,9 +814,10 @@
 <!-- complete path to the build directory -->
         <DIN_LOC_ROOT>/home/reichpb/shared/cesm_inputdata</DIN_LOC_ROOT>           
 <!-- complete path to the inputdata directory -->
+
         <DIN_LOC_ROOT_CLMFORC>/home/reichpb/shared/cesm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
 <!-- path to the optional forcing data for CLM (for CRUNCEP forcing) -->
-        <DOUT_S>FALSE</DOUT_S>                                           
+        <DOUT_S>FALSE</DOUT_S>                                            
 <!-- logical for short term archiving -->
         <DOUT_S_ROOT>USERDEFINED_optional_run</DOUT_S_ROOT>               
 <!-- complete path to a short term archiving directory -->
@@ -828,7 +829,7 @@
 <!-- path to the cprnc tool used to compare netcdf history files in testing -->
         <BATCHQUERY>qstat -f</BATCHQUERY>
         <BATCHSUBMIT>qsub -q mesabi</BATCHSUBMIT>
-        <SUPPORTED_BY>USERDEFINED_optional</SUPPORTED_BY>
+        <SUPPORTED_BY>chen1718 at umn dot edu</SUPPORTED_BY>
         <GMAKE_J>2</GMAKE_J>
         <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
@@ -864,6 +865,7 @@
 <!-- complete path to the build directory -->
         <DIN_LOC_ROOT>/home/reichpb/shared/cesm_inputdata</DIN_LOC_ROOT>           
 <!-- complete path to the inputdata directory -->
+
         <DIN_LOC_ROOT_CLMFORC>/home/reichpb/shared/cesm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
 <!-- path to the optional forcing data for CLM (for CRUNCEP forcing) -->
         <DOUT_S>FALSE</DOUT_S>                                            
@@ -878,7 +880,7 @@
 <!-- path to the cprnc tool used to compare netcdf history files in testing -->
         <BATCHQUERY>qstat -f</BATCHQUERY>
         <BATCHSUBMIT>qsub -q batch</BATCHSUBMIT>
-        <SUPPORTED_BY>USERDEFINED_optional</SUPPORTED_BY>
+        <SUPPORTED_BY>chen1718 at umn dot edu</SUPPORTED_BY>
         <GMAKE_J>2</GMAKE_J>
         <MAX_TASKS_PER_NODE>8</MAX_TASKS_PER_NODE>
          <batch_system type="pbs">
