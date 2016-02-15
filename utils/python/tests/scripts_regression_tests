@@ -6,8 +6,8 @@ LIB_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(LIB_DIR)
 from CIME.utils import run_cmd
 import CIME.utils, update_acme_tests, wait_for_tests
-import CIME.create_test
-from  CIME.create_test import CreateTest
+import CIME.system_test
+from  CIME.system_test import SystemTest
 from  CIME.XML.machines import Machines
 from  CIME.XML.files import Files
 from  CIME.case import Case
@@ -405,7 +405,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
     def test_phases(self):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
-        ct = CreateTest(tests)
+        ct = SystemTest(tests)
 
         build_fail_test = tests[0]
         run_fail_test   = tests[1]
@@ -417,9 +417,9 @@ class TestCreateTestImpl(TestCreateTestCommon):
 
         for idx, phase in enumerate(ct._phases):
             for test in ct._tests:
-                if (phase == CIME.create_test.INITIAL_PHASE):
+                if (phase == CIME.system_test.INITIAL_PHASE):
                     continue
-                elif (phase == CIME.create_test.BUILD_PHASE):
+                elif (phase == CIME.system_test.BUILD_PHASE):
                     ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
 
                     if (test == build_fail_test):
@@ -431,7 +431,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
                         self.assertFalse(ct._is_broken(test))
                         self.assertTrue(ct._work_remains(test))
 
-                elif (phase == CIME.create_test.RUN_PHASE):
+                elif (phase == CIME.system_test.RUN_PHASE):
                     if (test == build_fail_test):
                         with self.assertRaises(SystemExit):
                             ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
@@ -475,7 +475,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
-        ct = CreateTest(tests, test_id=test_id)
+        ct = SystemTest(tests, test_id=test_id)
 
         build_fail_test = tests[0]
         run_fail_test   = tests[1]
@@ -496,12 +496,12 @@ class TestCreateTestImpl(TestCreateTestCommon):
         for test_status in test_statuses:
             status, test_name = wait_for_tests.parse_test_status_file(test_status)
             if (test_name == build_fail_test):
-                self.assertEqual(status[CIME.create_test.BUILD_PHASE], wait_for_tests.TEST_FAIL_STATUS)
+                self.assertEqual(status[CIME.system_test.BUILD_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             elif (test_name == run_fail_test):
-                self.assertEqual(status[CIME.create_test.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
+                self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             else:
                 self.assertEqual(test_name, pass_test)
-                self.assertEqual(status[CIME.create_test.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
+                self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
 
 ###############################################################################
 @unittest.skipIf(CIME.utils.get_model() == 'cesm', "skip Jenkins tests in cesm")
