@@ -14,7 +14,7 @@ class Testlist(GenericXML):
         """
         GenericXML.__init__(self,infile)
 
-    def get_testsv1(self, machine=None, category=None, compiler=None):
+    def _get_testsv1(self, machine=None, category=None, compiler=None):
         tests = []
         compsetnodes = self.get_node("compset")
         machatts = {}
@@ -42,7 +42,7 @@ class Testlist(GenericXML):
                             tests.append(thistest)
         return tests
 
-    def get_testsv2(self, machine=None, category=None, compiler=None):
+    def _get_testsv2(self, machine=None, category=None, compiler=None):
         tests = []
         testnodes = self.get_node("test")
         machatts = {}
@@ -77,9 +77,9 @@ class Testlist(GenericXML):
 
     def get_tests(self, machine=None, category=None, compiler=None):
         if (self.version == "1.0"):
-            return self.get_testsv1(machine,category,compiler)
+            return self._get_testsv1(machine,category,compiler)
         elif (self.version == "2.0"):
-            return self.get_testsv2(machine,category,compiler)
+            return self._get_testsv2(machine,category,compiler)
         else:
             logging.critical("Did not recognize testlist file version %s for file %s"
                              % (self.version,self.filename))

@@ -1,5 +1,5 @@
 """
-Implementation of create_test functionality from CIME
+Implementation of System Test functionality from CIME
 """
 import shutil, traceback, stat, glob, threading, time, thread
 from XML.standard_module_setup import *
@@ -26,7 +26,7 @@ PHASES = [INITIAL_PHASE, CREATE_NEWCASE_PHASE, XML_PHASE, SETUP_PHASE, NAMELIST_
 CONTINUE = [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]
 
 ###############################################################################
-class CreateTest(object):
+class SystemTest(object):
 ###############################################################################
 
     ###########################################################################
@@ -623,7 +623,7 @@ class CreateTest(object):
             logging.warning("FAILED to set up cs files: %s" % str(e))
 
     ###########################################################################
-    def create_test(self):
+    def system_test(self):
     ###########################################################################
         """
         Main API for this class.
@@ -647,7 +647,7 @@ class CreateTest(object):
         self._setup_cs_files()
 
         # Return True if all tests passed
-        print "At create_test close, state is:"
+        print "At system_test close, state is:"
         rv = True
         for test in self._tests:
             phase, status, nl_fail = self._get_test_data(test)
@@ -673,6 +673,6 @@ class CreateTest(object):
 
             print "    Case dir: %s" % self._get_test_dir(test)
 
-        print "create_test took", time.time() - start_time, "seconds"
+        print "system_test took", time.time() - start_time, "seconds"
 
         return rv
