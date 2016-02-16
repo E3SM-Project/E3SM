@@ -300,10 +300,12 @@ class SystemTest(object):
             # Parallelizing builds introduces potential sync problems with sharedlibroot
             # Just let every case build it's own
             sharedlibroot = os.path.join(test_dir, "sharedlibroot.%s" % self._test_id)
-        create_newcase_cmd = "%s -model %s -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -nosavetiming -sharedlibroot %s" % \
+        create_newcase_cmd = "%s -model %s -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -sharedlibroot %s" % \
                               (os.path.join(self._cime_root,"scripts", "create_newcase"),
                                self._cime_model,test_dir, grid, machine, compiler, compset, test_case, self._project,
                                sharedlibroot)
+        if (test_case != 'PFS'):
+            create_newcase_cmd += " -nosavetiming "
         if (case_opts is not None):
             create_newcase_cmd += " -confopts _%s" % ("_".join(case_opts))
         if (test_mods is not None):

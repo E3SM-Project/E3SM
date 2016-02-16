@@ -2,11 +2,11 @@
 
 ./Tools/check_lockedfiles || exit -1
 
-set EXEROOT  = `./xmlquery EXEROOT -value`
-set RUNDIR   = `./xmlquery RUNDIR -value`
-set TESTID   = `./xmlquery TEST_TESTID -value`
-set CIMEROOT = `./xmlquery CIMEROOT -value`
-set CASE     = `./xmlquery CASE -value`
+set EXEROOT  = `./xmlquery EXEROOT --value`
+set RUNDIR   = `./xmlquery RUNDIR --value`
+set TESTID   = `./xmlquery TEST_TESTID --value`
+set CIMEROOT = `./xmlquery CIMEROOT --value`
+set CASE     = `./xmlquery CASE --value`
 
 echo "#! /bin/bash" > $EXEROOT/${CIME_MODEL}.exe
 echo "echo Insta pass" >> $EXEROOT/${CIME_MODEL}.exe
@@ -18,7 +18,7 @@ chmod +x $EXEROOT/${CIME_MODEL}.exe
 
 echo "Build phase complete, just made simple script for ${CIME_MODEL}.exe" | tee $EXEROOT/cesm.bldlog.$TESTID
 
-./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val TRUE
+./xmlchange --noecho --file env_build.xml --id BUILD_COMPLETE --val TRUE
 
 rm -rf LockedFiles/*
 

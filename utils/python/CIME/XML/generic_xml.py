@@ -54,9 +54,10 @@ class GenericXML(object):
         if(outfile is None):
             outfile = self.filename
         logging.info("write: "+ outfile)
-        doc = minidom.parseString(ET.tostring(self.root))
+        xmlstr = ET.tostring(self.root)
+        doc = minidom.parseString(xmlstr)
         with open(outfile,'w') as xmlout:
-            doc.writexml(xmlout,addindent='  ',newl='\n')
+            doc.writexml(xmlout,addindent='  ')
 
 
     def get_node(self, nodename, attributes=None, root=None):

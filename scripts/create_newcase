@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 #-----------------------------------------------------------------------------------------------
 #
 # create_newcase
@@ -7,14 +7,14 @@
 # options via a commandline interface.
 #
 # A few notes for clarification:
-# - All possible compset components will contain a cime_config directory containing 
-# a file "config_component.xml" specifying the xml variable definitions for that component 
+# - All possible compset components will contain a cime_config directory containing
+# a file "config_component.xml" specifying the xml variable definitions for that component
 # - If the atmopsheric component was datm, then $file would be
 #     $cimeroot/components/data_comps/datm/cime_config/config_component.xml
 # note that for CESM, the only primary components are
 #     cam, clm, cice, cism, pop, drv, allactive
 # so the directories for the primary components will contain the additional two files:
-#     'compsets.xml', 'pelayouts.xml' and 'pio_settings.xml'  
+#     'compsets.xml', 'pelayouts.xml' and 'pio_settings.xml'
 #
 #-----------------------------------------------------------------------------------------------
 
@@ -28,8 +28,8 @@ use Data::Dumper;
 use File::Basename;
 use File::Path qw(mkpath);
 
-# Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.  
-# If not found, print a warning message then exit. 
+# Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.
+# If not found, print a warning message then exit.
 eval {
     require XML::LibXML;
     XML::LibXML->import();
@@ -38,9 +38,9 @@ if($@)
 {
     my $warning = <<END;
 WARNING:
-    The perl module XML::LibXML is needed for XML parsing in the CIME script system.  
-	Please contact your local systems administrators or IT staff and have them install it for 
-	you, or install the module locally.  
+    The perl module XML::LibXML is needed for XML parsing in the CIME script system.
+	Please contact your local systems administrators or IT staff and have them install it for
+	you, or install the module locally.
 
 END
 	print "$warning\n";
@@ -50,7 +50,7 @@ END
 #-----------------------------------------------------------------------------------------------
 # Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
 # descriptions to be printed to STDOUT before the error messages start.
-*STDOUT->autoflush();                  
+*STDOUT->autoflush();
 
 #-----------------------------------------------------------------------------------------------
 # Set the directory that contains the CIME configuration scripts.  If the create_newcase command was
@@ -63,7 +63,7 @@ my $ProgDir = $1;                      # name of directory containing this scrip
                                        # the user's PATH
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
-if ($ProgDir) { 
+if ($ProgDir) {
     $cfgdir = abs_path($ProgDir);
 } else {
     $cfgdir = $cwd;
@@ -110,7 +110,7 @@ OPTIONS
   -mach_dir <path>         Specify the locations of the Machines directory (optional).
                            default: \$cimeroot/machines
   -user_mods_dir <path>    Path to directory with user_nl_* files and xmlchange
-                           commands to utilize (optional). For non-test cases, this 
+                           commands to utilize (optional). For non-test cases, this
                            can also include SourceMods
   -confopts <value>        Specify some additional configuration options (optional) as follows:
                            _AOA  = aoflux on atm grid
@@ -118,35 +118,35 @@ OPTIONS
                            _CG   = gregorian calendar
                            _D    = debug
                            _E    = esmf interfaces
-                           _IOP* = PnetCDF IO test where * is  A(atm), C(cpl), G(glc), 
+                           _IOP* = PnetCDF IO test where * is  A(atm), C(cpl), G(glc),
                                    I(ice), L(lnd), O(ocn), W(wav) or blank (all components)
-                           _L*   = set run length y, m, d, h, s, n(nsteps) plus integer 
-                                   (ie _Lm6 for 6 months) 
+                           _L*   = set run length y, m, d, h, s, n(nsteps) plus integer
+                                   (ie _Lm6 for 6 months)
                            _M*   = set the mpilib where * is default, mpi-serial, mpich, etc
                            _N*   = set NINST_ env value to * where * is an integer
-                           _P*   = set pecount to specific values include 
+                           _P*   = set pecount to specific values include
                                    T,S,M,L,X,1,1x1,16,16x1,4x4,16x1D, etc
-  -petype  <name>          Valid values are [threaded | mpionly] 
+  -petype  <name>          Valid values are [threaded | mpionly]
                            Force pes to be all threaded or all mpi
 			   default: this is not set
-  -pecount <name>          Value of S,M,L,X1,X2 (optional). 
+  -pecount <name>          Value of S,M,L,X1,X2 (optional).
                            default: M, partially redundant with confopts _P
   -user_compset <name>     Long name for new user compset to use (optional)
-                           This assumes that all of the compset settings in the 
+                           This assumes that all of the compset settings in the
                            long name have been defined in cime_config/config_compsets.xml
   -user_grid_file <name>   Full pathname of grid file to use (optional)
                            This should be a "copy" of cime_config/config_grids.xml
                            with the new user grid changes added to it
-  -user_pes_setby <name>   Component that sets the pe-layouts and pio settings 
+  -user_pes_setby <name>   Component that sets the pe-layouts and pio settings
                            For CESM this is [allactive, cam, clm, cice, cism, pop]
   -nosavetiming            Change the default for SAVE_TIMING in env_run.xml to .FALSE. (optional).
   -help [or -h]            Print usage to STDOUT (optional).
   -testlist                List valid values for tests [normally only invoked by create_test] (optional).
   -silent [or -s]          Turns on silent mode - only fatal messages issued (optional).
   -verbose [or -v]         Turn on verbose echoing of settings made by create_newcase (optional).
-  -xmlmode <name>          Sets format of xml files; normal or expert (optional). (default is normal) 
+  -xmlmode <name>          Sets format of xml files; normal or expert (optional). (default is normal)
   -nowarning               Turns off checking of the known_problems repository. (default is on)
-  -sharedlibroot           Used for re-using build components when building multiple cases, 
+  -sharedlibroot           Used for re-using build components when building multiple cases,
                            default is \$EXEROOT
 
 EXAMPLES
@@ -172,9 +172,9 @@ GetOptions(
     "case=s"                    => \$opts{'case'},
     "compset=s"                 => \$opts{'compset'},
     "confopts=s"                => \$opts{'confopts'},
-    "project=s"                 => \$opts{'project'},  
-    "compiler=s"                => \$opts{'compiler'},  
-    "mpilib=s"                  => \$opts{'mpilib'},  
+    "project=s"                 => \$opts{'project'},
+    "compiler=s"                => \$opts{'compiler'},
+    "mpilib=s"                  => \$opts{'mpilib'},
     "res=s"                     => \$opts{'res'},
     "h|help"                    => \$opts{'help'},
     "loglevel=s"             => \$opts{'loglevel'},
@@ -183,7 +183,7 @@ GetOptions(
     "model=s"                   => \$opts{'model'},
     "pecount=s"                 => \$opts{'pecount'},
     "petype=s"                  => \$opts{'petype'},
-    "pes_file=s"                => \$opts{'pes_file'}, 
+    "pes_file=s"                => \$opts{'pes_file'},
     "testname=s"                => \$opts{'testname'},
     "nosavetiming"              => \$opts{'nosavetiming'},
     "testlist"                  => \$opts{'testlist'},
@@ -212,12 +212,12 @@ unshift @INC, @dirs;
 require ConfigCase;
 require ConfigCompsetGrid;
 require ConfigPes;
-require ConfigMachine; 
+require ConfigMachine;
 require ConfigTests;
 require SetupTools;
 require Project::ProjectTools;
 require UserMods::UserModsTools;
-require Testing::TestLists; 
+require Testing::TestLists;
 require Module::ModuleLoader;
 require Log::Log4perl;
 
@@ -235,7 +235,7 @@ my $caseroot; # set in _check_input_options
 my $grid;     # set in _check_input_options
 my $compset; # set in _check_input_options
 my $compiler; # set in _check_input_options
-my $confopts; # set in _set_confopts 
+my $confopts; # set in _set_confopts
 my $mach_dir;
 my $machine;
 my $testname;
@@ -259,7 +259,7 @@ _check_input_options ();
 #------------------------------------------------------------------------------------------
 # *** Set hard-wired paths ***
 #------------------------------------------------------------------------------------------
-my $srcroot = abs_path("$cimeroot/../"); 
+my $srcroot = abs_path("$cimeroot/../");
 
 #------------------------------------------------------------------------------------------
 # *** Set master config file ***
@@ -276,21 +276,21 @@ my $config = ConfigCase->new("");
 # Add all the elements of the config_files.xml to $config
 $config->add_config_variables($files_spec_file, $srcroot, $cimeroot, $model);
 
-# Determine the driver_cpl config_component.xml file 
+# Determine the driver_cpl config_component.xml file
 my $file = $config->get('CONFIG_DRV_FILE');
 
 # Add all the elements of the driver_cpl/cime_config/config_component.xml to $config
 $config->add_config_variables($file, $srcroot, $cimeroot, $model);
-$config->set('CIMEROOT', $cimeroot); 
-$config->set('SRCROOT' , $srcroot); 
-$config->set('MODEL'   , $model); 
+$config->set('CIMEROOT', $cimeroot);
+$config->set('SRCROOT' , $srcroot);
+$config->set('MODEL'   , $model);
 
 # Determine compset longname and component that sets pe-layouts, compsets and pio settings  ($pes_setby)
 my ($pes_setby, $compsets_file, $compset_longname, $support_level);
 if ($opts{'user_compset'}) {
     $compset_longname = $opts{'user_compset'};
     $pes_setby = $opts{'user_pes_setby'};
-    $config->set('COMPSET',$compset_longname); 
+    $config->set('COMPSET',$compset_longname);
 } else {
     if (! $opts{'compset'}) {
 	$logger->logdie ("ERROR: must set the -compset option to create_newcase ");
@@ -303,7 +303,7 @@ if ($opts{'user_compset'}) {
 # Now given the target component, determine the full pathname of the file that
 # defines the compsets for this target component
 my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$files_spec_file");
-foreach my $id ('PES_SPEC_FILE', 'PIO_SPEC_FILE', 'TESTS_SPEC_FILE', 'TESTS_MOD_DIRS') { 
+foreach my $id ('PES_SPEC_FILE', 'PIO_SPEC_FILE', 'TESTS_SPEC_FILE', 'TESTS_MOD_DIRS') {
     my @nodes = $xml->findnodes(".//entry[\@id=\"$id\"]/values/value[\@component=\"$pes_setby\"]");
     if (@nodes) {
 	my $value = $nodes[0]->textContent();
@@ -331,7 +331,7 @@ foreach my $element (@elements) {
 
 # Given the compset components, determine the full pathname of each component definition file
 # (all have the generic name config_component.xml) and the directories each component's buildlib and buildnml files
-foreach my $comp ('ATM', 'LND', 'ROF', 'ICE', 'OCN', 'GLC', 'WAV', 'DRV') { 
+foreach my $comp ('ATM', 'LND', 'ROF', 'ICE', 'OCN', 'GLC', 'WAV', 'DRV') {
     FOUND1: foreach my $component (@compset_components) {
 	my $name = "CONFIG_" . $comp . "_FILE";
 	my @nodes = $xml->findnodes(".//entry[\@id=\"$name\"]/values/value[\@component=\"$component\"]");
@@ -359,7 +359,7 @@ foreach my $comp ('ATM', 'LND', 'ROF', 'ICE', 'OCN', 'GLC', 'WAV', 'DRV') {
 }
 
 # Overwrite the non-default values for the following config elements (needed for the calls below)
-my $username = "$ENV{'USER'}";  
+my $username = "$ENV{'USER'}";
 $config->set('USER'	  , "$username");
 $config->set('CASEROOT'	  , "$caseroot");
 $config->set('CASETOOLS'  , "$caseroot/Tools");
@@ -370,13 +370,13 @@ $config->set('UTILROOT'	  , "$cimeroot/scripts/Tools");
 $config->set('SRCROOT'	  , "$srcroot");
 
 #------------------------------------------------------------------------------------------
-# *** Options for listing (exit after listing) 
+# *** Options for listing (exit after listing)
 #------------------------------------------------------------------------------------------
 if ($opts{'testlist'}) {
     my $tests_file = $config->get('TESTS_SPEC_FILE');
     ConfigTests::listTests("$tests_file");
     exit;
-}    
+}
 
 #------------------------------------------------------------------------------------------
 # *** Determine grid settings
@@ -388,7 +388,7 @@ if (defined $opts{'user_grid_file'}){
     (-f "$file")  or  $logger->logdie ("** ERROR create_newcase: cannot find user specified grids file $file **\n");
     $config->set('GRIDS_SPEC_FILE', "$file");
 }
-my $grid_longname = ConfigCompsetGrid::getGridLongname($grid, $config); 
+my $grid_longname = ConfigCompsetGrid::getGridLongname($grid, $config);
 $config->set('GRID', "$grid_longname");
 
 # Set grid component domains and mapping files
@@ -397,15 +397,15 @@ ConfigCompsetGrid::setGridDomain($file, $config);
 ConfigCompsetGrid::setGridMaps($file, $config);
 
 #------------------------------------------------------------------------------------------
-# *** Determine compset component configurations 
+# *** Determine compset component configurations
 #------------------------------------------------------------------------------------------
 # Loop over the component files (i.e. definitions_component.xml files)
 # determined by the compsets of the target component
 
 my @setup_comp_files;
-foreach my $name ('CONFIG_ATM_FILE', 'CONFIG_ICE_FILE', 'CONFIG_GLC_FILE', 'CONFIG_LND_FILE', 
+foreach my $name ('CONFIG_ATM_FILE', 'CONFIG_ICE_FILE', 'CONFIG_GLC_FILE', 'CONFIG_LND_FILE',
 		  'CONFIG_ROF_FILE', 'CONFIG_OCN_FILE', 'CONFIG_WAV_FILE') {
-    my $file = $config->get($name);	
+    my $file = $config->get($name);
     (-f $file) || die "ERROR create_newcase: config_file $file does not exist";
     $config->add_config_variables($file, $srcroot, $cimeroot);
     ConfigCompsetGrid::setComponent($file, $config);
@@ -461,17 +461,17 @@ ConfigPes::setPes($pecount, $pes_setby, \%opts, $config);
 # which must be set to 1 when GLC is CISM1
 
 my $file = $config->get('CONFIG_DRV_FILE');
-ConfigCompsetGrid::setComponent($file, $config); 
+ConfigCompsetGrid::setComponent($file, $config);
 
 #------------------------------------------------------------------------------------------
 # Determine <entry> settings in config_compsets.xml
 #------------------------------------------------------------------------------------------
 # This determines driver_cpl/cime_config/config_component.xml settings that are compset specific
 # and also check that compset is supported for target grid
-# Note- this needs to come last since it will overwrite any values set above 
+# Note- this needs to come last since it will overwrite any values set above
 
 if (!$opts{'user_compset'}) {
-    ConfigCompsetGrid::setCompsetGeneralVars($config); 
+    ConfigCompsetGrid::setCompsetGeneralVars($config);
 }
 
 # Special case - if land and river grids are different AND there is no mapping file
@@ -481,14 +481,14 @@ if ($rof_comp eq 'rtm' || $rof_comp eq 'mosart') {
     my $lnd_grid    = $config->get('LND_GRID');
     my $rof_grid    = $config->get('ROF_GRID');
     my $map_lnd2rof = $config->get('LND2ROF_FMAPNAME');
-    
+
     if (($lnd_grid ne $rof_grid) && ($map_lnd2rof eq 'idmap')) {
 	$logger->warn("No lnd2rof_fmapname exists - RTM/MOSART mode set to null \n");
 	if ($rof_comp eq 'rtm') {
-	    $config->set('RTM_MODE', 'NULL');     
+	    $config->set('RTM_MODE', 'NULL');
 	}
 	if ($rof_comp eq 'mosart') {
-	    $config->set('MOSART_MODE', 'NULL');     
+	    $config->set('MOSART_MODE', 'NULL');
 	}
     }
 }
@@ -514,10 +514,10 @@ my $file = $config->get('GRIDS_SPEC_FILE');
 ConfigCompsetGrid::printGridCompsetInfo($file, $config);
 
 if(defined $compset){
-    $logger->info( "Compset specifier: $compset. \nLongname: $compset_longname"); 
-    $logger->info( "Grid is valid for this compset. "); 
+    $logger->info( "Compset specifier: $compset. \nLongname: $compset_longname");
+    $logger->info( "Grid is valid for this compset. ");
 }else{
-    $logger->info( "Compset specifier: $compset_longname."); 
+    $logger->info( "Compset specifier: $compset_longname.");
 }
 
 #------------------------------------------------------------------------------------------
@@ -576,7 +576,7 @@ unless(defined $testname && $testname eq "SBN"){
     $config->set('PROJECT',$project);
 }
 #------------------------------------------------------------------------------------------
-# *** Set the mpi library 
+# *** Set the mpi library
 #------------------------------------------------------------------------------------------
 _set_mpi_library($mpilib, $config);
 
@@ -605,7 +605,7 @@ if ($user_mods_dir) {
 	# relative path specified
 	my $user_mods_path = $config->get('USER_MODS_DIR', 'component', $pes_setby);
 	$user_mods_dir = "$user_mods_path/$user_mods_dir";
-    }	
+    }
 
    my $is_test = 0;
    if ($testname) {$is_test = 1;}
@@ -640,7 +640,7 @@ sub _check_input_options
 	if (-d $case) {
 	    $logger->logdie("Case directory $case already exists ");
 	}
-	mkpath($case); 
+	mkpath($case);
 	$caseroot = abs_path("$case");
 
 	my @dirs = split "/", $caseroot, -1;  # The -1 prevents split from stripping trailing nulls
@@ -788,14 +788,14 @@ sub _set_mpi_library
     my $mpilibs = $config->get('MPILIBS');
     my @mpilibs = split ",", $mpilibs, -1;
 
-    if ($mpilib =~ 'unset') 
+    if ($mpilib =~ 'unset')
     {
 	if ($config->get('NTASKS_ATM') == 1 && $config->get('NTASKS_LND') == 1 &&
 	    $config->get('NTASKS_OCN') == 1 && $config->get('NTASKS_ICE') == 1 &&
 	    $config->get('NTASKS_ROF') == 1 && $config->get('NTASKS_GLC') == 1 &&
-	    $config->get('NTASKS_WAV') == 1 && $config->get('NTASKS_CPL') == 1) 
-	{ 
-	    $mpilib = "mpi-serial"; 
+	    $config->get('NTASKS_WAV') == 1 && $config->get('NTASKS_CPL') == 1)
+	{
+	    $mpilib = "mpi-serial";
 	}else{
 	    my $compiler = $config->get('COMPILER');
 	    $mpilib = "openmpi" if($compiler eq "nag");
@@ -822,7 +822,7 @@ sub _set_mpi_library
 	}else{
 	    $mpilib = $mpilibs[0];
 	}
-    }    
+    }
     $config->set('MPILIB', "$mpilib");
     $logger->info( "Machine mpilib specifier: $mpilib.");
 }
@@ -842,7 +842,7 @@ sub _create_caseroot
     # Create relevant directories in $caseroot
     my @newdirs = qw(. SourceMods LockedFiles Buildconf Tools);
     foreach my $newdir ( @newdirs ) {
-	mkpath($newdir); 
+	mkpath($newdir);
     }
 
     # Open a new README.case file in $caseroot
@@ -851,12 +851,12 @@ sub _create_caseroot
     print $fh "$commandline\n\n\n";
     $fh->close;
 
-    # Copy README/disclaimer file 
+    # Copy README/disclaimer file
     #TODO - this needs to be updated
     #$sysmod = "cp $cimeroot/scripts/README $caseroot/README.science_support";
     #system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
 
-    _create_caseroot_sourcemods($config);  
+    _create_caseroot_sourcemods($config);
     _create_caseroot_tools($config);
     _create_caseroot_files($config);
 }
@@ -873,23 +873,22 @@ sub _create_caseroot_tools
     my $sysmod;
 
     my @files = (
-	"$cimeroot/scripts/Tools/case.setup", 
-	"$cimeroot/scripts/Tools/testcase.setup", 
-	"$cimeroot/scripts/Tools/archive_metadata.sh", 
-	"$cimeroot/scripts/Tools/check_case", 
-	"$cimeroot/scripts/Tools/create_production_test", 
-	"$cimeroot/scripts/Tools/st_archive", 
-	"$cimeroot/scripts/Tools/xmlchange",
+	"$cimeroot/scripts/Tools/case.setup",
+	"$cimeroot/scripts/Tools/testcase.setup",
+	"$cimeroot/scripts/Tools/archive_metadata.sh",
+	"$cimeroot/scripts/Tools/check_case",
+	"$cimeroot/scripts/Tools/create_production_test",
+	"$cimeroot/scripts/Tools/st_archive",
 	"$cimeroot/scripts/Tools/xmlquery",
-	"$cimeroot/scripts/Tools/README.post_process", 
-	); 
+	"$cimeroot/scripts/Tools/README.post_process",
+	);
     foreach my $file (@files) {
-	$sysmod = "cp -p $file $caseroot"; 
+	$sysmod = "cp -p $file $caseroot";
 	system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
     }
     $sysmod = "chmod u+w $caseroot/create_production_test";
     system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
-    
+
     my $machines_file = $config->get('MACHINES_SPEC_FILE');
     my $machines_dir  = dirname($machines_file);
 
@@ -899,18 +898,18 @@ sub _create_caseroot_tools
     } else {
 	$logger->warn("\nUsing UNSUPPORTED userdefined mkbatch script: \"~/.cime/mkbatch.$machine\"");
     }
-    
+
     # Copy relevant files into $caseroot/Tools/
-    @files = ("$cimeroot/scripts/Tools/check_lockedfiles", 
-	      "$cimeroot/scripts/Tools/lt_archive.sh", 
-	      "$cimeroot/scripts/Tools/getTiming", 
-	      "$machines_dir/taskmaker.pl", 
+    @files = ("$cimeroot/scripts/Tools/check_lockedfiles",
+	      "$cimeroot/scripts/Tools/lt_archive.sh",
+	      "$cimeroot/scripts/Tools/getTiming",
+	      "$machines_dir/taskmaker.pl",
 	      "$machines_dir/Makefile",
-	      "$machines_dir/mkSrcfiles", 
-	      "$machines_dir/mkDepends"); 
-    
+	      "$machines_dir/mkSrcfiles",
+	      "$machines_dir/mkDepends");
+
     foreach my $file (@files) {
-	$sysmod = "cp -p $file $caseroot/Tools/. "; 
+	$sysmod = "cp -p $file $caseroot/Tools/. ";
 	system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
     }
 }
@@ -939,34 +938,36 @@ sub _create_caseroot_files
     # Create $caseroot/Buildconf/build.pl
     $sysmod = "ln -s $cimeroot/scripts-python/check_input_data $caseroot/check_input_data";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-    $sysmod = "ln -s $cimeroot/scripts-python/case.build  $caseroot/case.build";
-    system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-    $sysmod = "chmod 755 $caseroot/case.build";
-    system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-    
+    my @pyscripts = qw(case.build xmlchange);
+    for (@pyscripts){
+	$sysmod = "ln -s $cimeroot/scripts-python/$_  $caseroot/$_";
+	system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+	$sysmod = "chmod 755 $caseroot/$_";
+	system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+    }
     # Create case.clean_build
-    $sysmod = "cp $cimeroot/scripts/Tools/clean_build $caseroot/case.clean_build"; 
+    $sysmod = "cp $cimeroot/scripts/Tools/clean_build $caseroot/case.clean_build";
     system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
-    
+
     # Create case.submit
-    $sysmod = "cp  $cimeroot/scripts/Tools/case.submit $caseroot/case.submit"; 
+    $sysmod = "cp  $cimeroot/scripts/Tools/case.submit $caseroot/case.submit";
     system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
 
     # Create machine specific module files (env_mach_specific)
     my $dbug = $config->get("DEBUG");
-    my $moduleloader = Module::ModuleLoader->new(machine  => $machine, 
-    						 compiler => $compiler, 
-    						 mpilib   => $mpilib, 
-    						 debug    => $dbug, 
-    						 caseroot => $caseroot, 
+    my $moduleloader = Module::ModuleLoader->new(machine  => $machine,
+    						 compiler => $compiler,
+    						 mpilib   => $mpilib,
+    						 debug    => $dbug,
+    						 caseroot => $caseroot,
     						 cimeroot => $cimeroot,
      						 model    => $model);
     $moduleloader->moduleInit();
     $moduleloader->writeXMLFileForCase();
 
     # Create $caseroot preview_namelist file
-    my $file = "${caseroot}/preview_namelists"; 
-    $sysmod = "cp  $cimeroot/scripts/Tools/preview_namelists $file"; 
+    my $file = "${caseroot}/preview_namelists";
+    $sysmod = "cp  $cimeroot/scripts/Tools/preview_namelists $file";
     system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
 
     $sysmod = "chmod 755 $file";
@@ -989,7 +990,7 @@ sub _create_caseroot_files
     $logger->info( "Created $caseroot/env_case.xml ");
 
     # Create env_mach_pes.xml.xml
-    $config->write_file("$caseroot/env_mach_pes.xml", "$file", $caseroot, $cimeroot );  
+    $config->write_file("$caseroot/env_mach_pes.xml", "$file", $caseroot, $cimeroot );
     $logger->info( "Created $caseroot/env_mach_pes.xml ");
 
     # Create env_build.xml
@@ -1001,7 +1002,7 @@ sub _create_caseroot_files
     $logger->info( "Created $caseroot/env_run.xml ");
 
     # Create env_archive.xml
-    $config->write_file("$caseroot/env_archive.xml", "$file", $caseroot, $cimeroot, 
+    $config->write_file("$caseroot/env_archive.xml", "$file", $caseroot, $cimeroot,
 			"$cimeroot/cime_config/${model}/archive.xml");
     $logger->info( "Created $caseroot/env_archive.xml ");
 
@@ -1011,7 +1012,7 @@ sub _create_caseroot_files
 
 
     # copy env_case.xml in to locked files
-    $sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml"; 
+    $sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml";
     system($sysmod) == 0 or $logger->logdie( "ERROR: create_newcase $sysmod failed: $?");
     $logger->info( "Locking file $caseroot/env_case.xml ");
 
@@ -1029,7 +1030,7 @@ sub _create_caseroot_files
     if ($opts{'nosavetiming'}) {
         my $cwd = getcwd(); # current working directory
         chdir "$caseroot";
-        $sysmod = './xmlchange -file env_run.xml -id SAVE_TIMING -val "FALSE"';
+        $sysmod = './xmlchange --file env_run.xml --id SAVE_TIMING --val "FALSE"';
         system($sysmod) == 0 or $logger->logdie("ERROR: $sysmod failed: $?\n");
         chdir "$cwd";
     }
@@ -1038,22 +1039,22 @@ sub _create_caseroot_files
 #-------------------------------------------------------------------------------
 sub _create_caseroot_sourcemods
 {
-    my ($config) = @_;  
+    my ($config) = @_;
 
     my $caseroot   = $config->get('CASEROOT');
     my $cimeroot   = $config->get('CIMEROOT');
-    my $comps_atm  = $config->get("COMP_ATM"); 
-    my $comps_lnd  = $config->get("COMP_LND"); 
-    my $comps_ocn  = $config->get("COMP_OCN"); 
-    my $comps_ice  = $config->get("COMP_ICE"); 
-    my $comps_glc  = $config->get("COMP_GLC"); 
-    my $comps_rof  = $config->get("COMP_ROF"); 
+    my $comps_atm  = $config->get("COMP_ATM");
+    my $comps_lnd  = $config->get("COMP_LND");
+    my $comps_ocn  = $config->get("COMP_OCN");
+    my $comps_ice  = $config->get("COMP_ICE");
+    my $comps_glc  = $config->get("COMP_GLC");
+    my $comps_rof  = $config->get("COMP_ROF");
     my $comps_wav  = $config->get("COMP_WAV");
-    my @comps  = ($comps_atm, $comps_lnd, $comps_ocn, $comps_ice, $comps_glc, $comps_rof, $comps_wav); 
+    my @comps  = ($comps_atm, $comps_lnd, $comps_ocn, $comps_ice, $comps_glc, $comps_rof, $comps_wav);
 
     # Create sourcemods
     foreach my $comp (@comps)  {
-	mkpath("$caseroot/SourceMods/src.$comp"); 
+	mkpath("$caseroot/SourceMods/src.$comp");
 
 	# Note: this is CESM specific given that we are referencing cism explitly
 	if ($comp eq 'cism') {
@@ -1068,8 +1069,8 @@ sub _create_caseroot_sourcemods
 	}
 
     }
-    mkpath("$caseroot/SourceMods/src.share"); 
-    mkpath("$caseroot/SourceMods/src.drv"); 
+    mkpath("$caseroot/SourceMods/src.share");
+    mkpath("$caseroot/SourceMods/src.drv");
 }
 
 #-------------------------------------------------------------------------------
@@ -1100,7 +1101,7 @@ sub _set_test
 	    my $desc = $child_nodes[0]->textContent();
 	    $logger->warn( " $name ($desc) ") ;
 	}
-	$logger->logdie( "_set_test: exiting"); 
+	$logger->logdie( "_set_test: exiting");
     }
 }
 
@@ -1108,8 +1109,8 @@ sub _set_test
 sub _clean
 {
     my ($name) = @_;
-    
-    $name =~ s/^\s+//; # strip any leading whitespace 
+
+    $name =~ s/^\s+//; # strip any leading whitespace
     $name =~ s/\s+$//; # strip any trailing whitespace
     return ($name);
 }

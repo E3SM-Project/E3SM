@@ -35,8 +35,8 @@ endif
 ./case.setup -clean -testmode
 ./case.setup
 
-set STOP_N      = `./xmlquery STOP_N      -value`
-set STOP_OPTION = `./xmlquery STOP_OPTION -value`
+set STOP_N      = `./xmlquery STOP_N      --value`
+set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 
 if (${STOP_N} < 3) then
   echo "ERROR:  stop_n too short" >>& $TESTSTATUS_LOG
@@ -58,12 +58,12 @@ cd $CASEROOT
 echo "" >>& $TESTSTATUS_LOG 
 echo "initial: doing a ${stopn1} ${STOP_OPTION} initial test writing a restart at ${restn1} ${STOP_OPTION}" >>& $TESTSTATUS_LOG 
 
-./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
-./xmlchange -file env_run.xml -id STOP_N       -val ${stopn1}
-./xmlchange -file env_run.xml -id REST_OPTION  -val ${STOP_OPTION}
-./xmlchange -file env_run.xml -id REST_N       -val ${restn1}
-./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
-./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
+./xmlchange --file env_run.xml --id CONTINUE_RUN --val FALSE
+./xmlchange --file env_run.xml --id STOP_N       --val ${stopn1}
+./xmlchange --file env_run.xml --id REST_OPTION  --val ${STOP_OPTION}
+./xmlchange --file env_run.xml --id REST_N       --val ${restn1}
+./xmlchange --file env_run.xml --id HIST_OPTION  --val ${STOP_OPTION}
+./xmlchange --file env_run.xml --id HIST_N       --val ${histn}
 
 ./case.run
 if ($status != 0) then
@@ -104,10 +104,10 @@ echo "restart: doing a ${stopn2} ${STOP_OPTION} restart test"  >>& $TESTSTATUS_L
 echo " halving the number of mpi    tasks   for all components with ntasks > 1" >>& $TESTSTATUS_LOG 
 echo " halving the number of openmp threads for all components with nthrds > 1" >>& $TESTSTATUS_LOG 
 
-./xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE
-./xmlchange -file env_run.xml -id STOP_N       -val ${stopn2}
-./xmlchange -file env_run.xml -id REST_OPTION  -val never
-./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
+./xmlchange --file env_run.xml --id CONTINUE_RUN --val TRUE
+./xmlchange --file env_run.xml --id STOP_N       --val ${stopn2}
+./xmlchange --file env_run.xml --id REST_OPTION  --val never
+./xmlchange --file env_run.xml --id HIST_N       --val ${histn}
 
 cp -f env_mach_pes.xml.2 env_mach_pes.xml
 cp -f env_mach_pes.xml.2 LockedFiles/env_mach_pes.xml

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 """
 Script to build a case.
@@ -166,11 +166,12 @@ ERROR, NINST VALUES HAVE CHANGED
   Then rerun the build script interactively
 """ % (ninst_build, ninst_value))
 
-    expect( smp_build == smpstr or smp_build == 0,
+    expect( smp_build == smpstr or int(smp_build) == 0,
             """
 ERROR, SMP VALUES HAVE CHANGED
   SMP_BUILD = %s
   SMP_VALUE = %s
+  smpstr = %s
   A manual clean of your obj directories is strongly recommended
   You should execute the following:
     ./case.clean_build
@@ -179,7 +180,7 @@ ERROR, SMP VALUES HAVE CHANGED
   You can override this error message at your own risk by executing:
     ./xmlchange -file env_build.xml -id SMP_BUILD -val 0
   Then rerun the build script interactively
-""" % (smp_build, smp_value))
+""" % (smp_build, smp_value, smpstr))
 
     expect(build_status == 0,
            """

@@ -23,7 +23,7 @@ OPTIONS
 
   -help [or -h]  Print usage to STDOUT (optional).
 EOF
-} 
+}
 
 my %opts = ( loglevel => "INFO");
 
@@ -97,10 +97,10 @@ Log::Log4perl->easy_init({level=>$level,
 
 $logger = Log::Log4perl::get_logger("preview_namelists");
 
-    
+
 
 if($dryrun){
-    # DO not load modules, only create rundir 
+    # DO not load modules, only create rundir
     my $sysmod = "mkdir -p $RUNDIR";
     if(system($sysmod) != 0) {
 	warn "Not able to create $RUNDIR, trying a subdirectory of $CASEROOT";
@@ -108,7 +108,7 @@ if($dryrun){
 	$sysmod = "mkdir -p $RUNDIR";
 	if(system($sysmod) == 0){
 	    print "Success! Setting RUNDIR=$RUNDIR\n";
-	    system("./xmlchange -noecho -file env_run.xml -id RUNDIR -val $RUNDIR");
+	    system("./xmlchange --noecho --file env_run.xml --id RUNDIR --val $RUNDIR");
 	}else{
 	    die "Could not create $RUNDIR";
 	}
@@ -116,11 +116,11 @@ if($dryrun){
 
 }else{
 
-    my $moduleloader = new Module::ModuleLoader(machine		=> "$MACH", 
+    my $moduleloader = new Module::ModuleLoader(machine		=> "$MACH",
 						compiler	=> "$COMPILER",
-						mpilib		=> "$MPILIB", 
-						debug		=> "$DEBUG", 
-						cimeroot	=> "$CIMEROOT", 
+						mpilib		=> "$MPILIB",
+						debug		=> "$DEBUG",
+						cimeroot	=> "$CIMEROOT",
 						caseroot	=> "$CASEROOT",
 						model		=> "$MODEL");
     $moduleloader->loadModules();
@@ -138,10 +138,10 @@ if($dryrun){
 	    $logger->debug("Created directory $dir");
 	}
     }
-    
+
     my @models = ("cpl", "atm", "lnd", "ice", "ocn", "glc", "wav", "rof");
     foreach my $model ( @models ){
-	my $objdir = "$EXEROOT/$model/obj"; 
+	my $objdir = "$EXEROOT/$model/obj";
 	if (! -d $objdir) {
 	    mkpath($objdir, 0755) or $logger->logdie("Could not create directory $objdir");
 	    $logger->debug("Created directory $objdir");
@@ -158,7 +158,7 @@ if($dryrun){
 # Create namelists
 # -------------------------------------------------------------------------
 
-# Note - COMP_CPL must be last so that it can use xml vars potentially set 
+# Note - COMP_CPL must be last so that it can use xml vars potentially set
 # by other component's buildnml scripts
 
 my @modelsorder = qw( atm lnd ice ocn glc wav rof drv );
@@ -235,10 +235,10 @@ foreach my $rfile (@runfiles){
 	$copied = 1;
     }
     if($rfile =~ /cism.config/){
-	copy("$RUNDIR/$rfile","$docdir/$rfile")or $logger->logdie("Could not copy $rfile to $docdir"); 
+	copy("$RUNDIR/$rfile","$docdir/$rfile")or $logger->logdie("Could not copy $rfile to $docdir");
 	$copied = 1;
     }
-    
+
     $logger->debug("Copied $rfile to $docdir") if($copied==1);
 
 }
@@ -249,7 +249,7 @@ if ( -e "$CASEBUILD/camconf" ) {
     my @chemfiles = grep(/chem_mech/,readdir(CC));
     closedir(CC);
     foreach(@chemfiles){
-	copy("$CASEBUILD/camconf/$_","$docdir/$_") or $logger->logdie("Could not copy $_ to $docdir"); 
+	copy("$CASEBUILD/camconf/$_","$docdir/$_") or $logger->logdie("Could not copy $_ to $docdir");
 	$logger->debug("Copied $CASEBUILD/camconf/$_ to $docdir") ;
     }
 }

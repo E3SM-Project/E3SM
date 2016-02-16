@@ -5,7 +5,7 @@
 
 cd $CASEROOT
 
-set CASE    = `./xmlquery CASE -value`
+set CASE    = `./xmlquery CASE --value`
 set CASE0   = ${CASE}
 set CASER0  = ${CASEROOT}
 set CASERR1 = ${CASEROOT}.ref1
@@ -25,21 +25,21 @@ rm -r -f ${CASERR1}; ./create_clone -case ${CASERR1} -clone ${CASER0}
 rm -r -f ${CASERR2}; ./create_clone -case ${CASERR2} -clone ${CASER0} 
 
 cd $CASERR1
-./xmlchange -file env_build.xml -id EXEROOT        -val ${EXEROOT}
-./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
+./xmlchange --file env_build.xml --id EXEROOT        --val ${EXEROOT}
+./xmlchange --file env_build.xml --id BUILD_COMPLETE --val TRUE
 ./case.setup
 
 cd $CASERR2
-./xmlchange -file env_build.xml -id EXEROOT        -val ${EXEROOT}
-./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
+./xmlchange --file env_build.xml --id EXEROOT        --val ${EXEROOT}
+./xmlchange --file env_build.xml --id BUILD_COMPLETE --val TRUE
 ./case.setup
 
 #---- determine run lengths needed below 
 cd $CASER0
 
-set STOP_N        = `./xmlquery STOP_N		-value`
-set STOP_OPTION   = `./xmlquery STOP_OPTION	-value`
-set RUN_STARTDATE = `./xmlquery RUN_STARTDATE	-value`
+set STOP_N        = `./xmlquery STOP_N		--value`
+set STOP_OPTION   = `./xmlquery STOP_OPTION	--value`
+set RUN_STARTDATE = `./xmlquery RUN_STARTDATE	--value`
 
 @ stopn1 = ${STOP_N} / 6
 @ restn1 = ${stopn1}
@@ -80,18 +80,18 @@ echo "  writing restarts at ${restn1} ${STOP_OPTION}"  >>& $TESTSTATUS_LOG
 echo "  short term archiving is on " >>& $TESTSTATUS_LOG 
 echo "" >>& $TESTSTATUS_LOG
 
-./xmlchange -file env_run.xml -id CONTINUE_RUN  -val FALSE
-./xmlchange -file env_run.xml -id RUN_STARTDATE -val ${start1}
-./xmlchange -file env_run.xml -id STOP_N        -val ${stopn1}
-./xmlchange -file env_run.xml -id REST_OPTION   -val ${STOP_OPTION}
-./xmlchange -file env_run.xml -id REST_N        -val ${restn1}
-./xmlchange -file env_run.xml -id HIST_OPTION   -val never
+./xmlchange --file env_run.xml --id CONTINUE_RUN  --val FALSE
+./xmlchange --file env_run.xml --id RUN_STARTDATE --val ${start1}
+./xmlchange --file env_run.xml --id STOP_N        --val ${stopn1}
+./xmlchange --file env_run.xml --id REST_OPTION   --val ${STOP_OPTION}
+./xmlchange --file env_run.xml --id REST_N        --val ${restn1}
+./xmlchange --file env_run.xml --id HIST_OPTION   --val never
 
 # note - must look in short term archiving directory for cpl log files
 
-set CASE        = `./xmlquery CASE        -value`
-set RUNDIR      = `./xmlquery RUNDIR      -value`
-set DOUTSR1     = `./xmlquery DOUT_S_ROOT -value`
+set CASE        = `./xmlquery CASE        --value`
+set RUNDIR      = `./xmlquery RUNDIR      --value`
+set DOUTSR1     = `./xmlquery DOUT_S_ROOT --value`
 
 # force cam namelist to write out initial file at end of run
 if (-e user_nl_cam) then
@@ -141,8 +141,8 @@ endif
 
 cd ${CASERR2}
 
-set CASE    = `./xmlquery CASE     -value`
-set RUNDIR  = `./xmlquery RUNDIR   -value`
+set CASE    = `./xmlquery CASE     --value`
+set RUNDIR  = `./xmlquery RUNDIR   --value`
 
 # Set startdate to start2, set ref date based on ref1 restart
 set refdate2 = `ls -1dt ${DOUTSR1}/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///" `
@@ -156,18 +156,18 @@ echo "  short term archiving is on " >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
 # setup ref2 case 
-./xmlchange -file env_run.xml -id RUN_TYPE      -val hybrid
-./xmlchange -file env_run.xml -id RUN_STARTDATE -val ${start2}
-./xmlchange -file env_run.xml -id RUN_REFCASE   -val $CASE0.ref1
-./xmlchange -file env_run.xml -id RUN_REFDATE   -val ${refdate2}
-./xmlchange -file env_run.xml -id RUN_REFTOD    -val ${reftod2}
-./xmlchange -file env_run.xml -id GET_REFCASE   -val FALSE
-./xmlchange -file env_run.xml -id CONTINUE_RUN  -val FALSE
-./xmlchange -file env_run.xml -id STOP_N        -val ${stopn2}
-./xmlchange -file env_run.xml -id REST_OPTION   -val ${STOP_OPTION}
-./xmlchange -file env_run.xml -id REST_N        -val ${restn2}
-./xmlchange -file env_run.xml -id HIST_OPTION   -val ${STOP_OPTION}
-./xmlchange -file env_run.xml -id HIST_N        -val ${histn}
+./xmlchange --file env_run.xml --id RUN_TYPE      --val hybrid
+./xmlchange --file env_run.xml --id RUN_STARTDATE --val ${start2}
+./xmlchange --file env_run.xml --id RUN_REFCASE   --val $CASE0.ref1
+./xmlchange --file env_run.xml --id RUN_REFDATE   --val ${refdate2}
+./xmlchange --file env_run.xml --id RUN_REFTOD    --val ${reftod2}
+./xmlchange --file env_run.xml --id GET_REFCASE   --val FALSE
+./xmlchange --file env_run.xml --id CONTINUE_RUN  --val FALSE
+./xmlchange --file env_run.xml --id STOP_N        --val ${stopn2}
+./xmlchange --file env_run.xml --id REST_OPTION   --val ${STOP_OPTION}
+./xmlchange --file env_run.xml --id REST_N        --val ${restn2}
+./xmlchange --file env_run.xml --id HIST_OPTION   --val ${STOP_OPTION}
+./xmlchange --file env_run.xml --id HIST_N        --val ${histn}
 
 mkdir -p $RUNDIR
 ln -s ${DOUTSR1}/rest/${refdate2}-${reftod2}/*${refdate2}* $RUNDIR/.
@@ -189,7 +189,7 @@ if($status != 0) then
     exit -1
 endif
 
-set DOUTSR2 = `./xmlquery DOUT_S_ROOT -value`
+set DOUTSR2 = `./xmlquery DOUT_S_ROOT --value`
 
 # must look in short term archiving directory for cpl log files
 set CplLogFile = `ls -1t $DOUTSR2/cpl/logs/cpl.log* | head -1`
@@ -216,8 +216,8 @@ endif
 
 cd $CASER0
 
-set CASE    = `./xmlquery CASE     -value`
-set RUNDIR  = `./xmlquery RUNDIR   -value`
+set CASE    = `./xmlquery CASE     --value`
+set RUNDIR  = `./xmlquery RUNDIR   --value`
 
 set refdate3 = `ls -1dt ${DOUTSR2}/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///" `
 set reftod3  = "00000"
@@ -229,18 +229,18 @@ echo "  writing restarts at ${restn3} ${STOP_OPTION}" >>& $TESTSTATUS_LOG
 echo "  short term archiving is off " >>& $TESTSTATUS_LOG 
 echo "" >>& $TESTSTATUS_LOG
 
-./xmlchange -file env_run.xml -id RUN_TYPE      -val branch
-./xmlchange -file env_run.xml -id RUN_REFCASE   -val $CASE0.ref2
-./xmlchange -file env_run.xml -id RUN_REFDATE   -val ${refdate3}
-./xmlchange -file env_run.xml -id RUN_REFTOD    -val ${reftod3}
-./xmlchange -file env_run.xml -id GET_REFCASE   -val FALSE
-./xmlchange -file env_run.xml -id CONTINUE_RUN  -val FALSE
-./xmlchange -file env_run.xml -id STOP_N        -val ${stopn3}
-./xmlchange -file env_run.xml -id REST_OPTION   -val ${STOP_OPTION}
-./xmlchange -file env_run.xml -id REST_N        -val ${restn3}
-./xmlchange -file env_run.xml -id HIST_OPTION   -val ${STOP_OPTION}
-./xmlchange -file env_run.xml -id HIST_N        -val ${stopn2}
-./xmlchange -file env_run.xml -id DOUT_S        -val FALSE
+./xmlchange --file env_run.xml --id RUN_TYPE      --val branch
+./xmlchange --file env_run.xml --id RUN_REFCASE   --val $CASE0.ref2
+./xmlchange --file env_run.xml --id RUN_REFDATE   --val ${refdate3}
+./xmlchange --file env_run.xml --id RUN_REFTOD    --val ${reftod3}
+./xmlchange --file env_run.xml --id GET_REFCASE   --val FALSE
+./xmlchange --file env_run.xml --id CONTINUE_RUN  --val FALSE
+./xmlchange --file env_run.xml --id STOP_N        --val ${stopn3}
+./xmlchange --file env_run.xml --id REST_OPTION   --val ${STOP_OPTION}
+./xmlchange --file env_run.xml --id REST_N        --val ${restn3}
+./xmlchange --file env_run.xml --id HIST_OPTION   --val ${STOP_OPTION}
+./xmlchange --file env_run.xml --id HIST_N        --val ${stopn2}
+./xmlchange --file env_run.xml --id DOUT_S        --val FALSE
 
 mkdir -p $RUNDIR
 ln -s ${DOUTSR2}/rest/${refdate3}-${reftod3}/*${refdate3}* $RUNDIR/.
@@ -298,17 +298,17 @@ $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase "$CASE" -
 
 cd $CASER0
 
-set CASE    = `./xmlquery CASE     -value`
-set RUNDIR  = `./xmlquery RUNDIR   -value`
+set CASE    = `./xmlquery CASE     --value`
+set RUNDIR  = `./xmlquery RUNDIR   --value`
 
 echo "branch restart: doing a ${stopn4} ${STOP_OPTION} continue restart test" >>& $TESTSTATUS_LOG 
 
-./xmlchange -file env_run.xml -id CONTINUE_RUN  -val TRUE
-./xmlchange -file env_run.xml -id STOP_N        -val ${stopn4}
-./xmlchange -file env_run.xml -id REST_OPTION   -val never
-./xmlchange -file env_run.xml -id DOUT_S        -val FALSE
-./xmlchange -file env_run.xml -id HIST_OPTION   -val ${STOP_OPTION}
-./xmlchange -file env_run.xml -id HIST_N        -val ${histn}
+./xmlchange --file env_run.xml --id CONTINUE_RUN  --val TRUE
+./xmlchange --file env_run.xml --id STOP_N        --val ${stopn4}
+./xmlchange --file env_run.xml --id REST_OPTION   --val never
+./xmlchange --file env_run.xml --id DOUT_S        --val FALSE
+./xmlchange --file env_run.xml --id HIST_OPTION   --val ${STOP_OPTION}
+./xmlchange --file env_run.xml --id HIST_N        --val ${histn}
 
 # do the restart run (short term archiving is off)
 

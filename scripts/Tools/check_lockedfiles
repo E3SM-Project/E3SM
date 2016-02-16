@@ -11,12 +11,12 @@ use IO::Handle;
 sub usage {
     die <<'EOF';
 
-SYNOPSIS 
+SYNOPSIS
 
   check_lockedfiles [options]
 
   checks that any files in the $CASEROOT/LockedFiles directory
-  match those in the $CASEROOT directory 
+  match those in the $CASEROOT directory
   (assumes that this utility exists in $CASEROOT/Tools)
 
 OPTIONS
@@ -24,7 +24,7 @@ OPTIONS
   -help [or -h]  Print usage to STDOUT (optional).
 
 EOF
-} 
+}
 
 my %opts = (loglevel=>"INFO",
                       cimeroot=>$ENV{CIMEROOT});
@@ -50,7 +50,7 @@ my $logger = Log::Log4perl::get_logger();
 # Give usage message.
 usage() if $opts{'help'};
 
-`./xmlchange -noecho -loglevel $opts{loglevel} BUILD_STATUS=0`;
+`./xmlchange --noecho -loglevel $opts{loglevel} BUILD_STATUS=0`;
 
 my @lockedfiles = glob ("./LockedFiles/*");
 foreach my $lockedfile (@lockedfiles) {
@@ -65,15 +65,15 @@ foreach my $lockedfile (@lockedfiles) {
 	$logger->warn( "$file has been modified and is different than the LockedFiles version ");
 	if ($file =~ /env_build/ ) {
 	    $logger->warn( "setting BUILD_COMPLETE to FALSE ");
-	    `./xmlchange -noecho -file env_build.xml -id BUILD_COMPLETE -val FALSE`;
-	    `./xmlchange -noecho -file env_build.xml -id BUILD_STATUS -val 1`;
+	    `./xmlchange --noecho --file env_build.xml -id BUILD_COMPLETE -val FALSE`;
+	    `./xmlchange --noecho --file env_build.xml -id BUILD_STATUS -val 1`;
 
 	    my $pioversion = `xmlquery PIO_VERSION -value`;
 	    my $oldpioversion = `xmlquery PIO_VERSION -value -file LockedFiles/env_build.xml`;
-	    
+
 	    if($pioversion != $oldpioversion){
 		$logger->warn("Changing PIO_VERSION requires running case.clean_build -all");
-	    `./xmlchange -noecho -file env_build.xml -id BUILD_STATUS -val 2`;
+	    `./xmlchange --noecho --file env_build.xml -id BUILD_STATUS -val 2`;
 
 	    }
 

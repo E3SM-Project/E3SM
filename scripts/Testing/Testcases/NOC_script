@@ -5,8 +5,8 @@
 
 cd $CASEROOT
 
-set STOP_N      = `./xmlquery STOP_N      -value`
-set STOP_OPTION = `./xmlquery STOP_OPTION -value`
+set STOP_N      = `./xmlquery STOP_N      --value`
+set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 
 # Reset user_nl_files from previous runs
 if (-e user_nl_cice_0001.base) then
@@ -41,10 +41,10 @@ cp -f user_nl_cice_0002 user_nl_cice_0002.mod
 cd $CASEROOT
 echo "doing an initial test with mod to instance 1, with length taken from compset default" >>& $TESTSTATUS_LOG 
 
-./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
-./xmlchange -file env_run.xml -id REST_OPTION  -val none
-./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
-./xmlchange -file env_run.xml -id HIST_N       -val ${STOP_N}
+./xmlchange --file env_run.xml --id CONTINUE_RUN --val FALSE
+./xmlchange --file env_run.xml --id REST_OPTION  --val none
+./xmlchange --file env_run.xml --id HIST_OPTION  --val ${STOP_OPTION}
+./xmlchange --file env_run.xml --id HIST_N       --val ${STOP_N}
 
 # Note that user_nl_cice_0001 and user_nl_cice_0002 are different below
 rm user_nl_cice_0001

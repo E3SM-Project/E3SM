@@ -97,7 +97,7 @@ sub main
         {
             $logger->logdie ("$config{'CASE'}.submit: resubmit option given without scriptname provided, aborting!");
         }
-	`./xmlchange -noecho -loglevel $opts{loglevel} RUN_WITH_SUBMIT=TRUE`;
+	`./xmlchange --noecho RUN_WITH_SUBMIT=TRUE`;
 	$config{RUN_WITH_SUBMIT}='TRUE';
 	$batchutils->doResubmit($opts{'scriptname'});
     }
@@ -110,7 +110,7 @@ sub main
 	}
 	for(my $resub=0; $resub < $loopcnt; $resub++){
 	    check_DA_settings();
-	    `./xmlchange -noecho -loglevel $opts{loglevel} RUN_WITH_SUBMIT=TRUE`;
+	    `./xmlchange --noecho  RUN_WITH_SUBMIT=TRUE`;
 	    $config{RUN_WITH_SUBMIT}='TRUE';
 	    $batchutils->submitJobs();
 	    if($batchutils->{batchtype} eq 'none'){

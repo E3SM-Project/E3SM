@@ -1,19 +1,19 @@
 #!/bin/csh -f
-setenv CIMEROOT `./xmlquery CIMEROOT    -value`
+setenv CIMEROOT `./xmlquery CIMEROOT    --value`
 
 ./Tools/check_lockedfiles || exit -1
 
 # NOTE - Are assumming that are already in $CASEROOT here
-set EXEROOT     = `./xmlquery EXEROOT		-value`
-set OCN_GRID	= `./xmlquery OCN_GRID		-value`
-set OCN_NX	= `./xmlquery OCN_NX		-value`
-set OCN_NY	= `./xmlquery OCN_NY		-value`
-set NTASKS_OCN	= `./xmlquery NTASKS_OCN	-value`
-set NTHRDS_OCN	= `./xmlquery NTASKS_OCN	-value`
+set EXEROOT     = `./xmlquery EXEROOT		--value`
+set OCN_GRID	= `./xmlquery OCN_GRID		--value`
+set OCN_NX	= `./xmlquery OCN_NX		--value`
+set OCN_NY	= `./xmlquery OCN_NY		--value`
+set NTASKS_OCN	= `./xmlquery NTASKS_OCN	--value`
+set NTHRDS_OCN	= `./xmlquery NTASKS_OCN	--value`
 
 touch pop_perf.out
 
-./xmlchange -file env_build.xml -id POP_AUTO_DECOMP  -val false
+./xmlchange --file env_build.xml --id POP_AUTO_DECOMP  --val false
 
 # set precheck to 0 to build cesm
 # set precheck to 1 to diagnose decomp configurations
@@ -55,9 +55,9 @@ while (${bx} < ${OCN_NX})
   if ($mxtr != 0) then
      @ mxt = $mxt + 1
   endif
-  ./xmlchange -file env_build.xml -id POP_BLCKX   -val $bx
-  ./xmlchange -file env_build.xml -id POP_BLCKY   -val $by
-  ./xmlchange -file env_build.xml -id POP_MXBLCKS -val $mxt
+  ./xmlchange --file env_build.xml --id POP_BLCKX   --val $bx
+  ./xmlchange --file env_build.xml --id POP_BLCKY   --val $by
+  ./xmlchange --file env_build.xml --id POP_MXBLCKS --val $mxt
 
   rm LockedFiles/env_build*  >& /dev/null
 
@@ -96,7 +96,7 @@ while (${bx} < ${OCN_NX})
     endif
 
     if ($runit == 1) then
-      ./xmlchange -file env_build.xml -id POP_DECOMPTYPE -val $decomp
+      ./xmlchange --file env_build.xml --id POP_DECOMPTYPE --val $decomp
       cp env_build.xml LockedFiles/env_build.xml
 
       if ($precheck == 0) then

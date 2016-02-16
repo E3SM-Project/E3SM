@@ -24,13 +24,13 @@ endif
 ./case.setup
 
 # Set env_run.xml values for run
-set STOP_N      = `./xmlquery STOP_N      -value`
-set STOP_OPTION = `./xmlquery STOP_OPTION -value`
+set STOP_N      = `./xmlquery STOP_N      --value`
+set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 
-./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
-./xmlchange -file env_run.xml -id REST_OPTION  -val never
-./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
-./xmlchange -file env_run.xml -id HIST_N       -val ${STOP_N}
+./xmlchange --file env_run.xml --id CONTINUE_RUN --val FALSE
+./xmlchange --file env_run.xml --id REST_OPTION  --val never
+./xmlchange --file env_run.xml --id HIST_OPTION  --val ${STOP_OPTION}
+./xmlchange --file env_run.xml --id HIST_N       --val ${STOP_N}
 
 #======================================================================
 # (1) Test run:
@@ -85,14 +85,14 @@ cd $CASEROOT
 echo " doing a ${STOP_N} ${STOP_OPTION} single threaded test" >>& $TESTSTATUS_LOG 
 echo "   no restarts are written" >>& $TESTSTATUS_LOG 
 
-./xmlchange -file env_mach_pes.xml -id NTHRDS_ATM -val 1
-./xmlchange -file env_mach_pes.xml -id NTHRDS_LND -val 1
-./xmlchange -file env_mach_pes.xml -id NTHRDS_ROF -val 1
-./xmlchange -file env_mach_pes.xml -id NTHRDS_WAV -val 1
-./xmlchange -file env_mach_pes.xml -id NTHRDS_GLC -val 1
-./xmlchange -file env_mach_pes.xml -id NTHRDS_OCN -val 1
-./xmlchange -file env_mach_pes.xml -id NTHRDS_ICE -val 1
-./xmlchange -file env_mach_pes.xml -id NTHRDS_CPL -val 1
+./xmlchange --file env_mach_pes.xml --id NTHRDS_ATM --val 1
+./xmlchange --file env_mach_pes.xml --id NTHRDS_LND --val 1
+./xmlchange --file env_mach_pes.xml --id NTHRDS_ROF --val 1
+./xmlchange --file env_mach_pes.xml --id NTHRDS_WAV --val 1
+./xmlchange --file env_mach_pes.xml --id NTHRDS_GLC --val 1
+./xmlchange --file env_mach_pes.xml --id NTHRDS_OCN --val 1
+./xmlchange --file env_mach_pes.xml --id NTHRDS_ICE --val 1
+./xmlchange --file env_mach_pes.xml --id NTHRDS_CPL --val 1
 
 cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml
 

@@ -93,7 +93,7 @@ class EnvModule(object):
             return my_value == xml_value
 
     def _load_module_modules(self, modules_to_load):
-        python_mod_cmd = self._machine.get_module_system_cmd_paths("python")
+        python_mod_cmd = self._machine.get_module_system_cmd_path("python")
         for action, argument in modules_to_load:
             cmd = "%s %s %s" % (python_mod_cmd, action, argument)
             py_module_code = run_cmd(cmd)
