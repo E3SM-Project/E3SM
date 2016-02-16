@@ -18,15 +18,15 @@ $ENV{PIO_VERSION} = `./xmlquery PIO_VERSION -value`;
 
 sub usage {
     die <<EOF;
-    
+
 SYNOPSIS
     $CASE.clean_build [options]
-    Removes existing coupled model object files and libraries  
+    Removes existing coupled model object files and libraries
 
 OPTIONS
   all Cleans all objects
    no arguments implies -a -c -o -w -g -i -r -l
-   -a Cleans the atm objects 
+   -a Cleans the atm objects
    -c Cleans the cpl objects
    -o Cleans the ocn objects
    -w Cleans the wav objects
@@ -58,7 +58,7 @@ GetOptions(
     "s" => \$opts{csmshare},
     "t" => \$opts{gptl},
     "p" => \$opts{pio},
-) or usage();    
+) or usage();
 
 usage() if($opts{help});
 
@@ -106,7 +106,7 @@ my @lockedfiles = glob("LockedFiles/env_build*");
 foreach my $lf (@lockedfiles) {
     unlink($lf);
 }
-system("./xmlchange -noecho SMP_BUILD=0,NINST_BUILD=0,BUILD_COMPLETE=FALSE,BUILD_STATUS=0");
+system("./xmlchange --noecho SMP_BUILD=0,NINST_BUILD=0,BUILD_COMPLETE=FALSE,BUILD_STATUS=0");
 
 my $sdate = `date +"%Y-%m-%d %H:%M:%S"`;
 open my $CS, ">>", "./CaseStatus";

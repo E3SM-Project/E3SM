@@ -11,12 +11,12 @@ cp -f $EXEROOT/${CIME_MODEL}.exe.mct $EXEROOT/${CIME_MODEL}.exe || exit -9
 cp -f env_build.xml.mct  env_build.xml
 cp -f env_build.xml.mct  LockedFiles/env_build.xml
 
-set STOP_N      = `./xmlquery STOP_N      -value`
-set STOP_OPTION = `./xmlquery STOP_OPTION -value`
+set STOP_N      = `./xmlquery STOP_N      --value`
+set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 
-./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
-./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
-./xmlchange -file env_run.xml -id HIST_N       -val ${STOP_N}
+./xmlchange --file env_run.xml --id CONTINUE_RUN --val FALSE
+./xmlchange --file env_run.xml --id HIST_OPTION  --val ${STOP_OPTION}
+./xmlchange --file env_run.xml --id HIST_N       --val ${STOP_N}
 
 #======================================================================
 # do an mct test

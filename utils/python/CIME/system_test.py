@@ -1,5 +1,5 @@
 """
-Implementation of create_test functionality from CIME
+Implementation of System Test functionality from CIME
 """
 import shutil, traceback, stat, glob, threading, time, thread
 from XML.standard_module_setup import *
@@ -26,7 +26,7 @@ PHASES = [INITIAL_PHASE, CREATE_NEWCASE_PHASE, XML_PHASE, SETUP_PHASE, NAMELIST_
 CONTINUE = [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]
 
 ###############################################################################
-class CreateTest(object):
+class SystemTest(object):
 ###############################################################################
 
     ###########################################################################
@@ -300,10 +300,12 @@ class CreateTest(object):
             # Parallelizing builds introduces potential sync problems with sharedlibroot
             # Just let every case build it's own
             sharedlibroot = os.path.join(test_dir, "sharedlibroot.%s" % self._test_id)
-        create_newcase_cmd = "%s -model %s -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -nosavetiming -sharedlibroot %s" % \
+        create_newcase_cmd = "%s -model %s -case %s -res %s -mach %s -compiler %s -compset %s -testname %s -project %s -sharedlibroot %s" % \
                               (os.path.join(self._cime_root,"scripts", "create_newcase"),
                                self._cime_model,test_dir, grid, machine, compiler, compset, test_case, self._project,
                                sharedlibroot)
+        if (test_case != 'PFS'):
+            create_newcase_cmd += " -nosavetiming "
         if (case_opts is not None):
             create_newcase_cmd += " -confopts _%s" % ("_".join(case_opts))
         if (test_mods is not None):
@@ -321,9 +323,9 @@ class CreateTest(object):
     ###########################################################################
     def _xml_phase(self, test):
     ###########################################################################
+
         test_case = CIME.utils.parse_test_name(test)[0]
-        xml_file = os.path.join(self._get_test_dir(test), "env_test.xml")
-        envtest = EnvTest()
+        envtest = EnvTest(self._get_test_dir(test))
 
         files = Files()
         drv_config_file = files.get_value("CONFIG_DRV_FILE")
@@ -353,8 +355,8 @@ class CreateTest(object):
 
         envtest.set_value("GENERATE_BASELINE", "TRUE" if self._generate else "FALSE")
         envtest.set_value("COMPARE_BASELINE", "TRUE" if self._compare else "FALSE")
-        envtest.set_value("CCSM_CPRNC", self._machobj.get_value("CCSM_CPRNC", resolved=False))
-        envtest.write(xml_file)
+        envtest.set_value("CCSM_CPRNC", self._machobj.get_value("CCSM_CPRNC",resolved=False))
+        envtest.write()
         return True
 
     ###########################################################################
@@ -623,7 +625,7 @@ class CreateTest(object):
             logging.warning("FAILED to set up cs files: %s" % str(e))
 
     ###########################################################################
-    def create_test(self):
+    def system_test(self):
     ###########################################################################
         """
         Main API for this class.
@@ -647,7 +649,7 @@ class CreateTest(object):
         self._setup_cs_files()
 
         # Return True if all tests passed
-        print "At create_test close, state is:"
+        print "At system_test close, state is:"
         rv = True
         for test in self._tests:
             phase, status, nl_fail = self._get_test_data(test)
@@ -673,6 +675,6 @@ class CreateTest(object):
 
             print "    Case dir: %s" % self._get_test_dir(test)
 
-        print "create_test took", time.time() - start_time, "seconds"
+        print "system_test took", time.time() - start_time, "seconds"
 
         return rv

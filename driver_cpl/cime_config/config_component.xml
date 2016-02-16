@@ -641,7 +641,7 @@
     <default_value></default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
-    <desc>email address of person (or group) that supports the build and port for this machine (do not edit)></desc>
+    <desc>email address of person (or group) that supports the build and port for this machine (do not edit)</desc>
   </entry> 
 
   <entry id="MPILIB"> 
@@ -662,7 +662,7 @@
     <default_value>NO_LEAP</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
-    <desc>calendar type></desc>
+    <desc>calendar type</desc>
   </entry>
 
   <entry id="COMP_INTERFACE"> 
@@ -774,7 +774,7 @@
     <default_value>FALSE</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
-    <desc>Status output: if TRUE, models have been built successfully. (DO NOT EDIT)></desc>
+    <desc>Status output: if TRUE, models have been built successfully. (DO NOT EDIT)</desc>
   </entry> 
 
   <entry id="SMP_BUILD"> 
@@ -783,7 +783,7 @@
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
-    <desc>Status: smp status of previous build, coded string. (DO NOT EDIT)></desc>
+    <desc>Status: smp status of previous build, coded string. (DO NOT EDIT)</desc>
   </entry> 
 
   <entry id="SMP_VALUE"> 
@@ -792,7 +792,7 @@
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
-    <desc>Status: smp status of current case, coded string (DO NOT EDIT)></desc>
+    <desc>Status: smp status of current case, coded string (DO NOT EDIT)</desc>
   </entry> 
 
   <entry id="NINST_BUILD"> 
@@ -801,7 +801,7 @@
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
-    <desc>Status: ninst status of previous build, coded string. (DO NOT EDIT)></desc>
+    <desc>Status: ninst status of previous build, coded string. (DO NOT EDIT)</desc>
   </entry> 
 
   <entry id="NINST_VALUE"> 
@@ -810,7 +810,7 @@
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
-    <desc>Status: ninst status of current case, coded string (DO NOT EDIT)></desc>
+    <desc>Status: ninst status of current case, coded string (DO NOT EDIT)</desc>
   </entry> 
 
   <entry id="BUILD_STATUS"> 
@@ -819,7 +819,7 @@
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
-    <desc>Status: of prior build. (DO NOT EDIT)></desc>
+    <desc>Status: of prior build. (DO NOT EDIT)</desc>
   </entry> 
 
   <entry id="OBJROOT"> 

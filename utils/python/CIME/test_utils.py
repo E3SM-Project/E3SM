@@ -1,4 +1,4 @@
-# Utility functions used in create_test.py
+# Utility functions used in system_test.py
 from XML.standard_module_setup import *
 from CIME.XML.testlist import Testlist
 from CIME.XML.files import Files

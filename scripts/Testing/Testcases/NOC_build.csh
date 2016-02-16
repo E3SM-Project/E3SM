@@ -1,5 +1,5 @@
 #!/bin/csh -f
-setenv CIMEROOT `./xmlquery CIMEROOT    -value`
+setenv CIMEROOT `./xmlquery CIMEROOT    --value`
 if( -e env_mach_pes.xml.orig) then
     cp env_mach_pes.xml.orig env_mach_pes.xml
     ./case.setup -clean
@@ -9,17 +9,17 @@ endif
 ./Tools/check_lockedfiles || exit -1
 
 # NOTE - Are assumming that are already in $CASEROOT here
-set CASE        = `./xmlquery CASE		-value`
-set EXEROOT     = `./xmlquery EXEROOT		-value`
+set CASE        = `./xmlquery CASE		--value`
+set EXEROOT     = `./xmlquery EXEROOT		--value`
 
-./xmlchange -file env_mach_pes.xml -id NINST_OCN  -val 1
+./xmlchange --file env_mach_pes.xml --id NINST_OCN  --val 1
 set maxtasks = 0
 
 foreach comp (ATM LND ROF WAV ICE GLC)
   ./xmlchange NINST_$comp=2
 
-  set tasks = `./xmlquery NTASKS_$comp -value`
-  set root = `./xmlquery ROOTPE_$comp -value`
+  set tasks = `./xmlquery NTASKS_$comp --value`
+  set root = `./xmlquery ROOTPE_$comp --value`
   set even = `expr $tasks % 2`
   if( $even == 1) then
     set tasks = `expr $tasks \* 2`
@@ -37,7 +37,7 @@ foreach comp (ATM LND ROF WAV ICE GLC)
     endif
   endif
 end
-set ocnroot = `./xmlquery ROOTPE_OCN -value`
+set ocnroot = `./xmlquery ROOTPE_OCN --value`
 if( ( $ocnroot > 0 ) && ( $ocnroot < $maxtasks ) ) then
   ./xmlchange ROOTPE_OCN=$maxtasks
 endif
@@ -45,7 +45,7 @@ endif
 ./case.setup -clean
 ./case.setup
 
-./case.build -testmode
+./case.build --testmode
 if ($status != 0) then
    exit -1    
 endif 

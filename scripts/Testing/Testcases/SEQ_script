@@ -21,13 +21,13 @@ endif
 ./case.setup -clean -testmode
 ./case.setup
 
-set STOP_N      = `./xmlquery STOP_N      -value`
-set STOP_OPTION = `./xmlquery STOP_OPTION -value`
+set STOP_N      = `./xmlquery STOP_N      --value`
+set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 
-./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
-./xmlchange -file env_run.xml -id HIST_N       -val ${STOP_N}
-./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
-./xmlchange -file env_run.xml -id REST_OPTION  -val never
+./xmlchange --file env_run.xml --id HIST_OPTION  --val ${STOP_OPTION}
+./xmlchange --file env_run.xml --id HIST_N       --val ${STOP_N}
+./xmlchange --file env_run.xml --id CONTINUE_RUN --val FALSE
+./xmlchange --file env_run.xml --id REST_OPTION  --val never
 
 #======================================================================
 # do an initial run test with default layout
@@ -70,14 +70,14 @@ cd $CASEROOT
 
 echo "doing a second a ${STOP_N} ${STOP_OPTION} with all rootpes set to 0" >>& $TESTSTATUS_LOG 
 
-./xmlchange -file env_mach_pes.xml -id ROOTPE_ATM -val 0
-./xmlchange -file env_mach_pes.xml -id ROOTPE_LND -val 0
-./xmlchange -file env_mach_pes.xml -id ROOTPE_ROF -val 0
-./xmlchange -file env_mach_pes.xml -id ROOTPE_WAV -val 0
-./xmlchange -file env_mach_pes.xml -id ROOTPE_GLC -val 0
-./xmlchange -file env_mach_pes.xml -id ROOTPE_OCN -val 0
-./xmlchange -file env_mach_pes.xml -id ROOTPE_ICE -val 0
-./xmlchange -file env_mach_pes.xml -id ROOTPE_CPL -val 0
+./xmlchange --file env_mach_pes.xml --id ROOTPE_ATM --val 0
+./xmlchange --file env_mach_pes.xml --id ROOTPE_LND --val 0
+./xmlchange --file env_mach_pes.xml --id ROOTPE_ROF --val 0
+./xmlchange --file env_mach_pes.xml --id ROOTPE_WAV --val 0
+./xmlchange --file env_mach_pes.xml --id ROOTPE_GLC --val 0
+./xmlchange --file env_mach_pes.xml --id ROOTPE_OCN --val 0
+./xmlchange --file env_mach_pes.xml --id ROOTPE_ICE --val 0
+./xmlchange --file env_mach_pes.xml --id ROOTPE_CPL --val 0
 
 cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml
 

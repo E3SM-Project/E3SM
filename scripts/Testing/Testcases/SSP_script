@@ -19,8 +19,8 @@ set CASERR1 = ${CASEROOT}.ref1
 set CASE0   = ${CASE}
 
 cd $CASER0
-set STOP_N      = `./xmlquery STOP_N          -value`
-set STOP_OPTION = `./xmlquery STOP_OPTION     -value`
+set STOP_N      = `./xmlquery STOP_N          --value`
+set STOP_OPTION = `./xmlquery STOP_OPTION     --value`
 
 @ stopnf = ${STOP_N}
 @ stopn1 = ${STOP_N} / 2
@@ -30,8 +30,8 @@ cd $CIMEROOT/scripts
 rm -r -f ${CASERR1}; ./create_clone -case ${CASERR1} -clone ${CASER0} 
 
 cd $CASERR1
-./xmlchange -file env_build.xml -id EXEROOT        -val ${EXEROOT} || exit -1
-./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE       || exit -1
+./xmlchange --file env_build.xml --id EXEROOT        --val ${EXEROOT} || exit -1
+./xmlchange --file env_build.xml --id BUILD_COMPLETE --val TRUE       || exit -1
 ./case_setup -testmode
 
 #======================================================================
@@ -45,12 +45,12 @@ echo "doing a ${stopn1} ${STOP_OPTION} initial spinup test, writing restarts at 
 echo " short term archiving is on" >>& $TESTSTATUS_LOG 
 
 # set up run
-set DOUT_S_ROOT          = `./xmlquery DOUT_S_ROOT     -value`
+set DOUT_S_ROOT          = `./xmlquery DOUT_S_ROOT     --value`
 set DOUTSR0              =  $DOUT_S_ROOT
-set orig_clm_bldnml_opts = `./xmlquery CLM_BLDNML_OPTS -value`
-set CASE                 = `./xmlquery CASE -value`
-./xmlchange -file env_run.xml -id STOP_N          -val ${stopn1}                || exit -1
-./xmlchange -file env_run.xml -id CLM_BLDNML_OPTS -val "-bgc_spinup on" -append || exit -1
+set orig_clm_bldnml_opts = `./xmlquery CLM_BLDNML_OPTS --value`
+set CASE                 = `./xmlquery CASE --value`
+./xmlchange --file env_run.xml --id STOP_N          --val ${stopn1}                || exit -1
+./xmlchange --file env_run.xml --id CLM_BLDNML_OPTS --val "-bgc_spinup on" --append || exit -1
 
 ./case.run
 if ($status != 0) then
@@ -101,7 +101,7 @@ echo "doing a ${stopn2} ${STOP_OPTION} final spinup test" >>& $TESTSTATUS_LOG
 echo " short term archiving is off" >>& $TESTSTATUS_LOG 
 
 # determine refdate for run
-set RUNDIR  = `./xmlquery RUNDIR   -value`
+set RUNDIR  = `./xmlquery RUNDIR   --value`
 mkdir -p $RUNDIR
 set refdate = `ls -1dt ${DOUTSR0}/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///" ` || exit -1
 ln -s ${DOUTSR0}/rest/${refdate}-00000/*${refdate}*  $RUNDIR/.
@@ -113,9 +113,9 @@ ln -s ${DOUTSR0}/rest/${refdate}-00000/*${refdate}*  $RUNDIR/.
 ./xmlchange RUN_REFDATE=${refdate}
 ./xmlchange STOP_N=${stopn2} 
 ./xmlchange DOUT_S=FALSE
-./xmlchange -file env_run.xml -id CLM_BLDNML_OPTS -val "$orig_clm_bldnml_opts -bgc_spinup off" || exit -1
+./xmlchange --file env_run.xml --id CLM_BLDNML_OPTS --val "$orig_clm_bldnml_opts -bgc_spinup off" || exit -1
 
-set CASE = `./xmlquery CASE -value`
+set CASE = `./xmlquery CASE --value`
 
 ./case.run
 if ($status != 0) then

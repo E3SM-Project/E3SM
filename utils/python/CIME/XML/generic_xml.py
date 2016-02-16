@@ -6,7 +6,7 @@ from standard_module_setup import *
 from xml.dom import minidom
 from CIME.utils import expect, get_cime_root
 
-class GenericXML:
+class GenericXML(object):
 
     def __init__(self, infile=None):
         """
@@ -33,7 +33,7 @@ class GenericXML:
             self.root.set('id',infile)
             self.tree = ET.ElementTree(root)
 
-    def read(self,infile):
+    def read(self, infile):
         """
         Read and parse an xml file into the object
         """
@@ -47,16 +47,18 @@ class GenericXML:
         logging.info("File version is "+self.version)
 
 
-    def write(self, infile=None):
+    def write(self, outfile=None):
         """
         Write an xml file from data in self
         """
-        if(infile is None):
-            infile = self.filename
-        logging.info("write: "+ infile)
-        doc = minidom.parseString(ET.tostring(self.root))
-        with open(infile,'w') as xmlout:
-            doc.writexml(xmlout,addindent='  ',newl='\n')
+        if(outfile is None):
+            outfile = self.filename
+        logging.info("write: "+ outfile)
+        xmlstr = ET.tostring(self.root)
+        doc = minidom.parseString(xmlstr)
+        with open(outfile,'w') as xmlout:
+            doc.writexml(xmlout,addindent='  ')
+
 
     def get_node(self, nodename, attributes=None, root=None):
         """

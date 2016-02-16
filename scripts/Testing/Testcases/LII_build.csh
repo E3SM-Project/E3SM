@@ -28,14 +28,14 @@ endif
 
 # The actual build for this test is the same as for the standard test, so the
 # contents of test_build.csh are copied below:
-setenv CIMEROOT `./xmlquery CIMEROOT    -value`
+setenv CIMEROOT `./xmlquery CIMEROOT    --value`
 
 ./Tools/check_lockedfiles || exit -1
 
 # NOTE - Are assumming that are already in $CASEROOT here
-set CASE     = `./xmlquery CASE    -value`
+set CASE     = `./xmlquery CASE    --value`
 
-./case.build -testmode
+./case.build --testmode
 if ($status != 0) then
    echo "Error: build failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus

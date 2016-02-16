@@ -44,10 +44,11 @@ class EntryID(GenericXML):
             node.set("value", value[0].text)
             return value[0].text
 
-    def set_value(self, vid, value):
+    def set_value(self, vid, value,subgroup=None):
         """
         Set the value of an entry-id field to value
         Returns the value or None if not found
+        subgroup is ignored in the general routine and applied in specific methods
         """
         val = None
         if (type(vid) != type(str())):
@@ -55,18 +56,18 @@ class EntryID(GenericXML):
             vid = node.attrib("id")
         else:
             nodes = self.get_node("entry", {"id":vid})
-            if (nodes is None):
+            if (not nodes):
                 return
             expect(len(nodes) == 1, "More than one match found for id " + vid)
             node = nodes[0]
 
         if (node is not None):
             val = value
-            node.set("value",value)
+            node.set("value", value)
 
         return val
 
-    def get_value(self, vid, attribute=None, resolved=True):
+    def get_value(self, vid, attribute={}, resolved=True,subgroup=None):
         """
         get a value for entry with id attribute vid.
         or from the values field if the attribute argument is provided
@@ -84,7 +85,7 @@ class EntryID(GenericXML):
             else:
                 node = nodes[0]
 
-        if (attribute is not None):
+        if (attribute):
             valnodes = self.get_node("value", attribute,root=node)
             if (valnodes is not None and len(valnodes) == 1):
                 val = valnodes[0].text

@@ -6,10 +6,11 @@ LIB_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(LIB_DIR)
 from CIME.utils import run_cmd
 import CIME.utils, update_acme_tests, wait_for_tests
-import CIME.create_test
-from  CIME.create_test import CreateTest
+import CIME.system_test
+from  CIME.system_test import SystemTest
 from  CIME.XML.machines import Machines
-from CIME.XML.files import Files
+from  CIME.XML.files import Files
+from  CIME.case import Case
 
 SCRIPT_DIR = CIME.utils.get_acme_scripts_root()
 
@@ -397,14 +398,14 @@ class TestCreateTest(TestCreateTestCommon):
         self.simple_test(True, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
 ###############################################################################
-class TestCreateTestImpl(TestCreateTestCommon):
+class TestSystemTest(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
     def test_phases(self):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
-        ct = CreateTest(tests)
+        ct = SystemTest(tests)
 
         build_fail_test = tests[0]
         run_fail_test   = tests[1]
@@ -416,9 +417,9 @@ class TestCreateTestImpl(TestCreateTestCommon):
 
         for idx, phase in enumerate(ct._phases):
             for test in ct._tests:
-                if (phase == CIME.create_test.INITIAL_PHASE):
+                if (phase == CIME.system_test.INITIAL_PHASE):
                     continue
-                elif (phase == CIME.create_test.BUILD_PHASE):
+                elif (phase == CIME.system_test.BUILD_PHASE):
                     ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
 
                     if (test == build_fail_test):
@@ -430,7 +431,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
                         self.assertFalse(ct._is_broken(test))
                         self.assertTrue(ct._work_remains(test))
 
-                elif (phase == CIME.create_test.RUN_PHASE):
+                elif (phase == CIME.system_test.RUN_PHASE):
                     if (test == build_fail_test):
                         with self.assertRaises(SystemExit):
                             ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
@@ -474,7 +475,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
-        ct = CreateTest(tests, test_id=test_id)
+        ct = SystemTest(tests, test_id=test_id)
 
         build_fail_test = tests[0]
         run_fail_test   = tests[1]
@@ -482,7 +483,7 @@ class TestCreateTestImpl(TestCreateTestCommon):
 
         try:
             sys.stdout = open("/dev/null", "w")
-            ct.create_test()
+            ct.system_test()
         finally:
             sys.stdout = sys.__stdout__
 
@@ -495,12 +496,12 @@ class TestCreateTestImpl(TestCreateTestCommon):
         for test_status in test_statuses:
             status, test_name = wait_for_tests.parse_test_status_file(test_status)
             if (test_name == build_fail_test):
-                self.assertEqual(status[CIME.create_test.BUILD_PHASE], wait_for_tests.TEST_FAIL_STATUS)
+                self.assertEqual(status[CIME.system_test.BUILD_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             elif (test_name == run_fail_test):
-                self.assertEqual(status[CIME.create_test.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
+                self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             else:
                 self.assertEqual(test_name, pass_test)
-                self.assertEqual(status[CIME.create_test.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
+                self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
 
 ###############################################################################
 @unittest.skipIf(CIME.utils.get_model() == 'cesm', "skip Jenkins tests in cesm")
@@ -702,7 +703,6 @@ class TestUpdateACMETests(unittest.TestCase):
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\cs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
-
 ###############################################################################
 class FullSystemTest(TestCreateTestCommon):
 ###############################################################################
@@ -729,6 +729,36 @@ class FullSystemTest(TestCreateTestCommon):
                          msg="COMMAND SHOULD HAVE WORKED\ncs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 ###############################################################################
+class TestCimeCase(TestCreateTestCommon):
+###############################################################################
+
+    ###########################################################################
+    def test_cime_case(self):
+    ###########################################################################
+        stat, output, errput = run_cmd("%s/create_test acme_test_only -t %s --no-build" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True)
+        self.assertEqual(stat, 0,
+                         msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+
+        casedir = os.path.join(self._testroot,
+                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+        self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
+        case = Case(casedir)
+
+        build_complete = case.get_value("BUILD_COMPLETE")
+        self.assertEqual(build_complete, "FALSE",
+                         msg="Build complete had wrong value '%s'" % build_complete)
+
+        case.set_value("BUILD_COMPLETE", "TRUE")
+        build_complete = case.get_value("BUILD_COMPLETE")
+        self.assertEqual(build_complete, "TRUE",
+                         msg="Build complete had wrong value '%s'" % build_complete)
+
+        case.flush()
+
+        build_complete = run_cmd("./xmlquery BUILD_COMPLETE -value", from_dir=casedir)
+        self.assertEqual(build_complete, "TRUE",
+                         msg="Build complete had wrong value '%s'" % build_complete)
+
 def _main_func():
 ###############################################################################
     if ("--fast" in sys.argv):

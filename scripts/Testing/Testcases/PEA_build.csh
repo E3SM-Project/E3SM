@@ -1,5 +1,5 @@
 #!/bin/csh -f
-setenv CIMEROOT `./xmlquery CIMEROOT    -value`
+setenv CIMEROOT `./xmlquery CIMEROOT    --value`
 
 ./Tools/check_lockedfiles || exit -1
 
@@ -13,16 +13,16 @@ else
   cp -f env_build.xml   env_build.xml.1
 endif
 
-set CASE    = `./xmlquery CASE	  -value`
-set EXEROOT = `./xmlquery EXEROOT -value`
+set CASE    = `./xmlquery CASE	  --value`
+set EXEROOT = `./xmlquery EXEROOT --value`
 
 if(-e mpilib.original) then
   set mpiliborig=`cat mpilib.original`
-  ./xmlchange -file env_build.xml -id MPILIB -val $mpiliborig
+  ./xmlchange --file env_build.xml --id MPILIB --val $mpiliborig
   ./case.setup -clean
   ./case.setup
 else
-  set MPILIB  = `./xmlquery MPILIB  -value`
+  set MPILIB  = `./xmlquery MPILIB  --value`
   echo $MPILIB > mpilib.original
 endif
 
@@ -31,7 +31,7 @@ endif
 #----------------------------
 
 ./case.clean_build
-./case.build -testmode
+./case.build --testmode
 if ($status != 0) then
    exit -1    
 endif 
@@ -44,13 +44,13 @@ mv -f Macros Macros.1
 # Build with mpi-serial
 #----------------------------
 
-./xmlchange -file env_build.xml -id MPILIB -val mpi-serial
+./xmlchange --file env_build.xml --id MPILIB --val mpi-serial
 
 ./case.setup -clean 
 ./case.setup
 
 ./case.clean_build
-./case.build -testmode
+./case.build --testmode
 if ($status != 0) then
    exit -1    
 endif 
