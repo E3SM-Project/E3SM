@@ -10,25 +10,26 @@ module pio_nf
   private
 
   public :: &
-       pio_def_var                                          ,   &
-       pio_def_var_deflate                                          ,   &
-       pio_def_dim                                          ,  &
-       pio_inq_attname                                      ,    & 
-       pio_inq_att                                          ,        &
-       pio_inq_attlen                                       ,     &
-       pio_inq_varid                                        ,      &
-       pio_inq_varname                                      ,    &
-       pio_inq_vartype                                      ,    &
-       pio_inq_varndims                                     ,   &
-       pio_inq_vardimid                                     ,   &
-       pio_inq_varnatts                                     ,   &
-       pio_inq_vardeflate                                   ,    &       
+       pio_def_var                                          , &
+       pio_def_var_deflate                                  , &
+       pio_def_var_chunking                                 , &
+       pio_def_dim                                          , &
+       pio_inq_attname                                      , & 
+       pio_inq_att                                          , &
+       pio_inq_attlen                                       , &
+       pio_inq_varid                                        , &
+       pio_inq_varname                                      , &
+       pio_inq_vartype                                      , &
+       pio_inq_varndims                                     , &
+       pio_inq_vardimid                                     , &
+       pio_inq_varnatts                                     , &
+       pio_inq_var_deflate                                  , &       
        pio_inquire_variable                                 , &
        pio_inquire_dimension                                , &
        pio_inq_dimname                                      , &
        pio_inq_dimlen                                       , &
        pio_inq_dimid                                        , &
-       pio_inq_unlimdim                                , &
+       pio_inq_unlimdim                                     , &
        pio_inquire                                          , &
        pio_enddef                                           , &
        pio_redef
@@ -45,9 +46,10 @@ module pio_nf
      module procedure &
           def_var_deflate
   end interface
-  ! interface pio_def_var_deflate
-  !    module procedure def_var_deflate
-  ! end interface
+  interface pio_def_var_chunking
+     module procedure &
+          def_var_chunking
+  end interface
   interface pio_inq_attname
      module procedure &
           inq_attname_desc                                  , &
@@ -104,11 +106,11 @@ module pio_nf
           inq_varnatts_vid                                  ,    &
           inq_varnatts_id
   end interface
-  interface pio_inq_vardeflate
+  interface pio_inq_var_deflate
      module procedure &
-          inq_vardeflate_desc                                 , &
-          inq_vardeflate_vid                                  , &
-          inq_vardeflate_id
+          inq_var_deflate_desc                                 , &
+          inq_var_deflate_vid                                  , &
+          inq_var_deflate_id
   end interface
   interface pio_inquire_dimension
      module procedure &
@@ -1012,11 +1014,11 @@ contains
   end function inq_varnatts_id
 
 !>
-!!  @defgroup PIO_inq_vardeflate PIO_inq_vardeflate
+!!  @defgroup PIO_inq_var_deflate PIO_inq_var_deflate
 !<
 !>
 !! @public 
-!! @ingroup PIO_inq_vardeflate
+!! @ingroup PIO_inq_var_deflate
 !! @brief Gets metadata information for netcdf file.
 !! @details
 !! @param File @copydoc file_desc_t
@@ -1024,7 +1026,7 @@ contains
 !! @param type : The type of variable
 !! @retval ierr @copydoc error_return
 !<
-  integer function inq_vardeflate_desc(File, vardesc, shuffle, deflate, &
+  integer function inq_var_deflate_desc(File, vardesc, shuffle, deflate, &
        deflate_level) result(ierr)
 
     type (File_desc_t), intent(in) :: File
@@ -1033,15 +1035,15 @@ contains
     integer, intent(out) :: deflate
     integer, intent(out) :: deflate_level
 
-    ierr = pio_inq_vardeflate(File%fh, vardesc%varid, shuffle, deflate, deflate_level)
-  end function inq_vardeflate_desc
+    ierr = pio_inq_var_deflate(File%fh, vardesc%varid, shuffle, deflate, deflate_level)
+  end function inq_var_deflate_desc
 
 !>
 !! @public 
-!! @ingroup PIO_inq_vardeflate
+!! @ingroup PIO_inq_var_deflate
 !! @brief Gets metadata information for netcdf file.
 !<
-  integer function inq_vardeflate_vid(File, varid, shuffle, deflate, deflate_level) result(ierr)
+  integer function inq_var_deflate_vid(File, varid, shuffle, deflate, deflate_level) result(ierr)
 
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -1049,14 +1051,14 @@ contains
     integer, intent(out) :: deflate
     integer, intent(out) :: deflate_level
 
-    ierr = pio_inq_vardeflate(File%fh, varid, shuffle, deflate, deflate_level)
-  end function inq_vardeflate_vid
+    ierr = pio_inq_var_deflate(File%fh, varid, shuffle, deflate, deflate_level)
+  end function inq_var_deflate_vid
 !>
 !! @public 
-!! @ingroup PIO_inq_vardeflate
+!! @ingroup PIO_inq_var_deflate
 !! @brief Gets metadata information for netcdf file.
 !<
-  integer function inq_vardeflate_id(ncid, varid, shuffle, deflate, &
+  integer function inq_var_deflate_id(ncid, varid, shuffle, deflate, &
        deflate_level) result(ierr)
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
@@ -1077,7 +1079,7 @@ contains
     end interface
 
     ierr = PIOc_inq_var_deflate(ncid, varid-1, shuffle, deflate, deflate_level)
-  end function inq_vardeflate_id
+  end function inq_var_deflate_id
   
 !>
 !! @defgroup PIO_inq_varname
@@ -1523,4 +1525,28 @@ contains
     ierr = PIOc_def_var_deflate(file%fh, vardesc%varid-1, shuffle, deflate, deflate_level)
   end function def_var_deflate
 
+!> 
+!! @public 
+!! @ingroup PIO_def_var_chunking
+!! @brief Changes chunking settings for a netCDF-4/HDF5 variable.
+!<
+  integer function def_var_chunking(file, vardesc, storage, chunksizes) result(ierr)
+    type (File_desc_t), intent(in)  :: file
+    type (var_desc_t), intent(in) :: vardesc
+    integer, intent(in) :: storage
+    integer, intent(in) :: chunksizes
+
+    interface
+       integer (C_INT) function PIOc_def_var_chunking(ncid, varid, storage, chunksizes) &
+            bind(c,name="PIOc_def_var_chunking")
+         use iso_c_binding
+         integer(c_int), value :: ncid
+         integer(c_int), value :: varid
+         integer(c_int), value :: storage
+         integer(c_int), value :: chunksizes
+       end function PIOc_def_var_chunking
+    end interface
+
+    ierr = PIOc_def_var_chunking(file%fh, vardesc%varid-1, storage, chunksizes)
+  end function def_var_chunking
 end module pio_nf

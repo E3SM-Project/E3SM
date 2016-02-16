@@ -96,7 +96,7 @@ int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
     /* Check the netCDF return code, and broadcast it to all tasks. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free the error string if there is no error. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -168,12 +168,12 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 	default:
@@ -189,117 +189,24 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
     }
 
     /* Check the netCDF return code, and broadcast it to all tasks. */
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
+    printf("about to check_netcdf ierr = %d errstr = %s\n", ierr, errstr);
+    ierr = check_netcdf(file, ierr, errstr, __LINE__);
+    printf("after check_netcdf ierr = %d errstr = %s\n", ierr, errstr);
 
-    /* Free the error string if there is no error. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
     /* Broadcast results to all tasks. */
-    if (shufflep)
-	ierr = MPI_Bcast(shufflep, 1, MPI_INT, ios->ioroot, ios->my_comm);
-    if (deflatep)
-	ierr = MPI_Bcast(deflatep, 1, MPI_INT, ios->ioroot, ios->my_comm);
-    if (deflate_levelp)
-	ierr = MPI_Bcast(deflate_levelp, 1, MPI_INT, ios->ioroot, ios->my_comm);
-    return ierr;
-}    
-
-/**
- * @ingroup PIO_inq_var
- * Inquire about szip settings for a variable.
- *
- * This function only applies to netCDF-4 files. When used with netCDF
- * classic files, the error PIO_ENOTNC4 will be returned.
- *
- * Szip is a read-only compression format in netCDF-4. Only raw HDF5
- * can create szip files, but netcdf-4 can read them.
- *
- * See the <a
- * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
- * variable documentation</a> for details about the operation of this
- * function.
- * 
- * @param ncid the ncid of the open file.
- * @param varid the ID of the variable to set chunksizes for.
- * @param options_maskp will get the options mask.
- * @param pixels_per_block will get the pixels per block.
- * 
- * @return PIO_NOERR for success, otherwise an error code.
- */
-int PIOc_inq_var_szip(int ncid, int varid, int *options_maskp,
-		      int *pixels_per_blockp)
-{
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    if (!(file = pio_get_file_from_id(ncid)))
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_INQ_VAR_SZIP;
-
-    if (ios->async_interface && ! ios->ioproc)
+    if (ierr == PIO_NOERR)
     {
-	if (ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
+	if (shufflep)
+	    ierr = MPI_Bcast(shufflep, 1, MPI_INT, ios->ioroot, ios->my_comm);
+	if (deflatep)
+	    ierr = MPI_Bcast(deflatep, 1, MPI_INT, ios->ioroot, ios->my_comm);
+	if (deflate_levelp)
+	    ierr = MPI_Bcast(deflate_levelp, 1, MPI_INT, ios->ioroot, ios->my_comm);
     }
-
-    if (ios->ioproc)
-    {
-	switch (file->iotype)
-	{
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_var_szip(file->fh, varid, options_maskp, pixels_per_blockp);
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-	    if (!ios->io_rank)
-		ierr = nc_inq_var_szip(file->fh, varid, options_maskp, pixels_per_blockp);
-	    break;
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    return PIO_ENOTNC4;
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    return PIO_ENOTNC4;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    /* Allocate an error string if needed. */
-    if (ierr != PIO_NOERR)
-    {
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
-    }
-
-    /* Check for netCDF error. */
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-
-    /* Free unused error string. */
-    if (errstr != NULL)
-	free(errstr);
-
-    /* Broadcast results to all tasks. */
-    if (options_maskp)
-	ierr = MPI_Bcast(options_maskp, 1, MPI_INT, ios->ioroot, ios->my_comm);
-    if (pixels_per_blockp)
-	ierr = MPI_Bcast(pixels_per_blockp, 1, MPI_INT, ios->ioroot, ios->my_comm);
-	
     return ierr;
 }    
 
@@ -393,7 +300,7 @@ int PIOc_def_var_fletcher32(int ncid, int varid, int fletcher32)
     /* Check for netCDF error. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free unused error string. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -484,7 +391,7 @@ int PIOc_inq_var_fletcher32(int ncid, int varid, int *fletcher32p)
     /* Check the netCDF return code, and broadcast it to all tasks. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free the error string if there is no error. */
+    /* Free the error stringif it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -584,7 +491,7 @@ int PIOc_def_var_chunking(int ncid, int varid, int storage,
     /* Check for netCDF error. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free unused error string. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -681,7 +588,7 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizes
     /* Check the netCDF return code, and broadcast it to all tasks. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free the error string if there is no error. */
+    /* Free the error stringif it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -783,7 +690,7 @@ int PIOc_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
     /* Check for netCDF error. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free unused error string. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -878,7 +785,7 @@ int PIOc_def_var_endian(int ncid, int varid, int endian)
     /* Check for netCDF error. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free unused error string. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -969,7 +876,7 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
     /* Check the netCDF return code, and broadcast it to all tasks. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free the error string if there is no error. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -1062,7 +969,7 @@ int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size,
     /* Check for netCDF error. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free unused error string. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -1157,7 +1064,7 @@ int PIOc_get_chunk_cache(int iotype, int io_rank, size_t *sizep,
     /* Check for netCDF error. */
     /* ierr = check_netcdf(file, ierr, errstr,__LINE__);*/
 
-    /* Free unused error string. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -1263,7 +1170,7 @@ int PIOc_set_var_chunk_cache(int ncid, int varid, size_t size, size_t nelems,
     /* Check for netCDF error. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free unused error string. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
@@ -1359,7 +1266,7 @@ int PIOc_get_var_chunk_cache(int ncid, int varid, size_t *sizep, size_t *nelemsp
     /* Check the netCDF return code, and broadcast it to all tasks. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
 
-    /* Free the error string if there is no error. */
+    /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 

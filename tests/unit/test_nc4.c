@@ -288,6 +288,9 @@ main(int argc, char **argv)
 	if ((ret = PIOc_createfile(iosysid, &ncid, &(format[fmt]), filename[fmt],
 				   PIO_CLOBBER)))
 	    ERR(ret);
+
+	/* Set error handling. */
+	PIOc_Set_File_Error_Handling(ncid, PIO_RETURN_ERROR);
 	
 	/* Define netCDF dimensions and variable. */
 	if (verbose)
@@ -346,9 +349,8 @@ main(int argc, char **argv)
 	    if ((ret = PIOc_inq_var_deflate(ncid, 0, &shuffle, &deflate, &deflate_level)))
 	    	ERR(ret);
 
-	    /** For serial netCDF-4, only processor rank 0 gets the
-	     * answers. Also deflate is turned on by default */
-	    if (format[fmt] == PIO_IOTYPE_NETCDF4C && !my_rank)
+	    /** For serial netCDF-4 deflate is turned on by default */
+	    if (format[fmt] == PIO_IOTYPE_NETCDF4C)
 		if (shuffle || !deflate || deflate_level != 1)
 		    ERR(ERR_AWFUL);
 
