@@ -138,7 +138,8 @@ contains
       call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
-      !$omp do schedule(runtime) private(zTop, transmissionCoeffBot, remainingStress, k, transmissionCoeffTop)
+      !$omp do schedule(runtime) private(zTop, transmissionCoeffBot, remainingStress, k, transmissionCoeffTop, &
+      !$omp                              cell1, cell2, attenuationCoeff, zBot)
       do iEdge = 1, nEdgesSolve
         zTop = 0.0_RKIND
         cell1 = cellsOnEdge(1,iEdge)
