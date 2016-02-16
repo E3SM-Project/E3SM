@@ -51,11 +51,10 @@ module ocn_time_average_coupled
         real (kind=RKIND), dimension(:), pointer :: avgEffectiveDensityInLandIce
         character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
-        integer :: iEdge, iCell
-        integer, pointer :: nAccumulatedCoupled, nEdges, nCells
+        integer :: iCell
+        integer, pointer :: nAccumulatedCoupled, nCells
 
         call mpas_pool_get_dimension(forcingPool, 'nCells', nCells)
-        call mpas_pool_get_dimension(forcingPool, 'nEdges', nEdges)
 
         call mpas_pool_get_array(forcingPool, 'avgTracersSurfaceValue', avgTracersSurfaceValue)
         call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
@@ -63,13 +62,8 @@ module ocn_time_average_coupled
         call mpas_pool_get_array(forcingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
 
         !$omp do schedule(runtime)
-        do iEdge = 1, nEdges
-           avgSurfaceVelocity(:, iEdge) = 0.0_RKIND
-        end do
-        !$omp end do
-
-        !$omp do schedule(runtime)
         do iCell = 1, nCells
+           avgSurfaceVelocity(:, iCell) = 0.0_RKIND
            avgTracersSurfaceValue(:, iCell) = 0.0_RKIND
            avgSSHGradient(:, iCell) = 0.0_RKIND
         end do
