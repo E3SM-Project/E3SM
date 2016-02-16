@@ -280,6 +280,7 @@ Contains
     integer :: shuffle
     integer :: deflate
     integer :: deflate_level
+    integer :: dim_len
 
     shuffle = 0
     deflate = 1
@@ -316,8 +317,9 @@ Contains
     end if
 
     ! Define a new dimension M1.
-    print *, 'calling PIO_def_dim'
-    ret_val = PIO_def_dim(pio_file, 'M111222', int(2*ntasks,pio_offset_kind), pio_dim)
+    dim_len = int(2*ntasks,pio_offset_kind)
+    print *, 'calling PIO_def_dim, dim_len = ', dim_len
+    ret_val = PIO_def_dim(pio_file, 'M111222', dim_len, pio_dim)
     if (ret_val .ne. PIO_NOERR) then
        err_msg = "Could not define dimension M111222"
        print *, ret_val
@@ -326,11 +328,9 @@ Contains
     end if
 
     ! Define a new variable
-    print *, 'calling PIO_def_va'
-    ret_val = PIO_def_var(pio_file, 'foo2222', PIO_int, &
-         (/pio_dim/), pio_var)
+    print *, 'calling PIO_def_var'
+    ret_val = PIO_def_var(pio_file, 'foo2222', PIO_int, (/pio_dim/), pio_var)
     if (ret_val .ne. PIO_NOERR) then
-       ! Error in PIO_def_var
        err_msg = "Could not define variable foo2222"
        call PIO_closefile(pio_file)
        return
@@ -383,51 +383,48 @@ Contains
     print *, 'calling PIO_enddef'
     ret_val = PIO_enddef(pio_file)
     if (ret_val .ne. PIO_NOERR) then
-       ! Error in PIO_enddef
        print *,__FILE__,__LINE__,ret_val
        err_msg = "Could not end define mode"
        return
     end if
 
     ! Check the compression settings of the variables.
+    print *, 'calling PIO_inq_var_deflate'    
     ret_val = PIO_inq_var_deflate(pio_file, pio_var, shuffle, deflate, deflate_level)
 
-    ! Should not have worked except for netCDF-4/HDF5 serial.
-    if (iotype .eq. PIO_iotype_netcdf4c) then
-       if (ret_val .ne. PIO_NOERR) then
-          err_msg = "Got error trying to inquire about deflate on for serial netcdf-4 file"
-          call PIO_closefile(pio_file)
-          return
-       else
-          if (shuffle .ne. 0 .or. deflate .ne. 1 .or. deflate_level .ne. 4) then
-             err_msg = "Wrong values for deflate and shuffle for serial netcdf-4 file"
-             call PIO_closefile(pio_file)
-             return
-          end if
-       end if
-       err_msg = "Could not turn inquire about compression for variable foo2222"
-       call PIO_closefile(pio_file)
-       return
-    else if (iotype .eq. PIO_iotype_pnetcdf .or. iotype .eq. PIO_iotype_netcdf .and. ret_val .eq. PIO_NOERR) then
-       err_msg = "Did not get expected error when trying to check deflate for non-netcdf-4 file"
-       call PIO_closefile(pio_file)
-       return
-    else if (iotype .eq. PIO_iotype_netcdf4p) then
-       if (ret_val .ne. PIO_NOERR) then
-          err_msg = "Got error trying to inquire about deflate on for parallel netcdf-4 file"
-          call PIO_closefile(pio_file)
-          return
-       else
-          if (shuffle .ne. 0 .or. deflate .ne. 0) then
-             err_msg = "Wrong values for deflate and shuffle for parallel netcdf-4 file"
-             call PIO_closefile(pio_file)
-             return
-          end if
-       end if
-    end if
+    ! ! Should not have worked except for netCDF-4/HDF5 serial.
+    ! if (iotype .eq. PIO_iotype_netcdf4c) then
+    !    if (ret_val .ne. PIO_NOERR) then
+    !       err_msg = "Got error trying to inquire about deflate on for serial netcdf-4 file"
+    !       call PIO_closefile(pio_file)
+    !       return
+    !    else
+    !       if (shuffle .ne. 0 .or. deflate .ne. 1 .or. deflate_level .ne. 4) then
+    !          err_msg = "Wrong values for deflate and shuffle for serial netcdf-4 file"
+    !          call PIO_closefile(pio_file)
+    !          return
+    !       end if
+    !    end if
+    ! else if ((iotype .eq. PIO_iotype_pnetcdf .or. iotype .eq. PIO_iotype_netcdf) .and. ret_val .eq. PIO_NOERR) then
+    !    err_msg = "Did not get expected error when trying to check deflate for non-netcdf-4 file"
+    !    call PIO_closefile(pio_file)
+    !    return
+    ! else if (iotype .eq. PIO_iotype_netcdf4p) then
+    !    if (ret_val .ne. PIO_NOERR) then
+    !       err_msg = "Got error trying to inquire about deflate on for parallel netcdf-4 file"
+    !       call PIO_closefile(pio_file)
+    !       return
+    !    else
+    !       if (shuffle .ne. 0 .or. deflate .ne. 0) then
+    !          err_msg = "Wrong values for deflate and shuffle for parallel netcdf-4 file"
+    !          call PIO_closefile(pio_file)
+    !          return
+    !       end if
+    !    end if
+    ! end if
 
     ! Write foo2
-    print *, 'calling PIO_write_darray'
+    print *, 'calling PIO_write_darray, data_to_write = ', data_to_write, 'iodesc_nCells = ', iodesc_nCells
     call PIO_write_darray(pio_file, pio_var, iodesc_nCells, data_to_write, ret_val)
     if (ret_val .ne. PIO_NOERR) then
        ! Error in PIO_write_darray
@@ -444,5 +441,6 @@ Contains
     call PIO_freedecomp(pio_iosystem, iodesc_nCells)
     call mpi_barrier(MPI_COMM_WORLD,ret_val)
     
+    print *, 'err_msg = ', err_msg
   End Subroutine test_nc4
 end module ncdf_tests

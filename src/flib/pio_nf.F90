@@ -10,26 +10,26 @@ module pio_nf
   private
 
   public :: &
-       pio_def_var                                          ,   &
-       pio_def_var_deflate                                          ,   &
-       pio_def_dim                                          ,  &
-       pio_inq_attname                                      ,    & 
-       pio_inq_att                                          ,        &
-       pio_inq_attlen                                       ,     &
-       pio_inq_varid                                        ,      &
-       pio_inq_varname                                      ,    &
-       pio_inq_vartype                                      ,    &
-       pio_inq_varndims                                     ,   &
-       pio_inq_vardimid                                     ,   &
-       pio_inq_varnatts                                     ,   &
-       pio_inq_var_deflate                                   ,    &       
-       pio_inq_var_szip                                   ,    &       
+       pio_def_var                                          , &
+       pio_def_var_deflate                                  , &
+       pio_def_var_chunking                                 , &
+       pio_def_dim                                          , &
+       pio_inq_attname                                      , & 
+       pio_inq_att                                          , &
+       pio_inq_attlen                                       , &
+       pio_inq_varid                                        , &
+       pio_inq_varname                                      , &
+       pio_inq_vartype                                      , &
+       pio_inq_varndims                                     , &
+       pio_inq_vardimid                                     , &
+       pio_inq_varnatts                                     , &
+       pio_inq_var_deflate                                  , &       
        pio_inquire_variable                                 , &
        pio_inquire_dimension                                , &
        pio_inq_dimname                                      , &
        pio_inq_dimlen                                       , &
        pio_inq_dimid                                        , &
-       pio_inq_unlimdim                                , &
+       pio_inq_unlimdim                                     , &
        pio_inquire                                          , &
        pio_enddef                                           , &
        pio_redef
@@ -46,9 +46,10 @@ module pio_nf
      module procedure &
           def_var_deflate
   end interface
-  ! interface pio_def_var_deflate
-  !    module procedure def_var_deflate
-  ! end interface
+  interface pio_def_var_chunking
+     module procedure &
+          def_var_chunking
+  end interface
   interface pio_inq_attname
      module procedure &
           inq_attname_desc                                  , &
@@ -110,12 +111,6 @@ module pio_nf
           inq_var_deflate_desc                                 , &
           inq_var_deflate_vid                                  , &
           inq_var_deflate_id
-  end interface
-  interface pio_inq_var_szip
-     module procedure &
-          inq_var_szip_desc                                 , &
-          inq_var_szip_vid                                  , &
-          inq_var_szip_id
   end interface
   interface pio_inquire_dimension
      module procedure &
@@ -1087,68 +1082,6 @@ contains
   end function inq_var_deflate_id
   
 !>
-!!  @defgroup PIO_inq_var PIO_inq_var_szip
-!<
-!>
-!! @public 
-!! @ingroup PIO_inq_var_szip
-!! @brief Gets metadata information for netcdf file.
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param vardesc @copydoc var_desc_t
-!! @param type : The type of variable
-!! @retval ierr @copydoc error_return
-!<
-  integer function inq_var_szip_desc(File, vardesc, options_mask, pixels_per_block) result(ierr)
-
-    type (File_desc_t), intent(in) :: File
-    type (Var_desc_t), intent(in) :: vardesc
-    integer, intent(out) :: options_mask
-    integer, intent(out) :: pixels_per_block
-
-    ierr = pio_inq_var_szip(File%fh, vardesc%varid, options_mask, pixels_per_block)
-  end function inq_var_szip_desc
-
-!>
-!! @public 
-!! @ingroup PIO_inq_var_szip
-!! @brief Gets metadata information for netcdf file.
-!<
-  integer function inq_var_szip_vid(File, varid, options_mask, pixels_per_block) result(ierr)
-
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    integer, intent(out) :: options_mask
-    integer, intent(out) :: pixels_per_block
-
-    ierr = pio_inq_var_szip(File%fh, varid, options_mask, pixels_per_block)
-  end function inq_var_szip_vid
-!>
-!! @public 
-!! @ingroup PIO_inq_var_szip
-!! @brief Gets metadata information for netcdf file.
-!<
-  integer function inq_var_szip_id(ncid, varid, options_mask, pixels_per_block) result(ierr)
-    integer, intent(in) :: ncid
-    integer, intent(in) :: varid
-    integer, intent(out) :: options_mask
-    integer, intent(out) :: pixels_per_block
-
-    interface
-       integer(C_INT) function PIOc_inq_var_szip(ncid, varid, options_mask, pixels_per_block) &
-            bind(C, name="PIOc_inq_var_szip")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: varid
-         integer(C_INT) :: options_mask
-         integer(C_INT) :: pixels_per_block
-       end function PIOc_inq_var_szip
-    end interface
-
-    ierr = PIOc_inq_var_szip(ncid, varid-1, options_mask, pixels_per_block)
-  end function inq_var_szip_id
-  
-!>
 !! @defgroup PIO_inq_varname
 !<
 !>
@@ -1592,4 +1525,28 @@ contains
     ierr = PIOc_def_var_deflate(file%fh, vardesc%varid-1, shuffle, deflate, deflate_level)
   end function def_var_deflate
 
+!> 
+!! @public 
+!! @ingroup PIO_def_var_chunking
+!! @brief Changes chunking settings for a netCDF-4/HDF5 variable.
+!<
+  integer function def_var_chunking(file, vardesc, storage, chunksizes) result(ierr)
+    type (File_desc_t), intent(in)  :: file
+    type (var_desc_t), intent(in) :: vardesc
+    integer, intent(in) :: storage
+    integer, intent(in) :: chunksizes
+
+    interface
+       integer (C_INT) function PIOc_def_var_chunking(ncid, varid, storage, chunksizes) &
+            bind(c,name="PIOc_def_var_chunking")
+         use iso_c_binding
+         integer(c_int), value :: ncid
+         integer(c_int), value :: varid
+         integer(c_int), value :: storage
+         integer(c_int), value :: chunksizes
+       end function PIOc_def_var_chunking
+    end interface
+
+    ierr = PIOc_def_var_chunking(file%fh, vardesc%varid-1, storage, chunksizes)
+  end function def_var_chunking
 end module pio_nf
