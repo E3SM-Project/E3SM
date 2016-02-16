@@ -16,7 +16,7 @@
                 </step>
 
                 <!-- run though mesh converter to make sure MPAS compliant -->
-                <step executable="./MpasMeshConverter.X" pre_message="\n\n### Creating MPAS mesh\n\n" post_message="\n\n### MPAS mesh creation complete\n\n">
+                <step executable="./MpasMeshConverter.x" pre_message="\n\n### Creating MPAS mesh\n\n" post_message="\n\n### MPAS mesh creation complete\n\n">
                         <argument flag="">grid.nc</argument>
                         <argument flag="">mpas_grid.nc</argument>
                 </step>
