@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config case="run_model">
+<config case="8proc_run">
 
         <!-- download file with IC on it -->
         <get_file dest_path="work_resolution_dir" file_name="gis20km.150922.nc">
@@ -21,18 +21,18 @@
                 <template file="greenland_20km_template.xml" path_base="script_resolution_dir"/>
         </streams>
 
-        <run_script name="run_model.py">
+        <run_script name="8proc_run.py">
 
                 <!-- Set up needed graph file -->
                 <step executable="./make_graph_file.py">
                         <argument flag="-f">landice_grid.nc</argument>
                 </step>
                 <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
-                        <argument flag="graph.info">4</argument>
+                        <argument flag="graph.info">8</argument>
                 </step>
 
                 <!-- Run the model -->
-                <model_run procs="4" threads="1" namelist="namelist.landice" streams="streams.landice"/>
+                <model_run procs="8" threads="1" namelist="namelist.landice" streams="streams.landice"/>
 
         </run_script>
 </config>

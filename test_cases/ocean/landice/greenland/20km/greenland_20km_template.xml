@@ -10,7 +10,7 @@
         <streams>
 
                 <stream name="input">
-                        <attribute name="filename_template">gis20km.150922.nc</attribute>
+                        <attribute name="filename_template">landice_grid.nc</attribute>
                 </stream>
 
                 <stream name="output">
