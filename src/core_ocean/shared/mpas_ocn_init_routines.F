@@ -633,9 +633,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 
       ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
       if (config_use_standardGM) then
-          !$omp parallel
           call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
-          !$omp end parallel
       end if
 
       if (config_use_standardGM) then

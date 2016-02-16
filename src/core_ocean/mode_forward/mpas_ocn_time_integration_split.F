@@ -1480,7 +1480,7 @@ module ocn_time_integration_split
                ! Only need T & S for earlier iterations,
                ! then all the tracers needed the last time through.
 
-               !$omp do schedule(runtime) private(k, temp_h, temp)
+               !$omp do schedule(runtime) private(k, temp_h, temp, i)
                do iCell = 1, nCells
                   ! sshNew is a pointer, defined above.
                   do k = 1, maxLevelCell(iCell)
