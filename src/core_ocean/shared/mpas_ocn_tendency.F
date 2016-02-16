@@ -508,7 +508,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTaperingCell', relativeSlopeTaperingCell)
       call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
-      call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
+      call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
       call mpas_pool_get_array(tendPool, 'layerThickness', tend_layerThickness)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
