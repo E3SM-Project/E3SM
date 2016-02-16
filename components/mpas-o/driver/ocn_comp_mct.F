@@ -746,9 +746,10 @@ contains
 
       type (MPAS_Time_Type) :: currTime
       type (domain_type), pointer :: domain_ptr
-      character(len=StrKIND) :: timeStamp
+      character(len=StrKIND) :: timeStamp, streamName
       type (MPAS_timeInterval_type) :: timeStep
-      integer :: ierr
+      integer :: ierr, streamDirection
+      logical :: streamActive
       logical, pointer :: config_write_output_on_startup
       character (len=StrKIND), pointer :: config_restart_timestamp_name
 
@@ -856,14 +857,22 @@ contains
       ! Check if coupler wants us to write a restart file.
       ! We only write restart files at the end of a coupling interval
       if (seq_timemgr_RestartAlarmIsOn(EClock)) then
+         ! Write a restart file, because the coupler asked for it.
+         call mpas_stream_mgr_begin_iteration(domain % streamManager)
+
+         do while ( mpas_stream_mgr_get_next_stream( domain % streamManager, streamID=streamName, &
+                    directionProperty=streamDirection, activeProperty=streamActive ) )
+
+            if ( streamActive .and. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) then
+               call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true., streamID=streamName, ierr=ierr)
+            end if
+         end do
+
          if ( domain_ptr % dminfo % my_proc_id == 0 ) then
             open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
             write(22, *) trim(timeStamp)
             close(22)
          end if
-
-         ! Write a restart file, because the coupler asked for it.
-         call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true., streamID='restart', ierr=ierr)
       end if
 
       ! Export state to coupler
