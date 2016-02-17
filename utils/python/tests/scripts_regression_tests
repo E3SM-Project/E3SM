@@ -319,7 +319,7 @@ class TestCreateTestCommon(unittest.TestCase):
         self._jenkins_root      = os.path.join(self._testroot, "jenkins")
         self._compiler          = MACHINE.get_default_compiler()
         self._hasbatch          = MACHINE.has_batch_system()
-
+        self._doteardown        = False
         # wait_for_tests could blow away our dart config, need to back it up
         if (os.path.exists(DART_CONFIG)):
             shutil.move(DART_CONFIG, DART_BACKUP)
@@ -331,17 +331,17 @@ class TestCreateTestCommon(unittest.TestCase):
 
         if (self._unset_proxy):
             del os.environ["http_proxy"]
+        if(self._doteardown):
+            baselines = os.path.join(self._baseline_area, self._compiler, self._baseline_name)
+            if (os.path.isdir(baselines)):
+                shutil.rmtree(baselines)
 
-        baselines = os.path.join(self._baseline_area, self._compiler, self._baseline_name)
-        if (os.path.isdir(baselines)):
-            shutil.rmtree(baselines)
-
-        for root in [self._testroot, self._jenkins_root]:
-            for test_id in ["master", self._baseline_name]:
-                for leftover in glob.glob(os.path.join(root, "*%s*/" % test_id)):
-                    shutil.rmtree(leftover)
-                for leftover in glob.glob(os.path.join(root, "*%s*" % test_id)):
-                    os.remove(leftover)
+            for root in [self._testroot, self._jenkins_root]:
+                for test_id in ["master", self._baseline_name]:
+                    for leftover in glob.glob(os.path.join(root, "*%s*/" % test_id)):
+                        shutil.rmtree(leftover)
+                    for leftover in glob.glob(os.path.join(root, "*%s*" % test_id)):
+                        os.remove(leftover)
 
         if (os.path.exists(DART_BACKUP)):
             shutil.move(DART_BACKUP, DART_CONFIG)
@@ -719,12 +719,13 @@ class FullSystemTest(TestCreateTestCommon):
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
         if (MACHINE.has_batch_system()):
-            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True, from_dir=self._testroot)
+            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, self._baseline_name),
+                                           ok_to_fail=True, from_dir=self._testroot)
             self.assertEqual(stat, 0,
                              msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
-
-        stat, output, errput = run_cmd("%s/cs.status.%s" % (self._testroot, self._baseline_name), ok_to_fail=True)
+        stat, output, errput = run_cmd("%s/cs.status.%s" % (self._testroot, self._baseline_name),
+                                       ok_to_fail=True,  from_dir=self._testroot)
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\ncs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
