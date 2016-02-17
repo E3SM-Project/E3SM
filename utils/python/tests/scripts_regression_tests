@@ -719,12 +719,13 @@ class FullSystemTest(TestCreateTestCommon):
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
         if (MACHINE.has_batch_system()):
-            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True, from_dir=self._testroot)
+            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, self._baseline_name),
+                                           ok_to_fail=True, from_dir=self._testroot)
             self.assertEqual(stat, 0,
                              msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
-
-        stat, output, errput = run_cmd("%s/cs.status.%s" % (self._testroot, self._baseline_name), ok_to_fail=True)
+        stat, output, errput = run_cmd("%s/cs.status.%s" % (self._testroot, self._baseline_name),
+                                       ok_to_fail=True,  from_dir=self._testroot)
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\ncs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
