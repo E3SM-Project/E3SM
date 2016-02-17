@@ -84,7 +84,7 @@ def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=No
     case = Case(caseroot)
     if(listofsettings ):
         for setting in listofsettings:
-            (xmlid, xmlval) = setting.split('=')
+            (xmlid, xmlval) = setting.split('=', 1)
             if(append is True):
                 value = case.get_value(xmlid, resolved=False, subgroup=subgroup)
                 xmlval = "%s %s" %(xmlval, value)

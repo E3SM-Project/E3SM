@@ -510,7 +510,8 @@ def case_build(caseroot, testmode):
     # Load modules
     env_module = EnvModule(mach, compiler, cimeroot, caseroot, mpilib, debug)
     env_module.load_env_for_case()
-
+    # Need to flush case xml to disk before calling preview_namelists
+    case.flush()
     run_cmd("./preview_namelists")
 
     build_checks(case, build_threaded, comp_interface, use_esmf_lib, mpilib,
