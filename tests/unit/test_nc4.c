@@ -331,10 +331,12 @@ main(int argc, char **argv)
 	    {
 		printf("rank: %d ret: %d storage: %d\n", my_rank, ret, storage);
 		for (d1 = 0; d1 < NDIM; d1++)
+		{
 		    printf("chunksize[%d]=%d\n", d1, my_chunksize[d1]);
+		}
 	    }
 	    
-	    /** For serial netCDF-4, only processor rank 0 gets the answers. */
+	    /** Check the answers. */
 	    if (format[fmt] == PIO_IOTYPE_NETCDF4C ||
 		format[fmt] == PIO_IOTYPE_NETCDF4P)
 	    {
