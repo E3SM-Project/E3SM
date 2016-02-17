@@ -370,20 +370,20 @@ main(int argc, char **argv)
 		if (fletcher32)
 		    ERR(ERR_AWFUL);
 
-	    /* Turn on (the off) fletcher32 filter for netCDF-4 serial. */
+	    /* Turn on (then off) fletcher32 filter for netCDF-4 serial. */
 	    if (format[fmt] == PIO_IOTYPE_NETCDF4C)
 	    {
 		if ((ret = PIOc_def_var_fletcher32(ncid, 0, 1)))
 		    ERR(ret);
 		if ((ret = PIOc_inq_var_fletcher32(ncid, 0, &fletcher32)))
 		    ERR(ret);
-		if (!fletcher32 && !my_rank)
+		if (!fletcher32)
 		    ERR(ERR_AWFUL);
 		if ((ret = PIOc_def_var_fletcher32(ncid, 0, 0)))
 		    ERR(ret);
 		if ((ret = PIOc_inq_var_fletcher32(ncid, 0, &fletcher32)))
 		    ERR(ret);
-		if (fletcher32 && !my_rank)
+		if (fletcher32)
 		    ERR(ERR_AWFUL);
 	    }		
 	    
