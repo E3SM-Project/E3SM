@@ -1,0 +1,28 @@
+<regression_suite name="basic_sia_integration_test_suite">
+
+        <test name="Dome restart test" core="landice" configuration="dome" resolution="2000m" test="restart_test">
+                <script name="setup_and_run_dome_testcase.py"/>
+        </test>
+
+        <test name="Dome decomposition test" core="landice" configuration="dome" resolution="2000m" test="decomposition_test">
+                <script name="setup_and_run_dome_testcase.py"/>
+        </test>
+
+        <test name="Dome varres restart test" core="landice" configuration="dome" resolution="variable_resolution" test="restart_test">
+                <script name="setup_and_run_dome_testcase.py"/>
+        </test>
+
+        <test name="Dome varres decomposition test" core="landice" configuration="dome" resolution="variable_resolution" test="decomposition_test">
+                <script name="setup_and_run_dome_testcase.py"/>
+        </test>
+
+        <test name="GIS restart test" core="landice" configuration="greenland" resolution="20km" test="restart_test">
+                <script name="setup_and_run_testcase.py"/>
+        </test>
+
+        <test name="GIS decomposition test" core="landice" configuration="greenland" resolution="20km" test="decomposition_test">
+                <script name="setup_and_run_testcase.py"/>
+        </test>
+
+</regression_suite>
+
