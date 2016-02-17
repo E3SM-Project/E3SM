@@ -50,7 +50,7 @@ my $logger = Log::Log4perl::get_logger();
 # Give usage message.
 usage() if $opts{'help'};
 
-`./xmlchange --noecho -loglevel $opts{loglevel} BUILD_STATUS=0`;
+`./xmlchange --noecho BUILD_STATUS=0`;
 
 my @lockedfiles = glob ("./LockedFiles/*");
 foreach my $lockedfile (@lockedfiles) {
