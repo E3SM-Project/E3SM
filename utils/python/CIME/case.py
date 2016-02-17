@@ -34,7 +34,7 @@ class Case(object):
         self._env_files.append(EnvBuild(case_root))
         self._env_files.append(EnvArchive(case_root))
         self._env_files.append(EnvBatch(case_root))
-        if(os.path.isfile(os.path.join(case_root,"env_test.xml")):
+        if(os.path.isfile(os.path.join(case_root,"env_test.xml"))):
                self._env_files.append(EnvTest(case_root))
 
     def __del__(self):

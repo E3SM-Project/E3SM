@@ -1720,7 +1720,6 @@
       <cmd_path lang="python">/glade/apps/opt/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="python">/glade/apps/opt/lmod/lmod/libexec/lmod  python</cmd_path>
       <modules>
 	<command name="purge"/>
 	<command name="load">ncarenv/1.0</command>
