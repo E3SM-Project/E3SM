@@ -82,8 +82,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=None, subgroup=None,
               append=None, noecho=False, warn=None):
     case = Case(caseroot)
-#    import pdb
-#    pdb.set_trace()
     if(listofsettings ):
         for setting in listofsettings:
             (xmlid, xmlval) = setting.split('=')
