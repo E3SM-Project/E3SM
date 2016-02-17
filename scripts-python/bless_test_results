@@ -13,7 +13,7 @@ with versions of the files that you should not bless.
 from standard_script_setup import *
 
 import wait_for_tests, compare_namelists, simple_compare
-from CIME.create_test import NAMELIST_PHASE
+from CIME.system_test import NAMELIST_PHASE
 from CIME.utils import run_cmd, expect
 from CIME.XML.machines import Machines
 

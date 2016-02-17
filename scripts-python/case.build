@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 """
 Script to build a case.
@@ -45,7 +45,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Case directory to build")
 
     parser.add_argument("-t", "--testmode", action="store_true",
-                        help="Unknown TODO")
+                        help="Some of the tests require multiple model builds, to accommodate that we have a case.test_build script. If you are in a test that requires multiple builds, provide this flag.")
 
     args = parser.parse_args(args[1:])
 
@@ -61,8 +61,12 @@ def check_input_data(case):
     run_type     = case.get_value("RUN_TYPE")
     continue_run = case.get_value("CONTINUE_RUN")
 
-    # JGF - I don't have the foggiest idea what this is for so this is just
-    # a 1-1 perl->python conversion
+    # We do not fully populate the inputdata directory on every
+    # machine and do not expect every user to download the 3TB+ of
+    # data in our inputdata repository. This code checks for the
+    # existence of inputdata in the local inputdata directory and
+    # attempts to download data from the server if it's needed and
+    # missing.
     if (get_refcase == "TRUE" and run_type != "startup" and continue_run == "FALSE"):
         din_loc_root = case.get_value("DIN_LOC_ROOT")
         run_refdate  = case.get_value("RUN_REFDATE")
@@ -123,7 +127,7 @@ def build_checks(case, build_threaded, comp_interface, use_esmf_lib, mpilib,
     ninst_wav    = int(case.get_value("NINST_WAV"))
     ninst_rof    = int(case.get_value("NINST_ROF"))
     ninst_value  = case.get_value("NINST_VALUE")
-    smp_build    = int(case.get_value("SMP_BUILD"))
+    smp_build    = case.get_value("SMP_BUILD")
     build_status = int(case.get_value("BUILD_STATUS"))
 
     atmstr = 1 if (build_threaded == "TRUE" or nthrds_atm > 1) else 0
@@ -168,11 +172,12 @@ ERROR, NINST VALUES HAVE CHANGED
   Then rerun the build script interactively
 """ % (ninst_build, ninst_value))
 
-    expect( smp_build == smpstr or smp_build == 0,
+    expect( smp_build == smpstr or int(smp_build) == 0,
             """
 ERROR, SMP VALUES HAVE CHANGED
   SMP_BUILD = %s
   SMP_VALUE = %s
+  smpstr = %s
   A manual clean of your obj directories is strongly recommended
   You should execute the following:
     ./case.clean_build
@@ -181,7 +186,7 @@ ERROR, SMP VALUES HAVE CHANGED
   You can override this error message at your own risk by executing:
     ./xmlchange -file env_build.xml -id SMP_BUILD -val 0
   Then rerun the build script interactively
-""" % (smp_build, smp_value))
+""" % (smp_build, smp_value, smpstr))
 
     expect(build_status == 0,
            """
@@ -255,7 +260,7 @@ def build_libraries(exeroot, caseroot, cimeroot, libroot, sharedlibroot, compile
 ###############################################################################
 def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
                 comp_atm,   comp_lnd,   comp_ice,   comp_ocn,   comp_glc,   comp_wav,   comp_rof,
-                nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav, nthrds_rof, lid, caseroot, cimeroot):
+                nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav, nthrds_rof, lid, caseroot, cimeroot, use_esmf_lib, comp_interface):
 ###############################################################################
     config_atm_dir = os.path.dirname(case.get_value("CONFIG_ATM_FILE"))
     config_lnd_dir = os.path.dirname(case.get_value("CONFIG_LND_FILE"))
@@ -276,6 +281,7 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
 
     logs = []
     overall_smp = os.environ["SMP"]
+    sharedpath = os.environ["SHAREDPATH"]
 
     for model, comp, config_dir, nthrds in models_build_data:
         os.environ["MODEL"] = model
@@ -284,11 +290,30 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
         else:
             os.environ["SMP"] = "FALSE"
 
-        # TODO - Special case for clm?
-        # TODO - bldroot?
+        bldroot = exeroot # What is this for?
 
         objdir = os.path.join(exeroot, model, "obj")
         libdir = os.path.join(exeroot, model)
+        compspec = comp
+
+        # Special case for clm
+        if (comp == "clm"):
+            esmfdir = "esmf" if use_esmf_lib == "TRUE" else "noesmf"
+            if ("clm4_0" in clm_config_opts):
+                logging.info("         - Building clm4_0 Library ")
+                compspec = "lnd"
+            else:
+                logging.info("         - Building clm4_5/clm5_0 Library ")
+                bldroot = os.path.join(sharedpath, comp_interface, esmfdir)
+                objdir = os.path.join(bldroot, comp, "obj")
+                libdir = os.path.join(bldroot, "lib")
+                compspec = "clm"
+
+        logging.debug("bldroot is %s" % bldroot)
+        logging.debug("objdir is %s" % objdir)
+        logging.debug("libdir is %s" % libdir)
+
+        # Make sure obj, lib dirs exist
         for build_dir in [objdir, libdir]:
             if (not os.path.exists(build_dir)):
                 os.makedirs(build_dir)
@@ -296,7 +321,7 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
         file_build = os.path.join(exeroot, "%s.bldlog.%s" % (model, lid))
 
         # build the component library
-        stat = run_cmd("%s/buildlib %s %s >> %s 2>&1" % (config_dir, caseroot, comp, file_build),
+        stat = run_cmd("%s/buildlib %s %s %s >> %s 2>&1" % (config_dir, caseroot, bldroot, compspec, file_build),
                        from_dir=os.path.join(exeroot, model), ok_to_fail=True)[0]
         expect(stat == 0,
                "ERROR: %s.buildlib failed, see %s" % (comp, file_build))
@@ -312,29 +337,28 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
 
     os.environ["SMP"] = overall_smp
 
-    # model is overloaded here, confusing
-    model = CIME.utils.get_model()
-    file_build = os.path.join(exeroot, "%s.bldlog.%s" % (model, lid))
+    cime_model = CIME.utils.get_model()
+    file_build = os.path.join(exeroot, "%s.bldlog.%s" % (cime_model, lid))
 
-    objdir = os.path.join(exeroot, model, "obj")
-    libdir = os.path.join(exeroot, model)
+    objdir = os.path.join(exeroot, cime_model, "obj")
+    libdir = os.path.join(exeroot, cime_model)
     for build_dir in [objdir, libdir]:
         if (not os.path.exists(build_dir)):
             os.makedirs(build_dir)
 
     stat = run_cmd("%s/driver_cpl/cime_config/buildexe %s >> %s 2>&1" % (cimeroot, caseroot, file_build),
-                   from_dir=os.path.join(exeroot, model), ok_to_fail=True)[0]
+                   from_dir=os.path.join(exeroot, cime_model), ok_to_fail=True)[0]
     expect(stat == 0, "ERROR: buildexe failed, cat %s" % file_build)
 
     # Copy the just-built ${MODEL}.exe to ${MODEL}.exe.$LID
-    shutil.copy("%s/%s.exe" % (exeroot, model), "%s/%s.exe.%s" % (exeroot, model, lid))
+    shutil.copy("%s/%s.exe" % (exeroot, cime_model), "%s/%s.exe.%s" % (exeroot, cime_model, lid))
 
     logs.append(file_build)
 
     return logs
 
 ###############################################################################
-def post_build(case, logs, exeroot):
+def post_build(case, logs):
 ###############################################################################
     logdir = case.get_value("LOGDIR")
 
@@ -452,7 +476,11 @@ def case_build(caseroot, testmode):
     os.environ["CLM_USE_PETSC"]        = clm_use_petsc       if clm_use_petsc       is not None else ""
     os.environ["CISM_USE_TRILINOS"]    = cism_use_trilinos   if cism_use_trilinos   is not None else ""
     os.environ["MPASLI_USE_ALBANY"]    = mpasli_use_albany   if mpasli_use_albany   is not None else ""
-    lid                                = run_cmd("date +%y%m%d-%H%M%S") # why not testid?
+
+    # This is a timestamp for the build , not the same as the testid,
+    # and this case may not be a test anyway. For a production
+    # experiment there may be many builds of the same case.
+    lid                                = run_cmd("date +%y%m%d-%H%M%S")
     os.environ["LID"]                  = lid
 
     # Set the overall USE_PETSC variable to TRUE if any of the
@@ -488,7 +516,8 @@ def case_build(caseroot, testmode):
     # Load modules
     env_module = EnvModule(mach, compiler, cimeroot, caseroot, mpilib, debug)
     env_module.load_env_for_case()
-
+    # Need to flush case xml to disk before calling preview_namelists
+    case.flush()
     run_cmd("./preview_namelists")
 
     build_checks(case, build_threaded, comp_interface, use_esmf_lib, mpilib,
@@ -496,8 +525,8 @@ def case_build(caseroot, testmode):
     logs = build_libraries(exeroot, caseroot, cimeroot, libroot, sharedlibroot, compiler, mpilib, build_threaded, debug, lid, machines_file)
     logs.extend(build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
                             comp_atm,   comp_lnd,   comp_ice,   comp_ocn,   comp_glc,   comp_wav,   comp_rof,
-                            nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav, nthrds_rof, lid, caseroot, cimeroot))
-    post_build(case, logs, exeroot)
+                            nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav, nthrds_rof, lid, caseroot, cimeroot, use_esmf_lib, comp_interface))
+    post_build(case, logs)
 
 ###############################################################################
 def _main_func(description):

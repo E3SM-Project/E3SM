@@ -44,15 +44,16 @@ class EntryID(GenericXML):
             node.set("value", value[0].text)
             return value[0].text
 
-    def set_value(self, vid, value):
+    def set_value(self, vid, value,subgroup=None):
         """
         Set the value of an entry-id field to value
         Returns the value or None if not found
+        subgroup is ignored in the general routine and applied in specific methods
         """
         val = None
         if (type(vid) != type(str())):
             node = vid
-            vid = node.attrib("id")
+            vid = node.attrib["id"]
         else:
             nodes = self.get_node("entry", {"id":vid})
             if (not nodes):
@@ -66,7 +67,7 @@ class EntryID(GenericXML):
 
         return val
 
-    def get_value(self, vid, attribute=None, resolved=True):
+    def get_value(self, vid, attribute={}, resolved=True,subgroup=None):
         """
         get a value for entry with id attribute vid.
         or from the values field if the attribute argument is provided
@@ -75,7 +76,7 @@ class EntryID(GenericXML):
         val = None
         if (type(vid) != type(str())):
             node = vid
-            vid = node.attrib("id")
+            vid = node.attrib["id"]
         else:
             nodes = self.get_node("entry", {"id":vid})
             if (len(nodes) == 0):
@@ -84,7 +85,7 @@ class EntryID(GenericXML):
             else:
                 node = nodes[0]
 
-        if (attribute is not None):
+        if (attribute):
             valnodes = self.get_node("value", attribute,root=node)
             if (valnodes is not None and len(valnodes) == 1):
                 val = valnodes[0].text
@@ -102,7 +103,7 @@ class EntryID(GenericXML):
 
         return val
 
-    def get_values(self, vid, att):
+    def get_values(self, vid, att, resolved=True):
         """
         If an entry includes a list of values return a dict matching each
         attribute to its associated value
@@ -117,11 +118,15 @@ class EntryID(GenericXML):
                 return
             node = nodes[0]
 
-        valnodes = self.get_node("value", node=node)
+        valnodes = self.get_node("value", root=node)
         if (valnodes is not None):
             for valnode in valnodes:
-                vatt = valnode.attrib(att)
-                values[vatt] = valnode.text
+                vatt = valnode.attrib[att]
+                if(resolved):
+                    values[vatt] = self.get_resolved_value(valnode.text)
+                else:
+                    values[vatt] = valnode.text
+
 
         return values
 

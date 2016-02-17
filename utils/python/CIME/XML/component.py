@@ -23,4 +23,4 @@ class Component(EntryID):
                 components.append(comp.text())
             return components
         else:
-            EntryID.get_value(self,name,attribute,resolved)
+            return EntryID.get_value(self,name,attribute,resolved)

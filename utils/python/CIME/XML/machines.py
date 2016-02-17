@@ -93,8 +93,8 @@ class Machines(GenericXML):
         """
         Sets the machine block in the Machines object
 
-        >>> machobj = Machines()
-        >>> machobj.set_machine("melvin")
+        >>> machobj = Machines(machine="melvin")
+        >>> machobj.get_machine_name()
         'melvin'
         >>> machobj.set_machine("trump")
         Traceback (most recent call last):
@@ -175,8 +175,7 @@ class Machines(GenericXML):
         """
         Check the compiler is valid for the current machine
 
-        >>> machobj = Machines()
-        >>> name = machobj.set_machine("edison")
+        >>> machobj = Machines(machine="edison")
         >>> machobj.get_default_compiler()
         'intel'
         >>> machobj.is_valid_compiler("cray")
@@ -194,8 +193,7 @@ class Machines(GenericXML):
         """
         Check the MPILIB is valid for the current machine
 
-        >>> machobj = Machines()
-        >>> name = machobj.probe_machine_name()
+        >>> machobj = Machines(machine="edison")
         >>> machobj.is_valid_MPIlib("mpi-serial")
         True
         """
@@ -207,9 +205,7 @@ class Machines(GenericXML):
         """
         Return if this machine has a batch system
 
-        >>> machobj = Machines()
-        >>> machobj.set_machine("edison")
-        'edison'
+        >>> machobj = Machines(machine="edison")
         >>> machobj.has_batch_system()
         True
         >>> machobj.set_machine("melvin")
@@ -228,8 +224,7 @@ class Machines(GenericXML):
         """
         Return the batch system used on this machine
 
-        >>> machobj = Machines()
-        >>> name = machobj.set_machine("edison")
+        >>> machobj = Machines(machine="edison")
         >>> machobj.get_batch_system_type()
         'slurm'
         """
@@ -248,20 +243,12 @@ class Machines(GenericXML):
         module_system = self.get_node("module_system")
         return module_system[0].get("type")
 
-    def get_module_system_init_paths(self):
-        result = {}
-        init_nodes = self.get_node("init_path")
-        for init_node in init_nodes:
-            lang = init_node.get("lang")
-            result[lang] = init_node.text
+    def get_module_system_init_path(self, lang):
+        init_nodes = self.get_node("init_path", attributes={"lang":lang})
+        expect(len(init_nodes) == 1, "Could not find init_path for lang '%s'" % lang)
+        return init_nodes[0].text
 
-        return result
-
-    def get_module_system_cmd_paths(self):
-        result = {}
-        cmd_nodes = self.get_node("cmd_path")
-        for cmd_node in cmd_nodes:
-            lang = cmd_node.get("lang")
-            result[lang] = cmd_node.text
-
-        return result
+    def get_module_system_cmd_path(self, lang):
+        cmd_nodes = self.get_node("cmd_path", attributes={"lang":lang})
+        expect(len(cmd_nodes) == 1, "Could not find cmd_path for lang '%s'" % lang)
+        return cmd_nodes[0].text

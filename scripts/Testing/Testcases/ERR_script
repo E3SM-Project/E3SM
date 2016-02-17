@@ -5,17 +5,17 @@
 #======================================================================
 
 
-# turn on memory leak check - if comparing with baseline also 
-# compare memory highwater mark from baseline 
+# turn on memory leak check - if comparing with baseline also
+# compare memory highwater mark from baseline
 set DETECT_MEMORY_LEAK
 if ($?COMPARE_BASELINE ) then
     set COMPARE_MEMORY
     set COMPARE_THROUGHPUT
 endif
-set DOUT_S_ROOT 	= `./xmlquery DOUT_S_ROOT      -value`
-set DOUT_S 	= `./xmlquery DOUT_S     -value`
-set STOP_N      = `./xmlquery STOP_N      -value`
-set STOP_OPTION = `./xmlquery STOP_OPTION -value`
+set DOUT_S_ROOT 	= `./xmlquery DOUT_S_ROOT      --value`
+set DOUT_S 	= `./xmlquery DOUT_S     --value`
+set STOP_N      = `./xmlquery STOP_N      --value`
+set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 
 if (${STOP_N} < 3) then
     echo "ERROR:  stop_n too short" >>& $TESTSTATUS_LOG
@@ -32,18 +32,18 @@ if( $resubmit > 0 ) then
 # (1) Test run:
 # do an initial run test
 #======================================================================
-    echo "ERR first job run starting" >>& $TESTSTATUS_LOG	
+    echo "ERR first job run starting" >>& $TESTSTATUS_LOG
     cd $CASEROOT
 
-    echo "" >>& $TESTSTATUS_LOG 
-    echo "initial: doing a ${stopn1} ${STOP_OPTION} initial test writing a restart at ${restn1} ${STOP_OPTION}" >>& $TESTSTATUS_LOG 
+    echo "" >>& $TESTSTATUS_LOG
+    echo "initial: doing a ${stopn1} ${STOP_OPTION} initial test writing a restart at ${restn1} ${STOP_OPTION}" >>& $TESTSTATUS_LOG
 
-    ./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
-    ./xmlchange -file env_run.xml -id STOP_N       -val ${stopn1}
-    ./xmlchange -file env_run.xml -id REST_OPTION  -val ${STOP_OPTION}
-    ./xmlchange -file env_run.xml -id REST_N       -val ${restn1}
-    ./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
-    ./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
+    ./xmlchange --file env_run.xml --id CONTINUE_RUN --val FALSE
+    ./xmlchange --file env_run.xml --id STOP_N       --val ${stopn1}
+    ./xmlchange --file env_run.xml --id REST_OPTION  --val ${STOP_OPTION}
+    ./xmlchange --file env_run.xml --id REST_N       --val ${restn1}
+    ./xmlchange --file env_run.xml --id HIST_OPTION  --val ${STOP_OPTION}
+    ./xmlchange --file env_run.xml --id HIST_N       --val ${histn}
     ./xmlchange DOUT_S=TRUE
 
     ./case.run
@@ -57,10 +57,10 @@ if( $resubmit > 0 ) then
 	if (-e $CplLogFile) then
 	    set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
 	    if ($pass != 1) then
-		echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+		echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  		exit -1
-	    else 
-		echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+	    else
+		echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
 		endif
 		endif
 	    else
@@ -86,13 +86,13 @@ echo "ERR second job run starting" >>& $TESTSTATUS_LOG
 
 cd $CASEROOT
 
-echo "restart: doing a ${stopn2} ${STOP_OPTION} restart test" >>& $TESTSTATUS_LOG 
+echo "restart: doing a ${stopn2} ${STOP_OPTION} restart test" >>& $TESTSTATUS_LOG
 
-./xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE
-./xmlchange -file env_run.xml -id STOP_N       -val ${stopn2}
-./xmlchange -file env_run.xml -id REST_OPTION  -val never
-./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
-./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
+./xmlchange --file env_run.xml --id CONTINUE_RUN --val TRUE
+./xmlchange --file env_run.xml --id STOP_N       --val ${stopn2}
+./xmlchange --file env_run.xml --id REST_OPTION  --val never
+./xmlchange --file env_run.xml --id HIST_OPTION  --val ${STOP_OPTION}
+./xmlchange --file env_run.xml --id HIST_N       --val ${histn}
 
 if ( $DOUT_S == "TRUE" ) then
     echo "Staging restart files from archive"
@@ -111,10 +111,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -137,7 +137,7 @@ set CPLLOG = $CplLogFile
 
 if ! ( $?IOP_ON ) then
     echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTSTATUS_OUT
-    echo "--- Test Functionality  ---:" >>& $TESTSTATUS_OUT
+#    echo "--- Test Functionality  ---:" >>& $TESTSTATUS_OUT
 endif
 
 echo "DONE ${CASEBASEID} : ($msg finished, successful coupler log) " >>& $TESTSTATUS_LOG

@@ -27,7 +27,6 @@ class Case(object):
 
         self._env_files = []
         self._env_files_that_need_rewrite = set()
-
         self._env_files.append(EnvRun(case_root))
         self._env_files.append(EnvMachSpecific(case_root))
         self._env_files.append(EnvCase(case_root))
@@ -47,13 +46,16 @@ class Case(object):
 
         self._env_files_that_need_rewrite = set()
 
-    def get_value(self, item):
+    def get_value(self, item, attribute={}, resolved=True, subgroup=None):
+        result = None
         for env_file in self._env_files:
-            result = env_file.get_value(item)
-            if (result is not None):
-                return self.get_resolved_value(result)
+            result = env_file.get_value(item, attribute, resolved, subgroup)
+            if(result is not None):
+                if(resolved):
+                    return self.get_resolved_value(result)
+                return result
+        logging.info("Not able to retreive value for item '%s'" % item)
 
-        logging.warning("Not able to retreive value for item '%s'" % item)
 
     def get_resolved_value(self, item):
         # TODO HACK - surely there is a better way?
@@ -71,9 +73,9 @@ class Case(object):
 
         return item
 
-    def set_value(self, item, value):
+    def set_value(self, item, value, subgroup=None):
         for env_file in self._env_files:
-            result = env_file.set_value(item, value)
+            result = env_file.set_value(item, value, subgroup)
             if (result is not None):
                 self._env_files_that_need_rewrite.add(env_file)
                 return result

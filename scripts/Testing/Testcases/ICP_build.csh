@@ -1,20 +1,20 @@
 #!/bin/csh -f
-setenv CIMEROOT `./xmlquery CIMEROOT    -value`
+setenv CIMEROOT `./xmlquery CIMEROOT    --value`
 
 ./Tools/check_lockedfiles || exit -1
 
 # NOTE - Are assumming that are already in $CASEROOT here
-set CASE        = `./xmlquery CASE		-value`
-set EXEROOT     = `./xmlquery EXEROOT		-value`
-set ICE_GRID	= `./xmlquery ICE_GRID		-value`
-set ICE_NX	= `./xmlquery ICE_NX		-value`
-set ICE_NY	= `./xmlquery ICE_NY		-value`
-set NTASKS_ICE	= `./xmlquery NTASKS_ICE	-value`
-set NTHRDS_ICE	= `./xmlquery NTASKS_ICE	-value`
+set CASE        = `./xmlquery CASE		--value`
+set EXEROOT     = `./xmlquery EXEROOT		--value`
+set ICE_GRID	= `./xmlquery ICE_GRID		--value`
+set ICE_NX	= `./xmlquery ICE_NX		--value`
+set ICE_NY	= `./xmlquery ICE_NY		--value`
+set NTASKS_ICE	= `./xmlquery NTASKS_ICE	--value`
+set NTHRDS_ICE	= `./xmlquery NTASKS_ICE	--value`
 
 touch cice_perf.out
 
-./xmlchange -file env_build.xml -id CICE_AUTO_DECOMP  -val false
+./xmlchange --file env_build.xml --id CICE_AUTO_DECOMP  --val false
 
 # set precheck to 0 to build cesm
 # set precheck to 1 to diagnose decomp configurations
@@ -79,9 +79,9 @@ foreach bx ($bxvals)
   if ($mxtr != 0) then
      @ mxt = $mxt + 1
   endif
-  ./xmlchange -file env_build.xml -id CICE_BLCKX   -val $bx
-  ./xmlchange -file env_build.xml -id CICE_BLCKY   -val $by
-  ./xmlchange -file env_build.xml -id CICE_MXBLCKS -val $mxt
+  ./xmlchange --file env_build.xml --id CICE_BLCKX   --val $bx
+  ./xmlchange --file env_build.xml --id CICE_BLCKY   --val $by
+  ./xmlchange --file env_build.xml --id CICE_MXBLCKS --val $mxt
   rm LockedFiles/env_build*  >& /dev/null
 
   foreach decomp ($decvals)
@@ -142,11 +142,11 @@ foreach bx ($bxvals)
 
     @ ice_pes = ${NTASKS_ICE} * ${NTHRDS_ICE}
     if ($runit == 1) then
-      ./xmlchange -file env_build.xml -id CICE_DECOMPTYPE -val $decomp
-      ./xmlchange -file env_build.xml -id CICE_DECOMPSETTING -val null
+      ./xmlchange --file env_build.xml --id CICE_DECOMPTYPE --val $decomp
+      ./xmlchange --file env_build.xml --id CICE_DECOMPSETTING --val null
       if ($decomp == slenderX1 || $decomp == slenderX2 || $decomp == square-pop) then
-        ./xmlchange -file env_build.xml -id CICE_DECOMPTYPE -val cartesian
-        ./xmlchange -file env_build.xml -id CICE_DECOMPSETTING -val $decomp
+        ./xmlchange --file env_build.xml --id CICE_DECOMPTYPE --val cartesian
+        ./xmlchange --file env_build.xml --id CICE_DECOMPSETTING --val $decomp
       endif
       cp env_build.xml LockedFiles/env_build.xml
 
@@ -165,21 +165,21 @@ foreach bx ($bxvals)
         cp -f env_build.xml env_build.xml.${acnt}
         cp -f $EXEROOT/${CIME_MODEL}.exe $EXEROOT/${CIME_MODEL}.exe.${acnt}
       else
-	set ICE_GRID		= `./xmlquery ICE_GRID			-value`
-	set CICE_BLCKX		= `./xmlquery CICE_BLCKX		-value`
-	set CICE_BLCKY		= `./xmlquery CICE_BLCKY		-value`
-	set CICE_MXBLCKS	= `./xmlquery CICE_MXBLCKS		-value`
-	set CICE_DECOMPTYPE	= `./xmlquery CICE_DECOMPTYPE		-value `  
-	set CICE_DECOMPSETTING	= `./xmlquery CICE_DECOMPSETTING	-value `  
-	set NTASKS_ICE		= `./xmlquery NTASKS_ICE		-value`
-	set NTHRDS_ICE		= `./xmlquery NTHRDS_ICE		-value`
+	set ICE_GRID		= `./xmlquery ICE_GRID			--value`
+	set CICE_BLCKX		= `./xmlquery CICE_BLCKX		--value`
+	set CICE_BLCKY		= `./xmlquery CICE_BLCKY		--value`
+	set CICE_MXBLCKS	= `./xmlquery CICE_MXBLCKS		--value`
+	set CICE_DECOMPTYPE	= `./xmlquery CICE_DECOMPTYPE		--value `  
+	set CICE_DECOMPSETTING	= `./xmlquery CICE_DECOMPSETTING	--value `  
+	set NTASKS_ICE		= `./xmlquery NTASKS_ICE		--value`
+	set NTHRDS_ICE		= `./xmlquery NTHRDS_ICE		--value`
         echo "precheck... $ICE_GRID ${ice_pes} $NTASKS_ICE $NTHRDS_ICE $CICE_BLCKX $CICE_BLCKY $CICE_MXBLCKS $CICE_DECOMPTYPE $CICE_DECOMPSETTING"
       endif
 
     else
-      set ICE_GRID		= `./xmlquery ICE_GRID			-value`
-      set NTASKS_ICE		= `./xmlquery NTASKS_ICE		-value`
-      set NTHRDS_ICE		= `./xmlquery NTHRDS_ICE		-value`
+      set ICE_GRID		= `./xmlquery ICE_GRID			--value`
+      set NTASKS_ICE		= `./xmlquery NTASKS_ICE		--value`
+      set NTHRDS_ICE		= `./xmlquery NTHRDS_ICE		--value`
       if ($precheck == 0) then
         echo "  skip..... $ICE_GRID ${ice_pes} $NTASKS_ICE $NTHRDS_ICE $bx $by $mxt $decomp" >> cice_perf.out
       else

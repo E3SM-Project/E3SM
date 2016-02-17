@@ -1,4 +1,4 @@
-#! /usr/bin/env perl 
+#! /usr/bin/env perl
 #------------------------------------------------------------------------------
 # Batch system directives
 #------------------------------------------------------------------------------
@@ -44,13 +44,13 @@ my $logger;
 #------------------------------------------------------------------------------
 {{ pedocumentation }}
 # -------------------------------------------------------------------------
-# global data needed by the script, stuff like the max number of threads, 
+# global data needed by the script, stuff like the max number of threads,
 # -------------------------------------------------------------------------
 my $banner = "*" x 65;
 my %config;
 my $case;
 my $compiler;
-my $machine; 
+my $machine;
 my $machroot;
 my $mpilib;
 my $scriptsroot;
@@ -64,7 +64,6 @@ sub main
     getOptions();
     for(my $cycle=0;$cycle<$config{DATA_ASSIMILATION_CYCLES};$cycle++){
 	doPreRunChecks();
-	checkInputData();
 	runModel();
 	postRun();
 	DoDataAssimilation($config{RUNDIR},$config{CASEROOT},$config{DATA_ASSIMILATION},
@@ -89,11 +88,11 @@ sub getOptions()
     my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
     Log::Log4perl->easy_init({level=>$level,
 			  layout=>'%m%n'});
-    
+
     $logger = Log::Log4perl::get_logger();
 
 
-    # First, get the configuration from xml . 
+    # First, get the configuration from xml .
     %config = SetupTools::getAllResolved();
     $case        = $config{'CASE'};
     $caseroot    = $config{'CASEROOT'};
@@ -111,10 +110,10 @@ sub getOptions()
     }
     else
     {
-        `./xmlchange -noecho -loglevel $opts{loglevel} RUN_WITH_SUBMIT=TRUE`;
+        `./xmlchange --noecho RUN_WITH_SUBMIT=TRUE`;
 	$config{RUN_WITH_SUBMIT}='TRUE';
     }
-    
+
 }
 
 # -------------------------------------------------------------------------
@@ -124,8 +123,8 @@ sub doPreRunChecks()
 {
     # Change to the case root
     chdir($config{'CASEROOT'});
-	
-    # Update the configuration from xml . 
+
+    # Update the configuration from xml .
     %config = SetupTools::getAllResolved();
     $case        = $config{'CASE'};
     $caseroot    = $config{'CASEROOT'};
@@ -134,24 +133,24 @@ sub doPreRunChecks()
     $machroot    = $config{'MACHDIR'};
     $mpilib      = $config{'MPILIB'};
 
-    # Now, check for locked files. 
+    # Now, check for locked files.
     Run::RunChecks->checkLockedFiles();
-    
-    # Now, load the module environment... 
-    # ModuleLoader for module-based systems.  
-    
-    my $moduleloader = new Module::ModuleLoader(machine  => $config{'MACH'}, 
+
+    # Now, load the module environment...
+    # ModuleLoader for module-based systems.
+
+    my $moduleloader = new Module::ModuleLoader(machine  => $config{'MACH'},
 						compiler => $config{'COMPILER'},
-						mpilib   => $config{'MPILIB'}, 
-						debug    => $config{'DEBUG'}, 
+						mpilib   => $config{'MPILIB'},
+						debug    => $config{'DEBUG'},
 						caseroot => $config{'CASEROOT'},
 						cimeroot => $config{'CIMEROOT'},
 	                                        model    => $config{'MODEL'});
-    
+
     $moduleloader->moduleInit();
     $moduleloader->findModulesForCase();
     $moduleloader->loadModules();
-    
+
     my $mpilib = `./xmlquery -value MPILIB`;
     if($mpilib =~ /mpi-serial/)
     {
@@ -162,27 +161,27 @@ sub doPreRunChecks()
         $ENV{'MP_MPILIB'} = $mpilib;
     }
     $config{'MPILIB'} = $mpilib;
-	
+
     $logger->debug( "build complete? $config{'BUILD_COMPLETE'}");
     if($config{'BUILD_COMPLETE'} ne 'TRUE')
     {
 	$logger->logdie("BUILD_COMPLETE is not true\nPlease rebuild the model interactively");
     }
-	
+
     $ENV{'LBQUERY'} = "TRUE";
     if( ! defined $config{'BATCHSUBMIT'} || length $config{'BATCHSUBMIT'} == 0)
     {
 	$ENV{'LBQUERY'} = "FALSE";
 	$ENV{'BATCHQUERY'} = "undefined";
     }
-    
+
     elsif ( $config{'BATCHSUBMIT'} eq 'UNSET')
     {
 	$ENV{'LBSUBMIT'} = "FALSE";
 	$ENV{'BATCHSUBMIT'} = "undefined";
     }
-    
-    ## Create the timing directories, optionally cleaning them if needed. 
+
+    ## Create the timing directories, optionally cleaning them if needed.
     if(! -d $config{'RUNDIR'})
     {
 	mkpath($config{'RUNDIR'}) or die "could not crate $config{'RUNDIR'}, exiting\n";
@@ -193,29 +192,29 @@ sub doPreRunChecks()
     }
     # Now make the timing and timing/checkpoints directories..
     mkpath("$config{'RUNDIR'}/timing/checkpoints");
-    
+
     # Now set up the LID and sdate? strings
     $LID = strftime("%y%m%d-%H%M%S", localtime);
     my $sdate = strftime("%Y-%m-%d %H:%M:%S", localtime);
     $ENV{'LID'} = $LID;
     $ENV{'sdate'} = $sdate;
-	
+
     open my $CS, ">>", "./CaseStatus" or die "Could not open CaseStatus file for writing!";
     print $CS "run started $sdate\n";
     close $CS;
-	
+
     $logger->info( "-------------------------------------------------------------------------");
     $logger->info(" BUILDNML SCRIPT STARTING");
     $logger->info(" - To prestage restarts, untar a restart.tar file into $config{'RUNDIR'}");
-	
+
     # Run preview namelists.. should turn this into a module at some point..
     system("./preview_namelists -loglevel $opts{loglevel} ");
-	
+
     if($?)
     {
 	$logger->logdie("ERROR from preview namelist - EXITING");
     }
-	
+
     $logger->info( " BUILDNML SCRIPT HAS FINISHED SUCCESSFULLY");
     $logger->info( "-------------------------------------------------------------------------");
     $logger->info( " PRESTAGE SCRIPT STARTING");
@@ -225,118 +224,12 @@ sub doPreRunChecks()
 }
 
 # -------------------------------------------------------------------------
-# we've done the preview namelists check, now we'll check on the inputdata..
-# -------------------------------------------------------------------------
-sub checkInputData()
-{
-    chdir($config{'CASEROOT'}) or $logger->logdie ("cannot change directory to $config{'CASEROOT'}, $!");
-    if(! -d $config{'DIN_LOC_ROOT'})
-    {
-	$logger->logdie( "ERROR, the input data directory $config{'DIN_LOC_ROOT'} cannot be found!");
-    }
-    
-    open(F,"./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check -loglevel $opts{loglevel} |" );
-    my @inputdatacheck = <F>;
-    close(F);
-    my @unknown = grep { /unknown/ } @inputdatacheck;
-    my @missing = grep { /missing/ } @inputdatacheck;
-    
-    if(@unknown)
-    {
-	#my $unknownmsg = <<MSG;
-        my $out= "Any files with \"status unknown\" below were not found in the\n";
-        $out.="expected location, and are not from the input data repository.\n";
-        $out.="This is informational only.\n";
-	$logger->warn($out);
-	system("./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check -loglevel $opts{loglevel} ");
-    }
-    
-    if(@missing)
-    {
-	$logger->info( "Attempting to download missing data:");
-	system("./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -export -loglevel $opts{loglevel}");
-    }
-    
-    open(F,"./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check -loglevel $opts{loglevel} |" );
-    my @potmissing  = <F>;
-    close(F);
-    @missing = grep { /missing/ } @potmissing;
-    if(@missing)
-    {
-	my $out = "The following files were not found, they are required\n";
-	$out .= map { print $_ } @potmissing;
-	$out .= "Invoke the following command to obtain them:\n";
-	$out .= " ./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -export ";
-        $logger->logdie($out);
-    }
-    
-    # Prestage our reference case if required..
-    if( ($config{'GET_REFCASE'} eq 'TRUE') && ($config{'RUN_TYPE'} ne 'startup') && ($config{'CONTINUE_RUN'} eq 'FALSE'))
-    {
-	my $refdir = "$config{'RUN_REFCASE'}/$config{'RUN_REFDATE'}";
-	my $fullrefdirpath = "$config{'DIN_LOC_ROOT'}/ccsm4_init/$refdir";
-	if(! -d $fullrefdirpath)
-	{
-            my $out = "$banner\n";
-            $out .= "ccsm_prestage ERROR: $refdir is not on local disk!\n";
-            $out .= "Obtain this data from the svn input data repository\n";
-            $out .= "> mkdir -p $refdir\n";
-            $out .= "> cd $refdir\n";
-            $out .= "> cd ..\n";
-            $out .= "> svn export --force https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/$refdir\n";
-            $out .= "or set GET_REFCASE to FALSE in env_run.xml\n";
-            $out .= "and prestage the restart data to $config{'RUNDIR'} manually\n";
-            $out .= "$banner\n";
-	    $logger->logdie($out);
-	}
-	
-	$logger->info(" - Prestaging REFCASE ($refdir) to $config{'RUNDIR'}");
-	
-	# prestage the reference case's files.  
-	mkpath $config{'RUNDIR'} if (! -d $config{'RUNDIR'});
-	my @refcasefiles = glob("$fullrefdirpath/*$config{'RUN_REFCASE'}*");
-	foreach my $rcfile(@refcasefiles)
-	{
-	    my $rcbasename = basename($rcfile);
-	    if(! -f "$config{'RUNDIR'}/$rcbasename")
-	    {
-		symlink($rcfile, "$config{'RUNDIR'}/$rcbasename") or $logger->warn ("could not symlink $rcfile to $config{'RUNDIR'}/$rcbasename, $!");
-	    }
-	}
-
-	# find the *rpointer* files, copy them to the rundir. 
-	my @rpointerfiles = glob("$fullrefdirpath/*rpointer*");
-	foreach my $rpointerfile(@rpointerfiles)
-	{
-	    copy($rpointerfile, $config{'RUNDIR'});
-	}
-	
-	chdir($config{'RUNDIR'});
-	
-	my @cam2_list = glob("*.cam2.*");
-	foreach my $cam2file(@cam2_list)
-	{
-	    my $camfile = $cam2file;
-	    $camfile =~ s/cam2/cam/g;
-	    symlink($cam2file, $camfile);
-	}
-	
-	my @allrundirfiles = glob("$config{'RUNDIR'}/*");
-	foreach my $runfile(@allrundirfiles)
-	{
-	    chmod 0755, $runfile;
-	}
-	$logger->info( "prestaging has finished successfully!");
-    }
-}
-
-# -------------------------------------------------------------------------
 # Run the model system
 # -------------------------------------------------------------------------
 sub runModel()
 {
     chdir $config{'RUNDIR'};
-    
+
     system("sleep 10");
     my $localtime = localtime;
     # Set OMP_NUM_THREADS
@@ -366,7 +259,7 @@ sub disposeLog
 	}
     }
 
-}	    
+}
 
 
 
@@ -377,8 +270,8 @@ sub disposeLog
 # -------------------------------------------------------------------------
 sub postRun()
 {
-    # Go back to the caseroot, pull in the configuration in case a user changed 
-    # of the variables  
+    # Go back to the caseroot, pull in the configuration in case a user changed
+    # of the variables
     chdir $config{'CASEROOT'};
     %config = SetupTools::getAllResolved();
     my $rundir = $config{RUNDIR};
@@ -390,7 +283,7 @@ sub postRun()
     my $logfile = "$rundir/cesm.log.$LID";
     my $cpllogfile = "$rundir/cpl.log.$LID";
 
-    if( -z $logfile) 
+    if( -z $logfile)
     {
         $logger->error( "Model did not complete, no cesm.log file present");
     }
@@ -398,7 +291,7 @@ sub postRun()
     if(! -e $cpllogfile)
     {
         my $msg = "Model did not complete - no cpl.log file corresponding to most recent model log: $logfile";
-        
+
         appendCaseStatus($msg);
         $logger->logdie($msg);
     }
@@ -493,11 +386,11 @@ sub resubmitCheck()
 	my $resubmitcommand = "$submitscript -resubmit -scriptname case.";
 
 	if(defined $config{TESTCASE} && $config{TESTCASE} eq "ERR"){
-	    $resubmitcommand .= "test"; 
+	    $resubmitcommand .= "test";
 	}else{
-	    $resubmitcommand .= "run"; 
+	    $resubmitcommand .= "run";
 	}
-	$logger->debug( "running resubmit check $resubmitcommand");    
+	$logger->debug( "running resubmit check $resubmitcommand");
 	system($resubmitcommand);
         if($?){ $logger->warn ("could not run CESM submit script, $! $?");}
 	chdir $cwd;

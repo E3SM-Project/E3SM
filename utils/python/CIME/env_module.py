@@ -10,6 +10,8 @@ from CIME.XML.env_mach_specific import EnvMachSpecific
 
 class EnvModule(object):
 
+    # TODO - write env_mach_specific files into case
+
     # Public API
 
     def __init__(self, machine, compiler, cimeroot, caseroot, mpilib, debug=False):
@@ -21,8 +23,6 @@ class EnvModule(object):
         self._debug    = debug
 
         self._module_system = self._machine.get_module_system_type()
-        self._init_paths    = self._machine.get_module_system_init_paths()
-        self._cmd_paths     = self._machine.get_module_system_cmd_paths()
 
     def load_env_for_case(self):
         mach_specific = EnvMachSpecific(caseroot=self._caseroot)
@@ -93,17 +93,17 @@ class EnvModule(object):
             return my_value == xml_value
 
     def _load_module_modules(self, modules_to_load):
-        python_mod_cmd = self._cmd_paths["python"]
+        python_mod_cmd = self._machine.get_module_system_cmd_path("python")
         for action, argument in modules_to_load:
             cmd = "%s %s %s" % (python_mod_cmd, action, argument)
             py_module_code = run_cmd(cmd)
             exec(py_module_code)
 
     def _load_soft_modules(self, modules_to_load):
-        expect(False, "Not implemented")
+        expect(False, "Not yet implemented")
 
     def _load_dotkit_modules(self, modules_to_load):
-        expect(False, "Not implemented")
+        expect(False, "Not yet implemented")
 
     def _load_none_modules(self, modules_to_load):
-        expect(False, "Not implemented")
+        expect(False, "Not yet implemented")
