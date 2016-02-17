@@ -29,11 +29,22 @@ class EnvBatch(EnvBase):
 
     def get_value(self, item, attribute={}, resolved=True, subgroup=None):
         value = {}
-        if(subgroup is None):
-            nodes = self.get_node("job")
-        else:
-            nodes = self.get_node("job",{"name":subgroup})
-        for node in nodes:
-            value[node.attrib["name"]] = EnvBase.get_value(self, node,
-                                                           item,attribute,resolved)
-        return value
+        nodes = self.get_node("entry",{"id":item})
+        if(len(nodes)>0):
+            if(subgroup is None):
+                nodes = self.get_node("job")
+            else:
+                nodes = self.get_node("job",{"name":subgroup})
+            for node in nodes:
+                val = EnvBase.get_value(self, node,
+                                        item,attribute,resolved)
+                if(val):
+                    value[node.attrib["name"]] = val
+            return value
+
+
+
+
+
+
+
