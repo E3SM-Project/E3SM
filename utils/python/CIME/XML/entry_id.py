@@ -53,7 +53,7 @@ class EntryID(GenericXML):
         val = None
         if (type(vid) != type(str())):
             node = vid
-            vid = node.attrib("id")
+            vid = node.attrib["id"]
         else:
             nodes = self.get_node("entry", {"id":vid})
             if (not nodes):

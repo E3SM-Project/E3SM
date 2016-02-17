@@ -13,20 +13,27 @@ class EnvBatch(EnvBase):
         EnvBase.__init__(self, case_root, infile)
 
     def set_value(self, item, value, subgroup=None):
-        if(subgroup is not None):
-            node = self.get_node("job",{"name":subgroup})
-            if(node):
-                vnode = self.get_node(item,root=node[0])
-                EnvBase.set_value(self, vnode, value)
+        val = None
+        if(subgroup is None):
+            nodes = self.get_node("entry",{"id":item})
+            for node in nodes:
+                val = EnvBase.set_value(self, node, value)
         else:
-            EnvBase.set_value(self,item,value)
+            nodes = self.get_node("job",{"name":subgroup})
+            for node in nodes:
+                vnode = self.get_node("entry",{"id":item},root=node)
+                if( len(vnode)>0 ):
+                    val = EnvBase.set_value(self,vnode[0],value)
+
+        return val
 
     def get_value(self, item, attribute={}, resolved=True, subgroup=None):
-        value = None
-        if(subgroup is not None):
-            node = self.get_node("job",{"name":subgroup})
-            if(node):
-                item = self.get_node(item,root=node[0])
-
-        value = EnvBase.get_value(self, item, attribute, resolved, subgroup)
+        value = {}
+        if(subgroup is None):
+            nodes = self.get_node("job")
+        else:
+            nodes = self.get_node("job",{"name":subgroup})
+        for node in nodes:
+            value[node.attrib["name"]] = EnvBase.get_value(self, node,
+                                                           item,attribute,resolved)
         return value

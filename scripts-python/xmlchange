@@ -44,27 +44,30 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument("--caseroot", default=os.getcwd(),
                         help="Case directory to build")
+    # Need to support older single dash version of arguments for compatibility with components
+    parser.add_argument("-loglevel",
+                        help="ignored, backward compatibility only")
 
-    parser.add_argument("-f", "--file",
-                        help="")
+    parser.add_argument("-file", "--file",
+                        help="xml file to edit")
 
-    parser.add_argument("-i", "--id",
-                        help="")
+    parser.add_argument("-id", "--id",
+                        help="the xml entry id")
 
-    parser.add_argument("--val",
-                        help="")
+    parser.add_argument("-val","--val",
+                        help="the value to set")
 
-    parser.add_argument("--noecho", action="store_true",
-                        help="")
+    parser.add_argument("-noecho", "--noecho", action="store_true",
+                        help="do not update CaseStatus with this change")
 
-    parser.add_argument("--append", action="store_true",
-                        help="")
+    parser.add_argument("-append","--append", action="store_true",
+                        help="append to the existing value")
 
-    parser.add_argument("--warn", action="store_true",
-                        help="")
+    parser.add_argument("-warn","--warn", action="store_true",
+                        help="not implemented")
 
-    parser.add_argument("--subgroup",
-                        help="")
+    parser.add_argument("-subgroup","--subgroup",
+                        help="apply to this subgroup only")
 
     args = parser.parse_args(args[1:])
 
@@ -100,7 +103,7 @@ def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=No
             argstr = ""
             for arg in sys.argv:
                 argstr += "%s "%arg
-            f.write("<command> %s </command>" % argstr)
+            f.write("<command> %s </command>\n" % argstr)
 
 def _main_func(description):
     if ("--test" in sys.argv):

@@ -184,8 +184,6 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
                 else:
                     expect(compiler == testsplit[5], "abiguity in compiler, please use the --compiler option")
 
-
-
     impl = SystemTest(testargs,
                       no_run=no_run, no_build=no_build, no_batch=no_batch,
                       test_root=test_root, test_id=test_id,
