@@ -309,7 +309,7 @@ int PIOc_def_var_fletcher32(int ncid, int varid, int fletcher32)
 
 /**
  * @ingroup PIO_inq_var
- * Inquire about chunksizes for a variable.
+ * Inquire about fletcher32 checksums for a variable.
  *
  * This function only applies to netCDF-4 files. When used with netCDF
  * classic files, the error PIO_ENOTNC4 will be returned.
@@ -320,12 +320,9 @@ int PIOc_def_var_fletcher32(int ncid, int varid, int fletcher32)
  * function.
  * 
  * @param ncid the ncid of the open file.
- * @param varid the ID of the variable to set chunksizes for.
- * @param storagep pointer to int which will be set to either
- * NC_CONTIGUOUS or NC_CHUNKED.
- * @param chunksizep pointer to memory where chunksizes will be
- * set. There are the same number of chunksizes as there are
- * dimensions.
+ * @param varid the ID of the variable.
+ * @param fletcher32p pointer will get zero if checksums are not in
+ * use, non-zero otherwise.
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */

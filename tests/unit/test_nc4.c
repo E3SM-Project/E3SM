@@ -363,7 +363,7 @@ main(int argc, char **argv)
 	     * work. Starts as off. */
 	    if ((ret = PIOc_inq_var_fletcher32(ncid, 0, &fletcher32)))
 	    	ERR(ret);
-	    if (format[fmt] == PIO_IOTYPE_NETCDF4C && !my_rank)
+	    if (format[fmt] == PIO_IOTYPE_NETCDF4C)
 		if (fletcher32)
 		    ERR(ERR_AWFUL);
 	    if (format[fmt] == PIO_IOTYPE_NETCDF4P)
