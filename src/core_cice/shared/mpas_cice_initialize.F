@@ -322,8 +322,8 @@ contains
 
           else
 
-             write(*,*) "Ice initial condition type unknown!"
-             write(*,*) "config_initial_condition_type: ", trim(config_initial_condition_type)
+             write(stderrUnit,*) "Ice initial condition type unknown!"
+             write(stderrUnit,*) "config_initial_condition_type: ", trim(config_initial_condition_type)
              stop
 
           endif
@@ -385,8 +385,8 @@ contains
 
           else
 
-             write(*,*) "Ice initial velocity type unknown!"
-             write(*,*) "config_initial_velocity_type: ", trim(config_initial_velocity_type)
+             write(stderrUnit,*) "Ice initial velocity type unknown!"
+             write(stderrUnit,*) "config_initial_velocity_type: ", trim(config_initial_velocity_type)
              stop
 
           endif
