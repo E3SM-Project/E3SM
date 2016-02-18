@@ -603,6 +603,8 @@ module li_time_integration_fe
                  thicknessNew,           &
                  err_tmp)
 
+            err = ior(err,err_tmp)
+
          elseif (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'none') then
 
             if (config_print_thickness_advection_info) then
@@ -621,9 +623,9 @@ module li_time_integration_fe
                  err_tmp,                &
                  advectTracersIn = .false.)
 
-         endif
+            err = ior(err,err_tmp)
 
-         err = ior(err,err_tmp)
+         endif
 
          block => block % next
       end do
@@ -672,7 +674,7 @@ module li_time_integration_fe
       ! Halo updates
       call mpas_timer_start("halo updates")
 
-      ! thickness, layerThickness
+      ! thickness
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
       call mpas_pool_get_field(geometryPool, 'thickness', thicknessField)
       call mpas_dmpar_exch_halo_field(thicknessField)
