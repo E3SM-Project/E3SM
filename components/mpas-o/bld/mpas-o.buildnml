@@ -581,7 +581,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
 	print $stream_file '        reference_time="0000-01-01_00:00:00"' . "\n";
 	print $stream_file '        clobber_mode="truncate"' . "\n";
 	print $stream_file '        input_interval="initial_only"' . "\n";
-	print $stream_file '        output_interval="00-01-00_00:00:00"/>' . "\n";
+	print $stream_file '        output_interval="stream:restart:output_interval"/>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<!--' . "\n";
 	print $stream_file 'All streams below this line are auxiliary streams. They are provided as' . "\n";
