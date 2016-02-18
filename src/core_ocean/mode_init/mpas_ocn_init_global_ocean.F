@@ -1518,7 +1518,6 @@ contains
 
           call mpas_pool_get_array(meshPool, 'latCell', latCell)
           call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
-          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
           call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
           call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
@@ -1590,6 +1589,7 @@ contains
                 call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
                 call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+                call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
                 call mpas_pool_get_dimension(tracersPool, 'index_temperature', idxTemperature)
                 call mpas_pool_get_dimension(tracersPool, 'index_salinity', idxSalinity)
 
@@ -1605,7 +1605,7 @@ contains
                 maxLevelCell(nCells+1) = -1
 
                 do iCell = 1, nCells
-                   do k = 1, maxLevelCell(iCell)
+                   do k = 1, nVertLevels
                       if ( associated(activeTracers) ) then
                          smoothedtemperature(k, iCell) = activeTracers(idxTemperature, k, iCell)
                          smoothedsalinity(k, iCell) = activeTracers(idxSalinity, k, iCell)
@@ -1615,7 +1615,7 @@ contains
                       do j = 1, nEdgesOnCell(iCell)
                          coc = cellsOnCell(j, iCell)
                          ! check if coc not 0 (or nCells+1)?
-                         if (k .le. maxLevelCell(coc)) then
+                         if (maxLevelCell(coc) > 0 ) then
 
                             if ( associated(activeTracers) ) then
                                smoothedtemperature(k, iCell) = smoothedtemperature(k, iCell) &
@@ -1661,8 +1661,6 @@ contains
 
        ! reinterpolate tracers from refZMid to zMid for PBCs or other modified vertical coordinates
 
-       allocate(inTracerColumn(nVertLevels),outTracerColumn(nVertLevels))
-
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -1678,6 +1676,8 @@ contains
           call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
           call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
 
+          allocate(inTracerColumn(nVertLevels),outTracerColumn(nVertLevels))
+
           call mpas_pool_begin_iteration(tracersPool)
           do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
              if ( groupItr % memberType .ne. MPAS_POOL_FIELD ) cycle
@@ -1688,12 +1688,12 @@ contains
 
              nTracers = size(tracersGroup, dim=1)
              do iCell = 1, nCells
-                if(maxLevelCell(iCell) < 1) cycle ! nothing to interpolate
                 outKMax = maxLevelCell(iCell)
+                if(outKMax < 1) cycle ! nothing to interpolate
 
                 do iTracer = 1, nTracers
                    inTracerColumn(:) = tracersGroup(iTracer,:,iCell)
-                   outTracerColumn(:) = 0.0_RKIND
+                   outTracerColumn(:) = 9.969209968386869e+36_RKIND
                    call ocn_init_interpolation_linear_vert(refZMid, &
                                                            inTracerColumn, &
                                                            nVertLevels, &
@@ -1701,15 +1701,15 @@ contains
                                                            outTracerColumn(1:outKMax), &
                                                            outKMax, &
                                                            extrapolate=.false.)
-
                    tracersGroup(iTracer,:,iCell) = outTracerColumn(:)
                 end do
              end do
           end do
 
+          deallocate(inTracerColumn,outTracerColumn)
+
           block_ptr => block_ptr % next
        end do
-       deallocate(inTracerColumn,outTracerColumn)
 
     end subroutine ocn_init_setup_global_ocean_interpolate_tracers!}}}
 
