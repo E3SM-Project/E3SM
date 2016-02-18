@@ -161,7 +161,7 @@ contains
           else 
 
              write(stderrUnit,*) "Error: config_stress_divergence_scheme unknown: ", trim(config_stress_divergence_scheme)
-             stop
+             call MPAS_dmpar_global_abort('config_stress_divergence_scheme unknown')
 
           endif
 
