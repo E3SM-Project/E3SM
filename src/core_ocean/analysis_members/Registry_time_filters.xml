@@ -55,6 +55,12 @@
 		<var name="velocityMeridionalLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Low-pass time filtered component of horizontal velocity in the northward direction"
 		/>
+		<var name="velocityZonalHighPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="High-pass time filtered component of horizontal velocity in the eastward direction"
+		/>
+		<var name="velocityMeridionalHighPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="High-pass time filtered component of horizontal velocity in the northward direction"
+		/>
 		<var name="velocityXLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Low-pass time filtered component of horizontal velocity in the x-direction (cartesian)"
 			 packages="forwardMode;analysisMode"
@@ -65,6 +71,18 @@
 		/>
 		<var name="velocityZLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Low-pass time filtered component of horizontal velocity in the x-direction (cartesian)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="velocityXHighPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="High-pass time filtered component of horizontal velocity in the x-direction (cartesian)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="velocityYHighPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="High-pass time filtered component of horizontal velocity in the x-direction (cartesian)"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="velocityZHighPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="High-pass time filtered component of horizontal velocity in the x-direction (cartesian)"
 			 packages="forwardMode;analysisMode"
 		/>
 	</var_struct>
