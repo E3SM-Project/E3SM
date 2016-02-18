@@ -249,9 +249,10 @@ contains
       type (mpas_pool_type), pointer :: timeFiltersAM
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalVelocityLowPass, normalVelocityHighPass, &
                                                     normalVelocityTest
-      type (field2DReal), pointer :: normalVelocityLowPassField
       real (kind=RKIND), dimension(:,:), pointer :: velocityZonalLowPass, velocityMeridionalLowPass, &
-                                                    velocityXLowPass, velocityYLowPass, velocityZLowPass
+                                                    velocityXLowPass, velocityYLowPass, velocityZLowPass, &
+                                                    velocityZonalHighPass, velocityMeridionalHighPass, &
+                                                    velocityXHighPass, velocityYHighPass, velocityZHighPass
       integer, pointer :: nVertLevels, nEdgesSolve
       integer :: k, iEdge
       integer, dimension(:), pointer :: maxLevelEdgeBot
@@ -336,9 +337,6 @@ contains
         do while (associated(block))
            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
            call mpas_pool_get_subpool(block % structs, 'timeFiltersAM', timeFiltersAMPool)
-           ! make sure all processors have correct normalVelocityLowPass data
-           call mpas_pool_get_field(timeFiltersAMPool, 'normalVelocityLowPass', normalVelocityLowPassField)
-           call mpas_dmpar_exch_halo_field(normalVelocityLowPassField)
            ! get variables for computations
            call mpas_pool_get_array(timeFiltersAMPool, 'normalVelocityLowPass', normalVelocityLowPass)
            call mpas_pool_get_array(timeFiltersAMPool, 'velocityZonalLowPass', velocityZonalLowPass)
@@ -346,10 +344,21 @@ contains
            call mpas_pool_get_array(timeFiltersAMPool, 'velocityXLowPass', velocityXLowPass)
            call mpas_pool_get_array(timeFiltersAMPool, 'velocityYLowPass', velocityYLowPass)
            call mpas_pool_get_array(timeFiltersAMPool, 'velocityZLowPass', velocityZLowPass)
+           call mpas_pool_get_array(timeFiltersAMPool, 'normalVelocityHighPass', normalVelocityHighPass)
+           call mpas_pool_get_array(timeFiltersAMPool, 'velocityZonalHighPass', velocityZonalHighPass)
+           call mpas_pool_get_array(timeFiltersAMPool, 'velocityMeridionalHighPass', velocityMeridionalHighPass)
+           call mpas_pool_get_array(timeFiltersAMPool, 'velocityXHighPass', velocityXHighPass)
+           call mpas_pool_get_array(timeFiltersAMPool, 'velocityYHighPass', velocityYHighPass)
+           call mpas_pool_get_array(timeFiltersAMPool, 'velocityZHighPass', velocityZHighPass)
           ! must perform reconstruction for cell centered values
            call mpas_reconstruct(meshPool, normalVelocityLowPass,  &
                             velocityXLowPass, velocityYLowPass, velocityZLowPass,   &
                             velocityZonalLowPass, velocityMeridionalLowPass, &
+                            includeHalos = .false.)
+          ! must perform reconstruction for cell centered values
+           call mpas_reconstruct(meshPool, normalVelocityHighPass,  &
+                            velocityXHighPass, velocityYHighPass, velocityZHighPass,   &
+                            velocityZonalHighPass, velocityMeridionalHighPass, &
                             includeHalos = .false.)
           block => block % next
         end do
