@@ -84,7 +84,8 @@ sub loadModules()
 	my $cmd = $cshenv . " " . $envfile ;
 	#print "running command $cmd\n";
 	my @output;
-	eval { @output = qx($cmd);};
+	#ndk eval { @output = qx($cmd);};  #ndk For whatever reason, using this was causing problems with modules on NERSC systems with bash
+	eval { @output = qx(env $envfile);};
 	#eval { $out = `$cmd`;};
 	#$out = `$cmd`;
 	chomp @output;
