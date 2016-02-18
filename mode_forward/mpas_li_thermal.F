@@ -48,6 +48,7 @@ module li_thermal
    !--------------------------------------------------------------------
 
    public :: li_thermal_init, li_thermal_solver, &
+             li_init_linear_temperature_in_column,  &
              li_heat_dissipation_sia, li_basal_friction_sia,  &
              li_temperature_to_enthalpy, li_enthalpy_to_temperature
 
@@ -168,16 +169,6 @@ module li_thermal
       type (field2DReal), pointer :: &
            temperatureField,  &
            waterfracField
-
-      real (kind=RKIND), dimension(:), allocatable :: &
-           pmptemp                     ! pressure melting point temp in ice interior
-
-      real (kind=RKIND) :: &
-           pmptemp_bed                 ! pressure melting point temp at bed
-
-      real (kind=RKIND), parameter :: &
-           pmpt_offset = 2.0_RKIND     ! offset of initial Tbed from pressure melting point temperature (K)
-                                       ! Note: pmtp_offset is positive for T < Tpmp
 
       integer :: k, iLayer
 
@@ -391,46 +382,23 @@ module li_thermal
             ! set up a linear temperature profile in each column
             ! T = surfaceAirTemperature at the ice surface, and T <= Tpmp at the bed
 
-            allocate(pmptemp(nVertLevels))
-
             ! initialize T = 273.15 K = 0 C everywhere
 
             temperature(:,:) = kelvin_to_celsius    ! = 273.15                                              
 
             do iCell = 1, nCellsSolve
 
-               ! set surface temperature to the air temperature (or 273.15, whichever is less)
-               surfaceTemperature(iCell) = min(surfaceAirTemperature(iCell), kelvin_to_celsius)
-
-               ! compute the pressure melting point temperature in the column and at the bed
-
-               call pressure_melting_point_column(&
-                    layerCenterSigma,   &
-                    thickness(iCell),   &
-                    pmptemp)
-
-               call pressure_melting_point(&
-                    thickness(iCell), &
-                    pmptemp_bed)
-
-               pmptemp(:) = pmptemp(:) + kelvin_to_celsius
-               pmptemp_bed = pmptemp_bed + kelvin_to_celsius
-
-               ! set the basal temperature to slightly below the pressure melting point temperature
-               basalTemperature(iCell) = pmptemp_bed - pmpt_offset
-
-               ! set the interior temperatures
-               ! make sure T <= Tpmp - pmpt_offset in column interior
-
-               temperature(:,iCell) = surfaceTemperature(iCell) +  &
-                                     (basalTemperature(iCell) - surfaceTemperature(iCell)) * layerCenterSigma(:)
-               
-               temperature(:,iCell) = min(temperature(:,iCell), pmptemp(:) - pmpt_offset)
+               call li_init_linear_temperature_in_column(&
+                    nVertLevels,                   &
+                    layerCenterSigma,              &
+                    thickness(iCell),              &
+                    surfaceAirTemperature(iCell),  &
+                    temperature(:,iCell),          &
+                    waterfrac(:,iCell),            &
+                    surfaceTemperature(iCell),     &
+                    basalTemperature(iCell))
 
             enddo  ! iCell
-
-            ! initialize the water fraction to zero
-            waterfrac(:,:) = 0.0_RKIND
 
             if (config_print_thermal_info) then
                write(stdoutUnit,*) 'Initialized a linear temperature profile in each column'
@@ -486,9 +454,6 @@ module li_thermal
 
          endif    ! restart file, input file, or linear
 
-         ! clean up
-         if (allocated(pmptemp)) deallocate(pmptemp)
-
          block => block % next
       enddo
 
@@ -522,6 +487,109 @@ module li_thermal
 
    !--------------------------------------------------------------------
     end subroutine li_thermal_init
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  li_init_linear_temperature_in_column
+!
+!> \brief MPAS initialize a linear temperature profile in a column
+!> \author William Lipscomb
+!> \date   February 2016
+!> \details
+!>  This routine initializes a linear temperature profile in an ice column,
+!>  with the surface ice temperature set to the surface air temperature,
+!>  and the basal ice temperature set to the pressure melting point minus
+!>  an offset.
+!-----------------------------------------------------------------------
+
+    subroutine li_init_linear_temperature_in_column(&
+         nVertLevels,            &
+         layerCenterSigma,       &
+         thickness,              &
+         surfaceAirTemperature,  &
+         temperature,            &
+         waterfrac,              &
+         surfaceTemperature,     &
+         basalTemperature)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      integer, intent(in) :: &
+           nVertLevels                  !< Input: number of ice layers
+
+      real(kind=RKIND), dimension(nVertLevels), intent(in) :: &
+           layerCenterSigma             !< Input: vertical sigma coordinate at layer midpoints
+
+      real(kind=RKIND), intent(in) ::  &
+           thickness,    &              !< Input: ice thickness
+           surfaceAirTemperature        !< Input: surface air temperature
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+
+      real(kind=RKIND), dimension(nVertLevels), intent(out) ::  &
+           temperature,     &           !< Output: interior ice temperature at midpoint of each layer
+           waterfrac                    !< Output: interior water fraction at midpoint of each layer
+
+      real(kind=RKIND), intent(out) ::  &
+           surfaceTemperature,     &    !< Output: surface ice temperature
+           basalTemperature             !< Output: basal ice temperature
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(nVertLevels) :: &
+           pmptemp                     ! pressure melting point temp in ice interior
+
+      real (kind=RKIND) :: &
+           pmptemp_bed                 ! pressure melting point temp at bed
+
+      integer :: nVert
+
+      !TODO - Make pmpt_offset a namelist parameter?
+      real (kind=RKIND), parameter :: &
+           pmpt_offset = 2.0_RKIND     ! offset of initial Tbed from pressure melting point temperature (K)
+                                       ! Note: pmtp_offset is positive for T < Tpmp
+
+
+      ! set the surface ice temperature to the surface air temperature (or 273.15, whichever is less)
+      surfaceTemperature = min(surfaceAirTemperature, kelvin_to_celsius)
+
+      ! compute the pressure melting point temperature in the column and at the bed
+      ! (in degrees C)
+
+      call pressure_melting_point_column(&
+           layerCenterSigma,   &
+           thickness,          &
+           pmptemp)
+
+      call pressure_melting_point(&
+           thickness,          &
+           pmptemp_bed)
+
+      ! convert to Kelvin
+      pmptemp(:) = pmptemp(:) + kelvin_to_celsius
+      pmptemp_bed = pmptemp_bed + kelvin_to_celsius
+
+      ! set the basal temperature to slightly below the pressure melting point temperature
+      basalTemperature = pmptemp_bed - pmpt_offset
+
+      ! set the interior temperatures
+      ! make sure T <= Tpmp - pmpt_offset in column interior
+
+      temperature(:) = surfaceTemperature +  &
+           (basalTemperature - surfaceTemperature) * layerCenterSigma(:)
+
+      temperature(:) = min(temperature(:), pmptemp(:) - pmpt_offset)
+
+      ! set waterfrac = 0
+      waterfrac(:) = 0.0_RKIND
+
+    end subroutine li_init_linear_temperature_in_column
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -2709,7 +2777,7 @@ module li_thermal
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(out) :: &
-           pmpTemperature          !< Output: pressure melting point temperature
+           pmpTemperature          !< Output: pressure melting point temperature (deg C)
 
       ! Compute the pressure melting point temperature in the column
 
@@ -2745,7 +2813,7 @@ module li_thermal
       !-----------------------------------------------------------------
 
       real (kind=RKIND), intent(out) :: &
-           pmpTemperature          !< Output: pressure melting point temperature
+           pmpTemperature          !< Output: pressure melting point temperature (deg C)
 
       ! Compute the pressure melting point temperature
 

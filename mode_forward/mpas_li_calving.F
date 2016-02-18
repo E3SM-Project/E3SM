@@ -522,15 +522,15 @@ module li_calving
 !> \author William Lipscomb
 !> \date   September 2015
 !> \details
-!>  This routine restores the calving front to its initial position.
-!>  There are several options:
-!> (1) Remove any floating ice that has advanced beyond the initial front.
-!> (2) Add back a thin layer of ice wherever the ice has retreated from
+!>  This routine restores the calving front to its initial position:
+!> (1) It removes any floating ice that has advanced beyond the initial front.
+!> (2) It adds back a thin layer of ice wherever the ice has retreated from
 !>     the initial front.
-!> (3) Both (1) and (2) combined
 !-----------------------------------------------------------------------
 
    subroutine li_restore_calving_front(domain, err)
+
+      use li_thermal, only: li_init_linear_temperature_in_column
 
       !-----------------------------------------------------------------
       ! input variables
@@ -556,10 +556,11 @@ module li_calving
 
       type (mpas_pool_type), pointer :: meshPool 
       type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: thermalPool
       type (mpas_pool_type), pointer :: scratchPool 
       type (mpas_pool_type), pointer :: velocityPool
 
-      integer, pointer :: nCellsSolve
+      integer, pointer :: nCellsSolve, nVertLevels
 
       logical, pointer :: &
            config_print_calving_info
@@ -571,6 +572,10 @@ module li_calving
       integer, dimension(:), pointer :: &
            cellMask            ! bit mask describing whether ice is floating, dynamically active, etc.
       
+      real(kind=RKIND), dimension(:), pointer :: &
+           layerCenterSigma    ! vertical sigma coordinate at layer midpoints
+
+      ! geometry and calving fields
       real (kind=RKIND), dimension(:), pointer :: &
            thickness,        & ! ice thickness
            bedTopography,    & ! elevation of the bed
@@ -581,6 +586,17 @@ module li_calving
 
       real (kind=RKIND) ::  &
            restoreThicknessMin  ! small thickness to which ice is restored should it fall below this thickness
+
+      ! thermal fields
+      ! These are needed to initialize the temperature profile in restored columns.
+      real (kind=RKIND), dimension(:,:), pointer :: &
+           temperature,           &   ! interior ice temperature
+           waterfrac                  ! interior water fraction
+
+      real (kind=RKIND), dimension(:), pointer :: &
+           surfaceAirTemperature, &   ! surface air temperature
+           surfaceTemperature,    &   ! surface ice temperature
+           basalTemperature           ! basal ice temperature
                                 
       integer :: iCell, err_tmp
 
@@ -589,6 +605,7 @@ module li_calving
       integer, parameter :: ncellsPerRow = 40
       integer, parameter :: nRows = 46
       integer :: i, iRow
+      integer :: k
 
       ! block loop
       block => domain % blocklist
@@ -597,11 +614,16 @@ module li_calving
          ! get pools
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)  ! required for cellMask computation
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
          ! get dimensions
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+         ! get required fields from the mesh pool
+         call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
 
          ! get required fields from the geometry pool
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
@@ -609,6 +631,13 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pool_get_array(geometryPool, 'restoreThickness', restoreThickness)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+
+         ! get required fields from the thermal pool
+         call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+         call mpas_pool_get_array(thermalPool, 'waterfrac', waterfrac)
+         call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
+         call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
+         call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
 
          ! get config variables
          call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
@@ -663,9 +692,10 @@ module li_calving
 
                if (li_mask_is_initial_ice(cellMask(iCell)) .and. thickness(iCell) < restoreThicknessMin) then
 
-                  ! Ice was present in this cell initially, but now is either very thin or absent.
-                  ! Save the difference (restoreThicknessMin - thickness) so as to keep track of energy non-conservation.
-                  ! Reset the thickness to restoreThicknessMin
+                  ! Ice was present in this cell initially, but now is either very thin or absent;
+                  !  reset the thickness to restoreThicknessMin.
+                  ! Note: Mass is not conserved.
+                  !       Save the difference (restoreThicknessMin - thickness) so as to keep track of energy non-conservation.
 
                   if (config_print_calving_info) then
                      write(stdoutUnit,*) 'Restore ice: iCell, thickness =', iCell, thickness(iCell)
@@ -673,8 +703,20 @@ module li_calving
 
                   restoreThickness(iCell) = restoreThicknessMin - thickness(iCell)
                   thickness(iCell) = restoreThicknessMin
-                  !WHL TODO - Restore the temperature profile also?
- 
+
+                  ! Initial a linear temperature profile in the column
+                  ! Note: Energy is not conserved.
+
+                  call li_init_linear_temperature_in_column(&
+                       nVertLevels,                   &
+                       layerCenterSigma,              &
+                       thickness(iCell),              &
+                       surfaceAirTemperature(iCell),  &
+                       temperature(:,iCell),          &
+                       waterfrac(:,iCell),            &
+                       surfaceTemperature(iCell),     &
+                       basalTemperature(iCell))
+
                elseif (.not.li_mask_is_initial_ice(cellMask(iCell)) .and. thickness(iCell) > 0.0_RKIND) then
 
                   ! This cell was initially ice-free but now has ice.
