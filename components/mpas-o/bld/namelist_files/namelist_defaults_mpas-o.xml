@@ -200,13 +200,14 @@
 
 <!-- frazil_ice -->
 <config_use_frazil_ice_formation>.true.</config_use_frazil_ice_formation>
-<config_frazil_heat_of_fusion>3.3337e5</config_frazil_heat_of_fusion>
+<config_frazil_heat_of_fusion>3.337e5</config_frazil_heat_of_fusion>
 <config_frazil_sea_ice_density>0.917e3</config_frazil_sea_ice_density>
 <config_frazil_fractional_thickness_limit>0.1</config_frazil_fractional_thickness_limit>
 <config_specific_heat_sea_water>3.996e3</config_specific_heat_sea_water>
 <config_frazil_maximum_depth>100.0</config_frazil_maximum_depth>
 <config_frazil_ice_reference_salinity>4.0</config_frazil_ice_reference_salinity>
 <config_frazil_maximum_freezing_temperature>0.0</config_frazil_maximum_freezing_temperature>
+<config_frazil_use_surface_pressure>.false.</config_frazil_use_surface_pressure>
 
 <!-- land_ice_fluxes -->
 <config_land_ice_flux_mode>'off'</config_land_ice_flux_mode>

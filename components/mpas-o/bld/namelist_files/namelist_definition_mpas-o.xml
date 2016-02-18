@@ -1210,6 +1210,14 @@ Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_frazil_use_surface_pressure" type="logical"
+	category="frazil_ice" group="frazil_ice">
+Flag that controls if frazil formation will exert a surface pressure as it is formed.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- land_ice_fluxes -->
 
@@ -1869,7 +1877,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_rx1_inner_iteration_weight" type="real"
 	category="constrain_Haney_number" group="constrain_Haney_number">
-During inner iteration, layers with rx1 > rx1Max are thickened toward a target thickness by this fraction.  A smaller weights will result in less layer thickening but will require more inner iterations to converge.
+During inner iteration, layers with rx1 greater than rx1Max are thickened toward a target thickness by this fraction.  A smaller weights will result in less layer thickening but will require more inner iterations to converge.
 
 Valid values: a positive value less than or equal to 1
 Default: Defined in namelist_defaults.xml

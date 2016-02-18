@@ -118,7 +118,7 @@ Default: Defined in namelist_defaults.xml
 	category="calving" group="calving">
 Selection of the method for calving ice.
 
-Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold'
+Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold' 
 Default: Defined in namelist_defaults.xml
 </entry>
 
