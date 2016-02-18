@@ -536,6 +536,10 @@ contains
 
        logical :: isOcean
 
+       integer, dimension(:), pointer :: scratchMaxLevelCell
+       type (field1DInteger), pointer :: scratchMaxLevelCellField
+
+
        iErr = 0
 
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_method', config_global_ocean_topography_method)
@@ -543,6 +547,11 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_smooth_topography', config_global_ocean_smooth_topography)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_has_ocean_frac', &
                                  config_global_ocean_topography_has_ocean_frac)
+
+       call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
+       call mpas_pool_get_field(scratchPool, 'scratchMaxLevelCell', scratchMaxLevelCellField)
+       call mpas_allocate_scratch_field(scratchMaxLevelCellField, .false.)
+
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
@@ -559,6 +568,7 @@ contains
           call mpas_pool_get_array(meshPool, 'oceanFracObserved', oceanFracObserved)
           call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+
 
           do k = 1, nVertLevels
              if (refBottomDepth(k).gt.config_global_ocean_minimum_depth) then
@@ -636,6 +646,7 @@ contains
              end if
           end do
 
+
           ! Smooth depth levels. Enforce different in maxLevelCell to only be a maximum
           ! of 1 vertical level between two neighboring cells.
           if (config_global_ocean_smooth_topography) then
@@ -680,6 +691,7 @@ contains
        do while(associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
           call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
@@ -687,11 +699,15 @@ contains
 
           call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
           call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
+          call mpas_pool_get_array(scratchPool, 'scratchMaxLevelCell', scratchMaxLevelCell)
 
           ! Compute refLayerThickness and refZMid
           call ocn_compute_layerThickness_zMid_from_bottomDepth(refLayerThickness,refZMid, &
                refBottomDepth,refBottomDepth(nVertLevels), &
                nVertLevels,nVertLevels,iErr)
+
+          ! save maxLevelCell from topo to use in reading/smoothing tracers
+          scratchMaxLevelCell(:) = maxLevelCell(:)
 
           block_ptr => block_ptr % next
        end do
@@ -1494,7 +1510,10 @@ contains
        real (kind=RKIND), dimension(:,:), pointer :: zMid
        type (mpas_pool_iterator_type) :: groupItr
        real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
-       integer :: outKMax, iTracer, nTracers
+       integer :: inKMax, outKMax, iTracer, nTracers
+
+       integer, dimension(:), pointer :: scratchMaxLevelCell
+       type (field1DInteger), pointer :: scratchMaxLevelCellField
 
        iErr = 0
 
@@ -1601,42 +1620,45 @@ contains
 
                 call mpas_pool_get_array(scratchPool, 'smoothedTemperature', smoothedTemperature)
                 call mpas_pool_get_array(scratchPool, 'smoothedSalinity', smoothedSalinity)
+                call mpas_pool_get_array(scratchPool, 'scratchMaxLevelCell', scratchMaxLevelCell)
 
                 maxLevelCell(nCells+1) = -1
 
                 do iCell = 1, nCells
-                   do k = 1, nVertLevels
+                   if(maxLevelCell(iCell) <= 0) cycle
+                   if(scratchMaxLevelCell(iCell) <= 0) cycle
+
+                   do k = 1, scratchMaxLevelCell(iCell)
                       if ( associated(activeTracers) ) then
-                         smoothedtemperature(k, iCell) = activeTracers(idxTemperature, k, iCell)
-                         smoothedsalinity(k, iCell) = activeTracers(idxSalinity, k, iCell)
+                         smoothedTemperature(k, iCell) = activeTracers(idxTemperature, k, iCell)
+                         smoothedSalinity(k, iCell) = activeTracers(idxSalinity, k, iCell)
                       end if
                       counter = 1
 
                       do j = 1, nEdgesOnCell(iCell)
                          coc = cellsOnCell(j, iCell)
                          ! check if coc not 0 (or nCells+1)?
-                         if (maxLevelCell(coc) > 0 ) then
+                         if (k > scratchMaxLevelCell(coc)) cycle
 
-                            if ( associated(activeTracers) ) then
-                               smoothedtemperature(k, iCell) = smoothedtemperature(k, iCell) &
-                                                             + activeTracers (idxTemperature, k, coc)
-                               smoothedsalinity(k, iCell) = smoothedsalinity(k, iCell) + activeTracers(idxSalinity, k, coc)
-                            end if
-                            counter = counter + 1
+                         if (.not. associated(activeTracers) ) cycle
 
-                         end if
+                         smoothedTemperature(k, iCell) = smoothedTemperature(k, iCell) &
+                                                       + activeTracers (idxTemperature, k, coc)
+                         smoothedSalinity(k, iCell) = smoothedSalinity(k, iCell) + activeTracers(idxSalinity, k, coc)
+                         counter = counter + 1
+
                       end do ! edgesOnCell
 
-                      smoothedtemperature(k, iCell) = smoothedtemperature(k, iCell) / counter
-                      smoothedsalinity(k, iCell) = smoothedsalinity(k, iCell) / counter
+                      smoothedTemperature(k, iCell) = smoothedTemperature(k, iCell) / counter
+                      smoothedSalinity(k, iCell) = smoothedSalinity(k, iCell) / counter
 
                    end do ! k level
 
                 end do ! iCell
 
                 if ( associated(activeTracers) ) then
-                   activeTracers(idxTemperature, :, :) = smoothedtemperature(:,:)
-                   activeTracers(idxSalinity, :, :) = smoothedsalinity(:,:)
+                   activeTracers(idxTemperature, :, :) = smoothedTemperature(:,:)
+                   activeTracers(idxSalinity, :, :) = smoothedSalinity(:,:)
                 end if
 
                 block_ptr => block_ptr % next
@@ -1668,6 +1690,7 @@ contains
           call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
           call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
           call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
           call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -1675,6 +1698,7 @@ contains
           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
           call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
           call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
+          call mpas_pool_get_array(scratchPool, 'scratchMaxLevelCell', scratchMaxLevelCell)
 
           allocate(inTracerColumn(nVertLevels),outTracerColumn(nVertLevels))
 
@@ -1691,12 +1715,14 @@ contains
                 outKMax = maxLevelCell(iCell)
                 if(outKMax < 1) cycle ! nothing to interpolate
 
+                inKMax = scratchMaxLevelCell(iCell)
+
                 do iTracer = 1, nTracers
                    inTracerColumn(:) = tracersGroup(iTracer,:,iCell)
                    outTracerColumn(:) = 9.969209968386869e+36_RKIND
-                   call ocn_init_interpolation_linear_vert(refZMid, &
-                                                           inTracerColumn, &
-                                                           nVertLevels, &
+                   call ocn_init_interpolation_linear_vert(refZMid(1:inKMax), &
+                                                           inTracerColumn(1:inKMax), &
+                                                           inKMax, &
                                                            zMid(1:outKMax,iCell), &
                                                            outTracerColumn(1:outKMax), &
                                                            outKMax, &
@@ -1710,6 +1736,9 @@ contains
 
           block_ptr => block_ptr % next
        end do
+
+       call mpas_pool_get_field(scratchPool, 'scratchMaxLevelCell', scratchMaxLevelCellField)
+       call mpas_deallocate_scratch_field(scratchMaxLevelCellField, .false.)
 
     end subroutine ocn_init_setup_global_ocean_interpolate_tracers!}}}
 
