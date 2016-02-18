@@ -520,17 +520,15 @@ module li_time_integration_fe
       type (mpas_pool_type), pointer :: scratchPool
 
       type (field1DReal), pointer :: thicknessField
-
-      type (field2DReal), pointer :: layerThicknessField
       type (field2DReal), pointer :: layerThicknessEdgeField
       type (field2DReal), pointer :: temperatureField
       type (field2DReal), pointer :: waterfracField
       type (field2DReal), pointer :: enthalpyField
 
+      real (kind=RKIND), dimension(:), pointer :: thicknessOld
+      real (kind=RKIND), dimension(:), pointer :: thicknessNew
       real (kind=RKIND), dimension(:), pointer :: thickness
 
-      real (kind=RKIND), dimension(:,:), pointer :: layerThicknessOld
-      real (kind=RKIND), dimension(:,:), pointer :: layerThicknessNew
       real (kind=RKIND), dimension(:,:), pointer :: temperature
       real (kind=RKIND), dimension(:,:), pointer :: waterfrac
       real (kind=RKIND), dimension(:,:), pointer :: enthalpy
@@ -559,13 +557,13 @@ module li_time_integration_fe
       ! Note: The layer thickness and tracers must be up to date in halos before calling the advection subroutines.
       !       Currently, layerThicknessEdge is updated at the end of subroutine li_calculate_diagnostic_vars.
       !       The thermal tracers (temperature, waterfrac, enthalpy) are updated at the end of li_thermal_solver.
-      !       But layerThickness (which is used by subroutine li_advection_thickness_tracers) needs an update here.
+      !       But thickness (which is used by subroutine li_advection_thickness_tracers) needs an update here.
       !        We use timeLevel=2 to get the value from the previous timestep.
 
       call mpas_timer_start("halo updates")
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
-      call mpas_pool_get_field(geometryPool, 'layerThickness', layerThicknessField, timeLevel=2)
-      call mpas_dmpar_exch_halo_field(layerThicknessField)
+      call mpas_pool_get_field(geometryPool, 'thickness', thicknessField, timeLevel=2)
+      call mpas_dmpar_exch_halo_field(thicknessField)
       call mpas_timer_stop("halo updates")
 
       ! ===
@@ -583,8 +581,8 @@ module li_time_integration_fe
 
          ! Note: The old and new layer thickness are input and output arguments, respectively, for the main advection subroutines
          ! TODO - Use only one time level for the ice geometry, and simply fetch the current layerThickness?
-         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessOld, timeLevel=2)
-         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessNew, timeLevel=1)
+         call mpas_pool_get_array(geometryPool, 'thickness', thicknessOld, timeLevel=2)  ! timeLevel 2 is from the previous time step
+         call mpas_pool_get_array(geometryPool, 'thickness', thicknessNew, timeLevel=1)
 
          if (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fo') then
 
@@ -601,8 +599,8 @@ module li_time_integration_fe
                  geometryPool,           &
                  thermalPool,            &
                  scratchPool,            &
-                 layerThicknessOld,      &
-                 layerThicknessNew,      &
+                 thicknessOld,           &
+                 thicknessNew,           &
                  err_tmp)
 
          elseif (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'none') then
@@ -618,8 +616,8 @@ module li_time_integration_fe
                  geometryPool,           &
                  thermalPool,            &
                  scratchPool,            &
-                 layerThicknessOld,      &
-                 layerThicknessNew,      &
+                 thicknessOld,           &
+                 thicknessNew,           &
                  err_tmp,                &
                  advectTracersIn = .false.)
 
@@ -676,8 +674,6 @@ module li_time_integration_fe
 
       ! thickness, layerThickness
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
-      call mpas_pool_get_field(geometryPool, 'layerThickness', layerThicknessField, timeLevel=1)
-      call mpas_dmpar_exch_halo_field(layerThicknessField)
       call mpas_pool_get_field(geometryPool, 'thickness', thicknessField)
       call mpas_dmpar_exch_halo_field(thicknessField)
 

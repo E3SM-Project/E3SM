@@ -74,10 +74,12 @@ module li_advection
         geometryPool,           &
         thermalPool,            &
         scratchPool,            &
-        layerThicknessOld,      &
-        layerThicknessNew,      &
+        thicknessOld,           &
+        thicknessNew,           &
         err,                    &
         advectTracersIn)
+
+     use li_diagnostic_vars, only: li_calculate_layerThickness
 
       !-----------------------------------------------------------------
       !
@@ -91,8 +93,8 @@ module li_advection
       type (mpas_pool_type), intent(in) :: &
            meshPool               !< Input: mesh information
 
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-           layerThicknessOld      !< Input: old layer thickness
+      real (kind=RKIND), dimension(:), intent(in) :: &
+           thicknessOld             !< Input: old thickness
 
       logical, intent(in), optional :: &
            advectTracersIn        !< Input: if true, then advect tracers as well as thickness
@@ -123,8 +125,8 @@ module li_advection
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:,:), intent(out) :: &
-           layerThicknessNew      !< Input: new layer thickness
+      real (kind=RKIND), dimension(:), intent(out) :: &
+           thicknessNew           !< Output: new layer thickness
 
       integer, intent(out) :: &
            err                    !< Output: error flag
@@ -138,7 +140,6 @@ module li_advection
       integer, pointer :: nVertLevels
 
       real (kind=RKIND), dimension(:), pointer :: &
-           thickness,             & ! ice thickness
            sfcMassBal,            & ! surface mass balance
            basalMassBal,          & ! basal mass balance
            groundedBasalMassBal,  & ! basal mass balance for grounded ice
@@ -151,6 +152,8 @@ module li_advection
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            layerNormalVelocity,   & ! normal component of velocity on cell edges at layer midpoints
+           layerThicknessOld,     & ! old thickness of each layer
+           layerThicknessNew,     & ! new thickness of each layer
            layerThicknessEdge       ! layer thickness on upstream edge of cell
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
@@ -220,7 +223,8 @@ module li_advection
       call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
       call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
       call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
-      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessOld, timeLevel=1)
+      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThicknessNew, timeLevel=2)
       call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
@@ -255,6 +259,9 @@ module li_advection
       call mpas_pool_get_field(scratchPool, 'workTracerLevelCell2', advectedTracersNewField)
       call mpas_allocate_scratch_field(advectedTracersNewField, .true.)
       advectedTracersNew => advectedTracersNewField % array
+
+      ! given the old thickness, compute the thickness in each layer
+      call li_calculate_layerThickness(meshPool, thicknessOld, layerThicknessOld)
 
       !-----------------------------------------------------------------
       ! Horizontal transport of thickness and tracers
@@ -377,8 +384,10 @@ module li_advection
          layerThicknessNew(nVertLevels,:) = layerThicknessNew(nVertLevels,:) + (basalMassBal/config_ice_density)*dt
 
          ! Update the thickness and cellMask before the vertical remap calculation
+         ! Note: The thickness field (rather than layerThickness) is the primary prognostic,
+         !       which should be returned from each subroutine that alters the thickness.
 
-         thickness = sum(LayerThicknessNew, 1)
+         thicknessNew = sum(LayerThicknessNew, 1)
 
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          
@@ -386,7 +395,7 @@ module li_advection
          ! Note: If tracers are not being advected, then this subroutine simply restores the
          !       layer thickness to sigma coordinate values.
 
-         call vertical_remap(thickness, cellMask, meshPool, layerThicknessNew, advectedTracersNew, err_tmp)
+         call vertical_remap(thicknessNew, cellMask, meshPool, layerThicknessNew, advectedTracersNew, err_tmp)
          err = ior(err, err_tmp)
 
          if (advectTracers) then
