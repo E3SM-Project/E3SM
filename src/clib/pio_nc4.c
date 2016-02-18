@@ -189,9 +189,7 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
     }
 
     /* Check the netCDF return code, and broadcast it to all tasks. */
-    printf("about to check_netcdf ierr = %d errstr = %s\n", ierr, errstr);
     ierr = check_netcdf(file, ierr, errstr, __LINE__);
-    printf("after check_netcdf ierr = %d errstr = %s\n", ierr, errstr);
 
     /* Free the error string if it was allocated. */
     if (errstr != NULL)

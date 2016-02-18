@@ -166,10 +166,13 @@ Program pio_unit_test_driver
 
            if (master_task) write(*,"(3x,A,1x)", advance="no") "testing PIO_enddef..."
            call test_enddef(test_id, err_msg)
+           print *, 'err_msg =', err_msg, ' fail_cnt = ', fail_cnt
            call parse(err_msg, fail_cnt)
 
            if (master_task) write(*,"(3x,A,1x)", advance="no") "testing PIO netCDF-4 functions..."
+           print *, 'err_msg =', err_msg, ' fail_cnt = ', fail_cnt
            call test_nc4(test_id, err_msg)
+           print *, 'err_msg =', err_msg, ' fail_cnt = ', fail_cnt
            call parse(err_msg, fail_cnt)
         end if
 

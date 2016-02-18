@@ -279,23 +279,28 @@ Contains
 
     integer :: shuffle
     integer :: deflate
-    integer :: deflate_level
+    integer :: my_deflate_level, deflate_level, deflate_level_2
+    integer :: storage
+    integer, dimension(1) :: chunksizes
 
     shuffle = 0
     deflate = 1
-    deflate_level = 4
+    deflate_level = 2
+    deflate_level_2 = 4
     err_msg = "no_error"
 
     dims(1) = 2*ntasks
     compdof = 2*my_rank+(/1,2/)  ! Where in the global array each task writes
     data_to_write = 1+my_rank
 
+    print*, ''
     call PIO_initdecomp(pio_iosystem, PIO_int, dims, compdof, iodesc_nCells)
 
     filename = fnames(test_id)
     iotype   = iotypes(test_id)
 
     ! Open existing file, write data to it
+    print*, 'PIO_openfile ', filename
     ret_val = PIO_openfile(pio_iosystem, pio_file, iotype, filename, PIO_write)
     if (ret_val .ne. PIO_NOERR) then
        ! Error in PIO_openfile
@@ -304,6 +309,7 @@ Contains
     end if
 
     ! Enter define mode
+    print*, 'PIO_redef'
     ret_val = PIO_redef(pio_file)
     if (ret_val .ne. PIO_NOERR) then
        ! Error in PIO_redef
@@ -313,6 +319,7 @@ Contains
     end if
 
     ! Define a new dimension M1.
+    print*, 'PIO_def_dim'
     ret_val = PIO_def_dim(pio_file, 'M111222', int(2*ntasks,pio_offset_kind), pio_dim)
     if (ret_val .ne. PIO_NOERR) then
        err_msg = "Could not define dimension M111222"
@@ -321,6 +328,7 @@ Contains
     end if
 
     ! Define a new variable
+    print*, ''
     ret_val = PIO_def_var(pio_file, 'foo2222', PIO_int, (/pio_dim/), pio_var)
     if (ret_val .ne. PIO_NOERR) then
        err_msg = "Could not define variable foo2222"
@@ -329,6 +337,7 @@ Contains
     end if
 
     ! Try to turn on compression for this variable.
+    print*, 'PIO_def_var_deflate'
     ret_val = PIO_def_var_deflate(pio_file, pio_var, shuffle, deflate, &
          deflate_level)
 
@@ -351,6 +360,31 @@ Contains
        return
     end if
 
+    ! Try to set chunksizes for this variable.
+    ! storage = 0
+    ! chunksizes(1) = 42
+    ! ret_val = PIO_def_var_chunking(pio_file, pio_var, storage, chunksizes)
+
+    ! ! Should not have worked except for netCDF-4/HDF5 serial and netCDF-4/HDF5 parallel.
+    ! if (iotype .eq. PIO_iotype_netcdf4c .and. ret_val .ne. PIO_NOERR) then
+    !    err_msg = "Could not set chunksizes for variable foo2222 in netCDF-4 serial file"
+    !    call PIO_closefile(pio_file)
+    !    return
+    ! else if (iotype .eq. PIO_iotype_pnetcdf .and. ret_val .eq. PIO_NOERR) then
+    !    err_msg = "Did not get expected error when trying to set chunksizes for pnetcdf file"
+    !    call PIO_closefile(pio_file)
+    !    return
+    ! else if (iotype .eq. PIO_iotype_netcdf .and. ret_val .eq. PIO_NOERR) then
+    !    err_msg = "Did not get expected error when trying to set chunksizes for netcdf classic file"
+    !    call PIO_closefile(pio_file)
+    !    return
+    ! else if (iotype .eq. PIO_iotype_netcdf4p .and. ret_val .ne. PIO_NOERR) then
+    !    err_msg = "Could not set chunksizes for variable foo2222 in netCDF-4 parallel file"
+    !    call PIO_closefile(pio_file)
+    !    return
+    ! end if
+
+    print*, 'PIO_put_att'
     ret_val = PIO_put_att(pio_file, pio_var, "max_val", ntasks)
     if (ret_val .ne. PIO_NOERR) then
        ! Error in PIO_put_att
@@ -359,6 +393,7 @@ Contains
        return
     end if
 
+    print*, 'PIO_put_att'
     ret_val = PIO_put_att(pio_file, PIO_global, "created_by", "PIO unit tests")
     if (ret_val .ne. PIO_NOERR) then
        ! Error in PIO_put_att
@@ -367,15 +402,9 @@ Contains
        return
     end if
 
-    ! Leave define mode
-    ret_val = PIO_enddef(pio_file)
-    if (ret_val .ne. PIO_NOERR) then
-       err_msg = "Could not end define mode"
-       return
-    end if
-
     ! Check the compression settings of the variables.
-    ret_val = PIO_inq_var_deflate(pio_file, pio_var, shuffle, deflate, deflate_level)
+    print*, 'PIO_inq_var_deflate'
+    ret_val = PIO_inq_var_deflate(pio_file, pio_var, shuffle, deflate, my_deflate_level)
 
     ! Should not have worked except for netCDF-4/HDF5 serial.
     if (iotype .eq. PIO_iotype_netcdf4c) then
@@ -384,7 +413,74 @@ Contains
           call PIO_closefile(pio_file)
           return
        else
-          if (shuffle .ne. 0 .or. deflate .ne. 1 .or. deflate_level .ne. 4) then
+          if (shuffle .ne. 0 .or. deflate .ne. 1 .or. my_deflate_level .ne. deflate_level) then
+             err_msg = "Wrong values for deflate and shuffle for serial netcdf-4 file"
+             call PIO_closefile(pio_file)
+             return
+          end if
+       end if
+    else if ((iotype .eq. PIO_iotype_pnetcdf .or. iotype .eq. PIO_iotype_netcdf) .and. ret_val .eq. PIO_NOERR) then
+       err_msg = "Did not get expected error when trying to check deflate for non-netcdf-4 file"
+       call PIO_closefile(pio_file)
+       return
+    else if (iotype .eq. PIO_iotype_netcdf4p) then
+       if (ret_val .ne. PIO_NOERR) then
+          err_msg = "Got error trying to inquire about deflate on for parallel netcdf-4 file"
+          call PIO_closefile(pio_file)
+          return
+       else
+          if (shuffle .ne. 0 .or. deflate .ne. 0) then
+             err_msg = "Wrong values for deflate and shuffle for parallel netcdf-4 file"
+             call PIO_closefile(pio_file)
+             return
+          end if
+       end if
+    end if
+
+    ! Try to turn on compression for this variable.
+    print*, 'PIO_def_var_deflate'
+    ret_val = PIO_def_var_deflate(pio_file, pio_var%varid, shuffle, deflate, &
+         deflate_level_2)
+
+    ! Should not have worked except for netCDF-4/HDF5 serial.
+    if (iotype .eq. PIO_iotype_netcdf4c .and. ret_val .ne. PIO_NOERR) then
+       err_msg = "Could not turn on compression for variable foo2222 second time"
+       call PIO_closefile(pio_file)
+       return
+    else if (iotype .eq. PIO_iotype_pnetcdf .and. ret_val .eq. PIO_NOERR) then
+       err_msg = "Did not get expected error when trying to turn deflate on for pnetcdf file"
+       call PIO_closefile(pio_file)
+       return
+    else if (iotype .eq. PIO_iotype_netcdf .and. ret_val .eq. PIO_NOERR) then
+       err_msg = "Did not get expected error when trying to turn deflate on for netcdf classic file"
+       call PIO_closefile(pio_file)
+       return
+    else if (iotype .eq. PIO_iotype_netcdf4p .and. ret_val .eq. PIO_NOERR) then
+       err_msg = "Did not get expected error when trying to turn deflate on for parallel netcdf-4 file"
+       call PIO_closefile(pio_file)
+       return
+    end if
+
+    ! Leave define mode
+    print*, 'PIO_enddef'
+    ret_val = PIO_enddef(pio_file)
+    if (ret_val .ne. PIO_NOERR) then
+       err_msg = "Could not end define mode"
+       return
+    end if
+
+    ! Check the compression settings of the variables.
+    print*, 'PIO_inq_var_deflate'
+    ret_val = PIO_inq_var_deflate(pio_file, pio_var%varid, shuffle, deflate, my_deflate_level)
+
+    ! Should not have worked except for netCDF-4/HDF5 serial and netcdf-4/HDF5 parallel.
+    if (iotype .eq. PIO_iotype_netcdf4c) then
+       if (ret_val .ne. PIO_NOERR) then
+          err_msg = "Got error trying to inquire about deflate on for serial netcdf-4 file"
+          call PIO_closefile(pio_file)
+          return
+       else
+          if (shuffle .ne. 0 .or. deflate .ne. 1 .or. my_deflate_level .ne. deflate_level_2) then
              err_msg = "Wrong values for deflate and shuffle for serial netcdf-4 file"
              call PIO_closefile(pio_file)
              return
@@ -409,6 +505,7 @@ Contains
     end if
 
     ! Write foo2
+    print*, 'PIO_write_darray'
     call PIO_write_darray(pio_file, pio_var, iodesc_nCells, data_to_write, ret_val)
     if (ret_val .ne. PIO_NOERR) then
        err_msg = "Could not write data"
@@ -416,6 +513,7 @@ Contains
     end if
 
     ! Close file
+    print*, ' PIO_closefile'
     call PIO_closefile(pio_file)
 
     ! Free decomp
