@@ -35,6 +35,11 @@ module mo_gas_phase_chemdr
   character(len=fieldname_len),dimension(extcnt)        :: extfrc_name
   logical :: convproc_do_aer 
 
+!-----------Added by MS for diurnal oxidants-----------------------------
+  logical :: inv_o3, inv_oh, inv_no3, inv_ho2
+  integer :: id_o3, id_oh, id_no3, id_ho2
+!------------------------------------------------------------------------
+
 contains
 
   subroutine gas_phase_chemdr_inti(chem_name)
@@ -74,6 +79,26 @@ contains
     hno3_ndx = get_spc_ndx('HNO3')
     dst_ndx = get_spc_ndx( dust_names(1) )
     synoz_ndx = get_extfrc_ndx( 'SYNOZ' )
+
+!-------------Added by MS for diurnal oxidants--------------------------
+    inv_o3   = get_inv_ndx('O3') > 0
+    inv_oh   = get_inv_ndx('OH') > 0
+    inv_no3  = get_inv_ndx('NO3') > 0
+    inv_ho2  = get_inv_ndx('HO2') > 0
+    if (inv_o3) then
+       id_o3 = get_inv_ndx('O3')
+    endif
+    if (inv_oh) then
+       id_oh = get_inv_ndx('OH')
+    endif
+    if (inv_no3) then
+       id_no3 = get_inv_ndx('NO3')
+    endif
+    if (inv_ho2) then
+       id_ho2 = get_inv_ndx('HO2')
+    endif
+!------------------------------------------------------------------------------
+
     call cnst_get_ind( 'CLDICE', cldice_ndx )
 
     do m = 1,extcnt
@@ -375,6 +400,8 @@ contains
     real(r8) :: qh2o(pcols,pver)               ! specific humidity (kg/kg)
     real(r8) :: delta
 
+    real(r8) :: dicorfac_hox(ncol), dicorfac_no3(ncol)
+
   ! for aerosol formation....  
     real(r8) :: del_h2so4_gasprod(ncol,pver)
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
@@ -472,6 +499,25 @@ contains
     !        ... Set the "invariants"
     !-----------------------------------------------------------------------  
     call setinv( invariants, tfld, h2ovmr, vmr, pmid, ncol, lchnk, pbuf )
+
+!-----------Added by MS for diurnal oxidant profile-----------------------------------------------
+!   call dicor_hox_no3( delt, calday, rlats, rlons, ncol, dicorfac_hox, dicorfac_no3)
+
+!   do i = 1, ncol
+!     if ( inv_o3 ) then
+!         invariants(i,:,id_o3)  = invariants(i,:,id_o3) * dicorfac_hox(i)
+!     end if
+!     if ( inv_oh ) then
+!         invariants(i,:,id_oh)  = invariants(i,:,id_oh) * dicorfac_hox(i)
+!     end if
+!     if ( inv_no3 ) then
+!         invariants(i,:,id_no3) = invariants(i,:,id_no3) * dicorfac_no3(i)
+!     end if
+!     if ( inv_ho2 ) then
+!         invariants(i,:,id_ho2) = invariants(i,:,id_ho2) * dicorfac_hox(i)
+!     end if
+!   enddo
+!----------------------------------------------------------------------------------------------------
 
     !-----------------------------------------------------------------------      
     !        ... interpolate SAGEII data for surface area
@@ -941,5 +987,210 @@ contains
     call t_stopf('chemdr_diags')
 
   end subroutine gas_phase_chemdr
+
+!-----------------------------------------------------------------------------
+!
+! ROUTINE
+!   Scale_HOx_NO3
+!
+! CODE DEVELOPER
+!   Xiaohong Liu
+!
+! DESCRIPTION
+!   This routine computes the scaling factor for HOx-NO3 based on
+!
+!   OH(instantaneous) = OH(max) * cos(theta)
+!
+!   where cos(theta) is cosine of solar zenith angle.
+!
+!   thus, OH(monthly_ave) * 24 (hr) = OH(max) * Sum (cos(theta) * dt)
+!                               ( t (time in hr) = triz -> tset, dt: timestep)
+!
+!   OH(max) = OH(monthly_ave) * 24 (hr) / (Sum (cos(theta) * dt) )
+!
+!   so, hox_scaler = 24 / (Sum (cos(theta) * dt) ) * cos(theta)
+!
+!   and, computes the scaling factor for NO3 assuming NO3 even distributed
+!        over night.
+!   so, no3_scaler = 24 / (24-(tset-triz))
+!
+!-----------------------------------------------------------------------------
+
+     subroutine dicor_hox_no3(dt, calday, clat, clon, ncol, hox_scaler,no3_scaler)
+
+      use shr_kind_mod,    only : r8 => shr_kind_r8
+      use time_manager,    only : get_curr_date
+      use orbit,             only : zenith
+
+      implicit none
+
+      integer, intent(in) :: ncol                 ! number of positions
+      real(r8), intent(in) :: dt                    ! model time step (s)
+      real(r8), intent(in) :: calday                ! Calendar day, including fraction
+      real(r8), intent(in) :: clat(ncol)          ! Current centered latitude (radians)
+      real(r8), intent(in) :: clon(ncol)          ! Centered longitude (radians)
+
+      real(r8), intent(out) :: hox_scaler(ncol)
+      real(r8), intent(out) :: no3_scaler(ncol)
+
+      !---------------------------Local variables-----------------------------
+
+      real(r8) tloc, tutc
+      real(r8) days_utc
+      real(r8) doy_utc, tod
+      integer  yr, mon, day, ncsec
+      real(r8) csza(ncol)
+      real(r8) latdeg(ncol)
+      real(r8) triz(ncol), tset(ncol)
+      real(r8) tot_cossza(ncol)
+      integer ic, nt, it
+
+
+      !-----------------------------------------------------------------------
+      !
+
+      doy_utc = aint( calday )
+      tod = calday - doy_utc
+
+      csza(:) = 0.0_r8
+
+      call get_curr_date( yr, mon, day, ncsec )
+
+!     Calculate the sun rize and sun set time (local time: hr)
+
+      do ic=1,ncol
+
+        latdeg(ic) = clat(ic) * 57.307_r8
+
+        call SunRizSet(mon, day, latdeg(ic), triz(ic), tset(ic))
+
+      end do
+
+      nt = nint( 86400.0/dt )
+      tot_cossza(:) = 0.0_r8
+
+      do it = 1, nt
+
+        tutc = (it-0.5) * 24.0_r8/nt      ! hr
+        days_utc = doy_utc + tutc / 24.0_r8
+
+        call zenith( days_utc, clat, clon, csza, ncol )
+
+        do ic=1,ncol
+          if(tutc > triz(ic) .and. tutc < tset(ic)) then
+            tot_cossza(ic) = tot_cossza(ic) + csza(ic) * 24.0_r8/nt
+          end if
+        end do
+
+      end do
+
+      call zenith( calday, clat, clon, csza, ncol )
+
+      do ic=1,ncol
+
+          tloc = tod*24.0_r8 + clon(ic)* 57.307_r8 / 360.0_r8 * 24.0_r8
+          if(tloc > 24.0_r8) tloc = tloc - 24.0_r8
+
+          if(tloc > triz(ic) .and. tloc < tset(ic)) then
+            hox_scaler(ic) = 24.0_r8 /tot_cossza(ic) * csza(ic)
+          else
+            hox_scaler(ic) = 1.0e-5_r8
+          end if
+
+          if(tloc < triz(ic) .or. tloc > tset(ic)) then
+            no3_scaler(ic) = 24.0_r8 /(24.0_r8 - (tset(ic) - triz(ic)))
+          else
+            no3_scaler(ic) = 1.0e-5_r8
+          end if
+       end do
+
+   end subroutine dicor_hox_no3
+
+!LL Subroutine: SunRizSet.f--------------------------------------------
+!LL Purpose: Compute the local time of sunrise and sunset given
+!LL          latitude and date.
+!LL
+!LL Author: Wenwei Pan
+!LL         Center for Meteorology and Oceanography
+!LL         Center for Global Change Science
+!LL         Department of Earth, Atmospheric and Planetary Sciences
+!LL
+!LL Version: 1.0
+!LL Date: April 3, 1997
+!LL
+!LL Tested under compiler: f77 V4.0
+!LL Tested under OS version: SunOS 5.5.1 Generic sun4u sparc SUNW,Ultra-1
+!LL
+!LL Code modification history:
+!LL Version Date
+!LL---------------------------------------------------------------------
+
+      subroutine SunRizSet(month,iday,rlat,triz,tset)
+
+      implicit none
+
+! Input variables.
+      integer     &
+           month, &
+           iday
+      real*8 ::   &
+           rlat           !Latitude in degrees.
+
+! Output variables.
+      real*8 :: triz,tset      !local time of sunrise and sunset(hr)
+
+! Local variables.
+      real*8 ::   &
+           fac,   &
+           Pi,    &
+           x,     &
+           xlat,  &        !Latitude in radians.
+           phi,cosphi,sinphi, &
+           tphi,costph,sintph,&
+           ttphi,costtp,sinttp, &
+           delta,     &    !Solar inclination angle in radians.
+           h              !Hour angle at sunrise and sunset in radians.
+
+!*----------------------------------------------------------------------
+
+      FAC = .01745d0
+      PI = 3.1415926d0
+      X = FLOAT((MONTH-1)*30+IDAY+MONTH/2)
+      XLAT = RLAT*FAC
+      PHI = 2.0d0*3.14159d0*X/365.0d0
+      TPHI = PHI*2.0d0
+      TTPHI = PHI*3.0d0
+      COSPHI = COS(PHI)
+      SINPHI = SIN(PHI)
+      COSTPH = COS(TPHI)
+      SINTPH = SIN(TPHI)
+      COSTTP = COS(TTPHI)
+      SINTTP = SIN(TTPHI)
+      DELTA = .006918d0 - 0.399912d0*COSPHI + 0.070257d0*SINPHI -      &
+        0.006758d0*COSTPH + 0.000907d0*SINTPH - 0.002697d0*COSTTP +    &
+        0.00148d0*SINTTP
+      IF(DELTA.GE.0.0d0)THEN                   !SUMMER
+         IF(XLAT.GE.(PI/2.0d0-DELTA))THEN      !NO SUNSET
+            H=PI
+         ELSEIF(XLAT.LE.(DELTA-PI/2.0d0))THEN  !NO SUNRISE
+            H=0.0d0
+         ELSE
+            H=ACOS(-TAN(XLAT)*TAN(DELTA))
+         ENDIF
+      ELSE
+         IF(XLAT.GE.(PI/2.0d0+DELTA))THEN      !NO SUNRISE
+            H=0.0d0
+         ELSEIF(XLAT.LE.(-DELTA-PI/2.0d0))THEN !NO SUNSET
+            H=PI
+         ELSE
+            H=ACOS(-TAN(XLAT)*TAN(DELTA))
+         ENDIF
+      ENDIF
+      Triz=12.0d0*(-H+PI)/PI
+      Tset=12.0d0*(H+PI)/PI
+
+      end subroutine SunRizSet
+
+
 
 end module mo_gas_phase_chemdr

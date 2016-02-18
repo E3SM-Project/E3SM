@@ -739,6 +739,17 @@ CONTAINS
              test_name = 'HO2NO2'
           case( 'XNH4NO3' )
              test_name = 'HNO3'
+
+!         Added by Manish Shrivastava on 01/22/2016 to do wet deposition of SOA
+!         gas species
+!---------------------------------------------------------------------------------------------------------
+
+           case(  'SOAG0','SOAG15', 'SOAG24', &
+                  'SOAG31', 'SOAG32', &
+                  'SOAG33', 'SOAG34', 'SOAG35' )
+             test_name = 'CH3OOH'  ! this is just a place holder. values are explicitly set below
+!----------------------------------------------------------------------------------------------------
+
           case( 'COhc','COme')
                 test_name = 'CO'  ! this is just a place holder. values are set in drydep_fromlnd
           case( 'CO01','CO02','CO03','CO04','CO05','CO06','CO07','CO08','CO09','CO10' )

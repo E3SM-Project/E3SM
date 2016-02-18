@@ -689,6 +689,11 @@ add_default($nl, 'profile_single_file', 'val'=>'.true.');
 my $rain_evap_to_coarse_aero  = $cfg->get('rain_evap_to_coarse_aero'); #BSINGH - See if rain_evap_to_coarse_aero option is selected
 if ($print>=2) { print "Running model with rain_evap_to_coarse_aero (1-YES, 0-NO)?: $rain_evap_to_coarse_aero $eol"; }
 
+my $vbs  = $cfg->get('vbs'); #MS - See if vbs option is selected
+if ($print>=1) { print "Running model with vbs (1-YES, 0-NO)?: $vbs $eol"; }
+
+
+
 #-----------------------------------------------------------------------------------------------
 # Add defaults for the CAM component 
 
@@ -2501,8 +2506,9 @@ if ($chem eq 'trop_mam4' || $chem eq 'trop_mam4_resus' || $chem eq 'trop_mam4_re
 
     # Surface emission datasets:
     %species = ();
-    if ($chem eq 'trop_mam4_resus_soag') {
-	%species = ('DMS       -> ' => 'dms_emis_file',
+    if ($vbs == 0) {
+       if ($chem eq 'trop_mam4_resus_soag') {
+	   %species = ('DMS       -> ' => 'dms_emis_file',
 		    'SO2       -> ' => 'so2_emis_file',
 		    'bc_a4     -> ' => 'bc_a4_emis_file',
 		    'pom_a4    -> ' => 'pom_a4_emis_file',
@@ -2511,9 +2517,9 @@ if ($chem eq 'trop_mam4' || $chem eq 'trop_mam4_resus' || $chem eq 'trop_mam4_re
 		    'num_a1    -> ' => 'mam7_num_a1_emis_file',
 		    'num_a2    -> ' => 'num_a2_emis_file',
 		    'num_a4    -> ' => 'mam7_num_a3_emis_file',
-	    );
-    } else {
-	%species = ('DMS       -> ' => 'dms_emis_file',
+	        );
+       } else {
+	    %species = ('DMS       -> ' => 'dms_emis_file',
 		    'SO2       -> ' => 'so2_emis_file',
 		    'SOAG      -> ' => 'soag_emis_file',
 		    'bc_a4     -> ' => 'bc_a4_emis_file',
@@ -2525,6 +2531,22 @@ if ($chem eq 'trop_mam4' || $chem eq 'trop_mam4_resus' || $chem eq 'trop_mam4_re
 		    'num_a4    -> ' => 'mam7_num_a3_emis_file',
 	    );
     }
+else  {
+    %species = ('DMS       -> ' => 'dms_emis_file',
+                'SO2       -> ' => 'so2_emis_file',
+                'SOAG0     -> ' => 'soag0_emis_file',
+                'ISOP     -> '  => 'isop_emis_file',
+                'C10H16   -> '  => 'c10h16_emis_file',
+                'bc_a4     -> ' => 'bc_a4_emis_file',
+                'pom_a4    -> ' => 'pom_a4_emis_file',
+                'so4_a1    -> ' => 'so4_a1_emis_file',
+                'so4_a2    -> ' => 'so4_a2_emis_file',
+                'num_a1    -> ' => 'mam7_num_a1_emis_file',
+                'num_a2    -> ' => 'num_a2_emis_file',
+                'num_a4    -> ' => 'mam7_num_a3_emis_file',
+        );
+           }
+
     my %verhash = ('ver'=>'mam');
     my $first = 1;
     my $pre = "";
@@ -2546,6 +2568,7 @@ if ($chem eq 'trop_mam4' || $chem eq 'trop_mam4_resus' || $chem eq 'trop_mam4_re
 
     # Vertical emission datasets:
     %species = ();
+    if ($vbs == 0) {
     if ($chem eq 'trop_mam4_resus_soag') {
 	%species = ('SO2         -> ' => 'so2_ext_file',
 		    'SOAG        -> ' => 'soag_ext_file',
@@ -2566,6 +2589,18 @@ if ($chem eq 'trop_mam4' || $chem eq 'trop_mam4_resus' || $chem eq 'trop_mam4_re
 		    'num_a2      -> ' => 'num_a2_ext_file',
 		    'num_a4      -> ' => 'mam7_num_a3_ext_file', );
     }
+}
+ else  {
+    %species = ('SO2         -> ' => 'so2_ext_file',
+                'so4_a1      -> ' => 'so4_a1_ext_file',
+                'so4_a2      -> ' => 'so4_a2_ext_file',
+                'SOAG0       -> ' => 'soag0_ext_file',
+                'pom_a4      -> ' => 'pom_a4_ext_file',
+                'bc_a4       -> ' => 'bc_a4_ext_file',
+                'num_a1      -> ' => 'mam7_num_a1_ext_file',
+                'num_a2      -> ' => 'num_a2_ext_file',
+                'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+            }
     $first = 1;
     $pre = "";
     $val = "";

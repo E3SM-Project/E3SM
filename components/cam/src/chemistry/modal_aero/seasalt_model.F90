@@ -44,7 +44,7 @@ module seasalt_model
   character(len=6),parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
        (/ 'ncl_a1', 'ncl_a2', 'ncl_a4', 'ncl_a6', 'num_a1', 'num_a2', 'num_a4', 'num_a6' /)
   integer, parameter :: om_num_ind = 0
-#elif( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE )
+#elif( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_VBS)
   integer, parameter :: nslt_om = 0
   integer, parameter :: nnum_om = 0
   integer, parameter :: om_num_modes = 0
@@ -173,7 +173,7 @@ module seasalt_model
                 0.3e-6_r8, 0.08e-6_r8, 0.3e-6_r8, 0.08e-6_r8, &
                 0.3e-6_r8, 0.08e-6_r8, 0.3e-6_r8, 0.08e-6_r8  &
               /)
-#elif ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE )
+#elif ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_VBS )
     real(r8), parameter :: sst_sz_range_lo (nslt+nslt_om) = &
          (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8 /)  ! accu, aitken, coarse
     real(r8), parameter :: sst_sz_range_hi (nslt+nslt_om) = &
