@@ -874,14 +874,16 @@ contains
 
        call mpas_timer_start("Column update state")
        call cice_column_update_state(domain, "thermodynamics", config_dt, config_dt)
-
-       !-----------------------------------------------------------------
-       ! Separate snow and ice tracers for advection
-       !-----------------------------------------------------------------
-
-       if (config_use_zaerosols) &
-           call column_separate_snow_ice_aerosols(domain)
        call mpas_timer_stop("Column update state")
+
+       !-----------------------------------------------------------------
+       ! Separate aerosol snow and ice tracers for advection
+       !-----------------------------------------------------------------
+
+       call mpas_timer_start("Column separate snow/ice tracers")
+       if (config_use_zaerosols) &
+            call column_separate_snow_ice_aerosols(domain)
+       call mpas_timer_stop("Column separate snow/ice tracers")
 
     endif
 
@@ -921,18 +923,25 @@ contains
     if (config_use_column_package) then
     
        call MPAS_pool_get_config(domain % configs, "config_use_column_ridging", config_use_column_ridging)
-       call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)                
+       call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
 
        call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_solver", velocitySolver)
        call MPAS_pool_get_array(velocitySolver, "dynamicsTimeStep", dynamicsTimeStep)
+
+       !-----------------------------------------------------------------
+       ! Combine aerosol snow and ice tracers
+       !-----------------------------------------------------------------
+
+       call mpas_timer_start("Column combine snow/ice tracers")
+       if (config_use_zaerosols) & 
+            call column_combine_snow_ice_aerosols(domain)
+       call mpas_timer_stop("Column combine snow/ice tracers")
 
        !-----------------------------------------------------------------
        ! Ridging
        !-----------------------------------------------------------------
 
        call mpas_timer_start("Column ridging")
-       if (config_use_zaerosols) & 
-            call column_combine_snow_ice_aerosols(domain)
        if (config_use_column_ridging) &
             call column_ridging(domain)
        call mpas_timer_stop("Column ridging")
@@ -975,7 +984,7 @@ contains
 
     if (config_use_column_package) then
     
-       call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)      
+       call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
        
        !-----------------------------------------------------------------
        ! Shortwave radiation
@@ -10550,9 +10559,8 @@ contains
     block => domain % blocklist
     do while (associated(block))
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
-
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
@@ -10636,9 +10644,8 @@ contains
     block => domain % blocklist
     do while (associated(block))
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
-
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
