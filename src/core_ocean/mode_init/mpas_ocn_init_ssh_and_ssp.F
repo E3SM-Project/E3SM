@@ -276,7 +276,7 @@ contains
            end where
          end if
          if(config_iterative_init_variable == 'ssp') then
-           ! we're updating SSP so we want to keep ssh fixed refSSH
+           ! we're updating SSP so we want to keep ssh fixed at refSSH
            ssh(:) = refSSH(:)
          end if
 
@@ -631,7 +631,8 @@ contains
            ! If deltaSSH is positive (moving up), it means the SSP is too small and if deltaSSH
            ! is negative (moving down), it means SSP is too large, the sign of the second term
            ! makes sense.
-           seaSurfacePressure(iCell) = seaSurfacePressure(iCell) + density(1,iCell)*gravity*deltaSSH(iCell)
+           seaSurfacePressure(iCell) = max(seaSurfacePressure(iCell) + density(1,iCell)*gravity*deltaSSH(iCell), &
+                                           0.0_RKIND)
          else
            ! the SSP should remain zero in the open ocean, though it may be that we are allowing the SSH to evolve here
            seaSurfacePressure(iCell) = 0.0_RKIND
