@@ -1078,11 +1078,33 @@ contains
     !
     ! !USES
     use decompMod         , only : get_proc_bounds
+    use clm_varcon, only : ispval
     !
+    ! !LOCAL VARIABLES:
     type(bounds_type) :: bounds_proc
-    integer :: l,c,p
+    integer           :: l,c,p
+    integer           :: curg, ltype
 
     call get_proc_bounds(bounds_proc)
+
+    grc%landunit_indices(:,bounds_proc%endg + 1:bounds_proc%endg_all) = ispval
+
+    do l = bounds_proc%endl + 1 ,bounds_proc%endl_all
+       ltype = lun%itype(l)
+       curg  = lun%gridcell(l)
+       if (curg < bounds_proc%begg_all .or. curg > bounds_proc%endg_all) then
+          write(iulog,*) 'ERROR: landunit_indices ', l,curg,bounds_proc%begg_all,bounds_proc%endg_all
+          call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+       end if
+
+       if (grc%landunit_indices(ltype, curg) == ispval) then
+          grc%landunit_indices(ltype, curg) = l
+       else
+          write(iulog,*) 'CheckGhostSubgridHierarchy ERROR: This landunit type has already been set for this gridcell'
+          write(iulog,*) 'l, ltype, curg = ', l, ltype, curg
+          call endrun(decomp_index=l, clmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+       end if
+    end do
 
     do l = bounds_proc%endl + 1, bounds_proc%endl_all
 
