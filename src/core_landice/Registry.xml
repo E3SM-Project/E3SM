@@ -690,7 +690,7 @@ is the value of that variable from the *previous* time level!
 		<var name="thickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
 		     description="ice thickness"
 		/>
-		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m" time_levs="2"
+		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m" time_levs="1"
 		     description="layer thickness"
 		/>
 		<var name="lowerSurface" type="real" dimensions="nCells Time" units="m above datum"

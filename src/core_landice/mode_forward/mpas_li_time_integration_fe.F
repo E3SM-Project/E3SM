@@ -579,14 +579,9 @@ module li_time_integration_fe
          call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
-         ! Note: The old and new layer thickness are input and output arguments, respectively, for the main advection subroutines
-         ! TODO - Use only one time level for the ice geometry, and simply fetch the current layerThickness?
-         call mpas_pool_get_array(geometryPool, 'thickness', thicknessOld, timeLevel=2)  ! timeLevel 2 is from the previous time step
-         call mpas_pool_get_array(geometryPool, 'thickness', thicknessNew, timeLevel=1)
-
          if (trim(config_thickness_advection) == 'fo' .and. trim(config_tracer_advection) == 'fo') then
 
-            ! Note: This subroutine requires that layerThickness and tracers are correct in halos.
+            ! Note: This subroutine requires that thickness and tracers are correct in halos
 
             if (config_print_thickness_advection_info) then
                write(stdoutUnit,*) 'Advect thickness and tracers, dt =', dtSeconds
@@ -599,8 +594,6 @@ module li_time_integration_fe
                  geometryPool,           &
                  thermalPool,            &
                  scratchPool,            &
-                 thicknessOld,           &
-                 thicknessNew,           &
                  err_tmp)
 
             err = ior(err,err_tmp)
@@ -618,8 +611,6 @@ module li_time_integration_fe
                  geometryPool,           &
                  thermalPool,            &
                  scratchPool,            &
-                 thicknessOld,           &
-                 thicknessNew,           &
                  err_tmp,                &
                  advectTracersIn = .false.)
 
@@ -648,7 +639,6 @@ module li_time_integration_fe
          where (thickness < 0.0_RKIND)
             masktmp = 1
             thickness = 0.0_RKIND
-            !TODO - Should layerThickness also be set to 0?
          end where
 
          if (config_print_thickness_advection_info) then
