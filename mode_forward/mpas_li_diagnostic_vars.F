@@ -124,7 +124,7 @@ contains
       err = 0
 
       ! ===
-      ! === Diagnostic solve of variables prior to velocity 
+      ! === Diagnostic solve of variables prior to velocity
       ! ===
 
       call mpas_timer_start("calc. diagnostic vars except vel")
@@ -134,16 +134,14 @@ contains
 
 
       ! ===
-      ! === Diagnostic solve of velocity 
+      ! === Diagnostic solve of velocity
       ! ===
-      if (solveVelo) then
-          call li_velocity_solve(domain, err)    ! ****** Calculate Velocity ******
-          err = ior(err, err_tmp)
-      endif
+      call li_velocity_solve(domain, solveVelo, err)    ! ****** Calculate Velocity ******
+      err = ior(err, err_tmp)
 
 
       ! ===
-      ! === Diagnostic solve of variables after velocity 
+      ! === Diagnostic solve of variables after velocity
       ! ===
 
       call mpas_timer_start("calc. diagnostic vars except vel")

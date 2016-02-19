@@ -219,7 +219,7 @@ contains
 !>  This routine calls velocity solvers.
 !
 !-----------------------------------------------------------------------
-   subroutine li_velocity_solve(domain, err)
+   subroutine li_velocity_solve(domain, solveVelo, err)
 
       use mpas_vector_reconstruction
       use li_mask
@@ -227,6 +227,10 @@ contains
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
+      logical, intent(in) :: solveVelo !< Input: logical determining if
+      !< velocity should be solved, or if an existing solution should be
+      !< used to calculate the diagnostic fields related to velocty
+      !< (e.g. on a restart)
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -288,6 +292,10 @@ contains
 
       uphillMarginEdgesFixed = 0
 
+
+      ! In some situations (first time level of a restart), we don't want to actually solve
+      ! velocity again, but we do want to calculate the diagnostic fields related to velocity.
+      if (solveVelo) then
 
       ! External solvers may not be able to cope with no ice in the domain, so determine if that is the case
       ! Don't bother checking this with SIA because it requires an extra global reduce
@@ -428,6 +436,10 @@ contains
       call mpas_dmpar_exch_halo_field(normalVelocityField)
       call mpas_timer_stop("halo updates")
 
+      endif  ! if solveVelo
+
+
+      ! -- Now that velocity is solved, update diagnostic fields related to velocity --
 
       block => domain % blocklist
       do while (associated(block))
@@ -454,6 +466,7 @@ contains
          ! but these can optionally be overwritten by reconstructed velocities for testing.
          if ( (trim(config_velocity_solver) == 'sia') .or.       &
               (trim(config_velocity_solver) == 'simple') .or.    &
+              (trim(config_velocity_solver) == 'none') .or.      &
                config_do_velocity_reconstruction_for_external_dycore ) then
             call mpas_reconstruct(meshPool, normalVelocity,               &
                              uReconstructX, uReconstructY, uReconstructZ, &
