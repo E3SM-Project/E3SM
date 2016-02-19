@@ -2,8 +2,8 @@
 Interface to the env_test.xml file.  This class inherits from EnvBase
 """
 from CIME.XML.standard_module_setup import *
+from system_tests_common import SystemTestsCommon
 
-from env_base import EnvBase
 
 class SMS(SystemTestsCommon):
     def __init__(self):
