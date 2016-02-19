@@ -14,7 +14,7 @@
         <namelist name="namelist.landice" mode="forward">
                 <template file="dome_2000m_template.xml" path_base="script_resolution_dir"/>
                 <option name="config_start_time">'0000-01-01_00:00:00'</option>
-                <option name="config_run_duration">'0000-00-02_00:00:00'</option>
+                <option name="config_run_duration">'0000-00-00_00:00:00'</option>
                 <option name="config_dt">'0000-00-01_00:00:00'</option>
                 <option name="config_velocity_solver">'FO'</option>
         </namelist>
