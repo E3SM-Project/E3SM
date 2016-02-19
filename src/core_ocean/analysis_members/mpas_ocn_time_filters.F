@@ -249,6 +249,7 @@ contains
       type (mpas_pool_type), pointer :: timeFiltersAM
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalVelocityLowPass, normalVelocityHighPass, &
                                                     normalVelocityTest
+      type (field2DReal), pointer :: normalVelocityLowPassField, normalVelocityHighPassField
       type (field2DReal), pointer :: normalVelocityLowPassField
       real (kind=RKIND), dimension(:,:), pointer :: velocityZonalLowPass, velocityMeridionalLowPass, &
                                                     velocityXLowPass, velocityYLowPass, velocityZLowPass
@@ -324,6 +325,11 @@ contains
             end if
 #endif
          end do
+         ! exchange halo information in order to ensure that particles on halo are advected properly
+         call mpas_pool_get_field(timeFiltersAMPool, 'normalVelocityLowPass', normalVelocityLowPassField)
+         call mpas_pool_get_field(timeFiltersAMPool, 'normalVelocityHighPass', normalVelocityHighPassField)
+         call mpas_dmpar_exch_halo_field(normalVelocityLowPassField)
+         call mpas_dmpar_exch_halo_field(normalVelocityHighPassField)
 
          block => block % next
       end do
@@ -336,9 +342,6 @@ contains
         do while (associated(block))
            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
            call mpas_pool_get_subpool(block % structs, 'timeFiltersAM', timeFiltersAMPool)
-           ! make sure all processors have correct normalVelocityLowPass data
-           call mpas_pool_get_field(timeFiltersAMPool, 'normalVelocityLowPass', normalVelocityLowPassField)
-           call mpas_dmpar_exch_halo_field(normalVelocityLowPassField)
            ! get variables for computations
            call mpas_pool_get_array(timeFiltersAMPool, 'normalVelocityLowPass', normalVelocityLowPass)
            call mpas_pool_get_array(timeFiltersAMPool, 'velocityZonalLowPass', velocityZonalLowPass)
