@@ -23,11 +23,12 @@ module decompMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
 
-  public get_proc_clumps    ! number of clumps for this processor
-  public get_proc_total     ! total no. of gridcells, landunits, columns and pfts for any processor
-  public get_proc_global    ! total gridcells, landunits, columns, pfts across all processors
-  public get_clmlevel_gsize ! get global size associated with clmlevel
-  public get_clmlevel_gsmap ! get gsmap associated with clmlevel
+  public get_proc_clumps       ! number of clumps for this processor
+  public get_proc_total        ! total no. of gridcells, landunits, columns and pfts for any processor
+  public get_proc_total_ghosts ! total no. of gridcells, landunits, columns and pfts for any processor
+  public get_proc_global       ! total gridcells, landunits, columns, pfts across all processors
+  public get_clmlevel_gsize    ! get global size associated with clmlevel
+  public get_clmlevel_gsmap    ! get gsmap associated with clmlevel
 
   interface get_clump_bounds
      module procedure get_clump_bounds_old
@@ -491,5 +492,31 @@ contains
     end select
 
   end subroutine get_clmlevel_gsmap
+
+   !------------------------------------------------------------------------------
+   subroutine get_proc_total_ghosts(ncells_ghost, nlunits_ghost, &
+      ncols_ghost, npfts_ghost, nCohorts_ghost)
+     !
+     ! !DESCRIPTION:
+     ! Count up ghost gridcells, landunits, columns, and pfts on process.
+     !
+     ! !ARGUMENTS:
+     integer, intent(out) :: ncells_ghost   ! number of ghost gridcells on the processor
+     integer, intent(out) :: nlunits_ghost  ! number of ghost landunits on the processor
+     integer, intent(out) :: ncols_ghost    ! number of ghost columns on the processor
+     integer, intent(out) :: npfts_ghost    ! number of ghost pfts on the processor
+     integer, intent(out) :: nCohorts_ghost ! number of ghost cohorts on the processor
+     !
+     ! !LOCAL VARIABLES:
+     integer :: cid       ! clump index
+     !------------------------------------------------------------------------------
+
+     npfts_ghost    = procinfo%ncells_ghost
+     nlunits_ghost  = procinfo%nlunits_ghost
+     ncols_ghost    = procinfo%ncols_ghost
+     npfts_ghost    = procinfo%npfts_ghost
+     nCohorts_ghost = procinfo%nCohorts_ghost
+
+   end subroutine get_proc_total_ghosts
 
 end module decompMod
