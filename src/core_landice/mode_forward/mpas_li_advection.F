@@ -63,7 +63,7 @@ module li_advection
 !>  horizontal advection, (2) applies surface and basal mass balance
 !>  terms, and (3) remaps tracers back onto the standard vertical grid.
 !>  Based on subroutine li_tendency_thickness by Matthew Hoffman
-!>  Note: The layerThickness and tracer fields must have had halo updates
+!>  Note: The thickness and tracer fields must have had halo updates
 !>        before calling this subroutine.
 !-----------------------------------------------------------------------
 
@@ -74,10 +74,10 @@ module li_advection
         geometryPool,           &
         thermalPool,            &
         scratchPool,            &
-        layerThicknessOld,      &
-        layerThicknessNew,      &
         err,                    &
         advectTracersIn)
+
+     use li_diagnostic_vars, only: li_calculate_layerThickness
 
       !-----------------------------------------------------------------
       !
@@ -90,9 +90,6 @@ module li_advection
 
       type (mpas_pool_type), intent(in) :: &
            meshPool               !< Input: mesh information
-
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-           layerThicknessOld      !< Input: old layer thickness
 
       logical, intent(in), optional :: &
            advectTracersIn        !< Input: if true, then advect tracers as well as thickness
@@ -123,9 +120,6 @@ module li_advection
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:,:), intent(out) :: &
-           layerThicknessNew      !< Input: new layer thickness
-
       integer, intent(out) :: &
            err                    !< Output: error flag
 
@@ -138,7 +132,7 @@ module li_advection
       integer, pointer :: nVertLevels
 
       real (kind=RKIND), dimension(:), pointer :: &
-           thickness,             & ! ice thickness
+           thickness,             & ! ice thickness (updated in this subroutine)
            sfcMassBal,            & ! surface mass balance
            basalMassBal,          & ! basal mass balance
            groundedBasalMassBal,  & ! basal mass balance for grounded ice
@@ -151,15 +145,14 @@ module li_advection
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            layerNormalVelocity,   & ! normal component of velocity on cell edges at layer midpoints
+           layerThickness,        & ! thickness of each layer
            layerThicknessEdge       ! layer thickness on upstream edge of cell
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
-           advectedTracersOld,    & ! old values of advected tracers
-           advectedTracersNew       ! new values of advected tracers
+           advectedTracers          ! values of advected tracers
 
       type (field3DReal), pointer :: &
-           advectedTracersOldField, & ! scratch field containing old values of advected tracers
-           advectedTracersNewField    ! scratch field containing new values of advected tracers
+           advectedTracersField       ! scratch field containing values of advected tracers
 
       integer, dimension(:), pointer :: &
            cellMask                 ! integer bitmask for cells
@@ -216,11 +209,12 @@ module li_advection
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       ! get arrays from the geometry pool
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
       call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
       call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
       call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
-      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
       call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
@@ -248,13 +242,12 @@ module li_advection
       ! Note: The old/advectedTracersNew fields are scratch fields containing only the tracers that need to be advected.
       !       For example, they will contain temperature or enthalpy (depending on config_thermal_solver) but not both.
 
-      call mpas_pool_get_field(scratchPool, 'workTracerLevelCell', advectedTracersOldField)
-      call mpas_allocate_scratch_field(advectedTracersOldField, .true.)
-      advectedTracersOld => advectedTracersOldField % array
+      call mpas_pool_get_field(scratchPool, 'workTracerLevelCell', advectedTracersField)
+      call mpas_allocate_scratch_field(advectedTracersField, .true.)
+      advectedTracers => advectedTracersField % array
 
-      call mpas_pool_get_field(scratchPool, 'workTracerLevelCell2', advectedTracersNewField)
-      call mpas_allocate_scratch_field(advectedTracersNewField, .true.)
-      advectedTracersNew => advectedTracersNewField % array
+      ! given the old thickness, compute the thickness in each layer
+      call li_calculate_layerThickness(meshPool, thickness, layerThickness)
 
       !-----------------------------------------------------------------
       ! Horizontal transport of thickness and tracers
@@ -276,7 +269,7 @@ module li_advection
 
          if (advectTracers) then
 
-            ! Copy the old tracer values into the advectedTracersOld array.
+            ! Copy the old tracer values into the advectedTracers array.
             ! This requires setting a tracer pointer to either temperature or enthalpy,
             !  depending on the value of config_thermal_solver.
             ! Currently (as of Nov. 2015), this is the only tracer transported, but others
@@ -286,11 +279,11 @@ module li_advection
                  meshPool,          &
                  geometryPool,      &
                  thermalPool,       &
-                 advectedTracersOld)
+                 advectedTracers)
 
          else   ! no tracer advection; pass a tracer array full of zeroes
 
-            advectedTracersOld(:,:,:) = 0.0_RKIND
+            advectedTracers(:,:,:) = 0.0_RKIND
 
          endif
 
@@ -303,7 +296,7 @@ module li_advection
             do iCell = 1, nCells
                if (indexToCellID(iCell) == config_stats_cell_ID) then
                   write(stdoutUnit,*) 'Before thickness advection, iCell (local, global), thickness:', &
-                       iCell, indexToCellID(iCell), sum(layerThicknessOld(:,iCell))
+                       iCell, indexToCellID(iCell), thickness(iCell)
                   do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(iEdgeOnCell,iCell)
                      write(stdoutUnit,*) 'iEdge, layerNormalVelocity:', iEdge, layerNormalVelocity(1,iEdge)
@@ -317,10 +310,8 @@ module li_advection
               meshPool,                &
               layerNormalVelocity,     &
               layerThicknessEdge,      & 
-              layerThicknessOld,       &
-              advectedTracersOld,      &
-              layerThicknessNew,       &
-              advectedTracersNew,      &
+              layerThickness,          &
+              advectedTracers,         &
               err)
 
          if (config_print_thickness_advection_info) then
@@ -329,7 +320,7 @@ module li_advection
                   write(stdoutUnit,*) ' '
                   write(stdoutUnit,*) 'After thickness advection, iCell, new layer thickness:'
                   do k = 1, nVertLevels
-                     write(stdoutUnit,*) iCell, layerThicknessNew(k,iCell)
+                     write(stdoutUnit,*) iCell, layerThickness(k,iCell)
                   enddo
                endif
             enddo
@@ -369,16 +360,18 @@ module li_advection
          ! Add surface mass balance to new top layer thickness
          ! TODO: Need to decide how to deal with negative SMB that eliminates top layer or all ice (check for negative thickness?)
 
-         layerThicknessNew(1,:) = layerThicknessNew(1,:) + (sfcMassBal/config_ice_density)*dt
+         layerThickness(1,:) = layerThickness(1,:) + (sfcMassBal/config_ice_density)*dt
 
          ! Add basal mass balance to new bottom layer thickness
          ! TODO: Need to decide how to deal with negative BMB that eliminates top layer or all ice (check for negative thickness?)
 
-         layerThicknessNew(nVertLevels,:) = layerThicknessNew(nVertLevels,:) + (basalMassBal/config_ice_density)*dt
+         layerThickness(nVertLevels,:) = layerThickness(nVertLevels,:) + (basalMassBal/config_ice_density)*dt
 
          ! Update the thickness and cellMask before the vertical remap calculation
+         ! Note: The thickness field (rather than layerThickness) is the primary prognostic,
+         !       which should be returned from each subroutine that alters the thickness.
 
-         thickness = sum(LayerThicknessNew, 1)
+         thickness = sum(LayerThickness, 1)
 
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          
@@ -386,7 +379,7 @@ module li_advection
          ! Note: If tracers are not being advected, then this subroutine simply restores the
          !       layer thickness to sigma coordinate values.
 
-         call vertical_remap(thickness, cellMask, meshPool, layerThicknessNew, advectedTracersNew, err_tmp)
+         call vertical_remap(thickness, cellMask, meshPool, layerThickness, advectedTracers, err_tmp)
          err = ior(err, err_tmp)
 
          if (advectTracers) then
@@ -398,7 +391,7 @@ module li_advection
                  meshPool,              &
                  geometryPool,          &
                  thermalPool,           &
-                 advectedTracersNew)
+                 advectedTracers)
 
          endif
 
@@ -416,8 +409,7 @@ module li_advection
       err = ior(err,err_tmp)
 
       ! clean up
-      call mpas_deallocate_scratch_field(advectedTracersOldField, .true.)
-      call mpas_deallocate_scratch_field(advectedTracersNewField, .true.)
+      call mpas_deallocate_scratch_field(advectedTracersField, .true.)
 
       ! === error check
       if (err > 0) then
@@ -697,10 +689,8 @@ module li_advection
          meshPool,               &
          layerNormalVelocity,         &
          layerThicknessEdge,     &
-         oldLayerThickness,      &
-         oldTracers,             &
-         newlayerThickness,      &
-         newTracers,             &
+         layerThickness,         &
+         tracers,                &
          err,                    &
          advectTracersIn)
 
@@ -720,27 +710,27 @@ module li_advection
            layerNormalVelocity,& !< Input: normal velocity averaged from interfaces to layer midpoints
            layerThicknessEdge    !< Input: layer thickness on upstream edge
 
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-           oldLayerThickness     !< Input: old layer thickness
-
-      real (kind=RKIND), dimension(:,:,:), intent(in) :: &
-           oldTracers            !< Input: old tracer values
-
       logical, intent(in), optional :: &
            advectTracersIn       !< Input: if true, then advect tracers as well as thickness
                                  !  Default (if not passed in) is to advect tracers
 
       !-----------------------------------------------------------------
       !
-      ! output variables
+      ! input/output variables
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:,:), intent(out) :: &
-           newLayerThickness       !< Output: new layer thickness
+      real (kind=RKIND), dimension(:,:), intent(inout) :: &
+           layerThickness        !< Input/output: layer thickness
 
-      real (kind=RKIND), dimension(:,:,:), intent(out) :: &
-           newTracers              !< Output: new tracer values
+      real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
+           tracers               !< Input/output: tracer values
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
 
       integer, intent(out) :: &
            err                     !< Output: error flag
@@ -818,7 +808,7 @@ module li_advection
          advectTracers = .true.
       endif
 
-      nTracers = size(oldTracers,1)
+      nTracers = size(tracers,1)
 
       ! allocate temporary arrays
       allocate(tracersEdge(nTracers))
@@ -844,18 +834,14 @@ module li_advection
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
       call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
 
-      ! initialize output variables
-      newLayerThickness(:,:) = 0.0_RKIND
-      newTracers(:,:,:) = 0.0_RKIND
-
       if (checkConservation) then
 
          ! compute initial ice volume (= area*thickness) and energy (= area*thickness*tracer1)
          initVolumeSum = 0.0_RKIND
          initEnergySum = 0.0_RKIND
          do iCell = 1, nCellsSolve
-            initVolumeSum = initVolumeSum + areaCell(iCell) * sum(oldLayerThickness(:,iCell))
-            initEnergySum = initEnergySum + areaCell(iCell) * sum(oldLayerThickness(:,iCell)*oldTracers(1,:,iCell))
+            initVolumeSum = initVolumeSum + areaCell(iCell) * sum(layerThickness(:,iCell))
+            initEnergySum = initEnergySum + areaCell(iCell) * sum(layerThickness(:,iCell)*tracers(1,:,iCell))
          enddo
 
       endif
@@ -901,8 +887,8 @@ module li_advection
                   ! Assign the upwind tracer values to each edge
                   ! Note: layerThicknessEdge is passed in and does not need to be computed here
 
-                  tracersEdge(:) = max(velSign * oldTracers(:,k,iCell1),   &
-                                       velSign * (-1.0_RKIND) * oldTracers(:,k,iCell2))
+                  tracersEdge(:) = max(velSign * tracers(:,k,iCell1),   &
+                                       velSign * (-1.0_RKIND) * tracers(:,k,iCell2))
                
                   thicknessTracerTendency(:) = thicknessTracerTendency(:) &
                                              + edgeSignOnCell(iEdgeOnCell,iCell) * thicknessFluxEdge * invAreaCell * tracersEdge(:)
@@ -918,17 +904,24 @@ module li_advection
 
             ! Compute the new layer thickness and tracers
 
-            newLayerThickness(k,iCell) = oldLayerThickness(k,iCell) + thicknessTendency * dt
-
             if (advectTracers) then
 
-               newThicknessTracers(:) = oldLayerThickness(k,iCell)*oldTracers(:,k,iCell) + thicknessTracerTendency(:) * dt
+               ! new thickness*tracer products
+               newThicknessTracers(:) = layerThickness(k,iCell)*tracers(:,k,iCell) + thicknessTracerTendency(:) * dt
 
-               if (newLayerThickness(k,iCell) > 0.0_RKIND) then
-                  newTracers(:,k,iCell) = newThicknessTracers(:) / newLayerThickness(k,iCell)
+               ! new layer thickness
+               layerThickness(k,iCell) = layerThickness(k,iCell) + thicknessTendency * dt
+
+               ! new tracers
+               if (layerThickness(k,iCell) > 0.0_RKIND) then
+                  tracers(:,k,iCell) = newThicknessTracers(:) / layerThickness(k,iCell)
                else
-                  newTracers(:,k,iCell) = 0.0_RKIND
+                  tracers(:,k,iCell) = 0.0_RKIND
                endif
+
+            else   ! advecting thickness only
+
+               layerThickness(k,iCell) = layerThickness(k,iCell) + thicknessTendency * dt
 
             endif  ! advectTracers
 
@@ -943,8 +936,8 @@ module li_advection
          finalVolumeSum = 0.0_RKIND
          finalEnergySum = 0.0_RKIND
          do iCell = 1, nCellsSolve
-            finalVolumeSum = finalVolumeSum + areaCell(iCell) * sum(newLayerThickness(:,iCell))
-            finalEnergySum = finalEnergySum + areaCell(iCell) * sum(newLayerThickness(:,iCell)*newTracers(1,:,iCell))
+            finalVolumeSum = finalVolumeSum + areaCell(iCell) * sum(layerThickness(:,iCell))
+            finalEnergySum = finalEnergySum + areaCell(iCell) * sum(layerThickness(:,iCell)*tracers(1,:,iCell))
          enddo
 
          if (config_print_thickness_advection_info) then

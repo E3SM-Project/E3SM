@@ -164,6 +164,7 @@ module li_calving
       integer :: err_tmp
 
       !WHL - debug
+      logical, parameter :: circular_shelf = .false.
       integer, parameter :: ncellsPerRow = 40
       integer, parameter :: nRows = 46
       integer :: i, iRow
@@ -187,9 +188,10 @@ module li_calving
       if (config_calving_timescale > 0.0_RKIND) then
          calvingFraction = min(deltat/config_calving_timescale, 1.0_RKIND)
          !WHL - debug
-         write(stderrUnit,*) 'deltat (s) =', deltat
-         write(stderrUnit,*) 'deltat (yr) =', deltat/scyr
-         write(stderrUnit,*) 'calvingFraction =', calvingFraction
+         if (config_print_calving_info) then
+            write(stdoutUnit,*) 'Calving a fraction of the ice thickness at each timestep'
+            write(stdoutUnit,*) 'deltat (yr), calvingFraction =', deltat/scyr, calvingFraction
+         endif
       else
          calvingFraction = 1.0_RKIND   ! calve the entire thickness in eligible columns
       endif
@@ -219,24 +221,26 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
          if (config_print_calving_info) then
-            write(stderrUnit,*) 'Do ice calving, option = ', trim(config_calving)
-            write(stderrUnit,*) 'Calving timscale (yr) = ', config_calving_timescale / scyr
+            write(stdoutUnit,*) 'Do ice calving, option = ', trim(config_calving)
+            write(stdoutUnit,*) 'Calving timscale (yr) = ', config_calving_timescale / scyr
 
             !WHL - debug - for circular shelf test case
-            write(stderrUnit,*) ' '
-            write(stderrUnit,*) 'Ice thickness before calving'
-            do iRow = nRows, 1, -1
-               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                  write(stderrUnit,'(a3)',advance='no') '    '
-               endif
-!!               do i = 1, nCellsPerRow
-               do i = nCellsPerRow/2 - 2, nCellsPerRow
-                  iCell = (iRow-1)*nCellsPerRow + i
-!!                  write(stderrUnit,'(i5)',advance='no') iCell
-                  write(stderrUnit,'(f8.2)',advance='no') thickness(iCell)
+            if (circular_shelf) then
+               write(stdoutUnit,*) ' '
+               write(stdoutUnit,*) 'Ice thickness before calving'
+               do iRow = nRows, 1, -1
+                  if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+                     write(stdoutUnit,'(a3)',advance='no') '    '
+                  endif
+!!                 do i = 1, nCellsPerRow
+                  do i = nCellsPerRow/2 - 2, nCellsPerRow
+                     iCell = (iRow-1)*nCellsPerRow + i
+!!                    write(stdoutUnit,'(i5)',advance='no') iCell
+                     write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
+                  enddo
+                  write(stdoutUnit,*) ' '
                enddo
-               write(stderrUnit,*) ' '
-            enddo
+            endif   ! circular_shelf
 
          endif  ! config_print_calving_info
 
@@ -277,8 +281,8 @@ module li_calving
             !      - Calve ice in ocean cells that are not on the inactive margin.
 
             if (config_print_calving_info) then
-               write(stderrUnit,*) 'Calving thickness (m) =', config_calving_thickness
-               write(stderrUnit,*) 'Dynamic thickness (m) =', config_dynamic_thickness
+               write(stdoutUnit,*) 'Calving thickness (m) =', config_calving_thickness
+               write(stdoutUnit,*) 'Dynamic thickness (m) =', config_dynamic_thickness
             endif
 
             ! Make sure config_calving_thickness > config_dynamic_thickness.
@@ -362,32 +366,32 @@ module li_calving
 
             if (config_print_calving_info) then
 
-!               write(stderrUnit,*) 'Active-for-calving mask'
+!               write(stdoutUnit,*) 'Active-for-calving mask'
                do iRow = nRows, 1, -1
                   if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-!                     write(stderrUnit,'(a3)',advance='no') '    '
+!                     write(stdoutUnit,'(a3)',advance='no') '    '
                   endif
-                  !!               do i = 1, nCellsPerRow
+!!               do i = 1, nCellsPerRow
                   do i = nCellsPerRow/2 - 2, nCellsPerRow
                      iCell = (iRow-1)*nCellsPerRow + i
-                     !!                  write(stderrUnit,'(i5)',advance='no') iCell
-!                     write(stderrUnit,'(i8)',advance='no') activeForCalvingMask(iCell)
+!!                  write(stdoutUnit,'(i5)',advance='no') iCell
+!                     write(stdoutUnit,'(i8)',advance='no') activeForCalvingMask(iCell)
                   enddo
-!                  write(stderrUnit,*) ' '
+!                  write(stdoutUnit,*) ' '
                enddo
 
-!               write(stderrUnit,*) 'Inactive margin mask'
+!               write(stdoutUnit,*) 'Inactive margin mask'
                do iRow = nRows, 1, -1
                   if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-!                     write(stderrUnit,'(a3)',advance='no') '    '
+!                     write(stdoutUnit,'(a3)',advance='no') '    '
                   endif
-                  !!               do i = 1, nCellsPerRow
+!!               do i = 1, nCellsPerRow
                   do i = nCellsPerRow/2 - 2, nCellsPerRow
                      iCell = (iRow-1)*nCellsPerRow + i
-                     !!                  write(stderrUnit,'(i5)',advance='no') iCell
-!                     write(stderrUnit,'(i8)',advance='no') inactiveMarginMask(iCell)
+!!                  write(stdoutUnit,'(i5)',advance='no') iCell
+!                     write(stdoutUnit,'(i8)',advance='no') inactiveMarginMask(iCell)
                   enddo
-!                  write(stderrUnit,*) ' '
+!                  write(stdoutUnit,*) ' '
                enddo
 
             endif  ! config_print_calving_info
@@ -431,7 +435,7 @@ module li_calving
                ! calve ice where the bed topography lies below a threshold depth
 
                if (config_print_calving_info) then
-                  write(stderrUnit,*) 'Calving topographic threshold (m) =', config_calving_topography
+                  write(stdoutUnit,*) 'Calving topographic threshold (m) =', config_calving_topography
                endif
             
                where (bedTopography < config_calving_topography + config_sea_level)
@@ -469,30 +473,32 @@ module li_calving
             
          if (config_print_calving_info) then
                
-            write(stderrUnit,*) ' '
-            write(stderrUnit,*) 'Global cell ID, bedTopography, calvingThickness:'
+            write(stdoutUnit,*) ' '
+            write(stdoutUnit,*) 'Global cell ID, bedTopography, calvingThickness:'
             do iCell = 1, nCells
                if (calvingThickness(iCell) > 0.0_RKIND) then
-                  write(stderrUnit,*) indexToCellID(iCell), bedTopography(iCell), calvingThickness(iCell)
+                  write(stdoutUnit,*) indexToCellID(iCell), bedTopography(iCell), calvingThickness(iCell)
                endif
             enddo
             
             !WHL - debug - for circular shelf test case
-            write(stderrUnit,*) ' '
-            write(stderrUnit,*) 'Ice thickness after calving'
-            do iRow = nRows, 1, -1
-               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                  write(stderrUnit,'(a3)',advance='no') '    '
-               endif
-               !!               do i = 1, nCellsPerRow
-               do i = nCellsPerRow/2 - 2, nCellsPerRow
-                  iCell = (iRow-1)*nCellsPerRow + i
-                  !!                  write(stderrUnit,'(i5)',advance='no') iCell
-                  write(stderrUnit,'(f8.2)',advance='no') thickness(iCell)
+            if (circular_shelf) then
+               write(stdoutUnit,*) ' '
+               write(stdoutUnit,*) 'Ice thickness after calving'
+               do iRow = nRows, 1, -1
+                  if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+                     write(stdoutUnit,'(a3)',advance='no') '    '
+                  endif
+!!                 do i = 1, nCellsPerRow
+                  do i = nCellsPerRow/2 - 2, nCellsPerRow
+                     iCell = (iRow-1)*nCellsPerRow + i
+!!                    write(stdoutUnit,'(i5)',advance='no') iCell
+                     write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
+                  enddo
+                  write(stdoutUnit,*) ' '
                enddo
-               write(stderrUnit,*) ' '
-            enddo
-            
+            endif   ! circular_shelf
+
          endif   ! config_print_calving_info
             
          block => block % next
@@ -516,15 +522,15 @@ module li_calving
 !> \author William Lipscomb
 !> \date   September 2015
 !> \details
-!>  This routine restores the calving front to its initial position.
-!>  There are several options:
-!> (1) Remove any floating ice that has advanced beyond the initial front.
-!> (2) Add back a thin layer of ice wherever the ice has retreated from
+!>  This routine restores the calving front to its initial position:
+!> (1) It removes any floating ice that has advanced beyond the initial front.
+!> (2) It adds back a thin layer of ice wherever the ice has retreated from
 !>     the initial front.
-!> (3) Both (1) and (2) combined
 !-----------------------------------------------------------------------
 
    subroutine li_restore_calving_front(domain, err)
+
+      use li_thermal, only: li_init_linear_temperature_in_column
 
       !-----------------------------------------------------------------
       ! input variables
@@ -550,10 +556,11 @@ module li_calving
 
       type (mpas_pool_type), pointer :: meshPool 
       type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: thermalPool
       type (mpas_pool_type), pointer :: scratchPool 
       type (mpas_pool_type), pointer :: velocityPool
 
-      integer, pointer :: nCellsSolve
+      integer, pointer :: nCellsSolve, nVertLevels
 
       logical, pointer :: &
            config_print_calving_info
@@ -565,6 +572,10 @@ module li_calving
       integer, dimension(:), pointer :: &
            cellMask            ! bit mask describing whether ice is floating, dynamically active, etc.
       
+      real(kind=RKIND), dimension(:), pointer :: &
+           layerCenterSigma    ! vertical sigma coordinate at layer midpoints
+
+      ! geometry and calving fields
       real (kind=RKIND), dimension(:), pointer :: &
            thickness,        & ! ice thickness
            bedTopography,    & ! elevation of the bed
@@ -575,13 +586,26 @@ module li_calving
 
       real (kind=RKIND) ::  &
            restoreThicknessMin  ! small thickness to which ice is restored should it fall below this thickness
+
+      ! thermal fields
+      ! These are needed to initialize the temperature profile in restored columns.
+      real (kind=RKIND), dimension(:,:), pointer :: &
+           temperature,           &   ! interior ice temperature
+           waterfrac                  ! interior water fraction
+
+      real (kind=RKIND), dimension(:), pointer :: &
+           surfaceAirTemperature, &   ! surface air temperature
+           surfaceTemperature,    &   ! surface ice temperature
+           basalTemperature           ! basal ice temperature
                                 
       integer :: iCell, err_tmp
 
       !WHL - debug
+      logical, parameter :: circular_shelf = .false.
       integer, parameter :: ncellsPerRow = 40
       integer, parameter :: nRows = 46
       integer :: i, iRow
+      integer :: k
 
       ! block loop
       block => domain % blocklist
@@ -590,11 +614,16 @@ module li_calving
          ! get pools
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)  ! required for cellMask computation
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
          ! get dimensions
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+         ! get required fields from the mesh pool
+         call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
 
          ! get required fields from the geometry pool
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
@@ -603,29 +632,38 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'restoreThickness', restoreThickness)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
+         ! get required fields from the thermal pool
+         call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+         call mpas_pool_get_array(thermalPool, 'waterfrac', waterfrac)
+         call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
+         call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
+         call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
+
          ! get config variables
          call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
          call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
          call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
 
          if (config_print_calving_info) then
-            write(stderrUnit,*) 'Restore calving front'
-            write(stderrUnit,*) 'max thickness (m) =', maxval(thickness)
+            write(stdoutUnit,*) 'Restore calving front'
+            write(stdoutUnit,*) 'max thickness (m) =', maxval(thickness)
 
             !WHL - debug - for circular shelf test case
-            write(stderrUnit,*) 'Initial ice thickness'
-            do iRow = nRows, 1, -1
-               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-                  write(stderrUnit,'(a3)',advance='no') '    '
-               endif
-!!               do i = 1, nCellsPerRow
-               do i = nCellsPerRow/2 - 2, nCellsPerRow
-                  iCell = (iRow-1)*nCellsPerRow + i
-!!                  write(stderrUnit,'(i5)',advance='no') iCell
-                  write(stderrUnit,'(f8.2)',advance='no') thickness(iCell)
+            if (circular_shelf) then
+               write(stdoutUnit,*) 'Initial ice thickness'
+               do iRow = nRows, 1, -1
+                  if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+                     write(stdoutUnit,'(a3)',advance='no') '    '
+                  endif
+!!                 do i = 1, nCellsPerRow
+                  do i = nCellsPerRow/2 - 2, nCellsPerRow
+                     iCell = (iRow-1)*nCellsPerRow + i
+!!                    write(stdoutUnit,'(i5)',advance='no') iCell
+                     write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
+                  enddo
+                  write(stdoutUnit,*) ' '
                enddo
-               write(stderrUnit,*) ' '
-            enddo
+            endif   ! circular_shelf
 
          endif
 
@@ -654,25 +692,38 @@ module li_calving
 
                if (li_mask_is_initial_ice(cellMask(iCell)) .and. thickness(iCell) < restoreThicknessMin) then
 
-                  ! Ice was present in this cell initially, but now is either very thin or absent.
-                  ! Save the difference (restoreThicknessMin - thickness) so as to keep track of energy non-conservation.
-                  ! Reset the thickness to restoreThicknessMin
+                  ! Ice was present in this cell initially, but now is either very thin or absent;
+                  !  reset the thickness to restoreThicknessMin.
+                  ! Note: Mass is not conserved.
+                  !       Save the difference (restoreThicknessMin - thickness) so as to keep track of energy non-conservation.
 
                   if (config_print_calving_info) then
-                     write(stderrUnit,*) 'Restore ice: iCell, thickness =', iCell, thickness(iCell)
+                     write(stdoutUnit,*) 'Restore ice: iCell, thickness =', iCell, thickness(iCell)
                   endif
 
                   restoreThickness(iCell) = restoreThicknessMin - thickness(iCell)
                   thickness(iCell) = restoreThicknessMin
-                  !WHL TODO - Restore the temperature profile also?
- 
+
+                  ! Initial a linear temperature profile in the column
+                  ! Note: Energy is not conserved.
+
+                  call li_init_linear_temperature_in_column(&
+                       nVertLevels,                   &
+                       layerCenterSigma,              &
+                       thickness(iCell),              &
+                       surfaceAirTemperature(iCell),  &
+                       temperature(:,iCell),          &
+                       waterfrac(:,iCell),            &
+                       surfaceTemperature(iCell),     &
+                       basalTemperature(iCell))
+
                elseif (.not.li_mask_is_initial_ice(cellMask(iCell)) .and. thickness(iCell) > 0.0_RKIND) then
 
                   ! This cell was initially ice-free but now has ice.
                   ! Remove the ice and add it to calvingThickness.
 
                   if (config_print_calving_info) then
-                     write(stderrUnit,*) 'Remove ice:  iCell, thickness =', iCell, thickness(iCell)
+                     write(stdoutUnit,*) 'Remove ice:  iCell, thickness =', iCell, thickness(iCell)
                   endif
 
                   calvingThickness(iCell) = thickness(iCell)
@@ -688,23 +739,25 @@ module li_calving
       enddo
 
       if (config_print_calving_info) then
-         write(stderrUnit,*) 'Restored the initial calving front'
+         write(stdoutUnit,*) 'Restored the initial calving front'
          
          !WHL - debug - for circular shelf test case
-         write(stderrUnit,*) 'Final ice thickness'
-         do iRow = nRows, 1, -1
-            if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
-               write(stderrUnit,'(a3)',advance='no') '    '
-            endif
+         if (circular_shelf) then
+            write(stdoutUnit,*) 'Final ice thickness'
+            do iRow = nRows, 1, -1
+               if (mod(iRow,2) == 0) then  ! indent for even-numbered rows
+                  write(stdoutUnit,'(a3)',advance='no') '    '
+               endif
 !!               do i = 1, nCellsPerRow
-            do i = nCellsPerRow/2 - 2, nCellsPerRow
-               iCell = (iRow-1)*nCellsPerRow + i
-!!                  write(stderrUnit,'(i5)',advance='no') iCell
-               write(stderrUnit,'(f8.2)',advance='no') thickness(iCell)
+               do i = nCellsPerRow/2 - 2, nCellsPerRow
+                  iCell = (iRow-1)*nCellsPerRow + i
+!!                  write(stdoutUnit,'(i5)',advance='no') iCell
+                  write(stdoutUnit,'(f8.2)',advance='no') thickness(iCell)
+               enddo
+               write(stdoutUnit,*) ' '
             enddo
-            write(stderrUnit,*) ' '
-         enddo
-         
+         endif  ! circular shelf
+
       endif
 
       ! === error check

@@ -72,6 +72,8 @@ module li_statistics
 
    subroutine li_compute_statistics(domain, itimestep)
 
+     use li_diagnostic_vars, only: li_calculate_layerThickness
+
      implicit none
 
      ! Input/output arguments
@@ -105,6 +107,7 @@ module li_statistics
      integer,           dimension(:),     pointer :: cellMask
      integer,           dimension(:),     pointer :: edgeMask
      real (kind=RKIND), dimension(:),     pointer :: upperSurface
+     real (kind=RKIND), dimension(:),     pointer :: thickness
      real (kind=RKIND), dimension(:),     pointer :: surfaceTemperature, basalTemperature
      real (kind=RKIND), dimension(:,:),   pointer :: layerThickness, normalVelocity
      real (kind=RKIND), dimension(:,:),   pointer :: temperature
@@ -234,6 +237,7 @@ module li_statistics
         call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
         call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+        call mpas_pool_get_array(geometryPool, 'thickness', thickness, timeLevel = 1)
         call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness, timeLevel = 1)
         call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
 
@@ -277,6 +281,9 @@ module li_statistics
         elsewhere
            iceEdgeMask = 0
         endwhere
+
+        ! given thickness, compute layerThickness
+        call li_calculate_layerThickness(meshPool, thickness, layerThickness)
 
         ! Compute statistics on local block
 
@@ -448,7 +455,8 @@ module li_statistics
               diagnosticBlockID = block % localBlockID
               diagnosticProcID = dminfo % my_proc_id
               diagnosticUpperSurface = upperSurface(iCell)
-              diagnosticThickness = sum(layerThickness(:,iCell))
+!!              diagnosticThickness = sum(layerThickness(:,iCell))
+              diagnosticThickness = thickness(iCell)
               diagnosticBedTopography = bedTopography(iCell)
               diagnosticSfcMassBal = sfcMassBal(iCell) * scyr / 1000.0_RKIND   ! convert from kg/m^2/s to m/yr
               diagnosticSurfaceTemperature = surfaceTemperature(iCell)
