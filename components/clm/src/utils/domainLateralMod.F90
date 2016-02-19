@@ -153,8 +153,7 @@ contains
     integer, pointer         :: int_array2(:)          ! temporary
     integer, pointer         :: int_array3(:)          ! temporary
     integer, pointer         :: int_array4(:)          ! temporary
-    integer, pointer         :: int_array5(:)          ! temporary
-    
+
     PetscInt                 :: offset                 ! temporary
     PetscInt                 :: cell_stride            ! temporary
     PetscInt                 :: idx                    ! temporary
@@ -422,7 +421,6 @@ contains
        allocate(int_array2(count))
        allocate(int_array3(count))
        allocate(int_array4(count))
-       allocate(int_array5(count))
 
        do n = 1, count
           int_array2(n) = n
@@ -439,10 +437,9 @@ contains
 
        int_array3 = 0
        int_array4 = 0
-       int_array5 = 0
 
        ugrid%ngrid_ghost = 1
-       int_array3(1)            = int_array(int_array2(1))
+       int_array3(ugrid%ngrid_ghost)            = int_array(int_array2(1))
 
        do n = 1, count
           if (int_array3(ugrid%ngrid_ghost) < &
@@ -450,8 +447,7 @@ contains
              ugrid%ngrid_ghost = ugrid%ngrid_ghost + 1
              int_array3(ugrid%ngrid_ghost) = int_array(int_array2(n))
           end if
-          int_array5(int_array2(n)) = n
-          int_array4(n) = ugrid%ngrid_ghost
+          int_array4(int_array2(n)) = ugrid%ngrid_ghost
        enddo
 
     else
@@ -512,7 +508,6 @@ contains
        deallocate(int_array2)
        deallocate(int_array3)
        deallocate(int_array4)
-       deallocate(int_array5)
     endif
     deallocate(int_array)
 
