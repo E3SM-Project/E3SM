@@ -1,5 +1,7 @@
 module domainLateralMod
 
+#include "shr_assert.h"
+
 #ifdef USE_PETSC_LIB
   !-----------------------------------------------------------------------
   !BOP
@@ -92,6 +94,7 @@ module domainLateralMod
   public create_ugdm
   public destroy_ugdm
   public ScatterDataG2L
+  public ExchangeColumnLevelGhostData
   !
   !EOP
   !------------------------------------------------------------------------------
@@ -460,6 +463,7 @@ contains
     !
     ! Step-7: Begin populating the ugrid object
     !
+    ugrid%maxEdges      = maxEdges
     ugrid%ngrid_local   = ngrid_local
     ugrid%ngrid_ghosted = ngrid_local + ugrid%ngrid_ghost
 
@@ -767,6 +771,192 @@ contains
     call destroy_ugdm(dm)
 
   end subroutine ScatterDataG2L
+
+  !-----------------------------------------------------------------------
+
+  subroutine ExchangeColumnLevelGhostData(bounds_proc, nvals_per_col, &
+       data_send_col, data_recv_col)
+    !
+    ! !DESCRIPTION:
+    ! - Exchanges column level data between MPI tasks.
+    ! - This subroutine must be called from OUTSIDE any loops over clumps
+    !
+    ! !USES:
+    use landunit_varcon , only : max_lunit
+    use decompMod       , only : bounds_type
+    use LandunitType    , only : lun
+    use ColumnType      , only : col
+    !
+    implicit none
+    !
+#include "finclude/petscsys.h"
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in)  :: bounds_proc       ! bound information at processor level
+    integer , intent(in )          :: nvals_per_col     ! number of values per grid column
+    real(r8), intent(in ), pointer :: data_send_col(:)  ! data to be send by each MPI task
+    real(r8), intent(out), pointer :: data_recv_col(:)  ! data received by each MPI task
+    !
+    ! !LOCAL VARIABLES:
+    integer             :: c,g,l,j                 ! indices
+    integer             :: cidx, lidx              ! column/landunit index
+    integer             :: ltype                   ! landunit type
+    integer             :: col_ltype               ! landunit type of the column
+    integer             :: ier                     ! error
+    integer             :: ndata_send              ! number of data sent by local mpi rank
+    integer             :: ndata_recv              ! number of data received by local mpi rank
+    integer             :: max_ncol_local          ! maximum number of columns per grid cell for local mpi rank
+    integer             :: max_ncol_global         ! maximum number of columns per grid cell across all mpi ranks
+    integer             :: nblocks                 ! number of values per grid cell
+    integer             :: nvals_col               ! number of values per subgrid category
+    integer             :: nvals                   ! number of values per subgrid category + additional values
+    integer             :: count                   ! temporary
+    integer             :: beg_idx, end_idx        ! begin/end index for accessing values in data_send/data_recv
+    integer             :: begc_idx, endc_idx      ! begin/end index for accessing values in data_send/data_recv
+    integer, pointer    :: ncol(:)                 ! number of columns in grid cell
+    integer, pointer    :: landunit_index(:,:)     ! index of the first landunit of a given landunit_itype within a grid cell
+    real(r8) , pointer  :: data_send(:)            ! data sent by local mpi rank
+    real(r8) , pointer  :: data_recv(:)            ! data received by local mpi rank
+    real(r8) , pointer  :: lun_rank(:)             ! rank of a landunit in a given grid cell for a given landunit type
+    real(r8) , pointer  :: grid_count(:)           ! temporary
+    integer             :: l_rank                  ! rank of landunit
+    integer             :: last_lun_type           ! temporary
+    PetscErrorCode      :: ierr                    ! PETSc return
+
+    character(len=*), parameter :: subname = 'ExchangeColumnLevelGhostData'
+    !-----------------------------------------------------------------------
+
+    SHR_ASSERT(bounds_proc%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
+
+    ! Compute index of the first landunit for a given landunit_itype within a grid cell
+    allocate(landunit_index(bounds_proc%begg_all:bounds_proc%endg_all,max_lunit))
+    landunit_index = 0
+
+    do lidx = bounds_proc%begl_all,  bounds_proc%endl_all
+       if (landunit_index(lun%gridcell(lidx),lun%itype(lidx)) == 0) then
+          landunit_index(lun%gridcell(lidx),lun%itype(lidx)) = lidx
+       endif
+    enddo
+
+    ! Compute number of columns for each grid cell
+    allocate(ncol(bounds_proc%begg:bounds_proc%endg))
+    ncol = 0
+
+    max_ncol_local = 0
+    do c = bounds_proc%begc, bounds_proc%endc
+       g       = col%gridcell(c)
+       ncol(g) = ncol(g) + 1
+       if (ncol(g) > max_ncol_local) max_ncol_local = ncol(g)
+    enddo
+
+    ! Determine the maximum number of columns for a grid cell
+    call mpi_allreduce(max_ncol_local, max_ncol_global, 1, MPI_INTEGER, MPI_MAX, mpicom, ier)
+
+    ! Determine the total number of data per subgrid category
+    nvals     = nvals_per_col + 2
+
+    ! Determine the number of data to be sent/received by
+    ! local mpi rank and allocate memory
+    nblocks = max_ncol_global * nvals
+
+    ndata_send = nblocks*(bounds_proc%endg     - bounds_proc%begg     + 1)
+    ndata_recv = nblocks*(bounds_proc%endg_all - bounds_proc%begg_all + 1)
+
+    allocate(data_send(ndata_send))
+    allocate(data_recv(ndata_recv))
+
+    data_send = -9999.d0
+    ! Determine the rank of first landunit for a given grid cell
+    ! and given landunit type
+    !
+    ! NOTE: Assumption is that for subgrid category are contigously allocated
+    !       for a given landunit type.
+    !
+    allocate(lun_rank  (bounds_proc%begl_all:bounds_proc%endl_all))
+    allocate(grid_count(bounds_proc%begg_all:bounds_proc%endg_all))
+
+    lun_rank(:)   = 0.d0
+    grid_count(:) = 0.d0
+    last_lun_type   = -1
+
+    do l = bounds_proc%begl_all, bounds_proc%endl_all
+       g             = lun%gridcell(l)
+
+       if (last_lun_type /= lun%itype(l)) then
+          grid_count(:) = 0.d0
+          last_lun_type = lun%itype(l)
+       endif
+       grid_count(g) = grid_count(g) + 1.d0
+       lun_rank(l)   = grid_count(g)
+    enddo
+
+    ! Aggregate the data to send
+    ncol = 0
+    do c = bounds_proc%begc, bounds_proc%endc
+
+       g = col%gridcell(c)
+       l = col%landunit(c)
+
+       beg_idx            = (g-bounds_proc%begg)*nblocks + ncol(g)*nvals + 1
+       data_send(beg_idx) = real(lun%itype(l))
+
+       beg_idx            = beg_idx + 1
+       data_send(beg_idx) = lun_rank(l)
+
+       beg_idx = beg_idx + 1
+       end_idx = beg_idx + nvals_per_col - 1
+
+       begc_idx = (c-bounds_proc%begc)*nvals_per_col + 1
+       endc_idx = begc_idx + nvals_per_col -1
+
+       data_send(beg_idx:end_idx) = data_send_col(begc_idx:endc_idx)
+
+       ncol(g) = ncol(g) + 1
+    enddo
+
+    ! Scatter: Global-to-Local
+    call ScatterDataG2L(nblocks, ndata_send, data_send, ndata_recv, data_recv)
+
+    ! Save data for ghost subgrid category
+    c = bounds_proc%endc
+    do ltype = 1, max_lunit
+       do g = bounds_proc%endg + 1, bounds_proc%endg_all
+
+          do cidx = 0, max_ncol_local-1
+
+             beg_idx = (g-bounds_proc%begg)*nblocks + cidx*nvals + 1
+
+             col_ltype = int(data_recv(beg_idx))
+
+             beg_idx  = beg_idx + 1
+             l_rank   = int(data_recv(beg_idx))
+
+             if (col_ltype == ltype) then
+                c       = c + 1
+
+                beg_idx = beg_idx + 1
+                end_idx = beg_idx + nvals_per_col - 1
+
+                begc_idx = (c-bounds_proc%begc)*nvals_per_col + 1
+                endc_idx = begc_idx + nvals_per_col -1
+
+                data_recv_col(begc_idx:endc_idx) = data_recv(beg_idx:end_idx)
+
+             endif
+          enddo
+       enddo
+    enddo
+
+    ! Free up memory
+    deallocate(ncol           )
+    deallocate(lun_rank       )
+    deallocate(grid_count     )
+    deallocate(landunit_index )
+    deallocate(data_send      )
+    deallocate(data_recv      )
+
+  end subroutine ExchangeColumnLevelGhostData
+
 
 #else
 
