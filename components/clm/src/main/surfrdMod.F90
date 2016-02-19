@@ -272,6 +272,19 @@ contains
        end if
     end if
 
+    ! Read xCell
+    call check_var(ncid=ncid, varname='xCell', vardesc=vardesc, readvar=readvar)
+    if (readvar) then
+       call ncd_io(ncid=ncid, varname= 'xCell', flag='read', data=ldomain%xCell, &
+            dim1name=grlnd, readvar=readvar)
+    endif
+
+    call check_var(ncid=ncid, varname='yCell', vardesc=vardesc, readvar=readvar)
+    if (readvar) then
+       call ncd_io(ncid=ncid, varname= 'yCell', flag='read', data=ldomain%yCell, &
+            dim1name=grlnd, readvar=readvar)
+    endif
+
     call ncd_pio_closefile(ncid)
 
     if (present(glcfilename)) then
