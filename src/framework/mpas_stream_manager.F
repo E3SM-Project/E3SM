@@ -275,9 +275,6 @@ module mpas_stream_manager
     !>  argument may take on values MPAS_IO_SINGLE_PRECISION,
     !>  MPAS_IO_DOUBLE_PRECISION, or MPAS_IO_NATIVE_PRECISION; if this argument is
     !>  not supplied, native precision is assumed.
-    !>  Note: Setting the precision of real fields is only supported at present
-    !>  for converting double-precision to single-precision on output; input is
-    !>  automatically converted from single- do double-precision if necessary.
     !>  The optional argument clobberMode determines how the stream manager will
     !>  deal with existing files; possible options include MPAS_STREAM_CLOBBER_NEVER, 
     !>  MPAS_STREAM_CLOBBER_APPEND, MPAS_STREAM_CLOBBER_TRUNCATE, 
