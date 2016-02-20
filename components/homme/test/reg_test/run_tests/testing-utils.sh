@@ -327,8 +327,10 @@ createAllRunScripts() {
     ############################################################
     if [ "${CREATE_BASELINE}" == false ] ; then 
       mkdir -p ${HOMME_DEFAULT_BASELINE_DIR}/${TEST_NAME}
-      echo "cp $thisRunScript ${HOMME_BASELINE_DIR}/${TEST_NAME}/"
-      cp $thisRunScript ${HOMME_BASELINE_DIR}/${TEST_NAME}/
+
+#      MT: why do this? it will trash the run scripts that were created by the baseline code?
+#      echo "cp $thisRunScript ${HOMME_BASELINE_DIR}/${TEST_NAME}/"
+#      cp $thisRunScript ${HOMME_BASELINE_DIR}/${TEST_NAME}/
 
       ############################################################
       # Now set up the cprnc diffing
@@ -604,61 +606,6 @@ diffCprncOutput() {
       exit -13
     fi
     
-  done
-}
-
-moveBaseline() {
-
-  source ${HOMME_TESTING_DIR}/test_list.sh
-
-  for subNum in $(seq 1 ${NUM_TEST_FILES})
-  do
-
-    subFile=TEST_FILE_${subNum}
-    subFile=${!subFile}
-
-    subDirName=`dirname ${subFile}`
-    subBaseName=`basename ${subDirName}`
-
-    baselineDir=${HOMME_BASELINE_DIR}/$subBaseName
-    mkdir -p $baselineDir
-
-    # source the test.sh file to get the name of the NC_OUTPUT_FILES
-    source ${subFile}
-
-    # NC_OUTPUT_FILES is defined in the .sh file
-    FILES="${NC_OUTPUT_FILES}"
-
-    if [ -z "${FILES}" ] ; then
-      : # pass for now
-      #echo "Test ${subBaseName} doesn't have Netcdf output files"
-    fi
-
-    # for files in movies
-    for file in $FILES 
-    do
-      #echo "file = ${file}"
-      baseFilename=`basename $file`
-
-      # new result
-      newFile=${subDirName}/movies/$file
-      newFileBasename=`basename $newFile`
-
-      if [ ! -f "${newFile}" ] ; then
-        echo "ERROR: The result file ${newFile} does not exist exiting" 
-        exit -17
-      fi
-
-      # Make the directory to store the netcdf files
-      cmd="mkdir -p $baselineDir/movies"
-      #echo $cmd
-      $cmd
-      # Move the netcdf files
-      cmd="mv $newFile $baselineDir/movies/$newFileBasename"
-      #echo "$cmd"
-      $cmd
-      
-    done
   done
 }
 

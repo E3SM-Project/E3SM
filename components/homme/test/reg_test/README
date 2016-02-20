@@ -17,15 +17,20 @@ solution errors,conservation errors, energy budget errors, and
 checking plots of the vorticity field and and tracers.
 
 To generate baselines:
-   cd /path/to/baseline/workdir
+   cd /working/path1
    cmake -C $MACHFILE -DUSE_NUM_PROCS=24  /path/to/homme/baseline/code
    make -j4 clean
-   make -j4 baseline
+   make -j4 baseline    make baselines in /working/path1/tests/baseline/
+   make -j4 check       run tests, store results in /working/path1/tests
+                        Compare against?   (not sure the default if HOMME_BASELINE_DIR not specified)
+
 To compare a different branch against the baselines:
-   cd /path/to/branch/workdir
-   cmake -C $MACHFILE -DUSE_NUM_PROCS=24  -DHOMME_BASELINE_DIR=/path/to/homme/baseline/code
+   cd /working/path2
+   cmake -C $MACHFILE -DUSE_NUM_PROCS=24  -DHOMME_BASELINE_DIR=/working/path1
    make -j4 clean
-   make -j4 check
+   make -j4 check      run tests, store results in /working/path2/tests
+                       compare against results in $HOMME_BASELINE_DIR/tests/baseline
+
 
 
 The above instructions assume you have queing disabled in your machine's cmake

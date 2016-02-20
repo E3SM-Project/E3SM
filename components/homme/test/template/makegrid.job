@@ -37,7 +37,7 @@ set NC = 4
 set ne = 0 ; 
 
 set HOMME = `cd ../.. ; pwd`  # path to HOMME code. assume we are running from homme/test/template
-set MACH = $HOMME/cmake/machineFiles/skybridge.cmake
+#set MACH = $HOMME/cmake/machineFiles/skybridge.cmake
 #set MACH = $HOMME/cmake/machineFiles/climate.cmake
 #set MACH = $HOMME/cmake/machineFiles/rhel5.cmake
 #set MACH = $HOMME/cmake/machineFiles/darwin.cmake
