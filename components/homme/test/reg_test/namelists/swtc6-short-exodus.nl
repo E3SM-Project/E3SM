@@ -35,9 +35,10 @@ kcut_fm       = 2
 wght_fm       = 0.10D0
 /
 &analysis_nl
-output_timeunits = 2,2
-output_frequency = 0,6
-output_varnames2 = 'u', 'v', 'geop'
+output_prefix     = "exodus-"
+output_timeunits = 2
+output_frequency = 6
+output_varnames1 = 'u', 'v', 'geop'
 interp_type      = 0          ! native high order
 output_type      = 'netcdf'
 io_stride        = 8

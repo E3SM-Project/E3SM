@@ -41,7 +41,7 @@ Determine executable (sweqx or preqx)
 Create new executable configuration (if needed).
    i.e. homme/test_exec/swtcA
 Create cmake description of test and namelist:
-   homme/test/reg_test/run_tets/swtc2.cmake
+   homme/test/reg_test/run_tests/swtc2.cmake
    homme/test/reg_test/namelists/swtc2.nl
    homme/test/reg_test/run_tests/test-list.cmake   (update for new test)
    
@@ -243,119 +243,15 @@ baroCamMoist.cmake
 
 
 ======================================================================================
-tests removed from ACME:
+other tests
 ======================================================================================
+templates.cmake 
 
-swtc1-dg.sh Test case 1 from Williamson et al 1992 (advection)
-            Discontinuous Galerkin core
-            Runge-kutta, inviscid test
-	    Output using PIO_INTERP
-            NE=10, NP=6, dt=100
-            Verification:
-            l1,l2,max errors have not changed significantly
-             (3-4 digits?  need to estimate their sensitivity)
-       12.00 days  l1,l2,linf=  0.7022180E-02  0.4124479E-02  0.3461017E-02
-
-
-swtc2-dg.sh Test case 2 from Williamson et al 1992 (steady-state)
-	    Discontinuous Galerkin core
-            Runge-kutta + viscosity
-            Output using PIO_INTERP
-            NE=6, NP=6, dt=30
-            Verification:  l1,l2,max errors have not changed significantly
-             (3-4 digits?  need to estimate their sensitivity)
-  5.00 days  l1,l2,linf=  0.1955934E-07  0.2790046E-07  0.2881657E-06
-
-
-
-swtc5-dg.sh Test case 5 from Williamson et al 1992 (isolated mtn)
-            Discontinuous Galerkin core
-            Runge-kutta + viscosity
-            Output using PIO_INTERP
-            NE=6, NP=6, dt=30
-            Verification: l1,l22,max errors have not changed (l1,l2,max errors 
-            are computed in swtc5ref.ncl, which compares against NCAR's 
-            T213 reference sol)
-            l1,l2,mx = 0.0109583 0.0154157 0.0734919
-
-
-
-baro1a.sh   Test case from Polvani et al 2004
-            Spectral Element core
-            Explicit leapfrog + viscosity
-            Output using PIO_INTERP
-            NE=9, NP=8, PLEV=20, dt=60
-            Run the configuration in this script, visually
-            compare plots produced in baro1a.pdf (either
-            run in branch AND trunk or compare to plots in
-            baro1a-ref.pdf in this directory)
-
-
-baro2a.sh   Test case from Jablonowski and Williamson 2006
-            Spectral Element core
-            No tracers
-            Explicit leapfrog + hyperviscosity
-            Output using PIO_INTERP
-            NE=15, NP=4, PLEV=26, dt=180
-
-            NOTE: tracer advection with leapfrog dynamics
-                  no longer supported. Need to update 
-                  reference plots to look at vorticty
-                  instead of tracers. (MT 2012/10)
-
-            Verification:
-            Run the configuration in this script, visually
-            compare plots produced in q.pdf (either run
-            in branch AND trunk or compare to plots in
-            baro2a-ref.pdf in this directory)
-
-            l2 error in PS against T340 EUL result
-            l2 PS error at day 9:  1.13mb
-            plot PS, zeta, compare with reference plots.  
-
-
-baro1b.sh   Test case from Polvani et al 2004
-            Spectral Element core
-            Semi-implicit time-stepping
-            Output using PIO
-            NE=9, NP=8, PLEV=20, dt=600
-            Run the configuration in this script, visually
-            compare plots produced in baro1b.pdf (either
-            run in branch AND trunk or compare to plots in
-            baro1b-ref.pdf in this directory)
-
-            Verification: baro1[ab].sh 
-            run both tests, verify enstrophy norm has not changed significantly
-            ( 0.79e-5, 2-3 digits).  Plot vorticity with the NCL script provided and
-            compare with reference plots provided.  Plots should be 
-           visually identical.
-
-
-
-
-baro-dg.sh  Test case from Jablonowski and Williamson 2006
-            Discontinous Galerkin core
-            Runge-Kutta timestepping with viscosity
-            NE=20, NP=6, PLEV=26, dt=10
-            Run the configuration in this script, visually
-            compare plots produced in zeta.pdf (either run
-            in branch AND trunk or compare to plots in
-            baro-dg-ref.pdf in ref_sol/)
-
-
-            This test is still very noisy, so these numbers should be
-            updated when the test works :) But for now, verify final
-            output and the statistics given by the NCL scripts on the
-            last day.
-      259200 time=   30.0000000000000       days
-  u=   -0.321240342997538E+02   0.639891385662766E+02   0.316917285108628E+08
-  v=   -0.456006221384880E+02   0.363723804401733E+02   0.268096107383425E+04
- ps=    0.896360869854064E+05   0.105148873963494E+06   0.865123395053191E+10
-temp=   0.216357094032624E+03   0.132267282279555E+04   0.103398193092533E+10
-  (0)	time = 30
-  (0)	ps min/max = 89626.2, 105149
-  (0)	zeta 850 min/max = -0.000254125, 0.000164322
-
-
-
+       Test the HOMME grid template generation.  This runs 1
+       timstep, and then outputs details about the grid and the GLL dual grid
+ 
+       Not tested: From this output, NCL scripts are used to convert
+       the data into a "*_latlon.nc" file used by CAM's interpic_new
+       utility, and a "*_scip.nc" file used by ESMF and Tempest
+       utilities that generate mapping files.
 

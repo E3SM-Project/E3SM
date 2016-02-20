@@ -21,6 +21,6 @@ SET(NAMELIST_FILES
    ${HOMME_ROOT}/test/reg_test/namelists/swtc6-short-exodus.nl
 )
 
-SET(NC_OUTPUT_FILES swtc61.nc swtc62.nc)
+SET(NC_OUTPUT_FILES swtc61.nc exodus-swtc61.nc)
 
 
