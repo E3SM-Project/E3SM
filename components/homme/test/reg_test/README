@@ -122,11 +122,22 @@ swtc5.cmake   Williamson et al 1992, test case 5 (isolated mtn)
 
 
 swtc6.cmake  short time, low resolution Rossby wave test
+             Run two simulations, one with the internal NE=2 grid, the
+             second with a tempest NE=2 grid from a .g meshfile
+             RMS error between the two runs should be: (final time):
+             (computed via cprnc utility)
+ RMS geop                             6.6086E-12            NORMALIZED  7.2158E-16
+ RMS u                                2.1855E-13            NORMALIZED  6.7928E-15
+ RMS v                                1.8779E-13            NORMALIZED  9.2013E-15
+
+
              executable:     sweqx
              configuration:  homme/test_execs/swtcC
                   NP=8  PLEV=1, USE_PIO=FALSE, WITH_ENERGY=FALSE
              namelist options:   homme/test/reg_test/namelists/swtc6-short.nl
                   NE=2, explicit leapfrog, no robert filter, no viscsoity, dt=6, run for 1 day    
+
+              
 
            Verification:
            verifty mass and energy conservatin to machine precision

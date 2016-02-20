@@ -3,8 +3,8 @@ NThreads      = 1
 partmethod    = 0
 topology      = "cube"
 test_case     = "swtc6"
-ne            = 2
-cubed_sphere_map = 2
+ne            = 0
+mesh_file     = "TEMPEST_NE2.g"
 ndays         = 1
 statefreq     = 1440
 restartfreq   = -100
@@ -35,9 +35,9 @@ kcut_fm       = 2
 wght_fm       = 0.10D0
 /
 &analysis_nl
-output_timeunits = 2
-output_frequency = 6
-output_varnames1 = 'u', 'v', 'geop'
+output_timeunits = 2,2
+output_frequency = 0,6
+output_varnames2 = 'u', 'v', 'geop'
 interp_type      = 0          ! native high order
 output_type      = 'netcdf'
 io_stride        = 8

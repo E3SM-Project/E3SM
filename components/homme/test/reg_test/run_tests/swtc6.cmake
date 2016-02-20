@@ -14,7 +14,13 @@ SET(EXEC_NAME swtcC)
 
 SET(NUM_CPUS 16)
 
-SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/swtc6-short.nl)
+SET(MESH_FILES ${HOMME_ROOT}/test/mesh_files/TEMPEST_NE2.g)
 
-SET(NC_OUTPUT_FILES swtc61.nc)
+SET(NAMELIST_FILES 
+   ${HOMME_ROOT}/test/reg_test/namelists/swtc6-short.nl
+   ${HOMME_ROOT}/test/reg_test/namelists/swtc6-short-exodus.nl
+)
+
+SET(NC_OUTPUT_FILES swtc61.nc swtc62.nc)
+
 
