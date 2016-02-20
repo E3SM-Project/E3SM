@@ -655,7 +655,7 @@ diffCprncRef() {
   do
     echo "file = ${file}"
     cprncOutputFile="${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.ref.`basename $file`.out"
-    cprncErrorFile="${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}..ref.`basename $file`.err"
+    cprncErrorFile="${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.ref.`basename $file`.err"
 
     # ensure that cprncOutputFile exists
     if [ ! -f "${cprncOutputFile}" ]; then
