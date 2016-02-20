@@ -80,7 +80,8 @@ contains
   end subroutine VSFMMPPInit
 
   !------------------------------------------------------------------------
-  subroutine VSFMMPPSetup(this, begc, endc, num_hydrologyc, filter_hydrologyc, &
+  subroutine VSFMMPPSetup(this, begg, endg, begc, endc, ncols_ghost, filter_hydrologyc, &
+       xc_col, yc_col, zc_col, grid_owner, &
        soilstate_vars, waterstate_vars, soilhydrology_vars)
     !
     ! !DESCRIPTION:
@@ -102,9 +103,14 @@ contains
     !
     ! !ARGUMENTS
     class(mpp_vsfm_type)                 :: this
+    integer, intent(in)                  :: begg,endg
     integer, intent(in)                  :: begc,endc
-    integer, intent(in)                  :: num_hydrologyc       ! number of column soil points in column filter
+    integer, intent(in)                  :: ncols_ghost          ! number of ghost/halo columns
     integer, intent(in)                  :: filter_hydrologyc(:) ! column filter for soil points
+    PetscReal, pointer, intent(in)       :: xc_col(:)
+    PetscReal, pointer, intent(in)       :: yc_col(:)
+    PetscReal, pointer, intent(in)       :: zc_col(:)
+    PetscInt, pointer, intent(in)        :: grid_owner(:)
     type(soilstate_type) , intent(in)    :: soilstate_vars
     type(waterstate_type)  , intent(in)  :: waterstate_vars
     type(soilhydrology_type), intent(in) :: soilhydrology_vars
@@ -122,7 +128,8 @@ contains
     this%id           = MPP_VSFM_SNES_CLM
     this%solver_type  = PETSC_SNES
     soe_type          = SOE_RE_ODE
-    call this%meshes(1)%Create(MESH_CLM_SOIL_COL, begc, endc, &
+    call this%meshes(1)%Create(MESH_CLM_SOIL_COL, begg, endg, begc, endc, ncols_ghost, &
+                               xc_col, yc_col, zc_col, grid_owner, &
                                waterstate_vars, soilhydrology_vars)
 
     ! Setup the system-of-equations
@@ -141,8 +148,8 @@ contains
     end select
 
     ! Initliaze the VSFM-MPP
-    call VSFMMPPInitialize(this, begc, endc, soilstate_vars, &
-             waterstate_vars, soilhydrology_vars)
+    call VSFMMPPInitialize(this, begc, endc, ncols_ghost, &
+             soilstate_vars, waterstate_vars, soilhydrology_vars)
 
   end subroutine VSFMMPPSetup
 
@@ -200,7 +207,7 @@ contains
     ! DM-Composite approach
 
     ! Create PETSc DM for pressure-equation
-    size = goveq_richards_pres%mesh%ncells
+    size = goveq_richards_pres%mesh%ncells_local
 
     select case(vsfm_mpp%id)
     case (MPP_VSFM_SNES_CLM)
@@ -229,6 +236,8 @@ contains
     call DMSetUp            (vsfm_soe%dm     , ierr               ); CHKERRQ(ierr)
 
     call DMCreateMatrix     (vsfm_soe%dm     , vsfm_soe%jac, ierr ); CHKERRQ(ierr)
+    call MatSetOption       (vsfm_soe%jac, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_FALSE, ierr); CHKERRQ(ierr)
+    call MatSetOption       (vsfm_soe%jac, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE, ierr); CHKERRQ(ierr)
 
     ! Create solution vector
     call DMCreateGlobalVector(vsfm_soe%dm , vsfm_soe%soln          , ierr); CHKERRQ(ierr)
@@ -254,7 +263,7 @@ contains
   end subroutine VSFMMPPSetupPetscSNESSetup
 
   !------------------------------------------------------------------------
-  subroutine VSFMMPPInitialize(vsfm_mpp, begc, endc, &
+  subroutine VSFMMPPInitialize(vsfm_mpp, begc, endc, ncols_ghost, &
        soilstate_vars, waterstate_vars, soilhydrology_vars)
 
     !
@@ -280,6 +289,7 @@ contains
     ! !ARGUMENTS
     class(mpp_vsfm_type)                              :: vsfm_mpp
     integer, intent(in)                               :: begc,endc
+    integer, intent(in)                               :: ncols_ghost          ! number of ghost/halo columns
     type(soilstate_type) , intent(in)                 :: soilstate_vars
     type(waterstate_type), intent(in)                 :: waterstate_vars
     type(soilhydrology_type), intent(in)              :: soilhydrology_vars
@@ -296,7 +306,7 @@ contains
     vsfm_soe => vsfm_mpp%sysofeqns
 
     ! Set initial coniditions
-    call VSFMMPPSetSoils(vsfm_mpp, begc, endc, soilstate_vars     )
+    call VSFMMPPSetSoils(vsfm_mpp, begc, endc, ncols_ghost, soilstate_vars     )
     call VSFMMPPSetICs(  vsfm_mpp, begc, endc, soilhydrology_vars )
 
     ! Get pointers to governing-equations
@@ -311,7 +321,7 @@ contains
     enddo
 
     ! Create PETSc DM for pressure-equation
-    size = goveq_richards_pres%mesh%ncells
+    size = goveq_richards_pres%mesh%ncells_local
 
     call VecCreateSeq(PETSC_COMM_SELF,size,variable_vec,ierr); CHKERRQ(ierr)
     call VecGetArrayF90(variable_vec, vec_p, ierr); CHKERRQ(ierr)
@@ -359,7 +369,7 @@ contains
   end subroutine VSFMMPPSetICs
 
   !------------------------------------------------------------------------
-  subroutine VSFMMPPSetSoils(vsfm_mpp, begc, endc, soilstate_vars)
+  subroutine VSFMMPPSetSoils(vsfm_mpp, begc, endc, ncols_ghost, soilstate_vars)
     !
     ! !DESCRIPTION:
     ! Sets soil properties for VSFM solver
@@ -372,11 +382,12 @@ contains
     ! !ARGUMENTS
     class(mpp_vsfm_type)              :: vsfm_mpp
     integer, intent(in)               :: begc,endc
+    integer, intent(in)               :: ncols_ghost
     type(soilstate_type) , intent(in) :: soilstate_vars
 
     select case(vsfm_mpp%id)
     case (MPP_VSFM_SNES_CLM)
-       call VSFMMPPSetSoilsCLM(vsfm_mpp, begc, endc, soilstate_vars)
+       call VSFMMPPSetSoilsCLM(vsfm_mpp, begc, endc, ncols_ghost, soilstate_vars)
     case default
        write(iulog,*) 'VSFMMPPSetSoils: Unknown mpp_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -385,7 +396,7 @@ contains
   end subroutine VSFMMPPSetSoils
 
   !------------------------------------------------------------------------
-  subroutine VSFMMPPSetSoilsCLM(vsfm_mpp, begc, endc, soilstate_vars)
+  subroutine VSFMMPPSetSoilsCLM(vsfm_mpp, begc, endc, ncols_ghost, soilstate_vars)
     !
     ! !DESCRIPTION:
     ! Sets soil properties for VSFM solver from CLM
@@ -414,6 +425,7 @@ contains
     ! !ARGUMENTS
     class(mpp_vsfm_type)                              :: vsfm_mpp
     integer, intent(in)                               :: begc,endc
+    integer, intent(in)                               :: ncols_ghost
     type(soilstate_type) , intent(in)                 :: soilstate_vars
     !
     ! !LOCAL VARIABLES:
@@ -440,6 +452,7 @@ contains
     PetscInt                                          :: first_active_hydro_col_id
     PetscInt                                          :: col_id
     PetscBool                                         :: dae_eqn
+    PetscInt :: ierr
 
     associate(&
          smpmin       =>    soilstate_vars%smpmin_col       , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)
@@ -501,11 +514,9 @@ contains
        ! In first pass, set hydraulic properties for soil columns that are
        ! active in CLM
 
-       !icell = 0
-       do c = begc, endc
+       do c = begc, endc + ncols_ghost
           do j = 1, nlevgrnd
 
-             !icell = icell + 1
              icell = (c - begc)*nlevgrnd + j
              g = col%gridcell(c)
              l = col%landunit(c)
@@ -886,10 +897,10 @@ contains
        cur_goveq => cur_goveq%next
     enddo
 
-    if (size(data_1d) /= goveq_richards_pres%mesh%ncells) then
-       write(iulog,*) 'VSFMMPPRestart: size(data_1d) /= goveq_richards_pres%mesh%ncells'
+    if (size(data_1d) /= goveq_richards_pres%mesh%ncells_local) then
+       write(iulog,*) 'VSFMMPPRestart: size(data_1d) /= goveq_richards_pres%mesh%ncells_local'
        write(iulog,*) 'size(data_1d)                    = ',size(data_1d)
-       write(iulog,*) 'goveq_richards_pres%mesh%ncells  = ', goveq_richards_pres%mesh%ncells
+       write(iulog,*) 'goveq_richards_pres%mesh%ncells_local  = ', goveq_richards_pres%mesh%ncells_local
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
 
@@ -908,7 +919,7 @@ contains
          PETSC_NULL_INTEGER, soln_subvecs, ierr)
 
     call VecGetArrayF90(soln_subvecs(1), press_p, ierr)
-    do local_id = 1, goveq_richards_pres%mesh%ncells
+    do local_id = 1, goveq_richards_pres%mesh%ncells_local
        press_p(local_id) = data_1d(local_id)
     enddo
     call VecRestoreArrayF90(soln_subvecs(1), press_p, ierr)

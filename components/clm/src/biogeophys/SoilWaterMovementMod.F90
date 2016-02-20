@@ -26,6 +26,7 @@ module SoilWaterMovementMod
   integer :: vsfm_cond_id_for_drainage
   integer :: vsfm_cond_id_for_snow
   integer :: vsfm_cond_id_for_sublimation
+  integer :: vsfm_cond_id_for_lateral_flux
   !-----------------------------------------------------------------------
 
 contains
@@ -52,6 +53,7 @@ contains
     vsfm_cond_id_for_drainage      = -1
     vsfm_cond_id_for_snow          = -1
     vsfm_cond_id_for_sublimation   = -1
+    vsfm_cond_id_for_lateral_flux  = -1
 
     ! GB-FIX-ME: The call to control_spmd() [in subroutine control_init()] before
     !            call to init_hydrology() would avoid the mpi broadcast
@@ -800,7 +802,7 @@ contains
     !DESCRIPTION
     !  Determines the IDs of various source-sink conditions in VSFM
     !
-    use clm_varctl, only : use_vsfm
+    use clm_varctl                       , only : use_vsfm, lateral_connectivity
 #ifdef USE_PETSC_LIB
     use MultiPhysicsProbVSFM             , only : vsfm_mpp
     use MultiPhysicsProbConstants        , only : COND_SS
@@ -814,6 +816,7 @@ contains
     integer :: ier ! error status
     character (len=256), pointer :: cond_names(:)
     integer                      :: num_conds
+    integer                      :: num_conds_expected
     integer                      :: nn
     integer                      :: kk
     character (len=256)          :: cond_name
@@ -821,11 +824,15 @@ contains
 
 #ifdef USE_PETSC_LIB
 
-    ! Get the number of
+    num_conds_expected = 6
+
+    if (lateral_connectivity) num_conds_expected = num_conds_expected + 1
+
+    ! Get the number of conditions
     call vsfm_mpp%sysofeqns%GetConditionNames(COND_SS, COND_NULL, num_conds, cond_names)
 
-    if (num_conds /= 6) then
-      write(iulog,*)'In init_vsfm_condition_ids: Source-sink conditions /= 6'
+    if (num_conds /= num_conds_expected) then
+      write(iulog,*)'In init_vsfm_condition_ids: Source-sink conditions /= ', num_conds_expected
       call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
 
@@ -843,6 +850,8 @@ contains
          vsfm_cond_id_for_snow = nn
        case ("Sublimation_Flux")
          vsfm_cond_id_for_sublimation = nn
+       case ("Lateral_flux")
+         vsfm_cond_id_for_lateral_flux = nn
        case default
          write(iulog,*)'In init_vsfm_condition_ids: Unknown flux.'
          call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -876,6 +885,11 @@ contains
 
     if (vsfm_cond_id_for_sublimation == -1) then
       write(iulog,*)'In init_vsfm_condition_ids: vsfm_cond_id_for_sublimation not defined.'
+      call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    if (lateral_connectivity .and. vsfm_cond_id_for_lateral_flux == -1) then
+      write(iulog,*)'In init_vsfm_condition_ids: vsfm_cond_id_for_lateral_flux not defined.'
       call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
 

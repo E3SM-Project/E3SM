@@ -53,6 +53,8 @@ module GoveqnRichardsODEPressureType
      procedure, public :: NumConditions             => RichardsODEPressureNumConditions
      procedure, public :: NumCellsInConditions      => RichardsODEPressureNumCellsInConditions
      procedure, public :: GetConditionNames         => RichardsODEPressureGetConditionNames
+
+     procedure, public :: ComputeLateralFlux        => RichardsODEComputeLateralFlux
   end type
 
   !------------------------------------------------------------------------
@@ -104,8 +106,8 @@ contains
     PetscInt                                 :: icond
 
     ! Allocate memory and initialize aux vars: For internal connections
-    allocate(this%aux_vars_in(this%mesh%ncells))
-    do icond = 1,this%mesh%ncells
+    allocate(this%aux_vars_in(this%mesh%ncells_all))
+    do icond = 1,this%mesh%ncells_all
        call this%aux_vars_in(icond)%Init()
     enddo
 
@@ -168,7 +170,7 @@ contains
     endif
 
     ! For internal connections
-    do icond = 1,this%mesh%ncells
+    do icond = 1,this%mesh%ncells_all
        this%aux_vars_in(icond)%density_type = density_type
     enddo
 
@@ -681,20 +683,28 @@ contains
           call endrun(msg=errMsg(__FILE__, __LINE__))
        end if
 
-       cur_conn_set => cur_cond%conn_set
-       do iconn = 1, cur_conn_set%num_connections
-          sum_conn = sum_conn + 1
-          select case(cur_cond%itype)
-          case (COND_MASS_RATE)
-             var_value = soe_avars(iconn + iauxvar_off)%condition_value
-             this%aux_vars_ss(sum_conn)%condition_value = var_value
-             cur_cond%value(iconn) = var_value
-          case default
-             write(string,*) cur_cond%itype
-             write(iulog,*) 'Unknown cur_cond%itype = ' // trim(string)
-             call endrun(msg=errMsg(__FILE__, __LINE__))
-          end select
-       enddo
+       if (trim(cur_cond%name) /= 'Lateral_flux') then
+          !
+          ! Do not update values associated with lateral flux because:
+          !  - SOE auxvars associated with lateral flux source-sink
+          !    have zero values, AND
+          !  - GE auxvars already have pre-computed values of lateral flux.
+          !
+          cur_conn_set => cur_cond%conn_set
+          do iconn = 1, cur_conn_set%num_connections
+             sum_conn = sum_conn + 1
+             select case(cur_cond%itype)
+             case (COND_MASS_RATE)
+                var_value = soe_avars(iconn + iauxvar_off)%condition_value
+                ge_avars(sum_conn)%condition_value = var_value
+                cur_cond%value(iconn) = var_value
+             case default
+                write(string,*) cur_cond%itype
+                write(iulog,*) 'Unknown cur_cond%itype = ' // trim(string)
+                call endrun(msg=errMsg(__FILE__, __LINE__))
+             end select
+          enddo
+       endif
 
        cur_cond => cur_cond%next
     enddo
@@ -859,7 +869,7 @@ contains
     PetscInt                                 :: ghosted_id
 
     ! Update aux vars for internal cells
-    do ghosted_id = 1, this%mesh%ncells
+    do ghosted_id = 1, this%mesh%ncells_all
        call this%aux_vars_in(ghosted_id)%AuxVarCompute()
     enddo
 
@@ -993,7 +1003,7 @@ contains
     ff(:) = 0.d0
 
     ! Interior cells.
-    do cell_id = 1, this%mesh%ncells
+    do cell_id = 1, this%mesh%ncells_local
 
        if (this%mesh%is_active(cell_id)) then
           ff(cell_id) = this%aux_vars_in(cell_id)%por   * &
@@ -1037,7 +1047,7 @@ contains
     dtInv = 1.d0 / this%dtime
 
     ! Interior cells
-    do cell_id = 1, this%mesh%ncells
+    do cell_id = 1, this%mesh%ncells_local
 
        if (this%mesh%is_active(cell_id) ) then
           por     = this%aux_vars_in(cell_id)%por
@@ -1633,6 +1643,132 @@ contains
     enddo
 
   end subroutine RichardsODEPressureJacOffDiag_BC
+
+  !------------------------------------------------------------------------
+  subroutine RichardsODEComputeLateralFlux(this)
+    !
+    ! !DESCRIPTION:
+    ! Computes the divergence associated with internal and boundary
+    ! conditions for residual equation. Also computes the contribution of
+    ! source-sink to residual equation.
+    !
+    ! \int \nabla \cdot (\rho \mathbf{q}) dV
+    ! = \int (\rho \mathbf{q}) \cdot \mathbf{n} dA
+    !
+    ! !USES:
+    use RichardsMod                 , only : RichardsFlux
+    use ConditionType               , only : condition_type
+    use ConnectionSetType           , only : connection_set_type
+    use MultiPhysicsProbConstants   , only : COND_NULL
+    use MultiPhysicsProbConstants   , only : FMWH2O
+    use MultiPhysicsProbConstants   , only : COND_MASS_RATE
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(goveqn_richards_ode_pressure_type) :: this
+    !
+    ! !LOCAL VARIABLES
+    PetscInt                                 :: iconn
+    PetscInt                                 :: sum_conn
+    PetscInt                                 :: cell_id_dn
+    PetscInt                                 :: cell_id_up
+    PetscInt                                 :: cell_id
+    PetscReal                                :: flux
+    PetscReal                                :: dummy_var1
+    PetscReal                                :: dummy_var2
+    PetscBool                                :: compute_deriv
+    PetscBool                                :: internal_conn
+    PetscInt                                 :: cond_type
+    type(condition_type),pointer             :: lateral_cond
+    type(connection_set_type), pointer       :: cur_conn_set
+    PetscBool                                :: lateral_cond_found
+    PetscErrorCode                           :: ierr
+    PetscViewer :: viewer
+    character(len=256) :: string
+    character(len=256) :: rank_string
+    Vec :: xx
+    PetscReal      , pointer       :: real_ptr(:)                   ! temporary
+
+    compute_deriv = PETSC_FALSE
+
+    call VecCreate(PETSC_COMM_SELF, xx, ierr); CHKERRQ(ierr)
+    call VecSetSizes(xx, this%mesh%ncells_local, PETSC_DECIDE, ierr); CHKERRQ(ierr)
+    call VecSetBlockSize(xx, 1, ierr); CHKERRQ(ierr)
+    call VecSetFromOptions(xx, ierr); CHKERRQ(ierr)
+
+    ! Source-sink cells
+    lateral_cond_found = PETSC_FALSE
+    lateral_cond => this%source_sinks%first
+    do
+       if (.not.associated(lateral_cond)) exit
+
+       if (trim(lateral_cond%name) == 'Lateral_flux') then
+          lateral_cond_found = PETSC_TRUE
+          exit
+       endif
+       lateral_cond => lateral_cond%next
+    enddo
+
+    if (.not.lateral_cond_found) then
+       write(iulog,*)'RichardsODEComputeLateralFlux: Lateral source-sink not found.'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    lateral_cond%value(:) = 0.d0
+
+    ! Lateral cells
+    cur_conn_set => this%mesh%lateral_conn_set_list%first
+    sum_conn = 0
+    do
+       if (.not.associated(cur_conn_set)) exit
+
+       do iconn = 1, cur_conn_set%num_connections
+          sum_conn = sum_conn + 1
+
+          cell_id_up = cur_conn_set%id_up(sum_conn)
+          cell_id_dn = cur_conn_set%id_dn(sum_conn)
+
+          internal_conn = PETSC_TRUE
+          cond_type     = COND_NULL
+
+          if ( (.not. this%mesh%is_active(cell_id_up)) .or. &
+               (.not. this%mesh%is_active(cell_id_dn)) ) cycle
+
+          call RichardsFlux(this%aux_vars_in(cell_id_up)%pressure,  &
+                            this%aux_vars_in(cell_id_up)%kr,        &
+                            this%aux_vars_in(cell_id_up)%dkr_dP,    &
+                            this%aux_vars_in(cell_id_up)%den,       &
+                            this%aux_vars_in(cell_id_up)%dden_dP,   &
+                            this%aux_vars_in(cell_id_up)%vis,       &
+                            this%aux_vars_in(cell_id_up)%dvis_dP,   &
+                            this%aux_vars_in(cell_id_up)%perm,      &
+                            this%aux_vars_in(cell_id_dn)%pressure,  &
+                            this%aux_vars_in(cell_id_dn)%kr,        &
+                            this%aux_vars_in(cell_id_dn)%dkr_dP,    &
+                            this%aux_vars_in(cell_id_dn)%den,       &
+                            this%aux_vars_in(cell_id_dn)%dden_dP,   &
+                            this%aux_vars_in(cell_id_dn)%vis,       &
+                            this%aux_vars_in(cell_id_dn)%dvis_dP,   &
+                            this%aux_vars_in(cell_id_dn)%perm,      &
+                            cur_conn_set%area(iconn),               &
+                            cur_conn_set%dist_up(iconn),            &
+                            cur_conn_set%dist_dn(iconn),            &
+                            cur_conn_set%dist_unitvec(iconn)%arr,   &
+                            compute_deriv,                          &
+                            internal_conn,                          &
+                            cond_type,                              &
+                            flux,                                   &
+                            dummy_var1,                             &
+                            dummy_var2                              &
+                            )
+
+       enddo
+
+       cur_conn_set => cur_conn_set%next
+    enddo
+
+  end subroutine RichardsODEComputeLateralFlux
 
   !------------------------------------------------------------------------
 

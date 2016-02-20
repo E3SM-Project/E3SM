@@ -40,20 +40,23 @@ module SystemOfEquationsVSFMType
      PetscInt, pointer                          :: soe_auxvars_bc_ncells (:) ! Number of control volumes associated with each boundary condition.
      PetscInt, pointer                          :: soe_auxvars_ss_ncells (:) ! Number of control volumes associated with each source-sink condition.
      PetscInt                                   :: num_auxvars_in            ! Number of auxvars associated with internal state.
+     PetscInt                                   :: num_auxvars_in_local      ! Number of auxvars associated with internal state.
      PetscInt                                   :: num_auxvars_bc            ! Number of auxvars associated with boundary condition.
      PetscInt                                   :: num_auxvars_ss            ! Number of auxvars associated with source-sink condition.
    contains
-     procedure, public :: Init              => VSFMSOEInit
-     procedure, public :: Setup             => VSFMSOESetup
-     procedure, public :: Residual          => VSFMSOEResidual
-     procedure, public :: Jacobian          => VSFMJacobian
-     procedure, public :: PreSolve          => VSFMSOEPreSolve
-     procedure, public :: SetDataFromCLM    => VSFMSOESetDataFromCLM
-     procedure, public :: GetDataForCLM     => VSFMSOEGetDataForCLM
-     procedure, public :: PostSolve         => VSFMSOEPostSolve
-     procedure, public :: PostStepDT        => VSFMSPostStepDT
-     procedure, public :: PreStepDT         => VSFMSPreStepDT
-     procedure, public :: GetConditionNames => VSFMSGetConditionNames
+     procedure, public :: Init                   => VSFMSOEInit
+     procedure, public :: Setup                  => VSFMSOESetup
+     procedure, public :: Residual               => VSFMSOEResidual
+     procedure, public :: Jacobian               => VSFMJacobian
+     procedure, public :: PreSolve               => VSFMSOEPreSolve
+     procedure, public :: SetDataFromCLM         => VSFMSOESetDataFromCLM
+     procedure, public :: GetDataForCLM          => VSFMSOEGetDataForCLM
+     procedure, public :: PostSolve              => VSFMSOEPostSolve
+     procedure, public :: PostStepDT             => VSFMSPostStepDT
+     procedure, public :: PreStepDT              => VSFMSPreStepDT
+     procedure, public :: GetConditionNames      => VSFMSGetConditionNames
+     procedure, public :: SetDataFromCLMForGhost => VSFMSOESetDataFromCLMForGhost
+     procedure, public :: ComputeLateralFlux     => VSFMComputeLateralFlux
   end type sysofeqns_vsfm_type
 
   public :: VSFMSOESetAuxVars
@@ -77,9 +80,10 @@ contains
 
     call SOEBaseInit(this)
 
-    this%num_auxvars_in   = 0
-    this%num_auxvars_bc   = 0
-    this%num_auxvars_ss   = 0
+    this%num_auxvars_in         = 0
+    this%num_auxvars_in_local   = 0
+    this%num_auxvars_bc         = 0
+    this%num_auxvars_ss         = 0
 
     nullify(this%aux_vars_in           )
     nullify(this%aux_vars_bc           )
@@ -138,6 +142,7 @@ contains
     ! Sets up SoE for the VSFM that uses PETSc SNES.
     !
     ! !USES:
+    use clm_varctl                      , only : lateral_connectivity
     use MeshType                        , only : mesh_type
     use MeshType                        , only : MeshCreateConnectionSet
     use ConditionType                   , only : condition_type
@@ -287,14 +292,35 @@ contains
     call ConditionListAddCondition(goveq_richards_pres%source_sinks, ss)
     nullify(ss)
 
+    if (lateral_connectivity) then
+       ss               => ConditionNew()
+       ss%name          = 'Lateral_flux'
+       ss%units         = 'kg/s'
+       ss%itype         = COND_MASS_RATE
+       ss%region_itype  = SOIL_CELLS
+       allocate(ss%conn_set)
+       call MeshCreateConnectionSet(  &
+            goveq_richards_pres%mesh, &
+            ss%region_itype,          &
+            ss%conn_set,              &
+            ss%ncells)
+       allocate(ss%value(ss%ncells))
+       ss%value(:) = 0.d0
+       call ConditionListAddCondition(goveq_richards_pres%source_sinks, ss)
+       nullify(ss)
+    endif
+
     ! Allocate memory for aux vars
 
     call goveq_richards_pres%AllocateAuxVars()
     call goveq_richards_pres%SetDensityType(DENSITY_TGDPB01)
 
-    vsfm_soe%num_auxvars_in = goveq_richards_pres%mesh%ncells
-    allocate(vsfm_soe%aux_vars_in(goveq_richards_pres%mesh%ncells))
-    do iauxvar = 1,goveq_richards_pres%mesh%ncells
+    vsfm_soe%num_auxvars_in       = goveq_richards_pres%mesh%ncells_all
+    vsfm_soe%num_auxvars_in_local = goveq_richards_pres%mesh%ncells_local
+
+    allocate(vsfm_soe%aux_vars_in(vsfm_soe%num_auxvars_in))
+
+    do iauxvar = 1,vsfm_soe%num_auxvars_in
        call vsfm_soe%aux_vars_in(iauxvar)%Init()
        vsfm_soe%aux_vars_in(iauxvar)%is_in      = PETSC_TRUE
        vsfm_soe%aux_vars_in(iauxvar)%goveqn_id  = 1
@@ -380,7 +406,7 @@ contains
     ! Create PETSc vector to store accumulation term at the begining
     ! of the timestep
 
-    call VecCreateSeq(PETSC_COMM_SELF, goveq_richards_pres%mesh%ncells, &
+    call VecCreateSeq(PETSC_COMM_SELF, goveq_richards_pres%mesh%ncells_local, &
          goveq_richards_pres%accum_prev, ierr)
     CHKERRQ(ierr)
 
@@ -979,7 +1005,72 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
 
+    if (size(data_1d) > nauxvar) then
+       write(iulog,*) 'VSFMSOESetDataFromCLM: size(data_1d) > nauxvar'
+       write(iulog,*) 'size(data_1d) = ',size(data_1d)
+       write(iulog,*) 'nauxvar       = ', nauxvar
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    do iauxvar = 1, size(data_1d)
+       call auxvars(iauxvar + iauxvar_off)%SetValue(var_type, data_1d(iauxvar))
+    enddo
+
   end subroutine VSFMSOESetDataFromCLM
+
+  !------------------------------------------------------------------------
+  subroutine VSFMSOESetDataFromCLMForGhost(this, soe_auxvar_type, var_type, &
+       soe_auxvar_id, data_1d)
+    !
+    ! !DESCRIPTION:
+    ! Used by CLM to set values of boundary conditions and source-sink
+    ! terms for the VSFM solver.
+    !
+    ! !USES:
+    use MultiPhysicsProbConstants, only : SOE_RE_ODE
+    use MultiPhysicsProbConstants, only : AUXVAR_INTERNAL
+    use MultiPhysicsProbConstants, only : AUXVAR_BC
+    use MultiPhysicsProbConstants, only : AUXVAR_SS
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(sysofeqns_vsfm_type)                 :: this
+    PetscInt, intent(in)                       :: var_type
+    PetscInt                                   :: soe_auxvar_type
+    PetscInt                                   :: soe_auxvar_id
+    PetscReal                                  :: data_1d(:)
+    !
+    ! !LOCAL VARIABLES:
+    PetscInt                                   :: iauxvar
+    PetscInt                                   :: iauxvar_beg
+    PetscInt                                   :: iauxvar_end
+    PetscInt                                   :: nauxvar
+    type (sysofeqns_vsfm_auxvar_type), pointer :: auxvars(:)
+
+    select case(soe_auxvar_type)
+    case(AUXVAR_INTERNAL)
+       auxvars      => this%aux_vars_in
+       nauxvar      = this%num_auxvars_in
+       iauxvar_beg  = this%num_auxvars_in_local + 1
+       iauxvar_end  = nauxvar
+    case default
+       write(iulog,*) 'VSFMSOESetDataFromCLM: Unknown soe_auxvar_type'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end select
+
+    if (size(data_1d) > nauxvar) then
+       write(iulog,*) 'VSFMSOESetDataFromCLMForGhost: size(data_1d) > nauxvar'
+       write(iulog,*) 'size(data_1d) = ',size(data_1d)
+       write(iulog,*) 'nauxvar       = ', nauxvar
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    do iauxvar = iauxvar_beg, iauxvar_end
+       call auxvars(iauxvar)%SetValue(var_type, data_1d(iauxvar))
+    enddo
+
+  end subroutine VSFMSOESetDataFromCLMForGhost
 
   !------------------------------------------------------------------------
   subroutine VSFMSOEGetDataForCLM(this, soe_auxvar_type, var_type, &
@@ -1032,7 +1123,52 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
 
+    if (size(data_1d) > nauxvar) then
+       write(iulog,*) 'VSFMSOEGetDataFromCLM: size(data_1d) > nauxvar'
+       write(iulog,*) 'size(data_1d) = ',size(data_1d)
+       write(iulog,*) 'nauxvar       = ', nauxvar
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    do iauxvar = 1, size(data_1d)
+       call auxvars(iauxvar + iauxvar_off)%GetValue(var_type, var_value)
+       data_1d(iauxvar) = var_value
+    enddo
+
   end subroutine VSFMSOEGetDataForCLM
+
+  !------------------------------------------------------------------------
+  subroutine VSFMComputeLateralFlux(this, dt)
+    !
+    use GoverningEquationBaseType     , only : goveqn_base_type
+    use GoveqnRichardsODEPressureType , only : goveqn_richards_ode_pressure_type
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(sysofeqns_vsfm_type)    :: this
+    PetscReal                     :: dt
+    !
+    class(goveqn_base_type),pointer :: cur_goveq
+
+    ! Set timestep
+    call this%SetDtime(dt)
+
+    ! Do any pre-solve operations
+    call this%PreSolve()
+
+    cur_goveq => this%goveqns
+    do
+       if (.not.associated(cur_goveq)) exit
+       select type(cur_goveq)
+          class is (goveqn_richards_ode_pressure_type)
+             call cur_goveq%ComputeLateralFlux()
+       end select
+
+       cur_goveq => cur_goveq%next
+    enddo
+
+  end subroutine VSFMComputeLateralFlux
 
   !------------------------------------------------------------------------
   subroutine VSFMSPreStepDT(this)

@@ -25,7 +25,9 @@ module MeshType
   type, public :: mesh_type
      character (len=256) :: name         ! indentifer for the mesh
 
-     PetscInt            :: ncells       ! Number of cells within the mesh
+     PetscInt            :: ncells_local ! Number of cells within the mesh
+     PetscInt            :: ncells_ghost ! Number of ghost cells with the mesh
+     PetscInt            :: ncells_all   ! Number of local+ghost cells with the mesh
      PetscInt            :: nlev         ! Number of cells in z
      PetscInt            :: itype        ! identifier
 
@@ -47,6 +49,7 @@ module MeshType
      PetscInt            :: orientation
 
      type(connection_set_list_type) :: intrn_conn_set_list
+     type(connection_set_list_type) :: lateral_conn_set_list
 
    contains
      procedure, public :: Init
@@ -74,11 +77,13 @@ contains
     ! !ARGUMENTS
     class(mesh_type) :: this
 
-    this%name        = ""
-    this%ncells      = 0
-    this%nlev        = 0
-    this%itype       = -1
-    this%orientation = -1
+    this%name         = ""
+    this%ncells_local = 0
+    this%ncells_ghost = 0
+    this%ncells_all   = 0
+    this%nlev         = 0
+    this%itype        = -1
+    this%orientation  = -1
 
     nullify(this%x         )
     nullify(this%y         )
@@ -95,11 +100,15 @@ contains
     nullify(this%is_active )
 
     call ConnectionSetListInit(this%intrn_conn_set_list)
+    call ConnectionSetListInit(this%lateral_conn_set_list)
 
   end subroutine Init
 
   !------------------------------------------------------------------------
-  subroutine Create(this, mesh_itype, begc, endc, waterstate_vars, soilhydrology_vars)
+  subroutine Create(this, mesh_itype, begg, endg, begc, endc, ncols_ghost, &
+       xc_col, yc_col, zc_col, &
+       grid_owner, &
+     waterstate_vars, soilhydrology_vars)
     !
     ! !DESCRIPTION:
     ! Creates a mesh from CLM column level data structure
@@ -112,13 +121,20 @@ contains
     ! !ARGUMENTS
     class(mesh_type)                      :: this
     integer                  , intent(in) :: mesh_itype
+    integer                  , intent(in) :: begg,endg
     integer                  , intent(in) :: begc,endc
+    integer                  , intent(in) :: ncols_ghost
+    PetscReal, pointer                , intent(in) :: xc_col(:)
+    PetscReal, pointer                , intent(in) :: yc_col(:)
+    PetscReal, pointer                , intent(in) :: zc_col(:)
+    PetscInt, pointer                 , intent(in) :: grid_owner(:)
     type(waterstate_type)    , intent(in) :: waterstate_vars
     type(soilhydrology_type) , intent(in) :: soilhydrology_vars
 
     select case(mesh_itype)
     case (MESH_CLM_SOIL_COL)
-       call this%CreateFromCLMCols(begc, endc)
+       call this%CreateFromCLMCols(begg, endg, begc, endc, ncols_ghost, &
+              xc_col, yc_col, zc_col, grid_owner)
     case default
        write(iulog,*)'MeshType: Create() Unknown mesh_type = ',mesh_itype
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -127,13 +143,16 @@ contains
   end subroutine Create
 
   !------------------------------------------------------------------------
-  subroutine CreateFromCLMCols(this, begc, endc)
+  subroutine CreateFromCLMCols(this, begg, endg, begc, endc, ncols_ghost, &
+       xc_col, yc_col, zc_col, grid_owner)
     !
     ! !DESCRIPTION:
     ! Creates a mesh from CLM column level data structure
     !
     ! !USES:
     use clm_varpar                  , only : nlevgrnd
+    use clm_varctl                  , only : lateral_connectivity
+    use GridcellType                , only : grc
     use ColumnType                  , only : col
     use LandunitType                , only : lun
     use landunit_varcon             , only : istcrop, istsoil
@@ -143,12 +162,19 @@ contains
     use MultiPhysicsProbConstants   , only : MESH_CLM_SOIL_COL
     use ConnectionSetType           , only : connection_set_type
     use ConnectionSetType           , only : ConnectionSetListAddSet
+    use domainLateralMod            , only : ldomain_lateral
     !
     implicit none
     !
     ! !ARGUMENTS
-    class(mesh_type)    :: this
-    integer, intent(in) :: begc,endc
+    class(mesh_type)                :: this
+    integer            , intent(in) :: begg,endg
+    integer            , intent(in) :: begc,endc
+    integer            , intent(in) :: ncols_ghost
+    PetscReal, pointer , intent(in) :: xc_col(:)
+    PetscReal, pointer , intent(in) :: yc_col(:)
+    PetscReal, pointer , intent(in) :: zc_col(:)
+    PetscInt, pointer  , intent(in) :: grid_owner(:)
     !
     ! !LOCAL VARIABLES:
     PetscInt                          :: c,j,l                              !indices
@@ -159,27 +185,37 @@ contains
     PetscInt                          :: first_active_hydro_col_id
     PetscInt                          :: col_id
     type(connection_set_type),pointer :: conn_set
+    PetscInt                          :: g_up, g_dn, iedge
+    PetscInt                          :: c_idx_up, c_idx_dn
+    PetscInt                          :: l_idx_up, l_idx_dn
+    PetscInt                          :: ltype, ctype
+    PetscInt                          :: tmp
+    PetscReal                         :: dist_x, dist_y, dist_z, dist
+    PetscErrorCode                    :: ierr
 
     call this%Init()
 
-    this%name        = "Soil Mesh"
-    this%itype       = MESH_CLM_SOIL_COL
-    this%ncells      = (endc - begc + 1)*nlevgrnd
-    this%nlev        = nlevgrnd
-    this%orientation = MESH_ALONG_GRAVITY
+    this%name           = "Soil Mesh"
+    this%itype          = MESH_CLM_SOIL_COL
+    this%ncells_local   = (endc - begc + 1)*nlevgrnd
+    this%ncells_ghost   = ncols_ghost*nlevgrnd
+    this%ncells_all     = this%ncells_local + this%ncells_ghost
+    this%nlev           = nlevgrnd
+    this%orientation    = MESH_ALONG_GRAVITY
 
-    allocate(this%x(this%ncells         ))
-    allocate(this%y(this%ncells         ))
-    allocate(this%z(this%ncells         ))
+    allocate(this%x(this%ncells_all         ))
+    allocate(this%y(this%ncells_all         ))
+    allocate(this%z(this%ncells_all         ))
 
-    allocate(this%z_m(this%ncells       ))
-    allocate(this%z_p(this%ncells       ))
+    allocate(this%z_m(this%ncells_all       ))
+    allocate(this%z_p(this%ncells_all       ))
 
-    allocate(this%dx(this%ncells        ))
-    allocate(this%dy(this%ncells        ))
-    allocate(this%dz(this%ncells        ))
-    allocate(this%vol(this%ncells       ))
-    allocate(this%is_active(this%ncells ))
+    allocate(this%dx(this%ncells_all        ))
+    allocate(this%dy(this%ncells_all        ))
+    allocate(this%dz(this%ncells_all        ))
+    allocate(this%vol(this%ncells_all       ))
+    allocate(this%is_active(this%ncells_all ))
+
 
     !
     ! Populate location of cell centroids
@@ -205,18 +241,16 @@ contains
     endif
 
     icell = 0
-    do c = begc, endc
+    do c = begc, endc + ncols_ghost
        do j = 1, this%nlev
 
           icell = icell + 1
           l = col%landunit(c)
-
-          this%x (icell) = 0.0_r8
-          this%y (icell) = 0.0_r8
+          this%x (icell) = xc_col(c)
+          this%y (icell) = yc_col(c)
 
           this%dx(icell) = 1.0_r8
           this%dy(icell) = 1.0_r8
-
 
           if (col%active(c) .and. &
                (lun%itype(l) == istsoil        .or. &
@@ -229,9 +263,9 @@ contains
              this%is_active(icell) = PETSC_FALSE
           endif
 
-          this%z(icell) = -0.5_r8*(col%zi(col_id,j-1) + col%zi(col_id,j))
-          this%z_m(icell) = -col%zi(col_id,j-1)
-          this%z_p(icell) = -col%zi(col_id,j  )
+          this%z(icell) = -0.5_r8*(col%zi(col_id,j-1) + col%zi(col_id,j)) + zc_col(c)
+          this%z_m(icell) = -col%zi(col_id,j-1) + zc_col(c)
+          this%z_p(icell) = -col%zi(col_id,j  ) + zc_col(c)
 
           this%dz(icell) = col%dz(col_id,j)
           this%vol(icell) = this%dx(icell)*this%dy(icell)*this%dz(icell)
@@ -265,11 +299,167 @@ contains
     enddo
 
     call ConnectionSetListAddSet(this%intrn_conn_set_list, conn_set)
+    nullify(conn_set)
+
+    if (lateral_connectivity) then
+
+       !
+       ! Sets up lateral connection between columns of type 'istsoil'
+       !
+       ! Assumptions:
+       ! - There is only ONE 'istsoil' column per landunit per grid cell.
+       ! - Grid cells that are laterally connected via cellsOnCell
+       !   field defined in domain netcdf file have at least ONE
+       !   column of 'istsoil' type
+
+       nconn = 0
+
+       ltype = istsoil
+       ctype = istsoil
+
+       ! Determine number of lateral connections
+
+       do icell = 1, ldomain_lateral%ugrid%ngrid_local
+          do iedge = 1, ldomain_lateral%ugrid%maxEdges
+
+             if (ldomain_lateral%ugrid%gridsOnGrid_local(iedge,icell) > icell) then
+                g_up = icell + begg - 1
+                g_dn = ldomain_lateral%ugrid%gridsOnGrid_local(iedge,icell) + begg - 1
+
+                l_idx_up = grc%landunit_indices(ltype, g_up)
+                l_idx_dn = grc%landunit_indices(ltype, g_dn)
+
+                c_idx_up = -1
+                c_idx_dn = -1
+
+                do c = lun%coli(l_idx_up), lun%colf(l_idx_up)
+                   if (col%itype(c) == ctype) then
+                      if (c_idx_up /= -1) then
+                         write(iulog,*)'CreateFromCLMCols: More than one column found for ' // &
+                              'ctype = ', ctype, ' for ltype = ', ltype, ' in grid cell ', g_up
+                         call endrun(msg=errMsg(__FILE__, __LINE__))
+                      endif
+                      c_idx_up = c
+                   endif
+                enddo
+
+                do c = lun%coli(l_idx_dn), lun%colf(l_idx_dn)
+                   if (col%itype(c) == ctype) then
+                      if (c_idx_dn /= -1) then
+                         write(iulog,*)'CreateFromCLMCols: More than one column found for ' // &
+                              'ctype = ', ctype, ' for ltype = ', ltype, ' in grid cell ', g_dn
+                         call endrun(msg=errMsg(__FILE__, __LINE__))
+                      endif
+                      c_idx_dn = c
+                   endif
+                enddo
+
+                if (c_idx_up > -1 .and. c_idx_dn > -1) then
+                   nconn = nconn + 1
+                else
+                   write(iulog,*)'CreateFromCLMCols: No column of ctype = ', ctype, &
+                        ' found between following grid cells: ',g_up,g_dn
+                   call endrun(msg=errMsg(__FILE__, __LINE__))
+                endif
+             endif
+          enddo
+       enddo
+
+       nconn = nconn * this%nlev
+       conn_set => ConnectionSetNew(nconn)
+
+       iconn = 0
+       do icell = 1, ldomain_lateral%ugrid%ngrid_local
+
+          do iedge = 1, ldomain_lateral%ugrid%maxEdges
+             if (ldomain_lateral%ugrid%gridsOnGrid_local(iedge,icell) > icell) then
+                g_up = icell + begg - 1
+                g_dn = ldomain_lateral%ugrid%gridsOnGrid_local(iedge,icell) + begg - 1
+
+                l_idx_up = grc%landunit_indices(ltype, g_up)
+                l_idx_dn = grc%landunit_indices(ltype, g_dn)
+
+                c_idx_up = -1
+                c_idx_dn = -1
+
+                do c = lun%coli(l_idx_up), lun%colf(l_idx_up)
+                   if (col%itype(c) == ctype) then
+                      if (c_idx_up /= -1) then
+                         write(iulog,*)'CreateFromCLMCols: More than one column found for ' // &
+                              'ctype = ', ctype, ' for ltype = ', ltype, ' in grid cell ', g_up
+                         call endrun(msg=errMsg(__FILE__, __LINE__))
+                      endif
+                      c_idx_up = c
+                   endif
+                enddo
+
+                do c = lun%coli(l_idx_dn), lun%colf(l_idx_dn)
+                   if (col%itype(c) == ctype) then
+                      if (c_idx_dn /= -1) then
+                         write(iulog,*)'CreateFromCLMCols: More than one column found for ' // &
+                              'ctype = ', ctype, ' for ltype = ', ltype, ' in grid cell ', g_dn
+                         call endrun(msg=errMsg(__FILE__, __LINE__))
+                      endif
+                      c_idx_dn = c
+                   endif
+                enddo
+
+                if (c_idx_up > -1 .and. c_idx_dn > -1) then
+
+                   if (grid_owner(g_up) > grid_owner(g_dn)) then
+                      tmp      = g_up;
+                      g_up     = g_dn
+                      g_dn     = tmp
+
+                      tmp      = l_idx_up;
+                      l_idx_up = l_idx_dn
+                      l_idx_dn = tmp
+
+                      tmp      = c_idx_up;
+                      c_idx_up = c_idx_dn
+                      c_idx_dn = tmp
+                   endif
+
+                   do j = 1, this%nlev
+                      iconn = iconn + 1
+
+                      id_up = (c_idx_up - begc)*this%nlev + j
+                      id_dn = (c_idx_dn - begc)*this%nlev + j
+
+                      conn_set%id_up(iconn) = id_up
+                      conn_set%id_dn(iconn) = id_dn
+
+                      this%is_active(id_up) = PETSC_TRUE
+                      this%is_active(id_dn) = PETSC_TRUE
+
+                      conn_set%area(iconn) = this%dz(id_up)*this%dx(id_up)
+
+                      dist_x = this%x(id_dn) - this%x(id_up)
+                      dist_y = this%y(id_dn) - this%y(id_up)
+                      dist_z = this%z(id_dn) - this%z(id_up)
+                      dist   = (dist_x**2.d0 + dist_y**2.d0 + dist_z**2.d0)**0.5d0
+
+                      conn_set%dist_up(iconn) = 0.5_r8*dist
+                      conn_set%dist_dn(iconn) = 0.5_r8*dist
+
+                      conn_set%dist_unitvec(iconn)%arr(1) = dist_x/dist
+                      conn_set%dist_unitvec(iconn)%arr(2) = dist_y/dist
+                      conn_set%dist_unitvec(iconn)%arr(3) = dist_z/dist
+                   enddo
+                endif ! if (c_idx_up > -1 .and. c_idx_dn > -1)
+             endif ! if (ldomain_lateral%ugrid%gridsOnGrid_local(iedge,icell) > icell)
+          enddo
+       enddo
+
+       call ConnectionSetListAddSet(this%lateral_conn_set_list, conn_set)
+       nullify(conn_set)
+
+    endif
 
   end subroutine CreateFromCLMCols
 
   !------------------------------------------------------------------------
-  subroutine MeshCreateConnectionSet(mesh, region_itype, conn_set, ncells, &
+  subroutine MeshCreateConnectionSet(mesh, region_itype, conn_set, ncells_local, &
        soil_top_cell_offset)
     !
     ! !DESCRIPTION:
@@ -292,7 +482,7 @@ contains
     type(mesh_type)                   :: mesh
     PetscInt                          :: region_itype
     type(connection_set_type),pointer :: conn_set
-    PetscInt, intent(out)             :: ncells
+    PetscInt, intent(out)             :: ncells_local
     PetscInt,optional                 :: soil_top_cell_offset
     !
     ! !LOCAL VARIABLES:
@@ -304,7 +494,7 @@ contains
     PetscInt                          :: ncols
     PetscInt                          :: offset
 
-    ncols = mesh%ncells/mesh%nlev
+    ncols = mesh%ncells_local/mesh%nlev
 
     offset = 0
     if (present(soil_top_cell_offset)) offset = soil_top_cell_offset
@@ -374,7 +564,7 @@ contains
 
     case (SOIL_CELLS, ALL_CELLS)
 
-       nconn = mesh%ncells
+       nconn = mesh%ncells_local
        conn_set => ConnectionSetNew(nconn)
 
        iconn = 0
@@ -404,7 +594,7 @@ contains
 
     end select
 
-    ncells = nconn
+    ncells_local = nconn
 
   end subroutine MeshCreateConnectionSet
 

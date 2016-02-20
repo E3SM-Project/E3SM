@@ -4,7 +4,7 @@ module clm_initializeMod
   ! Performs land model initialization
   !
   use shr_kind_mod     , only : r8 => shr_kind_r8
-  use spmdMod          , only : masterproc
+  use spmdMod          , only : masterproc, iam
   use shr_sys_mod      , only : shr_sys_flush
   use shr_log_mod      , only : errMsg => shr_log_errMsg
   use decompMod        , only : bounds_type, get_proc_bounds 
@@ -899,7 +899,11 @@ contains
     use SoilWaterMovementMod   , only : init_vsfm_condition_ids
     use clm_varctl             , only : lateral_connectivity
     use initGridCellsMod       , only : initGhostGridCells
+    use decompMod              , only : get_proc_total_ghosts
+    use shr_infnan_mod         , only : isnan => shr_infnan_isnan
+    use domainMod              , only : ldomain
 #ifdef USE_PETSC_LIB
+    use domainLateralMod       , only : ldomain_lateral, ScatterDataG2L
     use MultiPhysicsProbVSFM     , only : vsfm_mpp
     use MultiPhysicsProbConstants, only : VAR_MASS
     use MultiPhysicsProbConstants, only : VAR_SOIL_MATRIX_POT
@@ -917,7 +921,7 @@ contains
     ! !LOCAL VARIABLES:
     integer               :: nclumps               ! number of clumps on this processor
     integer               :: nc                    ! clump index
-    integer               :: c,fc,j                ! do loop indices
+    integer               :: c,g,fc,j              ! do loop indices
     type(bounds_type)     :: bounds_proc
     real(r8)              :: z_up, z_dn            ! [m]
 
@@ -932,6 +936,17 @@ contains
     real(r8), pointer     :: mflx_snowlyr_col(:)   ! mass flux to top soil layer due to disappearance of snow (kg H2O /s)
     real(r8), pointer     :: soilp_col(:,:)        ! soil liquid pressure [Pa]
     real(r8), pointer     :: vsfm_soilp_col_1d(:)  ! 1D soil liquid pressure for VSFM [Pa]
+    real(r8), pointer     :: xc_col(:)             ! x-position of grid cell [m]
+    real(r8), pointer     :: yc_col(:)             ! y-position of grid cell [m]
+    real(r8), pointer     :: zc_col(:)             ! z-position of grid cell [m]
+    integer, pointer      :: grid_owner(:)         ! MPI rank owner of grid cell
+
+    integer               :: nblocks
+    integer               :: beg_idx
+    integer               :: ndata_send              ! number of data sent by local mpi rank
+    integer               :: ndata_recv              ! number of data received by local mpi rank
+    real(r8), pointer     :: data_send(:)            ! data sent by local mpi rank
+    real(r8), pointer     :: data_recv(:)            ! data received by local mpi rank
     logical               :: restart_vsfm          ! does VSFM need to be restarted
 #ifdef USE_PETSC_LIB
     PetscInt              :: jwt                   ! index of first unsaturated soil layer
@@ -939,6 +954,11 @@ contains
     PetscInt              :: soe_auxvar_id         ! Index of system-of-equation's (SoE's) auxvar
     PetscErrorCode        :: ierr                  ! get error code from PETSc
 #endif
+     integer              :: ncells_ghost          ! total number of ghost gridcells on the processor
+     integer              :: nlunits_ghost         ! total number of ghost landunits on the processor
+     integer              :: ncols_ghost           ! total number of ghost columns on the processor
+     integer              :: npfts_ghost           ! total number of ghost pfts on the processor
+     integer              :: nCohorts_ghost        ! total number of ghost cohorts on the processor
     character(len=32)     :: subname = 'initialize3'
     !----------------------------------------------------------------------
 
@@ -971,11 +991,92 @@ contains
 
     nc = 1
 
+    allocate(xc_col(bounds_proc%begc_all:bounds_proc%endc_all))
+    allocate(yc_col(bounds_proc%begc_all:bounds_proc%endc_all))
+    allocate(zc_col(bounds_proc%begc_all:bounds_proc%endc_all))
+    allocate(grid_owner(bounds_proc%begg_all:bounds_proc%endg_all))
+
+    if (lateral_connectivity) then
+
+       call initGhostGridCells()
+
+       call soilstate_vars%InitColdGhost(bounds_proc)
+
+       nblocks    = 4
+       ndata_send = nblocks*ldomain_lateral%ugrid%ngrid_local
+       ndata_recv = nblocks*ldomain_lateral%ugrid%ngrid_ghosted
+
+       allocate(data_send(ndata_send))
+       allocate(data_recv(ndata_recv))
+
+       ! Aggregate the data to send
+       do g = bounds_proc%begg, bounds_proc%endg
+
+          beg_idx = (g-bounds_proc%begg)*nblocks
+
+          if (isnan(ldomain%xCell(g))) then
+             call endrun(msg='ERROR initialize3: xCell = NaN')
+          endif
+          beg_idx = beg_idx + 1;
+          data_send(beg_idx) = ldomain%xCell(g)
+
+          if (isnan(ldomain%yCell(g))) then
+             call endrun(msg='ERROR initialize3: yCell = NaN')
+          endif
+          beg_idx = beg_idx + 1;
+          data_send(beg_idx) = ldomain%yCell(g)
+
+          if (isnan(ldomain%topo(g))) then
+             call endrun(msg='ERROR initialize3: topo = NaN')
+          endif
+          beg_idx = beg_idx + 1;
+          data_send(beg_idx) = ldomain%topo(g)
+
+          beg_idx = beg_idx + 1;
+          data_send(beg_idx) = real(iam)
+
+       enddo
+
+       ! Scatter: Global-to-Local
+       call ScatterDataG2L(nblocks, ndata_send, data_send, ndata_recv, data_recv)
+
+       ! Save data for ghost subgrid category
+       do c = bounds_proc%begc_all, bounds_proc%endc_all
+
+          g       = col%gridcell(c)
+          beg_idx = (g-bounds_proc%begg)*nblocks
+
+          beg_idx = beg_idx + 1; xc_col(c) = data_recv(beg_idx)
+          beg_idx = beg_idx + 1; yc_col(c) = data_recv(beg_idx)
+          beg_idx = beg_idx + 1; zc_col(c) = data_recv(beg_idx)
+          beg_idx = beg_idx + 1; grid_owner(g) = data_recv(beg_idx)
+
+       enddo
+
+       deallocate(data_send)
+       deallocate(data_recv)
+
+      call get_proc_total_ghosts(ncells_ghost, nlunits_ghost, &
+        ncols_ghost, npfts_ghost, nCohorts_ghost)
+
+    else
+
+      xc_col(:)     = 0._r8
+      yc_col(:)     = 0._r8
+      zc_col(:)     = 0._r8
+      grid_owner(:) = 0
+
+    endif
+
     ! Allocate memory and setup data structure for VSFM-MPP
-    call vsfm_mpp%Setup(bounds_proc%begc,            &
+    call vsfm_mpp%Setup(bounds_proc%begg,            &
+                        bounds_proc%endg,            &
+                        bounds_proc%begc,            &
                         bounds_proc%endc,            &
-                        filter(nc)%num_hydrologyc,   &
+                        ncols_ghost,                 &
                         filter(nc)%hydrologyc,       &
+                        xc_col, yc_col, zc_col,      &
+                        grid_owner,                  &
                         soilstate_vars,              &
                         waterstate_vars,             &
                         soilhydrology_vars)
@@ -1091,16 +1192,18 @@ contains
         endif
     end do
 
+    ! Free up memory
+    deallocate(xc_col    )
+    deallocate(yc_col    )
+    deallocate(zc_col    )
+    deallocate(grid_owner)
+
 #else
 
     call endrun(msg='ERROR clm_initializeMod: '//&
                 'use_vsfm = true but code was not compiled ' // &
                 'using -DUSE_PETSC_LIB')
 #endif
-
-    if (lateral_connectivity) then
-       call initGhostGridCells()
-    endif
 
     call t_stopf('clm_init3')
 
