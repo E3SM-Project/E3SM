@@ -1,15 +1,14 @@
+Mark Taylor, 2016-02-19
 Mark Taylor, 2010-09-23
 Mike Levy, 2011-02-01
 
-We need to create a set of "official" regression tests.
-Here we are documenting the test cases in use at Sandia 
-as unofficial regression tests.
+HOMME regression tests
 
 These tests should be run in both the trunk and your branch
 to ensure changes you have made have not broken existing code.
 To check for bit-for-bit (BFB), output should be identical. To
 check for rounding-error level changes, several statistics are
-highlighted.
+highlighted for each test below.
 
 There are a couple of short BFB tests and an exact restart test
 that should be sufficient for changes to the 3D code that are
@@ -17,63 +16,118 @@ BFB.  Non-BFB changes require verifing minimal changes in l2
 solution errors,conservation errors, energy budget errors, and
 checking plots of the vorticity field and and tracers.
 
-Each script uses the build system in build/ to compile and runs
-with an appropriate namelist, but none are queue-ready on any
-machine at this time. They can be launched individually through
-the individual_tests/ directory, or you can run all of them
-(except baro-dg, because it takes significantly longer to run)
-with the alltests.sh script. Again, these can only be run
-interactively at the moment.
+To generate baselines:
+   cd /path/to/baseline/workdir
+   cmake -C $MACHFILE -DUSE_NUM_PROCS=24  /path/to/homme/baseline/code
+   make -j4 clean
+   make -j4 baseline
+To compare a different branch against the baselines:
+   cd /path/to/branch/workdir
+   cmake -C $MACHFILE -DUSE_NUM_PROCS=24  -DHOMME_BASELINE_DIR=/path/to/homme/baseline/code
+   make -j4 clean
+   make -j4 check
 
 
-Components tested:
+The above instructions assume you have queing disabled in your machine's cmake
+file.  If your cluster is supported by HOMME's testing system, and queing is
+enabled, then "make baseline" and "make check" above will submit jobs to the
+que and monitor their progress.  In this case, -DUSE_NUM_PROCS is ignored and
+the number of procs and nodes that will be used is configured for each test case.
+The queue support code is currently not maintained and is most likley broken.  
 
-shallow water equations:
-   explicit leapfrog    
-   explicit Runge-Kutta 
-   sign-preserving limiter
-   hyperviscosity
-   conservation (inviscid)
-   PIO_INTERP output
 
-primitive equations:
-   RK w/ subcycling
-   hyper-viscosity
-   conservation (inviscid)
-   conservation (with hyper-viscosity)
-   RK-SSP tracer advection
-   exact restart
-   PIO and PIO_INTERP output
+Instructions to create a new test:
+Determine executable (sweqx or preqx)
+Create new executable configuration (if needed).
+   i.e. homme/test_exec/swtcA
+Create cmake description of test and namelist:
+   homme/test/reg_test/run_tets/swtc2.cmake
+   homme/test/reg_test/namelists/swtc2.nl
+   homme/test/reg_test/run_tests/test-list.cmake   (update for new test)
+   
+
+
 
  
 =======================================================================
 SHALLOW WATER TESTS -- DETAILS
 
-swtc1.sh    Test case 1 from Williamson et al 1992 (advection)
-            Spectral Element core
-            Runge-kutta, inviscid test
+swtc1.cmake Test case 1 from Williamson et al 1992 (advection)
+            executable:     sweqx
+            configuration:  homme/test_execs/swtcA
+                NP=8, PLEV=4, USE_PIO=False  WITH_ENERGY=False
+            namelist options:
+               RK3-SSP, inviscid test
                Output using PIO_INTERP
-               NE=10, NP=8, dt=480
+               NE=10, dt=480, 12 days
+               transport only, with limiter_option=4
             Verification:
             verify l1,l2,max errors have not changed significantly
             (3-4 digits?  need to estimate their sensitivity)
             k= 1 12.00 days  l1,l2,linf=  0.5347100E-02  0.3621730E-02  0.6553164E-02
 
+            Using an RK3-SSP scheme with sign-preserving limiter, should verify 4 tracers
+            (one per level) remain positive to machine precision.  
 
 
-swtc5.sh    Williamson et al 1992, test case 5 (isolated mtn)
-            Spectral Element core
-            Explicit leapfrog + hyper-viscosity
-            Output using PIO_INTERP
-            NE=30, NP=4, dt=90
-            Verification:
+swtc2.cmake   Williamson et al 1992, test case 2 (steady state)
+              This test ensures the RK3-SSP (which is mostly used for advection tests)
+              also works for full shallow water.  
+              We run with 4 levels on an unstructured grid to test the 3D, unstructured grid
+              pack/boundary exchange/unpack code.  
+
+              executable:     sweqx
+              configuration:  homme/test_execs/swtcA
+                  NP=8  PLEV=4, USE_PIO=FALSE, WITH_ENERGY=FALSE
+              namelist options
+                 RK3-SSP
+                 Tensor-hyper-viscosity
+                 Output using PIO_INTERP
+                 grid: mountain_10_x2
+
+                 Verify l1,l2,max errors have not changed significantly:
+                 and that mass is conserved and identical on all 4 levels:
+  1.00 days  l1,l2,linf=  0.1045449E-06  0.1258886E-06  0.3304282E-06
+
+  u=   -0.496431514513851E-06   0.386396546491838E+02   0.153811206637787E+07
+  v=   -0.263754879572531E-04   0.237167291254892E-04  -0.253359330740395E-01
+  p=    0.108997400300042E+04   0.299811525752762E+04   0.119008435312488E+09
+  p=    0.108997400300042E+04   0.299811525752762E+04   0.119008435312488E+09
+  p=    0.108997400300042E+04   0.299811525752762E+04   0.119008435312488E+09
+  p=    0.108997400300042E+04   0.299811525752762E+04   0.119008435312488E+09
+
+level =  1  M-M0/M0      =-0.5776E-15 dM/dt   /M  = -0.267390E-19
+level =  2  M-M0/M0      =-0.5776E-15 dM/dt   /M  = -0.267390E-19
+level =  3  M-M0/M0      =-0.5776E-15 dM/dt   /M  = -0.267390E-19
+level =  4  M-M0/M0      =-0.5776E-15 dM/dt   /M  = -0.267390E-19
+
+                 
+
+
+
+swtc5.cmake   Williamson et al 1992, test case 5 (isolated mtn)
+              executable:     sweqx
+              configuration:  homme/test_execs/swtcB
+                  NP=4  PLEV=1, USE_PIO=FALSE, WITH_ENERGY=FALSE
+              namelist options
+                 Leapfrog-trapazoidal
+                 hyper-viscosity
+                 Output using PIO_INTERP
+                 NE=30, dt=90, run for 15 days
+              Verification:
                 l1,l2,max errors have not changed (l1,l2,max errors 
                 are computed in swtc5ref.ncl, which compares against
 		NCAR's T213 reference sol)
-            geop error: l1,l2,mx = 0.000531657 0.00074751 0.00837253
+                geop error: l1,l2,mx = 0.000531657 0.00074751 0.00837253
 
 
-swtc6.sh   short time, low resolution Rossby wave test
+swtc6.cmake  short time, low resolution Rossby wave test
+             executable:     sweqx
+             configuration:  homme/test_execs/swtcC
+                  NP=8  PLEV=1, USE_PIO=FALSE, WITH_ENERGY=FALSE
+             namelist options:   homme/test/reg_test/namelists/swtc6-short.nl
+                  NE=2, explicit leapfrog, no robert filter, no viscsoity, dt=6, run for 1 day    
+
            Verification:
            verifty mass and energy conservatin to machine precision
            verify enstrophy dissipation rate has not changed significantly
