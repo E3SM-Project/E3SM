@@ -160,15 +160,11 @@ IF(${BUILD_HOMME_SWEQX})
   ADD_SUBDIRECTORY(swtcC)
 ENDIF()
 
-# Add the test exec subdirs for the swdgx executable
-IF(${BUILD_HOMME_SWDGX})
-  ADD_SUBDIRECTORY(swtc-dgA)
-ENDIF()
 
 # Add the test exec subdirs for the preqx executable
 IF(${BUILD_HOMME_PREQX})
-  ADD_SUBDIRECTORY(baroA)
-  ADD_SUBDIRECTORY(baroB)
+#  ADD_SUBDIRECTORY(baroA)
+#  ADD_SUBDIRECTORY(baroB)
   ADD_SUBDIRECTORY(baroC)
   ADD_SUBDIRECTORY(baroCam)
 ENDIF()

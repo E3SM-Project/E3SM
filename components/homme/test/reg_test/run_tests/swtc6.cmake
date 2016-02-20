@@ -21,6 +21,11 @@ SET(NAMELIST_FILES
    ${HOMME_ROOT}/test/reg_test/namelists/swtc6-short-exodus.nl
 )
 
-SET(NC_OUTPUT_FILES swtc61.nc exodus-swtc61.nc)
+# files to compare against baselines
+SET(NC_OUTPUT_FILES swtc61.nc )
+
+# compare exodus output vs internal cubed sphere output:
+SET(NC_OUTPUT_REF swtc61.nc )
+SET(NC_OUTPUT_CHECKREF  exodus-swtc61.nc)
 
 
