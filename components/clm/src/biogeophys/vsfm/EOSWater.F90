@@ -139,7 +139,11 @@ contains
     endif
 
     ! Compressibility of water
-    kappa = (1.d0 + (k0 + k1*t_c + k2*t_c**2.d0)*dp)
+    if (p > p0) then
+       kappa = (1.d0 + (k0 + k1*t_c + k2*t_c**2.d0)*(p - p0))
+    else
+       kappa = 1.d0
+    endif
 
     ! Density of water
     den = dent*kappa/FMWH2O ! [kmol m^{-3}]
@@ -151,8 +155,13 @@ contains
     ddent_dt_3 =  ((t_c + a1)**2.d0)*(t_c + a2)/a3/((t_c + a4)**2.d0)
     ddent_dt   = a5*(ddent_dt_1 + ddent_dt_2 + ddent_dt_3)
 
-    dkappa_dp  = (k0 + k1*t_c + k2*t_c**2.d0)
-    dkappa_dt  = (k1 + 2.d0*k2*t_c)*dp
+    if (p > p0) then
+       dkappa_dp  = (k0 + k1*t_c + k2*t_c**2.d0)
+       dkappa_dt  = (k1 + 2.d0*k2*t_c)*(p - p0)
+    else
+       dkappa_dp  = 0.d0
+       dkappa_dt  = 0.d0
+    endif
 
     dden_dt    = (ddent_dt*kappa + dent*dkappa_dt)/FMWH2O
     dden_dp    = (ddent_dp*kappa + dent*dkappa_dp)/FMWH2O
