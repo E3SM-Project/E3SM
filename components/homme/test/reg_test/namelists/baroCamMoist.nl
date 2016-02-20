@@ -27,7 +27,6 @@ hypervis_order               = 2
 hypervis_subcycle            = 4
 u_perturb                    = 1
 vert_remap_q_alg = 1
-tracer_advection_formulation = 1
 ! disable_diagnostics          = .true.
 moisture = 'notdry'
 /

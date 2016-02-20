@@ -22,7 +22,7 @@ To generate baselines:
    make -j4 clean
    make -j4 baseline    make baselines in /working/path1/tests/baseline/
    make -j4 check       run tests, store results in /working/path1/tests
-                        Compare against?   (not sure the default if HOMME_BASELINE_DIR not specified)
+                        compare against self baselines 
 
 To compare a different branch against the baselines:
    cd /working/path2
@@ -127,6 +127,15 @@ swtc5.cmake   Williamson et al 1992, test case 5 (isolated mtn)
 
 
 swtc6.cmake  short time, low resolution Rossby wave test
+              executable:     sweqx
+              configuration:  homme/test_execs/swtcC
+                  NP=8  PLEV=1, USE_PIO=FALSE, WITH_ENERGY=FALSE
+             executable:     sweqx
+             namelist options:   homme/test/reg_test/namelists/swtc6-short.nl
+                 NE=2, explicit leapfrog, no robert filter, no viscsoity, 
+                 dt=6, run for 1 day    
+                 cubed_sphere_map=2
+
              Run two simulations, one with the internal NE=2 grid, the
              second with a tempest NE=2 grid from a .g meshfile
              RMS error between the two runs should be: (final time):
@@ -135,17 +144,9 @@ swtc6.cmake  short time, low resolution Rossby wave test
  RMS u                                2.1855E-13            NORMALIZED  6.7928E-15
  RMS v                                1.8779E-13            NORMALIZED  9.2013E-15
 
-
-             executable:     sweqx
-             configuration:  homme/test_execs/swtcC
-                  NP=8  PLEV=1, USE_PIO=FALSE, WITH_ENERGY=FALSE
-             namelist options:   homme/test/reg_test/namelists/swtc6-short.nl
-                  NE=2, explicit leapfrog, no robert filter, no viscsoity, dt=6, run for 1 day    
-
-              
-
            Verification:
            verifty mass and energy conservatin to machine precision
+           (timestep chosen very small to ensure energy conservation)
            verify enstrophy dissipation rate has not changed significantly
              (3-4 digits?).  Example output, last timestep: 
   M-M0/M0      = 0.0000E+00 dM/dt   /M  =  0.000000E+00
@@ -187,20 +188,45 @@ individual tests (i.e. exact restart, conservation), one should also:
 
 
 
-baro2b.sh   Test case from Jablonowski and Williamson 2006
-            Spectral Element core
-            (with 4 tracers, per ASP)
-            Runge-Kutta timestepping with subcycling + hyper-viscosity 
-            sign preserving limiter 
-            nu_p=nu
-            Output using PIO_INTERP
-            NE=15, NP=4, PLEV=26, dt=180
-            Run the configuration in this script, visually
-            compare plots produced in q.pdf (either run
-            in branch AND trunk or compare to plots in
-            baro2b-ref.pdf in ref_sol/)
+baro2b.cmake  Test case from Jablonowski and Williamson 2006
+              executable:     preqx
+              configuration:  homme/test_execs/baroC
+                  NP=4  PLEV=26, USE_PIO=FALSE, WITH_ENERGY=TRUE
+              namelist options:  
+                  dt=150
+                  4 tracers, per ASP
+                  Runge-Kutta timestepping with subcycling + hyper-viscosity 
+                 (tstep_type=1, qsplit=4)
+                 sign preserving limiter 
+                 nu_p=nu
+                 NE=15, NP=4, PLEV=26, dt=150, 9 days.  
 
-baro2c.sh   first runs 9 days of the JW baroclinic test case (to get to an
+               Performn 2 runs, 1 thread and 4 threads
+
+            verification:
+              compare 1 thread vs4 thread runs (should be identical)
+              Run the configuration in this script, visually
+              compare plots produced in q.pdf (either run
+              in branch AND trunk or compare to plots in
+              baro2b-ref.pdf in ref_sol/)
+
+baro2c.cmake   Test case from Jablonowski and Williamson 2006
+            executable:     preqx
+            configuration:  homme/test_execs/baroC
+                  NP=4  PLEV=26, USE_PIO=FALSE, WITH_ENERGY=TRUE
+            namelist options:  
+               NE=6
+               nmax = 2160 (9 days)
+               qsize=1
+               dt=360
+               nu=nu_s=4e16  (nu_p,nu_top=0)
+               monotone limiter
+
+               tstep=5 should run with dt=1800
+            restart run:  dt=30  LF
+            
+
+            first runs 9 days of the JW baroclinic test case (to get to an
             interesting flow field).  Then do a short restart run
             with a very small timestep to measure mass and energy
             conservation.  IE dissipation should be very small.
@@ -220,28 +246,53 @@ PE,d/dt,diss:  0.63765066746567E+03  0.12525807506476E-01  0.98007470195061E-11
  E,dE/dt       0.26233326563496E+10  0.63578287760417E-07
 Q1,Q diss, dQ^2/dt:  0.65215821593973E+04 kg/m^2  0.0000000E+00 -0.4239988E-03
         
-Verify that:
-  KE diss = -.25e-1
-  IE diss = +.25e-1
+Original Leapfrog w/o Robert filter code    
+(latest version does not support tracers, so Q stats no longer reported)
+  KE diss = -.24e-1
+  IE diss = +.24e-1
   PE diss = O(e-11)
   Q diss  = O(e-14)
-  dE/dt   = .8e-8   
+  dE/dt   = .5e-7   
   dQ^2/dt = -.42e-3
+
+switch to RK5 for initial run:
+  KE diss = -.24e-1
+  IE diss = +.24e-1
+  PE diss = O(e-11)
+  dE/dt   = .5e-7   
+
+switch to RK5 for initial and restart run:
+RK5 code dissipates more than leapfrog w/o Robert filter, as expected:
+  KE diss = -.24e-1
+  IE diss = +.24e-1
+  PE diss = O(e-7)
+  dE/dt   = .55e-5
+  Q diss  = O(e-13)
+  dQ^2/dt = -.26e-6
+
+
+
+
+
 
 
 
 baro2d.sh   Test case from Jablonowski and Williamson 2006
             Same as baro2b.sh, but configred to match CAM-SE (Eulerian)
-            subcycled tracers and hyperviscosity, nu_p=nu, nu_div=3*nu
-            monotone limiter            
-            Output using PIO_INTERP
-            NE=15, NP=4, PLEV=26, dt=180
-            Regression test runs for 9 day.  
-
+            executable:     preqx
+            configuration:  homme/test_execs/baroC
+                  NP=4  PLEV=26, USE_PIO=FALSE, WITH_ENERGY=TRUE
+              namelist options:  
+                subcycled tracers and hyperviscosity, nu_p=nu, nu_div=3*nu
+                monotone limiter            
+                Output using PIO_INTERP
+                NE=15, NP=4, PLEV=26, dt=150, 9 days.
+ 
+             (no threading tests)
 
 
 baroCamMoist.cmake
-              Similar to baro2b.sh, but configured to match CAM-SE Lagrangian
+              Similar to baro2d.sh, but configured to match CAM-SE Lagrangian
               moisture is turned on, so Q1 field feeds back to dynamics.  
               NE=6 run for 3 days
 
