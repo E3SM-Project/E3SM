@@ -536,7 +536,7 @@ diffCprnc() {
   FILES="${NC_OUTPUT_FILES}"
 
   if [ -z "${FILES}" ] ; then
-      echo "Test ${TEST_NAME} doesn't have Netcdf output files"
+      echo "Test ${TEST_NAME}: no netcdf output files. Skipping baseline compare"
   fi
 
   # for files in movies
@@ -651,7 +651,7 @@ diffCprncRef() {
   FILES="${NC_OUTPUT_CHECKREF}"
 
   if [ -z "${FILES}" ] ; then
-      echo "Test ${TEST_NAME} doesn't have Netcdf output files"
+      echo Test ${TEST_NAME}: no netcdf CHECKREF output files, skipping CHECKREF test.
   fi
 
   # for files in movies
