@@ -692,9 +692,6 @@ endif
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
                 iptr = (kptr+k-1)+edge%putmap(ll,ielem)+1
-                if (iptr > size(edge%buf)) then
-                    print *,'ERROR 1: ',size(edge%buf),iptr,edge%putmap(ll,ielem)
-                endif
                 edge%buf(iptr)=v(1  ,1 ,k)
             end do
         end if
@@ -705,9 +702,6 @@ endif
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
                 iptr = (kptr+k-1)+edge%putmap(ll,ielem)+1
-                if (iptr > size(edge%buf)) then
-                    print *,'ERROR 2: ',size(edge%buf),iptr
-                endif
                 edge%buf(iptr)=v(np ,1 ,k)
 !                edge%buf(kptr+k,edge%putmap(ll,ielem)+1)=v(np ,1 ,k)
             end do
@@ -719,9 +713,6 @@ endif
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
                 iptr = (kptr+k-1)+edge%putmap(ll,ielem)+1
-                if (iptr > size(edge%buf)) then
-                    print *,'ERROR 3: ',size(edge%buf),iptr
-                endif
                 edge%buf(iptr)=v(np ,np,k)
 !                edge%buf(kptr+k,edge%putmap(ll,ielem)+1)=v(np ,np,k)
             end do
@@ -733,9 +724,6 @@ endif
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
                 iptr = (kptr+k-1)+edge%putmap(ll,ielem)+1
-                if (iptr > size(edge%buf)) then
-                    print *,'ERROR 4: ',size(edge%buf),iptr
-                endif
                 edge%buf(iptr)=v(1  ,np,k)
 !                edge%buf(kptr+k,edge%putmap(ll,ielem)+1)=v(1  ,np,k)
             end do
