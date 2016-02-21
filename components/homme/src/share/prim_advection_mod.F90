@@ -2556,6 +2556,10 @@ end subroutine ALE_parametric_coords
   call bndry_exchangeV( hybrid , edgeAdvp1 )
 
   do ie = nets , nete
+    if ( DSSopt == DSSeta         ) DSSvar => elem(ie)%derived%eta_dot_dpdn(:,:,:)
+    if ( DSSopt == DSSomega       ) DSSvar => elem(ie)%derived%omega_p(:,:,:)
+    if ( DSSopt == DSSdiv_vdp_ave ) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
+
     call edgeVunpack( edgeAdvp1 , DSSvar(:,:,1:nlev) , nlev , qsize*nlev , ie )
 #if (defined COLUMN_OPENMP)
  !$omp parallel do private(k)
