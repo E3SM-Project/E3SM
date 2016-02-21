@@ -639,9 +639,13 @@ diffCprncOutput() {
 
 
 diffCprncRef() {
-
   # source the test.sh file to get the names of the NC_OUTPUT_FILES
   source ${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.sh
+  if [ -z "${TESTCASE_REF_TOL}" ]; then
+    tol=0.0E0
+  else
+     tol=${TESTCASE_REF_TOL}
+  fi
 
   # NC_OUTPUT_FILES is defined in the .sh file
   FILES="${NC_OUTPUT_CHECKREF}"
@@ -671,13 +675,25 @@ diffCprncRef() {
       # Delete the output file to remove clutter
     else
       echo "The files are different: DIFF_RESULT=${DIFF_RESULT}"
-      echo "############################################################################"
+      echo  Checking RMS differences with tol = $tol 
       echo "CPRNC returned the following RMS differences"
-      grep RMS ${cprncOutputFile}
-      echo "############################################################################"
-      exit -13
+      if grep RMS ${cprncOutputFile} ; then
+        RMSnormalized=`grep RMS ${cprncOutputFile} | awk '{print $5}' -`
+        for rmserror in $RMSnormalized 
+        do
+           check=`awk "BEGIN{ print ( $rmserror <= $tol ) }"`
+           if [ $check == "1" ]; then
+              echo $rmserror '<='  $tol  OK
+           else
+              echo $rmserror '> '  $tol  ERROR: TOL EXCEEDED
+              exit -14
+           fi  
+        done     
+      else
+         echo "Error: No RMS differences found"
+         exit -13
+      fi
     fi
-    
   done
 }
 
