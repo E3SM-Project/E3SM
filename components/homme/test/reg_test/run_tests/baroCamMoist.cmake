@@ -18,12 +18,20 @@ SET(EXEC_NAME baroCam)
 
 SET(NUM_CPUS 16)
 
-SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/${TEST_NAME}.nl)
+SET(NAMELIST_FILES 
+${HOMME_ROOT}/test/reg_test/namelists/baroCamMoist.nl
+${HOMME_ROOT}/test/reg_test/namelists/baroCamMoist-SL.nl
+)
 SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/*26*)
 SET(REFSOLN_FILES ${HOMME_ROOT}/test/reg_test/ref_sol/T340ref.nc)
 
 SET(NC_OUTPUT_FILES 
   camBaroMoist-asp_baroclinic1.nc 
-  camBaroMoist-asp_baroclinic2.nc)
+  camBaroMoist-asp_baroclinic2.nc
+  camBaroMoist-SL-asp_baroclinic1.nc 
+  camBaroMoist-SL-asp_baroclinic2.nc
+)
+
+
 
 

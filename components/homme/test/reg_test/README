@@ -255,13 +255,7 @@ Original Leapfrog w/o Robert filter code
   dE/dt   = .5e-7   
   dQ^2/dt = -.42e-3
 
-switch to RK5 for initial run:
-  KE diss = -.24e-1
-  IE diss = +.24e-1
-  PE diss = O(e-11)
-  dE/dt   = .5e-7   
-
-switch to RK5 for initial and restart run:
+2016-2/21: switch to RK5 for initial and restart run:
 RK5 code dissipates more than leapfrog w/o Robert filter, as expected:
   KE diss = -.24e-1
   IE diss = +.24e-1
@@ -295,6 +289,8 @@ baroCamMoist.cmake
               Similar to baro2d.sh, but configured to match CAM-SE Lagrangian
               moisture is turned on, so Q1 field feeds back to dynamics.  
               NE=6 run for 3 days
+
+              2 versions: SE tracers and SL tracers
 
 
 
