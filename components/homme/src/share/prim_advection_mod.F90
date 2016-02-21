@@ -2311,6 +2311,10 @@ end subroutine ALE_parametric_coords
   integer :: rhs_viss = 0
 
 !  call t_barrierf('sync_euler_step', hybrid%par%comm)
+  do k = 1 , nlev
+    dp0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
+  enddo
   call t_startf('euler_step')
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2346,10 +2350,6 @@ end subroutine ALE_parametric_coords
     !        for nu_p=nu_q>0, we need to apply dissipation to Q * diffusion_dp
     !
     ! initialize dp, and compute Q from Qdp (and store Q in Qtens_biharmonic)
-    do k = 1 , nlev
-      dp0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
-    enddo
     do ie = nets , nete
       ! add hyperviscosity to RHS.  apply to Q at timelevel n0, Qdp(n0)/dp
 #if (defined COLUMN_OPENMP)
@@ -2466,7 +2466,7 @@ end subroutine ALE_parametric_coords
       enddo
 #endif
 
-    endif ! rhs_multiplier == 2
+    endif
   endif  ! compute biharmonic mixing term and qmin/qmax
   ! end of limiter_option == 8 
 
