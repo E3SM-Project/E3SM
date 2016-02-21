@@ -288,9 +288,16 @@ baro2d.sh   Test case from Jablonowski and Williamson 2006
 baroCamMoist.cmake
               Similar to baro2d.sh, but configured to match CAM-SE Lagrangian
               moisture is turned on, so Q1 field feeds back to dynamics.  
-              NE=6 run for 3 days
 
-              2 versions: SE tracers and SL tracers
+              SE version
+              NE=6 run for 3 days, dt=480
+
+              SE-SL version
+              NE=2 run for 1 days, dt=1200, qsplit=3
+              on skybridge, this case is very very slow  - compiler issue with
+              one of the subroutines.  Changing to NE=2 for 1 day until this is fixed.
+
+
 
 
 
