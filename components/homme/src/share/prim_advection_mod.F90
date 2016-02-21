@@ -2365,9 +2365,13 @@ end subroutine ALE_parametric_coords
         do k=1,nlev
           Qtens_biharmonic(:,:,k,q,ie) = elem(ie)%state%Qdp(:,:,k,q,n0_qdp)/dp(:,:,k)
           if ( rhs_multiplier == 1 ) then
+             ! for this stage, we skip neighbor_minmax() call, but update
+             ! qmin/qmax with any new local extrema:
               qmin(k,q,ie)=min(qmin(k,q,ie),minval(Qtens_biharmonic(:,:,k,q,ie)))
               qmax(k,q,ie)=max(qmax(k,q,ie),maxval(Qtens_biharmonic(:,:,k,q,ie)))
           else
+             ! for rhs_multiplier=0,2 we will call neighbor_minmax and compute
+             ! the correct min/max values
               qmin(k,q,ie)=minval(Qtens_biharmonic(:,:,k,q,ie))
               qmax(k,q,ie)=maxval(Qtens_biharmonic(:,:,k,q,ie))
           endif
