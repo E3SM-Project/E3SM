@@ -57,6 +57,11 @@
     <PES_LEVEL>0</PES_LEVEL>
 </pes>
 
+<pes MACH="lawrencium-lr2|lawrencium-lr3">
+    <PIO_NUMTASKS>-1</PIO_NUMTASKS><PIO_STRIDE>-1</PIO_STRIDE> <PIO_TYPENAME>netcdf</PIO_TYPENAME> <PIO_ROOT>1</PIO_ROOT>
+    <PES_LEVEL>0</PES_LEVEL>
+</pes>
+
 <!-- Default settings for dead atm or CLM with DATM use one full node -->
 <pes CCSM_LCOMPSET="XATM|DATM.+CLM" >
     <NTASKS_ATM>$MAX_TASKS_PER_NODE</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
