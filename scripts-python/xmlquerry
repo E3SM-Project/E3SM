@@ -65,7 +65,12 @@ def _main_func(description):
         sys.exit(1 if test_results.failed > 0 else 0)
 
     args = parse_command_line(sys.argv, description)
+    
+    print args
+    
     case = Case(args.caseroot)
+    
+    
     
     for i in args.key :
         value = case.get_value(i, resolved=False, subgroup=subgroup)
