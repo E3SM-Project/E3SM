@@ -44,7 +44,8 @@ module pio_nf
   end interface
   interface pio_def_var_deflate
      module procedure &
-          def_var_deflate
+          def_var_deflate_desc                              , &         
+          def_var_deflate_id
   end interface
   interface pio_def_var_chunking
      module procedure &
@@ -1053,6 +1054,7 @@ contains
 
     ierr = pio_inq_var_deflate(File%fh, varid, shuffle, deflate, deflate_level)
   end function inq_var_deflate_vid
+
 !>
 !! @public 
 !! @ingroup PIO_inq_var_deflate
@@ -1503,9 +1505,9 @@ contains
 !! @ingroup PIO_def_var_deflate
 !! @brief Changes compression settings for a netCDF-4/HDF5 variable.
 !<
-  integer function def_var_deflate(file, vardesc, shuffle, deflate, deflate_level) result(ierr)
+  integer function def_var_deflate_id(file, varid, shuffle, deflate, deflate_level) result(ierr)
     type (File_desc_t), intent(in)  :: file
-    type (var_desc_t), intent(in) :: vardesc
+    integer, intent(in) :: varid
     integer, intent(in) :: shuffle
     integer, intent(in) :: deflate
     integer, intent(in) :: deflate_level
@@ -1522,8 +1524,23 @@ contains
        end function PIOc_def_var_deflate
     end interface
 
-    ierr = PIOc_def_var_deflate(file%fh, vardesc%varid-1, shuffle, deflate, deflate_level)
-  end function def_var_deflate
+    ierr = PIOc_def_var_deflate(file%fh, varid-1, shuffle, deflate, deflate_level)
+  end function def_var_deflate_id
+
+!> 
+!! @public 
+!! @ingroup PIO_def_var_deflate
+!! @brief Changes compression settings for a netCDF-4/HDF5 variable.
+!<
+  integer function def_var_deflate_desc(file, vardesc, shuffle, deflate, deflate_level) result(ierr)
+    type (File_desc_t), intent(in)  :: file
+    type (var_desc_t), intent(in) :: vardesc
+    integer, intent(in) :: shuffle
+    integer, intent(in) :: deflate
+    integer, intent(in) :: deflate_level
+
+    ierr = def_var_deflate_id(file, vardesc%varid, shuffle, deflate, deflate_level)
+  end function def_var_deflate_desc
 
 !> 
 !! @public 
@@ -1534,7 +1551,9 @@ contains
     type (File_desc_t), intent(in)  :: file
     type (var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: storage
-    integer, intent(in) :: chunksizes
+    integer, intent(in) :: chunksizes(:)
+    integer(C_INT) :: cchunksizes(PIO_MAX_VAR_DIMS)
+    integer :: ndims, i    
 
     interface
        integer (C_INT) function PIOc_def_var_chunking(ncid, varid, storage, chunksizes) &
@@ -1543,10 +1562,14 @@ contains
          integer(c_int), value :: ncid
          integer(c_int), value :: varid
          integer(c_int), value :: storage
-         integer(c_int), value :: chunksizes
+         integer(c_int) :: chunksizes(*)
        end function PIOc_def_var_chunking
     end interface
+    ndims = size(chunksizes)
+    do i=1,ndims
+       cchunksizes(i) = chunksizes(ndims-i+1)-1
+    enddo
 
-    ierr = PIOc_def_var_chunking(file%fh, vardesc%varid-1, storage, chunksizes)
+    ierr = PIOc_def_var_chunking(file%fh, vardesc%varid-1, storage, cchunksizes)
   end function def_var_chunking
 end module pio_nf
