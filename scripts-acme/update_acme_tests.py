@@ -80,6 +80,7 @@ _TEST_SUITES = {
                          "ERS.f09_g16_g.MPASLI_ONLY",
                          "SMS.T62_mpas120_gis20.MPAS_LISIO_TEST",
                          "SMS.f09_g16_a.IGCLM45_MLI",
+                         "SMS_D_Ln1.ne30_ne30.FC5AV1C",
                          "SMS_D_Ld1.ne16_ne16.FC5ATMMOD")
                         ),
 
@@ -108,6 +109,8 @@ _TEST_SUITES = {
                            "SMS_D_Ld3.ne16_ne16.FC5",
                            "SMS.f09_g16_a.MPASLIALB_ONLY",
                            "ERS.ne16_ne16.FC5ATMMOD",
+                           "SMS_Ld1.ne30_ne30.FC5AV1F",
+                           "SMS_Ld1.ne30_ne30.FC5AV1C",
                            "SMS_D_Ld1.ne16_ne16.FC5ATMMODCOSP")
                           ),
 }
