@@ -868,8 +868,8 @@ contains
          ! ===
          call mpas_timer_start("write output")
 
-         ! Reset the restart alarm to prevent restart files being written without the coupler requesting it.
-         call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', ierr=err_tmp)
+         ! Reset any restart alarms to prevent restart files being written without the coupler requesting it.
+         call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT_OUTPUT, ierr=err_tmp)
          err = ior(err, err_tmp)
 
          ! These calls will handle ALL output streams that need writing.
