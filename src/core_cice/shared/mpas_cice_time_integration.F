@@ -62,7 +62,9 @@ contains
          cice_column_dynamics_time_integration, &
          cice_column_postdynamics_time_integration, &
          cice_column_reinitialize_fluxes, &
-         cice_column_reinitialize_diagnostics
+         cice_column_reinitialize_diagnostics_thermodynamics, &
+         cice_column_reinitialize_diagnostics_bgc, &
+         cice_column_reinitialize_diagnostics_dynamics
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output: 
@@ -101,7 +103,10 @@ contains
     call store_timestep_counter(domain, itimestep)
 
     ! reinitialize diagnostics
-    call cice_column_reinitialize_diagnostics(domain)
+    call mpas_timer_start("Reinitialize diagnostics thermodynamics/bgc")
+    call cice_column_reinitialize_diagnostics_thermodynamics(domain)
+    call cice_column_reinitialize_diagnostics_bgc(domain)
+    call mpas_timer_stop("Reinitialize diagnostics thermodynamics/bgc")
 
     configs => domain % configs
 
@@ -121,6 +126,11 @@ contains
     ! loop of dynamcis subcycle
     call MPAS_pool_get_config(configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
     do iDynamicsSubcycle = 1, config_dynamics_subcycle_number
+
+       ! reinitialize dynamics diagnostics
+       call mpas_timer_start("Reinitialize diagnostics dynamics")
+       call cice_column_reinitialize_diagnostics_dynamics(domain)
+       call mpas_timer_stop("Reinitialize diagnostics dynamics")
 
        ! velocity solve
        call mpas_timer_start("Velocity solver")

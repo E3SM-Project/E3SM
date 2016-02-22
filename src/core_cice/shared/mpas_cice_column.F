@@ -39,7 +39,9 @@ module cice_column
        cice_column_aggregate, &
        cice_column_initial_air_drag_coefficient, &
        cice_column_reinitialize_fluxes, &
-       cice_column_reinitialize_diagnostics, &
+       cice_column_reinitialize_diagnostics_thermodynamics, &
+       cice_column_reinitialize_diagnostics_dynamics, &
+       cice_column_reinitialize_diagnostics_bgc, &
        cice_column_coupling_prep, &
        cice_column_finalize
        
@@ -10153,17 +10155,17 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  cice_column_reinitialize_diagnostics
+!  cice_column_reinitialize_diagnostics_thermodynamics
 !
-!> \brief 
+!> \brief Reinitialize thermodynamics diagnostics
 !> \author Adrian K. Turner, LANL
 !> \date 27th September 2015
 !> \details
-!>  
+!>  Reinitialize thermodynamics diagnostics
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_column_reinitialize_diagnostics(domain)
+  subroutine cice_column_reinitialize_diagnostics_thermodynamics(domain)
 
     use ice_constants_colpkg, only: &
          dragio
@@ -10178,9 +10180,8 @@ contains
          diagnosticsPool, &
          tracersAggregatePool, &
          pondsPool, &
-         dragPool, &
          shortwavePool, &
-         biogeochemistryPool
+         dragPool
 
     ! atmospheric fluxes
     real(kind=RKIND), dimension(:), pointer :: &
@@ -10206,9 +10207,6 @@ contains
 
     ! diagnostic tendencies
     real(kind=RKIND), dimension(:), pointer :: &
-         iceAreaTendencyTransport, &
-         iceVolumeTendencyTransport, &
-         iceAgeTendencyTransport, &
          iceAreaTendencyThermodynamics, &
          iceVolumeTendencyThermodynamics, &
          iceAgeTendencyThermodynamics, &
@@ -10247,29 +10245,9 @@ contains
          dragFloeLength, &
          dragFloeSeparation
 
-    ! biogeochemistry
-    real(kind=RKIND), dimension(:), pointer :: &
-         primaryProduction, &
-         netSpecificAlgalGrowthRate, &
-         netBrineHeight, &
-         zSalinityFlux, &
-         zSalinityGDFlux
-
-    real(kind=RKIND), dimension(:,:), pointer :: &
-         oceanBioFluxes, &
-         atmosIceBioFluxes, &
-         snowIceBioFluxes, &
-         totalVerticalBiologyIce, &
-         totalVerticalBiologySnow
-
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
-         bioTracerShortwave
-
     logical, pointer :: &
          config_use_ice_age, &
          config_use_form_drag, &
-         config_use_column_biogeochemistry, &
-         config_use_column_shortwave, &
          config_use_column_package
 
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
@@ -10327,22 +10305,9 @@ contains
           call MPAS_pool_get_array(diagnosticsPool, "iceVolumeTendencyThermodynamics", iceVolumeTendencyThermodynamics)
           call MPAS_pool_get_array(diagnosticsPool, "iceAgeTendencyThermodynamics", iceAgeTendencyThermodynamics)
 
-          call MPAS_pool_get_array(diagnosticsPool, "iceAreaTendencyTransport", iceAreaTendencyTransport)
-          call MPAS_pool_get_array(diagnosticsPool, "iceVolumeTendencyTransport", iceVolumeTendencyTransport)
-          call MPAS_pool_get_array(diagnosticsPool, "iceAgeTendencyTransport", iceAgeTendencyTransport)
-
           call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
           call MPAS_pool_get_array(tracersAggregatePool, "iceVolumeCell", iceVolumeCell)
           call MPAS_pool_get_array(tracersAggregatePool, "iceAgeCell", iceAgeCell)
-
-          ! transport tendencies
-          iceAreaTendencyTransport   = iceAreaCell
-          iceVolumeTendencyTransport = iceVolumeCell
-          if (config_use_ice_age) then
-             iceAgeTendencyTransport = iceAgeCell
-          else
-             iceAgeTendencyTransport = 0.0_RKIND
-          endif
 
           ! thermodynamic tendencies
           iceAreaTendencyThermodynamics   = iceAreaCell
@@ -10425,6 +10390,200 @@ contains
 
           endif ! config_use_form_drag
 
+          block => block % next
+       end do
+
+    endif ! config_use_column_package
+
+  end subroutine cice_column_reinitialize_diagnostics_thermodynamics
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_column_reinitialize_diagnostics_dynamics
+!
+!> \brief Reinitialize dynamics diagnostics
+!> \author Adrian K. Turner, LANL
+!> \date 27th September 2015
+!> \details
+!>  Reinitialize dynamics diagnostics
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_column_reinitialize_diagnostics_dynamics(domain)
+
+    use ice_constants_colpkg, only: &
+         dragio
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         velocitySolverPool, &
+         ridgingPool, &
+         diagnosticsPool, &
+         tracersAggregatePool
+
+    ! dynamics
+    real(kind=RKIND), dimension(:), pointer :: &
+         principalStress1, &
+         principalStress2, &
+         oceanStressU, &
+         oceanStressV, &
+         airStressVertexU, &
+         airStressVertexV, &
+         stressDivergenceU, &
+         stressDivergenceV, &
+         surfaceTiltForceU, &
+         surfaceTiltForceV, &
+         replacementPressure
+
+    ! ridging
+    real(kind=RKIND), dimension(:), pointer :: &
+         areaLossRidge, &
+         areaGainRidge, &
+         iceVolumeRidged, &
+         openingRateRidge
+
+    ! diagnostic tendencies
+    real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaTendencyTransport, &
+         iceVolumeTendencyTransport, &
+         iceAgeTendencyTransport, &
+         iceAreaCell, &
+         iceVolumeCell, &
+         iceAgeCell
+
+    logical, pointer :: &
+         config_use_ice_age, &
+         config_use_column_package
+
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
+
+    if (config_use_column_package) then
+
+       block => domain % blocklist
+       do while (associated(block))
+
+          call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+
+          call MPAS_pool_get_array(velocitySolverPool, "principalStress1", principalStress1)
+          call MPAS_pool_get_array(velocitySolverPool, "principalStress2", principalStress2)
+          call MPAS_pool_get_array(velocitySolverPool, "oceanStressU", oceanStressU)
+          call MPAS_pool_get_array(velocitySolverPool, "oceanStressV", oceanStressV)
+          call MPAS_pool_get_array(velocitySolverPool, "airStressVertexU", airStressVertexU)
+          call MPAS_pool_get_array(velocitySolverPool, "airStressVertexV", airStressVertexV)
+          call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
+          call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
+          call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceU", surfaceTiltForceU)
+          call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceV", surfaceTiltForceV)
+          call MPAS_pool_get_array(velocitySolverPool, "replacementPressure", replacementPressure)
+
+          principalStress1    = 0.0_RKIND
+          principalStress2    = 0.0_RKIND
+          oceanStressU        = 0.0_RKIND
+          oceanStressV        = 0.0_RKIND
+          airStressVertexU    = 0.0_RKIND
+          airStressVertexV    = 0.0_RKIND
+          stressDivergenceU   = 0.0_RKIND
+          stressDivergenceV   = 0.0_RKIND
+          surfaceTiltForceU   = 0.0_RKIND
+          surfaceTiltForceV   = 0.0_RKIND
+          replacementPressure = 0.0_RKIND
+
+          call MPAS_pool_get_subpool(block % structs, "ridging", ridgingPool)
+
+          call MPAS_pool_get_array(ridgingPool, "areaLossRidge", areaLossRidge)
+          call MPAS_pool_get_array(ridgingPool, "areaGainRidge", areaGainRidge)
+          call MPAS_pool_get_array(ridgingPool, "iceVolumeRidged", iceVolumeRidged)
+          call MPAS_pool_get_array(ridgingPool, "openingRateRidge", openingRateRidge)
+
+          areaLossRidge    = 0.0_RKIND
+          areaGainRidge    = 0.0_RKIND
+          iceVolumeRidged  = 0.0_RKIND
+          openingRateRidge = 0.0_RKIND
+
+          ! tendancies
+          call MPAS_pool_get_config(block % configs, "config_use_ice_age", config_use_ice_age)
+
+          call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnosticsPool)
+          call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
+
+          call MPAS_pool_get_array(diagnosticsPool, "iceAreaTendencyTransport", iceAreaTendencyTransport)
+          call MPAS_pool_get_array(diagnosticsPool, "iceVolumeTendencyTransport", iceVolumeTendencyTransport)
+          call MPAS_pool_get_array(diagnosticsPool, "iceAgeTendencyTransport", iceAgeTendencyTransport)
+
+          call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
+          call MPAS_pool_get_array(tracersAggregatePool, "iceVolumeCell", iceVolumeCell)
+          call MPAS_pool_get_array(tracersAggregatePool, "iceAgeCell", iceAgeCell)
+
+          ! transport tendencies
+          iceAreaTendencyTransport   = iceAreaCell
+          iceVolumeTendencyTransport = iceVolumeCell
+          if (config_use_ice_age) then
+             iceAgeTendencyTransport = iceAgeCell
+          else
+             iceAgeTendencyTransport = 0.0_RKIND
+          endif
+
+          block => block % next
+       end do
+
+    endif ! config_use_column_package
+
+  end subroutine cice_column_reinitialize_diagnostics_dynamics
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_column_reinitialize_diagnostics_bgc
+!
+!> \brief Reinitialize BGC diagnostics
+!> \author Adrian K. Turner, LANL
+!> \date 27th September 2015
+!> \details
+!>  Reinitialize BGC diagnostics
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_column_reinitialize_diagnostics_bgc(domain)
+
+    type(domain_type) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         biogeochemistryPool
+
+    ! biogeochemistry
+    real(kind=RKIND), dimension(:), pointer :: &
+         primaryProduction, &
+         netSpecificAlgalGrowthRate, &
+         netBrineHeight, &
+         zSalinityFlux, &
+         zSalinityGDFlux
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         oceanBioFluxes, &
+         atmosIceBioFluxes, &
+         snowIceBioFluxes, &
+         totalVerticalBiologyIce, &
+         totalVerticalBiologySnow
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         bioTracerShortwave
+
+    logical, pointer :: &
+         config_use_column_biogeochemistry, &
+         config_use_column_shortwave, &
+         config_use_column_package
+
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
+
+    if (config_use_column_package) then
+
+       block => domain % blocklist
+       do while (associated(block))
+
           ! biogeochemistry
           call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
 
@@ -10471,7 +10630,7 @@ contains
 
     endif ! config_use_column_package
 
-  end subroutine cice_column_reinitialize_diagnostics
+  end subroutine cice_column_reinitialize_diagnostics_bgc
 
 !-----------------------------------------------------------------------
 
