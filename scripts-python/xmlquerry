@@ -1,0 +1,81 @@
+#!/usr/bin/env python
+
+
+from standard_script_setup import *
+
+from CIME.utils import expect, run_cmd
+from CIME.case import Case
+
+import argparse, doctest, shutil, glob
+import xml.etree.ElementTree as ET
+
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+
+    # my %opts = (
+    #     fileonly        =>0,
+    #     valonly        =>0,
+    #     value            =>0,
+    #     file =>0,
+    #     noexpandxml            =>0,
+    #     help        =>0,
+    #     listall        =>0,
+    #     loglevel        =>"INFO",
+    #     );
+
+
+    parser = argparse.ArgumentParser()
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("File",
+                        help="env*.xml file")
+    parser.add_argument("-file", 
+                        help="env*.xml file")
+    parser.add_argument("--key", nargs="*" , help="env*.xml file")
+    
+    parser.add_argument("--caseroot", default=os.getcwd(),
+                        help="Case directory to build")
+                        
+  
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args
+
+
+# Same reads from same file as xmlchange
+# Use same methods
+
+def get_value(file , key):
+    
+    tree = ET.parse(file)
+    root = tree.getroot()
+    for child in root:
+        print child
+        
+    return value
+
+def _main_func(description):
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    args = parse_command_line(sys.argv, description)
+    case = Case(args.caseroot)
+    
+    for i in args.key :
+        value = case.get_value(i, resolved=False, subgroup=subgroup)
+        print value
+        
+
+    #xmlquerry(caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup, append, noecho, warn)
+    
+    print args.file , args.File
+    #get_value(args.File , args.Value)
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
