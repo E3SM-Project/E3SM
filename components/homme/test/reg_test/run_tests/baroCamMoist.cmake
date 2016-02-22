@@ -30,5 +30,26 @@ SET(NC_OUTPUT_FILES
 )
 
 
+SET(OMP_SUB_TESTS true)
+SET(OMP_NUM_THREADS 4)
+SET(OMP_NAMELIST_FILES 
+${HOMME_ROOT}/test/reg_test/namelists/baroCamMoist-omp3.nl
+${HOMME_ROOT}/test/reg_test/namelists/baroCamMoist-omp4.nl
+)
+
+
+# compare openMP output vs single threaded output
+SET(NC_OUTPUT_REF   
+  camBaroMoist-asp_baroclinic1.nc 
+  camBaroMoist-asp_baroclinic2.nc
+  camBaroMoist-asp_baroclinic1.nc 
+  camBaroMoist-asp_baroclinic2.nc
+)
+SET(NC_OUTPUT_CHECKREF    
+  camBaroMoist-omp3-asp_baroclinic1.nc 
+  camBaroMoist-omp3-asp_baroclinic2.nc
+  camBaroMoist-omp4-asp_baroclinic1.nc 
+  camBaroMoist-omp4-asp_baroclinic2.nc
+)
 
 

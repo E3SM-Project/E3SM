@@ -202,6 +202,8 @@ baro2b.cmake  Test case from Jablonowski and Williamson 2006
                  NE=15, NP=4, PLEV=26, dt=150, 9 days.  
 
                Performn 2 runs, 1 thread and 4 threads
+               (2015/2 MT: disabled this slow running thread test, replaced by
+                 thread tests in baroCamMoist below)
 
             verification:
               compare 1 thread vs4 thread runs (should be identical)
