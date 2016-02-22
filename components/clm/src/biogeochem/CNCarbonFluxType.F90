@@ -4360,7 +4360,7 @@ contains
       end do
     end do
 
-    call this%summary_rr(this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+    call this%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
     end associate
   end subroutine hr_summary_for_ch4
   !-----------------------------------------------------------------------
@@ -4804,7 +4804,16 @@ contains
 
     if ( (.not. is_active_betr_bgc           ) .and. &
          (.not. (use_pflotran .and. pf_cmode))) then
+      do k = 1, ndecomp_cascade_transitions
 
+       do j = 1,nlevdecomp
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+
+             this%decomp_cascade_hr_col(c,k) = 0._r8
+          enddo
+       enddo
+      enddo
       ! vertically integrate HR and decomposition cascade fluxes
       do k = 1, ndecomp_cascade_transitions
 
