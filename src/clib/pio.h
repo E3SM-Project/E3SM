@@ -374,7 +374,7 @@ int PIOc_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value);
 int PIOc_inq_var_fill(int ncid, int varid, int *no_fill, void *fill_valuep);
 int PIOc_def_var_endian(int ncid, int varid, int endian);
 int PIOc_inq_var_endian(int ncid, int varid, int *endianp);
-int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size, size_t nelems, float preemption);
+int PIOc_set_chunk_cache(int iosysid, int iotype, int io_rank, size_t size, size_t nelems, float preemption);
 int PIOc_get_chunk_cache(int iotype, int io_rank, size_t *sizep, size_t *nelemsp, float *preemptionp);
 int PIOc_set_var_chunk_cache(int ncid, int varid, size_t size, size_t nelems,
 			     float preemption);

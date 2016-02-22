@@ -902,14 +902,14 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
  * function.
  * 
  * @param iotype the iotype of files to be created or opened.
- `* @param io_rank the rank of the calling process.
+ * @param io_rank the rank of the calling process.
  * @param size size of file cache.
  * @param nelems number of elements in file cache.
  * @param preemption preemption setting for file cache.
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size,
+int PIOc_set_chunk_cache(int iosysid, int iotype, int io_rank, size_t size,
 			 size_t nelems, float preemption)
 {
     int ierr;
@@ -921,10 +921,14 @@ int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size,
 
     errstr = NULL;
     ierr = PIO_NOERR;
-    /*msg = PIO_MSG_SET_CHUNK_CACHE;*/
+    msg = PIO_MSG_SET_CHUNK_CACHE;
 
-    /* if (ios->async_interface && ! ios->ioproc){ */
-    /* 	if (ios->compmaster)  */
+    ios = pio_get_iosystem_from_id(iosysid);
+    if(ios == NULL)
+	return PIO_EBADID;
+
+  /* if (ios->async_interface && ! ios->ioproc){ */
+    /* 	if (ios->compmaster) */
     /* 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm); */
     /* 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm); */
     /* } */
@@ -942,31 +946,21 @@ int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size,
 	break;
 #endif
     case PIO_IOTYPE_NETCDF:
-	return PIO_ENOTNC4;
+	ierr = PIO_ENOTNC4;
 	break;
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-	return PIO_ENOTNC4;
+	ierr = PIO_ENOTNC4;
 	break;
 #endif
     default:
 	ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
 
-    /* Allocate an error string if needed. */
-    if (ierr != PIO_NOERR)
-    {
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
-    }
-
     /* Check for netCDF error. */
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-
-    /* Free the error string if it was allocated. */
-    if (errstr != NULL)
-	free(errstr);
+    if (ierr)
+	MPI_Bcast(&ierr, 1, MPI_INTEGER, ios->ioroot, ios->my_comm);    
 
     return ierr;
 }    
