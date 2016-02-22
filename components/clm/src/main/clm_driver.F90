@@ -955,6 +955,7 @@ contains
          endif
          
          if (use_lch4) then
+           !warning: do not call ch4 before CNAnnualUpdate, which will fail the ch4 model
            call t_startf('ch4')
            call ch4 (bounds_clump,                                                                  &
                filter(nc)%num_soilc, filter(nc)%soilc,                                             &
