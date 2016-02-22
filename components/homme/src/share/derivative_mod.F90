@@ -2056,11 +2056,8 @@ end do
        end do
     end do
 
-    do j=1,np
-       do i=1,np
-          div(i,j)=(div(i,j)+vvtemp(i,j))*(elem%rmetdet(i,j)*rrearth)
-       end do
-    end do
+!dir$ simd
+    div(:,:)=(div(:,:)+vvtemp(:,:))*(elem%rmetdet(:,:)*rrearth)
     
   end function divergence_sphere
 
