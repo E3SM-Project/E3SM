@@ -136,9 +136,10 @@ program prim_main
   !$OMP CRITICAL
 #endif
   if (par%rank<100) then 
-     write(6,9) par%rank,ithr,nets,nete 
+     write(6,9) par%rank,ithr,omp_get_max_threads(),nets,nete 
   endif
-9 format("process: ",i2,1x,"thread: ",i2,1x,"element limits: ",i5," - ",i5)
+9 format("process: ",i2,1x,"horiz thread id: ",i2,1x,"# vert threads: ",i2,1x,&
+       "element limits: ",i5,"-",i5)
 #if (defined HORIZ_OPENMP)
   !$OMP END CRITICAL
   !$OMP END PARALLEL
