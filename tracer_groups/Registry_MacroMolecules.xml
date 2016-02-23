@@ -93,17 +93,11 @@
 			</var_array>
 		</var_struct>
 	        <var_struct name="MacroMoleculesSeaIceCoupling" time_levs="1" packages="MacroMoleculesTracersPKG">
-                        <var name="oceanSurfaceDOC" type="real" dimensions="TWO nCells Time" units="mmolC m^{-3}"
+                        <var name="avgOceanSurfaceDOC" type="real" dimensions="TWO nCells Time" units="mmolC m^{-3}"
                                  description="Ocean Surface Organics concentration: (1,2)=>(polysaccharides,lipids)"
                         />
-                        <var name="oceanSurfaceDON" type="real" dimensions="nCells Time" units="mmolN m^{-3}"
+                        <var name="avgOceanSurfaceDON" type="real" dimensions="nCells Time" units="mmolN m^{-3}"
                                  description="Ocean Surface Organic Proteins concentration"
-                        />
-                        <var name="iceFluxDOC" type="real" dimensions="TWO nCells Time" units="mmolC m^{-2} s"
-                                 description="Surface Organics flux from sea ice: (1,2)=>(polysaccharides,lipids)"
-                        />
-                        <var name="iceFluxDON" type="real" dimensions="nCells Time" units="mmolN m^{-2} s"
-                                 description="Surface Organic Proteins flux from sea ice"
                         />
 		</var_struct>
 		<var_struct name="tracersSurfaceRestoringFields" time_levs="1">

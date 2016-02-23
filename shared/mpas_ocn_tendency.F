@@ -622,9 +622,9 @@ contains
                   call mpas_timer_start("DMS source-sink")
                   call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, timeLevel)
                   nTracersEcosys = size(ecosysTracers, dim=1)
-                  call ocn_tracer_DMS_compute(tracerGroup, nTracerGroup, ecosysTracers, nTracersEcosys, forcingPool, &
-                     nCellsSolve, maxLevelCell, nVertLevels, layerThickness,  &
-                     tracerGroupTend, err)
+                  call ocn_tracer_DMS_compute(activeTracers, tracerGroup, nTracerGroup, ecosysTracers,   &
+                     nTracersEcosys, forcingPool, nCellsSolve, maxLevelCell,  &
+                     nVertLevels, layerThickness, indexTemperature, indexSalinity, tracerGroupTend, err)
                   call mpas_timer_stop("DMS source-sink")
 
                   call mpas_timer_start("DMS surface flux", .false.)
