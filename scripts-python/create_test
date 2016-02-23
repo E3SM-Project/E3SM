@@ -170,16 +170,16 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
                 baseline_name, namelists_only, project, test_id, parallel_jobs,
                 xml_machine, xml_compiler, xml_category, xml_testlist):
 ###############################################################################
-    if(testargs and machine_name is None and compiler is None):
+    if (testargs and machine_name is None and compiler is None):
         for test in testargs:
             testsplit = CIME.utils.parse_test_name(test)
-            if(testsplit[4] is not None):
-                if(machine_name is None):
+            if (testsplit[4] is not None):
+                if (machine_name is None):
                     machine_name = testsplit[4]
                 else:
                     expect(machine_name == testsplit[4], "abiguity in machine, please use the --machine option")
-            if(testsplit[5] is not None):
-                if(compiler is None):
+            if (testsplit[5] is not None):
+                if (compiler is None):
                    compiler = testsplit[5]
                 else:
                     expect(compiler == testsplit[5], "abiguity in compiler, please use the --compiler option")
