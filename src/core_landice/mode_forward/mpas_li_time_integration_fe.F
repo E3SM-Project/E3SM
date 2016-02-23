@@ -561,7 +561,7 @@ module li_time_integration_fe
 
       call mpas_timer_start("halo updates")
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
-      call mpas_pool_get_field(geometryPool, 'thickness', thicknessField, timeLevel=2)
+      call mpas_pool_get_field(geometryPool, 'thickness', thicknessField)
       call mpas_dmpar_exch_halo_field(thicknessField)
       call mpas_timer_stop("halo updates")
 
