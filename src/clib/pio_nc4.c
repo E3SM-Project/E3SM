@@ -996,16 +996,21 @@ int PIOc_set_chunk_cache(int iosysid, int iotype, int io_rank, size_t size,
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_get_chunk_cache(int iotype, int io_rank, size_t *sizep,
+int PIOc_get_chunk_cache(int iosysid, int iotype, int io_rank, size_t *sizep,
 			 size_t *nelemsp, float *preemptionp)
 {
     int ierr;
     int msg;
     int mpierr;
+    iosystem_desc_t *ios;
     char *errstr;
 
     errstr = NULL;
     ierr = PIO_NOERR;
+
+    ios = pio_get_iosystem_from_id(iosysid);
+    if(ios == NULL)
+	return PIO_EBADID;
 
     /* Since this is a property of the running HDF5 instance, not the
      * file, it's not clear if this message passing will apply. For
@@ -1043,29 +1048,22 @@ int PIOc_get_chunk_cache(int iotype, int io_rank, size_t *sizep,
 	ierr = iotype_error(iotype,__FILE__,__LINE__);
     }
 
-    /* Allocate an error string if needed. */
-    if (ierr != PIO_NOERR)
-    {
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
-    }
 
     /* Check for netCDF error. */
-    /* ierr = check_netcdf(file, ierr, errstr,__LINE__);*/
-
-    /* Free the error string if it was allocated. */
-    if (errstr != NULL)
-	free(errstr);
-
-    /* if (sizep) */
-    /* 	if ((ierr = MPI_Bcast(sizep, 1, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm))) */
-    /* 	    return PIO_EIO; */
-    /* if (nelemsp) */
-    /* 	if ((ierr = MPI_Bcast(nelemsp, 1, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm))) */
-    /* 	    return PIO_EIO; */
-    /* if (preemptionp) */
-    /* 	if ((ierr = MPI_Bcast(preemptionp, 1, MPI_FLOAT, ios->ioroot, ios->my_comm))) */
-    /* 	    return PIO_EIO; */
+    if (ierr)
+	MPI_Bcast(&ierr, 1, MPI_INTEGER, ios->ioroot, ios->my_comm);
+    else
+    {
+	if (sizep)
+	    if ((ierr = MPI_Bcast(sizep, 1, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm)))
+		ierr = PIO_EIO;
+	if (nelemsp && !ierr)
+	    if ((ierr = MPI_Bcast(nelemsp, 1, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm)))
+		ierr = PIO_EIO;
+	if (preemptionp && !ierr)
+	    if ((ierr = MPI_Bcast(preemptionp, 1, MPI_FLOAT, ios->ioroot, ios->my_comm)))
+		ierr = PIO_EIO;
+    }
 
     return ierr;
 }
