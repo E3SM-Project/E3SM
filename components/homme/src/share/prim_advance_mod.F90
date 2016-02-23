@@ -1123,7 +1123,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
 #if (defined COLUMN_OPENMP)
 ! Not sure about deriv here.
-!$omp parallel do private(k,i,j,gVscript,deriv)
+!$omp parallel do private(k,i,j,gVscript)
 #endif
           do k=1,nlev
              do j=1,np
@@ -1810,7 +1810,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 #if (defined COLUMN_OPENMP)
 ! Not sure about deriv here
-!$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
+!$omp parallel do private(k,lap_p,lap_v,i,j)
 #endif
            do k=1,nlev
               lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
@@ -1901,11 +1901,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               enddo
 #endif
            endif
-           nu_scale=1
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,lap_p,lap_v,nu_scale_top,dpdn,dpdn0,nu_scale,utens_tmp,vtens_tmp,ptens_tmp)
 #endif
            do k=1,nlev
+              nu_scale=1
               ! advace in time.
               ! note: DSS commutes with time stepping, so we can time advance and then DSS.
               ! note: weak operators alreayd have mass matrix "included"
@@ -2111,7 +2111,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 #if (defined COLUMN_OPENMP)
 ! Not sure about deriv here
-!$omp parallel do private(k,lap_t,lap_v,deriv,i,j)
+!$omp parallel do private(k,lap_t,lap_v,i,j)
 #endif
            do k=1,nlev
               lap_t=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
@@ -2436,7 +2436,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 #if (defined COLUMN_OPENMP)
 ! Not sure about deriv here
-!$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
+!$omp parallel do private(k,lap_p,lap_v,i,j)
 #endif
            do k=1,nlev
               lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)

@@ -2339,6 +2339,9 @@ end subroutine ALE_parametric_coords
   integer :: rhs_viss = 0
 
 !  call t_barrierf('sync_euler_step', hybrid%par%comm)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
+#endif
   do k = 1 , nlev
     dp0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
@@ -2468,7 +2471,7 @@ end subroutine ALE_parametric_coords
       call biharmonic_wk_scalar(elem,qtens_biharmonic,deriv,edgeAdv,hybrid,nets,nete) 
       do ie = nets , nete
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k, q, dp0)
+!$omp parallel do private(k, q)
 #endif
         do q = 1 , qsize
           do k = 1 , nlev    !  Loop inversion (AAM)
