@@ -378,9 +378,9 @@ if ($clean) {
     system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 
     # remove relevant files from $caseroot/LockedFiels
-    my @files = <${caseroot}/LockedFiles/*build* ${caseroot}/LockedFiles/*mach_pes*>;
+    my @files = <${caseroot}/LockedFiles/env_build.xml ${caseroot}/LockedFiles/env_mach_pes.xml>;
     foreach my $file (@files) {
-	$sysmod = "rm $file";
+	$sysmod = "rm -f $file";
 	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
     }
 

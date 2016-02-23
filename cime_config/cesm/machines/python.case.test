@@ -34,7 +34,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("testname", nargs="*",
+    parser.add_argument("testname", nargs="?",default=None,
                         help="Name of the test to run, default is set in TESTCASE in env_test.xml")
 
     parser.add_argument("--caseroot", default=os.getcwd(),
@@ -44,24 +44,20 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.caseroot, testname
+    return args.caseroot, args.testname
 
-def cimetest(caseroot, testname):
+def cimetest(caseroot, testname=None):
     case = Case(caseroot)
-    test = Object()
+    test = object()
     if(testname is None):
         testname = case.get_value('TESTCASE')
 
+    logging.warn("Running test for %s"%testname)
+
     if(testname == 'SMS'):
-        test = SMS()
+        test = SMS(caseroot, case)
 
-    test.setup()
     test.run()
-    test.report()
-
-
-
-
 
 
 

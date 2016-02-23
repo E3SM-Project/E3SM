@@ -71,8 +71,10 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
         file_build = os.path.join(exeroot, "%s.bldlog.%s" % (model, lid))
 
         # build the component library
-        stat = run_cmd("%s/buildlib %s %s %s >> %s 2>&1" % (config_dir, caseroot, bldroot, compspec, file_build),
-                       from_dir=os.path.join(exeroot, model), ok_to_fail=True)[0]
+        stat = run_cmd("%s/buildlib %s %s %s >> %s 2>&1" %
+                       (config_dir, caseroot, bldroot, compspec, file_build),
+                       from_dir=os.path.join(exeroot, model),
+                       ok_to_fail=True, verbose=True)[0]
         expect(stat == 0,
                "ERROR: %s.buildlib failed, see %s" % (comp, file_build))
 
@@ -399,7 +401,7 @@ ERROR, NINST VALUES HAVE CHANGED
   Then rerun the build script interactively
 """ % (ninst_build, ninst_value))
 
-    expect( smp_build == smpstr or int(smp_build) == 0,
+    expect( smp_build == smpstr or smp_build == "0",
             """
 ERROR, SMP VALUES HAVE CHANGED
   SMP_BUILD = %s

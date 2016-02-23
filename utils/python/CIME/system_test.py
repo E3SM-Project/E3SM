@@ -78,14 +78,14 @@ class SystemTest(object):
         # Extra data associated with tests, do not modify after construction
         # test_name -> test_data
         #   test_data: name -> value
-        self._test_data      = {}
+        self._test_xml      = {}
 
         # If xml options are provided get tests from xml file, otherwise use acme dictionary
         if(not test_names and (xml_machine is not None or xml_category is not None or xml_compiler is not None or xml_testlist is not None)):
             test_data = CIME.test_utils.get_tests_from_xml(xml_machine, xml_category, xml_compiler, xml_testlist, machine_name, compiler)
             test_names = [item["name"] for item in test_data]
             for test_datum in test_data:
-                self._test_data[test_datum["name"]] = test_datum
+                self._test_xml[test_datum["name"]] = test_datum
         else:
             expect(len(test_names) > 0, "No tests to run")
             test_names = update_acme_tests.get_full_test_names(test_names, machine_name, self._compiler)
@@ -438,8 +438,8 @@ class SystemTest(object):
         test_dir = self._get_test_dir(test)
         # wallclock is an optional field in the version 2.0 testlist.xml file
         # setting wallclock time close to the expected test time will help queue throughput
-        if (test in self._test_data and "wallclock" in self._test_data[test]):
-            run_cmd("./xmlchange JOB_WALLCLOCK_TIME=%s" % self._test_data[test]["wallclock"], from_dir=test_dir)
+        if (test in self._test_xml and "wallclock" in self._test_xml[test]):
+            run_cmd("./xmlchange JOB_WALLCLOCK_TIME=%s" % self._test_xml[test]["wallclock"], from_dir=test_dir)
 
         return self._shell_cmd_for_phase(test, "./case.submit", RUN_PHASE, from_dir=test_dir)
 

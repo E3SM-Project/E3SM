@@ -1,16 +1,21 @@
 """
-CIME smoke test  This class inherits from SystemTestsCommon
+CIME ICP test  This class inherits from SystemTestsCommon
 """
 from CIME.XML.standard_module_setup import *
 from system_tests_common import SystemTestsCommon
 
 
-class SMS(SystemTestsCommon):
+class ICP(SystemTestsCommon):
     def __init__(self, caseroot, case):
         """
         initialize an object interface to file env_test.xml in the case directory
         """
         SystemTestsCommon.__init__(self, caseroot, case)
+
+    def build(self):
+        self._case.set_value("CICE_AUTO_DECOMP","false")
+
+
 
     def run(self):
         self._case.set_value("CONTINUE_RUN","FALSE")

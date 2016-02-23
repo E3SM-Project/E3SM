@@ -10,6 +10,9 @@ my $cimeroot = $nodes[0]->getAttribute('value');
 my %opts=(loglevel=>"DEBUG");
 $ENV{CIMEROOT}=$cimeroot;
 unshift @INC, "$cimeroot/utils/perl5lib";
+my $pypath = $ENV{PYTHONPATH};
+$ENV{PYTHONPATH} = "$cimeroot/utils/python:$cimeroot/scripts-python:$pypath";
+
 require Log::Log4perl;
 require Config::SetupTools;
 require Batch::BatchUtils;

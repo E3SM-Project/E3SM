@@ -58,7 +58,8 @@ foreach my $lockedfile (@lockedfiles) {
     $logger->info("Checking file $file");
 
     if (!-f $file) {
-	$logger->logdie ("Locked file $file cannot be found");
+	$logger->warn ("Locked file $file cannot be found");
+	next;
     }
     my $sysmod = "diff -w $lockedfile $file ";
     if (system($sysmod) != 0) {

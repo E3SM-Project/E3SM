@@ -4,7 +4,7 @@ Base class for CIME system tests
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
 from CIME.utils import run_cmd
-import CIME.cime_build as build
+import CIME.build as build
 
 class SystemTestsCommon(object):
     def __init__(self, caseroot=os.getcwd(),case=None):
@@ -19,7 +19,12 @@ class SystemTestsCommon(object):
         build.case_build(self._caseroot, True)
 
     def run(self):
+        run_cmd("case.run")
         return
 
     def report(self):
         return
+
+    def check_mem_leak(self):
+        rundir = self._case.get_value("RUNDIR")
+        cpllogfile = min(glob.iglob(os.path.join(rundir,"cpl.log*")), key=os.path.getctime)

@@ -13,7 +13,7 @@ Script to build a case.
 
 from standard_script_setup import *
 
-import CIME.cime_build as build
+import CIME.build as build
 
 import argparse, doctest
 
