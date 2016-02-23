@@ -71,7 +71,7 @@ module ocn_tracer_DMS
   type(DMS_flux_diagnostics_type), public :: DMS_flux_diagnostic_fields
 
 ! hold indices in tracer pool corresponding to each tracer array
-  type(DMS_indices_type) :: dmsIndices
+  type(DMS_indices_type), public :: dmsIndices
   type(BGC_indices_type) :: ecosysIndices
 
 !***********************************************************************
@@ -85,13 +85,14 @@ contains
 !> \brief   computes a tracer tendency due to DMS
 !> \author  Mathew Maltrud
 !> \date    11/01/2015
-!> \details
+!> \details 
 !>  This routine computes a tracer tendency due to DMS
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_DMS_compute(DMSTracers, nTracersDMS, ecosysTracers, nTracersEcosys, forcingPool, &
-      nCellsSolve, maxLevelCell, nVertLevels, layerThickness, DMSTracersTend, err)!{{{
+   subroutine ocn_tracer_DMS_compute(activeTracers, DMSTracers, nTracersDMS, ecosysTracers, nTracersEcosys,   &
+      forcingPool, nCellsSolve, maxLevelCell,  &
+      nVertLevels, layerThickness, indexTemperature, indexSalinity, DMSTracersTend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -112,11 +113,16 @@ contains
          DMSTracers
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
          ecosysTracers
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: &
+         activeTracers
+
 
       type (mpas_pool_type), intent(in) :: forcingPool
 
       ! scalars
       integer, intent(in) :: nTracersDMS, nTracersEcosys, nCellsSolve, nVertLevels
+      integer, intent(in) :: indexTemperature, indexSalinity
+
 
       !
       ! two dimensional pointers
@@ -131,7 +137,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         DMSTracersTend
+         DMSTracersTend 
 
       !-----------------------------------------------------------------
       !
@@ -150,7 +156,7 @@ contains
       ! source/sink wants cm instead of m
       real (kind=RKIND) :: zTop, zBot, convertLengthScale = 100.0_RKIND
 
-      integer :: iCell, iLevel, iTracer, numColumns, column
+      integer :: iCell, iLevel, iTracer, numColumns, column, iLevelSurface
 
       err = 0
 
@@ -158,8 +164,14 @@ contains
 
       numColumns = 1
       column = 1
+      iLevelSurface = 1
       do iCell=1,nCellsSolve
          DMS_input%number_of_active_levels(column) = maxLevelCell(iCell)
+
+         DMS_forcing%ShortWaveFlux_surface(column)  = shortWaveHeatFlux(iCell)
+         DMS_forcing%SST(column) = activeTracers(indexTemperature,iLevelSurface,iCell)
+         DMS_forcing%SSS(column) = activeTracers(indexSalinity,iLevelSurface,iCell)
+
          do iLevel=1,maxLevelCell(iCell)
             DMS_input%cell_thickness(iLevel,column)    = layerThickness(iLevel,iCell)*convertLengthScale
 
@@ -187,12 +199,10 @@ contains
 
          do iLevel=1,maxLevelCell(iCell)
 
-            DMSTracersTend(dmsIndices%dms_ind,iLevel,iCell) = DMSTracersTend(dmsIndices % dms_ind, iLevel, iCell)   &
-                                                          + DMS_output % DMS_tendencies(iLevel, column, DMS_indices % dms_ind) &
-                                                          * layerThickness(iLevel,iCell)
-            DMSTracersTend(dmsIndices%dmsp_ind,iLevel,iCell) = DMSTracersTend(dmsIndices % dmsp_ind, iLevel, iCell)   &
-                                                           + DMS_output % DMS_tendencies(iLevel, column, DMS_indices % dmsp_ind) &
-                                                           * layerThickness(iLevel, iCell)
+            DMSTracersTend(dmsIndices%dms_ind,iLevel,iCell) = DMSTracersTend(dmsIndices%dms_ind,iLevel,iCell)   &
+                                                                    + DMS_output%DMS_tendencies(iLevel,column,DMS_indices%dms_ind)*layerThickness(iLevel,iCell)
+            DMSTracersTend(dmsIndices%dmsp_ind,iLevel,iCell) = DMSTracersTend(dmsIndices%dmsp_ind,iLevel,iCell)   &
+                                                                    + DMS_output%DMS_tendencies(iLevel,column,DMS_indices%dmsp_ind)*layerThickness(iLevel,iCell)
 
          enddo
 
@@ -209,14 +219,14 @@ contains
 !> \brief   computes a tracer tendency due to DMS
 !> \author  Mathew Maltrud
 !> \date    11/01/2015
-!> \details
+!> \details 
 !>  This routine computes a tracer tendency due to DMS
 !
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_DMS_surface_flux_compute(activeTracers, DMSTracers, forcingPool,  &
       nTracers, nCellsSolve, zMid, indexTemperature, indexSalinity, DMSSurfaceFlux, err)!{{{
-
+     
 
       !-----------------------------------------------------------------
       !
@@ -261,23 +271,35 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: ecosysAuxiliary
+      type (mpas_pool_type), pointer :: ecosysAuxiliary,  &
+                                        DMSSeaIceCoupling, &
+                                        DMSFluxDiagnostics
 
       integer :: numColumns, column, iCell, iTracer, iLevelSurface
 
       real (kind=RKIND), dimension(:), pointer :: &
          seaSurfacePressure,   &
          iceFraction,          &
-         windSpeedSquared10m
+         windSpeedSquared10m,  &
+         iceFluxDMS,           &
+         iceFluxDMSP,          &
+         dms_flux_diag_ifrac,  &
+         dms_flux_diag_xkw,    &
+         dms_flux_diag_atm_press,  &
+         dms_flux_diag_pv,     &
+         dms_flux_diag_schmidt,&
+         dms_flux_diag_sat,    &
+         dms_flux_diag_surf,   &
+         dms_flux_diag_ws
 
       real (kind=RKIND) :: &
          renormFluxes = 0.01_RKIND, &
-!        PascalsToAtmospheres = 1.0_RKIND/101.325e+3_RKIND,  &
-!        mSquared_to_cmSquared = 1.0e+4_RKIND
+         PascalsToAtmospheres = 1.0_RKIND/101.325e+3_RKIND,  &
+         mSquared_to_cmSquared = 1.0e+4_RKIND
 !        PascalsToAtmospheres = 1.0_RKIND,  &
 !        mSquared_to_cmSquared = 1.0_RKIND
-         PascalsToAtmospheres = 0.0_RKIND,  &
-         mSquared_to_cmSquared = 1.0_RKIND
+!        PascalsToAtmospheres = 0.0_RKIND,  &
+!        mSquared_to_cmSquared = 1.0_RKIND
 
       err = 0
 
@@ -286,6 +308,22 @@ contains
 
       call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
       call mpas_pool_get_array(ecosysAuxiliary, 'windSpeedSquared10m', windSpeedSquared10m)
+
+      call mpas_pool_get_subpool(forcingPool, 'DMSSeaIceCoupling', DMSSeaIceCoupling)
+      call mpas_pool_get_array(DMSSeaIceCoupling, 'iceFluxDMS', iceFluxDMS)
+      call mpas_pool_get_array(DMSSeaIceCoupling, 'iceFluxDMSP', iceFluxDMSP)
+
+      call mpas_pool_get_subpool(forcingPool, 'DMSFluxDiagnostics', DMSFluxDiagnostics)
+      call mpas_pool_get_array(DMSFluxDiagnostics, 'dms_flux_diag_xkw', dms_flux_diag_xkw)
+      call mpas_pool_get_array(DMSFluxDiagnostics, 'dms_flux_diag_atm_press', dms_flux_diag_atm_press)
+      call mpas_pool_get_array(DMSFluxDiagnostics, 'dms_flux_diag_pv', dms_flux_diag_pv)
+      call mpas_pool_get_array(DMSFluxDiagnostics, 'dms_flux_diag_schmidt', dms_flux_diag_schmidt)
+      call mpas_pool_get_array(DMSFluxDiagnostics, 'dms_flux_diag_sat', dms_flux_diag_sat)
+      call mpas_pool_get_array(DMSFluxDiagnostics, 'dms_flux_diag_surf', dms_flux_diag_surf)
+      call mpas_pool_get_array(DMSFluxDiagnostics, 'dms_flux_diag_ws', dms_flux_diag_ws)
+      call mpas_pool_get_array(DMSFluxDiagnostics, 'dms_flux_diag_ifrac', dms_flux_diag_ifrac)
+
+      DMS_forcing%lcalc_DMS_gas_flux  = .true.
 
       numColumns = 1
       column = 1
@@ -298,12 +336,26 @@ contains
          DMS_forcing%SST(column) = activeTracers(indexTemperature,iLevelSurface,iCell)
          DMS_forcing%SSS(column) = activeTracers(indexSalinity,iLevelSurface,iCell)
 
+         DMS_input%DMS_tracers(1,column,DMS_indices%dms_ind)  = DMSTracers(dmsIndices%dms_ind,1,iCell)
+         DMS_input%DMS_tracers(1,column,DMS_indices%dmsp_ind) = DMSTracers(dmsIndices%dmsp_ind,1,iCell)
+
          call DMS_SurfaceFluxes(DMS_indices, DMS_input, DMS_forcing,   &
                                 DMS_flux_diagnostic_fields,   &
                                 numColumnsMax, column)
 
-         DMSSurfaceFlux(dmsIndices%dms_ind,iCell) = DMS_forcing%netFlux(column,DMS_indices%dms_ind)*renormFluxes
-         DMSSurfaceFlux(dmsIndices%dmsp_ind,iCell) = DMS_forcing%netFlux(column,DMS_indices%dmsp_ind)*renormFluxes
+         DMSSurfaceFlux(dmsIndices%dms_ind,iCell) = DMS_forcing%netFlux(column,DMS_indices%dms_ind)*renormFluxes +  &
+            iceFluxDMS(iCell)
+         DMSSurfaceFlux(dmsIndices%dmsp_ind,iCell) = DMS_forcing%netFlux(column,DMS_indices%dmsp_ind)*renormFluxes +  &
+            iceFluxDMSP(iCell)
+
+         dms_flux_diag_ifrac(iCell)     = DMS_flux_diagnostic_fields%diag_DMS_IFRAC(column)
+         dms_flux_diag_xkw(iCell)       = DMS_flux_diagnostic_fields%diag_DMS_XKW(column)
+         dms_flux_diag_atm_press(iCell) = DMS_flux_diagnostic_fields%diag_DMS_ATM_PRESS(column)
+         dms_flux_diag_pv(iCell)        = DMS_flux_diagnostic_fields%diag_DMS_PV(column)
+         dms_flux_diag_schmidt(iCell)   = DMS_flux_diagnostic_fields%diag_DMS_SCHMIDT(column)
+         dms_flux_diag_sat(iCell)       = DMS_flux_diagnostic_fields%diag_DMS_SAT(column)
+         dms_flux_diag_surf(iCell)      = DMS_flux_diagnostic_fields%diag_DMS_SURF(column)
+         dms_flux_diag_ws(iCell)        = DMS_flux_diagnostic_fields%diag_DMS_WS(column)
 
       enddo  !  iCell
 
@@ -318,7 +370,7 @@ contains
 !> \brief   Initializes ocean surface restoring
 !> \author  Mathew Maltrud
 !> \date    11/01/2015
-!> \details
+!> \details 
 !>  This routine initializes fields required for tracer surface flux restoring
 !
 !-----------------------------------------------------------------------
@@ -348,7 +400,7 @@ contains
       ! get tracers pools
       !
 
-      err = 0
+      err = 0 
 
       !
       ! Get tracer group so we can get the number of tracers in it
@@ -467,11 +519,11 @@ contains
       allocate ( DMS_forcing%windSpeedSquared10m(numColumnsMax) )
       allocate ( DMS_forcing%SST(numColumnsMax) )
       allocate ( DMS_forcing%SSS(numColumnsMax) )
-
+    
       allocate ( DMS_forcing%netFlux(numColumnsMax, DMS_tracer_cnt) )
-
+    
       allocate ( DMS_output%DMS_tendencies(nVertLevels, numColumnsMax, DMS_tracer_cnt) )
-
+    
     !---------------------------------------------------------------------------
     !   allocate flux diagnostic output fields
     !---------------------------------------------------------------------------

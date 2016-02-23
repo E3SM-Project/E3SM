@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## BGC Tag for build
-BGC_TAG=6c4240c
+BGC_TAG=8c0f6c5
 
 ## Subdirectory in BGC repo to use
 BGC_SUBDIR=.

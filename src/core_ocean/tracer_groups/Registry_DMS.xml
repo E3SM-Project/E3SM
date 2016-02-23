@@ -84,10 +84,10 @@
 			</var_array>
 		</var_struct>
 	        <var_struct name="DMSSeaIceCoupling" time_levs="1" packages="DMSTracersPKG">
-                        <var name="oceanSurfaceDMS" type="real" dimensions="nCells Time" units="mmolS m^{-3}"
+                        <var name="avgOceanSurfaceDMS" type="real" dimensions="nCells Time" units="mmolS m^{-3}"
                                  description="Ocean Surface DMS concentration"
                         />
-                        <var name="oceanSurfaceDMSP" type="real" dimensions="nCells Time" units="mmolS m^{-3}"
+                        <var name="avgOceanSurfaceDMSP" type="real" dimensions="nCells Time" units="mmolS m^{-3}"
                                  description="Ocean Surface DMSP concentration"
                         />
                         <var name="iceFluxDMS" type="real" dimensions="nCells Time" units="mmolS m^{-2} s"
@@ -95,6 +95,32 @@
                         />
                         <var name="iceFluxDMSP" type="real" dimensions="nCells Time" units="mmolS m^{-2} s"
                                  description="Surface DMSP flux from sea ice"
+                        />
+		</var_struct>
+	        <var_struct name="DMSFluxDiagnostics" time_levs="1" packages="DMSTracersPKG">
+                        <var name="dms_flux_diag_ifrac" type="real" dimensions="nCells Time" units="none"
+                                 description="Ice Fraction used in DMS flux calculation"
+                        />
+                        <var name="dms_flux_diag_xkw" type="real" dimensions="nCells Time" units="none"
+                                 description="XKW used in DMS flux calculation"
+                        />
+                        <var name="dms_flux_diag_atm_press" type="real" dimensions="nCells Time" units="unknown"
+                                 description="Atm Pressure used in DMS flux calculation"
+                        />
+                        <var name="dms_flux_diag_pv" type="real" dimensions="nCells Time" units="m s^{-1}"
+                                 description="Piston Velocity used in DMS flux calculation"
+                        />
+                        <var name="dms_flux_diag_schmidt" type="real" dimensions="nCells Time" units="none"
+                                 description="Schmidt Number used in DMS flux calculation"
+                        />
+                        <var name="dms_flux_diag_sat" type="real" dimensions="nCells Time" units="mmolS m^{3}"
+                                 description="DMS Saturation used in DMS flux calculation"
+                        />
+                        <var name="dms_flux_diag_surf" type="real" dimensions="nCells Time" units="mmolS m^{3}"
+                                 description="Surface DMS Values used in DMS flux calculation"
+                        />
+                        <var name="dms_flux_diag_ws" type="real" dimensions="nCells Time" units="m s^{-1}"
+                                 description="Wind Speed used in DMS flux calculation"
                         />
 		</var_struct>
 		<var_struct name="tracersSurfaceRestoringFields" time_levs="1">
