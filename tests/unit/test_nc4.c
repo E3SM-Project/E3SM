@@ -199,7 +199,7 @@ main(int argc, char **argv)
     size_t chunk_cache_size_in;
     size_t chunk_cache_nelems_in;
     float chunk_cache_preemption_in;
-
+    
     char varname[15];
     
 #ifdef TIMING    
@@ -431,8 +431,22 @@ main(int argc, char **argv)
 		    ERR(ret);
 		if (fletcher32)
 		    ERR(ERR_AWFUL);
-	    }		
-	    
+	    }
+
+	    /* Check setting the chunk cache for the variable. */
+	    if ((ret = PIOc_set_var_chunk_cache(ncid, 0, VAR_CACHE_SIZE, VAR_CACHE_NELEMS,
+						VAR_CACHE_PREEMPTION)) != PIO_ENOTNC4)
+	    	ERR(ret);
+
+	    /* Check getting the chunk cache values for the variable. */
+	    if ((ret = PIOc_get_var_chunk_cache(ncid, 0, &var_cache_size, &var_cache_nelems,
+						&var_cache_preemption)) != PIO_ENOTNC4)
+	    	ERR(ret);
+
+	    /* Check that we got expected values. */
+	    if (var_cache_size != VAR_CACHE_SIZE || var_cache_nelems != VAR_CACHE_NELEMS ||
+		var_cache_preemption != VAR_CACHE_PREEMPTION)
+		ERR(ERR_AWFUL);
 	} else {
 	    /* Trying to set or inq netCDF-4 settings for non-netCDF-4
 	     * files results in the PIO_ENOTNC4 error. */
