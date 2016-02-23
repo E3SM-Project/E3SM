@@ -7,11 +7,12 @@ cd $CASEROOT
 
 # Reset beginning test settings
 rm $EXEROOT/${CIME_MODEL}.exe >& /dev/null
-cp -f $EXEROOT/${CIME_MODEL}.exe.1 $EXEROOT/${CIME_MODEL}.exe || exit -9
 cp -f env_build.xml.1    env_build.xml
 cp -f env_build.xml.1    LockedFiles/env_build.xml
+set MPILIB  = `./xmlquery MPILIB --value`
+cp -f $EXEROOT/${CIME_MODEL}.exe.PEA_$MPILIB $EXEROOT/${CIME_MODEL}.exe || exit -9
 
-# Set env_run.xml settings 
+# Set env_run.xml settings
 set STOP_N      = `./xmlquery STOP_N      --value`
 set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 
@@ -26,7 +27,7 @@ set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 
 cd $CASEROOT
 
-echo "doing a ${STOP_N} ${STOP_OPTION} run with 1 pe and mpi " >>& $TESTSTATUS_LOG 
+echo "doing a ${STOP_N} ${STOP_OPTION} run with 1 pe and mpi " >>& $TESTSTATUS_LOG
 
 ./case.run
 if ($status != 0) then
@@ -39,10 +40,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -61,10 +62,10 @@ set CPLPROF_GENCMP = $cplprof
 
 cd $CASEROOT
 
-echo "doing a ${STOP_N} ${STOP_OPTION} run with 1 pe and mpiserial " >>& $TESTSTATUS_LOG 
+echo "doing a ${STOP_N} ${STOP_OPTION} run with 1 pe and mpiserial " >>& $TESTSTATUS_LOG
 
 rm $EXEROOT/${CIME_MODEL}.exe >& /dev/null
-cp -f $EXEROOT/${CIME_MODEL}.exe.2 $EXEROOT/${CIME_MODEL}.exe || exit -9
+cp -f $EXEROOT/${CIME_MODEL}.exe.PEA_mpi-serial $EXEROOT/${CIME_MODEL}.exe || exit -9
 cp -f env_build.xml.2      env_build.xml
 cp -f env_build.xml.2      LockedFiles/env_build.xml
 
@@ -79,10 +80,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else

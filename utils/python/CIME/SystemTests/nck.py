@@ -35,7 +35,7 @@ class NCK(SystemTestsCommon):
             SystemTestsCommon.build(self)
             shutil.move("%s/%s.exe"%(exeroot,cime_model),
                         "%s/%s.exe.NCK%s"%(exeroot,cime_model,bld))
-            shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build_NCK%s.xml"%bld))
+            shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build.NCK%s.xml"%bld))
             shutil.copy("env_mach_pes.xml", machpes)
 
             if(bld == 1):

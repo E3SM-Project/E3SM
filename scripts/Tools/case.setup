@@ -201,7 +201,7 @@ if (! $clean ) {
 
     } else {
 
-	my $sysmod = "./Tools/check_lockedfiles -cimeroot $cimeroot";
+	my $sysmod = "./Tools/check_lockedfiles --caseroot $caseroot";
 	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 
 	my $pestot = `$caseroot/Tools/taskmaker.pl -sumonly`;
@@ -268,11 +268,11 @@ if (! $clean ) {
 							     job => 'run'
 	                                                     );
 
-	if(defined $xmlvars{TESTCASE}){
-	    my $inputbatchscript  = "$xmlvars{'MACHDIR'}/python.case.test";
-	    my $outputbatchscript = "$xmlvars{'CASEROOT'}/case.test";
-	    $batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
-	}
+#	if(defined $xmlvars{TESTCASE}){
+#	    my $inputbatchscript  = "$xmlvars{'MACHDIR'}/python.case.test";
+#	    my $outputbatchscript = "$xmlvars{'CASEROOT'}/case.test";
+#	    $batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
+#	}
 
 	my $inputbatchscript  = "$xmlvars{'MACHDIR'}/template.case.run";
 	my $outputbatchscript = "$xmlvars{'CASEROOT'}/case.run";

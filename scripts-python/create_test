@@ -122,6 +122,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Number of tasks create_test should perform simultaneously. Default "
                         "will be min(num_cores, num_tests).")
 
+    parser.add_argument("--walltime", default=None,
+                        help="Set the wallclock limit for all tests in the suite.")
+
     parser.add_argument("--xml-machine",  help="Use this machine key in the lookup in testlist.xml")
     parser.add_argument("--xml-compiler", help="Use this compiler key in the lookup in testlist.xml")
     parser.add_argument("--xml-category", help="Use this category key in the lookup in testlist.xml")
@@ -162,13 +165,13 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     return args.testargs, args.compiler, args.machine, args.no_run, args.no_build, args.no_batch, \
         args.test_root, args.baseline_root, args.clean, args.compare, args.generate, args.baseline_name, \
         args.namelists_only, args.project, args.test_id, args.parallel_jobs, args.xml_machine, args.xml_compiler,\
-        args.xml_category, args.xml_testlist
+        args.xml_category, args.xml_testlist, args.walltime
 
 ###############################################################################
 def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, test_root,
                 baseline_root, clean, compare, generate,
                 baseline_name, namelists_only, project, test_id, parallel_jobs,
-                xml_machine, xml_compiler, xml_category, xml_testlist):
+                xml_machine, xml_compiler, xml_category, xml_testlist, walltime):
 ###############################################################################
     if(testargs and machine_name is None and compiler is None):
         for test in testargs:
@@ -192,7 +195,7 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
                       compare=compare, generate=generate, namelists_only=namelists_only,
                       project=project, parallel_jobs=parallel_jobs,
                       xml_machine=xml_machine,xml_compiler=xml_compiler,
-                      xml_category=xml_category,xml_testlist=xml_testlist)
+                      xml_category=xml_category,xml_testlist=xml_testlist,walltime=walltime)
     return 0 if impl.system_test() else CIME.utils.TESTS_FAILED_ERR_CODE
 
 ###############################################################################
@@ -204,12 +207,13 @@ def _main_func(description):
 
     testargs, compiler, machine_name, no_run, no_build, no_batch, test_root, baseline_root, clean, \
         compare, generate, baseline_name, namelists_only, project, test_id, parallel_jobs, \
-        xml_machine, xml_compiler, xml_category, xml_testlist\
+        xml_machine, xml_compiler, xml_category, xml_testlist, walltime\
         = parse_command_line(sys.argv, description)
 
     sys.exit(create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, test_root,
                          baseline_root, clean, compare, generate, baseline_name, namelists_only,
-                         project, test_id, parallel_jobs, xml_machine, xml_compiler, xml_category, xml_testlist))
+                         project, test_id, parallel_jobs, xml_machine, xml_compiler, xml_category,
+			 xml_testlist, walltime))
 
 ###############################################################################
 

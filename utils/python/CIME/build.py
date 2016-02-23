@@ -153,7 +153,7 @@ def case_build(caseroot, testmode):
 
     check_input_data(case)
 
-    run_cmd("./Tools/check_lockedfiles -cimeroot %s" % cimeroot)
+    run_cmd("./Tools/check_lockedfiles --caseroot %s" % caseroot)
 
     # Retrieve relevant case data
     build_threaded      = case.get_value("BUILD_THREADED")

@@ -6,15 +6,15 @@
 cd $CASEROOT
 
 # Reset beginning test settings
-if ( -e env_mach_pes.xml.1 )  then
-  cp -f env_mach_pes.xml.1   env_mach_pes.xml
-  cp -f env_mach_pes.xml.1   LockedFiles/env_mach_pes.xml
+if ( -e LockedFiles/env_mach_pes.NCK1.xml )  then
+  cp -f LockedFiles/env_mach_pes.NCK1.xml   env_mach_pes.xml
+  cp -f env_mach_pes.xml   LockedFiles/env_mach_pes.xml
   rm    $EXEROOT/${CIME_MODEL}.exe >& /dev/null
-  cp -f $EXEROOT/${CIME_MODEL}.exe.1 $EXEROOT/${CIME_MODEL}.exe || exit -9
-  cp -f env_build.xml.1      env_build.xml
-  cp -f env_build.xml.1      LockedFiles/env_build.xml
+  cp -f $EXEROOT/${CIME_MODEL}.exe.NCK1 $EXEROOT/${CIME_MODEL}.exe || exit -9
+  cp -f LockedFiles/env_build.NCK1.xml      env_build.xml
+  cp -f env_build.xml      LockedFiles/env_build.xml
 else
-  echo " ERROR: env_mach_pes.xml.1 does not exist" 
+  echo " ERROR: LockedFiles/env_mach_pes.NCK1.xml does not exist"
   echo "   this would been produced in the build - must run case.test_build"
   exit -1
 endif
@@ -27,7 +27,7 @@ endif
 ./case.setup -clean -testmode
 ./case.setup
 
-# Set env_run.xml settings 
+# Set env_run.xml settings
 set STOP_N      = `./xmlquery STOP_N      --value`
 set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 
@@ -42,7 +42,7 @@ set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 
 cd $CASEROOT
 
-echo "default: doing a ${STOP_N} ${STOP_OPTION} with NINST1" >>& $TESTSTATUS_LOG 
+echo "default: doing a ${STOP_N} ${STOP_OPTION} with NINST1" >>& $TESTSTATUS_LOG
 
 ./case.run
 if ($status != 0) then
@@ -55,10 +55,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -67,10 +67,10 @@ else
 endif
 
 echo "moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
-echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base" >>& $TESTSTATUS_LOG 
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base" >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base" 
+$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base"
 
 #======================================================================
 # do an initial run test with NINST 2
@@ -79,17 +79,17 @@ $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -su
 
 cd $CASEROOT
 
-echo "default: doing a ${STOP_N} ${STOP_OPTION} with NINST 2" >>& $TESTSTATUS_LOG 
+echo "default: doing a ${STOP_N} ${STOP_OPTION} with NINST 2" >>& $TESTSTATUS_LOG
 
-cp -f env_mach_pes.xml.2 env_mach_pes.xml
-cp -f env_mach_pes.xml.2 LockedFiles/env_mach_pes.xml
+cp -f LockedFiles/env_mach_pes.NCK2.xml env_mach_pes.xml
+cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml
 ./case.setup -clean -testmode
 ./case.setup
 
 rm $EXEROOT/${CIME_MODEL}.exe >& /dev/null
-cp -f $EXEROOT/${CIME_MODEL}.exe.2 $EXEROOT/${CIME_MODEL}.exe || exit -9
-cp -f env_build.xml.2    env_build.xml
-cp -f env_build.xml.2    LockedFiles/env_build.xml
+cp -f $EXEROOT/${CIME_MODEL}.exe.NCK2 $EXEROOT/${CIME_MODEL}.exe || exit -9
+cp -f LockedFiles/env_build.NCK2.xml    env_build.xml
+cp -f env_build.xml    LockedFiles/env_build.xml
 
 ./case.run
 if ($status != 0) then
@@ -102,10 +102,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -114,7 +114,7 @@ else
 endif
 
 echo "moving relevant history files to suffix with commands " >>& $TESTSTATUS_LOG
-echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix multiinst"  >>& $TESTSTATUS_LOG 
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix multiinst"  >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
 $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "multiinst"

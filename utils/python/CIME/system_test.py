@@ -37,7 +37,8 @@ class SystemTest(object):
                  baseline_root=None, baseline_name=None,
                  clean=False,compare=False, generate=False, namelists_only=False,
                  project=None, parallel_jobs=None,
-                 xml_machine=None, xml_compiler=None, xml_category=None,xml_testlist=None):
+                 xml_machine=None, xml_compiler=None, xml_category=None,
+                 xml_testlist=None, walltime=None):
     ###########################################################################
         self._cime_root = CIME.utils.get_cime_root()
         self._cime_model = CIME.utils.get_model()
@@ -89,6 +90,16 @@ class SystemTest(object):
         else:
             expect(len(test_names) > 0, "No tests to run")
             test_names = update_acme_tests.get_full_test_names(test_names, machine_name, self._compiler)
+
+        if(walltime is not None):
+            for test in test_names:
+                if(test in self._test_xml):
+                    test_datum = self._test_xml[test]
+                else:
+                    test_datum = {}
+                    self._test_xml[test] = test_datum
+                test_datum["wallclock"] = walltime
+
 
         if (parallel_jobs is None):
             self._parallel_jobs  = min(len(test_names), int(self._machobj.get_value("MAX_TASKS_PER_NODE")))
@@ -362,15 +373,9 @@ class SystemTest(object):
     ###########################################################################
     def _setup_phase(self, test):
     ###########################################################################
-        test_case = CIME.utils.parse_test_name(test)[0]
         test_dir  = self._get_test_dir(test)
-        test_case_definition_dir = os.path.join(self._cime_root, "scripts", "Testing", "Testcases")
-        test_build = os.path.join(test_dir, "case.test_build" )
-
-        if (os.path.exists(os.path.join(test_case_definition_dir, "%s_build.csh" % test_case))):
-            shutil.copy(os.path.join(test_case_definition_dir, "%s_build.csh" % test_case), test_build)
-        else:
-            shutil.copy(os.path.join(test_case_definition_dir, "tests_build.csh"), test_build)
+        os.symlink(os.path.join(self._cime_root, "scripts-python","case.test_build"),
+                   os.path.join(test_dir,"case.test_build"))
 
         return self._shell_cmd_for_phase(test, "./case.setup", SETUP_PHASE, from_dir=test_dir)
 

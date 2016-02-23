@@ -1,17 +1,16 @@
 """
-CIME smoke test  This class inherits from SystemTestsCommon
+CIME restart test  This class inherits from SystemTestsCommon
 """
 from CIME.XML.standard_module_setup import *
 from system_tests_common import SystemTestsCommon
 
 
-class SMS(SystemTestsCommon):
+class ERS(SystemTestsCommon):
     def __init__(self, caseroot, case):
         """
-        initialize an object interface to file env_test.xml in the case directory
+        initialize an object interface to the ERS system test
         """
-        expectedrunvars = ["CONTINUE_RUN", "REST_OPTION", "HIST_OPTION", "HIST_N"]
-        SystemTestsCommon.__init__(self, caseroot, case, expectedrunvars)
+        SystemTestsCommon.__init__(self, caseroot, case)
 
     def run(self):
         self._case.set_value("CONTINUE_RUN","FALSE")
