@@ -25,7 +25,7 @@ set input = $HOMME/test/jw_baroclinic    # input files for test case
 set vdir = $HOMME/test/vcoord            # vertical coordinate files
 set bld = $wdir/bld                      # cmake/build directory
 
-set MACH = $HOMME/cmake/machineFiles/redsky.cmake
+set MACH = $HOMME/cmake/machineFiles/skybride.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan-cuda.cmake    # CMAKE file for Titan GPU support
 #set MACH = $HOMME/cmake/machineFiles/darwin.cmake
@@ -125,7 +125,8 @@ set hypervis_scaling = 0
 
 if ( $ne == 0 ) then
     # CAM defaults
-    set mesh_file="$HOME/work/notes/squadgen/multiscale/wpacific_v2.g"
+    set mesh_file="/ascldap/users/mataylo/codes/mapping/grids/wpacific_v2.g"
+    #set mesh_file="/ascldap/users/mataylo/codes/mapping/grids/mountain_10_x8.g"
     set tstep=75
     set hypervis_scaling = 3.2  
     set nu = 8.0e-8

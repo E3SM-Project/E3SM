@@ -1,5 +1,5 @@
 &ctl_nl
-NThreads                     = 1
+NThreads                     = 3
 partmethod                   = 4
 topology                     = "cube"
 test_case                    = "asp_baroclinic"
@@ -48,7 +48,7 @@ profile_single_file	= .true.
 /
 
 &analysis_nl
-output_prefix     = "camBaroMoist-"
+output_prefix     = "camBaroMoist-omp3-"
 interp_gridtype   = 2
 output_timeunits  = 1,1
 output_frequency  = 3,3

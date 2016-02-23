@@ -1,8 +1,9 @@
 #!/bin/bash -f
 set -e
-HOMME=~/codes/acme-dev/models/atm/homme
+HOMME=~/codes/acme-dev/components/homme
+MACH=$HOMME/cmake/machineFiles/skybridge.cmake
+
 wdir=~/scratch1/sweqx
-MACH=$HOMME/cmake/machineFiles/redsky.cmake
 NCPU=0
 
 
@@ -15,6 +16,8 @@ hvscaling=3.2
 test_case=swtc6
 name=${test_case}
 mesh=~/codes/mapping/grids/mountain_10_x8.g
+mesh=~/codes/homme-ncarsvn/test/mesh_refine/grids/uniform_15.g
+
 
 #
 # run/build directoryies
@@ -31,7 +34,7 @@ cd $builddir
 if ! ([ -e  CMakeCache.txt ]) then
   rm -rf CMakeFiles CMakeCache.txt
   #cmake -C $MACH -DSWEQX_USE_PIO=1 -DSWEQX_PLEV=1  -DSWEQX_NP=4 $HOMME
-  cmake -C $MACH -DSWEQX_PLEV=1  -DSWEQX_NP=4 $HOMME
+  cmake -C $MACH -DSWEQX_PLEV=4  -DSWEQX_NP=4 $HOMME
   exit
 fi
 
@@ -45,6 +48,8 @@ cd $rundir
 rsync $mesh .
 let sfreq=24*3600
 sfreq=`echo "$sfreq / $tstep" | bc`
+
+
 
 	sed s/tstep.\*/"tstep = $tstep"/  $input/swtc6-tensor-hv.nl |\
 	sed s/hypervis_scaling.\*/"hypervis_scaling = $hvscaling"/  |\

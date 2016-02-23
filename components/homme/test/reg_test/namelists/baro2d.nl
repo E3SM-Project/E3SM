@@ -7,7 +7,6 @@ rotate_grid                  = 0
 ne                           = 15
 qsize                        = 4
 ntrac                        = 0
-tracer_transport_method      = 'cslam_fvm'
 tstep_type                   = 1 
 ndays                        = 9
 statefreq                    = 576
@@ -31,21 +30,9 @@ hypervis_subcycle_q          = 1
 u_perturb                    = 1
 /
 
-&solver_nl
-precon_method = "identity"
-maxits        = 500
-tol           = 1.e-9
-/
 
 &filter_nl
-filter_type   = "taylor"
-transfer_type = "bv"
 filter_freq   = 0
-filter_mu     = 0.04D0
-p_bv          = 12.0D0
-s_bv          = .666666666666666666D0
-wght_fm       = 0.10D0
-kcut_fm       = 2
 /
 
 &vert_nl
