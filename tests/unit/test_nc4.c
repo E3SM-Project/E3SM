@@ -311,8 +311,14 @@ main(int argc, char **argv)
 	/* Should only have worked for netCDF-4 iotypes. */
 	if (format[fmt] == PIO_IOTYPE_NETCDF4C || format[fmt] == PIO_IOTYPE_NETCDF4P)
 	{
+	    /* Check that there was no error. */
 	    if (ret != PIO_NOERR)
 		ERR(ret);
+
+	    /* Check that we got the correct values. */
+	    if (chunk_cache_size_in != chunk_cache_size || chunk_cache_nelems_in != chunk_cache_nelems ||
+		chunk_cache_preemption_in != chunk_cache_preemption)
+		ERR(ERR_AWFUL);
 	}
 	else
 	{
