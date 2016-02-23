@@ -105,7 +105,7 @@ module namelist_mod
 #endif
 
   !-----------------
-  use thread_mod, only : nthreads, nthreads_accel, omp_get_max_threads, vert_num_threads
+  use thread_mod, only : nthreads, nthreads_accel, omp_set_num_threads, omp_get_max_threads, vert_num_threads
   !-----------------
   use dimensions_mod, only : ne, np, npdg, nnodes, nmpi_per_node, npart, ntrac, ntrac_d, qsize, qsize_d, set_mesh_dimensions
   !-----------------
