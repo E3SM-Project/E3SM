@@ -2,12 +2,14 @@
 
 <namelist_defaults>
 
+<!-- Ice nucleation mods-->
 <use_hetfrz_classnuc>.true.</use_hetfrz_classnuc>
 <use_preexisting_ice>.true.</use_preexisting_ice>
 <hist_hetfrz_classnuc>.true.</hist_hetfrz_classnuc>
 <micro_mg_dcs_tdep>.true.</micro_mg_dcs_tdep>
 <microp_aero_wsub_scheme>2</microp_aero_wsub_scheme>
 
+<!-- For Polar mods-->
 <sscav_tuning>.true.</sscav_tuning>
 <convproc_do_aer>.true.</convproc_do_aer>
 <convproc_do_gas>.false.</convproc_do_gas>
@@ -19,6 +21,7 @@
 
 <ssalt_tuning>.true.</ssalt_tuning>
 
+<!-- For comprehensive history -->
 <history_amwg>.true.</history_amwg>
 <history_aerosol>.true.</history_aerosol>
 <history_aero_optics>.true.</history_aero_optics>
@@ -28,7 +31,7 @@
 <chlorine_loading_fixed_ymd chem="linoz_mam3">20000101</chlorine_loading_fixed_ymd>
 <chlorine_loading_type      chem="linoz_mam3">FIXED</chlorine_loading_type>
 <linoz_data_cycle_yr        chem="linoz_mam3">2000</linoz_data_cycle_yr>
-<linoz_data_file            chem="linoz_mam3">linoz1800-2100_2006jpl_climo_1.9x2.5_26L.c090424.nc</linoz_data_file>
+<linoz_data_file            chem="linoz_mam3">linoz1800-2100_2006jpl_climo_1.9x2.5_26L_extended.c160204.nc</linoz_data_file>
 <linoz_data_path            chem="linoz_mam3">atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            chem="linoz_mam3">CYCLICAL</linoz_data_type>
 
@@ -36,7 +39,7 @@
 <chlorine_loading_fixed_ymd chem="linoz_mam4_resus">20000101</chlorine_loading_fixed_ymd>
 <chlorine_loading_type      chem="linoz_mam4_resus">FIXED</chlorine_loading_type>
 <linoz_data_cycle_yr        chem="linoz_mam4_resus">2000</linoz_data_cycle_yr>
-<linoz_data_file            chem="linoz_mam4_resus">linoz1800-2100_2006jpl_climo_1.9x2.5_26L.c090424.nc</linoz_data_file>
+<linoz_data_file            chem="linoz_mam4_resus">linoz1800-2100_2006jpl_climo_1.9x2.5_26L_extended.c160204.nc</linoz_data_file>
 <linoz_data_path            chem="linoz_mam4_resus">atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            chem="linoz_mam4_resus">CYCLICAL</linoz_data_type>
 
@@ -44,7 +47,7 @@
 <chlorine_loading_fixed_ymd chem="linoz_mam4_resus_mom">20000101</chlorine_loading_fixed_ymd>
 <chlorine_loading_type      chem="linoz_mam4_resus_mom">FIXED</chlorine_loading_type>
 <linoz_data_cycle_yr        chem="linoz_mam4_resus_mom">2000</linoz_data_cycle_yr>
-<linoz_data_file            chem="linoz_mam4_resus_mom">linoz1800-2100_2006jpl_climo_1.9x2.5_26L.c090424.nc</linoz_data_file>
+<linoz_data_file            chem="linoz_mam4_resus_mom">linoz1800-2100_2006jpl_climo_1.9x2.5_26L_extended.c160204.nc</linoz_data_file>
 <linoz_data_path            chem="linoz_mam4_resus_mom">atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            chem="linoz_mam4_resus_mom">CYCLICAL</linoz_data_type>
 
