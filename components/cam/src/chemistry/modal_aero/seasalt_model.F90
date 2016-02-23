@@ -533,7 +533,7 @@ end subroutine ocean_data_readnl
              cflx_help2(:ncol) = 0.0_r8
              if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin)) then
                 cflx_help2(:ncol)=fi(:ncol,i)*ocnfrc(:ncol)*emis_scale  !++ ag: scale sea-salt
-                if ((mm==3).or.(mm==4)) then
+                if ((ibin==3).or.(ibin==4)) then
                    ! Don't apply OM parameterization to fine or coarse SS mode
                    cflx(:ncol,mn) = cflx(:ncol,mn) + cflx_help2(:ncol)
                 else if ( ( mixing_state == 1 ) .or. ( mixing_state == 3 ) ) then
@@ -568,7 +568,7 @@ end subroutine ocean_data_readnl
              cflx_help2(:ncol) = 0.0_r8
              cflx_help2(:ncol)=fi(:ncol,i)*ocnfrc(:ncol)*emis_scale  &   !++ ag: scale sea-salt
                   *4._r8/3._r8*pi*rdry(i)**3*dns_aer_sst  ! should use dry size, convert from number to mass flux (kg/m2/s)
-             if ((mm==3).or.(mm==4)) then
+             if ((ibin==3).or.(ibin==4)) then
                 ! Don't apply OM parameterization to fine or coarse SS mode
                 cflx(:ncol,mm) = cflx(:ncol,mm) + cflx_help2(:ncol)
              else if ( ( mixing_state == 1 ) .or. ( mixing_state == 3 ) ) then

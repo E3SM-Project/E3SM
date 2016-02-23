@@ -2767,7 +2767,8 @@ if ($chem eq 'trop_mam4_mom' || $chem eq 'trop_mam4_resus_mom') {
     my @files = ('mam_mom_specifier', 'mam_mom_filename',
 		 'mam_mom_datapath', 'mam_mom_datatype',
 		 'mam_mom_cycle_yr', 'mam_mom_fixed_ymd',
-		 'mam_mom_fixed_tod' );
+		 'mam_mom_fixed_tod', 'mam_mom_bubble_thickness',
+                 'mam_mom_mixing_state', 'mam_mom_parameterization');
     foreach my $file (@files) {
         add_default($nl, $file);
     }
