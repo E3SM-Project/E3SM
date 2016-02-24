@@ -1009,7 +1009,7 @@ sub _create_caseroot_files
 
 
     # copy env_case.xml in to locked files
-    $sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml.locked"; 
+    $sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml"; 
     system($sysmod) == 0 or $logger->logdie( "ERROR: create_newcase $sysmod failed: $?");
     $logger->info( "Locking file $caseroot/env_case.xml ");
 

@@ -9,7 +9,7 @@ cd $CASEROOT
 rm $EXEROOT/cesm.exe >& /dev/null
 cp -f $EXEROOT/cesm.exe.1 $EXEROOT/cesm.exe || exit -9
 cp -f env_build.xml.1    env_build.xml
-cp -f env_build.xml.1    LockedFiles/env_build.xml.locked
+cp -f env_build.xml.1    LockedFiles/env_build.xml
 
 # Set env_run.xml settings 
 set STOP_N      = `./xmlquery STOP_N      -value`
@@ -66,7 +66,7 @@ echo "doing a ${STOP_N} ${STOP_OPTION} run with 1 pe and mpiserial " >>& $TESTST
 rm $EXEROOT/cesm.exe >& /dev/null
 cp -f $EXEROOT/cesm.exe.2 $EXEROOT/cesm.exe || exit -9
 cp -f env_build.xml.2      env_build.xml
-cp -f env_build.xml.2      LockedFiles/env_build.xml.locked
+cp -f env_build.xml.2      LockedFiles/env_build.xml
 
 ./case.run
 if ($status != 0) then

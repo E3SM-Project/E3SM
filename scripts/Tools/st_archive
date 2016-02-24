@@ -296,7 +296,7 @@ sub listXMLin
 The env_archive.xml brief XML tag schema:
 
     <comp_archive_spec name="[string:component name] (cpl|dart|cam\*|datm|clm\?|dlnd|rtm|cice|dice|pop|docn|cism|ww3|dwav)">
-	<rootdir>[string:root directory name after DOUT_S_ROOT.locked] (rest|cpl|dart|atm|lnd|rof|ice|ocn|glc|wav)</rootdir>
+	<rootdir>[string:root directory name after DOUT_S_ROOT] (rest|cpl|dart|atm|lnd|rof|ice|ocn|glc|wav)</rootdir>
         <files>
             <file_extension regex_suffix="[string: perl regular expression for matching file suffix patterns"]>
 	    <keep_last_in_rundir>[string: specify if the most recent copy of the matching file should be saved in the RUNDIR] (true|false)</keep_last_in_rundir> 
@@ -427,8 +427,8 @@ sub getcompninst
 
 
 #-----------------------------------------------------------------------------------------------
-# undoArchive routine loops through the ARCHIVE_DIR_LOCKED getting the list of archived files
-# and then moves the file back into the RUNDIR. This has no affect on the ARCHIVE_DIR_LINKED files.
+# undoArchive routine loops through the DOUT_S_ROOT getting the list of archived files
+# and then moves the file back into the RUNDIR. 
 #-----------------------------------------------------------------------------------------------
 sub undoArchive
 {

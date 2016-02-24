@@ -242,7 +242,7 @@ if ($set_project) {
 } 
 
 # Copy env_case.xml in locked files
-$sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml.locked";
+$sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 print "Locking file $caseroot/env_case.xml \n";
 
