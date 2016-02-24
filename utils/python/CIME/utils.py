@@ -70,7 +70,7 @@ def get_cime_root():
     """
     Return the absolute path to the root of CIME that contains this script
 
-    >>> os.path.isdir(os.path.join(get_cime_root(), get_acme_scripts_location_within_cime()))
+    >>> os.path.isdir(os.path.join(get_cime_root(), get_scripts_location_within_cime()))
     True
     """
     cime_config = get_cime_config()
@@ -341,15 +341,15 @@ def get_current_commit(short=False, repo=None):
     output = run_cmd("git rev-parse %s HEAD" % ("--short" if short else ""), from_dir=repo)
     return output
 
-def get_acme_scripts_location_within_cime():
+def get_scripts_location_within_cime():
     """
-    From within CIME, return subdirectory where ACME scripts live.
+    From within CIME, return subdirectory where scripts live.
     """
     return "scripts"
 
 def get_cime_location_within_acme():
     """
-    From within ACME, return subdirectory where CIME lives.
+    From within acme, return subdirectory where CIME lives.
     """
     return "cime"
 
@@ -364,18 +364,18 @@ def get_acme_root():
     assert cime_absdir.endswith(get_cime_location_within_acme()), cime_absdir
     return os.path.normpath(cime_absdir[:len(cime_absdir)-len(get_cime_location_within_acme())])
 
-def get_acme_scripts_root():
+def get_scripts_root():
     """
-    Get absolute path to acme scripts
+    Get absolute path to scripts
 
-    >>> os.path.isdir(get_acme_scripts_root())
+    >>> os.path.isdir(get_scripts_root())
     True
     """
-    return os.path.join(get_cime_root(), get_acme_scripts_location_within_cime())
+    return os.path.join(get_cime_root(), get_scripts_location_within_cime())
 
 def get_python_libs_root():
     """
-    Get absolute path to acme scripts
+    Get absolute path to scripts
 
     >>> os.path.isdir(get_python_libs_root())
     True
@@ -384,7 +384,7 @@ def get_python_libs_root():
 
 def get_model_config_root(model=get_model()):
     """
-    Get absolute path to acme config area"
+    Get absolute path to model config area"
 
     >>> os.path.isdir(get_model_config_root())
     True

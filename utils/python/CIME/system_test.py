@@ -374,7 +374,7 @@ class SystemTest(object):
     def _setup_phase(self, test):
     ###########################################################################
         test_dir  = self._get_test_dir(test)
-        os.symlink(os.path.join(self._cime_root, "scripts","Tools","case.test_build"),
+        os.symlink(os.path.join(self._cime_root,"scripts","Tools","case.test_build"),
                    os.path.join(test_dir,"case.test_build"))
 
         return self._shell_cmd_for_phase(test, "./case.setup", SETUP_PHASE, from_dir=test_dir)
@@ -384,8 +384,8 @@ class SystemTest(object):
     ###########################################################################
         test_dir          = self._get_test_dir(test)
         casedoc_dir       = os.path.join(test_dir, "CaseDocs")
-        compare_nl        = os.path.join(CIME.utils.get_acme_scripts_root(), "compare_namelists")
-        simple_compare    = os.path.join(CIME.utils.get_acme_scripts_root(), "simple_compare")
+        compare_nl        = os.path.join(CIME.utils.get_scripts_root(), "Tools", "compare_namelists")
+        simple_compare    = os.path.join(CIME.utils.get_scripts_root(), "Tools", "simple_compare")
 
         if (self._compare):
             has_fails = False
@@ -604,10 +604,10 @@ class SystemTest(object):
     ###########################################################################
         try:
             python_libs_root = CIME.utils.get_python_libs_root()
-            acme_scripts_root = CIME.utils.get_acme_scripts_root()
+            scripts_root = CIME.utils.get_scripts_root()
             template_file = os.path.join(python_libs_root, "cs.status.template")
             template = open(template_file, "r").read()
-            template = template.replace("<PATH>", acme_scripts_root).replace("<TESTID>", self._test_id)
+            template = template.replace("<PATH>", scripts_root).replace("<TESTID>", self._test_id)
 
             cs_status_file = os.path.join(self._test_root, "cs.status.%s" % self._test_id)
             with open(cs_status_file, "w") as fd:

@@ -4,9 +4,9 @@ functions for building CIME models
 import logging, os, sys, glob, shutil
 LIB_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(LIB_DIR)
-from CIME.case import Case
-from CIME.utils import expect, run_cmd, get_model
-from CIME.env_module import EnvModule
+from case import Case
+from utils import expect, run_cmd, get_model
+from env_module import EnvModule
 
 def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
                 comp_atm,   comp_lnd,   comp_ice,   comp_ocn,   comp_glc,   comp_wav,   comp_rof,
