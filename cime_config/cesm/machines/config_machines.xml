@@ -1715,7 +1715,6 @@
       <init_path lang="python">/glade/apps/opt/lmod/lmod/init/env_modules_python.py</init_path>
       <init_path lang="csh">/glade/apps/opt/lmod/lmod/init/csh</init_path>
       <init_path lang="sh">/glade/apps/opt/lmod/lmod/init/sh</init_path>
-      <init_path lang="python">/glade/apps/opt/lmod/lmod/init/env_modules_python.py</init_path>
       <cmd_path lang="perl">/glade/apps/opt/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="python">/glade/apps/opt/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
