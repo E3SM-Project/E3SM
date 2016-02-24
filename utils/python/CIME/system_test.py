@@ -16,7 +16,6 @@ from CIME.XML.component import Component
 from CIME.XML.testlist import Testlist
 import CIME.test_utils
 
-
 INITIAL_PHASE        = "INIT"
 CREATE_NEWCASE_PHASE = "CREATE_NEWCASE"
 XML_PHASE            = "XML"
@@ -586,6 +585,13 @@ class SystemTest(object):
         if not success:
             status_str += "    Case dir: %s\n" % self._get_test_dir(test)
         sys.stdout.write(status_str)
+
+        # On batch systems, we want to immediately submit to the queue, because
+        # it's very cheap to submit and will get us a better spot in line
+        if (not self._no_run and not self._no_batch and test_phase == BUILD_PHASE):
+            sys.stdout.write("Starting %s for test %s with %d procs\n" % (RUN_PHASE, test, 1))
+            self._update_test_status(test, RUN_PHASE, TEST_PENDING_STATUS)
+            self._consumer(test, RUN_PHASE, self._run_phase)
 
     ###########################################################################
     def _producer(self):
