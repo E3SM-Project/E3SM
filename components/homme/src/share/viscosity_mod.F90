@@ -364,8 +364,7 @@ logical var_coef1
 ! Original use of qtens on left and right hand sides caused OpenMP errors (AAM)
            qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=var_coef1)
          enddo
-         kptr = nlev*(q-1)
-         call edgeVpack(edgeq, qtens(:,:,:,q,ie),nlev,kptr,ie)
+         call edgeVpack(edgeq, qtens(:,:,:,q,ie),nlev,nlev*(q-1),ie)
       enddo
    enddo
 
@@ -380,8 +379,7 @@ logical var_coef1
 !$omp parallel do private(k, q, lap_p)
 #endif
       do q=1,qsize      
-        kptr = nlev*(q-1)
-        call edgeVunpack(edgeq, qtens(:,:,:,q,ie),nlev,kptr,ie)
+        call edgeVunpack(edgeq, qtens(:,:,:,q,ie),nlev,nlev*(q-1),ie)
         do k=1,nlev    !  Potential loop inversion (AAM)
            lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
            qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)

@@ -623,7 +623,11 @@ endif
 #endif
     do k=1,vlyr
        iptr = np*(kptr+k-1)
-!dir$ ivdep
+#ifdef OMP4
+!$omp simd
+#else
+!dir$ simd
+#endif
        do i=1,np
           edge%buf(iptr+is+i)   = v(i  ,1 ,k) ! South
           edge%buf(iptr+in+i)   = v(i  ,np,k) ! North
