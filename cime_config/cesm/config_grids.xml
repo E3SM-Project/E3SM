@@ -128,6 +128,12 @@
       <lname>a%T42_l%T42_oi%T42_r%r05_m%usgs_g%null_w%null</lname>
     </grid>
 
+    <grid compset="(DOCN|XOCN|SOCN)">
+      <sname>T85_T85</sname>
+      <alias>T85_T85</alias>
+      <lname>a%T85_l%T85_oi%T85_r%r05_m%usgs_g%null_w%null</lname>
+    </grid>
+
     <grid compset="(DATM|XATM|SATM)">
       <sname>T62_gx3v7</sname>
       <alias>T62_g37</alias>
