@@ -28,7 +28,9 @@ class Case(object):
         self._env_files = []
         self._env_files_that_need_rewrite = set()
 
-        self._env_files.append(EnvTest(case_root))
+        if(os.path.isfile(os.path.join(case_root,"env_test.xml"))):
+            self._env_files.append(EnvTest(case_root))
+            
         self._env_files.append(EnvRun(case_root))
         self._env_files.append(EnvMachSpecific(case_root))
         self._env_files.append(EnvCase(case_root))
@@ -46,9 +48,16 @@ class Case(object):
 
         self._env_files_that_need_rewrite = set()
 
+    # Retrieve value from an xml element/node <element_name attribute=attribute_value>value</element_name>
+    # item is the element_name and atrribute a dictionary containing attribute and/or 
+    # attribute and  attribute_value pairs
+    # resolved denotes ?
+    # subgroup ?
+    
     def get_value(self, item, attribute={}, resolved=True, subgroup=None):
         result = None
         for env_file in self._env_files:
+            print env_file
             result = env_file.get_value(item, attribute, resolved, subgroup)
             if(result is not None):
                 if(resolved):
