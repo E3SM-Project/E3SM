@@ -170,6 +170,17 @@ my %dirs   = ( atm => $CONFIG_ATM_DIR, lnd => $CONFIG_LND_DIR, ice => $CONFIG_IC
 	       ocn => $CONFIG_OCN_DIR, glc => $CONFIG_GLC_DIR, wav => $CONFIG_WAV_DIR,
 	       rof => $CONFIG_ROF_DIR, drv => $CONFIG_DRV_DIR );
 
+my $drvfldsnl = "${RUNDIR}/drv_flds_in";
+if ( -f $drvfldsnl ) {
+   if ($opts{loglevel} eq "DEBUG") {
+      print "Remove $drvfldsnl\n";
+   }
+   system( "rm $drvfldsnl" );
+   if($? != 0){
+       $logger->logdie("Removal of $drvfldsnl failed: $?");
+   }
+}
+
 foreach my $model (@modelsorder) {
     my $comp = $models{$model};
     my $file = "$dirs{$model}/buildnml";
