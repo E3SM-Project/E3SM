@@ -29,11 +29,12 @@ def parse_command_line(args, description):
     parser = argparse.ArgumentParser()
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("File",
-                        help="env*.xml file")
+    parser.add_argument("key",  
+                        help="attribute value in env_*.xml file ( <element_name attribute='attribute_value'>value</element_name> )")
     parser.add_argument("-file", 
                         help="env*.xml file")
-    parser.add_argument("--key", nargs="*" , help="env*.xml file")
+    parser.add_argument("--item" , help="attribute name in item")
+    parser.add_argument("--attribute", nargs="*" , help="attribute name in item")
     
     parser.add_argument("--caseroot", default=os.getcwd(),
                         help="Case directory to build")
@@ -50,14 +51,6 @@ def parse_command_line(args, description):
 # Same reads from same file as xmlchange
 # Use same methods
 
-def get_value(file , key):
-    
-    tree = ET.parse(file)
-    root = tree.getroot()
-    for child in root:
-        print child
-        
-    return value
 
 def _main_func(description):
     if ("--test" in sys.argv):
@@ -66,21 +59,29 @@ def _main_func(description):
 
     args = parse_command_line(sys.argv, description)
     
-    print args
+    logging.debug("CLI arguments:" , args)
     
     case = Case(args.caseroot)
+    item = "*"
     
-    
-    
-    for i in args.key :
-        value = case.get_value(i, resolved=False, subgroup=subgroup)
-        print value
+    if args.key :
+        item = args.key
+    elif args.item :
+        item = args.item
         
-
-    #xmlquerry(caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup, append, noecho, warn)
     
-    print args.file , args.File
-    #get_value(args.File , args.Value)
+    logging.info("Searching for item '%s'" % item)
+        
+    value = case.get_value( item )
+  
+    if str(value):
+        print item , value
+    else:
+        for k,v in value.iteritems():
+            print k , v
+    
+   
+
 
 if (__name__ == "__main__"):
     _main_func(__doc__)
