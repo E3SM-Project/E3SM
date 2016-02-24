@@ -64,7 +64,7 @@ class SystemTest(object):
         # machine is not a batch machine
         self._no_batch = no_batch or not self._machobj.has_batch_system()
         if test_root is None:
-            self._machobj.get_value("CESMSCRATCHROOT")
+            self._test_root = self._machobj.get_value("CESMSCRATCHROOT")
         else:
             self._test_root = test_root
         if self._project is not None:
@@ -559,7 +559,7 @@ class SystemTest(object):
         while not finished_tests:
             for test, thread_info in threads_in_flight.iteritems():
                 if not thread_info[0].is_alive():
-                    finished_tests.append(test, thread_info[1])
+                    finished_tests.append((test, thread_info[1]))
 
             if not finished_tests:
                 time.sleep(0.2)
@@ -642,8 +642,9 @@ class SystemTest(object):
             scripts_root = CIME.utils.get_scripts_root()
             template_file = os.path.join(python_libs_root, "cs.status.template")
             template = open(template_file, "r").read()
-            template = template.replace("<PATH>", scripts_root).replace("<TESTID>", self._test_id)
-
+            template = template.replace("<PATH>",
+                                        os.path.join(self._cime_root,"scripts","Tools")).replace\
+                                        ("<TESTID>", self._test_id)
             cs_status_file = os.path.join(self._test_root, "cs.status.%s" % self._test_id)
             with open(cs_status_file, "w") as fd:
                 fd.write(template)

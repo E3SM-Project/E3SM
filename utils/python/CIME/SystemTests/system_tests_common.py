@@ -19,9 +19,14 @@ class SystemTestsCommon(object):
         self._case = case
         if os.path.isfile(os.path.join(caseroot, "LockedFiles", "env_run.orig.xml")):
             self.compare_env_run(expectedrunvars)
-        else:
-            shutil.copy("env_run.xml", os.path.join(caseroot, "Lockedfiles", "env_run.orig.xml"))
-
+        elif os.path.isfile(os.path.join(caseroot, "env_run.xml")):
+            lockedfiles = os.path.join(caseroot, "Lockedfiles")
+            try:
+                os.stat(lockedfiles)
+            except:
+                os.mkdir(lockedfiles)
+            shutil.copy("env_run.xml",
+                        os.path.join(lockedfiles, "env_run.orig.xml"))
 
     def build(self):
         build.case_build(self._caseroot, True)
