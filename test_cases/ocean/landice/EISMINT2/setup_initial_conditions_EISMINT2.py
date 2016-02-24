@@ -99,8 +99,8 @@ if experiment in ('a', 'f'):
     gridfile.variables['thickness'][:] = 0.0
     # flat bed at sea level
     gridfile.variables['bedTopography'][:] = 0.0
-    # constant, arbitrary temperature, degrees C (doesn't matter since there is no ice initially)
-    gridfile.variables['temperature'][:] = 0.0
+    # constant, arbitrary temperature, degrees K (doesn't matter since there is no ice initially)
+    gridfile.variables['temperature'][:] = 273.15
     # Setup layerThicknessFractions
     gridfile.variables['layerThicknessFractions'][:] = 1.0 / nVertLevels
 
@@ -116,23 +116,19 @@ params = exp_params[experiment]
 
 # SMB field specified by EISMINT, constant in time for EISMINT-2
 # It is a function of geographical position (not elevation)
-Mmax = params['Mmax']  # [m/yr] maximum accumulation rate
-Sb = params['Sb']      # gradient of accumulation rate change with horizontal distance  [m/a/km]
-Rel = params['Rel']    # [km]  accumulation rate 0 position
+Mmax = params['Mmax'] / scyr  # maximum accumulation rate [m/yr] converted to [m/s]
+Sb = params['Sb'] / scyr / 1000.0  # gradient of accumulation rate change with horizontal distance  [m/a/km] converted to [m/s/m]
+Rel = params['Rel'] * 1000.0  # accumulation rate at 0 position  [km] converted to [m]
 
-SMB = gridfile.variables['sfcMassBal'][0,:]
-SMB = numpy.minimum(Mmax, Sb * (Rel - r/1000.0)) # [m ice/yr]
-SMB = SMB * rhoi / scyr  # in kg/m2/s
+SMB = numpy.minimum(Mmax, Sb * (Rel - r)) # [m ice/s]
+SMB = SMB * rhoi  # in kg/m2/s
 gridfile.variables['sfcMassBal'][0,:] = SMB
 
 
-# Basal heat flux should be -4.2e-2
-#G[:] = -4.2e-2  # [W/m2]
-
 # Surface temperature
-Tmin = params['Tmin'] # minimum surface air temperature [K]
-ST = params['ST']     # gradient of air temperature change with horizontal distance [K/km]
-#Tsfc[:] = Tmin + ST * r/1000.0
+Tmin = params['Tmin']  # minimum surface air temperature [K]
+ST = params['ST'] / 1000.0  # gradient of air temperature change with horizontal distance [K/km] converted to [K/m]
+gridfile.variables['surfaceAirTemperature'][0,:] = Tmin + ST * r
 
 gridfile.close()
 print 'Successfully added initial conditions for EISMINT2, experiment '+experiment+' to the file: ', filename

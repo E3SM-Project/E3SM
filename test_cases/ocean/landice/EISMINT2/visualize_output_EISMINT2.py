@@ -36,7 +36,7 @@ else:
 ################### DEFINE FUNCTIONS ######################
 def xtime2numtime(xtime):
   """Define a function to convert xtime character array to numeric time values using datetime objects"""
-  # First parse the xtime character array into a string 
+  # First parse the xtime character array into a string
   xtimestr = netCDF4.chartostring(xtime) # convert from the character array to an array of strings using the netCDF4 module's function
 
   dt = []
@@ -52,7 +52,7 @@ def xtime2numtime(xtime):
 
 def xtimeGetYear(xtime):
   """Get an array of years from an xtime array, ignoring any partial year information"""
-  # First parse the xtime character array into a string 
+  # First parse the xtime character array into a string
   xtimestr = netCDF4.chartostring(xtime) # convert from the character array to an array of strings using the netCDF4 module's function
   years = np.zeros( (len(xtimestr),) )
   for i in range(len(xtimestr)):
@@ -61,46 +61,52 @@ def xtimeGetYear(xtime):
 
 
 
-def contourMPAS(field, contour_levs):
+def contourMPAS(field, contour_levs=None):
   """Contours irregular MPAS data on cells"""
   #-- Now let's grid your data.
-  # First we'll make a regular grid to interpolate onto. 
-  numcols, numrows = nCells**0.5, nCells**0.5  # may want to adjust the density of the regular grid
+  # First we'll make a regular grid to interpolate onto.
+  numcols = nCells**0.5 * 0.75  # may want to adjust the density of the regular grid
+  numrows = numcols
   xc = np.linspace(xCell.min(), xCell.max(), numcols)
   yc = np.linspace(yCell.min(), yCell.max(), numrows)
   xi, yi = np.meshgrid(xc, yc)
   #-- Interpolate at the points in xi, yi
   zi = griddata(xCell, yCell, field, xi, yi)
   #-- Display the results
-  im = plt.contour(xi, yi, zi, contour_levs)
+  if contour_levs == None:
+     im = plt.contour(xi, yi, zi)
+  else:
+     im = plt.contour(xi, yi, zi, contour_levs)
+
   #plt.scatter(xCell, yCell, c=temperature[timelev,:,-1], s=100, vmin=zi.min(), vmax=zi.max())  # to see the raw data on top
   plt.colorbar(im)
 ################### END OF FUNCTIONS ######################
 
 
 # Find data for requested experiment
-experimentpath = "experiment_" + experiment + "/"
-filename = experimentpath + 'eismint2' + experiment + '.output.nc'
+#experimentpath = "experiment_" + experiment + "/"
+#filename = experimentpath + 'eismint2' + experiment + '.output.nc'
+filename = "output.nc"
 
 # open supplied MPAS output file and get variables needed
-try:
-    filein = netCDF4.Dataset(filename,'r')
-    xCell = filein.variables['xCell'][:]/1000.0
-    yCell = filein.variables['yCell'][:]/1000.0
-    xtime = filein.variables['xtime'][:]
-    nCells = len(filein.dimensions['nCells'])
-    nVertLevels = len(filein.dimensions['nVertLevels'])
-    #numtime = xtime2numtime(xtime)
-    years = xtimeGetYear(xtime)
+filein = netCDF4.Dataset(filename,'r')
+xCell = filein.variables['xCell'][:]/1000.0
+yCell = filein.variables['yCell'][:]/1000.0
+xtime = filein.variables['xtime'][:]
+nCells = len(filein.dimensions['nCells'])
+nVertLevels = len(filein.dimensions['nVertLevels'])
+#numtime = xtime2numtime(xtime)
+years = xtimeGetYear(xtime)
 
-    thickness = filein.variables['thickness']
-    temperature = filein.variables['temperature']
-    layerThickness = filein.variables['layerThickness']
-    uReconstructX = filein.variables['uReconstructX']
-    uReconstructY = filein.variables['uReconstructY']
-    areaCell = filein.variables['areaCell']
-except:
-    sys.exit('Error: The output file is either missing or lacking needed dimensions/variables.')
+thickness = filein.variables['thickness']
+temperature = filein.variables['temperature']
+basalTemperature = filein.variables['basalTemperature']
+basalPmpTemperature = filein.variables['basalPmpTemperature']
+flwa = filein.variables['flowParamA']
+uReconstructX = filein.variables['uReconstructX']
+uReconstructY = filein.variables['uReconstructY']
+areaCell = filein.variables['areaCell'][:]
+layerThicknessFractions = filein.variables['layerThicknessFractions'][:]
 
 secInYr = 365.0*24.0*3600.0
 
@@ -146,10 +152,10 @@ iceIndices = np.where(thickness[timelev,:]>0.0)[0]
 plt.scatter(xCell[iceIndices], yCell[iceIndices], markersize, (0.8, 0.8, 0.8), marker=markershape, edgecolors='none') # print ice locations with gray hexagons
 
 # add contours of ice temperature over the top
-contourMPAS(temperature[timelev,:,-1], np.linspace(240.0, 275.0, 8))
+contourMPAS(basalTemperature[timelev,:], np.linspace(240.0, 275.0, 8))
 
 plt.axis('equal')
-plt.title('Modeled basal temperature (K) \n at time ' + netCDF4.chartostring(xtime)[timelev].strip() ) 
+plt.title('Modeled basal temperature (K) \n at time ' + netCDF4.chartostring(xtime)[timelev].strip() )
 plt.xlim( (0.0, 1500.0) ); plt.ylim( (0.0, 1500.0) )
 plt.xlabel('X position (km)')
 plt.ylabel('Y position (km)')
@@ -161,6 +167,7 @@ plt.ylabel('Y position (km)')
 # STEADY STATE MAPS
 # ================
 fig = plt.figure(2, facecolor='w', figsize=(12, 6), dpi=72)
+fig.suptitle('Payne et al. Fig. 2', fontsize=14, fontweight='bold')
 
 # ================
 # panel a - thickness
@@ -170,12 +177,15 @@ ax = fig.add_subplot(131)
 plt.scatter(xCell[iceIndices], yCell[iceIndices], markersize, (0.8, 0.8, 0.8), marker=markershape, edgecolors='none') # print ice locations with gray hexagons
 
 # add contours of ice thickness over the top
-contourMPAS(thickness[timelev,:], np.linspace(0.0, 5000.0,  5000.0/250.0+1))
+contour_intervals = np.linspace(0.0, 5000.0,  5000.0/250.0+1)
+contourMPAS(thickness[timelev,:], contour_levs=contour_intervals)
+#contourMPAS(thickness[timelev,:])
 
-plt.title('Final thickness (m)' ) 
-#plt.xlim( (0.0, 750.0) ); plt.ylim( (0.0, 750.0) )
+plt.title('Final thickness (m)' )
 plt.axis('equal')
+#plt.xlim( (0.0, 750.0) ); plt.ylim( (0.0, 750.0) )
 plt.xlabel('X position (km)'); plt.ylabel('Y position (km)')
+
 
 # ================
 # panel b - flux
@@ -183,15 +193,18 @@ ax = fig.add_subplot(132)
 
 flux = np.zeros( (nCells,) )
 for k in range(nVertLevels):
-  flux += (uReconstructX[timelev,:,k]**2 + uReconstructY[timelev,:,k]**2)**0.5 * layerThickness[timelev,:,k]
+    speedLevel = (uReconstructX[timelev,:,k:k+2].mean(axis=1)**2 + uReconstructY[timelev,:,k:k+2].mean(axis=1)**2)**0.5
+    flux += speedLevel * thickness[timelev,:] * layerThicknessFractions[k]
 
 # print ice locations with gray hexagons
 plt.scatter(xCell[iceIndices], yCell[iceIndices], markersize, (0.8, 0.8, 0.8), marker=markershape, edgecolors='none') # print ice locations with gray hexagons
 
-# add contours of ice thickness over the top
-contourMPAS(flux, np.linspace(0.0, 10.0,  10.0/0.5+1))
+# add contours over the top
+contour_intervals = np.linspace(0.0, 10.0,  10.0/0.5+1)
+#contourMPAS(flux * 3600.0*24.0*365.0, contour_levs=contour_intervals)
+contourMPAS(flux * 3600.0*24.0*365.0)
 plt.axis('equal')
-plt.title('Final flux (m$^2$ a$^{-1}$)' ) 
+plt.title('Final flux (m$^2$ a$^{-1}$)' )
 #plt.xlim( (0.0, 750.0) ); plt.ylim( (0.0, 750.0) )
 plt.xlabel('X position (km)'); plt.ylabel('Y position (km)')
 
@@ -202,10 +215,12 @@ ax = fig.add_subplot(133)
 # print ice locations with gray hexagons
 plt.scatter(xCell[iceIndices], yCell[iceIndices], markersize, (0.8, 0.8, 0.8), marker=markershape, edgecolors='none') # print ice locations with gray hexagons
 
-# add contours of ice thickness over the top
-#contourMPAS(flwa[timelev,:,-1]*secInYr/10**-25, np.linspace(0.0, 20.0, 2.0))  # NOT SURE WHICH LEVEL FLWA SHOULD COME FROM!
+# add contours over the top
+contour_intervals = np.linspace(0.0, 20.0, 20.0/2.0+1)
+contourMPAS(flwa[timelev,:,:].mean(axis=1) / 1.0e-25, contour_levs=contour_intervals)  # NOT SURE WHICH LEVEL FLWA SHOULD COME FROM - so taking column average
+#contourMPAS(flwa[timelev,:,:].mean(axis=1) / 1.0e-25)  # NOT SURE WHICH LEVEL FLWA SHOULD COME FROM - so taking column average
 plt.axis('equal')
-plt.title('Final flow factor (10$^{-25}$ Pa$^{-3}$ a$^{-1}$)' ) 
+plt.title('Final flow factor (10$^{-25}$ Pa$^{-3}$ s$^{-1}$)' )  # Note: the paper's figure claims units of 10$^{-25}$ Pa$^{-3}$ a$^{-1}$ but the time unit appears to be seconds, so using that here!
 #plt.xlim( (0.0, 750.0) ); plt.ylim( (0.0, 750.0) )
 plt.xlabel('X position (km)'); plt.ylabel('Y position (km)')
 
@@ -215,6 +230,7 @@ plt.xlabel('X position (km)'); plt.ylabel('Y position (km)')
 # DIVIDE EVOLUTION TIME SERIES
 # ================
 fig = plt.figure(3, facecolor='w')
+fig.suptitle('Payne et al. Fig. 5', fontsize=14, fontweight='bold')
 
 # get indices for given time
 if experiment =='b':
@@ -256,6 +272,7 @@ benchmarks = {'a':a_bench, 'b':b_bench, 'c':c_bench, 'd':d_bench, 'f':f_bench}
 bench = benchmarks[experiment]  # Get the benchmark dictionary
 
 fig = plt.figure(4, facecolor='w')
+fig.suptitle('Payne et al. Table 4: showing min/mean/max of community', fontsize=14, fontweight='bold')
 
 fig.add_subplot(151)
 volume = (thickness[timelev,iceIndices] * areaCell[iceIndices]).sum() / 1000.0**3 / 10.0**6
@@ -281,10 +298,12 @@ plt.plot( (0.0,), area, 'ro')  # MPAS results
 plt.xticks(())
 
 fig.add_subplot(153)
-meltfraction = 0.5
+warmBedIndices = np.where(np.logical_and(thickness[timelev,:] > 0.0, basalTemperature[timelev,:] >= (basalPmpTemperature[timelev,:] - 0.01) ) )[0]  # using threshold here to identify melted locations
+meltfraction = areaCell[warmBedIndices].sum() / 1000.0**2 / 10.0**6 / area
 plt.plot( np.zeros((3,)), bench['meltfraction'], 'k*')  # benchmark results
 if bench['stattype'] == 'relative':
-    meltfraction = meltfraction
+    initWarmBedIndices = np.where(np.logical_and(thickness[timelev,:] > 0.0, basalTemperature[0,:] >= (basalPmpTemperature[0,:] - 0.01) ) )[0]  # using threshold here to identify melted locations
+    meltfraction = (meltfraction / (areaCell[initWarmBedIndices].sum() / 1000.0**2 / 10.0**6) - 1.0) / 100.0
     plt.ylabel('Melt fraction change')
 else:
     plt.ylabel('Melt fraction')
