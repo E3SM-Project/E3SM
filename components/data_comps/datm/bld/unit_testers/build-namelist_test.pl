@@ -30,7 +30,8 @@ OPTIONS
 EOF
 }
 # The env variables that will need to be set
-my %xmlenv = ( "DATM_CO2_TSERIES", "RUN_TYPE", "DIN_LOC_ROOT", "ATM_DOMAIN_FILE", "ATM_DOMAIN_PATH", "DATM_MODE", "DATM_PRESAERO", "ATM_GRID", "GRID" );
+my %xmlenv = ( "DATM_CO2_TSERIES", "RUN_TYPE", "DIN_LOC_ROOT", "ATM_DOMAIN_FILE", "ATM_DOMAIN_PATH", "DATM_MODE", "DATM_PRESAERO", "ATM_GRID",
+"GRID", "DATM_TOPO" );
 my $envxmlfile = "env_utrun.xml";   # Filename to write env settings to
 #
 # Process command-line options.
@@ -105,6 +106,7 @@ $xmlenv{'ATM_DOMAIN_PATH'}          = "\$DIN_LOC_ROOT/share/domains";
 $xmlenv{'ATM_GRID'}                 = "48x96";
 $xmlenv{'GRID'}                     = "48x96_g37";
 $xmlenv{'DATM_MODE'}                = "CLMQIAN";
+$xmlenv{'DATM_TOPO'}                = "observed";
 $xmlenv{'DATM_PRESAERO'}            = "clim_2000";
 $xmlenv{'DATM_CO2_TSERIES'}         = "none";
 # Set some ENV vars needed for CLM_QIAN
@@ -325,6 +327,11 @@ system( "/bin/rm -rf $confdir"         );
 foreach my $mode ( "CORE2_NYF", "CORE2_IAF", "CPLHIST3HrWx", "CLMCRUNCEP","CLMCRUNCEP_V5", "CLMGSWP3" ) {
    $xmlenv{'DATM_MODE'} = $mode;
    print "DATM_MODE       = $xmlenv{'DATM_MODE'}\n";
+   if ( $mode =~ /^CLM/ ) {
+      $xmlenv{'DATM_TOPO'}   = "observed";
+   } else {
+      $xmlenv{'DATM_TOPO'}   = "none";
+   }
    &writeEnv( %xmlenv );
    eval{ system( "$bldnml" ); };
    ok( ! $?, "mode=$mode" );
@@ -339,6 +346,7 @@ foreach my $mode ( "CORE2_NYF", "CORE2_IAF", "CPLHIST3HrWx", "CLMCRUNCEP","CLMCR
 # Run with presaero="none";
 $xmlenv{'DATM_MODE'}     = "CORE2_NYF";
 $xmlenv{'DATM_PRESAERO'} = "none";
+$xmlenv{'DATM_TOPO'}   = "none";
 print "DATM_MODE       = $xmlenv{'DATM_MODE'}\n";
 print "DATM_PRESAERO   = $xmlenv{'DATM_PRESAERO'}\n";
 &writeEnv( %xmlenv );
@@ -349,6 +357,7 @@ ok( ! $?, "presaero=none" );
 system( "/bin/rm -rf $confdir"         );
 $xmlenv{'DATM_MODE'}     = "CLM_QIAN";
 $xmlenv{'DATM_PRESAERO'} = "clim_2000";
+$xmlenv{'DATM_TOPO'}   = "observed";
 print "DATM_MODE       = $xmlenv{'DATM_MODE'}\n";
 print "DATM_PRESAERO   = $xmlenv{'DATM_PRESAERO'}\n";
 
@@ -368,6 +377,7 @@ foreach my $option ( "-zztop", "-namelist '&datm_exp zztop=24/'", "-user_xml_dir
 # Bad ENV settings
 my %bad_env = (
    CLMQIAN_N_PAERONONE =>{ DATM_MODE    =>"CLM_QIAN",   DATM_PRESAERO=>"none"     },
+   TOPONONEAND_CLM     =>{ DATM_MODE    =>"CLM_QIAN",   DATM_TOPO    =>"none"     },
    BAD_DATM_MODE       =>{ DATM_MODE    =>"zztop"       },
    BAD_PRESAERO        =>{ DATM_PRESAERO=>"zztop"       },
    BAD_CQYR_RANGE      =>{ DATM_CLMNCEP_YR_START=>2004, DATM_CLMNCEP_YR_END=>1948 },
