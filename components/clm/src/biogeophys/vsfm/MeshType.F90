@@ -42,6 +42,7 @@ module MeshType
      PetscReal, pointer  :: dx(:)        ! [m]
      PetscReal, pointer  :: dy(:)        ! [m]
      PetscReal, pointer  :: dz(:)        ! [m]
+     PetscReal, pointer  :: area_xy(:)   ! [m^2]
      PetscReal, pointer  :: vol(:)       ! [m^3]
 
      PetscBool, pointer  :: is_active(:) ! [true/false]
@@ -95,6 +96,7 @@ contains
     nullify(this%dx        )
     nullify(this%dy        )
     nullify(this%dz        )
+    nullify(this%area_xy   )
     nullify(this%vol       )
 
     nullify(this%is_active )
@@ -107,7 +109,7 @@ contains
   !------------------------------------------------------------------------
   subroutine Create(this, mesh_itype, begg, endg, begc, endc, ncols_ghost, &
        xc_col, yc_col, zc_col, &
-       grid_owner, &
+       area_col, grid_owner, &
      waterstate_vars, soilhydrology_vars)
     !
     ! !DESCRIPTION:
@@ -124,17 +126,18 @@ contains
     integer                  , intent(in) :: begg,endg
     integer                  , intent(in) :: begc,endc
     integer                  , intent(in) :: ncols_ghost
-    PetscReal, pointer                , intent(in) :: xc_col(:)
-    PetscReal, pointer                , intent(in) :: yc_col(:)
-    PetscReal, pointer                , intent(in) :: zc_col(:)
-    PetscInt, pointer                 , intent(in) :: grid_owner(:)
+    PetscReal, pointer       , intent(in) :: xc_col(:)
+    PetscReal, pointer       , intent(in) :: yc_col(:)
+    PetscReal, pointer       , intent(in) :: zc_col(:)
+    PetscReal, pointer       , intent(in) :: area_col(:)
+    PetscInt, pointer        , intent(in) :: grid_owner(:)
     type(waterstate_type)    , intent(in) :: waterstate_vars
     type(soilhydrology_type) , intent(in) :: soilhydrology_vars
 
     select case(mesh_itype)
     case (MESH_CLM_SOIL_COL)
        call this%CreateFromCLMCols(begg, endg, begc, endc, ncols_ghost, &
-              xc_col, yc_col, zc_col, grid_owner)
+              xc_col, yc_col, zc_col, area_col, grid_owner)
     case default
        write(iulog,*)'MeshType: Create() Unknown mesh_type = ',mesh_itype
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -144,7 +147,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine CreateFromCLMCols(this, begg, endg, begc, endc, ncols_ghost, &
-       xc_col, yc_col, zc_col, grid_owner)
+       xc_col, yc_col, zc_col, area_col, grid_owner)
     !
     ! !DESCRIPTION:
     ! Creates a mesh from CLM column level data structure
@@ -174,6 +177,7 @@ contains
     PetscReal, pointer , intent(in) :: xc_col(:)
     PetscReal, pointer , intent(in) :: yc_col(:)
     PetscReal, pointer , intent(in) :: zc_col(:)
+    PetscReal, pointer , intent(in) :: area_col(:)
     PetscInt, pointer  , intent(in) :: grid_owner(:)
     !
     ! !LOCAL VARIABLES:
@@ -191,6 +195,7 @@ contains
     PetscInt                          :: ltype, ctype
     PetscInt                          :: tmp
     PetscReal                         :: dist_x, dist_y, dist_z, dist
+    PetscReal                         :: dc, dv
     PetscErrorCode                    :: ierr
 
     call this%Init()
@@ -213,6 +218,7 @@ contains
     allocate(this%dx(this%ncells_all        ))
     allocate(this%dy(this%ncells_all        ))
     allocate(this%dz(this%ncells_all        ))
+    allocate(this%area_xy(this%ncells_all   ))
     allocate(this%vol(this%ncells_all       ))
     allocate(this%is_active(this%ncells_all ))
 
@@ -267,8 +273,9 @@ contains
           this%z_m(icell) = -col%zi(col_id,j-1) + zc_col(c)
           this%z_p(icell) = -col%zi(col_id,j  ) + zc_col(c)
 
-          this%dz(icell) = col%dz(col_id,j)
-          this%vol(icell) = this%dx(icell)*this%dy(icell)*this%dz(icell)
+          this%dz      (icell) = col%dz(col_id,j)
+          this%area_xy (icell) = area_col(c)
+          this%vol     (icell) = area_col(c)*this%dz(icell)
        enddo
     enddo
 
@@ -286,7 +293,7 @@ contains
           conn_set%id_up(iconn) = id_up
           conn_set%id_dn(iconn) = id_dn
 
-          conn_set%area(iconn) = 1.0_r8
+          conn_set%area(iconn) = area_col(c)
 
           conn_set%dist_up(iconn) = 0.5_r8*this%dz(id_up)
           conn_set%dist_dn(iconn) = 0.5_r8*this%dz(id_dn)
@@ -420,6 +427,9 @@ contains
                       c_idx_dn = tmp
                    endif
 
+                   dc = ldomain_lateral%ugrid%dcOnGrid_local(iedge, icell)
+                   dv = ldomain_lateral%ugrid%dvOnGrid_local(iedge, icell)
+
                    do j = 1, this%nlev
                       iconn = iconn + 1
 
@@ -432,10 +442,10 @@ contains
                       this%is_active(id_up) = PETSC_TRUE
                       this%is_active(id_dn) = PETSC_TRUE
 
-                      conn_set%area(iconn) = this%dz(id_up)*this%dx(id_up)
+                      conn_set%area(iconn) = this%dz(id_up)*dv
 
-                      dist_x = this%x(id_dn) - this%x(id_up)
-                      dist_y = this%y(id_dn) - this%y(id_up)
+                      dist_x = dc
+                      dist_y = 0._r8
                       dist_z = this%z(id_dn) - this%z(id_up)
                       dist   = (dist_x**2.d0 + dist_y**2.d0 + dist_z**2.d0)**0.5d0
 
@@ -557,7 +567,7 @@ contains
 
           conn_set%id_up(iconn) = id_up
           conn_set%id_dn(iconn) = id_dn
-          conn_set%area(iconn)  = mesh%dx(id_dn)*mesh%dy(id_dn)
+          conn_set%area(iconn)  = mesh%area_xy(id_dn)
           conn_set%dist_up(iconn) = 0.0_r8
           conn_set%dist_dn(iconn) = 0.5_r8*mesh%dz(id_dn)
        enddo
@@ -582,7 +592,7 @@ contains
              conn_set%dist_unitvec(iconn)%arr(2) =  0._r8
              conn_set%dist_unitvec(iconn)%arr(3) =  0._r8
 
-             conn_set%area(iconn)  = mesh%dx(id_dn)*mesh%dy(id_dn)
+             conn_set%area(iconn)  = mesh%area_xy(id_dn)
 
              conn_set%dist_up(iconn) = 0.0_r8
              conn_set%dist_dn(iconn) = 0.0_r8

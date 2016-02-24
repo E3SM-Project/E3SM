@@ -81,7 +81,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPSetup(this, begg, endg, begc, endc, ncols_ghost, filter_hydrologyc, &
-       xc_col, yc_col, zc_col, grid_owner, &
+       xc_col, yc_col, zc_col, area_col, grid_owner, &
        soilstate_vars, waterstate_vars, soilhydrology_vars)
     !
     ! !DESCRIPTION:
@@ -110,6 +110,7 @@ contains
     PetscReal, pointer, intent(in)       :: xc_col(:)
     PetscReal, pointer, intent(in)       :: yc_col(:)
     PetscReal, pointer, intent(in)       :: zc_col(:)
+    PetscReal, pointer, intent(in)       :: area_col(:)
     PetscInt, pointer, intent(in)        :: grid_owner(:)
     type(soilstate_type) , intent(in)    :: soilstate_vars
     type(waterstate_type)  , intent(in)  :: waterstate_vars
@@ -129,7 +130,7 @@ contains
     this%solver_type  = PETSC_SNES
     soe_type          = SOE_RE_ODE
     call this%meshes(1)%Create(MESH_CLM_SOIL_COL, begg, endg, begc, endc, ncols_ghost, &
-                               xc_col, yc_col, zc_col, grid_owner, &
+                               xc_col, yc_col, zc_col, area_col, grid_owner, &
                                waterstate_vars, soilhydrology_vars)
 
     ! Setup the system-of-equations

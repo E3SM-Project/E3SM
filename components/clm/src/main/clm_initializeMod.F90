@@ -949,6 +949,7 @@ contains
     real(r8), pointer     :: xc_col(:)             ! x-position of grid cell [m]
     real(r8), pointer     :: yc_col(:)             ! y-position of grid cell [m]
     real(r8), pointer     :: zc_col(:)             ! z-position of grid cell [m]
+    real(r8), pointer     :: area_col(:)           ! area of grid cell [m^2]
     integer, pointer      :: grid_owner(:)         ! MPI rank owner of grid cell
 
     integer               :: nblocks
@@ -1004,6 +1005,7 @@ contains
     allocate(xc_col(bounds_proc%begc_all:bounds_proc%endc_all))
     allocate(yc_col(bounds_proc%begc_all:bounds_proc%endc_all))
     allocate(zc_col(bounds_proc%begc_all:bounds_proc%endc_all))
+    allocate(area_col(bounds_proc%begc_all:bounds_proc%endc_all))
     allocate(grid_owner(bounds_proc%begg_all:bounds_proc%endg_all))
 
     if (lateral_connectivity) then
@@ -1061,6 +1063,8 @@ contains
           beg_idx = beg_idx + 1; zc_col(c) = data_recv(beg_idx)
           beg_idx = beg_idx + 1; grid_owner(g) = data_recv(beg_idx)
 
+          area_col(c) = ldomain_lateral%ugrid%areaGrid_ghosted(g-bounds_proc%begg + 1)
+
        enddo
 
        deallocate(data_send)
@@ -1075,6 +1079,7 @@ contains
       yc_col(:)     = 0._r8
       zc_col(:)     = 0._r8
       grid_owner(:) = 0
+      area_col(:)   = 1._r8
 
     endif
 
@@ -1086,7 +1091,7 @@ contains
                         ncols_ghost,                 &
                         filter(nc)%hydrologyc,       &
                         xc_col, yc_col, zc_col,      &
-                        grid_owner,                  &
+                        area_col, grid_owner,        &
                         soilstate_vars,              &
                         waterstate_vars,             &
                         soilhydrology_vars)
@@ -1206,6 +1211,7 @@ contains
     deallocate(xc_col    )
     deallocate(yc_col    )
     deallocate(zc_col    )
+    deallocate(area_col  )
     deallocate(grid_owner)
 
 #else
