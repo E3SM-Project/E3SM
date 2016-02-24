@@ -323,6 +323,7 @@ GetOptions(
     "rain_evap_to_coarse_aero"  => \$opts{'rain_evap_to_coarse_aero'},
     "defaults=s"                => \$opts{'defaults'},
     "dyn=s"                     => \$opts{'dyn'},
+    "dyn_target=s"              => \$opts{'dyn_target'},
     "edit_chem_mech"            => \$opts{'edit_chem_mech'},
     "waccm_phys"                => \$opts{'waccm_phys'},
     "offline_dyn"               => \$opts{'offline_dyn'},
@@ -2763,8 +2764,13 @@ sub write_filepath
 
     print $fh "$camsrcdir/cam/src/dynamics/$dyn\n";
     if($dyn eq 'se') {
-	print $fh "$camsrcdir/homme/src/share\n";
-	print $fh "$camsrcdir/homme/src/share/openacc\n";
+	    print $fh "$camsrcdir/homme/src/share\n";
+      if ($opts{'dyn_target'} eq 'preqx') {
+	      print $fh "$camsrcdir/homme/src/preqx\n";
+      } 
+      elsif($opts{'dyn_target'} eq 'preqx_acc') {
+	      print $fh "$camsrcdir/homme/src/preqx_acc\n";
+      }
     }
 
     # Parallelization utilies
