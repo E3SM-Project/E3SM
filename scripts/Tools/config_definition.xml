@@ -1363,6 +1363,14 @@
 	 sdesc="CAM dynamical core"
 	 ></entry>
 
+  <entry id="CAM_TARGET" 
+	 type="char"
+	 valid_values="preqx,preqx_acc" 
+	 value="preqx" 
+	 group="build_component_cam"
+	 sdesc="CAM-SE cmake target (only used with CAM_DYCORE == 'se')"
+	 ></entry>
+
   <entry id="CAM_NML_USE_CASE" 
 	 type="char"
 	 valid_values=""
