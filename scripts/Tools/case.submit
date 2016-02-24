@@ -11,7 +11,7 @@ my %opts=(loglevel=>"DEBUG");
 $ENV{CIMEROOT}=$cimeroot;
 unshift @INC, "$cimeroot/utils/perl5lib";
 my $pypath = $ENV{PYTHONPATH};
-$ENV{PYTHONPATH} = "$cimeroot/utils/python:$cimeroot/scripts-python:$pypath";
+$ENV{PYTHONPATH} = "$cimeroot/utils/python:$cimeroot/scripts/Tools:$pypath";
 
 require Log::Log4perl;
 require Config::SetupTools;

@@ -345,7 +345,7 @@ def get_acme_scripts_location_within_cime():
     """
     From within CIME, return subdirectory where ACME scripts live.
     """
-    return "scripts-python"
+    return "scripts"
 
 def get_cime_location_within_acme():
     """

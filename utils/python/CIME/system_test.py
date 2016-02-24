@@ -374,7 +374,7 @@ class SystemTest(object):
     def _setup_phase(self, test):
     ###########################################################################
         test_dir  = self._get_test_dir(test)
-        os.symlink(os.path.join(self._cime_root, "scripts-python","case.test_build"),
+        os.symlink(os.path.join(self._cime_root, "scripts","Tools","case.test_build"),
                    os.path.join(test_dir,"case.test_build"))
 
         return self._shell_cmd_for_phase(test, "./case.setup", SETUP_PHASE, from_dir=test_dir)
