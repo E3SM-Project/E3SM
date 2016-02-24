@@ -77,8 +77,6 @@
     </submit_args>
     <directives>
       <directive> -N {{ job_id }}</directive>
-      <directive> -q {{ queue }}</directive>
-      <directive> -l walltime={{ wall_time }}</directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
       <!-- <directive> -j oe {{ output_error_path }} </directive> -->
       <directive> -j oe </directive>

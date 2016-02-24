@@ -46,11 +46,20 @@
       <value>pnetcdf</value>
       <value mach="userdefined">netcdf</value>
       <value mach="eastwind">netcdf</value>
+      <value mach="constance">netcdf</value>
       <value mach="pleiades.*">netcdf</value>
       <value mach="hobart" compiler="pgi">netcdf</value>
       <value mpilib="mpi-serial">netcdf</value>
     </values>
   </entry>
+
+  <entry id="PIO_REARRANGER">
+    <values>
+      <value>$PIO_VERSION</value>
+    </values>
+  </entry>
+
+
 
   <!--- uncomment and fill in relevant sections 
   <entry id="PIO_DEBUG_LEVEL">
