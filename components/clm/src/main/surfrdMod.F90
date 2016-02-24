@@ -863,7 +863,9 @@ contains
   end subroutine surfrd_veg_dgvm
 
   !-----------------------------------------------------------------------
-  subroutine surfrd_get_grid_conn(filename, cellsOnCell, nCells_loc, maxEdges)
+  subroutine surfrd_get_grid_conn(filename, cellsOnCell, edgesOnCell, &
+       nEdgesOnCell, areaCell, dcEdge, dvEdge, &
+       nCells_loc, nEdges_loc, maxEdges)
     !
     ! !DESCRIPTION:
     ! Read grid connectivity information.
@@ -875,15 +877,23 @@ contains
     ! !ARGUMENTS:
     character(len=*), intent(in)  :: filename                        ! filename
     integer         , pointer     :: cellsOnCell(:,:)                ! cells-to-cell connection
+    integer         , pointer     :: edgesOnCell(:,:)                ! index to determine distance between neighbors from dcEdge
+    integer         , pointer     :: nEdgesOnCell(:)                 ! number of edges
+    real(r8)        , pointer     :: dcEdge(:)                       ! distance between centroids of grid cells
+    real(r8)        , pointer     :: dvEdge(:)                       ! distance between vertices
+    real(r8)        , pointer     :: areaCell(:)                     ! area of grid cells [m^2]
     integer         , intent(out) :: nCells_loc                      ! number of local cell-to-cell connections
     integer         , intent(out) :: maxEdges                        ! max number of edges/neighbors
+    integer         , intent(out) :: nEdges_loc                      ! number of edge length saved locally
     !
     ! !LOCAL VARIABLES:
     integer                      :: dimid,varid                      ! netCDF id's
     integer                      :: i                                ! index
     integer                      :: ier                              ! error status
     integer                      :: nCells                           ! global number of cell-to-cell connections
-    integer                      :: ibeg, iend                       ! beginning/ending index of data
+    integer                      :: nEdges                           ! global number of edges
+    integer                      :: ibeg_c, iend_c                   ! beginning/ending index of data
+    integer                      :: ibeg_e, iend_e                   ! beginning/ending index of data
     integer                      :: remainder                        ! temporary variable
     type(file_desc_t)            :: ncid                             ! netcdf id
     character(len=256)           :: varname                          ! variable name
@@ -891,6 +901,8 @@ contains
     logical                      :: readvar                          ! read variable in or not
     logical                      :: readdim                          ! read dimension present or not
     integer , allocatable        :: idata2d(:,:)                     ! temporary data
+    integer , allocatable        :: idata1d(:)                       ! temporary data
+    real(r8), allocatable        :: rdata1d(:)                       ! temporary data
     character(len=32)            :: subname = 'surfrd_get_grid_conn' ! subroutine name
 
     !-----------------------------------------------------------------------
@@ -923,38 +935,101 @@ contains
     end if
     ier = pio_inq_dimlen(ncid, dimid, maxEdges)
 
-    ! Read the data independently (i.e. each MPI-proc reads in the entire
-    ! dataset)
-
-    allocate(idata2d(maxEdges, nCells))
-
-    call ncd_io(ncid=ncid, varname='cellsOnCell', data=idata2d, flag='read', readvar=readvar)
-
-    if (.not. readvar) then
-       call endrun(msg=' ERROR: cellsOnCell not found in the file'//errMsg(__FILE__, __LINE__))
+    call ncd_inqdid(ncid,'nEdges',dimid,readdim)
+    if ( .not.readdim ) then
+       call endrun( msg=' ERROR: Dimension nEdges missing in '//filename// &
+            errMsg(__FILE__, __LINE__))
     end if
+    ier = pio_inq_dimlen(ncid, dimid, nEdges)
 
     ! Determine the size of local array that needs to be saved.
     nCells_loc = nCells/npes
     remainder  = nCells - nCells_loc*npes
     if (iam < remainder) nCells_loc = nCells_loc + 1
 
-    ! Allocate memory
-    allocate(cellsOnCell(maxEdges, nCells_loc))
+    nEdges_loc = nEdges/npes
+    remainder  = nEdges - nEdges_loc*npes
+    if (iam < remainder) nEdges_loc = nEdges_loc + 1
 
     ! Determine the beginning and ending index of the data to
     ! be saved
-    ibeg = 0
-    iend = 0
-    call MPI_Exscan(nCells_loc, ibeg, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
-    call MPI_Scan(  nCells_loc, iend, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
-    ibeg = ibeg + 1
+    ibeg_c = 0
+    iend_c = 0
+    call MPI_Exscan(nCells_loc, ibeg_c, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+    call MPI_Scan(  nCells_loc, iend_c, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+    ibeg_c = ibeg_c + 1
 
-    ! Save the data
-    cellsOnCell(:,:) = idata2d(:,ibeg:iend)
+    ibeg_e = 0
+    iend_e = 0
+    call MPI_Exscan(nEdges_loc, ibeg_e, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+    call MPI_Scan(  nEdges_loc, iend_e, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+    ibeg_e = ibeg_e + 1
+
+    ! Allocate memory
+    allocate(cellsOnCell   (maxEdges, nCells_loc))
+    allocate(edgesOnCell   (maxEdges, nCells_loc))
+    allocate(nEdgesOnCell  (nCells_loc          ))
+    allocate(areaCell      (nCells_loc          ))
+    allocate(dcEdge        (nEdges_loc          ))
+    allocate(dvEdge        (nEdges_loc          ))
+
+    ! Read the data independently (i.e. each MPI-proc reads in the entire
+    ! dataset)
+
+    allocate(idata2d(maxEdges, nCells))
+
+    ! Read cellsOnCell
+    call ncd_io(ncid=ncid, varname='cellsOnCell', data=idata2d, flag='read', readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: cellsOnCell not found in the file'//errMsg(__FILE__, __LINE__))
+    end if
+    cellsOnCell(:,:) = idata2d(:,ibeg_c:iend_c)
+
+    ! Read edgesOnCell
+    call ncd_io(ncid=ncid, varname='edgesOnCell', data=idata2d, flag='read', readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: edgesOnCell not found in the file'//errMsg(__FILE__, __LINE__))
+    end if
+    edgesOnCell(:,:) = idata2d(:,ibeg_c:iend_c)
+
+    deallocate(idata2d)
+
+    ! Read nEdgesOnCell
+    allocate(idata1d(nCells))
+    call ncd_io(ncid=ncid, varname='nEdgesOnCell', data=idata1d, flag='read', readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: areaCell not found in the file'//errMsg(__FILE__, __LINE__))
+    end if
+    nEdgesOnCell(:) = idata1d(ibeg_c:iend_c)
+    deallocate(idata1d)
+
+    ! Read areaCell
+    allocate(rdata1d(nCells))
+    call ncd_io(ncid=ncid, varname='areaCell', data=rdata1d, flag='read', readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: areaCell not found in the file'//errMsg(__FILE__, __LINE__))
+    end if
+    areaCell(:) = rdata1d(ibeg_c:iend_c)
+    deallocate(rdata1d)
+
+    ! Read dcEdge
+    allocate(rdata1d(nEdges))
+    call ncd_io(ncid=ncid, varname='dcEdge', data=rdata1d, flag='read', readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: dcEdge not found in the file'//errMsg(__FILE__, __LINE__))
+    end if
+    dcEdge(:) = rdata1d(ibeg_e:iend_e)
+
+    ! Read dvEdge
+    call ncd_io(ncid=ncid, varname='dvEdge', data=rdata1d, flag='read', readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: dvEdge not found in the file'//errMsg(__FILE__, __LINE__))
+    end if
+    dvEdge(:) = rdata1d(ibeg_e:iend_e)
+
+    deallocate(rdata1d)
 
     ! Perform cleanup
-    deallocate(idata2d)
     call ncd_pio_closefile(ncid)
 
   end subroutine surfrd_get_grid_conn

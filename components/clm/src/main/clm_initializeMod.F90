@@ -75,7 +75,13 @@ contains
     type(bounds_type) :: bounds_proc             
     integer ,pointer  :: amask(:)                ! global land mask
     integer ,pointer  :: cellsOnCell(:,:)        ! grid cell level connectivity
+    integer ,pointer  :: edgesOnCell(:,:)        ! index to determine distance between neighbors from dcEdge
+    integer ,pointer  :: nEdgesOnCell(:)         ! number of edges
+    real(r8), pointer :: dcEdge(:)               ! distance between centroids of grid cells
+    real(r8), pointer :: dvEdge(:)               ! distance between vertices
+    real(r8), pointer :: areaCell(:)             ! area of grid cells [m^2]
     integer           :: nCells_loc              ! number of grid cell level connectivity saved locally
+    integer           :: nEdges_loc              ! number of edge length saved locally
     integer           :: maxEdges                ! max number of edges/neighbors
     character(len=32) :: subname = 'initialize1' ! subroutine name
     !-----------------------------------------------------------------------
@@ -128,7 +134,9 @@ contains
     ! ------------------------------------------------------------------------
 
     if (lateral_connectivity) then
-       call surfrd_get_grid_conn(fatmlndfrc, cellsOnCell, nCells_loc, maxEdges)
+       call surfrd_get_grid_conn(fatmlndfrc, cellsOnCell, edgesOnCell, &
+            nEdgesOnCell, areaCell, dcEdge, dvEdge, &
+            nCells_loc, nEdges_loc, maxEdges)
     else
        nullify(cellsOnCell)
        nCells_loc = 0
@@ -151,7 +159,9 @@ contains
     end select
 
     if (lateral_connectivity) then
-       call domainlateral_init(ldomain_lateral, cellsOnCell, nCells_loc, maxEdges)
+       call domainlateral_init(ldomain_lateral, cellsOnCell, edgesOnCell, &
+            nEdgesOnCell, areaCell, dcEdge, dvEdge, &
+            nCells_loc, nEdges_loc, maxEdges)
     endif
 
     ! *** Get JUST gridcell processor bounds ***
