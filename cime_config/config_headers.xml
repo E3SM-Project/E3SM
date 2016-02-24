@@ -28,6 +28,12 @@
     </header>
   </file>
 
+  <file name ="env_mach_specific.xml">
+    <header>
+    These variables should notbe changed.
+    </header>
+  </file>
+
   <file name="env_build.xml">
     <header>
     These variables SHOULD NOT be changed once the model has been built.
