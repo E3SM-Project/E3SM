@@ -11,9 +11,9 @@ SET(PHYSICS_DIR     ${HOMME_SOURCE_DIR}/physics)
 SET(UTILS_TIMING_DIR ${CMAKE_BINARY_DIR}/utils/timing)
 
 # Make INCLUDE_DIRS global so the tests can access it
-SET (PREQX_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
-                        ${UTILS_TIMING_DIR}
-                        ${SRC_SHARE_DIR} CACHE INTERNAL "include directories for preqx")
+SET (PREQX_ACC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
+                            ${UTILS_TIMING_DIR}
+                            ${SRC_SHARE_DIR} CACHE INTERNAL "include directories for preqx")
 
 SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/bndry_mod_base.F90
@@ -23,13 +23,14 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/solver_init_mod_base.F90
   ${SRC_SHARE_DIR}/vertremap_mod_base.F90
   ${SRC_SHARE_DIR}/viscosity_mod_base.F90
-  ${SRC_DIR}/preqx/bndry_mod.F90
-  ${SRC_DIR}/preqx/derivative_mod.F90
-  ${SRC_DIR}/preqx/edge_mod.F90
-  ${SRC_DIR}/preqx/prim_advection_mod.F90 
-  ${SRC_DIR}/preqx/solver_init_mod.F90
-  ${SRC_DIR}/preqx/vertremap_mod.F90
-  ${SRC_DIR}/preqx/viscosity_mod.F90
+  ${SRC_DIR}/preqx_acc/bndry_mod.F90
+  ${SRC_DIR}/preqx_acc/derivative_mod.F90
+  ${SRC_DIR}/preqx_acc/edge_mod.F90
+  ${SRC_DIR}/preqx_acc/openacc_utils_mod.F90
+  ${SRC_DIR}/preqx_acc/prim_advection_mod.F90 
+  ${SRC_DIR}/preqx_acc/solver_init_mod.F90
+  ${SRC_DIR}/preqx_acc/vertremap_mod.F90
+  ${SRC_DIR}/preqx_acc/viscosity_mod.F90
   ${SRC_SHARE_DIR}/arch_switch_mod.F90
   ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_SHARE_DIR}/dimensions_mod.F90
@@ -127,7 +128,7 @@ IF (DEFINED PREQX_CUSTOM_FLAGS_FILE)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(PREQX_SRCS ${PREQX_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_F90} CACHE INTERNAL "Sources for preqx")
+SET(PREQX_ACC_SRCS ${PREQX_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_F90} CACHE INTERNAL "Sources for preqx")
 
 # Set up defaults
 IF (NOT PREQX_NP)
@@ -156,16 +157,6 @@ MESSAGE(STATUS "  PLEV = ${PREQX_PLEV}")
 MESSAGE(STATUS "  PIO = ${PREQX_USE_PIO}")
 MESSAGE(STATUS "  ENERGY = ${PREQX_USE_ENERGY}")
 
-IF (${PREQX_USE_CUDA_FORTRAN})
-  SET(USE_CUDA_FORTRAN TRUE)
-  MESSAGE(STATUS "  Using CUDA Fortran")
-ENDIF ()
-
-IF (${PREQX_USE_OPENACC})
-  SET(USE_OPENACC TRUE)
-  MESSAGE(STATUS "  Using OpenACC")
-ENDIF ()
-
 IF (${ENABLE_HORIZ_OPENMP} AND ${ENABLE_COLUMN_OPENMP})
   SET(NESTED_OPENMP TRUE CACHE BOOL "Both horizontal and column threading")
 ENDIF ()
@@ -174,13 +165,7 @@ ENDIF ()
 ############################################################################
 # createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
 ############################################################################
-createTestExec(preqx preqx ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
+createTestExec(preqx_acc preqx_acc ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
                ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY})
 
-IF (${BUILD_PREQX_SPELT})
-  MESSAGE(STATUS "  Also building preqx_spelt")
-  createTestExec(preqx_spelt preqx ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
-                 ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY})
-  SET_TARGET_PROPERTIES(preqx_spelt PROPERTIES COMPILE_DEFINITIONS "_SPELT")
-ENDIF ()
 

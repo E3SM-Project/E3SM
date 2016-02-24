@@ -2,7 +2,7 @@
 #include "config.h"
 #endif
 
-module edge_mod
+module edge_mod_base
 
   use kinds, only : int_kind, log_kind, real_kind
   use dimensions_mod, only : max_neigh_edges, nelemd
@@ -4792,7 +4792,7 @@ end subroutine ghostVunpackR
   end subroutine ghostVunpack3d
 
 
-End module edge_mod
+End module edge_mod_base
 
 #if 0
 #ifndef HAVE_F2003_PTR_BND_REMAP

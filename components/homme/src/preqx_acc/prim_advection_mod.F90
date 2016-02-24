@@ -6,34 +6,52 @@
 #include "config.h"
 #endif
 
-module prim_advection_openacc_mod
-#if USE_OPENACC
-  use kinds          , only: real_kind, int_kind, log_kind
-  use dimensions_mod , only: np,nlevp,nlev,qsize,qsize_d,max_corner_elem,max_neigh_edges,nelemd
-  use element_mod    , only: timelevels
-  use edgetype_mod   , only: EdgeBuffer_t
-  use derivative_mod , only: derivative_t
+module prim_advection_mod
+  use prim_advection_mod_base
+  use prim_advection_mod_base, only: Prim_Advec_Tracers_remap_base => Prim_Advec_Tracers_remap, &
+                                     prim_advec_init1_base => prim_advec_init1, &
+                                     prim_advec_init2_base => prim_advec_init2, &
+                                     prim_advec_init_deriv_base => prim_advec_init_deriv, &
+                                     deriv_base => deriv, &
+                                     Prim_Advec_Tracers_remap_rk2_base => Prim_Advec_Tracers_remap_rk2
+  use kinds, only              : real_kind
+  use dimensions_mod, only     : nlev, nlevp, np, qsize, ntrac, nc, nep, nelemd
+  use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
+  use element_mod, only        : element_t
+  use fvm_control_volume_mod, only        : fvm_struct
+  use spelt_mod, only          : spelt_struct
+  use filter_mod, only         : filter_t, filter_P
+  use hybvcoord_mod, only      : hvcoord_t
+  use time_mod, only           : TimeLevel_t, smooth, TimeLevel_Qdp
+  use prim_si_mod, only        : preq_pressure
+  use diffusion_mod, only      : scalar_diffusion, diffusion_init
+  use control_mod, only        : integration, test_case, filter_freq_advection,  hypervis_order, &
+        statefreq, moisture, TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, &
+        nu_q, nu_p, limiter_option, hypervis_subcycle_q, rsplit
+  use edge_mod, only           : edgevpack, edgerotate, edgevunpack, initedgebuffer, initedgesbuffer, &
+        edgevunpackmin, initghostbuffer3D
+ 
+  use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t, ghostbuffer3D_t
+  use hybrid_mod, only         : hybrid_t
+  use bndry_mod, only          : bndry_exchangev
+  use perf_mod, only           : t_startf, t_stopf, t_barrierf ! _EXTERNAL
+  use parallel_mod, only   : abortmp
+  use derivative_mod, only: derivative_t
   implicit none
-  private
-  type (derivative_t), public, allocatable :: deriv(:) ! derivative struct (nthreads)
-  real(kind=real_kind), allocatable :: qmin(:,:,:), qmax(:,:,:)
-  real(kind=real_kind), allocatable :: dp0(:)
-  real(kind=real_kind), allocatable :: Qtens_biharmonic(:,:,:,:,:)
-  real(kind=real_kind), allocatable :: Qtens(:,:,:,:,:)
-  real(kind=real_kind), allocatable :: grads_tracer(:,:,:,:,:,:)
-  real(kind=real_kind), allocatable :: dp_star(:,:,:,:)
-  type (EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdv_p1, edgeAdvQ2, edgeAdv1, edgeAdv3, edgeMinMax
-  integer,parameter :: DSSeta = 1
-  integer,parameter :: DSSomega = 2
-  integer,parameter :: DSSdiv_vdp_ave = 3
-  integer,parameter :: DSSno_var = -1
-  real(kind=real_kind), allocatable :: data_pack(:,:,:,:), data_pack2(:,:,:,:)
-  logical :: first_time = .true.
-
-  public :: Prim_Advec_Tracers_remap
-  public :: prim_advec_init1
-  public :: prim_advec_init2
-  public :: prim_advec_init_deriv
+  type (derivative_t), allocatable :: deriv(:) ! derivative struct (nthreads)
+  real(kind=real_kind), private, allocatable :: qmin(:,:,:), qmax(:,:,:)
+  real(kind=real_kind), private, allocatable :: dp0(:)
+  real(kind=real_kind), private, allocatable :: Qtens_biharmonic(:,:,:,:,:)
+  real(kind=real_kind), private, allocatable :: Qtens(:,:,:,:,:)
+  real(kind=real_kind), private, allocatable :: grads_tracer(:,:,:,:,:,:)
+  real(kind=real_kind), private, allocatable :: dp_star(:,:,:,:)
+  type (EdgeBuffer_t), private :: edgeAdv, edgeAdvQ3, edgeAdv_p1, edgeAdvQ2, edgeAdv1, edgeAdv3, edgeMinMax
+  integer,parameter, private :: DSSeta = 1
+  integer,parameter, private :: DSSomega = 2
+  integer,parameter, private :: DSSdiv_vdp_ave = 3
+  integer,parameter, private :: DSSno_var = -1
+  real(kind=real_kind), allocatable, private :: data_pack(:,:,:,:), data_pack2(:,:,:,:)
+  logical, private :: first_time = .true.
 
 contains
 
@@ -112,7 +130,7 @@ contains
     use filter_mod    , only: filter_t
     use time_mod      , only: TimeLevel_t, TimeLevel_Qdp
     use control_mod   , only: limiter_option, nu_p, qsplit
-    use bndry_openacc_mod, only: bndry_exchangeV_timing
+    use bndry_mod, only: bndry_exchangeV_timing
     implicit none
     type (element_t)     , intent(inout) :: elem(:)
     type (derivative_t)  , intent(in   ) :: deriv
@@ -325,9 +343,9 @@ contains
     use perf_mod             , only: t_startf, t_stopf                          ! _EXTERNAL
     use hybvcoord_mod        , only: hvcoord_t
     use control_mod          , only: nu_q, hypervis_order, hypervis_subcycle_q, nu_p
-    use viscosity_openacc_mod, only: biharmonic_wk_scalar
-    use edge_openacc_mod     , only: edgeVpack, edgeVunpack
-    use bndry_openacc_mod    , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
+    use viscosity_mod, only: biharmonic_wk_scalar_openacc
+    use edge_mod     , only: edgeVpack_openacc, edgeVunpack_openacc
+    use bndry_mod    , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
     implicit none
     type (EdgeBuffer_t)  , intent(inout)         :: edgeAdv_dontuse
     type (element_t)     , intent(inout), target :: elem(:)
@@ -388,7 +406,7 @@ contains
       !$omp end master
       !$omp barrier
       ! compute biharmonic operator. Qtens = input and output 
-      call biharmonic_wk_scalar( elem , Qtens , grads_tracer , deriv , edgeAdv , hybrid , 1 , nelemd )
+      call biharmonic_wk_scalar_openacc( elem , Qtens , grads_tracer , deriv , edgeAdv , hybrid , 1 , nelemd )
       !$omp barrier
       !$omp master
       !$acc parallel loop gang vector collapse(5) present(state_qdp,elem(:),qtens)
@@ -407,7 +425,7 @@ contains
       enddo
       call limiter2d_zero(state_Qdp,2,nt_qdp)
       call t_startf('ah_scalar_PEU')
-      call edgeVpack(edgeAdv,state_qdp,qsize*nlev,0,elem(:),1,nelemd,2,nt_qdp)
+      call edgeVpack_openacc(edgeAdv,state_qdp,qsize*nlev,0,elem(:),1,nelemd,2,nt_qdp)
       !$omp end master
       !$omp barrier
 
@@ -417,7 +435,7 @@ contains
       
       !$omp barrier
       !$omp master
-      call edgeVunpack(edgeAdv,state_qdp,qsize*nlev,0,elem(:),1,nelemd,2,nt_qdp)
+      call edgeVunpack_openacc(edgeAdv,state_qdp,qsize*nlev,0,elem(:),1,nelemd,2,nt_qdp)
       call t_stopf('ah_scalar_PEU')
       !$acc parallel loop gang vector collapse(5) present(state_qdp,elem(:))
       do ie = 1 , nelemd
@@ -441,7 +459,6 @@ contains
 
   subroutine qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
     use element_mod, only: element_t, state_qdp
-    use control_mod, only: limiter_option
     implicit none
     type(element_t)     , intent(inout) :: elem(:)
     integer             , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete , limiter_option
@@ -488,10 +505,10 @@ contains
   use control_mod           , only: limiter_option, nu_p, nu_q
   use perf_mod              , only: t_startf, t_stopf
   use element_mod           , only: derived_divdp_proj, state_qdp, derived_vn0, derived_divdp
-  use derivative_openacc_mod, only: divergence_sphere
-  use viscosity_openacc_mod , only: biharmonic_wk_scalar, neighbor_minmax
-  use edge_openacc_mod      , only: edgeVpack, edgeVunpack
-  use bndry_openacc_mod     , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
+  use derivative_mod, only: divergence_sphere_openacc
+  use viscosity_mod , only: biharmonic_wk_scalar_openacc, neighbor_minmax_openacc
+  use edge_mod      , only: edgeVpack_openacc, edgeVunpack_openacc
+  use bndry_mod     , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
   implicit none
   integer              , intent(in   )         :: np1_qdp, n0_qdp
   real (kind=real_kind), intent(in   )         :: dt
@@ -606,7 +623,7 @@ contains
     enddo
     !$omp end master
     !$omp barrier
-    if ( rhs_multiplier == 0 ) call neighbor_minmax(elem,hybrid,edgeMinMax,1,nelemd,qmin,qmax)
+    if ( rhs_multiplier == 0 ) call neighbor_minmax_openacc(elem,hybrid,edgeMinMax,1,nelemd,qmin,qmax)
     ! compute biharmonic mixing term
     if ( rhs_multiplier == 2 ) then
       rhs_viss = 3
@@ -633,8 +650,8 @@ contains
         !$omp end master
         !$omp barrier
       endif
-      call biharmonic_wk_scalar( elem , qtens_biharmonic , grads_tracer , deriv , edgeAdv , hybrid , 1 , nelemd )
-      call neighbor_minmax( elem , hybrid , edgeMinMax , 1 , nelemd , qmin , qmax )
+      call biharmonic_wk_scalar_openacc( elem , qtens_biharmonic , grads_tracer , deriv , edgeAdv , hybrid , 1 , nelemd )
+      call neighbor_minmax_openacc( elem , hybrid , edgeMinMax , 1 , nelemd , qmin , qmax )
       !$omp barrier
       !$omp master
       !$acc parallel loop gang vector collapse(4) present(qtens_biharmonic,dp0,elem(:))
@@ -716,7 +733,7 @@ contains
       enddo
     enddo
   enddo
-  call divergence_sphere( grads_tracer , deriv , elem(:) , qtens , nlev*qsize , 1 , nelemd , 1 , 1 )
+  call divergence_sphere_openacc( grads_tracer , deriv , elem(:) , qtens , nlev*qsize , 1 , nelemd , 1 , 1 )
   !$acc parallel loop gang vector collapse(5) present(qtens,state_qdp,qtens_biharmonic)
   do ie = 1 , nelemd
     ! advance Qdp
@@ -761,7 +778,7 @@ contains
   ! note: eta_dot_dpdn is actually dimension nlev+1, but nlev+1 data is
   ! all zero so we only have to DSS 1:nlev
   call t_startf('eus_PEU')
-  call edgeVpack(edgeAdv , state_Qdp , nlev*qsize , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp )
+  call edgeVpack_openacc(edgeAdv , state_Qdp , nlev*qsize , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp )
   !$omp end master
   !$omp barrier
 
@@ -771,7 +788,7 @@ contains
 
   !$omp barrier
   !$omp master
-  call edgeVunpack( edgeAdv , state_Qdp , nlev*qsize , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp )
+  call edgeVunpack_openacc( edgeAdv , state_Qdp , nlev*qsize , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp )
   call t_stopf('eus_PEU')
   !$acc parallel loop gang vector collapse(4) present(state_Qdp,elem(:))
   do ie = 1 , nelemd
@@ -939,7 +956,7 @@ contains
     use edge_mod              , only: edgeVpack, edgeVunpack
     use bndry_mod             , only: bndry_exchangeV
     use control_mod           , only: limiter_option
-    use derivative_openacc_mod, only: divergence_sphere
+    use derivative_mod, only: divergence_sphere_openacc
     use openacc_utils_mod     , only: copy_ondev
     use perf_mod              , only: t_startf, t_stopf
     implicit none
@@ -954,7 +971,7 @@ contains
     !$omp barrier
     !$omp master
     !$acc update device(derived_vn0)
-    call divergence_sphere(derived_vn0,deriv,elem,derived_divdp,nlev,1,nelemd,1,1)
+    call divergence_sphere_openacc(derived_vn0,deriv,elem,derived_divdp,nlev,1,nelemd,1,1)
     call copy_ondev(derived_divdp_proj,derived_divdp,product(shape(derived_divdp)))
     !$acc update host(derived_divdp,derived_divdp_proj)
     !$omp end master
@@ -988,7 +1005,6 @@ contains
     call t_stopf('derived PEU')
   end subroutine precompute_divdp
 
-#endif
-end module prim_advection_openacc_mod
+end module prim_advection_mod
 
 

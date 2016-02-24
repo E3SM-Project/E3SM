@@ -56,6 +56,7 @@ ENDIF ()
 # Some options for conditional builds
 OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
+OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" OFF)
 OPTION(BUILD_HOMME_SWDGX "Shallow water equations DG" OFF)
 OPTION(BUILD_HOMME_PRIMDGX "Primitive equations DG" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
@@ -173,6 +174,10 @@ ENDIF()
 
 IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(src/preqx)
+ENDIF()
+
+IF(${BUILD_HOMME_PREQX_ACC})
+  ADD_SUBDIRECTORY(src/preqx_acc)
 ENDIF()
 
 IF(${BUILD_HOMME_SWDGX})

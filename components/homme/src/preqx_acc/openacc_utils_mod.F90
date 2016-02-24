@@ -4,7 +4,6 @@
 #endif
 
 module openacc_utils_mod
-#if USE_OPENACC
   use kinds, only: real_kind
   use dimensions_mod, only: nelemd
   implicit none
@@ -16,7 +15,6 @@ module openacc_utils_mod
   public :: update_device_async
   public :: copy_ondev
   public :: copy_ondev_async
-  public :: arch_init2
   public :: acc_async_test_wrap
 
 contains
@@ -29,27 +27,6 @@ contains
     rslt = .false.
     rslt = acc_async_test(asyncid)
   end function acc_async_test_wrap
-
-  subroutine arch_init2( elem , deriv )
-    use element_mod, only: element_t, state_qdp, derived_vn0, derived_divdp, derived_divdp_proj
-    use derivative_mod, only: derivative_t
-    implicit none
-    type(element_t)   , intent(in) :: elem(:)
-    type(derivative_t), intent(in) :: deriv
-    integer :: ie
-    !$omp barrier
-    !$omp master
-
-    !$acc enter data pcreate(state_Qdp,derived_vn0,derived_divdp,derived_divdp_proj)
-    !$acc enter data pcopyin(elem(1:nelemd),deriv)
-    do ie = 1 , nelemd
-      !$acc enter data pcopyin(elem(ie)%desc)
-      !$acc enter data pcopyin(elem(ie)%desc%putmapP,elem(ie)%desc%getmapP,elem(ie)%desc%reverse)
-    enddo
-
-    !$omp end master
-    !$omp barrier
-  end subroutine arch_init2
 
   subroutine copy_qdp_h2d( elem , tl )
     use element_mod, only: element_t, state_qdp
@@ -119,6 +96,5 @@ contains
     enddo
   end subroutine copy_ondev_async
 
-#endif
 end module openacc_utils_mod
 

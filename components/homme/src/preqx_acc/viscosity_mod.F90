@@ -3,28 +3,35 @@
 #include "config.h"
 #endif
 
-module viscosity_openacc_mod
-#if USE_OPENACC
-  use kinds, only: real_kind
-  use dimensions_mod, only: np,nlev,qsize,nelemd
+module viscosity_mod
+  use viscosity_mod_base
+! use viscosity_mod_base, only: neighbor_minmax_base => neighbor_minmax, &
+!                               biharmonic_wk_scalar_base => biharmonic_wk_scalar
+  use thread_mod, only : omp_get_num_threads
+  use kinds, only : real_kind, iulog
+  use dimensions_mod, only : np, nc, nlev,qsize,nelemd, ntrac
+  use hybrid_mod, only : hybrid_t, hybrid_create
+  use parallel_mod, only : parallel_t
+  use element_mod, only : element_t
+  use edgetype_mod, only : EdgeBuffer_t, EdgeDescriptor_t
+  use bndry_mod, only : bndry_exchangev, bndry_exchangeS, bndry_exchangeS_start,bndry_exchangeS_finish
+  use control_mod, only : hypervis_scaling, nu, nu_div
+  use perf_mod, only: t_startf, t_stopf
   implicit none
-  private
 
-  public :: neighbor_minmax
-  public :: biharmonic_wk_scalar
 
 contains
 
-  subroutine biharmonic_wk_scalar(elem,qtens,grads,deriv,edgeq,hybrid,nets,nete)
+  subroutine biharmonic_wk_scalar_openacc(elem,qtens,grads,deriv,edgeq,hybrid,nets,nete)
     use hybrid_mod            , only: hybrid_t
     use element_mod           , only: element_t
     use edgetype_mod          , only: edgeBuffer_t
     use derivative_mod        , only: derivative_t
     use control_mod           , only: hypervis_scaling
     use perf_mod              , only: t_startf, t_stopf
-    use derivative_openacc_mod, only: laplace_sphere_wk
-    use edge_openacc_mod      , only: edgeVpack, edgeVunpack
-    use bndry_openacc_mod     , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
+    use derivative_mod, only: laplace_sphere_wk_openacc
+    use edge_mod      , only: edgeVpack_openacc, edgeVunpack_openacc
+    use bndry_mod     , only: bndry_exchangeV => bndry_exchangeV_simple_overlap
     implicit none
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! compute weak biharmonic operator
@@ -47,9 +54,9 @@ contains
     if(hypervis_scaling > 0) var_coef1 = .false.
     !$omp barrier
     !$omp master
-    call laplace_sphere_wk(qtens,grads,deriv,elem,var_coef1,qtens,nlev*qsize,nets,nete,1,1)
+    call laplace_sphere_wk_openacc(qtens,grads,deriv,elem,var_coef1,qtens,nlev*qsize,nets,nete,1,1)
     call t_startf('biwksc_PEU')
-    call edgeVpack(edgeq,qtens,qsize*nlev,0,elem(:),nets,nete,1,1)
+    call edgeVpack_openacc(edgeq,qtens,qsize*nlev,0,elem(:),nets,nete,1,1)
     !$omp end master
     !$omp barrier
 
@@ -59,7 +66,7 @@ contains
     
     !$omp barrier
     !$omp master
-    call edgeVunpack(edgeq,qtens,qsize*nlev,0,elem(:),nets,nete,1,1)
+    call edgeVunpack_openacc(edgeq,qtens,qsize*nlev,0,elem(:),nets,nete,1,1)
     call t_stopf('biwksc_PEU')
     !$acc parallel loop gang vector collapse(5) present(qtens,elem(:))
     do ie = nets , nete
@@ -74,18 +81,18 @@ contains
         enddo
       enddo
     enddo
-    call laplace_sphere_wk(qtens,grads,deriv,elem,.true.,qtens,nlev*qsize,nets,nete,1,1)
+    call laplace_sphere_wk_openacc(qtens,grads,deriv,elem,.true.,qtens,nlev*qsize,nets,nete,1,1)
     !$omp end master
     !$omp barrier
-  end subroutine biharmonic_wk_scalar
+  end subroutine biharmonic_wk_scalar_openacc
 
-  subroutine neighbor_minmax(elem,hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
+  subroutine neighbor_minmax_openacc(elem,hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh)
     use hybrid_mod       , only: hybrid_t
     use element_mod      , only: element_t
     use perf_mod         , only: t_startf, t_stopf
     use edgetype_mod     , only: edgeBuffer_t
-    use edge_openacc_mod , only: edgeSpack, edgeSunpackMin, edgeSunpackMax
-    use bndry_openacc_mod, only: bndry_exchangeS => bndry_exchangeS_simple_overlap
+    use edge_mod , only: edgeSpack_openacc, edgeSunpackMin_openacc, edgeSunpackMax_openacc
+    use bndry_mod, only: bndry_exchangeS => bndry_exchangeS_simple_overlap
     implicit none
     ! compute Q min&max over the element and all its neighbors
     integer :: nets,nete
@@ -100,8 +107,8 @@ contains
     !$omp barrier
     !$omp master
     call t_startf('nmm_PEU')
-    call edgeSpack(edgeMinMax,min_neigh,nlev*qsize,0         ,elem(:),nets,nete,1,1)
-    call edgeSpack(edgeMinMax,max_neigh,nlev*qsize,nlev*qsize,elem(:),nets,nete,1,1)
+    call edgeSpack_openacc(edgeMinMax,min_neigh,nlev*qsize,0         ,elem(:),nets,nete,1,1)
+    call edgeSpack_openacc(edgeMinMax,max_neigh,nlev*qsize,nlev*qsize,elem(:),nets,nete,1,1)
     !$omp end master
     !$omp barrier
 
@@ -111,13 +118,12 @@ contains
        
     !$omp barrier
     !$omp master
-    call edgeSunpackMin(edgeMinMax,min_neigh,nlev*qsize,0         ,elem(:),nets,nete,1,1)
-    call edgeSunpackMax(edgeMinMax,max_neigh,nlev*qsize,nlev*qsize,elem(:),nets,nete,1,1)
+    call edgeSunpackMin_openacc(edgeMinMax,min_neigh,nlev*qsize,0         ,elem(:),nets,nete,1,1)
+    call edgeSunpackMax_openacc(edgeMinMax,max_neigh,nlev*qsize,nlev*qsize,elem(:),nets,nete,1,1)
     call t_stopf('nmm_PEU')
     !$omp end master
     !$omp barrier
-  end subroutine neighbor_minmax
+  end subroutine neighbor_minmax_openacc
 
-#endif
-end module viscosity_openacc_mod
+end module viscosity_mod
 

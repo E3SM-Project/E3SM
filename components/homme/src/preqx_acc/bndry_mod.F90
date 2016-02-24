@@ -3,14 +3,16 @@
 #include "config.h"
 #endif
 
-module bndry_openacc_mod
-#if USE_OPENACC
-  use kinds     , only: real_kind
+module bndry_mod
+  use bndry_mod_base
+  use parallel_mod, only : syncmp,parallel_t,abortmp,iam
+  use edgetype_mod, only : Ghostbuffertr_t, Ghostbuffer3D_t,Edgebuffer_t,LongEdgebuffer_t
+  use thread_mod, only : omp_in_parallel, omp_get_thread_num, omp_get_num_threads
+  use kinds, only: real_kind
   implicit none
-  private
-  integer, parameter :: maxCycles = 20
-  integer, parameter :: maxChunks = 64
-  real(kind=real_kind), parameter :: chunk_denom = 1.e5
+  integer, parameter, private :: maxCycles = 20
+  integer, parameter, private :: maxChunks = 64
+  real(kind=real_kind), parameter, private :: chunk_denom = 1.e5
 
   type send_stager_t
     integer :: nUpdateHost, nSendComp
@@ -24,13 +26,8 @@ module bndry_openacc_mod
     integer :: beg(maxchunks), end(maxchunks), len(maxchunks), asyncid(maxchunks), tag(maxchunks), req(maxchunks)
   end type recv_stager_t
 
-  type(send_stager_t) :: stg_send(maxCycles)
-  type(recv_stager_t) :: stg_recv(maxCycles)
-
-  public :: bndry_exchangeS_simple_overlap
-  public :: bndry_exchangeV_simple_overlap
-  public :: bndry_exchangeV_timing
-  public :: bndry_exchangeV_finer_overlap
+  type(send_stager_t), private :: stg_send(maxCycles)
+  type(recv_stager_t), private :: stg_recv(maxCycles)
 
 contains
 
@@ -634,6 +631,5 @@ contains
     if (stg_recv(myid)%nUpdateDev == nchunks) finished = .true.
   end function mpi_irecv_openacc_stage
 
-#endif
-end module bndry_openacc_mod
+end module bndry_mod
 

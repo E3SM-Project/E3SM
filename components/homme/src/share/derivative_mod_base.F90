@@ -3,7 +3,7 @@
 #endif
 
 
-module derivative_mod
+module derivative_mod_base
   use kinds, only : real_kind, longdouble_kind
   use dimensions_mod, only : np, nc, npdg, nep, nelemd, nlev
   use quadrature_mod, only : quadrature_t, gauss, gausslobatto,legendre, jacobi
@@ -2810,4 +2810,4 @@ end do
 
 
 
-end module derivative_mod
+end module derivative_mod_base
