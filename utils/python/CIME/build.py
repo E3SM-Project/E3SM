@@ -1,16 +1,16 @@
 """
 functions for building CIME models
 """
-import logging, os, sys, glob, shutil
-LIB_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append(LIB_DIR)
+import glob, shutil
+from XML.standard_module_setup import *
 from case import Case
 from utils import expect, run_cmd, get_model
 from env_module import EnvModule
 
 def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
-                comp_atm,   comp_lnd,   comp_ice,   comp_ocn,   comp_glc,   comp_wav,   comp_rof,
-                nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav, nthrds_rof, lid, caseroot, cimeroot, use_esmf_lib, comp_interface):
+                comp_atm, comp_lnd, comp_ice, comp_ocn, comp_glc, comp_wav, comp_rof,
+                nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav,
+                nthrds_rof, lid, caseroot, cimeroot, use_esmf_lib, comp_interface):
 ###############################################################################
     config_atm_dir = os.path.dirname(case.get_value("CONFIG_ATM_FILE"))
     config_lnd_dir = os.path.dirname(case.get_value("CONFIG_LND_FILE"))
@@ -35,7 +35,7 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
 
     for model, comp, config_dir, nthrds in models_build_data:
         os.environ["MODEL"] = model
-        if (nthrds > 1 or build_threaded == "TRUE"):
+        if nthrds > 1 or build_threaded == "TRUE":
             os.environ["SMP"] = "TRUE"
         else:
             os.environ["SMP"] = "FALSE"
@@ -47,9 +47,9 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
         compspec = comp
 
         # Special case for clm
-        if (comp == "clm"):
+        if comp == "clm":
             esmfdir = "esmf" if use_esmf_lib == "TRUE" else "noesmf"
-            if ("clm4_0" in clm_config_opts):
+            if "clm4_0" in clm_config_opts:
                 logging.info("         - Building clm4_0 Library ")
                 compspec = "lnd"
             else:
@@ -65,7 +65,7 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
 
         # Make sure obj, lib dirs exist
         for build_dir in [objdir, libdir]:
-            if (not os.path.exists(build_dir)):
+            if not os.path.exists(build_dir):
                 os.makedirs(build_dir)
 
         file_build = os.path.join(exeroot, "%s.bldlog.%s" % (model, lid))
@@ -95,7 +95,7 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
     objdir = os.path.join(exeroot, cime_model, "obj")
     libdir = os.path.join(exeroot, cime_model)
     for build_dir in [objdir, libdir]:
-        if (not os.path.exists(build_dir)):
+        if not os.path.exists(build_dir):
             os.makedirs(build_dir)
 
     stat = run_cmd("%s/driver_cpl/cime_config/buildexe %s >> %s 2>&1" %
@@ -118,9 +118,9 @@ def post_build(case, logs):
     logdir = case.get_value("LOGDIR")
 
     #zip build logs to CASEROOT/logs
-    if (logdir):
+    if logdir:
         bldlogdir = os.path.join(logdir, "bld")
-        if (not os.path.exists(bldlogdir)):
+        if not os.path.exists(bldlogdir):
             os.makedirs(bldlogdir)
 
         for log in logs:
@@ -132,7 +132,7 @@ def post_build(case, logs):
     case.set_value("SMP_BUILD", os.environ["SMP_VALUE"])
     case.flush()
 
-    if (os.path.exists("LockedFiles/env_build.xml")):
+    if os.path.exists("LockedFiles/env_build.xml"):
         os.remove("LockedFiles/env_build.xml")
 
     shutil.copy("env_build.xml", "LockedFiles")
@@ -143,13 +143,16 @@ def case_build(caseroot, testmode):
     expect(os.path.isdir(caseroot), "'%s' is not a valid directory" % caseroot)
     os.chdir(caseroot)
 
-    expect(os.path.exists("case.run"), "ERROR: must invoke case.setup script before calling build script ")
+    expect(os.path.exists("case.run"),
+           "ERROR: must invoke case.setup script before calling build script ")
 
     case = Case()
     testcase = case.get_value("TESTCASE")
     cimeroot = case.get_value("CIMEROOT")
-    expect( not (testcase is not None and os.path.exists("%s/scripts/Testing/Testcases/%s_build.csh" % (cimeroot, testcase)) and not testmode),
-            "%s build must be invoked via case.testbuild script" % testcase)
+    expect(not (testcase is not None and
+                os.path.exists("%s/scripts/Testing/Testcases/%s_build.csh" %
+                               (cimeroot, testcase)) and not testmode),
+           "%s build must be invoked via case.testbuild script" % testcase)
 
     check_input_data(case)
 
@@ -276,11 +279,15 @@ def case_build(caseroot, testmode):
     run_cmd("./preview_namelists")
 
     build_checks(case, build_threaded, comp_interface, use_esmf_lib, mpilib,
-                 nthrds_cpl, nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav, nthrds_rof, ninst_build, smp_value)
-    logs = build_libraries(exeroot, caseroot, cimeroot, libroot, sharedlibroot, compiler, mpilib, build_threaded, debug, lid, machines_file)
+                 nthrds_cpl, nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav,
+                 nthrds_rof, ninst_build, smp_value)
+    logs = build_libraries(exeroot, caseroot, cimeroot, libroot, sharedlibroot, compiler, mpilib,
+                           build_threaded, debug, lid, machines_file)
     logs.extend(build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
-                            comp_atm,   comp_lnd,   comp_ice,   comp_ocn,   comp_glc,   comp_wav,   comp_rof,
-                            nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav, nthrds_rof, lid, caseroot, cimeroot, use_esmf_lib, comp_interface))
+                            comp_atm, comp_lnd, comp_ice, comp_ocn, comp_glc, comp_wav, comp_rof,
+                            nthrds_atm, nthrds_lnd, nthrds_ice,
+                            nthrds_ocn, nthrds_glc, nthrds_wav, nthrds_rof,
+                            lid, caseroot, cimeroot, use_esmf_lib, comp_interface))
     post_build(case, logs)
 
 def check_input_data(case):
@@ -296,7 +303,7 @@ def check_input_data(case):
     # existence of inputdata in the local inputdata directory and
     # attempts to download data from the server if it's needed and
     # missing.
-    if (get_refcase == "TRUE" and run_type != "startup" and continue_run == "FALSE"):
+    if get_refcase == "TRUE" and run_type != "startup" and continue_run == "FALSE":
         din_loc_root = case.get_value("DIN_LOC_ROOT")
         run_refdate  = case.get_value("RUN_REFDATE")
         run_refcase  = case.get_value("RUN_REFCASE")
@@ -327,7 +334,7 @@ and prestage the restart data to $RUNDIR manually
         refcasefiles = glob.glob("%s/%s/*%s*" % (din_loc_root, refdir, run_refcase))
         for rcfile in refcasefiles:
             rcbaseline = os.path.basename(rcfile)
-            if (not os.path.exists("%s/%s" % (rundir, rcbaseline))):
+            if not os.path.exists("%s/%s" % (rundir, rcbaseline)):
                 os.symlink(rcfile, "%s/%s" % ((rundir, rcbaseline)))
 
             # copy the refcases' rpointer files to the run directory
@@ -346,7 +353,8 @@ and prestage the restart data to $RUNDIR manually
 
 ###############################################################################
 def build_checks(case, build_threaded, comp_interface, use_esmf_lib, mpilib,
-                 nthrds_cpl, nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav, nthrds_rof, ninst_build, smp_value):
+                 nthrds_cpl, nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc,
+                 nthrds_wav, nthrds_rof, ninst_build, smp_value):
 ###############################################################################
     ninst_atm    = int(case.get_value("NINST_ATM"))
     ninst_lnd    = int(case.get_value("NINST_LND"))

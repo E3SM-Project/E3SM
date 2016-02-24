@@ -3,19 +3,10 @@
 """
 Script to build a case.
 """
-#import sys, os, logging
-#_CIMEROOT = os.environ.get("CIMEROOT")
-#if(_CIMEROOT is None):
-#    _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-#    os.environ["CIMEROOT"] = _CIMEROOT
-#_LIB_DIR = os.path.join(_CIMEROOT, "utils", "python")
-#sys.path.append(_LIB_DIR)
 
 from standard_script_setup import *
 
 import CIME.build as build
-
-import argparse, doctest
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -31,11 +22,9 @@ OR
     \033[1;32m# Build case \033[0m
     > %s
 """ % ((os.path.basename(args[0]), ) * 4),
-
-description=description,
-
-formatter_class=argparse.ArgumentDefaultsHelpFormatter
-)
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
     CIME.utils.setup_standard_logging_options(parser)
 
@@ -43,7 +32,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Case directory to build")
 
     parser.add_argument("-t", "--testmode", action="store_true",
-                        help="Some of the tests require multiple model builds, to accommodate that we have a case.test_build script. If you are in a test that requires multiple builds, provide this flag.")
+                        help="Some of the tests require multiple model builds, to accommodate "
+                        "that we have a case.test_build script. If you are in a test that requires"
+                        " multiple builds, provide this flag.")
 
     args = parser.parse_args(args[1:])
 
@@ -54,13 +45,14 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
+    if "--test" in sys.argv:
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
     caseroot, testmode = parse_command_line(sys.argv, description)
-
+    logging.info("calling build.case_build with caseroot=%s and testmode=%s"
+                 %(caseroot, testmode))
     build.case_build(caseroot, testmode)
 
-if (__name__ == "__main__"):
+if __name__ == "__main__":
     _main_func(__doc__)

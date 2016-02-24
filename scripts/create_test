@@ -52,14 +52,16 @@ OR
 
 """ % ((os.path.basename(args[0]), ) * 11),
 
-description=description,
+        description=description,
 
-formatter_class=argparse.ArgumentDefaultsHelpFormatter
-)
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("testargs", nargs="*", help="Tests or test suites to run. Testnames expect in form CASE.GRID.COMPSET")
+    parser.add_argument("testargs", nargs="*",
+                        help="Tests or test suites to run."
+                        " Testnames expect in form CASE.GRID.COMPSET")
 
     parser.add_argument("--no-run", action="store_true",
                         help="Do not run generated tests")
@@ -68,10 +70,12 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
                         help="Do not build generated tests, implies --no-run")
 
     parser.add_argument("--no-batch", action="store_true",
-                        help="Do not submit jobs to batch system, run locally. If false, will default to machine setting.")
+                        help="Do not submit jobs to batch system, run locally."
+                        " If false, will default to machine setting.")
 
     parser.add_argument("-r", "--test-root",
-                        help="Where test cases will be created. Will default to scratch root XML machine file")
+                        help="Where test cases will be created."
+                        " Will default to scratch root XML machine file")
 
     parser.add_argument("--baseline-root",
                         help="Specifies an root directory for baseline"
@@ -80,29 +84,34 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument("--clean", action="store_true",
                         help="Specifies if tests should be cleaned after run. If set, "
-                        "all object executables, and data files will be removed after tests are run")
+                        "all object executables, and data files will"
+                        " be removed after tests are run")
 
-    parser.add_argument("-c", "--compare", const=True,nargs="?",
-                        help="While testing, compare baselines, optionally provide a compare directory ")
+    parser.add_argument("-c", "--compare", const=True, nargs="?",
+                        help="While testing, compare baselines,"
+                        " optionally provide a compare directory ")
 
-    parser.add_argument("-g", "--generate", const=True,nargs="?",
-                        help="While testing, generate baselines, optionally provide a generate directory")
+    parser.add_argument("-g", "--generate", const=True, nargs="?",
+                        help="While testing, generate baselines,"
+                        " optionally provide a generate directory")
 
     parser.add_argument("-b", "--baseline-name",
-                        help="If comparing or generating baselines with default paths, use this directory under baseline root. "
-                        "Default will be current branch name. Do NOT add the compiler to this argument "
-                        "That will be done for you.  If you provide directories in the generate and or compare argument do"
-                         " not use this option.")
+                        help="If comparing or generating baselines with default paths,"
+                        " use this directory under baseline root. "
+                        "Default will be current branch name. Do NOT add the compiler to"
+                        " this argument that will be done for you.  If you provide directories"
+                        " in the generate and or compare argument do not use this option.")
 
     parser.add_argument("--compiler",
-                        help="Compiler to use to build cime.  Default will be the name in the Testnames"
-                        " or the default defined for the machine.")
+                        help="Compiler to use to build cime.  Default will be the name in"
+                        " the Testnames or the default defined for the machine.")
 
     parser.add_argument("-m", "--machine",
-                        help="The machine for which to build tests, this machine must be defined in the "
-                        "config_machines.xml file for the given model. Default is to match the name of the "
-                        "machine in the test name or the name of the machine "
-                        "this script is run on to the NODENAME_REGEX field in config_machines.xml"  )
+                        help="The machine for which to build tests, this machine must be defined"
+                        " in the config_machines.xml file for the given model. "
+                        "Default is to match the name of the machine in the test name or "
+                        "the name of the machine this script is run on to the "
+                        "NODENAME_REGEX field in config_machines.xml")
 
     parser.add_argument("-n", "--namelists-only", action="store_true",
                         help="Only perform namelist actions for tests")
@@ -125,10 +134,14 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--walltime", default=None,
                         help="Set the wallclock limit for all tests in the suite.")
 
-    parser.add_argument("--xml-machine",  help="Use this machine key in the lookup in testlist.xml")
-    parser.add_argument("--xml-compiler", help="Use this compiler key in the lookup in testlist.xml")
-    parser.add_argument("--xml-category", help="Use this category key in the lookup in testlist.xml")
-    parser.add_argument("--xml-testlist", help="Use this testlist to lookup tests")
+    parser.add_argument("--xml-machine",
+                        help="Use this machine key in the lookup in testlist.xml")
+    parser.add_argument("--xml-compiler",
+                        help="Use this compiler key in the lookup in testlist.xml")
+    parser.add_argument("--xml-category",
+                        help="Use this category key in the lookup in testlist.xml")
+    parser.add_argument("--xml-testlist",
+                        help="Use this testlist to lookup tests")
 
     args = parser.parse_args(args[1:])
 
@@ -136,36 +149,38 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
 # generate and compare flags may not point to the same directory
 
-    if(args.generate is not None):
+    if args.generate is not None:
         expect(not (args.generate == args.compare),
                "Cannot generate and compare baselines at the same time")
     expect(not (args.baseline_name is not None and (not args.compare and not args.generate)),
            "Provided baseline name but did not specify compare or generate")
     expect(not (args.namelists_only and not (args.generate or args.compare)),
            "Must provide either --compare or --generate with --namelists-only")
-    if (args.parallel_jobs is not None):
+    if args.parallel_jobs is not None:
         expect(args.parallel_jobs > 0,
                "Invalid value for parallel_jobs: %d" % args.parallel_jobs)
-    if(args.xml_testlist is not None):
-        expect(not (args.xml_machine is None and args.xml_compiler is  None and args.xml_category is None),
-                "If an xml-testlist is present at least one of --xml-machine, --xml-compiler, --xml-category must also be present")
+    if args.xml_testlist is not None:
+        expect(not (args.xml_machine is None and args.xml_compiler
+                    is  None and args.xml_category is None),
+               "If an xml-testlist is present at least one of --xml-machine, "
+               "--xml-compiler, --xml-category must also be present")
 
-    if (args.no_build):
+    if args.no_build:
         args.no_run = True
 
     # Namelist-only forces some other options:
-    if (args.namelists_only):
+    if args.namelists_only:
         args.no_build = True
         args.no_run   = True
         args.no_batch = True
 
-    if (args.test_id is None):
+    if args.test_id is None:
         args.test_id = CIME.utils.get_utc_timestamp()
 
-    return args.testargs, args.compiler, args.machine, args.no_run, args.no_build, args.no_batch, \
-        args.test_root, args.baseline_root, args.clean, args.compare, args.generate, args.baseline_name, \
-        args.namelists_only, args.project, args.test_id, args.parallel_jobs, args.xml_machine, args.xml_compiler,\
-        args.xml_category, args.xml_testlist, args.walltime
+    return args.testargs, args.compiler, args.machine, args.no_run, args.no_build, args.no_batch,\
+        args.test_root, args.baseline_root, args.clean, args.compare, args.generate, \
+        args.baseline_name, args.namelists_only, args.project, args.test_id, args.parallel_jobs, \
+        args.xml_machine, args.xml_compiler, args.xml_category, args.xml_testlist, args.walltime
 
 ###############################################################################
 def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, test_root,
@@ -173,19 +188,21 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
                 baseline_name, namelists_only, project, test_id, parallel_jobs,
                 xml_machine, xml_compiler, xml_category, xml_testlist, walltime):
 ###############################################################################
-    if(testargs and machine_name is None and compiler is None):
+    if testargs and machine_name is None and compiler is None:
         for test in testargs:
             testsplit = CIME.utils.parse_test_name(test)
-            if(testsplit[4] is not None):
-                if(machine_name is None):
+            if testsplit[4] is not None:
+                if machine_name is None:
                     machine_name = testsplit[4]
                 else:
-                    expect(machine_name == testsplit[4], "abiguity in machine, please use the --machine option")
-            if(testsplit[5] is not None):
-                if(compiler is None):
-                   compiler = testsplit[5]
+                    expect(machine_name == testsplit[4],
+                           "abiguity in machine, please use the --machine option")
+            if testsplit[5] is not None:
+                if compiler is None:
+                    compiler = testsplit[5]
                 else:
-                    expect(compiler == testsplit[5], "abiguity in compiler, please use the --compiler option")
+                    expect(compiler == testsplit[5],
+                           "abiguity in compiler, please use the --compiler option")
 
     impl = SystemTest(testargs,
                       no_run=no_run, no_build=no_build, no_batch=no_batch,
@@ -194,15 +211,16 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
                       clean=clean, machine_name=machine_name, compiler=compiler,
                       compare=compare, generate=generate, namelists_only=namelists_only,
                       project=project, parallel_jobs=parallel_jobs,
-                      xml_machine=xml_machine,xml_compiler=xml_compiler,
-                      xml_category=xml_category,xml_testlist=xml_testlist,walltime=walltime)
+                      xml_machine=xml_machine, xml_compiler=xml_compiler,
+                      xml_category=xml_category, xml_testlist=xml_testlist, walltime=walltime)
     return 0 if impl.system_test() else CIME.utils.TESTS_FAILED_ERR_CODE
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
-        CIME.utils.run_cmd("python -m doctest %s/CIME/system_test.py -v" % CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
+    if "--test" in sys.argv:
+        CIME.utils.run_cmd("python -m doctest %s/CIME/system_test.py -v" %
+                           CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
         return
 
     testargs, compiler, machine_name, no_run, no_build, no_batch, test_root, baseline_root, clean, \
@@ -213,9 +231,9 @@ def _main_func(description):
     sys.exit(create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, test_root,
                          baseline_root, clean, compare, generate, baseline_name, namelists_only,
                          project, test_id, parallel_jobs, xml_machine, xml_compiler, xml_category,
-			 xml_testlist, walltime))
+                         xml_testlist, walltime))
 
 ###############################################################################
 
-if (__name__ == "__main__"):
+if __name__ == "__main__":
     _main_func(__doc__)
