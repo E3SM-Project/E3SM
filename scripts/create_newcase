@@ -909,7 +909,7 @@ sub _create_caseroot_tools
 	      "$machines_dir/mkDepends");
 
     foreach my $file (@files) {
-	$sysmod = "cp -p $file $caseroot/Tools/. ";
+	$sysmod = "ln -fs $file $caseroot/Tools/. ";
 	system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
     }
 }

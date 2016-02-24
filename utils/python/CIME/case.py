@@ -25,17 +25,20 @@ class Case(object):
         expect(os.path.isdir(case_root),
                "Case root directory '%s' does not exist" % case_root)
 
-        self._env_files = []
+        self._env_entryid_files = []
+        self._env_generic_files = []
+
         self._env_files_that_need_rewrite = set()
-        self._env_files.append(EnvRun(case_root))
-        self._env_files.append(EnvMachSpecific(case_root))
-        self._env_files.append(EnvCase(case_root))
-        self._env_files.append(EnvMachPes(case_root))
-        self._env_files.append(EnvBuild(case_root))
-        self._env_files.append(EnvArchive(case_root))
-        self._env_files.append(EnvBatch(case_root))
+
+        self._env_entryid_files.append(EnvRun(case_root))
+        self._env_entryid_files.append(EnvBuild(case_root))
+        self._env_entryid_files.append(EnvMachPes(case_root))
+        self._env_entryid_files.append(EnvCase(case_root))
+        self._env_entryid_files.append(EnvBatch(case_root))
         if(os.path.isfile(os.path.join(case_root,"env_test.xml"))):
-               self._env_files.append(EnvTest(case_root))
+               self._env_entryid_files.append(EnvTest(case_root))
+        self._env_generic_files.append(EnvMachSpecific(case_root))
+        self._env_generic_files.append(EnvArchive(case_root))
 
     def __del__(self):
         self.flush()
@@ -48,7 +51,7 @@ class Case(object):
 
     def get_value(self, item, attribute={}, resolved=True, subgroup=None):
         result = None
-        for env_file in self._env_files:
+        for env_file in self._env_entryid_files:
             result = env_file.get_value(item, attribute, resolved, subgroup)
             if(result is not None):
                 if(resolved):
@@ -61,7 +64,7 @@ class Case(object):
         # TODO HACK - surely there is a better way?
         num_unresolved = item.count("$")
         if (num_unresolved > 0):
-            for env_file in self._env_files:
+            for env_file in self._env_entryid_files:
                 result = env_file.get_resolved_value(item)
                 if (result.count("$") < num_unresolved):
                     num_unresolved = result.count("$")
@@ -74,7 +77,7 @@ class Case(object):
         return item
 
     def set_value(self, item, value, subgroup=None):
-        for env_file in self._env_files:
+        for env_file in self._env_entryid_files:
             result = env_file.set_value(item, value, subgroup)
             if (result is not None):
                 self._env_files_that_need_rewrite.add(env_file)
@@ -82,6 +85,3 @@ class Case(object):
 
         logging.warning("Not able to set value for item '%s'" % item)
 
-    def test_reset(self):
-        for env_file in self._env_files:
-            env_file.test_reset()

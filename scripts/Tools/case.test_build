@@ -1,0 +1,106 @@
+#!/usr/bin/env python2
+"""
+ This is the system test build script for CIME
+
+"""
+
+from standard_script_setup import *
+
+from CIME.case import Case
+from CIME.SystemTests.system_tests_common import \
+    SystemTestsCommon, TESTRUNDIFF, TESTRUNFAIL, TESTRUNPASS
+from CIME.SystemTests.sms import SMS
+from CIME.SystemTests.cme import CME
+from CIME.SystemTests.erp import ERP
+from CIME.SystemTests.nck import NCK
+from CIME.SystemTests.pea import PEA
+from CIME.SystemTests.ers import ERS
+from CIME.SystemTests.err import ERR
+from CIME.SystemTests.eri import ERI
+from CIME.SystemTests.seq import SEQ
+import argparse, doctest
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [<testname>] [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# case.test SMS\033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("testname", nargs="?",
+                        help="Name of the test to run, default is set in TESTCASE in env_test.xml")
+
+    parser.add_argument("--caseroot", default=os.getcwd(),
+                        help="Case directory to build")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.caseroot, args.testname
+
+def cimetestbuild(caseroot, testname):
+    case = Case(caseroot)
+    test = object()
+    if(testname is None):
+        testname = case.get_value('TESTCASE')
+
+    logging.warn("Building test for %s"%testname)
+
+    if(testname == 'SMS'):
+        test = SMS(caseroot, case)
+    elif(testname == 'SEQ'):
+        test = SEQ(caseroot, case)
+    elif(testname == 'ERR'):
+        test = ERR(caseroot, case)
+    elif(testname == 'ERS'):
+        test = ERS(caseroot, case)
+    elif(testname == 'ERI'):
+        test = ERI(caseroot, case)
+    elif(testname == 'CME'):
+        test = CME(caseroot, case)
+    elif(testname == 'ERP'):
+        test = ERP(caseroot, case)
+    elif(testname == 'NCK'):
+        test = NCK(caseroot, case)
+    elif(testname == 'PEA'):
+        test = PEA(caseroot, case)
+    elif(testname == 'PEM'):
+        test = PEM(caseroot, case)
+    elif(testname == "TESTRUNDIFF"):
+        test = TESTRUNDIFF(caseroot,case)
+    elif(testname == "TESTRUNFAIL"):
+        test = TESTRUNFAIL(caseroot,case)
+    elif(testname == "TESTRUNPASS"):
+        test = TESTRUNPASS(caseroot,case)
+
+
+    test.build()
+
+
+def _main_func(description):
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    caseroot, testname = parse_command_line(sys.argv, description)
+
+    cimetestbuild(caseroot, testname)
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

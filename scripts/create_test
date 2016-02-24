@@ -8,7 +8,7 @@ on an xml testlist if the xml suboption is provided.
 
 If this tool is missing any feature that you need, please notify jgfouca@sandia.gov.
 """
-from standard_script_setup import *
+from Tools.standard_script_setup import *
 
 import update_acme_tests
 from CIME.system_test import SystemTest
