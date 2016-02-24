@@ -410,6 +410,7 @@ $fh_out->open(">$CASEROOT/Buildconf/datm.input_data_list") or
 # Hash for parsing default_namelist_datm.xml
 my %default_namelist_opts;
 $default_namelist_opts{'grid'}             = $GRID;
+$default_namelist_opts{'atm_grid'}         = $ATM_GRID;
 $default_namelist_opts{'datm_mode'}        = $DATM_MODE;
 $default_namelist_opts{'presaero_mode'}    = $DATM_PRESAERO;
 $default_namelist_opts{'datm_co2_tseries'} = $DATM_CO2_TSERIES;
