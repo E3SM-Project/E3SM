@@ -181,10 +181,10 @@ my $cimeroot   = abs_path($CIMEROOT);
 my $perl5lib   = "$cimeroot/utils/perl5lib";
 
 # The XML::Lite module is required to parse the XML files.
-(-f "$perl5lib/XML/Lite.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"XML/Lite.pm\" in directory 
-    \"$perl5lib\" **
-EOF
+#(-f "$perl5lib/XML/Lite.pm")  or  die <<"EOF";
+#** $ProgName - Cannot find perl module \"XML/Lite.pm\" in directory 
+    #\"$perl5lib\" **
+#EOF
 
 # The Build::Config module provides utilities to access the configuration information
 # in the config_cache.xml file
@@ -256,7 +256,7 @@ EOF
 my @dirs = ( "$cfgdir/..", "$perl5lib");
 unshift @INC, @dirs;
 
-require XML::Lite;
+#require XML::Lite;
 require Build::Config;
 require Build::NamelistDefinition;
 require Build::NamelistDefaults;

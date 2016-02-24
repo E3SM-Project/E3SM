@@ -8,6 +8,7 @@
 
 use Test::More;
 use IO::File;
+use Cwd qw(abs_path);
 
 #########################
 
@@ -29,7 +30,8 @@ OPTIONS
 EOF
 }
 # The env variables that will need to be set
-my %xmlenv = ( "DATM_CO2_TSERIES", "RUN_TYPE", "DIN_LOC_ROOT", "ATM_DOMAIN_FILE", "ATM_DOMAIN_PATH", "DATM_MODE", "DATM_PRESAERO", "ATM_GRID", "GRID" );
+my %xmlenv = ( "DATM_CO2_TSERIES", "RUN_TYPE", "DIN_LOC_ROOT", "ATM_DOMAIN_FILE", "ATM_DOMAIN_PATH", "DATM_MODE", "DATM_PRESAERO", "ATM_GRID",
+"GRID", "DATM_TOPO" );
 my $envxmlfile = "env_utrun.xml";   # Filename to write env settings to
 #
 # Process command-line options.
@@ -70,23 +72,22 @@ my $CASEROOT = "$cwd/testcase";
 print "CASEROOT = $CASEROOT\n";
 my $confdir = "$CASEROOT/Buildconf/datmconf";
 
-# Check that SCRIPTSROOT set so can run
-if ( $ENV{'SCRIPTSROOT'} eq "" ) {
-   my $dir = "../../../../../scripts"; 
-   if ( ! -d "$dir" ) {
-      die "SCRIPTSROOT NOT set, and scripts directory $dir does not exist\n";
+# Check that CIMEROOT set so can run
+if ( $ENV{'CIMEROOT'} eq "" ) {
+   my $dir = abs_path("../../../../.."); 
+   if ( ! -d "$dir/scripts" ) {
+      die "CIMEROOT NOT set, and scripts directory $dir/scripts does not exist\n";
    }
-   $ENV{'SCRIPTSROOT'} = $dir;
-   print "SCRIPTSROOT = $ENV{'SCRIPTSROOT'}\n";
+   $ENV{'CIMEROOT'} = $dir;
+   print "CIMEROOT = $ENV{'CIMEROOT'}\n";
 } else {
-   if ( ! -d "$ENV{'SCRIPTSROOT'}" ) {
-      die "SCRIPTSROOT dir does not exist\n";
+   if ( ! -d "$ENV{'CIMEROOT'}"."/scripts" ) {
+      die "CIMEROOT scripts dir does not exist\n";
    }
 }
 #
 # 
-my $cimeroot = "$ENV{'SCRIPTSROOT'}/../";
-my $bldnml = "../build-namelist -debug -caseroot $CASEROOT -cimeroot $cimeroot";
+my $bldnml = "../build-namelist -debug -caseroot $CASEROOT -cimeroot $ENV{'CIMEROOT'}";
 
 my $tempfile = "temp_file.txt";
 if ( -f $tempfile ) {
@@ -105,6 +106,7 @@ $xmlenv{'ATM_DOMAIN_PATH'}          = "\$DIN_LOC_ROOT/share/domains";
 $xmlenv{'ATM_GRID'}                 = "48x96";
 $xmlenv{'GRID'}                     = "48x96_g37";
 $xmlenv{'DATM_MODE'}                = "CLMQIAN";
+$xmlenv{'DATM_TOPO'}                = "observed";
 $xmlenv{'DATM_PRESAERO'}            = "clim_2000";
 $xmlenv{'DATM_CO2_TSERIES'}         = "none";
 # Set some ENV vars needed for CLM_QIAN
@@ -322,9 +324,14 @@ my $stat = `fgrep \$ $confdir/datm_atm_in`;
 isnt( $?, 0, "check for unresolved env variables" );
 system( "/bin/rm -rf $confdir"         );
 # Run different DATM_MODE
-foreach my $mode ( "CORE2_NYF", "CORE2_IAF", "CPLHIST3HrWx", "CLMCRUNCEP","CLMCRUNCEP_V5" ) {
+foreach my $mode ( "CORE2_NYF", "CORE2_IAF", "CPLHIST3HrWx", "CLMCRUNCEP","CLMCRUNCEP_V5", "CLMGSWP3" ) {
    $xmlenv{'DATM_MODE'} = $mode;
    print "DATM_MODE       = $xmlenv{'DATM_MODE'}\n";
+   if ( $mode =~ /^CLM/ ) {
+      $xmlenv{'DATM_TOPO'}   = "observed";
+   } else {
+      $xmlenv{'DATM_TOPO'}   = "none";
+   }
    &writeEnv( %xmlenv );
    eval{ system( "$bldnml" ); };
    ok( ! $?, "mode=$mode" );
@@ -339,6 +346,7 @@ foreach my $mode ( "CORE2_NYF", "CORE2_IAF", "CPLHIST3HrWx", "CLMCRUNCEP","CLMCR
 # Run with presaero="none";
 $xmlenv{'DATM_MODE'}     = "CORE2_NYF";
 $xmlenv{'DATM_PRESAERO'} = "none";
+$xmlenv{'DATM_TOPO'}   = "none";
 print "DATM_MODE       = $xmlenv{'DATM_MODE'}\n";
 print "DATM_PRESAERO   = $xmlenv{'DATM_PRESAERO'}\n";
 &writeEnv( %xmlenv );
@@ -349,6 +357,7 @@ ok( ! $?, "presaero=none" );
 system( "/bin/rm -rf $confdir"         );
 $xmlenv{'DATM_MODE'}     = "CLM_QIAN";
 $xmlenv{'DATM_PRESAERO'} = "clim_2000";
+$xmlenv{'DATM_TOPO'}   = "observed";
 print "DATM_MODE       = $xmlenv{'DATM_MODE'}\n";
 print "DATM_PRESAERO   = $xmlenv{'DATM_PRESAERO'}\n";
 
@@ -368,6 +377,7 @@ foreach my $option ( "-zztop", "-namelist '&datm_exp zztop=24/'", "-user_xml_dir
 # Bad ENV settings
 my %bad_env = (
    CLMQIAN_N_PAERONONE =>{ DATM_MODE    =>"CLM_QIAN",   DATM_PRESAERO=>"none"     },
+   TOPONONEAND_CLM     =>{ DATM_MODE    =>"CLM_QIAN",   DATM_TOPO    =>"none"     },
    BAD_DATM_MODE       =>{ DATM_MODE    =>"zztop"       },
    BAD_PRESAERO        =>{ DATM_PRESAERO=>"zztop"       },
    BAD_CQYR_RANGE      =>{ DATM_CLMNCEP_YR_START=>2004, DATM_CLMNCEP_YR_END=>1948 },
