@@ -57,7 +57,6 @@ class Case(object):
     def get_value(self, item, attribute={}, resolved=True, subgroup=None):
         result = None
         for env_file in self._env_files:
-            print env_file
             result = env_file.get_value(item, attribute, resolved, subgroup)
             if(result is not None):
                 if(resolved):
