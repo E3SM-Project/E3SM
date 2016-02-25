@@ -342,7 +342,7 @@ class SystemTest(object):
             create_newcase_cmd += " -confopts _%s" % ("_".join(case_opts))
         if test_mods is not None:
             files = Files()
-            (component, mods) = test_mods.split('/')
+            (component, mods) = test_mods.split('/',1)
             testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
             test_mod_file = os.path.join(testmods_dir, component, mods)
             if not os.path.exists(test_mod_file):
