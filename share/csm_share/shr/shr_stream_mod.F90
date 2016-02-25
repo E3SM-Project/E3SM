@@ -41,6 +41,7 @@ module shr_stream_mod
    use shr_log_mod, only : s_loglev   => shr_log_Level
    use shr_log_mod, only : s_logunit  => shr_log_Unit
    use shr_log_mod, only : OOBMsg => shr_log_OOBMsg
+   use pio, only : file_desc_t
    use perf_mod
 
    implicit none
@@ -72,6 +73,8 @@ module shr_stream_mod
    public :: shr_stream_getFile           ! acquire file, return name of file to open
    public :: shr_stream_getNFiles         ! get the number of files in a stream
    public :: shr_stream_getCalendar       ! get the stream calendar
+   public :: shr_stream_getCurrFile       ! get the currfile, fileopen, and currpioid
+   public :: shr_stream_setCurrFile       ! set the currfile, fileopen, and currpioid
    public :: shr_stream_dataDump          ! internal stream data for debugging
    public :: shr_stream_restWrite         ! write a streams restart file
    public :: shr_stream_restRead          ! read  a streams restart file
@@ -136,6 +139,11 @@ module shr_stream_mod
       integer(SHR_KIND_IN) :: k_gvd,n_gvd         ! file/sample of greatest valid date
       logical              :: found_gvd           ! T <=> k_gvd,n_gvd have been set
 
+      !---- for keeping files open
+      logical                 :: fileopen         ! is current file open
+      character(SHR_KIND_CL)  :: currfile         ! current filename
+      type(file_desc_t)       :: currpioid        ! current pio file desc
+
       !--- stream data not used by stream module itself ---
       character(SHR_KIND_CXX):: fldListFile       ! field list: file's  field names
       character(SHR_KIND_CXX):: fldListModel      ! field list: model's field names
@@ -143,7 +151,8 @@ module shr_stream_mod
       character(SHR_KIND_CL) :: domFileName       ! domain file: name
       character(SHR_KIND_CS) :: domTvarName       ! domain file: time-dim var name
       character(SHR_KIND_CS) :: domXvarName       ! domain file: x-dim var name
-      character(SHR_KIND_CS) :: domYvarName       ! domain file: y-dim var ame
+      character(SHR_KIND_CS) :: domYvarName       ! domain file: y-dim var name
+      character(SHR_KIND_CS) :: domZvarName       ! domain file: z-dim var name
       character(SHR_KIND_CS) :: domAreaName       ! domain file: area  var name
       character(SHR_KIND_CS) :: domMaskName       ! domain file: mask  var name
 
@@ -511,6 +520,17 @@ subroutine shr_stream_init(strm,infoFile,yearFirst,yearLast,yearAlign,taxMode,rc
          call shr_string_listGetName (fldListFile,n,substr,rc)
          strm%domYvarName = subStr
       endif
+      !--- get vertical variable name ---
+      n = shr_string_listGetIndexF(fldListModel,"hgt")
+      if (n==0) then
+!         rCode = 1
+!         write(s_logunit,F00) "ERROR: no input field names"
+!         call shr_stream_abort(subName//"ERROR: no lat variable name")
+         strm%domZvarName = 'unknownname'
+      else
+         call shr_string_listGetName (fldListFile,n,substr,rc)
+         strm%domZvarName = subStr
+      endif
       !--- get area variable name ---
       n = shr_string_listGetIndexF(fldListModel,"area")
       if (n==0) then
@@ -638,7 +658,8 @@ end subroutine shr_stream_init
 
 subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
                           fldListFile,fldListModel,domFilePath,domFileName, &
-                          domTvarName,domXvarName,domYvarName,domAreaName,domMaskName, &
+                          domTvarName,domXvarName,domYvarName,domZvarName,  &
+                          domAreaName,domMaskName, &
                           filePath,filename,dataSource,rc)
 
 ! !INPUT/OUTPUT PARAMETERS:
@@ -655,7 +676,8 @@ subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
    character(*)          ,optional,intent(in)    :: domFileName  ! domain file name
    character(*)          ,optional,intent(in)    :: domTvarName  ! domain time dim name
    character(*)          ,optional,intent(in)    :: domXvarName  ! domain x dim name
-   character(*)          ,optional,intent(in)    :: domYvarName  ! domain y dim nam
+   character(*)          ,optional,intent(in)    :: domYvarName  ! domain y dim name
+   character(*)          ,optional,intent(in)    :: domZvarName  ! domain z dim name
    character(*)          ,optional,intent(in)    :: domAreaName  ! domain area name
    character(*)          ,optional,intent(in)    :: domMaskName  ! domain mask name
    character(*)          ,optional,intent(in)    :: filePath   ! path for filenames
@@ -719,6 +741,9 @@ subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
    if (present(domYvarName)) then
       strm%domYvarName = trim(domYvarName)
    endif
+   if (present(domZvarName)) then
+      strm%domZvarName = trim(domZvarName)
+   endif
    if (present(domAreaName)) then
       strm%domAreaName = trim(domAreaName)
    endif
@@ -729,8 +754,10 @@ subroutine shr_stream_set(strm,yearFirst,yearLast,yearAlign,offset,taxMode, &
       strm%filePath = trim(filePath)
    endif
    if (present(filename)) then
-      write(s_logunit,F01) "size of filename = ",size(filename)
-      write(s_logunit,F00) "filename = ",filename
+      if (debug>1 .and. s_loglev > 0) then
+         write(s_logunit,F01) "size of filename = ",size(filename)
+         write(s_logunit,F00) "filename = ",filename
+      endif
 
       do n = 1,size(filename)
          ! Ignore null file names.
@@ -811,6 +838,9 @@ subroutine shr_stream_default(strm,rc)
    strm%n_gvd            = -1 
    strm%found_gvd        = .false.
 
+   strm%fileopen         = .false.
+   strm%currfile         = ''
+
    strm%fldListFile      = ' '
    strm%fldListModel     = ' '
    strm%domFilePath      = ' '
@@ -818,6 +848,7 @@ subroutine shr_stream_default(strm,rc)
    strm%domTvarName      = ' '
    strm%domXvarName      = ' '
    strm%domYvarName      = ' '
+   strm%domZvarName      = ' '
    strm%domAreaName      = ' '
    strm%domMaskName      = ' '
 
@@ -1989,6 +2020,86 @@ end subroutine shr_stream_getCalendar
 !===============================================================================
 !BOP ===========================================================================
 !
+! !IROUTINE: shr_stream_getCurrFile -- return open file information
+!
+! !DESCRIPTION:
+!    returns current file information
+!
+! !REVISION HISTORY:
+!     2015-Nov-24 - T. Craig
+!
+! !INTERFACE: ------------------------------------------------------------------  
+
+subroutine shr_stream_getCurrFile(strm,fileopen,currfile,currpioid)
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   type(shr_stream_streamType),intent(in)  :: strm     ! data stream
+   logical           ,optional,intent(out) :: fileopen ! file open flag
+   character(*)      ,optional,intent(out) :: currfile ! current filename
+   type(file_desc_t) ,optional,intent(out) :: currpioid ! current pioid
+ 
+!EOP
+
+!-------------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+
+   if (present(fileopen)) then
+      fileopen = strm%fileopen
+   endif
+   if (present(currfile)) then
+      currfile = strm%currfile
+   endif
+   if (present(currpioid)) then
+      currpioid = strm%currpioid
+   endif
+
+end subroutine shr_stream_getCurrFile
+
+!===============================================================================
+!BOP ===========================================================================
+!
+! !IROUTINE: shr_stream_setCurrFile -- return open file information
+!
+! !DESCRIPTION:
+!    returns current file information
+!
+! !REVISION HISTORY:
+!     2015-Nov-24 - T. Craig
+!
+! !INTERFACE: ------------------------------------------------------------------  
+
+subroutine shr_stream_setCurrFile(strm,fileopen,currfile,currpioid)
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   type(shr_stream_streamType),intent(inout) :: strm     ! data stream
+   logical           ,optional,intent(in) :: fileopen ! file open flag
+   character(*)      ,optional,intent(in) :: currfile ! current filename
+   type(file_desc_t) ,optional,intent(in) :: currpioid ! current pioid
+ 
+!EOP
+
+!-------------------------------------------------------------------------------
+!
+!-------------------------------------------------------------------------------
+
+   if (present(fileopen)) then
+      strm%fileopen = fileopen
+   endif
+   if (present(currfile)) then
+      strm%currfile = currfile
+   endif
+   if (present(currpioid)) then
+      strm%currpioid = currpioid
+   endif
+
+end subroutine shr_stream_setCurrFile
+
+!===============================================================================
+!BOP ===========================================================================
+!
 ! !IROUTINE: shr_stream_getDomainInfo -- return domain information
 !
 ! !DESCRIPTION:
@@ -1999,7 +2110,7 @@ end subroutine shr_stream_getCalendar
 !
 ! !INTERFACE: ------------------------------------------------------------------  
 
-subroutine shr_stream_getDomainInfo(strm,filePath,fileName,timeName,lonName,latName,maskName,areaName)
+subroutine shr_stream_getDomainInfo(strm,filePath,fileName,timeName,lonName,latName,hgtName,maskName,areaName)
 
 ! !INPUT/OUTPUT PARAMETERS:
 
@@ -2009,6 +2120,7 @@ subroutine shr_stream_getDomainInfo(strm,filePath,fileName,timeName,lonName,latN
    character(*)               ,intent(out) :: timeName ! domain time var name
    character(*)               ,intent(out) ::  lonName ! domain lon  var name
    character(*)               ,intent(out) ::  latName ! domain lat  var name
+   character(*)               ,intent(out) ::  hgtName ! domain hgt  var name
    character(*)               ,intent(out) :: maskName ! domain mask var name
    character(*)               ,intent(out) :: areaName ! domain area var name
  
@@ -2023,6 +2135,7 @@ subroutine shr_stream_getDomainInfo(strm,filePath,fileName,timeName,lonName,latN
    timeName = strm%domTvarName 
     lonName = strm%domXvarName 
     latName = strm%domYvarName 
+    hgtName = strm%domZvarName 
    maskName = strm%domMaskName 
    areaName = strm%domAreaName 
 
@@ -2447,7 +2560,8 @@ subroutine  shr_stream_restWrite(strm,fileName,caseName,caseDesc,nstrms,rc)
       write(nUnit) strm(k)%domFilePath  ! domain file: path
       write(nUnit) strm(k)%domTvarName  ! domain file: time-dim var name
       write(nUnit) strm(k)%domXvarName  ! domain file: x-dim var name
-      write(nUnit) strm(k)%domYvarName  ! domain file: y-dim var ame
+      write(nUnit) strm(k)%domYvarName  ! domain file: y-dim var name
+      write(nUnit) strm(k)%domZvarName  ! domain file: z-dim var name
       write(nUnit) strm(k)%domAreaName  ! domain file: area  var name
       write(nUnit) strm(k)%domMaskName  ! domain file: mask  var name
 
@@ -2667,7 +2781,8 @@ subroutine  shr_stream_restRead(strm,fileName,nstrms,rc)
       read(nUnit) inpcl !  domFilePath  ! domain file: path
       read(nUnit) inpcs !  domTvarName  ! domain file: time-dim var name
       read(nUnit) inpcs !  domXvarName  ! domain file: x-dim var name
-      read(nUnit) inpcs !  domYvarName  ! domain file: y-dim var ame
+      read(nUnit) inpcs !  domYvarName  ! domain file: y-dim var name
+      read(nUnit) inpcs !  domZvarName  ! domain file: z-dim var name
       read(nUnit) inpcs !  domAreaName  ! domain file: area  var name
       read(nUnit) inpcs !  domMaskName  ! domain file: mask  var name
 
@@ -2750,6 +2865,7 @@ subroutine shr_stream_dataDump(strm)
    write(s_logunit,F00) "domTvarName  = ", trim(strm%domTvarName)
    write(s_logunit,F00) "domXvarName  = ", trim(strm%domXvarName)
    write(s_logunit,F00) "domYvarName  = ", trim(strm%domYvarName)
+   write(s_logunit,F00) "domZvarName  = ", trim(strm%domZvarName)
    write(s_logunit,F00) "domAreaName  = ", trim(strm%domAreaName)
    write(s_logunit,F00) "domMaskName  = ", trim(strm%domMaskName)
 
@@ -3088,6 +3204,8 @@ subroutine shr_stream_bcast(stream,comm,rc)
    call shr_mpi_bcast(stream%k_gvd       ,comm,subName)
    call shr_mpi_bcast(stream%n_gvd       ,comm,subName)
    call shr_mpi_bcast(stream%found_gvd   ,comm,subName)
+   call shr_mpi_bcast(stream%fileopen    ,comm,subName)
+   call shr_mpi_bcast(stream%currfile    ,comm,subName)
    call shr_mpi_bcast(stream%fldListFile ,comm,subName)
    call shr_mpi_bcast(stream%fldListModel,comm,subName)
    call shr_mpi_bcast(stream%domFileName ,comm,subName)
@@ -3095,6 +3213,7 @@ subroutine shr_stream_bcast(stream,comm,rc)
    call shr_mpi_bcast(stream%domTvarName ,comm,subName)
    call shr_mpi_bcast(stream%domXvarName ,comm,subName)
    call shr_mpi_bcast(stream%domYvarName ,comm,subName)
+   call shr_mpi_bcast(stream%domZvarName ,comm,subName)
    call shr_mpi_bcast(stream%domMaskName ,comm,subName)
    call shr_mpi_bcast(stream%calendar    ,comm,subName)
 

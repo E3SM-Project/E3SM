@@ -2919,7 +2919,7 @@ subroutine shr_map_getWts(Xdst,Ydst,Xsrc,Ysrc,pti,ptj,ptw,pnum,units)
 
   !--- is lat/lon degrees or radians?  needed for X wraparound ---
   if (present(units)) then
-    if (trim(units) == 'degrees') then
+    if (index(units,'degrees').ne.0) then
        csize = 360._SHR_KIND_R8
     elseif (trim(units) == 'radians') then
        csize = c2*pi
@@ -2945,6 +2945,7 @@ subroutine shr_map_getWts(Xdst,Ydst,Xsrc,Ysrc,pti,ptj,ptw,pnum,units)
   if (yd >  cpole + 1.0e-3 .or. &
       yd < -cpole - 1.0e-3) then
      write(s_logunit,*) trim(subname),' ERROR: yd outside bounds ',yd
+     write(s_logunit,*) trim(subname),'        cpole = ', cpole
      call shr_map_abort(subName//' ERROR yd outside 90 degree bounds')
   endif
   if (yd >  cpole) yd =  cpole
@@ -3375,7 +3376,11 @@ logical function shr_map_checkRad(Grid)
   shr_map_checkRad = .false.
   rmin = minval(Grid)
   rmax = maxval(Grid)
-  if ((rmax - rmin) < 1.01_SHR_KIND_R8*c2*pi) shr_map_checkRad = .true.
+  if (rmax.ne.rmin) then
+    shr_map_checkRad = ((rmax - rmin) < 1.01_SHR_KIND_R8*c2*pi)
+  else
+    shr_map_checkRad = .true.
+  end if
 
 end function shr_map_checkRad
 
