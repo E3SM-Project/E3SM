@@ -1,5 +1,6 @@
 """
-CIME smoke test  This class inherits from SystemTestsCommon
+CIME ERR test  This class inherits from SystemTestsCommon
+ERR tests short term archiving and restart capabilities
 """
 from CIME.XML.standard_module_setup import *
 from system_tests_common import SystemTestsCommon
@@ -8,7 +9,7 @@ from system_tests_common import SystemTestsCommon
 class ERR(SystemTestsCommon):
     def __init__(self, caseroot, case):
         """
-        initialize an object interface to file env_test.xml in the case directory
+        initialize an object interface to the ERR system test
         """
         SystemTestsCommon.__init__(self, caseroot, case)
 

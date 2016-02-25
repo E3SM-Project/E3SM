@@ -16,6 +16,9 @@ class PEM(SystemTestsCommon):
         SystemTestsCommon.__init__(self, caseroot, case)
 
     def build(self):
+        """
+        build two cases, the first is default the second has halve the tasks per component
+        """
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
 
@@ -30,7 +33,7 @@ class PEM(SystemTestsCommon):
             run_cmd("case.setup")
             run_cmd('case.clean_build')
             SystemTestsCommon.build(self)
-            machpes = os.path.join("LockedFiles","env_mach_pes.NCK%s.xml"%bld)
+            machpes = os.path.join("LockedFiles","env_mach_pes.PEM%s.xml"%bld)
             shutil.move("%s/%s.exe"%(exeroot,cime_model),
                         "%s/%s.exe.PEM%s"%(exeroot,cime_model,bld))
             shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build_PEM%s.xml"%bld))

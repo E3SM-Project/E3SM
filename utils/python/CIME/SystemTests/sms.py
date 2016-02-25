@@ -8,7 +8,7 @@ from system_tests_common import SystemTestsCommon
 class SMS(SystemTestsCommon):
     def __init__(self, caseroot, case):
         """
-        initialize an object interface to file env_test.xml in the case directory
+        initialize an object interface to the SMS system test
         """
         expectedrunvars = ["CONTINUE_RUN", "REST_OPTION", "HIST_OPTION", "HIST_N"]
         SystemTestsCommon.__init__(self, caseroot, case, expectedrunvars)

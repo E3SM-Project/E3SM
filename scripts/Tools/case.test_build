@@ -18,6 +18,7 @@ from CIME.SystemTests.ers import ERS
 from CIME.SystemTests.err import ERR
 from CIME.SystemTests.eri import ERI
 from CIME.SystemTests.seq import SEQ
+from CIME.utils import expect
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -61,33 +62,10 @@ def cimetestbuild(caseroot, testname):
 
     logging.warn("Building test for %s"%testname)
 
-    if testname == 'SMS':
-        test = SMS(caseroot, case)
-    elif testname == 'SEQ':
-        test = SEQ(caseroot, case)
-    elif testname == 'ERR':
-        test = ERR(caseroot, case)
-    elif testname == 'ERS':
-        test = ERS(caseroot, case)
-    elif testname == 'ERI':
-        test = ERI(caseroot, case)
-    elif testname == 'CME':
-        test = CME(caseroot, case)
-    elif testname == 'ERP':
-        test = ERP(caseroot, case)
-    elif testname == 'NCK':
-        test = NCK(caseroot, case)
-    elif testname == 'PEA':
-        test = PEA(caseroot, case)
-    elif testname == 'PEM':
-        test = PEM(caseroot, case)
-    elif testname == "TESTRUNDIFF":
-        test = TESTRUNDIFF(caseroot, case)
-    elif testname == "TESTRUNFAIL":
-        test = TESTRUNFAIL(caseroot, case)
-    elif testname == "TESTRUNPASS":
-        test = TESTRUNPASS(caseroot, case)
-
+    try:
+        test = globals()[testname](caseroot, case)
+    except:
+        expect(False,"Could not find a test called '%s'"%testname)
 
     test.build()
 

@@ -151,7 +151,6 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
 
     if(verbose):
         print "RUN: %s" % cmd
-    logging.info("RUN: %s" % cmd)
 
     if (input_str is not None):
         stdin = subprocess.PIPE

@@ -16,6 +16,11 @@ class ERP(SystemTestsCommon):
         SystemTestsCommon.__init__(self, caseroot, case)
 
     def build(self):
+        """
+        Build two cases.  Case one uses defaults, case2 uses half the number of threads
+        and tasks.   This test will fail for components (pop) that do not reproduce exactly
+        with different numbers of mpi tasks.
+        """
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
         machpes1 = os.path.join("LockedFiles","env_mach_pes.ERP1.xml")
@@ -27,17 +32,8 @@ class ERP(SystemTestsCommon):
 
         for bld in range(1,3):
             logging.warn("Starting bld %s"%bld)
-            self._case.set_value("SMP_BUILD","0")
-            self._case.flush()
-            run_cmd("case.setup -clean -testmode")
-            run_cmd("case.setup")
-            run_cmd('case.clean_build')
-            SystemTestsCommon.build(self)
-            shutil.move("%s/%s.exe"%(exeroot,cime_model),
-                        "%s/%s.exe.ERP%s"%(exeroot,cime_model,bld))
-            shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build_ERP%s.xml"%bld))
-        # halve the number of tasks and threads
-            if(bld == 1):
+            if(bld == 2):
+                # halve the number of tasks and threads
                 for comp in ['ATM','CPL','OCN','WAV','GLC','ICE','ROF','LND']:
                     ntasks      = int(self._case.get_value("NTASKS_%s"%comp))
                     nthreads  = int(self._case.get_value("NTHRDS_%s"%comp))
@@ -49,6 +45,16 @@ class ERP(SystemTestsCommon):
                         self._case.set_value("ROOTPE_%s"%comp, "%s"%int(rootpe/2))
                     if ( nthreads > 1 ):
                         self._case.set_value("NTHRDS_%s"%comp, "%s"%int(nthreads/2))
+            self._case.set_value("SMP_BUILD","0")
+            self._case.flush()
+            run_cmd("case.setup -clean -testmode")
+            run_cmd("case.setup")
+            run_cmd('case.clean_build')
+            SystemTestsCommon.build(self)
+            shutil.move("%s/%s.exe"%(exeroot,cime_model),
+                        "%s/%s.exe.ERP%s"%(exeroot,cime_model,bld))
+            shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build_ERP%s.xml"%bld))
+
 #
 # Because mira/cetus interprets its run script differently than
 # other systems we need to copy the original env_mach_pes.xml

@@ -1,5 +1,5 @@
 """
-Interface to the env_test.xml file.  This class inherits from EnvBase
+Interface to the CME system test.  This class inherits from SystemTestsCommon
 """
 import shutil
 from CIME.XML.standard_module_setup import *
@@ -11,11 +11,15 @@ from system_tests_common import SystemTestsCommon
 class CME(SystemTestsCommon):
     def __init__(self, caseroot, case):
         """
-        initialize an object interface to file env_test.xml in the case directory
+        initialize an object interface to the CME test
         """
         SystemTestsCommon.__init__(self, caseroot, case)
 
     def build(self):
+        """
+        Build two exectuables for the CME test, one with ESMF interfaces
+        the other with MCT interfaces and compare results - they should be exact
+        """
         self._case.set_value('USE_ESMF_LIB','TRUE')
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()

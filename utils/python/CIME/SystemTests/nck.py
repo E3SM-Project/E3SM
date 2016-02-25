@@ -24,11 +24,24 @@ class NCK(SystemTestsCommon):
             shutil.copy(machpes1,"env_mach_pes.xml")
 
         for bld in range(1,3):
+            """
+            Build two exectuables for this test, the first is a default build
+            the second halves the number of tasks and runs two instances
+            for each component
+            """
             logging.warn("Starting bld %s"%bld)
             machpes = os.path.join("LockedFiles","env_mach_pes.NCK%s.xml"%bld)
             for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
                 self._case.set_value("NINST_%s"%comp,str(bld))
+                if(bld == 2):
+                    ntasks      = int(self._case.get_value("NTASKS_%s"%comp))
+                    rootpe      = int(self._case.get_value("ROOTPE_%s"%comp))
+                    if ( ntasks > 1 ):
+                        self._case.set_value("NTASKS_%s"%comp, "%s"%int(ntasks/2))
+                        self._case.set_value("ROOTPE_%s"%comp, "%s"%int(rootpe/2))
             self._case.flush()
+
+
             run_cmd("case.setup -clean -testmode")
             run_cmd("case.setup")
             run_cmd('case.clean_build')
@@ -37,15 +50,6 @@ class NCK(SystemTestsCommon):
                         "%s/%s.exe.NCK%s"%(exeroot,cime_model,bld))
             shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build.NCK%s.xml"%bld))
             shutil.copy("env_mach_pes.xml", machpes)
-
-            if(bld == 1):
-                    ntasks      = int(self._case.get_value("NTASKS_%s"%comp))
-                    rootpe      = int(self._case.get_value("ROOTPE_%s"%comp))
-                    if ( ntasks > 1 ):
-                        self._case.set_value("NTASKS_%s"%comp, "%s"%int(ntasks/2))
-                        self._case.set_value("ROOTPE_%s"%comp, "%s"%int(rootpe/2))
-
-
 #
 # Because mira/cetus interprets its run script differently than
 # other systems we need to copy the original env_mach_pes.xml

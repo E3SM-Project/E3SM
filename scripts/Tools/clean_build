@@ -102,7 +102,7 @@ foreach my $lib (@opts){
     }
 }
 system($sysmod) == 0 or die "$sysmod failed: $?\n";
-my @lockedfiles = glob("LockedFiles/env_build*");
+my @lockedfiles = qw(LockedFiles/env_build.xml);
 foreach my $lf (@lockedfiles) {
     unlink($lf);
 }

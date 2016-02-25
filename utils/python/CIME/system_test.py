@@ -234,8 +234,8 @@ class SystemTest(object):
     def _work_remains(self, test):
     ###########################################################################
         test_phase, test_status, _ = self._get_test_data(test)
-        return (test_status in CONTINUE or test_status ==
-                TEST_PENDING_STATUS) and test_phase != self._phases[-1]
+        return (test_status in CONTINUE or test_status == TEST_PENDING_STATUS) and\
+            test_phase != self._phases[-1]
 
     ###########################################################################
     def _get_test_status(self, test, phase=None):
@@ -341,9 +341,10 @@ class SystemTest(object):
             create_newcase_cmd += " -confopts _%s" % ("_".join(case_opts))
         if test_mods is not None:
             files = Files()
-            (component, mods) = test_mods.split('/',1)
+            (component,modspath) = test_mods.split('/',1)
             testmods_dir = files.get_value("TESTS_MODS_DIR", {"component": component})
-            test_mod_file = os.path.join(testmods_dir, component, mods)
+
+            test_mod_file = os.path.join(testmods_dir, component, modspath)
             if not os.path.exists(test_mod_file):
                 self._log_output(test, "Missing testmod file '%s'" % test_mod_file)
                 return False
