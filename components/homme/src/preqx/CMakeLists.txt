@@ -30,7 +30,6 @@ SET(PREQX_SRCS_F90
   ${SRC_DIR}/preqx/solver_init_mod.F90
   ${SRC_DIR}/preqx/vertremap_mod.F90
   ${SRC_DIR}/preqx/viscosity_mod.F90
-  ${SRC_SHARE_DIR}/arch_switch_mod.F90
   ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_SHARE_DIR}/dimensions_mod.F90
   ${SRC_SHARE_DIR}/control_mod.F90
