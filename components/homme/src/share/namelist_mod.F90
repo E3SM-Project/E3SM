@@ -232,6 +232,7 @@ module namelist_mod
                      se_topology,      &
                      se_ne,            &
                      se_limiter_option, &
+                     nthreads,      &       ! Total number of threads per process
 #else
                      qsize,         &       ! number of SE tracers
                      ntrac,         &       ! number of fvm tracers
@@ -407,6 +408,7 @@ module namelist_mod
     se_phys_tscale=0
     se_nsplit = 1
     qsize = qsize_d
+    nthreads = 1
 #else
     ndays         = 0
     nmax          = 12
@@ -766,6 +768,7 @@ module namelist_mod
     phys_tscale = se_phys_tscale
     limiter_option  = se_limiter_option
     nsplit = se_nsplit
+    call MPI_bcast(nthreads  ,1,MPIinteger_t,par%root,par%comm,ierr)
 #else
     call MPI_bcast(omega     ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(pertlim   ,1,MPIreal_t   ,par%root,par%comm,ierr)
@@ -1138,6 +1141,7 @@ module namelist_mod
        if (npdg>0) write(iulog,*)"readnl: npdg       = ",npdg
        write(iulog,*)"readnl: partmethod    = ",PARTMETHOD
        write(iulog,*)'readnl: nmpi_per_node = ',nmpi_per_node
+       write(iulog,*)"readnl: nthreads      = ",nthreads
        write(iulog,*)'readnl: multilevel    = ',multilevel
        write(iulog,*)'readnl: useframes     = ',useframes
        write(iulog,*)'readnl: nnodes        = ',nnodes

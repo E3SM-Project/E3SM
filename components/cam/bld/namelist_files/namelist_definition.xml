@@ -5606,6 +5606,11 @@ Default: Set by build-namelist.
 Default: Set by build-namelist.
 </entry>
 
+<entry id="nthreads" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Total number of threads per MPI task.
+Default: 1.
+</entry>
 
 
 <!-- CAM I/O  -->
