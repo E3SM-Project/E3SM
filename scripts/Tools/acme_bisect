@@ -76,8 +76,8 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def acme_bisect(testname, good, bad, testroot, compiler, project, baseline_name, check_namelists, check_throughput, check_memory):
 ###############################################################################
-    create_test = os.path.join(CIME.utils.get_acme_scripts_root(), "create_test")
-    wait_for_tests = os.path.join(CIME.utils.get_acme_scripts_root(), "wait_for_tests")
+    create_test = os.path.join(CIME.utils.get_scripts_root(), "create_test")
+    wait_for_tests = os.path.join(CIME.utils.get_scripts_root(), "Tools", "wait_for_tests")
 
     # Important: we only want to test merges
     commits_we_want_to_test = run_cmd("git rev-list %s..%s --merges --first-parent" % (good, bad)).splitlines()

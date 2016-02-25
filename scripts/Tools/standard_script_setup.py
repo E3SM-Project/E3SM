@@ -3,10 +3,10 @@ Encapsulate the importing of python utils and logging setup, things
 that every script should do.
 """
 
-import sys, os, logging
+import sys, os, logging, doctest, argparse
 _CIMEROOT = os.environ.get("CIMEROOT")
 if(_CIMEROOT is None):
-    _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+    _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..")
     os.environ["CIMEROOT"] = _CIMEROOT
 _LIB_DIR = os.path.join(_CIMEROOT, "utils", "python")
 sys.path.append(_LIB_DIR)

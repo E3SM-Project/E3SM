@@ -1,88 +1,97 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python2
+"""
+ This script compares xml files
 
-use strict;
-use Cwd;
-use English;
-use Getopt::Long;
-use File::Basename;
-use IO::File;
-use IO::Handle;
+"""
+import glob
+from standard_script_setup import *
+from CIME.utils import expect
+from CIME.XML.env_build import EnvBuild
+from CIME.XML.env_case import EnvCase
+from CIME.XML.env_mach_pes import EnvMachPes
 
-sub usage {
-    die <<'EOF';
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [--verbose]
+OR
+%s --help
+OR
+%s --test
 
-SYNOPSIS
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# check_lockedfiles SMS\033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
 
-  check_lockedfiles [options]
+        description=description,
 
-  checks that any files in the $CASEROOT/LockedFiles directory
-  match those in the $CASEROOT directory
-  (assumes that this utility exists in $CASEROOT/Tools)
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
-OPTIONS
-  -loglevel        Set verbostity of script
-  -help [or -h]  Print usage to STDOUT (optional).
+    CIME.utils.setup_standard_logging_options(parser)
 
-EOF
-}
+    parser.add_argument("--caseroot", default=os.getcwd(),
+                        help="Case directory to build")
 
-my %opts = (loglevel=>"INFO",
-                      cimeroot=>$ENV{CIMEROOT});
+    args = parser.parse_args(args[1:])
 
-GetOptions(
-    "cimeroot=s" => \$opts{cimeroot},
-    "loglevel=s" => \$opts{loglevel},
-    "h|help"  => \$opts{'help'},
-    )  or usage();
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.caseroot
+
+def check_lockedfiles(caseroot):
+    lockedfiles = glob.glob(os.path.join(caseroot, "LockedFiles", "*.xml"))
+    for lfile in lockedfiles:
+        fpart = os.path.basename(lfile)
+        cfile = os.path.join(caseroot, fpart)
+        if os.path.isfile(cfile):
+            objname = fpart.split('.')[0]
+            logging.info("Checking file %s"%objname)
+            if objname == "env_build":
+                f1obj = EnvBuild(caseroot, cfile)
+                f2obj = EnvBuild(caseroot, lfile)
+            elif objname == "env_mach_pes":
+                f1obj = EnvMachPes(caseroot, cfile)
+                f2obj = EnvMachPes(caseroot, lfile)
+            elif objname == "env_case":
+                f1obj = EnvCase(caseroot, cfile)
+                f2obj = EnvCase(caseroot, lfile)
+
+            diffs = f1obj.compare_xml(f2obj)
+            if diffs:
+                logging.warn("File %s has been modified"%lfile)
+                for key in diffs.keys():
+                    print("  found difference in %s : case %s locked %s" %
+                          (key, diffs[key][0], diffs[key][1]))
+                if objname == "env_mach_pes":
+                    expect(False, "Invoke case.setup -clean followed by case.setup")
+                if objname == "env_case":
+                    expect(False, "Cannot change file env_case.xml, please"
+                           " recover the original copy from LockedFiles")
+                if objname == "env_build":
+                    logging.warn("Setting build complete to False")
+                    f1obj.set_value("BUILD_COMPLETE", "FALSE")
+                    if "PIO_VERSION" in diffs.keys():
+                        f1obj.set_value("BUILD_STATUS", "2")
+                        f1obj.write()
+                        logging.critical("Changing PIO_VERSION requires running "
+                                         "case.clean_build all and rebuilding")
+                    else:
+                        f1obj.set_value("BUILD_STATUS", "1")
+                        f1obj.write()
 
 
-my @dirs = ("$opts{cimeroot}/utils/perl5lib" );
-unshift @INC, @dirs;
-require Log::Log4perl;
 
+def _main_func(description):
+    if "--test" in sys.argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
-my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
-Log::Log4perl->easy_init({level=>$level,
-			  layout=>'%m%n'});
+    caseroot = parse_command_line(sys.argv, description)
 
-my $logger = Log::Log4perl::get_logger();
+    check_lockedfiles(caseroot)
 
-# Give usage message.
-usage() if $opts{'help'};
-
-`./xmlchange --noecho BUILD_STATUS=0`;
-
-my @lockedfiles = glob ("./LockedFiles/*");
-foreach my $lockedfile (@lockedfiles) {
-    my $file = basename("$lockedfile");
-    $logger->info("Checking file $file");
-
-    if (!-f $file) {
-	$logger->logdie ("Locked file $file cannot be found");
-    }
-    my $sysmod = "diff -w $lockedfile $file ";
-    if (system($sysmod) != 0) {
-	$logger->warn( "$file has been modified and is different than the LockedFiles version ");
-	if ($file =~ /env_build/ ) {
-	    $logger->warn( "setting BUILD_COMPLETE to FALSE ");
-	    `./xmlchange --noecho --file env_build.xml -id BUILD_COMPLETE -val FALSE`;
-	    `./xmlchange --noecho --file env_build.xml -id BUILD_STATUS -val 1`;
-
-	    my $pioversion = `xmlquery PIO_VERSION -value`;
-	    my $oldpioversion = `xmlquery PIO_VERSION -value -file LockedFiles/env_build.xml`;
-
-	    if($pioversion != $oldpioversion){
-		$logger->warn("Changing PIO_VERSION requires running case.clean_build -all");
-	    `./xmlchange --noecho --file env_build.xml -id BUILD_STATUS -val 2`;
-
-	    }
-
-	} elsif ($file =~ /.*env_mach_pes.*/) {
-	    $logger->logdie ("Invoke case.setup -clean followed by case.setup ");
-	} else {
-	    $logger->logdie ("Cannot change $file, please recover the original copy from LockedFiles");
-	}
-    }
-}
-
-exit (0);
+if __name__ == "__main__":
+    _main_func(__doc__)

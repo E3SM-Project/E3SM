@@ -201,7 +201,7 @@ if (! $clean ) {
 
     } else {
 
-	my $sysmod = "./Tools/check_lockedfiles -cimeroot $cimeroot";
+	my $sysmod = "./Tools/check_lockedfiles --caseroot $caseroot";
 	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 
 	my $pestot = `$caseroot/Tools/taskmaker.pl -sumonly`;
@@ -268,12 +268,17 @@ if (! $clean ) {
 							     job => 'run'
 	                                                     );
 
-
+#	if(defined $xmlvars{TESTCASE}){
+#	    my $inputbatchscript  = "$xmlvars{'MACHDIR'}/python.case.test";
+#	    my $outputbatchscript = "$xmlvars{'CASEROOT'}/case.test";
+#	    $batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
+#	}
 
 	my $inputbatchscript  = "$xmlvars{'MACHDIR'}/template.case.run";
 	my $outputbatchscript = "$xmlvars{'CASEROOT'}/case.run";
-
 	$batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
+
+
 	$logger->info("Creating batch script case.st_archive");
 	$batchmaker->overrideNodeCount(1);
 	$batchmaker->set({job=>'st_archive'});
@@ -373,9 +378,9 @@ if ($clean) {
     system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 
     # remove relevant files from $caseroot/LockedFiels
-    my @files = <${caseroot}/LockedFiles/*build* ${caseroot}/LockedFiles/*mach_pes*>;
+    my @files = <${caseroot}/LockedFiles/env_build.xml ${caseroot}/LockedFiles/env_mach_pes.xml>;
     foreach my $file (@files) {
-	$sysmod = "rm $file";
+	$sysmod = "rm -f $file";
 	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
     }
 

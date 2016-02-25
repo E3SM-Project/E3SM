@@ -176,3 +176,16 @@ class EntryID(GenericXML):
         if(vnode):
             node.remove(vnode)
         return node
+
+    def compare_xml(self, other):
+        xmldiffs = {}
+        f1nodes = self.get_node("entry")
+        for node in f1nodes:
+            vid = node.attrib["id"]
+            f2val = other.get_value(vid, resolved=False)
+            if(f2val is not None):
+                if(f2val != node.attrib["value"]):
+                    xmldiffs[vid] = [node.attrib["value"], f2val]
+
+        return xmldiffs
+

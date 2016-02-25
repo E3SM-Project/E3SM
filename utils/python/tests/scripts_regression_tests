@@ -12,8 +12,8 @@ from  CIME.XML.machines import Machines
 from  CIME.XML.files import Files
 from  CIME.case import Case
 
-SCRIPT_DIR = CIME.utils.get_acme_scripts_root()
-
+SCRIPT_DIR = CIME.utils.get_scripts_root()
+TOOLS_DIR = os.path.join(SCRIPT_DIR,"Tools")
 DART_CONFIG = "DartConfiguration.tcl"
 DART_BACKUP = "temp_dart_backup"
 MACHINE     = Machines()
@@ -25,30 +25,30 @@ logging.basicConfig()
 class RunUnitTests(unittest.TestCase):
 ###############################################################################
 
-    def do_unit_tests(self, script):
-        stat, output, _ = run_cmd("./%s --test 2>&1" % script, ok_to_fail=True, from_dir=SCRIPT_DIR)
+    def do_unit_tests(self, script,from_dir=SCRIPT_DIR):
+        stat, output, _ = run_cmd("./%s --test 2>&1" % script, ok_to_fail=True, from_dir=from_dir)
         self.assertEqual(stat, 0, msg=output)
 
     def test_acme_bisect_unit_test(self):
-        self.do_unit_tests("acme_bisect")
+        self.do_unit_tests("acme_bisect",from_dir=TOOLS_DIR)
 
     def test_compare_namelists_unit_test(self):
-        self.do_unit_tests("compare_namelists")
+        self.do_unit_tests("compare_namelists",from_dir=TOOLS_DIR)
 
     def test_jenkins_generic_job_unit_test(self):
-        self.do_unit_tests("jenkins_generic_job")
+        self.do_unit_tests("jenkins_generic_job",from_dir=TOOLS_DIR)
 
     def test_simple_compare_unit_test(self):
-        self.do_unit_tests("simple_compare")
+        self.do_unit_tests("simple_compare", from_dir=TOOLS_DIR)
 
     def test_update_acme_tests_unit_test(self):
-        self.do_unit_tests("update_acme_tests")
+        self.do_unit_tests("update_acme_tests", from_dir=TOOLS_DIR)
 
     def test_list_acme_tests_unit_test(self):
-        self.do_unit_tests("list_acme_tests")
+        self.do_unit_tests("list_acme_tests", from_dir=TOOLS_DIR)
 
     def test_wait_for_tests_unit_test(self):
-        self.do_unit_tests("wait_for_tests")
+        self.do_unit_tests("wait_for_tests", from_dir=TOOLS_DIR)
 
     def test_resolve_variable_name(self):
         files = Files()
@@ -172,7 +172,7 @@ class TestWaitForTests(unittest.TestCase):
     ###########################################################################
     def simple_test(self, testdir, expected_results, extra_args=""):
     ###########################################################################
-        stat, output, errput = run_cmd("%s/wait_for_tests -p ACME_test TestStatus* %s" % (SCRIPT_DIR, extra_args), ok_to_fail=True, from_dir=testdir)
+        stat, output, errput = run_cmd("%s/wait_for_tests -p ACME_test TestStatus* %s" % (TOOLS_DIR, extra_args), ok_to_fail=True, from_dir=testdir)
         if (expected_results == ["PASS"]*len(expected_results)):
             self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s" % (output, errput))
         else:
@@ -501,7 +501,7 @@ class TestSystemTest(TestCreateTestCommon):
             sys.stdout = sys.__stdout__
 
         if (self._hasbatch):
-            run_cmd("%s/wait_for_tests *%s*/TestStatus*" % (SCRIPT_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
+            run_cmd("%s/wait_for_tests *%s*/TestStatus*" % (TOOLS_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
 
         test_statuses = glob.glob("%s/*%s*/TestStatus" % (self._testroot, test_id))
         self.assertEqual(len(tests), len(test_statuses))
@@ -524,7 +524,7 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
-        stat, output, errput = run_cmd("%s/jenkins_generic_job %s" % (SCRIPT_DIR, extra_args), ok_to_fail=True)
+        stat, output, errput = run_cmd("%s/jenkins_generic_job %s" % (TOOLS_DIR, extra_args), ok_to_fail=True)
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (output, errput))
         else:
@@ -613,7 +613,7 @@ class TestBlessTestResults(TestCreateTestCommon):
         if (self._hasbatch):
             self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
             test_id = extra_args.split()[extra_args.split().index("-t") + 1]
-            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
+            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
 
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\nOutput:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
@@ -641,7 +641,7 @@ class TestBlessTestResults(TestCreateTestCommon):
         self.simple_test(False, "-c -b %s -t %s" % (self._baseline_name, test_id))
 
         # Bless
-        run_cmd("%s/bless_test_results --hist-only --force -b %s -t %s" % (SCRIPT_DIR, self._baseline_name, test_id))
+        run_cmd("%s/bless_test_results --hist-only --force -b %s -t %s" % (TOOLS_DIR, self._baseline_name, test_id))
 
         # Hist compare should now pass again
         self.simple_test(True, "-c -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
@@ -706,7 +706,7 @@ class TestUpdateACMETests(unittest.TestCase):
         self.assertTrue("ERS.f19_g16_rx1.E.melvin_gnu" in tests)
 
         if (CIME.utils.does_machine_have_batch()):
-            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True, from_dir=self._testroot)
+            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, self._baseline_name), ok_to_fail=True, from_dir=self._testroot)
             self.assertEqual(stat, 0,
                              msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
@@ -731,7 +731,7 @@ class FullSystemTest(TestCreateTestCommon):
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
         if (MACHINE.has_batch_system()):
-            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, self._baseline_name),
+            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, self._baseline_name),
                                            ok_to_fail=True, from_dir=self._testroot)
             self.assertEqual(stat, 0,
                              msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))

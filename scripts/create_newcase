@@ -909,7 +909,7 @@ sub _create_caseroot_tools
 	      "$machines_dir/mkDepends");
 
     foreach my $file (@files) {
-	$sysmod = "cp -p $file $caseroot/Tools/. ";
+	$sysmod = "ln -fs $file $caseroot/Tools/. ";
 	system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
     }
 }
@@ -936,11 +936,11 @@ sub _create_caseroot_files
     }
 
     # Create $caseroot/Buildconf/build.pl
-    $sysmod = "ln -s $cimeroot/scripts-python/check_input_data $caseroot/check_input_data";
+    $sysmod = "ln -s $cimeroot/scripts/Tools/check_input_data $caseroot/check_input_data";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
     my @pyscripts = qw(case.build xmlchange);
     for (@pyscripts){
-	$sysmod = "ln -s $cimeroot/scripts-python/$_  $caseroot/$_";
+	$sysmod = "ln -s $cimeroot/scripts/Tools/$_  $caseroot/$_";
 	system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 	$sysmod = "chmod 755 $caseroot/$_";
 	system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
