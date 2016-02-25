@@ -381,7 +381,7 @@ contains
 !> \brief   Computes diagnostic variables prior to velocity
 !> \author  Matt Hoffman
 !> \date    19 April 2012
-!> \details 
+!> \details
 !> This routine computes the diagnostic variables for land ice
 !> that are needed before velocity is solved.
 !
@@ -390,7 +390,8 @@ contains
 
       use mpas_geometry_utils, only: mpas_cells_to_points_using_baryweights
       use mpas_vector_operations, only: mpas_tangential_vector_1d
-   
+      use li_thermal
+
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -428,6 +429,9 @@ contains
       real (kind=RKIND), dimension(:), pointer :: thickness, upperSurface, &
         lowerSurface, bedTopography, upperSurfaceVertex, slopeEdge, &
         normalSlopeEdge, tangentSlopeEdge, dcEdge, dvEdge
+      real (kind=RKIND), dimension(:), pointer :: layerCenterSigma
+      real (kind=RKIND), dimension(:,:), pointer :: pmpTemperature
+      real (kind=RKIND), dimension(:), pointer :: basalPmpTemperature
       integer, dimension(:), pointer :: cellMask, edgeMask, vertexMask
       integer, dimension(:), pointer :: vertexMaskOld, vertexMaskNew
       integer, dimension(:), pointer :: floatingEdges
@@ -515,6 +519,8 @@ contains
           call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
           call mpas_pool_get_config(liConfigs, 'config_tracer_advection', config_tracer_advection)
 
+          call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
+
           call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
           call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
           call mpas_pool_get_array(geometryPool, 'thickness', thickness)
@@ -523,6 +529,8 @@ contains
           call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
 
           call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+          call mpas_pool_get_array(thermalPool, 'pmpTemperature', pmpTemperature)
+          call mpas_pool_get_array(thermalPool, 'basalPmpTemperature', basalPmpTemperature)
 
           ! Lower surface is based on floatation for floating ice.  For grounded ice (and non-ice areas) it is the bed.
           where ( li_mask_is_floating_ice(cellMask) )
@@ -540,6 +548,17 @@ contains
 
           ! Upper surface is the lower surface plus the thickness
           upperSurface(:) = lowerSurface(:) + thickness(:)
+
+
+          ! Calculate diagnostic PMP temperature
+          ! Note: this is only to allow these fields to be output;
+          !       the thermal module performs these calculations internally as needed.
+          ! Note: The PMP temperature calculated here will differ from the PMP values
+          !       used in the thermal module, because the thermal solver occurs before
+          !       advection occurs, and this calculation occurs after.
+          call li_compute_pressure_melting_point_fields(nCells, thickness, layerCenterSigma, &
+                pmpTemperature, basalPmpTemperature)
+
 
           ! Calculate SIA-related variables, if needed
           !   This first block for calculating normalSlopeEdge is also needed for the DCFL calculation that could occur with any velocity solver

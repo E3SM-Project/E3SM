@@ -841,6 +841,12 @@ is the value of that variable from the *previous* time level!
 		<var name="basalTemperature" type="real" dimensions="nCells Time" units="K"
 		     description="lower surface ice temperature"
 		/>
+		<var name="pmpTemperature" type="real" dimensions="nVertLevels nCells Time" units="K"
+		     description="pressure melt temperature"
+		/>
+		<var name="basalPmpTemperature" type="real" dimensions="nCells Time" units="K"
+		     description="lower surface pressure melt temperature"
+		/>
 		<var name="surfaceConductiveFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
 		     description="conductive heat flux at the upper surface (positive downward)"
 		/>
