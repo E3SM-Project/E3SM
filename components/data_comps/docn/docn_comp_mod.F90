@@ -78,6 +78,7 @@ module docn_comp_mod
   integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp  ! field indices
   integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
   integer(IN)   :: kh,kqbot
+  real(R8)      :: tfreeze
 
   type(shr_strdata_type) :: SDOCN
   type(mct_rearr) :: rearr
@@ -702,8 +703,9 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
                 (x2o%rAttr(ksnow,n)+x2o%rAttr(krofi,n))*latice) * &  ! latent by prec and roff
                 dt/(cpsw*rhosw*hn)
              !--- compute ice formed or melt potential ---
-            o2x%rAttr(kq,n) = (TkFrzSw - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0
-            o2x%rAttr(kt,n) = max(TkFrzSw,o2x%rAttr(kt,n))                    ! reset temp
+            tfreeze = -0.0544_r8*o2x%rAttr(ks,n) + TkFrz
+            o2x%rAttr(kq,n) = (tfreeze - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0
+            o2x%rAttr(kt,n) = max(tfreeze,o2x%rAttr(kt,n))                    ! reset temp
             somtp(n) = o2x%rAttr(kt,n)                                        ! save temp
          endif
          enddo

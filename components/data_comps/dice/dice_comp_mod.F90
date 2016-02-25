@@ -75,7 +75,8 @@ module dice_comp_mod
 
   real(R8),parameter  :: pi     = shr_const_pi      ! pi
   real(R8),parameter  :: spval  = shr_const_spval   ! flags invalid data
-  real(R8),parameter  :: tFrz   = shr_const_tkfrzsw ! temp of freezing salt-water
+  real(R8),parameter  :: tFrzSW = shr_const_tkfrzsw ! temp of freezing salt-water
+  real(R8),parameter  :: tFrz   = shr_const_tkfrz   ! temp of freezing 
   real(R8),parameter  :: latice = shr_const_latice  ! latent heat of fusion
   real(R8),parameter  :: cDay   = shr_const_cDay    ! sec in calendar day
   real(R8),parameter  :: waterMax = 1000.0_R8        ! wrt iFrac comp & frazil ice (kg/m^2)
@@ -98,6 +99,7 @@ module dice_comp_mod
   integer(IN) :: kswvdr,kswndr,kswvdf,kswndf,kq,kz,kua,kva,kptem,kshum,kdens,ktbot
   integer(IN) :: kiFrac,kt,kavsdr,kanidr,kavsdf,kanidf,kswnet,kmelth,kmeltw
   integer(IN) :: ksen,klat,klwup,kevap,ktauxa,ktauya,ktref,kqref,kswpen,ktauxo,ktauyo,ksalt
+  integer(IN) :: ksalinity
 
   ! optional per thickness category fields
   integer(IN) :: kiFrac_01,kswpen_iFrac_01
@@ -486,6 +488,7 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     kshum  = mct_aVect_indexRA(x2i,'Sa_shum')
     kdens  = mct_aVect_indexRA(x2i,'Sa_dens')
     ktbot  = mct_aVect_indexRA(x2i,'Sa_tbot')
+    ksalinity = mct_aVect_indexRA(x2i,'So_s')
 
     ! call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
     ! call mct_aVect_zero(avstrm)
@@ -634,6 +637,7 @@ subroutine dice_comp_run( EClock, cdata,  x2i, i2x)
    real(R8)      :: qmeltall          ! q that would melt all accumulated water
    real(R8)      :: cosarg            ! for setting ice temp pattern
    real(R8)      :: jday, jday0       ! elapsed day counters
+   real(R8)      :: tfreeze           ! salinity dependent freezing point
    character(CS) :: calendar          ! calendar type
 
    type(seq_infodata_type), pointer :: infodata
@@ -726,6 +730,8 @@ subroutine dice_comp_run( EClock, cdata,  x2i, i2x)
 
       do n = 1,lsize
 
+         tfreeze = -0.0544_R8*x2i%rAttr(ksalinity,n) + tFrz ! convert to Kelvin
+
          !--- fix erroneous iFrac ---
          i2x%rAttr(kiFrac,n) = min(1.0_R8,max(0.0_R8,i2x%rAttr(kiFrac,n))) 
 
@@ -791,7 +797,7 @@ subroutine dice_comp_run( EClock, cdata,  x2i, i2x)
             !--- non-zero water => non-zero iFrac ---
             if (i2x%rAttr(kiFrac,n) <= 0.0_R8  .and.  water(n) > 0.0_R8) then
                i2x%rAttr(kiFrac,n) = min(1.0_R8,water(n)/waterMax)
-               ! i2x%rAttr(kT,n) = Tfrz     ! T can be above freezing?!?
+               ! i2x%rAttr(kT,n) = tfreeze     ! T can be above freezing?!?
             end if
 
             !--- cpl multiplies melth & meltw by iFrac ---
@@ -806,8 +812,8 @@ subroutine dice_comp_run( EClock, cdata,  x2i, i2x)
             end if
          end if
 
-         !--- modify T wrt iFrac: (iFrac -> 0) => (T -> Tfrz) ---
-         i2x%rAttr(kt,n) = Tfrz + i2x%rAttr(kiFrac,n)*(i2x%rAttr(kt,n)-Tfrz) 
+         !--- modify T wrt iFrac: (iFrac -> 0) => (T -> tfreeze) ---
+         i2x%rAttr(kt,n) = tfreeze + i2x%rAttr(kiFrac,n)*(i2x%rAttr(kt,n)-tfreeze) 
 
       end do
 
