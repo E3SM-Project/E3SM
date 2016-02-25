@@ -16,7 +16,6 @@ from CIME.XML.component import Component
 from CIME.XML.testlist import Testlist
 import CIME.test_utils
 
-
 INITIAL_PHASE        = "INIT"
 CREATE_NEWCASE_PHASE = "CREATE_NEWCASE"
 XML_PHASE            = "XML"
@@ -64,7 +63,7 @@ class SystemTest(object):
         # machine is not a batch machine
         self._no_batch = no_batch or not self._machobj.has_batch_system()
         if test_root is None:
-            self._machobj.get_value("CESMSCRATCHROOT")
+            self._test_root = self._machobj.get_value("CESMSCRATCHROOT")
         else:
             self._test_root = test_root
         if self._project is not None:
@@ -559,7 +558,7 @@ class SystemTest(object):
         while not finished_tests:
             for test, thread_info in threads_in_flight.iteritems():
                 if not thread_info[0].is_alive():
-                    finished_tests.append(test, thread_info[1])
+                    finished_tests.append((test, thread_info[1]))
 
             if not finished_tests:
                 time.sleep(0.2)
@@ -586,6 +585,13 @@ class SystemTest(object):
         if not success:
             status_str += "    Case dir: %s\n" % self._get_test_dir(test)
         sys.stdout.write(status_str)
+
+        # On batch systems, we want to immediately submit to the queue, because
+        # it's very cheap to submit and will get us a better spot in line
+        if (not self._no_run and not self._no_batch and test_phase == BUILD_PHASE):
+            sys.stdout.write("Starting %s for test %s with %d procs\n" % (RUN_PHASE, test, 1))
+            self._update_test_status(test, RUN_PHASE, TEST_PENDING_STATUS)
+            self._consumer(test, RUN_PHASE, self._run_phase)
 
     ###########################################################################
     def _producer(self):
@@ -642,8 +648,9 @@ class SystemTest(object):
             scripts_root = CIME.utils.get_scripts_root()
             template_file = os.path.join(python_libs_root, "cs.status.template")
             template = open(template_file, "r").read()
-            template = template.replace("<PATH>", scripts_root).replace("<TESTID>", self._test_id)
-
+            template = template.replace("<PATH>",
+                                        os.path.join(self._cime_root,"scripts","Tools")).replace\
+                                        ("<TESTID>", self._test_id)
             cs_status_file = os.path.join(self._test_root, "cs.status.%s" % self._test_id)
             with open(cs_status_file, "w") as fd:
                 fd.write(template)
