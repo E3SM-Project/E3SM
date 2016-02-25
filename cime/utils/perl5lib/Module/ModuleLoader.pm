@@ -76,19 +76,33 @@ sub loadModules()
 	my %oldenv = %ENV;
 	my $envfile = $self->{'caseroot'} . "/env_mach_specific";
 	my $cshenv = "env ";
-    $cshenv .= "COMPILER=". $self->{'compiler'} . " " ;
-    $cshenv .= "MPILIB=". $self->{'mpilib'} . " " ;
-    $cshenv .= "DEBUG=". $self->{'debug'} . " " ;
-    $cshenv .= "CASEROOT=". $self->{'caseroot'} . " " ;
-    $cshenv .= "PERL=TRUE ";
+    	$cshenv .= "COMPILER=". $self->{'compiler'} . " " ;
+    	$cshenv .= "MPILIB=". $self->{'mpilib'} . " " ;
+    	$cshenv .= "DEBUG=". $self->{'debug'} . " " ;
+    	$cshenv .= "CASEROOT=". $self->{'caseroot'} . " " ;
+    	$cshenv .= "PERL=TRUE ";
 	my $cmd = $cshenv . " " . $envfile ;
 	#print "running command $cmd\n";
+	print "ndk neon running command $cmd\n";
+        my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =localtime(time);
+        my $ntimestamp = sprintf ( "%04d.%02d.%02d.%02d.%02d.%02d",$year+1900,$mon+1,$mday,$hour,$min,$sec);
+        #print "ntimestamp=$ntimestamp\n";
+        my $dfile="debugML_".$ntimestamp.".txt";
+        open(DEBUGOUT, ">$dfile");
+        print DEBUGOUT "ndk neon time=$ntimestamp running command $cmd\n";
 	my @output;
-	#ndk eval { @output = qx($cmd);};  #ndk For whatever reason, using this was causing problems with modules on NERSC systems with bash
-	eval { @output = qx(env $envfile);};
+	eval { @output = qx($cmd);};  #ndk looking at this while debugging problems with modules on NERSC systems with bash
 	#eval { $out = `$cmd`;};
 	#$out = `$cmd`;
 	chomp @output;
+        print DEBUGOUT "after running command output follows\n";
+        print DEBUGOUT "number of lines = $#output\n";
+        print DEBUGOUT '@output=qx($cmd) and output='; 
+        print DEBUGOUT "\n\n";
+        for my $i(0 .. $#output) {
+           my $oo=$output[$i];
+           print DEBUGOUT "$oo\n";
+        }
 	#print Dumper \@output;
 	if($?)
 	{
@@ -116,6 +130,7 @@ sub loadModules()
 		{
 	            chomp $line;
 	            #print "line: $line\n";
+                    print DEBUGOUT "line: $line\n";
 	            my ($key, $value) = split('=', $line, 2);
 	            $newenv{$key} = $value;
                 }
@@ -127,16 +142,21 @@ sub loadModules()
 		if(! defined $oldenv{$k})
 		{
 		    #print "new env var: $newenv{$k}\n";
+                   print DEBUGOUT "new    env var: $k=$newenv{$k}\n";
 			$newbuildenv{$k} = $newenv{$k};
 			$ENV{$k} = $newenv{$k};
 		}
 		if(defined $oldenv{$k} && $newenv{$k} ne $oldenv{$k})
 		{
 		    #print "modified env var: $newenv{$k}\n";
+                    print DEBUGOUT "modified env var: $k=$newenv{$k}\n";
 			$newbuildenv{$k} = $newenv{$k};
 			$ENV{$k} = $newenv{$k};
 		}
 	}
+
+        close (DEBUGOUT);
+
 	$ENV{CIME_MODULES_LOADED} = 1;
 	return %newbuildenv;
 
