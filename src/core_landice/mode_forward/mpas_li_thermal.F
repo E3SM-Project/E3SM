@@ -50,7 +50,9 @@ module li_thermal
    public :: li_thermal_init, li_thermal_solver, &
              li_init_linear_temperature_in_column,  &
              li_heat_dissipation_sia, li_basal_friction_sia,  &
-             li_temperature_to_enthalpy, li_enthalpy_to_temperature
+             li_temperature_to_enthalpy, li_enthalpy_to_temperature, &
+             li_compute_pressure_melting_point_fields
+
 
    !--------------------------------------------------------------------
    !
@@ -2761,7 +2763,7 @@ module li_thermal
          layerCenterSigma,  &
          thickness,         &
          pmpTemperature)
-      
+
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -2771,7 +2773,7 @@ module li_thermal
 
       real (kind=RKIND), intent(in) ::  &
            thickness             !< Input: ice thickness
- 
+
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
@@ -2781,7 +2783,7 @@ module li_thermal
 
       ! Compute the pressure melting point temperature in the column
 
-      pmpTemperature(:) = - iceMeltingPointPressureDependence * rhoi * gravity * thickness * layerCenterSigma(:) 
+      pmpTemperature(:) = - iceMeltingPointPressureDependence * rhoi * gravity * thickness * layerCenterSigma(:)
 
     end subroutine pressure_melting_point_column
 
@@ -2793,21 +2795,21 @@ module li_thermal
 !> \author William Lipscomb
 !> \date   October 2015
 !> \details
-!>  This routine computes the pressure melting point temperature at a 
+!>  This routine computes the pressure melting point temperature at a
 !>  given depth in an ice column.
 !-----------------------------------------------------------------------
 
     subroutine pressure_melting_point(&
          depth,           &
          pmpTemperature)
-      
+
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
 
       real (kind=RKIND), intent(in) ::  &
            depth                !< Input: depth in column
- 
+
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
@@ -2820,6 +2822,66 @@ module li_thermal
       pmpTemperature = - iceMeltingPointPressureDependence * rhoi * gravity * depth
 
     end subroutine pressure_melting_point
+
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  !  routine li_compute_pressure_melting_point_fields
+!
+!> \brief MPAS compute pressure melting point temperature for entire domain
+!> \author Matthew Hoffman
+!> \date   February 2016
+!> \details
+!>  This routine computes the pressure melting point temperature for the
+!>  entire interior ice domain and the basal boundary.
+!>  It makes use of existing routines for PMP calculations.
+!>  This is created for diagnostic output purposes, and is not used by the
+!>  thermal solver.
+!-----------------------------------------------------------------------
+
+    subroutine li_compute_pressure_melting_point_fields(&
+         nCells,                 &
+         thickness,              &
+         layerCenterSigma,       &
+         pmpTemperature,         &
+         basalPmpTemperature)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      integer, intent(in) :: nCells !< Input: number of cells
+
+      real (kind=RKIND), dimension(:), intent(in) ::  &
+           thickness                !< Input: thickness field
+
+      real (kind=RKIND), dimension(:), intent(in) ::  &
+           layerCenterSigma         !< Input: layer sigma levels
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+           pmpTemperature          !< Output: pressure melting point temperature (K) for interior ice
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+           basalPmpTemperature     !< Output: pressure melting point temperature (K) at ice-bed interface
+
+      ! Local variables
+      integer :: iCell
+
+      do iCell = 1, nCells
+         ! Calculate internal ice PMP
+         call pressure_melting_point_column(layerCenterSigma, thickness(iCell), pmpTemperature(:,iCell))
+         ! Calculate basal PMP
+         call pressure_melting_point(thickness(iCell), basalPmpTemperature(iCell))
+      enddo
+
+      ! Convert from Celsius to Kelvin
+      pmpTemperature = pmpTemperature + kelvin_to_celsius
+      basalPmpTemperature = basalPmpTemperature + kelvin_to_celsius
+
+    end subroutine li_compute_pressure_melting_point_fields
+
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
