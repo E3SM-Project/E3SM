@@ -1349,7 +1349,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
         ! for each level k, unpack all tracer neighbor data on that level
         kptr=(k-1)*qsize
         neigh_q=0
-        u(:,:,:) = elem(ie)%state%Q(:,:,k,:)
+        u(:,:,:) = elem(ie)%state%Q(:,:,k,1:qsize)
         call ghostVunpack_unoriented (ghostbuf_tr, neigh_q, np, qsize, kptr, elem(ie)%desc, elem(ie)%GlobalId, u)
 
         do i=1,np
