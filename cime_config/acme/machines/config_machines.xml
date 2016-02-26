@@ -617,16 +617,16 @@
 <machine MACH="blues">
          <DESC>ANL/LCRC Linux Cluster</DESC>
          <NODENAME_REGEX>blogin</NODENAME_REGEX>
-         <TESTS>acme_integration</TESTS>
-         <COMPILERS>pgi,intel,gnu,nag</COMPILERS>
-         <MPILIBS>mvapich,mpich,openmpi,mpi-serial</MPILIBS>
+         <TESTS>acme_integration,acme_developer</TESTS>
+         <COMPILERS>gnu</COMPILERS><!--,pgi,intel,nag</COMPILERS>-->
+         <MPILIBS>mvapich</MPILIBS><!--,mpich,openmpi,mpi-serial</MPILIBS>-->
          <CESMSCRATCHROOT>/lcrc/project/$PROJECT/$USER/acme_scratch</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
          <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/lcrc/project/$PROJECT/$USER/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
+         <DOUT_L_MSROOT>/lcrc/project/$PROJECT/$USER/archive/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/lcrc/group/earthscience/acme_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/home/ccsm-data/tools/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
@@ -636,14 +636,15 @@
          <SUPPORTED_BY>acme</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+	 <PES_PER_NODE>16</PES_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	 <PROJECT>ACME</PROJECT>
          <batch_system type="pbs" version="x.y">
            <walltimes>
-             <walltime default="true">59:00</walltime>
+             <walltime default="true">15:00</walltime>
            </walltimes>
          </batch_system>
-         <mpirun mpilib="default">
+         <mpirun mpilib="mvapich">
            <executable>mpiexec</executable>
            <arguments>
              <arg name="num_tasks"> -n {{ num_tasks }} </arg>
@@ -652,6 +653,24 @@
          <mpirun mpilib="mpi-serial">
              <executable></executable>
          </mpirun>
+    <module_system type="soft">
+      <init_path lang="csh">/etc/profile.d/a_softenv.csh</init_path>
+      <cmd_path lang="csh">soft</cmd_path>
+      <init_path lang="sh">/etc/profile.d/a_softenv.sh</init_path>
+      <cmd_path lang="sh">soft</cmd_path>
+      <modules>
+	<command name="add">+gcc-5.2</command>
+	<command name="add">+netcdf-4.3.3.1-gnu5.2-serial</command>
+	<command name="add">+cmake-2.8.12</command>
+	<command name="add">+python-2.7</command>
+	<command name="add">+mvapich2-2.2b-gcc-5.2-psm</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="NETCDFROOT">/soft/netcdf_serial/4.3.3.1/gnu-5.2</env>
+      <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm</env>
+    </environment_variables>
+
 </machine>
 
 <machine MACH="cetus">
