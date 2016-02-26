@@ -283,6 +283,10 @@ Contains
     integer :: storage
     integer, dimension(1) :: chunksizes
 
+    integer :: chunk_cache_size
+    integer :: chunk_cache_nelems
+    real :: chunk_cache_preemption
+
     shuffle = 0
     deflate = 1
     deflate_level = 2
@@ -299,7 +303,33 @@ Contains
     filename = fnames(test_id)
     iotype   = iotypes(test_id)
 
-    ! Open existing file, write data to it
+    ! Set the chunk cache for netCDF-4/HDF5 files.
+    chunk_cache_size = 1024 * 1024
+    chunk_cache_nelems = 3
+    chunk_cache_preemption = 0.1
+    ret_val = PIO_set_chunk_cache(pio_iosystem%iosysid, iotype, chunk_cache_size, chunk_cache_nelems, &
+         chunk_cache_preemption)
+    
+    ! Should not have worked except for netCDF-4/HDF5 iotypes.
+    if (iotype .eq. PIO_iotype_netcdf4c .and. ret_val .ne. PIO_NOERR) then
+       err_msg = "Could not set chunk cache"
+       call PIO_closefile(pio_file)
+       return
+    else if (iotype .eq. PIO_iotype_pnetcdf .and. ret_val .eq. PIO_NOERR) then
+       err_msg = "Did not get expected error when trying to set chunk cache for pnetcdf file"
+       call PIO_closefile(pio_file)
+       return
+    else if (iotype .eq. PIO_iotype_netcdf .and. ret_val .eq. PIO_NOERR) then
+       err_msg = "Did not get expected error when trying to set chunk cache for netcdf classic file"
+       call PIO_closefile(pio_file)
+       return
+    else if (iotype .eq. PIO_iotype_netcdf4p .and. ret_val .ne. PIO_NOERR) then
+       err_msg = "Could not set chunk cache"
+       call PIO_closefile(pio_file)
+       return
+    end if
+
+    ! Open existing file, write data to itn
     print*, 'PIO_openfile ', filename
     ret_val = PIO_openfile(pio_iosystem, pio_file, iotype, filename, PIO_write)
     if (ret_val .ne. PIO_NOERR) then
@@ -359,30 +389,6 @@ Contains
        call PIO_closefile(pio_file)
        return
     end if
-
-    ! Try to set chunksizes for this variable.
-    ! storage = 0
-    ! chunksizes(1) = 42
-    ! ret_val = PIO_def_var_chunking(pio_file, pio_var, storage, chunksizes)
-
-    ! ! Should not have worked except for netCDF-4/HDF5 serial and netCDF-4/HDF5 parallel.
-    ! if (iotype .eq. PIO_iotype_netcdf4c .and. ret_val .ne. PIO_NOERR) then
-    !    err_msg = "Could not set chunksizes for variable foo2222 in netCDF-4 serial file"
-    !    call PIO_closefile(pio_file)
-    !    return
-    ! else if (iotype .eq. PIO_iotype_pnetcdf .and. ret_val .eq. PIO_NOERR) then
-    !    err_msg = "Did not get expected error when trying to set chunksizes for pnetcdf file"
-    !    call PIO_closefile(pio_file)
-    !    return
-    ! else if (iotype .eq. PIO_iotype_netcdf .and. ret_val .eq. PIO_NOERR) then
-    !    err_msg = "Did not get expected error when trying to set chunksizes for netcdf classic file"
-    !    call PIO_closefile(pio_file)
-    !    return
-    ! else if (iotype .eq. PIO_iotype_netcdf4p .and. ret_val .ne. PIO_NOERR) then
-    !    err_msg = "Could not set chunksizes for variable foo2222 in netCDF-4 parallel file"
-    !    call PIO_closefile(pio_file)
-    !    return
-    ! end if
 
     print*, 'PIO_put_att'
     ret_val = PIO_put_att(pio_file, pio_var, "max_val", ntasks)
