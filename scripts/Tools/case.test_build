@@ -8,16 +8,17 @@ from standard_script_setup import *
 
 from CIME.case import Case
 from CIME.SystemTests.system_tests_common import TESTRUNDIFF, TESTRUNFAIL, TESTRUNPASS
-from CIME.SystemTests.sms import SMS
 from CIME.SystemTests.cme import CME
+from CIME.SystemTests.eri import ERI
 from CIME.SystemTests.erp import ERP
+from CIME.SystemTests.err import ERR
+from CIME.SystemTests.ers import ERS
 from CIME.SystemTests.nck import NCK
+from CIME.SystemTests.ncr import NCR
 from CIME.SystemTests.pea import PEA
 from CIME.SystemTests.pem import PEM
-from CIME.SystemTests.ers import ERS
-from CIME.SystemTests.err import ERR
-from CIME.SystemTests.eri import ERI
 from CIME.SystemTests.seq import SEQ
+from CIME.SystemTests.sms import SMS
 from CIME.utils import expect
 
 ###############################################################################

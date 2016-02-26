@@ -201,6 +201,8 @@ if (! $clean ) {
 
     } else {
 
+	_check_pelayouts_require_rebuild($xmlvars{'COMP_ICE'},$xmlvars{'COMP_OCN'});
+
 	my $sysmod = "./Tools/check_lockedfiles --caseroot $caseroot";
 	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 
@@ -268,12 +270,6 @@ if (! $clean ) {
 							     job => 'run'
 	                                                     );
 
-#	if(defined $xmlvars{TESTCASE}){
-#	    my $inputbatchscript  = "$xmlvars{'MACHDIR'}/python.case.test";
-#	    my $outputbatchscript = "$xmlvars{'CASEROOT'}/case.test";
-#	    $batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
-#	}
-
 	my $inputbatchscript  = "$xmlvars{'MACHDIR'}/template.case.run";
 	my $outputbatchscript = "$xmlvars{'CASEROOT'}/case.run";
 	$batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
@@ -291,11 +287,10 @@ if (! $clean ) {
 
 	# Make a copy of env_mach_pes.xml in order to be able
 	# to check that it does not change once case.setup is invoked
-	if (! -e "LockedFiles/env_mach_pes.xml") {
-	    $sysmod = "cp env_mach_pes.xml  LockedFiles/env_mach_pes.xml";
-	    system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
-	    $logger->info("Locking file env_mach_pes.xml ");
-	}
+	$sysmod = "cp env_mach_pes.xml  LockedFiles/env_mach_pes.xml";
+	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
+	$logger->info("Locking file env_mach_pes.xml ");
+
     }
 
     #--------------------------------------------------------------------------
@@ -377,12 +372,12 @@ if ($clean) {
     $sysmod = "rm ./case.run";
     system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 
-    # remove relevant files from $caseroot/LockedFiels
-    my @files = <${caseroot}/LockedFiles/env_build.xml ${caseroot}/LockedFiles/env_mach_pes.xml>;
-    foreach my $file (@files) {
-	$sysmod = "rm -f $file";
-	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
-    }
+    # remove relevant files from $caseroot/LockedFiles
+#    my @files = <${caseroot}/LockedFiles/env_build.xml ${caseroot}/LockedFiles/env_mach_pes.xml>;
+#    foreach my $file (@files) {
+#	$sysmod = "rm -f $file";
+#	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
+#    }
 
     # only do the following if are NOT in testmode
     if (! $testmode)  {
@@ -411,6 +406,35 @@ if ($clean) {
     $fh->close();
 
 }
+
+sub _check_pelayouts_require_rebuild {
+    my ($xmlvars) = @_;
+    if ( -e "LockedFiles/env_mach_pes.xml") {
+	# Look to see if $comp_PE_CHANGE_REQUIRES_REBUILD is defined for any component
+	foreach my $comp (qw(ATM LND ROF OCN ICE GLC WAV)){
+	    if(defined $xmlvars{$comp."_PE_CHANGE_REQUIRES_REBUILD"} &&
+	       $xmlvars{$comp."_PE_CHANGE_REQUIRES_REBUILD"} == "true"){
+		# Changing these values in env_mach_pes.xml will force you to clean the corresponding component
+		my $old_tasks = `./xmlquery NTASKS_$comp -file LockedFiles/env_mach_pes.xml -value`;
+		my $old_threads = `./xmlquery NTHRDS_$comp -file LockedFiles/env_mach_pes.xml -value`;
+		my $old_inst = `./xmlquery NINST_$comp -file LockedFiles/env_mach_pes.xml -value`;
+		my $new_tasks = `./xmlquery NTASKS_$comp -file env_mach_pes.xml -value`;
+		my $new_threads = `./xmlquery NTHRDS_$comp -file env_mach_pes.xml -value`;
+		my $new_inst = `./xmlquery NINST_$comp -file env_mach_pes.xml -value`;
+		if($old_tasks != $new_tasks || $old_threads != $new_threads || $old_inst != $new_inst){
+		    $logger->warn("$comp pe change requires clean build");
+		    my $cleanflag = lc substr($comp,0,1);
+		    system("./case.clean_build -$cleanflag");
+		}
+	    }
+	}
+	unlink("LockedFiles/env_mach_pes.xml");
+    }
+
+}
+
+
+
 
 #-----------------------------------------------------------------------------------------------
 sub _build_usernl_files {
