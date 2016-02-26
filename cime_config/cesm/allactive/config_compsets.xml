@@ -71,7 +71,7 @@
 
   <compset>
     <alias>B1850</alias>
-    <lname>1850_CAM55_CLM50%BGC-CROP_CICE_POP2_MOSART_SGLC_SWAV</lname>
+    <lname>1850_CAM55_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM1%NOEVOLVE_SWAV_BGC%BDRD</lname>
   </compset>
 
   <compset>
