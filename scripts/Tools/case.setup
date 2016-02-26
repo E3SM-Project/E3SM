@@ -201,7 +201,7 @@ if (! $clean ) {
 
     } else {
 	_check_pelayouts_require_rebuild();
-
+	unlink("LockedFiles/env_build.xml") if(-e "LockedFiles/env_build.xml");
 	my $sysmod = "./Tools/check_lockedfiles --caseroot $caseroot";
 	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 
@@ -371,13 +371,6 @@ if ($clean) {
     $sysmod = "rm ./case.run";
     system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 
-    # remove relevant files from $caseroot/LockedFiles
-#    my @files = <${caseroot}/LockedFiles/env_build.xml ${caseroot}/LockedFiles/env_mach_pes.xml>;
-#    foreach my $file (@files) {
-#	$sysmod = "rm -f $file";
-#	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
-#    }
-
     # only do the following if are NOT in testmode
     if (! $testmode)  {
 	# rebuild the models (even on restart)
@@ -431,10 +424,6 @@ sub _check_pelayouts_require_rebuild {
     }
 
 }
-
-
-
-
 #-----------------------------------------------------------------------------------------------
 sub _build_usernl_files {
     # Create user_nl_xxx files
