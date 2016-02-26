@@ -277,20 +277,27 @@ Contains
     integer                        :: pio_dim
     type(var_desc_t)               :: pio_var
 
+    ! These will be used to test the compression settings for netCDF-4
+    ! files.
     integer :: shuffle
     integer :: deflate
     integer :: my_deflate_level, deflate_level, deflate_level_2
+
+    ! These will be used to test the chunksizes for netCDF-4 files.
     integer :: storage
     integer, dimension(1) :: chunksizes
 
+    ! These will be used to set chunk cache sizes in netCDF-4/HDF5
+    ! files.
     integer :: chunk_cache_size
     integer :: chunk_cache_nelems
     real :: chunk_cache_preemption
 
-    shuffle = 0
-    deflate = 1
-    deflate_level = 2
-    deflate_level_2 = 4
+    ! These will be used to check the settings of the chunk caches.
+    integer :: chunk_cache_size_in
+    integer :: chunk_cache_nelems_in
+    real :: chunk_cache_preemption_in
+
     err_msg = "no_error"
 
     dims(1) = 2*ntasks
@@ -314,6 +321,36 @@ Contains
     if (iotype .eq. PIO_iotype_netcdf4c .and. ret_val .ne. PIO_NOERR) then
        err_msg = "Could not set chunk cache"
        call PIO_closefile(pio_file)
+       return
+    else if (iotype .eq. PIO_iotype_pnetcdf .and. ret_val .eq. PIO_NOERR) then
+       err_msg = "Did not get expected error when trying to set chunk cache for pnetcdf file"
+       call PIO_closefile(pio_file)
+       return
+    else if (iotype .eq. PIO_iotype_netcdf .and. ret_val .eq. PIO_NOERR) then
+       err_msg = "Did not get expected error when trying to set chunk cache for netcdf classic file"
+       call PIO_closefile(pio_file)
+       return
+    else if (iotype .eq. PIO_iotype_netcdf4p .and. ret_val .ne. PIO_NOERR) then
+       err_msg = "Could not set chunk cache"
+       call PIO_closefile(pio_file)
+       return
+    end if
+
+    ! Check the settings of the chunk cache for netCDF-4/HDF5 files.
+    ret_val = PIO_set_chunk_cache(pio_iosystem%iosysid, iotype, chunk_cache_size_in, chunk_cache_nelems_in, &
+         chunk_cache_preemption_in)
+    
+    ! Should not have worked except for netCDF-4/HDF5 iotypes.
+    if (iotype .eq. PIO_iotype_netcdf4c .or. iotype .eq. PIO_iotype_netcdf4p) then
+       if (ret_val .ne. PIO_NOERR) then
+          err_msg = "Could not set chunk cache"
+          call PIO_closefile(pio_file)
+       endif
+       if (chunk_cache_size_in .ne. chunk_cache_size .or. chunk_cache_nelems_in .ne. chunk_cache_nelems .or. &
+            chunk_cache_preemption_in .ne. chunk_cache_preemption) then
+          err_msg = "Incorrect chunk cache values!"
+          call PIO_closefile(pio_file)
+       endif
        return
     else if (iotype .eq. PIO_iotype_pnetcdf .and. ret_val .eq. PIO_NOERR) then
        err_msg = "Did not get expected error when trying to set chunk cache for pnetcdf file"
@@ -367,7 +404,11 @@ Contains
     end if
 
     ! Try to turn on compression for this variable.
-    print*, 'PIO_def_var_deflate'
+    print*, 'PIO_def_var_deflate' 
+    shuffle = 0
+    deflate = 1
+    deflate_level = 2
+    deflate_level_2 = 4
     ret_val = PIO_def_var_deflate(pio_file, pio_var, shuffle, deflate, &
          deflate_level)
 
