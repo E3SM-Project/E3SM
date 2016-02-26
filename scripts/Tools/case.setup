@@ -200,8 +200,7 @@ if (! $clean ) {
 	$logger->info( "Machine/Decomp/Pes configuration has already been done ...skipping ");
 
     } else {
-
-	_check_pelayouts_require_rebuild($xmlvars{'COMP_ICE'},$xmlvars{'COMP_OCN'});
+	_check_pelayouts_require_rebuild();
 
 	my $sysmod = "./Tools/check_lockedfiles --caseroot $caseroot";
 	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
