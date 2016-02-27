@@ -114,8 +114,9 @@ contains
           t2 = t
 
           if(.not. ignoretime) then
-             tdiff = abs(time(t1,1) - time(t2,2))
-             do while(t1<=ns1 .and. t2<= ns2 .and. tdiff > timeepsilon) 
+             do while(t1<=ns1 .and. t2<= ns2)
+                tdiff = abs(time(t1,1) - time(t2,2))
+                if (tdiff < timeepsilon) exit
                 if(time(t1,1) < time(t2,2)) then
                    Write(6,*) 'Skipping a time sample on file 1'
                    t1=t1+1
