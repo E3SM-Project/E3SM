@@ -37,7 +37,8 @@ vfile_int     = "vcoord/cami-26.ascii"
  output_timeunits=1
  output_frequency = 1
  infilenames='h0-tavg.nc'
- output_varnames1='area','corners','hypervis','cv_lat','cv_lon','phys_lat','phys_lon','phys_cv_lat','phys_cv_lon','phys_area'
+ output_varnames1='area','corners','hypervis','cv_lat','cv_lon','phys_lat','phys_lon','phys_cv_lat','phys_cv_lon'
+! removing 'phys_area' since this is not BFB accross different runs 
  output_type='netcdf'
 ! num_io_procs = 1
  io_stride = 8
