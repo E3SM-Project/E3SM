@@ -4,17 +4,19 @@ partmethod                   = 4
 topology                     = "cube"
 test_case                    = "asp_baroclinic"
 rotate_grid                  = 0
-ne                           = 6
+ne                           = 2
 qsize                        = 4
 tstep_type                   = 5 
-ndays                        = 3
-statefreq                    = 45
+ndays                        = 1
+statefreq                    = 36
 restartfreq                  = 43200
 restartfile                  = "./R0001"
 runtype                      = 0
-tstep                        = 480
+tstep                        = 1200
 rsplit                       = 3
-qsplit                       = 1
+qsplit                       = 3
+use_semi_lagrange_transport  = .true.
+cubed_sphere_map = 2
 integration                  = "explicit"
 nu                           = 5e16
 nu_s                         = -1  ! use same value as nu
@@ -48,10 +50,10 @@ profile_single_file	= .true.
 /
 
 &analysis_nl
-output_prefix     = "camBaroMoist-"
+output_prefix     = "camBaroMoist-SL-"
 interp_gridtype   = 2
 output_timeunits  = 1,1
-output_frequency  = 3,3
+output_frequency  = 1,1
 output_start_time = 0,0
 output_end_time   = 30,30
 output_varnames1  = 'zeta', 'u', 'v', 'ps', 'dp3d'

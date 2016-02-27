@@ -1,8 +1,22 @@
 03/2013 BFJ
+02/2016 MT
+
 
 Please see the HOMME wiki for information on how to build HOMME using the CMake build system.
 
 https://wiki.ucar.edu/display/homme/The+HOMME+CMake+build+and+testing+system
+
+Also, see the instructions for running the CMake regression test: homme/test/reg_test/README
+
+Scripts which will CMake configure, build, construct namelists and run a test, see:
+
+homme/test/sw_conservative/swtc[1256]ref.sh
+homme/test/jw_baroclinic/baro.job
+
+
+
+
+***OBSOLETE***
 
 03/2013 CGB and KJE and JER
 

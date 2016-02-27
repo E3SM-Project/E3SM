@@ -604,7 +604,6 @@ endif
     integer :: i,k,ir,ll,iptr
 
     integer :: is,ie,in,iw
-    integer :: nce
 
     !call t_adj_detailf(+2)
     !call t_startf('edgeVpack')
@@ -692,12 +691,12 @@ endif
     endif
 
     !set the max_corner_elem
-    nce = max_corner_elem
 ! SWEST
     do ll=swest,swest+max_corner_elem-1
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
-                edge%buf(nce*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(1  ,1 ,k)
+                iptr = (kptr+k-1)+edge%putmap(ll,ielem)+1
+                edge%buf(iptr)=v(1  ,1 ,k)
             end do
         end if
     end do
@@ -706,7 +705,8 @@ endif
     do ll=swest+max_corner_elem,swest+2*max_corner_elem-1
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
-                edge%buf(nce*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(np ,1 ,k)
+                iptr = (kptr+k-1)+edge%putmap(ll,ielem)+1
+                edge%buf(iptr)=v(np ,1 ,k)
 !                edge%buf(kptr+k,edge%putmap(ll,ielem)+1)=v(np ,1 ,k)
             end do
         end if
@@ -716,7 +716,8 @@ endif
     do ll=swest+3*max_corner_elem,swest+4*max_corner_elem-1
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
-                edge%buf(nce*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(np ,np,k)
+                iptr = (kptr+k-1)+edge%putmap(ll,ielem)+1
+                edge%buf(iptr)=v(np ,np,k)
 !                edge%buf(kptr+k,edge%putmap(ll,ielem)+1)=v(np ,np,k)
             end do
         end if
@@ -726,7 +727,8 @@ endif
     do ll=swest+2*max_corner_elem,swest+3*max_corner_elem-1
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
-                edge%buf(nce*(kptr+k-1)+edge%putmap(ll,ielem)+1)=v(1  ,np,k)
+                iptr = (kptr+k-1)+edge%putmap(ll,ielem)+1
+                edge%buf(iptr)=v(1  ,np,k)
 !                edge%buf(kptr+k,edge%putmap(ll,ielem)+1)=v(1  ,np,k)
             end do
         end if
@@ -752,7 +754,6 @@ endif
     integer :: i,k,ir,ll,iptr
 
     integer :: is,ie,in,iw
-    integer :: nce
     real (kind=real_kind) :: tmp
 
 !pw call t_adj_detailf(+2)
@@ -773,13 +774,11 @@ endif
        edge%buf(iptr+in+1)   = v(k) ! North
        edge%buf(iptr+iw+1)   = v(k) ! West
     enddo
-    !set the max_corner_elem
-    nce = max_corner_elem
 ! SWEST
     do ll=swest,swest+max_corner_elem-1
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
-                iptr = nce*(kptr+k-1)
+                iptr = (kptr+k-1)
                 edge%buf(iptr+edge%putmap(ll,ielem)+1)=v(k)
             end do
         end if
@@ -789,7 +788,7 @@ endif
     do ll=swest+max_corner_elem,swest+2*max_corner_elem-1
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
-                iptr = nce*(kptr+k-1)
+                iptr = (kptr+k-1)
                 edge%buf(iptr+edge%putmap(ll,ielem)+1)=v(k)
             end do
         end if
@@ -799,7 +798,7 @@ endif
     do ll=swest+3*max_corner_elem,swest+4*max_corner_elem-1
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
-                iptr = nce*(kptr+k-1)
+                iptr = (kptr+k-1)
                 edge%buf(iptr+edge%putmap(ll,ielem)+1)=v(k)
             end do
         end if
@@ -809,7 +808,7 @@ endif
     do ll=swest+2*max_corner_elem,swest+3*max_corner_elem-1
         if (edge%putmap(ll,ielem) /= -1) then
             do k=1,vlyr
-                iptr = nce*(kptr+k-1)
+                iptr = (kptr+k-1)
                 edge%buf(iptr+edge%putmap(ll,ielem)+1)=v(k)
             end do
         end if
@@ -976,7 +975,7 @@ endif
     !type (EdgeDescriptor_t)            :: desc
 
     ! Local
-    integer :: i,k,ll,iptr,nce
+    integer :: i,k,ll,iptr
     integer :: is,ie,in,iw
     integer :: ks,ke,kblock
     logical :: done
@@ -1018,11 +1017,10 @@ endif
     enddo
 
 ! SWEST
-    nce = max_corner_elem
     do ll=swest,swest+max_corner_elem-1
         if(edge%getmap(ll,ielem) /= -1) then 
             do k=1,vlyr
-                v(1  ,1 ,k)=v(1 ,1 ,k)+edge%receive(nce*(kptr+k-1)+edge%getmap(ll,ielem)+1)
+                v(1  ,1 ,k)=v(1 ,1 ,k)+edge%receive((kptr+k-1)+edge%getmap(ll,ielem)+1)
             enddo
         endif
     end do
@@ -1031,7 +1029,7 @@ endif
     do ll=swest+max_corner_elem,swest+2*max_corner_elem-1
         if(edge%getmap(ll,ielem) /= -1) then 
             do k=1,vlyr
-                v(np ,1 ,k)=v(np,1 ,k)+edge%receive(nce*(kptr+k-1)+edge%getmap(ll,ielem)+1)
+                v(np ,1 ,k)=v(np,1 ,k)+edge%receive((kptr+k-1)+edge%getmap(ll,ielem)+1)
             enddo
         endif
     end do
@@ -1040,7 +1038,7 @@ endif
     do ll=swest+3*max_corner_elem,swest+4*max_corner_elem-1
         if(edge%getmap(ll,ielem) /= -1) then 
             do k=1,vlyr
-                v(np ,np,k)=v(np,np,k)+edge%receive(nce*(kptr+k-1)+edge%getmap(ll,ielem)+1)
+                v(np ,np,k)=v(np,np,k)+edge%receive((kptr+k-1)+edge%getmap(ll,ielem)+1)
             enddo
         endif
     end do
@@ -1049,7 +1047,7 @@ endif
     do ll=swest+2*max_corner_elem,swest+3*max_corner_elem-1
         if(edge%getmap(ll,ielem) /= -1) then 
             do k=1,vlyr
-                v(1  ,np,k)=v(1 ,np,k)+edge%receive(nce*(kptr+k-1)+edge%getmap(ll,ielem)+1)
+                v(1  ,np,k)=v(1 ,np,k)+edge%receive((kptr+k-1)+edge%getmap(ll,ielem)+1)
             enddo
         endif
     end do
@@ -1342,6 +1340,7 @@ endif
     end do
 
     nce = max_corner_elem
+!   this is probably broken.  nce should be 1?  MT 2016/2/9
     i = swest
     if(edge%getmap(i,ielem) /= -1) then
       do k=1,vlyr
@@ -1391,7 +1390,7 @@ endif
 
     ! Local
 
-    integer :: i,k,l,iptr,nce
+    integer :: i,k,l,iptr
     integer :: is,ie,in,iw
 
     threadsafe=.false.
@@ -1410,12 +1409,11 @@ endif
        end do
     end do
 
-    nce = max_corner_elem
 ! SWEST
     do l=swest,swest+max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(1  ,1 ,k)=MAX(v(1 ,1 ,k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                v(1  ,1 ,k)=MAX(v(1 ,1 ,k),edge%receive((kptr+k-1)+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -1424,7 +1422,7 @@ endif
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(np ,1 ,k)=MAX(v(np,1 ,k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                v(np ,1 ,k)=MAX(v(np,1 ,k),edge%receive((kptr+k-1)+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -1433,7 +1431,7 @@ endif
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then
             do k=1,vlyr
-                v(np ,np,k)=MAX(v(np,np,k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                v(np ,np,k)=MAX(v(np,np,k),edge%receive((kptr+k-1)+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -1442,7 +1440,7 @@ endif
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(1  ,np,k)=MAX(v(1 ,np,k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                v(1  ,np,k)=MAX(v(1 ,np,k),edge%receive((kptr+k-1)+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -1462,7 +1460,7 @@ endif
 
     ! Local
 
-    integer :: i,k,l,iptr,nce
+    integer :: i,k,l,iptr
     integer :: is,ie,in,iw
 
 !pw call t_startf('edgeSunpack')
@@ -1477,12 +1475,11 @@ endif
        v(k) = MAX(v(k),edge%receive(iptr+is+1),edge%receive(iptr+ie+1),edge%receive(iptr+in+1),edge%receive(iptr+iw+1))
     end do
 
-    nce = max_corner_elem
 ! SWEST
     do l=swest,swest+max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                iptr = nce*(kptr+k-1)
+                iptr = (kptr+k-1)
                 v(k)=MAX(v(k),edge%receive(iptr+edge%getmap(l,ielem)+1))
             enddo
         endif
@@ -1492,7 +1489,7 @@ endif
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                iptr = nce*(kptr+k-1)
+                iptr = (kptr+k-1)
                 v(k)=MAX(v(k),edge%receive(iptr+edge%getmap(l,ielem)+1))
             enddo
         endif
@@ -1502,7 +1499,7 @@ endif
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then
             do k=1,vlyr
-                iptr = nce*(kptr+k-1)
+                iptr = (kptr+k-1)
                 v(k)=MAX(v(k),edge%receive(iptr+edge%getmap(l,ielem)+1))
             enddo
         endif
@@ -1512,7 +1509,7 @@ endif
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                iptr = nce*(kptr+k-1)
+                iptr = (kptr+k-1)
                 v(k)=MAX(v(k),edge%receive(iptr+edge%getmap(l,ielem)+1))
             enddo
         endif
@@ -1534,7 +1531,7 @@ endif
 
     ! Local
 
-    integer :: i,k,l,iptr,nce
+    integer :: i,k,l,iptr
     integer :: is,ie,in,iw
 
 !pw call t_startf('edgeSunpack')
@@ -1549,12 +1546,11 @@ endif
        v(k) = MIN(v(k),edge%receive(iptr+is+1),edge%receive(iptr+ie+1),edge%receive(iptr+in+1),edge%receive(iptr+iw+1))
     end do
 
-    nce = max_corner_elem
 ! SWEST
     do l=swest,swest+max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                iptr = nce*(kptr+k-1)
+                iptr = (kptr+k-1)
                 v(k)=MiN(v(k),edge%receive(iptr+edge%getmap(l,ielem)+1))
             enddo
         endif
@@ -1564,7 +1560,7 @@ endif
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                iptr = nce*(kptr+k-1)
+                iptr = (kptr+k-1)
                 v(k)=MIN(v(k),edge%receive(iptr+edge%getmap(l,ielem)+1))
             enddo
         endif
@@ -1574,7 +1570,7 @@ endif
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then
             do k=1,vlyr
-                iptr = nce*(kptr+k-1)
+                iptr = (kptr+k-1)
                 v(k)=MIN(v(k),edge%receive(iptr+edge%getmap(l,ielem)+1))
             enddo
         endif
@@ -1584,7 +1580,7 @@ endif
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                iptr = nce*(kptr+k-1)
+                iptr = (kptr+k-1)
                 v(k)=MIN(v(k),edge%receive(iptr+edge%getmap(l,ielem)+1))
             enddo
         endif
@@ -1606,7 +1602,7 @@ endif
 
     ! Local
 
-    integer :: i,k,l,iptr,nce
+    integer :: i,k,l,iptr
     integer :: is,ie,in,iw
 
     threadsafe=.false.
@@ -1626,11 +1622,10 @@ endif
     end do
 
 ! SWEST
-    nce = max_corner_elem
     do l=swest,swest+max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(1  ,1 ,k)=MIN(v(1 ,1 ,k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                v(1  ,1 ,k)=MIN(v(1 ,1 ,k),edge%receive((kptr+k-1)+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -1639,7 +1634,7 @@ endif
     do l=swest+max_corner_elem,swest+2*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(np ,1 ,k)=MIN(v(np,1 ,k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                v(np ,1 ,k)=MIN(v(np,1 ,k),edge%receive((kptr+k-1)+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -1648,7 +1643,7 @@ endif
     do l=swest+3*max_corner_elem,swest+4*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(np ,np,k)=MIN(v(np,np,k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                v(np ,np,k)=MIN(v(np,np,k),edge%receive((kptr+k-1)+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do
@@ -1657,7 +1652,7 @@ endif
     do l=swest+2*max_corner_elem,swest+3*max_corner_elem-1
         if(edge%getmap(l,ielem) /= -1) then 
             do k=1,vlyr
-                v(1  ,np,k)=MIN(v(1 ,np,k),edge%receive(nce*(kptr+k-1)+edge%getmap(l,ielem)+1))
+                v(1  ,np,k)=MIN(v(1 ,np,k),edge%receive((kptr+k-1)+edge%getmap(l,ielem)+1))
             enddo
         endif
     end do

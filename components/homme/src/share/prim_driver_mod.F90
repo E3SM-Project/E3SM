@@ -429,7 +429,7 @@ contains
 
        do ie=1,nelemd
           call cube_init_atomic(elem(ie),gp%points,area(1))
-          call rotation_init_atomic(elem(ie),rot_type)
+          !call rotation_init_atomic(elem(ie),rot_type)
        enddo
     end if
 

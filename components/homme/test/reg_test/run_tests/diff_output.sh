@@ -16,10 +16,17 @@ source ${HOMME_DIR}/tests/testing-utils.sh
 TEST_NAME=$1
 echo "Test name = ${TEST_NAME}"
 
-echo "Diffing the Netcdf output files"
+echo "Examining cprnc reference comparison output files"
+diffCprncRef
+echo "############################################################################"
+echo "  The diff using CPRNC has passed"
+echo "############################################################################"
+
+echo "Examining cprnc baseline comparison output files"
 diffCprncOutput
 echo "############################################################################"
 echo "  The diff using CPRNC has passed"
 echo "############################################################################"
+
 
 exit 0
