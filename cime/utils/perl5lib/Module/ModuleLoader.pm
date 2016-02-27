@@ -70,8 +70,19 @@ sub loadModules()
 	#};
 	#eval qx($self->{cmdpath} $cmd);
 
+        my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =localtime(time);
+        my $ntimestamp = sprintf ( "%04d.%02d.%02d.%02d.%02d.%02d",$year+1900,$mon+1,$mday,$hour,$min,$sec);
+        #print "ntimestamp=$ntimestamp\n";
+        my $dfile="debugML_".$ntimestamp.".txt";
+        open(DEBUGOUT, ">$dfile");
+
 	# Disable check - check will cause problem if scheduler is changing env - better reload 
-	#if(defined $ENV{CIME_MODULES_LOADED}) {return $self};
+	#ndk if(defined $ENV{CIME_MODULES_LOADED}) {return $self};
+	#if(defined $ENV{CIME_MODULES_LOADED}) {
+	#    print "ndk neon env CIME_MODULES_LOADED is true, returning\n";
+	#    print DEBUGOUT "ndk neon env CIME_MODULES_LOADED is true, returning\n";
+	#    return $self
+	#};
 
 	my %oldenv = %ENV;
 	my $envfile = $self->{'caseroot'} . "/env_mach_specific";
@@ -84,14 +95,14 @@ sub loadModules()
 	my $cmd = $cshenv . " " . $envfile ;
 	#print "running command $cmd\n";
 	print "ndk neon running command $cmd\n";
-        my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =localtime(time);
-        my $ntimestamp = sprintf ( "%04d.%02d.%02d.%02d.%02d.%02d",$year+1900,$mon+1,$mday,$hour,$min,$sec);
-        #print "ntimestamp=$ntimestamp\n";
-        my $dfile="debugML_".$ntimestamp.".txt";
-        open(DEBUGOUT, ">$dfile");
         print DEBUGOUT "ndk neon time=$ntimestamp running command $cmd\n";
 	my @output;
 	eval { @output = qx($cmd);};  #ndk looking at this while debugging problems with modules on NERSC systems with bash
+	#eval { @output = qx(env $envfile);};
+        #eval { @output = qx(env COMPILER=intel MPILIB=mpt DEBUG=FALSE CASEROOT=/scratch2/scratchdirs/ndk/acme_scratch/SMS.ne30_oEC.A_WCYCL2000.edison_intel.b07-feb25 PERL=TRUE $envfile);};
+        #eval { @output = qx(env COMPILER=intel MPILIB=mpt DEBUG=FALSE PERL=TRUE $envfile);};
+        #eval { @output = qx(env COMPILER=intel MPILIB=mpt DEBUG=FALSE $envfile);}; #works
+        #eval { @output = qx(env COMPILER=intel MPILIB=mpt DEBUG=FALSE CASEROOT=/scratch2/scratchdirs/ndk/acme_scratch/SMS.ne30_oEC.A_WCYCL2000.edison_intel.b07-feb25 $envfile);}; #works
 	#eval { $out = `$cmd`;};
 	#$out = `$cmd`;
 	chomp @output;
@@ -136,25 +147,41 @@ sub loadModules()
                 }
 	}
 	my %newbuildenv;
-	
-	foreach my $k(keys %newenv)
-	{
-		if(! defined $oldenv{$k})
-		{
-		    #print "new env var: $newenv{$k}\n";
-                   print DEBUGOUT "new    env var: $k=$newenv{$k}\n";
-			$newbuildenv{$k} = $newenv{$k};
-			$ENV{$k} = $newenv{$k};
-		}
-		if(defined $oldenv{$k} && $newenv{$k} ne $oldenv{$k})
-		{
-		    #print "modified env var: $newenv{$k}\n";
-                    print DEBUGOUT "modified env var: $k=$newenv{$k}\n";
-			$newbuildenv{$k} = $newenv{$k};
-			$ENV{$k} = $newenv{$k};
-		}
+
+        # only thing i'm suggesting we add in this case -- the other edits are debug
+	if (defined $oldenv{'_LMFILES_'}  && defined $newenv{'_LMFILES_000'} ) { # if there is a LF in old and a LF000 in new
+            # _LMFILES_ must have reached max size and was split into _LMFILES_000 and _LMFILES_001, ...
+	    delete $ENV{'_LMFILES_'}
 	}
 
+	foreach my $k(keys %newenv)
+	{
+	    print DEBUGOUT "k=$k ";
+		if(! defined $oldenv{$k})   # if this key is _not_ in the old set, add it as new
+		{
+		    #print "new env var: $newenv{$k}\n";
+                   print DEBUGOUT "new $k=$newenv{$k}\n";
+			$newbuildenv{$k} = $newenv{$k};
+			$ENV{$k} = $newenv{$k};
+		}
+		elsif(defined $oldenv{$k} && $newenv{$k} ne $oldenv{$k}) # if this var is in the old, and is different than it was in old
+		{
+		    #print "modified env var: $newenv{$k}\n";
+                    print DEBUGOUT "mod $k=$newenv{$k}\n";
+			$newbuildenv{$k} = $newenv{$k};
+			$ENV{$k} = $newenv{$k};
+		}
+	    else{
+		print DEBUGOUT "\n";
+	    }
+	}
+
+	foreach my $k(keys %newbuildenv) {
+	    print DEBUGOUT "nbe $k=$newbuildenv{$k}\n";
+	}
+	foreach my $k(keys %ENV) {
+	    print DEBUGOUT "ENV $k=$ENV{$k}\n";
+	}
         close (DEBUGOUT);
 
 	$ENV{CIME_MODULES_LOADED} = 1;
