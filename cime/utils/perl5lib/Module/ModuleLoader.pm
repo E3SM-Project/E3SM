@@ -127,11 +127,11 @@ sub loadModules()
 		chomp $output[$i];
 		if($output[$i] !~ /=/)
 		{
-			$output[$i] = '';
+                   $output[$i] = '';
 		}
 		if($output[$i] =~ /BASH_FUNC/i)
 		{
-			$output[$i] = '';
+                   $output[$i] = '';
 		}
 	}
 	#print Dumper \@output;
@@ -149,12 +149,22 @@ sub loadModules()
 	my %newbuildenv;
 
         # only thing i'm suggesting we add in this case -- the other edits are debug
-	if (defined $oldenv{'_LMFILES_'}  && defined $newenv{'_LMFILES_000'} ) { # if there is a LF in old and a LF000 in new
-            # _LMFILES_ must have reached max size and was split into _LMFILES_000 and _LMFILES_001, ...
-	    delete $ENV{'_LMFILES_'}
-	}
+	#if (defined $oldenv{'_LMFILES_'}  && defined $newenv{'_LMFILES_000'} ) { # if there is a LF in old and a LF000 in new
+        #    # _LMFILES_ must have reached max size and was split into _LMFILES_000 and _LMFILES_001, ...
+	#    delete $ENV{'_LMFILES_'}
+	#}
 
-	foreach my $k(keys %newenv)
+	# ndk: add a loop to see if our module adjusting _removed_ any environment variables which may need to be accounted for
+	foreach my $k(keys %oldenv) {
+           if($k =~ /BASH_FUNC/i) {
+              # leave this one alone
+           } elsif (defined $oldenv{$k} && !defined $newenv{$k}) { # if key in old but NOT in new, consider removing
+              print DEBUGOUT "del $k=$oldenv{$k}\n";
+	      delete $ENV{$k};
+           }
+        }
+        
+           foreach my $k(keys %newenv)
 	{
 	    print DEBUGOUT "k=$k ";
 		if(! defined $oldenv{$k})   # if this key is _not_ in the old set, add it as new
