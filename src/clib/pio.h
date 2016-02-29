@@ -366,8 +366,6 @@ int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
 int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
 			 int *deflatep, int *deflate_levelp);
 int PIOc_inq_var_szip(int ncid, int varid, int *options_maskp, int *pixels_per_blockp);
-int PIOc_def_var_fletcher32(int ncid, int varid, int fletcher32);
-int PIOc_inq_var_fletcher32(int ncid, int varid, int *fletcher32p);
 int PIOc_def_var_chunking(int ncid, int varid, int storage, const size_t *chunksizesp);
 int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizesp);
 int PIOc_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value);

@@ -158,9 +158,6 @@ main(int argc, char **argv)
     /** The deflate level set for the variable in the netCDF-4 test file. */
     int deflate_level;
 
-    /** Non-zero if fletcher32 filter is used for variable. */
-    int fletcher32;
-
     /** Endianness of variable. */
     int endianness;
 
@@ -406,34 +403,6 @@ main(int argc, char **argv)
 		if (shuffle || deflate)
 		    ERR(ERR_AWFUL);
 
-	    /* Check that the def/inq_var_fletcher32 functions
-	     * work. Starts as off. */
-	    if ((ret = PIOc_inq_var_fletcher32(ncid, 0, &fletcher32)))
-	    	ERR(ret);
-	    if (format[fmt] == PIO_IOTYPE_NETCDF4C)
-		if (fletcher32)
-		    ERR(ERR_AWFUL);
-	    if (format[fmt] == PIO_IOTYPE_NETCDF4P)
-		if (fletcher32)
-		    ERR(ERR_AWFUL);
-
-	    /* Turn on (then off) fletcher32 filter for netCDF-4 serial. */
-	    if (format[fmt] == PIO_IOTYPE_NETCDF4C)
-	    {
-		if ((ret = PIOc_def_var_fletcher32(ncid, 0, 1)))
-		    ERR(ret);
-		if ((ret = PIOc_inq_var_fletcher32(ncid, 0, &fletcher32)))
-		    ERR(ret);
-		if (!fletcher32)
-		    ERR(ERR_AWFUL);
-		if ((ret = PIOc_def_var_fletcher32(ncid, 0, 0)))
-		    ERR(ret);
-		if ((ret = PIOc_inq_var_fletcher32(ncid, 0, &fletcher32)))
-		    ERR(ret);
-		if (fletcher32)
-		    ERR(ERR_AWFUL);
-	    }
-
 	    /* Check setting the chunk cache for the variable. */
 	    printf("rank: %d PIOc_set_var_chunk_cache...\n", my_rank);
 	    if ((ret = PIOc_set_var_chunk_cache(ncid, 0, VAR_CACHE_SIZE, VAR_CACHE_NELEMS,
@@ -466,10 +435,6 @@ main(int argc, char **argv)
 		ERR(ERR_AWFUL);
 	    if ((ret = PIOc_inq_var_deflate(ncid, 0, &shuffle, &deflate, &deflate_level))
 		!= PIO_ENOTNC4)
-	    	ERR(ret);
-	    if ((ret = PIOc_def_var_fletcher32(ncid, 0, 1)) != PIO_ENOTNC4)
-		ERR(ret);
-	    if ((ret = PIOc_inq_var_fletcher32(ncid, 0, &fletcher32)) != PIO_ENOTNC4)
 	    	ERR(ret);
 	    if ((ret = PIOc_def_var_endian(ncid, 0, 1)) != PIO_ENOTNC4)
 		ERR(ret);
