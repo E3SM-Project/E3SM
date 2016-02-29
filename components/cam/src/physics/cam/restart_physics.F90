@@ -700,8 +700,8 @@ module restart_physics
            write(num,'(i4.4)') m
 
            !!XXgoldyXX: This hack should be replaced with the PIO interface
-           err_handling = File%iosystem%error_handling !! Hack
-           call pio_seterrorhandling(File, PIO_BCAST_ERROR)
+           !err_handling = File%iosystem%error_handling !! Hack
+           call pio_seterrorhandling(File, PIO_BCAST_ERROR, err_handling)
            ierr = pio_inq_varid(File, 'CFLX'//num, vardesc)
            call pio_seterrorhandling(File, err_handling)
 
@@ -727,8 +727,8 @@ module restart_physics
      !
      if ( radiation_do('aeres')  ) then
         !!XXgoldyXX: This hack should be replaced with the PIO interface
-        err_handling = File%iosystem%error_handling !! Hack
-        call pio_seterrorhandling( File, PIO_BCAST_ERROR)
+        !err_handling = File%iosystem%error_handling !! Hack
+        call pio_seterrorhandling( File, PIO_BCAST_ERROR, err_handling)
         ierr = pio_inq_varid(File, 'Emissivity', vardesc)
         call pio_seterrorhandling( File, err_handling)
         if(ierr/=PIO_NOERR) then
@@ -766,8 +766,8 @@ module restart_physics
 
      if (docosp) then
         !!XXgoldyXX: This hack should be replaced with the PIO interface
-        err_handling = File%iosystem%error_handling !! Hack
-        call pio_seterrorhandling( File, PIO_BCAST_ERROR)
+        !err_handling = File%iosystem%error_handling !! Hack
+        call pio_seterrorhandling( File, PIO_BCAST_ERROR, err_handling)
         ierr = pio_inq_varid(File, 'cosp_cnt_init', vardesc)
         call pio_seterrorhandling( File, err_handling)
         if(ierr/=PIO_NOERR) then

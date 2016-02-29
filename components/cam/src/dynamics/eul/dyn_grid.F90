@@ -48,9 +48,9 @@ module dyn_grid
 contains
 
   subroutine get_block_ldof_d(nlev, ldof)
-    use pio, only : pio_offset	    
+    use pio, only : pio_offset_kind	    
     integer, intent(in) ::  nlev
-    integer(kind=pio_offset), intent(out) :: ldof(:)
+    integer(kind=pio_offset_kind), intent(out) :: ldof(:)
     
   end subroutine get_block_ldof_d
 !========================================================================
