@@ -9,6 +9,7 @@
  *
  */
 #include <pio.h>
+
 #ifdef TIMING
 #include <gptl.h>
 #endif
@@ -164,10 +165,10 @@ main(int argc, char **argv)
     int endianness;
 
     /* Size of the var chunk cache. */
-    size_t var_cache_size;
+    PIO_Offset var_cache_size;
 
     /* Number of elements in var cache. */
-    size_t var_cache_nelems;
+    PIO_Offset var_cache_nelems;
 
     /* Var cache preemption. */    
     float var_cache_preemption;
@@ -434,18 +435,27 @@ main(int argc, char **argv)
 	    }
 
 	    /* Check setting the chunk cache for the variable. */
+	    printf("rank: %d PIOc_set_var_chunk_cache...\n", my_rank);
 	    if ((ret = PIOc_set_var_chunk_cache(ncid, 0, VAR_CACHE_SIZE, VAR_CACHE_NELEMS,
-						VAR_CACHE_PREEMPTION)) != PIO_ENOTNC4)
+						VAR_CACHE_PREEMPTION)))
 	    	ERR(ret);
 
 	    /* Check getting the chunk cache values for the variable. */
+	    printf("rank: %d PIOc_get_var_chunk_cache...\n", my_rank);	    
 	    if ((ret = PIOc_get_var_chunk_cache(ncid, 0, &var_cache_size, &var_cache_nelems,
-						&var_cache_preemption)) != PIO_ENOTNC4)
+						&var_cache_preemption)))
+	    	ERR(ret);
+	    PIO_Offset len;
+	    if ((ret = PIOc_inq_dimlen(ncid, 0, &len)))
 	    	ERR(ret);
 
 	    /* Check that we got expected values. */
-	    if (var_cache_size != VAR_CACHE_SIZE || var_cache_nelems != VAR_CACHE_NELEMS ||
-		var_cache_preemption != VAR_CACHE_PREEMPTION)
+	    printf("rank: %d var_cache_size = %d\n", my_rank, var_cache_size);	    
+	    if (var_cache_size != VAR_CACHE_SIZE)
+		ERR(ERR_AWFUL);
+	    if (var_cache_nelems != VAR_CACHE_NELEMS)
+		ERR(ERR_AWFUL);
+	    if (var_cache_preemption != VAR_CACHE_PREEMPTION)
 		ERR(ERR_AWFUL);
 	} else {
 	    /* Trying to set or inq netCDF-4 settings for non-netCDF-4

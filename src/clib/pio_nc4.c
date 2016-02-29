@@ -757,12 +757,12 @@ int PIOc_def_var_endian(int ncid, int varid, int endian)
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 	default:
@@ -848,12 +848,12 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 	default:
@@ -1012,6 +1012,12 @@ int PIOc_get_chunk_cache(int iosysid, int iotype, int io_rank, size_t *sizep,
     if(ios == NULL)
 	return PIO_EBADID;
 
+    int my_rank;
+    int ret;
+    if ((ret = MPI_Comm_rank(MPI_COMM_WORLD, &my_rank)))
+	return ret;
+    printf("rank %d PIOc_get_chunk_cache called iotype=%d\n", my_rank, iotype);
+
     /* Since this is a property of the running HDF5 instance, not the
      * file, it's not clear if this message passing will apply. For
      * now, comment it out. EJH */
@@ -1031,17 +1037,22 @@ int PIOc_get_chunk_cache(int iosysid, int iotype, int io_rank, size_t *sizep,
 	ierr = nc_get_chunk_cache(sizep, nelemsp, preemptionp);
 	break;
     case PIO_IOTYPE_NETCDF4C:
-	if (!io_rank)
+	if (!ios->io_rank)
+	{
 	    ierr = nc_get_chunk_cache(sizep, nelemsp, preemptionp);
+	    printf("rank 0 calling nc_get_chunk_cache returned *sizep = %d *nelemsp = %d *preemptionp=%g\n",
+		   *sizep, *nelemsp, *preemptionp);
+	}
 	break;
 #endif
     case PIO_IOTYPE_NETCDF:
-	return PIO_ENOTNC4;
+	ierr = PIO_ENOTNC4;
 	break;
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-	return PIO_ENOTNC4;
+	ierr = PIO_ENOTNC4;
+	printf("rank %d PIOc_get_chunk_cache ierr = %d\n", my_rank, ierr);
 	break;
 #endif
     default:
@@ -1055,14 +1066,27 @@ int PIOc_get_chunk_cache(int iosysid, int iotype, int io_rank, size_t *sizep,
     else
     {
 	if (sizep)
-	    if ((ierr = MPI_Bcast(sizep, 1, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm)))
+	{
+	    int my_size = *sizep;
+	    printf("before bcast rank %d PIOc_get_chunk_cache my_size = %d ios->ioroot %d ios->io_rank=%d\n", my_rank, my_size, ios->ioroot, ios->io_rank);
+	    if ((ierr = MPI_Bcast(&my_size, 1, MPI_INT, ios->ioroot, ios->my_comm)))
 		ierr = PIO_EIO;
+	    printf("after bcast rank %d PIOc_get_chunk_cache my_size = %d *sizep = %d\n", my_rank, my_size, *sizep);
+	    *sizep = my_size;
+	    printf("rank %d PIOc_get_chunk_cache my_size = %d *sizep = %d\n", my_rank, my_size, *sizep);
+	}
 	if (nelemsp && !ierr)
-	    if ((ierr = MPI_Bcast(nelemsp, 1, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm)))
+	{
+	    int my_nelems = *nelemsp;
+	    if ((ierr = MPI_Bcast(&my_nelems, 1, MPI_INT, ios->ioroot, ios->my_comm)))
 		ierr = PIO_EIO;
+	    *nelemsp = my_nelems;
+	}
 	if (preemptionp && !ierr)
+	{
 	    if ((ierr = MPI_Bcast(preemptionp, 1, MPI_FLOAT, ios->ioroot, ios->my_comm)))
 		ierr = PIO_EIO;
+	}
     }
 
     return ierr;
@@ -1092,7 +1116,7 @@ int PIOc_get_chunk_cache(int iosysid, int iotype, int io_rank, size_t *sizep,
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_set_var_chunk_cache(int ncid, int varid, size_t size, size_t nelems,
+int PIOc_set_var_chunk_cache(int ncid, int varid, PIO_Offset size, PIO_Offset nelems,
 			     float preemption)
 {
     int ierr;
@@ -1109,6 +1133,12 @@ int PIOc_set_var_chunk_cache(int ncid, int varid, size_t size, size_t nelems,
 	return PIO_EBADID;
     ios = file->iosystem;
     msg = PIO_MSG_SET_VAR_CHUNK_CACHE;
+
+    int my_rank;
+    int ret;
+    if ((ret = MPI_Comm_rank(MPI_COMM_WORLD, &my_rank)))
+	return ret;
+    printf("rank %d PIOc_set_var_chunk_cache called file->iotype=%d\n", my_rank, file->iotype);
 
     if (ios->async_interface && ! ios->ioproc)
     {
@@ -1127,19 +1157,20 @@ int PIOc_set_var_chunk_cache(int ncid, int varid, size_t size, size_t nelems,
 	    ierr = nc_set_var_chunk_cache(file->fh, varid, size, nelems, preemption);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
-	    if (ios->io_rank==0)
+	    if (!ios->io_rank)
 	    {
 		ierr = nc_set_var_chunk_cache(file->fh, varid, size, nelems, preemption);
 	    }
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
-	    return PIO_ENOTNC4;
+	    printf("rank %d PIOc_set_var_chunk_cache pnetcdf will return PIO_ENOTNC4\n", my_rank);
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 	default:
@@ -1187,7 +1218,7 @@ int PIOc_set_var_chunk_cache(int ncid, int varid, size_t size, size_t nelems,
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_get_var_chunk_cache(int ncid, int varid, size_t *sizep, size_t *nelemsp,
+int PIOc_get_var_chunk_cache(int ncid, int varid, PIO_Offset *sizep, PIO_Offset *nelemsp,
 			     float *preemptionp)
 {
     int ierr;
@@ -1203,6 +1234,12 @@ int PIOc_get_var_chunk_cache(int ncid, int varid, size_t *sizep, size_t *nelemsp
     if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
     ios = file->iosystem;
+
+    int my_rank;
+    int ret;
+    if ((ret = MPI_Comm_rank(MPI_COMM_WORLD, &my_rank)))
+	return ret;
+    printf("rank %d PIOc_get_var_chunk_cache called file->iotype=%d\n", my_rank, file->iotype);
 
     /* Since this is a property of the running HDF5 instance, not the
      * file, it's not clear if this message passing will apply. For
@@ -1222,27 +1259,34 @@ int PIOc_get_var_chunk_cache(int ncid, int varid, size_t *sizep, size_t *nelemsp
 #ifdef _NETCDF
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_get_var_chunk_cache(file->fh, varid,  sizep, nelemsp, preemptionp);
+	    ierr = nc_get_var_chunk_cache(file->fh, varid,  (size_t *)sizep, (size_t *)nelemsp,
+					  preemptionp);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
-	    if (!ios->io_rank)
-		ierr = nc_get_var_chunk_cache(file->fh, varid,  sizep, nelemsp, preemptionp);
+	    if (ios->io_rank == 0)
+	    {
+		ierr = nc_get_var_chunk_cache(file->fh, varid,  (size_t *)sizep, (size_t *)nelemsp,
+					      preemptionp);
+		printf("sizep=%d\n", *sizep);
+	    }
+	    
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
+	    printf("rank %d PIOc_get_var_chunk_cache called file->iotype=%d ierr = %d\n", my_rank, file->iotype, ierr);
 	    break;
 #endif
 	default:
 	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
 	}
     }
-
+    printf("rank %d PIOc_get_var_chunk_cache called file->iotype=%d ierr = %d\n", my_rank, file->iotype, ierr);
     /* If there is an error, allocate space for the error string. */
     if (ierr != PIO_NOERR)
     {
@@ -1252,18 +1296,37 @@ int PIOc_get_var_chunk_cache(int ncid, int varid, size_t *sizep, size_t *nelemsp
 
     /* Check the netCDF return code, and broadcast it to all tasks. */
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
-
+    printf("rank %d PIOc_get_var_chunk_cache called file->iotype=%d ierr = %d\n", my_rank, file->iotype, ierr);
     /* Free the error string if it was allocated. */
     if (errstr != NULL)
 	free(errstr);
 
     /* Broadcast results to all tasks. */
-    if (sizep)
-	ierr = MPI_Bcast(sizep, 1, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm);
-    if (nelemsp)
-	ierr = MPI_Bcast(nelemsp, 1, MPI_UNSIGNED_LONG, ios->ioroot, ios->my_comm);
-    if (preemptionp)
-	ierr = MPI_Bcast(preemptionp, 1, MPI_FLOAT, ios->ioroot, ios->my_comm);
+    printf("sizeof(PIO_Offset)=%d, sizeof(MPI_OFFSET)=%d, sizeof(MPI_Offset)=%d, sizeof(*sizep)= %d\n",
+	   sizeof(PIO_Offset), sizeof(MPI_OFFSET), sizeof(MPI_Offset), sizeof(*sizep));
+    if (sizep && !ierr)
+    {
+	int my_size = *sizep;
+	printf("rank %d sizep=%d\n", my_rank, *sizep);
+	printf("my_size = %d\n");
+	ierr = MPI_Bcast(&my_size, 1, MPI_INT, ios->ioroot, ios->my_comm);
+	printf("rank %d my_size = %d\n", my_rank, my_size);
+	*sizep = my_size;
+    }
+    printf("nelems\n");
+    if (nelemsp && !ierr)
+    {
+    	int my_nelems = *nelemsp;
+    	ierr = MPI_Bcast(&my_nelems, 1, MPI_INT, ios->ioroot, ios->my_comm);
+	printf("rank %d my_nelems = %d\n", my_rank, my_nelems);
+	*nelemsp = my_nelems;
+    }
+    printf("preemption\n");
+    if (preemptionp && !ierr)
+    {
+    	ierr = MPI_Bcast(preemptionp, 1, MPI_FLOAT, ios->ioroot, ios->my_comm);
+	printf("rank %d preemption = %g\n", my_rank, *preemptionp);	
+    }
 
     return ierr;
 }    
