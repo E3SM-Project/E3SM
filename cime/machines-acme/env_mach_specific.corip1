@@ -75,7 +75,7 @@ else
   module load cray-parallel-netcdf/1.6.1
 endif
 
-module load cray-mpich/7.2.5
+module load cray-mpich/7.3.1
 module load papi/5.4.1.2
 module load cmake/3.3.2
 module load cray-petsc/3.6.1.0
