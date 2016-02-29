@@ -607,6 +607,10 @@
 					description="The thickness over which to average when computing surface-averaged velocity and buoyancy"
 					possible_values="Any positive real value, but typically should be between 1 and 20 meters"
 		/>
+		<nml_option name="configure_cvmix_kpp_minimum_OBL_under_sea_ice" type="real" default_value="10.0" units="m"
+					description="The minimum allowable boundary layer depth with sea-ice is present"
+					possible_values="Any positive real value, but typically should be between 1 and 20 meters"
+                />
 		<nml_option name="config_cvmix_kpp_stop_OBL_search" type="real" default_value="100.0" units="non-dimensional"
 					description="The search for boundary layer depth is terminated when bulk Richardson number is greater than config_cvmix_kpp_stop_OBL_search*config_cvmix_kpp_criticalBulkRichardsonNumber"
 					possible_values="Any positive value"
@@ -2503,7 +2507,7 @@
 		/>
 
 		<!-- Misc. coupling fields -->
-		<var name="iceFraction" type="real" dimensions="nCells Time" units="percent"
+		<var name="iceFraction" type="real" dimensions="nCells Time" units="fractional"
 			 description="Fraction of sea ice coverage at cell centers from coupler. Positive into the ocean."
 		/>
 
