@@ -115,6 +115,7 @@ SET(PREQX_SRCS_F90
   ${PHYSICS_DIR}/column_types_mod.F90 
 )
 
+
 SET(PREQX_SRCS_C
   ${UTILS_SHARE_DIR}/shr_vmath_fwrap.c
   ${SRC_DIR}/jrio.c
@@ -155,11 +156,6 @@ MESSAGE(STATUS "  PLEV = ${PREQX_PLEV}")
 MESSAGE(STATUS "  PIO = ${PREQX_USE_PIO}")
 MESSAGE(STATUS "  ENERGY = ${PREQX_USE_ENERGY}")
 
-IF (${PREQX_USE_CUDA_FORTRAN})
-  SET(USE_CUDA_FORTRAN TRUE)
-  MESSAGE(STATUS "  Using CUDA Fortran")
-ENDIF ()
-
 IF (${PREQX_USE_OPENACC})
   SET(USE_OPENACC TRUE)
   MESSAGE(STATUS "  Using OpenACC")
@@ -176,10 +172,4 @@ ENDIF ()
 createTestExec(preqx preqx ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
                ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY})
 
-IF (${BUILD_PREQX_SPELT})
-  MESSAGE(STATUS "  Also building preqx_spelt")
-  createTestExec(preqx_spelt preqx ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
-                 ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY})
-  SET_TARGET_PROPERTIES(preqx_spelt PROPERTIES COMPILE_DEFINITIONS "_SPELT")
-ENDIF ()
 

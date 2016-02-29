@@ -63,28 +63,30 @@ contains
     integer        , intent(in) :: tl, nets , nete
     integer :: ie, k, j, i
     call t_startf('qdp1_pcie')
-    do ie = nets , nete
-      data_pack(:,:,:,ie) = state_qdp(:,:,:,1,tl,ie)
-    enddo
-    !$omp barrier
-    !$omp master
-!   do ie = 1 , nelemd
-!     !$acc update device(state_qdp(:,:,:,1,tl,ie))
-!   enddo
-    !$acc update device(data_pack) async(1)
-    !$acc parallel loop gang vector collapse(4) async(1) present(state_qdp,data_pack)
-    do ie = 1 , nelemd
-      do k = 1 , nlev
-        do j = 1 , np
-          do i = 1 , np
-            state_qdp(i,j,k,1,tl,ie) = data_pack(i,j,k,ie)
+#   if USE_OPENACC
+      do ie = nets , nete
+        data_pack(:,:,:,ie) = state_qdp(:,:,:,1,tl,ie)
+      enddo
+      !$omp barrier
+      !$omp master
+!     do ie = 1 , nelemd
+!       !$acc update device(state_qdp(:,:,:,1,tl,ie))
+!     enddo
+      !$acc update device(data_pack) async(1)
+      !$acc parallel loop gang vector collapse(4) async(1) present(state_qdp,data_pack)
+      do ie = 1 , nelemd
+        do k = 1 , nlev
+          do j = 1 , np
+            do i = 1 , np
+              state_qdp(i,j,k,1,tl,ie) = data_pack(i,j,k,ie)
+            enddo
           enddo
         enddo
       enddo
-    enddo
-    !$acc wait(1)
-    !$omp end master
-    !$omp barrier
+      !$acc wait(1)
+      !$omp end master
+      !$omp barrier
+#   endif
     call t_stopf('qdp1_pcie')
   end subroutine copy_qdp1_h2d
 
@@ -96,28 +98,30 @@ contains
     integer        , intent(in) :: tl, nets , nete
     integer :: ie, k, j, i
     call t_startf('qdp1_pcie')
-    !$omp barrier
-    !$omp master
-    !$acc parallel loop gang vector collapse(4) async(1) present(state_qdp,data_pack)
-    do ie = 1 , nelemd
-      do k = 1 , nlev
-        do j = 1 , np
-          do i = 1 , np
-            data_pack(i,j,k,ie) = state_qdp(i,j,k,1,tl,ie)
+#   if USE_OPENACC
+      !$omp barrier
+      !$omp master
+      !$acc parallel loop gang vector collapse(4) async(1) present(state_qdp,data_pack)
+      do ie = 1 , nelemd
+        do k = 1 , nlev
+          do j = 1 , np
+            do i = 1 , np
+              data_pack(i,j,k,ie) = state_qdp(i,j,k,1,tl,ie)
+            enddo
           enddo
         enddo
       enddo
-    enddo
-    !$acc update host(data_pack) async(1)
-    !$acc wait(1)
-!   do ie = 1 , nelemd
-!     !$acc update host(state_qdp(:,:,:,1,tl,ie))
-!   enddo
-    !$omp end master
-    !$omp barrier
-    do ie = nets , nete
-      state_qdp(:,:,:,1,tl,ie) = data_pack(:,:,:,ie)
-    enddo
+      !$acc update host(data_pack) async(1)
+      !$acc wait(1)
+!     do ie = 1 , nelemd
+!       !$acc update host(state_qdp(:,:,:,1,tl,ie))
+!     enddo
+      !$omp end master
+      !$omp barrier
+      do ie = nets , nete
+        state_qdp(:,:,:,1,tl,ie) = data_pack(:,:,:,ie)
+      enddo
+#   endif
     call t_stopf('qdp1_pcie')
   end subroutine copy_qdp1_d2h
 

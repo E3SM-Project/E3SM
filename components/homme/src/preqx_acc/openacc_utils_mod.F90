@@ -20,12 +20,18 @@ module openacc_utils_mod
 contains
 
   function acc_async_test_wrap( asyncid )  result(rslt)
-    use openacc, only: acc_async_test
+#   ifdef _OPENACC
+      use openacc, only: acc_async_test
+#   endif
     implicit none
     integer, intent(in) :: asyncid
     logical             :: rslt
-    rslt = .false.
-    rslt = acc_async_test(asyncid)
+#   ifdef _OPENACC
+      rslt = .false.
+      rslt = acc_async_test(asyncid)
+#   else
+      rslt = .true.
+#   endif
   end function acc_async_test_wrap
 
   subroutine copy_qdp_h2d( elem , tl )

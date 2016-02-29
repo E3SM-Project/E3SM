@@ -222,26 +222,7 @@ ENDIF ()
 ##############################################################################
 OPTION(ENABLE_OPENACC "Whether to build with OpenACC support" FALSE)
 IF (${ENABLE_OPENACC})
-  IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL PGI)
-    # Need to add -acc to the Fortran FLAGS to see if it will compile 
-    # "call acc_init()"
-    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -acc")
-    TRY_COMPILE(OPENACC_SUCCESS
-                ${CMAKE_BINARY_DIR}/tests/compilerTests/
-                ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilerTests/openAccTest.f90
-                OUTPUT_VARIABLE COMPILE_OUTPUT)
-    IF (${OPENACC_SUCCESS})
-      MESSAGE(STATUS "Using OpenACC through PGI compiler")
-      SET(PREQX_USE_OPENACC TRUE)
-    ELSE()
-      MESSAGE(FATAL_ERROR "Unable to use OpenACC through the PGI compiler")
-    ENDIF()
-  ELSEIF (${CMAKE_Fortran_COMPILER_ID} STREQUAL Cray)
-    SET(PREQX_USE_OPENACC TRUE)
-    MESSAGE(STATUS "Using OpenACC through Cray compiler")
-  ELSE ()
-    MESSAGE(FATAL_ERROR "OpenACC only supported through the PGI and Cray compilers")
-  ENDIF()
+  SET(PREQX_USE_OPENACC TRUE)
 ENDIF ()
 
 ##############################################################################
