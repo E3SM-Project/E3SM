@@ -491,7 +491,7 @@ contains
              endif
 
              ! apply minimum limit to OBL under sea-ice
-             if(iceFraction(iCell).gt.0.5) then
+             if(iceFraction(iCell).gt.0.15) then
              if(cvmix_variables % BoundaryLayerDepth .lt. configure_cvmix_kpp_minimum_OBL_under_sea_ice) then
                 cvmix_variables % BoundaryLayerDepth = configure_cvmix_kpp_minimum_OBL_under_sea_ice
                 cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(  &
