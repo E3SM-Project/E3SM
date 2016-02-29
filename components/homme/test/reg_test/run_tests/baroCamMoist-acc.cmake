@@ -10,9 +10,10 @@
 ###############################################################
 
 # The name of this test (should be the basename of this file)
-SET(TEST_NAME baroCamMoist)
+SET(TEST_NAME baroCamMoist-acc)
+
 # The specifically compiled executable that this test uses
-SET(EXEC_NAME baroCam)
+SET(EXEC_NAME baroCam-acc)
 
 SET(NUM_CPUS 16)
 
@@ -28,26 +29,23 @@ SET(NC_OUTPUT_FILES
 )
 
 
-SET(OMP_SUB_TESTS true)
-SET(OMP_NUM_THREADS 4)
-SET(OMP_NAMELIST_FILES 
-${HOMME_ROOT}/test/reg_test/namelists/baroCamMoist-omp3.nl
-${HOMME_ROOT}/test/reg_test/namelists/baroCamMoist-omp4.nl
-)
+# OMP tests (disabled for now)
+#SET(OMP_SUB_TESTS true)
+#SET(OMP_NUM_THREADS 4)
+#SET(OMP_NAMELIST_FILES 
+#${HOMME_ROOT}/test/reg_test/namelists/baroCamMoist-omp4.nl
+#)
 
 
-# compare openMP output vs single threaded output
+# compare output with CPU-only baroCamMoist test:
+SET(TESTCASE_REF_TOL 1E-11)
 SET(NC_OUTPUT_REF   
-  camBaroMoist-asp_baroclinic1.nc 
-  camBaroMoist-asp_baroclinic2.nc
-  camBaroMoist-asp_baroclinic1.nc 
-  camBaroMoist-asp_baroclinic2.nc
+  ../../baroCamMoist/movies/camBaroMoist-asp_baroclinic1.nc 
+  ../../baroCamMoist/movies/camBaroMoist-asp_baroclinic2.nc 
 )
 SET(NC_OUTPUT_CHECKREF    
-  camBaroMoist-omp3-asp_baroclinic1.nc 
-  camBaroMoist-omp3-asp_baroclinic2.nc
-  camBaroMoist-omp4-asp_baroclinic1.nc 
-  camBaroMoist-omp4-asp_baroclinic2.nc
+  camBaroMoist-asp_baroclinic1.nc 
+  camBaroMoist-asp_baroclinic2.nc
 )
 
 

@@ -9,8 +9,7 @@
 
 # The name of this test (should be the basename of this file)
 SET(TEST_NAME swtc1)
-# The type of run (preqx,sweqx,swdgx,etc.)
-SET(TEST_TYPE sweqx)
+
 # The specifically compiled executable that this test uses
 SET(EXEC_NAME swtcA)
 
