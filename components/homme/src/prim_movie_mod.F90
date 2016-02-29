@@ -65,7 +65,7 @@ module prim_movie_mod
   ! ---------------------
   use dof_mod, only : UniquePoints, UniqueCoords, UniqueNcolsP, createmetadata
   ! ---------------------
-  use pio, only  : io_desc_t !_EXTERNAL
+  use pio, only  : io_desc_t, pio_iotask_rank !_EXTERNAL
 
 
     use hybrid_mod, only : hybrid_t, hybrid_create
@@ -164,7 +164,7 @@ contains
     allocate(compdof(nxyp*nlev), latp(nxyp),lonp(nxyp))
     
     ! Create the DOF arrays for GLL points
-    iorank=pio_subsystem%io_rank
+    iorank=pio_iotask_rank(pio_subsystem)
 
     call getDOF(elem, GlobalUniqueCols, 1, compdof)
     call PIO_initDecomp(pio_subsystem, pio_double,(/GlobalUniqueCols/),&

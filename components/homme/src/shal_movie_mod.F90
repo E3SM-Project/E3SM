@@ -64,7 +64,8 @@ module shal_movie_mod
        nf_put_var => nf_put_var_netcdf, &
        iodesc2d, iodesc3d, iodescT, pio_subsystem, iodesc2d_nc, iodesc3d_nc
 
-  use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_double, pio_closefile 
+  use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_double, pio_closefile, & 
+                  pio_iotask_rank
   ! ---------------------
   use dof_mod, only : UniqueNcolsP, Uniquepoints, UniqueCoords, CreateUniqueIndex
   ! ---------------------
@@ -149,7 +150,7 @@ contains
 
 
 ! this is a trivial case for the time variable
-    iorank=pio_subsystem%io_rank
+    iorank=pio_iotask_rank(pio_subsystem)
     if(iorank==0) then
        compdof(1)=1
     else
