@@ -144,7 +144,7 @@ sub loadModules()
 		{
 	            chomp $line;
 	            #print "line: $line\n";
-                    if ($debugML) print DEBUGOUT "line: $line\n";
+                    if ($debugML) {print DEBUGOUT "line: $line\n";}
 	            my ($key, $value) = split('=', $line, 2);
 	            $newenv{$key} = $value;
                 }
@@ -158,29 +158,29 @@ sub loadModules()
               # leave this particular one alone
            } elsif (defined $oldenv{$k} && !defined $newenv{$k}) {
 	      # if key in old but NOT in new, consider removing
-              if ($debugML) print DEBUGOUT "del $k=$oldenv{$k}\n";
+              if ($debugML) {print DEBUGOUT "del $k=$oldenv{$k}\n";}
 	      delete $ENV{$k};
            }
         }
         
         foreach my $k(keys %newenv)
 	{
-           if ($debugML) print DEBUGOUT "k=$k ";
+           if ($debugML) {print DEBUGOUT "k=$k ";}
            if(! defined $oldenv{$k})   # if this key is _not_ in the old set, add it as new
            {
-              if ($debugML) print DEBUGOUT "new $k=$newenv{$k}\n";
+              if ($debugML) {print DEBUGOUT "new $k=$newenv{$k}\n";}
               $newbuildenv{$k} = $newenv{$k};
               $ENV{$k} = $newenv{$k};
            }
            elsif(defined $oldenv{$k} && $newenv{$k} ne $oldenv{$k}) 
            {
               # if this var is in the old, and is different than it was in old
-              if ($debugML) print DEBUGOUT "mod $k=$newenv{$k}\n";
+              if ($debugML) {print DEBUGOUT "mod $k=$newenv{$k}\n";}
               $newbuildenv{$k} = $newenv{$k};
               $ENV{$k} = $newenv{$k};
            }
            else {
-              if ($debugML) print DEBUGOUT "\n";
+              if ($debugML) {print DEBUGOUT "\n";}
            }
 	}
 
