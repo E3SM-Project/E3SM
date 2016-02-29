@@ -25,6 +25,7 @@ module li_advection
    use mpas_constants
    use li_setup
    use li_mask
+   use li_constants
 
    implicit none
    private
@@ -151,8 +152,16 @@ module li_advection
       real (kind=RKIND), dimension(:,:,:), pointer :: &
            advectedTracers          ! values of advected tracers
 
+      real (kind=RKIND), dimension(:,:), pointer :: &
+           surfaceTracers,        & ! tracer values for new ice at upper surface
+           basalTracers             ! tracer values for new ice at lower surface
+
       type (field3DReal), pointer :: &
-           advectedTracersField       ! scratch field containing values of advected tracers
+           advectedTracersField     ! scratch field containing values of advected tracers
+
+      type (field2DReal), pointer :: &
+           surfaceTracersField,   & ! scratch field containing values of surface tracers
+           basalTracersField        ! scratch field containing values of basal tracers
 
       integer, dimension(:), pointer :: &
            cellMask                 ! integer bitmask for cells
@@ -246,6 +255,14 @@ module li_advection
       call mpas_allocate_scratch_field(advectedTracersField, .true.)
       advectedTracers => advectedTracersField % array
 
+      call mpas_pool_get_field(scratchPool, 'workTracerCell', surfaceTracersField)
+      call mpas_allocate_scratch_field(surfaceTracersField, .true.)
+      surfaceTracers => surfaceTracersField % array
+
+      call mpas_pool_get_field(scratchPool, 'workTracerCell2', basalTracersField)
+      call mpas_allocate_scratch_field(basalTracersField, .true.)
+      basalTracers => basalTracersField % array
+
       ! given the old thickness, compute the thickness in each layer
       call li_calculate_layerThickness(meshPool, thickness, layerThickness)
 
@@ -279,7 +296,9 @@ module li_advection
                  meshPool,          &
                  geometryPool,      &
                  thermalPool,       &
-                 advectedTracers)
+                 advectedTracers,   &
+                 surfaceTracers,    &
+                 basalTracers)
 
          else   ! no tracer advection; pass a tracer array full of zeroes
 
@@ -295,8 +314,8 @@ module li_advection
          if (config_print_thickness_advection_info) then
             do iCell = 1, nCells
                if (indexToCellID(iCell) == config_stats_cell_ID) then
-                  write(stdoutUnit,*) 'Before thickness advection, iCell (local, global), thickness:', &
-                       iCell, indexToCellID(iCell), thickness(iCell)
+                  write(stdoutUnit,*) 'Before thickness advection, iCell (local, global), thickness, layer 1 tracer:', &
+                       iCell, indexToCellID(iCell), thickness(iCell), advectedTracers(1,1,iCell)
                   do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(iEdgeOnCell,iCell)
                      write(stdoutUnit,*) 'iEdge, layerNormalVelocity:', iEdge, layerNormalVelocity(1,iEdge)
@@ -318,9 +337,9 @@ module li_advection
             do iCell = 1, nCells
                if (indexToCellID(iCell) == config_stats_cell_ID) then
                   write(stdoutUnit,*) ' '
-                  write(stdoutUnit,*) 'After thickness advection, iCell, new layer thickness:'
+                  write(stdoutUnit,*) 'After thickness advection, iCell, new layer thickness, layer 1 tracer:'
                   do k = 1, nVertLevels
-                     write(stdoutUnit,*) iCell, layerThickness(k,iCell)
+                     write(stdoutUnit,*) iCell, layerThickness(k,iCell), advectedTracers(1,k,iCell)
                   enddo
                endif
             enddo
@@ -330,13 +349,8 @@ module li_advection
          ! Add the surface and basal mass balance to the layer thickness
          !-----------------------------------------------------------------
 
-         !TODO - Will need to treat temperature/enthalpy in a more complex way to conserve energy
-         !        when mass is added at the upper and lower surfaces.
-         !       For now, we are effectively assuming that ice is added at the surface with the top-layer temperature
-         !        and at the bed with the bottom-layer temperature.
-
          ! Combine various basal mass balance fields based on mask
-         ! Grounded and floating basal mass balance should come from the temperature solver.
+         ! Grounded and floating basal mass balance should come from the thermal solver.
 
          ! TODO: more complicated treatment at GL?
 
@@ -357,15 +371,15 @@ module li_advection
 
          end where
 
-         ! Add surface mass balance to new top layer thickness
-         ! TODO: Need to decide how to deal with negative SMB that eliminates top layer or all ice (check for negative thickness?)
-
-         layerThickness(1,:) = layerThickness(1,:) + (sfcMassBal/config_ice_density)*dt
-
-         ! Add basal mass balance to new bottom layer thickness
-         ! TODO: Need to decide how to deal with negative BMB that eliminates top layer or all ice (check for negative thickness?)
-
-         layerThickness(nVertLevels,:) = layerThickness(nVertLevels,:) + (basalMassBal/config_ice_density)*dt
+         call apply_mass_balance(&
+              dt,                  &
+              config_ice_density,  &
+              sfcMassBal,          &
+              basalMassBal,        &
+              surfaceTracers,      &
+              basalTracers,        &
+              layerThickness,      &
+              advectedTracers)
 
          ! Update the thickness and cellMask before the vertical remap calculation
          ! Note: The thickness field (rather than layerThickness) is the primary prognostic,
@@ -425,6 +439,181 @@ module li_advection
 
 !***********************************************************************
 !
+!  subroutine apply_mass_balance
+!
+!> \brief   Apply surface and basal mass balance
+!> \author  William Lipscomb
+!> \date    February 2016
+!> \details 
+!>  This routine applies the surface and basal mass balance, with a
+!>  conservative treatment of tracers such as temperature.
+!
+!-----------------------------------------------------------------------
+
+    subroutine apply_mass_balance(&
+              dt,                  &
+              rhoi,                &
+              sfcMassBal,          &
+              basalMassBal,        &
+              surfaceTracers,      &
+              basalTracers,        &
+              layerThickness,      &
+              advectedTracers)
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), intent(in) ::  &
+           dt,                 & ! time step (s)
+           rhoi                  ! ice density (kg/m^3)
+
+      real (kind=RKIND), dimension(:), intent(in) ::  &
+           sfcMassBal,         & ! surface mass balance (kg/m^2/s)
+           basalMassBal          ! basal mass balance (kg/m^2/s)
+
+      real(kind=RKIND), dimension(:,:), intent(in) :: &
+           surfaceTracers,     & ! tracer values of new ice at upper surface
+           basalTracers          ! tracer values of new ice at lower surface
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      real(kind=RKIND), dimension(:,:), intent(inout) :: &
+           layerThickness        ! ice thickness in each layer (m)
+
+      real(kind=RKIND), dimension(:,:,:), intent(inout) :: &
+           advectedTracers       ! tracer values in each layer
+
+      ! local variables
+
+      real (kind=RKIND) ::  &
+           sfcAccum, basalAccum,   & ! surface and basal accumulation (m), positive for ice gain
+           sfcAblat, basalAblat      ! surface and basal ablation (m), positive for ice loss
+
+      real (kind=RKIND), dimension(:), allocatable ::  &
+           thckTracerProducts        ! thickness-tracer products
+
+      integer :: nCells     ! number of cells
+      integer :: nLayers    ! number of layers
+      integer :: nTracers   ! number of tracers
+
+      integer :: iCell, iLayer, iTracer
+
+      nLayers = size(layerThickness,1)
+      nCells = size(layerThickness,2)
+      nTracers = size(advectedTracers,1)
+
+      allocate(thckTracerProducts(nTracers))
+
+      ! apply surface mass balance
+      ! If positive, then add the SMB to the top layer, conserving mass*tracer products
+      ! If negative, then melt from the top down until the melting term is used up or the ice is gone
+
+      do iCell = 1, nCells
+
+         ! initialize accumulation/ablation terms
+
+         sfcAccum = 0.0_RKIND
+         sfcAblat = 0.0_RKIND
+         basalAccum = 0.0_RKIND
+         basalAblat = 0.0_RKIND
+
+         ! apply surface mass balance
+
+         if (sfcMassBal(iCell) > 0.0_RKIND) then
+
+            ! surface accumulation
+            ! modify tracers conservatively in top layer
+
+            sfcAccum = sfcMassBal(iCell) * dt / rhoi
+
+            ! compute mass-tracer products in top layer
+            thckTracerProducts(:) = layerThickness(1,iCell)*advectedTracers(:,1,iCell)  &
+                                  + sfcAccum * surfaceTracers(:,iCell)
+
+            ! new thickness in top layer
+            layerThickness(1,iCell) = layerThickness(1,iCell) + sfcAccum
+
+            ! new tracers in top layer
+            advectedTracers(:,1,iCell) = thckTracerProducts(:) / layerThickness(1,iCell)
+
+         elseif (sfcMassBal(iCell) < 0.0_RKIND) then
+
+            ! surface ablation from the top down
+
+            sfcAblat = -sfcMassBal(iCell) * dt /rhoi    ! positive for melting
+
+            do iLayer = 1, nLayers
+               if (sfcAblat > layerThickness(iLayer,iCell)) then   ! melt the entire layer
+                  sfcAblat = sfcAblat - layerThickness(iLayer,iCell)
+                  layerThickness(iLayer,iCell) = 0.0_RKIND
+                  advectedTracers(:,iLayer,iCell) = 0.0_RKIND
+               else   ! melt part of the layer
+                  layerThickness(iLayer,iCell) = layerThickness(iLayer,iCell) - sfcAblat
+                  sfcAblat = 0.0_RKIND
+                  exit
+               endif
+            enddo
+
+            !TODO - If remaining sfcAblat > 0, then keep track of it to conserve energy
+
+         endif   ! sfcMassBal > 0
+
+         ! apply basal mass balance
+
+         if (basalMassBal(iCell) > 0.0_RKIND) then
+
+            ! basal freeze-on
+            ! modify tracers conservatively in top layer
+
+            basalAccum = basalMassBal(iCell) * dt / rhoi
+
+            ! compute mass-tracer products in bottom layer
+            thckTracerProducts(:) = layerThickness(nLayers,iCell)*advectedTracers(:,nLayers,iCell)  &
+                                  + basalAccum * basalTracers(:,iCell)
+
+            ! new thickness in top layer
+            layerThickness(nLayers,iCell) = layerThickness(nLayers,iCell) + basalAccum
+
+            ! new tracers in top layer
+            advectedTracers(:,nLayers,iCell) = thckTracerProducts(:) / layerThickness(nLayers,iCell)
+
+         elseif (basalMassBal(iCell) < 0.0_RKIND) then
+
+            ! surface ablation from the bottom up
+
+            basalAblat = -basalMassBal(iCell) * dt /rhoi    ! positive for melting
+
+            do iLayer = nLayers, 1, -1
+               if (basalAblat > layerThickness(iLayer,iCell)) then   ! melt the entire layer
+                  basalAblat = basalAblat - layerThickness(iLayer,iCell)
+                  layerThickness(iLayer,iCell) = 0.0_RKIND
+                  advectedTracers(:,iLayer,iCell) = 0.0_RKIND
+               else   ! melt part of the layer
+                  layerThickness(iLayer,iCell) = layerThickness(iLayer,iCell) - basalAblat
+                  basalAblat = 0.0_RKIND
+                  exit
+               endif
+            enddo
+
+            !TODO - If remaining basalAblat > 0, then keep track of it to conserve energy
+
+         endif   ! basalMassBal > 0
+
+      enddo   ! iCell
+
+      deallocate(thckTracerProducts)
+
+    end subroutine apply_mass_balance
+
+!***********************************************************************
+!
 !  subroutine tracer_setup
 !
 !> \brief   Assemble a 3D array for tracer advection
@@ -438,10 +627,12 @@ module li_advection
 !-----------------------------------------------------------------------
 
     subroutine tracer_setup(&
-         meshPool,       &
-         geometryPool,   &
-         thermalPool,    &
-         advectedTracers)
+         meshPool,         &
+         geometryPool,     &
+         thermalPool,      &
+         advectedTracers,  &
+         surfaceTracers,   &
+         basalTracers)
 
       use li_thermal, only: li_temperature_to_enthalpy
 
@@ -467,8 +658,13 @@ module li_advection
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:,:), intent(out) :: &
-           advectedTracers  ! tracers to be advected
-                            ! dimension 1 = maxTracers, 2 = nVertLevels, 3 = nCells
+           advectedTracers   ! tracers to be advected
+                             ! dimension 1 = maxTracers, 2 = nVertLevels, 3 = nCells
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+           surfaceTracers, & ! tracer values for new ice at upper surface
+           basalTracers      ! tracer values for new ice at lower surface
+                             ! dimension 1 = maxTracers, 2 = nCells
 
       !-----------------------------------------------------------------
       !
@@ -483,15 +679,22 @@ module li_advection
            nCellsSolve                ! number of locally owned cells
 
       real (kind=RKIND), dimension(:,:), pointer :: &
-           temperature,           & ! interior ice temperature
-           waterfrac,             & ! interior water fraction
-           enthalpy                 ! interior ice enthalpy
+           temperature,             & ! interior ice temperature
+           waterfrac,               & ! interior water fraction
+           enthalpy                   ! interior ice enthalpy
+
+      real (kind=RKIND), dimension(:), pointer :: &
+           surfaceAirTemperature,   & ! surface air temperature
+           basalTemperature           ! basal ice temperature
 
       real (kind=RKIND), dimension(:), pointer :: &
            layerCenterSigma           ! sigma coordinate at midpoint of each layer
 
       real (kind=RKIND), dimension(:), pointer :: &
            thickness                  ! ice thickness
+
+      real (kind=RKIND), pointer ::  &
+           config_ice_density         ! ice density
 
       integer :: iCell, iTracer
 
@@ -508,19 +711,29 @@ module li_advection
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
       call mpas_pool_get_array(thermalPool, 'waterfrac', waterfrac)
       call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
+      call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
+      call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
 
       ! get config variables
       call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
 
       ! initialize
       advectedTracers(:,:,:) = 0.0_RKIND
 
-      ! Note: For the enthalpy solver, it is necessary to transport enthalpy (rather than
-      !       temperature and waterfrac separately) in order to conserve energy.
-      ! Note: Temperature and waterfrac must be up to date (including halo cells)
-      !        before calling this subroutine.
+      ! Notes:
+      ! (1) For the enthalpy solver, it is necessary to transport enthalpy (rather than
+      !     temperature and waterfrac separately) in order to conserve energy.
+      ! (2) Temperature and waterfrac must be up to date (including halo cells)
+      !     before calling this subroutine.
+      ! (3) Surface and basal temperature (or enthalpy) are not transported, but their
+      !     values are applied to new accumulation at either surface.
+      ! (4) In most cases the surface temperature is equal to min(surfaceAirTemperature, 273.15),
+      !     so we could set surfaceTracers to surfaceTemperature.  But if a positive SMB
+      !     is applied to a previously ice-free cell, then surfaceTemperature has not yet been
+      !     initialized to the correct value, so we explicitly use min(surfaceAirTemperature, 273.15).
 
-      iTracer = 1    ! temperature or enthalpy is the first index of the tracers array
+      iTracer = 0    ! initialize the tracer index
 
       if (trim(config_thermal_solver) == 'enthalpy') then  ! advect enthalpy
 
@@ -537,11 +750,28 @@ module li_advection
 
          enddo
 
+         ! increment the tracer index
+         iTracer = iTracer + 1
+
+         ! copy enthalpy to the tracer array
          advectedTracers(iTracer,:,:) = enthalpy(:,:)
+
+         ! set enthalpy of new ice at upper and lower surfaces
+         ! convert temperature to enthalpy assuming waterfrac = 0 for new ice
+         surfaceTracers(iTracer,:) = min(surfaceAirTemperature(:), kelvin_to_celsius) * config_ice_density*cp_ice
+         basalTracers(iTracer,:) = basalTemperature(:) * config_ice_density*cp_ice
 
       elseif (trim(config_thermal_solver) == 'temperature') then  ! advect temperature
 
+         ! increment the tracer index
+         iTracer = iTracer + 1
+
+         ! copy temperature to the tracer array
          advectedTracers(iTracer,:,:) = temperature(:,:)
+
+         ! set enthalpy of new ice at upper and lower surfaces
+         surfaceTracers(iTracer,:) = min(surfaceAirTemperature(:), kelvin_to_celsius)
+         basalTracers(iTracer,:) = basalTemperature(:)
 
       endif
 
