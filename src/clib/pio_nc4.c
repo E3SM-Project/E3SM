@@ -233,7 +233,7 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
  * @return PIO_NOERR for success, otherwise an error code.
  */
 int PIOc_def_var_chunking(int ncid, int varid, int storage,
-			  const size_t *chunksizesp) 
+			  const PIO_Offset *chunksizesp) 
 {
     int ierr;
     int msg;
@@ -326,7 +326,7 @@ int PIOc_def_var_chunking(int ncid, int varid, int storage,
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizesp)
+int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, PIO_Offset *chunksizesp)
 {
     int ierr;
     int msg;
@@ -720,8 +720,8 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_set_chunk_cache(int iosysid, int iotype, int io_rank, size_t size,
-			 size_t nelems, float preemption)
+int PIOc_set_chunk_cache(int iosysid, int iotype, int io_rank, PIO_Offset size,
+			 PIO_Offset nelems, float preemption)
 {
     int ierr;
     int msg;
@@ -807,8 +807,8 @@ int PIOc_set_chunk_cache(int iosysid, int iotype, int io_rank, size_t size,
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_get_chunk_cache(int iosysid, int iotype, int io_rank, size_t *sizep,
-			 size_t *nelemsp, float *preemptionp)
+int PIOc_get_chunk_cache(int iosysid, int iotype, int io_rank, PIO_Offset *sizep,
+			 PIO_Offset *nelemsp, float *preemptionp)
 {
     int ierr;
     int msg;
@@ -844,11 +844,11 @@ int PIOc_get_chunk_cache(int iosysid, int iotype, int io_rank, size_t *sizep,
 #ifdef _NETCDF
 #ifdef _NETCDF4
     case PIO_IOTYPE_NETCDF4P:
-	ierr = nc_get_chunk_cache(sizep, nelemsp, preemptionp);
+	ierr = nc_get_chunk_cache((size_t *)sizep, (size_t *)nelemsp, preemptionp);
 	break;
     case PIO_IOTYPE_NETCDF4C:
 	if (!ios->io_rank)
-	    ierr = nc_get_chunk_cache(sizep, nelemsp, preemptionp);
+	    ierr = nc_get_chunk_cache((size_t *)sizep, (size_t *)nelemsp, preemptionp);
 	break;
 #endif
     case PIO_IOTYPE_NETCDF:
