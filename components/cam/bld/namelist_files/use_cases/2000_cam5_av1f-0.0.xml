@@ -32,7 +32,7 @@
 <fsnowoptics>lnd/clm2/snicardata/snicar_optics_5bnd_mam_c140303.nc</fsnowoptics>
 
 <!-- Radiation bugfix -->
-<use_rad_dt> 1 </use_rad_dt>
+<use_rad_dt_cosz> 1 </use_rad_dt_cosz>
 
 <!-- Marine organic aerosol configuration -->
 <mam_mom_mixing_state>2</mam_mom_mixing_state>
