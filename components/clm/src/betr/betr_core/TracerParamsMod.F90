@@ -211,8 +211,12 @@ contains
     SHR_ASSERT_ALL((ubound(jtops)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
     SHR_ASSERT_ALL((ubound(t_soisno)        == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
     SHR_ASSERT_ALL((ubound(jtops)           == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-    SHR_ASSERT_ALL((ubound(bunsencef_col)   == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
-    SHR_ASSERT_ALL((ubound(bulkdiffus)      == (/bounds%endc, ubj, betrtracer_vars%ntracer_groups/)),   errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(bunsencef_col, 1)== (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(bunsencef_col, 2)== (/ubj/))        ,   errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(bunsencef_col, 3)== (/betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(bulkdiffus, 1)   == (/bounds%endc/))                   ,   errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(bulkdiffus, 2)   == (/ubj/))                           ,   errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(bulkdiffus, 3)   == (/betrtracer_vars%ntracer_groups/)),   errMsg(__FILE__,__LINE__))
 
     associate(                                                                                              &
          ngwmobile_tracer_groups                => betrtracer_vars%ngwmobile_tracer_groups                , & ! Integer[intent(in)], number of dual phase (gw) tracers
@@ -356,8 +360,12 @@ contains
 
    SHR_ASSERT_ALL((ubound(jtops)             == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(dz)                == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(bulkdiffus)        == (/bounds%endc, ubj, betrtracer_vars%ntracer_groups/)),     errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(hmconductance_col) == (/bounds%endc, ubj-1, betrtracer_vars%ntracer_groups/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bulkdiffus,1)      == (/bounds%endc/)),                     errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bulkdiffus,2)      == (/ubj/)),                             errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bulkdiffus,3)      == (/betrtracer_vars%ntracer_groups/)),  errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(hmconductance_col,1) == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(hmconductance_col,2) == (/ubj-1/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(hmconductance_col,3) == (/betrtracer_vars%ntracer_groups/)),   errMsg(__FILE__,__LINE__))
 
    associate( &
     ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups   , & !Integer[intent(in)], number of gw tracers
@@ -409,8 +417,12 @@ contains
    SHR_ASSERT_ALL((ubound(jtops)             == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(t_soisno)          == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(soi_pH)            == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(aqu2neutralcef_col)== (/bounds%endc, ubj, betrtracer_vars%ngwmobile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(henrycef_col)      == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(aqu2neutralcef_col,1)== (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(aqu2neutralcef_col,2)== (/ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(aqu2neutralcef_col,3)== (/betrtracer_vars%ngwmobile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(henrycef_col,1)      == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(henrycef_col,2)      == (/ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(henrycef_col,3)      == (/betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
 
 
    associate( &
@@ -474,8 +486,12 @@ contains
    SHR_ASSERT_ALL((ubound(jtops)             == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(t_soisno)          == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(smp_l)             == (/bounds%endc, ubj/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(henrycef_col)      == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(bunsencef_col)     == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(henrycef_col,1)    == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(henrycef_col,2)    == (/ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(henrycef_col,3)    == (/betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bunsencef_col,1)   == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bunsencef_col,2)   == (/ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bunsencef_col,3)   == (/betrtracer_vars%nvolatile_tracer_groups/)),   errMsg(__FILE__,__LINE__))
 
    associate( &
     ngwmobile_tracer_groups    => betrtracer_vars%ngwmobile_tracer_groups      , & !Integer[intent(in)], number of tracers
@@ -1047,8 +1063,12 @@ contains
    character(len=255) :: subname = 'convert_mobile2gas'
 
    SHR_ASSERT_ALL((ubound(jtops)                  == (/bounds%endc/)),        errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(gas2bulkcef_mobile_col) == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracers/)),   errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL((ubound(tracer_conc_mobile)     == (/bounds%endc, ubj, betrtracer_vars%nvolatile_tracers/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(gas2bulkcef_mobile_col,1) == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(gas2bulkcef_mobile_col,2) == (/ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(gas2bulkcef_mobile_col,3) == (/betrtracer_vars%nvolatile_tracers/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(tracer_conc_mobile,1)     == (/bounds%endc/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(tracer_conc_mobile,2)     == (/ubj/)),   errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(tracer_conc_mobile,3)     == (/betrtracer_vars%nvolatile_tracers/)),   errMsg(__FILE__,__LINE__))
 
 
    associate( &
