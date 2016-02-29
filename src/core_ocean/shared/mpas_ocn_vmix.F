@@ -83,7 +83,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_coefs(meshPool, statePool, diagnosticsPool, scratchPool, err, timeLevelIn)!{{{
+   subroutine ocn_vmix_coefs(meshPool, statePool, forcingPool, diagnosticsPool, scratchPool, err, timeLevelIn)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -106,6 +106,9 @@ contains
 
       type (mpas_pool_type), intent(inout) :: &
          statePool             !< Input/Output: state information
+
+      type (mpas_pool_type), intent(inout) :: &
+         forcingPool             !< Input/Output: forcing information
 
       type (mpas_pool_type), intent(inout) :: &
          diagnosticsPool             !< Input/Output: diagnostic information
@@ -177,7 +180,7 @@ contains
       call mpas_timer_stop('coef rich build')
 
       call mpas_timer_start('coef cvmix build', .false.)
-      call ocn_vmix_coefs_cvmix_build(meshPool, statePool, diagnosticsPool, err4, timeLevel)
+      call ocn_vmix_coefs_cvmix_build(meshPool, statePool, forcingPool, diagnosticsPool, err4, timeLevel)
       call mpas_timer_stop('coef cvmix build')
 
       call mpas_timer_start('coef redi build', .false.)
@@ -463,11 +466,12 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, scratchPool, err, timeLevelIn)!{{{
+   subroutine ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, forcingPool, scratchPool, err, timeLevelIn)!{{{
       real (kind=RKIND), intent(in) :: dt
       type (mpas_pool_type), intent(in) :: meshPool
       type (mpas_pool_type), intent(inout) :: diagnosticsPool
       type (mpas_pool_type), intent(inout) :: statePool
+    type (mpas_pool_type), intent(inout) :: forcingPool
       type (mpas_pool_type), intent(in) :: scratchPool !< Input/Output: Scratch structure
       integer, intent(out) :: err
       integer, intent(in), optional :: timeLevelIn
@@ -514,7 +518,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
       call mpas_timer_start('vmix coefs', .false.)
-      call ocn_vmix_coefs(meshPool, statePool, diagnosticsPool, scratchPool, err, timeLevel)
+      call ocn_vmix_coefs(meshPool, statePool, forcingPool, diagnosticsPool, scratchPool, err, timeLevel)
       call mpas_timer_stop('vmix coefs')
 
       ! if using CVMix, then viscosity has to be averaged from cell centers to cell edges
