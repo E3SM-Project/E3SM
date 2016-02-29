@@ -45,7 +45,6 @@ my $EXEROOT		= `./xmlquery  EXEROOT		-value`;
 my $LIBROOT		= `./xmlquery  LIBROOT		-value`;
 my $INCROOT		= `./xmlquery  INCROOT		-value`;
 my $RUNDIR		= `./xmlquery  RUNDIR	 	-value`;
-my $SHAREDLIBROOT	= `./xmlquery  SHAREDLIBROOT	-value`;
 my $CASEROOT		= `./xmlquery  CASEROOT		-value`;
 my $CASEBUILD		= `./xmlquery  CASEBUILD	-value`;
 my $COMP_CPL		= `./xmlquery  COMP_CPL		-value`;
@@ -131,7 +130,7 @@ if($dryrun){
     # Make necessary directories
     # -------------------------------------------------------------------------
 
-    my @dirs = ("$EXEROOT", "$LIBROOT", "$INCROOT", "$RUNDIR", "$SHAREDLIBROOT");
+    my @dirs = ("$EXEROOT", "$LIBROOT", "$INCROOT", "$RUNDIR");
     foreach my $dir (@dirs) {
 	if (! -d $dir) {
 	    mkpath($dir, 0755) or $logger->logdie("Could not create directory $dir");
@@ -145,11 +144,6 @@ if($dryrun){
 	if (! -d $objdir) {
 	    mkpath($objdir, 0755) or $logger->logdie("Could not create directory $objdir");
 	    $logger->debug("Created directory $objdir");
-	}
-	my $libdir = "$EXEROOT/$model";
-	if (! -d $libdir) {
-	    mkpath($libdir, 0755) or $logger->logdie("Could not create directory $libdir");
-	    $logger->debug("Created directory $libdir");
 	}
     }
 }

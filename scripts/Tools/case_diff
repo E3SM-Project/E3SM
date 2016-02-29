@@ -1,0 +1,143 @@
+#! /usr/bin/env python
+
+"""
+Try to calculate and succinctly present the differences between two large
+directory trees.
+"""
+
+from standard_script_setup import *
+from CIME.utils import expect, run_cmd
+
+import argparse, sys, os, doctest, glob
+
+IGNORE = [".git", "bin", "bakefiles", "SNTools.project"]
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s case1 case2
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    > %s case1 case2
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("case1", help="First case.")
+
+    parser.add_argument("case2", help="Second case.")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.case1, args.case2
+
+###############################################################################
+def recursive_diff(dir1, dir2):
+###############################################################################
+    """
+    Starting at dir1, dir2 respectively, compare their contents
+    """
+    # The assertions below hurt performance
+    #assert os.path.isdir(dir1), dir1 + " not a directory"
+    #assert os.path.isdir(dir2), dir2 + " not a directory"
+
+    # Get contents of both directories
+    dir1_contents = set(os.listdir(dir1))
+    dir2_contents = set(os.listdir(dir2))
+
+    # Use set operations to figure out what they have in common
+    dir1_only = dir1_contents - dir2_contents
+    dir2_only = dir2_contents - dir1_contents
+    both      = dir1_contents & dir2_contents
+
+    num_differing_files = 0
+
+    # Print the unique items
+    for dirname, set_obj in [(dir1, dir1_only), (dir2, dir2_only)]:
+        for item in sorted(set_obj):
+            if (item not in IGNORE):
+                print os.path.join(dirname, item), "is unique"
+                num_differing_files += 1
+
+    # Handling of the common items is trickier
+    for item in sorted(both):
+        if (item in IGNORE):
+            continue
+        path1 = os.path.join(dir1, item)
+        path2 = os.path.join(dir2, item)
+        path1isdir = os.path.isdir(path1)
+
+        # If the directory status of the files differs, report diff
+        if (path1isdir != os.path.isdir(path2)):
+            print path1 + " DIFFERS (directory status)"
+            num_differing_files += 1
+            continue
+
+        # If the link status of the files differs, report diff
+        if (os.path.islink(path1) != os.path.islink(path2)):
+            print path1 + " DIFFERS (link status)"
+            num_differing_files += 1
+            continue
+
+        # If the paths are sym links, check if they are both broken/unbroken
+        paths_are_links = os.path.islink(path1)
+        if (paths_are_links):
+            if (os.path.exists(path1) != os.path.exists(path2)):
+                print path1 + " DIFFERS (brokeness of links)"
+                num_differing_files += 1
+                continue
+
+            # No need to move on to checking contents if the links are broken
+            paths_are_broken_links = not os.path.exists(path1)
+            if (paths_are_broken_links):
+                continue
+
+        # If we've made it this far, the files' status is the same. If the
+        # files are directories, recursively check them, otherwise check
+        # that the file contents match
+        if (path1isdir):
+            num_differing_files += recursive_diff(path1, path2)
+        else:
+            # # As a (huge) performance enhancement, if the files have the same
+            # # size, we assume the contents match
+            # if (os.path.getsize(path1) != os.path.getsize(path2)):
+            #     print path1 + " DIFFERS (contents)"
+
+            stat, out, _ = run_cmd("diff -w %s %s" % (path1, path2), ok_to_fail=True)
+            if (stat != 0):
+                print "==============================================================================="
+                print path1 + " DIFFERS (contents)"
+                num_differing_files += 1
+                print "  ", out
+
+    return num_differing_files
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    case1, case2 = parse_command_line(sys.argv, description)
+
+    num_differing_files = recursive_diff(case1, case2)
+    print num_differing_files, "files are different"
+    sys.exit(0 if num_differing_files == 0 else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

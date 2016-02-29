@@ -36,11 +36,17 @@ OR
                         "that we have a case.test_build script. If you are in a test that requires"
                         " multiple builds, provide this flag.")
 
+    parser.add_argument("-s", "--sharedlib-only", action="store_true",
+                        help="Only build sharedlibs")
+
+    parser.add_argument("-m", "--model-only", action="store_true",
+                        help="Assume shared libs already built")
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.caseroot, args.testmode
+    return args.caseroot, args.testmode, args.sharedlib_only, args.model_only
 
 ###############################################################################
 def _main_func(description):
@@ -49,10 +55,10 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    caseroot, testmode = parse_command_line(sys.argv, description)
+    caseroot, testmode, sharedlib_only, model_only = parse_command_line(sys.argv, description)
     logging.info("calling build.case_build with caseroot=%s and testmode=%s"
                  %(caseroot, testmode))
-    build.case_build(caseroot, testmode)
+    build.case_build(caseroot, testmode, sharedlib_only, model_only)
 
 if __name__ == "__main__":
     _main_func(__doc__)

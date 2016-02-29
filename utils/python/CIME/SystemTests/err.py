@@ -5,7 +5,6 @@ ERR tests short term archiving and restart capabilities
 from CIME.XML.standard_module_setup import *
 from system_tests_common import SystemTestsCommon
 
-
 class ERR(SystemTestsCommon):
     def __init__(self, caseroot, case):
         """

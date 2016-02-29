@@ -1,13 +1,12 @@
 #!/usr/bin/env python2
 """
- This is the system test build script for CIME
-
+This is the system test build script for CIME
 """
 
 from standard_script_setup import *
 
 from CIME.case import Case
-from CIME.SystemTests.system_tests_common import TESTRUNDIFF, TESTRUNFAIL, TESTRUNPASS
+from CIME.SystemTests.system_tests_common import TESTRUNDIFF, TESTRUNFAIL, TESTRUNPASS, TESTBUILDFAIL, TESTRUNSLOWPASS
 from CIME.SystemTests.sms import SMS
 from CIME.SystemTests.cme import CME
 from CIME.SystemTests.erp import ERP
@@ -20,9 +19,7 @@ from CIME.SystemTests.eri import ERI
 from CIME.SystemTests.seq import SEQ
 from CIME.utils import expect
 
-###############################################################################
 def parse_command_line(args, description):
-###############################################################################
     parser = argparse.ArgumentParser(
         usage="""\n%s [<testname>] [--verbose]
 OR
@@ -34,9 +31,7 @@ OR
     \033[1;32m# case.test_build SMS\033[0m
     > %s
 """ % ((os.path.basename(args[0]), ) * 4),
-
         description=description,
-
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
@@ -48,36 +43,40 @@ OR
     parser.add_argument("--caseroot", default=os.getcwd(),
                         help="Case directory to build")
 
+    parser.add_argument("-s", "--sharedlib-only", action="store_true",
+                        help="Only build sharedlibs")
+
+    parser.add_argument("-m", "--model-only", action="store_true",
+                        help="Assume shared libs already built")
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.caseroot, args.testname
+    return args.caseroot, args.testname, args.sharedlib_only, args.model_only
 
-def cimetestbuild(caseroot, testname):
+def cimetestbuild(caseroot, testname, sharedlib_only, model_only):
     case = Case(caseroot)
-    test = object()
     if testname is None:
         testname = case.get_value('TESTCASE')
 
-    logging.warn("Building test for %s"%testname)
+    logging.warn("Building test for %s" % testname)
 
     try:
         test = globals()[testname](caseroot, case)
-    except:
-        expect(False,"Could not find a test called '%s'"%testname)
+    except KeyError:
+        expect(False, "Could not find a test called '%s'" % testname)
 
-    test.build()
-
+    test.build(sharedlib_only=sharedlib_only, model_only=model_only)
 
 def _main_func(description):
     if "--test" in sys.argv:
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    caseroot, testname = parse_command_line(sys.argv, description)
+    caseroot, testname, sharedlib_only, model_only = parse_command_line(sys.argv, description)
 
-    cimetestbuild(caseroot, testname)
+    cimetestbuild(caseroot, testname, sharedlib_only, model_only)
 
 if __name__ == "__main__":
     _main_func(__doc__)

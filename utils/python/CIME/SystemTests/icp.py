@@ -12,10 +12,8 @@ class ICP(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, caseroot, case)
 
-    def build(self):
+    def build(self, sharedlib_only=False, model_only=False):
         self._case.set_value("CICE_AUTO_DECOMP","false")
-
-
 
     def run(self):
         self._case.set_value("CONTINUE_RUN","FALSE")

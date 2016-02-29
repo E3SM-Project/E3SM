@@ -2,7 +2,7 @@
 # Common Makefile: a framework for building all CIME components and more
 #
 # Command-line variables
-#   MODEL=<model>  ~ a standard macro definition, often found in the included 
+#   MODEL=<model>  ~ a standard macro definition, often found in the included
 #                    MACFILE, used to trigger special compilation flags
 # Supported compilers
 # ibm, bgl, bgp, pgi, intel, pathscale, gnu, nag
@@ -13,20 +13,20 @@ null  :=
 comma := ,
 
 # Load dependency search path.
-dirs := . 
+dirs := .
 dirs += $(shell cat Filepath)
 
 cpp_dirs := $(dirs)
 # Add INCROOT to path for Depends and Include
-MINCROOT := 
+MINCROOT :=
 ifdef INCROOT
   cpp_dirs += $(INCROOT)
   MINCROOT := $(INCROOT)
 endif
 
 # Expand any tildes in directory names. Change spaces to colons.
-VPATH := $(foreach dir,$(cpp_dirs),$(wildcard $(dir))) 
-VPATH := $(subst $(space),:,$(VPATH))               
+VPATH := $(foreach dir,$(cpp_dirs),$(wildcard $(dir)))
+VPATH := $(subst $(space),:,$(VPATH))
 
 RM    := rm
 CP    := cp
@@ -35,7 +35,7 @@ exec_se: $(EXEC_SE)  $(CURDIR)/Depends
 complib: $(COMPLIB)  $(CURDIR)/Depends
 
 # Determine whether to compile threaded or not
-# Set the THREADDIR for the shared build 
+# Set the THREADDIR for the shared build
 # based on the threaded build status
 compile_threaded = false
 ifeq ($(strip $(SMP)),TRUE)
@@ -82,7 +82,7 @@ endif
 # set CPP options (must use this before any flags or cflags settings)
 #===============================================================================
 
-CPPDEFS := $(USER_CPPDEFS) -D$(OS) 
+CPPDEFS := $(USER_CPPDEFS) -D$(OS)
 
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
 ifneq ($(strip $(DEBUG)),TRUE)
@@ -155,9 +155,9 @@ ifeq ($(USE_CXX), true)
     LD := $(MPIFC)
   endif
 endif
-# Use this if LD has not already been defined.   
+# Use this if LD has not already been defined.
 ifeq ($(origin LD), default)
-  ifeq ($(strip $(MPILIB)),mpi-serial)	
+  ifeq ($(strip $(MPILIB)),mpi-serial)
     LD := $(SFC)
   else
     LD := $(MPIFC)
@@ -270,17 +270,17 @@ endif
 
 ifdef CPRE
   FPPDEFS := $(subst $(comma),\\$(comma),$(CPPDEFS))
-  FPPDEFS := $(patsubst -D%,$(CPRE)%,$(FPPDEFS)) 
+  FPPDEFS := $(patsubst -D%,$(CPRE)%,$(FPPDEFS))
 else
   FPPDEFS := $(CPPDEFS)
 endif
 
 
 #===============================================================================
-# Set config args for pio and mct to blank and then enable serial 
+# Set config args for pio and mct to blank and then enable serial
 #===============================================================================
 ifndef CONFIG_ARGS
-  CONFIG_ARGS := 
+  CONFIG_ARGS :=
 endif
 ifeq ($(MPILIB),mpi-serial)
    CONFIG_ARGS+= --enable-mpiserial
@@ -296,7 +296,7 @@ endif
 # User-specified INCLDIR
 #===============================================================================
 
-INCLDIR := -I. 
+INCLDIR := -I.
 ifdef USER_INCLDIR
   INCLDIR += $(USER_INCLDIR)
 endif
@@ -343,7 +343,7 @@ ifdef MOD_NETCDF
 endif
 ifdef INC_MPI
   INCLDIR += -I$(INC_MPI)
-endif 
+endif
 ifdef INC_PNETCDF
   INCLDIR += -I$(INC_PNETCDF)
 endif
@@ -402,7 +402,7 @@ endif
 INCLDIR +=	-I$(SHAREDPATH)/include -I$(CIMEROOT)/share/csm_share/shr \
 		-I$(CIMEROOT)/share/csm_share/include -I$(CIMEROOT)/share/shr_RandNum/include
 #
-# Use the MCT dir for the cache for all configure calls because it is the first one 
+# Use the MCT dir for the cache for all configure calls because it is the first one
 #
 CFLAGS+=$(CPPDEFS)
 CXXFLAGS := $(CFLAGS)
@@ -410,7 +410,7 @@ CXXFLAGS := $(CFLAGS)
 CONFIG_ARGS +=  CC="$(SCC)" FC="$(SFC)" MPICC="$(MPICC)" \
                 MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
-                NETCDF_PATH=$(NETCDF_PATH) LDFLAGS="$(LDFLAGS)" 
+                NETCDF_PATH=$(NETCDF_PATH) LDFLAGS="$(LDFLAGS)"
 ifeq ($(COMPILER),nag)
   CONFIG_ARGS += LIBS="$(SLIBS)"
 endif
@@ -456,9 +456,9 @@ ifdef ESMF_LIBDIR
 endif
 
 
-# System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.) 
+# System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
 ifndef SLIBS
-   SLIBS := -L$(LIB_NETCDF) -lnetcdf 
+   SLIBS := -L$(LIB_NETCDF) -lnetcdf
 endif
 ifdef LIB_PNETCDF
    SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
@@ -469,13 +469,13 @@ endif
 ifdef LIB_MPI
    ifndef MPI_LIB_NAME
       SLIBS += -L$(LIB_MPI) -lmpi
-   else  
+   else
       SLIBS += -L$(LIB_MPI) -l$(MPI_LIB_NAME)
    endif
 endif
 
 # For compiling and linking with external ESMF.
-# If linking to external ESMF library then include esmf.mk 
+# If linking to external ESMF library then include esmf.mk
 # ESMF_F90COMPILEPATHS
 # ESMF_F90LINKPATHS
 # ESMF_F90LINKRPATHS
@@ -525,11 +525,11 @@ endif
 #------------------------------------------------------------------------------
 
 
-$(MCT_LIBDIR)/Makefile.conf: 
+$(MCT_LIBDIR)/Makefile.conf:
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
 	$(CONFIG_SHELL) $(CIMEROOT)/externals/mct/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/externals/mct
 
-$(MCT_LIBDIR)/mpi-serial/Makefile.conf: 
+$(MCT_LIBDIR)/mpi-serial/Makefile.conf:
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
 	$(CONFIG_SHELL) $(CIMEROOT)/externals/mct/mpi-serial/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/externals/mct
 
@@ -559,7 +559,7 @@ else
 endif
 #endif
 
-MCTLIBS = $(MCT_LIBDIR)/libmct.a $(MCT_LIBDIR)/libmpeu.a 
+MCTLIBS = $(MCT_LIBDIR)/libmct.a $(MCT_LIBDIR)/libmpeu.a
 
 GPTLLIB = $(GPTL_LIBDIR)/libgptl.a
 
@@ -570,7 +570,7 @@ ULIBS += -L$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -
 #------------------------------------------------------------------------------
 
 ifndef CMAKE_OPTS
-  CMAKE_OPTS := 
+  CMAKE_OPTS :=
 endif
 # note that the fortran flags include neither the FREEFLAGS nor the
 # FIXEDFLAGS, so that both free & fixed code can be built (cmake
@@ -586,7 +586,7 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(INCLDIR)" \
               -D USER_CMAKE_MODULE_PATH:STRING=$(CIMEROOT)/externals/CMake
 
 ifdef PNETCDF_PATH
-	CMAKE_OPTS += -D PNETCDF_DIR:STRING="$(PNETCDF_PATH)" 
+	CMAKE_OPTS += -D PNETCDF_DIR:STRING="$(PNETCDF_PATH)"
 else
         CMAKE_OPTS += -D WITH_PNETCDF:LOGICAL=FALSE -D PIO_USE_MPIIO:LOGICAL=FALSE
 endif
@@ -601,23 +601,23 @@ CMAKE_OPTS += $(USER_CMAKE_OPTS)
 # CMAKE_C_COMPILER, etc., when you rerun cmake with an existing
 # cache. So doing this via environment variables instead.
 ifndef CMAKE_ENV_VARS
-  CMAKE_ENV_VARS := 
+  CMAKE_ENV_VARS :=
 endif
 CMAKE_ENV_VARS += CC=$(CC) \
                   CXX=$(CXX) \
                   FC=$(FC) \
-                  LDFLAGS="$(LDFLAGS)" 
+                  LDFLAGS="$(LDFLAGS)"
 
 
 # We declare $(GLC_DIR)/Makefile to be a phony target so that cmake is
 # always rerun whenever invoking 'make $(GLC_DIR)/Makefile'; this is
 # desirable to pick up any new source files that may have been added
-.PHONY: $(GLC_DIR)/Makefile 
+.PHONY: $(GLC_DIR)/Makefile
 $(GLC_DIR)/Makefile:
 	cd $(GLC_DIR); \
 	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(CIMEROOT)/../components/cism/glimmer-cism
 
-$(PIO_LIBDIR)/Makefile: 
+$(PIO_LIBDIR)/Makefile:
 	cd $(PIO_LIBDIR); \
 	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(PIO_SRC_DIR)
 
@@ -625,7 +625,7 @@ $(PIO_LIBDIR)/Makefile:
 # Build & include dependency files
 #-------------------------------------------------------------------------------
 
-touch_filepath: 
+touch_filepath:
 	touch $(CURDIR)/Filepath
 
 # Get list of files and build dependency file for all .o files
@@ -634,7 +634,7 @@ touch_filepath:
 SOURCES := $(shell cat Srcfiles)
 BASENAMES := $(basename $(basename $(SOURCES)))
 OBJS    := $(addsuffix .o, $(BASENAMES))
-INCS    := $(foreach dir,$(cpp_dirs),-I$(dir)) 
+INCS    := $(foreach dir,$(cpp_dirs),-I$(dir))
 
 CURDIR := $(shell pwd)
 
@@ -646,7 +646,7 @@ $(CURDIR)/Deppath: $(CURDIR)/Filepath
 	@echo "$(MINCROOT)" >> $@
 
 $(CURDIR)/Srcfiles: $(CURDIR)/Filepath
-	$(CASETOOLS)/mkSrcfiles 
+	$(CASETOOLS)/mkSrcfiles
 
 $(CURDIR)/Filepath:
 	@echo "$(VPATH)" > $@
@@ -694,10 +694,10 @@ ifeq ($(ULIBDEP),$(null))
      ULIBDEP += $(LIBROOT)/libice.a
      ifeq ($(findstring clm5_0,$(CLM_CONFIG_OPTS)),clm5_0)
           LNDLIB := libclm.a
-     else	
+     else
           ifeq ($(findstring clm4_5,$(CLM_CONFIG_OPTS)),clm4_5)
                LNDLIB := libclm.a
-          else	
+          else
                LNDLIB := liblnd.a
           endif
      endif
@@ -750,7 +750,7 @@ CSMSHARELIB = $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_shar
 ULIBDEP += $(CSMSHARELIB)
 
 #-------------------------------------------------------------------------------
-# build rules: 
+# build rules:
 #-------------------------------------------------------------------------------
 
 .SUFFIXES:
@@ -762,14 +762,14 @@ ifeq ($(MPILIB),mpi-serial)
   CMAKE_OPTS += -DMPI_C_INCLUDE_PATH=$(SHAREDPATH)/include \
       -DMPI_Fortran_INCLUDE_PATH=$(SHAREDPATH)/include \
       -DMPI_C_LIBRARIES=$(SHAREDPATH)/lib/libmpi-serial.a \
-      -DMPI_Fortran_LIBRARIES=$(SHAREDPATH)/lib/libmpi-serial.a 
+      -DMPI_Fortran_LIBRARIES=$(SHAREDPATH)/lib/libmpi-serial.a
 endif
 
 $(MCTLIBS)  : $(MPISERIAL)
 
 $(PIOLIB) : $(MPISERIAL) $(GPTLLIB)
 
-$(CSMSHARELIB):  $(MCTLIBS) $(PIOLIB) $(GPTLLIB) 
+$(CSMSHARELIB):  $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 ifneq ($(MODEL),csm_share)
   $(OBJS):  $(CSMSHARELIB)
 endif
@@ -777,7 +777,7 @@ endif
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
 
-$(COMPLIB): $(OBJS) 
+$(COMPLIB): $(OBJS)
 	$(AR) -r $(COMPLIB) $(OBJS)
 
 
@@ -802,29 +802,29 @@ cleanatm:
 	cd $(EXEROOT)/atm/obj;  $(RM) -f *.o *.mod
 
 cleancpl:
-	cd $(EXEROOT)/drv/obj;  $(RM) -f *.o *.mod
+	cd $(EXEROOT)/cpl/obj;  $(RM) -f *.o *.mod
 
-cleanocn: 
-	$(RM) -f $(LIBROOT)/libocn.a 
+cleanocn:
+	$(RM) -f $(LIBROOT)/libocn.a
 	cd $(EXEROOT)/ocn/obj ; $(RM) -f *.o *.mod
 
-cleanwav: 
+cleanwav:
 	$(RM) -f $(LIBROOT)/libwav.a
 	cd $(EXEROOT)/wav/obj ; $(RM) -f *.o *.mod
 
-cleanglc: 
+cleanglc:
 	$(RM) -f $(LIBROOT)/libglc.a
-	$(RM) -fr $(EXEROOT)/glc 
+	$(RM) -fr $(EXEROOT)/glc
 
-cleanice: 
+cleanice:
 	$(RM) -f $(LIBROOT)/libice.a
 	cd $(EXEROOT)/ice/obj ; $(RM) -f *.o *.mod
 
-cleanrof: 
+cleanrof:
 	$(RM) -f $(LIBROOT)/librof.a
 	cd $(EXEROOT)/rof/obj ; $(RM) -f *.o *.mod
 
-cleanlnd: 
+cleanlnd:
 	$(RM) -f $(LIBROOT)/liblnd.a
 	cd $(EXEROOT)/lnd/obj ; $(RM) -f *.o *.mod
 

@@ -206,7 +206,7 @@ sub doPreRunChecks()
     $logger->info(" - To prestage restarts, untar a restart.tar file into $config{'RUNDIR'}");
 
     # Run preview namelists.. should turn this into a module at some point..
-    system("./preview_namelists -loglevel $opts{loglevel} ");
+    system("./preview_namelists");
 
     if($?)
     {
