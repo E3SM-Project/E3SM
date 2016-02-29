@@ -6,6 +6,7 @@ module dice_comp_mod
 ! !USES:
 
   use shr_const_mod
+  use shr_func_mod
   use shr_sys_mod
   use shr_kind_mod , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, &
                            CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
@@ -730,7 +731,7 @@ subroutine dice_comp_run( EClock, cdata,  x2i, i2x)
 
       do n = 1,lsize
 
-         tfreeze = -0.0544_R8*x2i%rAttr(ksalinity,n) + tFrz ! convert to Kelvin
+         tfreeze = shr_func_freezetemp(x2i%rAttr(ksalinity,n)) + tFrz ! convert to Kelvin
 
          !--- fix erroneous iFrac ---
          i2x%rAttr(kiFrac,n) = min(1.0_R8,max(0.0_R8,i2x%rAttr(kiFrac,n))) 

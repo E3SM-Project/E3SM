@@ -6,6 +6,7 @@ module docn_comp_mod
 ! !USES:
 
   use shr_const_mod
+  use shr_func_mod
   use shr_sys_mod
   use shr_kind_mod     , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, &
                                CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
@@ -703,7 +704,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
                 (x2o%rAttr(ksnow,n)+x2o%rAttr(krofi,n))*latice) * &  ! latent by prec and roff
                 dt/(cpsw*rhosw*hn)
              !--- compute ice formed or melt potential ---
-            tfreeze = -0.0544_r8*o2x%rAttr(ks,n) + TkFrz
+            tfreeze = shr_func_freezetemp(o2x%rAttr(ks,n)) + TkFrz
             o2x%rAttr(kq,n) = (tfreeze - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0
             o2x%rAttr(kt,n) = max(tfreeze,o2x%rAttr(kt,n))                    ! reset temp
             somtp(n) = o2x%rAttr(kt,n)                                        ! save temp
