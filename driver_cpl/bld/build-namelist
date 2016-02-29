@@ -430,6 +430,8 @@ add_default($nl, 'wv_sat_transition_start');
 add_default($nl, 'wv_sat_use_tables');
 add_default($nl, 'wv_sat_table_spacing');
 
+add_default($nl, 'tfreeze_option');
+
 add_default($nl, 'budget_inst');
 add_default($nl, 'budget_daily');
 add_default($nl, 'budget_month');

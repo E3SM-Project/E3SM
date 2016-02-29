@@ -76,6 +76,8 @@
 <wv_sat_use_tables>.false.</wv_sat_use_tables>
 <wv_sat_table_spacing>1.0D0</wv_sat_table_spacing>
 
+<tfreeze_option>minus1p8</tfreeze_option>
+
 <timing_dir>./timing</timing_dir>
 
 <tchkpt_dir>./timing/checkpoints</tchkpt_dir>
