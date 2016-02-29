@@ -103,6 +103,7 @@ MODULE seq_infodata_mod
       real(SHR_KIND_R8)       :: wv_sat_transition_start ! Saturation transition range
       logical                 :: wv_sat_use_tables   ! Saturation pressure lookup tables
       real(SHR_KIND_R8)       :: wv_sat_table_spacing! Saturation pressure table resolution
+      character(SHR_KIND_CS)  :: tfreeze_option     ! Computation of freezing point of salt water
       character(SHR_KIND_CL)  :: flux_epbal      ! selects E,P,R adjustment technique 
       logical                 :: flux_albav      ! T => no diurnal cycle in ocn albedos
       logical                 :: flux_diurnal    ! T => diurnal cycle in atm/ocn fluxes
@@ -309,6 +310,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
     real(SHR_KIND_R8)      :: wv_sat_transition_start! Saturation transition range
     logical                :: wv_sat_use_tables  ! Saturation pressure lookup tables
     real(SHR_KIND_R8)      :: wv_sat_table_spacing   ! Saturation pressure table resolution
+    character(SHR_KIND_CS) :: tfreeze_option        ! Computation of freezing point of salt water
     character(SHR_KIND_CL) :: flux_epbal         ! selects E,P,R adjustment technique 
     logical                :: flux_albav         ! T => no diurnal cycle in ocn albedos
     logical                :: flux_diurnal       ! T => diurnal cycle in atm/ocn fluxes
@@ -379,6 +381,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
          orb_iyear, orb_obliq, orb_eccen, orb_mvelp,       &
          wv_sat_scheme, wv_sat_transition_start,           &
          wv_sat_use_tables, wv_sat_table_spacing,          &
+         tfreeze_option,                                      &
          ice_gnam, rof_gnam, glc_gnam, wav_gnam,           &
          atm_gnam, lnd_gnam, ocn_gnam, cpl_decomp,         &
          shr_map_dopole, vect_map, aoflux_grid, do_histinit,  &
@@ -444,6 +447,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        wv_sat_transition_start = 20.0
        wv_sat_use_tables     = .false.
        wv_sat_table_spacing  = 1.0
+       tfreeze_option           = 'default'
        flux_epbal            = 'off'
        flux_albav            = .false.
        flux_diurnal          = .false.
@@ -546,6 +550,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        infodata%wv_sat_transition_start = wv_sat_transition_start
        infodata%wv_sat_use_tables     = wv_sat_use_tables
        infodata%wv_sat_table_spacing  = wv_sat_table_spacing
+       infodata%tfreeze_option           = tfreeze_option
        infodata%flux_epbal            = flux_epbal
        infodata%flux_albav            = flux_albav
        infodata%flux_diurnal          = flux_diurnal
@@ -842,6 +847,7 @@ SUBROUTINE seq_infodata_GetData( infodata, case_name, case_desc, timing_dir,  &
            cpl_cdf64, orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
            orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
            wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
+           tfreeze_option,                                                       &
            glc_phase, rof_phase, atm_phase, lnd_phase, ocn_phase, ice_phase,  &
            wav_phase, wav_nx, wav_ny, atm_nx, atm_ny,                         &
            lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
@@ -894,6 +900,7 @@ SUBROUTINE seq_infodata_GetData( infodata, case_name, case_desc, timing_dir,  &
    real(SHR_KIND_R8)   ,optional, intent(OUT) :: wv_sat_transition_start   ! Saturation transition range
    logical             ,optional, intent(OUT) :: wv_sat_use_tables ! Saturation pressure lookup tables
    real(SHR_KIND_R8)   ,optional, intent(OUT) :: wv_sat_table_spacing  ! Saturation pressure table resolution
+   character(len=*)    ,optional, intent(OUT) :: tfreeze_option   ! Freezing point of salt water
    character(len=*)    ,optional, intent(OUT) :: flux_epbal    ! selects E,P,R adjustment technique 
    logical             ,optional, intent(OUT) :: flux_albav    ! T => no diurnal cycle in ocn albedos
    logical             ,optional, intent(OUT) :: flux_diurnal  ! T => diurnal cycle in atm/ocn flux
@@ -1047,6 +1054,7 @@ SUBROUTINE seq_infodata_GetData( infodata, case_name, case_desc, timing_dir,  &
     if ( present(orb_mvelpp)     ) orb_mvelpp     = infodata%orb_mvelpp
     if ( present(orb_mvelp)      ) orb_mvelp      = infodata%orb_mvelp
     if ( present(wv_sat_scheme)  ) wv_sat_scheme  = infodata%wv_sat_scheme
+    if ( present(tfreeze_option)    ) tfreeze_option    = infodata%tfreeze_option
     if ( present(wv_sat_transition_start)) &
          wv_sat_transition_start = infodata%wv_sat_transition_start
     if ( present(wv_sat_use_tables)) wv_sat_use_tables = infodata%wv_sat_use_tables
@@ -1211,6 +1219,7 @@ SUBROUTINE seq_infodata_PutData( infodata, case_name, case_desc, timing_dir,  &
            cpl_cdf64, orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
            orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
            wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
+           tfreeze_option, &
            glc_phase, rof_phase, atm_phase, lnd_phase, ocn_phase, ice_phase,  &
            wav_phase, wav_nx, wav_ny, atm_nx, atm_ny,                         &
            lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
@@ -1263,6 +1272,7 @@ SUBROUTINE seq_infodata_PutData( infodata, case_name, case_desc, timing_dir,  &
    real(SHR_KIND_R8)   ,optional, intent(IN) :: wv_sat_transition_start  ! Saturation transition range
    logical             ,optional, intent(IN) :: wv_sat_use_tables ! Saturation pressure lookup tables
    real(SHR_KIND_R8)   ,optional, intent(IN) :: wv_sat_table_spacing  ! Saturation pressure table resolution
+   character(len=*)    ,optional, intent(IN) :: tfreeze_option   ! Freezing point of salt water
    character(len=*)    ,optional, intent(IN) :: flux_epbal    ! selects E,P,R adjustment technique 
    logical             ,optional, intent(IN) :: flux_albav    ! T => no diurnal cycle in ocn albedos
    logical             ,optional, intent(IN) :: flux_diurnal  ! T => diurnal cycle in atm/ocn flux
@@ -1418,6 +1428,7 @@ SUBROUTINE seq_infodata_PutData( infodata, case_name, case_desc, timing_dir,  &
          infodata%wv_sat_transition_start = wv_sat_transition_start
     if ( present(wv_sat_use_tables)) infodata%wv_sat_use_tables = wv_sat_use_tables
     if ( present(wv_sat_table_spacing)) infodata%wv_sat_table_spacing = wv_sat_table_spacing
+    if ( present(tfreeze_option)    ) infodata%tfreeze_option    = tfreeze_option
     if ( present(flux_epbal)     ) infodata%flux_epbal     = flux_epbal
     if ( present(flux_albav)     ) infodata%flux_albav     = flux_albav
     if ( present(flux_diurnal)   ) infodata%flux_diurnal   = flux_diurnal
@@ -1596,6 +1607,7 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%wv_sat_transition_start, mpicom)
     call shr_mpi_bcast(infodata%wv_sat_use_tables,     mpicom)
     call shr_mpi_bcast(infodata%wv_sat_table_spacing,  mpicom)
+    call shr_mpi_bcast(infodata%tfreeze_option,           mpicom)
     call shr_mpi_bcast(infodata%flux_epbal,            mpicom)
     call shr_mpi_bcast(infodata%flux_albav,            mpicom)
     call shr_mpi_bcast(infodata%flux_diurnal,          mpicom)
@@ -2228,6 +2240,7 @@ SUBROUTINE seq_infodata_print( infodata )
        write(logunit,F0L) subname,'wv_sat_use_tables        = ', infodata%wv_sat_use_tables
        write(logunit,F0R) subname,'wv_sat_table_spacing     = ', infodata%wv_sat_table_spacing
 
+       write(logunit,F0A) subname,'tfreeze_option              = ', trim(infodata%tfreeze_option)
        write(logunit,F0A) subname,'flux_epbal               = ', trim(infodata%flux_epbal)
        write(logunit,F0L) subname,'flux_albav               = ', infodata%flux_albav
        write(logunit,F0L) subname,'flux_diurnal             = ', infodata%flux_diurnal

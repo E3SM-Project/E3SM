@@ -408,6 +408,16 @@ Temperature resolution of saturation vapor pressure lookup tables in Kelvin.
 Default: 1.0
 </entry>
 
+<entry
+id="tfreeze_option"
+type="char*16"
+category="control"
+group="seq_infodata_inparm"
+valid_values="minus1p8,linear_salt,mushy">
+Freezing point calculation for salt water.
+Default: default
+</entry>
+
 <entry 
 id="flux_epbal"
 type="char*8"
