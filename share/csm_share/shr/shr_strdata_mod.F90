@@ -680,8 +680,10 @@ module shr_strdata_mod
 
      if (newData(n)) then
         if (debug > 0) then
-           write(logunit,*) trim(subname),' newData RLB = ',n,minval(SDAT%avRLB(n)%rAttr),maxval(SDAT%avRLB(n)%rAttr),sum(SDAT%avRLB(n)%rAttr)
-           write(logunit,*) trim(subname),' newData RUB = ',n,minval(SDAT%avRUB(n)%rAttr),maxval(SDAT%avRUB(n)%rAttr),sum(SDAT%avRUB(n)%rAttr)
+           write(logunit,*) trim(subname),' newData RLB = ',n,minval(SDAT%avRLB(n)%rAttr), &
+	                                 maxval(SDAT%avRLB(n)%rAttr),sum(SDAT%avRLB(n)%rAttr)
+           write(logunit,*) trim(subname),' newData RUB = ',n,minval(SDAT%avRUB(n)%rAttr), &
+	                                 maxval(SDAT%avRUB(n)%rAttr),sum(SDAT%avRUB(n)%rAttr)
         endif
         call shr_cal_date2ymd(SDAT%ymdLB(n),year,month,day)
         call shr_cal_timeSet(timeLB,SDAT%ymdLB(n),0,SDAT%stream(n)%calendar)
@@ -730,8 +732,10 @@ module shr_strdata_mod
         endif
 
         if (debug > 0) then
-           write(logunit,*) trim(subname),' newData FLB = ',n,minval(SDAT%avFLB(n)%rAttr),maxval(SDAT%avFLB(n)%rAttr),sum(SDAT%avFLB(n)%rAttr)
-           write(logunit,*) trim(subname),' newData FUB = ',n,minval(SDAT%avFUB(n)%rAttr),maxval(SDAT%avFUB(n)%rAttr),sum(SDAT%avFUB(n)%rAttr)
+           write(logunit,*) trim(subname),' newData FLB = ',n,minval(SDAT%avFLB(n)%rAttr), &
+	                                maxval(SDAT%avFLB(n)%rAttr),sum(SDAT%avFLB(n)%rAttr)
+           write(logunit,*) trim(subname),' newData FUB = ',n,minval(SDAT%avFUB(n)%rAttr), &
+	                                maxval(SDAT%avFUB(n)%rAttr),sum(SDAT%avFUB(n)%rAttr)
         endif
      endif
   enddo
