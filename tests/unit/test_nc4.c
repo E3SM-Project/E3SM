@@ -286,7 +286,23 @@ main(int argc, char **argv)
 	    printf("rank: %d Setting chunk cache for file %s with format %d...\n",
 		   my_rank, filename[fmt], format[fmt]);
 
+	/* Try to set the chunk cache with invalid preemption to check error handling. */
+	chunk_cache_preemption = 50.0;
+	ret = PIOc_set_chunk_cache(iosysid, format[fmt], my_rank, chunk_cache_size,
+				   chunk_cache_nelems, chunk_cache_preemption);
+	if (format[fmt] == PIO_IOTYPE_NETCDF4C || format[fmt] == PIO_IOTYPE_NETCDF4P)
+	{
+	    if (ret != NC_EINVAL)
+		ERR(ERR_AWFUL);
+	}
+	else
+	{
+	    if (ret != NC_ENOTNC4)
+		ERR(ERR_AWFUL);
+	}
+
 	/* Try to set the chunk cache. */
+	chunk_cache_preemption = 0.5;
 	ret = PIOc_set_chunk_cache(iosysid, format[fmt], my_rank, chunk_cache_size,
 				   chunk_cache_nelems, chunk_cache_preemption);
 
