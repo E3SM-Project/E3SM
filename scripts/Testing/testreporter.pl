@@ -309,7 +309,7 @@ sub getTestStatus
 	# test functionality summary as the teststatus field.
 	my @testsummarylines = grep { /test functionality summary/ } @statuslines;
 	my $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
-	if(defined $testsummary && $testsummary !~ /PASS/)
+	if((defined $testsummary && $testsummary !~ /PASS/) && ($teststatus !~ /DONE/))
 	{
 	    $teststatus = $testsummary;
 	    $teststatushash{$testcase}{'comment'} = "Overall Test status failed! Check the history files!!";
