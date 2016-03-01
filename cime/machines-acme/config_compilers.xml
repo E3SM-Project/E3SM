@@ -1121,5 +1121,14 @@ for mct, etc.
 	<ALBANY_PATH>$(ALBANY_PATH)</ALBANY_PATH>
 </compiler>
 
+<compiler COMPILER="intel" MACH="lawrencium-lr2">
+	<ADD_SLIBS> -lnetcdff -lnetcdf -mkl</ADD_SLIBS>
+	<GPTL_CPPDEFS> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="lawrencium-lr3">
+	<ADD_SLIBS> -lnetcdff -lnetcdf -mkl</ADD_SLIBS>
+	<GPTL_CPPDEFS> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
+</compiler>
 
 </config_compilers>
