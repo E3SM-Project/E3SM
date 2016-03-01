@@ -752,7 +752,7 @@ int PIOc_set_chunk_cache(int iosysid, int iotype, int io_rank, PIO_Offset size,
 	ierr = nc_set_chunk_cache(size, nelems, preemption);
 	break;
     case PIO_IOTYPE_NETCDF4C:
-	if (!io_rank)
+	if (!ios->io_rank)
 	    ierr = nc_set_chunk_cache(size, nelems, preemption);
 	break;
 #endif
@@ -769,9 +769,8 @@ int PIOc_set_chunk_cache(int iosysid, int iotype, int io_rank, PIO_Offset size,
 	ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
 
-    /* Check for netCDF error. */
-    if (ierr)
-	MPI_Bcast(&ierr, 1, MPI_INTEGER, ios->ioroot, ios->my_comm);    
+    /* Propogate error code to all processes. */
+    MPI_Bcast(&ierr, 1, MPI_INTEGER, ios->ioroot, ios->my_comm);    
 
     return ierr;
 }    
@@ -861,9 +860,8 @@ int PIOc_get_chunk_cache(int iosysid, int iotype, int io_rank, PIO_Offset *sizep
 
 
     /* Check for netCDF error. */
-    if (ierr)
-	MPI_Bcast(&ierr, 1, MPI_INTEGER, ios->ioroot, ios->my_comm);
-    else
+    MPI_Bcast(&ierr, 1, MPI_INTEGER, ios->ioroot, ios->my_comm);
+    if (!ierr)
     {
 	if (sizep)
 	    if ((ierr = MPI_Bcast(sizep, 1, MPI_OFFSET, ios->ioroot, ios->my_comm)))
