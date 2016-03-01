@@ -615,7 +615,7 @@
             if (status /= PIO_noerr) call abort_ice( &
                'ice: Error getting varid for '//avail_hist_fields(n)%vname)
             work1(:,:,:) = aa(:,:,n,:)
-            call pio_setframe(varid, int(1,kind=PIO_OFFSET))
+            call pio_setframe(File,varid, int(1,kind=PIO_OFFSET_KIND))
             call pio_write_darray(File, varid, iodesc2d,&
                                   work1, status, fillval=spval_dbl)
          endif
