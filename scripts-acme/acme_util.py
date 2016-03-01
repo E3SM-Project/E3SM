@@ -40,7 +40,7 @@ _MACHINE_PROJECTS = {
 }
 
 # Return this error code if the scripts worked but tests failed
-TESTS_FAILED_ERR_CODE = 165
+TESTS_FAILED_ERR_CODE = 100
 
 ###############################################################################
 def expect(condition, error_msg):
