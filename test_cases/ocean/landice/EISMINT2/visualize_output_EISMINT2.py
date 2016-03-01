@@ -279,7 +279,7 @@ volume = (thickness[timelev,iceIndices] * areaCell[iceIndices]).sum() / 1000.0**
 plt.plot( np.zeros((3,)), bench['volume'], 'k*')  # benchmark results
 if bench['stattype'] == 'relative':
     initIceIndices = np.where(thickness[0,:]>0.0)[0]
-    volume = (volume / (thickness[0,initIceIndices] * areaCell[initIceIndices]).sum() / 1000.0**3 / 10.0**6 - 1.0) / 100.0
+    volume = (volume / ((thickness[0,initIceIndices] * areaCell[initIceIndices]).sum() / 1000.0**3 / 10.0**6) - 1.0) * 100.0
     plt.ylabel('Volume change (%)')
 else:
     plt.ylabel('Volume (10$^6$ km$^3$)')
@@ -288,9 +288,10 @@ plt.xticks(())
 
 fig.add_subplot(152)
 area = (areaCell[iceIndices]).sum() / 1000.0**2 / 10.0**6
+areaAbsolute = area
 plt.plot( np.zeros((3,)), bench['area'], 'k*')  # benchmark results
 if bench['stattype'] == 'relative':
-    area = (area / (areaCell[initIceIndices]).sum() / 1000.0**2 / 10.0**6 - 1.0) / 100.0
+    area = (area / ((areaCell[initIceIndices]).sum() / 1000.0**2 / 10.0**6) - 1.0) * 100.0
     plt.ylabel('Area change (%)')
 else:
     plt.ylabel('Area (10$^6$ km$^2$)')
@@ -299,12 +300,13 @@ plt.xticks(())
 
 fig.add_subplot(153)
 warmBedIndices = np.where(np.logical_and(thickness[timelev,:] > 0.0, basalTemperature[timelev,:] >= (basalPmpTemperature[timelev,:] - 0.01) ) )[0]  # using threshold here to identify melted locations
-meltfraction = areaCell[warmBedIndices].sum() / 1000.0**2 / 10.0**6 / area
+meltfraction = areaCell[warmBedIndices].sum() / 1000.0**2 / 10.0**6 / areaAbsolute
 plt.plot( np.zeros((3,)), bench['meltfraction'], 'k*')  # benchmark results
 if bench['stattype'] == 'relative':
-    initWarmBedIndices = np.where(np.logical_and(thickness[timelev,:] > 0.0, basalTemperature[0,:] >= (basalPmpTemperature[0,:] - 0.01) ) )[0]  # using threshold here to identify melted locations
-    meltfraction = (meltfraction / (areaCell[initWarmBedIndices].sum() / 1000.0**2 / 10.0**6) - 1.0) / 100.0
-    plt.ylabel('Melt fraction change')
+    # use time 1 instead of 0 since these fields aren't fully populated at time 0
+    initWarmBedIndices = np.where(np.logical_and(thickness[1,:] > 0.0, basalTemperature[1,:] >= (basalPmpTemperature[1,:] - 0.01) ) )[0]  # using threshold here to identify melted locations
+    meltfraction = (meltfraction / ((areaCell[initWarmBedIndices].sum() / 1000.0**2 / 10.0**6)/areaAbsolute) - 1.0) * 100.0
+    plt.ylabel('Melt fraction change (%)')
 else:
     plt.ylabel('Melt fraction')
 plt.plot( (0.0,), meltfraction, 'ro')  # MPAS results
@@ -314,7 +316,7 @@ fig.add_subplot(154)
 dividethickness = thickness[timelev, divideIndex]
 plt.plot( np.zeros((3,)), bench['dividethickness'], 'k*')  # benchmark results
 if bench['stattype'] == 'relative':
-    dividethickness = (dividethickness / thickness[0, divideIndex] - 1.0) / 100.0
+    dividethickness = (dividethickness / thickness[0, divideIndex] - 1.0) * 100.0
     plt.ylabel('Divide thickness change (%)')
 else:
     plt.ylabel('Divide thickness (m)')
@@ -325,7 +327,8 @@ fig.add_subplot(155)
 dividebasaltemp = basalTemperature[timelev, divideIndex]
 plt.plot( np.zeros((3,)), bench['dividebasaltemp'], 'k*')  # benchmark results
 if bench['stattype'] == 'relative':
-    dividebasaltemp = dividebasaltemp - basalTemperature[0, divideIndex]
+    # use time 1 instead of 0 since these fields aren't fully populated at time 0
+    dividebasaltemp = dividebasaltemp - basalTemperature[1, divideIndex]
     plt.ylabel('Divide basal temp. change (K)')
 else:
     plt.ylabel('Divide basal temp. (K)')

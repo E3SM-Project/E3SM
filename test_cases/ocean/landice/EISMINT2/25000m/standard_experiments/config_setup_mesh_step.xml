@@ -6,7 +6,7 @@
         <add_executable source="periodic_hex" dest="."/>
         <add_executable source="mesh_converter" dest="."/>
         <add_executable source="grid_to_li_grid" dest="."/>
-        <add_link source_path="script_configuration_dir" source="setup_initial_conditions_EISMINT2.py" dest="."/>
+        <add_executable source="metis" dest="metis"/>
 
 
         <run_script name="setup_mesh.py">
@@ -29,9 +29,9 @@
                         <argument flag="--thermal"></argument>
                 </step>
 
-                <!-- Set up initial condition on to landice mesh -->
-                <step executable="./setup_initial_conditions_EISMINT2.py" pre_message="\n\n### Setting up initial condition\n\n" post_message="\n\n### Initial condition setup complete\n\n">
-                        <argument flag="-e">a</argument>
+                <!-- Set up needed graph file -->
+                <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
+                        <argument flag="graph.info">4</argument>
                 </step>
 
         </run_script>

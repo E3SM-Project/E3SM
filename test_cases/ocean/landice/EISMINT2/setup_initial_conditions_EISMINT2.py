@@ -42,11 +42,12 @@ exp_params = {'a':a_params, 'b':b_params, 'c':c_params, 'd':d_params, 'f':f_para
 filename = 'landice_grid.nc'
 # experiments that start from scratch
 if experiment in ('a', 'f'):
-    pass  # we will build the mesh from scratch
-else:  # todo: how to handle this?!
+    # we will build the mesh from scratch
+    shutil.copyfile('../setup_mesh/landice_grid.nc', filename)
+else:
     # use the final state of experiment A
     try:
-      stat = os.system('ncks -O -d Time,-1 ../experiment_a/eismint2a.output.nc ./' + filename)
+      stat = os.system('ncks -O -d Time,-1 ../experiment_A/output.nc ./' + filename)
       if stat != 0:
          raise error('ncks error')
     except:
@@ -55,6 +56,7 @@ else:  # todo: how to handle this?!
 # Open the new input file, get needed dimensions & variables
 gridfile = NetCDFFile(filename,'r+')
 nVertLevels = len(gridfile.dimensions['nVertLevels'])
+StrLen= len(gridfile.dimensions['StrLen'])
 # Get variables
 xCell = gridfile.variables['xCell'][:]
 yCell = gridfile.variables['yCell'][:]
@@ -103,6 +105,8 @@ if experiment in ('a', 'f'):
     gridfile.variables['temperature'][:] = 273.15
     # Setup layerThicknessFractions
     gridfile.variables['layerThicknessFractions'][:] = 1.0 / nVertLevels
+else:
+    gridfile.variables['xtime'][0,:] = list('000000-01-01_00:00:00'.ljust(StrLen, ' '))
 
 # Now update/set origin location and distance array
 r = ((xCell[:] - xsummit)**2 + (yCell[:] - ysummit)**2)**0.5
@@ -114,7 +118,7 @@ r = ((xCell[:] - xsummit)**2 + (yCell[:] - ysummit)**2)**0.5
 
 params = exp_params[experiment]
 
-# SMB field specified by EISMINT, constant in time for EISMINT-2
+# SMB field specified by EISMINT, constant in time for EISMINT2
 # It is a function of geographical position (not elevation)
 Mmax = params['Mmax'] / scyr  # maximum accumulation rate [m/yr] converted to [m/s]
 Sb = params['Sb'] / scyr / 1000.0  # gradient of accumulation rate change with horizontal distance  [m/a/km] converted to [m/s/m]
@@ -122,13 +126,23 @@ Rel = params['Rel'] * 1000.0  # accumulation rate at 0 position  [km] converted 
 
 SMB = numpy.minimum(Mmax, Sb * (Rel - r)) # [m ice/s]
 SMB = SMB * rhoi  # in kg/m2/s
-gridfile.variables['sfcMassBal'][0,:] = SMB
+if 'sfcMassBal' in gridfile.variables:
+   sfcMassBalVar = gridfile.variables['sfcMassBal']
+else:
+   datatype = gridfile.variables['xCell'].dtype  # Get the datatype for double precision float
+   sfcMassBalVar = gridfile.createVariable('sfcMassBal', datatype, ('Time', 'nCells'))
+sfcMassBalVar[0,:] = SMB
 
 
 # Surface temperature
 Tmin = params['Tmin']  # minimum surface air temperature [K]
 ST = params['ST'] / 1000.0  # gradient of air temperature change with horizontal distance [K/km] converted to [K/m]
-gridfile.variables['surfaceAirTemperature'][0,:] = Tmin + ST * r
+if 'surfaceAirTemperature' in gridfile.variables:
+   surfaceAirTemperatureVar = gridfile.variables['surfaceAirTemperature']
+else:
+   datatype = gridfile.variables['xCell'].dtype  # Get the datatype for double precision float
+   surfaceAirTemperatureVar = gridfile.createVariable('surfaceAirTemperature', datatype, ('Time', 'nCells'))
+surfaceAirTemperatureVar[0,:] = Tmin + ST * r
 
 gridfile.close()
 print 'Successfully added initial conditions for EISMINT2, experiment '+experiment+' to the file: ', filename
