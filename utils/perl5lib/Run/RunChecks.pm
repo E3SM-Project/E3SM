@@ -46,7 +46,7 @@ sub checkLockedFiles
 			elsif($unlockedfile =~ /env_mach_pes/)
 			{
 				print "PE count has been changed!\n";
-				print "please invoke cesm_setup -clean followed by cesm_setup\n";
+				print "please invoke case_setup -clean followed by case_setup\n";
 			}
 			else
 			{

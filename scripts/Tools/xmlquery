@@ -1,33 +1,35 @@
 #!/usr/bin/env perl
+
 #-----------------------------------------------------------------------------------------------
-#
 # xmlquery
 #
-# This utility allows the CESM user to view a field in a env_*xml file via a commandline interface.
-#
+# This utility allows the CIME user to view a field in a env_*xml file via a commandline interface.
 #-----------------------------------------------------------------------------------------------
 
 use strict;
-#use warnings;
-#use diagnostics;
-use Cwd qw( getcwd abs_path chdir);
 use English;
+use Cwd qw( getcwd abs_path chdir);
 use Getopt::Long;
 use IO::File;
 use IO::Handle;
 use XML::LibXML;
-#-----------------------------------------------------------------------------------------------
 
-sub usage {
+#-----------------------------------------------------------------------------------------------
+sub usage 
+{
     die <<EOF;
 SYNOPSIS
      xmlquery id [options]
 DESCRIPTION
      allows user to view a field in a env*.xml file
 REQUIRED INPUT
-     id                   Variable name of the field to view (such as CASE, GRID or MACH)
-                          (can also be a comma-seperated list of ids to query [NO-WHITESPACE])
-                          (list to list ALL variables)
+     id                   Can have one of three values
+                          (1) Variable name of the field to view - for example 
+			      > xmlquery CASE [options]
+                          (2) A comma-seperated list of ids to query [NO-WHITESPACE] - for example
+                              > xmlquery CASE,GRID,MACH [options]
+                          (3) Set to list ALL variables - for example
+                              > xmlquery list [options]
 OPTIONS
      User supplied values are denoted in angle brackets (<>).  Any value that contains
      white-space must be quoted.  Long option names may be supplied with either single
@@ -45,20 +47,16 @@ EOF
 }
 
 #-----------------------------------------------------------------------------------------------
-
 if ($#ARGV == -1) {
     print "ERROR: no arguments sent in -- id  name is REQUIRED\n";
     usage();
 }
 
-#-----------------------------------------------------------------------------------------------
 # Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
 # descriptions to be printed to STDOUT before the error messages start.
-
 *STDOUT->autoflush();                  
 
-#-----------------------------------------------------------------------------------------------
-# Set the directory that contains the CESM configuration scripts.  If the create_newcase command was
+# Set the directory that contains the CIME configuration scripts.  If the create_newcase command was
 # issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
 # command was issued from the current working directory.
 
@@ -74,7 +72,15 @@ if ($ProgDir) {
     $cfgdir = $cwd;
 }
 
-#-----------------------------------------------------------------------------------------------
+# First determine CIMEROOT
+
+my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml"); 
+my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
+my $cimeroot = $nodes[0]->getAttribute('value');
+
+unshift @INC, "$cimeroot/utils/perl5lib";
+require Config::SetupTools;
+
 # Parse command-line options.
 my %opts = (
     fileonly		=>0,
@@ -98,22 +104,7 @@ GetOptions(
 # Give usage message.
 usage() if $opts{'help'};
 
-# Get id from anything left over
-my $idlist = shift( @ARGV );
-my @ids;
-if ( $idlist eq "list" ) {
-  $opts{'listall'} = 1;
-} else {
-  @ids = split( /,/, $idlist );
-}
-
-# Check for unparsed arguments
-if (@ARGV) {
-    print "ERROR: unrecognized arguments: @ARGV\n";
-    print "A list of ID's needs to be comma-delimited with NO-WHITESPACE!\n";
-    usage();
-}
-#
+# Error checks on arguments
 if ($opts{'value'} && $opts{'fileonly'} ) {
     die "value and fileonly modes can NOT both be set\n";
 }
@@ -121,140 +112,127 @@ if ($opts{'valonly'} && $opts{'fileonly'} ) {
     die "valonly and fileonly modes can NOT both be set\n";
 }
 
-# Define 3 print levels:
-# 0 - only issue fatal error messages
-# 1 - only informs what files are created (default)
-# 2 - verbose
-my $print = 1;
-if ($opts{'verbose'}) { $print = 2; }
-my $eol = "\n";
+# Determine the required input "id"
+my $idlist = shift( @ARGV );
 
-my %cfg = ();           # build configuration
+# Check for unparsed arguments
+if (@ARGV) {
+    print "ERROR: unrecognized arguments: @ARGV\n";
+    print "A list of ID's needs to be comma-delimited with NO-WHITESPACE!\n";
+    usage();
+}
 
-#-----------------------------------------------------------------------------------------------
-# Make sure we can find required perl modules and configuration files.
-# Look for them in the directory that contains the configure script.
-
-# Check for the main configuration definition file.
-my $config_def_file = "config_definition.xml";
-my $dir  = "$cfgdir/Tools";
-my $cdir = abs_path( "$cfgdir" );
-if      ( -f "$dir/$config_def_file" )  {
-   $config_def_file = "$dir/$config_def_file";
-} elsif ( -f "$cfgdir/$config_def_file" ) {
-   $dir  = $cdir;
-   $config_def_file = "$cdir/$config_def_file";
+# *** Print out requested variables - first get requested id from anything left over***
+if ( $idlist eq "list" ) {
+    _listall();
 } else {
-   die <<"EOF";
-** Cannot find configuration definition file \"$config_def_file\" in directory Tools **
-EOF
+    _listids($idlist)
 }
 
-my $parser = XML::LibXML->new( no_blanks => 1);
-
-# search config_definition file to determine if id is a valid name
-# and exit early if id is NOT a valid name
-my $xml = $parser->parse_file($config_def_file);
-
-my @nodes = $xml->findnodes("//entry");
-if ( ! $opts{'listall'} ) {
-   foreach my $id ( @ids ) {
-       chomp($id);
-       my $match;
-       foreach my $node (@nodes) {
-	   my $id_attr = $node->getAttribute('id');
-	   chomp($id_attr);
-	   if ($id eq $id_attr) {
-	       $match = 1;
-	       last;
-	   }
-       }
-       if (! defined $match) {	
-	   die "ERROR: id $id NOT a valid name in the config_definition file\n"; 
-       }
-   }
-}
-
-#-----------------------------------------------------------------------------------------------
-my @dirs = ( "$cfgdir", "$cfgdir/Tools" );
-unshift @INC, @dirs;
-require SetupTools;
-#-----------------------------------------------------------------------------------------------
-
-# Loop over all of the files and fill the hashes
-
-my @filenames = glob( "env_*.xml" );
-my %myfile;
-my %xmlvars;
-FILELOOP:
-foreach my $file ( @filenames ) {
-   # Verify that file is NOT empty
-   if ( ! -r $file ) {
-      die "ERROR: file $file does NOT exist\n"; 
-   }
-   # Add the list of ALL *xml fields to a hash
-   my $xml = $parser->parse_file($file);
-   my @nodes = $xml->findnodes("//entry");
-   foreach my $node (@nodes) {
-       my $id_attr = $node->getAttribute('id');
-       my $val_attr = $node->getAttribute('value');
-       $xmlvars{$id_attr} = $val_attr;
-
-       # check if any of the id's input are in this file
-       if ( ! $opts{'listall'} ) {
-	   foreach my $id ( @ids ) {
-	       if ($id eq $id_attr) {
-		   $myfile{$id} = $file;
-	       }
-	   }
-       } else {
-	   # if listall option is set, add this id to id array, and add file to myfile hash
-	   push( @ids, $id_attr );
-	   $myfile{$id_attr} = $file;
-       }
-   }
-}
-
-# Report the results
-foreach my $id ( @ids ) {
-   unless (defined($myfile{$id}) ) { 
-       if ( $opts{'value'} ) {
-	   exit(1);
-       } else {
-	   die "WARNING: id $id not found in any of the files: @filenames \n"; 
-       }
-   }
-
-   if ( ! $opts{'value'} ) {
-       if ( ! $opts{'valonly'} ) {
-	   print "$myfile{$id}";
-	   print ": ";
-       }
-
-       print "$id" if $print > 0;
-
-       if ( ! $opts{'fileonly'} ) {
-	   print " = " if $print > 0;
-	   my $value = $xmlvars{$id};
-	   if ( ! $opts{'noexpandxml'} ) {
-	       $value = SetupTools::expand_xml_var( $value, \%xmlvars );
-	   }
-	   print "$value";
-       }
-       print "\n";
-
-   } else {
-       my $value = $xmlvars{$id};
-       if ( ! $opts{'noexpandxml'} ) {
-	   $value = SetupTools::expand_xml_var( $value, \%xmlvars );
-       }
-       $value =~ s/&apos;/'/g;
-       $value =~ s/&lt;/\</g;
-       print "$value";
-   }
-
-}
-if ($print>=2) { print "$ProgName done.\n"; }
+if ($opts{'verbose'}) { print "xmlchange completed successfully.\n"; }
 exit;
 
+#-----------------------------------------------------------------------------------------------
+#                               Private Routines
+#-----------------------------------------------------------------------------------------------
+sub _listids
+{
+    my ($idlist) = @_; 
 
+    # First create the hash %xmlvars and %xmlfile in order to call
+    # expand_xml_var if needed
+    my %xmlvars;
+    my %xmlfile;
+    my @files = ('env_build.xml', 'env_case.xml', 'env_mach_pes.xml', 
+		 'env_mach_specific.xml', 'env_run.xml', 'env_test.xml'); 
+    foreach my $file (@files) {
+	if (-f $file) {
+	    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
+	    my @nodes = $xml->findnodes(".//entry");
+	    if (@nodes) {
+		foreach my $node (@nodes) {
+		    my $id    = $node->getAttribute('id');
+		    my $value = $node->getAttribute('value');
+		    $xmlvars{$id} = $value;
+		    $xmlfile{$id} = $file;
+		}
+	    }
+	}
+    }
+
+    # Now print out the values of the requested ids
+    my @ids = split( /,/, $idlist );
+    foreach my $id ( @ids ) {
+	my $file  = $xmlfile{$id};
+	my $value = $xmlvars{$id};
+	$value =~ s/&apos;/'/g;
+	$value =~ s/&lt;/\</g;
+
+	unless (defined($file) ) { 
+	    if ( $opts{'value'} ) {
+		exit(1);
+	    } else {
+		die "ERROR xmlquery: id $id not found in any of the xml files: @files \n"; 
+	    }
+	}
+	if ( $opts{'noexpandxml'} ) {
+	    # do nothing
+	} else {
+	    $value = SetupTools::expand_xml_var( $value, \%xmlvars );
+	}
+	if ( $opts{'valonly'} ) {
+	    print "$id $value \n";
+	} elsif ( $opts{'fileonly'} ) {
+	    print "$file: $id \n";
+	} elsif ( $opts{'value'} ) {
+	    print "$value";
+	} else {
+	    print "$file: $id $value \n";
+	}	      
+    }
+}
+
+#-----------------------------------------------------------------------------------------------
+sub _listall
+{
+    # First create the hash %xmlvars and %xmlfile in order to call
+    # expand_xml_var if needed
+    my %xmlvars;
+    my %xmlfile;
+    my @ids;
+    my @files = glob( "env_*.xml" );
+
+    foreach my $file (@files) {
+	my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
+	my @nodes = $xml->findnodes(".//entry");
+	if (@nodes) {
+	    foreach my $node (@nodes) {
+		my $id    = $node->getAttribute('id');
+		my $value = $node->getAttribute('value');
+		push (@ids, $id);
+		$xmlvars{$id} = $value;
+		$xmlfile{$id}  = $file;
+	    }
+	}
+    }
+
+    # Now print out the values of all ids
+    foreach my $id ( @ids ) {
+	my $file  = $xmlfile{$id};
+	my $value = $xmlvars{$id};
+	$value =~ s/&apos;/'/g;
+	$value =~ s/&lt;/\</g;
+	if ( $opts{'noexpandxml'} ) {
+	    # do nothing
+	} else {
+	    $value = SetupTools::expand_xml_var( $value, \%xmlvars );
+	}
+	if ( $opts{'valonly'}  ) {
+	    print "$id = $value \n";
+	} elsif ( $opts{'fileonly'} ) {
+	    print "$file: $id \n";
+	} else {
+	    print "$file: $id $value \n";
+	}
+    }
+}

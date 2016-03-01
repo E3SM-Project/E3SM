@@ -27,12 +27,12 @@ rm -r -f ${CASERR2}; ./create_clone -case ${CASERR2} -clone ${CASER0}
 cd $CASERR1
 ./xmlchange -file env_build.xml -id EXEROOT        -val ${EXEROOT}
 ./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
-./cesm_setup
+./case_setup
 
 cd $CASERR2
 ./xmlchange -file env_build.xml -id EXEROOT        -val ${EXEROOT}
 ./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
-./cesm_setup
+./case_setup
 
 #---- determine run lengths needed below 
 cd $CASER0

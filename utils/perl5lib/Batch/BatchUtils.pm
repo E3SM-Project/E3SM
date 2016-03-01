@@ -14,6 +14,7 @@ use Exporter qw(import);
 use XML::LibXML;
 require Batch::BatchMaker;
 use lib '.';
+
 #==============================================================================
 # Base class constructor.  required args are the case name, caseroot, cime root, 
 # compiler, machine, machine root directory, the mpi library,
@@ -437,6 +438,7 @@ sub getBatchUtils
     # Find the batch system type based on the machine. 
     my $batchtype = getBatchSystemType($params{'machine'}, $params{'machroot'}, $params{'caseroot'});
 
+
     # Make a new base class 
     my $batchutils = Batch::BatchUtils->new(%params);
     
@@ -540,7 +542,7 @@ sub submitJobs()
     my $self = shift;
     my $sta_ok = shift;
     my $depjobid = shift;
-    
+
     my %depqueue = %{$self->{dependencyqueue}};
 
     # Get the first job sequence number. 
@@ -789,6 +791,7 @@ sub getSubmitArguments()
     my $sta_ok = shift;
 
     my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, 
+							 cimeroot => $self->{cimeroot},
 							 case => $self->{case},
 							 mpilib => $self->{mpilib}, 
 							 machroot => $self->{machroot}, 

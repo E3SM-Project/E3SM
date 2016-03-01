@@ -195,7 +195,7 @@ if [ $? -ne 0 ]; then
     archive_list="${archive_list} ${casename}.l_archive"
     archive_list="${archive_list} ${casename}.run"
     archive_list="${archive_list} check_input_data"
-    archive_list="${archive_list} cesm_setup"
+    archive_list="${archive_list} case_setup"
     archive_list="${archive_list} create_production_test"
     archive_list="${archive_list} env_build.xml"
     archive_list="${archive_list} env_case.xml"

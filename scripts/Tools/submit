@@ -1,0 +1,90 @@
+#!/usr/bin/env perl 
+
+use strict;
+use warnings;
+use Data::Dumper;
+use XML::LibXML;
+
+my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml"); 
+my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
+my $cimeroot = $nodes[0]->getAttribute('value');
+
+unshift @INC, "$cimeroot/utils/perl5lib";
+require Config::SetupTools;
+require Batch::BatchUtils;
+require Module::ModuleLoader;
+
+my %config	= SetupTools::getAllResolved();
+my $machine	= $config{'MACH'};
+my $machroot	= $config{'MACHDIR'};
+my $compiler	= $config{'COMPILER'};
+my $mpilib	= $config{'MPILIB'};
+my $caseroot	= $config{'CASEROOT'};
+my $case	= $config{'CASE'};
+my $model       = $config{'MODEL'};
+my $debug       = $config{'DEBUG'};
+
+my $lastjobid = undef;
+
+sub main
+{
+    # Check the case only once..
+    print "checking the case..\n";
+    open(my $CHECKCASE, "-|", "./check_case");
+    while(<$CHECKCASE>)
+    {
+	print "$_";
+    }
+    close $CHECKCASE;
+    if($?)
+    {
+        print "check_case failed\n";
+        exit(-1);
+    }
+    
+    my $moduleloader = Module::ModuleLoader->new(machine  => $machine, 
+						 compiler => $compiler, 
+						 mpilib   => $mpilib, 
+						 debug    => $debug, 
+						 caseroot => $caseroot, 
+						 cimeroot => $cimeroot,
+						 model    => $model);
+
+    $moduleloader->moduleInit();
+    $moduleloader->findModulesForCase();
+    $moduleloader->loadModules();
+
+    my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case	   => $case, 
+							      caseconfig   => \%config, 
+							      caseroot	   => $caseroot, 
+							      cimeroot	   => $cimeroot, 
+							      compiler	   => $compiler, 
+							      machine	   => $machine, 
+							      machroot	   => $machroot, 
+							      mpilib	   => $mpilib); 
+    
+    $batchutils->dependencyCheck("sta_ok");
+
+    check_DA_settings();
+
+    $batchutils->submitJobs("sta_ok");
+
+}
+
+
+sub check_DA_settings
+{
+    if($config{DATA_ASSIMILATION} eq "TRUE"){
+	my $script = $config{DATA_ASSIMILATION_SCRIPT};
+	print "DATA_ASSIMILATION enabled\n";
+	print "   using script $script\n";
+	print "   DATA_ASSIMILATION_CYCLES = $config{DATA_ASSIMILATION_CYCLES}\n";
+    }
+}
+
+
+
+
+
+
+main(@ARGV) unless caller();

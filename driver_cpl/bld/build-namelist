@@ -3,7 +3,7 @@
 #
 # build-namelist
 #
-# This script builds the namelists for the DRV configuration of CESM1.
+# This script builds the namelists for the Driver-cpl 
 #
 # build-namelist uses a config_cache.xml file that current contains the ocean grid information.
 # build-namelist reads this file to obtain information it needs to provide
@@ -39,13 +39,14 @@ OPTIONS
      -silent               Turn on silent mode
      -verbose              Turn on verbose echoing of informational messages.
      -caseroot             CASEROOT directory variable
-     -scriptsroot          SCRIPTSROOT directory variable
+     -cimeroot             CIMEROOT directory variable
      -grid                 GRID variable
      -rof_grid             ROF_GRID variable
      -wav_grid             WAV_GRID variable
      -atm_grid             ATM_GRID variable
      -lnd_grid             LND_GRID variable 
      -ocn_grid             OCN_GRID variable
+     
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. namelist values set by specific command-line options, i.e. (none right now)
@@ -79,7 +80,7 @@ if ($ProgDir) {
 my %opts = ( help        => 0,
 	     silent      => 0,
 	     caseroot    => 0,
-	     scriptsroot => 0,
+	     cimeroot    => 0,
 	     grid        => 0,
 	     rof_grid    => 0,
 	     wav_grid    => 0,
@@ -94,7 +95,7 @@ GetOptions(
     "s|silent"      => \$opts{'silent'},
     "v|verbose"     => \$opts{'verbose'},
     "caseroot=s"    => \$opts{'caseroot'},
-    "scriptsroot=s" => \$opts{'scriptsroot'},
+    "cimeroot=s"    => \$opts{'cimeroot'},
     "grid=s"        => \$opts{'grid'},	   
     "rof_grid=s"    => \$opts{'rof_grid'},
     "wav_grid=s"    => \$opts{'wav_grid'},
@@ -122,7 +123,7 @@ if ($opts{'verbose'}) { $print = 2; }
 my $eol = "\n";
 
 my $CASEROOT    = $opts{'caseroot'}; 
-my $SCRIPTSROOT = $opts{'scriptsroot'};       
+my $CIMEROOT    = $opts{'cimeroot'};       
 my $GRID        = $opts{'grid'}; 
 my $ROF_GRID    = $opts{'rof_grid'}; 
 my $WAV_GRID    = $opts{'wav_grid'}; 
@@ -153,8 +154,9 @@ print $fh  <<"EOF";
 </config_definition>
 EOF
 $fh->close;
+
 if ($print>=2) { print "Wrote file $config_cache $eol"; }
-(-f "config_cache.xml")  or  die <<"EOF";
+(-f "$CASEROOT/Buildconf/cplconf/config_cache.xml")  or  die <<"EOF";
 ** $ProgName - Cannot find configuration cache file: config_cache.xml\" **
 EOF
     
@@ -163,7 +165,7 @@ EOF
 # Look for them under the directory that contains the configure script.
     
 # The root directory for the perl5 required utilities 
-my $perl5lib_dir = "${SCRIPTSROOT}/../utils/perl5lib";
+my $perl5lib_dir = "${CIMEROOT}/utils/perl5lib";
 
 # The XML::Lite module is required to parse the XML files.
 (-f "$perl5lib_dir/XML/Lite.pm")  or  die <<"EOF";
@@ -231,7 +233,7 @@ require Build::Namelist;
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the DRV config_cache.xml file-  created by 
 # pop2.cpl7.template in $CASEROOT/Buildconf/cplconf
-my $cfg = Build::Config->new('config_cache.xml');
+my $cfg = Build::Config->new("$CASEROOT/Buildconf/cplconf/config_cache.xml");
 
 # Create a namelist definition object.  This object provides a method for verifying that the
 # output namelist variables are in the definition file, and are output in the correct
@@ -303,21 +305,17 @@ foreach my $file (@files) {
     }
 }
 my $DIN_LOC_ROOT = $xmlvars{'DIN_LOC_ROOT'};
-(-d $DIN_LOC_ROOT)  or  die <<"EOF";
-** $ProgName - CCSM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
-EOF
-if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
+if ($print>=2) { print "inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 # Note - $USER is not in the config_defintion.xml file - it is only in the environment
 $xmlvars{'USER'} = $ENV{'USER'};
-unshift @INC, "$CASEROOT/Tools";
-require XML::Lite;
-require SetupTools;
+unshift @INC, "${CIMEROOT}/utils/perl5lib";
+require Config::SetupTools;
 
 my %xmlvars = ();
 SetupTools::getxmlvars($CASEROOT, \%xmlvars);
 foreach my $attr (keys %xmlvars) {
-  $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
+    $xmlvars{$attr} = SetupTools::expand_xml_var($xmlvars{$attr}, \%xmlvars);
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -375,9 +373,8 @@ add_default($nl, 'start_type', 'val'=>"$start_type",'xml'=>'RUN_TYPE');
 
 add_default($nl, 'case_name',     'val'=>"$xmlvars{'CASE'}",         'xml'=>'CASE');
 add_default($nl, 'case_desc',     'val'=>"$xmlvars{'CASESTR'}",      'xml'=>'CASESTR');
-add_default($nl, 'username' ,     'val'=>"$xmlvars{'CCSMUSER'}",     'xml'=>'CCSMUSER');
+add_default($nl, 'username' ,     'val'=>"$xmlvars{'USER'}",         'xml'=>'USER');
 add_default($nl, 'hostname' ,     'val'=>"$xmlvars{'MACH'}",         'xml'=>'MACH');
-add_default($nl, 'model_version', 'val'=>"$xmlvars{'CCSM_REPOTAG'}", 'xml'=>'CCSM_REPOTAG');
 
 add_default($nl, 'atm_gnam',      'val'=>"$xmlvars{'ATM_GRID'}",     'xml'=>'ATM_GRID');
 add_default($nl, 'lnd_gnam',      'val'=>"$xmlvars{'LND_GRID'}",     'xml'=>'LND_GRID');
@@ -395,9 +392,18 @@ add_default($nl, 'run_barriers', 'COMP_RUN_BARRIERS'=>"$xmlvars{'COMP_RUN_BARRIE
 add_default($nl, 'bfbflag', 'BFBFLAG'=>"$xmlvars{'BFBFLAG'}");
 add_default($nl, 'do_budgets','BUDGETS'=>"$xmlvars{'BUDGETS'}");
 
+if (defined $xmlvars{'CPL_ALBAV'}) {
+    add_default($nl, 'flux_albav', 'val'=>".$xmlvars{'CPL_ALBAV'}.");
+} else {
+    add_default($nl, 'flux_albav', 'val'=>".false.");
+}
+if (defined $xmlvars{'CPL_EPBAL'}) {
+    add_default($nl, 'flux_epbal', 'val'=>"$xmlvars{'CPL_EPBAL'}");
+} else {
+    add_default($nl, 'flux_epbal', 'val'=>"off");
+}
 add_default($nl, 'flux_diurnal');
-add_default($nl, 'flux_albav');
-add_default($nl, 'flux_epbal');
+
 add_default($nl, 'info_debug');
 add_default($nl, 'cpl_decomp');
 add_default($nl, 'wall_time_limit');
@@ -935,7 +941,7 @@ sub add_default {
 #
 # ***** N.B. ***** This routine assumes the following variables are in package main::
 #  $definition        -- the namelist definition object
-#  $inputdata_rootdir -- CCSM inputdata root directory
+#  $inputdata_rootdir -- inputdata root directory
 
     my $nl = shift;     # namelist object
     my $var = shift;    # name of namelist variable
@@ -1001,7 +1007,7 @@ sub add_default {
 
     # The default values for input pathnames are relative.  If the namelist
     # variable is defined to be an absolute pathname, then prepend
-    # the CCSM inputdata root directory.
+    # the inputdata root directory.
     if ($is_input_pathname eq 'abs') {
 	$val =~ s/ //g;
 	if ($val eq 'idmap') {

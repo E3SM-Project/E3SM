@@ -28,28 +28,29 @@ use XML::LibXML;
 use Exporter qw(import);
 use lib '.';
 require Task::TaskMaker;
+
 #my $cesmRunSuffix = '$config{\'EXEROOT\'}/cesm.exe >> $cesm.log.$LID 2>&1';
 my @requiredargs = qw/caseroot case machroot machine cimeroot/;
 
 #==============================================================================
 #  Class constructor.  We need to know where in the filesystem we are, 
-#  so caseroot, case, machroot, machine, 
+#  so caseroot, case, machroot, machine, cimeroot
 #==============================================================================
 sub new
 {
 	my ($class, %params) = @_;
 	my $self = {
-		case     => $params{'case'}     || undef,
-		caseroot => $params{'caseroot'} || undef,
-		compiler    => $params{'compiler'}     || undef,
-		config => $params{'config'}           || undef,
-		machine     => $params{'machine'}     || undef,
-	    cimeroot  => $params{'cimeroot'} || undef,
-        machroot    => $params{'machroot'}    || ".",
-        mpilib      => $params{'mpilib'}      || undef,
-        threaded      => $params{'threaded'}      || undef,
+	    case	=> $params{'case'}	|| undef,
+	    caseroot	=> $params{'caseroot'}	|| undef,
+	    compiler    => $params{'compiler'}  || undef,
+	    config	=> $params{'config'}    || undef,
+	    machine     => $params{'machine'}   || undef,
+	    cimeroot	=> $params{'cimeroot'}	|| undef,
+	    machroot    => $params{'machroot'}  || ".",
+	    mpilib      => $params{'mpilib'}    || undef,
+            threaded    => $params{'threaded'}  || undef,
 	};
-    $self->{'ccsmroot'} = $self->{'cimeroot'} if defined $self->{'cimeroot'};
+	$self->{'srcroot'} = $self->{'cimeroot'} if defined $self->{'cimeroot'};
 
 	# make sure that the required args are supplied
 	foreach my $reqarg(@requiredargs)
@@ -64,14 +65,11 @@ sub new
 	$self->{'output_error_path'} = $self->{'case'};
 	$self->{'configbatch'} = "$self->{'machroot'}/config_batch.xml";
 	$self->{'configmachines'} = "$self->{'machroot'}/config_machines.xml";
-
-	# we need ConfigCase, and ProjectTools. 
-	my $casetoolsdir = "$self->{'caseroot'}/Tools";
-	push(@INC, $casetoolsdir);
-	my $toolsdir = "$self->{'cimeroot'}/ccsm_utils/Tools";
-	push(@INC, $toolsdir);
-	require ConfigCase;
-	require ProjectTools;
+	
+	# we need ProjectTools. 
+	my $cimeroot = "$self->{'cimeroot'}";
+	push(@INC, "$cimeroot/utils/per5lib");
+	require Project::ProjectTools;
 	$self->{'cwd'} = Cwd::getcwd();
 	bless $self, $class;
 	return $self;
@@ -343,11 +341,11 @@ sub setTaskInfo()
 {
 	my $self = shift;
 	chdir $self->{'caseroot'};
-	my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+	my $taskmaker = new Task::TaskMaker(cimeroot => $self->{'cimeroot'});
 	$self->{'taskmaker'} = $taskmaker;
 	$self->{'sumpes'} = $taskmaker->sumPES();
 	$self->{'tasks_per_node'} = $taskmaker->taskPerNode();
-    $self->{'MAX_TASKS_PER_NODE'} = $taskmaker->maxTasksPerNode();
+	$self->{'MAX_TASKS_PER_NODE'} = $taskmaker->maxTasksPerNode();
 	$self->{'tasks_per_numa'} = $taskmaker->taskPerNuma();
 	$self->{'fullsum'} = $taskmaker->sumOnly();
 	$self->{'task_count'} = $taskmaker->sumOnly();
@@ -412,6 +410,18 @@ sub setWallTime()
 			$self->{'wall_time'} = $defaultelem->textContent();
 		}
 	}
+
+	my @wtmax = split(':',$self->{walltimemax});
+	my @wt = split(':',$self->{wall_time});
+
+	for(my $i=0;$i<$#wtmax;$i++){
+	    if($wtmax[$i]<$wt[$i]){
+		$self->{wall_time} = $self->{walltimemax};
+		last;
+	    }
+	    last if($wtmax[$i] > $wt[$i]);
+	}
+
 }
 
 #==============================================================================
@@ -448,16 +458,15 @@ sub setProject()
 }
 
 #==============================================================================
-# Get the estimated cost for this run.  This value is currently calculated as part of cesm_setup. 
+# Get the estimated cost for this run.  This value is currently calculated as part of case_setup. 
 # TODO: modularize the cost calculation??? 
 #==============================================================================
 sub getEstCost()
 {
-	my $self = shift;
-	chdir $self->{'caseroot'};
-	my $envcfg = ConfigCase->new("$self->{'caseroot'}/Tools/config_definition.xml", "env_mach_pes.xml");
-	$self->{'CCSM_ESTCOST'} = $envcfg->get('CCSM_ESTCOST');
-	chdir $self->{'cwd'};
+        my $self = shift;
+        chdir $self->{'caseroot'};
+        $self->{'CCSM_ESTCOST'} = `./xmlquery CCSM_ESTCOST -value`;
+        chdir $self->{'cwd'};
 }
 
 #==============================================================================
@@ -496,7 +505,7 @@ sub setQueue()
 		my $jobmax = undef;
 		$jobmin = $qelem->getAttribute('jobmin');
 		$jobmax = $qelem->getAttribute('jobmax');
-
+                $self->{walltimemax} = $qelem->getAttribute('walltimemax');
 		# if the fullsum is between the min and max # jobs, then use this queue.  
 		if(defined $jobmin && defined $jobmax && $self->{'fullsum'} >= $jobmin && $self->{'fullsum'} <= $jobmax)
 		{
@@ -729,6 +738,7 @@ use Data::Dumper;
 sub getBatchMaker()
 {
 	my (%params) = @_;
+
 	if(! defined $params{'machine'})
 	{
 		die "BatchFactory: params{'machine'} must be defined!";
@@ -811,8 +821,8 @@ sub _test()
 sub setTaskInfo()
 {
     my $self = shift;
-	#print "in Batch::BatchMaker_cray setTaskInfo\n";
-    #my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+    #print "in Batch::BatchMaker_cray setTaskInfo\n";
+    #my $taskmaker = new Task::TaskMaker(cimeroot => $self->{'cimeroot'});
     #my $config = $taskmaker->{'config'};
     #my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
     #$self->{'mppsize'} = $self->{'mppsum'};
@@ -842,7 +852,8 @@ sub setTaskInfo()
 {
     my $self = shift;
     $self->SUPER::setTaskInfo();
-    my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+    my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'},
+	                                cimeroot => $self->{cimeroot});
 
     my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
     my $pes_per_node = ${$taskmaker->{'config'}}{'PES_PER_NODE'};
@@ -916,7 +927,7 @@ sub _test()
 sub setTaskInfo()
 {
 	my $self = shift;
-	my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
+	my $taskmaker = new Task::TaskMaker(cimeroot => $self->{'cimeroot'});
 	$self->{'mppsum'} = $taskmaker->sumOnly();
     $self->SUPER::setTaskInfo();
 }
@@ -991,16 +1002,16 @@ sub _test()
 sub setTaskInfo()
 {
     my $self = shift;
-    my $taskmaker = new Task::TaskMaker(caseroot => $self->{'caseroot'});
-	my $mppsize = $taskmaker->sumOnly();
+    my $taskmaker = new Task::TaskMaker(cimeroot => $self->{'cimeroot'});
+    my $mppsize = $taskmaker->sumOnly();
     my $config = $taskmaker->{'config'};
     my $maxTasksPerNode = ${$taskmaker->{'config'}}{'MAX_TASKS_PER_NODE'};
 
     if($mppsize % $maxTasksPerNode > 0)
 	{
-		my $mppnodes = $mppsize / $maxTasksPerNode;
-		$mppnodes = $mppnodes + 1;
-		$mppsize = $mppnodes * $maxTasksPerNode;
+	    my $mppnodes = $mppsize / $maxTasksPerNode;
+	    $mppnodes = $mppnodes + 1;
+	    $mppsize = $mppnodes * $maxTasksPerNode;
 	}
 	$self->{'mppsize'} = $mppsize;
     $self->SUPER::setTaskInfo();
@@ -1020,6 +1031,29 @@ sub setQueue()
 		$self->{'partition'} = "c1";
 	}
 }
-
+package Batch::BatchMaker_erebus;
 use base qw (Batch::BatchMaker );
+sub _test()
+{
+    my $self = shift;
+    return 1;
+}
+
+sub writeBatchScript()
+{
+    my $self = shift;
+    if($ENV{'HOSTNAME'} =~ /login/)
+    {
+        my $hostfilename = $self->{caseroot} . "/hostfile";
+        open my $HFILE, "<", $hostfilename or die "could not open $hostfilename for writing!";
+        print $HFILE $ENV{'HOSTNAME'}; 
+        close $HFILE;
+        $ENV{'MP_HOSTFILE'} = $hostfilename;
+        $ENV{'MP_PROCS'} = 1;
+        
+    }
+    $self->SUPER::writeBatchScript();
+}
+
+
 1;

@@ -85,7 +85,8 @@ if ( $ENV{'SCRIPTSROOT'} eq "" ) {
 }
 #
 # 
-my $bldnml = "../build-namelist -debug -caseroot $CASEROOT -scriptsroot $ENV{'SCRIPTSROOT'}";
+my $cimeroot = "$ENV{'SCRIPTSROOT'}/../";
+my $bldnml = "../build-namelist -debug -caseroot $CASEROOT -cimeroot $cimeroot";
 
 my $tempfile = "temp_file.txt";
 if ( -f $tempfile ) {

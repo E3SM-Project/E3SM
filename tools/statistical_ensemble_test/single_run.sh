@@ -367,7 +367,7 @@ fi
 
 # Unset LS_COLORS before configure runs
 LS_COLORS=
-./cesm_setup || { echo "Error running cesm_setup, probably a bad NP value"; exit 1; }
+./case_setup || { echo "Error running case_setup, probably a bad NP value"; exit 1; }
 chmod u+w user_nl_*
 if [ $LENS -eq 1 ]; then
   cp -f $ThisDir/user_nl_cam_LENS ./user_nl_cam

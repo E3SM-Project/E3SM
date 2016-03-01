@@ -6,7 +6,8 @@ use English;
 use Getopt::Long;
 use IO::File;
 use IO::Handle;
-
+use File::Basename;
+use File::Copy;
 
 sub usage {
     die <<EOF;
@@ -17,6 +18,7 @@ SYNOPSIS
 OPTIONS
   -verbose       If this is set, components (POP for now) will write out 
                  more verbose output regarding its namelist creation
+  -dryrun    Do not attempt to load modules or create directories
 
   -help [or -h]  Print usage to STDOUT (optional).
 EOF
@@ -26,6 +28,7 @@ my %opts = ( verbose => undef);
 
 GetOptions(
     "verbose" => \$opts{'verbose'},
+    "dryrun" => \$opts{dryrun},
     "h|help"  => \$opts{'help'},
     )  or usage();
 
@@ -37,7 +40,6 @@ if (@ARGV) {
     print "ERROR: unrecognized arguments: @ARGV\n";
     usage();
 }
-
 my $EXEROOT		= `./xmlquery  EXEROOT		-value`;
 my $LIBROOT		= `./xmlquery  LIBROOT		-value`;
 my $INCROOT		= `./xmlquery  INCROOT		-value`;
@@ -53,52 +55,94 @@ my $COMP_OCN		= `./xmlquery  COMP_OCN		-value`;
 my $COMP_GLC		= `./xmlquery  COMP_GLC		-value`;
 my $COMP_WAV		= `./xmlquery  COMP_WAV		-value`;
 my $COMP_ROF		= `./xmlquery  COMP_ROF		-value`;
-my $CIMEROOT             	= `./xmlquery  CIMEROOT		-value`;
-my $COMPILER             	= `./xmlquery  COMPILER		-value`;
-my $CIMEROOT             	= `./xmlquery  CIMEROOT		-value`;
-my $MACH             	        = `./xmlquery  MACH		-value`;
+my $CIMEROOT            = `./xmlquery  CIMEROOT		-value`;
+my $COMPILER            = `./xmlquery  COMPILER		-value`;
+my $CIMEROOT            = `./xmlquery  CIMEROOT		-value`;
+my $MACH             	= `./xmlquery  MACH		-value`;
 my $MPILIB             	= `./xmlquery  MPILIB		-value`;
 my $DEBUG             	= `./xmlquery  DEBUG		-value`;
-# ------------------------------------------
-#  Load Modules
-# ------------------------------------------
+my $CONFIG_ATM_FILE	= `./xmlquery  CONFIG_ATM_FILE	-value `;
+my $CONFIG_LND_FILE	= `./xmlquery  CONFIG_LND_FILE	-value `;
+my $CONFIG_ICE_FILE	= `./xmlquery  CONFIG_ICE_FILE	-value `;
+my $CONFIG_OCN_FILE	= `./xmlquery  CONFIG_OCN_FILE	-value `;
+my $CONFIG_GLC_FILE	= `./xmlquery  CONFIG_GLC_FILE	-value `;
+my $CONFIG_WAV_FILE	= `./xmlquery  CONFIG_WAV_FILE	-value `;
+my $CONFIG_ROF_FILE	= `./xmlquery  CONFIG_ROF_FILE	-value `;
+my $CONFIG_DRV_FILE	= `./xmlquery  CONFIG_DRV_FILE	-value `;
+my $MODEL               = `./xmlquery  MODEL		-value`;
+my $TESTCASE;
+$TESTCASE               = `./xmlquery  TESTCASE		-value` if(-e "env_test.xml");
 
+my $CONFIG_ATM_DIR	= dirname($CONFIG_ATM_FILE);
+my $CONFIG_LND_DIR	= dirname($CONFIG_LND_FILE);
+my $CONFIG_ICE_DIR	= dirname($CONFIG_ICE_FILE);
+my $CONFIG_OCN_DIR	= dirname($CONFIG_OCN_FILE);
+my $CONFIG_GLC_DIR	= dirname($CONFIG_GLC_FILE);
+my $CONFIG_WAV_DIR	= dirname($CONFIG_WAV_FILE);
+my $CONFIG_ROF_DIR	= dirname($CONFIG_ROF_FILE);
+my $CONFIG_DRV_DIR	= dirname($CONFIG_DRV_FILE);
 
-my $perl5lib = "$CIMEROOT/utils/perl5lib";
-push(@INC, $perl5lib);
-require Module::ModuleLoader;
+my $dryrun = $opts{dryrun};
+$dryrun = 1 if ($TESTCASE eq 'SBN');
 
-my $moduleloader = new Module::ModuleLoader(machine => "$MACH", compiler => "$COMPILER",
-	                                    mpilib => $MPILIB, debug => $DEBUG, 
-	                                    scriptsroot => "$CIMEROOT/scripts", caseroot => "$CASEROOT");
-$moduleloader->loadModules();
+if($dryrun){
 
-
-
-
-# -------------------------------------------------------------------------
-# Make necessary directories
-# -------------------------------------------------------------------------
-
-my @dirs = ("$EXEROOT", "$LIBROOT", "$INCROOT", "$RUNDIR", "$SHAREDLIBROOT");
-foreach my $dir (@dirs) {
-    if (! -d $dir) {
-	my $sysmod = "mkdir -p $dir";
-	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+    # DO not load modules, only create rundir 
+    my $sysmod = "mkdir -p $RUNDIR";
+    if(system($sysmod) != 0) {
+	warn "Not able to create $RUNDIR, trying a subdirectory of $CASEROOT";
+	$RUNDIR = $CASEROOT."/".$RUNDIR;
+	$sysmod = "mkdir -p $RUNDIR";
+	if(system($sysmod) == 0){
+	    print "Success! Setting RUNDIR=$RUNDIR\n";
+	    system("./xmlchange -file env_run.xml -id RUNDIR -val $RUNDIR");
+	}else{
+	    die "Could not create $RUNDIR";
+	}
     }
-}
 
-my @models = ("cpl", "atm", "lnd", "ice", "ocn", "glc", "wav", "rof");
-foreach my $model ( @models ){
-    my $objdir = "$EXEROOT/$model/obj"; 
-    if (! -d $objdir) {
-	my $sysmod = "mkdir -p $objdir";
-	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+}else{
+
+    #  Load Modules
+    my $perl5lib = "$CIMEROOT/utils/perl5lib";
+    push(@INC, $perl5lib);
+    require Module::ModuleLoader;
+
+    my $moduleloader = new Module::ModuleLoader(machine		=> "$MACH", 
+						compiler	=> "$COMPILER",
+						mpilib		=> "$MPILIB", 
+						debug		=> "$DEBUG", 
+						cimeroot	=> "$CIMEROOT", 
+						caseroot	=> "$CASEROOT",
+						model		=> "$MODEL");
+    $moduleloader->loadModules();
+    $moduleloader->findModulesForCase();
+
+
+    # -------------------------------------------------------------------------
+    # Make necessary directories
+    # -------------------------------------------------------------------------
+
+    my @dirs = ("$EXEROOT", "$LIBROOT", "$INCROOT", "$RUNDIR", "$SHAREDLIBROOT");
+    foreach my $dir (@dirs) {
+	if (! -d $dir) {
+	    my $sysmod = "mkdir -p $dir";
+	    system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+	}
     }
-    my $libdir = "$EXEROOT/$model";
-    if (! -d libdir) {
-	my $sysmod = "mkdir -p $libdir";
-	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+    
+    my @models = ("cpl", "atm", "lnd", "ice", "ocn", "glc", "wav", "rof");
+    foreach my $model ( @models ){
+	my $objdir = "$EXEROOT/$model/obj"; 
+	if (! -d $objdir) {
+	    my $sysmod = "mkdir -p $objdir";
+	    system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+	}
+	my $libdir = "$EXEROOT/$model";
+	if (! -d $libdir) {
+	    my $sysmod = "mkdir -p $libdir";
+	    system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+	}
     }
 }
 
@@ -106,13 +150,24 @@ foreach my $model ( @models ){
 # Create namelists
 # -------------------------------------------------------------------------
 
-my @comps = ("$COMP_CPL", "$COMP_ATM", "$COMP_LND", "$COMP_ICE", "$COMP_OCN", "$COMP_GLC", "$COMP_WAV", "$COMP_ROF");  
-foreach my $comp (@comps) {
+my @modelsorder = qw( atm lnd ice ocn glc wav rof drv );
+
+my %models = ( atm => $COMP_ATM, lnd => $COMP_LND, ice => $COMP_ICE,
+	       ocn => $COMP_OCN, glc => $COMP_GLC, wav => $COMP_WAV,
+	       rof => $COMP_ROF, drv => $COMP_CPL);
+my %dirs   = ( atm => $CONFIG_ATM_DIR, lnd => $CONFIG_LND_DIR, ice => $CONFIG_ICE_DIR,
+	       ocn => $CONFIG_OCN_DIR, glc => $CONFIG_GLC_DIR, wav => $CONFIG_WAV_DIR,
+	       rof => $CONFIG_ROF_DIR, drv => $CONFIG_DRV_DIR );
+
+foreach my $model (@modelsorder) {
+    my $comp = $models{$model};
+    my $file = "$dirs{$model}/buildnml";
+    print "     Calling $file \n";
     if ($opts{'verbose'}) {
-	my $sysmod = "env PREVIEW_NML=1 $CASEBUILD/$comp.buildnml $CASEROOT";
+	my $sysmod = "env PREVIEW_NML=1 $file $CASEROOT";
 	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
     } else {
-	my $sysmod = "$CASEBUILD/$comp.buildnml $CASEROOT";
+	my $sysmod = "$file $CASEROOT";
 	system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
     }
 }
@@ -130,20 +185,31 @@ if (! -d "$docdir") {
     print $fileh "   For documentation only DO NOT MODIFY";
     close $fileh;
 }
-`chmod +w $docdir/*`;
 
-`cp -p $RUNDIR/*_in_[0-9]*         $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*modelio*nml_[0-9]*	$docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*_in                $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*modelio*nml        $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*streams*txt*       $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*.stxt              $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/*maps.rc            $docdir/ >& /dev/null`;
-`cp -p $RUNDIR/cism.config*        $docdir/ >& /dev/null`;
+opendir(RD,$RUNDIR);
+my @runfiles = readdir(RD);
+closedir(RD);
+
+my $sysmod = "chmod 666 $docdir/*";
+system($sysmod) == 0 or die "ERROR preview_namelists: $sysmod failed: $?\n";
+
+foreach my $rfile (@runfiles){
+    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /_in_?[0-9]?$/);
+    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /modelio/);
+    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /streams.*txt/);
+    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /stxt$/);
+    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /maps.rc$/);
+    copy("$RUNDIR/$rfile","$docdir/$rfile") if($rfile =~ /cism.config/);
+}
 
 # copy over chemistry mechanism docs if they exist
 if ( -e "$CASEBUILD/camconf" ) {
-    `cp -p $CASEBUILD/camconf/chem_mech.* $docdir/ >& /dev/null`;
+    opendir(CC,"$CASEBUILD/camconf");
+    my @chemfiles = grep(/chem_mech/,readdir(CC));
+    closedir(CC);
+    foreach(@chemfiles){
+	copy("$CASEBUILD/camconf/$_","$docdir/$_");
+    }
 }
 
 my $sysmod = "chmod 444 $docdir/*";

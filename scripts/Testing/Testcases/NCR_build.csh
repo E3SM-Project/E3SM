@@ -13,8 +13,8 @@ else
   cp -f env_mach_pes.xml env_mach_pes.xml.1
 endif
 
-./cesm_setup -clean -testmode
-./cesm_setup 
+./case_setup -clean -testmode
+./case_setup 
 
 cp -f env_mach_pes.xml env_mach_pes.xml.1
 cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
@@ -81,8 +81,8 @@ endif
 
 ./xmlchange -file env_build.xml -id NINST_BUILD -val 0
 
-./cesm_setup -clean -testmode
-./cesm_setup
+./case_setup -clean -testmode
+./case_setup
 
 ./$CASE.clean_build 
 
@@ -152,8 +152,8 @@ set NTASKS_CPL  = `./xmlquery NTASKS_CPL	-value`
 ./xmlchange -file env_mach_pes.xml -id ROOTPE_GLC  -val $rootp
 ./xmlchange -file env_build.xml    -id NINST_BUILD -val 0
 
-./cesm_setup -clean -testmode
-./cesm_setup
+./case_setup -clean -testmode
+./case_setup
 
 ./$CASE.cleanbuild
 

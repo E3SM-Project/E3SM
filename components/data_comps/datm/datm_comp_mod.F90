@@ -895,97 +895,6 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
       call mct_aVect_zero(a2x)
    endif
 
-   !
-   ! anomaly forcing ( start block )
-   ! bias correct atmospheric input fields if streams exist
-   !
-   lsize = mct_avect_lsize(avstrm)
-
-   if (sprecsf > 0) then
-      do n = 1,lsize
-         avstrm%rAttr(sprec,n) = avstrm%rAttr(sprec,n)   &
-              *min(1.e2_r8,avstrm%rAttr(sprecsf,n))
-         avstrm%rAttr(sprecc,n) = avstrm%rAttr(sprecc,n) &
-              *min(1.e2_r8,avstrm%rAttr(sprecsf,n))
-         avstrm%rAttr(sprecl,n) = avstrm%rAttr(sprecl,n) &
-              *min(1.e2_r8,avstrm%rAttr(sprecsf,n))
-         avstrm%rAttr(sprecn,n) = avstrm%rAttr(sprecn,n) &
-              *min(1.e2_r8,avstrm%rAttr(sprecsf,n))
-      end do
-   endif
-   
-   ! adjust atmospheric input fields if anomaly forcing streams exist
-   if (su_af > 0 .and. sv_af > 0) then
-      do n = 1,lsize
-         avstrm%rAttr(swind,n) =  &
-              sqrt((avstrm%rAttr(swind,n)/sqrt(2._r8) &
-              + avstrm%rAttr(su_af,n))**2  &
-              +(avstrm%rAttr(swind,n)/sqrt(2._r8)     &
-              + avstrm%rAttr(sv_af,n))**2)
-      end do
-   endif
-
-   if (sshum_af > 0) then
-      do n = 1,lsize
-         avstrm%rAttr(sshum,n) = avstrm%rAttr(sshum,n) &
-              + avstrm%rAttr(sshum_af,n)
-
-         ! avoid possible negative q values
-         if(avstrm%rAttr(sshum,n) < 0._r8) then 
-            avstrm%rAttr(sshum,n) = 1.e-6_r8
-         endif
-
-      end do
-   endif
-      
-   if (spbot_af > 0) then
-      do n = 1,lsize
-         avstrm%rAttr(spbot,n) = avstrm%rAttr(spbot,n) &
-              + avstrm%rAttr(spbot_af,n)
-      end do
-   endif
-      
-   if (stbot_af > 0) then
-      do n = 1,lsize
-         avstrm%rAttr(stbot,n) = avstrm%rAttr(stbot,n) &
-              + avstrm%rAttr(stbot_af,n)
-      end do
-   endif
-      
-   if (slwdn_af > 0) then
-      do n = 1,lsize
-         avstrm%rAttr(slwdn,n) = avstrm%rAttr(slwdn,n) &
-              * avstrm%rAttr(slwdn_af,n)
-      end do
-   endif
-      
-   if (sprec_af > 0) then
-      do n = 1,lsize
-         avstrm%rAttr(sprec,n) = avstrm%rAttr(sprec,n)   &
-              * avstrm%rAttr(sprec_af,n)
-         avstrm%rAttr(sprecc,n) = avstrm%rAttr(sprecc,n) &
-              * avstrm%rAttr(sprec_af,n)
-         avstrm%rAttr(sprecl,n) = avstrm%rAttr(sprecl,n) &
-              * avstrm%rAttr(sprec_af,n)
-         avstrm%rAttr(sprecn,n) = avstrm%rAttr(sprecn,n) &
-              * avstrm%rAttr(sprec_af,n)
-      enddo
-   endif
-      
-   if (sswdn_af > 0) then
-      do n = 1,lsize
-         avstrm%rAttr(sswdn,n) = avstrm%rAttr(sswdn,n)     &
-              * avstrm%rAttr(sswdn_af,n)
-         avstrm%rAttr(sswdndf,n) = avstrm%rAttr(sswdndf,n) &
-              * avstrm%rAttr(sswdn_af,n)
-         avstrm%rAttr(sswdndr,n) = avstrm%rAttr(sswdndr,n) &
-              * avstrm%rAttr(sswdn_af,n)
-      enddo
-   endif
-   !
-   ! anomaly forcing ( end block )
-   !
-
    call t_startf('datm_mode')
 
    select case (trim(atm_mode))
@@ -1265,6 +1174,91 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
    end select
 
    call t_stopf('datm_mode')
+
+   !
+   ! bias correction / anomaly forcing ( start block )
+   ! modify atmospheric input fields if streams exist
+   !
+   lsize = mct_avect_lsize(avstrm)
+
+   ! bias correct precipitation relative to observed 
+   ! (via bias_correct nameslist option)
+   if (sprecsf > 0) then
+      do n = 1,lsize
+         a2x%rAttr(ksc,n) = a2x%rAttr(ksc,n)*min(1.e2_r8,avstrm%rAttr(sprecsf,n))
+         a2x%rAttr(ksl,n) = a2x%rAttr(ksl,n)*min(1.e2_r8,avstrm%rAttr(sprecsf,n))
+         a2x%rAttr(krc,n) = a2x%rAttr(krc,n)*min(1.e2_r8,avstrm%rAttr(sprecsf,n))
+         a2x%rAttr(krl,n) = a2x%rAttr(krl,n)*min(1.e2_r8,avstrm%rAttr(sprecsf,n))
+
+      end do
+   endif
+   
+   ! adjust atmospheric input fields if anomaly forcing streams exist
+   ! (via anomaly_forcing nameslist option)
+
+   ! wind
+   if (su_af > 0 .and. sv_af > 0) then
+      do n = 1,lsize
+         a2x%rAttr(ku,n) = a2x%rAttr(ku,n) + avstrm%rAttr(su_af,n)
+         a2x%rAttr(kv,n) = a2x%rAttr(kv,n) + avstrm%rAttr(sv_af,n)
+      end do
+   endif
+
+   ! specific humidity
+   if (sshum_af > 0) then
+      do n = 1,lsize
+         a2x%rAttr(kshum,n) = a2x%rAttr(kshum,n) + avstrm%rAttr(sshum_af,n)
+            
+         ! avoid possible negative q values
+         if(a2x%rAttr(kshum,n) < 0._r8) then 
+            a2x%rAttr(kshum,n) = 1.e-6_r8
+         endif
+
+      end do
+   endif
+      
+   ! pressure
+   if (spbot_af > 0) then
+      do n = 1,lsize
+         a2x%rAttr(kpbot,n) = a2x%rAttr(kpbot,n) + avstrm%rAttr(spbot_af,n)
+      end do
+   endif
+      
+   ! temperature
+   if (stbot_af > 0) then
+      do n = 1,lsize
+         a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + avstrm%rAttr(stbot_af,n)
+      end do
+   endif
+      
+   ! longwave
+   if (slwdn_af > 0) then
+      do n = 1,lsize
+         a2x%rAttr(klwdn,n) = a2x%rAttr(klwdn,n)*avstrm%rAttr(slwdn_af,n)
+      end do
+   endif
+      
+   ! precipitation
+   if (sprec_af > 0) then
+      do n = 1,lsize
+         a2x%rAttr(ksc,n) = a2x%rAttr(ksc,n)*avstrm%rAttr(sprec_af,n)
+         a2x%rAttr(ksl,n) = a2x%rAttr(ksl,n)*avstrm%rAttr(sprec_af,n)
+         a2x%rAttr(krc,n) = a2x%rAttr(krc,n)*avstrm%rAttr(sprec_af,n)
+         a2x%rAttr(krl,n) = a2x%rAttr(krl,n)*avstrm%rAttr(sprec_af,n)
+      enddo
+   endif
+   ! shortwave
+   if (sswdn_af > 0) then
+      do n = 1,lsize
+         a2x%rAttr(kswndr,n) = a2x%rAttr(kswndr,n)*avstrm%rAttr(sswdn_af,n)
+         a2x%rAttr(kswvdr,n) = a2x%rAttr(kswvdr,n)*avstrm%rAttr(sswdn_af,n)
+         a2x%rAttr(kswndf,n) = a2x%rAttr(kswndf,n)*avstrm%rAttr(sswdn_af,n)
+         a2x%rAttr(kswvdf,n) = a2x%rAttr(kswvdf,n)*avstrm%rAttr(sswdn_af,n)
+      enddo
+   endif
+   !
+   ! bias correction / anomaly forcing ( end block )
+   !
 
    if (write_restart) then
       call t_startf('datm_restart')

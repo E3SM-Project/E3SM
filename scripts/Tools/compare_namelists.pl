@@ -24,6 +24,8 @@ my $cnt2=$#basenml;
 my $shiftbl=1;
 foreach $line (@nlfile){
     my $bline = shift(@basenml) if($shiftbl);
+    $line =~ s/\s+/ /g;
+    $bline =~ s/\s+/ /g;
     $shiftbl=1;
     next if($line eq $bline);
     $bline=shift(@basenml) if(($bline =~ /^\s*[#!\[\/]/) or ($bline =~ /^\s*$/));

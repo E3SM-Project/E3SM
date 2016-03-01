@@ -244,7 +244,7 @@ else:
     machines_guesses = []
 
     if cesm_root_dir is not None:
-        machines_guesses.append(os.path.join(cesm_root_dir, "cime", "machines"))
+        machines_guesses.append(os.path.join(cesm_root_dir, "cime", "cime_config", "cesm", "machines"))
 
     machines_guesses.append(os.path.abspath("machines"))
 
