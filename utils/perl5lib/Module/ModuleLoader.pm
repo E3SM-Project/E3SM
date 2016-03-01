@@ -72,7 +72,7 @@ sub loadModules()
 
 	#ndk: to help with debugging, I was creating a timestamped file
         #     everytime this function was called.  Set $debugML=1 to turn on.
-        my $debugML=1;
+        my $debugML=0;
         my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst);
         my ($ntimestamp, $dfile);
 	if ($debugML) {
