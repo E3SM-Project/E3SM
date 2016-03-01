@@ -2,7 +2,7 @@
 use strict;
 
 print " -------------------------------------------------------------------------\n";
-print " Building a single executable version of CESM \n";
+print " Building a single executable version of target coupled model  \n";
 print " -------------------------------------------------------------------------\n";
 
 my ($CASEROOT) = @ARGV;
@@ -14,15 +14,16 @@ my $OBJROOT   = `./xmlquery OBJROOT   -value`;
 my $EXEROOT   = `./xmlquery EXEROOT   -value`;
 my $MACH      = `./xmlquery MACH      -value`;
 my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
+my $MODEL     = `./xmlquery MODEL     -value`;
 
-chdir "${OBJROOT}/cesm/obj";
+chdir "${OBJROOT}/${MODEL}/obj";
 
 open(file,">Filepath") or die "Could not open file Filepath to write";
 print file "${CASEROOT}/SourceMods/src.drv\n";
 print file "${CIMEROOT}/driver_cpl/driver\n";
 close(file);
 
-my $sysmod = "gmake exec_se -j ${GMAKE_J} EXEC_SE=${EXEROOT}/cesm.exe MODEL=driver  -f ${CASETOOLS}/Makefile ";
+my $sysmod = "gmake exec_se -j ${GMAKE_J} EXEC_SE=${EXEROOT}/${MODEL}.exe MODEL=driver  -f ${CASETOOLS}/Makefile ";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 exit(0);
