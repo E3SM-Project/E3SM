@@ -645,6 +645,9 @@ subroutine hetfrz_classnuc_cam_calc( &
    itim_old = pbuf_old_tim_idx()
    call pbuf_get_field(pbuf, ast_idx, ast, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
 
+   !initialize rho
+   rho(:,:) = 0.0_r8
+
    do k = top_lev, pver
       do i = 1, ncol
          rho(i,k) = pmid(i,k)/(rair*t(i,k))
@@ -683,6 +686,7 @@ subroutine hetfrz_classnuc_cam_calc( &
    dstcoat                    = 0._r8
    na500                      = 0._r8
    tot_na500                  = 0._r8
+   fn_cloudborne_aer_num      = 0._r8
 
    ! initializ diagnostic arrays, otherwise uninitialized for k < top_lev
    nnuccc_dst(:ncol,:) = 0._r8
