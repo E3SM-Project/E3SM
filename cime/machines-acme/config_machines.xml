@@ -1071,6 +1071,96 @@
          </mpirun>
 </machine>
 
+<machine MACH="lawrencium-lr3">
+  <DESC>Lawrencium LR3 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
+  <OS>LINUX</OS>
+  <COMPILERS>intel</COMPILERS>
+  <MPILIBS>openmpi,mpi-serial</MPILIBS>
+  <CESMSCRATCHROOT>/global/scratch/$ENV{USER}</CESMSCRATCHROOT>
+  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+  <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/cesm_input_datasets/</DIN_LOC_ROOT>
+  <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+  <DOUT_S_ROOT>$CESMSCRATCHROOT/cesm_archive/$CASE</DOUT_S_ROOT>
+  <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+  <CCSM_BASELINE>$CESMSCRATCHROOT/cesm_baselines</CCSM_BASELINE>
+  <CCSM_CPRNC>/$CESMSCRATCHROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
+  <BATCHQUERY>squeue</BATCHQUERY>
+  <BATCHREDIRECT></BATCHREDIRECT>
+  <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+  <SUPPORTED_BY>gbisht at lbl dot gov </SUPPORTED_BY>
+  <GMAKE_J>4</GMAKE_J>
+  <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+  <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+  <batch_system type="slurm" version="2.0">
+    <queues>
+      <queue walltimemin="0" walltimemax="72:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
+    </queues>
+    <walltimes>
+      <walltime default="true">00:59:00</walltime>
+    </walltimes>
+  </batch_system>
+  <mpirun mpilib="mpi-serial">
+    <executable>mpirun</executable>
+    <arguments>
+      <arg name="num_tasks">-np {{ num_tasks }}</arg>
+      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+    </arguments>
+  </mpirun>
+  <mpirun mpilib="default">
+    <executable>mpirun</executable>
+    <arguments>
+      <arg name="num_tasks">-np {{ num_tasks }}</arg>
+      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+    </arguments>
+  </mpirun>
+</machine>
+
+<machine MACH="lawrencium-lr2">
+  <DESC>Lawrencium LR2 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
+  <OS>LINUX</OS>
+  <COMPILERS>intel</COMPILERS>
+  <MPILIBS>openmpi,mpi-serial</MPILIBS>
+  <CESMSCRATCHROOT>/global/scratch/$ENV{USER}</CESMSCRATCHROOT>
+  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+  <DIN_LOC_ROOT>/global/scratch/$ENV{USER}/cesm_input_datasets/</DIN_LOC_ROOT>
+  <DIN_LOC_ROOT_CLMFORC>/global/scratch/$ENV{USER}/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+  <DOUT_S_ROOT>$CESMSCRATCHROOT/cesm_archive/$CASE</DOUT_S_ROOT>
+  <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+  <CCSM_BASELINE>$CESMSCRATCHROOT/cesm_baselines</CCSM_BASELINE>
+  <CCSM_CPRNC>/$CESMSCRATCHROOT/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
+  <BATCHQUERY>squeue</BATCHQUERY>
+  <BATCHREDIRECT></BATCHREDIRECT>
+  <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+  <SUPPORTED_BY>gbisht at lbl dot gov</SUPPORTED_BY>
+  <GMAKE_J>4</GMAKE_J>
+  <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+  <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+  <batch_system type="slurm" version="2.0">
+    <queues>
+      <queue walltimemin="0" walltimemax="72:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
+    </queues>
+    <walltimes>
+      <walltime default="true">00:59:00</walltime>
+    </walltimes>
+  </batch_system>
+  <mpirun mpilib="mpi-serial">
+    <executable>mpirun</executable>
+    <arguments>
+      <arg name="num_tasks">-np {{ num_tasks }}</arg>
+      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+    </arguments>
+  </mpirun>
+  <mpirun mpilib="default">
+    <executable>mpirun</executable>
+    <arguments>
+      <arg name="num_tasks">-np {{ num_tasks }}</arg>
+      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+    </arguments>
+  </mpirun>
+</machine>
+
 <default_run_suffix>
   <default_run_exe>$config{'EXEROOT'}/cesm.exe </default_run_exe>
   <default_run_misc_suffix> >> cesm.log.$LID 2>&amp;1 </default_run_misc_suffix>
