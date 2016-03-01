@@ -5,6 +5,9 @@
 
 MODULE shr_func_mod
 
+!===============================================================================
+!  This is a general module that can be used for global functions.
+!===============================================================================
    use shr_kind_mod, only: SHR_KIND_R8, SHR_KIND_IN, SHR_KIND_CS
    use shr_sys_mod
    use shr_const_mod
