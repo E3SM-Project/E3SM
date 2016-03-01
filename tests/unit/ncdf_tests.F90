@@ -304,7 +304,7 @@ Contains
     compdof = 2*my_rank+(/1,2/)  ! Where in the global array each task writes
     data_to_write = 1+my_rank
 
-    print*, 'PIO_initdecom'
+    print*, 'PIO_initdecomp'
     call PIO_initdecomp(pio_iosystem, PIO_int, dims, compdof, iodesc_nCells)
 
     filename = fnames(test_id)

@@ -823,11 +823,6 @@ int PIOc_get_chunk_cache(int iosysid, int iotype, int io_rank, PIO_Offset *sizep
     if(ios == NULL)
 	return PIO_EBADID;
 
-    int my_rank;
-    int ret;
-    if ((ret = MPI_Comm_rank(MPI_COMM_WORLD, &my_rank)))
-	return ret;
-
     /* Since this is a property of the running HDF5 instance, not the
      * file, it's not clear if this message passing will apply. For
      * now, comment it out. EJH */
@@ -926,11 +921,6 @@ int PIOc_set_var_chunk_cache(int ncid, int varid, PIO_Offset size, PIO_Offset ne
     ios = file->iosystem;
     msg = PIO_MSG_SET_VAR_CHUNK_CACHE;
 
-    int my_rank;
-    int ret;
-    if ((ret = MPI_Comm_rank(MPI_COMM_WORLD, &my_rank)))
-	return ret;
-
     if (ios->async_interface && ! ios->ioproc)
     {
 	if (ios->compmaster) 
@@ -1022,11 +1012,6 @@ int PIOc_get_var_chunk_cache(int ncid, int varid, PIO_Offset *sizep, PIO_Offset 
     if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
     ios = file->iosystem;
-
-    int my_rank;
-    int ret;
-    if ((ret = MPI_Comm_rank(MPI_COMM_WORLD, &my_rank)))
-	return ret;
 
     /* Since this is a property of the running HDF5 instance, not the
      * file, it's not clear if this message passing will apply. For
