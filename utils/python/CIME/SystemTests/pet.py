@@ -16,7 +16,7 @@ class PET(SystemTestsCommon):
         SystemTestsCommon.__init__(self, caseroot, case)
 
 
-    def build(self):
+    def build(self, sharedlib_only=False, model_only=False):
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
 
@@ -28,7 +28,7 @@ class PET(SystemTestsCommon):
         run_cmd("case.setup -clean ")
         run_cmd("case.setup")
         run_cmd('case.clean_build')
-        SystemTestsCommon.build(self)
+        SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
 
     def run(self):
         SystemTestsCommon.run(self)

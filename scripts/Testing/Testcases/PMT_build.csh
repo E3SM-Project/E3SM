@@ -21,7 +21,7 @@ cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml
 ./xmlchange --file env_run.xml --id BFBFLAG --val TRUE
 echo "b4b_flag=.true." >> user_nl_pop
 
-./case.build --testmode
+./case.build --testmode $*
 if ($status != 0) then
    exit -1    
 endif 
@@ -104,7 +104,7 @@ endif
 ./case.setup
 ./case.clean_build -all 
 
-./case.build --testmode
+./case.build --testmode $*
 if ($status != 0) then
    exit -1    
 endif 

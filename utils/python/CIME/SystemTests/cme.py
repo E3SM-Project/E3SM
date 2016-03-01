@@ -7,7 +7,6 @@ from CIME.case import Case
 import CIME.utils
 from system_tests_common import SystemTestsCommon
 
-
 class CME(SystemTestsCommon):
     def __init__(self, caseroot, case):
         """
@@ -15,7 +14,7 @@ class CME(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, caseroot, case)
 
-    def build(self):
+    def build(self, sharedlib_only=False, model_only=False):
         """
         Build two exectuables for the CME test, one with ESMF interfaces
         the other with MCT interfaces and compare results - they should be exact
@@ -27,9 +26,10 @@ class CME(SystemTestsCommon):
             self._case.set_value('COMP_INTERFACE',CPL)
             self._case.flush()
             run_cmd('case.clean_build')
-            SystemTestsCommon.build(self)
-            shutil.move("%s/%s.exe"%(exeroot,cime_model),
-                        "%s/%s.exe.%s"%(exeroot,cime_model,CPL))
+            SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+            if (not sharedlib_only):
+                shutil.move("%s/%s.exe"%(exeroot,cime_model),
+                            "%s/%s.exe.%s"%(exeroot,cime_model,CPL))
             shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build_%s.xml"%CPL))
 
     def run(self):

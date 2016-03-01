@@ -17,7 +17,7 @@ my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
 my $MODEL     = `./xmlquery MODEL     -value`;
 $ENV{PIO_VERSION}  = `./xmlquery PIO_VERSION   -value`;
 
-chdir "${OBJROOT}/${MODEL}/obj";
+chdir "${OBJROOT}/cpl/obj";
 
 open(file,">Filepath") or die "Could not open file Filepath to write";
 print file "${CASEROOT}/SourceMods/src.drv\n";

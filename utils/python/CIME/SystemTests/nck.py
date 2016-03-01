@@ -7,7 +7,6 @@ from CIME.case import Case
 import CIME.utils
 from system_tests_common import SystemTestsCommon
 
-
 class NCK(SystemTestsCommon):
     def __init__(self, caseroot, case):
         """
@@ -15,7 +14,7 @@ class NCK(SystemTestsCommon):
         """
         SystemTestsCommon.__init__(self, caseroot, case)
 
-    def build(self):
+    def build(self, sharedlib_only=False, model_only=False):
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
 
@@ -41,21 +40,21 @@ class NCK(SystemTestsCommon):
                         self._case.set_value("ROOTPE_%s"%comp, "%s"%int(rootpe/2))
             self._case.flush()
 
-
             run_cmd("case.setup -clean -testmode")
             run_cmd("case.setup")
             run_cmd('case.clean_build')
-            SystemTestsCommon.build(self)
-            shutil.move("%s/%s.exe"%(exeroot,cime_model),
-                        "%s/%s.exe.NCK%s"%(exeroot,cime_model,bld))
+            SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+            if (not sharedlib_only):
+                shutil.move("%s/%s.exe"%(exeroot,cime_model),
+                            "%s/%s.exe.NCK%s"%(exeroot,cime_model,bld))
             shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build.NCK%s.xml"%bld))
             shutil.copy("env_mach_pes.xml", machpes)
-#
-# Because mira/cetus interprets its run script differently than
-# other systems we need to copy the original env_mach_pes.xml
-# back
-#
 
+        #
+        # Because mira/cetus interprets its run script differently than
+        # other systems we need to copy the original env_mach_pes.xml
+        # back
+        #
         shutil.copy(machpes1,"env_mach_pes.xml")
         shutil.copy("env_mach_pes.xml",
                     os.path.join("LockedFiles","env_mach_pes.xml"))

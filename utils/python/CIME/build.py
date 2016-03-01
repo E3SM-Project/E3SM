@@ -1,12 +1,16 @@
 """
 functions for building CIME models
 """
-import glob, shutil
 from XML.standard_module_setup import *
 from case import Case
 from utils import expect, run_cmd, get_model
 from env_module import EnvModule
+from CIME.preview_namelists import preview_namelists
+from CIME.check_input_data import check_input_data
 
+import glob, shutil, time, threading
+
+###############################################################################
 def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
                 comp_atm, comp_lnd, comp_ice, comp_ocn, comp_glc, comp_wav, comp_rof,
                 nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav,
@@ -33,6 +37,7 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
     overall_smp = os.environ["SMP"]
     sharedpath = os.environ["SHAREDPATH"]
 
+    thread_bad_results = []
     for model, comp, config_dir, nthrds in models_build_data:
         os.environ["MODEL"] = model
         if nthrds > 1 or build_threaded == "TRUE":
@@ -71,17 +76,21 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
         file_build = os.path.join(exeroot, "%s.bldlog.%s" % (model, lid))
 
         # build the component library
-        stat = run_cmd("%s/buildlib %s %s %s >> %s 2>&1" %
-                       (config_dir, caseroot, bldroot, compspec, file_build),
-                       from_dir=os.path.join(exeroot, model),
-                       ok_to_fail=True, verbose=True)[0]
-        expect(stat == 0,
-               "ERROR: %s.buildlib failed, see %s" % (comp, file_build))
+        t = threading.Thread(target=_build_model_thread,
+            args=(config_dir, caseroot, bldroot, compspec, file_build,
+                  exeroot, model, comp, objdir, incroot, thread_bad_results))
+        t.start()
 
         for mod_file in glob.glob(os.path.join(objdir, "*_[Cc][Oo][Mm][Pp]_*.mod")):
             shutil.copy(mod_file, incroot)
 
         logs.append(file_build)
+
+    # Wait for threads to finish
+    while(threading.active_count() > 1):
+        time.sleep(1)
+
+    expect(not thread_bad_results, "\n".join(thread_bad_results))
 
     #
     # Now build the executable
@@ -92,15 +101,8 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
     cime_model = get_model()
     file_build = os.path.join(exeroot, "%s.bldlog.%s" % (cime_model, lid))
 
-    objdir = os.path.join(exeroot, cime_model, "obj")
-    libdir = os.path.join(exeroot, cime_model)
-    for build_dir in [objdir, libdir]:
-        if not os.path.exists(build_dir):
-            os.makedirs(build_dir)
-
     stat = run_cmd("%s/driver_cpl/cime_config/buildexe %s >> %s 2>&1" %
                    (cimeroot, caseroot, file_build),
-                   from_dir=os.path.join(exeroot, cime_model),
                    ok_to_fail=True,
                    verbose=True)[0]
     expect(stat == 0, "ERROR: buildexe failed, cat %s" % file_build)
@@ -138,15 +140,23 @@ def post_build(case, logs):
     shutil.copy("env_build.xml", "LockedFiles")
 
 ###############################################################################
-def case_build(caseroot, testmode):
+def case_build(caseroot, case=None, testmode=False, sharedlib_only=False, model_only=False):
 ###############################################################################
+    t1 = time.time()
+
+    expect(not (sharedlib_only and model_only),
+           "Contradiction: both sharedlib_only and model_only")
+
+    logging.info("sharedlib_only is %s" % sharedlib_only)
+    logging.info("model_only is %s" % model_only)
+
     expect(os.path.isdir(caseroot), "'%s' is not a valid directory" % caseroot)
     os.chdir(caseroot)
 
     expect(os.path.exists("case.run"),
            "ERROR: must invoke case.setup script before calling build script ")
 
-    case = Case()
+    case = Case() if case is None else case
     testcase = case.get_value("TESTCASE")
     cimeroot = case.get_value("CIMEROOT")
     expect(not (testcase is not None and
@@ -154,7 +164,8 @@ def case_build(caseroot, testmode):
                                (cimeroot, testcase)) and not testmode),
            "%s build must be invoked via case.testbuild script" % testcase)
 
-    check_input_data(case)
+    if not sharedlib_only:
+        check_all_input_data(case)
 
     run_cmd("./Tools/check_lockedfiles --caseroot %s" % caseroot)
 
@@ -238,8 +249,8 @@ def case_build(caseroot, testmode):
     # This is a timestamp for the build , not the same as the testid,
     # and this case may not be a test anyway. For a production
     # experiment there may be many builds of the same case.
-    lid                                = run_cmd("date +%y%m%d-%H%M%S")
-    os.environ["LID"]                  = lid
+    lid               = run_cmd("date +%y%m%d-%H%M%S")
+    os.environ["LID"] = lid
 
     # Set the overall USE_PETSC variable to TRUE if any of the
     # XXX_USE_PETSC variables are TRUE.
@@ -274,25 +285,42 @@ def case_build(caseroot, testmode):
     # Load modules
     env_module = EnvModule(mach, compiler, cimeroot, caseroot, mpilib, debug)
     env_module.load_env_for_case()
+
     # Need to flush case xml to disk before calling preview_namelists
     case.flush()
-    run_cmd("./preview_namelists")
 
-    build_checks(case, build_threaded, comp_interface, use_esmf_lib, mpilib,
+    if not sharedlib_only:
+        run_cmd("./preview_namelists")
+
+    build_checks(case, build_threaded, comp_interface, use_esmf_lib, compiler, mpilib, debug, sharedlibroot,
                  nthrds_cpl, nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav,
                  nthrds_rof, ninst_build, smp_value)
-    logs = build_libraries(exeroot, caseroot, cimeroot, libroot, sharedlibroot, compiler, mpilib,
-                           build_threaded, debug, lid, machines_file)
-    logs.extend(build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
-                            comp_atm, comp_lnd, comp_ice, comp_ocn, comp_glc, comp_wav, comp_rof,
-                            nthrds_atm, nthrds_lnd, nthrds_ice,
-                            nthrds_ocn, nthrds_glc, nthrds_wav, nthrds_rof,
-                            lid, caseroot, cimeroot, use_esmf_lib, comp_interface))
-    post_build(case, logs)
 
-def check_input_data(case):
+    t2 = time.time()
+    logs = []
+
+    if not model_only:
+        logs = build_libraries(exeroot, caseroot, cimeroot, libroot, mpilib, lid, machines_file)
+    if not sharedlib_only:
+        logs.extend(build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
+                                comp_atm,   comp_lnd,   comp_ice,   comp_ocn,   comp_glc,   comp_wav,   comp_rof,
+                                nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav, nthrds_rof,
+                                lid, caseroot, cimeroot, use_esmf_lib, comp_interface))
+
+    if not sharedlib_only:
+        post_build(case, logs)
+
+    t3 = time.time()
+
+    logging.info("Time spent not building: %f sec" % (t2 - t1))
+    logging.info("Time spent building: %f sec" % (t3 - t2))
+
 ###############################################################################
-    run_cmd("./check_input_data --download")
+def check_all_input_data(case):
+###############################################################################
+    success = check_input_data(case=case, download=True)
+    expect(success, "Failed to download input data")
+
     get_refcase  = case.get_value("GET_REFCASE")
     run_type     = case.get_value("RUN_TYPE")
     continue_run = case.get_value("CONTINUE_RUN")
@@ -352,9 +380,9 @@ and prestage the restart data to $RUNDIR manually
                 os.chmod(runfile, 0755)
 
 ###############################################################################
-def build_checks(case, build_threaded, comp_interface, use_esmf_lib, mpilib,
-                 nthrds_cpl, nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc,
-                 nthrds_wav, nthrds_rof, ninst_build, smp_value):
+def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib,
+                 sharedlibroot, nthrds_cpl, nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn,
+                 nthrds_glc, nthrds_wav, nthrds_rof, ninst_build, smp_value):
 ###############################################################################
     ninst_atm    = int(case.get_value("NINST_ATM"))
     ninst_lnd    = int(case.get_value("NINST_LND"))
@@ -381,6 +409,11 @@ def build_checks(case, build_threaded, comp_interface, use_esmf_lib, mpilib,
         os.environ["SMP"] = "TRUE"
     else:
         os.environ["SMP"] = "FALSE"
+
+    debugdir = "debug" if debug else "nodebug"
+    threaddir = "threads" if (os.environ["SMP"] == "TRUE" or build_threaded == "TRUE") else "nothreads"
+    sharedpath = os.path.join(sharedlibroot, compiler, mpilib, debugdir, threaddir)
+    os.environ["SHAREDPATH"] = sharedpath
 
     smpstr = "a%dl%dr%di%do%dg%dw%dc%d" % \
         (atmstr, lndstr, rofstr, icestr, ocnstr,  glcstr, wavstr, cplstr)
@@ -456,19 +489,14 @@ ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
     case.flush()
 
 ###############################################################################
-def build_libraries(exeroot, caseroot, cimeroot, libroot, sharedlibroot, compiler, mpilib, build_threaded, debug, lid, machines_file):
+def build_libraries(exeroot, caseroot, cimeroot, libroot, mpilib, lid, machines_file):
 ###############################################################################
 
     if (mpilib == "mpi-serial"):
         for header_to_copy in glob.glob(os.path.join(cimeroot, "externals/mct/mpi-serial/*.h")):
             shutil.copy(header_to_copy, os.path.join(libroot, "include"))
 
-    debugdir = "debug" if (debug== "TRUE") else "nodebug"
-
-    threaddir = "threads" if os.environ["SMP"] == "TRUE" or build_threaded == "TRUE" else "nothreads"
-
-    sharedpath = os.path.join(sharedlibroot, compiler, mpilib, debugdir, threaddir)
-    os.environ["SHAREDPATH"] = sharedpath
+    sharedpath = os.environ["SHAREDPATH"]
     shared_lib = os.path.join(sharedpath, "lib")
     shared_inc = os.path.join(sharedpath, "include")
     for shared_item in [shared_lib, shared_inc]:
@@ -498,3 +526,14 @@ def build_libraries(exeroot, caseroot, cimeroot, libroot, sharedlibroot, compile
     return logs
 
 ###############################################################################
+def _build_model_thread(config_dir, caseroot, bldroot, compspec, file_build,
+                        exeroot, model, comp, objdir, incroot, thread_bad_results):
+###############################################################################
+    stat = run_cmd("%s/buildlib %s %s %s >> %s 2>&1" %
+                   (config_dir, caseroot, bldroot, compspec, file_build),
+                   from_dir=os.path.join(exeroot, model), ok_to_fail=True)[0]
+    if (stat != 0):
+        thread_bad_results.append("ERROR: %s.buildlib failed, see %s" % (comp, file_build))
+
+    for mod_file in glob.glob(os.path.join(objdir, "*_[Cc][Oo][Mm][Pp]_*.mod")):
+        shutil.copy(mod_file, incroot)

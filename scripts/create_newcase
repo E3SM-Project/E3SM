@@ -967,7 +967,7 @@ sub _create_caseroot_files
 
     # Create $caseroot preview_namelist file
     my $file = "${caseroot}/preview_namelists";
-    $sysmod = "cp  $cimeroot/scripts/Tools/preview_namelists $file";
+    $sysmod = "ln -s $cimeroot/scripts/Tools/preview_namelists $file";
     system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
 
     $sysmod = "chmod 755 $file";

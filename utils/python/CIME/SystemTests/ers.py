@@ -4,7 +4,6 @@ CIME restart test  This class inherits from SystemTestsCommon
 from CIME.XML.standard_module_setup import *
 from system_tests_common import SystemTestsCommon
 
-
 class ERS(SystemTestsCommon):
     def __init__(self, caseroot, case):
         """

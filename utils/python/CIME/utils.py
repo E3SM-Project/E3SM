@@ -149,8 +149,7 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     if (arg_stderr is _hack):
         arg_stderr = subprocess.PIPE
 
-    if(verbose):
-        print "RUN: %s" % cmd
+    logging.info("RUN: %s" % cmd)
 
     if (input_str is not None):
         stdin = subprocess.PIPE
@@ -514,5 +513,20 @@ def handle_standard_logging_options(args):
 
     if (args.verbose == True):
         root_logger.setLevel(logging.INFO)
+    # DEBUG trumps INFO
     if (args.debug == True):
         root_logger.setLevel(logging.DEBUG)
+
+def get_logging_options():
+    """
+    Use to pass same logging options as was used for current
+    executable to subprocesses.
+    """
+    root_logger = logging.getLogger()
+
+    if (root_logger.level == logging.INFO):
+        return "--verbose"
+    elif (root_logger.level == logging.DEBUG):
+        return "--debug"
+    else:
+        return ""

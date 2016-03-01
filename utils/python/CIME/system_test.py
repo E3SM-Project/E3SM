@@ -16,14 +16,15 @@ from CIME.XML.component import Component
 from CIME.XML.testlist import Testlist
 import CIME.test_utils
 
-INITIAL_PHASE        = "INIT"
-CREATE_NEWCASE_PHASE = "CREATE_NEWCASE"
-XML_PHASE            = "XML"
-SETUP_PHASE          = "SETUP"
-BUILD_PHASE          = "BUILD"
-TEST_STATUS_PHASE    = "TEST_STATUS"
+INITIAL_PHASE         = "INIT"
+CREATE_NEWCASE_PHASE  = "CREATE_NEWCASE"
+XML_PHASE             = "XML"
+SETUP_PHASE           = "SETUP"
+SHAREDLIB_BUILD_PHASE = "SHAREDLIB_BUILD"
+MODEL_BUILD_PHASE     = "MODEL_BUILD"
+TEST_STATUS_PHASE     = "TEST_STATUS"
 PHASES = [INITIAL_PHASE, CREATE_NEWCASE_PHASE, XML_PHASE, SETUP_PHASE,
-          NAMELIST_PHASE, BUILD_PHASE, RUN_PHASE] # Order matters
+          NAMELIST_PHASE, SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE, RUN_PHASE] # Order matters
 CONTINUE = [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]
 
 ###############################################################################
@@ -62,15 +63,15 @@ class SystemTest(object):
         # We will not use batch system if user asked for no_batch or if current
         # machine is not a batch machine
         self._no_batch = no_batch or not self._machobj.has_batch_system()
-        if test_root is None:
-            self._test_root = self._machobj.get_value("CESMSCRATCHROOT")
-        else:
-            self._test_root = test_root
+
+        self._test_root = test_root if test_root is not None \
+            else self._machobj.get_value("CESMSCRATCHROOT")
+
         if self._project is not None:
             self._test_root = self._test_root.replace("$PROJECT", self._project)
-        self._test_root = os.path.abspath(self._test_root)
 
-        self._test_id = test_id if test_id is not None else CIME.utils.get_utc_timestamp()
+        self._test_root = os.path.abspath(self._test_root)
+        self._test_id   = test_id if test_id is not None else CIME.utils.get_utc_timestamp()
 
         self._compiler = compiler if compiler is not None else self._machobj.get_default_compiler()
         expect(self._machobj.is_valid_compiler(self._compiler),
@@ -82,7 +83,7 @@ class SystemTest(object):
         # Extra data associated with tests, do not modify after construction
         # test_name -> test_data
         #   test_data: name -> value
-        self._test_xml      = {}
+        self._test_xml = {}
 
         # If xml options are provided get tests from xml file, otherwise use acme dictionary
         if not test_names and (xml_machine is not None or xml_category is not None or
@@ -149,12 +150,12 @@ class SystemTest(object):
                                                                self._baseline_gen_name)
 
             # Compute baseline_root
-            if baseline_root is None:
-                self._baseline_root = self._machobj.get_value("CCSM_BASELINE")
-            else:
-                self._baseline_root = baseline_root
+            self._baseline_root = baseline_root if baseline_root is not None \
+                else self._machobj.get_value("CCSM_BASELINE")
+
             if self._project is not None:
                 self._baseline_root = self._baseline_root.replace("$PROJECT", self._project)
+
             self._baseline_root = os.path.abspath(self._baseline_root)
 
             if self._compare:
@@ -163,6 +164,7 @@ class SystemTest(object):
                        "Missing baseline comparison directory %s" % full_baseline_dir)
         else:
             self._baseline_root = None
+
         # This is the only data that multiple threads will simultaneously access
         # Each test has it's own value and setting/retrieving items from a dict
         # is atomic, so this should be fine to use without mutex.
@@ -176,11 +178,13 @@ class SystemTest(object):
         # Oversubscribe by 1/4
         pes = int(self._machobj.get_value("PES_PER_NODE"))
         self._proc_pool = int(pes * 1.25)
+        self._procs_avail = self._proc_pool
 
         # Setup phases
         self._phases = list(PHASES)
         if no_build:
-            self._phases.remove(BUILD_PHASE)
+            self._phases.remove(SHAREDLIB_BUILD_PHASE)
+            self._phases.remove(MODEL_BUILD_PHASE)
         if no_run:
             self._phases.remove(RUN_PHASE)
         if not self._compare and not self._generate:
@@ -321,20 +325,18 @@ class SystemTest(object):
         if compiler != self._compiler:
             raise StandardError("Test '%s' has compiler that does"
                                 " not match instance compliler '%s'" % (test, self._compiler))
-        if self._parallel_jobs == 1:
-            scratch_dir = self._machobj.get_value("CESMSCRATCHROOT")
-            if self._project is not None:
-                scratch_dir = scratch_dir.replace("$PROJECT", self._project)
-            sharedlibroot = os.path.join(scratch_dir, "sharedlibroot.%s" % self._test_id)
-        else:
-            # Parallelizing builds introduces potential sync problems with sharedlibroot
-            # Just let every case build it's own
-            sharedlibroot = os.path.join(test_dir, "sharedlibroot.%s" % self._test_id)
+
+        scratch_dir = self._machobj.get_value("CESMSCRATCHROOT")
+        if self._project is not None:
+            scratch_dir = scratch_dir.replace("$PROJECT", self._project)
+        sharedlibroot = os.path.join(scratch_dir, "sharedlibroot.%s" % self._test_id)
+
         create_newcase_cmd = "%s -model %s -case %s -res %s -mach %s -compiler %s -compset"\
                              " %s -testname %s -project %s -sharedlibroot %s" % \
                               (os.path.join(self._cime_root, "scripts", "create_newcase"),
                                self._cime_model, test_dir, grid, machine, compiler, compset,
                                test_case, self._project, sharedlibroot)
+
         if test_case != 'PFS':
             create_newcase_cmd += " -nosavetiming "
         if case_opts is not None:
@@ -349,6 +351,7 @@ class SystemTest(object):
                 self._log_output(test, "Missing testmod file '%s'" % test_mod_file)
                 return False
             create_newcase_cmd += " -user_mods_dir %s" % test_mod_file
+
         logging.info("Calling create_newcase: "+create_newcase_cmd)
         return self._shell_cmd_for_phase(test, create_newcase_cmd, CREATE_NEWCASE_PHASE)
 
@@ -461,10 +464,16 @@ class SystemTest(object):
         return True
 
     ###########################################################################
-    def _build_phase(self, test):
+    def _sharedlib_build_phase(self, test):
     ###########################################################################
         test_dir = self._get_test_dir(test)
-        return self._shell_cmd_for_phase(test, "./case.test_build", BUILD_PHASE, from_dir=test_dir)
+        return self._shell_cmd_for_phase(test, "./case.test_build --sharedlib-only", SHAREDLIB_BUILD_PHASE, from_dir=test_dir)
+
+    ###########################################################################
+    def _model_build_phase(self, test):
+    ###########################################################################
+        test_dir = self._get_test_dir(test)
+        return self._shell_cmd_for_phase(test, "./case.test_build --model-only", MODEL_BUILD_PHASE, from_dir=test_dir)
 
     ###########################################################################
     def _run_phase(self, test):
@@ -491,7 +500,7 @@ class SystemTest(object):
         for phase in self._phases[0:made_it_to_phase_idx+1]:
             str_to_write += "%s %s %s\n" % (self._get_test_status(test, phase), test, phase)
 
-        if not self._no_run and not self._is_broken(test) and made_it_to_phase == BUILD_PHASE:
+        if not self._no_run and not self._is_broken(test) and made_it_to_phase == MODEL_BUILD_PHASE:
             # Ensure PEND state always gets added to TestStatus file if we are
             # about to run test
             str_to_write += "%s %s %s\n" % (TEST_PENDING_STATUS, test, RUN_PHASE)
@@ -514,12 +523,24 @@ class SystemTest(object):
             return False
 
     ###########################################################################
-    def _get_procs_needed(self, test, phase):
+    def _get_procs_needed(self, test, phase, threads_in_flight):
     ###########################################################################
         if phase == RUN_PHASE and self._no_batch:
             test_dir = self._get_test_dir(test)
             out = run_cmd("./xmlquery TOTALPES -value", from_dir=test_dir)
             return int(out)
+        elif (phase == SHAREDLIB_BUILD_PHASE):
+            # Will force serialization of sharedlib builds
+            # TODO - instead of serializing, compute all library configs needed and build
+            # them all in parallel
+            for _, _, running_phase in threads_in_flight.values():
+                if (running_phase == SHAREDLIB_BUILD_PHASE):
+                    return self._proc_pool + 1
+
+            return 1
+        elif (phase == MODEL_BUILD_PHASE):
+            # Model builds now happen in parallel
+            return 4
         else:
             return 1
 
@@ -530,7 +551,7 @@ class SystemTest(object):
         # This complexity is due to sharing of TestStatus responsibilities
         #
         try:
-            if test_phase != RUN_PHASE and (not success or test_phase == BUILD_PHASE
+            if test_phase != RUN_PHASE and (not success or test_phase == MODEL_BUILD_PHASE
                                             or test_phase == self._phases[-1]):
                 self._update_test_status_file(test)
 
@@ -565,7 +586,7 @@ class SystemTest(object):
                 time.sleep(0.2)
 
         for finished_test, procs_needed in finished_tests:
-            self._proc_pool += procs_needed
+            self._procs_avail += procs_needed
             del threads_in_flight[finished_test]
 
     ###########################################################################
@@ -589,7 +610,7 @@ class SystemTest(object):
 
         # On batch systems, we want to immediately submit to the queue, because
         # it's very cheap to submit and will get us a better spot in line
-        if (success and not self._no_run and not self._no_batch and test_phase == BUILD_PHASE):
+        if (success and not self._no_run and not self._no_batch and test_phase == MODEL_BUILD_PHASE):
             sys.stdout.write("Starting %s for test %s with %d procs\n" % (RUN_PHASE, test, 1))
             self._update_test_status(test, RUN_PHASE, TEST_PENDING_STATUS)
             self._consumer(test, RUN_PHASE, self._run_phase)
@@ -597,7 +618,7 @@ class SystemTest(object):
     ###########################################################################
     def _producer(self):
     ###########################################################################
-        threads_in_flight = {} # test-name -> (thread, procs)
+        threads_in_flight = {} # test-name -> (thread, procs, phase)
         while True:
             work_to_do = False
             num_threads_launched_this_iteration = 0
@@ -613,22 +634,20 @@ class SystemTest(object):
                         test_phase, test_status, _ = self._get_test_data(test)
                         expect(test_status != TEST_PENDING_STATUS, test)
                         next_phase = self._phases[self._phases.index(test_phase) + 1]
-                        procs_needed = self._get_procs_needed(test, next_phase)
+                        procs_needed = self._get_procs_needed(test, next_phase, threads_in_flight)
 
-                        if procs_needed <= self._proc_pool:
-                            self._proc_pool -= procs_needed
+                        if procs_needed <= self._procs_avail:
+                            self._procs_avail -= procs_needed
 
                             # Necessary to print this way when multiple threads printing
                             sys.stdout.write("Starting %s for test %s with %d procs\n" %
                                              (next_phase, test, procs_needed))
 
                             self._update_test_status(test, next_phase, TEST_PENDING_STATUS)
-                            t = threading.Thread(target=self._consumer,
-                                                 args=(test, next_phase,
-                                                       getattr(self, "_%s_phase" %
-                                                               next_phase.lower())))
-                            threads_in_flight[test] = (t, procs_needed)
-                            t.start()
+                            new_thread = threading.Thread(target=self._consumer,
+                                args=(test, next_phase, getattr(self, "_%s_phase" % next_phase.lower())) )
+                            threads_in_flight[test] = (new_thread, procs_needed, next_phase)
+                            new_thread.start()
                             num_threads_launched_this_iteration += 1
 
             if not work_to_do:
@@ -638,8 +657,8 @@ class SystemTest(object):
                 # No free resources, wait for something in flight to finish
                 self._wait_for_something_to_finish(threads_in_flight)
 
-        for thread_info in threads_in_flight.values():
-            thread_info[0].join()
+        for unfinished_thread, _, _ in threads_in_flight.values():
+            unfinished_thread.join()
 
     ###########################################################################
     def _setup_cs_files(self):
