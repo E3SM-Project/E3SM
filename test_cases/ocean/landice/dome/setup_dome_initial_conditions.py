@@ -2,18 +2,7 @@
 # Generate initial conditions for dome land ice test case
 
 import sys, numpy
-try:
-  from Scientific.IO.NetCDF import NetCDFFile
-  netCDF_module = 'Scientific.IO.NetCDF'
-except ImportError:
-  try:
-    from netCDF4 import Dataset as NetCDFFile
-    netCDF_module = 'netCDF4'
-  except ImportError:
-      print 'Unable to import any of the following python modules:'
-      print '  Scientific.IO.NetCDF \n  netcdf4 '
-      print 'One of them must be installed.'
-      raise ImportError('No netCDF module found')
+from netCDF4 import Dataset as NetCDFFile
 from math import sqrt
 
 # Parse options
@@ -37,36 +26,19 @@ if not options.filename:
 
 
 # Open the file, get needed dimensions
-try:
-    gridfile = NetCDFFile(options.filename,'r+')
-    if (netCDF_module == 'Scientific.IO.NetCDF'):
-         nVertLevels = gridfile.dimensions['nVertLevels']
-    else:
-         nVertLevels = len(gridfile.dimensions['nVertLevels'])
-    if nVertLevels != 9:
-         print 'nVerLevels in the supplied file was ', nVertLevels, '.  Were you expecting 9?'
-    # Get variables
-    xCell = gridfile.variables['xCell']
-    yCell = gridfile.variables['yCell']
-    xEdge = gridfile.variables['xEdge']
-    yEdge = gridfile.variables['yEdge']
-    xVertex = gridfile.variables['xVertex']
-    yVertex = gridfile.variables['yVertex']
-    thickness = gridfile.variables['thickness']
-    bedTopography = gridfile.variables['bedTopography']
-    #normalVelocity = gridfile.variables['normalVelocity']
-    layerThicknessFractions = gridfile.variables['layerThicknessFractions']
-    temperature = gridfile.variables['temperature']
-    # Get b.c. variables
-    SMB = gridfile.variables['sfcMassBal']
-    # These legacy fields are currently not included in the new MPAS   MH 9/19/13 
-    #beta = gridfile.variables['betaTimeSeries'][:]
-    #SMB = gridfile.variables['sfcMassBalTimeSeries'][:]
-    #Tsfc = gridfile.variables['sfcAirTempTimeSeries'][:]
-    #G = gridfile.variables['basalHeatFluxTimeSeries'][:]
-    #BMB = gridfile.variables['marineBasalMassBalTimeSeries'][:]
-except:
-    sys.exit('Error: The grid file specified is either missing or lacking needed dimensions/variables.')
+gridfile = NetCDFFile(options.filename,'r+')
+nVertLevels = len(gridfile.dimensions['nVertLevels'])
+# Get variables
+xCell = gridfile.variables['xCell']
+yCell = gridfile.variables['yCell']
+xEdge = gridfile.variables['xEdge']
+yEdge = gridfile.variables['yEdge']
+xVertex = gridfile.variables['xVertex']
+yVertex = gridfile.variables['yVertex']
+thickness = gridfile.variables['thickness']
+bedTopography = gridfile.variables['bedTopography']
+layerThicknessFractions = gridfile.variables['layerThicknessFractions']
+SMB = gridfile.variables['sfcMassBal']
 
 
 
@@ -114,8 +86,6 @@ thickness[0,:] = thickness_field
 #normalVelocity[:] = 0.0
 # flat bed at sea level
 bedTopography[:] = 0.0
-# constant, arbitrary temperature, degrees C
-temperature[:] = 273.15 
 # Setup layerThicknessFractions
 layerThicknessFractions[:] = 1.0 / nVertLevels
 
