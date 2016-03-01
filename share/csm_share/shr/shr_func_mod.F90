@@ -41,15 +41,22 @@ real(SHR_KIND_R8) pure FUNCTION shr_func_freezetemp(s)
 
    real   (SHR_KIND_R8),intent(in) :: s ! Salinity in psu
 
+   real   (SHR_KIND_R8) :: salt
+
    !----------------------------------------------------------------------------
 
-   if (tfreeze_option == 'linear_salt') then
-      shr_func_freezetemp = -0.0544_SHR_KIND_R8*s
-   elseif(tfreeze_option == 'mushy') then
-      shr_func_freezetemp = s / (-18.48_SHR_KIND_R8 + (0.01848_SHR_KIND_R8*s))
+   salt = max(s,0.0_SHR_KIND_R8)
+
+   if (trim(tfreeze_option) == 'linear_salt') then
+      shr_func_freezetemp = -0.0544_SHR_KIND_R8*salt
+   elseif(trim(tfreeze_option) == 'mushy') then
+!     This form is the high temperature part of the liquidus relation (Assur 1958)
+      shr_func_freezetemp = salt / (-18.48_SHR_KIND_R8 + (0.01848_SHR_KIND_R8*salt))
    else
       shr_func_freezetemp = -1.8_SHR_KIND_R8
    endif
+
+   shr_func_freezetemp = max(shr_func_freezetemp,-2.0_SHR_KIND_R8)
 
 END FUNCTION shr_func_freezetemp
 
