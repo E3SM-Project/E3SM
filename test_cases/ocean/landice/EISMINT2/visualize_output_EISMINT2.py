@@ -171,7 +171,7 @@ fig.suptitle('Payne et al. Fig. 2', fontsize=14, fontweight='bold')
 
 # ================
 # panel a - thickness
-ax = fig.add_subplot(131)
+ax1 = fig.add_subplot(131)
 
 # print ice locations with gray hexagons
 plt.scatter(xCell[iceIndices], yCell[iceIndices], markersize, (0.8, 0.8, 0.8), marker=markershape, edgecolors='none') # print ice locations with gray hexagons
@@ -189,7 +189,7 @@ plt.xlabel('X position (km)'); plt.ylabel('Y position (km)')
 
 # ================
 # panel b - flux
-ax = fig.add_subplot(132)
+ax = fig.add_subplot(132, sharex=ax1, sharey=ax1)
 
 flux = np.zeros( (nCells,) )
 for k in range(nVertLevels):
@@ -210,7 +210,7 @@ plt.xlabel('X position (km)'); plt.ylabel('Y position (km)')
 
 # ================
 # panel c - flow factor
-ax = fig.add_subplot(133)
+ax = fig.add_subplot(133, sharex=ax1, sharey=ax1)
 
 # print ice locations with gray hexagons
 plt.scatter(xCell[iceIndices], yCell[iceIndices], markersize, (0.8, 0.8, 0.8), marker=markershape, edgecolors='none') # print ice locations with gray hexagons
@@ -249,7 +249,7 @@ plt.ylabel('Thickness (m)')
 
 # panel b - basal temperature
 ax = fig.add_subplot(212)
-plt.plot( years[timeInd]/1000.0, temperature[timeInd, divideIndex, -1], 'k.-')
+plt.plot( years[timeInd]/1000.0, basalTemperature[timeInd, divideIndex], 'k.-')
 plt.ylabel('Basal temperature (K)')
 plt.xlabel('Time (kyr)')
 
@@ -311,7 +311,7 @@ plt.plot( (0.0,), meltfraction, 'ro')  # MPAS results
 plt.xticks(())
 
 fig.add_subplot(154)
-dividethickness = thickness[-1, divideIndex]
+dividethickness = thickness[timelev, divideIndex]
 plt.plot( np.zeros((3,)), bench['dividethickness'], 'k*')  # benchmark results
 if bench['stattype'] == 'relative':
     dividethickness = (dividethickness / thickness[0, divideIndex] - 1.0) / 100.0
@@ -322,10 +322,10 @@ plt.plot( (0.0,), dividethickness, 'ro')  # MPAS results
 plt.xticks(())
 
 fig.add_subplot(155)
-dividebasaltemp = temperature[-1, divideIndex, -1]
+dividebasaltemp = basalTemperature[timelev, divideIndex]
 plt.plot( np.zeros((3,)), bench['dividebasaltemp'], 'k*')  # benchmark results
 if bench['stattype'] == 'relative':
-    dividebasaltemp = dividebasaltemp - temperature[-1, divideIndex, -1]
+    dividebasaltemp = dividebasaltemp - basalTemperature[0, divideIndex]
     plt.ylabel('Divide basal temp. change (K)')
 else:
     plt.ylabel('Divide basal temp. (K)')
