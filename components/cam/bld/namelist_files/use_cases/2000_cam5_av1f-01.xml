@@ -52,6 +52,6 @@
 <dust_emis_fact>     0.40D0 </dust_emis_fact>
 
 <!-- Updated secondary organic aerosol emissions file -->
-<soag_emis_file	   ver="mam" chem="trop_mam4_resus">atm/cam/chem/trop_mozart_aero/emis/newemit_soag_mon_v3.nc</soag_emis_file>
+<soag_emis_file	   ver="mam" chem="trop_mam4_resus_soag">atm/cam/chem/trop_mozart_aero/emis/newemit_soag_mon_v3.nc</soag_emis_file>
 
 </namelist_defaults>
