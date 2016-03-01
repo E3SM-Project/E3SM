@@ -9,6 +9,8 @@
 		<option name="config_use_cvmix_convection">.true.</option>
 		<option name="config_use_cvmix_shear">.true.</option>
 		<option name="config_use_cvmix_kpp">.true.</option>
+		<option name="config_cvmix_shear_mixing_scheme">'KPP'</option>
+		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
 		<option name="config_eos_type">'jm'</option>
 		<option name="config_bottom_drag_coeff">1.0e-3</option>
 		<option name="config_use_bulk_wind_stress">.true.</option>
