@@ -288,7 +288,7 @@ main(int argc, char **argv)
 
 	/* Try to set the chunk cache with invalid preemption to check error handling. */
 	chunk_cache_preemption = 50.0;
-	ret = PIOc_set_chunk_cache(iosysid, format[fmt], my_rank, chunk_cache_size,
+	ret = PIOc_set_chunk_cache(iosysid, format[fmt], chunk_cache_size,
 				   chunk_cache_nelems, chunk_cache_preemption);
 	if (format[fmt] == PIO_IOTYPE_NETCDF4C || format[fmt] == PIO_IOTYPE_NETCDF4P)
 	{
@@ -303,7 +303,7 @@ main(int argc, char **argv)
 
 	/* Try to set the chunk cache. */
 	chunk_cache_preemption = 0.5;
-	ret = PIOc_set_chunk_cache(iosysid, format[fmt], my_rank, chunk_cache_size,
+	ret = PIOc_set_chunk_cache(iosysid, format[fmt], chunk_cache_size,
 				   chunk_cache_nelems, chunk_cache_preemption);
 
 	/* Should only have worked for netCDF-4 iotypes. */
@@ -319,7 +319,7 @@ main(int argc, char **argv)
 	}
 
 	/* Now check the chunk cache. */
-	ret = PIOc_get_chunk_cache(iosysid, format[fmt], my_rank, &chunk_cache_size_in,
+	ret = PIOc_get_chunk_cache(iosysid, format[fmt], &chunk_cache_size_in,
 				   &chunk_cache_nelems_in, &chunk_cache_preemption_in);
 
 	/* Should only have worked for netCDF-4 iotypes. */
@@ -462,10 +462,10 @@ main(int argc, char **argv)
 	    if ((ret = PIOc_get_var_chunk_cache(ncid, 0, &var_cache_size, &var_cache_nelems,
 						&var_cache_preemption)) != PIO_ENOTNC4)
 		ERR(ret);
-	    if ((ret = PIOc_set_chunk_cache(iosysid, format[fmt], my_rank, chunk_cache_size, chunk_cache_nelems,
+	    if ((ret = PIOc_set_chunk_cache(iosysid, format[fmt], chunk_cache_size, chunk_cache_nelems,
 	    				    chunk_cache_preemption)) != PIO_ENOTNC4)
 	    	ERR(ret);
-	    if ((ret = PIOc_get_chunk_cache(iosysid, format[fmt], my_rank, &chunk_cache_size,
+	    if ((ret = PIOc_get_chunk_cache(iosysid, format[fmt], &chunk_cache_size,
 	    				    &chunk_cache_nelems, &chunk_cache_preemption)) != PIO_ENOTNC4)
 	    	ERR(ret);
 	}	    

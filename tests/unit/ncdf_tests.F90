@@ -315,7 +315,7 @@ Contains
     chunk_cache_nelems = 3
     chunk_cache_preemption = 0.1
     print*, 'PIO_set_chunk_cache'
-    ret_val = PIO_set_chunk_cache(pio_iosystem%iosysid, iotype, my_rank, chunk_cache_size, &
+    ret_val = PIO_set_chunk_cache(pio_iosystem%iosysid, iotype, chunk_cache_size, &
          chunk_cache_nelems, chunk_cache_preemption)
     
     ! Should not have worked except for netCDF-4/HDF5 iotypes.
@@ -339,7 +339,7 @@ Contains
 
     ! Check the settings of the chunk cache for netCDF-4/HDF5 files.
     print*, 'testing PIO_get_chunk_cache'
-    ret_val = PIO_get_chunk_cache(pio_iosystem%iosysid, iotype, my_rank, chunk_cache_size_in, &
+    ret_val = PIO_get_chunk_cache(pio_iosystem%iosysid, iotype, chunk_cache_size_in, &
          chunk_cache_nelems_in, chunk_cache_preemption_in)
     print*, 'PIO_get_chunk_cache returned ', chunk_cache_size_in, &
          chunk_cache_nelems_in, chunk_cache_preemption_in

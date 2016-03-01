@@ -713,14 +713,13 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
  * function.
  * 
  * @param iotype the iotype of files to be created or opened.
- * @param io_rank the rank of the calling process.
  * @param size size of file cache.
  * @param nelems number of elements in file cache.
  * @param preemption preemption setting for file cache.
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_set_chunk_cache(int iosysid, int iotype, int io_rank, PIO_Offset size,
+int PIOc_set_chunk_cache(int iosysid, int iotype, PIO_Offset size,
 			 PIO_Offset nelems, float preemption)
 {
     int ierr;
@@ -799,14 +798,13 @@ int PIOc_set_chunk_cache(int iosysid, int iotype, int io_rank, PIO_Offset size,
  * performance check chunking against access patterns.
  *
  * @param iotype the iotype of files to be created or opened.
- `* @param io_rank the rank of the calling process.
  * @param sizep gets the size of file cache.
  * @param nelemsp gets the number of elements in file cache.
  * @param preemptionp gets the preemption setting for file cache.
  * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_get_chunk_cache(int iosysid, int iotype, int io_rank, PIO_Offset *sizep,
+int PIOc_get_chunk_cache(int iosysid, int iotype, PIO_Offset *sizep,
 			 PIO_Offset *nelemsp, float *preemptionp)
 {
     int ierr;
