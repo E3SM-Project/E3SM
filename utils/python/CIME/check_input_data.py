@@ -19,7 +19,7 @@ def find_files(rootdir, pattern):
     recursively find all files matching a pattern
     """
     result = []
-    for root, dirs, files in os.walk(rootdir):
+    for root, _, files in os.walk(rootdir):
         for filename in files:
             if (fnmatch.fnmatch(filename, pattern)):
                 result.append(os.path.join(root, filename))
@@ -53,7 +53,7 @@ def check_input_data(case=None, svn_loc=None, input_data_root=None, data_list_di
     """
     # Fill in defaults as needed
     case = Case() if case is None else case
-    svn_loc = SVN_LOCS[get_model()] if svn_loc is None else snv_loc
+    svn_loc = SVN_LOCS[get_model()] if svn_loc is None else svn_loc
     input_data_root = case.get_value("DIN_LOC_ROOT") if input_data_root is None else input_data_root
 
     expect(os.path.isdir(input_data_root), "Invalid input_data_root directory: '%s'" % input_data_root)
@@ -75,11 +75,17 @@ def check_input_data(case=None, svn_loc=None, input_data_root=None, data_list_di
                 tokens = line.split('=')
                 description, full_path = tokens[0].strip(), tokens[1].strip()
                 if(full_path):
-                # expand xml variables
+                    # expand xml variables
                     full_path = case.get_resolved_value(full_path)
                     rel_path  = full_path.replace(input_data_root, "")
 
-                    if (not os.path.exists(full_path)):
+                    # There are some special values of rel_path that
+                    # we need to ignore - some of the component models
+                    # set things like 'NULL' or 'same_as_TS' -
+                    # basically if rel_path does not contain '/' (a
+                    # directory tree) you can assume it's a special
+                    # value and ignore it (perhaps with a warning)
+                    if ("/" in rel_path and not os.path.exists(full_path)):
                         model = os.path.basename(data_list_file).split('.')[0]
                         logging.warning("Model %s missing file %s = '%s'" % (model,description,full_path))
 

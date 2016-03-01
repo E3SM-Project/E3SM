@@ -140,7 +140,7 @@ def post_build(case, logs):
     shutil.copy("env_build.xml", "LockedFiles")
 
 ###############################################################################
-def case_build(caseroot, testmode=False, sharedlib_only=False, model_only=False):
+def case_build(caseroot, case=None, testmode=False, sharedlib_only=False, model_only=False):
 ###############################################################################
     t1 = time.time()
 
@@ -156,7 +156,7 @@ def case_build(caseroot, testmode=False, sharedlib_only=False, model_only=False)
     expect(os.path.exists("case.run"),
            "ERROR: must invoke case.setup script before calling build script ")
 
-    case = Case()
+    case = Case() if case is None else case
     testcase = case.get_value("TESTCASE")
     cimeroot = case.get_value("CIMEROOT")
     expect(not (testcase is not None and
@@ -286,9 +286,10 @@ def case_build(caseroot, testmode=False, sharedlib_only=False, model_only=False)
     env_module = EnvModule(mach, compiler, cimeroot, caseroot, mpilib, debug)
     env_module.load_env_for_case()
 
+    # Need to flush case xml to disk before calling preview_namelists
+    case.flush()
+
     if not sharedlib_only:
-        # Need to flush case xml to disk before calling preview_namelists
-        case.flush()
         run_cmd("./preview_namelists")
 
     build_checks(case, build_threaded, comp_interface, use_esmf_lib, compiler, mpilib, debug, sharedlibroot,

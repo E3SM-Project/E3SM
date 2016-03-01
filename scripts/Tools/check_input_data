@@ -63,9 +63,13 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    svn_loc, input_data_root, data_list_file, download = parse_command_line(sys.argv, description)
+    svn_loc, input_data_root, data_list_dir, download = parse_command_line(sys.argv, description)
 
-    sys.exit(0 if check_input_data(svn_loc, input_data_root, data_list_file, download) else 1)
+    sys.exit(0 if check_input_data(case=None,
+                                   svn_loc=svn_loc,
+                                   input_data_root=input_data_root,
+                                   data_list_dir=data_list_dir,
+                                   download=download) else 1)
 
 ###############################################################################
 
