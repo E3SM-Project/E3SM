@@ -230,11 +230,11 @@ value of RUN_STARTDATE will be date2.
 <COMPSET sname="F_2000_CAM5_RESUS"          alias="FC5RESUS"        >2000_CAM5%MAM4%RESUS_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_ATMMOD"         alias="FC5ATMMOD"       >2000_CAM5%ATMMOD_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_AV1C"           alias="FC5AV1C"         >2000_CAM5%AV1C_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
-<COMPSET sname="F_2000_CAM5_AV1C-00"       alias="FC5AV1C-00"     >2000_CAM5%AV1C_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
-<COMPSET sname="F_2000_CAM5_AV1C-01"       alias="FC5AV1C-01"     >2000_CAM5%AV1C_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_2000_CAM5_AV1C-00"       alias="FC5AV1C-00"     >2000_CAM5%AV1C-00_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_2000_CAM5_AV1C-01"       alias="FC5AV1C-01"     >2000_CAM5%AV1C-01_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_AV1F"           alias="FC5AV1F"         >2000_CAM5%AV1F_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
-<COMPSET sname="F_2000_CAM5_AV1F-00"       alias="FC5AV1F-00"     >2000_CAM5%AV1F_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
-<COMPSET sname="F_2000_CAM5_AV1F-01"       alias="FC5AV1F-01"     >2000_CAM5%AV1F_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_2000_CAM5_AV1F-00"       alias="FC5AV1F-00"     >2000_CAM5%AV1F-00_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
+<COMPSET sname="F_2000_CAM5_AV1F-01"       alias="FC5AV1F-01"     >2000_CAM5%AV1F-01_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_ATMMODCOSP"     alias="FC5ATMMODCOSP"   >2000_CAM5%ATMMODCOSP_CLM45%SPBC_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_CAM5_COSP"           alias="FC5COSP"         >2000_CAM5%COSP_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
 <COMPSET sname="F_2000_C5UNI"         alias="FC5UNI"     >2000_CAM5%UNI_CLM40%SP_CICE%PRES_DOCN%DOM_RTM_SGLC_SWAV</COMPSET>
@@ -638,7 +638,11 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <CAM_CONFIG_OPTS compset="_CAM5%MAM4"     >-chem trop_mam4</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%ATMMOD"   >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom -rain_evap_to_coarse_aero</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%AV1C"     >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom -rain_evap_to_coarse_aero -nlev 72</CAM_CONFIG_OPTS>
+<CAM_CONFIG_OPTS compset="_CAM5%AV1C-00"     >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom -rain_evap_to_coarse_aero -nlev 72</CAM_CONFIG_OPTS>
+<CAM_CONFIG_OPTS compset="_CAM5%AV1C-01"   >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%AV1F"     >-clubb_sgs -microphys mg2 -chem trop_mam4_resus      -rain_evap_to_coarse_aero -nlev 72</CAM_CONFIG_OPTS>
+<CAM_CONFIG_OPTS compset="_CAM5%AV1F-00"     >-clubb_sgs -microphys mg2 -chem trop_mam4_resus      -rain_evap_to_coarse_aero -nlev 72</CAM_CONFIG_OPTS>
+<CAM_CONFIG_OPTS compset="_CAM5%AV1F-01"   >-clubb_sgs -microphys mg2 -chem trop_mam4_resus_soag -rain_evap_to_coarse_aero -nlev 72</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%ATMMODCOSP"   >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom -rain_evap_to_coarse_aero -cosp</CAM_CONFIG_OPTS>
 <CAM_CONFIG_OPTS compset="_CAM5%COSP"     >-cosp</CAM_CONFIG_OPTS> 
 <CAM_CONFIG_OPTS compset="_CAM5%CLB"      >-clubb_sgs</CAM_CONFIG_OPTS>
@@ -795,8 +799,10 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <desc compset="_CAM5.*ATMMOD">CAM with all ACME atmosphere mods:</desc>
 <desc compset="_CAM5.*AV1C"  >CAM with complete set of ACME atmospheric mods for V1 (72 layers model):</desc>
 <desc compset="_CAM5.*AV1C-00"  >CAM with complete set of ACME atmospheric mods for V1 (72 layers model)- v00:</desc>
+<desc compset="_CAM5.*AV1C-01"  >CAM with complete set of ACME atmospheric mods for V1 (72 layers model) and ACES4BGC SOAG emissions- v01:</desc>
 <desc compset="_CAM5.*AV1F"  >CAM with familiar set of ACME atmospheric mods for V1 (72 Layers model):</desc>
 <desc compset="_CAM5.*AV1F-00"  >CAM with familiar set of ACME atmospheric mods for V1 (72 Layers model)- v00:</desc>
+<desc compset="_CAM5.*AV1F-01"  >CAM with familiar set of ACME atmospheric mods for V1 (72 Layers model) and ACES4BGC SOAG emissions- v01:</desc>
 <desc compset="_CAM5.*ATMMODCOSP">CAM with all ACME atmosphere mods and COSP:</desc>
 <desc compset="_CAM5%CLB"    >CAM CLUBB:</desc>
 <desc compset="_CAM5%MG2"    >CAM MG2:</desc>
