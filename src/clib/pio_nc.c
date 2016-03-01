@@ -3483,7 +3483,6 @@ int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp)
     sprintf(errstr,"in file %s",__FILE__);
   }
   ierr = check_netcdf(file, ierr, errstr,__LINE__);
-  printf("sizeof(MPI_OFFSET)=%d sizeof(PIO_Offset)=%d sizeof(*lenp)=%d \n", sizeof(MPI_OFFSET), sizeof(PIO_Offset), sizeof(*lenp));
     mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
   if(errstr != NULL) free(errstr);
   return ierr;
