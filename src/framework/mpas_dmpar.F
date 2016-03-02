@@ -6345,7 +6345,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       close(stderrUnit)
       open(unit=stderrUnit,file="mpas_critcal_error.log")
       write(stderrUnit,*) "MPAS critical error"
-      write(stderrUnit,*) mesg
+      write(stderrUnit,*) trim(mesg)
 
 #ifdef _MPI
       call MPI_Abort(MPI_COMM_WORLD, mpi_errcode, mpi_ierr)
