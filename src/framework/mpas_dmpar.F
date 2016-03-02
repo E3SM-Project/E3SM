@@ -6338,17 +6338,20 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
-#ifdef _MPI
       if ( threadNum == 0 ) then
         write(stderrUnit,*) trim(mesg)
       end if
-      call MPI_Abort(MPI_COMM_WORLD, mpi_errcode, mpi_ierr)
-#endif
 
-      if ( threadNum == 0 ) then
-        write(stderrUnit,*) trim(mesg)
-      end if
+      close(stderrUnit)
+      open(unit=stderrUnit,file="mpas_critcal_error.log")
+      write(stderrUnit,*) "MPAS critical error"
+      write(stderrUnit,*) mesg
+
+#ifdef _MPI
+      call MPI_Abort(MPI_COMM_WORLD, mpi_errcode, mpi_ierr)
+#else
       stop
+#endif
 
    end subroutine mpas_dmpar_global_abort!}}}
 
