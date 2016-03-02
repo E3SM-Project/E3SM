@@ -904,7 +904,9 @@
     <file>env_run.xml</file>
     <desc>Turns on component barriers for component timing.
           This variable is for testing and debugging only and should never
-          be set for a production run.
+          be set for a production run.  It has a side effect of causing
+          resubmit not to toggle the CONTINUE_RUN flag so that the RESUBMIT
+          flag can be used to run several identical runs for timing purposes.
     </desc>
   </entry>
 
