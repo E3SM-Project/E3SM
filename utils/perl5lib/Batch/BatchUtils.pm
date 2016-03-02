@@ -1,9 +1,9 @@
 #!/usr/bin/env perl;
 #==============================================================================
 # File:  BatchUtils.pm
-# Purpose:  Utility class for submitting jobs, and managing dependencies.  
-# PLEASE NOTE: for each subclass you define, you MUST add a _test() method 
-# to the subclass for the factory to work 
+# Purpose:  Utility class for submitting jobs, and managing dependencies.
+# PLEASE NOTE: for each subclass you define, you MUST add a _test() method
+# to the subclass for the factory to work
 #
 #==============================================================================
 use strict;
@@ -24,10 +24,10 @@ BEGIN{
 }
 
 #==============================================================================
-# Base class constructor.  required args are the case name, caseroot, cime root, 
+# Base class constructor.  required args are the case name, caseroot, cime root,
 # compiler, machine, machine root directory, the mpi library,
-# get the paths to the config_machines and config_batch xml files, and figure out 
-# the batch system type. 
+# get the paths to the config_machines and config_batch xml files, and figure out
+# the batch system type.
 #==============================================================================
 sub new
 {
@@ -55,7 +55,7 @@ sub new
     my $xml = XML::LibXML->new(no_blanks => 1);
     my $machineconfig = $xml->parse_file($configmachines);
     my $root = $machineconfig->getDocumentElement();
-    
+
     my @batchtypes = $root->findnodes("/config_machines/machine[\@MACH=\'$self->{machine}\']/batch_system");
     if(! @batchtypes)
     {
@@ -73,7 +73,7 @@ sub _check()
     return 1;
 }
 #==============================================================================
-# Get the batch system type for this machine. 
+# Get the batch system type for this machine.
 #==============================================================================
 sub getBatchSystemType()
 {
@@ -112,7 +112,7 @@ sub getDependString()
 }
 
 #==============================================================================
-# Get the job id from the output of the job submission. 
+# Get the job id from the output of the job submission.
 #==============================================================================
 sub getJobID()
 {
@@ -140,7 +140,7 @@ sub getJobID()
 	    $jobidpat = $basejobidpatterns[0]->textContent();
 	}
     }
-    
+
     my $jobid = undef;
     my $pattern  = qr($jobidpat);
     if($jobstring =~ /$pattern/ )
@@ -163,7 +163,7 @@ sub submitJobs()
     my $self = shift;
     my $scriptname = shift;
     my $depjobid = undef;
-    
+
     my %depqueue = %{$self->{dependencyqueue}};
     my $lastjobseqnum = (sort {$b <=> $a } keys %depqueue)[0];
     foreach my $jobnum(sort keys %depqueue)
@@ -181,9 +181,9 @@ sub submitJobs()
 }
 
 #==============================================================================
-# Submit a job, given the script name. If a dependent job id is given, 
-# use it as the dependency. If the islastjob flag is passed in, add the 
-# islastjob=TRUE flag to the environment of the job submission.. 
+# Submit a job, given the script name. If a dependent job id is given,
+# use it as the dependency. If the islastjob flag is passed in, add the
+# islastjob=TRUE flag to the environment of the job submission..
 #==============================================================================
 sub submitSingleJob()
 {
@@ -207,7 +207,7 @@ sub submitSingleJob()
     chdir $config{'CASEROOT'};
     my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname ";
 
-    $logger->info(": $runcmd");    
+    $logger->info(": $runcmd");
     my $output;
 
     eval {
@@ -220,9 +220,9 @@ sub submitSingleJob()
     {
 	$logger->logdie("job submission failed $?");
     }
-    
-    chomp $output;	
-    
+
+    chomp $output;
+
     my $jobid = $self->getJobID($output);
     $logger->debug( "Job ID: $jobid");
     return $jobid;
@@ -239,9 +239,11 @@ sub _decrementResubmitCounter()
     }
     my $owd = getcwd;
     chdir $config->{'CASEROOT'};
-    if($config->{COMP_RUN_BARRIERS} ne "TRUE") 
+    if($config->{COMP_RUN_BARRIERS} ne "TRUE")
     {
 	`./xmlchange -noecho CONTINUE_RUN=TRUE`;
+    }else{
+	$logger->warn("NOT changing CONTINUE_RUN since COMP_RUN_BARRIERS is on")
     }
     `./xmlchange -noecho RESUBMIT=$newresubmit`;
     if($?)
@@ -252,7 +254,7 @@ sub _decrementResubmitCounter()
 }
 #==============================================================================
 # Base class doResubmit
-# Check to see if the next set of jobs needs to be submitted.  
+# Check to see if the next set of jobs needs to be submitted.
 #======================================================
 
 sub doResubmit()
@@ -268,16 +270,16 @@ sub doResubmit()
 }
 
 #==============================================================================
-# If we need to resubmit a job + post-run jobs, this subroutine will check the 
-# env*.xml variables to see which jobs need to be resubmitted.  
-# For now, we are only handling runs and the short-term archiver. 
+# If we need to resubmit a job + post-run jobs, this subroutine will check the
+# env*.xml variables to see which jobs need to be resubmitted.
+# For now, we are only handling runs and the short-term archiver.
 #==============================================================================
 sub dependencyCheck()
 {
     my $self = shift;
     my $scriptname = shift;;
     my %config = %{$self->{'caseconfig'}};
-    
+
     $self->{dependencyqueue} = undef;
     # we always want to run the test or run again..
     if(-e "case.test")
@@ -290,8 +292,8 @@ sub dependencyCheck()
 	my $jobname = "case.run";
 	$self->addDependentJob($jobname);
     }
-    
-    # do we add the short-term archiver to the dependency queue? 
+
+    # do we add the short-term archiver to the dependency queue?
     if($config{'DOUT_S'} eq 'TRUE')
     {
 	my $jobname = "case.st_archive";
@@ -302,11 +304,11 @@ sub dependencyCheck()
 		my $jobname = "case.lt_archive";
 		$self->addDependentJob($jobname);
 	}
-    
+
 }
 
 #==============================================================================
-# Adds a job script name or array of job script names to the dependent jobs queue. 
+# Adds a job script name or array of job script names to the dependent jobs queue.
 #==============================================================================
 sub addDependentJob()
 {
@@ -314,29 +316,29 @@ sub addDependentJob()
     # Either a string with the job name or an array of job names
     my $jobref = shift;
     my $jobcounter = 0;
-    
-    # set up the dependency hash if not done.  
+
+    # set up the dependency hash if not done.
     if(! defined $self->{dependencyqueue})
     {
 	$self->{dependencyqueue} = {};
     }
-    # get the dependency hash. 
+    # get the dependency hash.
     my %dependencyqueue = %{$self->{dependencyqueue}};
-    
-    # Increment the job counter for each job set in the dependency queue. 
+
+    # Increment the job counter for each job set in the dependency queue.
     foreach my $jobnum(keys %{$self->{dependencyqueue}})
     {
 	$jobcounter += 1;
     }
 
-    # If the jobref is a regular string scalar, make an array out of it 
-    # and add it to the dependency queue. 
+    # If the jobref is a regular string scalar, make an array out of it
+    # and add it to the dependency queue.
     if(! ref($jobref) )
     {
 	my @jobarray = ( $jobref );
 	$dependencyqueue{$jobcounter} = \@jobarray;
     }
-    # if we have an array, add the array to the dependency queue directly.  
+    # if we have an array, add the array to the dependency queue directly.
     elsif(ref($jobref) eq 'ARRAY')
     {
 	$dependencyqueue{$jobcounter} = $jobref;
@@ -345,8 +347,8 @@ sub addDependentJob()
 }
 
 #==============================================================================
-# Base class getSubmitArguments.  If we need to have submit arguments to qsub, 
-# then this method will pull them out and set them up.  
+# Base class getSubmitArguments.  If we need to have submit arguments to qsub,
+# then this method will pull them out and set them up.
 #==============================================================================
 sub getSubmitArguments()
 {
@@ -357,12 +359,12 @@ sub getSubmitArguments()
     $scriptname =~ /\w+\.(\w+)$/;
     $self->{job} = $1;
     $logger->debug(" scriptname: $scriptname job $self->{job}");
-    # Get BatchMaker instance, we need its instance data. 
-    my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, 
+    # Get BatchMaker instance, we need its instance data.
+    my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot},
 							 cimeroot => $self->{cimeroot},
 							 case => $self->{case},
-							 mpilib => $self->{mpilib}, 
-							 machroot => $self->{machroot}, 
+							 mpilib => $self->{mpilib},
+							 machroot => $self->{machroot},
 							 machine => $self->{machine},
 							 compiler => $self->{compiler},
                                                           job => $self->{job} );
@@ -396,7 +398,7 @@ sub getSubmitArguments()
     	        else
     	        {
 		    # if argFlag ends in an = sign dont put any space before field
-		    if($argFlag =~ /=$/){		    
+		    if($argFlag =~ /=$/){
 			$submitargs .= " $argFlag$field";
 		    }else{
 			$submitargs .= " $argFlag $field";
@@ -404,7 +406,7 @@ sub getSubmitArguments()
     	        }
     	    }
     	    # If the argName isn't defined, just use the argflag, there;s
-            # no data to replace.  
+            # no data to replace.
     	    elsif(defined $argFlag && ! defined $argName)
     	    {
     	        $submitargs .= " $argFlag";
@@ -413,7 +415,7 @@ sub getSubmitArguments()
     }
 
     # If we have a dependent job id, we need to get the depend string
-    # for this particular setup, and add it to the submit arguments. 
+    # for this particular setup, and add it to the submit arguments.
     if(defined $dependentjobid)
     {
 	my $dependArg = $self->getDependString($dependentjobid);
@@ -425,10 +427,10 @@ sub getSubmitArguments()
 
 
 #==============================================================================
-# Factory package for getting the correct BatchUtils class.  Either machine-specific or 
+# Factory package for getting the correct BatchUtils class.  Either machine-specific or
 # batch system specific classes can be defined in this package, and that specific
-# class will be returned if it exists, or the base class will be returned if 
-# nothing machine-specific or batch system specific exists.  
+# class will be returned if it exists, or the base class will be returned if
+# nothing machine-specific or batch system specific exists.
 #==============================================================================
 package Batch::BatchUtilsFactory;
 use Exporter qw(import);
@@ -437,38 +439,38 @@ use XML::LibXML;
 sub getBatchUtils
 {
     my (%params) = @_;
-    
+
     # We need a machine to be defined
     my $machine = $params{'machine'};
     if(!defined $machine)
     {
 	$logger->logdie ("BatchUtilsFactory: machine must be defined!");
     }
-    
-    # Find the batch system type based on the machine. 
+
+    # Find the batch system type based on the machine.
     my $batchtype = getBatchSystemType($params{'machine'}, $params{'machroot'}, $params{'caseroot'});
 
 
-    # Make a new base class 
+    # Make a new base class
     my $batchutils = Batch::BatchUtils->new(%params);
-    
+
     # Get the machine-specific and batch-specific class names
-    my $machclassname = "Batch::BatchUtils_" . $machine; 
+    my $machclassname = "Batch::BatchUtils_" . $machine;
     my $batchclassname = "Batch::BatchUtils_" . $batchtype;
 
-    # Try to re-bless the base class into the machine-specific class. 
-    # then test to see if we can actually call methods. If the 
-    # eval fails, then we know the machine-specific class doesn't exist. 
-    my $rv = eval 
-    { 
+    # Try to re-bless the base class into the machine-specific class.
+    # then test to see if we can actually call methods. If the
+    # eval fails, then we know the machine-specific class doesn't exist.
+    my $rv = eval
+    {
         #$machclassname->new(%params);
         #require $machclassname;
         bless $batchutils, $machclassname;
         $batchutils->_test();
         1;
     };
-    # If we don't get an error, return the machine-specific 
-    # BatchUtils object. 
+    # If we don't get an error, return the machine-specific
+    # BatchUtils object.
     if(! $@)
     {
         return $batchutils;
@@ -478,12 +480,12 @@ sub getBatchUtils
 	bless $batchutils, "Batch::BatchUtils";
     }
 
-    # Now try to create the batch-system specific class. 
-    $rv = eval 
-    { 
+    # Now try to create the batch-system specific class.
+    $rv = eval
+    {
         #$batchclassname->new(%params);
         #require $batchclassname;
-        bless $batchutils, $batchclassname; 
+        bless $batchutils, $batchclassname;
         $batchutils->_test();
         #1;
     };
@@ -495,7 +497,7 @@ sub getBatchUtils
     }
     # just to make sure, if we're here, we should be returning the
     # base class BatchUtils
-    else    
+    else
     {
 	bless $batchutils, "Batch::BatchUtils";
         return $batchutils;
@@ -504,7 +506,7 @@ sub getBatchUtils
 }
 
 #==============================================================================
-# BatchUtilsFactory getBatchSystemType method. 
+# BatchUtilsFactory getBatchSystemType method.
 #==============================================================================
 sub getBatchSystemType()
 {
@@ -530,12 +532,12 @@ sub getBatchSystemType()
 
 
 #==============================================================================
-# Mira/ALCF specific BatchUtils class, since the workflow for ALCF has to be 
-# completely different. 
-# Current workflow: 
-# Run on Mira or Cetus.  When done, ssh over to cooleylogin1 and submit 
-# the short-term archive run.  If we need to continue and resubmit, we will then 
-# ssh back to either Mira or Cetus and resubmit the run.  
+# Mira/ALCF specific BatchUtils class, since the workflow for ALCF has to be
+# completely different.
+# Current workflow:
+# Run on Mira or Cetus.  When done, ssh over to cooleylogin1 and submit
+# the short-term archive run.  If we need to continue and resubmit, we will then
+# ssh back to either Mira or Cetus and resubmit the run.
 #==============================================================================
 package Batch::BatchUtils_mira;
 use base qw( Batch::BatchUtils );
@@ -543,9 +545,9 @@ use base qw( Batch::BatchUtils );
 use Cwd;
 
 #==============================================================================
-# Overridden submitJobs() method for Mira. 
-# For ALCF, we really only want this method to submit the run. 
-# The short-term archiver and resubmission will be handled elsewhere. 
+# Overridden submitJobs() method for Mira.
+# For ALCF, we really only want this method to submit the run.
+# The short-term archiver and resubmission will be handled elsewhere.
 #==============================================================================
 sub submitJobs()
 {
@@ -553,23 +555,23 @@ sub submitJobs()
 
     my %depqueue = %{$self->{dependencyqueue}};
 
-    # Get the first job sequence number. 
+    # Get the first job sequence number.
     my $firstjobseqnum = (sort {$a <=> $b } keys %depqueue)[0];
-    # we get the first job array reference. 
+    # we get the first job array reference.
     my $firstjobarray = $depqueue{$firstjobseqnum};
-    # Get the first job name. 
+    # Get the first job name.
     my $firstjobname = $$firstjobarray[0];
 
-    # submit the run, and nothing else. 
+    # submit the run, and nothing else.
     $self->submitSingleJob($firstjobname);
 }
 
 #==============================================================================
-# ALCF-specific single job submission. 
-# The trick with ALCF is when we need to know which machine to ssh back to 
+# ALCF-specific single job submission.
+# The trick with ALCF is when we need to know which machine to ssh back to
 # to resubmit the run.
-# So, write a 'workflowhostfile' which contains the hostname we need to ssh back to 
-# to resubmit the run. 
+# So, write a 'workflowhostfile' which contains the hostname we need to ssh back to
+# to resubmit the run.
 # mira submitSingleJob
 #==============================================================================
 sub submitSingleJob()
@@ -580,13 +582,13 @@ sub submitSingleJob()
     if(! -e $workflowhostfile)
     {
         open (my $W, ">", $workflowhostfile) or $logger->logdie ("could not open workflow host file, $!");
-        my $host = (defined $ENV{HOST})? $ENV{HOST}: $ENV{HOSTNAME}; 
+        my $host = (defined $ENV{HOST})? $ENV{HOST}: $ENV{HOSTNAME};
         print $W "$host\n";
         close $W;
         $logger->info("Setting workflow host $host");
     }
     my %config = %{$self->{'caseconfig'}};
-    
+
     my $dependarg = '';
     my $submitargs = '';
     $submitargs = $self->getSubmitArguments($scriptname);
@@ -600,9 +602,9 @@ sub submitSingleJob()
 
     $logger->info( "Submitting job $runcmd");
     $logger->debug("Runcmd: $runcmd");
-    
+
     my $output;
-    
+
     eval {
         open(my $RUN, "-|", $runcmd) // $logger->logdie (" job submission failed, $!");
         $output = <$RUN>;
@@ -619,25 +621,25 @@ sub submitSingleJob()
     return undef;
 }
 #==============================================================================
-# Mira-specific doResubmit call.  If this is called from the run, then we 
-# have to ssh over to cooley and run the short-term archiver. 
-# If called from the short-term archiver, 
+# Mira-specific doResubmit call.  If this is called from the run, then we
+# have to ssh over to cooley and run the short-term archiver.
+# If called from the short-term archiver,
 #==============================================================================
 sub doResubmit()
 {
     my ($self, $scriptname) = @_;
 
     my %config = %{$self->{'caseconfig'}};
-    
+
     #If we're NOT doing short-term archiving, and we need to resubmit, then we need to resubmit JUST the run
 
     my $issta = ($scriptname =~ /archive/);
-  
+
     if(! $issta && $config{'RESUBMIT'} > 0  && $config{'DOUT_S'} eq 'FALSE')
     {
         chdir $config{'CASEROOT'};
         my $submitargs = $self->getSubmitArguments($scriptname);
-        
+
         my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $scriptname ";
         $logger->info("1: $runcmd");
         qx($runcmd);
@@ -652,8 +654,8 @@ sub doResubmit()
 
     }
 
-    # If we ARE doing short-term archiving and we aren't resubmitting, then 
-    # just run the short-term archiver 
+    # If we ARE doing short-term archiving and we aren't resubmitting, then
+    # just run the short-term archiver
     if(! $issta && $config{'DOUT_S'} eq 'TRUE' && $config{'RESUBMIT'} == 0)
     {
         chdir $config{'CASEROOT'};
@@ -661,13 +663,13 @@ sub doResubmit()
 	# replace .run or .test with .st_archive
 
 	my($basename, $path) = fileparse($scriptname);
-        my $starchivescript = "$path/$basename.st_archive";	
+        my $starchivescript = "$path/$basename.st_archive";
         my $submitargs = $self->getSubmitArguments($starchivescript);
-        
+
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $starchivescript";
-        
+
         my $runcmd = "ssh cooleylogin1 $submitstuff";
-	
+
         $logger->info("2: $runcmd");
         qx($runcmd);
         if($? != 0)
@@ -675,10 +677,10 @@ sub doResubmit()
             $logger->logdie( "could not execute runcmd $runcmd, $! $?");
             exit(1);
         }
-        
+
     }
 
-    
+
     # If we're post run and we need to run the short-term archiver AND resubmit, then run the short-term archiver
     # on cooley
     if(! $issta && $config{'RESUBMIT'} > 0 && $config{'DOUT_S'} eq 'TRUE')
@@ -691,7 +693,7 @@ sub doResubmit()
 	    $starchivescript =~ s/test/st_archive/g;
         }
         my $submitargs = $self->getSubmitArguments($starchivescript);
-	
+
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $starchivescript";
         my $runcmd = "ssh cooleylogin1 $submitstuff";
         $logger->info("3: $runcmd");
@@ -705,12 +707,12 @@ sub doResubmit()
     }
 
     # If we're being called by the short-term archiver, and we actually need to resubmit
-    # something, then ssh from the cooley compute nodes to cooleylogin1, then ssh back to 
-    # either mira or cetuslac1, and resubmit the run. 
+    # something, then ssh from the cooley compute nodes to cooleylogin1, then ssh back to
+    # either mira or cetuslac1, and resubmit the run.
     if($issta && $config{RESUBMIT} > 0)
     {
         chdir $config{'CASEROOT'};
-        
+
         my $runscript = $scriptname;
 	if(defined $config{TESTCASE}){
 	    $runscript =~ s/st_archive/test/g;
@@ -718,9 +720,9 @@ sub doResubmit()
 	    $runscript =~ s/st_archive/run/g;
 	}
 
-        
+
         my $submitargs = $self->getSubmitArguments($runscript);
-	
+
         my $submitstuff = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} $runscript";
         open (my $W, "<", "./workflowhostfile" ) or $logger->logdie( "could not open workflow host file, $!");
         my $text = <$W>;
@@ -744,40 +746,40 @@ sub doResubmit()
             exit(1);
         }
 	$self->_decrementResubmitCounter(\%config);
-        
+
     }
-    
+
 }
 
 #==============================================================================
 # If we need arguments when we submit a job, this is where we will add them.
-# This is really specific to Mira/ALFC, no center requires qsub submit arguments. 
+# This is really specific to Mira/ALFC, no center requires qsub submit arguments.
 #==============================================================================
 sub getSubmitArguments()
 {
     my $self = shift;
-    
-    # We need the script name and the dependent job id. 
+
+    # We need the script name and the dependent job id.
     my $scriptname = shift;
     my $dependentjobid = shift;
     $scriptname =~ /\.([^\.]+)$/;
     my $job = $1;
-    my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot}, 
+    my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot},
 							 cimeroot => $self->{cimeroot},
 							 case => $self->{case},
-							 mpilib => $self->{mpilib}, 
-							 machroot => $self->{machroot}, 
+							 mpilib => $self->{mpilib},
+							 machroot => $self->{machroot},
 							 machine => $self->{machine},
 							 compiler => $self->{compiler},
                                                          job => $job );
-    
-    # Set the node count to 1 if this is the short-term archive script. 
+
+    # Set the node count to 1 if this is the short-term archive script.
     if(defined $scriptname && $scriptname =~ /archive/)
     {
         $batchmaker->overrideNodeCount(1);
     }
 
-    # Find the submit arguments for this particular batch system. 
+    # Find the submit arguments for this particular batch system.
     my $xml = XML::LibXML->new(no_blanks => 1);
     my $batchconfig = $xml->parse_file($self->{'configbatch'});
     my $root = $batchconfig->getDocumentElement();
@@ -786,7 +788,7 @@ sub getSubmitArguments()
 
     my $submitargs = '';
 
-    # get the flag, and the name of the flag.  
+    # get the flag, and the name of the flag.
     foreach my $dependarg(@dependargs)
     {
 
@@ -795,7 +797,7 @@ sub getSubmitArguments()
         $logger->debug( "flag: $argFlag");
         if(defined $argName && length($argName) > 0)
         {
-            # Get the actual data field from the BatchMaker class. 
+            # Get the actual data field from the BatchMaker class.
             my $field = $batchmaker->getField($argName);
             if(! defined $field)
             {
@@ -806,7 +808,7 @@ sub getSubmitArguments()
                 $submitargs .= " $argFlag $field";
             }
         }
-        # If the argName isn't defined, 
+        # If the argName isn't defined,
         elsif(defined $argFlag && ! defined $argName)
         {
             $submitargs .= " $argFlag";
@@ -824,7 +826,7 @@ sub getSubmitArguments()
 }
 
 #==============================================================================
-# Red herring method so the factory will work. 
+# Red herring method so the factory will work.
 #==============================================================================
 sub _test()
 {
