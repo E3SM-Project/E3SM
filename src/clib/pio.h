@@ -366,19 +366,17 @@ int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
 int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
 			 int *deflatep, int *deflate_levelp);
 int PIOc_inq_var_szip(int ncid, int varid, int *options_maskp, int *pixels_per_blockp);
-int PIOc_def_var_fletcher32(int ncid, int varid, int fletcher32);
-int PIOc_inq_var_fletcher32(int ncid, int varid, int *fletcher32p);
-int PIOc_def_var_chunking(int ncid, int varid, int storage, const size_t *chunksizesp);
-int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizesp);
+int PIOc_def_var_chunking(int ncid, int varid, int storage, const PIO_Offset *chunksizesp);
+int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, PIO_Offset *chunksizesp);
 int PIOc_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value);
 int PIOc_inq_var_fill(int ncid, int varid, int *no_fill, void *fill_valuep);
 int PIOc_def_var_endian(int ncid, int varid, int endian);
 int PIOc_inq_var_endian(int ncid, int varid, int *endianp);
-int PIOc_set_chunk_cache(int iosysid, int iotype, int io_rank, size_t size, size_t nelems, float preemption);
-int PIOc_get_chunk_cache(int iotype, int io_rank, size_t *sizep, size_t *nelemsp, float *preemptionp);
-int PIOc_set_var_chunk_cache(int ncid, int varid, size_t size, size_t nelems,
+int PIOc_set_chunk_cache(int iosysid, int iotype, PIO_Offset size, PIO_Offset nelems, float preemption);
+int PIOc_get_chunk_cache(int iosysid, int iotype, PIO_Offset *sizep, PIO_Offset *nelemsp, float *preemptionp);
+int PIOc_set_var_chunk_cache(int ncid, int varid, PIO_Offset size, PIO_Offset nelems,
 			     float preemption);
-int PIOc_get_var_chunk_cache(int ncid, int varid, size_t *sizep, size_t *nelemsp,
+int PIOc_get_var_chunk_cache(int ncid, int varid, PIO_Offset *sizep, PIO_Offset *nelemsp,
 			     float *preemptionp);
 int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp, int *dimidsp, int *nattsp); 
 int PIOc_inq_varname (int ncid, int varid, char *name); 

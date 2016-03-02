@@ -53,9 +53,12 @@ module pio
        PIO_def_var   ,        &
        PIO_def_var_deflate   ,        &
        PIO_redef     ,          &
-!       PIO_copy_att  ,       &   
        PIO_inquire_variable , &
-       PIO_inquire_dimension 
+       PIO_inquire_dimension, &
+       PIO_set_chunk_cache, &
+       PIO_get_chunk_cache, &
+       PIO_set_var_chunk_cache, &
+       PIO_get_var_chunk_cache
 
   use pionfatt_mod, only : PIO_put_att   => put_att,        &
        PIO_get_att   => get_att
