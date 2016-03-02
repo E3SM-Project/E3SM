@@ -10,4 +10,5 @@ library: $(OBJS)
 clean:
 	$(RM) *.o *.i
 
-.c.o: $(CC) $(CFLAGS) $(CPPFLAGS) -c $<
+.c.o:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<

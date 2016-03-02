@@ -1,3 +1,9 @@
+#ifdef USE_PIO2
+   integer, parameter :: MPAS_IO_OFFSET_KIND = PIO_OFFSET_KIND
+#else
+   integer, parameter :: MPAS_IO_OFFSET_KIND = PIO_OFFSET
+#endif
+
    ! File access modes
    integer, parameter :: MPAS_IO_READ  = 1, &
                          MPAS_IO_WRITE = 2
@@ -61,7 +67,7 @@
       integer :: ioformat
       integer :: pio_unlimited_dimid
       integer :: preexisting_records = 0
-      integer (kind=PIO_offset) :: frame_number = 1
+      integer (kind=MPAS_IO_OFFSET_KIND) :: frame_number = 1
       type (dimlist_type), pointer :: dimlist_head => null()
       type (dimlist_type), pointer :: dimlist_tail => null()
       type (fieldlist_type), pointer :: fieldlist_head => null()
@@ -82,6 +88,7 @@
       character (len=StrKIND) :: attName
       integer :: attType
       integer :: attValueInt
+      integer :: precision
       integer, dimension(:), pointer :: attValueIntA => null()
       real (kind=RKIND) :: attValueReal
       real (kind=RKIND), dimension(:), pointer :: attValueRealA => null()
