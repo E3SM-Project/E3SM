@@ -48,10 +48,10 @@ contains
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)     ,intent(inout) :: edge
     integer                ,intent(in   ) :: vlyr
-    real (kind=real_kind)  ,intent(in   ) :: v(vlyr,tdim,nelemd)
     integer                ,intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
+    real (kind=real_kind)  ,intent(in   ) :: v(vlyr,tdim,nelemd)
     ! Local variables
     integer :: i,k,ir,ll,is,ie,in,iw,el,kc,kk
     integer, parameter :: kchunk = 64
@@ -95,10 +95,10 @@ contains
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)    , intent(in   ) :: edge
     integer               , intent(in   ) :: vlyr
-    real(kind=real_kind)  , intent(inout) :: v(vlyr,tdim,nelemd)
     integer               , intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
+    real(kind=real_kind)  , intent(inout) :: v(vlyr,tdim,nelemd)
     ! Local
     integer :: i,k,ll,is,ie,in,iw,el,kc,kk
     integer, parameter :: kchunk = 64
@@ -154,10 +154,10 @@ contains
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)    , intent(in   ) :: edge
     integer               , intent(in   ) :: vlyr
-    real(kind=real_kind)  , intent(inout) :: v(vlyr,tdim,nelemd)
     integer               , intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
+    real(kind=real_kind)  , intent(inout) :: v(vlyr,tdim,nelemd)
     ! Local
     integer :: i,k,ll,is,ie,in,iw,el,kc,kk
     integer, parameter :: kchunk = 64
@@ -214,10 +214,10 @@ contains
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)     ,intent(inout) :: edge
     integer                ,intent(in   ) :: vlyr
-    real (kind=real_kind)  ,intent(in   ) :: v(np,np,vlyr,tdim,nelemd)
     integer                ,intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
+    real (kind=real_kind)  ,intent(in   ) :: v(np,np,vlyr,tdim,nelemd)
     ! Local variables
     integer :: i,k,ir,ll,is,ie,in,iw,el,kc,kk
     integer, parameter :: kchunk = 32
@@ -276,10 +276,10 @@ contains
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)    , intent(in   ) :: edge
     integer               , intent(in   ) :: vlyr
-    real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     integer               , intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
+    real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     ! Local
     integer :: i,k,ll,is,ie,in,iw,el,kc,kk,glob_k,loc_ind,ii,jj, j
     integer, parameter :: kchunk = 32
@@ -353,10 +353,10 @@ contains
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)    , intent(in   ) :: edge
     integer               , intent(in   ) :: vlyr
-    real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     integer               , intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
+    real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     ! Local
     integer :: i,k,ll,is,ie,in,iw,el,kc,kk,glob_k,loc_ind,ii,jj, j
     integer, parameter :: kchunk = 32
@@ -430,10 +430,10 @@ contains
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)    , intent(in   ) :: edge
     integer               , intent(in   ) :: vlyr
-    real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     integer               , intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
+    real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     ! Local
     integer :: i,k,ll,is,ie,in,iw,el,kc,kk,glob_k,loc_ind,ii,jj, j
     integer, parameter :: kchunk = 32

@@ -825,9 +825,9 @@ contains
     ! ps is only used when advecting Q instead of Qdp
     ! so ps should be at one timelevel behind Q
     implicit none
-    real (kind=real_kind), intent(inout) :: Qdp(np,np,nlev,qsize,tdim,nelemd)
     integer              , intent(in   ) :: tdim
     integer              , intent(in   ) :: tl
+    real (kind=real_kind), intent(inout) :: Qdp(np,np,nlev,qsize,tdim,nelemd)
     ! local
     real (kind=real_kind) :: mass,mass_new
     real (kind=real_kind) :: qtmp(np,np)

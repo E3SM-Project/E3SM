@@ -518,8 +518,8 @@ contains
     use parallel_mod     , only: mpireal_t
     use openacc_utils_mod, only: update_host_async, acc_async_test_wrap
     implicit none
-    real(kind=real_kind), intent(in   ) :: buf(count)   !buffer from which to send data
     integer             , intent(in   ) :: count        !number of elements in buffer
+    real(kind=real_kind), intent(in   ) :: buf(count)   !buffer from which to send data
     integer             , intent(in   ) :: dest         !the MPI rank I'm sending data to
     integer             , intent(in   ) :: tag_root     !tag of the original send (I'll alter this for internal mpi_isend calls)
     integer             , intent(in   ) :: comm         !Communicator to use
@@ -580,8 +580,8 @@ contains
     use parallel_mod     , only: mpireal_t
     use openacc_utils_mod, only: update_device_async, copy_ondev_async
     implicit none
-    real(kind=real_kind), intent(in   ) :: buf(count)   !buffer in which to receive data
     integer             , intent(in   ) :: count        !number of elements in buffer
+    real(kind=real_kind), intent(in   ) :: buf(count)   !buffer in which to receive data
     integer             , intent(in   ) :: source       !the MPI rank I'm receiving data from
     integer             , intent(in   ) :: tag_root     !tag of the original send (I'll alter this for internal mpi_isend calls)
     integer             , intent(in   ) :: comm         !Communicator to use
