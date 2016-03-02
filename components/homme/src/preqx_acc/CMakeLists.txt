@@ -127,7 +127,7 @@ IF (DEFINED PREQX_CUSTOM_FLAGS_FILE)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(PREQX_ACC_SRCS ${PREQX_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_F90} CACHE INTERNAL "Sources for preqx")
+SET(PREQX_ACC_SRCS ${PREQX_ACC_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_F90} CACHE INTERNAL "Sources for preqx_acc")
 
 # Set up defaults
 IF (NOT PREQX_NP)
