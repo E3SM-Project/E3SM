@@ -19,7 +19,7 @@ DART_BACKUP = "temp_dart_backup"
 MACHINE     = Machines()
 FAST_ONLY   = False
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig()
 
 ###############################################################################
 class RunUnitTests(unittest.TestCase):
