@@ -14,6 +14,7 @@ else:
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 165
+logger = logging.getLogger(__name__)
 
 def expect(condition, error_msg):
     """
@@ -47,7 +48,7 @@ def _read_cime_config_file():
     if(os.path.isfile(cime_config_file)):
         cime_config.read(cime_config_file)
     else:
-        logging.warning("File %s not found" % cime_config_file)
+        logger.warning("File %s not found" % cime_config_file)
         cime_config.add_section('main')
 
     return cime_config
@@ -84,7 +85,7 @@ def get_cime_root():
             assert script_absdir.endswith(get_python_libs_location_within_cime()), script_absdir
             cimeroot = os.path.abspath(os.path.join(script_absdir,"..",".."))
         cime_config.set('main','CIMEROOT',cimeroot)
-    logging.info( "CIMEROOT is " + cimeroot)
+    logger.debug( "CIMEROOT is " + cimeroot)
     return cimeroot
 
 def set_model(model):
@@ -149,7 +150,7 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     if (arg_stderr is _hack):
         arg_stderr = subprocess.PIPE
 
-    logging.info("RUN: %s" % cmd)
+    logger.info("RUN: %s" % cmd)
 
     if (input_str is not None):
         stdin = subprocess.PIPE
@@ -168,9 +169,11 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     errput = errput.strip() if errput is not None else errput
     stat = proc.wait()
 
-    logging.info("  stat: %d\n" % stat)
-    logging.info("  output: %s\n" % output)
-    logging.info("  errput: %s\n" % errput)
+    logger.debug("  stat: %d\n" % stat)
+    if(output is not None):
+        logger.info("  output: %s\n" % output)
+    if(errput is not None):
+        logger.info("  errput: %s\n" % errput)
 
     if (ok_to_fail):
         return stat, output, errput
@@ -479,18 +482,18 @@ def get_project():
     """
     project = os.environ.get("PROJECT")
     if (project is not None):
-        logging.warn("project from env PROJECT "+project)
+        logger.info("Using project from env PROJECT "+project)
         return project
     project = os.environ.get("ACCOUNT")
     if (project is not None):
-        logging.warn("project from env ACCOUNT "+project)
+        logger.info("Using project from env ACCOUNT "+project)
         return project
 
     cime_config = get_cime_config()
     if (cime_config.has_option('main','PROJECT')):
         project = cime_config.get('main','PROJECT')
         if (project is not None):
-            logging.warn("project from .cime/config "+project)
+            logger.info("Using project from .cime/config "+project)
             return project
         projectfile = os.path.abspath(os.path.join(os.path.expanduser("~"),
                                                    ".cesm_proj"))
@@ -504,18 +507,59 @@ def get_project():
 def setup_standard_logging_options(parser):
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Print extra information")
-
     parser.add_argument("-d", "--debug", action="store_true",
                         help="Print debug information (very verbose)")
+    parser.add_argument("-s", "--silent", action="store_true",
+                        help="Print only warnings and error messages")
 
 def handle_standard_logging_options(args):
-    root_logger = logging.getLogger()
-
-    if (args.verbose == True):
-        root_logger.setLevel(logging.INFO)
-    # DEBUG trumps INFO
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'propagate': True,
+        'formatters': {
+            'verbose': {
+                'format': '%(name)-12s %(levelname)-8s %(message)s',
+                },
+            'debug': {
+                'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                },
+            'default':{
+                'format': '%(message)s',
+                },
+            },
+        'handlers': {
+            'console1': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'default',
+                'level' : logging.INFO,
+                },
+            'file1' : {
+                'class': 'logging.FileHandler',
+                'mode':'w',
+                'formatter':'debug',
+                'filename' : '%s.log'%sys.argv[0],
+                'level' : logging.DEBUG,
+                },
+            },
+        'root': {
+            'handlers': ['console1'],
+            }
+        }
+    root_logger=logging.getLogger()
+    # DEBUG trumps INFO trumps Silent (WARN)
     if (args.debug == True):
+        LOGGING['root']['handlers'].append('file1')
+        LOGGING['handlers']['console1']['formatter'] = 'debug'
         root_logger.setLevel(logging.DEBUG)
+        logger.warn("Log level set to DEBUG")
+    elif (args.verbose == True):
+        LOGGING['handlers']['console1']['formatter'] = 'verbose'
+        logger.warn("Log level set to VERBOSE")
+    elif (args.silent == True):
+        root_logger.setLevel(logging.WARN)
+
+    logging.config.dictConfig(LOGGING)
 
 def get_logging_options():
     """
@@ -528,5 +572,7 @@ def get_logging_options():
         return "--verbose"
     elif (root_logger.level == logging.DEBUG):
         return "--debug"
+    elif (root_logger.level == logging.WARN):
+        return "--silent"
     else:
         return ""

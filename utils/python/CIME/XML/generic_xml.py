@@ -6,6 +6,8 @@ from standard_module_setup import *
 from xml.dom import minidom
 from CIME.utils import expect, get_cime_root
 
+logger = logging.getLogger(__name__)
+
 class GenericXML(object):
 
     def __init__(self, infile=None):
@@ -37,14 +39,14 @@ class GenericXML(object):
         """
         Read and parse an xml file into the object
         """
-        logging.info("read: "+infile)
+        logger.debug("read: "+infile)
         self.tree = ET.parse(infile)
         self.root = self.tree.getroot()
         if ("version" in self.root.attrib):
             self.version = self.root.attrib["version"]
         else:
             self.version = "1.0"
-        logging.info("File version is "+self.version)
+        logger.debug("File version is "+self.version)
 
 
     def write(self, outfile=None):
@@ -53,7 +55,7 @@ class GenericXML(object):
         """
         if(outfile is None):
             outfile = self.filename
-        logging.info("write: "+ outfile)
+        logger.debug("write: "+ outfile)
         xmlstr = ET.tostring(self.root)
         doc = minidom.parseString(xmlstr)
         with open(outfile,'w') as xmlout:
@@ -101,7 +103,7 @@ class GenericXML(object):
         """
         get_value is expected to be defined by the derived classes, if you get here it is an error.
         """
-        logging.debug("Get Value for "+item)
+        logger.debug("Get Value for "+item)
         result = None
         if item in self.lookups.keys():
             result = self.lookups[item]
@@ -109,7 +111,7 @@ class GenericXML(object):
             result = os.environ.get(item)
 
         if (result is None):
-            logging.info("No value available for item '%s'" % item)
+            logger.debug("No value available for item '%s'" % item)
         elif(resolved):
             result = self.get_resolved_value(result)
 
@@ -135,7 +137,7 @@ class GenericXML(object):
         >>> obj.get_resolved_value("one $ENV{FOO} two $ENV{BAZ} three")
         'one BAR two BARF three'
         """
-        logging.debug("raw_value %s" % raw_value)
+        logger.debug("raw_value %s" % raw_value)
         reference_re = re.compile(r'\$(\w+)')
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
         item_data = raw_value
@@ -144,17 +146,17 @@ class GenericXML(object):
             return None
 
         for m in env_ref_re.finditer(item_data):
-            logging.debug("look for "+item_data+ " in env")
+            logger.debug("look for "+item_data+ " in env")
             env_var = m.groups()[0]
             expect(env_var in os.environ, "Undefined env var '%s'" % env_var)
             item_data = item_data.replace(m.group(), os.environ[env_var])
 
         for m in reference_re.finditer(item_data):
             var = m.groups()[0]
-            logging.debug("find: "+var)
+            logger.debug("find: "+var)
             ref = self.get_value(var)
             if(ref is not None):
-                logging.debug("resolve: "+ref)
+                logger.debug("resolve: "+ref)
                 item_data = item_data.replace(m.group(), self.get_resolved_value(ref))
 
         return item_data

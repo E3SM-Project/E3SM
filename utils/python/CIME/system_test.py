@@ -28,6 +28,8 @@ PHASES = [INITIAL_PHASE, CREATE_NEWCASE_PHASE, XML_PHASE, SETUP_PHASE,
 CONTINUE = [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]
 
 ###############################################################################
+logger = logging.getLogger(__name__)
+
 class SystemTest(object):
 ###############################################################################
 
@@ -352,7 +354,7 @@ class SystemTest(object):
                 return False
             create_newcase_cmd += " -user_mods_dir %s" % test_mod_file
 
-        logging.info("Calling create_newcase: "+create_newcase_cmd)
+        logger.debug("Calling create_newcase: "+create_newcase_cmd)
         return self._shell_cmd_for_phase(test, create_newcase_cmd, CREATE_NEWCASE_PHASE)
 
     ###########################################################################
@@ -364,7 +366,7 @@ class SystemTest(object):
 
         files = Files()
         drv_config_file = files.get_value("CONFIG_DRV_FILE")
-        logging.info("Found drv_config_file %s" % drv_config_file)
+        logger.info("Found drv_config_file %s" % drv_config_file)
 
         drv_comp = Component(drv_config_file)
         envtest.add_elements_by_group(drv_comp, {}, "env_test.xml")
@@ -518,7 +520,7 @@ class SystemTest(object):
             exc_tb = sys.exc_info()[2]
             errput = "Test '%s' failed in phase '%s' with exception '%s'" % (test, phase, str(e))
             self._log_output(test, errput)
-            logging.warning("Caught exception: %s" % str(e))
+            logger.warning("Caught exception: %s" % str(e))
             traceback.print_tb(exc_tb)
             return False
 
@@ -568,7 +570,7 @@ class SystemTest(object):
             # TODO: What to do here? This failure is very severe because the
             # only way for test results to be communicated is by the TestStatus
             # file.
-            logging.critical("VERY BAD! Could not handle TestStatus file '%s': '%s'" %
+            logger.critical("VERY BAD! Could not handle TestStatus file '%s': '%s'" %
                              (os.path.join(self._get_test_dir(test), TEST_STATUS_FILENAME), str(e)))
             thread.interrupt_main()
 
@@ -606,12 +608,12 @@ class SystemTest(object):
                      (test_phase, test, elapsed_time, status)
         if not success:
             status_str += "    Case dir: %s\n" % self._get_test_dir(test)
-        sys.stdout.write(status_str)
+        logger.info(status_str)
 
         # On batch systems, we want to immediately submit to the queue, because
         # it's very cheap to submit and will get us a better spot in line
         if (success and not self._no_run and not self._no_batch and test_phase == MODEL_BUILD_PHASE):
-            sys.stdout.write("Starting %s for test %s with %d procs\n" % (RUN_PHASE, test, 1))
+            logger.info("Starting %s for test %s with %d procs\n" % (RUN_PHASE, test, 1))
             self._update_test_status(test, RUN_PHASE, TEST_PENDING_STATUS)
             self._consumer(test, RUN_PHASE, self._run_phase)
 
@@ -623,7 +625,7 @@ class SystemTest(object):
             work_to_do = False
             num_threads_launched_this_iteration = 0
             for test in self._tests:
-                logging.info("test_name: " + test)
+                logger.info("test_name: " + test)
                 # If we have no workers available, immediately wait
                 if len(threads_in_flight) == self._parallel_jobs:
                     self._wait_for_something_to_finish(threads_in_flight)
@@ -640,7 +642,7 @@ class SystemTest(object):
                             self._procs_avail -= procs_needed
 
                             # Necessary to print this way when multiple threads printing
-                            sys.stdout.write("Starting %s for test %s with %d procs\n" %
+                            logger.info("Starting %s for test %s with %d procs\n" %
                                              (next_phase, test, procs_needed))
 
                             self._update_test_status(test, next_phase, TEST_PENDING_STATUS)
@@ -693,7 +695,7 @@ class SystemTest(object):
                          os.stat(cs_submit_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
 
         except Exception as e:
-            logging.warning("FAILED to set up cs files: %s" % str(e))
+            logger.warning("FAILED to set up cs files: %s" % str(e))
 
     ###########################################################################
     def system_test(self):
@@ -706,9 +708,9 @@ class SystemTest(object):
         start_time = time.time()
 
         # Tell user what will be run
-        print "RUNNING TESTS:"
+        logger.info( "RUNNING TESTS:")
         for test in self._tests:
-            print " ", test
+            logger.info( " %s"% test)
 
         # TODO - documentation
 
@@ -720,11 +722,11 @@ class SystemTest(object):
         self._setup_cs_files()
 
         # Return True if all tests passed
-        print "At system_test close, state is:"
+        logger.info( "At system_test close, state is:")
         rv = True
         for test in self._tests:
             phase, status, nl_fail = self._get_test_data(test)
-            logging.debug("phase %s status %s" % (phase, status))
+            logger.debug("phase %s status %s" % (phase, status))
             if status == TEST_PASS_STATUS and phase == RUN_PHASE:
                 # Be cautious about telling the user that the test passed. This
                 # status should match what they would see on the dashboard. Our
@@ -734,18 +736,18 @@ class SystemTest(object):
                 status = wait_for_tests.interpret_status_file(test_status_file)[1]
 
             if status not in [TEST_PASS_STATUS, TEST_PENDING_STATUS]:
-                print "%s %s (phase %s)" % (status, test, phase)
+                logger.info( "%s %s (phase %s)" % (status, test, phase))
                 rv = False
 
             elif nl_fail:
-                print "%s %s (but otherwise OK)" % (NAMELIST_FAIL_STATUS, test)
+                logger.info( "%s %s (but otherwise OK)" % (NAMELIST_FAIL_STATUS, test))
                 rv = False
 
             else:
-                print status, test, phase
+                logger.info("status=%s test=%s phase=%s"%( status, test, phase))
 
-            print "    Case dir: %s" % self._get_test_dir(test)
+            logger.info( "    Case dir: %s" % self._get_test_dir(test))
 
-        print "system_test took", time.time() - start_time, "seconds"
+        logger.warn( "system_test took %s seconds"% (time.time() - start_time))
 
         return rv

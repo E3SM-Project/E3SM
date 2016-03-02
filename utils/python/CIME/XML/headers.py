@@ -7,6 +7,8 @@ from entry_id import EntryID
 from files import Files
 from CIME.utils import expect, get_cime_root, get_model
 
+logger = logging.getLogger(__name__)
+
 class Headers(EntryID):
     def __init__(self,infile=None):
         """

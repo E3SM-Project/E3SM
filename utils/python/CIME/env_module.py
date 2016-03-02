@@ -8,6 +8,8 @@ from CIME.utils import expect, run_cmd
 from CIME.XML.machines import Machines
 from CIME.XML.env_mach_specific import EnvMachSpecific
 
+logger = logging.getLogger(__name__)
+
 class EnvModule(object):
 
     # TODO - write env_mach_specific files into case

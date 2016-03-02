@@ -7,6 +7,8 @@ from generic_xml import GenericXML
 from files import Files
 from CIME.utils import expect
 
+logger = logging.getLogger(__name__)
+
 class Machines(GenericXML):
 
     def __init__(self, infile=None, files=None, machine=None):
@@ -24,7 +26,6 @@ class Machines(GenericXML):
                 files = Files()
             infile = files.get_value("MACHINES_SPEC_FILE")
 
-        logging.info("Open file " + infile)
         GenericXML.__init__(self, infile)
 
         if (machine is None):
@@ -67,7 +68,7 @@ class Machines(GenericXML):
 
         for node in nodes:
             machtocheck = node.get("MACH")
-            logging.debug("machine is " + machtocheck)
+            logger.debug("machine is " + machtocheck)
             self.set_machine(machtocheck)
             regex_str_nodes = self.get_node("NODENAME_REGEX", root=self.machine)
 
@@ -77,15 +78,15 @@ class Machines(GenericXML):
                 regex_str = machtocheck
 
             if (regex_str is not None):
-                logging.debug("machine regex string is " + regex_str)
+                logger.debug("machine regex string is " + regex_str)
                 regex = re.compile(regex_str)
                 if (regex.match(nametomatch)):
-                    logging.info("Found machine: %s matches %s" % (machtocheck, nametomatch))
+                    logger.info("Found machine: %s matches %s" % (machtocheck, nametomatch))
                     machine = machtocheck
                     break
 
         if (machine is None):
-            logging.warning("Could not probe machine for hostname '%s'" % nametomatch)
+            logger.warning("Could not probe machine for hostname '%s'" % nametomatch)
 
         return machine
 
@@ -217,7 +218,7 @@ class Machines(GenericXML):
         batch_system = self.get_node("batch_system")
         if (batch_system):
             result = (batch_system[0].get("type") != "none")
-        logging.debug("Machine %s has batch: %s" % (self.name, result))
+        logger.debug("Machine %s has batch: %s" % (self.name, result))
         return result
 
     def get_batch_system_type(self):
