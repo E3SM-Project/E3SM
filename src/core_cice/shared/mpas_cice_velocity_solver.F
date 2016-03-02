@@ -1309,6 +1309,139 @@ contains
 
   subroutine surface_tilt(domain)
 
+    type(domain_type), intent(inout) :: &
+         domain
+
+    logical, pointer :: &
+         configUseSurfaceTilt, &
+         configGeostrophicSurfaceTilt
+
+    call MPAS_pool_get_config(domain % configs, "config_use_surface_tilt", configUseSurfaceTilt)
+    call MPAS_pool_get_config(domain % configs, "config_geostrophic_surface_tilt", configGeostrophicSurfaceTilt)
+
+    if (configUseSurfaceTilt) then
+
+       if (configGeostrophicSurfaceTilt) then
+
+          call surface_tilt_geostrophic(domain)
+
+       else
+
+          call surface_tilt_ssh_gradient(domain)
+
+       endif
+
+    else
+
+       call no_surface_tilt(domain)
+
+    endif
+
+  end subroutine surface_tilt
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  surface_tilt_geostrophic
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine surface_tilt_geostrophic(domain)
+
+    use cice_constants, only: &
+         ciceGravity
+
+    type(domain_type), intent(inout) :: &
+         domain
+
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         icestatePool, &
+         velocitySolverPool, &
+         meshPool
+
+    real(kind=RKIND), dimension(:), pointer:: &
+         surfaceTiltForceU, &
+         surfaceTiltForceV, &
+         uOceanVelocityVertex, &
+         vOceanVelocityVertex, &
+         totalMassVertex, &
+         fVertex
+
+    integer, dimension(:), pointer :: &
+         solveVelocity
+
+    integer, pointer :: &
+         nVerticesSolve
+
+    integer :: &
+         iVertex
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+
+       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+
+       call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceU", surfaceTiltForceU)
+       call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceV", surfaceTiltForceV)
+
+       call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
+       call MPAS_pool_get_array(icestatePool, "totalMassVertex", totalMassVertex)
+
+       call MPAS_pool_get_array(velocitySolverPool, "uOceanVelocityVertex", uOceanVelocityVertex)
+       call MPAS_pool_get_array(velocitySolverPool, "vOceanVelocityVertex", vOceanVelocityVertex)
+       call MPAS_pool_get_array(meshPool, "fVertex", fVertex)
+
+       ! calculate surface tilt force from geostrophic currents
+       do iVertex = 1, nVerticesSolve
+
+          if (solveVelocity(iVertex) == 1) then
+
+             surfaceTiltForceU(iVertex) = -fVertex(iVertex) * totalMassVertex(iVertex) * vOceanVelocityVertex(iVertex)
+             surfaceTiltForceV(iVertex) =  fVertex(iVertex) * totalMassVertex(iVertex) * uOceanVelocityVertex(iVertex)
+
+          else
+
+             surfaceTiltForceU(iVertex) = 0.0_RKIND
+             surfaceTiltForceV(iVertex) = 0.0_RKIND
+
+          endif ! solveVelocity
+
+       enddo ! iVertex
+
+       block => block % next
+    end do
+
+  end subroutine surface_tilt_geostrophic
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  surface_tilt_ssh_gradient
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine surface_tilt_ssh_gradient(domain)
+
+    use cice_mesh, only: &
+         cice_interpolate_cell_to_vertex
+
     use cice_constants, only: &
          ciceGravity
 
@@ -1327,19 +1460,18 @@ contains
     real(kind=RKIND), dimension(:), pointer:: &
          surfaceTiltForceU, &
          surfaceTiltForceV, &
-         uOceanVelocityVertex, &
-         vOceanVelocityVertex, &
          totalMassVertex, &
-         fVertex, &
          seaSurfaceTiltU, &
-         seaSurfaceTiltV
+         seaSurfaceTiltV, &
+         seaSurfaceTiltVertexU, &
+         seaSurfaceTiltVertexV
+
+    type(field1DReal), pointer :: &
+         seaSurfaceTiltUField, &
+         seaSurfaceTiltVField
 
     integer, dimension(:), pointer :: &
          solveVelocity
-
-    logical, pointer :: &
-         configUseSurfaceTilt, &
-         configGeostrophicSurfaceTilt
 
     integer, pointer :: &
          nVerticesSolve
@@ -1347,87 +1479,118 @@ contains
     integer :: &
          iVertex
 
+    ! halo exchange surface tilt
+    call mpas_timer_start("sea surface tilt halo")
+
+    call MPAS_pool_get_subpool(domain % blocklist % structs, "ocean_coupling", oceanCouplingPool)
+    call MPAS_pool_get_field(oceanCouplingPool, "seaSurfaceTiltU", seaSurfaceTiltUField)
+    call MPAS_pool_get_field(oceanCouplingPool, "seaSurfaceTiltV", seaSurfaceTiltVField)
+    call MPAS_dmpar_exch_halo_field(seaSurfaceTiltUField)
+    call MPAS_dmpar_exch_halo_field(seaSurfaceTiltVField)
+
+    call mpas_timer_stop("sea surface tilt halo")
+
     block => domain % blocklist
     do while (associated(block))
-
-       call MPAS_pool_get_config(block % configs, "config_use_surface_tilt", configUseSurfaceTilt)
 
        call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
 
        call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
        call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
 
        call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceU", surfaceTiltForceU)
        call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceV", surfaceTiltForceV)
 
-       if (configUseSurfaceTilt) then
+       call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
+       call MPAS_pool_get_array(icestatePool, "totalMassVertex", totalMassVertex)
 
-          call MPAS_pool_get_config(block % configs, "config_geostrophic_surface_tilt", configGeostrophicSurfaceTilt)
+       call MPAS_pool_get_array(oceanCouplingPool, "seaSurfaceTiltU", seaSurfaceTiltU)
+       call MPAS_pool_get_array(oceanCouplingPool, "seaSurfaceTiltV", seaSurfaceTiltV)
 
-          call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
-          call MPAS_pool_get_array(icestatePool, "totalMassVertex", totalMassVertex)
+       call MPAS_pool_get_array(velocitySolverPool, "seaSurfaceTiltVertexU", seaSurfaceTiltVertexU)
+       call MPAS_pool_get_array(velocitySolverPool, "seaSurfaceTiltVertexV", seaSurfaceTiltVertexV)
 
-          if (configGeostrophicSurfaceTilt) then
-             ! calculate surface tilt force from geostrophic currents
+       ! interpolate sea surface tilt from cells to vertices
+       call cice_interpolate_cell_to_vertex(&
+            meshPool, &
+            seaSurfaceTiltVertexU, &
+            seaSurfaceTiltU)
 
-             call MPAS_pool_get_array(velocitySolverPool, "uOceanVelocityVertex", uOceanVelocityVertex)
-             call MPAS_pool_get_array(velocitySolverPool, "vOceanVelocityVertex", vOceanVelocityVertex)
-             call MPAS_pool_get_array(meshPool, "fVertex", fVertex)
+       call cice_interpolate_cell_to_vertex(&
+            meshPool, &
+            seaSurfaceTiltVertexV, &
+            seaSurfaceTiltV)
 
-             do iVertex = 1, nVerticesSolve
+       ! calculate surface tilt from sea surface gradient
+       do iVertex = 1, nVerticesSolve
 
-                if (solveVelocity(iVertex) == 1) then
+          if (solveVelocity(iVertex) == 1) then
 
-                   surfaceTiltForceU(iVertex) = -fVertex(iVertex) * totalMassVertex(iVertex) * vOceanVelocityVertex(iVertex)
-                   surfaceTiltForceV(iVertex) =  fVertex(iVertex) * totalMassVertex(iVertex) * uOceanVelocityVertex(iVertex)
-
-                else
-
-                   surfaceTiltForceU(iVertex) = 0.0_RKIND
-                   surfaceTiltForceV(iVertex) = 0.0_RKIND
-
-                endif ! solveVelocity
-
-             enddo ! iVertex
+             surfaceTiltForceU(iVertex) = -ciceGravity * totalMassVertex(iVertex) * seaSurfaceTiltVertexU(iVertex)
+             surfaceTiltForceV(iVertex) = -ciceGravity * totalMassVertex(iVertex) * seaSurfaceTiltVertexV(iVertex)
 
           else
-             ! calculate surface tilt from sea surface gradient
 
-             call MPAS_pool_get_array(oceanCouplingPool, "seaSurfaceTiltU", seaSurfaceTiltU)
-             call MPAS_pool_get_array(oceanCouplingPool, "seaSurfaceTiltV", seaSurfaceTiltV)
+             surfaceTiltForceU(iVertex) = 0.0_RKIND
+             surfaceTiltForceV(iVertex) = 0.0_RKIND
 
-             do iVertex = 1, nVerticesSolve
+          endif ! solveVelocity
 
-                if (solveVelocity(iVertex) == 1) then
-
-                   surfaceTiltForceU(iVertex) = -ciceGravity * totalMassVertex(iVertex) * seaSurfaceTiltU(iVertex)
-                   surfaceTiltForceV(iVertex) = -ciceGravity * totalMassVertex(iVertex) * seaSurfaceTiltV(iVertex)
-
-                else
-
-                   surfaceTiltForceU(iVertex) = 0.0_RKIND
-                   surfaceTiltForceV(iVertex) = 0.0_RKIND
-
-                endif ! solveVelocity
-
-             enddo ! iVertex
-
-          endif
-
-       else
-
-          ! no surface tilt
-          surfaceTiltForceU = 0.0_RKIND
-          surfaceTiltForceV = 0.0_RKIND
-
-       endif
+       enddo ! iVertex
 
        block => block % next
     end do
 
-  end subroutine surface_tilt
+  end subroutine surface_tilt_ssh_gradient
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  no_surface_tilt
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine no_surface_tilt(domain)
+
+    use cice_constants, only: &
+         ciceGravity
+
+    type(domain_type), intent(inout) :: &
+         domain
+
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         velocitySolverPool
+
+    real(kind=RKIND), dimension(:), pointer:: &
+         surfaceTiltForceU, &
+         surfaceTiltForceV
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+
+       call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceU", surfaceTiltForceU)
+       call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceV", surfaceTiltForceV)
+
+       ! no surface tilt
+       surfaceTiltForceU = 0.0_RKIND
+       surfaceTiltForceV = 0.0_RKIND
+
+       block => block % next
+    end do
+
+  end subroutine no_surface_tilt
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
