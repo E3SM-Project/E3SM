@@ -331,6 +331,7 @@ class CreateTest(object):
             if (os.path.isdir(baseline_casedocs)):
                 shutil.rmtree(baseline_casedocs)
             shutil.copytree(casedoc_dir, baseline_casedocs)
+            os.chmod(baseline_casedocs, stat.S_IRWXU | stat.S_IRWXG | stat.S_IXOTH | stat.S_IROTH)
             for item in glob.glob(os.path.join(test_dir, "user_nl*")):
                 shutil.copy2(item, baseline_dir)
 
