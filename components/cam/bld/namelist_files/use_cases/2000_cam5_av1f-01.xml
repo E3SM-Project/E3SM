@@ -77,6 +77,6 @@
 <linoz_data_type            chem="linoz_mam4_resus_mom">CYCLICAL</linoz_data_type>
 
 <!-- Updated secondary organic aerosol emissions file -->
-<soag_emis_file	   ver="mam" chem="trop_mam4_resus_soag">atm/cam/chem/trop_mozart_aero/emis/newemit_soag_mon_v3.nc</soag_emis_file>
+<soag_emis_file	   ver="mam" chem="trop_mam4_resus_soag">atm/cam/chem/trop_mozart_aero/emis/aces4bgc_nvsoa_soag_elev_2000_c160222.nc</soag_emis_file>
 
 </namelist_defaults>
