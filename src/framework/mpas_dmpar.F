@@ -6333,8 +6333,10 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       integer :: threadNum
 
 #ifdef _MPI
-      integer :: mpi_ierr, mpi_errcode
+      integer :: mpi_ierr, mpi_errcode, my_proc_id
 #endif
+
+      character(len=strKIND) :: errorfile
 
       threadNum = mpas_threading_get_thread_num()
 
@@ -6342,11 +6344,24 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
         write(stderrUnit,*) trim(mesg)
       end if
 
+      ! close log units
       close(stderrUnit)
-      open(unit=stderrUnit,file="mpas_critcal_error.log")
+      close(stdoutUnit)
+
+      ! write out error message to critical error message file
+#ifdef _MPI
+      call MPI_COMM_RANK(MPI_COMM_WORLD, my_proc_id, mpi_ierr)
+      write(errorfile,fmt='(a,i6.6,a)') "mpas_critical_error.", my_proc_id, ".log"
+#else
+      errorfile = "mpas_critical_error.log"
+#endif
+
+      open(unit=stderrUnit,file=trim(errorfile))
       write(stderrUnit,*) "MPAS critical error"
       write(stderrUnit,*) trim(mesg)
+      close(stderrUnit)
 
+      ! stop the code
 #ifdef _MPI
       call MPI_Abort(MPI_COMM_WORLD, mpi_errcode, mpi_ierr)
 #else
