@@ -337,6 +337,7 @@ contains
       real (kind=RKIND), pointer :: config_specific_heat_sea_water
       real (kind=RKIND), pointer :: config_frazil_ice_reference_salinity
       real (kind=RKIND), pointer :: config_frazil_maximum_freezing_temperature
+      logical, pointer :: config_frazil_use_surface_pressure
 
       real (kind=RKIND) :: newFrazilIceThickness
       real (kind=RKIND) :: sumNewFrazilIceThickness
@@ -396,6 +397,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_frazil_heat_of_fusion', config_frazil_heat_of_fusion)
       call mpas_pool_get_config(ocnConfigs, 'config_frazil_sea_ice_density', config_frazil_sea_ice_density)
       call mpas_pool_get_config(ocnConfigs, 'config_frazil_ice_reference_salinity', config_frazil_ice_reference_salinity)
+      call mpas_pool_get_config(ocnConfigs, 'config_frazil_use_surface_pressure', config_frazil_use_surface_pressure)
       call mpas_pool_get_config(ocnConfigs, 'config_frazil_maximum_freezing_temperature', &
                                 config_frazil_maximum_freezing_temperature)
 
@@ -520,10 +522,16 @@ contains
         accumulatedFrazilIceMassNew(iCell) = accumulatedFrazilIceMassOld(iCell) + sumNewFrazilIceThickness &
                                            * config_frazil_sea_ice_density
 
-        ! sea surface pressure due to the net production of frazil ice
-        frazilSurfacePressure(iCell) = accumulatedFrazilIceMassNew(iCell) * gravity
-
       enddo   ! do iCell = 1, nCells
+      !$omp end do
+
+      if ( config_frazil_use_surface_pressure ) then
+        !$omp do schedule(runtime)
+        do iCell = 1, nCells
+           frazilSurfacePressure(iCell) = accumulatedFrazilIceMassNew(iCell) * gravity
+        end do
+        !$omp end do
+      end if
 
       call mpas_timer_stop("frazil")
 
