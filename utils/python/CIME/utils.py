@@ -149,8 +149,8 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
         arg_stdout = subprocess.PIPE
     if (arg_stderr is _hack):
         arg_stderr = subprocess.PIPE
-
-    logger.info("RUN: %s" % cmd)
+    if (verbose):
+        logger.info("RUN: %s" % cmd)
 
     if (input_str is not None):
         stdin = subprocess.PIPE
@@ -170,9 +170,9 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     stat = proc.wait()
 
     logger.debug("  stat: %d\n" % stat)
-    if(output is not None):
+    if(verbose and output is not None):
         logger.info("  output: %s\n" % output)
-    if(errput is not None):
+    if(verbose and errput is not None):
         logger.info("  errput: %s\n" % errput)
 
     if (ok_to_fail):
