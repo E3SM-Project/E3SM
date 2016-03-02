@@ -19,7 +19,7 @@ find_library(NetcdfF_LIBRARY
 find_path(Netcdf_NC_CONFIG_BIN
           NAMES nc-config
           HINTS ${Netcdf_INCLUDE_DIR}/../bin
-          NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+          NO_CMAKE_SYSTEM_PATH)
 
 find_file(NETCDF4_PAR_H netcdf_par.h
           HINTS ${Netcdf_INCLUDE_DIR}
