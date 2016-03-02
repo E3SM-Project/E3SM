@@ -45,8 +45,10 @@
 <clubb_ice_sh>       50.e-6 </clubb_ice_sh
 <clubb_liq_deep>     8.e-6  </clubb_liq_deep  
 <clubb_liq_sh>       10.e-6 </clubb_liq_sh>
+<clubb_C2rt>         0.75D0 </clubb_C2rt>
 <zmconv_c0_lnd>      0.005  </zmconv_c0_lnd>
 <zmconv_c0_ocn>      0.005  </zmconv_c0_ocn>
+<zmconv_dmpdz>      -0.75e-3</zmconv_dmpdz>
 <effgw_oro>          0.25   </effgw_oro>
 <seasalt_emis_scale> 0.5    </seasalt_emis_scale>
 <dust_emis_fact>     0.40D0 </dust_emis_fact>
