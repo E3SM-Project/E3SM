@@ -4,10 +4,11 @@
 #endif
 
 module edge_mod
-  use edge_mod_base
-  use edge_mod_base, only: edgeSpack_base => edgeSpack, &
-                           edgeSunpackMin_base => edgeSunpackMin, &
-                           edgeSunpackMax_base => edgeSunpackMax
+  use edge_mod_base, only: initLongEdgeBuffer, FreeLongEdgeBuffer, LongEdgeVpack, LongEdgeVunpackMIN, initEdgeBuffer, initEdgeSBuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack,       &
+                           edgeVunpackMIN, edgeVunpackMAX, edgeDGVpack, edgeDGVunpack, edgeVunpackVert, edgerotate, buffermap, edgeDefaultVal, initGhostBuffer3D, FreeGhostBuffer3D, &
+                           ghostVpackfull, ghostVunpackfull, ghostVpack_unoriented, ghostVunpack_unoriented, ghostVpack3d, ghostVunpack3d, initGhostBufferTR, FreeGhostBufferTR,     &
+                           ghostVpack, ghostVunpack, ghostVpackR, ghostVunpackR, ghostVpack2d, ghostVunpack2d, ghostVpack2d_single, ghostVunpack2d_single, ghostVpack2d_level,       &
+                           ghostVunpack2d_level, edgeSpack, edgeSunpackMin, edgeSunpackMax
   use kinds, only : int_kind, log_kind, real_kind
   use dimensions_mod, only : max_neigh_edges, nelemd, np
   use perf_mod, only: t_startf, t_stopf, t_adj_detailf ! _EXTERNAL
@@ -20,6 +21,20 @@ module edge_mod
       Longedgebuffer_t, Ghostbuffertr_t, Ghostbuffer3d_t, initedgebuffer_callid
   use element_mod, only : element_t
   implicit none
+  private
+
+  public :: initLongEdgeBuffer, FreeLongEdgeBuffer, LongEdgeVpack, LongEdgeVunpackMIN, initEdgeBuffer, initEdgeSBuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack,       &
+            edgeVunpackMIN, edgeVunpackMAX, edgeDGVpack, edgeDGVunpack, edgeVunpackVert, edgerotate, buffermap, edgeDefaultVal, initGhostBuffer3D, FreeGhostBuffer3D, &
+            ghostVpackfull, ghostVunpackfull, ghostVpack_unoriented, ghostVunpack_unoriented, ghostVpack3d, ghostVunpack3d, initGhostBufferTR, FreeGhostBufferTR,     &
+            ghostVpack, ghostVunpack, ghostVpackR, ghostVunpackR, ghostVpack2d, ghostVunpack2d, ghostVpack2d_single, ghostVunpack2d_single, ghostVpack2d_level,       &
+            ghostVunpack2d_level, edgeSpack, edgeSunpackMin, edgeSunpackMax
+  public :: edgeSpack_openacc
+  public :: edgeSunpackMin_openacc
+  public :: edgeSunpackMax_openacc
+  public :: edgeVpack_openacc
+  public :: edgeVunpack_openacc
+  public :: edgeVunpackMin_openacc
+  public :: edgeVunpackMax_openacc
 
 
 contains
