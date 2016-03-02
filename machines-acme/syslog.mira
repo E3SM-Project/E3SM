@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/csh -f
 # mira syslog script: 
 #  mach_syslog <sampling interval (in seconds)> <job identifier> <timestamp> <run directory> <timing directory> <output directory> 
 
