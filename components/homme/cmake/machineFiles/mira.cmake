@@ -15,6 +15,6 @@ SET (HDF5_DIR /soft/libraries/hdf5/current/cnk-xl/current CACHE FILEPATH "")
 SET (ZLIB_DIR /soft/libraries/alcf/current/xl/ZLIB CACHE FILEPATH "")
 
 SET (USE_QUEUING FALSE CACHE BOOL "")
-#SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
+SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 SET (ENV{LD_LIBRARY_PATH} "/soft/libraries/alcf/current/xl/BLAS/lib:/soft/libraries/alcf/current/xl/LAPACK/lib:$ENV{LD_LIBRARY_PATH}")
 
