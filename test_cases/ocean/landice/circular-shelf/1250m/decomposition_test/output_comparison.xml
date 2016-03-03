@@ -1,0 +1,10 @@
+<template>
+        <validation>
+                <compare_fields>
+                        <field name="normalVelocity" l2_norm="1.0e-27"/>
+                        <field name="uReconstructX" l2_norm="2.0e-27"/>
+                        <field name="uReconstructY" l2_norm="1.0e-27"/>
+                </compare_fields>
+        </validation>
+</template>
+

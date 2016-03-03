@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<config case="8proc_run">
+
+        <!-- download file with IC on it -->
+        <get_file dest_path="work_resolution_dir" file_name="gis20km.150922.nc">
+           <mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/mpas_landice/test_cases/"/>
+        </get_file>
+
+        <!-- add needed files/executables -->
+        <add_link source_path="work_resolution_dir" source="gis20km.150922.nc" dest="landice_grid.nc"/>
+        <add_link source_path="utility_scripts" source="make_graph_file.py" dest="make_graph_file.py"/>
+        <add_executable source="metis" dest="metis"/>
+        <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
+        <add_executable source="model" dest="landice_model"/>
+
+        <namelist name="namelist.landice" mode="forward">
+                <template file="greenland_20km_template.xml" path_base="script_resolution_dir"/>
+        </namelist>
+
+        <streams name="streams.landice" keep="immutable" mode="forward">
+                <template file="greenland_20km_template.xml" path_base="script_resolution_dir"/>
+        </streams>
+
+        <run_script name="8proc_run.py">
+
+                <!-- Set up needed graph file -->
+                <step executable="./make_graph_file.py">
+                        <argument flag="-f">landice_grid.nc</argument>
+                </step>
+                <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
+                        <argument flag="graph.info">8</argument>
+                </step>
+
+                <!-- Run the model -->
+                <model_run procs="8" threads="1" namelist="namelist.landice" streams="streams.landice"/>
+
+        </run_script>
+</config>
+
