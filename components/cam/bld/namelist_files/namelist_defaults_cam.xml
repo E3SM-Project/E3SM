@@ -308,11 +308,13 @@
 <seasalt_emis_scale>                          1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam4">         1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam4_resus">   1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="trop_mam4_resus_soag">   1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam4_resus_mom">1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_strat_mam4">   1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="linoz_mam3">        1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="linoz_mam4_resus">  1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="linoz_mam4_resus_mom"> 1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="linoz_mam4_resus_mom_soag"> 1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam7">         1.62 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_strat_mam7">   1.62 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam9">         1.62 </seasalt_emis_scale>
@@ -672,6 +674,7 @@
 <drydep_method chem="trop_mam3">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam4">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam4_resus">xactive_atm</drydep_method>
+<drydep_method chem="trop_mam4_resus_soag">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam4_resus_mom">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam4_mom">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam7">xactive_atm</drydep_method>
@@ -679,6 +682,7 @@
 <drydep_method chem="linoz_mam3">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam4_resus">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam4_resus_mom">xactive_atm</drydep_method>
+<drydep_method chem="linoz_mam4_resus_mom_soag">xactive_atm</drydep_method>
 <drydep_method chem="waccm_mozart_mam3">xactive_atm</drydep_method>
 
 <!-- Dry Dep surface data file needed by prognostic MAM on unstructured grid only. -->

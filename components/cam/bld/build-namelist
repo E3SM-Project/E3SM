@@ -2491,7 +2491,7 @@ if ($chem eq 'waccm_mozart_mam3') {
 
 }
 
-if ($chem eq 'trop_mam4' || $chem eq 'trop_mam4_resus') {
+if ($chem eq 'trop_mam4' || $chem eq 'trop_mam4_resus' || $chem eq 'trop_mam4_resus_soag') {
 
     my %species;
 
@@ -2774,7 +2774,7 @@ if ($chem eq 'trop_mam4_mom' || $chem eq 'trop_mam4_resus_mom') {
     }
 }
 
-if ($chem eq 'linoz_mam4_resus_mom') {
+if ($chem eq 'linoz_mam4_resus_mom' || $chem eq 'linoz_mam4_resus_mom_soag') {
 
     my %species;
 
