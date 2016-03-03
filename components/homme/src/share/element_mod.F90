@@ -36,7 +36,7 @@ module element_mod
     real (kind=real_kind) :: ps_v(np,np,timelevels)                   ! surface pressure                   4
     real (kind=real_kind) :: phis(np,np)                              ! surface geopotential (prescribed)  5
     real (kind=real_kind) :: Q   (np,np,nlev,qsize_d)                 ! Tracer concentration               6
-    real (kind=real_kind), pointer :: Qdp (:,:,:,:,:)  ! Tracer mass                        7  (np,np,nlev,qsize_d,2)   
+    real (kind=real_kind), pointer :: Qdp (:,:,:,:,:)  ! Tracer mass                        7  (np,np,nlev,qsize,2)   
   end type elem_state_t
 
   integer(kind=int_kind),public,parameter::StateComponents=8  ! num prognistics variables (for prim_restart_mod.F90)
@@ -564,12 +564,12 @@ contains
 
   !___________________________________________________________________
   subroutine setup_element_pointers(elem)
-    use dimensions_mod, only: nelemd
+    use dimensions_mod, only: nelemd, qsize
     implicit none
     type(element_t), intent(inout) :: elem(:)
 #if USE_OPENACC
     integer :: ie
-    allocate( state_Qdp                (np,np,nlev,qsize_d,2,nelemd)          )
+    allocate( state_Qdp                (np,np,nlev,qsize,2,nelemd)            )
     allocate( derived_vn0              (np,np,2,nlev,nelemd)                  )
     allocate( derived_divdp            (np,np,nlev,nelemd)                    )
     allocate( derived_divdp_proj       (np,np,nlev,nelemd)                    )
