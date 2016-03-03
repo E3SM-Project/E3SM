@@ -99,6 +99,7 @@
       <directive> -N {{ job_id }}</directive>
       <directive> -l walltime={{ wall_time }}</directive>
       <directive> -j oe </directive>
+      <directive> -A {{ project }} </directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
       <directive default="ae"  > -m {{ mail_options }} </directive>
       <directive default="/bin/bash" > -S {{ shell }}</directive>
