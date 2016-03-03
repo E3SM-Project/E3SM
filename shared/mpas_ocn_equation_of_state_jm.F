@@ -312,7 +312,7 @@ contains
           displacement_type_local = 'relative'
           k_displaced_local = 0
         else
-          call mpas_dmpar_global_abort('ERROR: tracersSurfaceLayerValue must be present when displacement_type is ' &
+          call mpas_dmpar_global_abort('MPAS-ocean: ERROR: tracersSurfaceLayerValue must be present when displacement_type is ' &
                                     // '''surfaceDisplaced'' in JM EOS')
         endif
       else
@@ -326,7 +326,7 @@ contains
          write (stderrUnit,*) 'Abort: In equation_of_state_jm', &
              ' k_displaced must be between 1 and nVertLevels for ', &
              'displacement_type = absolute.'
-         call mpas_dmpar_global_abort('ERROR: k_displaced value invalide for JM EOS')
+         call mpas_dmpar_global_abort('MPAS-ocean: ERROR: k_displaced value invalide for JM EOS')
       endif
 
       if (k_displaced_local == 0) then
@@ -360,7 +360,7 @@ contains
              k_displaced_local = 0
            else
              write (stderrUnit,*) 'Abort: tracersSurfaceLayerValue must be present'
-             call mpas_dmpar_global_abort('ERROR: tracersSurfaceLayerValue must be present in JM EOS call')
+             call mpas_dmpar_global_abort('MPAS-ocean: ERROR: tracersSurfaceLayerValue must be present in JM EOS call')
            endif
          else
            tracerTemp(:) = tracers(indexT,:,iCell)

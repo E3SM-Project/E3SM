@@ -205,7 +205,7 @@ contains
          call ocn_init_shortwave_forcing_ohlmann(domain)
       case default
          write(stderrUnit,*) "Shortwave parameterization type unknown: ", trim(config_sw_absorption_type)
-         call MPAS_dmpar_global_abort('Unknown config_sw_absortion_type')
+         call MPAS_dmpar_global_abort('MPAS-ocean: Unknown config_sw_absortion_type')
       end select
 
 

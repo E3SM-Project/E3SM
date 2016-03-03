@@ -202,7 +202,7 @@ contains
     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
     ! test if configure settings are invalid
-    if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The ZISO configuration can only be ' &
+    if ( on_a_sphere ) call mpas_dmpar_global_abort('MPAS-ocean: ERROR: The ZISO configuration can only be ' &
                                                  // 'applied to a planar mesh. Exiting...')
 
     ! Define interface locations
@@ -292,17 +292,17 @@ contains
        call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
        ! tests to make sure these are allocated
        if (.not. associated(windStressZonal) .or. .not. associated(windStressMeridional)) then
-         call mpas_dmpar_global_abort("windStressZonal and / or windStressMeridional are not allocated")
+         call mpas_dmpar_global_abort("MPAS-ocean: windStressZonal and / or windStressMeridional are not allocated")
        end if
 
        call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
        if (.not. associated(tracersSurfaceRestoringFieldsPool)) then
-         call mpas_dmpar_global_abort("tracersSurfaceRestoringFieldsPool not allocated.")
+         call mpas_dmpar_global_abort("MPAS-ocean: tracersSurfaceRestoringFieldsPool not allocated.")
        end if
        call mpas_pool_get_subpool(forcingPool, 'tracersInteriorRestoringFields', tracersInteriorRestoringFieldsPool)
        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', activeTracersPistonVelocity, 1)
        if (.not. associated(activeTracersPistonVelocity)) then
-         call mpas_dmpar_global_abort("activeTracersPistonVelocity not allocated.")
+         call mpas_dmpar_global_abort("MPAS-ocean: activeTracersPistonVelocity not allocated.")
        end if
        call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, &
                  'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue, 1)

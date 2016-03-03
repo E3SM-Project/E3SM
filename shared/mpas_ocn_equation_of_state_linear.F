@@ -138,7 +138,7 @@ contains
          write (stderrUnit,*) 'Abort: In equation_of_state_jm', &
              ' k_displaced must be between 1 and nVertLevels for ', &
              'displacement_type = absolute'
-         call mpas_dmpar_global_abort('Abort: In equation_of_state_jm')
+         call mpas_dmpar_global_abort('MPAS-ocean: Abort: In equation_of_state_jm')
       endif
 
       ! if surfaceDisplaced, then compute density at all levels based on surface values
