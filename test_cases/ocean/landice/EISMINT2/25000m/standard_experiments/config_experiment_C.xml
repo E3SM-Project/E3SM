@@ -11,6 +11,7 @@
 
         <namelist name="namelist.landice" mode="forward">
                 <template file="EISMINT2_25000m_template.xml" path_base="script_resolution_dir"/>
+                <option name="config_adaptive_timestep_CFL_fraction">0.1</option>
         </namelist>
 
         <streams name="streams.landice" keep="immutable" mode="forward">

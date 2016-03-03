@@ -56,7 +56,6 @@ else:
 # Open the new input file, get needed dimensions & variables
 gridfile = NetCDFFile(filename,'r+')
 nVertLevels = len(gridfile.dimensions['nVertLevels'])
-StrLen= len(gridfile.dimensions['StrLen'])
 # Get variables
 xCell = gridfile.variables['xCell'][:]
 yCell = gridfile.variables['yCell'][:]
@@ -106,6 +105,7 @@ if experiment in ('a', 'f'):
     # Setup layerThicknessFractions
     gridfile.variables['layerThicknessFractions'][:] = 1.0 / nVertLevels
 else:
+    StrLen= len(gridfile.dimensions['StrLen'])
     gridfile.variables['xtime'][0,:] = list('000000-01-01_00:00:00'.ljust(StrLen, ' '))
 
 # Now update/set origin location and distance array
@@ -117,6 +117,7 @@ r = ((xCell[:] - xsummit)**2 + (yCell[:] - ysummit)**2)**0.5
 # Define values prescribed by Payne et al. 2000 paper.
 
 params = exp_params[experiment]
+print "Parameters for this experiment:", params
 
 # SMB field specified by EISMINT, constant in time for EISMINT2
 # It is a function of geographical position (not elevation)

@@ -65,7 +65,7 @@ def contourMPAS(field, contour_levs=None):
   """Contours irregular MPAS data on cells"""
   #-- Now let's grid your data.
   # First we'll make a regular grid to interpolate onto.
-  numcols = nCells**0.5 * 0.75  # may want to adjust the density of the regular grid
+  numcols = nCells**0.5 * 4.0  # may want to adjust the density of the regular grid
   numrows = numcols
   xc = np.linspace(xCell.min(), xCell.max(), numcols)
   yc = np.linspace(yCell.min(), yCell.max(), numrows)
@@ -238,18 +238,19 @@ if experiment =='b':
   endTime = 40000.0
 else:
   endTime = 80000.0
-timeInd = np.nonzero(years <= endTime)[0][1:]  # skip the first index cause basalTemperature isn't calculated then
 
 # get index at divide - we set this up to be 750,750
 divideIndex = np.logical_and( xCell == 750.0, yCell == 750.0)
 
 # panel a - thickness
 ax = fig.add_subplot(211)
+timeInd = np.nonzero(years <= endTime)[0][0:] 
 plt.plot( years[timeInd]/1000.0, thickness[timeInd, divideIndex], 'k.-')
 plt.ylabel('Thickness (m)')
 
 # panel b - basal temperature
 ax = fig.add_subplot(212)
+timeInd = np.nonzero(years <= endTime)[0][1:]  # skip the first index cause basalTemperature isn't calculated then
 plt.plot( years[timeInd]/1000.0, basalTemperature[timeInd, divideIndex], 'k.-')
 plt.ylabel('Basal temperature (K)')
 plt.xlabel('Time (kyr)')
@@ -292,7 +293,8 @@ area = (areaCell[iceIndices]).sum() / 1000.0**2 / 10.0**6
 areaAbsolute = area
 plt.plot( np.zeros((3,)), bench['area'], 'k*')  # benchmark results
 if bench['stattype'] == 'relative':
-    area = (area / ((areaCell[initIceIndices]).sum() / 1000.0**2 / 10.0**6) - 1.0) * 100.0
+    initArea = (areaCell[initIceIndices]).sum() / 1000.0**2 / 10.0**6
+    area = (area / initArea - 1.0) * 100.0
     plt.ylabel('Area change (%)')
 else:
     plt.ylabel('Area (10$^6$ km$^2$)')
@@ -305,8 +307,12 @@ meltfraction = areaCell[warmBedIndices].sum() / 1000.0**2 / 10.0**6 / areaAbsolu
 plt.plot( np.zeros((3,)), bench['meltfraction'], 'k*')  # benchmark results
 if bench['stattype'] == 'relative':
     # use time 1 instead of 0 since these fields aren't fully populated at time 0
+    initIceIndices = np.where(thickness[1,:]>0.0)[0]
+    initArea = (areaCell[initIceIndices].sum() / 1000.0**2 / 10.0**6)
     initWarmBedIndices = np.where(np.logical_and(thickness[1,:] > 0.0, basalTemperature[1,:] >= (basalPmpTemperature[1,:] - 0.01) ) )[0]  # using threshold here to identify melted locations
-    meltfraction = (meltfraction / ((areaCell[initWarmBedIndices].sum() / 1000.0**2 / 10.0**6)/areaAbsolute) - 1.0) * 100.0
+    initWarmArea = (areaCell[initWarmBedIndices].sum() / 1000.0**2 / 10.0**6)
+    initMeltFraction = initWarmArea / initArea
+    meltfraction = (meltfraction / initMeltFraction - 1.0) * 100.0
     plt.ylabel('Melt fraction change (%)')
 else:
     plt.ylabel('Melt fraction')
