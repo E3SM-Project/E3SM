@@ -4,7 +4,7 @@
 
 <entries>
 
-  <entry id="COMP_CPL"> 
+  <entry id="COMP_CPL">
     <type>char</type>
     <valid_values>cpl</valid_values>
     <default_value>cpl</default_value>
@@ -18,36 +18,36 @@
   <!-- and directories to configure a case -->
   <!-- ===================================================================== -->
 
-  <entry id="FILES_CONFIG_SPEC"> 
+  <entry id="FILES_CONFIG_SPEC">
     <type>char</type>
     <default_value>$CIMEROOT/config_files.xml</default_value>
     <group>case_def</group>
     <file>env_case.xml</file>
     <desc> master configuration file that specifies all relevant filenames
-    and directories to configure a case</desc> 
-  </entry> 
+    and directories to configure a case</desc>
+  </entry>
 
   <!-- ===================================================================== -->
   <!-- definitions case directories -->
   <!-- ===================================================================== -->
 
-  <entry id="CASEROOT"> 
+  <entry id="CASEROOT">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>case_def</group>
     <file>env_case.xml</file>
     <desc>full pathname of case</desc>
-  </entry> 
+  </entry>
 
-  <entry id="LOGDIR"> 
+  <entry id="LOGDIR">
     <type>char</type>
     <default_value>$CASEROOT/logs</default_value>
     <group>run_desc</group>
     <file>env_run.xml</file>
     <desc>Extra copies of the component log files will be saved here.</desc>
-  </entry> 
+  </entry>
 
-  <entry id="CASETOOLS"> 
+  <entry id="CASETOOLS">
     <type>char</type>
     <default_value>$CASEROOT/Tools</default_value>
     <group>case_der</group>
@@ -55,7 +55,7 @@
     <desc>Case Tools directory location (derived variable, not in namelists</desc>
   </entry>
 
-  <entry id="CASEBUILD"> 
+  <entry id="CASEBUILD">
     <type>char</type>
     <default_value>$CASEROOT/Buildconf</default_value>
     <group>case_der</group>
@@ -63,7 +63,7 @@
     <desc>Buildconf directory location (derived variable not in namelist)</desc>
   </entry>
 
-  <entry id="SCRIPTSROOT"> 
+  <entry id="SCRIPTSROOT">
     <type>char</type>
     <default_value>$CIMEROOT/scripts</default_value>
     <group>case_der</group>
@@ -71,23 +71,23 @@
     <desc>Scripts root directory location (setup automatically to $CIMEROOT/scripts- DO NOT EDIT)</desc>
   </entry>
 
-  <entry id="SRCROOT"> 
+  <entry id="SRCROOT">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>case_def</group>
     <file>env_case.xml</file>
     <desc>full pathname of source root directory</desc>
-  </entry> 
+  </entry>
 
-  <entry id="CIMEROOT"> 
+  <entry id="CIMEROOT">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>case_def</group>
     <file>env_case.xml</file>
     <desc>full pathname of CIME source root directory</desc>
-  </entry> 
+  </entry>
 
-  <entry id="UTILROOT"> 
+  <entry id="UTILROOT">
     <type>char</type>
     <default_value>$CIMEROOT/scripts/Tools</default_value>
     <group>case_der</group>
@@ -99,7 +99,7 @@
   <!-- definitions case -->
   <!-- ===================================================================== -->
 
-  <entry id="CASE"> 
+  <entry id="CASE">
     <type>char*256</type>
     <default_value>UNSET</default_value>
     <group>case_def</group>
@@ -107,7 +107,7 @@
     <desc>case name</desc>
   </entry>
 
-  <entry id="CASESTR"> 
+  <entry id="CASESTR">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_desc</group>
@@ -115,14 +115,14 @@
     <desc>case description</desc>
   </entry>
 
-  <entry id="COMPSET"> 
+  <entry id="COMPSET">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>Component set long name (for documentation only - DO NOT EDIT)</desc>
   </entry>
-    
+
   <entry id='GRID'>
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -131,7 +131,7 @@
     <desc>Model grid - DO NOT EDIT (for experts only)</desc>
   </entry>
 
-  <entry id="SUPPORTED_BY"> 
+  <entry id="SUPPORTED_BY">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>case_def</group>
@@ -139,27 +139,27 @@
     <desc>current machine name support contact</desc>
   </entry>
 
-  <entry id="USER"> 
+  <entry id="USER">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>case_desc</group>
     <file>env_case.xml</file>
     <desc>case user name</desc>
-  </entry> 
+  </entry>
 
   <!-- ===================================================================== -->
   <!-- definitions runtimes -->
   <!-- ===================================================================== -->
 
-  <entry id="RUN_TYPE"> 
+  <entry id="RUN_TYPE">
     <type>char</type>
     <valid_values>startup,hybrid,branch</valid_values>
     <default_value>startup</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      Determines the model run initialization type.  
-      This setting is only important for the initial run of a production run when the 
+      Determines the model run initialization type.
+      This setting is only important for the initial run of a production run when the
       CONTINUE_RUN variable is set to FALSE.  After the initial run, the CONTINUE_RUN
       variable is set to TRUE, and the model restarts exactly using input
       files in a case, date, and bit-for-bit continuous fashion.
@@ -193,7 +193,7 @@
       To set up a branch run, locate the restart tar file or restart
       directory for RUN_REFCASE and RUN_REFDATE from a previous run, then
       place those files in the RUNDIR directory.
-      --- In a hybrid run the model is initialized as a startup, BUT uses  
+      --- In a hybrid run the model is initialized as a startup, BUT uses
       initialization datasets FROM A PREVIOUS case.  This
       is somewhat analogous to a branch run with relaxed restart
       constraints.  A hybrid run allows users to bring together combinations
@@ -211,7 +211,7 @@
     </desc>
   </entry>
 
-  <entry id="RUN_REFDIR"> 
+  <entry id="RUN_REFDIR">
     <type>char*256</type>
     <default_value>ccsm4_init</default_value>
     <group>run_begin_stop_restart</group>
@@ -221,7 +221,7 @@
     </desc>
   </entry>
 
-  <entry id="RUN_REFCASE"> 
+  <entry id="RUN_REFCASE">
     <type>char*256</type>
     <default_value>case.std</default_value>
     <group>run_begin_stop_restart</group>
@@ -231,7 +231,7 @@
     </desc>
   </entry>
 
-  <entry id="RUN_REFDATE"> 
+  <entry id="RUN_REFDATE">
     <type>char*10</type>
     <default_value>0001-01-01</default_value>
     <group>run_begin_stop_restart</group>
@@ -241,7 +241,7 @@
     </desc>
   </entry>
 
-  <entry id="RUN_REFTOD"> 
+  <entry id="RUN_REFTOD">
     <type>char</type>
     <default_value>00000</default_value>
     <group>run_begin_stop_restart</group>
@@ -251,7 +251,7 @@
     </desc>
   </entry>
 
-  <entry id="BRNCH_RETAIN_CASENAME"> 
+  <entry id="BRNCH_RETAIN_CASENAME">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
@@ -260,21 +260,21 @@
     <desc>
       Allow same branch casename as reference casename. Only used for branch runs.
     </desc>
-  </entry> 
+  </entry>
 
-  <entry id="GET_REFCASE"> 
+  <entry id="GET_REFCASE">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      Flag for automatically prestaging the refcase restart dataset. 
+      Flag for automatically prestaging the refcase restart dataset.
       If TRUE, then the refcase data is prestaged into the executable directory
     </desc>
-  </entry> 
+  </entry>
 
-  <entry id="RUN_STARTDATE"> 
+  <entry id="RUN_STARTDATE">
     <type>char</type>
     <default_value>0001-01-01</default_value>
     <group>run_begin_stop_restart</group>
@@ -284,7 +284,7 @@
     </desc>
   </entry>
 
-  <entry id="START_TOD"> 
+  <entry id="START_TOD">
     <type>integer</type>
     <default_value>0</default_value>
     <group>run_begin_stop_restart</group>
@@ -294,7 +294,7 @@
     </desc>
   </entry>
 
-  <entry id="STOP_OPTION"> 
+  <entry id="STOP_OPTION">
     <type>char</type>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
     <default_value>ndays</default_value>
@@ -305,7 +305,7 @@
     </desc>
   </entry>
 
-  <entry id="STOP_N"> 
+  <entry id="STOP_N">
     <type>integer</type>
     <default_value>5</default_value>
     <group>run_begin_stop_restart</group>
@@ -315,7 +315,7 @@
     </desc>
   </entry>
 
-  <entry id="STOP_DATE"> 
+  <entry id="STOP_DATE">
     <type>integer</type>
     <default_value>-999</default_value>
     <group>run_begin_stop_restart</group>
@@ -326,7 +326,7 @@
     </desc>
   </entry>
 
-  <entry id="REST_OPTION"> 
+  <entry id="REST_OPTION">
     <type>char</type>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
     <default_value>$STOP_OPTION</default_value>
@@ -338,17 +338,17 @@
     </desc>
   </entry>
 
-  <entry id="REST_N"> 
+  <entry id="REST_N">
     <type>char</type>
     <default_value>$STOP_N</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
-    <desc> 
+    <desc>
       sets model restart writes with REST_OPTION and REST_DATE
     </desc>
   </entry>
 
-  <entry id="REST_DATE"> 
+  <entry id="REST_DATE">
     <type>char</type>
     <default_value>$STOP_DATE</default_value>
     <group>run_begin_stop_restart</group>
@@ -359,7 +359,7 @@
     </desc>
   </entry>
 
-  <entry id="BARRIER_OPTION"> 
+  <entry id="BARRIER_OPTION">
     <type>char</type>
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
     <default_value>never</default_value>
@@ -370,17 +370,17 @@
     </desc>
   </entry>
 
-  <entry id="BARRIER_N"> 
+  <entry id="BARRIER_N">
     <type>char</type>
     <default_value>1</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
-    <desc> 
+    <desc>
       sets periodic model barriers with BARRIER_OPTION and BARRIER_DATE for synchronization
     </desc>
   </entry>
 
-  <entry id="BARRIER_DATE"> 
+  <entry id="BARRIER_DATE">
     <type>char</type>
     <default_value>-999</default_value>
     <group>run_begin_stop_restart</group>
@@ -391,24 +391,24 @@
     </desc>
   </entry>
 
-  <entry id="CONTINUE_RUN"> 
+  <entry id="CONTINUE_RUN">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      A setting of TRUE implies a continuation run    
+      A setting of TRUE implies a continuation run
       When you first begin a branch, hybrid or startup run, CONTINUE_RUN
       must be set to FALSE. When you successfully run and get a restart
       file, you will need to change CONTINUE_RUN to TRUE for the remainder
-      of your run. This variable determines if the run is a restart run.   
+      of your run. This variable determines if the run is a restart run.
       Set to FALSE when initializing a startup, branch or hybrid case.
       Set to TRUE when continuing a run.
     </desc>
   </entry>
 
-  <entry id="RESUBMIT"> 
+  <entry id="RESUBMIT">
     <type>integer</type>
     <default_value>0</default_value>
     <group>run_begin_stop_restart</group>
@@ -417,7 +417,7 @@
     Enables the model to automatically resubmit a new run.  To get
     multiple runs, set RESUBMIT greater than 0, then RESUBMIT will be
     decremented and the case will be resubmitted.  The case will stop automatically
-    resubmitting when the RESUBMIT value reaches 0. 
+    resubmitting when the RESUBMIT value reaches 0.
     Long runs can easily outstrip supercomputer queue time limits. For
     this reason, a case is usually run as a series of jobs, each
     restarting where the previous finished.
@@ -432,13 +432,13 @@
     <file>env_run.xml</file>
     <desc>Logical to determine whether CESM run has been submitted with the submit script or not</desc>
   </entry>
-  
+
 
   <!-- ===================================================================== -->
   <!-- definitions archive -->
   <!-- ===================================================================== -->
 
-  <entry id="DOUT_S"> 
+  <entry id="DOUT_S">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>TRUE</default_value>
@@ -448,7 +448,7 @@
     If TRUE, short term archiving will be turned on.</desc>
   </entry>
 
-  <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES"> 
+  <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
@@ -460,11 +460,11 @@
     The restart files are saved under the specific component directory
     ($DOUT_S_ROOT/$CASE/$COMPONENT/rest rather than the top-level $DOUT_S_ROOT/$CASE/rest directory).
     Interim restart files are created using the REST_N and REST_OPTION variables.
-    This is for expert users ONLY and requires expert knowledge. 
+    This is for expert users ONLY and requires expert knowledge.
     We will not document this further in this guide.</desc>
-  </entry> 
+  </entry>
 
-  <entry id="DOUT_L_MS"> 
+  <entry id="DOUT_L_MS">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
@@ -593,24 +593,24 @@
       The scratchroot root directory.  Base diretory for build and run directories.</desc>
   </entry>
 
-  <entry id="EXEROOT"> 
+  <entry id="EXEROOT">
     <type>char</type>
-    <valid_values></valid_values>  
+    <valid_values></valid_values>
     <default_value>UNSET</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
-    <desc>Case executable root directory. 
+    <desc>Case executable root directory.
     (executable is $EXEROOT/cesm.exe, component libraries are in $EXEROOT/bld)
-    This is where the model builds its executable and by default runs the executable.  
+    This is where the model builds its executable and by default runs the executable.
     Note that EXEROOT needs to have enough disk space for the experimental configuration
     requirements. As an example, a model run can produce more than a terabyte of
     data during a 100-year run, so you should set EXEROOT to scratch or
     tmp space and frequently back up the data to a long term archiving storage device
     For a supported machine, EXEROOT is set in $CIMEROOT/machines/config_machines.xml.
     For a userdefined machine, EXEROOT must explicitly be set it in env_build.xml.</desc>
-  </entry> 
+  </entry>
 
-  <entry id="OS"> 
+  <entry id="OS">
     <type>char</type>
     <valid_values></valid_values>
     <default_value>USERDEFINED_required_macros</default_value>
@@ -619,17 +619,17 @@
     <desc>Operating system - DO NOT EDIT UNLESS for userdefined machine - ignored once Macros has been created.</desc>
   </entry>
 
-  <entry id="COMPILERS"> 
+  <entry id="COMPILERS">
     <type>char</type>
-    <valid_values></valid_values>  
-    <default_value></default_value> 
+    <valid_values></valid_values>
+    <default_value></default_value>
     <group>build_macros</group>
     <file>env_build.xml</file>
     <desc>Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
     Machine compiler (must match one the supported compilers) - ignored once Macros has been created.</desc>
-  </entry> 
+  </entry>
 
-  <entry id="COMPILER"> 
+  <entry id="COMPILER">
     <type>char</type>
     <valid_values></valid_values>
     <default_value></default_value>
@@ -638,41 +638,41 @@
     <desc>Machine compiler (must match one the supported compilers)
     Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
     Must be explicitly set in env_build.xml for userdefined machine.</desc>
-  </entry> 
+  </entry>
 
-  <entry id="MPILIBS"> 
+  <entry id="MPILIBS">
     <type>char</type>
-    <valid_values></valid_values>  
-    <default_value></default_value> 
+    <valid_values></valid_values>
+    <default_value></default_value>
     <group>build_macros</group>
     <file>env_build.xml</file>
     <desc>Supported mpi libraries for target machine - set in config_machines.xml - (DO NOT EDIT)
       Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
       Must be explicitly set in env_build.xml for userdefined machine.</desc>
-  </entry> 
+  </entry>
 
-  <entry id="SUPPORTED_BY"> 
+  <entry id="SUPPORTED_BY">
     <type>char</type>
     <valid_values></valid_values>
     <default_value></default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>email address of person (or group) that supports the build and port for this machine (do not edit)></desc>
-  </entry> 
+  </entry>
 
-  <entry id="MPILIB"> 
+  <entry id="MPILIB">
     <type>char</type>
-    <valid_values></valid_values>  
+    <valid_values></valid_values>
     <default_value>USERDEFINED_required_macros</default_value>
     <group>build_macros</group>
     <file>env_build.xml</file>
-    <desc>mpi library (must match one of the supported libraries) - 
+    <desc>mpi library (must match one of the supported libraries) -
     ignored once Macros has been created
     Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
     Must be explicitly set in env_build.xml for userdefined machine.</desc>
-  </entry> 
+  </entry>
 
-  <entry id="CALENDAR"> 
+  <entry id="CALENDAR">
     <type>char</type>
     <valid_values>NO_LEAP,GREGORIAN</valid_values>
     <default_value>NO_LEAP</default_value>
@@ -681,7 +681,7 @@
     <desc>calendar type></desc>
   </entry>
 
-  <entry id="COMP_INTERFACE"> 
+  <entry id="COMP_INTERFACE">
     <type>char</type>
     <valid_values>MCT,ESMF</valid_values>
     <default_value>MCT</default_value>
@@ -690,7 +690,7 @@
     <desc>use MCT or ESMF component interfaces</desc>
   </entry>
 
-  <entry id="USE_ESMF_LIB"> 
+  <entry id="USE_ESMF_LIB">
     <type>char</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
@@ -699,31 +699,31 @@
     <desc>TRUE implies using the ESMF library specified by ESMF_LIBDIR or ESMFMKFILE</desc>
   </entry>
 
-  <entry id="DEBUG"> 
+  <entry id="DEBUG">
     <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values> 
+    <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>TRUE implies turning on run and compile time debugging
-      Flag to turn on debugging for run time and compile time. 
-      If TRUE, compile-time debugging flags are activated that you can use to verify 
+      Flag to turn on debugging for run time and compile time.
+      If TRUE, compile-time debugging flags are activated that you can use to verify
       software robustness, such as bounds checking.
-      Important:: On IBM machines, floating point trapping is not activated for production 
+      Important:: On IBM machines, floating point trapping is not activated for production
       runs (i.e., non-DEBUG), due to performance penalties associated with turning on these flags.</desc>
-  </entry> 
+  </entry>
 
-  <entry id="BUILD_THREADED"> 
+  <entry id="BUILD_THREADED">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>TRUE implies always build model for openmp capability
-      If FALSE, component libraries are built with OpenMP capability only if 
+      If FALSE, component libraries are built with OpenMP capability only if
       the NTHREADS_ setting for that component is greater than 1 in env_mach_pes.xml.
       If TRUE, the component libraries are always built with OpenMP capability.</desc>
-  </entry> 
+  </entry>
 
   <entry id="USE_TRILINOS">
     <type>logical</type>
@@ -738,7 +738,7 @@
       executable. This is currently only supported for certain machines.</desc>
   </entry>
 
-  <entry id="GMAKE"> 
+  <entry id="GMAKE">
     <type>char</type>
     <valid_values></valid_values>
     <default_value>gmake</default_value>
@@ -747,70 +747,70 @@
     <desc>GNU make command</desc>
   </entry>
 
-  <entry id="GMAKE_J"> 
+  <entry id="GMAKE_J">
     <type>integer</type>
-    <valid_values></valid_values> 
+    <valid_values></valid_values>
     <default_value>1</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>Number of processors for gmake</desc>
   </entry>
 
-  <entry id="BUILD_COMPLETE"> 
+  <entry id="BUILD_COMPLETE">
     <type>int</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
     <desc>Status output: if TRUE, models have been built successfully. (DO NOT EDIT)></desc>
-  </entry> 
+  </entry>
 
-  <entry id="SMP_BUILD"> 
+  <entry id="SMP_BUILD">
     <type>char</type>
-    <valid_values></valid_values>  
+    <valid_values></valid_values>
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
     <desc>Status: smp status of previous build, coded string. (DO NOT EDIT)></desc>
-  </entry> 
+  </entry>
 
-  <entry id="SMP_VALUE"> 
+  <entry id="SMP_VALUE">
     <type>char</type>
     <valid_values></valid_values>
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
     <desc>Status: smp status of current case, coded string (DO NOT EDIT)></desc>
-  </entry> 
+  </entry>
 
-  <entry id="NINST_BUILD"> 
+  <entry id="NINST_BUILD">
     <type>char</type>
-    <valid_values></valid_values>  
+    <valid_values></valid_values>
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
     <desc>Status: ninst status of previous build, coded string. (DO NOT EDIT)></desc>
-  </entry> 
+  </entry>
 
-  <entry id="NINST_VALUE"> 
+  <entry id="NINST_VALUE">
     <type>char</type>
     <valid_values></valid_values>
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
     <desc>Status: ninst status of current case, coded string (DO NOT EDIT)></desc>
-  </entry> 
+  </entry>
 
-  <entry id="BUILD_STATUS"> 
+  <entry id="BUILD_STATUS">
     <type>integer</type>
-    <valid_values>0,1,2</valid_values>  
+    <valid_values>0,1,2</valid_values>
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
     <desc>Status: of prior build. (DO NOT EDIT)></desc>
-  </entry> 
+  </entry>
 
-  <entry id="OBJROOT"> 
+  <entry id="OBJROOT">
     <type>char</type>
     <valid_values></valid_values>
     <default_value>$EXEROOT</default_value>
@@ -819,16 +819,16 @@
     <desc>case build directory (set automatically to $EXEROOT, - DO NOT EDIT)</desc>
   </entry>
 
-  <entry id="LIBROOT"> 
+  <entry id="LIBROOT">
     <type>char</type>
-    <valid_values></valid_values> 
+    <valid_values></valid_values>
     <default_value>$EXEROOT/lib</default_value>
     <group>build_derived</group>
     <file>env_build.xml</file>
     <desc>case lib directory (set automatically to $EXEROOT/lib - DO NOT EDIT)</desc>
   </entry>
 
-  <entry id="INCROOT"> 
+  <entry id="INCROOT">
     <type>char</type>
     <valid_values></valid_values>
     <default_value>$EXEROOT/lib/include</default_value>
@@ -859,7 +859,7 @@
   <!-- definitions performance -->
   <!-- ===================================================================== -->
 
-  <entry id="CHECK_TIMING"> 
+  <entry id="CHECK_TIMING">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>TRUE</default_value>
@@ -868,7 +868,7 @@
     <desc>logical to diagnose model timing at the end of the run</desc>
   </entry>
 
-  <entry id="SAVE_TIMING"> 
+  <entry id="SAVE_TIMING">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
@@ -877,7 +877,7 @@
     <desc>logical to save timing files in rundir</desc>
   </entry>
 
-  <entry id="TIMER_LEVEL"> 
+  <entry id="TIMER_LEVEL">
     <type>integer</type>
     <default_value>12</default_value>
     <group>run_flags</group>
@@ -892,17 +892,22 @@
     <group>run_cesm</group>
     <file>env_run.xml</file>
     <desc>Enables the papi hardware counters in gptl
-    The papi library must be included in the build step for 
+    The papi library must be included in the build step for
     this to work.</desc>
   </entry>
 
-  <entry id="COMP_RUN_BARRIERS"> 
+  <entry id="COMP_RUN_BARRIERS">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
-    <desc>Turns on component barriers for component timing</desc>
+    <desc>Turns on component barriers for component timing.
+          This variable is for testing and debugging only and should never
+          be set for a production run.  It has a side effect of causing
+          resubmit not to toggle the CONTINUE_RUN flag so that the RESUBMIT
+          flag can be used to run several identical runs for timing purposes.
+    </desc>
   </entry>
 
   <entry id="CCSM_PCOST">
@@ -913,23 +918,23 @@
     <desc>cost relative to 64 pes (DO NOT EDIT)</desc>
   </entry>
 
-  <entry id="CCSM_TCOST"> 
+  <entry id="CCSM_TCOST">
     <type>integer</type>
-    <default_value>0</default_value> 
+    <default_value>0</default_value>
     <group>mach_pes_last</group>
     <file>env_mach_pes.xml</file>
     <desc>relative cost of test where ERS is 1 (DO NOT EDIT)</desc>
   </entry>
 
-  <entry id="CCSM_ESTCOST"> 
+  <entry id="CCSM_ESTCOST">
     <type>integer</type>
-    <default_value>0</default_value> 
+    <default_value>0</default_value>
     <group>mach_pes_last</group>
     <file>env_mach_pes.xml</file>
     <desc>relative total cost of case (DO NOT EDIT)</desc>
   </entry>
 
-  <entry id="COST_PES"> 
+  <entry id="COST_PES">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_last</group>
@@ -1037,7 +1042,7 @@
     <desc>number of ice cells in j direction - DO NOT EDIT (for experts only)</desc>
   </entry>
 
-  <entry id="ICE_NCAT"> 
+  <entry id="ICE_NCAT">
     <type>integer</type>
     <default_value>1</default_value>
     <group>build_grid</group>
@@ -1100,7 +1105,7 @@
     <group>run_component_cism</group>
     <file>env_run.xml</file>
     <desc>glacier (glc) grid - DO NOT EDIT (for experts only)</desc>
-  </entry> 
+  </entry>
 
   <entry id="WAV_GRID">
     <type>char</type>
@@ -1134,26 +1139,26 @@
     <desc>grid mask - DO NOT EDIT (for experts only)</desc>
   </entry>
 
-  <entry id="PTS_MODE"> 
+  <entry id="PTS_MODE">
     <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values> 
-    <default_value>FALSE</default_value> 
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>Operate on only a single point of the global grid  - DO NOT EDIT (for experts only)</desc>
   </entry>
 
-  <entry id="PTS_LAT"> 
+  <entry id="PTS_LAT">
     <type>real(1)</type>
-    <default_value>-999.99</default_value> 
+    <default_value>-999.99</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>Latitude to find nearest points for points mode (only used if PTS_MODE is TRUE)</desc>
   </entry>
 
-  <entry id="PTS_LON"> 
+  <entry id="PTS_LON">
     <type>real(1)</type>
-    <default_value>-999.99</default_value> 
+    <default_value>-999.99</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>Longitude to find nearest points for points mode (only used if PTS_MODE is TRUE)</desc>
@@ -1404,7 +1409,7 @@
     <file>env_run.xml</file>
     <desc>ocn2atm state mapping file</desc>
   </entry>
-  
+
   <entry id="OCN2ATM_SMAPTYPE">
     <type>char</type>
     <valid_values>X,Y</valid_values>
@@ -1584,7 +1589,7 @@
     <desc>glc2lnd state mapping file decomp type</desc>
   </entry>
 
-  <entry id="GLC2ICE_RMAPNAME"> 
+  <entry id="GLC2ICE_RMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
     <group>run_domain</group>
@@ -1601,7 +1606,7 @@
     <desc>glc2ice runoff mapping file decomp type</desc>
   </entry>
 
-  <entry id="GLC2OCN_RMAPNAME"> 
+  <entry id="GLC2OCN_RMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
     <group>run_domain</group>
@@ -1726,7 +1731,7 @@
     <desc>Error tolerance for differences in ocean/ice lon/lat in domain checking</desc>
   </entry>
 
-  <entry id="EPS_OGRID">   
+  <entry id="EPS_OGRID">
     <type>real</type>
     <default_value>1.0e-02</default_value>
     <group>run_domain</group>
@@ -1738,7 +1743,7 @@
   <!-- definitions machine -->
   <!-- ===================================================================== -->
 
-  <entry id="MACH"> 
+  <entry id="MACH">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>case_def</group>
@@ -1762,19 +1767,19 @@
     <desc>Machines directory location</desc>
   </entry>
 
-  <entry id="RUNDIR"> 
+  <entry id="RUNDIR">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_desc</group>
     <file>env_run.xml</file>
     <desc>
-      The directory where the executable will be run. 
-      By default this is set to EXEROOT/../run. 
+      The directory where the executable will be run.
+      By default this is set to EXEROOT/../run.
       RUNDIR allows you to keep the run directory separate from the build directory
     </desc>
   </entry>
 
-  <entry id="DIN_LOC_ROOT"> 
+  <entry id="DIN_LOC_ROOT">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_din</group>
@@ -1785,9 +1790,9 @@
       Default values for the target machine are in the
       $CIMEROOT/machines/config_machines.xml
     </desc>
-  </entry> 
+  </entry>
 
-  <entry id="DIN_LOC_ROOT_CLMFORC"> 
+  <entry id="DIN_LOC_ROOT_CLMFORC">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_din</group>
@@ -1799,26 +1804,26 @@
     This is usually a shared disk area.
     Default values for the target machine are in the
     $CIMEROOT/machines/config_machines.xml</desc>
-  </entry> 
+  </entry>
 
-  <entry id="DOUT_S_ROOT"> 
-    <type>char</type> 
+  <entry id="DOUT_S_ROOT">
+    <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_dout</group>
     <file>env_run.xml</file>
-    <desc>Root directory for short term archiving. This directory must be visible to compute nodes.</desc> 
-  </entry> 
+    <desc>Root directory for short term archiving. This directory must be visible to compute nodes.</desc>
+  </entry>
 
-  <entry id="DOUT_L_MSROOT"> 
+  <entry id="DOUT_L_MSROOT">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_dout</group>
     <file>env_run.xml</file>
     <desc>Root directory on long term archiving store system for long-term data archives.</desc>
-  </entry> 
+  </entry>
 
 
-  <entry id="BATCHQUERY"> 
+  <entry id="BATCHQUERY">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_machine</group>
@@ -1826,7 +1831,7 @@
     <desc>command used to query batch system</desc>
   </entry>
 
-  <entry id="BATCHSUBMIT"> 
+  <entry id="BATCHSUBMIT">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_machine</group>
@@ -1834,7 +1839,7 @@
     <desc>command used to submit to batch system</desc>
   </entry>
 
-  <entry id="MPI_RUN_COMMAND"> 
+  <entry id="MPI_RUN_COMMAND">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_mpi</group>
@@ -1846,7 +1851,7 @@
   <!-- definitions pelayout -->
   <!-- ===================================================================== -->
 
-  <entry id="NTASKS_ATM"> 
+  <entry id="NTASKS_ATM">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_atm</group>
@@ -1854,7 +1859,7 @@
     <desc>number of atmosphere tasks</desc>
   </entry>
 
-  <entry id="NTHRDS_ATM"> 
+  <entry id="NTHRDS_ATM">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_atm</group>
@@ -1862,7 +1867,7 @@
     <desc>number of atmosphere threads</desc>
   </entry>
 
-  <entry id="ROOTPE_ATM"> 
+  <entry id="ROOTPE_ATM">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_atm</group>
@@ -1887,7 +1892,7 @@
     <desc>Layout of atmosphere instances</desc>
   </entry>
 
-  <entry id="NTASKS_LND"> 
+  <entry id="NTASKS_LND">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_lnd</group>
@@ -1895,7 +1900,7 @@
     <desc>number of land mpi tasks</desc>
   </entry>
 
-  <entry id="NTHRDS_LND"> 
+  <entry id="NTHRDS_LND">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_lnd</group>
@@ -1903,7 +1908,7 @@
     <desc>number of land mpi threads</desc>
   </entry>
 
-  <entry id="ROOTPE_LND"> 
+  <entry id="ROOTPE_LND">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_lnd</group>
@@ -1928,7 +1933,7 @@
     <desc>Layout of land instances</desc>
   </entry>
 
-  <entry id="NTASKS_ICE"> 
+  <entry id="NTASKS_ICE">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_ice</group>
@@ -1936,7 +1941,7 @@
     <desc>number of ice mpi tasks</desc>
   </entry>
 
-  <entry id="NTHRDS_ICE"> 
+  <entry id="NTHRDS_ICE">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_ice</group>
@@ -1944,7 +1949,7 @@
     <desc>number of ice mpi threads</desc>
   </entry>
 
-  <entry id="ROOTPE_ICE"> 
+  <entry id="ROOTPE_ICE">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_ice</group>
@@ -1969,7 +1974,7 @@
     <desc>Layout of sea ice instances</desc>
   </entry>
 
-  <entry id="NTASKS_OCN"> 
+  <entry id="NTASKS_OCN">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_ocn</group>
@@ -1977,7 +1982,7 @@
     <desc>number of ocean mpi tasks</desc>
   </entry>
 
-  <entry id="NTHRDS_OCN"> 
+  <entry id="NTHRDS_OCN">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_ocn</group>
@@ -1985,7 +1990,7 @@
     <desc>number of ocean mpi threads</desc>
   </entry>
 
-  <entry id="ROOTPE_OCN"> 
+  <entry id="ROOTPE_OCN">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_ocn</group>
@@ -2010,7 +2015,7 @@
     <desc>Layout of ocean instances</desc>
   </entry>
 
-  <entry id="NTASKS_CPL"> 
+  <entry id="NTASKS_CPL">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_cpl</group>
@@ -2018,7 +2023,7 @@
     <desc>number of coupler mpi tasks</desc>
   </entry>
 
-  <entry id="NTHRDS_CPL"> 
+  <entry id="NTHRDS_CPL">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_cpl</group>
@@ -2026,7 +2031,7 @@
     <desc>number of coupler mpi threads</desc>
   </entry>
 
-  <entry id="ROOTPE_CPL"> 
+  <entry id="ROOTPE_CPL">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_cpl</group>
@@ -2034,7 +2039,7 @@
     <desc>root cpl mpi task</desc>
   </entry>
 
-  <entry id="NTASKS_GLC"> 
+  <entry id="NTASKS_GLC">
     <type>integer</type>
     <default_value>0</default_value>
     <values>
@@ -2045,7 +2050,7 @@
     <desc>number of glc mpi tasks</desc>
   </entry>
 
-  <entry id="NTHRDS_GLC"> 
+  <entry id="NTHRDS_GLC">
     <type>integer</type>
     <default_value>0</default_value>
     <values>
@@ -2056,7 +2061,7 @@
     <desc>number of glc mpi threads</desc>
   </entry>
 
-  <entry id="ROOTPE_GLC"> 
+  <entry id="ROOTPE_GLC">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_glc</group>
@@ -2081,7 +2086,7 @@
     <desc>Layout of glacier instances</desc>
   </entry>
 
-  <entry id="NTASKS_ROF"> 
+  <entry id="NTASKS_ROF">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_rof</group>
@@ -2089,7 +2094,7 @@
     <desc>number of river runoff tasks</desc>
   </entry>
 
-  <entry id="NTHRDS_ROF"> 
+  <entry id="NTHRDS_ROF">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_rof</group>
@@ -2097,7 +2102,7 @@
     <desc>number of river runoff threads</desc>
   </entry>
 
-  <entry id="ROOTPE_ROF"> 
+  <entry id="ROOTPE_ROF">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_rof</group>
@@ -2238,7 +2243,7 @@
     <desc>total number of tasks and threads (setup automatically - DO NOT EDIT)</desc>
   </entry>
 
-  <entry id="MAX_TASKS_PER_NODE"> 
+  <entry id="MAX_TASKS_PER_NODE">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_last</group>
@@ -2246,7 +2251,7 @@
     <desc>maximum number of tasks/ threads allowed per node </desc>
   </entry>
 
-  <entry id="PES_PER_NODE"> 
+  <entry id="PES_PER_NODE">
     <type>integer</type>
     <default_value>0</default_value>
     <group>mach_pes_last</group>
@@ -2258,7 +2263,7 @@
   <!-- definitions pio -->
   <!-- ===================================================================== -->
 
-  <entry id="PIO_VERSION"> 
+  <entry id="PIO_VERSION">
     <type>int</type>
     <default_value>1</default_value>
     <valid_values>1,2</valid_values>
@@ -2267,7 +2272,7 @@
     <desc>PIO library version</desc>
   </entry>
 
-  <entry id="PIO_CONFIG_OPTS"> 
+  <entry id="PIO_CONFIG_OPTS">
     <type>char</type>
     <default_value></default_value>
     <group>build_macros</group>
@@ -2282,7 +2287,7 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>TRUE implies perform asynchronous i/o</desc>
-  </entry> 
+  </entry>
 
   <entry id="PIO_STRIDE">
     <type>integer</type>
@@ -2323,7 +2328,7 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
-  </entry> 
+  </entry>
 
   <entry id="PIO_DEBUG_LEVEL">
     <type>integer</type>
@@ -2388,7 +2393,7 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
-  </entry> 
+  </entry>
 
   <entry id="LND_PIO_STRIDE">
     <type>integer</type>
@@ -2429,7 +2434,7 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
-  </entry> 
+  </entry>
 
   <entry id="ROF_PIO_STRIDE">
     <type>integer</type>
@@ -2470,7 +2475,7 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
-  </entry> 
+  </entry>
 
   <entry id="ICE_PIO_STRIDE">
     <type>integer</type>
@@ -2511,7 +2516,7 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
-  </entry> 
+  </entry>
 
   <entry id="ATM_PIO_STRIDE">
     <type>integer</type>
@@ -2552,7 +2557,7 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
-  </entry> 
+  </entry>
 
   <entry id="CPL_PIO_STRIDE">
     <type>integer</type>
@@ -2593,7 +2598,7 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
-  </entry> 
+  </entry>
 
   <entry id="GLC_PIO_STRIDE">
     <type>integer</type>
@@ -2634,7 +2639,7 @@
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
-  </entry> 
+  </entry>
 
   <entry id="WAV_PIO_STRIDE">
     <type>integer</type>
@@ -2796,21 +2801,21 @@
     <desc>Whether to clean the test after it is built/run</desc>
   </entry>
 
-  <entry id="CCSM_BASELINE"> 
+  <entry id="CCSM_BASELINE">
     <type>char</type>
     <default_value>/UNSET</default_value>
     <group>test</group>
     <file>env_test.xml</file>
     <desc>standard baselines root directory for testing</desc>
-  </entry> 
+  </entry>
 
-  <entry id="CCSM_CPRNC"> 
+  <entry id="CCSM_CPRNC">
     <type>char</type>
     <default_value>/UNSET</default_value>
     <group>test</group>
     <file>env_test.xml</file>
     <desc>standard full pathname of the cprnc executable</desc>
-  </entry> 
+  </entry>
 
   <!-- ===================================================================== -->
   <!-- component coupling options and frequencies -->
@@ -2832,17 +2837,17 @@
     <file>env_run.xml</file>
     <desc>
       Coupler sequencing option. This is used to set the driver namelist variable cpl_seq_option.
-      CESM1_ORIG is the cesm1.1 implementation.  
-      CESM1_MOD includes a cesm1.3 mod that swaps ocean merging and atm/ocn flux 
-      computation.  
-      RASM_OPTION1 runs prep ocean before the ocean coupling reducing 
-      most of the lags and field inconsistency but still allowing the ocean to run 
-      concurrently with the ice and atmosphere.  
-      RASM_OPTION2 is similar to RASM_OPTION1 
-      but sequences the ice model, prep ocean and ocean model in that order.  The 
-      ocean model loses some of the concurrency with the ice model.  
-      CESM1_ORIG_TIGHT and CESM1_MOD_TIGHT are consistent with the old variables 
-      ocean_tight_coupling = true in the driver.  That namelist is gone and the 
+      CESM1_ORIG is the cesm1.1 implementation.
+      CESM1_MOD includes a cesm1.3 mod that swaps ocean merging and atm/ocn flux
+      computation.
+      RASM_OPTION1 runs prep ocean before the ocean coupling reducing
+      most of the lags and field inconsistency but still allowing the ocean to run
+      concurrently with the ice and atmosphere.
+      RASM_OPTION2 is similar to RASM_OPTION1
+      but sequences the ice model, prep ocean and ocean model in that order.  The
+      ocean model loses some of the concurrency with the ice model.
+      CESM1_ORIG_TIGHT and CESM1_MOD_TIGHT are consistent with the old variables
+      ocean_tight_coupling = true in the driver.  That namelist is gone and the
       cpl_seq_option flags take it's place.
       TIGHT coupling makes no sense with the OPTION5 and OPTION6 flags.
     </desc>
@@ -2850,17 +2855,17 @@
 
   <entry id="CPL_I2O_PER_CAT">
     <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>  
-    <default_value>FALSE</default_value> 
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
     <group>run_coupling</group>
     <file>env_run.xml</file>
     <desc>determine if per ice thickness category fields are passed from ice to ocean - DO NOT EDIT (set by POP build-namelist)</desc>
   </entry>
 
-  <entry id="CCSM_BGC"> 
+  <entry id="CCSM_BGC">
     <type>char</type>
-    <valid_values>none,CO2A,CO2B,CO2C,CO2_DMSA</valid_values>  
-    <default_value>none</default_value> 
+    <valid_values>none,CO2A,CO2B,CO2C,CO2_DMSA</valid_values>
+    <default_value>none</default_value>
     <values>
       <value compset="_CAM"     >CO2A</value>
       <value compset="_DATM"    >none</value>
@@ -2871,13 +2876,13 @@
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
-    <desc>Flag to turn on new fields in coupling. 
-    If the value is not none, the coupler is compiled so that optional 
-    BGC related fields are exchanged between component models.  
+    <desc>Flag to turn on new fields in coupling.
+    If the value is not none, the coupler is compiled so that optional
+    BGC related fields are exchanged between component models.
     </desc>
-  </entry> 
+  </entry>
 
-  <entry id="NCPL_BASE_PERIOD"> 
+  <entry id="NCPL_BASE_PERIOD">
     <type>char</type>
     <valid_values>hour,day,year,decade</valid_values>
     <group>run_coupling</group>
@@ -2892,23 +2897,23 @@
     atm_cpl_dt, lnd_cpl_dt, ocn_cpl_dt, ice_cpl_dt, glc_cpl_dt, rof_cpl_dt and wav_cpl_dt.</desc>
   </entry>
 
-  <entry id="ATM_NCPL"> 
+  <entry id="ATM_NCPL">
     <type>char</type>
     <default_value>48</default_value>
     <values>
-      <value compset="_CAM[45]"             >48</value>  
+      <value compset="_CAM[45]"             >48</value>
       <value compset="_CAM[45]%WCBC"        >144</value>
       <value compset="_CAM4%WCMX"           >288</value>
       <value compset="_CAM4%WCXI"           >288</value>
-      <value compset="_CAM%ADIAB"           >48</value>  
-      <value compset="_CAM%IDEAL"           >48</value>  
-      <value compset="_DATM%COPYALL_NPS"    >72</value> 
-      <value compset="_DATM.*_CLM"          >48</value>  
+      <value compset="_CAM%ADIAB"           >48</value>
+      <value compset="_CAM%IDEAL"           >48</value>
+      <value compset="_DATM%COPYALL_NPS"    >72</value>
+      <value compset="_DATM.*_CLM"          >48</value>
       <value compset="_DATM.*_DICE.*_POP2"  >4</value>
       <value compset="_DATM.*_CICE.*_POP2"  >24</value>
       <value compset="_DATM.*_CICE.*_DOCN"  >24</value>
-      <value compset="_DATM.*_DOCN%US20"    >24</value> 
-      <value compset="_MPAS"                >1</value>  
+      <value compset="_DATM.*_DOCN%US20"    >24</value>
+      <value compset="_MPAS"                >1</value>
       <value compset=".+" grid="a%0.23x0.31">96</value>
       <value compset=".+" grid="a%ne60np4"  >96</value>
       <value compset=".+" grid="a%ne120np4" >96</value>
@@ -2931,7 +2936,7 @@
     where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
   </entry>
 
-  <entry id="LND_NCPL"> 
+  <entry id="LND_NCPL">
     <type>char</type>
     <default_value>$ATM_NCPL</default_value>
     <values>
@@ -2944,7 +2949,7 @@
     where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
   </entry>
 
-  <entry id="ICE_NCPL"> 
+  <entry id="ICE_NCPL">
     <type>char</type>
     <default_value>$ATM_NCPL</default_value>
     <values>
@@ -2957,12 +2962,12 @@
     where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
   </entry>
 
-  <entry id="OCN_NCPL"> 
+  <entry id="OCN_NCPL">
     <type>char</type>
     <default_value>$ATM_NCPL</default_value>
     <values>
       <value compset="_POP2">1</value>
-      <value compset="_POP2" grid="oi%tx0.1v2">4</value> 
+      <value compset="_POP2" grid="oi%tx0.1v2">4</value>
       <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_SWAV">1</value>
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
@@ -2978,7 +2983,7 @@
     where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
   </entry>
 
-  <entry id="GLC_NCPL"> 
+  <entry id="GLC_NCPL">
     <type>char</type>
     <default_value>1</default_value>
     <values>
@@ -2989,7 +2994,7 @@
     <desc>Number of glc coupling intervals per NCPL_BASE_PERIOD.</desc>
   </entry>
 
-  <entry id="ROF_NCPL"> 
+  <entry id="ROF_NCPL">
     <type>char</type>
     <default_value>8</default_value>
     <values>
@@ -3017,10 +3022,10 @@
   </entry>
 
 
-  <entry id="CPL_ALBAV"> 
+  <entry id="CPL_ALBAV">
     <type>logical</type>
     <valid_values>true,false</valid_values>
-    <default_value>false</default_value> 
+    <default_value>false</default_value>
     <values>
       <value compset="DATM.+POP">true</value>
       <value compset="DATM.+DOCN%IAF">true</value>
@@ -3028,10 +3033,10 @@
     <group>run_component_cpl</group>
     <file>env_run.xml</file>
     <desc>
-      Only used for compsets with DATM and POP (currently C and G): 
+      Only used for compsets with DATM and POP (currently C and G):
       If true, compute albedos to work with daily avg SW down
       If false (default), albedos are computed with the assumption that downward
-      solar radiation from the atm component has a diurnal cycle and zenith-angle 
+      solar radiation from the atm component has a diurnal cycle and zenith-angle
       dependence. This is normally the case when using an active atm component
       If true, albedos are computed with the assumption that downward
       solar radiation from the atm component is a daily average quantity and
@@ -3040,17 +3045,17 @@
     </desc>
   </entry>
 
-  <entry id="CPL_EPBAL"> 
+  <entry id="CPL_EPBAL">
     <type>char</type>
     <valid_values>off,ocn</valid_values>
-    <default_value>off</default_value> 
+    <default_value>off</default_value>
     <values>
       <value compset="DATM.+POP">ocn</value>
     </values>
     <group>run_component_cpl</group>
     <file>env_run.xml</file>
     <desc>
-      Only used for compsets with DATM and POP (currently C and G): 
+      Only used for compsets with DATM and POP (currently C and G):
       If ocn, ocn provides EP balance factor for precipitation.
       Provides EP balance factor for precip for POP. A factor computed by
       POP is applied to precipitation so that precipitation balances
@@ -3064,10 +3069,10 @@
   <!-- history / restart frequencies -->
   <!-- ===================================================================== -->
 
-  <entry id="HIST_OPTION"> 
+  <entry id="HIST_OPTION">
     <type>char</type>
-    <valid_values></valid_values>  
-    <default_value>never</default_value> 
+    <valid_values></valid_values>
+    <default_value>never</default_value>
     <values>
       <value compset="CISM">nyears</value>
     </values>
@@ -3076,10 +3081,10 @@
     <desc>Sets driver snapshot history file frequency (like REST_OPTION)</desc>
   </entry>
 
-  <entry id="HIST_N"> 
+  <entry id="HIST_N">
     <type>integer</type>
-    <valid_values></valid_values>  
-    <default_value>-999</default_value> 
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
     <values>
       <value compset="CISM">1</value>
     </values>
@@ -3089,19 +3094,19 @@
     </desc>
   </entry>
 
-  <entry id="HIST_DATE"> 
+  <entry id="HIST_DATE">
     <type>integer</type>
-    <valid_values></valid_values>  
-    <default_value>-999</default_value> 
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
     <group>run_drv_history</group>
     <file>env_run.xml</file>
     <desc>yyyymmdd format, sets coupler snapshot history date (like REST_DATE)</desc>
   </entry>
 
-  <entry id="AVGHIST_OPTION"> 
+  <entry id="AVGHIST_OPTION">
     <type>char</type>
-    <valid_values></valid_values>  
-    <default_value>never</default_value> 
+    <valid_values></valid_values>
+    <default_value>never</default_value>
     <values>
       <value compset="_DOCN%IAF">nmonths</value>
     </values>
@@ -3110,10 +3115,10 @@
     <desc>Sets driver average history file frequency (like REST_OPTION)</desc>
   </entry>
 
-  <entry id="AVGHIST_N"> 
+  <entry id="AVGHIST_N">
     <type>char</type>
-    <valid_values></valid_values>  
-    <default_value>-999</default_value> 
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
     <values>
       <value compset="_DOCN%IAF">1</value>
     </values>
@@ -3122,16 +3127,16 @@
     <desc>Sets driver average history file frequency (like REST_N)</desc>
   </entry>
 
-  <entry id="AVGHIST_DATE"> 
+  <entry id="AVGHIST_DATE">
     <type>integer</type>
-    <valid_values></valid_values>  
-    <default_value>-999</default_value> 
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
     <group>run_drv_history</group>
     <file>env_run.xml</file>
     <desc>yyyymmdd format, sets driver average history date (like REST_DATE)</desc>
   </entry>
 
-  <entry id="BUDGETS"> 
+  <entry id="BUDGETS">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
@@ -3145,10 +3150,10 @@
     <desc>logical that turns on diagnostic budgets for driver</desc>
   </entry>
 
-  <entry id="CCSM_CO2_PPMV"> 
+  <entry id="CCSM_CO2_PPMV">
     <type>real</type>
     <valid_values></valid_values>
-    <default_value>379.000</default_value> 
+    <default_value>379.000</default_value>
     <values>
       <value compset="^1850"					>284.7</value>
       <value compset="^HIST.+BGC%BPRP"				>284.7</value>
@@ -3159,11 +3164,11 @@
       <value compset="^2000.+DATM%NYF"				>379.000</value>
       <value compset="^2000.+DATM%IAF"				>379.000</value>
       <value compset="^HIST.+DATM"				>367.0</value>
-      <value compset="^4804.+DATM"				>367.0</value> 
-      <value compset="^RCP2.+DATM"				>367.0</value> 
-      <value compset="^RCP4.+DATM"				>367.0</value> 
-      <value compset="^RCP6.+DATM"				>367.0</value> 
-      <value compset="^RCP8.+DATM"				>367.0</value> 
+      <value compset="^4804.+DATM"				>367.0</value>
+      <value compset="^RCP2.+DATM"				>367.0</value>
+      <value compset="^RCP4.+DATM"				>367.0</value>
+      <value compset="^RCP6.+DATM"				>367.0</value>
+      <value compset="^RCP8.+DATM"				>367.0</value>
       <value compset="^2000.+XATM"				>379.000</value>
       <value compset="^HIST.+CAM"				>0.000001</value>
       <value compset="^5505.+CAM"				>0.000001</value>
@@ -3174,9 +3179,9 @@
       <value compset="^2013.+CAM"				>0.000001</value>
       <value compset="^GEOS.+CAM"				>0.000001</value>
       <value compset="^AMIP.+CAM"				>0.000001</value>
-      <value compset="^AR95"					>368.9</value> 
+      <value compset="^AR95"					>368.9</value>
       <value compset="^AR97"					>368.9</value>
-      <value compset="^2003"					>367.0</value> 
+      <value compset="^2003"					>367.0</value>
       <!-- Override values based on CAM (WACCM) chemistry -->
       <value compset="CAM[45]%W"				>0.000001</value>
       <value compset="CAM[45]%SSOA"				>0.000001</value>
@@ -3194,7 +3199,7 @@
       introduced to coordinate this value among multiple components.</desc>
   </entry>
 
-  <entry id="DRV_THREADING"> 
+  <entry id="DRV_THREADING">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
@@ -3204,7 +3209,7 @@
     Used to set the driver namelist variable "drv_threading".</desc>
   </entry>
 
-  <entry id="CPL_DECOMP"> 
+  <entry id="CPL_DECOMP">
     <type>integer</type>
     <valid_values>0,1,2,3,4,5,6</valid_values>
     <default_value>0</default_value>
@@ -3213,7 +3218,7 @@
     <desc>Coupler decomposition option.</desc>
   </entry>
 
-  <entry id="BFBFLAG"> 
+  <entry id="BFBFLAG">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
@@ -3222,48 +3227,48 @@
     <desc>turns on coupler bit-for-bit reproducibility with varying pe counts</desc>
   </entry>
 
-  <entry id="INFO_DBUG"> 
+  <entry id="INFO_DBUG">
     <type>integer</type>
     <valid_values>0,1,2,3</valid_values>
     <default_value>1</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>level of debug output, 0=minimum, 1=normal, 2=more, 3=too much</desc>
-  </entry> 
+  </entry>
 
-  <entry id="SCIENCE_SUPPORT"> 
+  <entry id="SCIENCE_SUPPORT">
     <type>char*256</type>
-    <valid_values>on, off</valid_values> 
+    <valid_values>on, off</valid_values>
     <default_value>off</default_value>
     <group>case_def</group>
     <file>env_case.xml</file>
     <desc>If set to off, this component set/ grid specification is not scientifically supported.
     If set to on, this component set/ grid specification is scientifically supported</desc>
-  </entry>       
+  </entry>
 
-  <entry id="CCSM_CCOST"> 
+  <entry id="CCSM_CCOST">
     <type>integer</type>
-    <valid_values></valid_values> 
-    <default_value>0</default_value> 
+    <valid_values></valid_values>
+    <default_value>0</default_value>
     <values>
-      <!-- estimated cost (used only for development purposes) -->     
-      <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_DROF.*_SGLC_SWAV"		>-3</value> <!-- A --> 
-      <value compset="_DATM.*_DICE.*_DOCN.*_WW3"				>-3</value> <!-- A_WAV --> 
-      <value compset="_DATM.*_SLND.*_DICE.*_POP2_DROF.*_SGLC_SWAV"		>-1</value> <!-- C --> 
-      <value compset="_DATM.*_SLND.*_DICE.*_POP2%ECO_DROF.*_SGLC_SWAV"		> 1</value> <!-- CECO --> 
-      <value compset="_DATM.*_SLND.*_CICE.*_DOCN%SOM_DROF.*_SGLC_SWAV"		> 1</value> <!-- D --> 
-      <value compset="_DATM.*_SLND.*_CICE.*_POP2_DROF.*_SGLC_SWAV"		>-1</value> <!-- G,H --> 
-      <value compset="_DATM.*_SLND.*_CICE.*_POP2%ECO_DROF.*_SGLC_SWAV"		> 1</value> <!-- GECO --> 
-      <value compset="_DATM.*_CLM.*_SICE_SOCN_RTM.*_SGLC_SWAV"			>-2</value> <!-- I --> 
+      <!-- estimated cost (used only for development purposes) -->
+      <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_DROF.*_SGLC_SWAV"		>-3</value> <!-- A -->
+      <value compset="_DATM.*_DICE.*_DOCN.*_WW3"				>-3</value> <!-- A_WAV -->
+      <value compset="_DATM.*_SLND.*_DICE.*_POP2_DROF.*_SGLC_SWAV"		>-1</value> <!-- C -->
+      <value compset="_DATM.*_SLND.*_DICE.*_POP2%ECO_DROF.*_SGLC_SWAV"		> 1</value> <!-- CECO -->
+      <value compset="_DATM.*_SLND.*_CICE.*_DOCN%SOM_DROF.*_SGLC_SWAV"		> 1</value> <!-- D -->
+      <value compset="_DATM.*_SLND.*_CICE.*_POP2_DROF.*_SGLC_SWAV"		>-1</value> <!-- G,H -->
+      <value compset="_DATM.*_SLND.*_CICE.*_POP2%ECO_DROF.*_SGLC_SWAV"		> 1</value> <!-- GECO -->
+      <value compset="_DATM.*_CLM.*_SICE_SOCN_RTM.*_SGLC_SWAV"			>-2</value> <!-- I -->
       <value compset="_SATM_DLND.*_SICE_SOCN_SROF_CISM_SWAV"			>-5</value> <!-- TG -->
       <value compset="_SATM_DLND.*_SICE_SOCN_RTM.*_SGLC_SWAV"			>-5</value> <!-- U -->
       <value compset="_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV"			>-6</value> <!-- U -->
-      <value compset="_CAM4.*_CLM.*_CICE.*_DOCN.*_DROF.*_SGLC_SWAV"		>0</value>  <!-- E --> 
-      <value compset="_CAM4.*_CLM.*_CICE.*_DOCN.*_RTM.*_SGLC_SWAV"		>0</value>  <!-- F --> 
-      <value compset="_CAM4.*_CLM.*_DICE.*_DOCN.*_RTM.*_SGLC_SWAV"		>0</value>  <!-- K --> 
-      <value compset="_CAM4.*_DLND.*_DICE.*_DOCN.*_SROF_SGLC_SWAV"		>0</value>  <!-- L --> 
-      <value compset="_CAM4%TMOZ.*_CLM.*_CICE_DOCN.*_RTM.*_SGLC_SWAV"		>1</value>  <!-- FMOZ --> 
-      <value compset="GEOS_CAM4%TBAM.*_CLM.*_CICE_DOCN.*_RTM.*_SGLC_SWAV"	>3</value>  <!-- FSDBAM --> 
+      <value compset="_CAM4.*_CLM.*_CICE.*_DOCN.*_DROF.*_SGLC_SWAV"		>0</value>  <!-- E -->
+      <value compset="_CAM4.*_CLM.*_CICE.*_DOCN.*_RTM.*_SGLC_SWAV"		>0</value>  <!-- F -->
+      <value compset="_CAM4.*_CLM.*_DICE.*_DOCN.*_RTM.*_SGLC_SWAV"		>0</value>  <!-- K -->
+      <value compset="_CAM4.*_DLND.*_DICE.*_DOCN.*_SROF_SGLC_SWAV"		>0</value>  <!-- L -->
+      <value compset="_CAM4%TMOZ.*_CLM.*_CICE_DOCN.*_RTM.*_SGLC_SWAV"		>1</value>  <!-- FMOZ -->
+      <value compset="GEOS_CAM4%TBAM.*_CLM.*_CICE_DOCN.*_RTM.*_SGLC_SWAV"	>3</value>  <!-- FSDBAM -->
       <value compset="_CAM5"							>1</value>
       <value compset="_CAM[45]%W"						>3</value>
       <value compset="_CAM[45]%WCSC"						>1</value>
@@ -3283,13 +3288,13 @@
     <desc>2**n relative cost of compset where B is 1 (DO NOT EDIT)</desc>
   </entry>
 
-  <entry id="GLC_NEC"> 
+  <entry id="GLC_NEC">
     <type>integer</type>
     <valid_values>0,1,3,5,10,36</valid_values>
     <default_value>0</default_value>
     <values>
-      <value compset="_CISM">10</value> 
-      <value compset="_X"   >10</value> 
+      <value compset="_CISM">10</value>
+      <value compset="_X"   >10</value>
     </values>
     <group>run_glc</group>
     <file>env_run.xml</file>
@@ -3297,7 +3302,7 @@
     Used by both CLM and CISM (even if CISM is not running, and only SGLC is used).</desc>
   </entry>
 
-  <entry id="GLC_TWO_WAY_COUPLING"> 
+  <entry id="GLC_TWO_WAY_COUPLING">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
@@ -3319,19 +3324,19 @@
       compsets.</desc>
   </entry>
 
-  <entry id="CCSM_GCOST"> 
+  <entry id="CCSM_GCOST">
     <type>integer</type>
-    <valid_values></valid_values> 
-    <default_value>0</default_value> 
+    <valid_values></valid_values>
+    <default_value>0</default_value>
     <group>case_cost</group>
     <file>env_case.xml</file>
     <desc>2**n relative cost of grid where f19_g15 is 1 (DO NOT EDIT)</desc>
   </entry>
 
-  <entry id="CCSM_MCOST"> 
+  <entry id="CCSM_MCOST">
     <type>integer</type>
-    <valid_values></valid_values> 
-    <default_value>0</default_value> 
+    <valid_values></valid_values>
+    <default_value>0</default_value>
     <group>case_cost</group>
     <file>env_case.xml</file>
     <desc>2**n relative cost of machine (DO NOT EDIT)</desc>
@@ -3381,14 +3386,14 @@
    <file>env_batch.xml</file>
    <desc>The machine wallclock setting.  Default determined in config_machines.xml can be overwritten by testing</desc>
  </entry>
- 
- <entry id="PROJECT"> 
+
+ <entry id="PROJECT">
    <type>char</type>
    <default_value>PROJECT_UNSET</default_value>
    <group>job_submission</group>
    <file>env_batch.xml</file>
    <desc>project for project-sensitive build and run paths, and job scripts</desc>
- </entry> 
+ </entry>
 
  <entry id="PROJECT_REQUIRED">
    <type>logical</type>
@@ -3398,41 +3403,41 @@
    <file>env_batch.xml</file>
    <desc>whether the PROJECT value is required on this machine</desc>
  </entry>
-  
+
   <description>
     <desc compset="BGC%BPRP">BGC CO2=prog, rad CO2=prog:</desc>
     <desc compset="BGC%BDRD">BGC CO2=diag, rad CO2=diag:</desc>
     <desc compset="POP2%ECO">ECO in POP:</desc>
-    <desc compset="_TEST" >--DO NOT USE FOR LONG SIMULATIONS:</desc> 
+    <desc compset="_TEST" >--DO NOT USE FOR LONG SIMULATIONS:</desc>
     <desc compset="1850_">pre-industrial:</desc>
     <desc compset="2000_">present day:</desc>
-    <desc compset="HIST_">Historical 1850 to 2000 transient:</desc> 
+    <desc compset="HIST_">Historical 1850 to 2000 transient:</desc>
     <desc compset="AMIP_">AMIP for stand-alone cam:</desc>
-    <desc compset="C2R[68]_">CCMI REFC2 1950 to 2100 transient:</desc> 
-    <desc compset="C2R4_">CCMI REFC2 2004 to 2100 transient:</desc> 
-    <desc compset="4804_">1948 to 2004 transient:</desc> 
-    <desc compset="FRC1_">CCMI REFC1 Free running, 1950 to 2010 transient:</desc> 
-    <desc compset="SDC1_">CCMI REFC1 Specified dynamics, 1975 to 2010 transient:</desc> 
+    <desc compset="C2R[68]_">CCMI REFC2 1950 to 2100 transient:</desc>
+    <desc compset="C2R4_">CCMI REFC2 2004 to 2100 transient:</desc>
+    <desc compset="4804_">1948 to 2004 transient:</desc>
+    <desc compset="FRC1_">CCMI REFC1 Free running, 1950 to 2010 transient:</desc>
+    <desc compset="SDC1_">CCMI REFC1 Specified dynamics, 1975 to 2010 transient:</desc>
     <desc compset="C2R8_">RCP8.5 future scenario:</desc>
     <desc compset="C2R6_">RCP6.0 future scenario:</desc>
     <desc compset="C2R4_">RCP4.5 future scenario:</desc>
-    <desc compset="5505_">1955 to 2005 transient:</desc> 
+    <desc compset="5505_">1955 to 2005 transient:</desc>
     <desc compset="RCP8_">RCP8.5 future scenario:</desc>
     <desc compset="RCP6_">RCP6.0 future scenario:</desc>
     <desc compset="RCP4_">RCP4.5 future scenario:</desc>
     <desc compset="RCP2_">RCP2.6 future scenario:</desc>
     <desc compset="2013_">RCP4.5 based scenario from 2013 (control for WACCM/CARMA nuclear winter study):</desc>
     <desc compset="9205_CAM">1992 to 2005 transient:</desc>
-    <desc compset="GEOS_CAM">GEOS5 meteorology: for stand-alone cam</desc> 
-    <desc compset="AR95_CAM">ARM95 IOP: for stand-alone cam</desc> 
-    <desc compset="AR97_CAM">ARM97 IOP: for stand-alone cam</desc> 
+    <desc compset="GEOS_CAM">GEOS5 meteorology: for stand-alone cam</desc>
+    <desc compset="AR95_CAM">ARM95 IOP: for stand-alone cam</desc>
+    <desc compset="AR97_CAM">ARM97 IOP: for stand-alone cam</desc>
     <desc compset="HIST_CLM4[05]%CN">CLM transient land use:</desc>
     <desc compset="PIPD">
       pre-industrial (1850) to present day:
       -----------------------------WARNING ------------------------------------------------
-      "PIPD" compsets use complete forcing data from observed sources 
-      up to the year 2005. Following this period they are a combination of observed sources 
-      (land-use, SST, sea ice, CO2, CH4, N2O) to present day and IPCC RCP4.5 scenario data.  
+      "PIPD" compsets use complete forcing data from observed sources
+      up to the year 2005. Following this period they are a combination of observed sources
+      (land-use, SST, sea ice, CO2, CH4, N2O) to present day and IPCC RCP4.5 scenario data.
       -------------------------------------------------------------------------------------
     </desc>
     <desc compset="CAM4.*_BGC%B">
@@ -3445,7 +3450,7 @@
 
   <help>
     =========================================
-    Notes: 
+    Notes:
     (1) Time period is first four characters of
     compset name
     =========================================

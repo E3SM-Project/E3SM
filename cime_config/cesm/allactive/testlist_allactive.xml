@@ -23,6 +23,9 @@
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">bluewaters</machine>
         <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
       </test>
+      <test name="ERR">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">edison</machine>
+      </test>
       <test name="NCR">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
       </test>
