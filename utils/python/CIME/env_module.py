@@ -102,7 +102,29 @@ class EnvModule(object):
             exec(py_module_code)
 
     def _load_soft_modules(self, modules_to_load):
-        expect(False, "Not yet implemented")
+        #logging.info("initializing soft")
+        #sh_init_cmd = ("source %s" % self._machine.get_module_system_init_path("sh"))
+        #logging.debug("sh_init_cmd = %s" % sh_init_cmd)
+        #run_cmd(sh_init_cmd)
+        logging.info("Loading soft modules")
+        sh_mod_cmd = self._machine.get_module_system_cmd_path("sh")
+        for action,argument in modules_to_load:
+            cmd = "%s %s %s" % (sh_mod_cmd, action, argument)
+            logging.debug("Command=%s" % cmd)
+            output=run_cmd(cmd)
+
+            # Inject soft env variables into current environment
+            # output should be in VARNAME=value ; export VARNAME
+            for line in output.splitlines():
+                m=re.match(r'(\S+)\s*=\s*(\S+)\s',line)
+                if m:
+                    key = m.groups()[0]
+                    val = os.path.expandvars(m.groups()[1])
+                    logging.info('setting environment variable %s to %s' % (key,val))
+                    os.environ[key] = val
+                
+
+
 
     def _load_dotkit_modules(self, modules_to_load):
         expect(False, "Not yet implemented")
