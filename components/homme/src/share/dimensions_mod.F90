@@ -27,9 +27,9 @@ module dimensions_mod
 #endif
 #else
 #ifdef QSIZE_D
-  integer, parameter         :: qsize_d=50
+  integer, parameter         :: qsize_d=QSIZE_D
 #else
-  integer, parameter         :: qsize_d=50
+  integer, parameter         :: qsize_d=4
 #endif
   integer, parameter         :: ntrac_d=4          ! fvm tracers
 #endif
