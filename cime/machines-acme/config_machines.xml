@@ -915,6 +915,7 @@
 	</mpirun>
 	<GMAKE_J>4</GMAKE_J>
 	<MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
+	<PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	<SUPPORTED_BY>jacobsen.douglas -at- gmail.com</SUPPORTED_BY>
 </machine>
 
@@ -967,6 +968,7 @@
 	</mpirun>
 	<GMAKE_J>4</GMAKE_J>
 	<MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+	<PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	<SUPPORTED_BY>jacobsen.douglas -at- gmail.com</SUPPORTED_BY>
 </machine>
 
