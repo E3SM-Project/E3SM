@@ -78,6 +78,16 @@
 <linoz_data_path            chem="linoz_mam4_resus_mom">atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            chem="linoz_mam4_resus_mom">CYCLICAL</linoz_data_type>
 
+<chlorine_loading_file      chem="linoz_mam4_resus_mom_soag">atm/cam/chem/trop_mozart/ub/EESC_1850-2100_c090603.nc</chlorine_loading_file>
+<chlorine_loading_fixed_ymd chem="linoz_mam4_resus_mom_soag">20000101</chlorine_loading_fixed_ymd>
+<chlorine_loading_type      chem="linoz_mam4_resus_mom_soag">FIXED</chlorine_loading_type>
+<linoz_data_cycle_yr        chem="linoz_mam4_resus_mom_soag">2000</linoz_data_cycle_yr>
+<linoz_data_file            chem="linoz_mam4_resus_mom_soag">linoz1800-2100_2006jpl_climo_1.9x2.5_26L_extended.c160204.nc</linoz_data_file>
+<linoz_data_path            chem="linoz_mam4_resus_mom_soag">atm/cam/chem/trop_mozart/ub</linoz_data_path>
+<linoz_data_type            chem="linoz_mam4_resus_mom_soag">CYCLICAL</linoz_data_type>
+
+
+
 <!-- Updated secondary organic aerosol emissions file -->
 <soag_emis_file	   ver="mam" chem="trop_mam4_resus_soag">atm/cam/chem/trop_mozart_aero/emis/aces4bgc_nvsoa_soag_elev_2000_c160222.nc</soag_emis_file>
 
