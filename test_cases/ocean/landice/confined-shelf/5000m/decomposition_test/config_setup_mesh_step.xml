@@ -3,9 +3,9 @@
 
         <!-- Set up needed files and executables -->
         <add_link source_path="script_resolution_dir" source="periodic_hex.namelist.input" dest="namelist.input"/>
-        <add_executable source="periodic_hex" dest="."/>
-        <add_executable source="mesh_converter" dest="."/>
-        <add_executable source="grid_to_li_grid" dest="."/>
+        <add_executable source="periodic_hex" dest="periodic_grid"/>
+        <add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
+        <add_executable source="grid_to_li_grid" dest="create_landice_grid_from_generic_MPAS_grid.py"/>
         <add_link source_path="script_configuration_dir" source="setup_confined_shelf_initial_conditions.py" dest="."/>
 
 
