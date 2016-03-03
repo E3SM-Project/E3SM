@@ -652,7 +652,7 @@ Currently the following streams are supported (term definitions precede the stre
 <strm_year_align stream="CLMGSWP3.Solar">$DATM_CLMNCEP_YR_ALIGN</strm_year_align>
 <strm_domdir     stream="CLMGSWP3.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016</strm_domdir>
 <strm_domfil     stream="CLMGSWP3.Solar">domain.GSWP3.c2014.0.5d.nc</strm_domfil>
-<strm_datdir     stream="CLMGSWP3.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016/Solar6Hrly</strm_datdir>
+<strm_datdir     stream="CLMGSWP3.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.V1.c141016/Solar</strm_datdir>
 <strm_datfil     stream="CLMGSWP3.Solar">clmforc.GSWP3.c2011.0.5x0.5.Solr.%ym.nc</strm_datfil>
 <strm_offset     stream="CLMGSWP3.Solar">0</strm_offset>
 <strm_tintalgo   stream="CLMGSWP3.Solar">coszen</strm_tintalgo>
