@@ -324,7 +324,7 @@ contains
 
              write(stderrUnit,*) "Ice initial condition type unknown!"
              write(stderrUnit,*) "config_initial_condition_type: ", trim(config_initial_condition_type)
-             call MPAS_dmpar_global_abort('Ice initial condition type unknown')
+             call MPAS_dmpar_global_abort('MPAS-seaice: Ice initial condition type unknown')
 
           endif
 
@@ -387,7 +387,7 @@ contains
 
              write(stderrUnit,*) "Ice initial velocity type unknown!"
              write(stderrUnit,*) "config_initial_velocity_type: ", trim(config_initial_velocity_type)
-             call MPAS_dmpar_global_abort('Ice initial velocity type unknown')
+             call MPAS_dmpar_global_abort('MPAS-seaice: Ice initial velocity type unknown')
 
           endif
 

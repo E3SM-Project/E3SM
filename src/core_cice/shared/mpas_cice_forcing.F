@@ -112,7 +112,7 @@ contains
        call init_atmospheric_forcing_CORE(domain)
     case default
        write(stderrUnit,*) "Atmospheric forcing type unknown: ", trim(config_atmospheric_forcing_type)
-       call MPAS_dmpar_global_abort('Unknown config_atmospheric_forcing_type')
+       call MPAS_dmpar_global_abort('MPAS-seaice: Unknown config_atmospheric_forcing_type')
     end select
 
   end subroutine init_atmospheric_forcing
@@ -959,7 +959,7 @@ contains
        precipitationFactor = 1.0_RKIND
     case default
        write(stderrUnit,*) "Unknown config_precipitation_units"
-       call MPAS_dmpar_global_abort('Unknown config_precipitation_units')
+       call MPAS_dmpar_global_abort('MPAS-seaice: Unknown config_precipitation_units')
     end select
 
   end subroutine init_precipitation_factor
@@ -1155,7 +1155,7 @@ contains
        call init_oceanic_forcing_ncar(domain)
     case default
        write(stderrUnit,*) "Oceanic forcing type unknown: ", trim(config_forcing_sst_type)
-       call MPAS_dmpar_global_abort('Unknown config_forcing_sst_type')
+       call MPAS_dmpar_global_abort('MPAS-seaice: Unknown config_forcing_sst_type')
     end select
 
   end subroutine init_oceanic_forcing

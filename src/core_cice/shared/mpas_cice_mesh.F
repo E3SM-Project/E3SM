@@ -280,7 +280,7 @@ contains
 
              write(stderrUnit,*) "Error: rescale_mesh: inconsistent radii"
              write(stderrUnit,*) "sphere_radius: ", sphere_radius, ", earthRadius: ", earthRadius
-             call MPAS_dmpar_global_abort('Error: rescale_mesh: inconsistent radii')
+             call MPAS_dmpar_global_abort('MPAS-seaice: rescale_mesh: inconsistent radii')
 
           endif
 

@@ -172,7 +172,7 @@ contains
 
       call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nProcs", nProcs)
       if (nProcs /= domain % dminfo % nprocs) then
-         call MPAS_dmpar_global_abort("Error: mpas_cice_load_balance: wrong nProcs set")
+         call MPAS_dmpar_global_abort("MPAS-seaice: Error: mpas_cice_load_balance: wrong nProcs set")
       endif
       
       call MPAS_pool_get_subpool(domain % blocklist % structs, "loadBalanceAM", loadBalanceAMPool)
