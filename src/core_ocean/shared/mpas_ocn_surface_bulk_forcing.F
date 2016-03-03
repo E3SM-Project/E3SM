@@ -389,6 +389,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
       call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
 
+      call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
       call mpas_pool_get_array(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFlux)
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
 
@@ -409,15 +410,21 @@ contains
       !$omp end do
 
       ! Surface fluxes of water have an associated heat content, but the coupled system does not account for this
-      ! Assume surface fluxes of water have a temperature equal to the surface temperature.
+      ! Assume surface fluxes of water have a temperature dependent on the incoming mass flux.
       ! Assume surface fluxes of water have zero salinity. So the RHS forcing is zero for salinity.
       ! Only include this heat forcing when bulk thickness is turned on
       ! indices on tracerGroup are (iTracer, iLevel, iCell)
       if (bulkThicknessFluxOn) then
          !$omp do schedule(runtime)
          do iCell = 1, nCells
+           ! Accumulate fluxes that use the surface temperature
            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
-               + (snowFlux(iCell) + rainFlux(iCell))*tracerGroup(index_temperature_flux,1,iCell) / rho_sw
+               + ( snowFlux(iCell) + rainFlux(iCell) ) * tracerGroup(index_temperature_flux,1,iCell) &
+               / rho_sw
+
+           ! Accumulate fluxes that use the freezing point
+           tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
+               + seaIceFreshWaterFlux(iCell) * ocn_freezing_temperature( tracerGroup(index_salinity_flux, 1, iCell) ) / rho_sw
          end do
          !$omp end do
       endif ! bulkThicknessFluxOn

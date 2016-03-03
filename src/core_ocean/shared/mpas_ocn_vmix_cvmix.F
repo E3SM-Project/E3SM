@@ -447,8 +447,12 @@ contains
              endif  ! if (config_use_cvmix_fixed_boundary_layer) then
 
              ! apply minimum limit to OBL
-             if(cvmix_variables % BoundaryLayerDepth .lt. layerThickness(1,iCell)/2.0_RKIND) then
-                cvmix_variables % BoundaryLayerDepth = layerThickness(1,iCell)/2.0_RKIND
+             ! DWJ 03/02/2016 : change default to 10m to help with coupled simulations.
+             !if(cvmix_variables % BoundaryLayerDepth .lt. layerThickness(1,iCell)/2.0_RKIND) then
+             !   cvmix_variables % BoundaryLayerDepth = layerThickness(1,iCell)/2.0_RKIND
+
+             if(cvmix_variables % BoundaryLayerDepth .lt. 10.0_RKIND) then
+                cvmix_variables % BoundaryLayerDepth = 10.0_RKIND
                cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(  &
                           zw_iface = cvmix_variables%zw_iface(1:nVertLevels+1),&
                           zt_cntr = cvmix_variables%zt_cntr(1:nVertLevels),    &

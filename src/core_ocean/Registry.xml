@@ -672,6 +672,10 @@
 			description="Maximum freezing temperature for the creation of frazil"
 			possible_values="Any positive real number."
 		/>
+		<nml_option name="config_frazil_use_surface_pressure" type="logical" default_value=".true." units="unitless"
+			description="Flag that controls if frazil formation will exert a surface pressure as it is formed."
+			possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="land_ice_fluxes" mode="init;forward">
 		<nml_option name="config_land_ice_flux_mode" type="character" default_value="off" units="unitless"
