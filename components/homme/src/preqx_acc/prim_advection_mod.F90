@@ -343,7 +343,6 @@ contains
     use hybrid_mod           , only: hybrid_t
     use element_mod          , only: element_t, derived_divdp_proj, state_qdp
     use derivative_mod       , only: derivative_t
-    use edge_mod             , only: EdgeBuffer_t
     use perf_mod             , only: t_startf, t_stopf                          ! _EXTERNAL
     use hybvcoord_mod        , only: hvcoord_t
     use control_mod          , only: nu_q, hypervis_order, hypervis_subcycle_q, nu_p
