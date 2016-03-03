@@ -144,6 +144,7 @@ print 'Using a markersize of ', markersize
 
 
 fig = plt.figure(1, facecolor='w')
+fig.suptitle('Payne et al. Fig. 1, 3, 6, 9, or 11', fontsize=12, fontweight='bold')
 #markersize = 30.0
 #markershape='h'
 
@@ -167,7 +168,7 @@ plt.ylabel('Y position (km)')
 # STEADY STATE MAPS
 # ================
 fig = plt.figure(2, facecolor='w', figsize=(12, 6), dpi=72)
-fig.suptitle('Payne et al. Fig. 2', fontsize=14, fontweight='bold')
+fig.suptitle('Payne et al. Fig. 2 or 4', fontsize=12, fontweight='bold')
 
 # ================
 # panel a - thickness
@@ -230,14 +231,14 @@ plt.xlabel('X position (km)'); plt.ylabel('Y position (km)')
 # DIVIDE EVOLUTION TIME SERIES
 # ================
 fig = plt.figure(3, facecolor='w')
-fig.suptitle('Payne et al. Fig. 5', fontsize=14, fontweight='bold')
+fig.suptitle('Payne et al. Fig. 5, 7, or 8', fontsize=14, fontweight='bold')
 
 # get indices for given time
 if experiment =='b':
   endTime = 40000.0
 else:
   endTime = 80000.0
-timeInd = np.nonzero(years <= endTime)[0]
+timeInd = np.nonzero(years <= endTime)[0][1:]  # skip the first index cause basalTemperature isn't calculated then
 
 # get index at divide - we set this up to be 750,750
 divideIndex = np.logical_and( xCell == 750.0, yCell == 750.0)
@@ -272,7 +273,7 @@ benchmarks = {'a':a_bench, 'b':b_bench, 'c':c_bench, 'd':d_bench, 'f':f_bench}
 bench = benchmarks[experiment]  # Get the benchmark dictionary
 
 fig = plt.figure(4, facecolor='w')
-fig.suptitle('Payne et al. Table 4: showing min/mean/max of community', fontsize=14, fontweight='bold')
+fig.suptitle('Payne et al. Table 4, 5, 6, 7, 8, or 9: showing min/mean/max of community', fontsize=12, fontweight='bold')
 
 fig.add_subplot(151)
 volume = (thickness[timelev,iceIndices] * areaCell[iceIndices]).sum() / 1000.0**3 / 10.0**6
