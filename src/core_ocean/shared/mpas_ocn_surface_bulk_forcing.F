@@ -419,12 +419,15 @@ contains
          do iCell = 1, nCells
            ! Accumulate fluxes that use the surface temperature
            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
-               + ( snowFlux(iCell) + rainFlux(iCell) ) * tracerGroup(index_temperature_flux,1,iCell) &
-               / rho_sw
+               + rainFlux(iCell) * tracerGroup(index_temperature_flux,1,iCell) / rho_sw
 
            ! Accumulate fluxes that use the freezing point
            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
                + seaIceFreshWaterFlux(iCell) * ocn_freezing_temperature( tracerGroup(index_salinity_flux, 1, iCell) ) / rho_sw
+
+           ! Fields with zero temperature are not accumulated. These include:
+           !    snowFlux
+           !    iceRunoffFlux
          end do
          !$omp end do
       endif ! bulkThicknessFluxOn
