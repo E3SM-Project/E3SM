@@ -10,7 +10,7 @@ module prim_advection_mod
   !OVERWRITING: Prim_Advec_Tracers_remap, prim_advec_init1, prim_advec_init2, prim_advec_init_deriv, deriv, Prim_Advec_Tracers_remap_rk2
   use prim_advection_mod_base, only: Prim_Advec_Tracers_remap_ALE, prim_advec_tracers_fvm, vertical_remap
   use kinds, only              : real_kind
-  use dimensions_mod, only     : nlev, nlevp, np, qsize, ntrac, nc, nep, nelemd
+  use dimensions_mod, only     : nlev, nlevp, np, qsize, ntrac, nc, nep, nelemd, qsize_d
   use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
   use element_mod, only        : element_t
   use fvm_control_volume_mod, only        : fvm_struct
@@ -269,7 +269,7 @@ contains
     type (element_t), intent(in) :: elem(:)
     call initEdgeBuffer (par,edgeAdvQ3 ,elem(:),max(nlev,qsize*nlev*3))
     call initEdgeBuffer (par,edgeAdv1  ,elem(:),nlev                  )
-    call initEdgeBuffer (par,edgeAdv   ,elem(:),qsize*nlev            )
+    call initEdgeBuffer (par,edgeAdv   ,elem(:),qsize_d*nlev          )
     call initEdgeBuffer (par,edgeAdv_p1,elem(:),qsize*nlev + nlev     ) 
     call initEdgeBuffer (par,edgeAdvQ2 ,elem(:),qsize*nlev*2          )
     call initEdgeBuffer (par,edgeAdv3  ,elem(:),nlev*3                )
@@ -432,7 +432,7 @@ contains
       enddo
       call limiter2d_zero(state_Qdp,2,nt_qdp)
       call t_startf('ah_scalar_PEU')
-      call edgeVpack_openacc(edgeAdv,state_qdp,qsize*nlev,0,elem(:),1,nelemd,2,nt_qdp)
+      call edgeVpack_openacc(edgeAdv,state_qdp,qsize_d*nlev,0,elem(:),1,nelemd,2,nt_qdp)
       !$omp end master
       !$omp barrier
 
@@ -442,7 +442,7 @@ contains
       
       !$omp barrier
       !$omp master
-      call edgeVunpack_openacc(edgeAdv,state_qdp,qsize*nlev,0,elem(:),1,nelemd,2,nt_qdp)
+      call edgeVunpack_openacc(edgeAdv,state_qdp,qsize_d*nlev,0,elem(:),1,nelemd,2,nt_qdp)
       call t_stopf('ah_scalar_PEU')
       !$acc parallel loop gang vector collapse(5) present(state_qdp,elem(:))
       do ie = 1 , nelemd
@@ -785,7 +785,7 @@ contains
   ! note: eta_dot_dpdn is actually dimension nlev+1, but nlev+1 data is
   ! all zero so we only have to DSS 1:nlev
   call t_startf('eus_PEU')
-  call edgeVpack_openacc(edgeAdv , state_Qdp , nlev*qsize , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp )
+  call edgeVpack_openacc(edgeAdv , state_Qdp , nlev*qsize_d , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp )
   !$omp end master
   !$omp barrier
 
@@ -795,7 +795,7 @@ contains
 
   !$omp barrier
   !$omp master
-  call edgeVunpack_openacc( edgeAdv , state_Qdp , nlev*qsize , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp )
+  call edgeVunpack_openacc( edgeAdv , state_Qdp , nlev*qsize_d , 0 , elem(:) , 1 , nelemd , 2 , np1_qdp )
   call t_stopf('eus_PEU')
   !$acc parallel loop gang vector collapse(4) present(state_Qdp,elem(:))
   do ie = 1 , nelemd
@@ -826,7 +826,7 @@ contains
     implicit none
     integer              , intent(in   ) :: tdim
     integer              , intent(in   ) :: tl
-    real (kind=real_kind), intent(inout) :: Qdp(np,np,nlev,qsize,tdim,nelemd)
+    real (kind=real_kind), intent(inout) :: Qdp(np,np,nlev,qsize_d,tdim,nelemd)
     ! local
     real (kind=real_kind) :: mass,mass_new
     real (kind=real_kind) :: qtmp(np,np)
