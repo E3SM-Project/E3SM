@@ -40,6 +40,8 @@ class Case(object):
         self._env_generic_files.append(EnvMachSpecific(case_root))
         self._env_generic_files.append(EnvArchive(case_root))
 
+        self._case_root = case_root
+
     def __del__(self):
         self.flush()
 

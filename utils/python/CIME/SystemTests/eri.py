@@ -18,6 +18,3 @@ class ERI(SystemTestsCommon):
         self._case.set_value("HIST_N","$STOP_N")
         self._case.flush()
         SystemTestsCommon.run(self)
-
-    def report(self):
-        SystemTestsCommon.report(self)

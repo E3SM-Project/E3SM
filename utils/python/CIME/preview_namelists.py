@@ -5,6 +5,7 @@ API for preview namelist
 from XML.standard_module_setup import *
 from CIME.utils import expect, run_cmd
 from CIME.case import Case
+from CIME.env_module import EnvModule
 
 import glob, shutil
 
@@ -20,10 +21,17 @@ def preview_namelists(dryrun=False, case=None, casedir=None):
     libroot = case.get_value("LIBROOT")
     incroot = case.get_value("INCROOT")
     rundir = case.get_value("RUNDIR")
-    sharedlibroot = case.get_value("SHAREDLIBROOT")
     caseroot = case.get_value("CASEROOT")
+    cimeroot = case.get_value("CIMEROOT")
     casebuild = case.get_value("CASEBUILD")
     testcase = case.get_value("TESTCASE")
+    compiler = case.get_value("COMPILER")
+    mach = case.get_value("MACH")
+    debug = case.get_value("DEBUG")
+    mpilib = case.get_value("MPILIB")
+
+    logging.debug("LID is: '%s'" % os.getenv("LID", ""))
+    logging.debug("caseroot is: '%s'" % caseroot)
 
     dryrun = True if (testcase == "SBN") else dryrun
 
@@ -45,13 +53,19 @@ def preview_namelists(dryrun=False, case=None, casedir=None):
                 expect(False, "Could not create rundir")
 
     else:
+
+        # Load modules
+        env_module = EnvModule(mach, compiler, cimeroot, caseroot, mpilib, debug)
+        env_module.load_env_for_case()
+
         # Make necessary directories
         dirs_to_make = [os.path.join(exeroot, model, "obj") for model in models]
-        dirs_to_make.extend([exeroot, libroot, incroot, rundir, sharedlibroot, docdir])
+        dirs_to_make.extend([exeroot, libroot, incroot, rundir, docdir])
 
         for dir_to_make in dirs_to_make:
             if (not os.path.isdir(dir_to_make)):
                 try:
+                    logging.debug("Making dir '%s'" % dir_to_make)
                     os.makedirs(dir_to_make)
                 except OSError as e:
                     expect(False, "Could not make directory '%s', error: %s" % (dir_to_make, e))
@@ -70,6 +84,7 @@ def preview_namelists(dryrun=False, case=None, casedir=None):
 
     # Save namelists to docdir
     if (not os.path.isdir(docdir)):
+        os.makedirs(docdir)
         try:
             with open(os.path.join(docdir, "README"), "w") as fd:
                 fd.write(" CESM Resolved Namelist Files\n   For documentation only DO NOT MODIFY\n")
@@ -80,6 +95,7 @@ def preview_namelists(dryrun=False, case=None, casedir=None):
     for cpglob in ["*_in_[0-9]*", "*modelio*", "*_in",
                    "*streams*txt*", "*stxt", "*maps.rc", "*cism.config*"]:
         for file_to_copy in glob.glob(os.path.join(rundir, cpglob)):
+            logging.debug("Copy file from '%s' to '%s'" % (file_to_copy, docdir))
             shutil.copy2(file_to_copy, docdir)
 
     # Copy over chemistry mechanism docs if they exist

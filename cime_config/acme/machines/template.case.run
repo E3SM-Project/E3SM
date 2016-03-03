@@ -160,6 +160,10 @@ sub doPreRunChecks()
     }
     $config{'MPILIB'} = $mpilib;
 
+    # Necessary for NCK clones to work, must override the CASEROOT that
+    # was inherited in the environment. Without
+    $ENV{'CASEROOT'} = $caseroot;
+
     $logger->debug( "build complete? $config{'BUILD_COMPLETE'}");
     if($config{'BUILD_COMPLETE'} ne 'TRUE')
     {
@@ -278,12 +282,12 @@ sub postRun()
     my $workingdir = getcwd;
 
     # find the last $model.log and cpl.log
-    my $logfile = "$rundir/cesm.log.$LID";
+    my $logfile = "$rundir/acme.log.$LID";
     my $cpllogfile = "$rundir/cpl.log.$LID";
 
     if( -z $logfile)
     {
-        $logger->error( "Model did not complete, no cesm.log file present");
+        $logger->error( "Model did not complete, no acme.log file present");
     }
 
     if(! -e $cpllogfile)
@@ -337,7 +341,7 @@ sub postRun()
         }
 
         $logger->debug("lid: $LID");
-	foreach my $comp (qw(atm cpl ocn wav glc ice rof lnd cesm)){
+	foreach my $comp (qw(atm cpl ocn wav glc ice rof lnd acme)){
 	    disposeLog($config{RUNDIR},$config{CASEROOT}, $comp ,$LID,$config{LOGDIR});
 	}
     }
@@ -352,7 +356,7 @@ sub postRun()
         $logger->info( "running timing script..");
         system(" $config{'CASETOOLS'}/getTiming -lid $LID ");
         $logger->info( "gzipping timing stats..");
-        qx( gzip timing/cesm_timing_stats.$LID );
+        qx( gzip timing/acme_timing_stats.$LID );
     }
     chdir $owd;
 
@@ -390,7 +394,7 @@ sub resubmitCheck()
 	}
 	$logger->debug( "running resubmit check $resubmitcommand");
 	system($resubmitcommand);
-        if($?){ $logger->warn ("could not run CESM submit script, $! $?");}
+        if($?){ $logger->warn ("could not run ACME submit script, $! $?");}
 	chdir $cwd;
     }
 }

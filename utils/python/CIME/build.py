@@ -1,10 +1,10 @@
 """
 functions for building CIME models
 """
-from XML.standard_module_setup import *
-from case import Case
-from utils import expect, run_cmd, get_model
-from env_module import EnvModule
+from CIME.XML.standard_module_setup import *
+from CIME.case import Case
+from CIME.utils import expect, run_cmd, get_model
+from CIME.env_module import EnvModule
 from CIME.preview_namelists import preview_namelists
 from CIME.check_input_data import check_input_data
 
@@ -290,7 +290,7 @@ def case_build(caseroot, case=None, testmode=False, sharedlib_only=False, model_
     case.flush()
 
     if not sharedlib_only:
-        run_cmd("./preview_namelists")
+        preview_namelists(case=case)
 
     build_checks(case, build_threaded, comp_interface, use_esmf_lib, compiler, mpilib, debug, sharedlibroot,
                  nthrds_cpl, nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav,

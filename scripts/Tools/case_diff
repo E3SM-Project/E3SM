@@ -37,14 +37,17 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument("case2", help="Second case.")
 
+    parser.add_argument("-b", "--show-binary", action="store_true",
+                        help="Show binary diffs")
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.case1, args.case2
+    return args.case1, args.case2, args.show_binary
 
 ###############################################################################
-def recursive_diff(dir1, dir2):
+def recursive_diff(dir1, dir2, show_binary):
 ###############################################################################
     """
     Starting at dir1, dir2 respectively, compare their contents
@@ -108,19 +111,26 @@ def recursive_diff(dir1, dir2):
         # files are directories, recursively check them, otherwise check
         # that the file contents match
         if (path1isdir):
-            num_differing_files += recursive_diff(path1, path2)
+            num_differing_files += recursive_diff(path1, path2, show_binary)
         else:
             # # As a (huge) performance enhancement, if the files have the same
             # # size, we assume the contents match
             # if (os.path.getsize(path1) != os.path.getsize(path2)):
             #     print path1 + " DIFFERS (contents)"
 
-            stat, out, _ = run_cmd("diff -w %s %s" % (path1, path2), ok_to_fail=True)
+            stat, out, err = run_cmd("file %s" % path1, ok_to_fail=True)
             if (stat != 0):
-                print "==============================================================================="
-                print path1 + " DIFFERS (contents)"
-                num_differing_files += 1
-                print "  ", out
+                logging.warn("Failed to probe file '%s', out: '%s', err: '%s'" % (path1, out, err))
+                continue
+
+            is_text_file = "text" in out
+            if (not (not show_binary and not is_text_file)):
+                stat, out, _ = run_cmd("diff -w %s %s" % (path1, path2), ok_to_fail=True)
+                if (stat != 0):
+                    print "==============================================================================="
+                    print path1 + " DIFFERS (contents)"
+                    num_differing_files += 1
+                    print "  ", out
 
     return num_differing_files
 
@@ -131,9 +141,9 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    case1, case2 = parse_command_line(sys.argv, description)
+    case1, case2, show_binary = parse_command_line(sys.argv, description)
 
-    num_differing_files = recursive_diff(case1, case2)
+    num_differing_files = recursive_diff(case1, case2, show_binary)
     print num_differing_files, "files are different"
     sys.exit(0 if num_differing_files == 0 else 1)
 

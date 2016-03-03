@@ -47,40 +47,49 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def normalize_cases(case1, case2):
 ###############################################################################
-    # gunzip all build logs
-    run_cmd("gunzip *.gz", from_dir=os.path.join(case1, "bld"))
-    run_cmd("gunzip *.gz", from_dir=os.path.join(case2, "bld"))
+    # gunzip all logs
+    for case_dir in [case1, case2]:
+        for log_dir in ["bld", "run"]:
+            gzips = glob.glob(os.path.join(case_dir, log_dir, "*.gz"))
+            if (gzips):
+                run_cmd("gunzip %s" % " ".join(gzips))
 
     # Change case1 to be as if it had same test-id as case2
-    test_id1 = case1.split(".")[-1]
-    test_id2 = case2.split(".")[-1]
+    test_id1 = run_cmd("./xmlquery -value TEST_TESTID", from_dir=case1)
+    test_id2 = run_cmd("./xmlquery -value TEST_TESTID", from_dir=case2)
     run_cmd("for item in $(find -type f); do  sed -i 's/%s/%s/g' $item; done" % (test_id1, test_id2),
             from_dir=case1)
 
-    # Get all LIDs
-    case1_lids = set()
-    for logfile in glob.glob("%s/bld/*.bldlog.*" % case1):
-        case1_lids.add(logfile.split(".")[-1])
-
-    case2_lids = set()
-    for logfile in glob.glob("%s/bld/*.bldlog.*" % case2):
-        case2_lids.add(logfile.split(".")[-1])
-
-    case1_lids = list(sorted(case1_lids))
-    case2_lids = list(sorted(case2_lids))
-
     # Change case1 to look as if it is was built/run at exact same time as case2
-    for case1_lid, case2_lid in zip(case1_lids, case2_lids):
-        run_cmd("for item in $(find -type f); do  sed -i 's/%s/%s/g' $item; done" % (case1_lid, case2_lid),
+    for log_dir in ["bld", "run"]:
+        case1_lids = set()
+        for logfile in glob.glob("%s/%s/*.bldlog.*" % (case1, log_dir)):
+            case1_lids.add(logfile.split(".")[-1])
+
+        case2_lids = set()
+        for logfile in glob.glob("%s/%s/*.bldlog.*" % (case2, log_dir)):
+            case2_lids.add(logfile.split(".")[-1])
+
+        case1_lids = list(sorted(case1_lids))
+        case2_lids = list(sorted(case2_lids))
+
+        for case1_lid, case2_lid in zip(case1_lids, case2_lids):
+            run_cmd("for item in $(find -type f); do  sed -i 's/%s/%s/g' $item; done" % (case1_lid, case2_lid),
+                    from_dir=case1)
+
+        for case1_lid, case2_lid in zip(case1_lids, case2_lids):
+            files_needing_rename = run_cmd('find -depth -name "*.%s"' % case1_lid, from_dir=case1).splitlines()
+            for file_needing_rename in files_needing_rename:
+                expect(file_needing_rename.endswith(case1_lid), "broken")
+                new_name = file_needing_rename.rstrip(case1_lid) + case2_lid
+                os.rename(os.path.join(case1, file_needing_rename), os.path.join(case1, new_name))
+
+    # Normalize CIMEROOT
+    case1_root = run_cmd("./xmlquery -value CIMEROOT", from_dir=case1)
+    case2_root = run_cmd("./xmlquery -value CIMEROOT", from_dir=case2)
+    if (case1_root != case2_root):
+        run_cmd("for item in $(find -type f); do  sed -i 's:%s:%s:g' $item; done" % (case1_root, case2_root),
                 from_dir=case1)
-
-    for case1_lid, case2_lid in zip(case1_lids, case2_lids):
-        files_needing_rename = run_cmd('find -depth -name "*.%s"' % case1_lid, from_dir=case1).splitlines()
-        for file_needing_rename in files_needing_rename:
-            expect(file_needing_rename.endswith(case1_lid), "broken")
-            new_name = file_needing_rename.rstrip(case1_lid) + case2_lid
-            os.rename(os.path.join(case1, file_needing_rename), os.path.join(case1, new_name))
-
 
 ###############################################################################
 def _main_func(description):
