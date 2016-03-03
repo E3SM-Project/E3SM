@@ -508,7 +508,7 @@ contains
                nCellsSolve, &
                err)
             if(err .ne. 0) then
-               call mpas_dmpar_global_abort("ERROR: compute_HJ99_melt_fluxes failed.")
+               call mpas_dmpar_global_abort("MPAS-ocean: ERROR: compute_HJ99_melt_fluxes failed.")
             end if
 
             ! freezing solution
@@ -526,7 +526,7 @@ contains
                nCellsSolve, &
                err)
             if(err .ne. 0) then
-               call mpas_dmpar_global_abort("ERROR: compute_melt_fluxes failed.")
+               call mpas_dmpar_global_abort("MPAS-ocean: ERROR: compute_melt_fluxes failed.")
             end if
 
             where(landIceFreshwaterFlux < 0.0_RKIND)
@@ -551,7 +551,7 @@ contains
                nCellsSolve, &
                err)
             if(err .ne. 0) then
-               call mpas_dmpar_global_abort("ERROR: compute_melt_fluxes failed.")
+               call mpas_dmpar_global_abort("MPAS-ocean: ERROR: compute_melt_fluxes failed.")
             end if
          end if
          landIceFreshwaterFlux(:) = landIceFraction(:)*landIceFreshwaterFlux(:)
@@ -627,7 +627,7 @@ contains
       else
          write(stderrUnit, *) "ERROR: config_land_ice_flux_formulation not one of 'ISOMIP', 'Jenkins', or 'HollandJenkins'."
          err = 1
-         call mpas_dmpar_global_abort("ERROR: config_land_ice_flux_formulation not one of 'ISOMIP', 'Jenkins', " &
+         call mpas_dmpar_global_abort("MPAS-ocean: ERROR: config_land_ice_flux_formulation not one of 'ISOMIP', 'Jenkins', " &
                                       // "or 'HollandJenkins'.")
       end if
 
@@ -762,7 +762,7 @@ contains
       if (outInterfaceSalinity(iCell) .le. 0.0_RKIND) then
         write(stderrUnit, *) "ERROR: interfaceSalinity <= 0", outInterfaceSalinity(iCell), oceanSalinity(iCell), a, b, c
         err = 1
-        call mpas_dmpar_global_abort('ERROR: interfaceSalinity is negative...')
+        call mpas_dmpar_global_abort('MPAS-ocean: ERROR: interfaceSalinity is negative...')
       end if
       outInterfaceTemperature(iCell) = dTf_dS*outInterfaceSalinity(iCell)+T0
 
@@ -903,7 +903,7 @@ contains
       outInterfaceSalinity(iCell) = (-b + sqrt(b**2 - 4.0_RKIND*a*c*oceanSalinity(iCell)))/(2.0_RKIND*a)
       if (outInterfaceSalinity(iCell) .le. 0.0_RKIND) then
         err = 1
-        call mpas_dmpar_global_abort('ERROR: interfaceSalinity is negative...')
+        call mpas_dmpar_global_abort('MPAS-ocean: ERROR: interfaceSalinity is negative...')
       end if
       outInterfaceTemperature(iCell) = dTf_dS*outInterfaceSalinity(iCell)+T0
 

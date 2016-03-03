@@ -287,7 +287,7 @@ contains
                   ! If the stream is set to 'none' nullify the config, so it doesn't get read in
                   nullify(config_AM_restart_stream)
                else if ( .not. mpas_stream_mgr_stream_exists(domain % streamManager, config_AM_restart_stream) ) then
-                  call mpas_dmpar_global_abort('ERROR: Stream named ''' // trim(config_AM_restart_stream) // &
+                  call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Stream named ''' // trim(config_AM_restart_stream) // &
                                                ''' does not exist in config for analysis member ''' // &
                                                trim(poolItr % memberName(1:nameLength)) // '''')
                end if
@@ -299,7 +299,7 @@ contains
                   ! If the stream is set to 'none' nullify the config, so it doesn't get read in
                   nullify(config_AM_input_stream)
                else if ( .not. mpas_stream_mgr_stream_exists(domain % streamManager, config_AM_input_stream) ) then
-                  call mpas_dmpar_global_abort('ERROR: Stream named ''' // trim(config_AM_input_stream) // &
+                  call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Stream named ''' // trim(config_AM_input_stream) // &
                                                ''' does not exist in config for analysis member ''' // &
                                                trim(poolItr % memberName(1:nameLength)) // '''')
                end if
@@ -434,12 +434,13 @@ contains
                end do
 
                if ( .not. streamFound ) then
-                  call mpas_dmpar_global_abort('ERROR: Stream ' // trim(config_AM_output_stream) // ' does not exist. Exiting...')
+                  call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Stream ' // trim(config_AM_output_stream) // &
+                                               ' does not exist. Exiting...')
                end if
             end if
 
             if ( config_AM_compute_interval == 'output_interval' .and. config_AM_output_stream == 'none') then
-               call mpas_dmpar_global_abort('ERROR: Analysis member has compute_interval of ''output_interval'' ' // &
+               call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Analysis member has compute_interval of ''output_interval'' ' // &
                                             'without an output stream.')
             end if
 

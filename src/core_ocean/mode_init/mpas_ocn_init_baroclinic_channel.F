@@ -151,8 +151,8 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-      if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The baroclinic channel configuration can only be applied ' &
-                                                   // 'to a planar mesh. Exiting...')
+      if ( on_a_sphere ) call mpas_dmpar_global_abort('MPAS-ocean: ERROR: The baroclinic channel configuration ' &
+                                                   // 'can only be applied to a planar mesh. Exiting...')
 
       allocate(interfaceLocations(nVertLevelsP1))
       call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations )

@@ -500,7 +500,7 @@ module ocn_tracer_advection_mono
       end if
 
       if (nHalos < 3) then
-        call mpas_dmpar_global_abort('ERROR: Monotonic advection cannot be used with less than 3 halos.')
+        call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Monotonic advection cannot be used with less than 3 halos.')
       end if
 
       positiveDzDk = dzdk_positive
