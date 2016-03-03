@@ -250,7 +250,8 @@ module ocn_forward_mode
       ierr = ior(ierr, err_tmp)
 
       if(ierr.eq.1) then
-          call mpas_dmpar_global_abort('MPAS-ocean: ERROR: An error was encountered while initializing the MPAS-Ocean forward mode')
+          call mpas_dmpar_global_abort('MPAS-ocean: ERROR: An error was encountered while initializing '// &
+                                       'the MPAS-Ocean forward mode')
       endif
 
       call ocn_init_routines_vert_coord(domain)
@@ -280,7 +281,8 @@ module ocn_forward_mode
           config_vert_coord_movement.ne.'fixed')then
          write (stderrUnit,*) 'filter_btr_mode has only been tested with'// &
             ' config_vert_coord_movement=fixed.'
-         call mpas_dmpar_global_abort('MPAS-ocean: ERROR: filter_btr_mode has only been tested with config_vert_coord_movement=fixed.')
+         call mpas_dmpar_global_abort('MPAS-ocean: ERROR: filter_btr_mode has only been tested '// &
+                                      'with config_vert_coord_movement=fixed.')
       endif
 
       ! find the maximum value of the meshDensity
@@ -341,8 +343,8 @@ module ocn_forward_mode
       ierr = ior(ierr, err_tmp)
 
       if(ierr.eq.1) then
-          call mpas_dmpar_global_abort('MPAS-ocean: ERROR: An error was encountered while initializing the analysis members in the ' &
-                                    // 'MPAS-Ocean forward mode')
+          call mpas_dmpar_global_abort('MPAS-ocean: ERROR: An error was encountered while initializing ' &
+                                    // 'the analysis members in the MPAS-Ocean forward mode')
       endif
 
    end function ocn_forward_mode_init!}}}
