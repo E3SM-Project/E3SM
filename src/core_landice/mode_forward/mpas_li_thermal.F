@@ -1172,7 +1172,7 @@ module li_thermal
                         write(stdoutUnit,*) 'flux for bottom melting =', basalFrictionFlux(iCell) + basalHeatFlux(iCell) + basalConductiveFlux(iCell)
                      endif   ! verboseColumn
 
-                     write(stdoutUnit,*) 'li_thermal, energy conservation error: iCell, imbalance (W/m2):', &
+                     write(stderrUnit,*) 'li_thermal, energy conservation error: iCell, imbalance (W/m2):', &
                                          indexToCellID(iCell), (finalEnergy - initialEnergy - deltaEnergy)/deltat
                      err = 1
                      

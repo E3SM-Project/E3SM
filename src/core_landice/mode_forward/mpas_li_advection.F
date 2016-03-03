@@ -188,7 +188,7 @@ module li_advection
       integer, dimension(:,:), pointer :: edgesOnCell
 
       !WHL - debug - for test-case diagnostics
-      logical, parameter :: dome_test = .true.
+      logical, parameter :: dome_test = .false.
       logical, parameter :: circular_shelf_test = .false.
       integer :: nCellsPerRow
       integer :: nRows
