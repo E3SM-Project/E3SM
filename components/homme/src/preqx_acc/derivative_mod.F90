@@ -4,11 +4,11 @@
 #endif
 
 module derivative_mod
-  use derivative_mod_base
-  use derivative_mod_base, only: laplace_sphere_wk_base => laplace_sphere_wk, &
-                                 divergence_sphere_wk_base => divergence_sphere_wk, &
-                                 gradient_sphere_base => gradient_sphere, &
-                                 divergence_sphere_base => divergence_sphere
+  use derivative_mod_base, only: derivative_t, derivative_stag_t, subcell_integration, subcell_dss_fluxes, subcell_div_fluxes, subcell_Laplace_fluxes, allocate_subcell_integration_matrix,   &
+                                 derivinit, deriv_print, gradient, gradient_wk, vorticity, divergence, interpolate_gll2fvm_corners, interpolate_gll2fvm_points, interpolate_gll2spelt_points, &
+                                 remap_phys2gll, v2pinit, gradient_sphere_wk_testcov, gradient_sphere_wk_testcontra, ugradv_sphere, vorticity_sphere, vorticity_sphere_diag, curl_sphere,     &
+                                 curl_sphere_wk_testcov, vlaplace_sphere_wk, element_boundary_integral, edge_flux_u_cg, gll_to_dgmodal, dgmodal_to_gll, limiter_optim_iter_full, &
+                                 laplace_sphere_wk, divergence_sphere_wk, gradient_sphere, divergence_sphere
   use kinds, only : real_kind, longdouble_kind
   use dimensions_mod, only : np, nc, npdg, nep, nelemd, nlev
   use quadrature_mod, only : quadrature_t, gauss, gausslobatto,legendre, jacobi
@@ -18,6 +18,17 @@ module derivative_mod
   use element_mod, only : element_t
   use control_mod, only : hypervis_scaling, hypervis_power
   implicit none
+  private
+
+  public ::  derivative_t, derivative_stag_t, subcell_integration, subcell_dss_fluxes, subcell_div_fluxes, subcell_Laplace_fluxes, allocate_subcell_integration_matrix,   &
+             derivinit, deriv_print, gradient, gradient_wk, vorticity, divergence, interpolate_gll2fvm_corners, interpolate_gll2fvm_points, interpolate_gll2spelt_points, &
+             remap_phys2gll, v2pinit, gradient_sphere_wk_testcov, gradient_sphere_wk_testcontra, ugradv_sphere, vorticity_sphere, vorticity_sphere_diag, curl_sphere,     &
+             curl_sphere_wk_testcov, vlaplace_sphere_wk, element_boundary_integral, edge_flux_u_cg, gll_to_dgmodal, dgmodal_to_gll, limiter_optim_iter_full, &
+             laplace_sphere_wk, divergence_sphere_wk, gradient_sphere, divergence_sphere
+  public :: laplace_sphere_wk_openacc
+  public :: divergence_sphere_wk_openacc
+  public :: gradient_sphere_openacc
+  public :: divergence_sphere_openacc
 
 contains
 
