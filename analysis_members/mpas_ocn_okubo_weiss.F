@@ -1132,12 +1132,12 @@ contains
       call mpas_timer_stop("sort/reduce")
 
       ! only output if IO node
+      call mpas_timer_start("output")
       if (dminfo % my_proc_id == IO_NODE) then
          ! Output aggregated
-         call mpas_timer_start("output")
          call ocn_output_eddy_stats(listIdx, aggregated, use_lat_lon_coords,xtime)
-         call mpas_timer_stop("output")
       end if
+      call mpas_timer_stop("output")
 
    end subroutine ocn_aggregate_eddy_stats!}}}
 
