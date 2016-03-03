@@ -415,7 +415,7 @@ category="control"
 group="seq_infodata_inparm"
 valid_values="minus1p8,linear_salt,mushy">
 Freezing point calculation for salt water.
-Default: default
+Default: minus1p8
 </entry>
 
 <entry 

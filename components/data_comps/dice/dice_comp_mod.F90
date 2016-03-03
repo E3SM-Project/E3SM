@@ -6,7 +6,7 @@ module dice_comp_mod
 ! !USES:
 
   use shr_const_mod
-  use shr_func_mod
+  use shr_frz_mod
   use shr_sys_mod
   use shr_kind_mod , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, &
                            CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
@@ -111,6 +111,7 @@ module dice_comp_mod
   integer(IN) , pointer :: imask(:)
   real(R8)    , pointer :: yc(:)
   real(R8)    , pointer :: water(:)
+  real(R8)    , pointer :: tfreeze(:)
 !  real(R8)    , pointer :: ifrac0(:)
 
   integer(IN),parameter :: ktrans = 42
@@ -497,6 +498,7 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     allocate(imask(lsize))
     allocate(yc(lsize))
     allocate(water(lsize))
+    allocate(tfreeze(lsize))
     ! allocate(iFrac0(lsize))
 
     kfld = mct_aVect_indexRA(ggrid%data,'mask')
@@ -638,7 +640,6 @@ subroutine dice_comp_run( EClock, cdata,  x2i, i2x)
    real(R8)      :: qmeltall          ! q that would melt all accumulated water
    real(R8)      :: cosarg            ! for setting ice temp pattern
    real(R8)      :: jday, jday0       ! elapsed day counters
-   real(R8)      :: tfreeze           ! salinity dependent freezing point
    character(CS) :: calendar          ! calendar type
 
    type(seq_infodata_type), pointer :: infodata
@@ -729,9 +730,9 @@ subroutine dice_comp_run( EClock, cdata,  x2i, i2x)
 
       lsize = mct_avect_lsize(i2x)
 
-      do n = 1,lsize
+      tfreeze = shr_frz_freezetemp(x2i%rAttr(ksalinity,:)) + tFrz ! convert to Kelvin
 
-         tfreeze = shr_func_freezetemp(x2i%rAttr(ksalinity,n)) + tFrz ! convert to Kelvin
+      do n = 1,lsize
 
          !--- fix erroneous iFrac ---
          i2x%rAttr(kiFrac,n) = min(1.0_R8,max(0.0_R8,i2x%rAttr(kiFrac,n))) 
@@ -798,7 +799,7 @@ subroutine dice_comp_run( EClock, cdata,  x2i, i2x)
             !--- non-zero water => non-zero iFrac ---
             if (i2x%rAttr(kiFrac,n) <= 0.0_R8  .and.  water(n) > 0.0_R8) then
                i2x%rAttr(kiFrac,n) = min(1.0_R8,water(n)/waterMax)
-               ! i2x%rAttr(kT,n) = tfreeze     ! T can be above freezing?!?
+               ! i2x%rAttr(kT,n) = tfreeze(n)     ! T can be above freezing?!?
             end if
 
             !--- cpl multiplies melth & meltw by iFrac ---
@@ -814,7 +815,7 @@ subroutine dice_comp_run( EClock, cdata,  x2i, i2x)
          end if
 
          !--- modify T wrt iFrac: (iFrac -> 0) => (T -> tfreeze) ---
-         i2x%rAttr(kt,n) = tfreeze + i2x%rAttr(kiFrac,n)*(i2x%rAttr(kt,n)-tfreeze) 
+         i2x%rAttr(kt,n) = tfreeze(n) + i2x%rAttr(kiFrac,n)*(i2x%rAttr(kt,n)-tfreeze(n)) 
 
       end do
 
