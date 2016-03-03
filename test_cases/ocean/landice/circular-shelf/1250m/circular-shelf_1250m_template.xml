@@ -23,6 +23,7 @@
                         <attribute name="clobber_mode">truncate</attribute>
                         <add_contents>
                                 <member name="basicmesh" type="stream"/>
+                                <member name="layerInterfaceSigma" type="var"/>
                                 <member name="xtime" type="var"/>
                                 <member name="normalVelocity" type="var"/>
                                 <member name="thickness" type="var"/>

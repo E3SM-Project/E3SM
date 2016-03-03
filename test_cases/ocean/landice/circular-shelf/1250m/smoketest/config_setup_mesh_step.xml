@@ -25,7 +25,7 @@
                 <step executable="./create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
                         <argument flag="-i">mpas_grid.nc</argument>
                         <argument flag="-o">landice_grid.nc</argument>
-                        <argument flag="-l">10</argument>
+                        <argument flag="-l">5</argument>
                         <argument flag="--diri"></argument>
                         <argument flag="--beta"></argument>
                 </step>

@@ -18,27 +18,23 @@ if not options.filename:
 
 
 # Open the file, get needed dimensions
-try:
-    gridfile = Dataset(options.filename,'r+')
-    nVertLevels = len(gridfile.dimensions['nVertLevels'])
-    if nVertLevels != 5:
-         print 'nVerLevels in the supplied file was ', nVertLevels, '.  This test case is typically run with 5 levels.'
-    # Get variables
-    xCell = gridfile.variables['xCell']
-    yCell = gridfile.variables['yCell']
-    xEdge = gridfile.variables['xEdge']
-    yEdge = gridfile.variables['yEdge']
-    xVertex = gridfile.variables['xVertex']
-    yVertex = gridfile.variables['yVertex']
-    thickness = gridfile.variables['thickness']
-    bedTopography = gridfile.variables['bedTopography']
-    layerThicknessFractions = gridfile.variables['layerThicknessFractions']
-    temperature = gridfile.variables['temperature']
-    cellsOnCell= gridfile.variables['cellsOnCell']
-    # Get b.c. variables
-    SMB = gridfile.variables['sfcMassBal']
-except:
-    sys.exit('Error: The grid file specified is either missing or lacking needed dimensions/variables.')
+gridfile = Dataset(options.filename,'r+')
+nVertLevels = len(gridfile.dimensions['nVertLevels'])
+if nVertLevels != 5:
+     print 'nVertLevels in the supplied file was ', nVertLevels, '.  This test case is typically run with 5 levels.'
+# Get variables
+xCell = gridfile.variables['xCell']
+yCell = gridfile.variables['yCell']
+xEdge = gridfile.variables['xEdge']
+yEdge = gridfile.variables['yEdge']
+xVertex = gridfile.variables['xVertex']
+yVertex = gridfile.variables['yVertex']
+thickness = gridfile.variables['thickness']
+bedTopography = gridfile.variables['bedTopography']
+layerThicknessFractions = gridfile.variables['layerThicknessFractions']
+cellsOnCell= gridfile.variables['cellsOnCell']
+# Get b.c. variables
+SMB = gridfile.variables['sfcMassBal']
 
 
 
@@ -78,10 +74,10 @@ thickness[0,:] = thickness_field
 
 # flat bed at -2000 m everywhere with a single grounded point
 bedTopography[:] = -2000.0  
-bedTopography[centerCellIndex] = -880.0
+bedTopography[0, centerCellIndex] = -880.0
 if options.use_7cells:
    print 'Making the grounded portion of the domain cover 7 cells - the center cell and its 6 neighbors.'
-   bedTopography[cellsOnCell[centerCellIndex,:]-1] = -880.0  # use this to make the grounded area 7 cells instead of 1
+   bedTopography[0, cellsOnCell[centerCellIndex,:]-1] = -880.0  # use this to make the grounded area 7 cells instead of 1
 else:
    print 'Making the grounded portion of the domain cover 1 cell - the center cell.'
 
@@ -106,8 +102,6 @@ else: # use Dirichlet b.c.
    if options.use_7cells:
       dirMask[:, cellsOnCell[centerCellIndex,:]-1, -1] = 1
 
-# constant, arbitrary temperature, degrees C
-temperature[:] = 273.15 
 # Setup layerThicknessFractions
 layerThicknessFractions[:] = 1.0 / nVertLevels
 # boundary conditions

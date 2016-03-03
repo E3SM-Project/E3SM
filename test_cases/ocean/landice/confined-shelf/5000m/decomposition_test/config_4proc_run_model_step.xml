@@ -6,6 +6,9 @@
         <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
         <add_executable source="model" dest="landice_model"/>
         <add_executable source="metis" dest="metis"/>
+        <!-- link in scripts that a user might want -->
+        <add_link source_path="script_configuration_dir" source="setup_confined_shelf_initial_conditions.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="visualize_confined_shelf.py" dest="."/>
 
         <namelist name="namelist.landice" mode="forward">
                 <template file="confined-shelf_5000m_template.xml" path_base="script_resolution_dir"/>

@@ -6,7 +6,7 @@
         <add_executable source="periodic_hex" dest="."/>
         <add_executable source="mesh_converter" dest="."/>
         <add_executable source="grid_to_li_grid" dest="."/>
-        <add_link source_path="script_configuration_dir" source="setup_dome_initial_conditions.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="setup_circular_shelf_initial_conditions.py" dest="."/>
 
 
         <run_script name="setup_mesh.py">
@@ -25,13 +25,14 @@
                 <step executable="./create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
                         <argument flag="-i">mpas_grid.nc</argument>
                         <argument flag="-o">landice_grid.nc</argument>
-                        <argument flag="-l">10</argument>
+                        <argument flag="-l">5</argument>
+                        <argument flag="--diri"></argument>
+                        <argument flag="--beta"></argument>
                 </step>
 
                 <!-- Set up initial condition on to landice mesh -->
-                <step executable="./setup_dome_initial_conditions.py" pre_message="\n\n### Setting up initial condition\n\n" post_message="\n\n### Initial condition setup complete\n\n">
+                <step executable="./setup_circular_shelf_initial_conditions.py" pre_message="\n\n### Setting up initial condition\n\n" post_message="\n\n### Initial condition setup complete\n\n">
                         <argument flag="-f">landice_grid.nc</argument>
-                        <argument flag="-d">halfar</argument>
                 </step>
 
         </run_script>

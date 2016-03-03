@@ -101,7 +101,7 @@ cbar.set_label('speed (m/yr)', rotation=270)
 plt.plot(xCell[indXsectIce], upperSurface[time_slice, indXsectIce], 'ro-', label="Upper surface")
 plt.plot(xCell[indXsectIce], lowerSurface[time_slice, indXsectIce], 'bo-', label="Lower surface")
 try:
-   plt.plot(xCell[indXsect], bedTopography[indXsect], 'go-', label="Bed topography")
+   plt.plot(xCell[indXsect], bedTopography[time_slice, indXsect], 'go-', label="Bed topography")
 except:
    print "Skipping plotting of bedTopography."
 plt.plot(xCell[indXsect], xCell[indXsect] * 0.0, ':k', label="sea level")
