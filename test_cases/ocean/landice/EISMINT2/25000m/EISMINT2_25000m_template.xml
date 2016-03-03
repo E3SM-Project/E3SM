@@ -6,6 +6,7 @@
                 <option name="config_adaptive_timestep">.true.</option>
                 <option name="config_max_adaptive_timestep">3153600000</option> <!-- 100 years -->
                 <option name="config_adaptive_timestep_include_DCFL">.true.</option>
+                <option name="config_adaptive_timestep_force_interval">'900000-00-00_00:00:00</option>
                 <option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
                 <option name="config_velocity_solver">"sia"</option>
                 <option name="config_flowParamA_calculation">"PB1982"</option>
