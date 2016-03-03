@@ -161,7 +161,7 @@ contains
           else 
 
              write(stderrUnit,*) "Error: config_stress_divergence_scheme unknown: ", trim(config_stress_divergence_scheme)
-             call MPAS_dmpar_global_abort('config_stress_divergence_scheme unknown')
+             call MPAS_dmpar_global_abort('MPAS-seaice: config_stress_divergence_scheme unknown')
 
           endif
 

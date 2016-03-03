@@ -757,7 +757,7 @@ contains
        weightQuadPoint(4:6) = w2TriangleQP    ! 0.022338...
     else
        write(stderrUnit,*) 'ERROR: must have nQuadPoints = 3 or 6 for IR transport'
-       call mpas_dmpar_global_abort('Aborting with IR error')
+       call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
     endif
 
     ! check for non-positive cell areas
@@ -768,7 +768,7 @@ contains
           write(stderrUnit,*) ' '
           write(stderrUnit,*) 'Bad cell area, iCell, area:', iCell, areaCell(iCell)
 !!          write(stderrUnit,*) 'cellsOnCell:', cellsOnCell(:,iCell)
-          call mpas_dmpar_global_abort('Aborting with IR error')
+          call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
        endif
     enddo
 
@@ -835,7 +835,7 @@ contains
        write(stderrUnit,*) "-- vertexDegree:     ", vertexDegree
        write(stderrUnit,*) "-- config_num_halos: ", config_num_halos
        write(stderrUnit,*) "-- numHalosOptimal:  ", numHalosOptimal
-       call MPAS_dmpar_global_abort("Error: incremental remapping advection")
+       call MPAS_dmpar_global_abort("MPAS-seaice: incremental remapping advection")
 
     else if (config_num_halos > numHalosOptimal) then
 
@@ -1319,7 +1319,7 @@ contains
                    write(stderrUnit,*) 'edgeVertex(:,1):', edgeVertex(:,1)
                    write(stderrUnit,*) 'edgeVertex(:,2):', edgeVertex(:,2)
                    write(stderrUnit,*) 'cellCenter(:):', cellCenter(:)
-                   call mpas_dmpar_global_abort('Aborting with IR error')
+                   call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
                 endif
                 
              endif  ! neighbor cell exists
@@ -1356,7 +1356,7 @@ contains
                    write(stderrUnit,*) 'edgeVertex(:,1):', edgeVertex(:,1)
                    write(stderrUnit,*) 'edgeVertex(:,2):', edgeVertex(:,2)
                    write(stderrUnit,*) 'cellCenter(:):', cellCenter(:)
-                   call mpas_dmpar_global_abort('Aborting with IR error')
+                   call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
                 endif
                 
              endif  ! neighbor cell exists
@@ -1951,7 +1951,7 @@ contains
                    iVertex = verticesOnCell(iVertexCell,iCell)
                    write(stderrUnit,*) iVertexCell, xVertex(iVertex), yVertex(iVertex), zVertex(iVertex)
                 enddo
-                call mpas_dmpar_global_abort('Aborting with IR error')
+                call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
              endif
              
           enddo   ! iVertexOnCell
@@ -1993,7 +1993,7 @@ contains
              do iVertexCell = 1, nEdgesOnCell(iCell)
                 write(stderrUnit,*) iVertexCell, xVertexOnCell(iVertexCell,iCell), yVertexOnCell(iVertexCell,iCell)
              enddo
-             call mpas_dmpar_global_abort('Aborting with IR error')
+             call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
           endif
 
        enddo   ! iVertexOnCell
@@ -3698,7 +3698,7 @@ contains
              elseif (thisTracer % nParents == 3) then
 
                 write(stderrUnit,*) 'IR, construct_linear_tracer_fields: Tracers with 3 parents should not have children'
-                call mpas_dmpar_global_abort('Aborting with IR error')
+                call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
 
              endif   ! nParents
 
@@ -3979,7 +3979,7 @@ contains
                 elseif (thisTracer % nParents == 3) then
 
                    write(stderrUnit,*) 'ERROR: IR, construct_linear_tracer_fields: Tracers with 3 parents should not have children'
-                   call mpas_dmpar_global_abort('Aborting with IR error')
+                   call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
 
                 endif   ! parentTracer % ndims
 
@@ -4899,7 +4899,7 @@ contains
     if (.not. (present(xBarycenter2D) .and. present(yBarycenter2D)) .and.  &
         .not. (present(xBarycenter3D) .and. present(yBarycenter3D))) then
        write(stderrUnit,*) 'ERROR: Subroutine limit_tracer_gradient_3d requires input barycenter coordinates'
-       call mpas_dmpar_global_abort('Aborting with IR error')
+       call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
     endif
 
     nLayers     = size(field, 1)
@@ -6207,7 +6207,7 @@ contains
        
        if (abs(crossProduct) < eps11) then  ! the two vectors are (nearly) parallel; something is wrong
           write(stderrUnit,*) 'ERROR: basis vectors for IR coordinate transformations must not be parallel: iEdge, iCell =', iEdge, iCell
-          call mpas_dmpar_global_abort('Aborting with IR error')
+          call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
        endif
        
        if (crossProduct > 0.0_RKIND) then
@@ -6434,7 +6434,7 @@ contains
     else   ! nQuadPoint /= 3 or 6
 
        write(stderrUnit,*) 'ERROR: must have nQuadPoints = 3 or 6'
-       call mpas_dmpar_global_abort('Aborting with IR error')
+       call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
 
     endif            ! nQuadPoints
 
@@ -6535,7 +6535,7 @@ contains
        ! check that nParents <= 3
        if (thisTracer % nParents > 3) then
           write(stderrUnit,*) 'ERROR: Tracer has > 3 parents:', trim(thisTracer % tracerName)
-          call mpas_dmpar_global_abort('Aborting with IR error')
+          call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
        endif
 
        ! initialize edge flux and allocate tracerIntegral array
@@ -6662,7 +6662,7 @@ contains
                                write(stderrUnit,*)'center val:', thisTracer % center2D(iCat,iCell)
                                write(stderrUnit,*)'x gradient:', thisTracer % xGrad2D(iCat,iCell)
                                write(stderrUnit,*)'y gradient:', thisTracer % yGrad2D(iCat,iCell)
-                               call mpas_dmpar_global_abort('Aborting with IR error')
+                               call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
                             endif  ! negative area
                          enddo   ! iCat
                       enddo   ! iqp
@@ -6752,7 +6752,7 @@ contains
                                   write(stderrUnit,*)'center val:', thisTracer % center3D(iLayer,iCat,iCell)
                                   write(stderrUnit,*)'x gradient:', thisTracer % xGrad3D(iLayer,iCat,iCell)
                                   write(stderrUnit,*)'y gradient:', thisTracer % yGrad3D(iLayer,iCat,iCell)
-                                  call mpas_dmpar_global_abort('Aborting with IR error')
+                                  call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
                                endif  ! negative area
                             enddo   ! iLayer
                          enddo   ! iCat
@@ -7272,7 +7272,7 @@ contains
                       write(stderrUnit,*) ' '
                       write(stderrUnit,*) 'ERROR: Negative mass in IR: iCat, iCell, value:', &
                            iCat, iCell, thisTracer % array2D(iCat,iCell)
-                      call mpas_dmpar_global_abort('Aborting with IR error')
+                      call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
                    endif
                 enddo
              enddo
@@ -7286,7 +7286,7 @@ contains
                          write(stderrUnit,*) ' '
                          write(stderrUnit,*) 'ERROR: Negative mass in IR: iLayer, iCat, iCell, value:',  &
                               iLayer, iCat, iCell, thisTracer % array3D(iLayer,iCat,iCell)
-                         call mpas_dmpar_global_abort('Aborting with IR error')
+                         call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
                       endif
                    enddo
                 enddo
@@ -7948,7 +7948,7 @@ contains
                    write(stderrUnit,*) 'Tracer conservation error: tracer, category =', trim(thisTracer % tracerName), iCat
                    write(stderrUnit,*) 'Init value, final value:', thisTracer % globalSumInit2D(iCat), thisTracer % globalSumFinal2D(iCat)
                    write(stderrUnit,*) 'Difference, ratio:', difference, ratio
-                   call mpas_dmpar_global_abort('Aborting with IR error')
+                   call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
                 endif
                 
              endif
@@ -7989,7 +7989,7 @@ contains
                       write(stderrUnit,*) 'Tracer conservation error: tracer, category, layer =', trim(thisTracer % tracerName), iCat, iLayer
                       write(stderrUnit,*) 'Init value, final value:', thisTracer % globalSumInit3D(iLayer,iCat), thisTracer % globalSumFinal3D(iLayer,iCat)
                       write(stderrUnit,*) 'Difference, ratio:', difference, ratio
-                      call mpas_dmpar_global_abort('Aborting with IR error')
+                      call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
                    endif
                    
                 endif
@@ -8327,7 +8327,7 @@ contains
                             write(stderrUnit,*) 'New value in cell =', thisTracer % array2d(iCat,iCell)
                             write(stderrUnit,*) 'Tolerance, difference:', toleranceMin,  &
                                  thisTracer % localMin2D(iCat,iCell) - thisTracer % array2D(iCat,iCell)
-                            call mpas_dmpar_global_abort('Aborting with IR error')
+                            call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
                             
                          elseif (thisTracer % array2D(iCat,iCell) > thisTracer % localMax2D(iCat,iCell) + toleranceMax) then
                             
@@ -8338,7 +8338,7 @@ contains
                             write(stderrUnit,*) 'New value in cell =', thisTracer % array2d(iCat,iCell)
                             write(stderrUnit,*) 'Tolerance, difference:', toleranceMax,  &
                                  thisTracer % array2D(iCat,iCell) - thisTracer % localMax2D(iCat,iCell)
-                            call mpas_dmpar_global_abort('Aborting with IR error')
+                            call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
                             
                          endif
                          
@@ -8433,7 +8433,7 @@ contains
                                write(stderrUnit,*) 'New value in cell =', thisTracer % array3D(iLayer,iCat,iCell)
                                write(stderrUnit,*) 'Tolerance, difference:', toleranceMin,  &
                                     thisTracer % localMin3D(iLayer,iCat,iCell) - thisTracer % array3D(iLayer,iCat,iCell)
-                               call mpas_dmpar_global_abort('Aborting with IR error')
+                               call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
                                
                             elseif (thisTracer % array3D(iLayer,iCat,iCell) > thisTracer % localMax3D(iLayer,iCat,iCell) + toleranceMax) then
                                
@@ -8444,7 +8444,7 @@ contains
                                write(stderrUnit,*) 'New value in cell =', thisTracer % array3D(iLayer,iCat,iCell)
                                write(stderrUnit,*) 'Tolerance, difference:', toleranceMax,  &
                                     thisTracer % array3D(iLayer,iCat,iCell) - thisTracer % localMax3D(iLayer,iCat,iCell)
-                               call mpas_dmpar_global_abort('Aborting with IR error')
+                               call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
                                
                             endif
                             
@@ -8545,7 +8545,7 @@ contains
 
        ! mass-like field must be 2D
        write(stderrUnit,*) 'ERROR: mass-like field must be 2D'
-       call mpas_dmpar_global_abort('Aborting with IR error')
+       call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
 
     endif   ! ndims
 

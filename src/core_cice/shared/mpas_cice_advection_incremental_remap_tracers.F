@@ -746,7 +746,7 @@ contains
                             write(stderrUnit,*) 'ERROR, IR tracers: Cannot have an inactive parent with an active child'
                             write(stderrUnit,*) 'Inactive parent:', trim(tracer % tracerName)
                             write(stderrUnit,*) 'Active child:', trim(childTracer % tracerName)
-                            call mpas_dmpar_global_abort('Aborting with IR error')
+                            call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
                          endif
                       endif
                    endif     ! nParents > 1
@@ -769,7 +769,7 @@ contains
              if (first) then ! the list is empty; something is wrong
                 nullify(tracersHead)
                 write(stderrUnit,*) 'ERROR: No active tracers for IR'
-                call mpas_dmpar_global_abort('Aborting with IR error')
+                call mpas_dmpar_global_abort('MPAS-seaice: Aborting with IR error')
              endif
 
           endif  ! associated(tracer % nextInitial)
