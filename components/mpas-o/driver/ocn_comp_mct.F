@@ -1489,7 +1489,9 @@ contains
            riverRunoffFlux(i) = x2o_o % rAttr(index_x2o_Foxx_rofl, n)
         end if
         if ( iceRunoffFluxField % isActive ) then
-           iceRunoffFlux(i) = x2o_o % rAttr(index_x2o_Foxx_rofi, n)
+           ! DWJ 03/03/2016: Disable solid ice runoff temporarily to prevent large sea ice growth
+           !iceRunoffFlux(i) = x2o_o % rAttr(index_x2o_Foxx_rofi, n)
+           iceRunoffFlux(i) = 0.0_RKIND
            if(iceRunoffFlux(n) < 0.0_RKIND) then
                call shr_sys_abort ('Error: incoming rofi_F is negative')
            end if
