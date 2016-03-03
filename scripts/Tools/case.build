@@ -58,7 +58,7 @@ def _main_func(description):
     caseroot, testmode, sharedlib_only, model_only = parse_command_line(sys.argv, description)
     logging.info("calling build.case_build with caseroot=%s and testmode=%s"
                  %(caseroot, testmode))
-    build.case_build(caseroot, testmode, sharedlib_only, model_only)
+    build.case_build(caseroot, case=None, testmode=testmode, sharedlib_only=sharedlib_only, model_only=model_only)
 
 if __name__ == "__main__":
     _main_func(__doc__)
