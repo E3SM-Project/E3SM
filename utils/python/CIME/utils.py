@@ -48,7 +48,7 @@ def _read_cime_config_file():
     if(os.path.isfile(cime_config_file)):
         cime_config.read(cime_config_file)
     else:
-        logger.warning("File %s not found" % cime_config_file)
+        logger.debug("File %s not found" % cime_config_file)
         cime_config.add_section('main')
 
     return cime_config
@@ -149,7 +149,8 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
         arg_stdout = subprocess.PIPE
     if (arg_stderr is _hack):
         arg_stderr = subprocess.PIPE
-    if (verbose):
+
+    if (verbose or logger.level == logging.DEBUG):
         logger.info("RUN: %s" % cmd)
 
     if (input_str is not None):
@@ -169,10 +170,9 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     errput = errput.strip() if errput is not None else errput
     stat = proc.wait()
 
-    logger.debug("  stat: %d\n" % stat)
-    if(verbose and output is not None):
+    if (verbose or logger.level == logging.DEBUG):
+        logger.info("  stat: %d\n" % stat)
         logger.info("  output: %s\n" % output)
-    if(verbose and errput is not None):
         logger.info("  errput: %s\n" % errput)
 
     if (ok_to_fail):

@@ -366,7 +366,7 @@ class SystemTest(object):
 
         files = Files()
         drv_config_file = files.get_value("CONFIG_DRV_FILE")
-        logger.info("Found drv_config_file %s" % drv_config_file)
+        logger.debug("Found drv_config_file %s" % drv_config_file)
 
         drv_comp = Component(drv_config_file)
         envtest.add_elements_by_group(drv_comp, {}, "env_test.xml")
@@ -604,16 +604,16 @@ class SystemTest(object):
             self._update_test_status(test, test_phase, status)
         self._handle_test_status_file(test, test_phase, success)
 
-        status_str = "Finished %s for test %s in %f seconds (%s)\n" %\
+        status_str = "Finished %s for test %s in %f seconds (%s)" %\
                      (test_phase, test, elapsed_time, status)
         if not success:
-            status_str += "    Case dir: %s\n" % self._get_test_dir(test)
+            status_str += "    Case dir: %s" % self._get_test_dir(test)
         logger.info(status_str)
 
         # On batch systems, we want to immediately submit to the queue, because
         # it's very cheap to submit and will get us a better spot in line
         if (success and not self._no_run and not self._no_batch and test_phase == MODEL_BUILD_PHASE):
-            logger.info("Starting %s for test %s with %d procs\n" % (RUN_PHASE, test, 1))
+            logger.info("Starting %s for test %s with %d procs" % (RUN_PHASE, test, 1))
             self._update_test_status(test, RUN_PHASE, TEST_PENDING_STATUS)
             self._consumer(test, RUN_PHASE, self._run_phase)
 
@@ -625,7 +625,7 @@ class SystemTest(object):
             work_to_do = False
             num_threads_launched_this_iteration = 0
             for test in self._tests:
-                logger.info("test_name: " + test)
+                logger.debug("test_name: " + test)
                 # If we have no workers available, immediately wait
                 if len(threads_in_flight) == self._parallel_jobs:
                     self._wait_for_something_to_finish(threads_in_flight)
@@ -642,8 +642,8 @@ class SystemTest(object):
                             self._procs_avail -= procs_needed
 
                             # Necessary to print this way when multiple threads printing
-                            logger.info("Starting %s for test %s with %d procs\n" %
-                                             (next_phase, test, procs_needed))
+                            logger.info("Starting %s for test %s with %d procs" %
+                                        (next_phase, test, procs_needed))
 
                             self._update_test_status(test, next_phase, TEST_PENDING_STATUS)
                             new_thread = threading.Thread(target=self._consumer,
@@ -710,7 +710,7 @@ class SystemTest(object):
         # Tell user what will be run
         logger.info( "RUNNING TESTS:")
         for test in self._tests:
-            logger.info( " %s"% test)
+            logger.info( "  %s"% test)
 
         # TODO - documentation
 
