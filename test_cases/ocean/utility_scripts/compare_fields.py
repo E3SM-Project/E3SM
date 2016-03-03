@@ -58,12 +58,11 @@ print "Comparing field '%s'"%(args.variable)
 
 for t in range( 0, time_length):
 	pass_time = True
-	diff = field1[t][:] - field2[t][:]
-	l2_norm = sum(diff * diff)
-	l2_norm = l2_norm / np.sum(field1[t][:].shape)
-	l2_norm = np.max(l2_norm)
+	diff = np.absolute(field1[t][:] - field2[t][:])
+	l2_norm = np.sum(diff * diff)
+	l2_norm = np.sqrt(l2_norm)
 	
-	l1_norm = sum(diff)
+	l1_norm = np.sum(diff)
 	l1_norm = l1_norm / np.sum(field1[t][:].shape)
 	l1_norm = np.max(l1_norm)
 
@@ -72,17 +71,17 @@ for t in range( 0, time_length):
 
 	diff_str = '%d: '%(t)
 	if args.l1_norm:
-		if float(args.l1_norm) < abs(l1_norm):
+		if float(args.l1_norm) < l1_norm:
 			pass_time = False
 	diff_str = '%s l1: %16.14e '%(diff_str, l1_norm)
 
 	if args.l2_norm:
-		if float(args.l2_norm) < abs(l2_norm):
+		if float(args.l2_norm) < l2_norm:
 			pass_time = False
 	diff_str = '%s l2: %16.14e '%(diff_str, l2_norm)
 
 	if args.linf_norm:
-		if float(args.linf_norm) < abs(linf_norm):
+		if float(args.linf_norm) < linf_norm:
 			pass_time = False
 	diff_str = '%s linf: %16.14e '%(diff_str, linf_norm)
 
