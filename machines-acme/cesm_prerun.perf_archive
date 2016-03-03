@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/csh -f
 # cesm_prerun with performance data archiving: 
 #  ./cesm_prerun.perf_archive with the following argument keyword/value pairs, in any order
 #   -machine <system name>
