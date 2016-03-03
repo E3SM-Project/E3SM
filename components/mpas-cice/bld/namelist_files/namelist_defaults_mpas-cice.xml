@@ -75,7 +75,7 @@
 <config_revised_evp>false</config_revised_evp>
 <config_use_air_stress>true</config_use_air_stress>
 <config_use_ocean_stress>true</config_use_ocean_stress>
-<config_use_surface_tilt>false</config_use_surface_tilt>
+<config_use_surface_tilt>true</config_use_surface_tilt>
 <config_geostrophic_surface_tilt>false</config_geostrophic_surface_tilt>
 
 <!-- advection -->
@@ -271,6 +271,13 @@
 <config_AM_pondDiagnostics_output_stream>'none'</config_AM_pondDiagnostics_output_stream>
 <config_AM_pondDiagnostics_compute_on_startup>.false.</config_AM_pondDiagnostics_compute_on_startup>
 <config_AM_pondDiagnostics_write_on_startup>.false.</config_AM_pondDiagnostics_write_on_startup>
+
+<!-- AM_unitConversion -->
+<config_AM_unitConversion_enable>.true.</config_AM_unitConversion_enable>
+<config_AM_unitConversion_compute_interval>'dt'</config_AM_unitConversion_compute_interval>
+<config_AM_unitConversion_output_stream>'none'</config_AM_unitConversion_output_stream>
+<config_AM_unitConversion_compute_on_startup>.false.</config_AM_unitConversion_compute_on_startup>
+<config_AM_unitConversion_write_on_startup>.false.</config_AM_unitConversion_write_on_startup>
 
 <!-- AM_pointwiseStats -->
 <config_AM_pointwiseStats_enable>.false.</config_AM_pointwiseStats_enable>

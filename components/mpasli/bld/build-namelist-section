@@ -126,3 +126,4 @@ add_default($nl, 'config_AM_globalStats_compute_interval');
 add_default($nl, 'config_AM_globalStats_stream_name');
 add_default($nl, 'config_AM_globalStats_compute_on_startup');
 add_default($nl, 'config_AM_globalStats_write_on_startup');
+
