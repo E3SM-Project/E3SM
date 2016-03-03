@@ -242,7 +242,7 @@ contains
                end do
    
                if ( .not. streamFound ) then
-                  call mpas_dmpar_global_abort('ERROR: Stream ' // trim(config_AM_stream_name) // ' does not exist. Exiting...')
+                  call mpas_dmpar_global_abort('MPAS-landice: ERROR: Stream ' // trim(config_AM_stream_name) // ' does not exist. Exiting...')
                end if
             end if
             

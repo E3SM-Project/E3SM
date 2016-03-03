@@ -222,7 +222,7 @@ module li_core
 
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
-          call mpas_dmpar_global_abort("An error has occurred in li_core_init. Aborting...")
+          call mpas_dmpar_global_abort("MPAS-landice: An error has occurred in li_core_init. Aborting...")
       endif
 
    !--------------------------------------------------------------------
@@ -413,7 +413,7 @@ module li_core
          ! === error check and exit
          call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
          if (globalErr > 0) then
-             call mpas_dmpar_global_abort("An error has occurred in li_core_run. Aborting...")
+             call mpas_dmpar_global_abort("MPAS-landice: An error has occurred in li_core_run. Aborting...")
          endif
 
       end do
@@ -492,7 +492,7 @@ module li_core
       ! === error check and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
-          call mpas_dmpar_global_abort("An error has occurred in li_core_finalize. Aborting...")
+          call mpas_dmpar_global_abort("MPAS-landice: An error has occurred in li_core_finalize. Aborting...")
       endif
 
       call mpas_timer_stop("land ice finalize")
@@ -659,7 +659,7 @@ module li_core
       ! === error check and exit
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
-          call mpas_dmpar_global_abort("An error has occurred in li_core_initial_solve. Aborting...")
+          call mpas_dmpar_global_abort("MPAS-landice: An error has occurred in li_core_initial_solve. Aborting...")
       endif
 
 

@@ -292,7 +292,7 @@ module li_calving
                write(stderrUnit,*) 'ERROR: Must have config_calving_thickness > config_dynamic_thickness'
                write(stderrUnit,*) 'config_calving_thickness (m) =', config_calving_thickness
                write(stderrUnit,*) 'config_dynamic_thickness (m) =', config_dynamic_thickness
-!!               call mpas_dmpar_global_abort('Aborting with calving error')
+!!               call mpas_dmpar_global_abort('MPAS-landice: Aborting with calving error')
             endif
 
             ! get scratch fields for calving
