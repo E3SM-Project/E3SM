@@ -250,7 +250,7 @@ module ocn_forward_mode
       ierr = ior(ierr, err_tmp)
 
       if(ierr.eq.1) then
-          call mpas_dmpar_global_abort('ERROR: An error was encountered while initializing the MPAS-Ocean forward mode')
+          call mpas_dmpar_global_abort('MPAS-ocean: ERROR: An error was encountered while initializing the MPAS-Ocean forward mode')
       endif
 
       call ocn_init_routines_vert_coord(domain)
@@ -266,13 +266,13 @@ module ocn_forward_mode
           config_vert_coord_movement.ne.'impermeable_interfaces'.and. &
           config_vert_coord_movement.ne.'user_specified') then
          write (stderrUnit,*) ' Incorrect choice of config_vert_coord_movement.'
-         call mpas_dmpar_global_abort('ERROR: Incorrect choice of config_vert_coord_movement.')
+         call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Incorrect choice of config_vert_coord_movement.')
       endif
 
       if(config_vert_coord_movement .ne. 'impermeable_interfaces' .and. config_pressure_gradient_type &
             .eq. 'MontgomeryPotential') then
          write (stderrUnit,*) ' Incorrect combination of config_vert_coord_movement and config_pressure_gradient_type'
-         call mpas_dmpar_global_abort('ERROR: Incorrect combination of config_vert_coord_movement and ' &
+         call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Incorrect combination of config_vert_coord_movement and ' &
                                    // 'config_pressure_gradient_type')
       end if
 
@@ -280,7 +280,7 @@ module ocn_forward_mode
           config_vert_coord_movement.ne.'fixed')then
          write (stderrUnit,*) 'filter_btr_mode has only been tested with'// &
             ' config_vert_coord_movement=fixed.'
-         call mpas_dmpar_global_abort('ERROR: filter_btr_mode has only been tested with config_vert_coord_movement=fixed.')
+         call mpas_dmpar_global_abort('MPAS-ocean: ERROR: filter_btr_mode has only been tested with config_vert_coord_movement=fixed.')
       endif
 
       ! find the maximum value of the meshDensity
@@ -308,7 +308,7 @@ module ocn_forward_mode
          call ocn_init_routines_block(block, dt, ierr)
 
          if(ierr.eq.1) then
-             call mpas_dmpar_global_abort('ERROR: An error was encountered in ocn_init_routines_block')
+             call mpas_dmpar_global_abort('MPAS-ocean: ERROR: An error was encountered in ocn_init_routines_block')
          endif
 
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
@@ -341,7 +341,7 @@ module ocn_forward_mode
       ierr = ior(ierr, err_tmp)
 
       if(ierr.eq.1) then
-          call mpas_dmpar_global_abort('ERROR: An error was encountered while initializing the analysis members in the ' &
+          call mpas_dmpar_global_abort('MPAS-ocean: ERROR: An error was encountered while initializing the analysis members in the ' &
                                     // 'MPAS-Ocean forward mode')
       endif
 

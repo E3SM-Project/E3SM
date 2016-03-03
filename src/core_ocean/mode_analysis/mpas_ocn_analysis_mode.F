@@ -121,7 +121,7 @@ module ocn_analysis_mode
 
          call ocn_init_routines_block(block, dt, ierr)
          if(ierr.eq.1) then
-             call mpas_dmpar_global_abort('ERROR: An error was encountered in ocn_init_routines_block')
+             call mpas_dmpar_global_abort('MPAS-ocean: ERROR: An error was encountered in ocn_init_routines_block')
          endif
 
          xtime = startTimeStamp

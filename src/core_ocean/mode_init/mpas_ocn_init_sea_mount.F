@@ -151,7 +151,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
-      if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The sea mount configuration can only be applied to ' &
+      if ( on_a_sphere ) call mpas_dmpar_global_abort('MPAS-ocean: ERROR: The sea mount configuration can only be applied to ' &
                                                    // 'a planar mesh. Exiting...')
 
       allocate(interfaceLocations(nVertLevelsP1))
@@ -293,7 +293,7 @@ contains
                  densityCell = config_sea_mount_density_coef_exp - config_sea_mount_density_gradient_exp * exp( z &
                              / config_sea_mount_density_depth_exp)
               else
-                 call mpas_dmpar_global_abort(' Error: Incorrect config_sea_mount_stratification_type: ' &
+                 call mpas_dmpar_global_abort('MPAS-ocean: Error: Incorrect config_sea_mount_stratification_type: ' &
                                               // config_sea_mount_stratification_type)
               end if
 

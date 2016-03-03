@@ -153,7 +153,7 @@ module ocn_init_sub_ice_shelf_2D
      call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
      ! you may restrict your case geometry as follows:
-     if ( on_a_sphere ) call mpas_dmpar_global_abort('ERROR: The sub_ice_shelf_2D configuration can only be applied to ' &
+     if ( on_a_sphere ) call mpas_dmpar_global_abort('MPAS-ocean: ERROR: The sub_ice_shelf_2D configuration can only be applied to ' &
                                                   // 'a planar mesh. Exiting...')
 
      allocate(interfaceLocations(nVertLevelsP1))

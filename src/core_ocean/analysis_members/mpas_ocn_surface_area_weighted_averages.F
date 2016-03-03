@@ -310,7 +310,7 @@ contains
          if (nDefinedDataFields > nSfcAreaWeightedAvgFields) then
              write (stderrUnit,*) 'Abort: nDefinedDataFields > nSfcAreaWeightedAvgFields'
              write (stderrUnit,*) '     :  increase size of ocn_surface_area_weighted_averages scratch space'
-             call mpas_dmpar_global_abort('Abort: nDefinedDataFields > nSfcAreaWeightedAvgFields')
+             call mpas_dmpar_global_abort('MPAS-ocean: Abort: nDefinedDataFields > nSfcAreaWeightedAvgFields')
          endif
 
          ! get pointers to data that will be analyzed

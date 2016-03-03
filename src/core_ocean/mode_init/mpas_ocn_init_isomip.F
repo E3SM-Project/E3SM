@@ -187,7 +187,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       if ( on_a_sphere ) call mpas_dmpar_global_abort(&
-           'ERROR: The ISOMIP configuration can only be applied to a planar mesh. Exiting...')
+           'MPAS-ocean: ERROR: The ISOMIP configuration can only be applied to a planar mesh. Exiting...')
 
       ySouth = config_isomip_southern_boundary
       yNorth = config_isomip_northern_boundary

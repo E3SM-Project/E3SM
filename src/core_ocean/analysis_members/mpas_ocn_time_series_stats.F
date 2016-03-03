@@ -602,7 +602,7 @@ subroutine start_state(domain, instance, series, err)
   call mpas_pool_get_config(domain % configs, config, output_stream_name)
 
   if (output_stream_name == 'none') then
-    call mpas_dmpar_global_abort('Error: stream cannot be "none" ' // &
+    call mpas_dmpar_global_abort('MPAS-ocean: Error: stream cannot be "none" ' // &
       'for time series stats.')
   end if
 
@@ -638,7 +638,7 @@ subroutine start_state(domain, instance, series, err)
     series % operation = MAX_OP
   else
     ! error if unknown operation
-    call mpas_dmpar_global_abort('Error: unknown operation in time ' // &
+    call mpas_dmpar_global_abort('MPAS-ocean: Error: unknown operation in time ' // &
       'averaging analysis member configuration.')
   end if
 
@@ -864,7 +864,7 @@ subroutine modify_stream(domain, instance, series, err)!{{{
     write(stderrUnit, *) '       an instance of the time series stats analysis member. This stream will be built'
     write(stderrUnit, *) '       based on the contents of the ''' // trim(output_stream_name) // ''' stream.'
     write(stderrUnit, *) '       Please ensure it is empty in the streams file.'
-    call mpas_dmpar_global_abort('ERROR: Misconfigured streams for time series stats analysis member.')
+    call mpas_dmpar_global_abort('MPAS-ocean: ERROR: Misconfigured streams for time series stats analysis member.')
   end if
 
   ! create and put the counters in the streams
@@ -903,7 +903,7 @@ subroutine modify_stream(domain, instance, series, err)!{{{
     ! check if we can handle it
     if(.not. ((info % fieldType == MPAS_POOL_REAL) &
        .or. (info % fieldType == MPAS_POOL_INTEGER))) then
-      call mpas_dmpar_global_abort('Error: field "' // &
+      call mpas_dmpar_global_abort('MPAS-ocean: Error: field "' // &
         trim(series % variables(v) % input_name) // '" listed in the ' // &
         'output stream, for time series stats analysis member ' // &
         'stream, is not real or integer.')
@@ -1025,7 +1025,7 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   call set_times(series, alarms, domain % clock, RESET_INTERVALS, &
     config_results, ok, err)
   if (.not. ok) then
-    call mpas_dmpar_global_abort('Error: number of times in ' // &
+    call mpas_dmpar_global_abort('MPAS-ocean: Error: number of times in ' // &
       'reset_intervals is not consistent with number of times ' // &
       'in reference_times in time series stats analysis member ' // &
       'configuration.')
@@ -1037,7 +1037,7 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   call set_times(series, alarms, domain % clock, REPEAT_INTERVALS, &
     config_results, ok, err)
   if (.not. ok) then
-    call mpas_dmpar_global_abort('Error: number of times in ' // &
+    call mpas_dmpar_global_abort('MPAS-ocean: Error: number of times in ' // &
       'repeat_intervals is not consistent with number of times ' // &
       'in reference_times in time series stats analysis member ' // &
       'configuration.')
@@ -1049,7 +1049,7 @@ subroutine get_alarms(domain, instance, series, alarms, err)
   call set_times(series, alarms, domain % clock, DURATION_INTERVALS, &
     config_results, ok, err)
   if (.not. ok) then
-    call mpas_dmpar_global_abort('Error: number of times in ' // &
+    call mpas_dmpar_global_abort('MPAS-ocean: Error: number of times in ' // &
       'duration_intervals is not consistent with number of times ' // &
       'in reference_times in time series stats analysis member ' // &
       'configuration.')

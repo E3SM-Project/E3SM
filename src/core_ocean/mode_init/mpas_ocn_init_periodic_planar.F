@@ -146,7 +146,7 @@ contains
     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
     ! test if configure settings are invalid
-    if ( on_a_sphere ) call mpas_dmpar_global_abort('IERROR: The planar periodic configuration can only be applied to ' &
+    if ( on_a_sphere ) call mpas_dmpar_global_abort('MPAS-ocean: IERROR: The planar periodic configuration can only be applied to ' &
                                                  // 'a planar mesh. Exiting...')
 
     ! Define interface locations

@@ -114,7 +114,7 @@ module ocn_init_mode
       call ocn_constants_init(domain % configs, domain % packages)
 
       if ( ierr /= 0 ) then
-         call mpas_dmpar_global_abort("ERROR: Failed validation...")
+         call mpas_dmpar_global_abort("MPAS-ocean: ERROR: Failed validation...")
       end if
 
       !
@@ -143,7 +143,7 @@ module ocn_init_mode
       call ocn_equation_of_state_init(err_tmp)
       ierr = ior(ierr, err_tmp)
       if(ierr.eq.1) then
-          call mpas_dmpar_global_abort('ERROR: An error was encountered while initializing the MPAS-Ocean init mode')
+          call mpas_dmpar_global_abort('MPAS-ocean: ERROR: An error was encountered while initializing the MPAS-Ocean init mode')
       endif
 
       !

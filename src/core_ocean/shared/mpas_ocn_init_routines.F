@@ -479,7 +479,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
                   write (stderrUnit,'(a,10f10.2)') ' refBottomDepth(maxLevelCell(iCell)), ' &
                                                    // 'refBottomDepthTopOfCell(maxLevelCell(iCell)): ', &
                                 refBottomDepth(maxLevelCell(iCell)), refBottomDepthTopOfCell(maxLevelCell(iCell))
-                  call mpas_dmpar_global_abort('Abort: bottomDepth and maxLevelCell do not match')
+                  call mpas_dmpar_global_abort('MPAS-ocean: Abort: bottomDepth and maxLevelCell do not match')
                endif
 
             enddo
