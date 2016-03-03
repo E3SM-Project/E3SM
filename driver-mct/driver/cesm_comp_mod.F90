@@ -735,6 +735,8 @@ subroutine cesm_pre_init2()
         shr_const_mwwv, shr_const_mwdair
    use shr_wv_sat_mod, only: shr_wv_sat_set_default, shr_wv_sat_init, &
         ShrWVSatTableSpec, shr_wv_sat_make_tables
+   use shr_frz_mod
+
    implicit none
    type(file_desc_t) :: pioid
    integer :: maxthreads
@@ -843,6 +845,7 @@ subroutine cesm_pre_init2()
         rof_gnam=rof_gnam                         , &
         glc_gnam=glc_gnam                         , &
         wav_gnam=wav_gnam                         , &
+        tfreeze_option = tfreeze_option           , &
         cpl_decomp=seq_mctext_decomp              , & 
         shr_map_dopole=shr_map_dopole             , &
         wall_time_limit=wall_time_limit           , &
@@ -930,6 +933,8 @@ subroutine cesm_pre_init2()
         orb_iyear=orb_iyear,             &
         orb_iyear_align=orb_iyear_align, &
         orb_mode=orb_mode)
+
+   call shr_frz_freezetemp_init()
 
    if (trim(orb_mode) == trim(seq_infodata_orb_variable_year)) then
       call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd)

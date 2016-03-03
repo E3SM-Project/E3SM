@@ -103,7 +103,7 @@ MODULE seq_infodata_mod
       real(SHR_KIND_R8)       :: wv_sat_transition_start ! Saturation transition range
       logical                 :: wv_sat_use_tables   ! Saturation pressure lookup tables
       real(SHR_KIND_R8)       :: wv_sat_table_spacing! Saturation pressure table resolution
-      character(SHR_KIND_CS)  :: tfreeze_option     ! Computation of freezing point of salt water
+      character(SHR_KIND_CS)  :: tfreeze_option  ! Freezing point calculation
       character(SHR_KIND_CL)  :: flux_epbal      ! selects E,P,R adjustment technique 
       logical                 :: flux_albav      ! T => no diurnal cycle in ocn albedos
       logical                 :: flux_diurnal    ! T => diurnal cycle in atm/ocn fluxes
@@ -310,7 +310,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
     real(SHR_KIND_R8)      :: wv_sat_transition_start! Saturation transition range
     logical                :: wv_sat_use_tables  ! Saturation pressure lookup tables
     real(SHR_KIND_R8)      :: wv_sat_table_spacing   ! Saturation pressure table resolution
-    character(SHR_KIND_CS) :: tfreeze_option        ! Computation of freezing point of salt water
+    character(SHR_KIND_CS) :: tfreeze_option     ! Freezing point calculation
     character(SHR_KIND_CL) :: flux_epbal         ! selects E,P,R adjustment technique 
     logical                :: flux_albav         ! T => no diurnal cycle in ocn albedos
     logical                :: flux_diurnal       ! T => diurnal cycle in atm/ocn fluxes
@@ -447,7 +447,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        wv_sat_transition_start = 20.0
        wv_sat_use_tables     = .false.
        wv_sat_table_spacing  = 1.0
-       tfreeze_option           = 'default'
+       tfreeze_option        = 'minus1p8'
        flux_epbal            = 'off'
        flux_albav            = .false.
        flux_diurnal          = .false.
@@ -550,7 +550,7 @@ SUBROUTINE seq_infodata_Init( infodata, nmlfile, ID, pioid)
        infodata%wv_sat_transition_start = wv_sat_transition_start
        infodata%wv_sat_use_tables     = wv_sat_use_tables
        infodata%wv_sat_table_spacing  = wv_sat_table_spacing
-       infodata%tfreeze_option           = tfreeze_option
+       infodata%tfreeze_option        = tfreeze_option
        infodata%flux_epbal            = flux_epbal
        infodata%flux_albav            = flux_albav
        infodata%flux_diurnal          = flux_diurnal
@@ -1054,11 +1054,11 @@ SUBROUTINE seq_infodata_GetData( infodata, case_name, case_desc, timing_dir,  &
     if ( present(orb_mvelpp)     ) orb_mvelpp     = infodata%orb_mvelpp
     if ( present(orb_mvelp)      ) orb_mvelp      = infodata%orb_mvelp
     if ( present(wv_sat_scheme)  ) wv_sat_scheme  = infodata%wv_sat_scheme
-    if ( present(tfreeze_option)    ) tfreeze_option    = infodata%tfreeze_option
     if ( present(wv_sat_transition_start)) &
          wv_sat_transition_start = infodata%wv_sat_transition_start
     if ( present(wv_sat_use_tables)) wv_sat_use_tables = infodata%wv_sat_use_tables
     if ( present(wv_sat_table_spacing)) wv_sat_table_spacing = infodata%wv_sat_table_spacing
+    if ( present(tfreeze_option) ) tfreeze_option = infodata%tfreeze_option
     if ( present(flux_epbal)     ) flux_epbal     = infodata%flux_epbal
     if ( present(flux_albav)     ) flux_albav     = infodata%flux_albav
     if ( present(flux_diurnal)   ) flux_diurnal   = infodata%flux_diurnal
@@ -1607,7 +1607,7 @@ subroutine seq_infodata_bcast(infodata,mpicom)
     call shr_mpi_bcast(infodata%wv_sat_transition_start, mpicom)
     call shr_mpi_bcast(infodata%wv_sat_use_tables,     mpicom)
     call shr_mpi_bcast(infodata%wv_sat_table_spacing,  mpicom)
-    call shr_mpi_bcast(infodata%tfreeze_option,           mpicom)
+    call shr_mpi_bcast(infodata%tfreeze_option,        mpicom)
     call shr_mpi_bcast(infodata%flux_epbal,            mpicom)
     call shr_mpi_bcast(infodata%flux_albav,            mpicom)
     call shr_mpi_bcast(infodata%flux_diurnal,          mpicom)
@@ -2240,7 +2240,7 @@ SUBROUTINE seq_infodata_print( infodata )
        write(logunit,F0L) subname,'wv_sat_use_tables        = ', infodata%wv_sat_use_tables
        write(logunit,F0R) subname,'wv_sat_table_spacing     = ', infodata%wv_sat_table_spacing
 
-       write(logunit,F0A) subname,'tfreeze_option              = ', trim(infodata%tfreeze_option)
+       write(logunit,F0A) subname,'tfreeze_option           = ', trim(infodata%tfreeze_option)
        write(logunit,F0A) subname,'flux_epbal               = ', trim(infodata%flux_epbal)
        write(logunit,F0L) subname,'flux_albav               = ', infodata%flux_albav
        write(logunit,F0L) subname,'flux_diurnal             = ', infodata%flux_diurnal
