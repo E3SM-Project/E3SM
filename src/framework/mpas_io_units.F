@@ -44,11 +44,18 @@ module mpas_io_units
 
         integer :: i
 
+        logical :: opened
+
         do i = 1, maxUnits
-            if(.not. unitsInUse(i) ) then
-                newUnit = i
-                unitsInUse(newUnit) = .true.
-                return
+            if (.not. unitsInUse(i)) then
+                inquire(i, opened=opened)
+                if (opened) then
+                    unitsInUse(i) = .true.
+                else
+                    newUnit = i
+                    unitsInUse(newUnit) = .true.
+                    return
+                endif
             end if
         end do
 
