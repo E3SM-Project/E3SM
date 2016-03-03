@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/csh -f
 # cesm_postbuild with support for performance data archiving: 
 #  ./cesm_postbuild.perf_archive with the following required argument keyword/value pairs, in any order
 #   -cesmid <$LID in cesm-lingo>
