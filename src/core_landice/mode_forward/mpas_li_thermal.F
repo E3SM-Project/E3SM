@@ -742,7 +742,7 @@ module li_thermal
 
       if (deltat <= 0.0_RKIND) then
          write(stderrUnit,*) 'ERROR: li_thermal_solver was called with invalid deltat =', deltat
-         call mpas_dmpar_global_abort("An error has occurred in li_thermal. Aborting...")
+         call mpas_dmpar_global_abort("MPAS-landice: An error has occurred in li_thermal. Aborting...")
       endif
 
       ! block loop
@@ -1228,7 +1228,7 @@ module li_thermal
                   do k = 1, nVertLevels
                      write(stderrUnit,*) k, temperature(k,iCell)
                   enddo
-                  call mpas_dmpar_global_abort("An error has occurred in li_thermal. Aborting...")
+                  call mpas_dmpar_global_abort("MPAS-landice: An error has occurred in li_thermal. Aborting...")
                endif
 
                if (mintemp < mintempThreshold) then
@@ -1238,7 +1238,7 @@ module li_thermal
                   do k = 1, nVertLevels
                      write(stderrUnit,*) k, temperature(k,iCell)
                   enddo
-                  call mpas_dmpar_global_abort("An error has occurred in li_thermal. Aborting...")
+                  call mpas_dmpar_global_abort("MPAS-landice: An error has occurred in li_thermal. Aborting...")
                endif
           
             enddo   ! iCell

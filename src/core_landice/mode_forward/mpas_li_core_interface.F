@@ -183,7 +183,7 @@ module li_core_interface
       call mpas_pool_get_config(configs, 'config_do_restart', config_do_restart)
 
       if (.not. associated(config_do_restart)) then
-         call mpas_dmpar_global_abort('ERROR: config_do_restart is not associated.')
+         call mpas_dmpar_global_abort('MPAS-landice: ERROR: config_do_restart is not associated.')
       else if (config_do_restart) then
          write(stream,'(a)') 'restart'
       else
