@@ -7,8 +7,13 @@
 #endif
 
 module prim_advection_mod
-  !OVERWRITING: Prim_Advec_Tracers_remap, prim_advec_init1, prim_advec_init2, prim_advec_init_deriv, deriv, Prim_Advec_Tracers_remap_rk2
-  use prim_advection_mod_base, only: Prim_Advec_Tracers_remap_ALE, prim_advec_tracers_fvm, vertical_remap
+  use prim_advection_mod_base
+  use prim_advection_mod_base, only: Prim_Advec_Tracers_remap_base => Prim_Advec_Tracers_remap, &
+                                     prim_advec_init1_base => prim_advec_init1, &
+                                     prim_advec_init2_base => prim_advec_init2, &
+                                     prim_advec_init_deriv_base => prim_advec_init_deriv, &
+                                     deriv_base => deriv, &
+                                     Prim_Advec_Tracers_remap_rk2_base => Prim_Advec_Tracers_remap_rk2
   use kinds, only              : real_kind
   use dimensions_mod, only     : nlev, nlevp, np, qsize, ntrac, nc, nep, nelemd
   use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
@@ -33,7 +38,6 @@ module prim_advection_mod
   use parallel_mod, only   : abortmp
   use derivative_mod, only: derivative_t
   implicit none
-  private
   type (derivative_t), allocatable :: deriv(:) ! derivative struct (nthreads)
   real(kind=real_kind), private, allocatable :: qmin(:,:,:), qmax(:,:,:)
   real(kind=real_kind), private, allocatable :: dp0(:)
@@ -48,14 +52,6 @@ module prim_advection_mod
   integer,parameter, private :: DSSno_var = -1
   real(kind=real_kind), allocatable, private :: data_pack(:,:,:,:), data_pack2(:,:,:,:)
   logical, private :: first_time = .true.
-
-  public :: Prim_Advec_Tracers_remap_ALE, prim_advec_tracers_fvm, vertical_remap
-  public :: Prim_Advec_Tracers_remap
-  public :: prim_advec_init1
-  public :: prim_advec_init2
-  public :: prim_advec_init_deriv
-  public :: deriv
-  public :: Prim_Advec_Tracers_remap_rk2
 
 contains
 

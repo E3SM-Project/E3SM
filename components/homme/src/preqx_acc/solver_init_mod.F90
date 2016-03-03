@@ -3,11 +3,10 @@
 #endif
 
 module solver_init_mod
-  !OVERWRITING: solver_init2
-  use solver_init_mod_base, only: 
+  use solver_init_mod_base
+  use solver_init_mod_base, only: solver_init2_base => solver_init2
   use dimensions_mod, only: nelemd
   implicit none
-  private
 
   public :: solver_init2
 
