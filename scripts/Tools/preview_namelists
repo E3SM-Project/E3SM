@@ -137,15 +137,15 @@ if($dryrun){
 	    $logger->debug("Created directory $dir");
 	}
     }
-
-    my @models = ("cpl", "atm", "lnd", "ice", "ocn", "glc", "wav", "rof");
-    foreach my $model ( @models ){
-	my $objdir = "$EXEROOT/$model/obj";
-	if (! -d $objdir) {
-	    mkpath($objdir, 0755) or $logger->logdie("Could not create directory $objdir");
-	    $logger->debug("Created directory $objdir");
-	}
-    }
+#
+#    my @models = ("cpl", "atm", "lnd", "ice", "ocn", "glc", "wav", "rof");
+#    foreach my $model ( @models ){
+#	my $objdir = "$EXEROOT/$model/obj";
+#	if (! -d $objdir) {
+#	    mkpath($objdir, 0755) or $logger->logdie("Could not create directory $objdir");
+#	    $logger->debug("Created directory $objdir");
+#	}
+#    }
 }
 
 # -------------------------------------------------------------------------

@@ -9,7 +9,6 @@ from standard_script_setup import *
 
 from CIME.utils import expect, get_model, run_cmd
 from CIME.XML.machines import Machines
-from CIME.case import Case
 from CIME.check_input_data import check_input_data, SVN_LOCS
 
 import argparse, doctest, fnmatch
@@ -65,13 +64,15 @@ def _main_func(description):
 
     svn_loc, input_data_root, data_list_dir, download = parse_command_line(sys.argv, description)
 
-    sys.exit(0 if check_input_data(case=None,
-                                   svn_loc=svn_loc,
-                                   input_data_root=input_data_root,
-                                   data_list_dir=data_list_dir,
-                                   download=download) else 1)
+    sys.exit(0 if check_input_data(svn_loc=svn_loc, input_data_root=input_data_root,
+                                   data_list_dir=data_list_dir, download=download) else 1)
 
 ###############################################################################
 
 if (__name__ == "__main__"):
     _main_func(__doc__)
+
+
+
+
+

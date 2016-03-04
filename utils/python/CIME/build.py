@@ -39,6 +39,9 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
 
     thread_bad_results = []
     for model, comp, config_dir, nthrds in models_build_data:
+        # aquap has a dependancy on atm so we will build it after the threaded loop
+        if comp == "aquap":
+            continue
         os.environ["MODEL"] = model
         if nthrds > 1 or build_threaded == "TRUE":
             os.environ["SMP"] = "TRUE"
@@ -52,17 +55,14 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
         compspec = comp
 
         # Special case for clm
+        # clm 4_0 is not a shared library and must be built here
+        # clm 4_5 and newer is a shared library and should be built in build_libraries
         if comp == "clm":
-            esmfdir = "esmf" if use_esmf_lib == "TRUE" else "noesmf"
             if "clm4_0" in clm_config_opts:
                 logging.info("         - Building clm4_0 Library ")
                 compspec = "lnd"
             else:
-                logging.info("         - Building clm4_5/clm5_0 Library ")
-                bldroot = os.path.join(sharedpath, comp_interface, esmfdir)
-                objdir = os.path.join(bldroot, comp, "obj")
-                libdir = os.path.join(bldroot, "lib")
-                compspec = "clm"
+                continue
 
         logging.debug("bldroot is %s" % bldroot)
         logging.debug("objdir is %s" % objdir)
@@ -89,6 +89,11 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
     # Wait for threads to finish
     while(threading.active_count() > 1):
         time.sleep(1)
+
+    # aquap has a dependancy on atm so we build it after the threaded loop
+    if comp_ocn == "aquap":
+        _build_model_thread(config_ocn_dir, caseroot, bldroot, "aquap", file_build,
+                            exeroot, "ocn", "aquap", objdir, incroot, thread_bad_results)
 
     expect(not thread_bad_results, "\n".join(thread_bad_results))
 
@@ -285,7 +290,6 @@ def case_build(caseroot, case=None, testmode=False, sharedlib_only=False, model_
     # Load modules
     env_module = EnvModule(mach, compiler, cimeroot, caseroot, mpilib, debug)
     env_module.load_env_for_case()
-
     # Need to flush case xml to disk before calling preview_namelists
     case.flush()
 
@@ -301,6 +305,24 @@ def case_build(caseroot, case=None, testmode=False, sharedlib_only=False, model_
 
     if not model_only:
         logs = build_libraries(exeroot, caseroot, cimeroot, libroot, mpilib, lid, machines_file)
+        if sharedlib_only and comp_lnd == "clm" and not "clm4_0" in clm_config_opts:
+            logging.info("         - Building clm4_5/clm5_0 Library ")
+            esmfdir = "esmf" if use_esmf_lib == "TRUE" else "noesmf"
+            sharedpath = os.environ["SHAREDPATH"]
+            bldroot = os.path.join(sharedpath, comp_interface, esmfdir)
+            objdir = os.path.join(bldroot, "lnd", "obj")
+            libdir = os.path.join(bldroot, "lib")
+            file_build = os.path.join(exeroot, "lnd.bldlog.%s" %  lid)
+            config_lnd_dir = os.path.dirname(case.get_value("CONFIG_LND_FILE"))
+            results = []
+            for ndir in [bldroot, objdir, libdir]:
+                if(not os.path.isdir(ndir)):
+                    os.makedirs(ndir)
+
+            _build_model_thread(config_lnd_dir, caseroot, bldroot, "clm", file_build,
+                                exeroot, "lnd", "clm", objdir, incroot, results)
+
+
     if not sharedlib_only:
         logs.extend(build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
                                 comp_atm,   comp_lnd,   comp_ice,   comp_ocn,   comp_glc,   comp_wav,   comp_rof,
@@ -531,7 +553,7 @@ def _build_model_thread(config_dir, caseroot, bldroot, compspec, file_build,
 ###############################################################################
     stat = run_cmd("%s/buildlib %s %s %s >> %s 2>&1" %
                    (config_dir, caseroot, bldroot, compspec, file_build),
-                   from_dir=os.path.join(exeroot, model), ok_to_fail=True)[0]
+                   from_dir=objdir, ok_to_fail=True,verbose=True)[0]
     if (stat != 0):
         thread_bad_results.append("ERROR: %s.buildlib failed, see %s" % (comp, file_build))
 
