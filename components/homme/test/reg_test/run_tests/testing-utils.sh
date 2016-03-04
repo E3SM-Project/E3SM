@@ -481,7 +481,7 @@ execLine() {
     if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
       echo "mpirun.lsf -pam \"-n ${NUM_MPI_PROCS}\" ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
     elif [ "${MPI_EXEC}" = "aprun" ] ; then
-      if [ -n "${OMP_NUMBER_THREADS}" ]; then
+      if [[ $4 == *"_OMP"* ]]; then
         echo "aprun -n ${NUM_MPI_PROCS} -d ${OMP_NUMBER_THREADS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
       else
         echo "aprun -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT

@@ -28,6 +28,8 @@ cmake                                                                          \
   -DBUILD_HOMME_PREQX_ACC=TRUE                                                 \
   -DENABLE_OPENMP=TRUE                                                         \
   -DHOMME_PROJID=STF006                                                        \
+  -DOPENACC_Fortran_FLAGS="-acc -ta=tesla,pin,cc35,cuda7.0 -Minfo=accel"       \
+  -DOPENACC_Linker_FLAGS="-acc -ta=tesla,pin,cc35,cuda7.0 -Mcuda"              \
   -DPREQX_CUSTOM_FLAGS_FILE=${HOMME_ROOT}/compile_scripts/titan/customFlags.cmake.cpu \
   $HOMME_ROOT                                               
 fi
