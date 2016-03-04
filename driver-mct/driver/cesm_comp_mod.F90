@@ -33,6 +33,7 @@ module cesm_comp_mod
    use shr_mem_mod,       only: shr_mem_init, shr_mem_getusage
    use shr_cal_mod,       only: shr_cal_date2ymd, shr_cal_ymd2date, shr_cal_advdateInt
    use shr_orb_mod,       only: shr_orb_params
+   use shr_frz_mod,       only: shr_frz_freezetemp_init
    use shr_reprosum_mod,  only: shr_reprosum_setopts
    use mct_mod            ! mct_ wrappers for mct lib
    use perf_mod
@@ -271,6 +272,7 @@ module cesm_comp_mod
    integer  :: ymdtmp                 ! temporary date (YYYYMMDD)
    integer  :: todtmp                 ! temporary time of day (seconds)
    character(CL) :: orb_mode          ! orbital mode
+   character(CS) :: tfreeze_option    ! Freezing point calculation
    integer  :: orb_iyear              ! orbital year
    integer  :: orb_iyear_align        ! associated with model year
    integer  :: orb_cyear              ! orbital year for current orbital computation
@@ -735,7 +737,6 @@ subroutine cesm_pre_init2()
         shr_const_mwwv, shr_const_mwdair
    use shr_wv_sat_mod, only: shr_wv_sat_set_default, shr_wv_sat_init, &
         ShrWVSatTableSpec, shr_wv_sat_make_tables
-   use shr_frz_mod
 
    implicit none
    type(file_desc_t) :: pioid
@@ -934,7 +935,11 @@ subroutine cesm_pre_init2()
         orb_iyear_align=orb_iyear_align, &
         orb_mode=orb_mode)
 
-   call shr_frz_freezetemp_init()
+   !----------------------------------------------------------
+   ! Initialize freezing point calculation for all components
+   !----------------------------------------------------------
+
+   call shr_frz_freezetemp_init(tfreeze_option)
 
    if (trim(orb_mode) == trim(seq_infodata_orb_variable_year)) then
       call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd)
