@@ -55,6 +55,14 @@ linf_norm = -(sys.float_info.max)
 pass_val = True
 
 print "Comparing field '%s'"%(args.variable)
+if ( args.l2_norm or args.l1_norm or args.linf_norm ):
+	print "    Pass thresholds are:"
+	if ( args.l1_norm ):
+		print "       L1: %f"%(float(args.l2_norm))
+	if ( args.l2_norm ):
+		print "       L2: %f"%(float(args.l1_norm))
+	if ( args.linf_norm ):
+		print "       L_Infinity: %f"%(float(args.linf_norm))
 
 for t in range( 0, time_length):
 	pass_time = True
