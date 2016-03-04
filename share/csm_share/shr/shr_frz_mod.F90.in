@@ -1,18 +1,15 @@
-!===============================================================================
-! SVN $Id: shr_frz_mod.F90 25434 2010-11-04 22:46:24Z tcraig $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/release_tags/cesm1_2_x_n02_share3_130715/shr/shr_frz_mod.F90 $
-!===============================================================================
 
-   MODULE shr_frz_mod
+   module shr_frz_mod
 
 !===============================================================================
-!  This is a general module that can be used for global functions.
+!  This is a module used for the freezing point of salt water
 !===============================================================================
-   use shr_kind_mod, only: SHR_KIND_R8, SHR_KIND_IN, SHR_KIND_CS
-   use shr_log_mod, only: s_loglev  => shr_log_Level,s_logunit => shr_log_Unit,errMsg => shr_log_errMsg
+
+   use shr_kind_mod, only: R8->SHR_KIND_R8, CS->SHR_KIND_CS
+   use shr_log_mod, only: s_logunit => shr_log_Unit
    use shr_sys_mod, only: shr_sys_abort
 
-   IMPLICIT none
+   implicit none
 
    !----------------------------------------------------------------------------
    ! PUBLIC: Interfaces and global data
@@ -28,13 +25,14 @@
    integer, public, parameter :: TFREEZE_OPTION_MINUS1P8 = 1
    integer, public, parameter :: TFREEZE_OPTION_LINEAR_SALT = 2
    integer, public, parameter :: TFREEZE_OPTION_MUSHY = 3
+   integer, public, parameter :: TFREEZE_OPTION_UNINITIALIZED = -999
 
    private
 
-   integer :: tfrz_option = -999
+   integer :: tfrz_option = TFREEZE_OPTION_UNINITIALIZED
 
 !===============================================================================
-CONTAINS
+   contains
 !===============================================================================
 
    subroutine shr_frz_freezetemp_init(tfreeze_option)
@@ -42,35 +40,35 @@ CONTAINS
    implicit none
 
    character(len=*),parameter :: subname = "(shr_frz_freezetemp_init) "
-   character(SHR_KIND_CS),intent(in)  :: tfreeze_option ! option for computing freezing point
+   character(CS),intent(in)  :: tfreeze_option ! option for computing freezing point
                                                         ! minus1p8 is constant -1.8C
                                                         ! linear_salt is linear equation
                                                         ! mushy for CICE mushy-layer nonlinear equation
 
-       !---------------------------------------------------------------
-       ! Check tfreeze_option
-       !---------------------------------------------------------------
-       if (trim(tfreeze_option) == 'minus1p8') then
-          write(s_logunit,*) ' tfreeze_option is minus1p8'
-          tfrz_option = TFREEZE_OPTION_MINUS1P8
-       elseif (trim(tfreeze_option) == 'linear_salt') then
-          write(s_logunit,*) ' tfreeze_option is linear_salt'
-          tfrz_option = TFREEZE_OPTION_LINEAR_SALT
-       elseif (trim(tfreeze_option) == 'mushy') then
-          write(s_logunit,*) ' tfreeze_option is mushy'
-          tfrz_option = TFREEZE_OPTION_MUSHY
-       else
-          call shr_sys_abort(subname//' ERROR: not a valid tfreeze_option')
-       endif
+   !---------------------------------------------------------------
+   ! Check tfreeze_option
+   !---------------------------------------------------------------
+   if (trim(tfreeze_option) == 'minus1p8') then
+      write(s_logunit,*) ' tfreeze_option is minus1p8'
+      tfrz_option = TFREEZE_OPTION_MINUS1P8
+   elseif (trim(tfreeze_option) == 'linear_salt') then
+      write(s_logunit,*) ' tfreeze_option is linear_salt'
+      tfrz_option = TFREEZE_OPTION_LINEAR_SALT
+   elseif (trim(tfreeze_option) == 'mushy') then
+      write(s_logunit,*) ' tfreeze_option is mushy'
+      tfrz_option = TFREEZE_OPTION_MUSHY
+   else
+      call shr_sys_abort(subname//' ERROR: not a valid tfreeze_option '//trim(tfreeze_option))
+   endif
 
    end subroutine shr_frz_freezetemp_init
 
    ! DIMS 0,1,2
-   FUNCTION shr_frz_freezetemp_{DIMS}d(s) result(shr_frz_freezetemp)
+   function shr_frz_freezetemp_{DIMS}d(s) result(shr_frz_freezetemp)
 
    !----------------------------------------------------------------------------
    !
-   ! FUNCTION to return the freezing point of salt water
+   ! FUNCTION to return the freezing point of salt water in degrees Celsus
    !
    !--------------- Code History -----------------------------------------------
    !
@@ -82,33 +80,33 @@ CONTAINS
 
    character(len=*),parameter :: subname = "(shr_frz_freezetemp_{DIMS}d) "
 
-   real   (SHR_KIND_R8),intent(in) :: s{DIMSTR} ! Salinity in psu
+   real   (R8),intent(in) :: s{DIMSTR} ! Salinity in psu
 #if ({DIMS}==0)
-   real   (SHR_KIND_R8) :: shr_frz_freezetemp
+   real   (R8) :: shr_frz_freezetemp
 #elif ({DIMS}==1)
-   real   (SHR_KIND_R8) :: shr_frz_freezetemp(size(s))
+   real   (R8) :: shr_frz_freezetemp(size(s))
 #elif ({DIMS}==2)
-   real   (SHR_KIND_R8) :: shr_frz_freezetemp(size(s,1),size(s,2))
+   real   (R8) :: shr_frz_freezetemp(size(s,1),size(s,2))
 #endif
 
    !----------------------------------------------------------------------------
 
    if (tfrz_option == TFREEZE_OPTION_MINUS1P8) then
-      shr_frz_freezetemp = -1.8_SHR_KIND_R8
+      shr_frz_freezetemp = -1.8_R8
    elseif (tfrz_option == TFREEZE_OPTION_LINEAR_SALT) then
-      shr_frz_freezetemp = -0.0544_SHR_KIND_R8*max(s,0.0_SHR_KIND_R8)
+      shr_frz_freezetemp = -0.0544_R8*max(s,0.0_R8)
    elseif (tfrz_option == TFREEZE_OPTION_MUSHY) then
 !     This form is the high temperature part of the liquidus relation (Assur 1958)
-      shr_frz_freezetemp = max(s,0.0_SHR_KIND_R8) &
-         / (-18.48_SHR_KIND_R8 + (0.01848_SHR_KIND_R8*max(s,0.0_SHR_KIND_R8)))
+      shr_frz_freezetemp = max(s,0.0_R8) &
+         / (-18.48_R8 + (0.01848_R8*max(s,0.0_R8)))
    else
       call shr_sys_abort(subname//' ERROR: not intialized correctly with a valid tfreeze_option - call shr_frz_freezetemp_init first with a valid tfreeze_option')
    endif
 
-   shr_frz_freezetemp = max(shr_frz_freezetemp,-2.0_SHR_KIND_R8)
+   shr_frz_freezetemp = max(shr_frz_freezetemp,-2.0_R8)
 
-   END FUNCTION shr_frz_freezetemp_{DIMS}d
+   end function shr_frz_freezetemp_{DIMS}d
 
 !===============================================================================
 
-   END MODULE shr_frz_mod
+   end module shr_frz_mod
