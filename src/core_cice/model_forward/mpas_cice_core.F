@@ -39,6 +39,9 @@ module cice_core
    
       use mpas_derived_types
       use mpas_stream_manager
+
+      use cice_diagnostics, only: &
+           cice_initialize_time_diagnostics
    
       implicit none
    
@@ -46,12 +49,9 @@ module cice_core
       character(len=*), intent(out) :: startTimeStamp
    
       real (kind=RKIND) :: dt
-      type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: diagnosticsPool
 
       logical, pointer :: config_do_restart
       real (kind=RKIND), pointer :: config_dt
-      character (len=StrKIND), pointer :: xtime, simulationStartTime
       type (MPAS_Time_Type) :: startTime
       integer :: ierr
 
@@ -105,23 +105,8 @@ module cice_core
       !
       dt = config_dt
 
-      block => domain % blocklist
-      do while (associated(block))
-
-         call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnosticsPool)
-
-         ! current time
-         call MPAS_pool_get_array(diagnosticsPool, "xtime", xtime)
-         xtime = startTimeStamp
-
-         ! simulation start time
-         if (.not. config_do_restart) then
-            call MPAS_pool_get_array(diagnosticsPool, "simulationStartTime", simulationStartTime)
-            simulationStartTime = startTimeStamp
-         endif
-
-         block => block % next
-      end do
+      ! initialize time diagnostics
+      call cice_initialize_time_diagnostics(domain)
 
       ! initialize analysis members
       call cice_analysis_init(domain, ierr)
@@ -373,21 +358,6 @@ module cice_core
       integer, intent(in) :: itimestep
       real (kind=RKIND), intent(in) :: dt
       character(len=*), intent(in) :: timeStamp
-
-      type (block_type), pointer :: block
-
-      type (MPAS_pool_type), pointer :: diagnosticsPool
-      character(len=strKIND), pointer :: xtime
-
-      block => domain % blocklist
-      do while (associated(block))
-
-         call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnosticsPool)
-         call MPAS_pool_get_array(diagnosticsPool, "xtime", xtime)
-         xtime = timeStamp
-
-         block => block % next
-      end do
 
       call cice_timestep(domain, clock, dt, itimestep)
 
