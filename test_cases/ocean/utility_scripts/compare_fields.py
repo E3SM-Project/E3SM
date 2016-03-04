@@ -57,11 +57,12 @@ except:
 	print "ERROR: Field '%s' does not exist in both"%(args.variable)
 	print "           file1: %s"%(args.filename1)
 	print "       and file2: %s"%(args.filename2)
-	print "Exiting with a successful comparision, since no comparision can be done."
-	sys.exit(0)
+	print "Exiting with a failed comparision, since no comparision can be done but a comparison was requested."
+	sys.exit(1)
 
 if not field1.shape == field2.shape:
 	print "ERROR: Field sizes don't match in different files."
+	sys.exit(1)
 
 linf_norm = -(sys.float_info.max)
 
