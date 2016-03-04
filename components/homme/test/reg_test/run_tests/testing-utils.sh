@@ -480,20 +480,20 @@ execLine() {
     # mpirun.lsf is a special case
     if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
       echo "mpirun.lsf -pam \"-n ${NUM_MPI_PROCS}\" ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
+    elif [ "${MPI_EXEC}" = "aprun" ] ; then
+      if [ -n "${OMP_NUMBER_THREADS}" ]; then
+        echo "aprun -n ${NUM_MPI_PROCS} -d ${OMP_NUMBER_THREADS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
+      else
+        echo "aprun -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
+      fi
     else
       echo "${MPI_EXEC} -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
     fi
   else
     if [ "$HOMME_Submission_Type" = lsf ]; then
       echo "mpirun.lsf -pam \"-n ${NUM_MPI_PROCS}\" ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
-
     elif [ "$HOMME_Submission_Type" = pbs ]; then
-      if [ -n "${OMP_NUMBER_THREADS}" ]; then
-        echo "aprun -n ${NUM_MPI_PROCS} -d ${OMP_NUMBER_THREADS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
-      else
         echo "aprun -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
-      fi
-
     else
       echo "mpiexec -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
 

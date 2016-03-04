@@ -8,6 +8,7 @@ SET (HDF5_DIR $ENV{HDF5_DIR} CACHE FILEPATH "")
 SET (DEBUG_FLAGS " " CACHE STRING "")
 SET (Netcdf_NC_CONFIG_BIN "/opt/cray/netcdf/4.3.3.1/bin" CACHE FILEPATH "")
 SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
+SET (USE_MPIEXEC "aprun" CACHE STRING "")
 
 # The following is required for cross compilation
 SET (CMAKE_SYSTEM_NAME Catamount CACHE FILEPATH "")
