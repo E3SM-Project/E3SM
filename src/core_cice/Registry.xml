@@ -1822,6 +1822,7 @@
 	<var_struct name="diagnostics" time_levs="1">
 	        <var name="xtime"                             type="text"     dimensions="Time"/>
 		<var name="simulationStartTime"               type="text"     dimensions=""/>
+		<var name="daysSinceStartOfSim"               type="real"     dimensions="Time"/>
 	        <var name="meltOnset"                         type="real"     dimensions="nCells Time"              name_in_code="meltOnset"/>
 	        <var name="freezeOnset"                       type="real"     dimensions="nCells Time"              name_in_code="freezeOnset"/>
 	        <var name="iceAreaTendencyTransport"          type="real"     dimensions="nCells Time"              name_in_code="iceAreaTendencyTransport"/>

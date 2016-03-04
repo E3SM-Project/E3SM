@@ -23,7 +23,8 @@ OBJS = 	mpas_cice_time_integration.o \
 	mpas_cice_numerics.o \
 	mpas_cice_constants.o \
 	mpas_cice_column.o \
-	mpas_cice_history.o
+	mpas_cice_history.o \
+	mpas_cice_diagnostics.o
 
 all: $(OBJS)
 
@@ -32,6 +33,8 @@ mpas_cice_constants.o:
 mpas_cice_column.o:
 
 mpas_cice_history.o:
+
+mpas_cice_diagnostics.o: mpas_cice_constants.o
 
 mpas_cice_mesh.o: mpas_cice_constants.o
 

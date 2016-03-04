@@ -39,7 +39,8 @@ module cice_constants
        ciceDegreesToRadians = pii / 180.0_RKIND, &
        ciceRadiansToDegrees = 180.0_RKIND / pii, &
        ciceSecondsPerYear = 24.0_RKIND * 3600.0_RKIND * 365.0_RKIND, &
-       ciceSecondsPerDay  = 24.0_RKIND * 3600.0_RKIND
+       ciceSecondsPerDay  = 24.0_RKIND * 3600.0_RKIND, &
+       ciceDaysPerSecond = 1.0_RKIND/ciceSecondsPerDay
 
   ! Earth constants
   real (kind=RKIND), parameter, public :: &

@@ -48,6 +48,9 @@ contains
 
     use mpas_timer
 
+    use cice_diagnostics, only: &
+         cice_set_time_diagnostics
+
     use cice_unit_test, only: &
          cice_perform_unit_test
 
@@ -99,6 +102,9 @@ contains
     call mpas_timer_start("Halo")
     call mpas_timer_stop("Halo")
 #endif
+
+    ! set time diagnostics
+    call cice_set_time_diagnostics(domain)
 
     call store_timestep_counter(domain, itimestep)
 
