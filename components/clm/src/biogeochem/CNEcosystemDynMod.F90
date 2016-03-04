@@ -628,6 +628,14 @@ contains
             carbonflux_vars)
        call t_stopf('CNGResp')
        call carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+
+       if(use_c13) then
+         call c13_carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+       endif
+
+       if(use_c14) then
+         call c14_carbonflux_vars%summary_rr(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+       endif
        !--------------------------------------------
        ! Dynamic Roots
        !--------------------------------------------
@@ -854,7 +862,14 @@ contains
           call update_plant_stoichiometry(num_soilp, filter_soilp, &
                carbonstate_vars, nitrogenstate_vars, phosphorusstate_vars)
        end if
-           
+
+       call carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+       if( use_c13 ) then
+          call c13_carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+       endif
+       if( use_c14 ) then
+          call c14_carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+       endif    
     end if !end of if not use_ed block
 
   end subroutine CNEcosystemDynNoLeaching2

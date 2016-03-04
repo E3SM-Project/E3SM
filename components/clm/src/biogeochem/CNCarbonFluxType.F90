@@ -405,6 +405,7 @@ module CNCarbonFluxType
      procedure , public  :: SetValues
      procedure , public  :: ZeroDWT
      procedure , public  :: Summary
+     procedure , public  :: summary_cflux_for_ch4
      procedure , public  :: summary_rr
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory
@@ -4411,32 +4412,6 @@ contains
                this%npp_patch(p)
        end if
 
-       ! aboveground NPP: leaf, live stem, dead stem (AGNPP)
-       ! This is supposed to correspond as closely as possible to
-       ! field measurements of AGNPP, so it ignores the storage pools
-       ! and only treats the fluxes into displayed pools.
-
-       this%agnpp_patch(p) = &
-            this%cpool_to_leafc_patch(p)                  + &
-            this%leafc_xfer_to_leafc_patch(p)             + &
-            this%cpool_to_livestemc_patch(p)              + &
-            this%livestemc_xfer_to_livestemc_patch(p)     + &
-            this%cpool_to_deadstemc_patch(p)              + &
-            this%deadstemc_xfer_to_deadstemc_patch(p)
-
-       ! belowground NPP: fine root, live coarse root, dead coarse root (BGNPP)
-       ! This is supposed to correspond as closely as possible to
-       ! field measurements of BGNPP, so it ignores the storage pools
-       ! and only treats the fluxes into displayed pools.
-
-       this%bgnpp_patch(p) = &
-            this%cpool_to_frootc_patch(p)                   + &
-            this%frootc_xfer_to_frootc_patch(p)             + &
-            this%cpool_to_livecrootc_patch(p)               + &
-            this%livecrootc_xfer_to_livecrootc_patch(p)     + &
-            this%cpool_to_deadcrootc_patch(p)               + &
-            this%deadcrootc_xfer_to_deadcrootc_patch(p)
-
        ! litterfall (LITFALL)
 
        this%litfall_patch(p) = &
@@ -4549,10 +4524,6 @@ contains
             this%m_gresp_xfer_to_fire_patch(p)
 
        if ( crop_prog .and. pft%itype(p) >= npcropmin )then
-          this%agnpp_patch(p) =                    &
-               this%agnpp_patch(p)               + &
-               this%cpool_to_grainc_patch(p)     + &
-               this%grainc_xfer_to_grainc_patch(p)
 
           this%litfall_patch(p) =                  &
                this%litfall_patch(p)             + &
@@ -4650,10 +4621,6 @@ contains
          this%ar_col(bounds%begc:bounds%endc))
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         this%rr_patch(bounds%begp:bounds%endp), &
-         this%rr_col(bounds%begc:bounds%endc))
-
-    call p2c(bounds, num_soilc, filter_soilc, &
          this%npp_patch(bounds%begp:bounds%endp), &
          this%npp_col(bounds%begc:bounds%endc))
 
@@ -4703,8 +4670,6 @@ contains
     ! some zeroing
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%somhr_col(c)              = 0._r8
-       this%lithr_col(c)              = 0._r8
        this%cwdc_loss_col(c)          = 0._r8
        this%som_c_leached_col(c)      = 0._r8
     end do
@@ -4719,10 +4684,6 @@ contains
           do fc = 1,num_soilc
              c = filter_soilc(fc)
 
-             this%decomp_cascade_hr_col(c,k) = &
-                  this%decomp_cascade_hr_col(c,k) + &
-                  this%decomp_cascade_hr_vr_col(c,j,k) * dzsoi_decomp(j) 
-
              this%decomp_cascade_ctransfer_col(c,k) = &
                   this%decomp_cascade_ctransfer_col(c,k) + &
                   this%decomp_cascade_ctransfer_vr_col(c,j,k) * dzsoi_decomp(j) 
@@ -4730,29 +4691,6 @@ contains
        end do
       end do
 
-      ! litter heterotrophic respiration (LITHR)
-      do k = 1, ndecomp_cascade_transitions
-       if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%lithr_col(c) = &
-                  this%lithr_col(c) + &
-                  this%decomp_cascade_hr_col(c,k)
-          end do
-       end if
-      end do
-
-      ! soil organic matter heterotrophic respiration (SOMHR)
-      do k = 1, ndecomp_cascade_transitions
-       if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%somhr_col(c) = &
-                  this%somhr_col(c) + &
-                  this%decomp_cascade_hr_col(c,k)
-          end do
-       end if
-      end do
 
       ! total heterotrophic respiration (HR)
       do fc = 1,num_soilc
@@ -4762,24 +4700,6 @@ contains
             this%somhr_col(c)
       end do
 
-      ! total heterotrophic respiration, vertically resolved (HR)
-      do j = 1,nlevdecomp
-        do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%hr_vr_col(c,j) = 0._r8
-        end do
-      end do
-
-      do k = 1, ndecomp_cascade_transitions
-        do j = 1,nlevdecomp
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%hr_vr_col(c,j) = &
-                  this%hr_vr_col(c,j) + &
-                  this%decomp_cascade_hr_vr_col(c,j,k)
-          end do
-        end do
-      end do
 
     elseif (is_active_betr_bgc) then
 
@@ -5244,6 +5164,133 @@ end subroutine CSummary_interface
          this%rr_col(bounds%begc:bounds%endc))
          
   end subroutine summary_rr
+
+
+    !-----------------------------------------------------------------------
+
+  subroutine summary_cflux_for_ch4( this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc )
+
+  !summarize heterotrophic respiration for methane calculation
+  !
+    use tracer_varcon    , only : is_active_betr_bgc
+    use clm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
+  ! !ARGUMENTS:
+    class(carbonflux_type) :: this
+    type(bounds_type), intent(in)  :: bounds
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    integer  :: c,p,j,k,l       ! indices
+    integer  :: fp,fc           ! lake filter indices
+
+    associate(&
+         is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
+         is_soil   =>    decomp_cascade_con%is_soil     & ! Input:  [logical (:) ]  TRUE => pool is a soil pool
+    )
+
+    ! patch loop
+    do fp = 1,num_soilp
+       p = filter_soilp(fp)   
+
+       ! aboveground NPP: leaf, live stem, dead stem (AGNPP)
+       ! This is supposed to correspond as closely as possible to
+       ! field measurements of AGNPP, so it ignores the storage pools
+       ! and only treats the fluxes into displayed pools.
+
+       this%agnpp_patch(p) = &
+            this%cpool_to_leafc_patch(p)                  + &
+            this%leafc_xfer_to_leafc_patch(p)             + &
+            this%cpool_to_livestemc_patch(p)              + &
+            this%livestemc_xfer_to_livestemc_patch(p)     + &
+            this%cpool_to_deadstemc_patch(p)              + &
+            this%deadstemc_xfer_to_deadstemc_patch(p)
+
+       if ( crop_prog .and. pft%itype(p) >= npcropmin )then
+          this%agnpp_patch(p) =                    &
+               this%agnpp_patch(p)               + &
+               this%cpool_to_grainc_patch(p)     + &
+               this%grainc_xfer_to_grainc_patch(p)
+       endif
+
+       ! belowground NPP: fine root, live coarse root, dead coarse root (BGNPP)
+       ! This is supposed to correspond as closely as possible to
+       ! field measurements of BGNPP, so it ignores the storage pools
+       ! and only treats the fluxes into displayed pools.
+       this%bgnpp_patch(p) = &
+            this%cpool_to_frootc_patch(p)                   + &
+            this%frootc_xfer_to_frootc_patch(p)             + &
+            this%cpool_to_livecrootc_patch(p)               + &
+            this%livecrootc_xfer_to_livecrootc_patch(p)     + &
+            this%cpool_to_deadcrootc_patch(p)               + &
+            this%deadcrootc_xfer_to_deadcrootc_patch(p)
+    enddo
+    ! some zeroing
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%somhr_col(c)              = 0._r8
+       this%lithr_col(c)              = 0._r8
+       this%decomp_cascade_hr_col(c,1:ndecomp_cascade_transitions)= 0._r8
+       this%hr_vr_col(c,1:nlevdecomp) = 0._r8
+    enddo
+
+    if ( (.not. is_active_betr_bgc           ) .and. &
+         (.not. (use_pflotran .and. pf_cmode))) then
+      ! vertically integrate HR and decomposition cascade fluxes
+      do k = 1, ndecomp_cascade_transitions
+
+       do j = 1,nlevdecomp
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+
+             this%decomp_cascade_hr_col(c,k) = &
+                this%decomp_cascade_hr_col(c,k) + &
+                this%decomp_cascade_hr_vr_col(c,j,k) * dzsoi_decomp(j)
+
+          end do
+       end do
+      end do
+
+      ! litter heterotrophic respiration (LITHR)
+      do k = 1, ndecomp_cascade_transitions
+        if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%lithr_col(c) = &
+              this%lithr_col(c) + &
+              this%decomp_cascade_hr_col(c,k)
+          end do
+        end if
+      end do
+
+      ! soil organic matter heterotrophic respiration (SOMHR)
+      do k = 1, ndecomp_cascade_transitions
+        if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%somhr_col(c) = &
+              this%somhr_col(c) + &
+              this%decomp_cascade_hr_col(c,k)
+          end do
+        end if
+      end do
+
+      ! total heterotrophic respiration, vertically resolved (HR)
+
+      do k = 1, ndecomp_cascade_transitions
+        do j = 1,nlevdecomp
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%hr_vr_col(c,j) = &
+                this%hr_vr_col(c,j) + &
+                this%decomp_cascade_hr_vr_col(c,j,k)
+          end do
+        end do
+      end do
+    endif
+
+    end associate
+  end subroutine summary_cflux_for_ch4
   
   
 end module CNCarbonFluxType
