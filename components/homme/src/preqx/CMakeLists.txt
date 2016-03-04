@@ -113,7 +113,7 @@ SET(PREQX_SRCS_F90
   ${PHYSICS_DIR}/heldsuarez/held_suarez_mod.F90 
   ${PHYSICS_DIR}/column_model_mod.F90 
   ${PHYSICS_DIR}/column_types_mod.F90 
-)
+  CACHE INTERNAL "")
 
 
 SET(PREQX_SRCS_C

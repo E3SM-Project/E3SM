@@ -488,7 +488,11 @@ execLine() {
       echo "mpirun.lsf -pam \"-n ${NUM_MPI_PROCS}\" ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
 
     elif [ "$HOMME_Submission_Type" = pbs ]; then
-      echo "aprun -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
+      if [ -n "${OMP_NUMBER_THREADS}" ]; then
+        echo "aprun -n ${NUM_MPI_PROCS} -d ${OMP_NUMBER_THREADS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
+      else
+        echo "aprun -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
+      fi
 
     else
       echo "mpiexec -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT

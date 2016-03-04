@@ -5,26 +5,21 @@ do_clean=1
 do_make=1
  
 HOMME_ROOT=/ccs/home/$USER/ACME/components/homme
-NTRACERS=50
-NLEVELS=64
+BUILD_ROOT=/lustre/atlas/scratch/imn/stf006/homme_tests
+NTRACERS=4
+NLEVELS=26
 
 source ./env_mach_specific.cpu
 
-mkdir -p titan-cpu     || exit -1
-cd titan-cpu
+mkdir -p $BUILD_ROOT/titan-cpu     || exit -1
+cd $BUILD_ROOT/titan-cpu
  
 if [ $do_cmake -eq 1 ]; then
 rm -rf CMakeFiles CMakeCache.txt
 cmake                                                                          \
   -C $HOMME_ROOT/cmake/machineFiles/titan.cmake                                \
-  -DCMAKE_Fortran_COMPILER=ftn                                                 \
-  -DCMAKE_C_COMPILER=cc                                                        \
-  -DCMAKE_CXX_COMPILER=CC                                                      \
-  -DOPT_FLAGS="-O0 -Kieee -Mvect=nosse"                                        \
-  -DDEBUG_FLAGS=" "                                                            \
-  -DNETCDF_DIR=$NETCDF_DIR                                                     \
-  -DWITH_PNETCDF=FALSE                                                         \
-  -DHDF5_DIR=$HDF5_DIR                                                         \
+  -DOPT_FLAGS="-O2 -Kieee -Mvect=nosse"                                        \
+  -DWITH_PNETCDF=TRUE                                                          \
   -DPREQX_NP=4                                                                 \
   -DPREQX_PLEV=$NLEVELS                                                        \
   -DPREQX_QSIZE_D=$TRACERS                                                     \
@@ -33,12 +28,9 @@ cmake                                                                          \
   -DBUILD_HOMME_PREQX_ACC=TRUE                                                 \
   -DENABLE_OPENMP=TRUE                                                         \
   -DHOMME_PROJID=STF006                                                        \
-  -DHOMME_FIND_BLASLAPACK=TRUE                                                 \
-  -DNetcdf_NC_CONFIG_BIN="/opt/cray/netcdf/4.3.3.1/bin"                        \
   -DPREQX_CUSTOM_FLAGS_FILE=${HOMME_ROOT}/compile_scripts/titan/customFlags.cmake.cpu \
   $HOMME_ROOT                                               
 fi
-# -DOPT_FLAGS="-fastsse -Mvect"                                                \
 
 if [ $do_clean -eq 1 ]; then
 make clean                                                  || exit -1
@@ -48,4 +40,5 @@ if [ $do_make -eq 1 ]; then
 make -j32                                                   || exit -1
 mkdir -p $HOMME_ROOT/build/preqx
 cp ./src/preqx/preqx $HOMME_ROOT/build/preqx/preqx.cpu      || exit -1
+#cp ./src/preqx_acc/preqx_acc $HOMME_ROOT/build/preqx/preqx.openacc      || exit -1
 fi
