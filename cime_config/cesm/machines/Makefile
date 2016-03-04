@@ -639,7 +639,7 @@ test_esmf: test_esmf.o
 # create list of component libraries
 #------------------------------------------------------------------------------
 CLMVER = $(filter $(CLM_CONFIG_OPTS), clm5_0 clm4_5)
-ifeq ($(CLMVER),'')
+ifeq ($(CLMVER),$(null))
   LNDOBJDIR = $(EXEROOT)/lnd/obj
   LNDLIBDIR=$(LIBROOT)
   LNDLIB := liblnd.a
