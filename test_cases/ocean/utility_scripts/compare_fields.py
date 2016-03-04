@@ -77,14 +77,64 @@ if ( args.l2_norm or args.l1_norm or args.linf_norm ):
 	if ( args.linf_norm ):
 		print "       L_Infinity: %f"%(float(args.linf_norm))
 
-for t in range( 0, time_length):
-	pass_time = True
-	diff = np.absolute(field1[t][:] - field2[t][:])
+field_dims = field1.dimensions
+
+if "Time" in field_dims:
+	for t in range( 0, time_length):
+		pass_time = True
+		if len(field_dims) >= 2:
+			diff = np.absolute(field1[t][:] - field2[t][:])
+		else:
+			diff = np.absolute(field1[t] - field2[t])
+
+		l2_norm = np.sum(diff * diff)
+		l2_norm = np.sqrt(l2_norm)
+
+		l1_norm = np.sum(diff)
+		if len(field_dims) >= 2:
+			l1_norm = l1_norm / np.sum(field1[t][:].shape)
+		l1_norm = np.max(l1_norm)
+
+		if np.amax(diff) > linf_norm:
+			linf_norm = np.amax(diff)
+
+		diff_str = '%d: '%(t)
+		if args.l1_norm:
+			if float(args.l1_norm) < l1_norm:
+				pass_time = False
+		diff_str = '%s l1: %16.14e '%(diff_str, l1_norm)
+
+		if args.l2_norm:
+			if float(args.l2_norm) < l2_norm:
+				pass_time = False
+		diff_str = '%s l2: %16.14e '%(diff_str, l2_norm)
+
+		if args.linf_norm:
+			if float(args.linf_norm) < linf_norm:
+				pass_time = False
+		diff_str = '%s linf: %16.14e '%(diff_str, linf_norm)
+
+		if not args.quiet:
+			print diff_str
+		elif not pass_time:
+			print diff_str
+
+		if not pass_time:
+			pass_val = False
+
+		del diff
+else:
+	if len(field_dims) >= 2:
+		diff = np.absolute(field1[:] - field2[:])
+	else:
+		diff = np.absolute(field1[0] - field2[0])
+
 	l2_norm = np.sum(diff * diff)
 	l2_norm = np.sqrt(l2_norm)
-	
+
 	l1_norm = np.sum(diff)
-	l1_norm = l1_norm / np.sum(field1[t][:].shape)
+	if len(field_dims) >= 2:
+		l1_norm = l1_norm / np.sum(field1[:].shape)
 	l1_norm = np.max(l1_norm)
 
 	if np.amax(diff) > linf_norm:
@@ -93,26 +143,23 @@ for t in range( 0, time_length):
 	diff_str = '%d: '%(t)
 	if args.l1_norm:
 		if float(args.l1_norm) < l1_norm:
-			pass_time = False
+			pass_val = False
 	diff_str = '%s l1: %16.14e '%(diff_str, l1_norm)
 
 	if args.l2_norm:
 		if float(args.l2_norm) < l2_norm:
-			pass_time = False
+			pass_val = False
 	diff_str = '%s l2: %16.14e '%(diff_str, l2_norm)
 
 	if args.linf_norm:
 		if float(args.linf_norm) < linf_norm:
-			pass_time = False
+			pass_val = False
 	diff_str = '%s linf: %16.14e '%(diff_str, linf_norm)
 
 	if not args.quiet:
 		print diff_str
-	elif not pass_time:
+	elif not pass_val:
 		print diff_str
-	
-	if not pass_time:
-		pass_val = False
 
 	del diff
 
