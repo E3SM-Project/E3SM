@@ -29,6 +29,19 @@ if not args.variable:
 if (not args.l2_norm) and (not args.l1_norm) and (not args.linf_norm):
 	print "WARNING: Script will pass since no norm values have been defined."
 
+files_exist = True
+
+if not os.path.exists(args.filename1):
+	print "ERROR: File %s does not exist. Comparison will FAIL."%(args.filename1)
+	files_exist = False
+
+if not os.path.exists(args.filename2):
+	print "ERROR: File %s does not exist. Comparison will FAIL."%(args.filename2)
+	files_exist = False
+
+if not files_exist:
+	sys.exit(1)
+
 f1 = NetCDFFile(args.filename1,'r')
 f2 = NetCDFFile(args.filename2,'r')
 
