@@ -11,11 +11,14 @@
 
         <namelist name="namelist.landice" mode="forward">
                 <template file="EISMINT2_25000m_template.xml" path_base="script_resolution_dir"/>
-                <option name="config_run_duration">'10000-00-00_00:00:00'</option>
+                <option name="config_run_duration">'3000-00-00_00:00:00'</option>
         </namelist>
 
         <streams name="streams.landice" keep="immutable" mode="forward">
                 <template file="EISMINT2_25000m_template.xml" path_base="script_resolution_dir"/>
+                <stream name="output">
+                        <attribute name="output_interval">0000-00-01_00:00:00</attribute>
+                </stream>
         </streams>
 
         <run_script name="1proc_run.py">

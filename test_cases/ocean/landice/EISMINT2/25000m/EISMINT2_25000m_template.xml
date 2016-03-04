@@ -48,6 +48,7 @@
                                 <member name="daysSinceStart" type="var"/>
                                 <member name="allowableDtACFL" type="var"/>
                                 <member name="allowableDtDCFL" type="var"/>
+                                <member name="deltat" type="var"/>
                         </add_contents>
                 </stream>
 
