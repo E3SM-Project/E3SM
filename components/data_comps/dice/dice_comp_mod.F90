@@ -76,7 +76,6 @@ module dice_comp_mod
 
   real(R8),parameter  :: pi     = shr_const_pi      ! pi
   real(R8),parameter  :: spval  = shr_const_spval   ! flags invalid data
-  real(R8),parameter  :: tFrzSW = shr_const_tkfrzsw ! temp of freezing salt-water
   real(R8),parameter  :: tFrz   = shr_const_tkfrz   ! temp of freezing 
   real(R8),parameter  :: latice = shr_const_latice  ! latent heat of fusion
   real(R8),parameter  :: cDay   = shr_const_cDay    ! sec in calendar day
