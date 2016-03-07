@@ -6,17 +6,17 @@
     =========================================
     GRID naming convention
     =========================================
-    The long grid name has the order atm,lnd,ocn/ice,river,mask,glc 
+    The long grid name has the order atm,lnd,ocn/ice,river,mask,glc
     The following shortname is used
     a% => atm, l% => lnd, oi% => ocn/ice, r% => river, m% => mask, g% => glc, w% => wav
-    The notation is 
+    The notation is
     a%name_l%name_oi%name_r%name_m%mask_g%name_w%name
     Each grid is associated with three required elements and one optional element
     longname      (a%name_l%name_oi%name_r%name_m%mask_g%name_w%name)
     shortname     (for backwards compatibility)
     alias         (even shorter notation than shortname) (optional)
     support       (Description of the support level for this grid) (optional)
-    Each grid can also be associated with the following optional attributes	 
+    Each grid can also be associated with the following optional attributes
     compset       (Regular expression for compsets that are required to match for this grid) (optional)
   </help>
 
@@ -102,13 +102,13 @@
       <sname>T85_0.9x1.25_tx0.1v2</sname>
       <alias>T85_f09_t12</alias>
       <lname>a%T85_l%0.9x1.25_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</lname>
-    </grid> 
+    </grid>
 
     <grid>
       <sname>T341_0.23x0.31_tx0.1v2</sname>
       <alias>T341_f02_t12</alias>
       <lname>a%T341_l%0.23x0.31_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</lname>
-    </grid> 
+    </grid>
 
     <grid compset="(DOCN|XOCN|SOCN).+SGLC">
       <sname>T31_T31</sname>
@@ -138,7 +138,7 @@
       <sname>T62_gx3v7</sname>
       <alias>T62_g37</alias>
       <lname>a%T62_l%T62_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null</lname>
-    </grid>  
+    </grid>
 
     <grid compset="(DATM|XATM|SATM)">
       <sname>T62_tx1v1</sname>
@@ -188,7 +188,7 @@
       <sname>0.47x0.63_tx0.1v2</sname>
       <alias>f05_t12</alias>
       <lname>a%0.47x0.63_l%0.47x0.63_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</lname>
-    </grid>    
+    </grid>
 
     <grid>
       <sname>0.9x1.25_gx1v6</sname>
@@ -319,14 +319,14 @@
       <alias>ne30_f19_g16</alias>
       <lname>a%ne30np4_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
       <support>For testing tri-grid</support>
-    </grid>  
+    </grid>
 
     <grid>
       <sname>ne30np4_0.9x1.25_gx1v6</sname>
       <alias>ne30_f09_g16</alias>
       <lname>a%ne30np4_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
       <support>For testing tri-grid</support>
-    </grid> 
+    </grid>
 
     <grid>
       <sname>ne60np4_gx1v6</sname>
@@ -361,39 +361,39 @@
 
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne16np4_ne16np4</sname>
-      <alias>ne16_ne16</alias>    
+      <alias>ne16_ne16</alias>
       <lname>a%ne16np4_l%ne16np4_oi%ne16np4_r%r05_m%gx3v7_g%null_w%null</lname>
     </grid>
 
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne30np4_ne30np4</sname>
-      <alias>ne30_ne30</alias>    
+      <alias>ne30_ne30</alias>
       <lname>a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6_g%null_w%null</lname>
     </grid>
 
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne60np4_ne60np4</sname>
-      <alias>ne60_ne60</alias>    
+      <alias>ne60_ne60</alias>
       <lname>a%ne60np4_l%ne60np4_oi%ne60np4_r%r05_m%gx1v6_g%null_w%null</lname>
     </grid>
 
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne120np4_ne120np4</sname>
-      <alias>ne120_ne120</alias>  
+      <alias>ne120_ne120</alias>
       <lname>a%ne120np4_l%ne120np4_oi%ne120np4_r%r05_m%gx1v6_g%null_w%null</lname>
     </grid>
 
     <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
       <sname>ne240np4_ne240np4</sname>
-      <alias>ne240_ne240</alias>  
+      <alias>ne240_ne240</alias>
       <lname>a%ne240np4_l%ne240np4_oi%ne240np4_r%null_m%gx1v6_g%null_w%null</lname>
     </grid>
 
-    <!--- cism grids --> 
+    <!--- cism grids -->
 
     <grid compset="_CISM">
       <sname>0.9x1.25_gx1v6_gland4</sname>
-      <alias>f09_g16_gl4</alias> 
+      <alias>f09_g16_gl4</alias>
       <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland4_w%null</lname>
     </grid>
 
@@ -505,7 +505,7 @@
       <sname>ne30np4_1.9x2.5_gx1v6_rx1</sname>
       <alias>ne30_f19_g16_rx1</alias>
       <lname>a%ne30np4_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</lname>
-    </grid><!-- back compat --> 
+    </grid><!-- back compat -->
 
     <!-- ww3 grids -->
 
@@ -536,7 +536,7 @@
     </grid>
 
     <grid compset="(_DROF.*_DWAV|_DROF.*_WW3)">
-      <sname>1.9x2.5_gx1v6_rx1_ww3a</sname>  
+      <sname>1.9x2.5_gx1v6_rx1_ww3a</sname>
       <alias>f19_g16_rx1_ww3</alias>
       <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%ww3a</lname>
     </grid>
@@ -573,7 +573,7 @@
 
     <domain name="null">
       <!-- null grid -->
-      <nx>0</nx> <ny>0</ny>    
+      <nx>0</nx> <ny>0</ny>
       <desc>null is no grid: </desc>
     </domain>
 
@@ -584,170 +584,170 @@
       <desc>01col is a single-column grid for datm and POP:</desc>
     </domain>
 
-    <domain name="CLM_USRDAT">  
-      <nx>1</nx> <ny>1</ny> 
+    <domain name="CLM_USRDAT">
+      <nx>1</nx> <ny>1</ny>
       <file lnd_mask="reg">domain.lnd.${CLM_USRDAT_NAME}_navy.nc</file>
-      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>  
-      <desc>user specified domain - only valid for DATM/CLM compset</desc>  
+      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>
+      <desc>user specified domain - only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_numaIA">
-      <nx>1</nx> <ny>1</ny>  
-      <file lnd_mask="reg">domain.lnd.1x1pt-numaIA_navy.110106.nc</file>  
-      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>  
-      <desc>1x1 Numa Iowa -- only valid for DATM/CLM compset</desc>  
+      <nx>1</nx> <ny>1</ny>
+      <file lnd_mask="reg">domain.lnd.1x1pt-numaIA_navy.110106.nc</file>
+      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>
+      <desc>1x1 Numa Iowa -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_brazil">
-      <nx>1</nx> <ny>1</ny>  
-      <file lnd_mask="reg">domain.lnd.1x1pt-brazil_navy.090715.nc</file>  
-      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>  
-      <desc>1x1 Brazil -- only valid for DATM/CLM compset</desc>  
+      <nx>1</nx> <ny>1</ny>
+      <file lnd_mask="reg">domain.lnd.1x1pt-brazil_navy.090715.nc</file>
+      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>
+      <desc>1x1 Brazil -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_smallvilleIA">
-      <nx>1</nx> <ny>1</ny>  
-      <file lnd_mask="reg">domain.lnd.1x1pt-smallvilleIA_test.110106.nc</file>  
-      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>  
-      <desc>1x1 Smallville Iowa Crop Test Case -- only valid for DATM/CLM compset</desc>  
+      <nx>1</nx> <ny>1</ny>
+      <file lnd_mask="reg">domain.lnd.1x1pt-smallvilleIA_test.110106.nc</file>
+      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>
+      <desc>1x1 Smallville Iowa Crop Test Case -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_camdenNJ">
-      <nx>1</nx> <ny>1</ny>  
-      <file lnd_mask="reg">domain.lnd.1x1pt-camdenNJ_navy.111004.nc</file>  
-      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>  
-      <desc>1x1 Camden New Jersey -- only valid for DATM/CLM compset</desc>  
+      <nx>1</nx> <ny>1</ny>
+      <file lnd_mask="reg">domain.lnd.1x1pt-camdenNJ_navy.111004.nc</file>
+      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>
+      <desc>1x1 Camden New Jersey -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_mexicocityMEX">
-      <nx>1</nx> <ny>1</ny>  
+      <nx>1</nx> <ny>1</ny>
       <file lnd_mask="reg">domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc</file>
       <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>
-      <desc>1x1 Mexico City Mexico -- only valid for DATM/CLM compset</desc>  
+      <desc>1x1 Mexico City Mexico -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_vancouverCAN">
-      <nx>1</nx> <ny>1</ny>  
-      <file lnd_mask="reg">domain.lnd.1x1pt-vancouverCAN_navy.090715.nc</file>  
-      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>  
-      <desc>1x1 Vancouver Canada -- only valid for DATM/CLM compset</desc>  
+      <nx>1</nx> <ny>1</ny>
+      <file lnd_mask="reg">domain.lnd.1x1pt-vancouverCAN_navy.090715.nc</file>
+      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>
+      <desc>1x1 Vancouver Canada -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_tropicAtl">
-      <nx>1</nx> <ny>1</ny>  
-      <file lnd_mask="reg">domain.lnd.1x1pt-tropicAtl_test.111004.nc</file>  
-      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>  
-      <desc>1x1 Tropical Atlantic Test Case -- only valid for DATM/CLM compset</desc>  
+      <nx>1</nx> <ny>1</ny>
+      <file lnd_mask="reg">domain.lnd.1x1pt-tropicAtl_test.111004.nc</file>
+      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>
+      <desc>1x1 Tropical Atlantic Test Case -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="1x1_urbanc_alpha">
-      <nx>1</nx> <ny>1</ny>  
-      <file lnd_mask="reg">domain.lnd.1x1pt-urbanc_alpha_test.110201.nc</file>  
-      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>  
-      <desc>1x1 Urban C Alpha Test Case -- only valid for DATM/CLM compset</desc>  
+      <nx>1</nx> <ny>1</ny>
+      <file lnd_mask="reg">domain.lnd.1x1pt-urbanc_alpha_test.110201.nc</file>
+      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>
+      <desc>1x1 Urban C Alpha Test Case -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="5x5_amazon">
-      <nx>1</nx> <ny>1</ny>  
-      <file lnd_mask="reg">domain.lnd.5x5pt-amazon_navy.090715.nc</file>  
-      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>  
-      <desc>5x5 Amazon regional case -- only valid for DATM/CLM compset</desc>  
+      <nx>1</nx> <ny>1</ny>
+      <file lnd_mask="reg">domain.lnd.5x5pt-amazon_navy.090715.nc</file>
+      <path lnd_mask="reg">$DIN_LOC_ROOT/share/domains/domain.clm</path>
+      <desc>5x5 Amazon regional case -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="360x720cru">
       <nx>720</nx> <ny>360</ny>
-      <file lnd_mask="360x720cru">domain.lnd.360x720_cruncep.100429.nc</file>  
+      <file lnd_mask="360x720cru">domain.lnd.360x720_cruncep.100429.nc</file>
       <path lnd_mask="360x720cru">$DIN_LOC_ROOT/share/domains/domain.clm</path>
       <desc>Exact half-degree CRUNCEP datm forcing grid with CRUNCEP land-mask -- only valid for DATM/CLM compset</desc>
     </domain>
 
     <domain name="0.23x0.31">
-      <nx>1152</nx> <ny>768</ny>  
+      <nx>1152</nx> <ny>768</ny>
       <file lnd_mask="gx1v6">domain.lnd.fv0.23x0.31_gx1v6.100517.nc</file>
       <file ocn_mask="gx1v6">domain.ocn.0.23x0.31_gx1v6_101108.nc</file>
       <file lnd_mask="tx0.1v2">domain.lnd.fv0.23x0.31_tx0.1v2_070929.nc</file>
       <!-- BUG: missing ocn domain file for tx01.v2 mask -->
-      <desc>0.23x0.31 is FV 1/4-deg grid:</desc> 
+      <desc>0.23x0.31 is FV 1/4-deg grid:</desc>
     </domain>
 
     <domain name="0.47x0.63">
-      <nx>576</nx>  <ny>384</ny>  
+      <nx>576</nx>  <ny>384</ny>
       <file lnd_mask="gx1v6">domain.lnd.fv0.47x0.63_gx1v6.090407.nc</file>
       <file ocn_mask="gx1v6">domain.ocn.0.47x0.63_gx1v6_090408.nc</file>
       <file lnd_mask="tx0.1v2">domain.lnd.fv0.47x0.63_tx0.1v2_070929.nc</file>
       <!-- BUG: missing ocn domain file for tx01.v2 mask -->
-      <desc>0.47x0.63 is FV 1/2-deg grid:</desc> 
+      <desc>0.47x0.63 is FV 1/2-deg grid:</desc>
     </domain>
 
     <domain name="0.9x1.25">
-      <nx>288</nx>  <ny>192</ny>  
+      <nx>288</nx>  <ny>192</ny>
       <file lnd_mask="gx1v6">domain.lnd.fv0.9x1.25_gx1v6.090309.nc</file>
       <file ocn_mask="gx1v6">domain.ocn.0.9x1.25_gx1v6_090403.nc</file>
       <file lnd_mask="mp120v1">domain.lnd.fv0.9x1.25_mp120v1.111018.nc</file>
       <file lnd_mask="tx0.1v2">domain.lnd.fv0.9x1.25_tx0.1v2_070928.nc</file>
       <!-- BUG: missing ocn domain file for mp120v1 and tx01.v2 mask -->
-      <desc>0.9x1.25 is FV 1-deg grid:</desc> 
+      <desc>0.9x1.25 is FV 1-deg grid:</desc>
     </domain>
 
     <domain name="1.9x2.5">
-      <nx>144</nx>  <ny>96</ny>   
+      <nx>144</nx>  <ny>96</ny>
       <file lnd_mask="gx1v6">domain.lnd.fv1.9x2.5_gx1v6.090206.nc</file>
       <file ocn_mask="gx1v6">domain.ocn.1.9x2.5_gx1v6_090403.nc</file>
       <file lnd_mask="tx1v1">domain.lnd.fv1.9x2.5_tx1v1_090713.nc</file>
-      <desc>1.9x2.5 is FV 2-deg grid:</desc> 
+      <desc>1.9x2.5 is FV 2-deg grid:</desc>
     </domain>
 
     <domain name="4x5">
-      <nx>72</nx> <ny>46</ny>   
+      <nx>72</nx> <ny>46</ny>
       <file lnd_mask="gx3v7">domain.lnd.fv4x5_gx3v7.091218.nc</file>
       <file ocn_mask="gx3v7">domain.ocn.4x5_gx3v7_100120.nc</file>
-      <desc>4x5 is FV 4-deg grid:</desc> 
+      <desc>4x5 is FV 4-deg grid:</desc>
     </domain>
 
     <domain name="2.5x3.33">
-      <nx>108</nx>  <ny>72</ny>   
+      <nx>108</nx>  <ny>72</ny>
       <file lnd_mask="gx3v7">domain.lnd.fv2.5x3.33_gx3v7.110223.nc</file>
       <file ocn_mask="gx3v7">domain.ocn.fv2.5x3.33_gx3v7_110223.nc</file>
-      <desc>2.5x3.33 is FV 3-deg grid:</desc> 
+      <desc>2.5x3.33 is FV 3-deg grid:</desc>
     </domain>
 
-    <domain name="10x15">       
-      <nx>24</nx>   <ny>19</ny>   
+    <domain name="10x15">
+      <nx>24</nx>   <ny>19</ny>
       <file lnd_mask="usgs">domain.lnd.fv10x15_USGS.110713.nc</file>
       <file ocn_mask="usgs">domain.camocn.10x15_USGS_070807.nc</file>
       <path lnd_mask="usgs">$DIN_LOC_ROOT/share/domains/domain.clm</path>
       <path ocn_mask="usgs">$DIN_LOC_ROOT/share/domains/domain.clm</path>
-      <desc>10x15 is FV 10-deg grid:</desc> 
+      <desc>10x15 is FV 10-deg grid:</desc>
       <support>For low resolution testing</support>
     </domain>
 
-    <domain name="T341"> 
-      <nx>1024</nx> <ny>512</ny> 
+    <domain name="T341">
+      <nx>1024</nx> <ny>512</ny>
       <!-- global spectral (eulerian dycore) grids-->
       <!--- mask for atm is irrelevant -->
       <file lnd_mask="tx0.1v2">domain.lnd.T341_gx1v6.111226.nc</file>
-      <desc>T341 is Gaussian grid:</desc> 
+      <desc>T341 is Gaussian grid:</desc>
       <support>Backward compatible for very high resolution Spectral-dycore experiments</support>
     </domain>
 
     <domain name="T85">
       <!-- global spectral (eulerian dycore) grids-->
-      <nx>256</nx>  <ny>128</ny> 
+      <nx>256</nx>  <ny>128</ny>
       <file lnd_mask="gx1v6">domain.lnd.T85_gx1v4.060403.nc</file>
       <file lnd_mask="tx0.1v2">domain.lnd.T85_gx1v4.060403.nc</file>
-      <desc>T85 is Gaussian grid:</desc> 
+      <desc>T85 is Gaussian grid:</desc>
       <support>Backward compatible for high resolution Spectral-dycore experiments</support>
     </domain>
 
-    <domain name="T62">                   
-      <nx>192</nx>  <ny>96</ny>  
+    <domain name="T62">
+      <nx>192</nx>  <ny>96</ny>
       <!--- datm/slnd/drof only -->
       <file lnd_mask="gx1v6">domain.lnd.T62_gx1v6.090320.nc</file>
       <file lnd_mask="gx3v7">domain.lnd.T62_gx3v7.090911.nc</file>
       <file lnd_mask="tx1v1">domain.lnd.T62_tx1v1.090122.nc</file>
       <file lnd_mask="tx0.1v2">domain.lnd.T62_tx0.1v2_090623.nc</file>
       <file lnd_mask="mpas120">domain.lnd.T62_mpas120.121116.nc</file>
-      <desc>T62 is Gaussian grid:</desc> 
+      <desc>T62 is Gaussian grid:</desc>
     </domain>
 
     <domain name="T42">
@@ -756,113 +756,113 @@
       <file ocn_mask="usgs">domain.camocn.64x128_USGS_070807.nc</file>
       <path lnd_mask="usgs">$DIN_LOC_ROOT/share/domains/domain.clm</path>
       <path ocn_mask="usgs">$DIN_LOC_ROOT/atm/cam/ocnfrac</path>
-      <desc>T42 is Gaussian grid:</desc> 
+      <desc>T42 is Gaussian grid:</desc>
     </domain>
 
     <domain name="T31">
       <nx>96</nx> <ny>48</ny>
       <file lnd_mask="gx3v7">domain.lnd.T31_gx3v7.090928.nc</file>
       <file ocn_mask="gx3v7">domain.ocn.48x96_gx3v7_100114.nc</file>
-      <desc>T31 is Gaussian grid:</desc> 
+      <desc>T31 is Gaussian grid:</desc>
     </domain>
 
     <domain name="ne16np4">
-      <nx>13826</nx> <ny>1</ny>   
+      <nx>13826</nx> <ny>1</ny>
       <file lnd_mask="gx3v7">domain.lnd.ne16np4_gx3v7.120406.nc</file>
       <file ocn_mask="gx3v7">domain.ocn.ne16np4_gx3v7.121113.nc</file>
-      <desc>ne16np4 is Spectral Elem 2-deg grid:</desc> 
+      <desc>ne16np4 is Spectral Elem 2-deg grid:</desc>
       <support>For low resolution spectral element grid testing</support>
     </domain>
 
     <domain name="ne30np4">
-      <nx>48602</nx> <ny>1</ny>   
+      <nx>48602</nx> <ny>1</ny>
       <file lnd_mask="gx1v6">domain.lnd.ne30np4_gx1v6.110905.nc</file>
       <file ocn_mask="gx1v6">domain.ocn.ne30np4_gx1v6_110217.nc</file>
-      <desc>ne30np4 is Spectral Elem 1-deg grid:</desc> 
+      <desc>ne30np4 is Spectral Elem 1-deg grid:</desc>
     </domain>
 
     <domain name="ne60np4">
-      <nx>194402</nx> <ny>1</ny>   
+      <nx>194402</nx> <ny>1</ny>
       <file lnd_mask="gx1v6">domain.lnd.ne60np4_gx1v6.120406.nc</file>
       <file ocn_mask="gx1v6">domain.ocn.ne60np4_gx1v6.121113.nc</file>
-      <desc>ne60np4 is Spectral Elem 1/2-deg grid:</desc> 
+      <desc>ne60np4 is Spectral Elem 1/2-deg grid:</desc>
     </domain>
 
     <domain name="ne120np4">
-      <nx>777602</nx> <ny>1</ny>   
+      <nx>777602</nx> <ny>1</ny>
       <file lnd_mask="gx1v6">domain.lnd.ne120np4_gx1v6.110502.nc</file>
       <file ocn_mask="gx1v6">domain.ocn.ne120np4_gx1v6.121113.nc</file>
       <file lnd_mask="tx0.1v2">domain.lnd.ne120np4_tx01v2.120412.nc</file>
-      <desc>ne120np4 is Spectral Elem 1/4-deg grid:</desc> 
+      <desc>ne120np4 is Spectral Elem 1/4-deg grid:</desc>
     </domain>
 
     <domain name="ne240np4">
-      <nx>3110402</nx> <ny>1</ny>   
+      <nx>3110402</nx> <ny>1</ny>
       <file lnd_mask="gx1v6">domain.lnd.ne240np4_gx1v6.111226.nc</file>
       <file ocn_mask="gx1v6">domain.ocn.ne240np4_gx1v6.111226.nc</file>
-      <desc>ne240np4 is Spectral Elem 1/8-deg grid:</desc> 
+      <desc>ne240np4 is Spectral Elem 1/8-deg grid:</desc>
       <support>Experimental for very high resolution experiments</support>
     </domain>
 
     <domain name="gx1v6">
-      <nx>320</nx>  <ny>384</ny>  
+      <nx>320</nx>  <ny>384</ny>
       <file lnd_mask="gx1v6">domain.ocn.gx1v6.090206.nc </file>
       <file ocn_mask="gx1v6">domain.ocn.gx1v6.090206.nc </file>
       <desc>gx1v6 is displaced Greenland pole v6 1-deg grid:</desc>
     </domain>
 
     <domain name="gx3v7">
-      <nx>100</nx> <ny>116</ny>  
+      <nx>100</nx> <ny>116</ny>
       <file ocn_mask="gx3v7">domain.ocn.gx3v7.120323.nc </file>
       <desc>gx3v7 is displaced Greenland pole v7 3-deg grid:</desc>
     </domain>
 
     <domain name="tx0.1v2">
-      <nx>3600</nx> <ny>2400</ny> 
+      <nx>3600</nx> <ny>2400</ny>
       <file ocn_mask="tx0.1v2">domain.ocn.tx0.1v2_090218.nc</file>
       <desc>tx0.1v2 is tripole v2 1/10-deg grid:</desc>
       <support>Experimental for high resolution experiments</support>
     </domain>
 
-    <domain name="tx1v1">       
-      <nx>360</nx> <ny>240</ny>  
+    <domain name="tx1v1">
+      <nx>360</nx> <ny>240</ny>
       <file ocn_mask="tx1v1">domain.ocn.tx1v1.090122.nc </file>
       <desc>tripole v1 1-deg grid: testing proxy for high-res tripole ocean grids- do not use for scientific experiments</desc>
       <support>Experimental tripole ocean grid</support>
     </domain>
 
     <domain name="mpas120">
-      <nx>28574</nx>  <ny>1</ny>  
+      <nx>28574</nx>  <ny>1</ny>
       <file  mask="mpas120">domain.ocn.mpas120.121116.nc</file>
       <desc>mpas120 is a MPAS ocean grid that is roughly 1 degree resolution:</desc>
       <support>Experimental, under development</support>
     </domain>
 
     <domain name="rx1">
-      <nx>360</nx> <ny>180</ny>  
+      <nx>360</nx> <ny>180</ny>
       <desc>rx1 is 1 degree river routing grid (only valid for DROF):</desc>
       <support>Can only be used by DROF</support>
     </domain>
 
     <domain name="r05">
-      <nx>720</nx> <ny>360</ny>  
+      <nx>720</nx> <ny>360</ny>
       <desc>r05 is 1/2 degree river routing grid:</desc>
     </domain>
 
     <domain name="r01">
-      <nx>3600</nx> <ny>1800</ny> 
+      <nx>3600</nx> <ny>1800</ny>
       <desc>r01 is 1/10 degree river routing grid:</desc>
       <support>For experimental use by high resolution grids</support>
     </domain>
 
     <domain name="mp120v1">
-      <nx>28993</nx>  <ny>1</ny>    
+      <nx>28993</nx>  <ny>1</ny>
       <desc>mp120v1 is a MPAS ocean grid that is roughly 1 degree resolution:</desc>
       <support>Experimental, under development</support>
     </domain>
 
     <domain name="mp120r10v1">
-      <nx>139734</nx> <ny>1</ny>    
+      <nx>139734</nx> <ny>1</ny>
       <desc>mp120r10v1 is a MPAS grid:</desc>
       <support>Experimental, under development</support>
     </domain>
@@ -897,7 +897,7 @@
     <!-- WW3 domains-->
 
     <domain name="ww3a">
-      <nx>90</nx>  <ny>50</ny>  
+      <nx>90</nx>  <ny>50</ny>
       <file lnd_mask="ww3a">domain.lnd.ww3a_ww3a.120222.nc</file>
       <file ocn_mask="ww3a">domain.ocn.ww3a_ww3a.120222.nc</file>
       <path lnd_mask="ww3a">$DIN_LOC_ROOT/share/domains</path>
@@ -941,11 +941,11 @@
     </gridmap>
 
     <gridmap atm_grid="0.47x0.63" ocn_grid="tx0.1v2">
-      <ATM2OCN_FMAPNAME>cpl/cpl6/map_fv0.47x0.63_to_tx0.1v2_aave_da_090218.nc</ATM2OCN_FMAPNAME> 
-      <ATM2OCN_SMAPNAME>cpl/cpl6/map_fv0.47x0.63_to_tx0.1v2_bilin_da_090218.nc</ATM2OCN_SMAPNAME> 
-      <ATM2OCN_VMAPNAME>cpl/cpl6/map_fv0.47x0.63_to_tx0.1v2_bilin_da_090218.nc</ATM2OCN_VMAPNAME> 
-      <OCN2ATM_FMAPNAME>cpl/cpl6/map_tx0.1v2_to_fv0.47x0.63_aave_da_090218.nc</OCN2ATM_FMAPNAME> 
-      <OCN2ATM_SMAPNAME>cpl/cpl6/map_tx0.1v2_to_fv0.47x0.63_aave_da_090218.nc</OCN2ATM_SMAPNAME> 
+      <ATM2OCN_FMAPNAME>cpl/cpl6/map_fv0.47x0.63_to_tx0.1v2_aave_da_090218.nc</ATM2OCN_FMAPNAME>
+      <ATM2OCN_SMAPNAME>cpl/cpl6/map_fv0.47x0.63_to_tx0.1v2_bilin_da_090218.nc</ATM2OCN_SMAPNAME>
+      <ATM2OCN_VMAPNAME>cpl/cpl6/map_fv0.47x0.63_to_tx0.1v2_bilin_da_090218.nc</ATM2OCN_VMAPNAME>
+      <OCN2ATM_FMAPNAME>cpl/cpl6/map_tx0.1v2_to_fv0.47x0.63_aave_da_090218.nc</OCN2ATM_FMAPNAME>
+      <OCN2ATM_SMAPNAME>cpl/cpl6/map_tx0.1v2_to_fv0.47x0.63_aave_da_090218.nc</OCN2ATM_SMAPNAME>
     </gridmap>
 
     <gridmap atm_grid="0.9x1.25" ocn_grid="gx1v6">
@@ -1115,7 +1115,7 @@
       <OCN2ATM_SMAPNAME>cpl/cpl6/map_gx3v7_to_T31_aave_da_090903.nc</OCN2ATM_SMAPNAME>
     </gridmap>
 
-    <gridmap atm_grid="T85" ocn_grid="gx1v6"> 
+    <gridmap atm_grid="T85" ocn_grid="gx1v6">
       <ATM2OCN_FMAPNAME>cpl/gridmaps/T85/map_T85_to_gx1v6_aave_110411.nc</ATM2OCN_FMAPNAME>
       <ATM2OCN_SMAPNAME>cpl/gridmaps/T85/map_T85_to_gx1v6_bilin_110411.nc</ATM2OCN_SMAPNAME>
       <ATM2OCN_VMAPNAME>cpl/gridmaps/T85/map_T85_to_gx1v6_bilin_110411.nc</ATM2OCN_VMAPNAME>
@@ -1128,7 +1128,7 @@
       <LND2ATM_FMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_to_T85_aave_110411.nc</LND2ATM_FMAPNAME>
       <LND2ATM_SMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_to_T85_bilin_110411.nc</LND2ATM_SMAPNAME>
     </gridmap>
-    <gridmap atm_grid="T85" ocn_grid="tx0.1v2"> 
+    <gridmap atm_grid="T85" ocn_grid="tx0.1v2">
       <ATM2OCN_FMAPNAME>cpl/gridmaps/T85/map_T85_to_tx0.1v2_aave_110411.nc</ATM2OCN_FMAPNAME>
       <ATM2OCN_SMAPNAME>cpl/gridmaps/T85/map_T85_to_tx0.1v2_bilin_110411.nc</ATM2OCN_SMAPNAME>
       <ATM2OCN_VMAPNAME>cpl/gridmaps/T85/map_T85_to_tx0.1v2_bilin_110411.nc</ATM2OCN_VMAPNAME>
@@ -1142,14 +1142,14 @@
       <LND2ATM_SMAPNAME>cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_to_T85_aave_110411.nc</LND2ATM_SMAPNAME>
     </gridmap>
 
-    <gridmap atm_grid="512x1024" ocn_grid="tx0.1v2"> 
+    <gridmap atm_grid="512x1024" ocn_grid="tx0.1v2">
       <ATM2OCN_FMAPNAME>cpl/gridmaps/T341/map_T341_to_tx0.1v2_aave_110413.nc</ATM2OCN_FMAPNAME>
       <ATM2OCN_SMAPNAME>cpl/gridmaps/T341/map_T341_to_tx0.1v2_aave_110413.nc</ATM2OCN_SMAPNAME>
       <ATM2OCN_VMAPNAME>cpl/gridmaps/T341/map_T341_to_tx0.1v2_aave_110413.nc</ATM2OCN_VMAPNAME>
       <OCN2ATM_FMAPNAME>cpl/gridmaps/tx0.1v2/map_tx0.1v2_to_T341_aave_110413.nc</OCN2ATM_FMAPNAME>
       <OCN2ATM_SMAPNAME>cpl/gridmaps/tx0.1v2/map_tx0.1v2_to_T341_aave_110413.nc</OCN2ATM_SMAPNAME>
     </gridmap>
-    <gridmap atm_grid="512x1024" lnd_grid="0.23x0.31" > 
+    <gridmap atm_grid="512x1024" lnd_grid="0.23x0.31" >
       <ATM2LND_FMAPNAME>cpl/gridmaps/T341/map_T341_to_fv0.23x0.31_aave_110413.nc</ATM2LND_FMAPNAME>
       <ATM2LND_SMAPNAME>cpl/gridmaps/T341/map_T341_to_fv0.23x0.31_aave_110413.nc</ATM2LND_SMAPNAME>
       <LND2ATM_FMAPNAME>cpl/gridmaps/fv0.23x0.31/map_fv0.23x0.31_to_T341_aave_110413.nc</LND2ATM_FMAPNAME>
@@ -1308,12 +1308,15 @@
       <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_gx3v7_e1000r500_090903.nc</ROF2OCN_RMAPNAME>
     </gridmap>
     <gridmap rof_grid="r05" ocn_grid="gx1v6" >
-      <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_gx1v6_e1000r300_090226.nc</ROF2OCN_RMAPNAME>
+      <ROF2OCN_RMAPNAME >cpl/gridmaps/r05/map_r05_to_gx1v6_e1000r300_151109.nc</ROF2OCN_RMAPNAME>
+    </gridmap>
+    <gridmap rof_grid="r05" ocn_grid="gx1v7" >
+      <ROF2OCN_RMAPNAME >cpl/gridmaps/r05/map_r05_to_gx1v7_e1000r300_151109b.nc</ROF2OCN_RMAPNAME>
     </gridmap>
     <gridmap rof_grid="r05" ocn_grid="tx1v1" >
       <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_tx1v1_e1000r500_080505.nc</ROF2OCN_RMAPNAME>
     </gridmap>
-    <gridmap rof_grid="r05" ocn_grid="tx0.1v2" > 
+    <gridmap rof_grid="r05" ocn_grid="tx0.1v2" >
       <ROF2OCN_RMAPNAME>cpl/cpl6/map_r05_to_tx0.1v2_r500e1000_080620.nc</ROF2OCN_RMAPNAME>
     </gridmap>
 
