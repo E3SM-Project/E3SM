@@ -113,8 +113,9 @@ contains
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
 
       real (kind=RKIND), dimension(:), pointer :: surfaceThicknessFlux
+      real (kind=RKIND), dimension(:), pointer :: surfaceThicknessFluxRunoff
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, layerThicknessEdge, &
-         vertAleTransportTop, tend_layerThickness, normalTransportVelocity, fractionAbsorbed
+         vertAleTransportTop, tend_layerThickness, normalTransportVelocity, fractionAbsorbed, fractionAbsorbedRunoff
 
       integer, pointer :: nCells
       integer :: err, iCell
@@ -132,7 +133,9 @@ contains
       call mpas_pool_get_array(tendPool, 'layerThickness', tend_layerThickness)
 
       call mpas_pool_get_array(forcingPool, 'surfaceThicknessFlux', surfaceThicknessFlux)
+      call mpas_pool_get_array(forcingPool, 'surfaceThicknessFluxRunoff', surfaceThicknessFluxRunoff)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
+      call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', fractionAbsorbedRunoff)
 
       !
       ! height tendency: start accumulating tendency terms
@@ -141,6 +144,7 @@ contains
       do iCell = 1, nCells
          tend_layerThickness(:, iCell) = 0.0_RKIND
          surfaceThicknessFlux(iCell) = 0.0_RKIND
+         surfaceThicknessFluxRunoff(iCell) = 0.0_RKIND
       end do
       !$omp end do
 
@@ -150,7 +154,7 @@ contains
 
       ! Build suface mass flux array from bulk
       call mpas_timer_start("bulk_thick", .false.)
-      call ocn_surface_bulk_forcing_thick(meshPool, forcingPool, surfaceThicknessFlux, err)
+      call ocn_surface_bulk_forcing_thick(meshPool, forcingPool, surfaceThicknessFlux, surfaceThicknessFluxRunoff, err)
       call mpas_timer_stop("bulk_thick")
 
       ! Build suface thickness flux array from land ice
@@ -182,7 +186,8 @@ contains
       !
       call mpas_timer_start("surface flux")
 
-      call ocn_thick_surface_flux_tend(meshPool, fractionAbsorbed, layerThickness, surfaceThicknessFlux, tend_layerThickness, err)
+      call ocn_thick_surface_flux_tend(meshPool, fractionAbsorbed, fractionAbsorbedRunoff, layerThickness,  &
+         surfaceThicknessFlux, surfaceThicknessFluxRunoff, tend_layerThickness, err)
       call mpas_timer_stop("surface flux")
 
       !
@@ -438,7 +443,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: &
         normalTransportVelocity, layerThickness,vertAleTransportTop, layerThicknessEdge, vertDiffTopOfCell, &
         tend_layerThickness, normalThicknessFlux, tracerGroupSurfaceFlux, fractionAbsorbed, zMid, relativeSlopeTopOfEdge, &
-        relativeSlopeTapering, relativeSlopeTaperingCell
+        relativeSlopeTapering, relativeSlopeTaperingCell, fractionAbsorbedRunoff, tracerGroupSurfaceFluxRunoff
 
       !
       ! three dimensional pointers
@@ -509,6 +514,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
+      call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', fractionAbsorbedRunoff)
       call mpas_pool_get_array(tendPool, 'layerThickness', tend_layerThickness)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
@@ -576,6 +582,12 @@ contains
                modifiedGroupName = trim(groupItr % memberName) // "SurfaceFlux"
                call mpas_pool_get_array(tracersSurfaceFluxPool, trim(modifiedGroupName), tracerGroupSurfaceFlux)
 
+               ! Get surface flux due to river runoff array
+               if (trim(groupItr % memberName) == 'activeTracers') then
+                  modifiedGroupName = trim(groupItr % memberName) // "SurfaceFluxRunoff"
+                  call mpas_pool_get_array(tracersSurfaceFluxPool, trim(modifiedGroupName), tracerGroupSurfaceFluxRunoff)
+               endif
+
                !
                ! initialize tracer surface flux and tendency to zero.
                !
@@ -586,13 +598,21 @@ contains
                end do
                !$omp end do
 
+               if (trim(groupItr % memberName) == 'activeTracers') then
+               !$omp do schedule(runtime)
+               do iCell = 1, nCells
+                 tracerGroupSurfaceFluxRunoff(:, iCell) = 0.0_RKIND
+               end do
+               !$omp end do
+               endif
+
                !
                ! fill components of surface tracer flux
                !
                if (config_use_tracerGroup_surface_bulk_forcing) then
                   call mpas_timer_start("bulk_" // trim(groupItr % memberName))
                   call ocn_surface_bulk_forcing_tracers(meshPool, groupItr % memberName, forcingPool, tracerGroup, &
-                                                        tracerGroupSurfaceFlux, err)
+                                                        tracerGroupSurfaceFlux, tracerGroupSurfaceFluxRunoff, err)
                   call mpas_timer_stop("bulk_" // trim(groupItr % memberName))
                end if
 
@@ -764,7 +784,8 @@ contains
                ! of surface layers
                !
                call mpas_timer_start("surface_tracer_flux")
-               call ocn_tracer_surface_flux_tend(meshPool, fractionAbsorbed, layerThickness, tracerGroupSurfaceFlux, &
+               call ocn_tracer_surface_flux_tend(meshPool, fractionAbsorbed, fractionAbsorbedRunoff, layerThickness, &
+                                                 tracerGroupSurfaceFlux, tracerGroupSurfaceFluxRunoff,  &
                                                  tracerGroupTend, err)
                call mpas_timer_stop("surface_tracer_flux")
 
