@@ -130,6 +130,11 @@ endif
 ifeq (,$(MPILIB))
   MPILIB = $(shell ./xmlquery MPILIB -value)
 endif
+ifeq ($(strip $(PIO_VERSION)),1)
+  CPPDEFS += -DPIO1
+endif
+
+
 
 ifeq (,$(SHAREDPATH))
   SHAREDPATH = $(SHAREDLIBROOT)/$(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)
@@ -631,36 +636,25 @@ test_esmf: test_esmf.o
 	$(LD) -o $@ test_esmf.o $(LDFLAGS)
 
 #-------------------------------------------------------------------------------
-# create list of component libraries - hard-wired for current ccsm components
-#-------------------------------------------------------------------------------
+# create list of component libraries
+#------------------------------------------------------------------------------
+CLMVER = $(filter $(CLM_CONFIG_OPTS), clm5_0 clm4_5)
+ifeq ($(CLMVER),$(null))
+  LNDOBJDIR = $(EXEROOT)/lnd/obj
+  LNDLIBDIR=$(LIBROOT)
+  LNDLIB := liblnd.a
+else
+  LNDOBJDIR = $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/clm/obj
+  LNDLIBDIR = $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/lib
+  LNDLIB := libclm.a
+endif
+INCLDIR += -I$(LNDOBJDIR)
 
 ifeq ($(ULIBDEP),$(null))
    ifneq ($(LIBROOT),$(null))
      ULIBDEP += $(LIBROOT)/libatm.a
      ULIBDEP += $(LIBROOT)/libice.a
-     ifeq ($(findstring clm5_0,$(CLM_CONFIG_OPTS)),clm5_0)
-          LNDLIB := libclm.a
-     else
-          ifeq ($(findstring clm4_5,$(CLM_CONFIG_OPTS)),clm4_5)
-               LNDLIB := libclm.a
-          else
-               LNDLIB := liblnd.a
-          endif
-     endif
-     ifeq ($(findstring libclm.a,$(LNDLIB)),libclm.a)
-        ULIBDEP += $(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/lib/$(LNDLIB)
-     else
-        ULIBDEP += $(LIBROOT)/$(LNDLIB)
-     endif
-     ifeq ($(MODEL),driver)
-         ifeq ($(findstring libclm.a,$(LNDLIB)),libclm.a)
-             INCLDIR += -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/clm/obj
-         else
-             INCLDIR += -I$(EXEROOT)/lnd/obj
-         endif
-     endif
-
-
+     ULIBDEP += $(LNDLIBDIR)/$(LNDLIB)
      ULIBDEP += $(LIBROOT)/libocn.a
      ifeq ($(COMP_OCN), pop)
        ULIBDEP += $(LIBROOT)/libcvmix.a
@@ -776,8 +770,8 @@ cleanrof:
 	cd $(EXEROOT)/rof/obj ; $(RM) -f *.o *.mod
 
 cleanlnd:
-	$(RM) -f $(LIBROOT)/liblnd.a
-	cd $(EXEROOT)/lnd/obj ; $(RM) -f *.o *.mod
+	$(RM) -f $(LNDLIBDIR)/$(LNDLIB)
+	cd $(LNDOBJDIR) ; $(RM) -f *.o *.mod
 
 cleancsmshare:
 	$(RM) -f $(CSMSHARELIB)
