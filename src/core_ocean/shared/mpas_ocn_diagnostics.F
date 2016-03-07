@@ -1271,6 +1271,7 @@ contains
 
       ! pool pointers
       type (mpas_pool_type), pointer :: tracersSurfaceFluxPool
+      type (mpas_pool_type), pointer :: tracersPool
 
       ! scalars
       integer, pointer :: nCells, nVertLevels
@@ -1292,6 +1293,9 @@ contains
       real (kind=RKIND), dimension(:), pointer :: &
            indexSurfaceLayerDepth
 
+      real (kind=RKIND), dimension(:,:,:), pointer :: &
+           activeTracers
+
       real (kind=RKIND), dimension(:,:), pointer ::  &
            bulkRichardsonNumberBuoy, bulkRichardsonNumberShear
 
@@ -1310,6 +1314,7 @@ contains
       end if
 
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
+      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
       ! set the parameter turbulentVelocitySquared
       turbulentVelocitySquared = 0.001_RKIND
@@ -1347,6 +1352,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'surfaceStress', surfaceStress)
       call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', surfaceStressMagnitude)
 
+      call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
       call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
 
       ! allocate scratch space displaced density computation
@@ -1390,10 +1396,12 @@ contains
        !    2. Sm: salinity associated with surfaceThicknessFlux, PSU (here we assume Sm == salinitySurfaceValue and account for
        !           salinity flux in activeTracersSurfaceFlux array)
        !
-         surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (1,iCell) &
+       surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (1,iCell) &
               * ( activeTracersSurfaceFlux(indexTempFlux,iCell) + penetrativeTemperatureFlux(iCell) &
-              - penetrativeTemperatureFluxOBL(iCell) ) - salineContractionCoeff(1,iCell) &
-              * activeTracersSurfaceFlux(indexSaltFlux,iCell)
+              - penetrativeTemperatureFluxOBL(iCell) - surfaceThicknessFlux(iCell) * activeTracers(indexTempFlux, 1, iCell)) &
+              - salineContractionCoeff(1,iCell) &
+             * ( activeTracersSurfaceFlux(indexSaltFlux,iCell) - surfaceThicknessFlux(iCell) * &
+             activeTracers(indexSaltFlux, 1, iCell) )
 
        ! at this point, surfaceBuoyancyForcing has units of m/s
        ! change into units of m^2/s^3 (which can be thought of as the flux of buoyancy, units of buoyancy * velocity )
