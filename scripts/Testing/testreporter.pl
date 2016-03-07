@@ -184,7 +184,6 @@ sub getTestDirs
 
 #-------------------------------------------------------------------------------
 # Get the suite info and send it back.  
-# Also get the expectedfails file
 #-------------------------------------------------------------------------------
 sub getTestSuiteInfo
 {
@@ -244,16 +243,6 @@ sub getTestSuiteInfo
     my @bltagnodes = $root->findnodes('/testlist/baselinetag');
     $caseinfo{'baselinetag'} = $bltagnodes[0]->textContent();
     &Debug( "baselinetag: $caseinfo{'baselinetag'}\n") ;
-    
-    # Get the expectedFailsFile. 
-    if(! defined $expectedFailsFile)
-    {
-	my @cimeroots = $root->findnodes('/testlist/cimeroot');
-	die "cannot find cimeroot!" if(! @cimeroots);
-	my $cimeroot = $cimeroots[0]->textContent();
-	&Debug("cimeroot: $cimeroot\n");
-	$expectedFailsFile = "$cimeroot/cime_config/cesm/ExpectedTestFails.xml";
-    }
 
     &Debug("caseinfo: " . eval { Dumper \%caseinfo} );
     return %caseinfo;
@@ -309,17 +298,22 @@ sub getTestStatus
 	# test functionality summary as the teststatus field.
 	my @testsummarylines = grep { /test functionality summary/ } @statuslines;
 	my $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
-	if((defined $testsummary && $testsummary !~ /PASS/) && ($teststatus !~ /DONE/))
+	if(defined $testsummary && $testsummary !~ /PASS/)
 	{
-	    $teststatus = $testsummary;
+	    ##$teststatus = $testsummary;
 	    $teststatushash{$testcase}{'comment'} = "Overall Test status failed! Check the history files!!";
 	}
-	$teststatushash{$testcase}{'status'} = $teststatus;
+	##$teststatushash{$testcase}{'status'} = $teststatus;
+	if(length($testsummary) == 0) 
+	{
+	    $testsummary = 'FAIL';
+	}
+	$teststatushash{$testcase}{'status'} = $testsummary;
 
 	# Get the baseline compare summary
 	my @comparelines = grep { /baseline compare summary/} @statuslines;
 	my ($comparestatus,$comparetest)  = split(/\s+/, $comparelines[0]);
-	$teststatushash{$testcase}{'compare'} = $comparestatus;
+	$teststatushash{$testcase}{'compare'} = (length($comparestatus) > 0) ? $comparestatus : "----";
 	my $comparetag = (split(/\./, $comparetest))[-1];
 	$baselinetag = $comparetag unless defined $baselinetag;
     
@@ -330,20 +324,20 @@ sub getTestStatus
 	{
 	    my @memleaklines = grep { /memleak/ } @statuslines;
 	    my $memleakstatus = (split(/\s+/, $memleaklines[0]))[0];
-	    $teststatushash{$testcase}{'memleak'} = $memleakstatus;
+	    $teststatushash{$testcase}{'memleak'} = (length($memleakstatus) > 0) ? $memleakstatus : "----";
 	
 	    my @memcomplines = grep { /memcomp/} @statuslines;
 	    my $memcompstatus = (split(/\s+/, $memcomplines[0]))[0];
-	    $teststatushash{$testcase}{'memcomp'} = $memcompstatus;
+	    $teststatushash{$testcase}{'memcomp'} = (length($memcompstatus) > 0) ? $memcompstatus : "----";
 
 	    my @tputcomplines = grep { /tputcomp/ } @statuslines;
 	    my $tputcompstatus = (split(/\s+/, $tputcomplines[0]))[0];
-	    $teststatushash{$testcase}{'tputcomp'} = $tputcompstatus;
+	    $teststatushash{$testcase}{'tputcomp'} = (length($tputcompstatus) > 0) ? $tputcompstatus : "----";
 	}
 
 	my @nlcomplines = grep { /nlcomp/i } @statuslines;
 	my $nlcompstatus = (split(/\s+/, $nlcomplines[0]))[0];
-	$teststatushash{$testcase}{'nlcomp'} = $nlcompstatus;
+	$teststatushash{$testcase}{'nlcomp'} = (length($nlcompstatus) > 0) ? $nlcompstatus : "----";
 
 	my @commentlines = grep { /COMMENT/ } @statuslines;
 	my $comment = (split(/\s+/, $commentlines[0], 2) )[1];
@@ -394,7 +388,7 @@ sub getTestStatus
 	    
 	    @memleaklines = grep { /memleak/ } @statuslines;
 	    $memleakstatus = (split(/\s+/, $memleaklines[0]))[0];
-	    $teststatushash{$testcase}{'iopmemleak'} = $memleakstatus;
+	    $teststatushash{$testcase}{'iopmemleak'} = (length($memleakstatus) > 0) ? $memleakstatus : "---";
 
 	    @comparelines = grep { /compare_hist/} @statuslines;
 	    ($comparestatus,$comparetest)  = split(/\s+/, $comparelines[0]);
