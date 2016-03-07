@@ -1,0 +1,6 @@
+<driver_script name="setup_MISMIP.py">
+        <case name="10000m">
+                <step executable="./setup_test.py" quiet="false" pre_message=" * Setting up 10000 m" post_message="     Complete"/>
+        </case>
+</driver_script>
+
