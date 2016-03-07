@@ -48,7 +48,7 @@
 				<var name="salinity" array_group="activeGRP" units="grams salt per kilogram seawater"
 					 description="salinity"
 				/>
-		   </var_array>
+			</var_array>
 		</var_struct>
 	</var_struct>
 
@@ -73,6 +73,14 @@
 				/>
 				<var name="salinitySurfaceFlux" array_group="activeGRP" units="PSU m s^{-1}"
 					 description="Flux of salinity through the ocean surface. Positive into ocean."
+				/>
+			</var_array>
+			<var_array name="activeTracersSurfaceFluxRunoff" type="real" dimensions="nCells Time" packages="activeTracersPKG">
+				<var name="temperatureSurfaceFluxRunoff" array_group="activeGRP" units="^\circ C m s^{-1}"
+					 description="Flux of temperature through the ocean surface due to river runoff. Positive into ocean."
+				/>
+				<var name="salinitySurfaceFluxRunoff" array_group="activeGRP" units="PSU m s^{-1}"
+					 description="Flux of salinity through the ocean surface due to river runoff. Positive into ocean."
 				/>
 			</var_array>
 		</var_struct>

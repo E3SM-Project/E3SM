@@ -143,7 +143,9 @@ contains
       character (len=StrKIND), pointer :: config_pressure_gradient_type
 
       real (kind=RKIND), pointer :: config_flux_attenuation_coefficient
+      real (kind=RKIND), pointer :: config_flux_attenuation_coefficient_runoff
       real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficient
+      real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficientRunoff
 
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
@@ -157,6 +159,8 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_surface_layer_averaging', config_cvmix_kpp_surface_layer_averaging)
       call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
       call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient', config_flux_attenuation_coefficient)
+      call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient_runoff',  &
+                                             config_flux_attenuation_coefficient_runoff)
 
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
@@ -236,6 +240,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'indexSurfaceLayerDepth', indexSurfaceLayerDepth)
 
       call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficient', surfaceFluxAttenuationCoefficient)
+      call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficientRunoff', surfaceFluxAttenuationCoefficientRunoff)
       !
       ! Compute height on cell edges at velocity locations
       !   Namelist options control the order of accuracy of the reconstructed layerThicknessEdge value
@@ -783,6 +788,7 @@ contains
       !$omp do schedule(runtime)
       do iCell = 1, nCells
          surfaceFluxAttenuationCoefficient(iCell) = config_flux_attenuation_coefficient
+         surfaceFluxAttenuationCoefficientRunoff(iCell) = config_flux_attenuation_coefficient_runoff
       end do
       !$omp end do
 

@@ -71,7 +71,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_bulk_forcing_tracers(meshPool, groupName, forcingPool, tracerGroup, tracersSurfaceFlux, err)!{{{
+   subroutine ocn_surface_bulk_forcing_tracers(meshPool, groupName, forcingPool, tracerGroup,   &
+      tracersSurfaceFlux, tracersSurfaceFluxRunoff, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -89,6 +90,8 @@ contains
       type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tracerGroup
       real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFlux !< Input/Output: Surface flux for tracer group
+      real (kind=RKIND), dimension(:,:), intent(inout) ::   &
+         tracersSurfaceFluxRunoff !< Input/Output: Surface flux for tracer group due to river runoff
 
       !-----------------------------------------------------------------
       !
@@ -107,7 +110,8 @@ contains
       err = 0
 
       if ( trim(groupName) == 'activeTracers' ) then
-         call ocn_surface_bulk_forcing_active_tracers(meshPool, forcingPool, tracerGroup, tracersSurfaceFlux, err)
+         call ocn_surface_bulk_forcing_active_tracers(meshPool, forcingPool, tracerGroup,  &
+            tracersSurfaceFlux, tracersSurfaceFluxRunoff, err)
       end if
 
    end subroutine ocn_surface_bulk_forcing_tracers!}}}
@@ -214,7 +218,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_bulk_forcing_thick(meshPool, forcingPool, surfaceThicknessFlux, err)!{{{
+   subroutine ocn_surface_bulk_forcing_thick(meshPool, forcingPool, surfaceThicknessFlux, surfaceThicknessFluxRunoff, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -230,6 +234,8 @@ contains
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
       real (kind=RKIND), dimension(:), intent(inout) :: surfaceThicknessFlux !< Input/Output: Array for surface thickness flux
+      real (kind=RKIND), dimension(:), intent(inout) ::  &
+         surfaceThicknessFluxRunoff !< Input/Output: Array for surface thickness flux due to river runoff
 
       !-----------------------------------------------------------------
       !
@@ -272,8 +278,8 @@ contains
       !$omp do schedule(runtime)
       do iCell = 1, nCells
         surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) &
-                                    + seaIceFreshWaterFlux(iCell) + iceRunoffFlux(iCell) &
-                                    + riverRunoffFlux(iCell) ) / rho_sw
+                                    + seaIceFreshWaterFlux(iCell) + iceRunoffFlux(iCell) ) / rho_sw
+        surfaceThicknessFluxRunoff(iCell) = riverRunoffFlux(iCell) / rho_sw
       end do
       !$omp end do
 
@@ -326,7 +332,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_bulk_forcing_active_tracers(meshPool, forcingPool, tracerGroup, tracersSurfaceFlux, err)!{{{
+   subroutine ocn_surface_bulk_forcing_active_tracers(meshPool, forcingPool, tracerGroup,  &
+      tracersSurfaceFlux, tracersSurfaceFluxRunoff, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -342,6 +349,7 @@ contains
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
       real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFlux
+      real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFluxRunoff
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tracerGroup
 
       !-----------------------------------------------------------------
@@ -366,7 +374,7 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: latentHeatFlux, sensibleHeatFlux, longWaveHeatFluxUp, longWaveHeatFluxDown, &
                                                   seaIceHeatFlux
-      real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, seaIceSalinityFlux, iceRunoffFlux
+      real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, seaIceSalinityFlux, iceRunoffFlux, riverRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux, penetrativeTemperatureFlux
 
       real (kind=RKIND), dimension(:), pointer :: snowFlux, rainFlux
@@ -392,6 +400,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
       call mpas_pool_get_array(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFlux)
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
+      call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
 
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
 
@@ -428,6 +437,9 @@ contains
            ! Fields with zero temperature are not accumulated. These include:
            !    snowFlux
            !    iceRunoffFlux
+
+           tracersSurfaceFluxRunoff(index_temperature_flux, iCell) =  tracersSurfaceFluxRunoff(index_temperature_flux, iCell) &
+               + riverRunoffFlux(iCell)*tracerGroup(index_temperature_flux,1,iCell) / rho_sw
          end do
          !$omp end do
       endif ! bulkThicknessFluxOn
