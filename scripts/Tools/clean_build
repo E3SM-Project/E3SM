@@ -87,7 +87,7 @@ if( $cnt==0){
     $opts{ice} = 1;
     $opts{rof} = 1;
     # Do not clean shared land library in a test case unless explicitly requested
-    if(not defined $testcase or $ENV{CLM_CONFIG_OPTS} ~= /clm4_0/){
+    if(not defined $testcase or ($ENV{CLM_CONFIG_OPTS} =~ /clm4_0/)){
 	$opts{lnd} = 1;
     }
 }
