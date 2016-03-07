@@ -401,11 +401,12 @@ foreach my $stream ( @streams ) {
 	$stream_template_opts{'yearlast'}   = SetupTools::expand_xml_var($stream_template_opts{'yearlast'}  , \%xmlvars);
 	
 	# Create the streams txt file for this stream (from a generic template)
+	# QL, 150527,typos fixed, dice->drof
 	my $stream_template = Streams::TemplateGeneric->new( \%stream_template_opts );
-	$stream_template->Read( "${CASEROOT}/Buildconf/dice.template.streams.xml" );
+	$stream_template->Read( "${CASEROOT}/Buildconf/drof.template.streams.xml" );
 	$stream_template->Write( $outstream );
 	
-	# Append to dice.input_data_list
+	# Append to drof.input_data_list
 	my @filenames = $stream_template->GetDataFilenames( 'domain');
 	my $i = 0;
 	foreach my $file ( @filenames ) {

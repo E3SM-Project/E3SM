@@ -324,10 +324,16 @@ sub _queryGrids
     print " ======================================================\n";
     print "\n";
     foreach my $node ($xml_grid->findnodes(".//grids/grid")) {
-	my $alias     = $node->getAttribute('alias');
+	my @lname_nodes = $node->findnodes("./lname");
+	my $lname = $lname_nodes[0]->textContent();
+	my @alias_nodes = $node->findnodes("./alias");
+	my $alias;
+	if ($#alias_nodes == 0) {
+	    $alias = $alias_nodes[0]->textContent();
+	}
 	my $compset   = $node->getAttribute('compset');
 	my $support   = $node->getAttribute('support');
-	my $lname     = $node->textContent();
+
 	print " model grid: $lname \n";
 	if (defined ($alias)  ) { print "    alias        : $alias \n"}
 	if (defined ($compset)) { print "    compset match: $compset \n"}

@@ -41,7 +41,7 @@ OPTIONS
      -value               Only print the value of the field without any equal or identifier.
      -noexpandxml         Do not expand any xml variables that the value is dependent on.
      -help [or -h]        Print usage to STDOUT.
-     -verbose [or -v]     Turn on verbose echoing of what xmlquery is doing.
+     -loglevel            Stdout verbosity level
 
 EOF
 }
@@ -51,11 +51,6 @@ if ($#ARGV == -1) {
     print "ERROR: no arguments sent in -- id  name is REQUIRED\n";
     usage();
 }
-
-# Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
-# descriptions to be printed to STDOUT before the error messages start.
-*STDOUT->autoflush();                  
-
 # Set the directory that contains the CIME configuration scripts.  If the create_newcase command was
 # issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
 # command was issued from the current working directory.
@@ -80,6 +75,7 @@ my $cimeroot = $nodes[0]->getAttribute('value');
 
 unshift @INC, "$cimeroot/utils/perl5lib";
 require Config::SetupTools;
+require Log::Log4perl;
 
 # Parse command-line options.
 my %opts = (
@@ -89,7 +85,7 @@ my %opts = (
     noexpandxml	        =>0,
     help		=>0,
     listall		=>0,
-    verbose		=>0,
+    loglevel		=>"INFO",
     );
 
 GetOptions(
@@ -98,18 +94,25 @@ GetOptions(
     "value"        => \$opts{'value'},
     "noexpandxml"  => \$opts{'noexpandxml'},
     "h|help"       => \$opts{'help'},
-    "v|verbose"    => \$opts{'verbose'},
+    "loglevel=s"    => \$opts{loglevel},
 )  or usage();
 
 # Give usage message.
 usage() if $opts{'help'};
 
+my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
+Log::Log4perl->easy_init({level=>$level,
+			  layout=>'%m%n'});
+
+my $logger = Log::Log4perl::get_logger();
+
+
 # Error checks on arguments
 if ($opts{'value'} && $opts{'fileonly'} ) {
-    die "value and fileonly modes can NOT both be set\n";
+    $logger->logdie ("value and fileonly modes can NOT both be set");
 }
 if ($opts{'valonly'} && $opts{'fileonly'} ) {
-    die "valonly and fileonly modes can NOT both be set\n";
+    $logger->logdie ("valonly and fileonly modes can NOT both be set");
 }
 
 # Determine the required input "id"
@@ -117,8 +120,8 @@ my $idlist = shift( @ARGV );
 
 # Check for unparsed arguments
 if (@ARGV) {
-    print "ERROR: unrecognized arguments: @ARGV\n";
-    print "A list of ID's needs to be comma-delimited with NO-WHITESPACE!\n";
+    $logger->logdie( "ERROR: unrecognized arguments: @ARGV
+            A list of ID's needs to be comma-delimited with NO-WHITESPACE!");
     usage();
 }
 
@@ -129,7 +132,7 @@ if ( $idlist eq "list" ) {
     _listids($idlist)
 }
 
-if ($opts{'verbose'}) { print "xmlchange completed successfully.\n"; }
+$logger->debug( "xmlquery completed successfully.");
 exit;
 
 #-----------------------------------------------------------------------------------------------
@@ -147,6 +150,7 @@ sub _listids
 		 'env_mach_specific.xml', 'env_run.xml', 'env_test.xml'); 
     foreach my $file (@files) {
 	if (-f $file) {
+	    $logger->debug("Reading $file");
 	    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
 	    my @nodes = $xml->findnodes(".//entry");
 	    if (@nodes) {
@@ -172,12 +176,10 @@ sub _listids
 	    if ( $opts{'value'} ) {
 		exit(1);
 	    } else {
-		die "ERROR xmlquery: id $id not found in any of the xml files: @files \n"; 
+		$logger->logdie ("ERROR xmlquery: id $id not found in any of the xml files: @files "); 
 	    }
 	}
-	if ( $opts{'noexpandxml'} ) {
-	    # do nothing
-	} else {
+	if (! $opts{'noexpandxml'} ) {
 	    $value = SetupTools::expand_xml_var( $value, \%xmlvars );
 	}
 	if ( $opts{'valonly'} ) {
@@ -200,18 +202,22 @@ sub _listall
     my %xmlvars;
     my %xmlfile;
     my @ids;
-    my @files = glob( "env_*.xml" );
+
+    my @files = ('env_build.xml', 'env_case.xml', 'env_mach_pes.xml', 
+		 'env_mach_specific.xml', 'env_run.xml', 'env_test.xml'); 
 
     foreach my $file (@files) {
-	my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
-	my @nodes = $xml->findnodes(".//entry");
-	if (@nodes) {
-	    foreach my $node (@nodes) {
-		my $id    = $node->getAttribute('id');
-		my $value = $node->getAttribute('value');
-		push (@ids, $id);
-		$xmlvars{$id} = $value;
-		$xmlfile{$id}  = $file;
+	if(-f $file){
+	    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
+	    my @nodes = $xml->findnodes(".//entry");
+	    if (@nodes) {
+		foreach my $node (@nodes) {
+		    my $id    = $node->getAttribute('id');
+		    my $value = $node->getAttribute('value');
+		    push (@ids, $id);
+		    $xmlvars{$id} = $value;
+		    $xmlfile{$id}  = $file;
+		}
 	    }
 	}
     }
@@ -222,9 +228,7 @@ sub _listall
 	my $value = $xmlvars{$id};
 	$value =~ s/&apos;/'/g;
 	$value =~ s/&lt;/\</g;
-	if ( $opts{'noexpandxml'} ) {
-	    # do nothing
-	} else {
+	if (! $opts{'noexpandxml'} ) {
 	    $value = SetupTools::expand_xml_var( $value, \%xmlvars );
 	}
 	if ( $opts{'valonly'}  ) {

@@ -1,4 +1,5 @@
 #!/bin/csh -f
+setenv CIMEROOT `./xmlquery CIMEROOT    -value`
 if( -e env_mach_pes.xml.orig) then
     cp env_mach_pes.xml.orig env_mach_pes.xml
     ./case_setup -clean

@@ -410,6 +410,7 @@ subroutine glc_run_esmf(comp, import_state, export_state, EClock, rc)
     integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
     integer(IN)   :: CurrentYMD        ! model date
     integer(IN)   :: CurrentTOD        ! model sec into model date
+    character(*), parameter :: subName = "(glc_run_esmf) "
     character(*), parameter :: F04   = "('(glc_run_esmf) ',2a,2i8,'s')"
 !-------------------------------------------------------------------------------
 !
@@ -514,8 +515,9 @@ subroutine glc_final_esmf(comp, import_state, export_state, EClock, rc)
 !EOP
     type(ESMF_Array)                 :: d2x_a, x2d_a, dom_a
     type(ESMF_DistGrid)              :: distgrid
-    character(*), parameter :: F00   = "('(glc_final) ',8a)"
-    character(*), parameter :: F91   = "('(glc_final) ',73('-'))"
+    character(*), parameter :: subName = "(glc_final_esmf) "
+    character(*), parameter :: F00   = "('(glc_final_esmf) ',8a)"
+    character(*), parameter :: F91   = "('(glc_final_esmf) ',73('-'))"
  
 !-------------------------------------------------------------------------------
 !

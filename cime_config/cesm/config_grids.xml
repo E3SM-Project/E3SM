@@ -447,6 +447,38 @@
       <lname>a%ww3a_l%ww3a_oi%ww3a_r%null_m%ww3a_g%null_w%ww3a</lname>
     </grid>
 
+
+    <!-- QL, 150525, ww3 grids -->
+    <grid compset="(_DWAV|_XWAV|_WW3)">
+      <sname>1.9x2.5_gx1v6_r05_ww3a</sname>
+      <alias>f19_g16_r05_ww3</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%ww3a</lname>
+    </grid>
+
+    <grid compset="(_DWAV|_XWAV|_WW3)">
+      <sname>T31_gx3v7_r05_ww3a</sname>
+      <alias>T31_g37_r05_ww3</alias>
+      <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%null_w%ww3a</lname>
+    </grid>
+
+    <grid compset="(_DROF.*_DWAV|_DROF.*_WW3)">
+      <sname>1.9x2.5_gx1v6_rx1_ww3a</sname>  
+      <alias>f19_g16_rx1_ww3</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%ww3a</lname>
+    </grid>
+
+    <grid compset="(_DROF.*_DWAV|_DROF.*_WW3)">
+      <sname>T31_gx3v7_rx1_ww3a</sname>
+      <alias>T31_g37_rx1_ww3></alias>
+      <lname>a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%ww3a</lname>
+    </grid>
+
+    <grid compset="(DATM.+DWAV|XATM.+XWAV|SATM.+SWAV)">
+      <sname>T62_gx1v6_rx1_ww3a</sname>
+      <alias>T62_g16_rx1_ww3</alias>
+      <lname>a%T62_l%T62_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%ww3a</lname>
+    </grid>
+
   </grids>
 
   <!-- ======================================================== -->
@@ -1041,6 +1073,33 @@
       <ATM2LND_SMAPNAME>cpl/gridmaps/T341/map_T341_to_fv0.23x0.31_aave_110413.nc</ATM2LND_SMAPNAME>
       <LND2ATM_FMAPNAME>cpl/gridmaps/fv0.23x0.31/map_fv0.23x0.31_to_T341_aave_110413.nc</LND2ATM_FMAPNAME>
       <LND2ATM_SMAPNAME>cpl/gridmaps/fv0.23x0.31/map_fv0.23x0.31_to_T341_aave_110413.nc</LND2ATM_SMAPNAME>
+    </gridmap>
+
+    <!--  QL, 150525, wav to ocn, atm, ice mapping files  -->
+
+    <gridmap ocn_grid="gx3v7" wav_grid="ww3a">
+      <WAV2OCN_SMAPNAME>cpl/gridmaps/ww3a/map_ww3a_TO_gx3v7_splice_150428.nc</WAV2OCN_SMAPNAME>
+      <OCN2WAV_SMAPNAME>cpl/gridmaps/gx3v7/map_gx3v7_TO_ww3a_splice_150428.nc</OCN2WAV_SMAPNAME>
+      <ICE2WAV_SMAPNAME>cpl/gridmaps/gx3v7/map_gx3v7_TO_ww3a_splice_150428.nc</ICE2WAV_SMAPNAME>
+    </gridmap>
+
+    <gridmap ocn_grid="gx1v6" wav_grid="ww3a">
+      <WAV2OCN_SMAPNAME>cpl/gridmaps/ww3a/map_ww3a_TO_gx1v6_splice_150428.nc</WAV2OCN_SMAPNAME>
+      <OCN2WAV_SMAPNAME>cpl/gridmaps/gx1v6/map_gx1v6_TO_ww3a_splice_150428.nc</OCN2WAV_SMAPNAME>
+      <ICE2WAV_SMAPNAME>cpl/gridmaps/gx1v6/map_gx1v6_TO_ww3a_splice_150428.nc</ICE2WAV_SMAPNAME>
+    </gridmap>
+
+
+    <gridmap atm_grid="48x96" wav_grid="ww3a">
+      <ATM2WAV_SMAPNAME>cpl/gridmaps/T31/map_T31_TO_ww3a_bilin_131104.nc</ATM2WAV_SMAPNAME>
+    </gridmap>
+
+    <gridmap atm_grid="T62" wav_grid="ww3a">
+      <ATM2WAV_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_ww3a_bilin.150617.nc</ATM2WAV_SMAPNAME>
+    </gridmap>
+
+    <gridmap atm_grid="1.9x2.5" wav_grid="ww3a">
+      <ATM2WAV_SMAPNAME>cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_ww3a_bilin_140702.nc</ATM2WAV_SMAPNAME>
     </gridmap>
 
     <!--- river to land and land to river mapping files    -->

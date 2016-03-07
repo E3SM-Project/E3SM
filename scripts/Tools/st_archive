@@ -26,17 +26,19 @@ my @dirs = ("$cimeroot/utils/perl5lib" );
 
 unshift @INC, @dirs;
 require Config::SetupTools;
-
-#-----------------------------------------------------------------------------------------------
-# Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
-# descriptions to be printed to STDOUT before the error messages start.
-#-----------------------------------------------------------------------------------------------
-
-*STDOUT->autoflush();                  
-
+require Log::Log4perl;
 # Globals
-my %opts = ();
+my %opts = (loglevel=>"DEBUG");
 
+my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
+Log::Log4perl->easy_init({level=>$level,
+			  layout=>'%m%n'});
+
+my $logger = Log::Log4perl::get_logger();
+
+
+
+ 
 # the global config hash holds all valid XML variables necessary for the short term st_archive to function
 my %config = SetupTools::getAllResolved();
 
@@ -95,7 +97,7 @@ ENV_ARCHIVE.XML SCHEMA AND DOCUMENT TYPE DEFINITION (DTD)
 
     <config_definition>
     <components>
-      <comp_archive_spec name="[regular expression string] (cpl|dart|cam\\*|datm|clm\\?|dlnd|rtm|cice|dice|pop|docn|cism|ww3|dwav)">
+      <comp_archive_spec name="[regular expression string] (cpl|dart|cam\\*|datm|clm\\?|dlnd|rtm|mosart|cice|dice|pop|docn|cism|ww3|dwav)">
       NOTE: model component name (note: cam\\* and clm\\? are historical for CAM and CLM model components).
 
         <rootdir>[string] (rest|cpl|dart|atm|lnd|rof|ice|ocn|glc|wav)</rootdir>
@@ -360,7 +362,7 @@ sub listXMLin
 
 The env_archive.xml brief XML tag schema:
 
-    <comp_archive_spec name="[string:component name] (cpl|dart|cam\*|datm|clm\?|dlnd|rtm|cice|dice|pop|docn|cism|ww3|dwav)">
+    <comp_archive_spec name="[string:component name] (cpl|dart|cam\*|datm|clm\?|dlnd|rtm|mosart|cice|dice|pop|docn|cism|ww3|dwav)">
 	<rootdir>[string:root directory name after DOUT_S_ROOT.locked] (rest|cpl|dart|atm|lnd|rof|ice|ocn|glc|wav)</rootdir>
         <multi_instance>[string: multi-instance support] (y|n)</multi_instance>
         <files>

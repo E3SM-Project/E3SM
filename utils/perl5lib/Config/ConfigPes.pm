@@ -1,5 +1,5 @@
 package ConfigPes;
-my $pkg_nm = 'ConfigPes';
+my $pkg_nm = __PACKAGE__;
 
 use strict;
 use English;
@@ -7,25 +7,13 @@ use IO::File;
 use XML::LibXML;
 use Data::Dumper;
 use ConfigCase;
+use Log::Log4perl qw(get_logger);
+my $logger;
 
-# Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.
-# If not found, print a warning message then exit.
-eval {
-    require XML::LibXML;
-    XML::LibXML->import();
-};
-if($@)
-{
-    my $warning = <<END;
-WARNING:
-  The perl module XML::LibXML is needed for XML parsing in the CESM script system.
-  Please contact your local systems administrators or IT staff and have them install it for
-  you, or install the module locally.  
-
-END
-    print "$warning\n";
-    exit(1);
+BEGIN{
+    $logger = get_logger();
 }
+
 
 #-----------------------------------------------------------------------------------------------
 sub setPes {
@@ -38,7 +26,7 @@ sub setPes {
 
 	# Reset the pes if a pes file is specified
 	my $pes_file = $$opts_ref{'pes_file'};
-	(-f "$pes_file")  or  die "** Cannot find pes_file \"$pes_file\" ***\n";
+	(-f "$pes_file")  or  $logger->logdie("** Cannot find pes_file \"$pes_file\" ***");
 	$config->reset_setup("$pes_file");    
 
     } else {
@@ -123,34 +111,7 @@ sub _setPESsettings
     my $compset_longname = $config->get('COMPSET');
     my $pes_file	 = $config->get('PES_SPEC_FILE');
 
-    # temporary hash
     my %decomp;
-    $decomp{'NTASKS_ATM'} = 16;
-    $decomp{'NTASKS_LND'} = 16;
-    $decomp{'NTASKS_ICE'} = 16;
-    $decomp{'NTASKS_OCN'} = 16;
-    $decomp{'NTASKS_ROF'} = 16;
-    $decomp{'NTASKS_GLC'} = 16;
-    $decomp{'NTASKS_WAV'} = 16;
-    $decomp{'NTASKS_CPL'} = 16;
-
-    $decomp{'NTHRDS_ATM'} = 1;
-    $decomp{'NTHRDS_LND'} = 1;
-    $decomp{'NTHRDS_ICE'} = 1;
-    $decomp{'NTHRDS_OCN'} = 1;
-    $decomp{'NTHRDS_ROF'} = 1;
-    $decomp{'NTHRDS_GLC'} = 1;
-    $decomp{'NTHRDS_WAV'} = 1;
-    $decomp{'NTHRDS_CPL'} = 1;
-
-    $decomp{'ROOTPE_ATM'} = 0;
-    $decomp{'ROOTPE_LND'} = 0;
-    $decomp{'ROOTPE_ICE'} = 0;
-    $decomp{'ROOTPE_OCN'} = 0;
-    $decomp{'ROOTPE_ROF'} = 0;
-    $decomp{'ROOTPE_GLC'} = 0;
-    $decomp{'ROOTPE_WAV'} = 0;
-    $decomp{'ROOTPE_CPL'} = 0;
 
     # --------------------------------------
     # look for model grid / model machine match
@@ -161,25 +122,29 @@ sub _setPESsettings
 
     # First determine that the xml file has consistent attributes
     foreach my $grid ($xml->findnodes(".//grid")) {
+	next if($grid->nodeType == XML_COMMENT_NODE);
+
 	if (! defined $grid->getAttribute('name')) {
 	    my $name = $grid->nodeName();
-	    die "\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"name\" in $pes_file \n\n";
+	    $logger->logdie("\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"name\" in $pes_file \n\n");
 	}
     }
     foreach my $mach ($xml->findnodes(".//mach")) {
+	next if($mach->nodeType == XML_COMMENT_NODE);
 	if (! defined $mach->getAttribute('name')) {
 	    my $name = $mach->nodeName();
-	    die "\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"name\" in $pes_file \n\n";
+	    $logger->logdie("\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"name\" in $pes_file \n\n");
 	}
     }
     foreach my $pes ($xml->findnodes(".//pes")) {
+	next if($pes->nodeType == XML_COMMENT_NODE);
 	if (! defined $pes->getAttribute('pesize')) {
 	    my $name = $pes->nodeName();
-	    die "\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"pesize\" in $pes_file \n\n";
+	    $logger->logdie("\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"pesize\" in $pes_file \n\n");
 	}
 	if (! defined $pes->getAttribute('compset')) {
 	    my $name = $pes->nodeName();
-	    die "\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"compset\" in $pes_file \n\n";
+	    $logger->logdie("\n ERROR ConfigPes.pm: node <$name> does not have a required attribute of \"compset\" in $pes_file \n\n");
 	}
     }
 
@@ -199,8 +164,17 @@ sub _setPESsettings
     my $compset_match;
     my $pesize_match;
 
-    # Find nodes with grid= not 'any' and mach='any' - this override the default for $grid_match and $mach_match
+    # Find default which will be overwritten by any match below 
+    foreach my $node ($xml->findnodes(".//grid[(\@name =\"any\")]/mach[\@name =\"any\"]/pes[\@pesize =\"any\" and \@compset =\"any\"]")) {
+	next if($node->nodeType == XML_COMMENT_NODE);
+	$pe_select = $node;
+    }
+
+
+    
+        # Find nodes with grid= not 'any' and mach='any' - this override the default for $grid_match and $mach_match
     foreach my $node ($xml->findnodes(".//grid[not(\@name =\"any\")]/mach[\@name =\"any\"]")) {
+	next if($node->nodeType == XML_COMMENT_NODE);
 	my $grid_attr = $node->parentNode()->getAttribute('name');
 	if ($grid_longname =~ m/$grid_attr/) {
 	    $grid_match = $grid_attr;
@@ -212,6 +186,7 @@ sub _setPESsettings
     # Find nodes with grid = 'any' and mach = not 'any'
     # The first match found will overwrite the above grid_match and mach_match default
     foreach my $node ($xml->findnodes(".//grid[\@name =\"any\"]/mach[not(\@name =\"any\")]")) {
+	next if($node->nodeType == XML_COMMENT_NODE);
 	my $mach_attr = $node->getAttribute('name');
 	if ($mach =~ m/$mach_attr/) {
 	    $grid_match = 'any';
@@ -223,6 +198,7 @@ sub _setPESsettings
     # Find nodes with grid = not 'any' and mach = not 'any'
     # The first match found will overwrite the above grid_match and mach_match default
     foreach my $node ($xml->findnodes(".//grid[not(\@name =\"any\")]/mach[not(\@name =\"any\")]")) {
+	next if($node->nodeType == XML_COMMENT_NODE);
 	my $grid_attr = $node->parentNode()->getAttribute('name');
 	my $mach_attr = $node->getAttribute('name');
 	if ($grid_longname =~ m/$grid_attr/ && $mach =~ m/$mach_attr/) {
@@ -237,6 +213,7 @@ sub _setPESsettings
     my @nodes = $xml->findnodes(".//grid[\@name=\"$grid_match\"]/mach[\@name=\"$mach_match\"]/*");
     if ((! defined $compset_match) && (! defined $pesize_match)) {
 	foreach my $node (@nodes) {
+	    next if($node->nodeType == XML_COMMENT_NODE);
 	    my $compset_attr = $node->getAttribute('compset');
 	    my $pesize_attr  = $node->getAttribute('pesize');
 	    if (($compset_longname =~ m/$compset_attr/) && ($pesize_opts =~ m/$pesize_attr/)) {
@@ -284,23 +261,26 @@ sub _setPESsettings
 	}
     }
     if (! defined $pe_select) {
-	die "ERROR: no pes match found in $pes_file \n";
+	$logger->logdie("ERROR: no pes match found in $pes_file ");
     } 
-    print "ConfigPES: grid          is $grid_longname \n";
-    print "ConfigPES: compset       is $compset_longname \n";
-    print "ConfigPES: grid match    is $grid_match \n";
-    print "ConfigPES: machine match is $mach_match\n";
-    print "ConfigPES: compset_match is $compset_match\n"; 
-    print "ConfigPES: pesize match  is $pesize_match \n"; 
+    $logger->info("ConfigPES: grid          is $grid_longname ");
+    $logger->info("ConfigPES: compset       is $compset_longname ");
+    $logger->info("ConfigPES: grid match    is $grid_match ");
+    $logger->info("ConfigPES: machine match is $mach_match");
+    $logger->info("ConfigPES: compset_match is $compset_match"); 
+    $logger->info("ConfigPES: pesize match  is $pesize_match "); 
     
     my $pes_per_node = $config->get('PES_PER_NODE');
     my @pes_ntasks = $pe_select->findnodes("./ntasks"); 
     my @pes_nthrds = $pe_select->findnodes("./nthrds"); 
     my @pes_rootpe = $pe_select->findnodes("./rootpe"); 
-
+    my %decomp;
+    
     foreach my $pes (@pes_ntasks, @pes_nthrds, @pes_rootpe) {
+	next if($pes->nodeType == XML_COMMENT_NODE);
 	my @children = $pes ->childNodes();
 	foreach my $child (@children) {
+	    next if($child->nodeType == XML_COMMENT_NODE);
 	    my $name  = uc $child->nodeName(); 
 	    my $value =    $child->textContent();
             if ($value =~ /-?\d/){
@@ -311,22 +291,47 @@ sub _setPESsettings
            }
 	}
     }
+    if(!defined $decomp{NTASKS_ATM} || ! defined $decomp{NTHRDS_ATM} || !defined $decomp{ROOTPE_ATM}){
+	die("NO pelayout found");
+    }
 
+
+    
     foreach my $comp ("ATM", "LND", "ICE", "OCN", "GLC", "WAV", "ROF", "CPL") {
+	if($comp ne "ATM"){
+	    if(!defined $decomp{"NTASKS_$comp"}){
+		$decomp{"NTASKS_$comp"} = $decomp{NTASKS_ATM};
+		warn "No Match found for NTASKS_$comp, using $decomp{NTASKS_ATM}";
+	    }
+	    if(!defined $decomp{"NTHRDS_$comp"}){
+		$decomp{"NTHRDS_$comp"} = $decomp{NTHRDS_ATM};
+		warn "No Match found for NTHRDS_$comp, using $decomp{NTHRDS_ATM}";
+	    }
+	    if(!defined $decomp{"ROOTPE_$comp"}){
+		$decomp{"ROOTPE_$comp"} = $decomp{ROOTPE_ATM};
+		warn "No Match found for ROOTPE_$comp, using $decomp{ROOTPE_ATM}";
+	    }
+	}
+	    
+
 	my $ntasks = _clean($decomp{"NTASKS_$comp"});
 	my $nthrds = _clean($decomp{"NTHRDS_$comp"});
 	my $rootpe = _clean($decomp{"ROOTPE_$comp"});
-
+	
 	$config->set("NTASKS_$comp" , $ntasks);
 	$config->set("NTHRDS_$comp" , $nthrds);
 	$config->set("ROOTPE_$comp" , $rootpe);
     }
+
 }
+
+
 
 #-------------------------------------------------------------------------------
 sub _clean
 {
     my ($name) = @_;
+  
     $name =~ s/^\s+//; # strip any leading whitespace 
     $name =~ s/\s+$//; # strip any trailing whitespace
     return ($name);

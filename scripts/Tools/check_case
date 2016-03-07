@@ -7,7 +7,7 @@ use Getopt::Long;
 use File::Basename;
 use IO::File;
 use IO::Handle;
-
+use XML::LibXML;
 sub usage {
     die <<'EOF';
 
@@ -24,30 +24,42 @@ OPTIONS
 EOF
 } 
 
-my %opts = ( );
+my %opts = (loglevel=>"INFO" );
 
 GetOptions(
+    "loglevel=s" => \$opts{loglevel},
     "h|help"  => \$opts{'help'},
     )  or usage();
 
 # Give usage message.
 usage() if $opts{'help'};
+my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml"); 
+my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
+my $cimeroot = $nodes[0]->getAttribute('value');
+
+unshift @INC, "$cimeroot/utils/perl5lib";
+require Log::Log4perl;
+
+my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
+Log::Log4perl->easy_init({level=>$level,
+			  layout=>'%m%n'});
+my $logger = Log::Log4perl::get_logger();
+
 
 my $sysmod = "./Tools/check_lockedfiles";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
 
 my $CASE           = `./xmlquery CASE           -value`;
 my $BUILD_COMPLETE = `./xmlquery BUILD_COMPLETE -value`;
 
-my $sysmod = "./preview_namelists";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+my $sysmod = "./preview_namelists -loglevel $opts{loglevel}";
+system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
 
 if ($BUILD_COMPLETE ne "TRUE") {
-    print "BUILD_COMPLETE is not TRUE \n" ;
-    print "Please rebuild the model interactively via calling \n";
-    print "   ./${CASE}.build \n";
-    die;
+    $logger->logdie("BUILD_COMPLETE is not TRUE \n
+    Please rebuild the model interactively via calling 
+      ./${CASE}.build" );
 }
 
-print "check_case OK \n";
+$logger->info( "check_case OK ");
 

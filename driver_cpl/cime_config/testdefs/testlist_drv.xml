@@ -4,6 +4,7 @@
     <grid name="T31_g37_rx1">
       <test name="ERI">
         <machine compiler="intel " testtype="prebeta">yellowstone</machine>
+        <machine compiler="cray" testtype="prebeta">edison</machine>
       </test>
       <test name="ERI_D">
         <machine compiler="intel" testtype="prebeta">hobart</machine>
@@ -13,7 +14,7 @@
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
-      <test name="ERS_D_Ld3">
+      <test name="ERS_Ld3">
         <machine compiler="pgi" testtype="prebeta">bluewaters</machine>
         <machine compiler="intel" testtype="prealpha">edison</machine>
         <machine compiler="intel" testtype="prebeta">edison</machine>
@@ -22,9 +23,9 @@
       </test>
       <test name="ERS_Ld3">
         <machine compiler="pgi" testtype="prealpha">bluewaters</machine>
-        <machine compiler="pgi" testtype="prebeta">bluewaters</machine>
+        <machine compiler="cray" testtype="prebeta">edison</machine>
       </test>
-      <test name="ERS_N2_D_Ld3">
+      <test name="ERS_N2_Ld3">
         <machine compiler="intel" testtype="prebeta">hobart</machine>
         <machine compiler="pgi" testtype="prebeta">hobart</machine>
         <machine compiler="intel" testtype="prebeta">edison</machine>
@@ -39,7 +40,7 @@
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
       </test>
-      <test name="ERS_N2_D_Ld3">
+      <test name="ERS_N2_Ld3">
         <machine compiler="pgi" testtype="prebeta">bluewaters</machine>
         <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="intel" testtype="prebeta">eos</machine>
@@ -60,7 +61,15 @@
       <test name="CME_Ld3">
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
       </test>
-      <test name="ERS_D_Ld3">
+      <test name="ERR">
+        <machine compiler="intel" testtype="prealpha">yellowstone</machine>
+        <machine compiler="nag" testtype="prealpha">hobart</machine>
+        <machine compiler="cray" testtype="prealpha">eos</machine>
+        <machine compiler="intel" testtype="prealpha">edison</machine>
+        <machine compiler="pgi" testtype="prealpha">bluewaters</machine>
+        <machine compiler="ibm" testtype="prealpha">mira</machine>
+      </test>
+      <test name="ERS_Ld3">
         <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="intel" testtype="prealpha">hobart</machine>
         <machine compiler="pgi" testtype="prealpha">hobart</machine>
@@ -78,7 +87,7 @@
         <machine compiler="intel" testtype="prebeta">edison</machine>
         <machine compiler="intel" testtype="prebeta">eos</machine>
       </test>
-      <test name="PEA_P1_M_Ld3">
+      <test name="PEA_P1_Ld3">
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -135,7 +144,7 @@
   </compset>
   <compset name="X">
     <grid name="T31_g37">
-      <test name="PEA_P1_M_Ld3">
+      <test name="PEA_P1_Ld3">
         <machine compiler="gnu" testtype="prebeta">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta">yellowstone</machine>
         <machine compiler="pgi" testtype="prebeta">yellowstone</machine>
@@ -147,14 +156,14 @@
       </test>
     </grid>
     <grid name="f19_g16">
-      <test name="ERS_D_Ld3">
+      <test name="ERS_Ld3">
         <machine compiler="intel" testtype="prealpha">hobart</machine>
         <machine compiler="pgi" testtype="prealpha">hobart</machine>
         <machine compiler="intel" testtype="prealpha">edison</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
       </test>
-      <test name="PET_D_E_CG">
+      <test name="PET_E_CG">
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
       </test>
       <test name="PET_PT_Ld3">

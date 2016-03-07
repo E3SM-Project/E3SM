@@ -3,6 +3,12 @@
 <?xml-stylesheet type="text/xsl" href="config_definition.xsl" ?>
 
 <files>
+  <file name="env_batch.xml">
+    <header>
+      These variables may be changed anytime during a run, they
+      control arguments to the batch submit command.
+    </header>
+  </file>
 
   <file name="env_case.xml">
     <header>

@@ -1,5 +1,5 @@
 package ConfigTests;
-my $pkg_nm = 'ConfigTests';
+my $pkg_nm = __PACKAGE__;
 
 use strict;
 use English;
@@ -8,23 +8,11 @@ use XML::LibXML;
 use Data::Dumper;
 use ConfigCase;
 
-# Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.
-# If not found, print a warning message then exit.
-eval {
-    require XML::LibXML;
-    XML::LibXML->import();
-};
-if($@)
-{
-    my $warning = <<END;
-WARNING:
-  The perl module XML::LibXML is needed for XML parsing in the CESM script system.
-  Please contact your local systems administrators or IT staff and have them install it for
-  you, or install the module locally.  
+use Log::Log4perl qw(get_logger);
+my $logger;
 
-END
-    print "$warning\n";
-    exit(1);
+BEGIN{
+    $logger = get_logger();
 }
 
 #-------------------------------------------------------------------------------
@@ -49,13 +37,13 @@ sub setTests
     }
     # Die unless search was successful.
     unless ($found) { 
-	print "set_test: no match for test $testname - possible testnames are \n";
+	my $outstr = "set_test: no match for test $testname - possible testnames are\n";
 	foreach my $test (@tests) {
 	    my $name = $test->getAttribute('NAME');
 	    my $desc = $test->getAttribute('DESC');
-	    print " $name ($desc) \n" ;
+	    $outstr .= " $name ($desc) \n" ;
 	}
-	die "set_test: exiting\n"; 
+	$logger->logdie($outstr);
     }
 
     # Loop through all entry_ids of the $cfg_ref object and if the corresponding attribute
@@ -67,7 +55,7 @@ sub setTests
 	    foreach my $node ($test->childNodes()) {
 		my $name = $node->nodeName();
 		if ( ! $cfg_ref->is_valid_name($name) ) { 
-		    die "set_test: invalid element $name in test $testname in file $testfile exiting\n"; 
+		    $logger->logdie("set_test: invalid element $name in test $testname in file $testfile exiting"); 
 		}
 		if ($name eq $id) {
 		    my $value = $node->textContent();

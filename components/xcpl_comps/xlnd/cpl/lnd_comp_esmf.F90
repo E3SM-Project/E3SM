@@ -390,6 +390,7 @@ subroutine lnd_run_esmf(comp, import_state, export_state, EClock, rc)
     integer(IN)   :: CurrentYMD        ! model date
     integer(IN)   :: CurrentTOD        ! model sec into model date
     integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
+    character(*), parameter :: subName = "(lnd_run_esmf) "
     character(*), parameter :: F04   = "('(lnd_run_esmf) ',2a,2i8,'s')"
 !-------------------------------------------------------------------------------
 !
@@ -494,8 +495,9 @@ subroutine lnd_final_esmf(comp, import_state, export_state, EClock, rc)
     type(ESMF_Array)                 :: dom_a
     type(ESMF_Array)                 :: d2x_a, x2d_a
     type(ESMF_DistGrid)              :: distgrid
-    character(*), parameter :: F00   = "('(lnd_final) ',8a)"
-    character(*), parameter :: F91   = "('(lnd_final) ',73('-'))"
+    character(*), parameter :: subName = "(lnd_final_esmf) "
+    character(*), parameter :: F00   = "('(lnd_final_esmf) ',8a)"
+    character(*), parameter :: F91   = "('(lnd_final_esmf) ',73('-'))"
  
 !-------------------------------------------------------------------------------
 !
