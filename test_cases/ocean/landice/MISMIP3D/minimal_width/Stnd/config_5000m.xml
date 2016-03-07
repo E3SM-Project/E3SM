@@ -66,7 +66,7 @@
 
                 <!-- Set up needed graph file -->
                 <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
-                        <argument flag="graph.info">48</argument>
+                        <argument flag="graph.info">16</argument>
                 </step>
 
         </run_script>

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config case="5000m">
+<config case="1000m">
 
         <!-- Set up needed files and executables -->
         <add_executable source="periodic_hex" dest="periodic_grid"/>
@@ -12,7 +12,7 @@
         <add_link source_path="script_configuration_dir" source="setup_mismip3d_initial_conditions.py" dest="."/>
         <add_link source_path="script_configuration_dir" source="plot_GL_Stnd_MISMIP3D.py" dest="."/>
         <add_link source_path="script_configuration_dir" source="albany_input.xml" dest="."/>
-        <add_link source_path="script_test_dir" source="namelist.input.5000m" dest="namelist.input"/>
+        <add_link source_path="script_test_dir" source="namelist.input.1000m" dest="namelist.input"/>
         <add_link source_path="work_case_dir" source="culled_graph.info" dest="graph.info"/>
 
 
@@ -22,12 +22,15 @@
 
         <streams name="streams.landice" keep="immutable" mode="forward">
                 <template file="mismip_template.xml" path_base="script_configuration_dir"/>
+                <stream name="restart">
+                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                </stream>
                 <stream name="output">
-                        <attribute name="filename_interval">2000-00-00_00:00:00</attribute>
+                        <attribute name="filename_interval">0200-00-00_00:00:00</attribute>
                         <attribute name="output_interval">0100-00-00_00:00:00</attribute>
                 </stream>
                 <stream name="outputmask">
-                        <attribute name="filename_interval">2000-00-00_00:00:00</attribute>
+                        <attribute name="filename_interval">200-00-00_00:00:00</attribute>
                         <attribute name="output_interval">0000-00-01_00:00:00</attribute>
                 </stream>
         </streams>
@@ -66,7 +69,7 @@
 
                 <!-- Set up needed graph file -->
                 <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
-                        <argument flag="graph.info">48</argument>
+                        <argument flag="graph.info">96</argument>
                 </step>
 
         </run_script>
