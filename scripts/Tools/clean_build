@@ -15,7 +15,7 @@ $ENV{COMP_INTERFACE} = `./xmlquery COMP_INTERFACE -value `;
 $ENV{BUILD_THREADED} = `./xmlquery BUILD_THREADED -value`;
 $ENV{PIO_VERSION} = `./xmlquery PIO_VERSION -value`;
 $ENV{CLM_CONFIG_OPTS} = `./xmlquery CLM_CONFIG_OPTS -value`;
-
+my $testcase = `./xmlquery TESTCASE -value`;
 
 sub usage {
     die <<EOF;
@@ -86,7 +86,10 @@ if( $cnt==0){
     $opts{glc} = 1;
     $opts{ice} = 1;
     $opts{rof} = 1;
-    $opts{lnd} = 1;
+    # Do not clean shared land library in a test case unless explicitly requested
+    if(not defined $testcase or $ENV{CLM_CONFIG_OPTS} ~= /clm4_0/){
+	$opts{lnd} = 1;
+    }
 }
 
 if($opts{mct}+$opts{pio}+$opts{gptl}+$opts{csmshare} >= 1){
