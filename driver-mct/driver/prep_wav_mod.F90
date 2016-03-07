@@ -194,6 +194,7 @@ contains
        efi = mod((ewi-1),num_inst_frc) + 1
 
        x2w_wx => component_get_x2c_cx(wav(ewi)) 
+
        call prep_wav_merge(a2x_wx(eai), o2x_wx(eoi), i2x_wx(eii), fractions_wx(efi), x2w_wx)
     enddo
     call t_drvstopf  (trim(timer_mrg))
@@ -236,8 +237,11 @@ contains
        enddo
 
        call mct_aVect_setSharedIndices(a2x_w, x2w_w, a2x_SharedIndices)
-       call mct_aVect_setSharedIndices(o2x_w, x2w_w, a2x_SharedIndices)
-       call mct_aVect_setSharedIndices(i2x_w, x2w_w, a2x_SharedIndices)
+       ! QL, 150625, bug?
+       ! a2x_SharedIndices -> o2x_SharedIndices
+       ! a2x_SharedIndices -> i2x_SharedIndices
+       call mct_aVect_setSharedIndices(o2x_w, x2w_w, o2x_SharedIndices)
+       call mct_aVect_setSharedIndices(i2x_w, x2w_w, i2x_SharedIndices)
 
        !--- document copy operations ---
        do i=1,a2x_SharedIndices%shared_real%num_indices
@@ -262,6 +266,7 @@ contains
 
     ! Create input wave state directly from atm, ocn, ice output state
 
+    call mct_avect_zero(x2w_w)
     call mct_aVect_copy(aVin=a2x_w, aVout=x2w_w, vector=mct_usevector, sharedIndices=a2x_SharedIndices)
     call mct_aVect_copy(aVin=o2x_w, aVout=x2w_w, vector=mct_usevector, sharedIndices=o2x_SharedIndices)
     call mct_aVect_copy(aVin=i2x_w, aVout=x2w_w, vector=mct_usevector, sharedIndices=i2x_SharedIndices)
