@@ -424,6 +424,18 @@
     </desc>
   </entry>
 
+  <entry id="RESUBMIT_SETS_CONTINUE_RUN">
+    <type>logical</type>
+    <default_value>TRUE</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>This flag controls whether the RESUBMIT flag causes
+      CONTINUE_RUN to toggle from FALSE to TRUE.  The default is
+      TRUE.  This flag might be used in conjunction with COMP_RUN_BARRIERS for
+      timing tests.
+    </desc>
+  </entry>
+
   <entry id="RUN_WITH_SUBMIT">
     <type>logical</type>
     <group>run_begin_stop_restart</group>
@@ -904,9 +916,7 @@
     <file>env_run.xml</file>
     <desc>Turns on component barriers for component timing.
           This variable is for testing and debugging only and should never
-          be set for a production run.  It has a side effect of causing
-          resubmit not to toggle the CONTINUE_RUN flag so that the RESUBMIT
-          flag can be used to run several identical runs for timing purposes.
+          be set for a production run.
     </desc>
   </entry>
 

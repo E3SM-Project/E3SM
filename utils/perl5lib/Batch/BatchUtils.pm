@@ -239,11 +239,11 @@ sub _decrementResubmitCounter()
     }
     my $owd = getcwd;
     chdir $config->{'CASEROOT'};
-    if($config->{COMP_RUN_BARRIERS} ne "TRUE")
+    if($config->{RESUBMIT_SETS_CONTINUE_RUN} eq "TRUE")
     {
 	`./xmlchange -noecho CONTINUE_RUN=TRUE`;
     }else{
-	$logger->warn("NOT changing CONTINUE_RUN since COMP_RUN_BARRIERS is on")
+	$logger->warn("NOT changing CONTINUE_RUN since RESUBMIT_SETS_CONTINUE_RUN is FALSE")
     }
     `./xmlchange -noecho RESUBMIT=$newresubmit`;
     if($?)
