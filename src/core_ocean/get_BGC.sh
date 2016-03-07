@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## BGC Tag for build
-BGC_TAG=6c4240c
+BGC_TAG=8c0f6c5
 
 ## Subdirectory in BGC repo to use
 BGC_SUBDIR=.
@@ -34,36 +34,36 @@ fi
 
 # BGC Doesn't exist, need to acquire souce code
 # If might have been flushed from the above if, in the case where it was svn or wget that acquired the source.
-if [ ! -d BGC ]; then 
+if [ ! -d BGC ]; then
 	if [ -d .BGC_all ]; then
 		rm -rf .BGC_all
 	fi
 
-	if [ "${GIT}" != "" ]; then 
+	if [ "${GIT}" != "" ]; then
 		echo " ** Using git to acquire BGC source. ** "
 		PROTOCOL="git ssh"
 		git clone ${BGC_GIT_SSH_ADDRESS} .BGC_all &> /dev/null
-		if [ -d .BGC_all ]; then 
-			cd .BGC_all 
+		if [ -d .BGC_all ]; then
+			cd .BGC_all
 			git checkout ${BGC_TAG} &> /dev/null
-			cd ../ 
-			ln -sf .BGC_all/${BGC_SUBDIR} BGC 
-		else 
+			cd ../
+			ln -sf .BGC_all/${BGC_SUBDIR} BGC
+		else
 			git clone ${BGC_GIT_HTTP_ADDRESS} .BGC_all &> /dev/null
 			PROTOCOL="git http"
-			if [ -d .BGC_all ]; then 
-				cd .BGC_all 
+			if [ -d .BGC_all ]; then
+				cd .BGC_all
 				git checkout ${BGC_TAG} &> /dev/null
-				cd ../ 
-				ln -sf .BGC_all/${BGC_SUBDIR} BGC 
-			fi 
-		fi 
-	elif [ "${SVN}" != "" ]; then 
+				cd ../
+				ln -sf .BGC_all/${BGC_SUBDIR} BGC
+			fi
+		fi
+	elif [ "${SVN}" != "" ]; then
 		echo " ** Using svn to acquire BGC source. ** "
 		PROTOCOL="svn"
 		svn co ${BGC_SVN_ADDRESS}/${BGC_TAG} .BGC_all &> /dev/null
 		ln -sf .BGC_all/${BGC_SUBDIR} BGC
-	else 
+	else
 		echo " ** Using wget to acquire BGC source. ** "
 		PROTOCOL="svn"
 		BGC_ZIP_DIR=`echo ${BGC_TAG} | sed 's/v//g'`
@@ -73,9 +73,9 @@ if [ ! -d BGC ]; then
 		fi
 		unzip ${BGC_TAG}.zip &> /dev/null
 		mv ${BGC_TAG}.zip .${BGC_TAG}.zip
-		mv ${BGC_ZIP_DIR} .BGC_all 
-		ln -sf .BGC_all/${BGC_SUBDIR} BGC 
-	fi 
+		mv ${BGC_ZIP_DIR} .BGC_all
+		ln -sf .BGC_all/${BGC_SUBDIR} BGC
+	fi
 fi
 
 if [ ! -d BGC ]; then

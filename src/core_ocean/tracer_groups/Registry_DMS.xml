@@ -47,13 +47,13 @@
 		<var_struct name="tracers" time_levs="2">
 			<var_array name="DMSTracers" dimensions="nVertLevels nCells Time" type="real" packages="DMSTracersPKG" >
 				<!-- Add constituents of tracer group -->
-                                <var name="DMS" array_group="DMSGRP" units="mmol m^{-3}"
-                                         description="Dimethyl Sulfide"
-                                />
-                                <var name="DMSP" array_group="DMSGRP" units="mmol m^{-3}"
-                                         description="Dimethyl Sulfoniopropionate"
-                                />
-		   </var_array>
+				<var name="DMS" array_group="DMSGRP" units="mmol m^{-3}"
+					description="Dimethyl Sulfide"
+				/>
+				<var name="DMSP" array_group="DMSGRP" units="mmol m^{-3}"
+					description="Dimethyl Sulfoniopropionate"
+				/>
+			</var_array>
 		</var_struct>
 	</var_struct>
 
@@ -61,12 +61,12 @@
 		<var_struct name="tracersTend" time_levs="1">
 			<var_array name="DMSTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="DMSTracersPKG">
 				<!-- Add constituents of tracer group -->
-                                <var name="DMSTend" array_group="DMSGRP" units="mmol m^{-3} s^{-1}"
-                                         description="Dimethyl Sulfide Tendency"
-                                />
-                                <var name="DMSPTend" array_group="DMSGRP" units="mmol m^{-3} s^{-1}"
-                                         description="Dimethyl Sulfoniopropionate Tendency"
-                                />
+				<var name="DMSTend" array_group="DMSGRP" units="mmol m^{-3} s^{-1}"
+					description="Dimethyl Sulfide Tendency"
+				/>
+				<var name="DMSPTend" array_group="DMSGRP" units="mmol m^{-3} s^{-1}"
+					description="Dimethyl Sulfoniopropionate Tendency"
+				/>
 			</var_array>
 		</var_struct>
 	</var_struct>
@@ -75,27 +75,53 @@
 		<var_struct name="tracersSurfaceFlux" time_levs="1">
 			<var_array name="DMSTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="DMSTracersPKG">
 				<!-- Add constituents of tracer group -->
-                                <var name="DMSSurfaceFlux" array_group="DMSGRP" units="mmol m^{-3} m s^{-1}"
-                                         description="Dimethyl Sulfide Surface Flux"
-                                />
-                                <var name="DMSPSurfaceFlux" array_group="DMSGRP" units="mmol m^{-3} m s^{-1}"
-                                         description="Dimethyl Sulfoniopropionate Surface Flux"
-                                />
+				<var name="DMSSurfaceFlux" array_group="DMSGRP" units="mmol m^{-3} m s^{-1}"
+					description="Dimethyl Sulfide Surface Flux"
+				/>
+				<var name="DMSPSurfaceFlux" array_group="DMSGRP" units="mmol m^{-3} m s^{-1}"
+					description="Dimethyl Sulfoniopropionate Surface Flux"
+				/>
 			</var_array>
 		</var_struct>
-	        <var_struct name="DMSSeaIceCoupling" time_levs="1" packages="DMSTracersPKG">
-                        <var name="oceanSurfaceDMS" type="real" dimensions="nCells Time" units="mmolS m^{-3}"
-                                 description="Ocean Surface DMS concentration"
-                        />
-                        <var name="oceanSurfaceDMSP" type="real" dimensions="nCells Time" units="mmolS m^{-3}"
-                                 description="Ocean Surface DMSP concentration"
-                        />
-                        <var name="iceFluxDMS" type="real" dimensions="nCells Time" units="mmolS m^{-2} s"
-                                 description="Surface DMS flux from sea ice"
-                        />
-                        <var name="iceFluxDMSP" type="real" dimensions="nCells Time" units="mmolS m^{-2} s"
-                                 description="Surface DMSP flux from sea ice"
-                        />
+		<var_struct name="DMSSeaIceCoupling" time_levs="1" packages="DMSTracersPKG">
+			<var name="avgOceanSurfaceDMS" type="real" dimensions="nCells Time" units="mmolS m^{-3}"
+				description="Ocean Surface DMS concentration"
+			/>
+			<var name="avgOceanSurfaceDMSP" type="real" dimensions="nCells Time" units="mmolS m^{-3}"
+				description="Ocean Surface DMSP concentration"
+			/>
+			<var name="iceFluxDMS" type="real" dimensions="nCells Time" units="mmolS m^{-2} s"
+				description="Surface DMS flux from sea ice"
+			/>
+			<var name="iceFluxDMSP" type="real" dimensions="nCells Time" units="mmolS m^{-2} s"
+				description="Surface DMSP flux from sea ice"
+			/>
+		</var_struct>
+		<var_struct name="DMSFluxDiagnostics" time_levs="1" packages="DMSTracersPKG">
+			<var name="dms_flux_diag_ifrac" type="real" dimensions="nCells Time" units="none"
+				description="Ice Fraction used in DMS flux calculation"
+			/>
+			<var name="dms_flux_diag_xkw" type="real" dimensions="nCells Time" units="none"
+				description="XKW used in DMS flux calculation"
+			/>
+			<var name="dms_flux_diag_atm_press" type="real" dimensions="nCells Time" units="unknown"
+				description="Atm Pressure used in DMS flux calculation"
+			/>
+			<var name="dms_flux_diag_pv" type="real" dimensions="nCells Time" units="m s^{-1}"
+				description="Piston Velocity used in DMS flux calculation"
+			/>
+			<var name="dms_flux_diag_schmidt" type="real" dimensions="nCells Time" units="none"
+				description="Schmidt Number used in DMS flux calculation"
+			/>
+			<var name="dms_flux_diag_sat" type="real" dimensions="nCells Time" units="mmolS m^{3}"
+				description="DMS Saturation used in DMS flux calculation"
+			/>
+			<var name="dms_flux_diag_surf" type="real" dimensions="nCells Time" units="mmolS m^{3}"
+				description="Surface DMS Values used in DMS flux calculation"
+			/>
+			<var name="dms_flux_diag_ws" type="real" dimensions="nCells Time" units="m s^{-1}"
+				description="Wind Speed used in DMS flux calculation"
+			/>
 		</var_struct>
 		<var_struct name="tracersSurfaceRestoringFields" time_levs="1">
 			<var_array name="DMSTracersPistonVelocity" type="real" dimensions="nCells Time" packages="DMSTracersSurfaceRestoringPKG">

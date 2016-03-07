@@ -69,7 +69,7 @@ module ocn_tracer_MacroMolecules
   type(MACROS_diagnostics_type), public :: MacroMolecules_diagnostic_fields
 
 ! hold indices in tracer pool corresponding to each tracer array
-  type(MACROS_indices_type) :: macrosIndices
+  type(MACROS_indices_type), public :: macrosIndices
   type(BGC_indices_type) :: ecosysIndices
 
 !***********************************************************************
@@ -216,7 +216,6 @@ contains
 
    subroutine ocn_tracer_MacroMolecules_surface_flux_compute(activeTracers, MacroMoleculesTracers, forcingPool,  &
       nTracers, nCellsSolve, zMid, indexTemperature, indexSalinity, MacroMoleculesSurfaceFlux, err)!{{{
-
 
       !-----------------------------------------------------------------
       !
