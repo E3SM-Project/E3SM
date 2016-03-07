@@ -70,7 +70,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_surface_flux_tend(meshPool, fractionAbsorbed, fractionAbsorbedRunoff, layerThickness,  &
-      surfaceTracerFlux, surfaceTracerFluxRunoff, tend, err)!{{{ 
+      surfaceTracerFlux, surfaceTracerFluxRunoff, tend, err)!{{{
       !-----------------------------------------------------------------
       !
       ! input variables
