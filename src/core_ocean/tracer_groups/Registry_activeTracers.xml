@@ -48,7 +48,7 @@
 				<var name="salinity" array_group="activeGRP" units="grams salt per kilogram seawater"
 					 description="salinity"
 				/>
-		   </var_array>
+			</var_array>
 		</var_struct>
 	</var_struct>
 
