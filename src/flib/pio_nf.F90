@@ -1531,7 +1531,8 @@ contains
 !! @ingroup PIO_def_var_deflate
 !! @brief Changes compression settings for a netCDF-4/HDF5 variable.
 !<
-  integer function def_var_deflate_id(file, varid, shuffle, deflate, deflate_level) result(ierr)
+  integer function def_var_deflate_id(file, varid, shuffle, deflate, deflate_level) &
+       result(ierr)
     type (File_desc_t), intent(in)  :: file
     integer, intent(in) :: varid
     integer, intent(in) :: shuffle
@@ -1539,8 +1540,8 @@ contains
     integer, intent(in) :: deflate_level
 
     interface
-       integer (C_INT) function PIOc_def_var_deflate(ncid, varid, shuffle, deflate, deflate_level) &
-            bind(c,name="PIOc_def_var_deflate")
+       integer (C_INT) function PIOc_def_var_deflate(ncid, varid, shuffle, deflate, &
+            deflate_level) bind(c,name="PIOc_def_var_deflate")
          use iso_c_binding
          integer(c_int), value :: ncid
          integer(c_int), value :: varid
@@ -1558,7 +1559,8 @@ contains
 !! @ingroup PIO_def_var_deflate
 !! @brief Changes compression settings for a netCDF-4/HDF5 variable.
 !<
-  integer function def_var_deflate_desc(file, vardesc, shuffle, deflate, deflate_level) result(ierr)
+  integer function def_var_deflate_desc(file, vardesc, shuffle, deflate, deflate_level) &
+       result(ierr)
     type (File_desc_t), intent(in)  :: file
     type (var_desc_t), intent(in) :: vardesc
     integer, intent(in) :: shuffle
@@ -1604,7 +1606,8 @@ contains
 !! @ingroup PIO_set_chunk_cache
 !! @brief Changes chunk cache settings for netCDF-4/HDF5 files created after this call.
 !<
-  integer function set_chunk_cache(iosysid, iotype, chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption) result(ierr)
+  integer function set_chunk_cache(iosysid, iotype, chunk_cache_size, chunk_cache_nelems, &
+       chunk_cache_preemption) result(ierr)
     integer, intent(in) :: iosysid
     integer, intent(in) :: iotype 
     integer(kind=PIO_OFFSET_KIND), intent(in) :: chunk_cache_size
@@ -1612,7 +1615,8 @@ contains
     real, intent(in) :: chunk_cache_preemption
 
     interface
-       integer (C_INT) function PIOc_set_chunk_cache(iosysid, iotype, chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption) &
+       integer (C_INT) function PIOc_set_chunk_cache(iosysid, iotype, chunk_cache_size, &
+            chunk_cache_nelems, chunk_cache_preemption) &
             bind(c,name="PIOc_set_chunk_cache")
          use iso_c_binding
          integer(c_int), value :: iosysid
@@ -1623,7 +1627,8 @@ contains
        end function PIOc_set_chunk_cache
     end interface
 
-    ierr = PIOc_set_chunk_cache(iosysid, iotype, chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption)
+    ierr = PIOc_set_chunk_cache(iosysid, iotype, chunk_cache_size, chunk_cache_nelems, &
+         chunk_cache_preemption)
   end function set_chunk_cache
 
 !> 
@@ -1631,7 +1636,8 @@ contains
 !! @ingroup PIO_set_chunk_cache  
 !! @brief Gets current settings for chunk cache (only relevant for netCDF4/HDF5 files.)
 !<
-  integer function get_chunk_cache(iosysid, iotype, chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption) result(ierr)
+  integer function get_chunk_cache(iosysid, iotype, chunk_cache_size, chunk_cache_nelems, &
+       chunk_cache_preemption) result(ierr)
     integer, intent(in) :: iosysid
     integer, intent(in) :: iotype
     integer(kind=PIO_OFFSET_KIND), intent(out) :: chunk_cache_size
@@ -1639,7 +1645,8 @@ contains
     real, intent(out) :: chunk_cache_preemption
 
     interface
-       integer (C_INT) function PIOc_get_chunk_cache(iosysid, iotype, chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption) &
+       integer (C_INT) function PIOc_get_chunk_cache(iosysid, iotype, chunk_cache_size, &
+            chunk_cache_nelems, chunk_cache_preemption) &
             bind(c,name="PIOc_get_chunk_cache")
          use iso_c_binding
          integer(c_int), value :: iosysid
@@ -1650,7 +1657,8 @@ contains
        end function PIOc_get_chunk_cache
     end interface
 
-    ierr = PIOc_get_chunk_cache(iosysid, iotype, chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption)
+    ierr = PIOc_get_chunk_cache(iosysid, iotype, chunk_cache_size, chunk_cache_nelems, &
+         chunk_cache_preemption)
   end function get_chunk_cache
 
 !> 
@@ -1658,7 +1666,8 @@ contains
 !! @ingroup PIO_set_chunk_cache
 !! @brief Changes chunk cache settings for a variable in a netCDF-4/HDF5 file.
 !<
-  integer function set_var_chunk_cache_id(file, varid, chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption) result(ierr)
+  integer function set_var_chunk_cache_id(file, varid, chunk_cache_size, &
+       chunk_cache_nelems, chunk_cache_preemption) result(ierr)
     type (File_desc_t), intent(in)  :: file
     integer, intent(in) :: varid
     integer(PIO_OFFSET_KIND), intent(in) :: chunk_cache_size
@@ -1666,7 +1675,8 @@ contains
     real, intent(in) :: chunk_cache_preemption
 
     interface
-       integer (C_INT) function PIOc_set_var_chunk_cache(ncid, varid, chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption) &
+       integer (C_INT) function PIOc_set_var_chunk_cache(ncid, varid, chunk_cache_size, &
+            chunk_cache_nelems, chunk_cache_preemption) &
             bind(c,name="PIOc_set_var_chunk_cache")
          use iso_c_binding
          integer(c_int), value :: ncid
@@ -1677,7 +1687,8 @@ contains
        end function PIOc_set_var_chunk_cache
     end interface
 
-    ierr = PIOc_set_var_chunk_cache(file%fh, varid-1, chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption)
+    ierr = PIOc_set_var_chunk_cache(file%fh, varid-1, chunk_cache_size, &
+         chunk_cache_nelems, chunk_cache_preemption)
   end function set_var_chunk_cache_id
 
   !> 
@@ -1685,14 +1696,16 @@ contains
 !! @ingroup PIO_set_var_chunk_cache
 !! @brief Changes chunk cacne for a variable.
 !<
-  integer function set_var_chunk_cache_desc(file, vardesc, chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption) result(ierr)
+  integer function set_var_chunk_cache_desc(file, vardesc, chunk_cache_size, &
+       chunk_cache_nelems, chunk_cache_preemption) result(ierr)
     type (File_desc_t), intent(in)  :: file
     type (var_desc_t), intent(in) :: vardesc
     integer(PIO_OFFSET_KIND), intent(in) :: chunk_cache_size
     integer(PIO_OFFSET_KIND), intent(in) :: chunk_cache_nelems
     real, intent(in) :: chunk_cache_preemption
 
-    ierr = set_var_chunk_cache_id(file, vardesc%varid, chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption)
+    ierr = set_var_chunk_cache_id(file, vardesc%varid, chunk_cache_size, &
+         chunk_cache_nelems, chunk_cache_preemption)
   end function set_var_chunk_cache_desc
 
 !> 
@@ -1700,14 +1713,16 @@ contains
 !! @ingroup PIO_get_var_chunk_cache
 !! @brief Get the chunk cache settings for a variable.
 !<
-  integer function get_var_chunk_cache_desc(file, vardesc, chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption) result(ierr)
+  integer function get_var_chunk_cache_desc(file, vardesc, chunk_cache_size, &
+       chunk_cache_nelems, chunk_cache_preemption) result(ierr)
     type (File_desc_t), intent(in)  :: file
     type (var_desc_t), intent(in) :: vardesc
     integer(PIO_OFFSET_KIND), intent(out) :: chunk_cache_size
     integer(PIO_OFFSET_KIND), intent(out) :: chunk_cache_nelems
     real, intent(out) :: chunk_cache_preemption
 
-    ierr = get_var_chunk_cache_id(file, vardesc%varid, chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption)
+    ierr = get_var_chunk_cache_id(file, vardesc%varid, chunk_cache_size, &
+         chunk_cache_nelems, chunk_cache_preemption)
   end function get_var_chunk_cache_desc
 
 !> 
@@ -1715,7 +1730,8 @@ contains
 !! @ingroup PIO_get_var_chunk_cache
 !! @brief Get the chunk cache settings for a variable.
 !<
-  integer function get_var_chunk_cache_id(file, varid, chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption) result(ierr)
+  integer function get_var_chunk_cache_id(file, varid, chunk_cache_size, &
+       chunk_cache_nelems, chunk_cache_preemption) result(ierr)
     type (File_desc_t), intent(in)  :: file
     integer, intent(in) :: varid
     integer(PIO_OFFSET_KIND), intent(out) :: chunk_cache_size
@@ -1723,7 +1739,8 @@ contains
     real, intent(out) :: chunk_cache_preemption
 
     interface
-       integer (C_INT) function PIOc_get_var_chunk_cache(ncid, varid, chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption) &
+       integer (C_INT) function PIOc_get_var_chunk_cache(ncid, varid, &
+            chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption) &
             bind(c,name="PIOc_get_var_chunk_cache")
          use iso_c_binding
          integer(c_int), value :: ncid
@@ -1734,7 +1751,8 @@ contains
        end function PIOc_get_var_chunk_cache
     end interface
 
-    ierr = PIOc_get_var_chunk_cache(file%fh, varid-1, chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption)
+    ierr = PIOc_get_var_chunk_cache(file%fh, varid-1, chunk_cache_size, &
+         chunk_cache_nelems, chunk_cache_preemption)
   end function get_var_chunk_cache_id
 
 end module pio_nf
