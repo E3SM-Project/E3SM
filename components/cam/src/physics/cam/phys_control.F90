@@ -300,6 +300,7 @@ subroutine phys_ctl_readnl(nlfile)
    prog_modal_aero = (     cam_chempkg_is('trop_mam3') &
                       .or. cam_chempkg_is('trop_mam4') &
                       .or. cam_chempkg_is('trop_mam4_resus') &
+                      .or. cam_chempkg_is('trop_mam4_resus_soag') &
                       .or. cam_chempkg_is('trop_mam4_mom') &
                       .or. cam_chempkg_is('trop_mam4_resus_mom') &
                       .or. cam_chempkg_is('trop_mam7') &
@@ -307,6 +308,7 @@ subroutine phys_ctl_readnl(nlfile)
                       .or. cam_chempkg_is('linoz_mam3') &
                       .or. cam_chempkg_is('linoz_mam4_resus') &
                       .or. cam_chempkg_is('linoz_mam4_resus_mom') &
+                      .or. cam_chempkg_is('linoz_mam4_resus_mom_soag') &
                       .or. cam_chempkg_is('super_fast_llnl_mam3') &
                       .or. cam_chempkg_is('trop_mozart_mam3') &
                       .or. cam_chempkg_is('trop_strat_mam3') &

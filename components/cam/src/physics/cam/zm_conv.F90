@@ -45,6 +45,7 @@ module zm_conv
    real(r8) :: zmconv_c0_ocn = unset_r8    
    real(r8) :: zmconv_ke     = unset_r8 
    real(r8) :: zmconv_tau    = unset_r8   
+   real(r8) :: zmconv_dmpdz    = unset_r8   
    logical  :: zmconv_trigmem= .false.    
 
    real(r8) rl         ! wg latent heat of vaporization.
@@ -56,6 +57,7 @@ module zm_conv
    real(r8) :: ke           ! Tunable evaporation efficiency set from namelist input zmconv_ke
    real(r8) :: c0_lnd       ! set from namelist input zmconv_c0_lnd
    real(r8) :: c0_ocn       ! set from namelist input zmconv_c0_ocn
+   real(r8) :: dmpdz        ! Parcel fractional mass entrainment rate (/m)
    logical  :: trigmem      ! set from namelist input zmconv_trigmem
    real(r8) tau   ! convective time scale
    real(r8),parameter :: c1 = 6.112_r8
@@ -93,7 +95,8 @@ subroutine zmconv_readnl(nlfile)
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'zmconv_readnl'
 
-   namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_ke, zmconv_tau, zmconv_trigmem
+   namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_ke, zmconv_tau, & 
+           zmconv_dmpdz, zmconv_trigmem
    !-----------------------------------------------------------------------------
 
    zmconv_tau = 3600._r8
@@ -117,6 +120,14 @@ subroutine zmconv_readnl(nlfile)
       tau = zmconv_tau
       trigmem = zmconv_trigmem
 
+      !WLIN set dmpdz to namelist values if present, or default based on pver
+      if ( zmconv_dmpdz /= unset_r8 ) then
+           dmpdz = zmconv_dmpdz
+      else
+           dmpdz=-1.e-3_r8 * 0.5_r8        ! Entrainment rate. (-ve for /m)
+           !BSINGH - special case for 30 layer model
+          if(pver == 30)dmpdz=-1.e-3_r8        ! Entrainment rate. (-ve for /m)
+      end if
    end if
 
 #ifdef SPMD
@@ -125,6 +136,7 @@ subroutine zmconv_readnl(nlfile)
    call mpibcast(c0_ocn,            1, mpir8,  0, mpicom)
    call mpibcast(ke,                1, mpir8,  0, mpicom)
    call mpibcast(tau,               1, mpir8,  0, mpicom)
+   call mpibcast(dmpdz,             1, mpir8,  0, mpicom)
    call mpibcast(trigmem,           1, mpir8,  0, mpicom)
 #endif
 
@@ -168,6 +180,7 @@ subroutine zm_convi(limcnv_in, no_deep_pbl_in)
       write(iulog,*) 'tuning parameters zm_convi: tau',tau
       write(iulog,*) 'tuning parameters zm_convi: c0_lnd',c0_lnd, ', c0_ocn', c0_ocn 
       write(iulog,*) 'tuning parameters zm_convi: ke',ke
+      write(iulog,*) 'tuning parameters zm_convi: dmpdz',dmpdz
       write(iulog,*) 'tuning parameters zm_convi: no_deep_pbl',no_deep_pbl
    endif
 
@@ -3456,7 +3469,7 @@ real(r8) mp0(pcols)    ! Parcel launch relative mass flux.
 real(r8) lwmax      ! Maximum condesate that can be held in cloud before rainout.
 real(r8) dmpdp      ! Parcel fractional mass entrainment rate (/mb).
 !real(r8) dmpdpc     ! In cloud parcel mass entrainment rate (/mb).
-real(r8) dmpdz      ! Parcel fractional mass entrainment rate (/m)
+!real(r8) dmpdz      ! Parcel fractional mass entrainment rate (/m)
 real(r8) dpdz,dzdp  ! Hydrstatic relation and inverse of.
 real(r8) senv       ! Environmental entropy at each grid point.
 real(r8) qtenv      ! Environmental total water "   "   ".
@@ -3490,9 +3503,11 @@ integer i,k,ii   ! Loop counters.
 !
 
 nit_lheat = 2 ! iterations for ds,dq changes from condensation freezing.
-dmpdz=-1.e-3_r8 * 0.5_r8        ! Entrainment rate. (-ve for /m)
+
+!dmpdz=-1.e-3_r8 * 0.5_r8        ! Entrainment rate. (-ve for /m)
 !BSINGH - special case for 30 layer model
-if(pver == 30)dmpdz=-1.e-3_r8        ! Entrainment rate. (-ve for /m)
+!if(pver == 30)dmpdz=-1.e-3_r8        ! Entrainment rate. (-ve for /m)
+
 !dmpdpc = 3.e-2_r8   ! In cloud entrainment rate (/mb).
 lwmax = 1.e-3_r8    ! Need to put formula in for this.
 tscool = 0.0_r8   ! Temp at which water loading freezes in the cloud.
