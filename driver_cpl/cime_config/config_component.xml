@@ -87,20 +87,20 @@
     <desc>Scripts root directory location (setup automatically to $CIMEROOT/scripts- DO NOT EDIT)</desc>
   </entry>
 
-  <entry id="SRCROOT">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>case_def</group>
-    <file>env_case.xml</file>
-    <desc>full pathname of source root directory</desc>
-  </entry>
-
   <entry id="CIMEROOT">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>case_def</group>
     <file>env_case.xml</file>
     <desc>full pathname of CIME source root directory</desc>
+  </entry>
+
+  <entry id="SRCROOT">
+    <type>char</type>
+    <default_value>$CIMEROOT/..</default_value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>full pathname of source root directory</desc>
   </entry>
 
   <entry id="UTILROOT">

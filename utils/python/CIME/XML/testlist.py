@@ -24,12 +24,16 @@ class Testlist(GenericXML):
             machatts["testtype"]  = category
         if(compiler is not None):
             machatts["compiler"]  = compiler
+        logger.debug("compsetnodes %d"%len(compsetnodes))
         for cnode in compsetnodes:
             gridnodes = self.get_node("grid",root=cnode)
+            logger.debug("  gridnodes %d"%len(gridnodes))
             for gnode in gridnodes:
                 testnamenodes = self.get_node("test",root=gnode)
+                logger.debug("    testnamenodes %d"%len(testnamenodes))
                 for tnode in testnamenodes:
-                    machnodes = self.get_node("machine",machatts)
+                    machnodes = self.get_node("machine",machatts,root=tnode)
+                    logger.debug("      machnodes %d"%len(machnodes))
                     for mach in machnodes:
                         thistest = {}
                         if (machine is None or (machine is not None and mach.text == machine)):
