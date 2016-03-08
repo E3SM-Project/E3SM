@@ -918,10 +918,18 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
 	run_config_tree = ET.parse(run_definition_file)
 	run_config_root = run_config_tree.getroot()
 
+	dev_null = open('/dev/null', 'r+')
+
 	try:
 		executable_name = model_run_tag.attrib['executable']
 	except:
 		executable_name = 'model'
+
+	script.write('print "\\n"\n')
+	script.write('print "     *****************************"\n')
+	script.write('print "     ** Starting model run step **"\n')
+	script.write('print "     *****************************"\n')
+	script.write('print "\\n"\n')
 
 	# Process each part of the run script
 	for child in run_config_root:
@@ -933,7 +941,11 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
 					arg_text = grandchild.text
 
 					if arg_text == 'model':
-						grandchild.text = config.get('executables', executable_name)
+						executable_full_path = config.get('executables', executable_name)
+						executable_parts = executable_full_path.split('/')
+						executable_link = executable_parts[ len(executable_parts) - 1]
+						subprocess.check_call(['ln', '-sf', config.get('executables', executable_name), '.'], stdout=dev_null, stderr=dev_null)
+						grandchild.text = executable_link
 					elif arg_text.find('attr_') >= 0:
 						attr_array = arg_text.split('_')
 						try:
@@ -957,6 +969,13 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
 					sys.exit(1)
 				
 			process_env_define_step(child, configs, '', script)
+
+	script.write('print "\\n"\n')
+	script.write('print "     *****************************"\n')
+	script.write('print "     ** Finished model run step **"\n')
+	script.write('print "     *****************************"\n')
+	script.write('print "\\n"\n')
+	dev_null.close()
 #}}}
 #}}}
 
