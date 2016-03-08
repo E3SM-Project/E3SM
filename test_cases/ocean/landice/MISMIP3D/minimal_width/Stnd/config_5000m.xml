@@ -22,6 +22,9 @@
 
         <streams name="streams.landice" keep="immutable" mode="forward">
                 <template file="mismip_template.xml" path_base="script_configuration_dir"/>
+                <stream name="restart">
+                        <attribute name="output_interval">0500-00-00_00:00:00</attribute>
+                </stream>
                 <stream name="output">
                         <attribute name="filename_interval">2000-00-00_00:00:00</attribute>
                         <attribute name="output_interval">0100-00-00_00:00:00</attribute>

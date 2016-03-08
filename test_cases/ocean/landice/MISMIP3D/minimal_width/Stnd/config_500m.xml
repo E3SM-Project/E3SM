@@ -23,7 +23,7 @@
         <streams name="streams.landice" keep="immutable" mode="forward">
                 <template file="mismip_template.xml" path_base="script_configuration_dir"/>
                 <stream name="restart">
-                        <attribute name="output_interval">0100-00-00_00:00:00</attribute>
+                        <attribute name="output_interval">0050-00-00_00:00:00</attribute>
                 </stream>
                 <stream name="output">
                         <attribute name="filename_interval">0200-00-00_00:00:00</attribute>
@@ -69,7 +69,7 @@
 
                 <!-- Set up needed graph file -->
                 <step executable="./metis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
-                        <argument flag="graph.info">192</argument>
+                        <argument flag="graph.info">160</argument>
                 </step>
 
         </run_script>

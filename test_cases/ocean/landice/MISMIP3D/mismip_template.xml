@@ -70,7 +70,7 @@
                         <attribute name="type">input;output</attribute>
                         <attribute name="filename_template">restart_$Y.nc</attribute>
                         <attribute name="filename_interval">output_interval</attribute>
-                        <attribute name="output_interval">5000-00-00_00:00:00</attribute>
+                        <attribute name="output_interval">0500-00-00_00:00:00</attribute>
                         <attribute name="clobber_mode">truncate</attribute>
                         <attribute name="precision">double</attribute>
                         <attribute name="input_interal">initial_only</attribute>
