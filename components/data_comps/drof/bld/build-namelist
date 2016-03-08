@@ -324,6 +324,7 @@ if ($ROF_GRID eq "null") {
     }
 }
 
+(-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "Inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 ####################################
