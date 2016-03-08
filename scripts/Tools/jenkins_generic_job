@@ -57,7 +57,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--baseline-compare", action="store", choices=("yes", "no"), default=("yes" if default_maintain_baselines else "no"),
                         help="Do baseline comparisons")
 
-    parser.add_argument("-s", "--submit-to-cdash", action="store_true",
+    parser.add_argument("--submit-to-cdash", action="store_true",
                         help="Send results to CDash")
 
     parser.add_argument("-c", "--cdash-build-name",
@@ -80,11 +80,11 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     CIME.utils.handle_standard_logging_options(args)
 
     expect(not (args.submit_to_cdash and args.generate_baselines),
-           "Does not make sense to use -g and -s together")
+           "Does not make sense to use --generate-baselines and --submit-to-cdash together")
     expect(not (args.cdash_build_name is not None and not args.submit_to_cdash),
-           "Does not make sense to use --cdash-build-name without -s")
+           "Does not make sense to use --cdash-build-name without --submit-to-cdash")
     expect(not (args.cdash_project is not wait_for_tests.ACME_MAIN_CDASH and not args.submit_to_cdash),
-           "Does not make sense to use -p without -s")
+           "Does not make sense to use --cdash-project without --submit-to-cdash")
 
     return args.generate_baselines, args.submit_to_cdash, args.baseline_name, args.cdash_build_name, args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare
 
