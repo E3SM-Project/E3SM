@@ -23,8 +23,8 @@
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">bluewaters</machine>
         <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
       </test>
-      <test name="NCR">
-        <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
+      <test name="ERR">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">edison</machine>
       </test>
       <test name="PET_PT">
         <machine compiler="gnu" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
@@ -57,7 +57,7 @@
   </compset>
   <compset name="B1850C4L45BGCRBPRP">
     <grid name="f19_g16">
-      <test name="ERS_Ld11">
+      <test name="ERS">
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">bluewaters</machine>
       </test>
     </grid>
@@ -125,7 +125,7 @@
   </compset>
   <compset name="B1850RG">
     <grid name="f09_g16">
-      <test name="ERS_Ld11">
+      <test name="ERS">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/cesm2dev01io">yellowstone</machine>
       </test>
       <test name="PFS">
@@ -138,7 +138,7 @@
   </compset>
   <compset name="B1850RW">
     <grid name="f19_g16">
-      <test name="ERS_Ld11">
+      <test name="ERS">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
       </test>
     </grid>
@@ -246,7 +246,7 @@
   </compset>
   <compset name="BRCP45C4L40CNRBDRD">
     <grid name="f09_g16">
-      <test name="ERS_Ld11">
+      <test name="ERS">
         <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
       </test>
     </grid>

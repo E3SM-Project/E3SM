@@ -68,6 +68,7 @@ if ! ( $?IOP_ON ) then
 endif
 
 echo "DONE ${CASEBASEID} : ($msg finished, successful coupler log) " >>& $TESTSTATUS_LOG
+echo "PASS ${CASEBASEID} : test functionality summary " >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
 if ( $?IOP_ON ) then
@@ -76,6 +77,7 @@ if ( $?IOP_ON ) then
     $SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 none $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
 else
    echo "PASS ${CASEBASEID} : successful coupler log " >>& $TESTSTATUS_OUT
+   echo "PASS ${CASEBASEID} : test functionality summary " >>& $TESTSTATUS_OUT
 endif
 
 
