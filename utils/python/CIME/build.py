@@ -39,7 +39,7 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
 
     thread_bad_results = []
     for model, comp, config_dir, nthrds in models_build_data:
-        # aquap has a dependancy on atm so we will build it after the threaded loop
+        # aquap has a dependency on atm so we will build it after the threaded loop
         if comp == "aquap":
             continue
         os.environ["MODEL"] = model
@@ -290,6 +290,7 @@ def case_build(caseroot, case=None, testmode=False, sharedlib_only=False, model_
     # Load modules
     env_module = EnvModule(mach, compiler, cimeroot, caseroot, mpilib, debug)
     env_module.load_env_for_case()
+
     # Need to flush case xml to disk before calling preview_namelists
     case.flush()
 

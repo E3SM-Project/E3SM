@@ -47,7 +47,7 @@ def download_if_in_repo(svn_loc, input_data_root, rel_path):
         else:
             return True
 
-def check_input_data(case=None,svn_loc=None, input_data_root=None, data_list_dir="Buildconf", download=False):
+def check_input_data(case=None, svn_loc=None, input_data_root=None, data_list_dir="Buildconf", download=False):
     """
     Return True if no files missing
     """
@@ -78,6 +78,7 @@ def check_input_data(case=None,svn_loc=None, input_data_root=None, data_list_dir
                     # expand xml variables
                     full_path = case.get_resolved_value(full_path)
                     rel_path  = full_path.replace(input_data_root, "")
+
                     # There are some special values of rel_path that
                     # we need to ignore - some of the component models
                     # set things like 'NULL' or 'same_as_TS' -

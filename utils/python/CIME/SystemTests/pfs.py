@@ -13,13 +13,3 @@ class PFS(SystemTestsCommon):
         expectedrunvars = ["CONTINUE_RUN", "REST_OPTION", "HIST_OPTION", "HIST_N"]
         SystemTestsCommon.__init__(self, caseroot, case, expectedrunvars)
 
-    def run(self):
-        self._case.set_value("CONTINUE_RUN","FALSE")
-        self._case.set_value("REST_OPTION","none")
-        self._case.set_value("HIST_OPTION","$STOP_OPTION")
-        self._case.set_value("HIST_N","$STOP_N")
-        self._case.flush()
-        SystemTestsCommon.run(self)
-
-    def report(self):
-        SystemTestsCommon.report(self)
