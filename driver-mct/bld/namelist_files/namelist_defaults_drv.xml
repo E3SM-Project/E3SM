@@ -126,8 +126,10 @@
 <profile_barrier     >.false.</profile_barrier>
 <profile_single_file >.false.</profile_single_file>
 <profile_global_stats>.true.</profile_global_stats>
+
 <profile_papi_enable PROFILE_PAPI_ENABLE="TRUE">.true.</profile_papi_enable>
 <profile_papi_enable PROFILE_PAPI_ENABLE="FALSE">.false.</profile_papi_enable>
+
 <profile_timer>4</profile_timer> <!-- mpiwtime -->
 <profile_timer MACH="yellowstone">2</profile_timer> <!-- nanotime -->
 <profile_timer MPILIB="mpi-serial">1</profile_timer> <!-- gettimeofday -->
@@ -138,6 +140,22 @@
 
 <profile_disable TIMER_LEVEL="neg">.true.</profile_disable>
 <profile_disable TIMER_LEVEL="pos">.false.</profile_disable>
+
+<profile_detail_limit TIMER_DETAIL="neg">0</profile_detail_limit>
+<profile_detail_limit TIMER_DETAIL="pos">$TIMER_DETAIL</profile_detail_limit>
+
+<profile_ovhd_measurement>.false.</profile_ovhd_measurement>
+<profile_outpe_num>1</profile_outpe_num>
+<profile_papi_enable>.false.</profile_papi_enable>
+
+<!-- =========================================  -->
+<!--- prof_inparm                               -->
+<!-- =========================================  -->
+
+<papi_ctr1_str>PAPI_FP_OPS</papi_ctr1_str>
+<papi_ctr2_str>PAPI_NO_CTR</papi_ctr2_str>
+<papi_ctr3_str>PAPI_NO_CTR</papi_ctr3_str>
+<papi_ctr4_str>PAPI_NO_CTR</papi_ctr4_str>
 
 <!-- =========================================  -->
 <!--- pio_default_inparm                        -->
@@ -153,6 +171,13 @@
 <pio_buffer_size_limit>$PIO_BUFFER_SIZE_LIMIT</pio_buffer_size_limit>
 <pio_async_interface PIO_ASYNC_INTERFACE="TRUE">.true.</pio_async_interface>
 <pio_async_interface PIO_ASYNC_INTERFACE="FALSE">.false.</pio_async_interface>
+<pio_rearr_comm_type  >$PIO_REARR_COMM_TYPE</pio_rearr_comm_type>
+<pio_rearr_comm_fcd   >$PIO_REARR_COMM_FCD</pio_rearr_comm_fcd>
+<pio_rearr_comm_max_pend_req>$PIO_REARR_COMM_MAX_PEND_REQ</pio_rearr_comm_max_pend_req>
+<pio_rearr_comm_enable_hs PIO_REARR_COMM_ENABLE_HS="TRUE">.true.</pio_rearr_comm_enable_hs>
+<pio_rearr_comm_enable_hs PIO_REARR_COMM_ENABLE_HS="FALSE">.false.</pio_rearr_comm_enable_hs>
+<pio_rearr_comm_enable_isend PIO_REARR_COMM_ENABLE_ISEND="TRUE">.true.</pio_rearr_comm_enable_isend>
+<pio_rearr_comm_enable_isend PIO_REARR_COMM_ENABLE_ISEND="FALSE">.false.</pio_rearr_comm_enable_isend>
 
 <!-- =========================================  -->
 <!--- seq_maps.rc                               -->
