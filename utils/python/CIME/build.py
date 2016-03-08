@@ -1,7 +1,7 @@
 """
 functions for building CIME models
 """
-from CIME.XML.standard_module_setup import *
+from XML.standard_module_setup import *
 from CIME.case import Case
 from CIME.utils import expect, run_cmd, get_model
 from CIME.env_module import EnvModule

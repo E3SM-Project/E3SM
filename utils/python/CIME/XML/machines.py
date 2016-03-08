@@ -134,7 +134,10 @@ class Machines(GenericXML):
             value = GenericXML.get_value(self, name)
 
         if (resolved):
-            value = self.get_resolved_value(value)
+            if(value is not None):
+                value = self.get_resolved_value(value)
+            elif(name in os.environ):
+                value = os.environ[name]
 
         return value
 
