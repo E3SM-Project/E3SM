@@ -255,14 +255,6 @@ $logger->info( "Setting configuration directory to $cfgdir\n");
 _check_input_options ();
 
 #------------------------------------------------------------------------------------------
-# *** Determine user_mods_dir ***
-#------------------------------------------------------------------------------------------
-my $user_mods_dir = $opts{'user_mods_dir'};
-if ($user_mods_dir) {
-    (-d "$user_mods_dir") or  $logger->logdie ("** Cannot find user_mods_dir directory $user_mods_dir **");
-}
-
-#------------------------------------------------------------------------------------------
 # *** Set hard-wired paths ***
 #------------------------------------------------------------------------------------------
 my $srcroot = abs_path("$cimeroot/../"); 
@@ -519,9 +511,12 @@ if ($run_refcase ne 'case.std') {
 my $file = $config->get('GRIDS_SPEC_FILE');
 ConfigCompsetGrid::printGridCompsetInfo($file, $config);
 
-$logger->info( "Compset specifier: $compset."); 
-$logger->info( "Grid is valid for this compset. "); 
-
+if(defined $compset){
+    $logger->info( "Compset specifier: $compset. \nLongname: $compset_longname"); 
+    $logger->info( "Grid is valid for this compset. "); 
+}else{
+    $logger->info( "Compset specifier: $compset_longname."); 
+}
 
 #------------------------------------------------------------------------------------------
 # *** Inform the user of the current support level for the compset they are attempting to run.
@@ -596,8 +591,20 @@ if (defined $opts{'sharedlibroot'}) {
 # create the caseroot directory and necessary subdirectories
 _create_caseroot($caseroot, $cimeroot, $config);
 
-# Copy the user_mods_dir files in and apply them
-if ( defined($user_mods_dir) ) {
+#------------------------------------------------------------------------------------------
+# *** Determine user_mods_dir ***
+#------------------------------------------------------------------------------------------
+my $user_mods_dir = $opts{'user_mods_dir'};
+if ($user_mods_dir) {
+    if($user_mods_dir =~ /^\//){
+	# complete path specified
+	(-d "$user_mods_dir") or  $logger->logdie ("** Cannot find user_mods_dir directory $user_mods_dir **");
+    }else{
+	# relative path specified
+	my $user_mods_path = $config->get('USER_MODS_DIR', 'component', $pes_setby);
+	$user_mods_dir = "$user_mods_path/$user_mods_dir";
+    }	
+
    my $is_test = 0;
    if ($testname) {$is_test = 1;}
    UserModsTools::apply_mods($user_mods_dir, $caseroot, $is_test);
@@ -864,8 +871,8 @@ sub _create_caseroot_tools
     my $sysmod;
 
     my @files = (
-	"$cimeroot/scripts/Tools/case_setup", 
-	"$cimeroot/scripts/Tools/testcase_setup", 
+	"$cimeroot/scripts/Tools/case.setup", 
+	"$cimeroot/scripts/Tools/testcase.setup", 
 	"$cimeroot/scripts/Tools/check_input_data", 
 	"$cimeroot/scripts/Tools/archive_metadata.sh", 
 	"$cimeroot/scripts/Tools/check_case", 
@@ -933,17 +940,17 @@ sub _create_caseroot_files
     }
 
     # Create $caseroot/Buildconf/build.pl
-    $sysmod = "cp $cimeroot/scripts/Tools/build.pl  $caseroot/$case.build";
+    $sysmod = "cp $cimeroot/scripts/Tools/case.build  $caseroot/case.build";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-    $sysmod = "chmod 755 $caseroot/$case.build";
+    $sysmod = "chmod 755 $caseroot/case.build";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
     
-    # Create $case.clean_build
-    $sysmod = "cp $cimeroot/scripts/Tools/clean_build $caseroot/$case.clean_build"; 
+    # Create case.clean_build
+    $sysmod = "cp $cimeroot/scripts/Tools/clean_build $caseroot/case.clean_build"; 
     system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
     
-    # Create $case.submit
-    $sysmod = "cp  $cimeroot/scripts/Tools/submit $caseroot/$case.submit"; 
+    # Create case.submit
+    $sysmod = "cp  $cimeroot/scripts/Tools/case.submit $caseroot/case.submit"; 
     system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
 
     # Create machine specific module files (env_mach_specific)

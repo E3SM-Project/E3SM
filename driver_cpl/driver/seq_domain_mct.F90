@@ -183,10 +183,12 @@ contains
 
     ! Get info
 
-    gsmap_a  => component_get_gsmap_cx(atm) ! gsmap_ax
-    atmdom_a => component_get_dom_cx(atm)   ! dom_ax
-    atmsize  = mct_avect_lsize(atmdom_a%data)
-    gatmsize = mct_gsMap_gsize(gsMap_a)
+    if (atm_present) then
+       gsmap_a  => component_get_gsmap_cx(atm) ! gsmap_ax
+       atmdom_a => component_get_dom_cx(atm)   ! dom_ax
+       atmsize  = mct_avect_lsize(atmdom_a%data)
+       gatmsize = mct_gsMap_gsize(gsMap_a)
+    end if
 
     if (atm_present .and. lnd_present) then
        gsmap_l  => component_get_gsmap_cx(lnd) ! gsmap_lx
@@ -403,54 +405,56 @@ contains
     ! Check consistency of land fraction with ocean mask on grid
     !------------------------------------------------------------------------------
 
-    my_eps_frac = eps_frac
-    if (samegrid_ao) my_eps_frac = eps_frac_samegrid
-    if (.not. samegrid_al) my_eps_frac = eps_big
+    if (atm_present) then
+       my_eps_frac = eps_frac
+       if (samegrid_ao) my_eps_frac = eps_frac_samegrid
+       if (.not. samegrid_al) my_eps_frac = eps_big
 
-    if (iamroot) write(logunit,F00) ' --- checking fractions in domains ---'
-    dmaxi = 0.0_R8
-    dmaxo = 0.0_R8
-    do n = 1,atmsize
-       if (atm_present .and. lnd_present .and. ice_present) then
-          diff = abs(1._R8 - fracl(n) - fraci(n))
-          dmaxi = max(diff,dmaxi)
-          if (diff > my_eps_frac) then
-             write(logunit,*)'inconsistency between land fraction and sea ice fraction'
-             write(logunit,*)'n= ',n,' fracl= ',fracl(n),' fraci= ',fraci(n),' sum= ',fracl(n)+fraci(n)
-             call shr_sys_flush(logunit)
-             call shr_sys_abort(subname//' inconsistency between land fraction and sea ice fraction')
-          end if
-          if ((1._R8-fraci(n)) > eps_frac .and. fracl(n) < eps_tiny) then
-             write(logunit,*)'inconsistency between land mask and sea ice mask'
-             write(logunit,*)'n= ',n,' fracl= ',fracl(n),' fraci= ',fraci(n)
-             call shr_sys_flush(logunit)
-             call shr_sys_abort(subname//'  inconsistency between land mask and sea ice mask')
-          end if
-       endif
-       if (atm_present .and. lnd_present .and. ocn_present) then
-          diff = abs(1._R8 - fracl(n) - fraco(n))
-          dmaxo = max(diff,dmaxo)
-          if (diff > my_eps_frac) then
-             write(logunit,*)'inconsistency between land fraction and ocn land fraction'
-             write(logunit,*)'n= ',n,' fracl= ',fracl(n),' fraco= ',fraco(n),' sum= ',fracl(n)+fraco(n)
-             call shr_sys_flush(logunit)
-             call shr_sys_abort(subname//'  inconsistency between land fraction and ocn land fraction')
-          end if
-          if ((1._R8-fraco(n)) > eps_frac .and. fracl(n) < eps_tiny) then
-             write(logunit,*)'inconsistency between land mask and ocn land mask'
-             write(logunit,*)'n= ',n,' fracl= ',fracl(n),' fraco= ',fraco(n)
-             call shr_sys_flush(logunit)
-             call shr_sys_abort(subname//'  inconsistency between land mask and ocn land mask')
-          end if
-       endif
-    end do 
-    if (iamroot) then
-       write(logunit,F02) ' maximum           difference for ofrac sum ',dmaxo
-       write(logunit,F02) ' maximum           difference for ifrac sum ',dmaxi
-       write(logunit,F02) ' maximum allowable difference for  frac sum ',my_eps_frac
-       write(logunit,F02) ' maximum allowable tolerance for valid frac ',eps_frac
-       call shr_sys_flush(logunit)
-    endif
+       if (iamroot) write(logunit,F00) ' --- checking fractions in domains ---'
+       dmaxi = 0.0_R8
+       dmaxo = 0.0_R8
+       do n = 1,atmsize
+          if (lnd_present .and. ice_present) then
+             diff = abs(1._R8 - fracl(n) - fraci(n))
+             dmaxi = max(diff,dmaxi)
+             if (diff > my_eps_frac) then
+                write(logunit,*)'inconsistency between land fraction and sea ice fraction'
+                write(logunit,*)'n= ',n,' fracl= ',fracl(n),' fraci= ',fraci(n),' sum= ',fracl(n)+fraci(n)
+                call shr_sys_flush(logunit)
+                call shr_sys_abort(subname//' inconsistency between land fraction and sea ice fraction')
+             end if
+             if ((1._R8-fraci(n)) > eps_frac .and. fracl(n) < eps_tiny) then
+                write(logunit,*)'inconsistency between land mask and sea ice mask'
+                write(logunit,*)'n= ',n,' fracl= ',fracl(n),' fraci= ',fraci(n)
+                call shr_sys_flush(logunit)
+                call shr_sys_abort(subname//'  inconsistency between land mask and sea ice mask')
+             end if
+          endif
+          if (lnd_present .and. ocn_present) then
+             diff = abs(1._R8 - fracl(n) - fraco(n))
+             dmaxo = max(diff,dmaxo)
+             if (diff > my_eps_frac) then
+                write(logunit,*)'inconsistency between land fraction and ocn land fraction'
+                write(logunit,*)'n= ',n,' fracl= ',fracl(n),' fraco= ',fraco(n),' sum= ',fracl(n)+fraco(n)
+                call shr_sys_flush(logunit)
+                call shr_sys_abort(subname//'  inconsistency between land fraction and ocn land fraction')
+             end if
+             if ((1._R8-fraco(n)) > eps_frac .and. fracl(n) < eps_tiny) then
+                write(logunit,*)'inconsistency between land mask and ocn land mask'
+                write(logunit,*)'n= ',n,' fracl= ',fracl(n),' fraco= ',fraco(n)
+                call shr_sys_flush(logunit)
+                call shr_sys_abort(subname//'  inconsistency between land mask and ocn land mask')
+             end if
+          endif
+       end do
+       if (iamroot) then
+          write(logunit,F02) ' maximum           difference for ofrac sum ',dmaxo
+          write(logunit,F02) ' maximum           difference for ifrac sum ',dmaxi
+          write(logunit,F02) ' maximum allowable difference for  frac sum ',my_eps_frac
+          write(logunit,F02) ' maximum allowable tolerance for valid frac ',eps_frac
+          call shr_sys_flush(logunit)
+       end if
+    end if
 
     !------------------------------------------------------------------------------
     ! Clean up allocated memory

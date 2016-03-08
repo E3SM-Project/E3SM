@@ -2,7 +2,7 @@
 setenv CIMEROOT `./xmlquery CIMEROOT    -value`
 if( -e env_mach_pes.xml.orig) then
     cp env_mach_pes.xml.orig env_mach_pes.xml
-    ./case_setup -clean
+    ./case.setup -clean
 else
     cp env_mach_pes.xml env_mach_pes.xml.orig
 endif
@@ -42,10 +42,10 @@ if( ( $ocnroot > 0 ) && ( $ocnroot < $maxtasks ) ) then
   ./xmlchange ROOTPE_OCN=$maxtasks
 endif
 
-./case_setup -clean
-./case_setup
+./case.setup -clean
+./case.setup
 
-./$CASE.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus

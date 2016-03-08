@@ -104,8 +104,8 @@ if  ($testname eq 'ERS_Lm3') {
 }
 writeEnvTestXML($testroot, $test);
 if  ($testname eq 'ERS_Lm3') {
-    $sysmod = "./xmlchange STOP_OPTION=nmonths"	; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-    $sysmod = "./xmlchange STOP_N=3"	; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    $sysmod = "./xmlchange -noecho STOP_OPTION=nmonths"	; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    $sysmod = "./xmlchange -noecho STOP_N=3"	; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
 # Create the testing file $testroot/$testname.test

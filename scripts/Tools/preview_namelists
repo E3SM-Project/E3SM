@@ -91,13 +91,11 @@ my $perl5lib = "$CIMEROOT/utils/perl5lib";
 push(@INC, $perl5lib);
 require Module::ModuleLoader;
 require Log::Log4perl;
-
 my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
 Log::Log4perl->easy_init({level=>$level,
 			  layout=>'%m%n'});
 
-$logger = Log::Log4perl::get_logger();
-
+$logger = Log::Log4perl::get_logger("preview_namelists");
 
     
 
@@ -110,7 +108,7 @@ if($dryrun){
 	$sysmod = "mkdir -p $RUNDIR";
 	if(system($sysmod) == 0){
 	    print "Success! Setting RUNDIR=$RUNDIR\n";
-	    system("./xmlchange -file env_run.xml -id RUNDIR -val $RUNDIR");
+	    system("./xmlchange -noecho -file env_run.xml -id RUNDIR -val $RUNDIR");
 	}else{
 	    die "Could not create $RUNDIR";
 	}
@@ -160,6 +158,9 @@ if($dryrun){
 # Create namelists
 # -------------------------------------------------------------------------
 
+# Note - COMP_CPL must be last so that it can use xml vars potentially set 
+# by other component's buildnml scripts
+
 my @modelsorder = qw( atm lnd ice ocn glc wav rof drv );
 
 my %models = ( atm => $COMP_ATM, lnd => $COMP_LND, ice => $COMP_ICE,
@@ -174,12 +175,15 @@ foreach my $model (@modelsorder) {
     my $file = "$dirs{$model}/buildnml";
     $logger->info( "     Calling $file ");
 #   This change requires a tag for all components, defering for the moment
-#    qx( $file -loglevel $opts{loglevel} $CASEROOT );
+#    system(" $file -loglevel $opts{loglevel} $CASEROOT ");
 
     if ($opts{loglevel} eq "DEBUG") {
-       qx(env PREVIEW_NML=1 $file $CASEROOT);
+       system("env PREVIEW_NML=1 $file $CASEROOT");
     } else {
-       qx($file $CASEROOT);
+       system("$file $CASEROOT");
+    }
+    if($? != 0){
+	$logger->logdie("$file failed $?");
     }
 }
 
@@ -206,7 +210,11 @@ system($sysmod) == 0 or $logger->logdie ("ERROR preview_namelists: $sysmod faile
 
 foreach my $rfile (@runfiles){
     my $copied=0;
-    if($rfile =~ /_in_?[0-9]?$/){
+    if($rfile =~ /_in$/){
+	copy("$RUNDIR/$rfile","$docdir/$rfile") or $logger->logdie("Could not copy $rfile to $docdir");
+	$copied = 1;
+    }
+    if($rfile =~ /_in_\d+$/){
 	copy("$RUNDIR/$rfile","$docdir/$rfile") or $logger->logdie("Could not copy $rfile to $docdir");
 	$copied = 1;
     }

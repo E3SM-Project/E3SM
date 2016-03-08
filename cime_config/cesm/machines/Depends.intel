@@ -16,6 +16,17 @@ SatellitePhenologyMod.o
 REDUCED_PRECISION_OBJS=\
 shr_wv_sat_mod.o
 
+SHR_RANDNUM_FORT_OBJS=\
+kissvec_mod.o \
+mersennetwister_mod.o \
+dSFMT_interface.o \
+shr_RandNum_mod.o
+
+SHR_RANDNUM_C_OBJS=\
+dSFMT.o \
+dSFMT_utils.o \
+kissvec.o
+
 ifeq ($(DEBUG),FALSE)
   $(PERFOBJS): %.o: %.F90
 	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div $<
@@ -23,4 +34,8 @@ ifeq ($(DEBUG),FALSE)
 	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O1 $<
   $(REDUCED_PRECISION_OBJS): %.o: %.F90
 	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -fimf-precision=low -fp-model fast $<
+  $(SHR_RANDNUM_FORT_OBJS): %.o: %.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O3 -fp-model fast -no-prec-div -no-prec-sqrt -override-limits $<
+  $(SHR_RANDNUM_C_OBJS): %.o: %.c
+	  $(CC) -c $(INCLDIR) $(INCS) $(CFLAGS) -O3 -fp-model fast $<
 endif

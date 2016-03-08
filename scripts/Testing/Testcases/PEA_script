@@ -28,9 +28,9 @@ cd $CASEROOT
 
 echo "doing a ${STOP_N} ${STOP_OPTION} run with 1 pe and mpi " >>& $TESTSTATUS_LOG 
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -68,9 +68,9 @@ cp -f $EXEROOT/cesm.exe.2 $EXEROOT/cesm.exe || exit -9
 cp -f env_build.xml.2      env_build.xml
 cp -f env_build.xml.2      LockedFiles/env_build.xml.locked
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 

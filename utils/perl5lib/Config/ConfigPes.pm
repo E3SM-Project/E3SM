@@ -278,7 +278,7 @@ sub _setPESsettings
     
     foreach my $pes (@pes_ntasks, @pes_nthrds, @pes_rootpe) {
 	next if($pes->nodeType == XML_COMMENT_NODE);
-	my @children = $pes ->childNodes();
+	my @children = $pes ->findnodes(".//*");
 	foreach my $child (@children) {
 	    next if($child->nodeType == XML_COMMENT_NODE);
 	    my $name  = uc $child->nodeName(); 

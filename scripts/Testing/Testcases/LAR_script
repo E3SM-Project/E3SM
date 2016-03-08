@@ -20,9 +20,9 @@ set start_date = $start_year-11-01
 ./xmlchange -file env_run.xml   -id CONTINUE_RUN	-val FALSE
 ./xmlchange -file env_run.xml   -id REST_OPTION		-val none
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -44,7 +44,7 @@ endif
 
 echo "running long-term archiver" >>& $TESTSTATUS_LOG 
 
-./$CASE.l_archive
+./case.lt_archive
 
 #======================================================================
 # (2) do a restart run test
@@ -54,9 +54,9 @@ echo "doing a continue run" >>& $TESTSTATUS_LOG
 
 ./xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -77,7 +77,7 @@ else
 endif
 
 echo "running long-term archiver" >>& $TESTSTATUS_LOG 
-./$CASE.l_archive
+./case.lt_archive
 
 # TODO ??? What should be done here?
 

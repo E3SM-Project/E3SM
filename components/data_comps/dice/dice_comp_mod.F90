@@ -28,7 +28,8 @@ module dice_comp_mod
   use seq_timemgr_mod
   use seq_comm_mct     , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
   use seq_flds_mod     , only: seq_flds_i2x_fields, &
-                               seq_flds_x2i_fields
+                               seq_flds_x2i_fields, &
+                               seq_flds_i2o_per_cat
 !
 ! !PUBLIC TYPES:
   implicit none
@@ -97,6 +98,9 @@ module dice_comp_mod
   integer(IN) :: kswvdr,kswndr,kswvdf,kswndf,kq,kz,kua,kva,kptem,kshum,kdens,ktbot
   integer(IN) :: kiFrac,kt,kavsdr,kanidr,kavsdf,kanidf,kswnet,kmelth,kmeltw
   integer(IN) :: ksen,klat,klwup,kevap,ktauxa,ktauya,ktref,kqref,kswpen,ktauxo,ktauyo,ksalt
+
+  ! optional per thickness category fields
+  integer(IN) :: kiFrac_01,kswpen_iFrac_01
 
   type(shr_strdata_type) :: SDICE
   type(mct_rearr) :: rearr
@@ -459,6 +463,13 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     ktauxo = mct_aVect_indexRA(i2x,'Fioi_taux')
     ktauyo = mct_aVect_indexRA(i2x,'Fioi_tauy')
     ksalt  = mct_aVect_indexRA(i2x,'Fioi_salt')
+
+    ! optional per thickness category fields
+
+    if (seq_flds_i2o_per_cat) then
+      kiFrac_01       = mct_aVect_indexRA(i2x,'Si_ifrac_01')
+      kswpen_iFrac_01 = mct_aVect_indexRA(i2x,'PFioi_swpen_ifrac_01')
+    end if
 
     call mct_aVect_init(x2i, rList=seq_flds_x2i_fields, lsize=lsize)
     call mct_aVect_zero(x2i)
@@ -839,6 +850,15 @@ subroutine dice_comp_run( EClock, cdata,  x2i, i2x)
 
 
    end select
+
+   ! optional per thickness category fields
+
+   if (seq_flds_i2o_per_cat) then
+      do n=1,lsize
+         i2x%rAttr(kiFrac_01,n)       = i2x%rAttr(kiFrac,n)
+         i2x%rAttr(kswpen_iFrac_01,n) = i2x%rAttr(kswpen,n) * i2x%rAttr(kiFrac,n)
+      end do
+   end if
 
    call t_stopf('dice_mode')
 

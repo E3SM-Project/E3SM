@@ -45,9 +45,9 @@ if( $resubmit > 0 ) then
     ./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
     ./xmlchange -file env_run.xml -id HIST_N       -val ${histn}
 
-    ./$CASE.run
+    ./case.run
     if ($status != 0) then
-	echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+	echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
 	exit -1
     endif
 
@@ -99,9 +99,9 @@ if ( $DOUT_S == "TRUE" ) then
 endif
 
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 

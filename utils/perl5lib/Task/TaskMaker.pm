@@ -275,7 +275,7 @@ sub _computeValues
 	if($self->{'COMPILER'} eq "intel" && $taskpernode > 1)
 	{
 		my $taskpernuma = ceil($taskpernode / 2);
-		$aprun .= " -S $taskpernuma -cc numa_mode ";
+		$aprun .= " -S $taskpernuma -cc numa_node ";
 	}
 
 	# add all the calculated numbers as instance data. 
@@ -471,7 +471,7 @@ sub document()
 		my $r  = ${$self->{'rootpe'}}[$c1];
 		my $p  = ${$self->{'pstrid'}}[$c1];
 		my $tt = $r + ($n -1) * $p;
-		my $tm = ${$self->{'sumthreads'}}[$tt] + $t + 1;
+		my $tm = ${$self->{'sumthreads'}}[$tt] + $t - 1;
 		$doc .=  "#     " . ${$self->{'mcomps'}}[$c1] . " hw pe range ~ from " . ${$self->{'sumthreads'}}[$r] . " to $tm\n";
 	}
 
