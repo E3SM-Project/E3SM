@@ -19,6 +19,8 @@ from CIME.XML.env_run           import EnvRun
 from CIME.XML.env_archive       import EnvArchive
 from CIME.XML.env_batch         import EnvBatch
 
+logger = logging.getLogger(__name__)
+
 class Case(object):
 
     def __init__(self, case_root=os.getcwd()):

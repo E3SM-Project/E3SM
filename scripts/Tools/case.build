@@ -36,7 +36,7 @@ OR
                         "that we have a case.test_build script. If you are in a test that requires"
                         " multiple builds, provide this flag.")
 
-    parser.add_argument("-s", "--sharedlib-only", action="store_true",
+    parser.add_argument("--sharedlib-only", action="store_true",
                         help="Only build sharedlibs")
 
     parser.add_argument("-m", "--model-only", action="store_true",

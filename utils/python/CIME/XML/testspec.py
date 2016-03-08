@@ -8,6 +8,8 @@ from CIME.utils import expect, get_cime_root, get_model
 
 _VERSION = "1.0"
 
+logger = logging.getLogger(__name__)
+
 class TestSpec(GenericXML):
     def __init__(self,infile):
         """

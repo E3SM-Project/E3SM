@@ -7,6 +7,8 @@ from standard_module_setup import *
 from CIME.utils import expect
 from generic_xml import GenericXML
 
+logger = logging.getLogger(__name__)
+
 class EntryID(GenericXML):
 
     def __init__(self, infile=None):
@@ -36,7 +38,7 @@ class EntryID(GenericXML):
                     if (att.key in attributes):
                         if (re.search(attributes[att.key],att.text)):
                             value = valnode.text
-                            logging.info("id %s value %s" % (vid, valnode.text))
+                            logger.info("id %s value %s" % (vid, valnode.text))
 
         if (value is None):
             value = self.get_node("default_value", root=node)
@@ -164,7 +166,7 @@ class EntryID(GenericXML):
             self.set_default_value(node, attlist)
             node = self.cleanupnode(node)
             self.groups[gname].append(node)
-            logging.info ("Adding to group "+gname)
+            logger.debug ("Adding to group "+gname)
         return nodelist
 
     def cleanupnode(self,node):

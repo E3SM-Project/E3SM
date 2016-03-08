@@ -7,6 +7,8 @@ from standard_module_setup import *
 from generic_xml import GenericXML
 from CIME.utils import expect, get_cime_root, get_model
 
+logger = logging.getLogger(__name__)
+
 class Testlist(GenericXML):
     def __init__(self,infile):
         """
@@ -81,6 +83,6 @@ class Testlist(GenericXML):
         elif (self.version == "2.0"):
             return self._get_testsv2(machine,category,compiler)
         else:
-            logging.critical("Did not recognize testlist file version %s for file %s"
+            logger.critical("Did not recognize testlist file version %s for file %s"
                              % (self.version,self.filename))
 
