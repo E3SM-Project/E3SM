@@ -107,9 +107,8 @@ for mct, etc.
   <FFLAGS> -g -qfullpath -qmaxmem=-1 </FFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -qstrict -Q </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O3  </ADD_CFLAGS>
-  <ADD_FFLAGS compile_threaded="true"> -qsmp=omp </ADD_FFLAGS>
-  <ADD_CFLAGS compile_threaded="true"> -qsmp=omp </ADD_CFLAGS>
-  <!--ADD_LDFLAGS compile_threaded="true"> -qsmp=omp </ADD_LDFLAGS-->
+  <ADD_FFLAGS DEBUG="FALSE" compile_threaded="true"> -qsmp=omp </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE" compile_threaded="true"> -qsmp=omp </ADD_CFLAGS>
   <FC_AUTO_R8> -qrealsize=8 </FC_AUTO_R8>
   <ADD_FFLAGS DEBUG="TRUE"> -qinitauto=7FF7FFFF -qflttrap=ov:zero:inv:en </ADD_FFLAGS>
   <ADD_FFLAGS DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </ADD_FFLAGS>
