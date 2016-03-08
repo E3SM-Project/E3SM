@@ -10,6 +10,8 @@ from CIME.check_input_data import check_input_data
 
 import glob, shutil, time, threading
 
+logger = logging.getLogger(__name__)
+
 ###############################################################################
 def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
                 comp_atm, comp_lnd, comp_ice, comp_ocn, comp_glc, comp_wav, comp_rof,
@@ -55,18 +57,18 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
         if comp == "clm":
             esmfdir = "esmf" if use_esmf_lib == "TRUE" else "noesmf"
             if "clm4_0" in clm_config_opts:
-                logging.info("         - Building clm4_0 Library ")
+                logger.info("         - Building clm4_0 Library ")
                 compspec = "lnd"
             else:
-                logging.info("         - Building clm4_5/clm5_0 Library ")
+                logger.info("         - Building clm4_5/clm5_0 Library ")
                 bldroot = os.path.join(sharedpath, comp_interface, esmfdir)
                 objdir = os.path.join(bldroot, comp, "obj")
                 libdir = os.path.join(bldroot, "lib")
                 compspec = "clm"
 
-        logging.debug("bldroot is %s" % bldroot)
-        logging.debug("objdir is %s" % objdir)
-        logging.debug("libdir is %s" % libdir)
+        logger.debug("bldroot is %s" % bldroot)
+        logger.debug("objdir is %s" % objdir)
+        logger.debug("libdir is %s" % libdir)
 
         # Make sure obj, lib dirs exist
         for build_dir in [objdir, libdir]:
@@ -147,8 +149,8 @@ def case_build(caseroot, case=None, testmode=False, sharedlib_only=False, model_
     expect(not (sharedlib_only and model_only),
            "Contradiction: both sharedlib_only and model_only")
 
-    logging.info("sharedlib_only is %s" % sharedlib_only)
-    logging.info("model_only is %s" % model_only)
+    logger.info("sharedlib_only is %s" % sharedlib_only)
+    logger.info("model_only is %s" % model_only)
 
     expect(os.path.isdir(caseroot), "'%s' is not a valid directory" % caseroot)
     os.chdir(caseroot)
@@ -292,9 +294,9 @@ def case_build(caseroot, case=None, testmode=False, sharedlib_only=False, model_
     if not sharedlib_only:
         run_cmd("./preview_namelists")
 
-    build_checks(case, build_threaded, comp_interface, use_esmf_lib, compiler, mpilib, debug, sharedlibroot,
-                 nthrds_cpl, nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav,
-                 nthrds_rof, ninst_build, smp_value)
+    build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib, 
+                 sharedlibroot, nthrds_cpl, nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, 
+                 nthrds_glc, nthrds_wav, nthrds_rof, ninst_build, smp_value)
 
     t2 = time.time()
     logs = []
@@ -312,8 +314,8 @@ def case_build(caseroot, case=None, testmode=False, sharedlib_only=False, model_
 
     t3 = time.time()
 
-    logging.info("Time spent not building: %f sec" % (t2 - t1))
-    logging.info("Time spent building: %f sec" % (t3 - t2))
+    logger.info("Time spent not building: %f sec" % (t2 - t1))
+    logger.info("Time spent building: %f sec" % (t3 - t2))
 
 ###############################################################################
 def check_all_input_data(case):
@@ -352,7 +354,7 @@ or set GET_REFCASE to FALSE in env_run.xml
 and prestage the restart data to $RUNDIR manually
 *****************************************************************""" % (refdir, refdir, refdir))
 
-        logging.info(" - Prestaging REFCASE (%s) to %s" % (refdir, rundir))
+        logger.info(" - Prestaging REFCASE (%s) to %s" % (refdir, rundir))
 
         # prestage the reference case's files.
 
@@ -413,6 +415,8 @@ def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, comp
     debugdir = "debug" if debug else "nodebug"
     threaddir = "threads" if (os.environ["SMP"] == "TRUE" or build_threaded == "TRUE") else "nothreads"
     sharedpath = os.path.join(sharedlibroot, compiler, mpilib, debugdir, threaddir)
+    logger.debug("compiler=%s mpilib=%s debugdir=%s threaddir=%s"%
+                 (compiler,mpilib,debugdir,threaddir))
     os.environ["SHAREDPATH"] = sharedpath
 
     smpstr = "a%dl%dr%di%do%dg%dw%dc%d" % \
