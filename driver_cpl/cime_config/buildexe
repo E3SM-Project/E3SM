@@ -12,6 +12,7 @@ my $CASETOOLS = `./xmlquery CASETOOLS -value`;
 my $CIMEROOT  = `./xmlquery CIMEROOT  -value`;
 my $OBJROOT   = `./xmlquery OBJROOT   -value`;
 my $EXEROOT   = `./xmlquery EXEROOT   -value`;
+my $LIBROOT   = `./xmlquery LIBROOT   -value`;
 my $MACH      = `./xmlquery MACH      -value`;
 my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
 my $MODEL     = `./xmlquery MODEL     -value`;
@@ -24,7 +25,7 @@ print file "${CASEROOT}/SourceMods/src.drv\n";
 print file "${CIMEROOT}/driver_cpl/driver\n";
 close(file);
 
-my $sysmod = "gmake exec_se -j ${GMAKE_J} EXEC_SE=${EXEROOT}/${MODEL}.exe MODEL=driver  -f ${CASETOOLS}/Makefile ";
+my $sysmod = "gmake exec_se -j ${GMAKE_J} EXEC_SE=${EXEROOT}/${MODEL}.exe MODEL=driver LIBROOT=${LIBROOT} -f ${CASETOOLS}/Makefile ";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 exit(0);

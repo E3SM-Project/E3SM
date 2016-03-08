@@ -160,10 +160,6 @@ sub doPreRunChecks()
     }
     $config{'MPILIB'} = $mpilib;
 
-    # Necessary for NCK clones to work, must override the CASEROOT that
-    # was inherited in the environment. Without
-    $ENV{'CASEROOT'} = $caseroot;
-
     $logger->debug( "build complete? $config{'BUILD_COMPLETE'}");
     if($config{'BUILD_COMPLETE'} ne 'TRUE')
     {

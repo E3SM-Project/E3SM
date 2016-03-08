@@ -105,8 +105,6 @@ class GenericXML(object):
         result = None
         if item in self.lookups.keys():
             result = self.lookups[item]
-        if item in os.environ:
-            result = os.environ.get(item)
 
         if (result is None):
             logging.info("No value available for item '%s'" % item)
@@ -156,5 +154,9 @@ class GenericXML(object):
             if(ref is not None):
                 logging.debug("resolve: "+ref)
                 item_data = item_data.replace(m.group(), self.get_resolved_value(ref))
+            elif(var in os.environ):
+                logging.warn("resolve from env: "+var)
+                item_data = item_data.replace(m.group(), os.environ[var])
+
 
         return item_data

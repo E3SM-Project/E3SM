@@ -1,7 +1,9 @@
 #!/usr/bin/env python2
 
 """
-TODO - What does this do?
+preview_namelists runs the buildnml script for each case component
+which creates the namelist and other model input files, it then
+copies those files to the CaseDocs subdirectory for inspection
 """
 
 from standard_script_setup import *

@@ -54,11 +54,15 @@ class Case(object):
     def get_value(self, item, attribute={}, resolved=True, subgroup=None):
         result = None
         for env_file in self._env_entryid_files:
-            result = env_file.get_value(item, attribute, resolved, subgroup)
+            # Wait and resolve in self rather than in env_file
+            result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
+            logging.debug("CASE %s %s"%(item,result))
             if(result is not None):
                 if(resolved):
                     return self.get_resolved_value(result)
                 return result
+
+
         logging.info("Not able to retreive value for item '%s'" % item)
 
 
