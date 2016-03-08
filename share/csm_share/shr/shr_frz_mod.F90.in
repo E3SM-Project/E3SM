@@ -5,7 +5,7 @@
 !  This is a module used for the freezing point of salt water
 !===============================================================================
 
-   use shr_kind_mod, only: R8->SHR_KIND_R8, CS->SHR_KIND_CS
+   use shr_kind_mod, only: R8=>SHR_KIND_R8, CS=>SHR_KIND_CS
    use shr_log_mod, only: s_logunit => shr_log_Unit
    use shr_sys_mod, only: shr_sys_abort
 
