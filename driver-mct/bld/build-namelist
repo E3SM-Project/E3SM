@@ -344,11 +344,18 @@ if ($CCSM_BGC eq 'CO2A') {
 my $glc_nec = "$xmlvars{'GLC_NEC'}";
 if ( ! defined $glc_nec ) {$glc_nec = 0;}
 
+my $ice_ncat = $xmlvars{'ICE_NCAT'};
+
+my $seq_flds_i2o_per_cat = ".false.";
+if ($xmlvars{'CPL_I2O_PER_CAT'} eq 'TRUE') { $seq_flds_i2o_per_cat = ".true." }
+
 add_default($nl, 'flds_co2a',    'val'=>"$flds_co2a");
 add_default($nl, 'flds_co2b',    'val'=>"$flds_co2b");
 add_default($nl, 'flds_co2c',    'val'=>"$flds_co2c");
 add_default($nl, 'flds_co2_dmsa','val'=>"$flds_co2_dmsa");
 add_default($nl, 'glc_nec',      'val'=>"$glc_nec");
+add_default($nl, 'ice_ncat',     'val'=>"$ice_ncat", 'xml'=>'ICE_NCAT');
+add_default($nl, 'seq_flds_i2o_per_cat', 'val'=>"$seq_flds_i2o_per_cat", 'xml'=>'CPL_I2O_PER_CAT');
     
 #############################################
 # namelist group: seq_cplflds_userspec      #
