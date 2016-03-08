@@ -259,9 +259,9 @@ contains
        case(PIO_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
           if (File%fh>0) then
              ierr = nf90_sync(File%fh)
-             if(Debug) print *,__FILE__,__LINE__,ierr
+             if(Debug) print *,__PIO_FILE__,__LINE__,ierr
              ierr= nf90_close(File%fh)
-             if(Debug) print *,__FILE__,__LINE__,ierr
+             if(Debug) print *,__PIO_FILE__,__LINE__,ierr
           endif
 #endif
        case default

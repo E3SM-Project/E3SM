@@ -16,6 +16,11 @@ find_library(NetcdfF_LIBRARY
              HINTS ${Netcdf_INCLUDE_DIR}/../lib
              NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
+find_library(Pnetcdf_LIBRARY 
+             NAMES libpnetcdf.a netcdff
+             HINTS ${Netcdf_INCLUDE_DIR}/../lib
+             NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+
 find_path(Netcdf_NC_CONFIG_BIN
           NAMES nc-config
           HINTS ${Netcdf_INCLUDE_DIR}/../bin
@@ -25,7 +30,7 @@ find_path(Netcdf_NC_CONFIG_BIN
 set(Netcdf_INCLUDE_DIRS ${Netcdf_INCLUDE_DIR})
 
 # Store libraries in Netcdf_LIBRARIES
-set(Netcdf_LIBRARIES ${NetcdfF_LIBRARY} ${Netcdf_LIBRARY})
+set(Netcdf_LIBRARIES ${NetcdfF_LIBRARY} ${Netcdf_LIBRARY} ${Pnetcdf_LIBRARY})
 
 IF (NOT ${Netcdf_NC_CONFIG_BIN} STREQUAL Netcdf_NC_CONFIG_BIN-NOTFOUND)
 

@@ -3,18 +3,19 @@ include(CheckFunctionExists)
 
 FIND_PATH(PNETCDF_INCLUDE_DIR 
           pnetcdf.h
-          HINTS ${PNETCDF_DIR}/include
+          HINTS ${PNETCDF_DIR}/include ${NETCDF_DIR}/include
           CACHE)
 MESSAGE("PNETCDF_INCLUDE_DIR: ${PNETCDF_INCLUDE_DIR}")
+
 IF (${PREFER_SHARED})
   FIND_LIBRARY(PNETCDF_LIBRARY 
                NAMES pnetcdf
-               HINTS ${PNETCDF_DIR}/lib
+               HINTS ${PNETCDF_DIR}/lib ${NETCDF_DIR}/lib
                CACHE)
 ELSE ()
   FIND_LIBRARY(PNETCDF_LIBRARY 
                NAMES libpnetcdf.a pnetcdf
-               HINTS ${PNETCDF_DIR}/lib
+               HINTS ${PNETCDF_DIR}/lib ${NETCDF_DIR}/lib
                CACHE)
 ENDIF ()
 

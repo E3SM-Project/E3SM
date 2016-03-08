@@ -9,8 +9,8 @@ cd $CASEROOT
 if ( -e env_mach_pes.xml.1 )  then
   cp -f env_mach_pes.xml.1   env_mach_pes.xml
   cp -f env_mach_pes.xml.1   LockedFiles/env_mach_pes.xml
-  rm    $EXEROOT/cesm.exe >& /dev/null
-  cp -f $EXEROOT/cesm.exe.1 $EXEROOT/cesm.exe || exit -9
+  rm    $EXEROOT/${CIME_MODEL}.exe >& /dev/null
+  cp -f $EXEROOT/${CIME_MODEL}.exe.1 $EXEROOT/${CIME_MODEL}.exe || exit -9
   cp -f env_build.xml.1      env_build.xml
   cp -f env_build.xml.1      LockedFiles/env_build.xml
 else
@@ -28,13 +28,13 @@ endif
 ./case.setup
 
 # Set env_run.xml settings 
-set STOP_N      = `./xmlquery STOP_N      -value`
-set STOP_OPTION = `./xmlquery STOP_OPTION -value`
+set STOP_N      = `./xmlquery STOP_N      --value`
+set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 
-./xmlchange -file env_run.xml -id CONTINUE_RUN -val FALSE
-./xmlchange -file env_run.xml -id REST_OPTION  -val never
-./xmlchange -file env_run.xml -id HIST_OPTION  -val ${STOP_OPTION}
-./xmlchange -file env_run.xml -id HIST_N       -val ${STOP_N}
+./xmlchange --file env_run.xml --id CONTINUE_RUN --val FALSE
+./xmlchange --file env_run.xml --id REST_OPTION  --val never
+./xmlchange --file env_run.xml --id HIST_OPTION  --val ${STOP_OPTION}
+./xmlchange --file env_run.xml --id HIST_N       --val ${STOP_N}
 
 #======================================================================
 # (1) do an initial run with default pe layout
@@ -91,8 +91,8 @@ cp -f env_mach_pes.xml.2 LockedFiles/env_mach_pes.xml
 ./case.setup -clean -testmode
 ./case.setup
 
-rm $EXEROOT/cesm.exe >& /dev/null
-cp -f $EXEROOT/cesm.exe.2 $EXEROOT/cesm.exe || exit -9
+rm $EXEROOT/${CIME_MODEL}.exe >& /dev/null
+cp -f $EXEROOT/${CIME_MODEL}.exe.2 $EXEROOT/${CIME_MODEL}.exe || exit -9
 cp -f env_build.xml.2    env_build.xml
 cp -f env_build.xml.2    LockedFiles/env_build.xml
 
@@ -134,9 +134,6 @@ $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -su
 
 echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
-
-echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >&! $TESTSTATUS_OUT
-echo " --- Test Functionality: ---" >>& $TESTSTATUS_OUT
 
 $SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 "base" -suffix2 "modpes" $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
 

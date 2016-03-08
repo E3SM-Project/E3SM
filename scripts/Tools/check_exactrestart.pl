@@ -113,6 +113,11 @@ sub compare{
         #print "skip line2 $line2\n";
         $line2 = shift @line2;
         chomp $line2;
+        if ( !defined($line2) ) {
+          print "ERROR: Reached end of $f2 without finding the comm_diag token. Exiting...\n";
+          print "FAIL \n";
+          die;
+        }
       }
       if($line1 eq $line2) {
 	  $good_cnt++;

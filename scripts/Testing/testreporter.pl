@@ -411,7 +411,7 @@ sub getTestStatus
 
 	# Get the baseline compare summary
 	#my @comparelines = grep { /compare_hist/} @statuslines;
-	my @comparelines = grep { /baseline compare summary/} @statuslines;
+	my @comparelines = grep { / compare/} @statuslines;
 	my ($comparestatus,$comparetest)  = split(/\s+/, $comparelines[0]);
 	$teststatushash{$testcase}{'compare'} = $comparestatus;
 	my $comparetag = (split(/\./, $comparetest))[-1];

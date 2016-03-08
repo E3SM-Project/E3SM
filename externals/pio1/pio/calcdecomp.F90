@@ -168,7 +168,7 @@ contains
     kount=mykount
 
 !    if(myiorank>=0 .and. myiorank<use_io_procs) then
-!       print *,__FILE__,__LINE__,use_io_procs,gdims,start,kount
+!       print *,__PIO_FILE__,__LINE__,use_io_procs,gdims,start,kount
 !    endif
 
 

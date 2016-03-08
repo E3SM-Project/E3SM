@@ -1,0 +1,110 @@
+#!/bin/csh -f
+
+setenv CASEROOT			`./xmlquery  CASEROOT		-value `
+
+setenv CASE			`./xmlquery  CASE		-value `
+setenv CASETOOLS		`./xmlquery  CASETOOLS		-value `
+setenv CCSMROOT			`./xmlquery  CCSMROOT		-value `
+setenv CIMEROOT			`./xmlquery  CIMEROOT		-value `
+setenv LIBROOT			`./xmlquery  LIBROOT		-value `
+setenv EXEROOT			`./xmlquery  EXEROOT		-value `
+setenv OBJROOT			`./xmlquery  OBJROOT		-value `
+setenv INCROOT			`./xmlquery  INCROOT		-value `
+setenv SHAREDLIBROOT		`./xmlquery  SHAREDLIBROOT	-value `
+setenv CASEBUILD		`./xmlquery  CASEBUILD		-value `
+setenv DIN_LOC_ROOT		`./xmlquery  DIN_LOC_ROOT	-value `
+setenv RUNDIR			`./xmlquery  RUNDIR		-value `
+setenv LOGDIR			`./xmlquery  LOGDIR		-value `
+
+setenv MACH			`./xmlquery  MACH		-value `
+setenv GMAKE			`./xmlquery  GMAKE		-value `
+setenv GMAKE_J			`./xmlquery  GMAKE_J		-value `
+setenv NINST_BUILD		`./xmlquery  NINST_BUILD	-value `
+setenv NINST_VALUE		`./xmlquery  NINST_VALUE	-value `
+setenv SMP_BUILD		`./xmlquery  SMP_BUILD		-value `
+setenv SMP_VALUE		`./xmlquery  SMP_VALUE		-value `
+setenv BUILD_THREADED		`./xmlquery  BUILD_THREADED	-value `
+setenv BUILD_STATUS		`./xmlquery  BUILD_STATUS	-value `
+setenv COMP_INTERFACE		`./xmlquery  COMP_INTERFACE	-value `
+setenv USE_ESMF_LIB		`./xmlquery  USE_ESMF_LIB	-value `
+setenv COMPILER			`./xmlquery  COMPILER		-value `
+setenv MPILIB			`./xmlquery  MPILIB		-value `
+setenv DEBUG			`./xmlquery  DEBUG		-value `
+setenv OS			`./xmlquery  OS			-value `
+setenv MAX_TASKS_PER_NODE       `./xmlquery  MAX_TASKS_PER_NODE	-value `
+setenv PES_PER_NODE             `./xmlquery  PES_PER_NODE	-value `
+setenv COST_PES                 `./xmlquery  COST_PES   	-value `
+setenv CCSM_ESTCOST             `./xmlquery  CCSM_ESTCOST   	-value `
+setenv PROJECT                  `./xmlquery  PROJECT    	-value `
+
+setenv COMP_CPL			`./xmlquery  COMP_CPL		-value `
+setenv COMP_ATM			`./xmlquery  COMP_ATM		-value `
+setenv COMP_LND			`./xmlquery  COMP_LND		-value `
+setenv COMP_ICE			`./xmlquery  COMP_ICE		-value `
+setenv COMP_OCN			`./xmlquery  COMP_OCN		-value `
+setenv COMP_GLC			`./xmlquery  COMP_GLC		-value `
+setenv COMP_WAV			`./xmlquery  COMP_WAV		-value `
+setenv COMP_ROF			`./xmlquery  COMP_ROF		-value `
+
+setenv NTASKS_CPL		`./xmlquery  NTASKS_CPL		-value `
+setenv NTASKS_ATM		`./xmlquery  NTASKS_ATM		-value `
+setenv NTASKS_LND		`./xmlquery  NTASKS_LND		-value `
+setenv NTASKS_ICE		`./xmlquery  NTASKS_ICE		-value `
+setenv NTASKS_OCN		`./xmlquery  NTASKS_OCN		-value `
+setenv NTASKS_GLC		`./xmlquery  NTASKS_GLC		-value `
+setenv NTASKS_WAV		`./xmlquery  NTASKS_WAV		-value `
+setenv NTASKS_ROF		`./xmlquery  NTASKS_ROF		-value `
+
+setenv NTHRDS_CPL		`./xmlquery  NTHRDS_CPL		-value `
+setenv NTHRDS_ATM		`./xmlquery  NTHRDS_ATM		-value `
+setenv NTHRDS_LND		`./xmlquery  NTHRDS_LND		-value `
+setenv NTHRDS_ICE		`./xmlquery  NTHRDS_ICE		-value `
+setenv NTHRDS_OCN		`./xmlquery  NTHRDS_OCN		-value `
+setenv NTHRDS_GLC		`./xmlquery  NTHRDS_GLC		-value `
+setenv NTHRDS_WAV		`./xmlquery  NTHRDS_WAV		-value `
+setenv NTHRDS_ROF		`./xmlquery  NTHRDS_ROF		-value `
+
+setenv ROOTPE_CPL		`./xmlquery  ROOTPE_CPL		-value `
+setenv ROOTPE_ATM		`./xmlquery  ROOTPE_ATM		-value `
+setenv ROOTPE_LND		`./xmlquery  ROOTPE_LND		-value `
+setenv ROOTPE_ICE		`./xmlquery  ROOTPE_ICE		-value `
+setenv ROOTPE_OCN		`./xmlquery  ROOTPE_OCN		-value `
+setenv ROOTPE_GLC		`./xmlquery  ROOTPE_GLC		-value `
+setenv ROOTPE_WAV		`./xmlquery  ROOTPE_WAV		-value `
+setenv ROOTPE_ROF		`./xmlquery  ROOTPE_ROF		-value `
+
+setenv PSTRID_CPL		`./xmlquery  PSTRID_CPL		-value `
+setenv PSTRID_ATM		`./xmlquery  PSTRID_ATM		-value `
+setenv PSTRID_LND		`./xmlquery  PSTRID_LND		-value `
+setenv PSTRID_ICE		`./xmlquery  PSTRID_ICE		-value `
+setenv PSTRID_OCN		`./xmlquery  PSTRID_OCN		-value `
+setenv PSTRID_GLC		`./xmlquery  PSTRID_GLC		-value `
+setenv PSTRID_WAV		`./xmlquery  PSTRID_WAV		-value `
+setenv PSTRID_ROF		`./xmlquery  PSTRID_ROF		-value `
+
+setenv NINST_ATM		`./xmlquery  NINST_ATM		-value `
+setenv NINST_LND		`./xmlquery  NINST_LND		-value `
+setenv NINST_ICE		`./xmlquery  NINST_ICE		-value `
+setenv NINST_OCN		`./xmlquery  NINST_OCN		-value `
+setenv NINST_GLC		`./xmlquery  NINST_GLC		-value `
+setenv NINST_WAV		`./xmlquery  NINST_WAV		-value `
+setenv NINST_ROF		`./xmlquery  NINST_ROF		-value `
+
+setenv PROFILE_PAPI_ENABLE      `./xmlquery  PROFILE_PAPI_ENABLE -value`
+
+source $CASEROOT/env_mach_specific
+if ($status != 0) then
+   echo "Error: problem sourcing env_mach_specific"; exit -2
+endif 
+
+set MODELS     = (         cpl         atm         lnd         ice         ocn         glc         wav          rof)	  
+set COMPONENTS = (   $COMP_CPL   $COMP_ATM   $COMP_LND   $COMP_ICE   $COMP_OCN   $COMP_GLC   $COMP_WAV    $COMP_ROF)  
+set NTASKS     = ( $NTASKS_CPL $NTASKS_ATM $NTASKS_LND $NTASKS_ICE $NTASKS_OCN $NTASKS_GLC $NTASKS_WAV  $NTASKS_ROF) 
+set NTHRDS     = ( $NTHRDS_CPL $NTHRDS_ATM $NTHRDS_LND $NTHRDS_ICE $NTHRDS_OCN $NTHRDS_GLC $NTHRDS_WAV  $NTHRDS_ROF) 
+set ROOTPE     = ( $ROOTPE_CPL $ROOTPE_ATM $ROOTPE_LND $ROOTPE_ICE $ROOTPE_OCN $ROOTPE_GLC $ROOTPE_WAV  $ROOTPE_ROF) 
+set PSTRID     = ( $PSTRID_CPL $PSTRID_ATM $PSTRID_LND $PSTRID_ICE $PSTRID_OCN $PSTRID_GLC $PSTRID_WAV  $PSTRID_ROF) 
+set NINST      = (          1   $NINST_ATM  $NINST_LND  $NINST_ICE  $NINST_OCN  $NINST_GLC  $NINST_WAV   $NINST_ROF)  
+
+
+
+

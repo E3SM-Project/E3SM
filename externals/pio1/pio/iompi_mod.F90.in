@@ -194,7 +194,7 @@ contains
     integer(i4) :: cnt
     logical, parameter :: Check = .TRUE.
 #ifdef TIMING
-    call t_startf("pio_write_mpiio_{TYPE}")
+    call t_startf("PIO:pio_write_mpiio_{TYPE}")
 #endif
 #ifdef USEMPIIO   
      datarep   = 'native'
@@ -240,7 +240,7 @@ contains
      ierr=0
 #endif
 #ifdef TIMING
-    call t_stopf("pio_write_mpiio_{TYPE}")
+    call t_stopf("PIO:pio_write_mpiio_{TYPE}")
 #endif
 
  end function write_mpiio_{TYPE}
@@ -271,7 +271,7 @@ contains
      glen      = iodesc%glen
      offset    = iodesc%IOmap%start
 #ifdef TIMING
-    call t_startf("pio_read_mpiio_{TYPE}")
+    call t_startf("PIO:pio_read_mpiio_{TYPE}")
 #endif
 #ifdef USEMPIIO
      reclen=glen*c_sizeof(iobuf(1))
@@ -311,7 +311,7 @@ contains
      ierr=0
 #endif
 #ifdef TIMING
-    call t_stopf("pio_read_mpiio_{TYPE}")
+    call t_stopf("PIO:pio_read_mpiio_{TYPE}")
 #endif
  end function read_mpiio_{TYPE}
 
