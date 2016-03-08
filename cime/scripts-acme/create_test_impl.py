@@ -336,7 +336,9 @@ class CreateTest(object):
                 os.chmod(item, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
 
             for item in glob.glob(os.path.join(test_dir, "user_nl*")):
-                os.remove(os.path.join(baseline_dir, os.path.basename(item)))
+                preexisting_baseline = os.path.join(baseline_dir, os.path.basename(item))
+                if (os.path.exists(preexisting_baseline)):
+                    os.remove(preexisting_baseline)
                 shutil.copy2(item, baseline_dir)
 
         # Always mark as passed unless we hit exception
