@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<config case="init_step2">
+
+	<add_executable source="model" dest="ocean_model"/>
+	<add_executable source="metis" dest="metis"/>
+
+	<add_link source="../init_step1/culled_mesh.nc" dest="mesh.nc"/>
+	<add_link source="../init_step1/culled_graph.info" dest="graph.info"/>
+	<add_link source="../init_step1/temperature.nc" dest="temperature.nc"/>
+	<add_link source="../init_step1/salinity.nc" dest="salinity.nc"/>
+	<add_link source="../init_step1/wind_stress.nc" dest="wind_stress.nc"/>
+	<add_link source="../init_step1/topography.nc" dest="topography.nc"/>
+	<add_link source="../init_step1/swData.nc" dest="swData.nc"/>
+
+	<namelist name="namelist.ocean" mode="init">
+		<template file="template_init2.xml" path_base="script_core_dir" path="global_ocean"/>
+		<option name="config_global_ocean_deepen_channels">.true.</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="init">
+		<template file="template_init2.xml" path_base="script_core_dir" path="global_ocean"/>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="./metis">
+			<argument flag="graph.info">16</argument>
+		</step>
+		<model_run procs="16" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>
