@@ -26,7 +26,7 @@
 	</get_file>
 
 	<add_executable source="model" dest="ocean_model"/>
-        <add_executable source="metis" dest="metis"/>
+	<add_executable source="metis" dest="metis"/>
 	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
 
 	<add_link source_path="mesh_database" source="mesh.EC.60-30km.160115.nc" dest="base_mesh.nc"/>

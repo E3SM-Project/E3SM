@@ -7,10 +7,10 @@
 	</case>
 	<case name="spin_up1">
 		<step executable="./run.py" quiet="true" pre_message=" * Running spin_up1" post_message="     Complete"/>
-	</case>		
+	</case>
 	<case name="forward">
 		<step executable="./run.py" quiet="true" pre_message=" * Running forward" post_message="     Complete"/>
-	</case>		
+	</case>
 	<validation>
 		<compare_fields file1="forward/output.nc">
 			<template file="prognostic_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
