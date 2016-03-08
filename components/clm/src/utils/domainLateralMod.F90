@@ -1275,13 +1275,15 @@ contains
     type(domainlateral_type) :: domain_l                     ! domain datatype
     integer , intent(in)     :: cellsOnCell_old(:,:)         ! grid cell level connectivity information
     integer , intent(in)     :: edgesOnCell_old(:,:)         ! index to determine distance between neighbors from dcEdge [in natural order prior to domain decomposition]
-    integer , intent(in)     :: nEdgesOnCell_old(:,:)        ! number of edges                                           [in natural order prior to domain decomposition]
+    integer , intent(in)     :: nEdgesOnCell_old(:)          ! number of edges                                           [in natural order prior to domain decomposition]
     real(r8), intent(in)     :: dcEdge_old(:)                ! distance between neighbors                                [in natural order prior to domain decomposition]
     real(r8), intent(in)     :: dvEdge_old(:)                ! distance between vertices                                 [in natural order prior to domain decomposition]
     real(r8), intent(in)     :: areaCell_old(:)              ! area of grid cell                                         [in natural order prior to domain decomposition]
     integer , intent(in)     :: nCells_loc_old               ! number of local cell-to-cell connections                  [in natural order prior to domain decomposition]
     integer , intent(in)     :: nEdges_loc_old               ! number of edges                                           [in natural order prior to domain decomposition]
     integer , intent(in)     :: maxEdges                     ! max number of edges/neighbors
+
+    character(len=*), parameter :: subname = 'domainlateral_init'
 
     call endrun(msg='ERROR ' // trim(subname) //': Requires '//&
          'PETSc, but the code was compiled without -DUSE_PETSC_LIB')

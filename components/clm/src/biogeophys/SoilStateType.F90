@@ -860,16 +860,15 @@ end if
 
 
   !------------------------------------------------------------------------
+#ifdef USE_PETSC_LIB
   subroutine InitColdGhost(this, bounds_proc)
     !
     ! !DESCRIPTION:
     ! Assign soil properties for ghost/halo columns
     !
     ! !USES:
-#ifdef USE_PETSC_LIB
     use domainLateralMod       , only : ldomain_lateral, ScatterDataG2L
     use domainLateralMod       , only : ExchangeColumnLevelGhostData
-#endif
     use shr_infnan_mod         , only : shr_infnan_isnan
     use shr_infnan_mod         , only : isnan => shr_infnan_isnan
     use landunit_varcon        , only : max_lunit
@@ -958,6 +957,30 @@ end if
     deallocate(data_recv_col)
 
   end subroutine InitColdGhost
+
+#else
+
+  !------------------------------------------------------------------------
+  subroutine InitColdGhost(this, bounds_proc)
+    !
+    ! !DESCRIPTION:
+    ! Assign soil properties for ghost/halo columns
+    !
+    ! !USES:
+    implicit none
+    !
+    ! !ARGUMENTS:
+    class(soilstate_type)            :: this
+    type(bounds_type), intent(in)    :: bounds_proc
+
+    character(len=*), parameter :: subname = 'InitColdGhost'
+
+    call endrun(msg='ERROR ' // trim(subname) //': Requires '//&
+         'PETSc, but the code was compiled without -DUSE_PETSC_LIB')
+
+  end subroutine InitColdGhost
+
+#endif
   !------------------------------------------------------------------------
 
 end module SoilStateType
