@@ -37,7 +37,8 @@
     module switch cray-libsci cray-libsci/13.0.4
     module load esmf/5.2.0rp2
     module switch atp atp/1.7.5
-
+    module add cudatoolkit
+    export CRAY_CUDA_MPS=1
 
     export CRAY_CPU_TARGET=istanbul
     module load cray-netcdf-hdf5parallel/4.3.3.1
