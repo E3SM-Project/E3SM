@@ -80,6 +80,7 @@ extern "C" {
 int velocity_solver_init_mpi(int* fComm) {
   // get MPI_Comm from Fortran
   comm = MPI_Comm_f2c(*fComm);
+  reducedComm = MPI_COMM_NULL;  // initialize to null so we can check if set
 
   return 0;
 }
@@ -1415,11 +1416,8 @@ void importP0Temperature(double const * temperature_F) {
 
 void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id) {
   int numProcs, me;
-static int reduced_comm_active = 0;
-  if(reduced_comm_active) {
+  if (reduced_comm_id != MPI_COMM_NULL)
     MPI_Comm_free(&reduced_comm_id);
-    reduced_comm_active = 0;
-  }
   MPI_Group world_group_id, reduced_group_id;
   MPI_Comm_size(comm, &numProcs);
   MPI_Comm_rank(comm, &me);
@@ -1438,7 +1436,6 @@ static int reduced_comm_active = 0;
   MPI_Comm_group(comm, &world_group_id);
   MPI_Group_incl(world_group_id, ranks.size(), &ranks[0], &reduced_group_id);
   MPI_Comm_create(comm, reduced_group_id, &reduced_comm_id);
-  reduced_comm_active = 1;
 }
 
 void computeLocalOffset(int nLocalEntities, int& localOffset,
