@@ -63,7 +63,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, index_temperature, & !{{{
-                                                    layerThickness, penetrativeTemperatureFlux, tend, err)
+                    layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tend, err)
 
       !-----------------------------------------------------------------
       !
@@ -76,6 +76,9 @@ contains
 
       real (kind=RKIND), dimension(:), intent(in) :: &
          penetrativeTemperatureFlux !< Input: short wave heat flux
+
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+         penetrativeTemperatureFluxOBL
 
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Layer thicknesses
 
@@ -113,10 +116,10 @@ contains
       err = 0
       if(useJerlov) then
          call ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, forcingPool, index_temperature, layerThickness, &
-                                                           penetrativeTemperatureFlux, tend, err)
+                                        penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tend, err)
       else
          call ocn_tracer_short_wave_absorption_variable_tend(meshPool,swForcingPool, forcingPool, index_temperature, &
-                                                             layerThickness, penetrativeTemperatureFlux,tend,err)
+                                        layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL,tend,err)
       endif
    !--------------------------------------------------------------------
 

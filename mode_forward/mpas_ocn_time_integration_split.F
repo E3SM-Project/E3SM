@@ -1684,7 +1684,7 @@ module ocn_time_integration_split
            call mpas_timer_stop('se vmix gm comp Bolus vel')
         end if
         call mpas_timer_start('se vmix vmix imp', .false.)
-        call ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, scratchPool, err, 2)
+        call ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, forcingPool, scratchPool, err, 2)
         call mpas_timer_stop('se vmix vmix imp')
 
         block => block % next

@@ -430,7 +430,7 @@ contains
       !
       ! one dimensional pointers
       !
-      real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux
+      real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL
       real (kind=RKIND), dimension(:), pointer :: tracerGroupExponentialDecayRate
       integer, dimension(:), pointer :: maxLevelCell
 
@@ -513,6 +513,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTaperingCell', relativeSlopeTaperingCell)
       call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
+      call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', fractionAbsorbedRunoff)
       call mpas_pool_get_array(tendPool, 'layerThickness', tend_layerThickness)
@@ -795,7 +796,7 @@ contains
                if ( trim(groupItr % memberName) == 'activeTracers' ) then
                   call mpas_timer_start("short wave")
                   call ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, indexTemperature, &
-                                                             layerThickness, penetrativeTemperatureFlux, tracerGroupTend, err)
+                            layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tracerGroupTend, err)
                   call mpas_timer_stop("short wave")
                endif
 
