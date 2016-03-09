@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_colpkg.F90 1105 2016-01-28 17:14:14Z njeffery $
+!  SVN:$Id: ice_colpkg.F90 1108 2016-03-07 18:42:44Z njeffery $
 !=========================================================================
 !
 ! flags and interface routines for the column package
@@ -1480,6 +1480,7 @@
                                     potT        , sst         , &
                                     sss         , Tf          , &
                                     strocnxT    , strocnyT    , &
+                                    fbot        ,               &
                                     frzmlt      , rside       , &
                                     fsnow       , frain       , &
                                     fpond       ,               &
@@ -1603,6 +1604,7 @@
          strairyT    , & ! stress on ice by air, y-direction
          strocnxT    , & ! ice-ocean stress, x-direction
          strocnyT    , & ! ice-ocean stress, y-direction
+         fbot        , & ! ice-ocean heat flux at bottom surface (W/m^2)
          frzmlt      , & ! freezing/melting potential (W/m^2)
          rside       , & ! fraction of ice that melts laterally
          sst         , & ! sea surface temperature (C)
@@ -1669,7 +1671,7 @@
       character (len=char_len), intent(out) :: &
          stop_label
 
-    integer (kind=int_kind), intent(in) :: &
+      integer (kind=int_kind), intent(in) :: &
          nu_diag         ! file unit number (diagnostic only)
 
       ! local variables
@@ -1695,7 +1697,6 @@
          Urefn       , & ! air speed reference level            (m/s)
          Qrefn       , & ! air sp hum reference level         (kg/kg)
          Tbot        , & ! ice bottom surface temperature (deg C)
-         fbot        , & ! ice-ocean heat flux at bottom surface (W/m^2)
          shcoef      , & ! transfer coefficient for sensible heat
          lhcoef      , & ! transfer coefficient for latent heat
          rfrac           ! water fraction retained for melt ponds
@@ -4686,7 +4687,7 @@
        amm  = c1 ! ISPOL < 1 mmol/m^3 
        dmsp = p1  
        dms  = p1    
-       algalN(1) = 0.0026_dbl_kind ! ISPOL, Lannuzel 2013(pennate) 
+       algalN(1) = c1  !0.0026_dbl_kind ! ISPOL, Lannuzel 2013(pennate) 
        algalN(2) = 0.0027_dbl_kind ! ISPOL, Lannuzel 2013(Phaeocystis)
        algalN(3) = 0.0057_dbl_kind ! ISPOL, Lannuzel 2013(flagellates)  
                                      ! 0.024_dbl_kind ! 5% of 1 mgchl/m^3 
@@ -4703,8 +4704,9 @@
        !ki = 1
        !if (trim(fe_data_type) == 'clim') ki = 2
        do k = 1, max_fe ! ki, max_fe
-            fed(k) = c1 ! (nM) Lannuzel2007 DFe, 
-                        ! range 0.14-2.6 (nM) van der Merwe 2011
+            fed(k) = 0.4_dbl_kind ! c1 (nM) Lannuzel2007 DFe, 
+                                  ! range 0.14-2.6 (nM) van der Merwe 2011
+                                  ! Tagliabue 2012 (0.4 nM)
             fep(k) = c2 ! (nM) van der Merwe 2011
                         ! (0.6 to 2.9 nM ocean)
        enddo 

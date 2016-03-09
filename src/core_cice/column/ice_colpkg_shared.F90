@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_colpkg_shared.F90 1072 2015-10-29 15:36:55Z njeffery $
+!  SVN:$Id: ice_colpkg_shared.F90 1109 2016-03-07 20:24:24Z njeffery $
 !=========================================================================
 !
 ! flags for the column package
@@ -243,30 +243,30 @@
       ! DOC        : Proteins, EPS, Lipids
       !-----------------------------------------------------------------
       real (kind=dbl_kind), parameter, dimension(max_algae), public :: &
-         algaltype = (/c0, c0, c0/)  ! strongly retained 
+         algaltype = (/p5, p5, p5/)  ! tau_min for both retention and release
 
       real (kind=dbl_kind), parameter, public :: &
          nitratetype  = -c1, & ! purely mobile
-         ammoniumtype =  p5, & ! fast exchange 
+         ammoniumtype =  c1, & ! tau_max for retention and tau_min for release 
          silicatetype = -c1, &
-         dmspptype    =  c0, & ! fast exchange (retained and released)
+         dmspptype    =  p5, & ! 
          dmspdtype    = -c1, & !
-         humtype      =  c0    ! strongly retained   
+         humtype      =  c1    !  
 
       real (kind=dbl_kind), parameter, dimension(max_doc), public :: &
-         doctype   = (/ c0, c0, c0/)
+         doctype   = (/ p5, p5, p5/)
 
       real (kind=dbl_kind), parameter, dimension(max_dic), public :: &
          dictype   = (/-c1/)
 
       real (kind=dbl_kind), parameter, dimension(max_don), public :: &
-         dontype   = (/ c0/)
+         dontype   = (/p5/)
 
       real (kind=dbl_kind), parameter, dimension(max_fe), public :: &
-         fedtype   = (/ c0, c0/)
+         fedtype   = (/p5, p5/)
 
       real (kind=dbl_kind), parameter, dimension(max_fe), public :: &
-         feptype   = (/ c0, c0/) 
+         feptype   = (/ p5, p5/) 
 
       !------------------------------------------------------------
       ! Aerosol order and type should be consistent with order/type 
@@ -276,8 +276,8 @@
       ! 6) dust (2.5-5 micron) 
       !-------------------------------------------------------------
       real (kind=dbl_kind), parameter, dimension(max_aero), public :: &
-         zaerotype   = (/ 0.1_dbl_kind, 1.0_dbl_kind, 0.5_dbl_kind, &
-                          1.0_dbl_kind, 1.0_dbl_kind, 1.0_dbl_kind/) 
+         zaerotype   = (/ c1, c1, c1, &
+                          c1, c1, c1/)
 
       !-----------------------------------------------------------------
       ! Forcing input, history and diagnostic output
