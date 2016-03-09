@@ -340,6 +340,7 @@ class CreateTest(object):
                 if (os.path.exists(preexisting_baseline)):
                     os.remove(preexisting_baseline)
                 shutil.copy2(item, baseline_dir)
+                os.chmod(preexisting_baseline, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
 
         # Always mark as passed unless we hit exception
         return True
