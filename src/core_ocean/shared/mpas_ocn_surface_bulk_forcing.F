@@ -373,8 +373,8 @@ contains
       type(mpas_pool_type),pointer :: tracersSurfaceFluxPool
 
       real (kind=RKIND), dimension(:), pointer :: latentHeatFlux, sensibleHeatFlux, longWaveHeatFluxUp, longWaveHeatFluxDown, &
-                                                  seaIceHeatFlux
-      real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, seaIceSalinityFlux, iceRunoffFlux, riverRunoffFlux
+                                                  seaIceHeatFlux, evaporationFlux, riverRunoffFlux
+      real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, seaIceSalinityFlux, iceRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux, penetrativeTemperatureFlux
 
       real (kind=RKIND), dimension(:), pointer :: snowFlux, rainFlux
@@ -396,6 +396,8 @@ contains
       call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
       call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
       call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
+      call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
+      call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
 
       call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
       call mpas_pool_get_array(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFlux)
@@ -417,6 +419,7 @@ contains
                                                         + seaIceSalinityFlux(iCell) * sflux_factor
       end do
       !$omp end do
+      ! assume that snow comes in at 0 C
 
       ! Surface fluxes of water have an associated heat content, but the coupled system does not account for this
       ! Assume surface fluxes of water have a temperature dependent on the incoming mass flux.
@@ -426,9 +429,11 @@ contains
       if (bulkThicknessFluxOn) then
          !$omp do schedule(runtime)
          do iCell = 1, nCells
+
            ! Accumulate fluxes that use the surface temperature
-           tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
-               + rainFlux(iCell) * tracerGroup(index_temperature_flux,1,iCell) / rho_sw
+            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
+                      + (rainFlux(iCell) + riverRunoffFlux(iCell) + evaporationFlux(iCell)) *  &
+                       tracerGroup(index_temperature_flux,1,iCell) / rho_sw
 
            ! Accumulate fluxes that use the freezing point
            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
@@ -438,8 +443,6 @@ contains
            !    snowFlux
            !    iceRunoffFlux
 
-           tracersSurfaceFluxRunoff(index_temperature_flux, iCell) =  tracersSurfaceFluxRunoff(index_temperature_flux, iCell) &
-               + riverRunoffFlux(iCell)*tracerGroup(index_temperature_flux,1,iCell) / rho_sw
          end do
          !$omp end do
       endif ! bulkThicknessFluxOn
