@@ -14,6 +14,7 @@ $ENV{USE_ESMF_LIB}   = `./xmlquery USE_ESMF_LIB   -value `;
 $ENV{COMP_INTERFACE} = `./xmlquery COMP_INTERFACE -value `;
 $ENV{BUILD_THREADED} = `./xmlquery BUILD_THREADED -value`;
 $ENV{PIO_VERSION} = `./xmlquery PIO_VERSION -value`;
+$ENV{CLM_CONFIG_OPTS} = `./xmlquery CLM_CONFIG_OPTS -value`;
 
 
 sub usage {
