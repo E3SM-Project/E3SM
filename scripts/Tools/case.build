@@ -36,7 +36,7 @@ OR
                         "that we have a case.test_build script. If you are in a test that requires"
                         " multiple builds, provide this flag.")
 
-    parser.add_argument("-s", "--sharedlib-only", action="store_true",
+    parser.add_argument("--sharedlib-only", action="store_true",
                         help="Only build sharedlibs")
 
     parser.add_argument("-m", "--model-only", action="store_true",
@@ -58,7 +58,7 @@ def _main_func(description):
     caseroot, testmode, sharedlib_only, model_only = parse_command_line(sys.argv, description)
     logging.info("calling build.case_build with caseroot=%s and testmode=%s"
                  %(caseroot, testmode))
-    build.case_build(caseroot,case=None,testmode=testmode,
+    build.case_build(caseroot, case=None, testmode=testmode,
                      sharedlib_only=sharedlib_only, model_only=model_only)
 
 if __name__ == "__main__":

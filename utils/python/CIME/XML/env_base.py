@@ -6,6 +6,8 @@ from standard_module_setup import *
 from entry_id import EntryID
 from headers import Headers
 
+logger = logging.getLogger(__name__)
+
 class EnvBase(EntryID):
     def __init__(self, case_root, infile):
         if(os.path.isabs(infile)):

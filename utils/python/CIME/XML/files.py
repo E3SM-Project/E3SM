@@ -6,6 +6,8 @@ from standard_module_setup import *
 from entry_id import EntryID
 from CIME.utils import expect, get_cime_root, get_model
 
+logger = logging.getLogger(__name__)
+
 class Files(EntryID):
     def __init__(self):
         """

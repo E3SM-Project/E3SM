@@ -5,6 +5,8 @@ from standard_module_setup import *
 
 from generic_xml import GenericXML
 
+logger = logging.getLogger(__name__)
+
 class EnvMachSpecific(GenericXML):
 
     def __init__(self, caseroot, infile="env_mach_specific.xml"):

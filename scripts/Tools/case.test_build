@@ -44,7 +44,7 @@ OR
     parser.add_argument("--caseroot", default=os.getcwd(),
                         help="Case directory to build")
 
-    parser.add_argument("-s", "--sharedlib-only", action="store_true",
+    parser.add_argument("--sharedlib-only", action="store_true",
                         help="Only build sharedlibs")
 
     parser.add_argument("-m", "--model-only", action="store_true",
