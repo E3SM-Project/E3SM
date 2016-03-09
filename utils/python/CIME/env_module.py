@@ -103,10 +103,6 @@ class EnvModule(object):
             exec(py_module_code)
 
     def _load_soft_modules(self, modules_to_load):
-        #logging.info("initializing soft")
-        #sh_init_cmd = ("source %s" % self._machine.get_module_system_init_path("sh"))
-        #logging.debug("sh_init_cmd = %s" % sh_init_cmd)
-        #run_cmd(sh_init_cmd)
         logging.info("Loading soft modules")
         sh_mod_cmd = self._machine.get_module_system_cmd_path("sh")
         for action,argument in modules_to_load:
