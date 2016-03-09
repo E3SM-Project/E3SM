@@ -25,9 +25,9 @@ class PET(SystemTestsCommon):
                 self._case.set_value("NTHRDS_%s"%comp,"2")
 
         self._case.flush()
-        run_cmd("case.setup -clean ")
-        run_cmd("case.setup")
-        run_cmd('case.clean_build')
+        run_cmd("./case.setup -clean ")
+        run_cmd("./case.setup")
+        run_cmd('./case.clean_build')
         SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
 
     def run(self):

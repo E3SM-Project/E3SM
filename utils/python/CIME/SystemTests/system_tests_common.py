@@ -33,7 +33,7 @@ class SystemTestsCommon(object):
                          sharedlib_only=sharedlib_only, model_only=model_only)
 
     def run(self):
-        run_cmd("case.run")
+        run_cmd("./case.run")
         return
 
     def report(self):

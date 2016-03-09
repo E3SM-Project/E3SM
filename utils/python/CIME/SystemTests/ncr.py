@@ -46,9 +46,9 @@ class NCR(SystemTestsCommon):
             self._case.flush()
 
 
-            run_cmd("case.setup -clean -testmode")
-            run_cmd("case.setup")
-            run_cmd('case.clean_build')
+            run_cmd("./case.setup -clean -testmode")
+            run_cmd("./case.setup")
+            run_cmd('./case.clean_build')
             SystemTestsCommon.build(self)
             shutil.move("%s/%s.exe"%(exeroot,cime_model),
                         "%s/%s.exe.NCR%s"%(exeroot,cime_model,bld))

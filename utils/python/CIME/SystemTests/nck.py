@@ -40,9 +40,9 @@ class NCK(SystemTestsCommon):
                         self._case.set_value("ROOTPE_%s"%comp, "%s"%int(rootpe/2))
             self._case.flush()
 
-            run_cmd("case.setup -clean -testmode")
-            run_cmd("case.setup")
-            run_cmd('case.clean_build')
+            run_cmd("./case.setup -clean -testmode")
+            run_cmd("./case.setup")
+            run_cmd('./case.clean_build')
             SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
             if (not sharedlib_only):
                 shutil.move("%s/%s.exe"%(exeroot,cime_model),
