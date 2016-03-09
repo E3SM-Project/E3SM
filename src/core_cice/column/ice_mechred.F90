@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_mechred.F90 1071 2015-10-28 22:12:56Z njeffery $
+!  SVN:$Id: ice_mechred.F90 1099 2015-12-12 18:12:30Z eclare $
 !=======================================================================
 
 ! Driver for ice mechanical redistribution (ridging)

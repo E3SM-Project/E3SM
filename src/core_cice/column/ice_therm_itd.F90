@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_itd.F90 1071 2015-10-28 22:12:56Z njeffery $
+!  SVN:$Id: ice_therm_itd.F90 1099 2015-12-12 18:12:30Z eclare $
 !=======================================================================
 !
 ! Thermo calculations after call to coupler, related to ITD:
@@ -1117,6 +1117,7 @@
          rnilyr       , & ! real(nilyr)
          dfresh       , & ! change in fresh
          dfsalt       , & ! change in fsalt
+         vi0tmp       , & ! frzmlt part of frazil
          Ti           , & ! frazil temperature
          qi0new       , & ! frazil ice enthalpy
          Si0new       , & ! frazil ice bulk salinity
@@ -1236,10 +1237,22 @@
       !-----------------------------------------------------------------
 
       if (update_ocn_f) then
-         dfresh = -rhoi*vi0new/dt 
-         dfsalt = ice_ref_salinity*p001*dfresh
-         fresh  = fresh  + dfresh
-         fsalt  = fsalt  + dfsalt
+         if (ktherm <= 1) then
+            dfresh = -rhoi*vi0new/dt 
+            dfsalt = ice_ref_salinity*p001*dfresh
+            fresh  = fresh  + dfresh
+            fsalt  = fsalt  + dfsalt
+         ! elseif (ktherm == 2) the fluxes are added elsewhere
+         endif
+      else ! update_ocn_f = false
+         if (ktherm == 2) then ! return mushy-layer frazil to ocean (POP)
+            vi0tmp = fnew*dt / (rhoi*Lfresh)
+            dfresh = -rhoi*(vi0new - vi0tmp)/dt
+            dfsalt = ice_ref_salinity*p001*dfresh
+            fresh  = fresh + dfresh
+            fsalt  = fsalt + dfsalt
+         ! elseif ktherm==1 do nothing
+         endif
       endif
 
       !-----------------------------------------------------------------

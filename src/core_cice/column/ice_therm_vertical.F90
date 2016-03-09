@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_vertical.F90 1071 2015-10-28 22:12:56Z njeffery $
+!  SVN:$Id: ice_therm_vertical.F90 1105 2016-01-28 17:14:14Z njeffery $
 !=========================================================================
 !
 ! Update ice and snow internal temperatures and compute
@@ -72,13 +72,9 @@
                                   congel,      snoice,    &
                                   mlt_onset,   frz_onset, &
                                   yday,        dsnow,     &
-                                  l_stop,      nu_diag)
-
+                                  l_stop,      nu_diag,   &
+                                  prescribed_ice)
       use ice_therm_mushy, only: temperature_changes_salinity
-!!!AKT: prescribed ice not implemented in ACME
-!!!#ifdef CCSMCOUPLED
-!!!      use ice_prescribed_mod, only: prescribed_ice
-!!!#endif
 
       integer (kind=int_kind), intent(in) :: &
          nilyr   , & ! number of ice layers
@@ -101,7 +97,10 @@
          iage        ! ice age (s)
 
       logical (kind=log_kind), intent(in) :: &
-         tr_pond_topo  !  if .true., use melt pond tracer
+         tr_pond_topo    ! if .true., use melt pond tracer
+
+      logical (kind=log_kind), intent(in), optional :: &
+         prescribed_ice  ! if .true., use prescribed ice instead of computed
 
       real (kind=dbl_kind), dimension (:), intent(inout) :: &
          zqsn    , & ! snow layer enthalpy, zqsn < 0 (J m-3)
@@ -402,13 +401,15 @@
       !-----------------------------------------------------------------
       ! If prescribed ice, set hi back to old values
       !-----------------------------------------------------------------
-!!!AKT: prescribed ice not implemented in ACME
-!!!#ifdef CCSMCOUPLED
-!!!      if (prescribed_ice) then
-!!!            hin    = worki
-!!!            fhocnn = c0             ! for diagnostics
-!!!      endif
-!!!#endif
+
+#ifdef CCSMCOUPLED
+      if (present(prescribed_ice)) then
+          if (prescribed_ice) then
+            hin    = worki
+            fhocnn = c0             ! for diagnostics
+          endif
+      endif
+#endif
 
       !-----------------------------------------------------------------
       ! Compute fluxes of water and salt from ice to ocean.
