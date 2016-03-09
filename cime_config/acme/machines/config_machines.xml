@@ -665,7 +665,7 @@
 	<command name="add">+netcdf-4.3.3.1-gnu5.2-serial</command>
 	<command name="add">+cmake-2.8.12</command>
 	<command name="add">+python-2.7</command>
-	<command name="add">+mvapich2-2.2b-gcc-5.2-psm</command>
+	<command name="add">+mvapich2-2.2b-gcc-5.2</command>
       </modules>
       <modules compiler="intel">
 	<command name="add">+cmake-2.8.12</command>
