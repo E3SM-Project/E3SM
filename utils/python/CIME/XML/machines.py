@@ -233,6 +233,7 @@ class Machines(GenericXML):
         'slurm'
         """
         batch_system = self.get_node("batch_system")
+        expect(len(batch_system) == 1, "Could not find 'batch_system' node in machines xml file")
         return batch_system[0].get("type")
 
     def get_module_system_type(self):
@@ -245,6 +246,7 @@ class Machines(GenericXML):
         'module'
         """
         module_system = self.get_node("module_system")
+        expect(len(module_system) == 1, "Could not find 'module_system' node in machines xml file")
         return module_system[0].get("type")
 
     def get_module_system_init_path(self, lang):
