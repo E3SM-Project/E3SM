@@ -74,7 +74,6 @@ class Case(object):
         if (num_unresolved > 0 and recurse < recurse_limit ):
             for env_file in self._env_entryid_files:
                 result = env_file.get_resolved_value(item)
-                num_unresolved = result.count("$")
                 item = result
             if ("$" not in item):
                 return item
