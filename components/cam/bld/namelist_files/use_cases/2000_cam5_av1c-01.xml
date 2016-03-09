@@ -39,8 +39,8 @@
 <ice_sed_ai>         500.0  </ice_sed_ai>
 <cldfrc_dp1>         0.05D0 </cldfrc_dp1>
 <clubb_ice_deep>     20.e-6 </clubb_ice_deep>
-<clubb_ice_sh>       50.e-6 </clubb_ice_sh
-<clubb_liq_deep>     8.e-6  </clubb_liq_deep  
+<clubb_ice_sh>       50.e-6 </clubb_ice_sh>
+<clubb_liq_deep>     8.e-6  </clubb_liq_deep>  
 <clubb_liq_sh>       10.e-6 </clubb_liq_sh>
 <clubb_C2rt>         0.75D0 </clubb_C2rt>
 <zmconv_c0_lnd>      0.005  </zmconv_c0_lnd>
