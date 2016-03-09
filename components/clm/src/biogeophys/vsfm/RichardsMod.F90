@@ -59,9 +59,9 @@ contains
     ! Positive flux implies flow occurs from upwind to downwind control volume.
     !
     ! !USES:
-    use MultiPhysicsProbConstants, only : GRAVITY_CONSTANT
+    use MultiPhysicsProbConstants, only : GRAVITY_CONSTANT, PRESSURE_REF
     use MultiPhysicsProbConstants, only : COND_DIRICHLET, COND_MASS_FLUX, COND_MASS_RATE
-    use MultiPhysicsProbConstants, only : COND_DIRICHLET_FRM_OTR_GOVEQ
+    use MultiPhysicsProbConstants, only : COND_DIRICHLET_FRM_OTR_GOVEQ, COND_SEEPAGE_BC
     use MultiPhysicsProbConstants, only : FMWH2O
     !
     implicit none
@@ -120,6 +120,8 @@ contains
     PetscReal :: dq_dP_up
     PetscReal :: dq_dP_dn
 
+    PetscBool :: seepage_bc_update
+
     perm_up = dabs(dist_unitvec(1))*perm_vec_up(1) + &
          dabs(dist_unitvec(2))*perm_vec_up(2) + &
          dabs(dist_unitvec(3))*perm_vec_up(3)
@@ -134,8 +136,8 @@ contains
     else
 
        select case(cond_type)
-       case (COND_DIRICHLET, COND_MASS_FLUX)
-          upweight = 1.d0
+       case (COND_DIRICHLET, COND_MASS_FLUX, COND_SEEPAGE_BC)
+          upweight = 0.d0
           Dq       = perm_dn/(dist_up + dist_dn)
        case (COND_DIRICHLET_FRM_OTR_GOVEQ)
           upweight = dist_up/(dist_up + dist_dn)
@@ -158,12 +160,20 @@ contains
 
     dist_gravity = (dist_up + dist_dn)*udist_dot_ugrav
 
-    den_ave      = upweight*den_up + (1.d0-upweight)*den_dn
+    den_ave      = upweight*den_up + (1.d0 - upweight)*den_dn
 
     ! gravityterm = (rho*g*z)
     gravityterm  = (upweight*den_up + (1.d0 - upweight)*den_dn)*FMWH2O*dist_gravity;
 
     dphi         = Pres_up - Pres_dn + gravityterm;
+
+    seepage_bc_update = PETSC_FALSE
+    if (.not.(internal_conn) .and. (cond_type == COND_SEEPAGE_BC)) then
+       if (dphi > 0.d0 .and. Pres_up <= PRESSURE_REF) then
+          seepage_bc_update = PETSC_TRUE
+       endif
+    endif
+    if (seepage_bc_update) dphi = 0.d0
 
     if (dphi>=0.d0) then
        ukvr = kr_up/vis_up
@@ -191,6 +201,8 @@ contains
 
        dphi_dP_up           =  1.d0 + dgravityterm_dden_up*dden_dP_up;
        dphi_dP_dn           = -1.d0 + dgravityterm_dden_dn*dden_dP_dn;
+
+       if (seepage_bc_update) dphi_dP_dn = 0.d0
 
        if (dphi>=0) then
           dukvr_dP_up = dkr_dP_up/vis_up - kr_up/(vis_up*vis_up)*dvis_dP_up

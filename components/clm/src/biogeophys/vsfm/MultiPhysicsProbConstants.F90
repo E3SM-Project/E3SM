@@ -50,6 +50,7 @@ module MultiPhysicsProbConstants
   PetscInt, parameter, public :: COND_DIRICHLET_FRM_OTR_GOVEQ      = 506
   PetscInt, parameter, public :: COND_HEAT_FLUX                    = 507
   PetscInt, parameter, public :: COND_DARCY_RATE                   = 508
+  PetscInt, parameter, public :: COND_SEEPAGE_BC                   = 509
 
   !
   PetscInt, parameter, public :: VAR_XI                            = 601

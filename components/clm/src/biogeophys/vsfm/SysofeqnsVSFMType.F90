@@ -155,6 +155,8 @@ contains
     use MultiPhysicsProbConstants       , only : COND_BC
     use MultiPhysicsProbConstants       , only : COND_SS
     use MultiPhysicsProbConstants       , only : COND_NULL
+    use MultiPhysicsProbConstants       , only : COND_SEEPAGE_BC
+    use MultiPhysicsProbConstants       , only : PRESSURE_REF
     use GoveqnRichardsODEPressureType   , only : goveqn_richards_ode_pressure_type
     use EOSWaterMod                     , only : DENSITY_TGDPB01
     use SystemOfEquationsBaseType       , only : SOESetMeshesOfGoveqns
@@ -308,6 +310,23 @@ contains
        ss%value(:) = 0.d0
        call ConditionListAddCondition(goveq_richards_pres%source_sinks, ss)
        nullify(ss)
+
+       bc              => ConditionNew()
+       bc%name         = 'Seepage_bc'
+       bc%units        = 'Pa'
+       bc%itype        = COND_SEEPAGE_BC
+       bc%region_itype = SOIL_TOP_CELLS
+       allocate(bc%conn_set)
+       call MeshCreateConnectionSet(  &
+            goveq_richards_pres%mesh, &
+            bc%region_itype,          &
+            bc%conn_set,              &
+            bc%ncells)
+       allocate(bc%value(bc%ncells))
+       bc%value(:) = PRESSURE_REF
+       call ConditionListAddCondition(goveq_richards_pres%boundary_conditions, bc)
+       nullify(bc)
+
     endif
 
     ! Allocate memory for aux vars
