@@ -9,7 +9,7 @@
 	<add_executable source="metis" dest="metis"/>
 
 	<add_link source_path="utility_scripts" source="make_graph_file.py" dest="make_graph_file.py"/>
-	<add_link source_path="mesh_database" source="mesh.QU.642.151008.nc" dest="base_mesh.nc"/>
+	<add_link source_path="mesh_database" source="mesh.QU.960km.151026.nc" dest="base_mesh.nc"/>
 
 	<namelist name="namelist.test" mode="forward"/>
 
