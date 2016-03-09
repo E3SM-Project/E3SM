@@ -171,9 +171,12 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     stat = proc.wait()
 
     if (verbose or logger.level == logging.DEBUG):
-        logger.info("  stat: %d\n" % stat)
-        logger.info("  output: %s\n" % output)
-        logger.info("  errput: %s\n" % errput)
+        if stat != 0:
+            logger.info("  stat: %d\n" % stat)
+        if output:
+            logger.info("  output: %s\n" % output)
+        if errput:
+            logger.info("  errput: %s\n" % errput)
 
     if (ok_to_fail):
         return stat, output, errput
