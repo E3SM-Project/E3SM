@@ -618,13 +618,11 @@
          <DESC>ANL/LCRC Linux Cluster</DESC>
          <NODENAME_REGEX>blogin</NODENAME_REGEX>
          <TESTS>acme_integration,acme_developer</TESTS>
-         <COMPILERS>gnu,intel</COMPILERS><!--,pgi,intel,nag</COMPILERS>-->
-         <MPILIBS>mvapich</MPILIBS><!--,mpich,openmpi,mpi-serial</MPILIBS>-->
+         <COMPILERS>gnu,intel</COMPILERS>
+         <MPILIBS>mvapich</MPILIBS>
          <CESMSCRATCHROOT>/lcrc/project/ACME/$USER/acme_scratch</CESMSCRATCHROOT>
 	 <RUNDIR>/lcrc/project/ACME/sarich/acme_scratch/$CASE/run</RUNDIR>
 	 <EXEROOT>/lcrc/project/ACME/sarich/acme_scratch/$CASE/bld</EXEROOT>
-         <!--<RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>-->
-         <!--<EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>-->
          <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
          <DOUT_S_ROOT>/lcrc/project/ACME/$USER/archive/$CASE</DOUT_S_ROOT>
