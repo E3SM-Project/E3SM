@@ -55,7 +55,6 @@ class EnvModule(object):
         for env_name, env_value in envs_to_set:
             # Let bash do the work on evaluating and resolving env_value
             os.environ[env_name] = run_cmd("echo %s" % env_value)
-        print os.environ
 
     # Private API
 
