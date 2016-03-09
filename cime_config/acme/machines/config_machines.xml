@@ -618,15 +618,17 @@
          <DESC>ANL/LCRC Linux Cluster</DESC>
          <NODENAME_REGEX>blogin</NODENAME_REGEX>
          <TESTS>acme_integration,acme_developer</TESTS>
-         <COMPILERS>gnu</COMPILERS><!--,pgi,intel,nag</COMPILERS>-->
+         <COMPILERS>gnu,intel</COMPILERS><!--,pgi,intel,nag</COMPILERS>-->
          <MPILIBS>mvapich</MPILIBS><!--,mpich,openmpi,mpi-serial</MPILIBS>-->
-         <CESMSCRATCHROOT>/lcrc/project/$PROJECT/$USER/acme_scratch</CESMSCRATCHROOT>
-         <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-         <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/lcrc/project/ACME/$USER/acme_scratch</CESMSCRATCHROOT>
+	 <RUNDIR>/lcrc/project/ACME/sarich/acme_scratch/$CASE/run</RUNDIR>
+	 <EXEROOT>/lcrc/project/ACME/sarich/acme_scratch/$CASE/bld</EXEROOT>
+         <!--<RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>-->
+         <!--<EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>-->
          <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
          <DIN_LOC_ROOT_CLMFORC>/home/ccsm-data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-         <DOUT_S_ROOT>/lcrc/project/$PROJECT/$USER/archive/$CASE</DOUT_S_ROOT>
-         <DOUT_L_MSROOT>/lcrc/project/$PROJECT/$USER/archive/$CASE</DOUT_L_MSROOT>
+         <DOUT_S_ROOT>/lcrc/project/ACME/$USER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_MSROOT>/lcrc/project/ACME/$USER/archive/$CASE</DOUT_L_MSROOT>
          <CCSM_BASELINE>/lcrc/group/earthscience/acme_baselines</CCSM_BASELINE>
          <CCSM_CPRNC>/home/ccsm-data/tools/cprnc</CCSM_CPRNC>
          <OS>LINUX</OS>
@@ -634,7 +636,7 @@
          <BATCHSUBMIT>qsub</BATCHSUBMIT>
          <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>acme</SUPPORTED_BY>
-         <GMAKE_J>8</GMAKE_J>
+         <GMAKE_J>4</GMAKE_J>
          <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 	 <PES_PER_NODE>16</PES_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
@@ -655,18 +657,40 @@
          </mpirun>
     <module_system type="soft">
       <init_path lang="csh">/etc/profile.d/a_softenv.csh</init_path>
-      <cmd_path lang="csh">soft</cmd_path>
       <init_path lang="sh">/etc/profile.d/a_softenv.sh</init_path>
-      <cmd_path lang="sh">soft</cmd_path>
-      <modules>
+      <cmd_path lang="csh">/soft/softenv/1.6.2/bin/soft-dec csh</cmd_path>
+      <cmd_path lang="sh">/soft/softenv/1.6.2/bin/soft-dec sh</cmd_path>
+      <modules compiler="gnu">
 	<command name="add">+gcc-5.2</command>
 	<command name="add">+netcdf-4.3.3.1-gnu5.2-serial</command>
 	<command name="add">+cmake-2.8.12</command>
 	<command name="add">+python-2.7</command>
 	<command name="add">+mvapich2-2.2b-gcc-5.2-psm</command>
       </modules>
+      <modules compiler="intel">
+	<command name="add">+cmake-2.8.12</command>
+	<command name="add">+python-2.7</command>
+	<command name="add">+intel-15.0</command>
+	<command name="add">+pnetcdf-1.6.1-mvapich2-2.2a-intel-15.0</command>
+	<command name="add">+mvapich2-2.2b-intel-15.0</command>
+	<command name="add">+mkl-11.2.1</command>
+      </modules>
     </module_system>
-    <environment_variables>
+    <environment_variables compiler="gnu">
+      <env name="NETCDFROOT">/soft/netcdf_serial/4.3.3.1/gnu-5.2</env>
+      <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm</env>
+      <env name="LD_LIBRARY_PATH">/soft/mvapich2/2.2b_psm/gnu-5.2/lib:/soft/netcdf_serial/4.3.3.1/gnu-5.2/lib:/soft/gcc/5.2.0/lib64:/soft/gcc/5.2.0/lib/gcc/x86_64-redhat-linux/5.2.0:/soft/python/2.7.3/lib:/soft/gcc/4.4.2/lib64:/soft/gcc/4.4.2/lib:/soft/lcrc/lib:/usr/lib64:/usr/lib:/soft/mvapich2/1.4-gcc-4.4.2/lib:/soft/tau/2.20.2/tau_latest/x86_64/lib</env>
+    </environment_variables>
+    <environment_variables compiler="intel">
+      <env name="NETCDFROOT">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1</env>
+      <env name="NETCDF_INCLUDES">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/include</env>
+      <env name="NETCDF_LIBS">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/lib</env>
+      <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/intel-15.0.1/mvapich2-2.2a-intel-15.0</env>
+      <env name="PATH">$NETCDFROOT/bin:$PATH</env>
+      <env name="LD_LIBRARY_PATH">$NETCDFROOT/lib:/soft/intel/15.0.1/mkl/lib/intel64:$LD_LIBRARY_PATH</env>
+    </environment_variables>
+
+    <environment_variables compiler="gnu">
       <env name="NETCDFROOT">/soft/netcdf_serial/4.3.3.1/gnu-5.2</env>
       <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm</env>
     </environment_variables>
