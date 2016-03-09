@@ -6,7 +6,7 @@ Module dyn_comp
   use time_mod, only : TimeLevel_t, se_nsplit=>nsplit
   use hybvcoord_mod, only : hvcoord_t
   use hybrid_mod, only : hybrid_t
-  use thread_mod, only: nthreads, omp_get_max_threads, omp_get_thread_num
+  use thread_mod, only: nthreads, vthreads, omp_get_max_threads, omp_get_thread_num
   use perf_mod, only: t_startf, t_stopf
   use cam_logfile, only : iulog
   use time_manager, only: is_first_step
@@ -152,9 +152,12 @@ CONTAINS
        write(iulog,*) " "
     endif
 #ifdef COLUMN_OPENMP
+    call omp_set_nested(.true.)
+    nthreads = nthreads / vthreads
     if(par%masterproc) then
        write(iulog,*) " "
-       write(iulog,*) "dyn_init1: using OpenMP within element instead of across elements"
+       write(iulog,*) "dyn_init1: using OpenMP across and within elements"
+       write(iulog,*) "dyn_init1: nthreads=",nthreads,"vthreads=",vthreads
        write(iulog,*) " "
     endif
 #endif

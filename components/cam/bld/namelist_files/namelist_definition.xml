@@ -5614,6 +5614,12 @@ Default: Set by build-namelist.
 Default: Set by build-namelist.
 </entry>
 
+<entry id="vthreads" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of vertical threads.
+Default: 1.
+</entry>
+
 
 
 <!-- CAM I/O  -->
