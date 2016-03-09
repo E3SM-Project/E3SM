@@ -147,17 +147,23 @@ module li_advection
       real (kind=RKIND), dimension(:,:), pointer :: &
            layerNormalVelocity,   & ! normal component of velocity on cell edges at layer midpoints
            layerThickness,        & ! thickness of each layer
+           layerThicknessOld,     & ! old layer thickness
            layerThicknessEdge       ! layer thickness on upstream edge of cell
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
-           advectedTracers          ! values of advected tracers
+           advectedTracers,       & ! values of advected tracers
+           advectedTracersOld       ! old values of advected tracers
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            surfaceTracers,        & ! tracer values for new ice at upper surface
            basalTracers             ! tracer values for new ice at lower surface
 
       type (field3DReal), pointer :: &
-           advectedTracersField     ! scratch field containing values of advected tracers
+           advectedTracersField,  & ! scratch field containing values of advected tracers
+           advectedTracersOldField  ! scratch field containing old values of advected tracers
+
+      type (field2DReal), pointer :: &
+           layerThicknessOldField   ! scratch field containing old values of layer thickness
 
       type (field2DReal), pointer :: &
            surfaceTracersField,   & ! scratch field containing values of surface tracers
@@ -180,7 +186,7 @@ module li_advection
       integer :: err_tmp
 
       !WHL - debug
-      integer, dimension(:), pointer :: indexToCellID
+      integer, dimension(:), pointer :: indexToCellID, indexToEdgeID
       integer, pointer :: nCells
       integer, pointer :: config_stats_cell_ID
       integer :: iEdge, iEdgeOnCell
@@ -245,15 +251,24 @@ module li_advection
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
+      call mpas_pool_get_array(meshPool, 'indexToEdgeID', indexToEdgeID)
       call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
 
       ! get fields from the scratch pool
-      ! Note: The old/advectedTracersNew fields are scratch fields containing only the tracers that need to be advected.
-      !       For example, they will contain temperature or enthalpy (depending on config_thermal_solver) but not both.
+      ! Note: The advectedTracers field is a scratch field containing only the tracers that need to be advected.
+      !       For example, it contains temperature or enthalpy (depending on config_thermal_solver) but not both.
 
       call mpas_pool_get_field(scratchPool, 'workTracerLevelCell', advectedTracersField)
       call mpas_allocate_scratch_field(advectedTracersField, .true.)
       advectedTracers => advectedTracersField % array
+
+      call mpas_pool_get_field(scratchPool, 'workLevelCell', layerThicknessOldField)
+      call mpas_allocate_scratch_field(layerThicknessOldField, .true.)
+      layerThicknessOld => layerThicknessOldField % array
+
+      call mpas_pool_get_field(scratchPool, 'workTracerLevelCell2', advectedTracersOldField)
+      call mpas_allocate_scratch_field(advectedTracersOldField, .true.)
+      advectedTracersOld => advectedTracersOldField % array
 
       call mpas_pool_get_field(scratchPool, 'workTracerCell', surfaceTracersField)
       call mpas_allocate_scratch_field(surfaceTracersField, .true.)
@@ -318,17 +333,24 @@ module li_advection
                        iCell, indexToCellID(iCell), thickness(iCell), advectedTracers(1,1,iCell)
                   do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(iEdgeOnCell,iCell)
-                     write(stdoutUnit,*) 'iEdge, layerNormalVelocity:', iEdge, layerNormalVelocity(1,iEdge)
+                     write(stdoutUnit,*) 'iEdge (local, global), layerNormalVelocity:', iEdge, indexToEdgeID(iEdge), layerNormalVelocity(1,iEdge)
                   enddo
                endif
             enddo
          endif
 
+         ! copy old (input) values of layer thickness and tracers to scratch arrays
+         layerThicknessOld(:,:) = layerThickness(:,:)
+         advectedTracersOld(:,:,:) = advectedTracers(:,:,:)
+
+         ! compute new values of layer thickness and tracers
          call advect_thickness_tracers_upwind(&
               dt,                      &
               meshPool,                &
               layerNormalVelocity,     &
-              layerThicknessEdge,      & 
+              layerThicknessEdge,      &
+              layerThicknessOld,       &
+              advectedTracersOld,      &
               layerThickness,          &
               advectedTracers,         &
               err)
@@ -337,9 +359,9 @@ module li_advection
             do iCell = 1, nCells
                if (indexToCellID(iCell) == config_stats_cell_ID) then
                   write(stdoutUnit,*) ' '
-                  write(stdoutUnit,*) 'After thickness advection, iCell, new layer thickness, layer 1 tracer:'
+                  write(stdoutUnit,*) 'After thickness advection, iCell (local, global), new layer thickness, tracer 1:'
                   do k = 1, nVertLevels
-                     write(stdoutUnit,*) iCell, layerThickness(k,iCell), advectedTracers(1,k,iCell)
+                     write(stdoutUnit,*) iCell, indexToCellID(iCell), layerThickness(k,iCell), advectedTracers(1,k,iCell)
                   enddo
                endif
             enddo
@@ -396,6 +418,18 @@ module li_advection
          call vertical_remap(thickness, cellMask, meshPool, layerThickness, advectedTracers, err_tmp)
          err = ior(err, err_tmp)
 
+         if (config_print_thickness_advection_info) then
+            do iCell = 1, nCells
+               if (indexToCellID(iCell) == config_stats_cell_ID) then
+                  write(stdoutUnit,*) ' '
+                  write(stdoutUnit,*) 'After vertical remap, iCell, new layer thickness, tracer 1:'
+                  do k = 1, nVertLevels
+                     write(stdoutUnit,*) iCell, layerThickness(k,iCell), advectedTracers(1,k,iCell)
+                  enddo
+               endif
+            enddo
+         endif
+
          if (advectTracers) then
 
             ! Copy the advectedTracersNew values into the thermal tracer arrays
@@ -424,6 +458,10 @@ module li_advection
 
       ! clean up
       call mpas_deallocate_scratch_field(advectedTracersField, .true.)
+      call mpas_deallocate_scratch_field(advectedTracersOldField, .true.)
+      call mpas_deallocate_scratch_field(layerThicknessOldField, .true.)
+      call mpas_deallocate_scratch_field(basalTracersField, .true.)
+      call mpas_deallocate_scratch_field(surfaceTracersField, .true.)
 
       ! === error check
       if (err > 0) then
@@ -917,10 +955,12 @@ module li_advection
     subroutine advect_thickness_tracers_upwind(&
          dt,                     &
          meshPool,               &
-         layerNormalVelocity,         &
+         layerNormalVelocity,    &
          layerThicknessEdge,     &
-         layerThickness,         &
-         tracers,                &
+         layerThicknessOld,      &
+         tracersOld,             &
+         layerThicknessNew,      &
+         tracersNew,             &
          err,                    &
          advectTracersIn)
 
@@ -944,17 +984,17 @@ module li_advection
            advectTracersIn       !< Input: if true, then advect tracers as well as thickness
                                  !  Default (if not passed in) is to advect tracers
 
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+           layerThicknessOld     !< Input: layer thickness
+
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: &
+           tracersOld            !< Input: tracer values
+
       !-----------------------------------------------------------------
       !
       ! input/output variables
       !
       !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:,:), intent(inout) :: &
-           layerThickness        !< Input/output: layer thickness
-
-      real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
-           tracers               !< Input/output: tracer values
 
       !-----------------------------------------------------------------
       !
@@ -962,8 +1002,14 @@ module li_advection
       !
       !-----------------------------------------------------------------
 
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+           layerThicknessNew     !< Output: layer thickness
+
+      real (kind=RKIND), dimension(:,:,:), intent(out) :: &
+           tracersNew            !< Output: tracer values
+
       integer, intent(out) :: &
-           err                     !< Output: error flag
+           err                   !< Output: error flag
 
       !-----------------------------------------------------------------
       !
@@ -1038,7 +1084,7 @@ module li_advection
          advectTracers = .true.
       endif
 
-      nTracers = size(tracers,1)
+      nTracers = size(tracersOld,1)
 
       ! allocate temporary arrays
       allocate(tracersEdge(nTracers))
@@ -1070,8 +1116,8 @@ module li_advection
          initVolumeSum = 0.0_RKIND
          initEnergySum = 0.0_RKIND
          do iCell = 1, nCellsSolve
-            initVolumeSum = initVolumeSum + areaCell(iCell) * sum(layerThickness(:,iCell))
-            initEnergySum = initEnergySum + areaCell(iCell) * sum(layerThickness(:,iCell)*tracers(1,:,iCell))
+            initVolumeSum = initVolumeSum + areaCell(iCell) * sum(layerThicknessOld(:,iCell))
+            initEnergySum = initEnergySum + areaCell(iCell) * sum(layerThicknessOld(:,iCell)*tracersOld(1,:,iCell))
          enddo
 
       endif
@@ -1085,9 +1131,9 @@ module li_advection
          invAreaCell = 1.0_RKIND / areaCell(iCell)
 
          if (indexToCellID(iCell) == config_stats_cell_ID .and. config_print_thickness_advection_info) then
-            write(stdoutUnit,*) 'In advect_thickness_tracer, iCell =', iCell
+            write(stdoutUnit,*) 'In advect_thickness_tracer, iCell (local, global) =', iCell, indexToCellID(iCell)
             write(stdoutUnit,*)
-            write(stdoutUnit,*) 'k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge, thicknessFluxEdge, thicknessTendency' 
+            write(stdoutUnit,*) 'k, iEdgeOnCell, layerNormalVelocity, layerThicknessEdge, thicknessFluxEdge, thicknessTendency, thicknessTracerTendency:' 
          endif
 
          ! loop over layers
@@ -1117,8 +1163,8 @@ module li_advection
                   ! Assign the upwind tracer values to each edge
                   ! Note: layerThicknessEdge is passed in and does not need to be computed here
 
-                  tracersEdge(:) = max(velSign * tracers(:,k,iCell1),   &
-                                       velSign * (-1.0_RKIND) * tracers(:,k,iCell2))
+                  tracersEdge(:) = max(velSign * tracersOld(:,k,iCell1),   &
+                                       velSign * (-1.0_RKIND) * tracersOld(:,k,iCell2))
                
                   thicknessTracerTendency(:) = thicknessTracerTendency(:) &
                                              + edgeSignOnCell(iEdgeOnCell,iCell) * thicknessFluxEdge * invAreaCell * tracersEdge(:)
@@ -1127,7 +1173,8 @@ module li_advection
 
                !WHL - debug
                if (indexToCellID(iCell) == config_stats_cell_ID .and. k==1 .and. config_print_thickness_advection_info) then
-                  write(stdoutUnit,*) k, iEdgeOnCell, layerNormalVelocity(k,iEdge), layerThicknessEdge(k,iEdge), thicknessFluxEdge, thicknessTendency 
+                  write(stdoutUnit,*) k, iEdgeOnCell, layerNormalVelocity(k,iEdge), layerThicknessEdge(k,iEdge), &
+                       thicknessFluxEdge, thicknessTendency, thicknessTracerTendency(1)
                endif
 
             enddo      ! iEdgeOnCell
@@ -1137,21 +1184,21 @@ module li_advection
             if (advectTracers) then
 
                ! new thickness*tracer products
-               newThicknessTracers(:) = layerThickness(k,iCell)*tracers(:,k,iCell) + thicknessTracerTendency(:) * dt
+               newThicknessTracers(:) = layerThicknessOld(k,iCell)*tracersOld(:,k,iCell) + thicknessTracerTendency(:) * dt
 
                ! new layer thickness
-               layerThickness(k,iCell) = layerThickness(k,iCell) + thicknessTendency * dt
+               layerThicknessNew(k,iCell) = layerThicknessOld(k,iCell) + thicknessTendency * dt
 
                ! new tracers
-               if (layerThickness(k,iCell) > 0.0_RKIND) then
-                  tracers(:,k,iCell) = newThicknessTracers(:) / layerThickness(k,iCell)
+               if (layerThicknessNew(k,iCell) > 0.0_RKIND) then
+                  tracersNew(:,k,iCell) = newThicknessTracers(:) / layerThicknessNew(k,iCell)
                else
-                  tracers(:,k,iCell) = 0.0_RKIND
+                  tracersNew(:,k,iCell) = 0.0_RKIND
                endif
 
             else   ! advecting thickness only
 
-               layerThickness(k,iCell) = layerThickness(k,iCell) + thicknessTendency * dt
+               layerThicknessNew(k,iCell) = layerThicknessOld(k,iCell) + thicknessTendency * dt
 
             endif  ! advectTracers
 
@@ -1166,8 +1213,8 @@ module li_advection
          finalVolumeSum = 0.0_RKIND
          finalEnergySum = 0.0_RKIND
          do iCell = 1, nCellsSolve
-            finalVolumeSum = finalVolumeSum + areaCell(iCell) * sum(layerThickness(:,iCell))
-            finalEnergySum = finalEnergySum + areaCell(iCell) * sum(layerThickness(:,iCell)*tracers(1,:,iCell))
+            finalVolumeSum = finalVolumeSum + areaCell(iCell) * sum(layerThicknessNew(:,iCell))
+            finalEnergySum = finalEnergySum + areaCell(iCell) * sum(layerThicknessNew(:,iCell)*tracersNew(1,:,iCell))
          enddo
 
          if (config_print_thickness_advection_info) then
