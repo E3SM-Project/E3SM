@@ -583,10 +583,8 @@ contains
                call mpas_pool_get_array(tracersSurfaceFluxPool, trim(modifiedGroupName), tracerGroupSurfaceFlux)
 
                ! Get surface flux due to river runoff array
-               if (trim(groupItr % memberName) == 'activeTracers') then
-                  modifiedGroupName = trim(groupItr % memberName) // "SurfaceFluxRunoff"
-                  call mpas_pool_get_array(tracersSurfaceFluxPool, trim(modifiedGroupName), tracerGroupSurfaceFluxRunoff)
-               endif
+               modifiedGroupName = trim(groupItr % memberName) // "SurfaceFluxRunoff"
+               call mpas_pool_get_array(tracersSurfaceFluxPool, trim(modifiedGroupName), tracerGroupSurfaceFluxRunoff)
 
                !
                ! initialize tracer surface flux and tendency to zero.
