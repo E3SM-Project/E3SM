@@ -13,7 +13,6 @@ class NCK(SystemTestsCommon):
         initialize a test object
         """
         SystemTestsCommon.__init__(self, caseroot, case)
-        self._test_requires_test_build = True
 
     def build(self, sharedlib_only=False, model_only=False):
         exeroot = self._case.get_value("EXEROOT")
