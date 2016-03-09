@@ -31,11 +31,6 @@ OR
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
                         help="Case directory to build")
 
-    parser.add_argument("-t", "--testmode", action="store_true",
-                        help="Some of the tests require multiple model builds, to accommodate "
-                        "that we have a case.test_build script. If you are in a test that requires"
-                        " multiple builds, provide this flag.")
-
     parser.add_argument("--sharedlib-only", action="store_true",
                         help="Only build sharedlibs")
 
@@ -55,10 +50,10 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    caseroot, testmode, sharedlib_only, model_only = parse_command_line(sys.argv, description)
+    caseroot, sharedlib_only, model_only = parse_command_line(sys.argv, description)
     logging.info("calling build.case_build with caseroot=%s and testmode=%s"
                  %(caseroot, testmode))
-    build.case_build(caseroot, case=None, testmode=testmode, sharedlib_only=sharedlib_only,
+    build.case_build(caseroot, case=None, testmode=False, sharedlib_only=sharedlib_only,
                      model_only=model_only)
 
 if __name__ == "__main__":

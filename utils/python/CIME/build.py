@@ -166,10 +166,6 @@ def case_build(caseroot, case=None, testmode=False, sharedlib_only=False, model_
     case = Case() if case is None else case
     testcase = case.get_value("TESTCASE")
     cimeroot = case.get_value("CIMEROOT")
-    expect(not (testcase is not None and
-                os.path.exists("%s/scripts/Testing/Testcases/%s_build.csh" %
-                               (cimeroot, testcase)) and not testmode),
-           "%s build must be invoked via case.testbuild script" % testcase)
 
     if not sharedlib_only:
         check_all_input_data(case)
