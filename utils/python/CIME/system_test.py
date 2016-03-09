@@ -400,8 +400,6 @@ class SystemTest(object):
     def _setup_phase(self, test):
     ###########################################################################
         test_dir  = self._get_test_dir(test)
-        os.symlink(os.path.join(self._cime_root, "scripts", "Tools", "case.test_build"),
-                   os.path.join(test_dir, "case.test_build"))
 
         return self._shell_cmd_for_phase(test, "./case.setup", SETUP_PHASE, from_dir=test_dir)
 
@@ -469,13 +467,13 @@ class SystemTest(object):
     def _sharedlib_build_phase(self, test):
     ###########################################################################
         test_dir = self._get_test_dir(test)
-        return self._shell_cmd_for_phase(test, "./case.test_build --sharedlib-only", SHAREDLIB_BUILD_PHASE, from_dir=test_dir)
+        return self._shell_cmd_for_phase(test, "./case.build --sharedlib-only", SHAREDLIB_BUILD_PHASE, from_dir=test_dir)
 
     ###########################################################################
     def _model_build_phase(self, test):
     ###########################################################################
         test_dir = self._get_test_dir(test)
-        return self._shell_cmd_for_phase(test, "./case.test_build --model-only", MODEL_BUILD_PHASE, from_dir=test_dir)
+        return self._shell_cmd_for_phase(test, "./case.build --model-only", MODEL_BUILD_PHASE, from_dir=test_dir)
 
     ###########################################################################
     def _run_phase(self, test):
@@ -680,7 +678,7 @@ class SystemTest(object):
 
             template_file = os.path.join(python_libs_root, "cs.submit.template")
             template = open(template_file, "r").read()
-            build_cmd = "./*.test_build" if self._no_build else ":"
+            build_cmd = "./*.build" if self._no_build else ":"
             run_cmd = "./*.test" if self._no_batch else "./*.submit"
             template = template.replace("<BUILD_CMD>",
                                         build_cmd).replace("<RUN_CMD>",

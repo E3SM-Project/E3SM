@@ -68,18 +68,19 @@ class Case(object):
         logging.info("Not able to retreive value for item '%s'" % item)
 
 
-    def get_resolved_value(self, item):
-        # TODO HACK - surely there is a better way?
+    def get_resolved_value(self, item, recurse=0):
         num_unresolved = item.count("$")
-        if (num_unresolved > 0):
+        recurse_limit = 10
+        if (num_unresolved > 0 and recurse < recurse_limit ):
             for env_file in self._env_entryid_files:
                 result = env_file.get_resolved_value(item)
-                if (result.count("$") < num_unresolved):
-                    num_unresolved = result.count("$")
-                    item = result
-                    if ("$" not in item):
-                        return item
+                item = result
+            if ("$" not in item):
+                return item
+            else:
+                self.get_resolved_value(item,recurse=recurse+1)
 
+        if(recurse >= recurse_limit):
             logging.warning("Not able to fully resolve item '%s'" % item)
 
         return item

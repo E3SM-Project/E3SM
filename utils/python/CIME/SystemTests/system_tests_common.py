@@ -29,11 +29,11 @@ class SystemTestsCommon(object):
                         os.path.join(lockedfiles, "env_run.orig.xml"))
 
     def build(self, sharedlib_only=False, model_only=False):
-        build.case_build(self._caseroot, case=self._case, testmode=True,
+        build.case_build(self._caseroot, case=self._case,
                          sharedlib_only=sharedlib_only, model_only=model_only)
 
     def run(self):
-        run_cmd("case.run")
+        run_cmd("./case.run")
         return
 
     def report(self):

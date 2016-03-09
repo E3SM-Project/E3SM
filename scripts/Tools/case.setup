@@ -273,6 +273,15 @@ if (! $clean ) {
 	my $outputbatchscript = "$xmlvars{'CASEROOT'}/case.run";
 	$batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
 
+	if(defined $xmlvars{'TESTCASE'}){
+	    my $testscript = $xmlvars{CIMEROOT}."/scripts/Testing/Testcases/".
+		$xmlvars{TESTCASE}."_script";
+	    if(! -e $testscript){
+		my $inputbatchscript  = "$xmlvars{'MACHDIR'}/python.case.test";
+		my $outputbatchscript = "$xmlvars{'CASEROOT'}/case.test";
+		$batchmaker->makeBatchScript($inputbatchscript, $outputbatchscript);
+	    }
+	}
 
 	$logger->info("Creating batch script case.st_archive");
 	$batchmaker->overrideNodeCount(1);

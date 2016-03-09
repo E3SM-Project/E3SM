@@ -147,7 +147,7 @@ def post_build(case, logs):
     shutil.copy("env_build.xml", "LockedFiles")
 
 ###############################################################################
-def case_build(caseroot, case=None, testmode=False, sharedlib_only=False, model_only=False):
+def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
 ###############################################################################
     t1 = time.time()
 
@@ -164,12 +164,7 @@ def case_build(caseroot, case=None, testmode=False, sharedlib_only=False, model_
            "ERROR: must invoke case.setup script before calling build script ")
 
     case = Case() if case is None else case
-    testcase = case.get_value("TESTCASE")
     cimeroot = case.get_value("CIMEROOT")
-    expect(not (testcase is not None and
-                os.path.exists("%s/scripts/Testing/Testcases/%s_build.csh" %
-                               (cimeroot, testcase)) and not testmode),
-           "%s build must be invoked via case.testbuild script" % testcase)
 
     if not sharedlib_only:
         check_all_input_data(case)
@@ -299,32 +294,16 @@ def case_build(caseroot, case=None, testmode=False, sharedlib_only=False, model_
     if not sharedlib_only:
         preview_namelists(case=case)
 
-    build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib, 
-                 sharedlibroot, nthrds_cpl, nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, 
+    build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib,
+                 sharedlibroot, nthrds_cpl, nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn,
                  nthrds_glc, nthrds_wav, nthrds_rof, ninst_build, smp_value)
 
     t2 = time.time()
     logs = []
 
     if not model_only:
-        logs = build_libraries(exeroot, caseroot, cimeroot, libroot, mpilib, lid, machines_file)
-        if sharedlib_only and comp_lnd == "clm" and not "clm4_0" in clm_config_opts:
-            logging.info("         - Building clm4_5/clm5_0 Library ")
-            esmfdir = "esmf" if use_esmf_lib == "TRUE" else "noesmf"
-            sharedpath = os.environ["SHAREDPATH"]
-            bldroot = os.path.join(sharedpath, comp_interface, esmfdir)
-            objdir = os.path.join(bldroot, "lnd", "obj")
-            libdir = os.path.join(bldroot, "lib")
-            file_build = os.path.join(exeroot, "lnd.bldlog.%s" %  lid)
-            config_lnd_dir = os.path.dirname(case.get_value("CONFIG_LND_FILE"))
-            results = []
-            for ndir in [bldroot, objdir, libdir]:
-                if(not os.path.isdir(ndir)):
-                    os.makedirs(ndir)
-
-            _build_model_thread(config_lnd_dir, caseroot, bldroot, "clm", file_build,
-                                exeroot, "lnd", "clm", objdir, incroot, results)
-
+        logs = build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid,
+                               machines_file)
 
     if not sharedlib_only:
         logs.extend(build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
@@ -516,7 +495,7 @@ ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
     case.flush()
 
 ###############################################################################
-def build_libraries(exeroot, caseroot, cimeroot, libroot, mpilib, lid, machines_file):
+def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, machines_file):
 ###############################################################################
 
     if (mpilib == "mpi-serial"):
@@ -549,6 +528,24 @@ def build_libraries(exeroot, caseroot, cimeroot, libroot, mpilib, lid, machines_
                        ok_to_fail=True, verbose=True)[0]
         expect(stat == 0, "ERROR: buildlib.%s failed, cat %s" % (lib, file_build))
         logs.append(file_build)
+
+    comp_lnd = case.get_value("COMP_LND")
+    clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
+    if comp_lnd == "clm" and not "clm4_0" in clm_config_opts:
+        logging.info("         - Building clm4_5/clm5_0 Library ")
+        esmfdir = "esmf" if case.get_value("USE_ESMF_LIB") == "TRUE" else "noesmf"
+        sharedpath = os.environ["SHAREDPATH"]
+        bldroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir)
+        objdir = os.path.join(bldroot, "clm", "obj")
+        libdir = os.path.join(bldroot, "lib")
+        file_build = os.path.join(exeroot, "lnd.bldlog.%s" %  lid)
+        config_lnd_dir = os.path.dirname(case.get_value("CONFIG_LND_FILE"))
+        for ndir in [bldroot, objdir, libdir]:
+            if(not os.path.isdir(ndir)):
+                os.makedirs(ndir)
+
+        _build_model_thread(config_lnd_dir, caseroot, bldroot, "clm", file_build,
+                            exeroot, "lnd", "clm", objdir, os.path.join(sharedpath,"include"), logs)
 
     return logs
 
