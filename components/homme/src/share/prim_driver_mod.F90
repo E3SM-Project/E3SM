@@ -60,8 +60,7 @@ contains
   subroutine prim_init1(elem, fvm, par, dom_mt, Tl)
 
     ! --------------------------------
-    use thread_mod, only : nthreads, omp_get_thread_num, omp_set_num_threads, &
-                           vert_num_threads
+    use thread_mod, only : nthreads, omp_get_thread_num, vert_num_threads
     ! --------------------------------
     use control_mod, only : runtype, restartfreq, filter_counter, integration, topology, &
          partmethod, while_iter, use_semi_lagrange_transport
@@ -530,7 +529,7 @@ contains
     deallocate(HeadPartition)
 
     n_domains = min(Nthreads,nelemd)
-    call omp_set_num_threads(n_domains)
+    nthreads = n_domains
 
     ! =====================================
     ! Set number of threads...
