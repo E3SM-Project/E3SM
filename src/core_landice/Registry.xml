@@ -651,7 +651,11 @@ is the value of that variable from the *previous* time level!
 		/>
 		<var name="edgeSignOnVertex" type="integer" dimensions="maxEdges nVertices" units="unitless"
 		     description="Sign of edge contributions to a vertex for each edge on vertex. Used for bit-reproducible loops. Represents directionality of vector connecting vertices."
-		/>
+                     />
+                <!-- Useful Variables -->
+                <var name="cellProcID" type="integer" dimensions="nCells" units="unitless"
+                     description="processor number for each cell"
+                />
 		<!-- Variables only needed by SIA solver -->
 		<var name="baryCellsOnVertex" type="integer" dimensions="R3 nVertices" units="unitless"
 			 description="Cell center indices to use for interpolating from cell centers to vertex locations.  Note these are local indices!" packages="SIAvelocity"
