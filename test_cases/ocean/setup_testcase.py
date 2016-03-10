@@ -22,8 +22,6 @@ import ConfigParser
 
 import netCDF4
 
-import traceback
-
 try:
 	from collections import defaultdict
 except ImportError:
@@ -1270,200 +1268,201 @@ def get_case_name(config_file):#{{{
 #}}}
 #}}}
 
-# Define and process input arguments
-parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument("-o", "--core", dest="core", help="Core that contains configurations", metavar="CORE")
-parser.add_argument("-c", "--configuration", dest="configuration", help="Configuration to setup", metavar="CONFIG")
-parser.add_argument("-r", "--resolution", dest="resolution", help="Resolution of configuration to setup", metavar="RES")
-parser.add_argument("-t", "--test", dest="test", help="Test name within a resolution to setup", metavar="TEST")
-parser.add_argument("-n", "--case_number", dest="case_num", help="Case number to setup, as listed from list_testcases.py. Can be a comma delimited list of case numbers.", metavar="NUM")
-parser.add_argument("-f", "--config_file", dest="config_file", help="Configuration file for test case setup", metavar="FILE")
-parser.add_argument("-m", "--model_runtime", dest="model_runtime", help="Definition of how to build model run commands on this machine", metavar="FILE")
-parser.add_argument("-b", "--baseline_dir", dest="baseline_dir", help="Location of baseslines that can be compared to", metavar="PATH")
-parser.add_argument("-q", "--quiet", dest="quiet", help="If set, script will not write a command_history file", action="store_true")
-parser.add_argument("--no_download", dest="no_download", help="If set, script will not auto-download base_mesh files", action="store_true")
-parser.add_argument("--work_dir", dest="work_dir", help="If set, script will create case directories in work_dir rather than the current directory.", metavar="PATH")
+if __name__ == "__main__":
+	# Define and process input arguments
+	parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
+	parser.add_argument("-o", "--core", dest="core", help="Core that contains configurations", metavar="CORE")
+	parser.add_argument("-c", "--configuration", dest="configuration", help="Configuration to setup", metavar="CONFIG")
+	parser.add_argument("-r", "--resolution", dest="resolution", help="Resolution of configuration to setup", metavar="RES")
+	parser.add_argument("-t", "--test", dest="test", help="Test name within a resolution to setup", metavar="TEST")
+	parser.add_argument("-n", "--case_number", dest="case_num", help="Case number to setup, as listed from list_testcases.py. Can be a comma delimited list of case numbers.", metavar="NUM")
+	parser.add_argument("-f", "--config_file", dest="config_file", help="Configuration file for test case setup", metavar="FILE")
+	parser.add_argument("-m", "--model_runtime", dest="model_runtime", help="Definition of how to build model run commands on this machine", metavar="FILE")
+	parser.add_argument("-b", "--baseline_dir", dest="baseline_dir", help="Location of baseslines that can be compared to", metavar="PATH")
+	parser.add_argument("-q", "--quiet", dest="quiet", help="If set, script will not write a command_history file", action="store_true")
+	parser.add_argument("--no_download", dest="no_download", help="If set, script will not auto-download base_mesh files", action="store_true")
+	parser.add_argument("--work_dir", dest="work_dir", help="If set, script will create case directories in work_dir rather than the current directory.", metavar="PATH")
 
-args = parser.parse_args()
+	args = parser.parse_args()
 
-if not args.config_file:
-	print "WARNING: No configuration file specified. Using the default of 'local.config'"
-	args.config_file = 'local.config'
+	if not args.config_file:
+		print "WARNING: No configuration file specified. Using the default of 'local.config'"
+		args.config_file = 'local.config'
 
-if not os.path.exists(args.config_file):
-	parser.error(" Configuration file '%s' does not exist. Please create and setup before running again."%(args.config_file))
+	if not os.path.exists(args.config_file):
+		parser.error(" Configuration file '%s' does not exist. Please create and setup before running again."%(args.config_file))
 
-if not args.case_num and not ( args.core and args.configuration and args.resolution and args.test):
-	print 'Must be run with either the --case_number argument, or the core, configuration, resolution, and test arguments.'
-	parser.error(' Invalid configuration. Exiting...')
+	if not args.case_num and not ( args.core and args.configuration and args.resolution and args.test):
+		print 'Must be run with either the --case_number argument, or the core, configuration, resolution, and test arguments.'
+		parser.error(' Invalid configuration. Exiting...')
 
-if args.case_num and args.core and args.configuration and args.resoltuion and args.test:
-	print 'Can only be configured with either --case_number (-n) or --core (-o), --configuration (-c), --resolution (-r), and --test (-t).'
-	parser.error(' Invalid configuration. Too many options used. Exiting...')
+	if args.case_num and args.core and args.configuration and args.resoltuion and args.test:
+		print 'Can only be configured with either --case_number (-n) or --core (-o), --configuration (-c), --resolution (-r), and --test (-t).'
+		parser.error(' Invalid configuration. Too many options used. Exiting...')
 
-if args.case_num:
-	use_case_list = True
-	case_list = args.case_num.split(',')
-else:
-	use_case_list = False
-	case_list = list()
-	case_list.append(0)
-
-config = ConfigParser.SafeConfigParser()
-config.read(args.config_file)
-
-if not args.no_download:
-	args.no_download = False
-
-if not args.work_dir:
-	args.work_dir = os.getcwd()
-
-# Add configuation information to the config object.
-# This allows passing config around with all of the config options needed to
-# build paths, and determine options.
-config.add_section('script_input_arguments')
-config.add_section('script_paths')
-
-if not use_case_list:
-	config.set('script_input_arguments', 'core', args.core)
-	config.set('script_input_arguments', 'configuration', args.configuration)
-	config.set('script_input_arguments', 'resolution', args.resolution)
-	config.set('script_input_arguments', 'test', args.test)
-
-if args.baseline_dir:
-	config.set('script_paths', 'baseline_dir', args.baseline_dir)
-else:
-	config.set('script_paths', 'baseline_dir', 'NONE')
-
-if args.no_download:
-	config.set('script_input_arguments', 'no_download', 'yes')
-else:
-	config.set('script_input_arguments', 'no_download', 'no')
-
-config.set('script_paths', 'script_path', os.path.dirname(os.path.realpath(__file__)))
-config.set('script_paths', 'work_dir', os.path.abspath(args.work_dir) )
-config.set('script_paths', 'utility_scripts', '%s/utility_scripts'%(config.get('script_paths', 'script_path')))
-
-if not args.model_runtime:
-	config.set('script_input_arguments', 'model_runtime', '%s/runtime_definitions/mpirun.xml'%(config.get('script_paths', 'script_path')))
-	print ' WARNING: No runtime definition selected. Using the deafult of %s'%(config.get('script_input_arguments', 'model_runtime'))
-else:
-	config.set('script_input_arguments', 'model_runtime', args.model_runtime)
-
-# Build variables for history output
-old_dir = os.getcwd()
-os.chdir( config.get('script_paths', 'script_path' ))
-git_version = subprocess.check_output(['git', 'describe', '--tags', '--dirty'])
-git_version = git_version.strip('\n')
-calling_command = ""
-for arg in sys.argv:
-	calling_command = "%s%s "%(calling_command, arg)
-os.chdir(old_dir)
-
-# Iterate over all cases in the case_list.
-# There is only one if the (-o, -c, -r) options were used in place of (-n)
-for case_num in case_list:
-
-	# If we're using a case_list, determine the core, configuration, and
-	# resolution for the current test case.
-	if use_case_list:
-		core_configuration = subprocess.check_output(['%s/list_testcases.py'%(config.get('script_paths', 'script_path')), '-n', '%d'%(int(case_num))])
-		config_options = core_configuration.strip('\n').split(' ')
-		config.set('script_input_arguments', 'core', config_options[1])
-		config.set('script_input_arguments', 'configuration', config_options[3])
-		config.set('script_input_arguments', 'resolution', config_options[5])
-		config.set('script_input_arguments', 'test', config_options[7])
-
-	# Setup each xml file in the configuration directory:
-	test_path = '%s/%s/%s/%s'%(config.get('script_input_arguments', 'core'), config.get('script_input_arguments', 'configuration'), config.get('script_input_arguments', 'resolution'), config.get('script_input_arguments', 'test'))
-	work_dir = '%s/%s'%(config.get('script_paths', 'work_dir'), test_path)
-
-	# Set paths to core, configuration, resolution, and case for use in functions
-	config.set('script_paths', 'core_dir', config.get('script_input_arguments', 'core'))
-	config.set('script_paths', 'configuration_dir', '%s/%s'%(config.get('script_paths', 'core_dir'), config.get('script_input_arguments', 'configuration')))
-	config.set('script_paths', 'resolution_dir', '%s/%s'%(config.get('script_paths', 'configuration_dir'), config.get('script_input_arguments', 'resolution')))
-	config.set('script_paths', 'test_dir', test_path)
-	config.set('script_paths', 'config_path', test_path)
-
-	# Only write history if we did something...
-	write_history = False
-
-	# Loop over all files in test_path that have the .xml extension.
-	for file in os.listdir('%s'%(test_path)):
-		if fnmatch.fnmatch(file, '*.xml'):
-			# Build full file name
-			config_file = '%s/%s'%(test_path, file)
-
-			# Determine the type of the config file
-			# Could be config, driver_script, template, etc.
-			# The type is defined by the parent tag.
-			config_type = get_config_file_type(config_file)
-
-			# Process config files
-			if config_type == 'config':
-				write_history = True
-				# Ensure the case directory exists
-				case_dir = make_case_dir(config_file, work_dir)
-				case_name = get_case_name(config_file)
-
-				# Set case_dir path for function calls
-				config.set('script_paths', 'case_dir', '%s/%s'%(config.get('script_paths', 'test_dir'), case_name))
-
-				case_path = '%s/%s'%(work_dir, case_dir)
-
-				# Generate all namelists for this case
-				generate_namelist_files(config_file, case_path, config)
-
-				# Generate all streams files for this case
-				generate_streams_files(config_file, case_path, config)
-
-				# Ensure required files exist for this case
-				get_defined_files(config_file, '%s'%(case_path), config)
-
-				# Process all links for this case
-				add_links(config_file, config)
-
-				# Generate run scripts for this case.
-				generate_run_scripts(config_file, '%s'%(case_path), config)
-
-				print " -- Set up case: %s/%s"%(work_dir, case_dir)
-			# Process driver scripts
-			elif config_type == 'driver_script':
-				write_history = True
-
-				# Generate driver scripts.
-				generate_driver_scripts(config_file, config)
-				print " -- Set up driver script in %s"%(work_dir)
-
-# Write the history of this command to the command_history file, for
-# provenance.
-if write_history and not args.quiet:
-	history_file_path = '%s/command_history'%(config.get('script_paths', 'work_dir'))
-	if os.path.exists(history_file_path):
-		history_file = open(history_file_path, 'a')
-		history_file.write('\n')
+	if args.case_num:
+		use_case_list = True
+		case_list = args.case_num.split(',')
 	else:
-		history_file = open(history_file_path, 'w')
+		use_case_list = False
+		case_list = list()
+		case_list.append(0)
 
-	history_file.write('***********************************************************************\n')
-	history_file.write('git_version: %s\n'%(git_version))
-	history_file.write('command: %s\n'%(calling_command))
-	history_file.write('setup the following cases:\n')
-	if use_case_list:
-		for case_num in case_list:
-			core_configuration = subprocess.check_output(['./list_testcases.py', '-n', '%d'%(int(case_num))])
+	config = ConfigParser.SafeConfigParser()
+	config.read(args.config_file)
+
+	if not args.no_download:
+		args.no_download = False
+
+	if not args.work_dir:
+		args.work_dir = os.getcwd()
+
+	# Add configuation information to the config object.
+	# This allows passing config around with all of the config options needed to
+	# build paths, and determine options.
+	config.add_section('script_input_arguments')
+	config.add_section('script_paths')
+
+	if not use_case_list:
+		config.set('script_input_arguments', 'core', args.core)
+		config.set('script_input_arguments', 'configuration', args.configuration)
+		config.set('script_input_arguments', 'resolution', args.resolution)
+		config.set('script_input_arguments', 'test', args.test)
+
+	if args.baseline_dir:
+		config.set('script_paths', 'baseline_dir', args.baseline_dir)
+	else:
+		config.set('script_paths', 'baseline_dir', 'NONE')
+
+	if args.no_download:
+		config.set('script_input_arguments', 'no_download', 'yes')
+	else:
+		config.set('script_input_arguments', 'no_download', 'no')
+
+	config.set('script_paths', 'script_path', os.path.dirname(os.path.realpath(__file__)))
+	config.set('script_paths', 'work_dir', os.path.abspath(args.work_dir) )
+	config.set('script_paths', 'utility_scripts', '%s/utility_scripts'%(config.get('script_paths', 'script_path')))
+
+	if not args.model_runtime:
+		config.set('script_input_arguments', 'model_runtime', '%s/runtime_definitions/mpirun.xml'%(config.get('script_paths', 'script_path')))
+		print ' WARNING: No runtime definition selected. Using the deafult of %s'%(config.get('script_input_arguments', 'model_runtime'))
+	else:
+		config.set('script_input_arguments', 'model_runtime', args.model_runtime)
+
+	# Build variables for history output
+	old_dir = os.getcwd()
+	os.chdir( config.get('script_paths', 'script_path' ))
+	git_version = subprocess.check_output(['git', 'describe', '--tags', '--dirty'])
+	git_version = git_version.strip('\n')
+	calling_command = ""
+	for arg in sys.argv:
+		calling_command = "%s%s "%(calling_command, arg)
+	os.chdir(old_dir)
+
+	# Iterate over all cases in the case_list.
+	# There is only one if the (-o, -c, -r) options were used in place of (-n)
+	for case_num in case_list:
+
+		# If we're using a case_list, determine the core, configuration, and
+		# resolution for the current test case.
+		if use_case_list:
+			core_configuration = subprocess.check_output(['%s/list_testcases.py'%(config.get('script_paths', 'script_path')), '-n', '%d'%(int(case_num))])
 			config_options = core_configuration.strip('\n').split(' ')
-			history_file.write('\n')
-			history_file.write('\tcore: %s\n'%(config_options[1]))
-			history_file.write('\tconfiguration: %s\n'%(config_options[3]))
-			history_file.write('\tresolution: %s\n'%(config_options[5]))
-			history_file.write('\ttest: %s\n'%(config_options[7]))
-	else:
-		history_file.write('core: %s\n'%(config.get('script_input_arguments', 'core')))
-		history_file.write('configuration: %s\n'%(config.get('script_input_arguments', 'configuration')))
-		history_file.write('resolution: %s\n'%(config.get('script_input_arguments', 'resolution')))
-		history_file.write('test: %s\n'%(config.get('script_input_arguments', 'test')))
+			config.set('script_input_arguments', 'core', config_options[1])
+			config.set('script_input_arguments', 'configuration', config_options[3])
+			config.set('script_input_arguments', 'resolution', config_options[5])
+			config.set('script_input_arguments', 'test', config_options[7])
 
-	history_file.write('***********************************************************************\n')
-	history_file.close()
+		# Setup each xml file in the configuration directory:
+		test_path = '%s/%s/%s/%s'%(config.get('script_input_arguments', 'core'), config.get('script_input_arguments', 'configuration'), config.get('script_input_arguments', 'resolution'), config.get('script_input_arguments', 'test'))
+		work_dir = '%s/%s'%(config.get('script_paths', 'work_dir'), test_path)
+
+		# Set paths to core, configuration, resolution, and case for use in functions
+		config.set('script_paths', 'core_dir', config.get('script_input_arguments', 'core'))
+		config.set('script_paths', 'configuration_dir', '%s/%s'%(config.get('script_paths', 'core_dir'), config.get('script_input_arguments', 'configuration')))
+		config.set('script_paths', 'resolution_dir', '%s/%s'%(config.get('script_paths', 'configuration_dir'), config.get('script_input_arguments', 'resolution')))
+		config.set('script_paths', 'test_dir', test_path)
+		config.set('script_paths', 'config_path', test_path)
+
+		# Only write history if we did something...
+		write_history = False
+
+		# Loop over all files in test_path that have the .xml extension.
+		for file in os.listdir('%s'%(test_path)):
+			if fnmatch.fnmatch(file, '*.xml'):
+				# Build full file name
+				config_file = '%s/%s'%(test_path, file)
+
+				# Determine the type of the config file
+				# Could be config, driver_script, template, etc.
+				# The type is defined by the parent tag.
+				config_type = get_config_file_type(config_file)
+
+				# Process config files
+				if config_type == 'config':
+					write_history = True
+					# Ensure the case directory exists
+					case_dir = make_case_dir(config_file, work_dir)
+					case_name = get_case_name(config_file)
+
+					# Set case_dir path for function calls
+					config.set('script_paths', 'case_dir', '%s/%s'%(config.get('script_paths', 'test_dir'), case_name))
+
+					case_path = '%s/%s'%(work_dir, case_dir)
+
+					# Generate all namelists for this case
+					generate_namelist_files(config_file, case_path, config)
+
+					# Generate all streams files for this case
+					generate_streams_files(config_file, case_path, config)
+
+					# Ensure required files exist for this case
+					get_defined_files(config_file, '%s'%(case_path), config)
+
+					# Process all links for this case
+					add_links(config_file, config)
+
+					# Generate run scripts for this case.
+					generate_run_scripts(config_file, '%s'%(case_path), config)
+
+					print " -- Set up case: %s/%s"%(work_dir, case_dir)
+				# Process driver scripts
+				elif config_type == 'driver_script':
+					write_history = True
+
+					# Generate driver scripts.
+					generate_driver_scripts(config_file, config)
+					print " -- Set up driver script in %s"%(work_dir)
+
+	# Write the history of this command to the command_history file, for
+	# provenance.
+	if write_history and not args.quiet:
+		history_file_path = '%s/command_history'%(config.get('script_paths', 'work_dir'))
+		if os.path.exists(history_file_path):
+			history_file = open(history_file_path, 'a')
+			history_file.write('\n')
+		else:
+			history_file = open(history_file_path, 'w')
+
+		history_file.write('***********************************************************************\n')
+		history_file.write('git_version: %s\n'%(git_version))
+		history_file.write('command: %s\n'%(calling_command))
+		history_file.write('setup the following cases:\n')
+		if use_case_list:
+			for case_num in case_list:
+				core_configuration = subprocess.check_output(['./list_testcases.py', '-n', '%d'%(int(case_num))])
+				config_options = core_configuration.strip('\n').split(' ')
+				history_file.write('\n')
+				history_file.write('\tcore: %s\n'%(config_options[1]))
+				history_file.write('\tconfiguration: %s\n'%(config_options[3]))
+				history_file.write('\tresolution: %s\n'%(config_options[5]))
+				history_file.write('\ttest: %s\n'%(config_options[7]))
+		else:
+			history_file.write('core: %s\n'%(config.get('script_input_arguments', 'core')))
+			history_file.write('configuration: %s\n'%(config.get('script_input_arguments', 'configuration')))
+			history_file.write('resolution: %s\n'%(config.get('script_input_arguments', 'resolution')))
+			history_file.write('test: %s\n'%(config.get('script_input_arguments', 'test')))
+
+		history_file.write('***********************************************************************\n')
+		history_file.close()
 
