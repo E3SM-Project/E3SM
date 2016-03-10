@@ -331,9 +331,9 @@ if ($WAV_GRID eq "null") {
 }
 
 (-d $DIN_LOC_ROOT)  or  die <<"EOF";
-** $ProgName - CESM inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
+** $ProgName - Inputdata root is not a directory: \"$DIN_LOC_ROOT\" **
 EOF
-if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
+if ($print>=2) { print "Inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 ####################################
 # Streams file(s)                  #
