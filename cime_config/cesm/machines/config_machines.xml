@@ -252,6 +252,7 @@
   </machine>
 
   <machine MACH="bluewaters">
+    <NODENAME_REGEX>h2o</NODENAME_REGEX>
     <DESC>ORNL XE6, os is CNL, 32 pes/node, batch system is PBS</DESC>
     <COMPILERS>pgi,cray,gnu</COMPILERS>
     <MPILIBS>mpich,mpi-serial</MPILIBS>
@@ -294,9 +295,11 @@
     </mpirun>
     <module_system type="module">
       <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+      <init_path lang="python">/opt/modules/default/init/python.py</init_path>
       <init_path lang="sh">/opt/modules/default/init/sh</init_path>
       <init_path lang="csh">/opt/modules/default/init/csh</init_path>
       <cmd_path lang="perl">/opt/modules/3.2.10.3/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/opt/modules/3.2.10.3/bin/modulecmd python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
