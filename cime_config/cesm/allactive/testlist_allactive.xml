@@ -1,21 +1,10 @@
 <?xml version="1.0"?>
 <testlist version="2.0">
-  <test name="CME_D_Ld5" grid="f19_g16" compset="B1850" testmods="allactive/defaultio">
+  <test name="CME_Ld5" grid="f19_g16" compset="B1850" testmods="allactive/defaultio">
     <machines>
       <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="CME_Ld5" grid="f19_g16" compset="B1850" testmods="allactive/defaultio">
-    <machines>
-      <machine name="edison" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -25,16 +14,9 @@
       <machine name="bluewaters" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="edison" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-      <machine name="eos" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
           <option name="pecount">L</option>
@@ -47,23 +29,57 @@
       <machine name="yellowstone" compiler="intel" category="prealpha">
         <options>
           <option name="wallclock">2:00</option>
+        </options>
+      </machine>
+    </machines>
+  </test>
+  <test name="ERR" grid="f19_g16" compset="B1850" testmods="allactive/defaultio">
+    <machines>
+      <machine name="edison" compiler="intel" category="prealpha">
+        <options>
+          <option name="wallclock">2:00</option>
+        </options>
+      </machine>
+    </machines>
+  </test>
+  <test name="ERR_N3" grid="f19_g16" compset="B1850R" testmods="allactive/defaultio">
+    <machines>
+      <machine name="edison" compiler="intel" category="prebeta">
+        <options>
+          <option name="wallclock">2:00</option>
+        </options>
+      </machine>
+      <machine name="yellowstone" compiler="intel" category="prealpha">
+        <options>
+          <option name="wallclock">4:00</option>
           <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
   </test>
-  <test name="ERR_N2" grid="f19_g16" compset="B1850R" testmods="allactive/defaultio">
+  <test name="ERS" grid="f19_g16" compset="B1850C4L45BGCRBPRP" testmods="allactive/defaultio">
+    <machines>
+      <machine name="bluewaters" compiler="pgi" category="prebeta">
+        <options>
+          <option name="wallclock">2:00</option>
+        </options>
+      </machine>
+    </machines>
+  </test>
+  <test name="ERS" grid="f09_g16" compset="B1850RG" testmods="allactive/cesm2dev01io">
     <machines>
       <machine name="yellowstone" compiler="intel" category="prealpha">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
-      <machine name="eos" compiler="intel" category="prebeta">
+    </machines>
+  </test>
+  <test name="ERS" grid="f19_g16" compset="B1850RW" testmods="allactive/defaultio">
+    <machines>
+      <machine name="yellowstone" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
-          <option name="pecount">L</option>
+          <option name="wallclock">2:00</option>
         </options>
       </machine>
     </machines>
@@ -73,10 +89,9 @@
       <machine name="bluewaters" compiler="pgi" category="prealpha">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
-      <machine name="mira" compiler="ibm" category="prealpha">
+      <machine name="edison" compiler="cray" category="prealpha">
         <options>
           <option name="wallclock">4:00</option>
           <option name="pecount">L</option>
@@ -86,58 +101,24 @@
         <options>
           <option name="wallclock">4:00</option>
           <option name="pecount">L</option>
+        </options>
+      </machine>
+    </machines>
+  </test>
+  <test name="ERS" grid="f09_g16" compset="BRCP45C4L40CNRBDRD" testmods="allactive/defaultio">
+    <machines>
+      <machine name="yellowstone" compiler="intel" category="prebeta">
+        <options>
+          <option name="wallclock">2:00</option>
         </options>
       </machine>
     </machines>
   </test>
   <test name="ERS" grid="f09_g16" compset="BRCP85C5L45BGCR" testmods="allactive/defaultio">
     <machines>
-      <machine name="mira" compiler="ibm" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="ERS_D_Ld7" grid="f19_g16" compset="B1850" testmods="allactive/defaultio">
-    <machines>
-      <machine name="bluewaters" compiler="pgi" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
-        <options>
-          <option name="wallclock">4:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="ERS_D_Ld7" grid="ne30_g16" compset="B1850" testmods="allactive/defaultio">
-    <machines>
-      <machine name="mira" compiler="ibm" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="ERS_D_Ld7" grid="f19_g16" compset="BC4SSOAL40SPR" testmods="allactive/defaultio">
-    <machines>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
       <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
-          <option name="pecount">L</option>
+          <option name="wallclock">2:00</option>
         </options>
       </machine>
     </machines>
@@ -147,23 +128,15 @@
       <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
   </test>
   <test name="ERS_IOP_Ld7" grid="ne30_g16" compset="B1850" testmods="allactive/defaultio">
     <machines>
-      <machine name="mira" compiler="ibm" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
       <machine name="yellowstone" compiler="gnu" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
-          <option name="pecount">L</option>
+          <option name="wallclock">2:00</option>
         </options>
       </machine>
     </machines>
@@ -173,76 +146,9 @@
       <machine name="bluewaters" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="intel" category="prealpha">
-        <options>
-          <option name="wallclock">4:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="ERS_Ld11" grid="f09_g16" compset="B1850RG" testmods="allactive/cesm2dev01io">
-    <machines>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="ERS_Ld11" grid="f09_g16" compset="B1850C4L40CNRBDRD" testmods="allactive/defaultio">
-    <machines>
-      <machine name="mira" compiler="ibm" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="ERS_Ld11" grid="f19_g16" compset="B1850RW" testmods="allactive/defaultio">
-    <machines>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="ERS_Ld11" grid="f19_g16" compset="B1850C4L45BGCRBPRP" testmods="allactive/defaultio">
-    <machines>
-      <machine name="bluewaters" compiler="pgi" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="ERS_Ld11" grid="f09_g16" compset="BHISTC4L40CNRBDRD" testmods="allactive/defaultio">
-    <machines>
-      <machine name="eos" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="ERS_Ld11" grid="f09_g16" compset="BRCP45C4L40CNRBDRD" testmods="allactive/defaultio">
-    <machines>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-      <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
           <option name="pecount">L</option>
@@ -255,16 +161,29 @@
       <machine name="yellowstone" compiler="intel" category="prealpha">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
   </test>
-  <test name="ERS_Ld5" grid="f19_g16" compset="E1850C5L40CNRTEST" testmods="cice/default">
+  <test name="ERS_Ld5" grid="f19_g16" compset="E1850C5L45TEST" testmods="cice/default">
     <machines>
-      <machine name="yellowstone" compiler="pgi" category="prebeta">
+      <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
+        </options>
+      </machine>
+    </machines>
+  </test>
+  <test name="ERS_Ld7" grid="f19_g16" compset="B1850" testmods="allactive/defaultio">
+    <machines>
+      <machine name="bluewaters" compiler="pgi" category="prebeta">
+        <options>
+          <option name="wallclock">2:00</option>
+        </options>
+      </machine>
+      <machine name="yellowstone" compiler="intel" category="prealpha">
+        <options>
+          <option name="wallclock">4:00</option>
           <option name="pecount">L</option>
         </options>
       </machine>
@@ -275,22 +194,11 @@
       <machine name="yellowstone" compiler="gnu" category="prealpha">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="gnu" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="ERS_Ld7" grid="f09_g16" compset="B1850C4RCO2L40CNR" testmods="allactive/defaultio">
-    <machines>
-      <machine name="mira" compiler="ibm" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
           <option name="pecount">L</option>
         </options>
       </machine>
@@ -301,75 +209,33 @@
       <machine name="bluewaters" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
   </test>
   <test name="ERS_Ld7" grid="f19_g16" compset="B1850C5WCCML45CNR" testmods="allactive/defaultio">
     <machines>
-      <machine name="mira" compiler="ibm" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
-        <options>
-          <option name="wallclock">4:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
       <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
-          <option name="pecount">L</option>
+          <option name="wallclock">2:00</option>
         </options>
       </machine>
     </machines>
   </test>
   <test name="ERS_Ld7" grid="f19_g16" compset="BC4FCHML40CNR" testmods="allactive/defaultio">
     <machines>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
       <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
-          <option name="pecount">L</option>
+          <option name="wallclock">2:00</option>
         </options>
       </machine>
     </machines>
   </test>
-  <test name="ERS_Ld7" grid="f19_g16" compset="BC4WCBCL40CNR" testmods="allactive/defaultio">
+  <test name="ERS_Ld7" grid="f19_g16" compset="BC4SSOAL40SPR" testmods="allactive/defaultio">
     <machines>
-      <machine name="janus" compiler="intel" category="prebeta">
+      <machine name="yellowstone" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="ERS_Ld7" grid="ne16_g37" compset="BC5L40SPR" testmods="allactive/defaultio">
-    <machines>
-      <machine name="babbageKnc" compiler="intel15" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="ERS_Ld7" grid="f09_g16" compset="BHISTC4FCHML40CNR" testmods="allactive/defaultio">
-    <machines>
-      <machine name="eos" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -379,55 +245,15 @@
       <machine name="yellowstone" compiler="gnu" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="ERS_Ld7" grid="f09_g16" compset="BHISTC5L45BGCR" testmods="allactive/defaultio">
-    <machines>
-      <machine name="bluewaters" compiler="pgi" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="ERS_Ld7" grid="f19_g16" compset="BC4SSOAL40SPR" testmods="allactive/defaultio">
-    <machines>
-      <machine name="yellowstone" compiler="pgi" category="prealpha">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-      <machine name="yellowstone" compiler="pgi" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
   </test>
   <test name="ERS_Ld7" grid="f19_g16" compset="BC4WCMAL40SPR" testmods="allactive/defaultio">
     <machines>
-      <machine name="yellowstone" compiler="gnu" category="prealpha">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
       <machine name="yellowstone" compiler="gnu" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
-        <options>
-          <option name="wallclock">4:00</option>
-          <option name="pecount">L</option>
+          <option name="wallclock">2:00</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="intel" category="prebeta">
@@ -443,7 +269,6 @@
       <machine name="yellowstone" compiler="pgi" category="prealpha">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="pgi" category="prebeta">
@@ -454,22 +279,20 @@
       </machine>
     </machines>
   </test>
-  <test name="ERS_Ld9" grid="ne120_g16" compset="B1850" testmods="allactive/defaultio">
+  <test name="ERS_Ld7" grid="f09_g16" compset="BHISTC5L45BGCR" testmods="allactive/defaultio">
     <machines>
-      <machine name="mira" compiler="ibm" category="prebeta">
+      <machine name="bluewaters" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
   </test>
-  <test name="ERS_Ld9" grid="ne30_g16" compset="B1850" testmods="allactive/defaultio">
+  <test name="ERS_Ld9" grid="ne120_g16" compset="B1850" testmods="allactive/defaultio">
     <machines>
-      <machine name="titan" compiler="pgi" category="prebeta">
+      <machine name="edison" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -479,17 +302,15 @@
       <machine name="bluewaters" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
   </test>
-  <test name="ERS_N2_Ld7" grid="f19_g16" compset="BHISTC5L40CNR" testmods="allactive/defaultio">
+  <test name="ERS_N3_Ld7" grid="f19_g16" compset="BHISTC5L40CNR" testmods="allactive/defaultio">
     <machines>
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="gnu" category="prealpha">
@@ -506,12 +327,11 @@
       </machine>
     </machines>
   </test>
-  <test name="ERS_N2_Ld7" grid="f19_g16" compset="BHISTC5L45BGCR" testmods="allactive/defaultio">
+  <test name="ERS_N3_Ld7" grid="f19_g16" compset="BHISTC5L45BGCR" testmods="allactive/defaultio">
     <machines>
       <machine name="hobart" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -521,7 +341,6 @@
       <machine name="janus" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -531,23 +350,15 @@
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
   </test>
   <test name="NCK_Ld5" grid="f19_g16" compset="BC5L45BGCR" testmods="allactive/cism/test_coupling">
     <machines>
-      <machine name="yellowstone" compiler="gnu" category="prealpha">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
       <machine name="yellowstone" compiler="gnu" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
-          <option name="pecount">L</option>
+          <option name="wallclock">2:00</option>
         </options>
       </machine>
     </machines>
@@ -557,7 +368,6 @@
       <machine name="yellowstone" compiler="intel" category="prealpha">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="intel" category="prebeta">
@@ -568,22 +378,11 @@
       </machine>
     </machines>
   </test>
-  <test name="NCR_P15x1D" grid="f19_g16" compset="B1850" testmods="allactive/defaultio">
-    <machines>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
   <test name="NOC" grid="f09_g16" compset="B1850R" testmods="allactive/defaultio">
     <machines>
       <machine name="yellowstone" compiler="intel" category="prealpha">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="intel" category="prebeta">
@@ -599,7 +398,6 @@
       <machine name="hobart" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="hobart" compiler="pgi" category="prebeta">
@@ -610,48 +408,29 @@
       </machine>
     </machines>
   </test>
-  <test name="PET_PT" grid="f19_g16" compset="B1850C5L40SPR" testmods="allactive/defaultio">
-    <machines>
-      <machine name="bluewaters" compiler="pgi" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
   <test name="PET_PT" grid="f19_g16" compset="B1850" testmods="allactive/defaultio">
     <machines>
-      <machine name="titan" compiler="pgi" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
       <machine name="yellowstone" compiler="gnu" category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
-          <option name="pecount">L</option>
+          <option name="wallclock">2:00</option>
         </options>
       </machine>
     </machines>
   </test>
   <test name="PET_PT" grid="ne30_g16" compset="B1850" testmods="allactive/defaultio">
     <machines>
-      <machine name="eos" compiler="intel" category="prebeta">
+      <machine name="edison" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
   </test>
-  <test name="PFS" grid="f09_g16" compset="B1850RG" testmods="allactive/cesm2dev01">
+  <test name="PET_PT" grid="f19_g16" compset="B1850C5L40SPR" testmods="allactive/defaultio">
     <machines>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
+      <machine name="bluewaters" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -661,7 +440,6 @@
       <machine name="bluewaters" compiler="pgi " category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="intel" category="prealpha">
@@ -680,16 +458,9 @@
   </test>
   <test name="PFS" grid="ne30_g16" compset="B1850" testmods="allactive/default">
     <machines>
-      <machine name="mira" compiler="ibm " category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
       <machine name="yellowstone" compiler="intel " category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
-          <option name="pecount">L</option>
+          <option name="wallclock">2:00</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="intel " category="prebeta">
@@ -700,22 +471,29 @@
       </machine>
     </machines>
   </test>
+  <test name="PFS" grid="f09_g16" compset="B1850RG" testmods="allactive/cesm2dev01">
+    <machines>
+      <machine name="yellowstone" compiler="intel" category="prealpha">
+        <options>
+          <option name="wallclock">2:00</option>
+        </options>
+      </machine>
+    </machines>
+  </test>
   <test name="SMS_D" grid="f09_g16" compset="BHISTC5L45BGCR" testmods="allactive/defaultio">
     <machines>
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
   </test>
-  <test name="SMS_D_Ld5" grid="T31_g37_gl20" compset="B1850C5L45BGCRG2" testmods="allactive/cism/test_coupling">
+  <test name="SMS_Ld5" grid="T31_g37_gl20" compset="B1850C5L45BGCRG2" testmods="allactive/cism/test_coupling">
     <machines>
       <machine name="yellowstone" compiler="intel" category="prealpha">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="intel" category="prebeta">
@@ -726,12 +504,11 @@
       </machine>
     </machines>
   </test>
-  <test name="SMS_D_Ld5" grid="T31_g37_gl20" compset="BC5L45BGCRG" testmods="allactive/cism/test_coupling">
+  <test name="SMS_Ld5" grid="T31_g37_gl20" compset="BC5L45BGCRG" testmods="allactive/cism/test_coupling">
     <machines>
       <machine name="hobart" compiler="nag" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -741,7 +518,6 @@
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -751,17 +527,6 @@
       <machine name="yellowstone" compiler="intel" category="prealpha">
         <options>
           <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="SMS_Ld7" grid="ne16_g37" compset="BC5L40SPR" testmods="allactive/defaultio">
-    <machines>
-      <machine name="babbageKnc" compiler="intel15" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
