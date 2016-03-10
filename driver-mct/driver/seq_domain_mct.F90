@@ -32,7 +32,7 @@ module seq_domain_mct
 
   real(R8), parameter :: eps_tiny   = 1.0e-16_R8 ! roundoff eps
   real(R8), parameter :: eps_big    = 1.0e+02_R8 ! big eps
-  real(R8), parameter :: eps_frac_samegrid = 1.0e-14_R8 ! epsilon for fractions for samegrid
+  real(R8), parameter :: eps_frac_samegrid = 1.0e-9_R8 ! epsilon for fractions for samegrid
 
 !--------------------------------------------------------------------------
 ! Private interfaces

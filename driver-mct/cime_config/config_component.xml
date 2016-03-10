@@ -4,6 +4,22 @@
 
 <entries>
 
+<!-- The list of component classes that this coupler/driver knows how
+     to deal with.  Stub and data models for each component class
+     should be provided by the driver. This list should follow the same order
+     as compset longnames follows -->
+
+  <components>
+    <comp>DRV</comp>
+    <comp>ATM</comp>
+    <comp>LND</comp>
+    <comp>ICE</comp>
+    <comp>OCN</comp>
+    <comp>ROF</comp>
+    <comp>GLC</comp>
+    <comp>WAV</comp>
+  </components>
+
   <entry id="COMP_CPL">
     <type>char</type>
     <valid_values>cpl</valid_values>
@@ -71,20 +87,20 @@
     <desc>Scripts root directory location (setup automatically to $CIMEROOT/scripts- DO NOT EDIT)</desc>
   </entry>
 
-  <entry id="SRCROOT">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>case_def</group>
-    <file>env_case.xml</file>
-    <desc>full pathname of source root directory</desc>
-  </entry>
-
   <entry id="CIMEROOT">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>case_def</group>
     <file>env_case.xml</file>
     <desc>full pathname of CIME source root directory</desc>
+  </entry>
+
+  <entry id="SRCROOT">
+    <type>char</type>
+    <default_value>$CIMEROOT/..</default_value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>full pathname of source root directory</desc>
   </entry>
 
   <entry id="UTILROOT">
@@ -459,7 +475,7 @@
   <entry id="DOUT_S">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
-    <default_value>TRUE</default_value>
+    <default_value>FALSE</default_value>
     <group>run_data_archive</group>
     <file>env_run.xml</file>
     <desc>Logical to turn on short term archiving.
@@ -696,7 +712,7 @@
     <default_value>NO_LEAP</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
-    <desc>calendar type></desc>
+    <desc>calendar type</desc>
   </entry>
 
   <entry id="COMP_INTERFACE">
@@ -741,6 +757,33 @@
       If FALSE, component libraries are built with OpenMP capability only if
       the NTHREADS_ setting for that component is greater than 1 in env_mach_pes.xml.
       If TRUE, the component libraries are always built with OpenMP capability.</desc>
+  </entry>
+
+  <entry id="USE_PETSC">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies linking to the PETSc library - set
+    automatically by XXX_USE_PETSC options (do not edit). Flag to turn
+    on linking to the PETSc library. Currently this is used by
+    CLM. This is currently only supported for certain machines.</desc>
+  </entry>
+
+  <entry id="USE_ALBANY">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies linking to the Albany library - set
+    automatically by XXX_USE_ALBANY options (do not edit). Flag to
+    turn on linking to the Albany library. Currently this is used by
+    MPASLI. Note that Albany is a C++ library, so setting this
+    variable to TRUE will involve the inclusion of C++ code in the
+    MPASLI executable. This is currently only supported for certain
+    machines.</desc>
   </entry>
 
   <entry id="USE_TRILINOS">
@@ -789,7 +832,7 @@
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
-    <desc>Status: smp status of previous build, coded string. (DO NOT EDIT)></desc>
+    <desc>Status: smp status of previous build, coded string. (DO NOT EDIT)</desc>
   </entry>
 
   <entry id="SMP_VALUE">
@@ -798,7 +841,7 @@
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
-    <desc>Status: smp status of current case, coded string (DO NOT EDIT)></desc>
+    <desc>Status: smp status of current case, coded string (DO NOT EDIT)</desc>
   </entry>
 
   <entry id="NINST_BUILD">
@@ -816,7 +859,7 @@
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
-    <desc>Status: ninst status of current case, coded string (DO NOT EDIT)></desc>
+    <desc>Status: ninst status of current case, coded string (DO NOT EDIT)</desc>
   </entry>
 
   <entry id="BUILD_STATUS">
@@ -825,7 +868,7 @@
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
-    <desc>Status: of prior build. (DO NOT EDIT)></desc>
+    <desc>Status: of prior build. (DO NOT EDIT)</desc>
   </entry>
 
   <entry id="OBJROOT">
@@ -1795,6 +1838,36 @@
     </desc>
   </entry>
 
+  <entry id="NODENAME_REGEX">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>
+      A regular expression to match machine node names to ACME machine.
+    </desc>
+  </entry>
+
+  <entry id="PROXY">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>
+      Proxy (if any) setting for http_proxy to allow web access on this machine.
+    </desc>
+  </entry>
+
+  <entry id="TESTS">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>
+      The default test suite for this machine.
+    </desc>
+  </entry>
+
   <entry id="DIN_LOC_ROOT">
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -2337,10 +2410,55 @@
     <desc>pio rearranger choice box=1, subset=2 </desc>
   </entry>
 
+  <entry id="PIO_REARR_COMM_TYPE">
+    <type>char</type>
+    <valid_values>p2p,coll,default</valid_values>
+    <default_value>p2p</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger communication type</desc>
+  </entry>
+
+  <entry id="PIO_REARR_COMM_FCD">
+    <type>char</type>
+    <valid_values>2denable,io2comp,comp2io,disable,default</valid_values>
+    <default_value>2denable</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger communication flow control direction</desc>
+  </entry>
+
+  <entry id="PIO_REARR_COMM_MAX_PEND_REQ">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>64</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger communication max pending requests</desc>
+  </entry>
+
+  <entry id="PIO_REARR_COMM_ENABLE_HS">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>TRUE</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger communiation options: TRUE implies enable handshake</desc>
+  </entry>
+
+  <entry id="PIO_REARR_COMM_ENABLE_ISEND">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger communiation options: TRUE implies enable isend</desc>
+  </entry>
+
   <entry id="PIO_TYPENAME">
     <type>char</type>
     <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
-    <default_value>netcdf</default_value>
+    <default_value>pnetcdf</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
@@ -3316,6 +3434,103 @@
     <file>env_run.xml</file>
     <desc>Glacier model number of elevation classes, 0 implies no glacier land unit in clm
     Used by both CLM and CISM (even if CISM is not running, and only SGLC is used).</desc>
+  </entry>
+
+  <entry id="CLM_USE_PETSC">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_component_clm</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies CLM is built with support for the PETSc
+      library. The Variably Saturated Flow Model (VSFM) solver in CLM
+      uses the PETSc library. In order to use the VSFM solver, CLM
+      must be built with PETSc support and linking to PETSc must occur
+      when building the ACME executable. This occurs if this variable
+      is set to TRUE. Note that is only available on a limited set of
+      machines/compilers.</desc>
+  </entry>
+
+  <!-- ======================================================================= -->
+  <!-- MOSART                                                                  -->
+  <!-- ======================================================================= -->
+
+  <entry id="MOSART_MODE">
+    <type>char</type>
+    <valid_values>ACTIVE,NULL</valid_values>
+    <default_value>ACTIVE</default_value>
+    <group>build_component_mosart</group>
+    <file>env_build.xml</file>
+    <desc>mode for mosart model, NULL means mosart is turned off</desc>
+  </entry>
+
+  <entry id="MOSART_FLOOD_MODE">
+    <type>char</type>
+    <valid_values>ACTIVE,NULL</valid_values>
+    <default_value>NULL</default_value>
+    <group>build_component_mosart</group>
+    <file>env_build.xml</file>
+    <desc>mode for mosart flood feature, NULL means mosart flood is turned off</desc>
+  </entry>
+
+  <entry id="MOSART_BLDNML_OPTS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>run_component_mosart</group>
+    <file>env_build.xml</file>
+    <desc>MOSART build-namelist options</desc>
+  </entry>
+
+  <entry id="MOSART_NAMELIST_OPTS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>run_component_mosart</group>
+    <file>env_build.xml</file>
+    <desc>MOSART specific namelist settings MOSART-specific namelist
+    settings in the MOSART build-namelist.  MOSART_NAMELIST_OPTS is
+    normally set as a compset variable and in general should not be
+    modified for supported compsets.  It is recommended that if you
+    want to modify this value for your experiment, you should use your
+    own user-defined component sets via using create_newcase with a
+    compset_file argument.</desc>
+  </entry>
+
+  <entry id="MPASLI_CONFIG_OPTS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>build_component_mpasli</group>
+    <file>env_build.xml</file>
+    <desc>MPASLI configure options. Currently not used</desc>
+  </entry>
+
+  <entry id="MPASLI_USE_ALBANY">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_component_mpasli</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies MPASLI is built with support for the Albany
+      library The first-order velocity solver in MPASLI uses the
+      Albany library.  In order to use that velocity solver, MPASLI
+      must be built with Albany support and linking to Albany must
+      occur when building the ACME executable.  This occurs if this
+      variable is set to TRUE.  Note that is only available on a
+      limited set of machines/compilers.  This must remain FALSE to
+      run MPASLI on a machine that does not have Albany, or for which
+      the CIME scripts are not aware of the existence of
+      Albany.</desc>
+  </entry>
+
+  <entry id="GLC_SMB">
+    <type>logical</type>
+    <valid_values>true,false</valid_values>
+    <default_value>true</default_value>
+    <group>run_component_mpasli</group>
+    <file>env_run.xml</file>
+    <desc>true => have LND calculate surface mass balance</desc>
   </entry>
 
   <entry id="GLC_TWO_WAY_COUPLING">
