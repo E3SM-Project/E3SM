@@ -139,6 +139,7 @@ OPTIONS
                            with the new user grid changes added to it
   -user_pes_setby <name>   Component that sets the pe-layouts and pio settings
                            For CESM this is [allactive, cam, clm, cice, cism, pop]
+  -nosavetiming            Change the default for SAVE_TIMING in env_run.xml to .FALSE. (optional).
   -help [or -h]            Print usage to STDOUT (optional).
   -testlist                List valid values for tests [normally only invoked by create_test] (optional).
   -silent [or -s]          Turns on silent mode - only fatal messages issued (optional).
@@ -184,6 +185,7 @@ GetOptions(
     "petype=s"                  => \$opts{'petype'},
     "pes_file=s"                => \$opts{'pes_file'},
     "testname=s"                => \$opts{'testname'},
+    "nosavetiming"              => \$opts{'nosavetiming'},
     "testlist"                  => \$opts{'testlist'},
     "xmlmode=s"                 => \$opts{'xmlmode'},
     "nowarning"                 => \$opts{'nowarning'},
@@ -471,9 +473,7 @@ ConfigCompsetGrid::setComponent($file, $config);
 # and also check that compset is supported for target grid
 # Note- this needs to come last since it will overwrite any values set above
 
-
 ConfigCompsetGrid::setCompsetGeneralVars($config);
-
 
 # Special case - if land and river grids are different AND there is no mapping file
 # between land and river then set the river mode  to null if the river component is rtm
@@ -876,12 +876,10 @@ sub _create_caseroot_tools
     my @files = (
 	"$cimeroot/scripts/Tools/case.setup",
 	"$cimeroot/scripts/Tools/testcase.setup",
-	"$cimeroot/scripts/Tools/check_input_data",
 	"$cimeroot/scripts/Tools/archive_metadata.sh",
 	"$cimeroot/scripts/Tools/check_case",
 	"$cimeroot/scripts/Tools/create_production_test",
 	"$cimeroot/scripts/Tools/st_archive",
-	"$cimeroot/scripts/Tools/xmlchange",
 	"$cimeroot/scripts/Tools/xmlquery",
 	"$cimeroot/scripts/Tools/README.post_process",
 	);
@@ -913,7 +911,7 @@ sub _create_caseroot_tools
 	      "$machines_dir/mkDepends");
 
     foreach my $file (@files) {
-	$sysmod = "cp -p $file $caseroot/Tools/. ";
+	$sysmod = "ln -fs $file $caseroot/Tools/. ";
 	system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
     }
 }
@@ -940,10 +938,15 @@ sub _create_caseroot_files
     }
 
     # Create $caseroot/Buildconf/build.pl
-    $sysmod = "cp $cimeroot/scripts/Tools/case.build  $caseroot/case.build";
+    $sysmod = "ln -s $cimeroot/scripts/Tools/check_input_data $caseroot/check_input_data";
     system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-    $sysmod = "chmod 755 $caseroot/case.build";
-    system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+    my @pyscripts = qw(case.build xmlchange);
+    for (@pyscripts){
+	$sysmod = "ln -s $cimeroot/scripts/Tools/$_  $caseroot/$_";
+	system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+	$sysmod = "chmod 755 $caseroot/$_";
+	system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+    }
 
     # Create case.clean_build
     $sysmod = "cp $cimeroot/scripts/Tools/clean_build $caseroot/case.clean_build";
@@ -967,7 +970,7 @@ sub _create_caseroot_files
 
     # Create $caseroot preview_namelist file
     my $file = "${caseroot}/preview_namelists";
-    $sysmod = "cp  $cimeroot/scripts/Tools/preview_namelists $file";
+    $sysmod = "ln -s $cimeroot/scripts/Tools/preview_namelists $file";
     system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
 
     $sysmod = "chmod 755 $file";
@@ -1025,6 +1028,15 @@ sub _create_caseroot_files
     $mon = 1+$mon;
     print $fh "$commandline\n";
     printf ($fh "case created %04u-%02u-%02u %02u:%02u:%02u\n",$year,$mon,$mday,$hour,$min,$sec);
+
+    # set the default to not archive performance data and associated provenance
+    if ($opts{'nosavetiming'}) {
+        my $cwd = getcwd(); # current working directory
+        chdir "$caseroot";
+        $sysmod = './xmlchange --file env_run.xml --id SAVE_TIMING --val "FALSE"';
+        system($sysmod) == 0 or $logger->logdie("ERROR: $sysmod failed: $?\n");
+        chdir "$cwd";
+    }
 }
 
 #-------------------------------------------------------------------------------

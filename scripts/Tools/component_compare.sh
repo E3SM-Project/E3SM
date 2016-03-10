@@ -22,9 +22,6 @@
 # this script with model=cpl to do the comparisons after the baseline
 # generation completes (but first you will need to copy the cpl.hi.nc
 # files in each baseline directory to cpl.h.nc).
-# 
-# Exit status will generally be 0 (even for test failure), but will be
-# non-zero for incorrect usage.
 #
 # cprnc should be in your path, but if it isn't, the script tries to
 # find cprnc in its yellowstone location
@@ -40,11 +37,11 @@
 #
 # - Missing arguments
 #   - return status should be "UNDEF"
-# 
+#
 # - test_hist='', no baseline
 #   - return status should be "BFAIL_NA"
 #   - example: tst=`component_compare.sh -baseline_dir /glade/scratch/sacks/cesm_baselines/test_script/ERI44y.f09_g16.TGRCP85.bluefire_ibm -baseline_hist DOES_NOT_EXIST -test_dir /ptmp/sacks/ERI44y.f09_g16.TGRCP85.bluefire_ibm.C.114029/run -test_hist ''`
-# 
+#
 # - Given test history file doesn't exist, no baseline
 #   - return status should be "BFAIL_NA"
 #   - example: tst=`component_compare.sh -baseline_dir /glade/scratch/sacks/cesm_baselines/test_script/ERI44y.f09_g16.TGRCP85.bluefire_ibm -baseline_hist DOES_NOT_EXIST -test_dir /ptmp/sacks/ERI44y.f09_g16.TGRCP85.bluefire_ibm.C.114029/run -test_hist DOES_NOT_EXIST`
@@ -146,8 +143,8 @@ function absolute_path {
 function print_result {
     status="$1"
     info="$2"
-    
-    echo "${status}:${info}"
+
+    echo "${status}:COMPCOMPARE${info}"
 }
 
 #======================================================================
@@ -158,7 +155,7 @@ progname=`basename $0`
 
 # need absolute path (rather than relative path) because we use this
 # path after we have cd'ed to another location
-tools_dir=$(absolute_path `dirname $0`)  
+tools_dir=$(absolute_path `dirname $0`)
 
 #----------------------------------------------------------------------
 # Set default return values
@@ -218,7 +215,7 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
-	    
+
 
 #----------------------------------------------------------------------
 # Exit if required command-line arguments weren't provided
@@ -288,17 +285,17 @@ if [[ $baseline_exists -eq 0 && $test_exists -eq 0 ]]; then
     status="BFAIL_NA"
     info="neither baseline nor test history file exists"
     print_result $status "$info"
-    exit 0
+    exit 2
 elif [[ $baseline_exists -eq 0 && $test_exists -eq 1 ]]; then
     status="BFAIL"
     info="baseline history file does not exist"
     print_result $status "$info"
-    exit 0
+    exit 2
 elif [[ $baseline_exists -eq 1 && $test_exists -eq 0 ]]; then
     status="FAIL"
     info="no history file in test case"
     print_result $status "$info"
-    exit 0
+    exit 2
 fi
 
 # Note: at this point, we know that there is both a baseline history
@@ -309,30 +306,18 @@ fi
 # Put output in a file named ${test_dir}/${test_hist}.cprnc.out
 #----------------------------------------------------------------------
 
-# We cd to test_dir so that $testhist.out.out is put there 
+# We cd to test_dir so that $testhist.out.out is put there
 # (note that this assumes that the user has write permission in test_dir)
 
 curdir=`pwd`
 cd $test_dir
 
-$cprnc_exe $test_dir/$test_hist $baseline_dir/$baseline_hist > ${test_hist}.cprnc.out
-diff_test=`grep "diff_test" ${test_dir}/${test_hist}.cprnc.out | grep IDENTICAL | wc -l`
+cprnc_output=$($cprnc_exe $test_dir/$test_hist $baseline_dir/$baseline_hist | tee ${test_hist}.cprnc.out 2> /dev/null )
 
-status="FAIL"
-if [ $diff_test -gt 0 ]; then
-    status="PASS"
+if [[ $cprnc_output == *IDENTICAL* ]]; then
+    print_result PASS "$info"
+    exit 0
 else
-    diff_test=`grep -a "diff_test" ${test_dir}/${test_hist}.cprnc.out | grep IDENTICAL | wc -l`
-    if [ $diff_test -gt 0 ]; then
-	status="PASS"
-    fi
+    print_result FAIL "$info"
+    exit 3
 fi
-
-cd $curdir
-
-print_result $status "$info"
-
-exit 0
-
-
-

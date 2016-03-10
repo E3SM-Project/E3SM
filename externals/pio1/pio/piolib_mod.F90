@@ -9,6 +9,8 @@
 #ifdef BGQbroken
 #define BGx
 #endif
+
+#include "rearr_options.h"
 !>
 !! @file 
 !! @brief Initialization Routines for PIO
@@ -23,7 +25,7 @@ module piolib_mod
   use pio_types, only : file_desc_t, iosystem_desc_t, var_desc_t, io_desc_t, &
 	pio_iotype_pbinary, pio_iotype_binary, pio_iotype_direct_pbinary, &
 	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
-        pio_noerr, pio_num_ost
+        pio_noerr, pio_num_ost, PIO_rearr_opt_t
   !--------------
   use alloc_mod
   !--------------
@@ -819,7 +821,7 @@ contains
     ! testing.
     !-------------------------------------------
 #ifdef TIMING
-    call t_startf("PIO_initdecomp")
+    call t_startf("PIO:PIO_initdecomp")
 #endif
 #ifdef MEMCHK	
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
@@ -838,7 +840,7 @@ contains
     !---------------------
     glength= product(int(dims,kind=PIO_OFFSET))
     if(glength > huge(ndisp)) then
-       print *,__FILE__,__LINE__,dims,glength
+       print *,__PIO_FILE__,__LINE__,dims,glength
        call piodie( __PIO_FILE__,__LINE__, &
             'requested array size too large for this interface ')       
     endif
@@ -944,7 +946,7 @@ contains
     end if
 #endif
 #ifdef TIMING
-    call t_stopf("PIO_initdecomp")
+    call t_stopf("PIO:PIO_initdecomp")
 #endif
   end subroutine initdecomp_1dof_nf_i8
 
@@ -1028,7 +1030,7 @@ contains
     nullify(displace)
 
 #ifdef TIMING
-    call t_startf("PIO_initdecomp_dof")
+    call t_startf("PIO:PIO_initdecomp_dof")
 #endif
     if(iosystem%async_interface .and. .not. iosystem%ioproc) then
        msg = PIO_MSG_INITDECOMP_DOF
@@ -1237,7 +1239,7 @@ contains
     end if
 #endif
 #ifdef TIMING
-    call t_stopf("PIO_initdecomp_dof")
+    call t_stopf("PIO:PIO_initdecomp_dof")
 #endif
 
   end subroutine PIO_initdecomp_dof_i8
@@ -1283,7 +1285,7 @@ contains
 
 
 #ifdef TIMING
-    call t_startf("PIO_initdecomp_dof")
+    call t_startf("PIO:PIO_initdecomp_dof")
 #endif
     if(iosystem%async_interface .and. .not. iosystem%ioproc) then
        msg = PIO_MSG_INITDECOMP_DOF
@@ -1413,7 +1415,7 @@ contains
     end if
 #endif
 #ifdef TIMING
-    call t_stopf("PIO_initdecomp_dof")
+    call t_stopf("PIO:PIO_initdecomp_dof")
 #endif
 
   end subroutine PIO_initdecomp_dof_i8_vdc
@@ -1515,7 +1517,7 @@ contains
          if(check) call checkmpireturn('genindexedblock: after call to type_commit: ',ierr)
 !         if(debug) then
 !            call mpi_type_get_envelope(filetype, nints, nadds, ndtypes, comb, ierr)
-!            print *,__FILE__,__LINE__,nints,nadds,ndtypes,comb,ierr
+!            print *,__PIO_FILE__,__LINE__,nints,nadds,ndtypes,comb,ierr
 !         endif
        endif
 
@@ -1584,6 +1586,38 @@ contains
   end subroutine gensubarray
 
 
+  ! This function initializes the rearranger communication
+  ! options in iosystem_desc_t
+  subroutine init_iosystem_rearr_options(iosystem)
+    use pio_types
+
+    type (iosystem_desc_t), intent(inout)  :: iosystem  ! io descriptor to initalize
+
+#ifdef _USE_ALLTOALLW
+    iosystem%rearr_opts%comm_type = PIO_rearr_comm_coll
+#else
+    iosystem%rearr_opts%comm_type = PIO_rearr_comm_p2p
+#endif
+
+#ifdef _NO_FLOW_CONTROL
+    iosystem%rearr_opts%comm_fc_opts%fcd = PIO_rearr_comm_fc_2d_disable
+#else
+    ! We ignore the following flags 
+    ! 1) _MPISERIAL : The flow control code is never used when _MPISERIAL is set
+    ! 2) _USE_COMP2IO_FC/_USE_IO2COMP_FC : These flags are not currently used
+    !  (These were experimental flags). The user can explicitly control
+    !  these options (comp2io and io2comp flow control) via rearranger
+    !  options passed to pio_init()
+    iosystem%rearr_opts%comm_fc_opts%fcd = PIO_rearr_comm_fc_2d_enable
+#endif
+
+    ! the following will be ignored if not p2p with flow control
+    iosystem%rearr_opts%comm_fc_opts%enable_hs = DEF_P2P_HANDSHAKE
+    iosystem%rearr_opts%comm_fc_opts%enable_isend = DEF_P2P_ISEND
+    iosystem%rearr_opts%comm_fc_opts%max_pend_req = DEF_P2P_MAXREQ
+
+  end subroutine init_iosystem_rearr_options
+
 
 !> 
 !! @public
@@ -1601,8 +1635,8 @@ contains
 !! @param iosystem a derived type which can be used in subsequent pio operations (defined in PIO_types).
 !! @param base @em optional argument can be used to offset the first io task - default base is task 1.
 !<
-  subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base)
-    use pio_types, only : pio_internal_error, pio_rearr_none
+  subroutine init_intracom(comp_rank, comp_comm, num_iotasks, num_aggregator, stride,  rearr, iosystem,base, rearr_opts)
+    use pio_types, only : pio_internal_error, pio_rearr_none, pio_rearr_opt_t
     integer(i4), intent(in) :: comp_rank
     integer(i4), intent(in) :: comp_comm
     integer(i4), intent(in) :: num_iotasks 
@@ -1612,6 +1646,7 @@ contains
     type (iosystem_desc_t), intent(out)  :: iosystem  ! io descriptor to initalize
 
     integer(i4), intent(in),optional :: base
+    type (pio_rearr_opt_t), intent(in), optional :: rearr_opts
     
     integer(i4) :: n_iotasks
     integer(i4) :: length
@@ -1633,7 +1668,7 @@ contains
     integer(i4) :: rearrFlag
 
 #ifdef TIMING
-    call t_startf("PIO_init")
+    call t_startf("PIO:PIO_init")
 #endif
 
     iosystem%error_handling = PIO_internal_error
@@ -1656,6 +1691,12 @@ contains
     iosystem%num_comptasks = iosystem%num_tasks
     iosystem%union_rank = comp_rank
     iosystem%rearr = rearr
+    if(present(rearr_opts)) then
+      iosystem%rearr_opts = rearr_opts
+    else
+      ! Set the default rearranger options
+      call init_iosystem_rearr_options(iosystem)
+    end if
 
     if(check) call checkmpireturn('init: after call to comm_size: ',ierr)
     ! ---------------------------------------
@@ -1742,7 +1783,7 @@ contains
 
     iotmp2(:)=0 
     call MPI_allreduce(iotmp, iotmp2, iosystem%num_tasks, MPI_INTEGER, MPI_SUM, comp_comm, ierr)
-    call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+    call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
     call alloc_check(iosystem%ioranks,n_iotasks,'init:n_ioranks')
     j=1
     iosystem%iomaster = -1
@@ -1870,7 +1911,7 @@ contains
          iosystem%io_rank, iosystem%iomaster, iosystem%comp_comm, iosystem%io_comm
 
 #ifdef TIMING
-    call t_stopf("PIO_init")
+    call t_stopf("PIO:PIO_init")
 #endif
   end subroutine init_intracom
 
@@ -1889,7 +1930,7 @@ contains
 !! @param io_comm    The io communicator 
 !! @param iosystem a derived type which can be used in subsequent pio operations (defined in PIO_types).
 !<
-  subroutine init_intercom(component_count, peer_comm, comp_comms, io_comm, iosystem)
+  subroutine init_intercom(component_count, peer_comm, comp_comms, io_comm, iosystem, rearr_opts)
     use pio_types, only : pio_internal_error, pio_rearr_box
     integer, intent(in) :: component_count
     integer, intent(in) :: peer_comm
@@ -1897,6 +1938,7 @@ contains
     integer, intent(in) :: io_comm     !  The io communicator
 
     type (iosystem_desc_t), intent(out)  :: iosystem(component_count)  ! io descriptor to initalize
+    type (pio_rearr_opt_t), intent(in), optional :: rearr_opts
 
     integer :: ierr
     logical :: is_inter
@@ -1908,7 +1950,7 @@ contains
     integer :: itmp
     
 #ifdef TIMING
-    call t_startf("PIO_init")
+    call t_startf("PIO:PIO_init")
 #endif
 #if defined(NO_MPI2) || defined(_MPISERIAL)
     call piodie( __PIO_FILE__,__LINE__, &
@@ -1927,6 +1969,12 @@ contains
        iosystem(i)%compmaster= MPI_PROC_NULL
        iosystem(i)%iomaster = MPI_PROC_NULL 
        iosystem(i)%numOST = PIO_num_OST
+       if(present(rearr_opts)) then
+          iosystem(i)%rearr_opts = rearr_opts
+       else
+          ! Set the default rearranger options
+          call init_iosystem_rearr_options(iosystem(i))
+       end if
 
 
        if(io_comm/=MPI_COMM_NULL) then
@@ -1938,11 +1986,11 @@ contains
              iam = -1
           end if
           call mpi_allreduce(iam, io_leader, 1, mpi_integer, MPI_MAX, peer_comm, ierr)
-          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
           ! Find the rank of the comp leader in peer_comm
           iam = -1
           call mpi_allreduce(iam, comp_leader, 1, mpi_integer, MPI_MAX, peer_comm, ierr)
-          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
           ! create the intercomm
           call mpi_intercomm_create(io_comm, 0, peer_comm, comp_leader, i, iosystem(i)%intercomm, ierr)
           ! create the union_comm
@@ -1951,7 +1999,7 @@ contains
           ! Find the rank of the io leader in peer_comm
           iam = -1
           call mpi_allreduce(iam, io_leader, 1, mpi_integer, MPI_MAX, peer_comm, ierr)
-          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
 
           ! Find the rank of the comp leader in peer_comm
           iosystem(i)%comp_rank = -1
@@ -1964,7 +2012,7 @@ contains
              end if
           end if
           call mpi_allreduce(iam, comp_leader, 1, mpi_integer, MPI_MAX, peer_comm, ierr)
-          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
 
           ! create the intercomm
           call mpi_intercomm_create(comp_comms(i), 0, peer_comm, io_leader, i, iosystem(i)%intercomm, ierr)
@@ -2014,11 +2062,11 @@ contains
           if(Debugasync) print *,__PIO_FILE__,__LINE__
           
           call MPI_allreduce(iosystem(i)%comproot, j, 1, MPI_INTEGER, MPI_MAX,iosystem(i)%union_comm,ierr)
-          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
           
           iosystem%comproot=j
           call MPI_allreduce(iosystem(i)%ioroot, j, 1, MPI_INTEGER, MPI_MAX,iosystem(i)%union_comm,ierr)
-          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
 
           iosystem%ioroot=j
 
@@ -2049,7 +2097,7 @@ contains
           call alloc_check(iosystem(i)%ioranks, iosystem(i)%num_iotasks,'init:n_ioranks')
           if(Debugasync) print *,__PIO_FILE__,__LINE__,iotmp
           call MPI_allreduce(iotmp,iosystem(i)%ioranks,iosystem(i)%num_iotasks,MPI_INTEGER,MPI_MAX,iosystem(i)%union_comm,ierr)
-          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+          call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
 
           if(Debugasync) print *,__PIO_FILE__,__LINE__,iosystem(i)%ioranks
           call dealloc_check(iotmp)
@@ -2100,7 +2148,7 @@ contains
     
     if(DebugAsync) print*,__PIO_FILE__,__LINE__, iosystem(1)%ioranks
 #ifdef TIMING
-    call t_stopf("PIO_init")
+    call t_stopf("PIO:PIO_init")
 #endif
 #endif
   end subroutine init_intercom
@@ -2152,7 +2200,7 @@ contains
     endif
     iotmp2(:)=0 
     call MPI_allreduce(iotmp,iotmp2,num_tasks,MPI_INTEGER,MPI_SUM,comm,ierr)
-    call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__FILE__,__LINE__)
+    call CheckMPIReturn('Call to MPI_ALLREDUCE()',ierr,__PIO_FILE__,__LINE__)
 
     numiotasks=SUM(iotmp2)
 
@@ -2364,15 +2412,30 @@ contains
 !! @param file @copydoc file_desc_t
 !! @param iotype : @copydoc PIO_iotype
 !! @param rearr : @copydoc PIO_rearr_method
+!! @param rearr_opts : @copydoc PIO_rearr_options
 !<
-  subroutine setiotype(file,iotype,rearr)
+  subroutine setiotype(file,iotype,rearr,rearr_opts)
+
+    use pio_types
 
     type (file_desc_t), intent(inout) :: file
     integer(i4), intent(in) :: iotype 
     integer(i4), intent(in) :: rearr
+    type (PIO_rearr_opt_t), intent(in), optional :: rearr_opts
 
     file%iotype = iotype
+    ! FIXME: Ideally the file_desc_t should contain a pointer to
+    ! iodesc_t and the rearranger and its options should be set
+    ! there - so that we can control the rearranger to be used
+    ! on a per file basis. The current design only contains 
+    ! a pointer to the iosystem_desc_t in the file_desc_t,
+    ! so each call results in setting the global rearr not
+    ! per file rearranger
     file%iosystem%rearr = rearr
+
+    if(present(rearr_opts)) then
+        file%iosystem%rearr_opts = rearr_opts
+    end if
 
   end subroutine setiotype
 
@@ -2448,7 +2511,7 @@ contains
 
 #endif
 #ifdef TIMING
-    call t_startf("PIO_createfile")
+    call t_startf("PIO:PIO_createfile")
 #endif
 
     if(debug.or.debugasync) print *,'createfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank, &
@@ -2543,7 +2606,7 @@ contains
     if(debug .and. file%iosystem%io_rank==0) print *,__PIO_FILE__,__LINE__,'open: ',file%fh, myfname
     deallocate(myfname)
 #ifdef TIMING
-    call t_stopf("PIO_createfile")
+    call t_stopf("PIO:PIO_createfile")
 #endif
   end function createfile
 !>
@@ -2612,7 +2675,7 @@ contains
     character(len=:), allocatable :: myfname
     integer :: namelen
 #ifdef TIMING
-    call t_startf("PIO_openfile")
+    call t_startf("PIO:PIO_openfile")
 #endif
 
 
@@ -2705,7 +2768,7 @@ contains
     if(ierr==0) file%file_is_open=.true.
     deallocate(myfname)
 #ifdef TIMING
-    call t_stopf("PIO_openfile")
+    call t_stopf("PIO:PIO_openfile")
 #endif
   end function PIO_openfile
 
@@ -2839,7 +2902,7 @@ contains
     logical, parameter :: check = .true.
 
 #ifdef TIMING
-    call t_startf("PIO_closefile")
+    call t_startf("PIO:PIO_closefile")
 #endif
     if(file%iosystem%async_interface .and. .not. file%iosystem%ioproc) then
        msg = PIO_MSG_CLOSE_FILE
@@ -2864,7 +2927,7 @@ contains
     if(ierr==0) file%file_is_open=.false.
 
 #ifdef TIMING
-    call t_stopf("PIO_closefile")
+    call t_stopf("PIO:PIO_closefile")
 #endif
 
 

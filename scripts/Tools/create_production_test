@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 #-----------------------------------------------------------------------------------------------
 #
 # create_production_test
@@ -26,19 +26,19 @@ NAME
 
   We use the following example to document running this script.
   If the current case is in
-      /ptmp/user/current_case 
+      /ptmp/user/current_case
   the production restart test will be created in
       /ptmp/user/current_case_testname
   where testname can be any of the tests currently supported.   The default is an ERS
 
-  possible testnames are 
-     ERS (exact restart from startup, 6 days + 5 days) 
-     ERT (exact restart from startup, 2 months + 1 month, default) 
-     ERI (hybrid/branch/exact restart test, 3+19/10+9/5+4 days) 
-     LAR (long term archive test) 
-     PFS (performance test setup) 
-     NCK (multi-instance validation vs single instance (default length)) 
-     CME (compare mct and esmf interfaces (10 days)) 
+  possible testnames are
+     ERS (exact restart from startup, 6 days + 5 days)
+     ERT (exact restart from startup, 2 months + 1 month, default)
+     ERI (hybrid/branch/exact restart test, 3+19/10+9/5+4 days)
+     LAR (long term archive test)
+     PFS (performance test setup)
+     NCK (multi-instance validation vs single instance (default length))
+     CME (compare mct and esmf interfaces (10 days))
 
   In order to run the test, you will need to
     - cd to /ptmp/user/current_case_testname
@@ -52,8 +52,8 @@ SYNOPSIS
    create_production_test -help
 
    create_production_test -test testname
- 
-   create_production_test 
+
+   create_production_test
 
 EOF
 }
@@ -71,7 +71,7 @@ if ($opts{'test'}) {
     $testname = $opts{'test'};
     my $accepttest;
     my @allowedtests = qw(ERS ERS_Lm3 ERI LAR PFS NCK CME);
-    foreach my $allowedtest (@allowedtests) { 
+    foreach my $allowedtest (@allowedtests) {
 	if ($testname eq $allowedtest) {
 	    $accepttest = 'yes';
 	    last;
@@ -97,15 +97,15 @@ system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 # Change to the new cloned test directory
 chdir("$testroot");
 
-# Write env_test.xml in the cloned test directory, needed by the test environment setup 
+# Write env_test.xml in the cloned test directory, needed by the test environment setup
 my $test = $testname;
 if  ($testname eq 'ERS_Lm3') {
     $test = "ERS";
 }
 writeEnvTestXML($testroot, $test);
 if  ($testname eq 'ERS_Lm3') {
-    $sysmod = "./xmlchange -noecho STOP_OPTION=nmonths"	; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-    $sysmod = "./xmlchange -noecho STOP_N=3"	; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    $sysmod = "./xmlchange --noecho STOP_OPTION=nmonths"	; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    $sysmod = "./xmlchange --noecho STOP_N=3"	; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
 # Create the testing file $testroot/$testname.test
@@ -134,16 +134,16 @@ sub writeEnvTestXML
     my $config = ConfigCase->new("");
 
     # Add all the elements of the driver config_component.xml file to $config
-    my $file = "$cimeroot/driver_cpl/cime_config/config_component.xml"; 
+    my $file = "$cimeroot/driver_cpl/cime_config/config_component.xml";
     $config->add_config_variables($file, 'unset', $cimeroot, $model);
 
-    # Then set some new values in $config 
+    # Then set some new values in $config
     my $testid = `date +%y%m%d-%H%M%S`;
     chomp $testid;
     $config->set('TESTCASE'    , $testname);
     $config->set('TEST_TESTID' , $testid);
 
-    # Set the parameters for the specified testname.  
+    # Set the parameters for the specified testname.
     # If no testname matches are found then issue error message.
     my $file = "$cimeroot/scripts/Testing/Testcases/config_tests.xml";
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$file");

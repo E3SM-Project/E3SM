@@ -1,3 +1,4 @@
+#define __PIO_FILE__ "pionfwrite_mod.F90"
 !>
 !! @file 
 !! $Revision$
@@ -83,7 +84,7 @@ contains
     request = MPI_REQUEST_NULL
 
 #ifdef TIMING
-    call t_startf("pio_write_nfdarray_{TYPE}")
+    call t_startf("PIO:pio_write_nfdarray_{TYPE}")
 #endif
     ierr = PIO_NOERR
     if(file%iosystem%ioproc) then
@@ -121,11 +122,11 @@ contains
           ! allocate space on root for copy of iobuf etc.
           iobuf_size=size(IOBUF)
           if(File%iosystem%num_iotasks>1) then
-             if(Debug) print *,__FILE__,__LINE__
+             if(Debug) print *,__PIO_FILE__,__LINE__
              call MPI_ALLREDUCE(iobuf_size,max_iobuf_size, &
                   1,MPI_INTEGER,MPI_MAX,File%iosystem%IO_comm,mpierr)
              call CheckMPIReturn(subName, mpierr)
-             if(Debug) print *,__FILE__,__LINE__,iobuf_size
+             if(Debug) print *,__PIO_FILE__,__LINE__,iobuf_size
              if (File%iosystem%io_rank==0) then
                    call alloc_check(temp_iobuf,max_iobuf_size)
              else
@@ -147,7 +148,7 @@ contains
 
           temp_count(1:ndims)=int(count(1:ndims))
 
-          if(Debug) print *,__FILE__,__LINE__,ndims,temp_start(1:ndims),temp_count(1:ndims)
+          if(Debug) print *,__PIO_FILE__,__LINE__,ndims,temp_start(1:ndims),temp_count(1:ndims)
 
           ! Every i/o proc send data to root
 
@@ -214,13 +215,13 @@ contains
 	           if(sum(temp_count(1:ndims))>0) then
 
 #ifdef TIMING
-                      call t_startf("nc_put_var2")
+                      call t_startf("PIO:nc_put_var2")
 #endif
                       ierr=nf90_put_var( fh,vid,	&
                            temp_iobuf,temp_start(1:ndims),temp_count(1:ndims))
                       if(Debug) print *, subname,__LINE__,i,fh,vid, ierr
 #ifdef TIMING
-                      call t_stopf("nc_put_var2")
+                      call t_stopf("PIO:nc_put_var2")
 #endif
                       if (Debug) print *, subName,': 0: done writing for ',i
                    else
@@ -248,7 +249,7 @@ contains
 
     call check_netcdf(File, ierr,subname,__LINE__)
 #ifdef TIMING
-    call t_stopf("pio_write_nfdarray_{TYPE}")
+    call t_stopf("PIO:pio_write_nfdarray_{TYPE}")
 #endif
 !  call mpi_barrier(file%iosystem%comp_comm, mpierr)
 !  call CheckMPIReturn(subName,mpierr)

@@ -201,7 +201,7 @@ if [ -z "$test_hist" ]; then
     status="GFAIL_NA"
     info="no history file in test case"
     print_result $status "$info"
-    exit 0
+    exit 1
 fi
 
 #----------------------------------------------------------------------
@@ -212,7 +212,7 @@ if [ $? -ne 0 ]; then
     status="GFAIL"
     info="error creating baseline directory"
     print_result $status "$info"
-    exit 0
+    exit 1
 fi
 chmod ug+w,a+rx $baseline_dir
 chmod ug+w,a+rx $baseline_dir/..
@@ -220,12 +220,12 @@ chmod ug+w,a+rx $baseline_dir/..
 #----------------------------------------------------------------------
 # Copy history file to baseline directory
 #----------------------------------------------------------------------
-cp $test_dir/$test_hist $baseline_dir/$baseline_hist
+cp -f $test_dir/$test_hist $baseline_dir/$baseline_hist
 if [ $? -ne 0 ]; then
     status="GFAIL"
     info="error copying history file to baseline directory"
     print_result $status "$info"
-    exit 0
+    exit 1
 fi
 chmod ug+w,a+r $baseline_dir/$baseline_hist
 

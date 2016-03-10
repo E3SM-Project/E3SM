@@ -2,8 +2,8 @@
 !! @file 
 !! @brief User interface Module for PIO, this is the only file a user program should 'use'
 !! 
-!! $Revision$
-!! $LastChangedDate$
+!! $Revision: 856 $
+!! $LastChangedDate: 2013-11-19 15:48:54 -0600 (Tue, 19 Nov 2013) $
 !<
 
 module pio
@@ -19,7 +19,11 @@ module pio
        pio_dupiodesc, pio_finalize, pio_set_hint, pio_getnumiotasks, pio_file_is_open, &
        pio_setnum_OST, pio_getnum_OST
 
-  use pio_types, only : io_desc_t, file_desc_t, var_desc_t, iosystem_desc_t, &
+  use pio_types, only : io_desc_t, file_desc_t, var_desc_t, iosystem_desc_t,&
+    pio_rearr_opt_t, pio_rearr_comm_fc_opt_t, pio_rearr_comm_fc_2d_enable,&
+    pio_rearr_comm_fc_1d_comp2io, pio_rearr_comm_fc_1d_io2comp,&
+    pio_rearr_comm_fc_2d_disable, pio_rearr_comm_unlimited_pend_req,&
+    pio_rearr_comm_p2p, pio_rearr_comm_coll,&
 	pio_int, pio_real, pio_double, pio_noerr, iotype_netcdf, &
 	iotype_pnetcdf, iotype_binary, iotype_direct_pbinary, iotype_pbinary, &
         PIO_iotype_binary, PIO_iotype_direct_pbinary, PIO_iotype_pbinary, &
@@ -63,12 +67,14 @@ module pio
   use pionfget_mod, only : PIO_get_var   => get_var
 
   use calcdecomp, only : pio_set_blocksize
+   
+
+
   implicit none
   public
 ! Added for pio2 compatability
   integer, parameter :: pio_offset_kind = pio_offset
   integer, parameter :: pio_rearr_subset = pio_rearr_box
-
 contains
   function pio_iam_iotask(iosystem) result(task)
     type(iosystem_desc_t), intent(in) :: iosystem

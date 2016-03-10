@@ -52,7 +52,7 @@ system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
 my $CASE           = `./xmlquery CASE           -value`;
 my $BUILD_COMPLETE = `./xmlquery BUILD_COMPLETE -value`;
 
-my $sysmod = "./preview_namelists -loglevel $opts{loglevel}";
+my $sysmod = "./preview_namelists";
 system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
 
 if ($BUILD_COMPLETE ne "TRUE") {

@@ -175,6 +175,7 @@ sub submitJobs()
 	    my $islastjob = 0;
 	    $islastjob = 1 if ($jobnum == $lastjobseqnum);
 	    $depjobid = $self->submitSingleJob($jobname, $depjobid, $islastjob);
+
 	}
     }
     $logger->debug("in submitJobs");
@@ -202,29 +203,37 @@ sub submitSingleJob()
 	$submitargs = '' ;
     }
 
-    $logger->info("Submitting job script: $scriptname");
     #my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname $sta_argument";
     chdir $config{'CASEROOT'};
     my $runcmd = "$config{'BATCHSUBMIT'} $submitargs $config{'BATCHREDIRECT'} ./$scriptname ";
-
     $logger->info(": $runcmd");
     my $output;
-
-    eval {
-	open (my $RUN, "-|", $runcmd) or $logger->logdie ("job submission failed, $!");
-	$output = <$RUN>;
-	close $RUN or $logger->logdie( "job submission failed: |$?|, |$!|");
-    };
-    my $exitstatus = ($?>>8);
-    if($exitstatus != 0)
-    {
-	$logger->logdie("job submission failed $?");
+    my $jobid;
+    my $exitstatus;
+    if($self->{batchtype} ne 'none'){
+	$logger->info("Submitting job script: $runcmd");
+	eval {
+	    open (my $RUN, "-|", $runcmd) or $logger->logdie ("job submission failed, $!");
+	    $output = <$RUN>;
+	    close $RUN or $logger->logdie( "job submission failed: |$?|, |$!|");
+	};
+	chomp $output;
+        $jobid = $self->getJobID($output);
+	$logger->debug( "Job ID: $jobid");
+	$exitstatus = ($?>>8);
+	if($exitstatus != 0)
+	{
+	    $logger->logdie("job submission failed $?");
+	}
+    }else{
+	$logger->info("Running job script: $runcmd");
+	system("$runcmd");
     }
-
     chomp $output;
 
     my $jobid = $self->getJobID($output);
     $logger->debug( "Job ID: $jobid");
+
     return $jobid;
 }
 
@@ -264,6 +273,7 @@ sub doResubmit()
 
     $logger->info( "resubmitting jobs...");
     $self->dependencyCheck($scriptname);
+
     $self->submitJobs($scriptname);
     $self->_decrementResubmitCounter($self->{caseconfig});
 
@@ -825,6 +835,9 @@ sub getSubmitArguments()
     return $submitargs;
 }
 
+#==============================================================================
+package Batch::BatchUtils_cetus;
+use base qw( Batch::BatchUtils_mira );
 #==============================================================================
 # Red herring method so the factory will work.
 #==============================================================================
