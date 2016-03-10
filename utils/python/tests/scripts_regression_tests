@@ -172,12 +172,13 @@ class TestWaitForTests(unittest.TestCase):
     ###########################################################################
     def simple_test(self, testdir, expected_results, extra_args=""):
     ###########################################################################
-        stat, output, errput = run_cmd("%s/wait_for_tests -p ACME_test TestStatus* %s" % (TOOLS_DIR, extra_args), ok_to_fail=True, from_dir=testdir)
+        cmd = "%s/wait_for_tests -p ACME_test TestStatus* %s" % (TOOLS_DIR, extra_args)
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=testdir)
         if (expected_results == ["PASS"]*len(expected_results)):
-            self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s" % (output, errput))
+            self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
         else:
             self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE,
-                             msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\nwait_for_tests output:\n%s\n\nerrput:\n%s" % (output, errput))
+                             msg="COMMAND '%s' SHOULD HAVE DETECTED FAILED TESTS\nwait_for_tests output:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
 
         lines = [line for line in output.splitlines() if line.startswith("Test '")]
         self.assertEqual(len(lines), 10)
@@ -366,11 +367,12 @@ class TestCreateTest(TestCreateTestCommon):
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
-        stat, output, errput = run_cmd("%s/create_test acme_test_only_pass %s" % (SCRIPT_DIR, extra_args), ok_to_fail=True)
+        cmd = "%s/create_test acme_test_only_pass %s" % (SCRIPT_DIR, extra_args)
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True)
         if (expect_works):
-            self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+            self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
         else:
-            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE, msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\ncreate_test output:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (output, errput, stat))
+            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE, msg="COMMAND '%s' SHOULD HAVE DETECTED FAILED TESTS\ncreate_test output:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (cmd, output, errput, stat))
 
     ###############################################################################
     def test_create_test_rebless_namelist(self):
@@ -524,11 +526,12 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
-        stat, output, errput = run_cmd("%s/jenkins_generic_job %s" % (TOOLS_DIR, extra_args), ok_to_fail=True)
+        cmd = "%s/jenkins_generic_job %s" % (TOOLS_DIR, extra_args)
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True)
         if (expect_works):
-            self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (output, errput))
+            self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
         else:
-            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE, msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (output, errput))
+            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE, msg="COMMAND '%s' SHOULD HAVE DETECTED FAILED TESTS\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
 
     ###########################################################################
     def threaded_test(self, expect_works, extra_args):
@@ -608,17 +611,18 @@ class TestBlessTestResults(TestCreateTestCommon):
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
-        stat, output, errput = run_cmd("%s/create_test %s %s" % (SCRIPT_DIR, self._test_name, extra_args), ok_to_fail=True)
+        cmd = "%s/create_test %s %s" % (SCRIPT_DIR, self._test_name, extra_args)
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True)
 
         if (self._hasbatch):
-            self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+            self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
             test_id = extra_args.split()[extra_args.split().index("-t") + 1]
             stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
 
         if (expect_works):
-            self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\nOutput:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+            self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\nOutput:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
         else:
-            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE, msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\nOutput:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (output, errput, stat))
+            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE, msg="COMMAND '%s' SHOULD HAVE DETECTED FAILED TESTS\nOutput:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (cmd, output, errput, stat))
 
     ###############################################################################
     def test_create_test_rebless_namelist(self):
@@ -772,8 +776,10 @@ class TestCimeCase(TestCreateTestCommon):
         self.assertEqual(build_complete, "TRUE",
                          msg="Build complete had wrong value '%s'" % build_complete)
 
-def _main_func():
 ###############################################################################
+
+def _main_func():
+
     if ("--fast" in sys.argv):
         sys.argv.remove("--fast")
         global FAST_ONLY

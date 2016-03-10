@@ -10,6 +10,7 @@ from CIME.utils import expect, get_cime_root, get_model
 logger = logging.getLogger(__name__)
 
 class Testlist(GenericXML):
+
     def __init__(self,infile):
         """
         initialize an object
@@ -18,25 +19,27 @@ class Testlist(GenericXML):
 
     def _get_testsv1(self, machine=None, category=None, compiler=None):
         tests = []
-        compsetnodes = self.get_node("compset")
+
         machatts = {}
-        if(category is not None):
-            machatts["testtype"]  = category
-        if(compiler is not None):
-            machatts["compiler"]  = compiler
-        logger.debug("compsetnodes %d"%len(compsetnodes))
+        if category is not None:
+            machatts["testtype"] = category
+        if compiler is not None:
+            machatts["compiler"] = compiler
+
+        compsetnodes = self.get_nodes("compset")
+        logger.debug("compsetnodes %d" % len(compsetnodes))
         for cnode in compsetnodes:
-            gridnodes = self.get_node("grid",root=cnode)
+            gridnodes = self.get_nodes("grid", root=cnode)
             logger.debug("  gridnodes %d"%len(gridnodes))
             for gnode in gridnodes:
-                testnamenodes = self.get_node("test",root=gnode)
+                testnamenodes = self.get_nodes("test",root=gnode)
                 logger.debug("    testnamenodes %d"%len(testnamenodes))
                 for tnode in testnamenodes:
-                    machnodes = self.get_node("machine",machatts,root=tnode)
+                    machnodes = self.get_nodes("machine",machatts,root=tnode)
                     logger.debug("      machnodes %d"%len(machnodes))
                     for mach in machnodes:
                         thistest = {}
-                        if (machine is None or (machine is not None and mach.text == machine)):
+                        if machine is None or (machine is not None and mach.text == machine):
                             thistest["compiler"] = mach.attrib["compiler"]
                             thistest["category"] = mach.attrib["testtype"]
                             thistest["machine"] = mach.text
@@ -50,43 +53,45 @@ class Testlist(GenericXML):
 
     def _get_testsv2(self, machine=None, category=None, compiler=None):
         tests = []
-        testnodes = self.get_node("test")
+        testnodes = self.get_nodes("test")
         machatts = {}
-        if(machine is not None):
+        if machine is not None:
             machatts["name"]      = machine
-        if(category is not None):
+        if category is not None:
             machatts["category"]  = category
-        if(compiler is not None):
+        if compiler is not None:
             machatts["compiler"]  = compiler
 
         for tnode in testnodes:
-            machnodes = self.get_node("machine",machatts,root=tnode)
+            machnodes = self.get_nodes("machine",machatts,root=tnode)
             thistest = {}
 
-            if(machnodes):
+            if machnodes:
                 for key in tnode.attrib.keys():
-                    if(key == "name"):
+                    if key == "name":
                         thistest["testname"] = tnode.attrib[key]
                     else:
                         thistest[key] = tnode.attrib[key]
+
                 for mach in machnodes:
                     for key in mach.attrib.keys():
-                        if (key == "name"):
+                        if key == "name":
                             thistest["machine"] = mach.attrib[key]
                         else:
                             thistest[key] = mach.attrib[key]
-                    optionnodes = self.get_node("option", root=mach)
+                    optionnodes = self.get_nodes("option", root=mach)
                     for onode in optionnodes:
-                       thistest[onode.attrib['name']]=onode.text
+                       thistest[onode.attrib['name']] = onode.text
                     tests.append(thistest)
+
         return tests
 
     def get_tests(self, machine=None, category=None, compiler=None):
-        if (self.version == "1.0"):
-            return self._get_testsv1(machine,category,compiler)
-        elif (self.version == "2.0"):
-            return self._get_testsv2(machine,category,compiler)
+        if self.version == "1.0":
+            return self._get_testsv1(machine, category, compiler)
+        elif self.version == "2.0":
+            return self._get_testsv2(machine, category, compiler)
         else:
             logger.critical("Did not recognize testlist file version %s for file %s"
-                             % (self.version,self.filename))
+                             % (self.version, self.filename))
 
