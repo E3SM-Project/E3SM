@@ -292,6 +292,7 @@ module ocn_time_integration
 
         !close unit
         close(errorUnit)
+        call mpas_release_unit(errorUnit)
 
       endif ! if(errorFlag)
 
@@ -301,7 +302,7 @@ module ocn_time_integration
       nanCheck = sum(normalVelocity)
       if (nanCheck /= nanCheck) then
          write(stderrUnit,*) 'Ocean Abort: NaN detected'
-         call mpas_dmpar_global_abort('Ocean Abort: NaN detected')
+         call mpas_dmpar_global_abort('MPAS-ocean: Ocean Abort: NaN detected')
       endif
 
    end subroutine test_ocean_state
