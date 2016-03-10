@@ -267,6 +267,10 @@
     		<nml_option name="config_sea_freezing_temperature_type"           type="character"     default_value="mushy"/>
 	</nml_record>
 
+	<nml_record name="diagnostics" in_defaults="true">
+    		<nml_option name="config_check_state"                             type="logical"       default_value="false"/>
+	</nml_record>
+
 	<streams>
 	  <stream name="mesh" 
 		  type="none"
