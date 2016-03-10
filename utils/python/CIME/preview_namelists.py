@@ -8,6 +8,7 @@ from CIME.case import Case
 from CIME.env_module import EnvModule
 
 import glob, shutil
+logger = logging.getLogger(__name__)
 
 def preview_namelists(dryrun=False, case=None, casedir=None):
     if (case is None):
@@ -30,8 +31,8 @@ def preview_namelists(dryrun=False, case=None, casedir=None):
     debug = case.get_value("DEBUG")
     mpilib = case.get_value("MPILIB")
 
-    logging.debug("LID is: '%s'" % os.getenv("LID", ""))
-    logging.debug("caseroot is: '%s'" % caseroot)
+    logger.debug("LID is: '%s'" % os.getenv("LID", ""))
+    logger.debug("caseroot is: '%s'" % caseroot)
 
     dryrun = True if (testcase == "SBN") else dryrun
 
@@ -43,11 +44,11 @@ def preview_namelists(dryrun=False, case=None, casedir=None):
         try:
             os.makedirs(rundir)
         except OSError:
-            logging.warning("Not able to create $RUNDIR, trying a subdirectory of $CASEROOT")
+            logger.warning("Not able to create $RUNDIR, trying a subdirectory of $CASEROOT")
             rundir = os.path.join(caseroot, rundir)
             try:
                 os.makedirs(rundir)
-                logging.info("Success! Setting RUNDIR=%s" % rundir)
+                logger.info("Success! Setting RUNDIR=%s" % rundir)
                 case.set_value("RUNDIR", rundir)
             except OSError:
                 expect(False, "Could not create rundir")
@@ -65,10 +66,14 @@ def preview_namelists(dryrun=False, case=None, casedir=None):
         for dir_to_make in dirs_to_make:
             if (not os.path.isdir(dir_to_make)):
                 try:
-                    logging.debug("Making dir '%s'" % dir_to_make)
+                    logger.debug("Making dir '%s'" % dir_to_make)
                     os.makedirs(dir_to_make)
                 except OSError as e:
                     expect(False, "Could not make directory '%s', error: %s" % (dir_to_make, e))
+
+    # Remove the drv_flds_in file if it exists
+    if ( os.path.isfile(os.path.join(rundir,"drv_flds_in"))):
+        os.remove(os.path.join(rundir,"drv_flds_in"))
 
     # Create namelists
     for model in models:
@@ -77,7 +82,7 @@ def preview_namelists(dryrun=False, case=None, casedir=None):
         config_dir = os.path.dirname(config_file)
         cmd = os.path.join(config_dir, "buildnml")
 
-        if (logging.getLogger().level == logging.DEBUG):
+        if (logger.level == logging.DEBUG):
             run_cmd("PREVIEW_NML=1 %s %s" % (cmd, caseroot))
         else:
             run_cmd("%s %s" % (cmd, caseroot))
@@ -95,7 +100,7 @@ def preview_namelists(dryrun=False, case=None, casedir=None):
     for cpglob in ["*_in_[0-9]*", "*modelio*", "*_in",
                    "*streams*txt*", "*stxt", "*maps.rc", "*cism.config*"]:
         for file_to_copy in glob.glob(os.path.join(rundir, cpglob)):
-            logging.debug("Copy file from '%s' to '%s'" % (file_to_copy, docdir))
+            logger.debug("Copy file from '%s' to '%s'" % (file_to_copy, docdir))
             shutil.copy2(file_to_copy, docdir)
 
     # Copy over chemistry mechanism docs if they exist
