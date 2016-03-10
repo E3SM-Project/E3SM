@@ -1223,8 +1223,8 @@ type="char*16"
 category="time" 
 group="seq_timemgr_inparm"
 valid_values="none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,monthly,nmonth,nyears,nyear,date,ifdays0,end">
-sets the run length with stop_n and stop_ymd
-stop_option alarms are:
+sets the restart frequency with restart_n and restart_ymd
+restart_option alarms are:
 [none/never], turns option off
 [nstep/s]   , restarts every restart_n nsteps  , relative to current run start time
 [nsecond/s] , restarts every restart_n nseconds, relative to current run start time
@@ -1244,7 +1244,7 @@ id="restart_n"
 type="integer"
 category="time" 
 group="seq_timemgr_inparm">
-Ssets model restart writes with restart_option and restart_ymd (same options as stop_n)
+Sets model restart writes with restart_option and restart_ymd (same options as stop_n)
 </entry>
 
 <entry
@@ -1348,6 +1348,34 @@ category="time"
 group="seq_timemgr_inparm">
 date associated with histavg_option date.  yyyymmdd format.  
 set by AVGHIST_DATE in env_run.xml.
+</entry>
+
+<entry
+id="barrier_option"
+type="char*16"
+category="time" 
+group="seq_timemgr_inparm"
+valid_values="none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,monthly,nmonth,nyears,nyear,date,ifdays0,end">
+sets the driver barrier frequency to sync models across all tasks with barrier_n and barrier_ymd
+barrier_option alarms are like restart_option
+default: never
+</entry>
+
+<entry
+id="barrier_n"
+type="integer"
+category="time" 
+group="seq_timemgr_inparm">
+Sets model barriers with barrier_option and barrier_ymd (same options as stop_n)
+default: 1
+</entry>
+
+<entry
+id="barrier_ymd"
+type="integer"
+category="time" 
+group="seq_timemgr_inparm">
+Date in yyyymmdd format, sets model barriers date with barrier_option and barrier_n
 </entry>
 
 <entry
