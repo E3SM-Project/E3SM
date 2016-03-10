@@ -3330,7 +3330,7 @@
   <entry id="DRV_THREADING" 
 	 type="logical"
 	 valid_values="TRUE,FALSE"  
-	 value="FALSE" 
+	 value="TRUE"
 	 group="run_flags"
 	 sdesc="Turns on component varying thread control in the driver"
 	 ></entry>
