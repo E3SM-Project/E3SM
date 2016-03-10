@@ -2,7 +2,7 @@
 .SUFFIXES: .F90 .o .c .f90
 # name of macros file - but default this is generic
 
-VPATH := $(TIMING_DIR) $(GPTL_DIR)
+VPATH := $(GPTL_DIR)
 
 # Determine whether to compile threaded or not
 ifeq ($(strip $(BUILD_THREADED)),TRUE)
@@ -27,12 +27,10 @@ endif
 # But must be AFTER any definitions it uses are defined.
 # So be careful if moving this either earlier or later in the makefile!!!
 include $(MACFILE)
-
-INCLDIR += -I$(GPTL_DIR)
-
 ifdef GPTL_CPPDEFS
-  CPPDEFS += $(GPTL_CPPDEFS)
+  CPPDEFS+=$(GPTL_CPPDEFS)
 endif
+INCLDIR += -I$(GPTL_DIR)
 
 ifeq ($(strip $(MPILIB)), mpi-serial)
   CC      := $(SCC)
@@ -45,15 +43,6 @@ else
   FC := $(MPIFC)
   CPPDEFS += -DHAVE_MPI
 endif
-ifdef PAPI_INC
-  CPPDEFS += -DHAVE_PAPI
-  INCLDIR += -I$(PAPI_INC)
-endif
-ifeq ($(strip $(SMP)),TRUE)
-  CPPDEFS += -DTHREADED_OMP
-endif
-
-
 ifdef CPRE
   FPPDEFS := $(patsubst -D%,$(CPRE)%,$(CPPDEFS)) 
 else
@@ -62,14 +51,14 @@ endif
 
 
 
-OBJS = gptl.o util.o get_memusage.o print_memusage.o \
-       gptl_papi.o f_wrappers.o perf_mod.o perf_utils.o \
-       pr_summary.o gptlf.o print_rusage.o memstats.o \
-       getoverhead.o hashstats.o
+OBJS = gptl.o GPTLutil.o GPTLget_memusage.o GPTLprint_memusage.o \
+       gptl_papi.o f_wrappers.o perf_mod.o perf_utils.o
 
 
 libgptl.a: $(OBJS)
 	$(AR) ruv $@ $(OBJS)
+
+
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS) $(CPPDEFS) $<
@@ -96,7 +85,7 @@ install: libgptl.a
 perf_mod.o: perf_utils.o
 f_wrappers.o: gptl.h private.h
 f_wrappers_pmpi.o: gptl.h private.h
-gptl.o: gptl.h private.h gptlf.o
+gptl.o: gptl.h private.h
 util.o: gptl.h private.h
 gptl_papi.o: gptl.h private.h
 pmpi.o: gptl.h private.h
