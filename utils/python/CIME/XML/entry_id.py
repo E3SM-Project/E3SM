@@ -19,7 +19,14 @@ class EntryID(GenericXML):
         """
         Set the value of an entry to the default value for that entry
         """
-        # Need comment here
+        # Hangle this case:
+        # <entry id ...>
+        #  <values>
+        #   <value A="a1">X</value>
+        #   <value A="a2">Y</value>
+        #   <value A="a3">Z</value>
+        #  </values>
+        # </entry>
         valnodes = self.get_nodes("value", root=node)
         for valnode in valnodes:
             for att in valnode.attributes:

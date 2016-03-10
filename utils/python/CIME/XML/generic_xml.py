@@ -16,7 +16,13 @@ class GenericXML(object):
         """
         self.tree = None
 
-        # Hold arbitary values? Why?
+        # Hold arbitary values. In create_newcase we may set values
+        # for xml files that haven't been created yet. We need a place
+        # to store them until we are ready to create the file. At file
+        # creation we get the values for those fields from this lookup
+        # table and then remove the entry. This was what I came up
+        # with in the perl anyway and I think that we still need it
+        # here.
         self.lookups = {}
         self.lookups['CIMEROOT'] = get_cime_root()
 
