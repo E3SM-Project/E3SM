@@ -15,13 +15,13 @@
 
   <entry id="DATM_MODE">
     <type>char</type>
-    <valid_values>CORE2_NYF,CORE2_IAF,TN460,CLM_QIAN,CLM1PT,CLMCRUNCEP,CLMCRUNCEP_V5,CPLHIST3HrWx,COPYALL_NPS_v1,COPYALL_NPS_CORE2_v1,WRF,WW3</valid_values>
+    <valid_values>CORE2_NYF,CORE2_IAF,TN460,CLM_QIAN,CLM1PT,CLMCRUNCEP,CLMCRUNCEP_V5,CLMGSWP3,CPLHIST3HrWx,COPYALL_NPS_v1,COPYALL_NPS_CORE2_v1,WRF,WW3</valid_values>
     <default_value>CORE2_NYF</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
     <desc>Mode for data atmosphere component.
       The default is CORE2_NYF (CORE2 normal year forcing) is the 
-      DATM mode used in C and G compsets. CLM_QIAN, CLMCRUNCEP and CLM1PT are 
+      DATM mode used in C and G compsets. CLM_QIAN, CLMCRUNCEP, CLMGSWP3 and CLM1PT are 
       modes using observational data for forcing CLM in I compsets.</desc>
     <values>
       <value compset="%NYF"  >CORE2_NYF</value>
@@ -30,6 +30,7 @@
       <value compset="%NPSC2">COPYALL_NPS_CORE2_v1</value>
       <value compset="%QIA"  >CLM_QIAN</value>
       <value compset="%CRU"  >CLMCRUNCEP</value>
+      <value compset="%GSW"  >CLMGSWP3</value>
       <value compset="%1PT"  >CLM1PT</value>
       <value compset="%S1850">CPLHIST3HrWx</value> 
     </values>
@@ -144,16 +145,22 @@
       <value compset="2000.*_DATM%1PT">1</value>
       <value compset="1850.*_DATM%QIA">1</value>
       <value compset="1850.*_DATM%CRU">1</value>
+      <value compset="1850.*_DATM%GSW">1</value>
       <value compset="2000.*_DATM%QIA">1</value>
       <value compset="HIST.*_DATM%QIA">1895</value>
       <value compset="HIST.*_DATM%CRU">1901</value>
+      <value compset="HIST.*_DATM%GSW">1901</value>
       <value compset="4804.*_DATM%QIA">1</value>
       <value compset="RCP.*_DATM%QIA">2004</value> 
       <value compset="RCP.*_DATM%CRU">2005</value> 
+      <value compset="RCP.*_DATM%GSW">2005</value> 
       <value compset="2003.*_DATM%QIA.*_TEST">1</value> 
       <value compset="1850.*_DATM%CRU">1</value>
       <value compset="2000.*_DATM%CRU">1</value>
       <value compset="2003.*_DATM%CRU">1</value>
+      <value compset="1850.*_DATM%GSW">1</value>
+      <value compset="2000.*_DATM%GSW">1</value>
+      <value compset="2003.*_DATM%GSW">1</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -168,16 +175,22 @@
       <value compset="2000.*_DATM%1PT">1972</value>
       <value compset="1850.*_DATM%QIA">1948</value>
       <value compset="1850.*_DATM%CRU">1901</value>
+      <value compset="1850.*_DATM%GSW">1901</value>
       <value compset="2000.*_DATM%QIA">1972</value>
       <value compset="HIST.*_DATM%QIA">1948</value>
       <value compset="HIST.*_DATM%CRU">1901</value>
+      <value compset="HIST.*_DATM%GSW">1901</value>
       <value compset="4804.*_DATM%QIA">1948</value>
       <value compset="RCP.*_DATM%QIA" >1972</value> 
       <value compset="RCP.*_DATM%CRU" >1991</value> 
+      <value compset="RCP.*_DATM%GSW" >1991</value> 
       <value compset="2003.*_DATM%QIA.*_TEST">2002</value> 
       <value compset="1850.*_DATM%CRU">1901</value>
       <value compset="2000.*_DATM%CRU">1991</value>
       <value compset="2003.*_DATM%CRU">2002</value>
+      <value compset="1850.*_DATM%GSW">1901</value>
+      <value compset="2000.*_DATM%GSW">1991</value>
+      <value compset="2003.*_DATM%GSW">2002</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -192,16 +205,22 @@
       <value   compset="2000.*_DATM%1PT">2004</value> 
       <value   compset="1850.*_DATM%QIA">1972</value> 
       <value   compset="1850.*_DATM%CRU">1920</value> 
+      <value   compset="1850.*_DATM%GSW">1920</value> 
       <value   compset="2000.*_DATM%QIA">2004</value> 
       <value   compset="HIST.*_DATM%QIA">1972</value>
       <value   compset="HIST.*_DATM%CRU">1920</value>
+      <value   compset="HIST.*_DATM%GSW">1920</value>
       <value   compset="4804.*_DATM%QIA">2004</value>
       <value   compset="RCP.*_DATM%QIA">2004</value> 
       <value   compset="RCP.*_DATM%CRU">2010</value> 
+      <value   compset="RCP.*_DATM%GSW">2010</value> 
       <value   compset="2003.*_DATM%QIA.*_TEST">2003</value> 
       <value   compset="1850.*_DATM%CRU">1920</value> 
       <value   compset="2000.*_DATM%CRU">2010</value>
       <value   compset="2003.*_DATM%CRU">2003</value>
+      <value   compset="1850.*_DATM%GSW">1920</value> 
+      <value   compset="2000.*_DATM%GSW">2010</value>
+      <value   compset="2003.*_DATM%GSW">2003</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -220,6 +239,11 @@
     <desc compset="^2003_DATM%CRU"	>CRUNCEP atm input data for 2002-2003:</desc>
     <desc compset="^HIST_DATM%CRU"	>CRUNCEP atm input data for 1901-1920:</desc>
     <desc compset="^RCP[2468]_DATM%CRU"	>CRUNCEP atm input data for 1991-2010:</desc>
+    <desc compset="^1850_DATM%GSW"	>GSWP3 atm input data for 1901-1920:</desc>
+    <desc compset="^2000_DATM%GSW"	>GSWP3 atm input data for 1991-2010:</desc>
+    <desc compset="^2003_DATM%GSW"	>GSWP3 atm input data for 2002-2003:</desc>
+    <desc compset="^HIST_DATM%GSW"	>GSWP3 atm input data for 1901-1920:</desc>
+    <desc compset="^RCP[2468]_DATM%GSW"	>GSWP3 atm input data for 1991-2010:</desc>
     <desc compset="^1850_DATM%S1850"	>CPL history input data:</desc>
     <desc compset="^2000_DATM%1PT"	>single point tower site atm input data:</desc> 
     <desc compset="_DATM%NYF"		>COREv2 datm normal year forcing: (requires additional user-supplied data)</desc>

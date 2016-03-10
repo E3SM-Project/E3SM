@@ -27,6 +27,10 @@
 <histavg_ymd>$AVGHIST_DATE</histavg_ymd>
 <max_cplstep_time>0.0</max_cplstep_time>
 
+<barrier_option>$BARRIER_OPTION</barrier_option>
+<barrier_n>$BARRIER_N</barrier_n>
+<barrier_ymd>$BARRIER_DATE</barrier_ymd>
+
 <!-- =========================================  -->
 <!--- seq_infodata_inparm                       -->
 <!-- =========================================  -->

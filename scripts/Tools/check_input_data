@@ -226,7 +226,7 @@ foreach $i (@filelocations) {
         if ($docheck) {
            if (($checkopt)  && ($fileneed =~ m/.*(\w)+.*/)) {
 	      if (! -e $fileneed) {
-                 $logger->warn( "File is missing: $fileneed ");
+		  print "File is missing: $fileneed \n";
                  $status = 1;
               }
            }
@@ -234,7 +234,7 @@ foreach $i (@filelocations) {
 	      my $fileloc = $svn_loc.$filend;     # Location in subversion repository.
   	      my $lsearch = $fileloc;             # Variable used in  searches for symbolic links.
 	      isinrepository($fileloc) ? dataexport($fileneed, $fileloc) : 
-		 $logger->warn( "File was not found in svn repo: $fileloc ");
+		  print "File was not found in svn repo: $fileloc \n";
 	   }
 	   if (($isinput) && ($prestageopt)) {
 	      my $filecopy = $prestage_rootdir.$filend;
@@ -242,13 +242,13 @@ foreach $i (@filelocations) {
               if (-d $fileneed) {
                  system("umask 2; mkdir -p -m 775 $dirname");
 	         system("cp $fileneed/* $filecopy/ 2>/dev/null");
-                 $logger->info( "Dir  copied to: $filecopy ");
+                 print "Dir  copied to: $filecopy \n";
               } else {
                  if ((-e $fileneed) && (!-e $filecopy)) {
 	            $dirname =~  s!/[^/]+$!!;
   	            system("umask 2; mkdir -p -m 775 $dirname");
 	            system("cp $fileneed $filecopy");
-	            $logger->info( "File copied to: $filecopy");
+	            print "File copied to: $filecopy\n";
                  }
 	      }
 	   }
@@ -256,7 +256,7 @@ foreach $i (@filelocations) {
         else {
            if (($checkopt)  && ($fileneed =~ m/.*(\w)+.*/)) {
 	      if (! -e $fileneed) {
-		 $logger->info( "File status unknown: $fileneed ");
+		 print "File status unknown: $fileneed \n";
               }
            }
         }
