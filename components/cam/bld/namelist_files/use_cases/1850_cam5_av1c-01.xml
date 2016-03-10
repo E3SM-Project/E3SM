@@ -77,7 +77,7 @@
 <bc_a4_ext_file       >atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</bc_a4_ext_file>
 <mam7_num_a1_ext_file >atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</mam7_num_a1_ext_file>
 <num_a2_ext_file      >atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</num_a2_ext_file>
-<mam7_num_a3_ext_file >atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</mam7_num_a3_ext_file>
+<mam7_num_a3_ext_file >atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</mam7_num_a3_ext_file> <!-- This is to set num_a4 emissions -->
 <pom_a4_ext_file      >atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</pom_a4_ext_file>
 <so4_a1_ext_file      >atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</so4_a1_ext_file>
 <so4_a2_ext_file      >atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</so4_a2_ext_file>
@@ -88,9 +88,9 @@
 <dms_emis_file	      >atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</dms_emis_file>
 <so2_emis_file	      >atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</so2_emis_file>
 <bc_a4_emis_file      >atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</bc_a4_emis_file>
-<mam7_num_a1_emis_file>atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</mam7_num_a1_emis_file>
+<mam7_num_a1_emis_file>atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</mam7_num_a1_emis_file> 
 <num_a2_emis_file     >atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</num_a2_emis_file>
-<mam7_num_a3_emis_file>atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</mam7_num_a3_emis_file>
+<mam7_num_a3_emis_file>atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</mam7_num_a3_emis_file> <!-- This is to set num_a4 emissions -->
 <pom_a4_emis_file     >atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</pom_a4_emis_file>
 <so4_a1_emis_file     >atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</so4_a1_emis_file>
 <so4_a2_emis_file     >atm/cam/chem/trop_mozart_aero/emis/NOT_YET_SPECIFIED</so4_a2_emis_file>
