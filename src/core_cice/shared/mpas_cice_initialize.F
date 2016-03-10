@@ -320,6 +320,11 @@ contains
                   block, &
                   domain % configs)
 
+          else if (trim(config_initial_condition_type) == "no_ice") then
+
+             ! no ice initial condition
+             continue
+
           else
 
              write(stderrUnit,*) "Ice initial condition type unknown!"
