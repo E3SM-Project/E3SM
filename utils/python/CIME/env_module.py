@@ -29,8 +29,8 @@ class EnvModule(object):
     def load_env_for_case(self):
         mach_specific = EnvMachSpecific(caseroot=self._caseroot)
 
-        module_nodes = mach_specific.get_node("modules")
-        env_nodes    = mach_specific.get_node("environment_variables")
+        module_nodes = mach_specific.get_nodes("modules")
+        env_nodes    = mach_specific.get_nodes("environment_variables")
 
         if (module_nodes is not None):
             modules_to_load = self._compute_module_actions(module_nodes)

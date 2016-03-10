@@ -8,6 +8,7 @@ from env_base import EnvBase
 logger = logging.getLogger(__name__)
 
 class EnvCase(EnvBase):
+
     def __init__(self, case_root=os.getcwd(), infile="env_case.xml"):
         """
         initialize an object interface to file env_case.xml in the case directory

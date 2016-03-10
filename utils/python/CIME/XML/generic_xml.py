@@ -15,13 +15,16 @@ class GenericXML(object):
         Initialize an object
         """
         self.tree = None
+
+        # Hold arbitary values? Why?
         self.lookups = {}
         self.lookups['CIMEROOT'] = get_cime_root()
-        if(infile == None):
+
+        if infile == None:
             # if file is not defined just return
             self.filename = None
             return
-        if(os.path.isfile(infile) and os.access(infile, os.R_OK)):
+        if os.path.isfile(infile) and os.access(infile, os.R_OK):
             # If file is defined and exists, read it
             self.filename = infile
             self.read(infile)
@@ -30,47 +33,65 @@ class GenericXML(object):
             # and set it's id to file
             self.filename = infile
             root = ET.Element("xml")
-            root.set('version','1.0')
-            self.root = ET.SubElement(root,"file")
-            self.root.set('id',infile)
+            root.set("version", "1.0")
+            self.root = ET.SubElement(root, "file")
+            self.root.set("id", infile)
             self.tree = ET.ElementTree(root)
 
     def read(self, infile):
         """
         Read and parse an xml file into the object
         """
-        logger.debug("read: "+infile)
+        logger.debug("read: " + infile)
         self.tree = ET.parse(infile)
         self.root = self.tree.getroot()
-        if ("version" in self.root.attrib):
+        if "version" in self.root.attrib:
             self.version = self.root.attrib["version"]
         else:
             self.version = "1.0"
         logger.debug("File version is "+self.version)
 
-
     def write(self, outfile=None):
         """
         Write an xml file from data in self
         """
-        if(outfile is None):
+        if outfile is None:
             outfile = self.filename
-        logger.debug("write: "+ outfile)
+
+        logger.debug("write: " + outfile)
         xmlstr = ET.tostring(self.root)
         doc = minidom.parseString(xmlstr)
         with open(outfile,'w') as xmlout:
             doc.writexml(xmlout,addindent='  ')
 
-
     def get_node(self, nodename, attributes=None, root=None):
         """
-        Get an xml element matching nodename with optional attributes
+        Get an xml element matching nodename with optional attributes.
+
+        Error unless exactly one match.
         """
-        if(root is None):
+        nodes = self.get_nodes(nodename, attributes, root)
+        expect(len(nodes) == 1, "Incorrect number of matches, %d, for nodename '%s' and attrs '%s' in file '%s'" %
+               (len(nodes), nodename, attributes, self.filename))
+        return nodes[0]
+
+    def get_optional_node(self, nodename, attributes=None, root=None):
+        """
+        Get an xml element matching nodename with optional attributes.
+
+        Return None if no match.
+        """
+        nodes = self.get_nodes(nodename, attributes, root)
+        expect(len(nodes) <= 1, "Multiple matches for nodename '%s' and attrs '%s' in file '%s'" %
+               (nodename, attributes, self.filename))
+        return nodes[0] if nodes else None
+
+    def get_nodes(self, nodename, attributes=None, root=None):
+        if root is None:
             root = self.root
         nodes = []
         xpath = ".//"+nodename
-        if(attributes is not None):
+        if attributes is not None:
             keys = list(attributes.keys())
             # xml.etree has limited support for xpath and does not allow more than
             # one attribute in an xpath query so we query seperately for each attribute
@@ -78,13 +99,13 @@ class GenericXML(object):
             for key in keys:
                 xpath = ".//%s[@%s=\'%s\']" % (nodename,key,attributes[key])
                 newnodes = root.findall(xpath)
-                if(not nodes):
+                if not nodes:
                     nodes = newnodes
                 else:
                     for node in nodes[:]:
-                        if (node not in newnodes):
+                        if node not in newnodes:
                             nodes.remove(node)
-                if(not nodes):
+                if not nodes:
                     return []
         else:
             nodes = root.findall(xpath)
@@ -95,11 +116,11 @@ class GenericXML(object):
         """
         Add element node to self at root
         """
-        if(root is None):
+        if root is None:
             root = self.root
         self.root.append(node)
 
-    def get_value(self, item,resolved=True):
+    def get_value(self, item, resolved=True):
         """
         get_value is expected to be defined by the derived classes, if you get here it is an error.
         """
@@ -108,16 +129,16 @@ class GenericXML(object):
         if item in self.lookups.keys():
             result = self.lookups[item]
 
-        if (result is None):
+        if result is None:
             logger.debug("No value available for item '%s'" % item)
-        elif(resolved):
+        elif resolved:
             result = self.get_resolved_value(result)
 
         return result
 
-    def set_value(self,vid, value):
-        valnodes = self.get_node(vid)
-        if(valnodes):
+    def set_value(self, vid, value):
+        valnodes = self.get_nodes(vid)
+        if valnodes:
             for node in valnodes:
                 node.text = value
         else:
@@ -140,7 +161,7 @@ class GenericXML(object):
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
         item_data = raw_value
 
-        if (item_data is None):
+        if item_data is None:
             return None
 
         for m in env_ref_re.finditer(item_data):
@@ -151,14 +172,13 @@ class GenericXML(object):
 
         for m in reference_re.finditer(item_data):
             var = m.groups()[0]
-            logger.debug("find: "+var)
+            logger.debug("find: " + var)
             ref = self.get_value(var)
-            if(ref is not None):
-                logger.debug("resolve: "+ref)
+            if ref is not None:
+                logger.debug("resolve: " + ref)
                 item_data = item_data.replace(m.group(), self.get_resolved_value(ref))
-            elif(var in os.environ):
-                logging.warn("resolve from env: "+var)
+            elif var in os.environ:
+                logging.warn("resolve from env: " + var)
                 item_data = item_data.replace(m.group(), os.environ[var])
-
 
         return item_data

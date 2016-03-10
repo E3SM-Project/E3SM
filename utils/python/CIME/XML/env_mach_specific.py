@@ -13,8 +13,8 @@ class EnvMachSpecific(GenericXML):
         """
         initialize an object interface to file env_mach_specific.xml in the case directory
         """
-	if(os.path.isabs(infile)):
+	if os.path.isabs(infile):
 	    fullpath = infile
         else:
-            fullpath = os.path.join(caseroot,infile)
+            fullpath = os.path.join(caseroot, infile)
         GenericXML.__init__(self, fullpath)
