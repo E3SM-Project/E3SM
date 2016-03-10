@@ -6,7 +6,7 @@ module docn_comp_mod
 ! !USES:
 
   use shr_const_mod
-  use shr_frz_mod
+  use shr_frz_mod, only: shr_frz_freezetemp
   use shr_sys_mod
   use shr_kind_mod     , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, &
                                CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
