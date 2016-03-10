@@ -512,6 +512,7 @@
 
   <machine MACH="corip1">
     <DESC>NERSC XC40 Haswell, os is CNL, 32 pes/node, batch system is Slurm</DESC>
+    <NODENAME_REGEX>cori</NODENAME_REGEX>
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
     <CESMSCRATCHROOT>$ENV{SCRATCH}</CESMSCRATCHROOT>
@@ -559,9 +560,11 @@
     </mpirun>
     <module_system type="module">
       <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+      <init_path lang="python">/opt/modules/default/init/python.py</init_path>
       <init_path lang="sh">/opt/modules/default/init/sh</init_path>
       <init_path lang="csh">/opt/modules/default/init/csh</init_path>
       <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/opt/modules/default/bin/modulecmd python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
