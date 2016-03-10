@@ -12,6 +12,7 @@
 				<member name="mesh" type="stream"/>
 				<member name="tracers" type="var_struct"/>
 				<member name="layerThickness" type="var"/>
+				<member name="normalVelocity" type="var"/>
 				<member name="ssh" type="var"/>
 				<member name="maxLevelEdgeTop" type="var"/>
 				<member name="vertCoordMovementWeights" type="var"/>

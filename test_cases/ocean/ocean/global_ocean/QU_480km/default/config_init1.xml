@@ -37,6 +37,7 @@
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init1.xml" path_base="script_configuration_dir"/>
+		<option name="config_global_ocean_depth_conversion_factor">0.01</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">

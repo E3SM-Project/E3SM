@@ -13,6 +13,7 @@
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init2.xml" path_base="script_configuration_dir"/>
+		<option name="config_global_ocean_depth_conversion_factor">0.01</option>
 		<option name="config_use_debugTracers">.true.</option>
 	</namelist>
 

@@ -2,7 +2,7 @@
 <config case="init_step2">
 
 	<add_executable source="model" dest="ocean_model"/>
-        <add_executable source="metis" dest="metis"/>
+		<add_executable source="metis" dest="metis"/>
 
 	<add_link source="../init_step1/culled_mesh.nc" dest="mesh.nc"/>
 	<add_link source="../init_step1/culled_graph.info" dest="graph.info"/>
@@ -14,6 +14,7 @@
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init2.xml" path_base="script_core_dir" path="global_ocean"/>
+		<option name="config_global_ocean_depth_conversion_factor">0.01</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
