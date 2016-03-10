@@ -339,6 +339,8 @@ if not os.path.exists(args.config_file):
 if not args.work_dir:
 	args.work_dir = os.path.dirname(os.path.realpath(__file__))
 
+args.work_dir = os.path.abspath(args.work_dir)
+
 if not args.model_runtime:
 	args.model_runtime = '%s/runtime_definitions/mpirun.xml'%(os.path.dirname(os.path.realpath(__file__)))
 	print 'WARNING: No model runtime specified. Using the default of %s'%(args.model_runtime)
@@ -374,8 +376,11 @@ if suite_root.tag == 'regression_suite':
 # provenance.
 if write_history:
 	# Build variables for history output
+	old_dir = os.getcwd()
+	os.chdir( os.path.dirname( os.path.realpath(__file__) ) )
 	git_version = subprocess.check_output(['git', 'describe', '--tags', '--dirty'])
 	git_version = git_version.strip('\n')
+	os.chdir(old_dir)
 	calling_command = ""
 	for arg in sys.argv:
 		calling_command = "%s%s "%(calling_command, arg)

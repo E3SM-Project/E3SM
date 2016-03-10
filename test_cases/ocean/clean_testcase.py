@@ -62,20 +62,18 @@ else:
 if not args.work_dir:
 	args.work_dir = os.getcwd()
 
+args.work_dir = os.path.abspath(args.work_dir)
+
 # Build variables for history output
+old_dir = os.getcwd()
+os.chdir( os.path.dirname( os.path.realpath(__file__) ) )
 git_version = subprocess.check_output(['git', 'describe', '--tags', '--dirty'])
 git_version = git_version.strip('\n')
+os.chdir(old_dir)
 calling_command = ""
 write_history = False
 for arg in sys.argv:
 	calling_command = "%s%s "%(calling_command, arg)
-
-# Make sure the script executes the following commands in it's location, rather
-# than wherever the developer / user is currently.
-if not os.getcwd() == os.path.dirname(os.path.realpath(__file__)):
-	print ' WARNING: Script is not being run from the proper directory.'
-	print '          Changing directory. This may have unexpected consequences.'
-	os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
 # Iterate over all cases in the case_list.
 # There is only one if the (-o, -c, -r) options were used in place of (-n)

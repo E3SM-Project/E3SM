@@ -44,6 +44,9 @@ if not quiet:
 # Start case numbering at 1
 case_num = 1
 
+script_path = os.path.dirname( os.path.realpath( __file__ ) )
+os.chdir(script_path)
+
 # Iterate over all cores
 for core_dir in os.listdir('.'):
 	if os.path.isdir(core_dir) and not core_dir == '.git':

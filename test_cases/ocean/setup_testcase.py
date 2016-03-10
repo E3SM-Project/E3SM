@@ -1318,13 +1318,6 @@ if not args.no_download:
 if not args.work_dir:
 	args.work_dir = os.getcwd()
 
-# Build variables for history output
-git_version = subprocess.check_output(['git', 'describe', '--tags', '--dirty'])
-git_version = git_version.strip('\n')
-calling_command = ""
-for arg in sys.argv:
-	calling_command = "%s%s "%(calling_command, arg)
-
 # Add configuation information to the config object.
 # This allows passing config around with all of the config options needed to
 # build paths, and determine options.
@@ -1348,7 +1341,7 @@ else:
 	config.set('script_input_arguments', 'no_download', 'no')
 
 config.set('script_paths', 'script_path', os.path.dirname(os.path.realpath(__file__)))
-config.set('script_paths', 'work_dir', args.work_dir)
+config.set('script_paths', 'work_dir', os.path.abspath(args.work_dir) )
 config.set('script_paths', 'utility_scripts', '%s/utility_scripts'%(config.get('script_paths', 'script_path')))
 
 if not args.model_runtime:
@@ -1357,12 +1350,15 @@ if not args.model_runtime:
 else:
 	config.set('script_input_arguments', 'model_runtime', args.model_runtime)
 
-# Make sure the script executes the following commands in it's location, rather
-# than wherever the developer / user is currently.
-if not os.getcwd() == config.get('script_paths', 'script_path'):
-	print ' WARNING: Script is not being run from the proper directory.'
-	print '          Changing directory. This may have unexpected consequences.'
-	os.chdir(config.get('script_paths', 'script_path'))
+# Build variables for history output
+old_dir = os.getcwd()
+os.chdir( config.get('script_paths', 'script_path' ))
+git_version = subprocess.check_output(['git', 'describe', '--tags', '--dirty'])
+git_version = git_version.strip('\n')
+calling_command = ""
+for arg in sys.argv:
+	calling_command = "%s%s "%(calling_command, arg)
+os.chdir(old_dir)
 
 # Iterate over all cases in the case_list.
 # There is only one if the (-o, -c, -r) options were used in place of (-n)
@@ -1371,7 +1367,7 @@ for case_num in case_list:
 	# If we're using a case_list, determine the core, configuration, and
 	# resolution for the current test case.
 	if use_case_list:
-		core_configuration = subprocess.check_output(['./list_testcases.py', '-n', '%d'%(int(case_num))])
+		core_configuration = subprocess.check_output(['%s/list_testcases.py'%(config.get('script_paths', 'script_path')), '-n', '%d'%(int(case_num))])
 		config_options = core_configuration.strip('\n').split(' ')
 		config.set('script_input_arguments', 'core', config_options[1])
 		config.set('script_input_arguments', 'configuration', config_options[3])
