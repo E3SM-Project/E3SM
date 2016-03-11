@@ -101,6 +101,17 @@
                 <nml_option name="config_print_global_minmax_sca"    type="logical"       default_value="false"              in_defaults="false"/>
         </nml_record>
 
+
+<!-- **************************************************************************************** -->
+<!-- **************************************  Packages  ************************************** -->
+<!-- **************************************************************************************** -->
+
+        <packages>
+                <package name="mp_kessler_in" description="parameterization of kessler microphysics."/>
+                <package name="mp_wsm6_in" description="parameterization of WSM6 cloud microphysics."/>
+        </packages>
+
+
 <!-- **************************************************************************************** -->
 <!-- *************************************** Streams **************************************** -->
 <!-- **************************************************************************************** -->
@@ -338,11 +349,11 @@
 			<var name="tyear_accum"/>
 			<var name="refl10cm_max"/>
 			<var name="i_rainnc"/>
-			<var name="sr"/>
 			<var name="rainncv"/>
 			<var name="rainnc"/>
 			<var name="snownc"/>
 			<var name="graupelnc"/>
+			<var name="sr"/>
 			<var name="i_rainc"/>
 			<var name="cuprec"/>
 			<var name="rainc"/>
@@ -768,12 +779,12 @@
                 <var name="theta_m"   type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="m_ps"      type="real"     dimensions="nCells Time"/>
                 <var_array name="scalars" type="real" dimensions="nVertLevels nCells Time">
-                        <var name="qv"      array_group="moist"/>
-                        <var name="qc"      array_group="moist"/>
-                        <var name="qr"      array_group="moist"/>
-                        <var name="qi"      array_group="moist"/>
-                        <var name="qs"      array_group="moist"/>
-                        <var name="qg"      array_group="moist"/>
+                     <var name="qv"  array_group="moist"  packages="mp_kessler_in;mp_wsm6_in"/>
+                     <var name="qc"  array_group="moist"  packages="mp_kessler_in;mp_wsm6_in"/>
+                     <var name="qr"  array_group="moist"  packages="mp_kessler_in;mp_wsm6_in"/>
+                     <var name="qi"  array_group="moist"  packages="mp_wsm6_in"/>
+                     <var name="qs"  array_group="moist"  packages="mp_wsm6_in"/>
+                     <var name="qg"  array_group="moist"  packages="mp_wsm6_in"/>
                 </var_array>
 
                 <var_array name="aerosols" type="real" dimensions="nAerLevels nCells Time">
@@ -925,12 +936,12 @@
 
                 <!-- scalar tendencies -->
                 <var_array name="scalars_tend" type="real" dimensions="nVertLevels nCells Time">
-                        <var name="tend_qv"    name_in_code="qv"        array_group="moist"/>
-                        <var name="tend_qc"    name_in_code="qc"        array_group="moist"/>
-                        <var name="tend_qr"    name_in_code="qr"        array_group="moist"/>
-                        <var name="tend_qi"    name_in_code="qi"        array_group="moist"/>
-                        <var name="tend_qs"    name_in_code="qs"        array_group="moist"/>
-                        <var name="tend_qg"    name_in_code="qg"        array_group="moist"/>
+                     <var name="tend_qv"  name_in_code="qv"  array_group="moist"  packages="mp_kessler_in;mp_wsm6_in"/>
+                     <var name="tend_qc"  name_in_code="qc"  array_group="moist"  packages="mp_kessler_in;mp_wsm6_in"/>
+                     <var name="tend_qr"  name_in_code="qr"  array_group="moist"  packages="mp_kessler_in;mp_wsm6_in"/>
+                     <var name="tend_qi"  name_in_code="qi"  array_group="moist"  packages="mp_wsm6_in"/>
+                     <var name="tend_qs"  name_in_code="qs"  array_group="moist"  packages="mp_wsm6_in"/>
+                     <var name="tend_qg"  name_in_code="qg"  array_group="moist"  packages="mp_wsm6_in"/>
                 </var_array>
         </var_struct>
 
@@ -1028,19 +1039,19 @@
                 <!-- precipw   : precipitable water                                                            (kg/m2)  -->
                 <!-- refl10cm_max: maximum column reflectivity                                                   (dBz)  -->
 
-                <var name="refl10cm_max"  type="real"     dimensions="nCells Time"/>
+                <var name="refl10cm_max" type="real"    dimensions="nCells Time"/>
 
-                <var name="i_rainnc"      type="integer"  dimensions="nCells Time"/>
-                <var name="sr"            type="real"     dimensions="nCells Time"/>
-                <var name="rainncv"       type="real"     dimensions="nCells Time"/>
-                <var name="snowncv"       type="real"     dimensions="nCells Time"/>
-                <var name="graupelncv"    type="real"     dimensions="nCells Time"/>
+                <var name="i_rainnc"     type="integer" dimensions="nCells Time" packages="mp_kessler_in;mp_wsm6_in"/>
+                <var name="rainncv"      type="real"    dimensions="nCells Time" packages="mp_kessler_in;mp_wsm6_in"/>
+                <var name="graupelncv"   type="real"    dimensions="nCells Time" packages="mp_wsm6_in"/>
+                <var name="snowncv"      type="real"    dimensions="nCells Time" packages="mp_wsm6_in"/>
+                <var name="sr"           type="real"    dimensions="nCells Time" packages="mp_wsm6_in"/>
 
-                <var name="rainnc"        type="real"     dimensions="nCells Time"/>
-                <var name="snownc"        type="real"     dimensions="nCells Time"/>
-                <var name="graupelnc"     type="real"     dimensions="nCells Time"/>
+                <var name="rainnc"       type="real"    dimensions="nCells Time" packages="mp_kessler_in;mp_wsm6_in"/>
+                <var name="snownc"       type="real"    dimensions="nCells Time" packages="mp_wsm6_in"/>
+                <var name="graupelnc"    type="real"    dimensions="nCells Time" packages="mp_wsm6_in"/>
 
-                <var name="precipw"       type="real"     dimensions="nCells Time"/>
+                <var name="precipw"      type="real"    dimensions="nCells Time"/>
 
                 <!-- ================================================================================================== -->
                 <!-- ... PARAMETERIZATION OF CONVECTION:                                                                -->
