@@ -593,7 +593,8 @@ module li_time_integration_fe
                  geometryPool,           &
                  thermalPool,            &
                  scratchPool,            &
-                 err_tmp)
+                 err_tmp,                &
+                 advectTracersIn = .true.)
 
             err = ior(err,err_tmp)
 

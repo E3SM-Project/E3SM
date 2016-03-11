@@ -165,7 +165,7 @@ plt.ylabel('Y position (km)')
 
 
 # ================
-# STEADY STATE MAPS
+# STEADY STATE MAPS -  panels b and c are switched and with incorrect units in the paper
 # ================
 fig = plt.figure(2, facecolor='w', figsize=(12, 6), dpi=72)
 fig.suptitle('Payne et al. Fig. 2 or 4', fontsize=12, fontweight='bold')
@@ -189,8 +189,8 @@ plt.xlabel('X position (km)'); plt.ylabel('Y position (km)')
 
 
 # ================
-# panel b - flux
-ax = fig.add_subplot(132, sharex=ax1, sharey=ax1)
+# panel c - flux
+ax = fig.add_subplot(133, sharex=ax1, sharey=ax1)
 
 flux = np.zeros( (nCells,) )
 for k in range(nVertLevels):
@@ -201,27 +201,29 @@ for k in range(nVertLevels):
 plt.scatter(xCell[iceIndices], yCell[iceIndices], markersize, (0.8, 0.8, 0.8), marker=markershape, edgecolors='none') # print ice locations with gray hexagons
 
 # add contours over the top
-contour_intervals = np.linspace(0.0, 10.0,  10.0/0.5+1)
-#contourMPAS(flux * 3600.0*24.0*365.0, contour_levs=contour_intervals)
-contourMPAS(flux * 3600.0*24.0*365.0)
+#contour_intervals = np.linspace(0.0, 10.0,  10.0/0.5+1)
+contour_intervals = np.linspace(0.0, 20.0,  11)
+contourMPAS(flux * 3600.0*24.0*365.0 / 10000.0, contour_levs=contour_intervals)
+#contourMPAS(flux * 3600.0*24.0*365.0 / 10000.0)
 plt.axis('equal')
-plt.title('Final flux (m$^2$ a$^{-1}$)' )
+plt.title('Final flux (m$^2$ a$^{-1}$ / 10000)' )
 #plt.xlim( (0.0, 750.0) ); plt.ylim( (0.0, 750.0) )
 plt.xlabel('X position (km)'); plt.ylabel('Y position (km)')
 
 # ================
-# panel c - flow factor
-ax = fig.add_subplot(133, sharex=ax1, sharey=ax1)
+# panel b - flow factor
+ax = fig.add_subplot(132, sharex=ax1, sharey=ax1)
 
 # print ice locations with gray hexagons
 plt.scatter(xCell[iceIndices], yCell[iceIndices], markersize, (0.8, 0.8, 0.8), marker=markershape, edgecolors='none') # print ice locations with gray hexagons
 
 # add contours over the top
-contour_intervals = np.linspace(0.0, 20.0, 20.0/2.0+1)
-contourMPAS(flwa[timelev,:,:].mean(axis=1) / 1.0e-25, contour_levs=contour_intervals)  # NOT SURE WHICH LEVEL FLWA SHOULD COME FROM - so taking column average
-#contourMPAS(flwa[timelev,:,:].mean(axis=1) / 1.0e-25)  # NOT SURE WHICH LEVEL FLWA SHOULD COME FROM - so taking column average
+#contour_intervals = np.linspace(0.0, 20.0, 20.0/2.0+1)
+contour_intervals = np.linspace(0.0, 16.0, 16.0/0.5+1)
+#contourMPAS(flwa[timelev,:,:].mean(axis=1) *3600.0*24.0*365.0 / 1.0e-17, contour_levs=contour_intervals)  # NOT SURE WHICH LEVEL FLWA SHOULD COME FROM - so taking column average
+contourMPAS(flwa[timelev,:,:].mean(axis=1) * 3600.0*24.0*365.0 / 1.0e-17)  # NOT SURE WHICH LEVEL FLWA SHOULD COME FROM - so taking column average
 plt.axis('equal')
-plt.title('Final flow factor (10$^{-25}$ Pa$^{-3}$ s$^{-1}$)' )  # Note: the paper's figure claims units of 10$^{-25}$ Pa$^{-3}$ a$^{-1}$ but the time unit appears to be seconds, so using that here!
+plt.title('Final flow factor (10$^{-17}$ Pa$^{-3}$ a$^{-1}$)' )  # Note: the paper's figure claims units of 10$^{-25}$ Pa$^{-3}$ a$^{-1}$ but the time unit appears to be 10^-17
 #plt.xlim( (0.0, 750.0) ); plt.ylim( (0.0, 750.0) )
 plt.xlabel('X position (km)'); plt.ylabel('Y position (km)')
 
