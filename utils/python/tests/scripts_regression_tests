@@ -18,6 +18,7 @@ DART_CONFIG = "DartConfiguration.tcl"
 DART_BACKUP = "temp_dart_backup"
 MACHINE     = Machines()
 FAST_ONLY   = False
+NO_BATCH = False
 
 logging.basicConfig()
 
@@ -367,12 +368,15 @@ class TestCreateTest(TestCreateTestCommon):
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
+        if NO_BATCH:
+            extra_args += " --no-batch"
         cmd = "%s/create_test acme_test_only_pass %s" % (SCRIPT_DIR, extra_args)
         stat, output, errput = run_cmd(cmd, ok_to_fail=True)
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
         else:
-            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE, msg="COMMAND '%s' SHOULD HAVE DETECTED FAILED TESTS\ncreate_test output:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (cmd, output, errput, stat))
+            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE,
+                             msg="COMMAND '%s' SHOULD HAVE DETECTED FAILED TESTS\ncreate_test output:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (cmd, output, errput, stat))
 
     ###############################################################################
     def test_create_test_rebless_namelist(self):
@@ -611,6 +615,8 @@ class TestBlessTestResults(TestCreateTestCommon):
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
+        if NO_BATCH:
+            extra_args += " --no-batch"
         cmd = "%s/create_test %s %s" % (SCRIPT_DIR, self._test_name, extra_args)
         stat, output, errput = run_cmd(cmd, ok_to_fail=True)
 
@@ -730,7 +736,11 @@ class FullSystemTest(TestCreateTestCommon):
         if (FAST_ONLY):
             self.skipTest("Skipping slow test")
 
-        stat, output, errput = run_cmd("%s/create_test cime_developer -t %s" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True)
+        create_test_cmd =  "%s/create_test cime_developer -t %s" % (SCRIPT_DIR, self._baseline_name)
+        if NO_BATCH:
+            create_test_cmd += " --no-batch"
+
+        stat, output, errput = run_cmd(create_test_cmd, ok_to_fail=True)
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
@@ -784,6 +794,11 @@ def _main_func():
         sys.argv.remove("--fast")
         global FAST_ONLY
         FAST_ONLY = True
+
+    if ("--no-batch" in sys.argv):
+        sys.argv.remove("--no-batch")
+        global NO_BATCH
+        NO_BATCH = True
 
     unittest.main(verbosity=2)
 
