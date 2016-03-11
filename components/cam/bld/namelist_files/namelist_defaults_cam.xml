@@ -1366,6 +1366,7 @@
 <interp_nlat> 0 </interp_nlat>
 <interp_type> 1 </interp_type>
 <interp_gridtype> 1 </interp_gridtype>
+<vthreads> 1 </vthreads>
 
 <!-- ================================================================== -->
 <!-- Defaults for driver namelist seq_infodata_inparm                   -->
