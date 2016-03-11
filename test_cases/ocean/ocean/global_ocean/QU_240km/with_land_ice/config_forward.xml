@@ -22,7 +22,7 @@
 		<stream name="input">
 			<attribute name="filename_template">ic/ocean.nc</attribute>
 		</stream>
-		<template file="minimal_output.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="output.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="land_ice_fluxes.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
 		<stream name="forcing_data">
