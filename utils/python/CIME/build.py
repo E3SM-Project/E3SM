@@ -12,6 +12,10 @@ import glob, shutil, time, threading
 
 logger = logging.getLogger(__name__)
 
+def stringify_bool(val):
+    expect(type(val) is bool, "Wrong type")
+    return "TRUE" if val else "FALSE"
+
 ###############################################################################
 def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
                 comp_atm, comp_lnd, comp_ice, comp_ocn, comp_glc, comp_wav, comp_rof,
@@ -45,10 +49,7 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
         if comp == "aquap":
             continue
         os.environ["MODEL"] = model
-        if nthrds > 1 or build_threaded == "TRUE":
-            os.environ["SMP"] = "TRUE"
-        else:
-            os.environ["SMP"] = "FALSE"
+        os.environ["SMP"] = stringify_bool(nthrds > 1 or build_threaded)
 
         bldroot = exeroot # What is this for?
 
@@ -136,8 +137,8 @@ def post_build(case, logs):
             run_cmd("gzip %s" % log, from_dir=bldlogdir)
 
     # Set XML to indicate build complete
-    case.set_value("BUILD_COMPLETE", "TRUE")
-    case.set_value("BUILD_STATUS", "0")
+    case.set_value("BUILD_COMPLETE", True)
+    case.set_value("BUILD_STATUS", 0)
     case.set_value("SMP_BUILD", os.environ["SMP_VALUE"])
     case.flush()
 
@@ -205,14 +206,14 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
     machines_file       = case.get_value("MACHINES_SPEC_FILE")
     ocn_submodel        = case.get_value("OCN_SUBMODEL")
     profile_papi_enable = case.get_value("PROFILE_PAPI_ENABLE")
-    nthrds_cpl          = int(case.get_value("NTHRDS_CPL"))
-    nthrds_atm          = int(case.get_value("NTHRDS_ATM"))
-    nthrds_lnd          = int(case.get_value("NTHRDS_LND"))
-    nthrds_ice          = int(case.get_value("NTHRDS_ICE"))
-    nthrds_ocn          = int(case.get_value("NTHRDS_OCN"))
-    nthrds_glc          = int(case.get_value("NTHRDS_GLC"))
-    nthrds_wav          = int(case.get_value("NTHRDS_WAV"))
-    nthrds_rof          = int(case.get_value("NTHRDS_ROF"))
+    nthrds_cpl          = case.get_value("NTHRDS_CPL")
+    nthrds_atm          = case.get_value("NTHRDS_ATM")
+    nthrds_lnd          = case.get_value("NTHRDS_LND")
+    nthrds_ice          = case.get_value("NTHRDS_ICE")
+    nthrds_ocn          = case.get_value("NTHRDS_OCN")
+    nthrds_glc          = case.get_value("NTHRDS_GLC")
+    nthrds_wav          = case.get_value("NTHRDS_WAV")
+    nthrds_rof          = case.get_value("NTHRDS_ROF")
 
     # Load some params into env
     os.environ["CIMEROOT"]             = cimeroot
@@ -224,12 +225,12 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
     os.environ["CASEROOT"]             = caseroot
     os.environ["COMPILER"]             = compiler
     os.environ["COMP_INTERFACE"]       = comp_interface
-    os.environ["NINST_VALUE"]          = ninst_value
-    os.environ["BUILD_THREADED"]       = build_threaded
+    os.environ["NINST_VALUE"]          = str(ninst_value)
+    os.environ["BUILD_THREADED"]       = stringify_bool(build_threaded)
     os.environ["MACH"]                 = mach
-    os.environ["USE_ESMF_LIB"]         = use_esmf_lib
+    os.environ["USE_ESMF_LIB"]         = stringify_bool(use_esmf_lib)
     os.environ["MPILIB"]               = mpilib
-    os.environ["DEBUG"]                = debug
+    os.environ["DEBUG"]                = stringify_bool(debug)
     os.environ["OS"]                   = os_
     os.environ["COMP_CPL"]             = comp_cpl
     os.environ["COMP_ATM"]             = comp_atm
@@ -243,10 +244,10 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
     os.environ["CAM_CONFIG_OPTS"]      = cam_config_opts     if cam_config_opts     is not None else ""
     os.environ["PIO_CONFIG_OPTS"]      = pio_config_opts     if pio_config_opts     is not None else ""
     os.environ["OCN_SUBMODEL"]         = ocn_submodel        if ocn_submodel        is not None else ""
-    os.environ["PROFILE_PAPI_ENABLE"]  = profile_papi_enable if profile_papi_enable is not None else ""
-    os.environ["CLM_USE_PETSC"]        = clm_use_petsc       if clm_use_petsc       is not None else ""
-    os.environ["CISM_USE_TRILINOS"]    = cism_use_trilinos   if cism_use_trilinos   is not None else ""
-    os.environ["MPASLI_USE_ALBANY"]    = mpasli_use_albany   if mpasli_use_albany   is not None else ""
+    os.environ["PROFILE_PAPI_ENABLE"]  = stringify_bool(profile_papi_enable) if profile_papi_enable is not None else ""
+    os.environ["CLM_USE_PETSC"]        = stringify_bool(clm_use_petsc)       if clm_use_petsc       is not None else ""
+    os.environ["CISM_USE_TRILINOS"]    = stringify_bool(cism_use_trilinos)   if cism_use_trilinos   is not None else ""
+    os.environ["MPASLI_USE_ALBANY"]    = stringify_bool(mpasli_use_albany)   if mpasli_use_albany   is not None else ""
 
     # This is a timestamp for the build , not the same as the testid,
     # and this case may not be a test anyway. For a production
@@ -260,9 +261,9 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
     # the future there may be others -- so USE_PETSC will be true if
     # ANY of those are true.
 
-    use_petsc = "TRUE" if clm_use_petsc == "TRUE" else "FALSE"
+    use_petsc = clm_use_petsc
     case.set_value("USE_PETSC", use_petsc)
-    os.environ["USE_PETSC"] = use_petsc
+    os.environ["USE_PETSC"] = stringify_bool(use_petsc)
 
     # Set the overall USE_TRILINOS variable to TRUE if any of the
     # XXX_USE_TRILINOS variables are TRUE.
@@ -270,9 +271,9 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
     # the future there may be others -- so USE_TRILINOS will be true if
     # ANY of those are true.
 
-    use_trilinos = "TRUE" if cism_use_trilinos == "TRUE" else "FALSE"
+    use_trilinos = False if cism_use_trilinos is None else cism_use_trilinos
     case.set_value("USE_TRILINOS", use_trilinos)
-    os.environ["USE_TRILINOS"] = use_trilinos
+    os.environ["USE_TRILINOS"] = stringify_bool(use_trilinos)
 
     # Set the overall USE_ALBANY variable to TRUE if any of the
     # XXX_USE_ALBANY variables are TRUE.
@@ -280,9 +281,9 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
     # the future there may be others -- so USE_ALBANY will be true if
     # ANY of those are true.
 
-    use_albany = "TRUE" if mpasli_use_albany == "TRUE" else "FALSE"
+    use_albany = mpasli_use_albany
     case.set_value("USE_ALBANY", use_albany)
-    os.environ["USE_ALBANY"] = use_albany
+    os.environ["USE_ALBANY"] = stringify_bool(use_albany)
 
     # Load modules
     env_module = EnvModule(mach, compiler, cimeroot, caseroot, mpilib, debug)
@@ -335,7 +336,7 @@ def check_all_input_data(case):
     # existence of inputdata in the local inputdata directory and
     # attempts to download data from the server if it's needed and
     # missing.
-    if get_refcase == "TRUE" and run_type != "startup" and continue_run == "FALSE":
+    if get_refcase and run_type != "startup" and not continue_run:
         din_loc_root = case.get_value("DIN_LOC_ROOT")
         run_refdate  = case.get_value("RUN_REFDATE")
         run_refcase  = case.get_value("RUN_REFCASE")
@@ -388,25 +389,25 @@ def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, comp
                  sharedlibroot, nthrds_cpl, nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn,
                  nthrds_glc, nthrds_wav, nthrds_rof, ninst_build, smp_value):
 ###############################################################################
-    ninst_atm    = int(case.get_value("NINST_ATM"))
-    ninst_lnd    = int(case.get_value("NINST_LND"))
-    ninst_ice    = int(case.get_value("NINST_ICE"))
-    ninst_ocn    = int(case.get_value("NINST_OCN"))
-    ninst_glc    = int(case.get_value("NINST_GLC"))
-    ninst_wav    = int(case.get_value("NINST_WAV"))
-    ninst_rof    = int(case.get_value("NINST_ROF"))
+    ninst_atm    = case.get_value("NINST_ATM")
+    ninst_lnd    = case.get_value("NINST_LND")
+    ninst_ice    = case.get_value("NINST_ICE")
+    ninst_ocn    = case.get_value("NINST_OCN")
+    ninst_glc    = case.get_value("NINST_GLC")
+    ninst_wav    = case.get_value("NINST_WAV")
+    ninst_rof    = case.get_value("NINST_ROF")
     ninst_value  = case.get_value("NINST_VALUE")
     smp_build    = case.get_value("SMP_BUILD")
-    build_status = int(case.get_value("BUILD_STATUS"))
+    build_status = case.get_value("BUILD_STATUS")
 
-    atmstr = 1 if (build_threaded == "TRUE" or nthrds_atm > 1) else 0
-    lndstr = 1 if (build_threaded == "TRUE" or nthrds_lnd > 1) else 0
-    icestr = 1 if (build_threaded == "TRUE" or nthrds_ice > 1) else 0 # not in perl
-    ocnstr = 1 if (build_threaded == "TRUE" or nthrds_ocn > 1) else 0
-    rofstr = 1 if (build_threaded == "TRUE" or nthrds_rof > 1) else 0
-    glcstr = 1 if (build_threaded == "TRUE" or nthrds_glc > 1) else 0
-    wavstr = 1 if (build_threaded == "TRUE" or nthrds_wav > 1) else 0
-    cplstr = 1 if (build_threaded == "TRUE" or nthrds_cpl > 1) else 0
+    atmstr = 1 if (build_threaded or nthrds_atm > 1) else 0
+    lndstr = 1 if (build_threaded or nthrds_lnd > 1) else 0
+    icestr = 1 if (build_threaded or nthrds_ice > 1) else 0 # not in perl
+    ocnstr = 1 if (build_threaded or nthrds_ocn > 1) else 0
+    rofstr = 1 if (build_threaded or nthrds_rof > 1) else 0
+    glcstr = 1 if (build_threaded or nthrds_glc > 1) else 0
+    wavstr = 1 if (build_threaded or nthrds_wav > 1) else 0
+    cplstr = 1 if (build_threaded or nthrds_cpl > 1) else 0
 
     if (nthrds_atm > 1 or nthrds_lnd > 1 or nthrds_ice > 1 or nthrds_ocn > 1 or
         nthrds_rof > 1 or nthrds_glc > 1 or nthrds_wav > 1 or nthrds_cpl > 1):
@@ -415,7 +416,7 @@ def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, comp
         os.environ["SMP"] = "FALSE"
 
     debugdir = "debug" if debug else "nodebug"
-    threaddir = "threads" if (os.environ["SMP"] == "TRUE" or build_threaded == "TRUE") else "nothreads"
+    threaddir = "threads" if (os.environ["SMP"] == "TRUE" or build_threaded) else "nothreads"
     sharedpath = os.path.join(sharedlibroot, compiler, mpilib, debugdir, threaddir)
     logger.debug("compiler=%s mpilib=%s debugdir=%s threaddir=%s"%
                  (compiler,mpilib,debugdir,threaddir))
@@ -472,14 +473,14 @@ ERROR env_build HAS CHANGED
     ./case.clean_build all
 """)
 
-    expect(comp_interface != "ESMF" or use_esmf_lib == "TRUE",
+    expect(comp_interface != "ESMF" or use_esmf_lib,
            """
 ERROR COMP_INTERFACE IS ESMF BUT USE_ESMF_LIB IS NOT TRUE
   SET USE_ESMF_LIB to TRUE with:
     ./xmlchange -file env_build.xml -id USE_ESMF_LIB -value TRUE
 """)
 
-    expect(mpilib != "mpi-serial" or use_esmf_lib != "TRUE",
+    expect(mpilib != "mpi-serial" or not use_esmf_lib,
            """
 ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
   MPILIB can only be used with an ESMF library built with mpiuni on
@@ -490,7 +491,7 @@ ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
   And comment out this if block in Tools/models_buildexe
 """)
 
-    case.set_value("BUILD_COMPLETE", "FALSE")
+    case.set_value("BUILD_COMPLETE", False)
 
     case.flush()
 
@@ -533,7 +534,7 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
     clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
     if comp_lnd == "clm" and not "clm4_0" in clm_config_opts:
         logging.info("         - Building clm4_5/clm5_0 Library ")
-        esmfdir = "esmf" if case.get_value("USE_ESMF_LIB") == "TRUE" else "noesmf"
+        esmfdir = "esmf" if case.get_value("USE_ESMF_LIB") else "noesmf"
         sharedpath = os.environ["SHAREDPATH"]
         bldroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir)
         objdir = os.path.join(bldroot, "clm", "obj")

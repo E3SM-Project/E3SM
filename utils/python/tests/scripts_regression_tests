@@ -762,19 +762,19 @@ class TestCimeCase(TestCreateTestCommon):
         case = Case(casedir)
 
         build_complete = case.get_value("BUILD_COMPLETE")
-        self.assertEqual(build_complete, "FALSE",
+        self.assertFalse(build_complete,
                          msg="Build complete had wrong value '%s'" % build_complete)
 
-        case.set_value("BUILD_COMPLETE", "TRUE")
+        case.set_value("BUILD_COMPLETE", True)
         build_complete = case.get_value("BUILD_COMPLETE")
-        self.assertEqual(build_complete, "TRUE",
-                         msg="Build complete had wrong value '%s'" % build_complete)
+        self.assertTrue(build_complete,
+                        msg="Build complete had wrong value '%s'" % build_complete)
 
         case.flush()
 
         build_complete = run_cmd("./xmlquery BUILD_COMPLETE -value", from_dir=casedir)
-        self.assertEqual(build_complete, "TRUE",
-                         msg="Build complete had wrong value '%s'" % build_complete)
+        self.assertTrue(build_complete,
+                        msg="Build complete had wrong value '%s'" % build_complete)
 
 ###############################################################################
 

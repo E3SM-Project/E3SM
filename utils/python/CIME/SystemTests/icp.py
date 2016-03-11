@@ -16,7 +16,7 @@ class ICP(SystemTestsCommon):
         self._case.set_value("CICE_AUTO_DECOMP","false")
 
     def run(self):
-        self._case.set_value("CONTINUE_RUN","FALSE")
+        self._case.set_value("CONTINUE_RUN",False)
         self._case.set_value("REST_OPTION","none")
         self._case.set_value("HIST_OPTION","$STOP_OPTION")
         self._case.set_value("HIST_N","$STOP_N")

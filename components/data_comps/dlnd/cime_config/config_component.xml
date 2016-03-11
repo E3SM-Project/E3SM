@@ -31,7 +31,7 @@
   </entry>
 
   <entry id="DLND_CPLHIST_DIR">
-    <type>char*256</type>
+    <type>char</type>
     <default_value>UNSET</default_value>
     <values>
       <value compset="2000.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">$DIN_LOC_ROOT/lnd/dlnd7/CPLHIST_SNO/b.e10.BG20TRCN.f09_g16.002_c121001</value>
@@ -45,7 +45,7 @@
   </entry>
 
   <entry id="DLND_CPLHIST_CASE"> 
-    <type>char*256</type>
+    <type>char</type>
     <default_value>UNSET</default_value>
     <values>
       <value compset="2000.*_DLND%SCPL.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">b.e10.BG20TRCN.f09_g16.002</value>

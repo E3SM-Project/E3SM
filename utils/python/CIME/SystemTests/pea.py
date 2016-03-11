@@ -18,7 +18,7 @@ class PEA(SystemTestsCommon):
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
         for comp in ['ATM','CPL','OCN','WAV','GLC','ICE','ROF','LND']:
-            self._case.set_value("NTASKS_%s"%comp,"1")
+            self._case.set_value("NTASKS_%s"%comp, 1)
 
         build1 = os.path.join("LockedFiles","env_build.PEA1.xml")
         if ( os.path.isfile(build1) ):

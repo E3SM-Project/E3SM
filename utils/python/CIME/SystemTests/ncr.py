@@ -7,8 +7,8 @@ from CIME.case import Case
 import CIME.utils
 from system_tests_common import SystemTestsCommon
 
-
 class NCR(SystemTestsCommon):
+
     def __init__(self, caseroot, case):
         """
         initialize a test object
@@ -34,17 +34,16 @@ class NCR(SystemTestsCommon):
             ntasks_sum = 0
             for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
                 self._case.set_value("NINST_%s"%comp,str(bld))
-                ntasks      = int(self._case.get_value("NTASKS_%s"%comp))
+                ntasks      = self._case.get_value("NTASKS_%s"%comp)
                 if(bld == 1):
-                    self._case.set_value("ROOTPE_%s"%comp,"0")
+                    self._case.set_value("ROOTPE_%s"%comp, 0)
                     if ( ntasks > 1 ):
-                        self._case.set_value("NTASKS_%s"%comp, "%s"%int(ntasks/2))
+                        self._case.set_value("NTASKS_%s"%comp, ntasks/2)
                 else:
-                    self._case.set_value("ROOTPE_%s"%comp, "%s"% ntasks_sum)
+                    self._case.set_value("ROOTPE_%s"%comp, ntasks_sum)
                     ntasks_sum += ntasks*2
-                    self._case.set_value("NTASKS_%s"%comp, "%s"%int(ntasks*2))
+                    self._case.set_value("NTASKS_%s"%comp, ntasks*2)
             self._case.flush()
-
 
             run_cmd("./case.setup -clean -testmode")
             run_cmd("./case.setup")

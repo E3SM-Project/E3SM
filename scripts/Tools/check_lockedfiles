@@ -64,7 +64,7 @@ def check_lockedfiles(caseroot):
                 logging.warn("File %s has been modified"%lfile)
                 for key in diffs.keys():
                     print("  found difference in %s : case %s locked %s" %
-                          (key, diffs[key][0], diffs[key][1]))
+                          (key, repr(diffs[key][0]), repr(diffs[key][1])))
                 if objname == "env_mach_pes":
                     expect(False, "Invoke case.setup -clean followed by case.setup")
                 if objname == "env_case":
@@ -72,14 +72,14 @@ def check_lockedfiles(caseroot):
                            " recover the original copy from LockedFiles")
                 if objname == "env_build":
                     logging.warn("Setting build complete to False")
-                    f1obj.set_value("BUILD_COMPLETE", "FALSE")
+                    f1obj.set_value("BUILD_COMPLETE", False)
                     if "PIO_VERSION" in diffs.keys():
-                        f1obj.set_value("BUILD_STATUS", "2")
+                        f1obj.set_value("BUILD_STATUS", 2)
                         f1obj.write()
                         logging.critical("Changing PIO_VERSION requires running "
                                          "case.clean_build all and rebuilding")
                     else:
-                        f1obj.set_value("BUILD_STATUS", "1")
+                        f1obj.set_value("BUILD_STATUS", 1)
                         f1obj.write()
 
 

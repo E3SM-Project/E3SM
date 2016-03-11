@@ -4,7 +4,7 @@ this is an abstract class and is expected to
 be used by other XML interface modules and not directly.
 """
 from standard_module_setup import *
-from CIME.utils import expect
+from CIME.utils import expect, convert_to_string, convert_to_type
 from generic_xml import GenericXML
 
 logger = logging.getLogger(__name__)
@@ -42,6 +42,21 @@ class EntryID(GenericXML):
             node.set("value", value.text)
             return value.text
 
+    def _get_type_info(self, node):
+        type_node = self.get_optional_node("type", root=node)
+        if type_node is not None:
+            return type_node.text
+        else:
+            # Default to string
+            return "char"
+
+    def get_type_info(self, vid):
+        node = self.get_optional_node("entry", {"id":vid})
+        if node is None:
+            return None
+        else:
+            return self._get_type_info(node)
+
     def set_value(self, vid, value, subgroup=None):
         """
         Set the value of an entry-id field to value
@@ -49,12 +64,12 @@ class EntryID(GenericXML):
         subgroup is ignored in the general routine and applied in specific methods
         """
         node = self.get_optional_node("entry", {"id":vid})
-        val = None
         if node is not None:
-            val = value
-            node.set("value", value)
-
-        return val
+            type_str = self._get_type_info(node)
+            node.set("value", convert_to_string(value, type_str, vid))
+            return value
+        else:
+            return None
 
     def get_value(self, vid, attribute={}, resolved=True, subgroup=None):
         """
@@ -84,7 +99,9 @@ class EntryID(GenericXML):
         if resolved:
             val = self.get_resolved_value(val)
 
-        return val
+        # Return value as right type
+        type_str = self._get_type_info(node)
+        return convert_to_type(val, type_str, vid)
 
     def get_values(self, vid, att, resolved=True):
         """
@@ -96,6 +113,8 @@ class EntryID(GenericXML):
         if node is None:
             return
 
+        type_str = self._get_type_info(node)
+
         valnodes = self.get_nodes("value", root=node)
         for valnode in valnodes:
             vatt = valnode.attrib[att]
@@ -103,6 +122,8 @@ class EntryID(GenericXML):
                 values[vatt] = self.get_resolved_value(valnode.text)
             else:
                 values[vatt] = valnode.text
+
+            valnode[vatt] = convert_to_type(valnode[vatt], type_str, vid)
 
         return values
 
@@ -162,8 +183,9 @@ class EntryID(GenericXML):
             vid = node.attrib["id"]
             f2val = other.get_value(vid, resolved=False)
             if f2val is not None:
-                if f2val != node.attrib["value"]:
-                    xmldiffs[vid] = [node.attrib["value"], f2val]
+                f1val = self.get_value(vid, resolved=False)
+                if f2val != f1val:
+                    xmldiffs[vid] = [f1val, f2val]
 
         return xmldiffs
 
