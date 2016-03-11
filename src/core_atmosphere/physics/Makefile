@@ -30,6 +30,7 @@ OBJS = \
 	mpas_atmphys_landuse.o             \
 	mpas_atmphys_lsm_noahinit.o        \
 	mpas_atmphys_manager.o             \
+	mpas_atmphys_packages.o            \
 	mpas_atmphys_rrtmg_lwinit.o        \
 	mpas_atmphys_rrtmg_swinit.o        \
 	mpas_atmphys_todynamics.o          \
