@@ -294,6 +294,8 @@ for mct, etc.
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
   <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mvapich"> -mkl=cluster </ADD_SLIBS>
+  <ADD_SLIBS MPILIB="mvapich2"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpt"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="openmpi"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="impi"> -mkl=cluster </ADD_SLIBS>
@@ -475,7 +477,6 @@ for mct, etc.
 
 <compiler COMPILER="gnu" MACH="yellowstone">
   <LAPACK_LIBDIR> /glade/apps/opt/lib </LAPACK_LIBDIR>
-  <PIO_TYPENAME>netcdf</PIO_TYPENAME>
 </compiler>
 
 
@@ -722,7 +723,7 @@ for mct, etc.
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
-  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi </SLIBS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt</SLIBS>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="olympus">

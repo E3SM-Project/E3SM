@@ -40,7 +40,7 @@ REQUIRED OPTIONS
 
    Either provide ALL of the following options to modify a single variable...
 
-     -file <name>         xml file to modify 
+     -file <name>         xml file to modify
                           NOTE: this is no longer utilized - but is there for backwards compatibility
      -id <name>           xml variable id
      -val <name> 	  xml new value for variable id
@@ -57,7 +57,7 @@ REQUIRED OPTIONS
 
 OPTIONAL
      -subgroup           If the value is in more than one node change this one (default - change all)  Currently this supports changing values in env_batch.xml which are defined by
-          the name of the job being submitted.  (run, test, st_archive, lt_archive) 
+          the name of the job being submitted.  (run, test, st_archive, lt_archive)
      -append [or -a]      append value to the end of existing value
      -help [or -h]        Print usage to STDOUT.
      -noecho              Do NOT echo command to CaseStatus file
@@ -77,10 +77,10 @@ if ($#ARGV == -1) {
 
 # Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
 # descriptions to be printed to STDOUT before the error messages start.
-*STDOUT->autoflush();                  
+*STDOUT->autoflush();
 
-my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml"); 
-my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
+my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml");
+my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]");
 my $cimeroot = $nodes[0]->getAttribute('value');
 
 unshift @INC, "$cimeroot/utils/perl5lib";
@@ -133,7 +133,7 @@ if (@ARGV) {
 # Check for manditory case input if not just listing valid values
 my %idlist;
 if ( ! defined($settinglist) ) {
-   foreach my $item ( "file", "id", "val" ) 
+   foreach my $item ( "file", "id", "val" )
    {
       if ( ! defined($opts{$item}) ) {
          $logger->error( "ERROR xmlchange : Must provide $item as input argument ");
@@ -143,7 +143,7 @@ if ( ! defined($settinglist) ) {
    $idlist{$opts{'id'}} = $opts{'val'};
 } else {
    foreach my $varval ( split( /,/, $settinglist ) ) {
-      if ( $varval =~ /^([a-zA-Z0-9_]+)=([^,=]+)$/ ) {
+       if ( $varval =~ /^(\w+)=(.*+)$/ ){
          if ( defined($idlist{$1}) ) {
             $logger->warn( "ERROR: variable $1 was already set once in the settings list: $settinglist");
          }
@@ -160,7 +160,7 @@ my @filenames = qw(env_run.xml env_build.xml env_case.xml env_mach_pes.xml env_b
 if ( ! defined($settinglist) ) {
    push (@filenames, $opts{'file'});
    my $status = 0;
-   foreach my $filename (@filenames) 
+   foreach my $filename (@filenames)
    {
        if ($opts{'file'} eq $filename) {
 	   $status = 1;
@@ -182,22 +182,22 @@ if ( ! defined($settinglist) ) {
 #-----------------------------------------------------------------------------------------------
 
 my %id_file;
-foreach my $id ( keys(%idlist) )  
+foreach my $id ( keys(%idlist) )
 {
-    foreach my $file (@filenames) 
+    foreach my $file (@filenames)
     {
 	next unless(-e $file);
 	# Loop over all nodes in the file
-	my $xml_file = XML::LibXML->new( no_blanks => 1)->parse_file($file); 
-	foreach my $node ($xml_file->findnodes(".//entry[\@id=\"$id\"]")) 
+	my $xml_file = XML::LibXML->new( no_blanks => 1)->parse_file($file);
+	foreach my $node ($xml_file->findnodes(".//entry[\@id=\"$id\"]"))
 	{
 	    # Store this in %id_file hash - this will be used below
 	    $id_file{$id} = $file;
-	    
+
 	    # Do error checking for requested change
 	    my $value = $node->getAttribute('value');
 	    my($type, $valid_values, $is_list_value);
-	    foreach my $childnode ($node->findnodes(".//*")) 
+	    foreach my $childnode ($node->findnodes(".//*"))
 	    {
 		if ($childnode->nodeName() eq 'type') {
 		    $type = $childnode->textContent();
@@ -211,16 +211,16 @@ foreach my $id ( keys(%idlist) )
 	    }
 
 	    # Determine if requested change is a value
-        
+
         # If we are setting a value to another unresolved value
-        # such as ./xmlchange REST_OPTION=\$STOP_OPTION, 
-        # we want to resolve STOP_OPTION, make sure whatever 
-        # it is set to is a valid_value, then set 
+        # such as ./xmlchange REST_OPTION=\$STOP_OPTION,
+        # we want to resolve STOP_OPTION, make sure whatever
+        # it is set to is a valid_value, then set
         # $value to $unresolved_value if is_valid_values passes
         my $unresolved_value = $idlist{$id};
 	    if($unresolved_value =~ m/^\$/) {
             $logger->debug("UNRESOLVED VALUE: $unresolved_value");
-            my $resolved_value = SetupTools::getSingleResolved($unresolved_value); 
+            my $resolved_value = SetupTools::getSingleResolved($unresolved_value);
 		    $logger->debug("is_valid_value: $id, $resolved_value, $valid_values, $is_list_value");
             SetupTools::is_valid_value($id, $resolved_value, $valid_values, $is_list_value);
             $value = $unresolved_value;
@@ -241,10 +241,10 @@ foreach my $id ( keys(%idlist) )
 	    # If warn mode is on, abort if data is set to something other than missing values
 	    if ($opts{'warn'}) {
 		if ( $type ne 'char') {
-		    if ( ($value !~ m/^\s*$/) && ($value !~ m/UNSET/i) ) { 
+		    if ( ($value !~ m/^\s*$/) && ($value !~ m/UNSET/i) ) {
 			$logger->logdie ("ERROR xmlchange: Variable $id is already set to $value.");
 		    }
-		} elsif ( $value != -99 && $value != -999 && $value != -999.99 ) { 
+		} elsif ( $value != -99 && $value != -999 && $value != -999.99 ) {
 		    $logger->logdie ("ERROR xmlchange : Variable $id is already set to $value.");
 		}
 	    }
@@ -258,18 +258,18 @@ foreach my $id ( keys(%idlist) )
 
 #-----------------------------------------------------------------------------------------------
 # Now overwrite all the necessary files that contain variables that must be modified
-# Before overwriting the file, make a backup copy in case  there are file system problems, 
+# Before overwriting the file, make a backup copy in case  there are file system problems,
 # this way the original xml file does not get corrupted.
 #-----------------------------------------------------------------------------------------------
 
-foreach my $file (values (%id_file)) 
+foreach my $file (values (%id_file))
 {
     # Create backup file
     my $backupfile = "$file.bak";
     copy($file, $backupfile) or $logger->logdie ("A problem occurred copying $file to $backupfile, reason was $!");
-    
+
     # Write out the file header
-    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file); 
+    my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
 
     my $fh = IO::File->new($file, '>' ) or $logger->logdie ("can't open file: $file");
     print $fh "<?xml version=\"1.0\"?> \n";
@@ -282,25 +282,25 @@ foreach my $file (values (%id_file))
 	my $header_text = $nodes_header[0]->textContent();
 	print $fh "<header>";
 	print $fh "$header_text";
-	print $fh "</header> "; 
+	print $fh "</header> ";
     }
 
     # Write out the groups contained in the file
     print $fh "\n\n";
-    print $fh "<groups>\n";   	    
-    foreach my $node ($xml->findnodes(".//groups/*")) 
+    print $fh "<groups>\n";
+    foreach my $node ($xml->findnodes(".//groups/*"))
     {
 	my $group = $node->textContent();
-	print $fh "   <group>$group</group> \n"; 
+	print $fh "   <group>$group</group> \n";
     }
-    print $fh "</groups>\n";   	    
+    print $fh "</groups>\n";
     print $fh "\n";
 
     my @subgroups = qw(none);
     if($file =~ "env_batch.xml"){
 	@subgroups = qw(run test st_archive lt_archive);
     }
-    
+
     my $indent = "  ";
     my $editthis=1;
     my $nodename;
@@ -313,7 +313,7 @@ foreach my $file (values (%id_file))
 	    $nodename = "entry";
 	}
 	# Loop over each file variable, modify if needed, then write it out
-	foreach my $node ($xml->findnodes(".//$nodename")) 
+	foreach my $node ($xml->findnodes(".//$nodename"))
 	{
 	    if($subgroup ne "none" && defined $opts{subgroup}){
 		$editthis = 0;
@@ -329,7 +329,7 @@ foreach my $file (values (%id_file))
 	    $value =~ s/\</&gt;/g;
 
 	    my ($group, $valid_values, $type, $desc, $is_list_value);
-	    foreach my $childnode ($node->childNodes()) 
+	    foreach my $childnode ($node->childNodes())
 	    {
 		# Determine all node properties other than value
 		if ($childnode->nodeName() eq 'desc') {
@@ -356,7 +356,7 @@ foreach my $file (values (%id_file))
 	    }
 
 	    # Loop over all entries in the file
-	    foreach my $id ( keys(%idlist) ) 
+	    foreach my $id ( keys(%idlist) )
 	    {
 		# Make a change to the value if requested
 		if ($id eq $name) {
@@ -364,10 +364,10 @@ foreach my $file (values (%id_file))
 		    my $newval   = $id_value;
 		    if ($opts{'append'}) {
 			# Append new value on the end of old only if old NOT unset
-			if ( ($value !~ m/^\s*$/) && ($value !~ m/UNSET/i) ) { 
+			if ( ($value !~ m/^\s*$/) && ($value !~ m/UNSET/i) ) {
 			    $newval = "$value $id_value";
 			}
-		    }		    
+		    }
 		    $newval =~ s/'/&apos;/g;
 		    $newval =~ s/\</&lt;/g;
 		    $newval =~ s/\</&gt;/g;
@@ -379,10 +379,10 @@ foreach my $file (values (%id_file))
 	    $logger->debug("name = $name value = $value subgroup = $subgroup");
 	    # Write out the entry
 	    write_xml_entry($fh, $name, $value, $type, $valid_values, $desc, $group, $is_list_value, $indent);
-		
-	    
+
+
 	}
-	    
+
 	if($subgroup ne "none"){
 	    print $fh "  </job>\n";
 	}
@@ -391,7 +391,7 @@ foreach my $file (values (%id_file))
     print $fh "\n";
     print $fh "</config_definition> \n";
 
-    # Before finishing, remove the backup files.  
+    # Before finishing, remove the backup files.
     unlink($backupfile) or $logger->warn ("unable to link $backupfile, $!");
 }
 
@@ -399,7 +399,7 @@ if (! $opts{'noecho'}) {
    echo_command_to_CaseStatus();
 }
 
-$logger->debug( "xmlchange done."); 
+$logger->debug( "xmlchange done.");
 exit;
 
 #-----------------------------------------------------------------------------------------------
@@ -416,7 +416,7 @@ sub echo_command_to_CaseStatus {
    else {
       $logger->warn ("WARNING: No CaseStatus file found; this xmlchange command has been executed, but not recorded in the CaseStatus file");
    }
-}   
+}
 
 #-----------------------------------------------------------------------------------------------
 #   TODO this code is duplicated in ConfigCase.pm
@@ -430,19 +430,19 @@ sub write_xml_entry
     $value =~ s/'/&apos;/g;
     $value =~ s/\</&lt;/g;
     $value =~ s/\</&gt;/g;
-    
+
     $desc =~ s/^\n//;
     $desc =~ s/\n$//;
     $desc =~ s/^ *//;
     $desc =~ s/ *$//g;
     chomp $desc;
-    
+
     print $fh "\n";
-    print $fh "$indent<entry id=\"$id\"  value=\"$value\">\n";   	    
-    print $fh "$indent  <type>$type</type> \n"; 
+    print $fh "$indent<entry id=\"$id\"  value=\"$value\">\n";
+    print $fh "$indent  <type>$type</type> \n";
     if ($valid_values  ne '') {print $fh "$indent  <valid_values>$valid_values</valid_values> \n";}
     if ($is_list_value ne '') {print $fh "$indent  <list>$is_list_value</list> \n";}
-    print $fh "$indent  <group>$group</group> \n"; 
+    print $fh "$indent  <group>$group</group> \n";
     print $fh "$indent  <desc>$desc</desc> \n";
     print $fh "$indent</entry> \n";
 }

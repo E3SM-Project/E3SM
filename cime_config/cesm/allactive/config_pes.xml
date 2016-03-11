@@ -854,12 +854,12 @@
       <pes pesize="any" compset="any">
 	<comment>none</comment>
 	<ntasks>
-	  <ntasks_atm>72</ntasks_atm> 
-	  <ntasks_lnd>24</ntasks_lnd> 
-	  <ntasks_rof>24</ntasks_rof>  
-	  <ntasks_ice>48</ntasks_ice> 
+	  <ntasks_atm>120</ntasks_atm> 
+	  <ntasks_lnd>48</ntasks_lnd> 
+	  <ntasks_rof>48</ntasks_rof>  
+	  <ntasks_ice>72</ntasks_ice> 
 	  <ntasks_ocn>24</ntasks_ocn> 
-	  <ntasks_cpl>72</ntasks_cpl> 
+	  <ntasks_cpl>120</ntasks_cpl> 
 	  <ntasks_glc>1</ntasks_glc> 
 	  <ntasks_wav>1</ntasks_wav> 
 	</ntasks>
@@ -876,8 +876,8 @@
 	<rootpe>
 	  <rootpe_atm>0</rootpe_atm>
 	  <rootpe_lnd>0</rootpe_lnd>
-	  <rootpe_ice>24</rootpe_ice>
-	  <rootpe_ocn>72</rootpe_ocn>
+	  <rootpe_ice>48</rootpe_ice>
+	  <rootpe_ocn>120</rootpe_ocn>
 	  <rootpe_cpl>0</rootpe_cpl>
 	  <rootpe_glc>0</rootpe_glc>
 	  <rootpe_rof>0</rootpe_rof>
