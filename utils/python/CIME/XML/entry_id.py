@@ -114,6 +114,7 @@ class EntryID(GenericXML):
             return
 
         type_str = self._get_type_info(node)
+        logger.debug("vid %s type %s"%(vid,type_str))
 
         valnodes = self.get_nodes("value", root=node)
         for valnode in valnodes:
@@ -122,8 +123,7 @@ class EntryID(GenericXML):
                 values[vatt] = self.get_resolved_value(valnode.text)
             else:
                 values[vatt] = valnode.text
-
-            valnode[vatt] = convert_to_type(valnode[vatt], type_str, vid)
+            values[vatt] = convert_to_type(values[vatt], type_str, vid)
 
         return values
 
