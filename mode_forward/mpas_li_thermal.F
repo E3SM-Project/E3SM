@@ -178,6 +178,8 @@ module li_thermal
 
       integer :: err_tmp
 
+      real(kind=RKIND) :: temperatureValue
+
       !WHL - debug - for test-case diagnostics
       logical, parameter :: circular_shelf_test = .false.
       logical, parameter :: dome_test = .false.
@@ -372,11 +374,24 @@ module li_thermal
                write(stdoutUnit,*) 'Initialized ice temperature from the input file'
             endif
 
-            ! If using the enthalpy solver, initialize waterfrac here
+            ! initialize waterfrac, in case we are using the enthalpy solver
             !TODO - Allow waterfrac to be read from the input file?
+            waterfrac(:,:) = 0.0_RKIND
 
-            if (trim(config_thermal_solver) == 'enthalpy') then
-               waterfrac(:,:) = 0.0_RKIND
+         elseif (trim(config_temperature_init) == 'sfc_air_temperature') then
+
+            do iCell = 1, nCellsSolve
+               ! set the column temperature to the surface air temperature or 273.15, whichever is less
+               temperatureValue = min(surfaceAirTemperature(iCell), kelvin_to_celsius)
+               surfaceTemperature(iCell) = temperatureValue
+               temperature(:,iCell)      = temperatureValue
+               basalTemperature(iCell)   = temperatureValue
+            enddo
+
+            waterfrac(:,:) = 0.0_RKIND
+
+            if (config_print_thermal_info) then
+               write(stdoutUnit,*) 'Initialized ice column temperature to the surface air temperature'
             endif
 
          elseif (trim(config_temperature_init) == 'linear') then
@@ -851,7 +866,9 @@ module li_thermal
                do iCell = 1, nCellsSolve
                   if (indexToCellID(iCell) == config_stats_cell_ID) then
                      write(stdoutUnit,*) 'thickness =', thickness(iCell)
-                     write(stdoutUnit,*) 'Initial temperature, iCell =', iCell
+                     write(stdoutUnit,*) 'surfaceAirTemperature =', surfaceAirTemperature(iCell)
+                     write(stdoutUnit,*) ' '
+                     write(stdoutUnit,*) 'Initial column temperatures, iCell =', iCell
                      write(stdoutUnit,*) 0, surfaceTemperature(iCell)
                      do k = 1, nVertLevels
                         write(stdoutUnit,*) k, temperature(k,iCell)
@@ -1155,7 +1172,7 @@ module li_thermal
                         write(stdoutUnit,*) 'flux for bottom melting =', basalFrictionFlux(iCell) + basalHeatFlux(iCell) + basalConductiveFlux(iCell)
                      endif   ! verboseColumn
 
-                     write(stdoutUnit,*) 'li_thermal, energy conservation error: iCell, imbalance (W/m2):', &
+                     write(stderrUnit,*) 'li_thermal, energy conservation error: iCell, imbalance (W/m2):', &
                                          indexToCellID(iCell), (finalEnergy - initialEnergy - deltaEnergy)/deltat
                      err = 1
                      

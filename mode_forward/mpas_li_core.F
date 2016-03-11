@@ -103,6 +103,7 @@ module li_core
       type (MPAS_TimeInterval_type) :: timeStepInterval
       character (len=StrKIND), pointer :: xtime, simulationStartTime
       real (kind=RKIND), pointer :: daysSinceStart
+      integer, dimension(:), pointer :: cellProcID
       type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
 
       type(field3DReal), pointer :: &
@@ -195,6 +196,10 @@ module li_core
       ! ===
       block => domain % blocklist
       do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_array(meshPool, 'cellProcID', cellProcID)
+         cellProcID(:) = domain % dminfo % my_proc_id
+
          call landice_init_block(block, domain % dminfo, err_tmp)
          err = ior(err, err_tmp)
 
