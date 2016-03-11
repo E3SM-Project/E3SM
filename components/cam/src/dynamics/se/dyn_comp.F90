@@ -254,7 +254,7 @@ CONTAINS
     type(element_t),    pointer :: elem(:)
     type(fvm_struct), pointer :: fvm(:)
 
-    integer :: ithr, nets, nete, ie, k, max_threads
+    integer :: ithr, nets, nete, ie, k
     real(r8), parameter :: Tinit=300.0_r8
     real(r8) :: dyn_ps0
     type(hybrid_t) :: hybrid
@@ -274,7 +274,6 @@ CONTAINS
     if(iam < par%nprocs) then
 
 #ifdef HORIZ_OPENMP
-       max_threads = omp_get_max_threads()
        if (iam==0) write (iulog,*) "dyn_init2: nthreads=",nthreads,&
                                    "max_threads=",omp_get_max_threads()
        !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ie,ithr,nets,nete,hybrid)
@@ -342,7 +341,6 @@ CONTAINS
        call nctopo_util_driver(elem,hybrid,nets,nete)
 #ifdef HORIZ_OPENMP
        !$OMP END PARALLEL 
-       call omp_set_num_threads(max_threads)
 #endif
     end if
 
@@ -374,14 +372,13 @@ CONTAINS
 
     integer, intent(out)               :: rc      ! Return code
     integer ::  n
-    integer :: nets, nete, ithr, max_threads
+    integer :: nets, nete, ithr
     integer :: ie
 
     ! !DESCRIPTION:
     !
     if(iam < par%nprocs) then
 #ifdef HORIZ_OPENMP
-       max_threads = omp_get_max_threads()
        !if (iam==0) write (iulog,*) "dyn_run: nthreads=",nthreads,&
        !                            "max_threads=",omp_get_max_threads()
        !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,n)
@@ -403,7 +400,6 @@ CONTAINS
 
 #ifdef HORIZ_OPENMP
        !$OMP END PARALLEL
-       call omp_set_num_threads(max_threads)
 #endif
     end if
     rc = DYN_RUN_SUCCESS
