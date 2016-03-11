@@ -315,6 +315,17 @@
                      possible_values=".true. or .false."/>
         </nml_record>
 
+
+<!-- **************************************************************************************** -->
+<!-- **************************************  Packages  ************************************** -->
+<!-- **************************************************************************************** -->
+
+        <packages>
+                <package name="mp_kessler_in" description="parameterization of kessler microphysics."/>
+                <package name="mp_wsm6_in" description="parameterization of WSM6 cloud microphysics."/>
+        </packages>
+
+
 <!-- **************************************************************************************** -->
 <!-- *************************************** Streams **************************************** -->
 <!-- **************************************************************************************** -->
@@ -556,11 +567,11 @@
 			<var name="tyear_accum"/>
 			<var name="refl10cm_max"/>
 			<var name="i_rainnc"/>
-			<var name="sr"/>
 			<var name="rainncv"/>
 			<var name="rainnc"/>
 			<var name="snownc"/>
 			<var name="graupelnc"/>
+			<var name="sr"/>
 			<var name="i_rainc"/>
 			<var name="cuprec"/>
 			<var name="rainc"/>
@@ -1140,24 +1151,29 @@
                      description="Surface pressure from match on MPAS grid"/>
 
                 <var_array name="scalars" type="real" dimensions="nVertLevels nCells Time">
-                        <var name="qv"      array_group="moist" units="kg kg^{-1}"
+                        <var name="qv" array_group="moist" units="kg kg^{-1}"
+                             packages="mp_kessler_in;mp_wsm6_in" 
                              description="Water vapor mixing ratio"/>
 
-                        <var name="qc"      array_group="moist" units="kg kg^{-1}"
+                        <var name="qc" array_group="moist" units="kg kg^{-1}"
+                             packages="mp_kessler_in;mp_wsm6_in"
                              description="Cloud water mixing ratio"/>
 
-                        <var name="qr"      array_group="moist" units="kg kg^{-1}"
+                        <var name="qr" array_group="moist" units="kg kg^{-1}"
+                             packages="mp_kessler_in;mp_wsm6_in"
                              description="Rain water mixing ratio"/>
 
-                        <var name="qi"      array_group="moist" units="kg kg^{-1}"
+                        <var name="qi" array_group="moist" units="kg kg^{-1}"
+                             packages="mp_wsm6_in"
                              description="Ice mixing ratio"/>
 
-                        <var name="qs"      array_group="moist" units="kg kg^{-1}"
+                        <var name="qs" array_group="moist" units="kg kg^{-1}"
+                             packages="mp_wsm6_in"
                              description="Snow mixing ratio"/>
 
-                        <var name="qg"      array_group="moist" units="kg kg^{-1}"
+                        <var name="qg" array_group="moist" units="kg kg^{-1}"
+                             packages="mp_wsm6_in"
                              description="Graupel mixing ratio"/>
-
                 </var_array>
 
                 <var_array name="aerosols" type="real" dimensions="nAerLevels nCells Time">
@@ -1516,24 +1532,29 @@
 
                 <!-- scalar tendencies -->
                 <var_array name="scalars_tend" type="real" dimensions="nVertLevels nCells Time">
-                        <var name="tend_qv"    name_in_code="qv"        array_group="moist" units="kg kg^{-1} s^{-1}"
+                        <var name="tend_qv" name_in_code="qv" array_group="moist" units="kg kg^{-1} s^{-1}"
+                             packages="mp_kessler_in;mp_wsm6_in"
                              description="Tendency of water vapor mixing ratio"/>
 
-                        <var name="tend_qc"    name_in_code="qc"        array_group="moist" units="kg kg^{-1} s^{-1}"
+                        <var name="tend_qc" name_in_code="qc" array_group="moist" units="kg kg^{-1} s^{-1}"
+                             packages="mp_kessler_in;mp_wsm6_in"
                              description="Tendency of cloud water mixing ratio"/>
 
-                        <var name="tend_qr"    name_in_code="qr"        array_group="moist" units="kg kg^{-1} s^{-1}"
+                        <var name="tend_qr" name_in_code="qr" array_group="moist" units="kg kg^{-1} s^{-1}"
+                             packages="mp_kessler_in;mp_wsm6_in"
                              description="Tendency of rain water mixing ratio"/>
 
-                        <var name="tend_qi"    name_in_code="qi"        array_group="moist" units="kg kg^{-1} s^{-1}"
+                        <var name="tend_qi" name_in_code="qi" array_group="moist" units="kg kg^{-1} s^{-1}"
+                             packages="mp_wsm6_in"
                              description="Tendency of ice mixing ratio"/>
 
-                        <var name="tend_qs"    name_in_code="qs"        array_group="moist" units="kg kg^{-1} s^{-1}"
+                        <var name="tend_qs" name_in_code="qs" array_group="moist" units="kg kg^{-1} s^{-1}"
+                             packages="mp_wsm6_in"
                              description="Tendency of snow ratio"/>
 
-                        <var name="tend_qg"    name_in_code="qg"        array_group="moist" units="kg kg^{-1} s^{-1}"
+                        <var name="tend_qg" name_in_code="qg" array_group="moist" units="kg kg^{-1} s^{-1}"
+                             packages="mp_wsm6_in"
                              description="Tendency of graupel mixing ratio"/>
-
                 </var_array>
         </var_struct>
 
@@ -1778,31 +1799,40 @@
                      description="10 cm maximum radar reflectivity"/>
 
                 <var name="i_rainnc" type="integer" dimensions="nCells Time" units="unitless"
+                     packages="mp_kessler_in;mp_wsm6_in"
                      description="incidence of accumulated grid-scale precipitation greater than config_bucket_rainnc"/>
 
                 <var name="sr" type="real" dimensions="nCells Time" units="unitless"
+                     packages="mp_wsm6_in"
                      description="time-step ratio of frozen versus total grid-scale precipitation"/>
 
                 <var name="rainncv" type="real" dimensions="nCells Time" units="mm"
+                     packages="mp_kessler_in;mp_wsm6_in"
                      description="time-step total grid-scale precipitation"/>
 
                 <var name="snowncv" type="real" dimensions="nCells Time" units="mm"
+                     packages="mp_wsm6_in"
                      description="time-step grid-scale precipitation of snow"/>
 
                 <var name="graupelncv" type="real" dimensions="nCells Time" units="mm"
+                     packages="mp_wsm6_in"
                      description="time-step grid-scale precipitation of graupel"/>
 
                 <var name="rainnc" type="real" dimensions="nCells Time" units="mm"
+                     packages="mp_kessler_in;mp_wsm6_in"
                      description="accumulated total grid-scale precipitation"/>
 
                 <var name="snownc" type="real" dimensions="nCells Time" units="mm"
+                     packages="mp_wsm6_in"
                      description="accumulated grid-scale precipitation of snow"/>
 
                 <var name="graupelnc" type="real" dimensions="nCells Time" units="mm"
+                     packages="mp_wsm6_in"
                      description="accumulated grid-scale precipitation of graupel"/>
 
                 <var name="precipw" type="real" dimensions="nCells Time" units="kg m^{-2}"
                      description="precipitable water"/>
+
 
                 <!-- ================================================================================================== -->
                 <!-- ... PARAMETERIZATION OF CONVECTION:                                                                -->
