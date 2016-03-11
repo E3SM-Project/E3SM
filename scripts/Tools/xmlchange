@@ -12,7 +12,7 @@
 
 from standard_script_setup import *
 
-from CIME.utils import expect, run_cmd
+from CIME.utils import expect, run_cmd, convert_to_type
 from CIME.case import Case
 
 import argparse, doctest, shutil, glob
@@ -85,15 +85,17 @@ def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=No
     if(listofsettings ):
         for setting in listofsettings:
             (xmlid, xmlval) = setting.split('=', 1)
+            type_str = case.get_type_info(xmlid)
             if(append is True):
                 value = case.get_value(xmlid, resolved=False, subgroup=subgroup)
                 xmlval = "%s %s" %(xmlval, value)
-            case.set_value(xmlid, xmlval, subgroup)
+            case.set_value(xmlid, convert_to_type(xmlval, type_str, xmlid), subgroup)
     else:
         if(append is True):
             value = case.get_value(xmlid, resolved=False, subgroup=subgroup)
             xmlval = "%s %s" %(xmlval, value)
-        case.set_value(xmlid, xmlval, subgroup)
+        type_str = case.get_type_info(xmlid)
+        case.set_value(xmlid, convert_to_type(xmlval, type_str, xmlid), subgroup)
     case.flush()
 
     if(noecho is False):

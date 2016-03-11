@@ -116,7 +116,7 @@
   <!-- ===================================================================== -->
 
   <entry id="CASE">
-    <type>char*256</type>
+    <type>char</type>
     <default_value>UNSET</default_value>
     <group>case_def</group>
     <file>env_case.xml</file>
@@ -228,7 +228,7 @@
   </entry>
 
   <entry id="RUN_REFDIR">
-    <type>char*256</type>
+    <type>char</type>
     <default_value>ccsm4_init</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
@@ -238,7 +238,7 @@
   </entry>
 
   <entry id="RUN_REFCASE">
-    <type>char*256</type>
+    <type>char</type>
     <default_value>case.std</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
@@ -248,7 +248,7 @@
   </entry>
 
   <entry id="RUN_REFDATE">
-    <type>char*10</type>
+    <type>char</type>
     <default_value>0001-01-01</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
@@ -675,7 +675,7 @@
   </entry>
 
   <entry id="USE_ESMF_LIB">
-    <type>char</type>
+    <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <group>build_def</group>
@@ -769,7 +769,7 @@
   </entry>
 
   <entry id="BUILD_COMPLETE">
-    <type>int</type>
+    <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <group>build_status</group>
@@ -1156,7 +1156,7 @@
   </entry>
 
   <entry id="PTS_LAT">
-    <type>real(1)</type>
+    <type>real</type>
     <default_value>-999.99</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
@@ -1164,7 +1164,7 @@
   </entry>
 
   <entry id="PTS_LON">
-    <type>real(1)</type>
+    <type>real</type>
     <default_value>-999.99</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
@@ -1962,7 +1962,7 @@
   </entry>
 
   <entry id="NINST_LND_LAYOUT">
-    <type>integer</type>
+    <type>char</type>
     <valid_values>sequential,concurrent</valid_values>
     <default_value>concurrent</default_value>
     <group>mach_pes_lnd</group>
@@ -2003,7 +2003,7 @@
   </entry>
 
   <entry id="NINST_ICE_LAYOUT">
-    <type>integer</type>
+    <type>char</type>
     <valid_values>equential,concurrent</valid_values>
     <default_value>concurrent</default_value>
     <group>mach_pes_ice</group>
@@ -2301,7 +2301,7 @@
   <!-- ===================================================================== -->
 
   <entry id="PIO_VERSION">
-    <type>int</type>
+    <type>integer</type>
     <default_value>1</default_value>
     <valid_values>1,2</valid_values>
     <group>build_macros</group>
@@ -3318,7 +3318,7 @@
   </entry>
 
   <entry id="SCIENCE_SUPPORT">
-    <type>char*256</type>
+    <type>char</type>
     <valid_values>on, off</valid_values>
     <default_value>off</default_value>
     <group>case_def</group>
@@ -3549,7 +3549,7 @@
 
  <!-- Job Submission stuff -->
  <entry id="JOB_QUEUE">
-   <type>character</type>
+   <type>char</type>
    <valid_values></valid_values>
    <default_value></default_value>
    <group>job_submission</group>
@@ -3557,7 +3557,7 @@
    <desc>The machine queue in which to submit the job.  Default determined in config_machines.xml can be overwritten by testing</desc>
  </entry>
  <entry id="JOB_WALLCLOCK_TIME">
-   <type>character</type>
+   <type>char</type>
    <valid_values></valid_values>
    <default_value></default_value>
    <group>job_submission</group>

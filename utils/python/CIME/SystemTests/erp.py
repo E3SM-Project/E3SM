@@ -34,16 +34,16 @@ class ERP(SystemTestsCommon):
             if(bld == 2):
                 # halve the number of tasks and threads
                 for comp in ['ATM','CPL','OCN','WAV','GLC','ICE','ROF','LND']:
-                    ntasks      = int(self._case.get_value("NTASKS_%s"%comp))
-                    nthreads  = int(self._case.get_value("NTHRDS_%s"%comp))
-                    rootpe      = int(self._case.get_value("ROOTPE_%s"%comp))
+                    ntasks    = self._case.get_value("NTASKS_%s"%comp)
+                    nthreads  = self._case.get_value("NTHRDS_%s"%comp)
+                    rootpe    = self._case.get_value("ROOTPE_%s"%comp)
                     if ( nthreads > 1 ):
-                        self._case.set_value("BUILD_THREADED","TRUE")
+                        self._case.set_value("BUILD_THREADED", True)
                     if ( ntasks > 1 ):
-                        self._case.set_value("NTASKS_%s"%comp, "%s"%int(ntasks/2))
-                        self._case.set_value("ROOTPE_%s"%comp, "%s"%int(rootpe/2))
+                        self._case.set_value("NTASKS_%s"%comp, ntasks/2)
+                        self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
                     if ( nthreads > 1 ):
-                        self._case.set_value("NTHRDS_%s"%comp, "%s"%int(nthreads/2))
+                        self._case.set_value("NTHRDS_%s"%comp, nthreads/2)
             self._case.set_value("SMP_BUILD","0")
             self._case.flush()
             run_cmd("./case.setup -clean -testmode")

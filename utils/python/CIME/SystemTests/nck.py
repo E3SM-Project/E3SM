@@ -8,6 +8,7 @@ import CIME.utils
 from system_tests_common import SystemTestsCommon
 
 class NCK(SystemTestsCommon):
+
     def __init__(self, caseroot, case):
         """
         initialize a test object
@@ -31,13 +32,13 @@ class NCK(SystemTestsCommon):
             logging.warn("Starting bld %s"%bld)
             machpes = os.path.join("LockedFiles","env_mach_pes.NCK%s.xml"%bld)
             for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
-                self._case.set_value("NINST_%s"%comp,str(bld))
+                self._case.set_value("NINST_%s"%comp, bld)
                 if(bld == 2):
-                    ntasks      = int(self._case.get_value("NTASKS_%s"%comp))
-                    rootpe      = int(self._case.get_value("ROOTPE_%s"%comp))
+                    ntasks      = self._case.get_value("NTASKS_%s"%comp)
+                    rootpe      = self._case.get_value("ROOTPE_%s"%comp)
                     if ( ntasks > 1 ):
-                        self._case.set_value("NTASKS_%s"%comp, "%s"%int(ntasks/2))
-                        self._case.set_value("ROOTPE_%s"%comp, "%s"%int(rootpe/2))
+                        self._case.set_value("NTASKS_%s"%comp, ntasks/2)
+                        self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
             self._case.flush()
 
             run_cmd("./case.setup -clean -testmode")

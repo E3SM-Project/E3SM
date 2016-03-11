@@ -7,8 +7,8 @@ from CIME.case import Case
 import CIME.utils
 from system_tests_common import SystemTestsCommon
 
-
 class PEM(SystemTestsCommon):
+
     def __init__(self, caseroot, case):
         """
         initialize a test object
@@ -43,12 +43,11 @@ class PEM(SystemTestsCommon):
             shutil.copy("env_mach_pes.xml", machpes)
 
             if bld == 1:
-                ntasks = int(self._case.get_value("NTASKS_%s"%comp))
-                rootpe = int(self._case.get_value("ROOTPE_%s"%comp))
+                ntasks = self._case.get_value("NTASKS_%s"%comp)
+                rootpe = self._case.get_value("ROOTPE_%s"%comp)
                 if ntasks > 1:
-                    self._case.set_value("NTASKS_%s"%comp, "%s"%int(ntasks/2))
-                    self._case.set_value("ROOTPE_%s"%comp, "%s"%int(rootpe/2))
-
+                    self._case.set_value("NTASKS_%s"%comp, ntasks/2)
+                    self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
 
         #
         # Because mira/cetus interprets its run script differently than

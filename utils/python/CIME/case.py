@@ -59,14 +59,21 @@ class Case(object):
             # Wait and resolve in self rather than in env_file
             result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
             logging.debug("CASE %s %s"%(item,result))
-            if(result is not None):
-                if(resolved):
+            if result is not None:
+                if resolved and type(result) is str:
                     return self.get_resolved_value(result)
                 return result
 
-
         logging.info("Not able to retreive value for item '%s'" % item)
 
+    def get_type_info(self, item, attribute={}):
+        result = None
+        for env_file in self._env_entryid_files:
+            result = env_file.get_type_info(item)
+            if result is not None:
+                return result
+
+        logging.info("Not able to retreive type for item '%s'" % item)
 
     def get_resolved_value(self, item, recurse=0):
         num_unresolved = item.count("$")

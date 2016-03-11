@@ -73,7 +73,7 @@ class FakeTest(SystemTestsCommon):
                 f.write(script)
 
             os.chmod(modelexe, 0755)
-            self._case.set_value("BUILD_COMPLETE", "TRUE")
+            self._case.set_value("BUILD_COMPLETE", True)
             self._case.flush()
 
 class TESTRUNPASS(FakeTest):

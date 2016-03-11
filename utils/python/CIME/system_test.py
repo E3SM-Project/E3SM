@@ -385,13 +385,13 @@ class SystemTest(object):
             envtest.set_value("BASECMP_CASE", os.path.join(self._baseline_cmp_name, test))
 
         envtest.set_value("TEST_ARGV", test_argv)
-        envtest.set_value("CLEANUP", ("TRUE" if self._clean else "FALSE"))
+        envtest.set_value("CLEANUP", self._clean)
 
         if self._generate or self._compare:
             envtest.set_value("BASELINE_ROOT", self._baseline_root)
 
-        envtest.set_value("GENERATE_BASELINE", "TRUE" if self._generate else "FALSE")
-        envtest.set_value("COMPARE_BASELINE", "TRUE" if self._compare else "FALSE")
+        envtest.set_value("GENERATE_BASELINE", self._generate)
+        envtest.set_value("COMPARE_BASELINE", self._compare)
         envtest.set_value("CCSM_CPRNC", self._machobj.get_value("CCSM_CPRNC", resolved=False))
         envtest.write()
         return True
