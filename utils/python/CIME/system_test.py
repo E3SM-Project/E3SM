@@ -50,9 +50,10 @@ class SystemTest(object):
         os.environ["CIMEROOT"] = self._cime_root
 
         if machine_name is None:
-            machine_name = xml_machine or self._machobj.get_machine_name()
+            machine_name = xml_machine
 
         self._machobj = Machines(machine=machine_name)
+        machine_name = self._machobj.get_machine_name()
 
         self._no_build = no_build if not namelists_only else True
         self._no_run = no_run if not self._no_build else True
