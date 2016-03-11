@@ -103,7 +103,7 @@
 
  microp_select: select case(microp_scheme)
 
-    case ("wsm6")
+    case ("mp_wsm6")
        !mass mixing ratios:
        if(.not.allocated(qi_p)         ) allocate(qi_p(ims:ime,kms:kme,jms:jme)  )
        if(.not.allocated(qs_p)         ) allocate(qs_p(ims:ime,kms:kme,jms:jme)  )
@@ -145,7 +145,7 @@
 
  microp_select: select case(microp_scheme)
 
-    case ("wsm6")
+    case ("mp_wsm6")
        !mass mixing ratios:
        if(allocated(qi_p)         ) deallocate(qi_p         )
        if(allocated(qs_p)         ) deallocate(qs_p         )
@@ -172,7 +172,7 @@
 
  microp_select: select case(microp_scheme)
 
-    case("wsm6")
+    case("mp_wsm6")
 !       write(0,*) '--- enter subroutine wsm6init:'
        call wsm6init(rho_a,rho_r,rho_s,cliq,cpv,.false.)
 !       write(0,*) '--- end subroutine wsm6init'
@@ -246,7 +246,7 @@
 
     microp_select: select case(microp_scheme)
 
-       case ("kessler")
+       case ("mp_kessler")
 
           call kessler( &
                   t        = th_p      , qv    = qv_p  , qc     = qc_p     ,                &
@@ -260,9 +260,9 @@
                   ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme   , &
                   its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte     &
                    )
-!          write(0,*) '--- end kessler:',istep
+!          write(0,*) '--- end mp_kessler:',istep
 
-       case ("wsm6")
+       case ("mp_wsm6")
           call wsm6( &
                   th      = th_p        , q          = qv_p         , qc      = qc_p      , &
                   qr      = qr_p        , qi         = qi_p         , qs      = qs_p      , &
@@ -280,7 +280,7 @@
                   ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme   , &
                   its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte     &
                    )
-!          write(0,*) '--- end wsm6:',istep
+!          write(0,*) '--- end mp_wsm6:',istep
 
        case default
        
@@ -295,7 +295,7 @@
  
     ! Ensure that we only call compute_radar_reflectivity() if we are using an MPS that
     !    supports the computation of simulated radar reflectivity
-    if (trim(microp_scheme) == "wsm6") then
+    if (trim(microp_scheme) == "mp_wsm6") then
        call compute_radar_reflectivity(diag_physics)
     else
        write(0,*) '*** NOTICE: NOT computing simulated radar reflectivity'
@@ -368,7 +368,7 @@
 
  microp_select_init: select case(microp_scheme)
 
-    case ("wsm6")
+    case ("mp_wsm6")
  
        do j = jts, jte
        do i = its, ite
@@ -466,7 +466,7 @@
 
  microp_select_init: select case(microp_scheme)
 
-    case ("wsm6")
+    case ("mp_wsm6")
 
        do j = jts,jte
        do i = its,ite
@@ -511,11 +511,11 @@
 
  microp_select: select case(microp_scheme)
 
-    case ("kessler")
+    case ("mp_kessler")
        call physics_error_fatal('--- calculation of radar reflectivity is not available' // &
                                  'with kessler cloud microphysics')
 
-    case ("wsm6")
+    case ("mp_wsm6")
 
        if(.not.allocated(p1d)  ) allocate(p1d(kts:kte)  )
        if(.not.allocated(t1d)  ) allocate(t1d(kts:kte)  )
