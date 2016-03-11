@@ -628,7 +628,7 @@ def convert_to_string(value, type_str, vid=""):
             value = "TRUE" if value else "FALSE"
         elif type_str == "real":
             expect(type(value) is float, "Wrong type for entry id '%s'" % vid)
-            value = float(value)
+            value = str(value)
         else:
             expect(False, "Unknown type '%s'" % type_str)
 
