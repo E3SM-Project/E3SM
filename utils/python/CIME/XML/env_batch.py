@@ -17,10 +17,11 @@ class EnvBatch(EnvBase):
 
     def set_value(self, item, value, subgroup=None):
         val = None
+        # allow the user to set all instances of item if subgroup is not provided
         if subgroup is None:
             nodes = self.get_nodes("entry", {"id":item})
             for node in nodes:
-                node.attrib["value"] = value
+                self._set_value(node, item, value)
                 val = value
         else:
             nodes = self.get_nodes("job",{"name":subgroup})
