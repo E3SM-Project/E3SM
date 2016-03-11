@@ -5,7 +5,13 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!==================================================================================================
+!===============================================================================================================
+!===============================================================================================================
+
+!=============================================================================================================
+
+
+
  module mpas_atmphys_control
  use mpas_kind_types
  use mpas_derived_types
@@ -21,42 +27,41 @@
  logical,public:: moist_physics
 
 
-!>\brief MPAS control and initialization routines.
-!>\author Laura D. Fowler (send comments to laura@ucar.edu).
-!>\date 2013-05-01.
-!>
-!>\details
-!> mpas_atmphys_control contains subroutines called during the initialization.
-!>
-!> subroutines called in mpas_atmphys_control:
-!> -------------------------------------------
-!> physics_namelist_check: checks that physics namelist parameters are defined correctly.
-!> physics_registry_init : initializes thicknesses of soil layers for NOAH land-surface scheme.
-!> physics_idealized_init: initializes physics variables needed to run idealized cases.
-!>
-!> add-ons and modifications to sourcecode:
-!> ----------------------------------------
-!>    * removed the namelist option config_eddy_scheme and associated sourcecode.
-!>    * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
-!>    * removed controls to the updated Kain-Fritsch convection scheme.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
-!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
-!>    * modified sourcecode to use pools.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
-!>    * removed subroutine physics_idealized_init, also available in mpas_init_atm_cases.F in 
-!>      core_init_atmosphere.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-08-11.
-!>    * renamed config_conv_deep_scheme to config_convection_scheme.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+!MPAS control and initialization routines.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
+!
+! subroutines called in mpas_atmphys_control:
+! -------------------------------------------
+! * physics_namelist_check: checks that physics namelist parameters are defined correctly.
+! * physics_registry_init : initializes thicknesses of soil layers for NOAH land-surface scheme.
+! * physics_idealized_init: initializes physics variables needed to run idealized cases.
+!
+! add-ons and modifications to sourcecode:
+! ----------------------------------------
+! * removed the namelist option config_eddy_scheme and associated sourcecode.
+! * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
+! * removed controls to the updated Kain-Fritsch convection scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
+! * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+! * modified sourcecode to use pools.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+! * removed subroutine physics_idealized_init, also available in mpas_init_atm_cases.F in 
+!   core_init_atmosphere.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-08-11.
+! * renamed config_conv_deep_scheme to config_convection_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+! * renamed "wsm6" to "mp_wsm6" and "kessler" to "mp_kessler".
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-09.
 
 
  contains
 
 
-!==================================================================================================
+!=================================================================================================================
  subroutine physics_namelist_check(mesh,configs)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
@@ -92,7 +97,7 @@
  !
  if (trim(config_physics_suite) == 'mesoscale_reference') then
 
-    if (trim(config_microp_scheme) == 'suite')     config_microp_scheme     = 'wsm6'
+    if (trim(config_microp_scheme) == 'suite')     config_microp_scheme     = 'mp_wsm6'
     if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'tiedtke'
     if (trim(config_pbl_scheme) == 'suite')        config_pbl_scheme        = 'ysu'
     if (trim(config_gwdo_scheme) == 'suite')       config_gwdo_scheme       = 'off'
@@ -124,9 +129,9 @@
  
 
 !cloud microphysics scheme:
- if(.not. (config_microp_scheme .eq. 'off'      .or. &
-           config_microp_scheme .eq. 'kessler'  .or. &
-           config_microp_scheme .eq. 'wsm6'     )) then
+ if(.not. (config_microp_scheme .eq. 'off'        .or. &
+           config_microp_scheme .eq. 'mp_kessler' .or. &
+           config_microp_scheme .eq. 'mp_wsm6'     )) then
           
     write(mpas_err_message,'(A,A10)') 'illegal value for config_microp_scheme:', &
           trim(config_microp_scheme)
