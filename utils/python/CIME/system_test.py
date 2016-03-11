@@ -49,6 +49,8 @@ class SystemTest(object):
         # needed for perl interface
         os.environ["CIMEROOT"] = self._cime_root
 
+        # if machine_name is set use it, otherwise if xml_machine is set use it,
+        # otherwise probe for machine_name
         if machine_name is None:
             machine_name = xml_machine
 
@@ -78,6 +80,9 @@ class SystemTest(object):
 
         self._test_root = os.path.abspath(self._test_root)
         self._test_id   = test_id if test_id is not None else CIME.utils.get_utc_timestamp()
+
+        # if compiler is set use it, otherwise if xml_compiler is set use it,
+        # otherwise use the default compiler for the machine
         if compiler is not None:
             self._compiler = compiler
         elif xml_compiler is not None:
