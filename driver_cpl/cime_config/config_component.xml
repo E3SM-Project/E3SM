@@ -368,9 +368,6 @@
     <desc>
       sets frequency of full model barrier (same options as STOP_OPTION) for synchronization with BARRIER_N and BARRIER_DATE
     </desc>
-    <values>
-      <value compset="DATM.+CLM">ndays</value>   <!-- Daily barrier needed for concurrent PE layouts so that DATM doesn't get ahead -->
-    </values>
   </entry>
 
   <entry id="BARRIER_N">
@@ -381,9 +378,6 @@
     <desc>
       sets periodic model barriers with BARRIER_OPTION and BARRIER_DATE for synchronization
     </desc>
-    <values>
-      <value compset="DATM.+CLM">1</value>   <!-- Daily barrier needed for concurrent PE layouts so that DATM doesn't get ahead -->
-    </values>
   </entry>
 
   <entry id="BARRIER_DATE">
