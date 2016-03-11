@@ -1,0 +1,80 @@
+! Copyright (c) 2013,  Los Alamos National Security, LLC (LANS)
+! and the University Corporation for Atmospheric Research (UCAR).
+!
+! Unless noted otherwise source code is licensed under the BSD license.
+! Additional copyright and license information can be found in the LICENSE file
+! distributed with this code, or at http://mpas-dev.github.com/license.html
+!
+!=================================================================================================================
+ module mpas_atmphys_packages
+ use mpas_kind_types
+ use mpas_derived_types,only : mpas_pool_type,mpas_io_context_type
+ use mpas_pool_routines,only : mpas_pool_get_config,mpas_pool_get_package
+ use mpas_io_units,only : stderrUnit
+
+ implicit none
+ private
+ public:: atmphys_setup_packages
+
+!mpas_atmphys_packages contains the definitions of all physics packages.
+!Laura D. Fowler (laura@ucar.edu) / 2016-03-10.
+
+
+ contains
+
+
+!=================================================================================================================
+ function atmphys_setup_packages(configs,packages,iocontext) result(ierr)
+!=================================================================================================================
+
+!inout arguments:
+ type (mpas_pool_type), intent(inout) :: configs
+ type (mpas_pool_type), intent(inout) :: packages
+ type (mpas_io_context_type), intent(inout) :: iocontext
+
+!local variables:
+ character(len=StrKIND),pointer:: config_microp_scheme
+ logical,pointer:: mp_kessler_in,mp_wsm6_in
+
+ integer :: ierr
+
+!-----------------------------------------------------------------------------------------------------------------
+
+ ierr = 0
+
+!--- initialization of all packages for cloud microphysics parameterizations:
+
+ call mpas_pool_get_config(configs,'config_microp_scheme',config_microp_scheme)
+
+ nullify(mp_kessler_in)
+ call mpas_pool_get_package(packages,'mp_kessler_inActive',mp_kessler_in)
+
+ nullify(mp_wsm6_in)
+ call mpas_pool_get_package(packages,'mp_wsm6_inActive',mp_wsm6_in)
+
+ if(.not.associated(mp_kessler_in) .or. &
+    .not.associated(mp_wsm6_in)  ) then
+    write(stderrUnit,*) '===================================================================================='
+    write(stderrUnit,*) '* Error while setting up packages for cloud microphysics options in atmosphere core.'
+    write(stderrUnit,*) '===================================================================================='
+    ierr = 1
+    return
+ endif
+
+ mp_kessler_in = .false.
+ mp_wsm6_in    = .false.
+
+ if(config_microp_scheme == 'mp_kessler') then
+    mp_kessler_in = .true.
+ elseif(config_microp_scheme == 'mp_wsm6') then
+    mp_wsm6_in = .true. 
+ endif
+
+ end function atmphys_setup_packages
+
+!=================================================================================================================
+ end module mpas_atmphys_packages
+!=================================================================================================================
+
+
+
