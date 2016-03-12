@@ -88,6 +88,7 @@ class GenericXML(object):
         Return None if no match.
         """
         nodes = self.get_nodes(nodename, attributes, root)
+
         expect(len(nodes) <= 1, "Multiple matches for nodename '%s' and attrs '%s' in file '%s'" %
                (nodename, attributes, self.filename))
         return nodes[0] if nodes else None
@@ -104,6 +105,7 @@ class GenericXML(object):
             # and create a result with the intersection of those lists
             for key in keys:
                 xpath = ".//%s[@%s=\'%s\']" % (nodename,key,attributes[key])
+                logger.debug("xpath is %s"%xpath)
                 newnodes = root.findall(xpath)
                 if not nodes:
                     nodes = newnodes

@@ -17,10 +17,12 @@ class EnvBatch(EnvBase):
 
     def set_value(self, item, value, subgroup=None):
         val = None
+        # allow the user to set all instances of item if subgroup is not provided
         if subgroup is None:
             nodes = self.get_nodes("entry", {"id":item})
             for node in nodes:
-                val = EnvBase.set_value(self, node, value)
+                self._set_value(node, item, value)
+                val = value
         else:
             nodes = self.get_nodes("job",{"name":subgroup})
             for node in nodes:
@@ -47,3 +49,15 @@ class EnvBatch(EnvBase):
                     value[node.attrib["name"]] = val
 
         return value
+
+    def get_type_info(self, vid):
+        nodes = self.get_nodes("entry",{"id":vid})
+        type_info = None
+        for node in nodes:
+            new_type_info = self._get_type_info(node)
+            if type_info is None:
+                type_info = new_type_info
+            else:
+                expect( type_info == new_type_info,
+                        "Inconsistent type_info for entry id=%s %s %s" % (vid, new_type_info, type_info))
+        return type_info

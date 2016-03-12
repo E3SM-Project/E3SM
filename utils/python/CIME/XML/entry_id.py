@@ -33,8 +33,8 @@ class EntryID(GenericXML):
                 if att.key in attributes:
                     if re.search(attributes[att.key], att.text):
                         node.set("value", valnode.text)
+                        logger.debug("id %s value %s" % (node.attrib["id"], valnode.text))
                         return valnode.text
-                        logger.info("id %s value %s" % (vid, valnode.text))
 
         # Fall back to default value
         value = self.get_optional_node("default_value", root=node)
@@ -57,6 +57,11 @@ class EntryID(GenericXML):
         else:
             return self._get_type_info(node)
 
+    def _set_value(self, node, vid, value, subgroup=None):
+        type_str = self._get_type_info(node)
+        node.set("value", convert_to_string(value, type_str, vid))
+        return value
+
     def set_value(self, vid, value, subgroup=None):
         """
         Set the value of an entry-id field to value
@@ -65,9 +70,7 @@ class EntryID(GenericXML):
         """
         node = self.get_optional_node("entry", {"id":vid})
         if node is not None:
-            type_str = self._get_type_info(node)
-            node.set("value", convert_to_string(value, type_str, vid))
-            return value
+            return self._set_value(node, vid, value, subgroup)
         else:
             return None
 
@@ -112,8 +115,8 @@ class EntryID(GenericXML):
         node = self.get_optional_node("entry", {"id":vid})
         if node is None:
             return
-
         type_str = self._get_type_info(node)
+        logger.debug("vid %s type %s"%(vid,type_str))
 
         valnodes = self.get_nodes("value", root=node)
         for valnode in valnodes:
@@ -122,8 +125,7 @@ class EntryID(GenericXML):
                 values[vatt] = self.get_resolved_value(valnode.text)
             else:
                 values[vatt] = valnode.text
-
-            valnode[vatt] = convert_to_type(valnode[vatt], type_str, vid)
+            values[vatt] = convert_to_type(values[vatt], type_str, vid)
 
         return values
 

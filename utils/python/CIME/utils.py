@@ -597,9 +597,9 @@ def convert_to_type(value, type_str, vid=""):
                 expect(False, "Entry %s was listed as type int but value '%s' is not valid int" % (vid, value))
 
         elif type_str == "logical":
-            expect(value in ["TRUE", "FALSE"],
+            expect(value in ["TRUE", "FALSE","true","false"],
                    "Entry %s was listed as type logical but had val '%s' instead of TRUE or FALSE" % (vid, value))
-            value = value == "TRUE"
+            value = value == "TRUE" or value == "true"
 
         elif type_str == "real":
             try:
@@ -628,7 +628,7 @@ def convert_to_string(value, type_str, vid=""):
             value = "TRUE" if value else "FALSE"
         elif type_str == "real":
             expect(type(value) is float, "Wrong type for entry id '%s'" % vid)
-            value = float(value)
+            value = str(value)
         else:
             expect(False, "Unknown type '%s'" % type_str)
 
