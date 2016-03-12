@@ -275,7 +275,7 @@ contains
     type(mct_aVect)  , intent(in)    :: landfrac_l ! lfrac field on the land grid
     character(len=*) , intent(in)    :: fieldname  ! name of the field to map (should have NO trailing blanks)
     type(seq_map)    , intent(inout) :: mapper
-    real(r8), pointer, intent(out)   :: data_g_bare_land(:)
+    real(r8), pointer, intent(inout) :: data_g_bare_land(:)
     !
     ! !LOCAL VARIABLES:
     character(len=:), allocatable :: elevclass_as_string
