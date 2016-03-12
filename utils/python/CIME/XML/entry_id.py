@@ -33,8 +33,8 @@ class EntryID(GenericXML):
                 if att.key in attributes:
                     if re.search(attributes[att.key], att.text):
                         node.set("value", valnode.text)
+                        logger.debug("id %s value %s" % (node.attrib["id"], valnode.text))
                         return valnode.text
-                        logger.info("id %s value %s" % (vid, valnode.text))
 
         # Fall back to default value
         value = self.get_optional_node("default_value", root=node)
@@ -57,25 +57,10 @@ class EntryID(GenericXML):
         else:
             return self._get_type_info(node)
 
-    def set_value(self, vid, value, subgroup=None):
-        """
-        Set the value of an entry-id field to value
-        Returns the value or None if not found
-        subgroup is ignored in the general routine and applied in specific methods
-        """
-        node = self.get_optional_node("entry", {"id":vid})
-        if node is not None:
-            type_str = self._get_type_info(node)
-            node.set("value", convert_to_string(value, type_str, vid))
-            return value
-        else:
-            return None
-
     def _set_value(self, node, vid, value, subgroup=None):
         type_str = self._get_type_info(node)
         node.set("value", convert_to_string(value, type_str, vid))
         return value
-
 
     def set_value(self, vid, value, subgroup=None):
         """
