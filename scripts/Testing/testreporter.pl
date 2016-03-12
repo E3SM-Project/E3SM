@@ -42,10 +42,6 @@ my $debug = 0;
 my $dumpxml = 0;
 my $printreport = 0;
 my $dryrun = 0;
-# full path to the expected fails file. 
-my $expectedFailsFile;
-# Hash with expected fails data
-my %xfailsData;
 my $username = undef;
 my $password = undef;
 
@@ -65,21 +61,20 @@ my %suiteinfo;
 %suiteinfo = &getTestSuiteInfo(\@testdirs);
 my $teststatus;
 my $nlfailreport;
-my $xfailelems = getExpectedFails();
-($teststatus, $nlfailreport) = getTestStatus(\@testdirs, $tagname, $testid, $xfailelems);
+($teststatus, $nlfailreport) = getTestStatus(\@testdirs, $tagname, $testid);
 &Debug( eval { Dumper $teststatus} );
 &Debug( eval { Dumper \%suiteinfo } );
 my $testxml = &makeResultsXml($teststatus, \%suiteinfo, $nlfailreport);
 if(!$dryrun)
 {
-	&sendresults(\%teststatus, \%suiteinfo, $testxml);
+    &sendresults(\%teststatus, \%suiteinfo, $testxml);
 }
 &printreport($teststatus, $nlfailreport) if $printreport;
 
 #-------------------------------------------------------------------------------
 # End Main
 #-------------------------------------------------------------------------------
-  
+
 #-------------------------------------------------------------------------------
 # Get the options. 
 #-------------------------------------------------------------------------------
@@ -95,23 +90,12 @@ sub opts
 	"help"		=> \$opt_help,
 	"dumpxml|x"	=> \$dumpxml,
 	"printreport|p" => \$printreport,
-    "expectedfails=s" => \$expectedFailsFile,
 	"dryrun"    => \$dryrun,
-    
 	);
 
     # Show usage if the required options aren't specified. 
     &help if (defined $opt_help);
-    #&usage if ( (! defined $testroot) ||(! defined $tagname) || (! defined $testid) || (!defined $testtype) || (! defined $expectedFailsFile));
     &usage if ( (! defined $testroot) ||(! defined $tagname) || (! defined $testid) || (!defined $testtype));
-    if(defined $expectedFailsFile)
-	{
-	    $expectedFailsFile = abs_path($expectedFailsFile);
-	}
-	else
-	{
-		$expectedFailsFile = undef;
-	}
 }
 
 #-------------------------------------------------------------------------------
@@ -121,10 +105,9 @@ sub usage
 {
     print <<'END';
   Usage: 
-    ./testreporter --testroot /glade/scratch/$user/tests/cesm1_1_alphaXX --tagname cesm1_1_alpha15c --testid testid --testtype prealpha|prebeta|prerelease --expectedfails expectedfailsfile
-	[--dumpxml|--printreport]
+    ./testreporter.pl --testroot /glade/scratch/$user/tests/cesm1_1_alphaXX --tagname cesm1_1_alpha15c --testid testid --testtype prealpha|prebeta|prerelease [--dumpxml|--printreport]
 END
-	exit(1);
+    exit(1);
 }
 
 sub help
@@ -147,7 +130,6 @@ sub help
 	tag used.  
 	--testid   The testid you specified to create_test_suite.  
 	--testtype The type of test you are running: prealpha, prebeta, or prerelease. 
-    --expectedfails The path to the expected fails file, ususally in the $SRCROOT
 	
 END
 }
@@ -165,22 +147,6 @@ sub Debug
     }
 }
 
-
-
-
-#-------------------------------------------------------------------------------
-# Read the expected fails xml file. 
-#-------------------------------------------------------------------------------
-sub getExpectedFails
-{
-	my $parser = XML::LibXML->new;
-	my $xfails = $parser->parse_file($expectedFailsFile);
-	my $root = $xfails->getDocumentElement();    
-	my @xfailelems = $root->findnodes('/expectedFails/entry');
-	#print Dumper \@xfailelems;
-	
-	return \@xfailelems;
-}
 
 #-------------------------------------------------------------------------------
 # Using the testroot, find the test directories that end with the specified testid.
@@ -218,7 +184,6 @@ sub getTestDirs
 
 #-------------------------------------------------------------------------------
 # Get the suite info and send it back.  
-# Also get the expectedfails file
 #-------------------------------------------------------------------------------
 sub getTestSuiteInfo
 {
@@ -234,45 +199,43 @@ sub getTestSuiteInfo
 	}
     }
     &Debug("test path:  $testpath\n");
-	
-	# We need to find SetupTools in a path-independent manner.  
-	# so parse out the cimeroot from testspec.*.xml, 
-	# get rid of the tags, and then we have 
+    
+    # We need to find SetupTools in a path-independent manner.  
+    # so parse out the cimeroot from testspec.*.xml, 
+    # get rid of the tags, and then we have 
     #my $testspecfile = "$testroot/testspec.$testid.$caseinfo{'mach'}.xml";
     my $testspecfile = "$testroot/testspec.$testid.xml";
     Debug( "testspecfile: $testspecfile\n");
-	open my $SPEC, '<', $testspecfile or die "could not open $testspecfile, $!";
-	my @testspeclines =  <$SPEC>;
-	my @cimerootlines = grep { /<cimeroot>/ } @testspeclines;
-	#my @cimerootlines = grep { /^<cimeroot>/ } <$SPEC>;
-	close $SPEC;
-	chomp @cimerootlines;
-	my $cimeroot = $cimerootlines[0];
-	if(! defined $cimeroot)
-	{
-		die "cimeroot not defined, aborting..";
-	}
-	
-	$cimeroot =~ s/<cimeroot>|<\/cimeroot>|^\s+|\s+$//g;
-	#$cimeroot =~ s/<\/cimeroot>//g;
-	Debug("cimeroot is now: |$cimeroot|");
-    #my @dirs = ( $testpath, $testpath . "../utils/perl5lib");
+    open my $SPEC, '<', $testspecfile or die "could not open $testspecfile, $!";
+    my @testspeclines =  <$SPEC>;
+    my @cimerootlines = grep { /<cimeroot>/ } @testspeclines;
+    #my @cimerootlines = grep { /^<cimeroot>/ } <$SPEC>;
+    close $SPEC;
+    chomp @cimerootlines;
+    my $cimeroot = $cimerootlines[0];
+    if(! defined $cimeroot)
+    {
+	die "cimeroot not defined, aborting..";
+    }
+    
+    $cimeroot =~ s/<cimeroot>|<\/cimeroot>|^\s+|\s+$//g;
+    Debug("cimeroot is now: |$cimeroot|");
     my @dirs = ( $testpath, "$cimeroot/utils/perl5lib");
     unshift @INC, @dirs;
-	
-	# SetupTools needs a case to work, so why not just cd to the 
-	# first test directory, and run SetupTools there?? :)
-	my $firsttestdir = $testroot . "/" . $$testlist[0];
-	Debug("first test dir: $firsttestdir");
+    
+    # SetupTools needs a case to work, so why not just cd to the 
+    # first test directory, and run SetupTools there?? :)
+    my $firsttestdir = $testroot . "/" . $$testlist[0];
+    Debug("first test dir: $firsttestdir");
     require Config::SetupTools;
-	chdir $firsttestdir;
+    chdir $firsttestdir;
 
     my %config = SetupTools::getAllResolved();
     $caseinfo{'mach'}     = $config{'MACH'};
     $caseinfo{'compiler'} = $config{'COMPILER'};
     $caseinfo{'mpilib'}   = $config{'MPILIB'};
 
-	chdir $testroot;
+    chdir $testroot;
 
     my $parser = XML::LibXML->new;
     my $spec = $parser->parse_file($testspecfile);
@@ -280,18 +243,7 @@ sub getTestSuiteInfo
     my @bltagnodes = $root->findnodes('/testlist/baselinetag');
     $caseinfo{'baselinetag'} = $bltagnodes[0]->textContent();
     &Debug( "baselinetag: $caseinfo{'baselinetag'}\n") ;
-	
-	# Get the expectedFailsFile. 
-	if(! defined $expectedFailsFile)
-	{
-	    my @cimeroots = $root->findnodes('/testlist/cimeroot');
-	    die "cannot find cimeroot!" if(! @cimeroots);
-	    my $cimeroot = $cimeroots[0]->textContent();
-	    &Debug("cimeroot: $cimeroot\n");
-	    $expectedFailsFile = "$cimeroot/cime_config/cesm/ExpectedTestFails.xml";
-	}
 
-    
     &Debug("caseinfo: " . eval { Dumper \%caseinfo} );
     return %caseinfo;
 }
@@ -302,7 +254,7 @@ sub getTestSuiteInfo
 #-------------------------------------------------------------------------------
 sub getTestStatus
 {
-    my ($testdirs, $tag, $testid, $xfailelems)  = @_;
+    my ($testdirs, $tag, $testid)  = @_;
     my %teststatushash;
     my %nlreporthash;
     my $time = localtime;
@@ -332,122 +284,68 @@ sub getTestStatus
 	open (my $teststatusfile, "<", $statusfile) or die "cannot open TestStatus file for $testcase, $!";
 	my $teststatus = <$teststatusfile>;
 	chomp $teststatus;
-	#my $lotsacasestatus = $teststatus;
 	my $statusline = $teststatus;
 	$teststatus = (split(/\s+/, $teststatus))[0];
 
-	
 	&Debug("Testcase:   $testcase\n");
-	&Debug( "Teststatus: $teststatus\n"); 
-	
-	my $xfailbugz;
-	my $xfailnode;
-	
-	#print Dumper $xfailelems;
-	#print "statusline: $statusline\n";
-	foreach my $xfailelem(@$xfailelems)
-	{
-		my $xfailentry = $xfailelem->textContent();
-		#print "xfailentry $xfailentry\n";
-		#my $bugz = $xfailnode->getAttribute('bugz');
-		my $bugz = undef;
-		if($xfailelem->hasAttribute('bugz'))
-		{
-			$bugz = $xfailelem->getAttribute('bugz');
-		}
-		$xfailentry =~ m/(\w+\s)(.+$)/;
-		#print "xfailentry $xfailentry\n";
-		my $xfailinfo = $2;
-		#print "xfailinfo: $xfailinfo\n";
-		#print "statusline: $statusline\n";
-		chomp($status_info);
-		#if(($statusline =~ m/(^$xfailinfo)(\..*$)/) ||
-        #    $xfailinfo eq $status_info)
-		if(($xfailinfo =~ /$testbaseid/) ||
-            $xfailinfo eq $status_info)
-		{
-			&Debug( "match found!");
-			&Debug( "xfailinfo: $xfailinfo");
-			&Debug( "statusline: $statusline");
-			if($teststatus =~ m/DONE/)
-			{
-				$teststatus = 'U' . $teststatus;
-			}
-			if($teststatus =~ m/PASS/)
-			{
-				$teststatus = 'U' . $teststatus;
-			}
-
-			if($teststatus =~ m/(FAIL|RUN)/)
-			{
-				if($bugz)
-				{
-					$teststatus = 'KT' . $teststatus . "(bugzilla $bugz)";
-				}
-				else
-				{
-					$teststatus = 'KT' . $teststatus ;
-				}
-			}
-			&Debug( "teststatus $teststatus");
-		}
-	
-	}
+	&Debug("Teststatus: $teststatus\n"); 
 
 	# Now go through the TestStats getting the memleak, compare, baseline tag, throughput, and comments if any. 
 	my @statuslines = <$teststatusfile>;
 	chomp @statuslines;
 
-    #If the 'test functionality summary' is not PASS, then report the
-    # test functionality summary as the teststatus field.
-    my @testsummarylines = grep { /test functionality summary/ } @statuslines;
-    my $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
-    if(defined $testsummary && $testsummary !~ /PASS/)
-    {
-        $teststatus = $testsummary;
-		$teststatushash{$testcase}{'comment'} = "Overall Test status failed! Check the history files!!";
-    }
-    $teststatushash{$testcase}{'status'} = $teststatus;
+	# If the 'test functionality summary' is not PASS, then report the
+	# test functionality summary as the teststatus field.
+	my @testsummarylines = grep { /test functionality summary/ } @statuslines;
+	my $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+	if(defined $testsummary && $testsummary !~ /PASS/)
+	{
+	    ##$teststatus = $testsummary;
+	    $teststatushash{$testcase}{'comment'} = "Overall Test status failed! Check the history files!!";
+	}
+	##$teststatushash{$testcase}{'status'} = $teststatus;
+	if(length($testsummary) == 0) 
+	{
+	    $testsummary = 'FAIL';
+	}
+	$teststatushash{$testcase}{'status'} = $testsummary;
 
 	# Get the baseline compare summary
-	#my @comparelines = grep { /compare_hist/} @statuslines;
 	my @comparelines = grep { /baseline compare summary/} @statuslines;
 	my ($comparestatus,$comparetest)  = split(/\s+/, $comparelines[0]);
-	$teststatushash{$testcase}{'compare'} = $comparestatus;
+	$teststatushash{$testcase}{'compare'} = (length($comparestatus) > 0) ? $comparestatus : "----";
 	my $comparetag = (split(/\./, $comparetest))[-1];
 	$baselinetag = $comparetag unless defined $baselinetag;
-
-	
-        # If this a normal test, ie NOT a set of SBN tests, then 
-        # send the following fields. If this is a namelist test, then skip these fields, they
-        # will never be filled in for SBN tests. 
-        if($testtype ne 'namelist') 
+    
+	# If this a normal test, ie NOT a set of SBN tests, then 
+	# send the following fields. If this is a namelist test, then skip these fields, they
+	# will never be filled in for SBN tests. 
+	if($testtype ne 'namelist') 
 	{
 	    my @memleaklines = grep { /memleak/ } @statuslines;
 	    my $memleakstatus = (split(/\s+/, $memleaklines[0]))[0];
-	    $teststatushash{$testcase}{'memleak'} = $memleakstatus;
-
+	    $teststatushash{$testcase}{'memleak'} = (length($memleakstatus) > 0) ? $memleakstatus : "----";
+	
 	    my @memcomplines = grep { /memcomp/} @statuslines;
 	    my $memcompstatus = (split(/\s+/, $memcomplines[0]))[0];
-	    $teststatushash{$testcase}{'memcomp'} = $memcompstatus;
+	    $teststatushash{$testcase}{'memcomp'} = (length($memcompstatus) > 0) ? $memcompstatus : "----";
 
 	    my @tputcomplines = grep { /tputcomp/ } @statuslines;
 	    my $tputcompstatus = (split(/\s+/, $tputcomplines[0]))[0];
-	    $teststatushash{$testcase}{'tputcomp'} = $tputcompstatus;
+	    $teststatushash{$testcase}{'tputcomp'} = (length($tputcompstatus) > 0) ? $tputcompstatus : "----";
 	}
 
 	my @nlcomplines = grep { /nlcomp/i } @statuslines;
 	my $nlcompstatus = (split(/\s+/, $nlcomplines[0]))[0];
-	$teststatushash{$testcase}{'nlcomp'} = $nlcompstatus;
+	$teststatushash{$testcase}{'nlcomp'} = (length($nlcompstatus) > 0) ? $nlcompstatus : "----";
 
 	my @commentlines = grep { /COMMENT/ } @statuslines;
 	my $comment = (split(/\s+/, $commentlines[0], 2) )[1];
 	chomp $comment;
-	#$teststatushash{$testcase}{'comment'} = $lotsacasestatus;
 	$teststatushash{$testcase}{'comment'} = $comment;
 	
 	close $teststatusfile;
-	
+    
 	# Check the CaseStatus, and print out the last line...
 	my $casestatusfile = $testroot . "/"  . $testcase . "/" . $casestatusfilename;
 	if( -e $casestatusfile)
@@ -462,7 +360,6 @@ sub getTestStatus
 	    close $casestatusfile;
 	    chomp $lastline;
 	    &Debug ("last line of CaseStatus: $lastline\n");
-	    #$teststatushash{$testcase}{'casestatus'} = $lotsacasestatus;
 	    $teststatushash{$testcase}{'casestatus'} = $lastline;
 	}
 	else
@@ -491,7 +388,7 @@ sub getTestStatus
 	    
 	    @memleaklines = grep { /memleak/ } @statuslines;
 	    $memleakstatus = (split(/\s+/, $memleaklines[0]))[0];
-	    $teststatushash{$testcase}{'iopmemleak'} = $memleakstatus;
+	    $teststatushash{$testcase}{'iopmemleak'} = (length($memleakstatus) > 0) ? $memleakstatus : "---";
 
 	    @comparelines = grep { /compare_hist/} @statuslines;
 	    ($comparestatus,$comparetest)  = split(/\s+/, $comparelines[0]);
@@ -507,7 +404,7 @@ sub getTestStatus
 	    $tputcompstatus = (split(/\s+/, $tputcomplines[0]))[0];
 	    $teststatushash{$testcase}{'ioptputcomp'} = $tputcompstatus;
 
-  	    @nlcomplines = grep { /nlcomp/i } @statuslines;
+	    @nlcomplines = grep { /nlcomp/i } @statuslines;
 	    $nlcompstatus = (split(/\s+/, $nlcomplines[0]))[0];
 	    $teststatushash{$testcase}{'iopnlcomp'} = $nlcompstatus;
 
@@ -521,11 +418,10 @@ sub getTestStatus
 	    close $iopfh;
 	}
 
-
-        if($testtype eq 'namelist')
+	if($testtype eq 'namelist')
 	{
 	    my $statusoutfile = $testroot  . "/"  . $testcase .  "/" . $teststatusoutfilename;
-            if( -e $statusoutfile  && $teststatushash{$testcase}{'nlcomp'} eq 'FAIL')
+	    if( -e $statusoutfile  && $teststatushash{$testcase}{'nlcomp'} eq 'FAIL')
 	    {
 		open my $STATUSOUT, "<", $statusoutfile or warn "can't open $statusoutfile, $!";
 		my @statusoutlines = <$STATUSOUT>;	
@@ -544,18 +440,19 @@ sub getTestStatus
 		}
 		$nlreporthash{$teststatushash{$testcase}{'comment'}}{$testcase} = 1;
 	    }
-	    foreach my $blank(keys %nlreporthash)
-	    {
-		delete $nlreporthash{$blank} if(length $nlreporthash{$blank} == 0);
-	    }
+	}
+
+	foreach my $blank(keys %nlreporthash)
+	{
+	    delete $nlreporthash{$blank} if(length $nlreporthash{$blank} == 0);
 	}
     }
-    
+
     foreach my $blank(keys %nlreporthash)
     {
 	delete $nlreporthash{$blank} if(length $nlreporthash{$blank} == 0);
     }
-    
+
     return \%teststatushash, \%nlreporthash;
 }
 
@@ -705,12 +602,12 @@ sub printreport
 
 sub authenticate
 {
-  print "Enter your username: \n";
-  $username = <STDIN>;
-  print "Enter your password: \n";
-  system('stty','-echo');
-  chop($password = <STDIN>);
-  system('stty','echo');
-  chomp $username;
-  chomp $password;
+    print "Enter your username: \n";
+    $username = <STDIN>;
+    print "Enter your password: \n";
+    system('stty','-echo');
+    chop($password = <STDIN>);
+    system('stty','echo');
+    chomp $username;
+    chomp $password;
 }

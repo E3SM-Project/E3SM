@@ -39,7 +39,7 @@ mv -f $EXEROOT/cesm.exe $EXEROOT/cesm.exe.1
 cp -f env_build.xml    env_build.xml.1
 
 #-----------------------------------------------------
-# Halve the number of tasks and threads and build again
+# Halve the number of tasks and threads and ROOTPE and build again,
 #-----------------------------------------------------
 
 set NTASKS_ATM  = `./xmlquery NTASKS_ATM	-value`
@@ -59,6 +59,15 @@ set NTHRDS_OCN  = `./xmlquery NTHRDS_OCN	-value`
 set NTHRDS_ICE  = `./xmlquery NTHRDS_ICE	-value`
 set NTHRDS_GLC  = `./xmlquery NTHRDS_GLC	-value`
 set NTHRDS_CPL  = `./xmlquery NTHRDS_CPL	-value`
+
+set ROOTPE_ATM  = `./xmlquery ROOTPE_ATM	-value`
+set ROOTPE_LND  = `./xmlquery ROOTPE_LND	-value`
+set ROOTPE_ROF  = `./xmlquery ROOTPE_ROF	-value`
+set ROOTPE_WAV  = `./xmlquery ROOTPE_WAV	-value`
+set ROOTPE_OCN  = `./xmlquery ROOTPE_OCN	-value`
+set ROOTPE_ICE  = `./xmlquery ROOTPE_ICE	-value`
+set ROOTPE_GLC  = `./xmlquery ROOTPE_GLC	-value`
+set ROOTPE_CPL  = `./xmlquery ROOTPE_CPL	-value`
 
 if ( $NTHRDS_ATM > 1 || $NTHRDS_LND > 1 || $NTHRDS_ROF > 1 || $NTHRDS_WAV > 1 || $NTHRDS_OCN > 1 || $NTHRDS_ICE > 1 || $NTHRDS_GLC > 1 || $NTHRDS_CPL > 1 ) then
   ./xmlchange -file env_build.xml -id BUILD_THREADED  -val TRUE
@@ -97,6 +106,25 @@ if ( $NTASKS_CPL > 1 ) then
   @ ntask = $NTASKS_CPL / 2
   ./xmlchange -file env_mach_pes.xml -id NTASKS_CPL  -val $ntask
 endif
+
+# Halve the rootpe
+  @ rootpe = $ROOTPE_ATM / 2
+  ./xmlchange -file env_mach_pes.xml -id ROOTPE_ATM  -val $rootpe
+  @ rootpe = $ROOTPE_LND / 2
+  ./xmlchange -file env_mach_pes.xml -id ROOTPE_LND  -val $rootpe
+  @ rootpe = $ROOTPE_ROF / 2
+  ./xmlchange -file env_mach_pes.xml -id ROOTPE_ROF  -val $rootpe
+  @ rootpe = $ROOTPE_WAV / 2
+  ./xmlchange -file env_mach_pes.xml -id ROOTPE_WAV  -val $rootpe
+  @ rootpe = $ROOTPE_OCN / 2
+  ./xmlchange -file env_mach_pes.xml -id ROOTPE_OCN  -val $rootpe
+  @ rootpe = $ROOTPE_ICE / 2
+  ./xmlchange -file env_mach_pes.xml -id ROOTPE_ICE  -val $rootpe
+  @ rootpe = $ROOTPE_GLC / 2
+  ./xmlchange -file env_mach_pes.xml -id ROOTPE_GLC  -val $rootpe
+  @ rootpe = $ROOTPE_CPL / 2
+  ./xmlchange -file env_mach_pes.xml -id ROOTPE_CPL  -val $rootpe
+
 
 # Halve the number of threads
 if ( $NTHRDS_ATM > 1 ) then
@@ -154,4 +182,4 @@ cp -f env_mach_pes.xml env_mach_pes.xml.2
 # back 
 #
 cp -f env_mach_pes.xml.1 env_mach_pes.xml
-cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
+cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml

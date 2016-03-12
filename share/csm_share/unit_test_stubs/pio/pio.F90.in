@@ -64,6 +64,7 @@ module pio
   integer, parameter, public :: pio_offset = MPI_OFFSET_KIND
   integer, parameter, public :: pio_offset_kind = pio_offset
   integer, parameter, public :: pio_rearr_subset = 0
+  integer, parameter, public :: pio_rearr_box = 1
   integer, parameter, public :: PIO_WRITE = 0
 
   public :: PIO_def_dim

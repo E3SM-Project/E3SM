@@ -1,0 +1,25 @@
+PIO_TF_AUTO_TEST_SUB_BEGIN fail_rank_even
+  LOGICAL cond
+  ! Even procs fail
+  IF (mod(pio_tf_world_rank_,2) == 0) THEN
+    cond = .FALSE.
+  ELSE
+    cond = .TRUE.
+  END IF
+  PIO_TF_PASSERT(cond, "Hard assert")
+PIO_TF_AUTO_TEST_SUB_END fail_rank_even
+
+PIO_TF_AUTO_TEST_SUB_BEGIN always_fail_with_error
+  PIO_TF_ERROR("Fatal Error")
+PIO_TF_AUTO_TEST_SUB_END always_fail_with_error
+
+PIO_TF_AUTO_TEST_SUB_BEGIN always_success
+  ! This test will always succeed
+  ! The idea is to check that a test can succeed
+  !  after a previous test fails
+  PIO_TF_LOG(0, *) "This test will always succeed"
+PIO_TF_AUTO_TEST_SUB_END always_success
+
+PIO_TF_AUTO_TEST_SUB_BEGIN always_fail_with_passert
+  PIO_TF_PASSERT(.FALSE., "Fatal Assert")
+PIO_TF_AUTO_TEST_SUB_END always_fail_with_passert

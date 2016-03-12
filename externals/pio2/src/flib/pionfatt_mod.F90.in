@@ -1,0 +1,463 @@
+#define __PIO_FILE__ "pionfatt_mod.F90"
+!>
+!! @file 
+!! @brief NetCDF attribute interface to PIO
+!<
+module pionfatt_mod
+  use pio_kinds, only : r4, r8, i4, pio_offset_kind
+  use pio_types
+  use pio_support, only : replace_c_null
+  use iso_c_binding
+  implicit none
+
+
+  !>
+  !! @private
+  !<
+  public :: put_att
+  interface put_att
+     module procedure put_att_id_{TYPE}, put_att_desc_{TYPE}, put_att_vid_{TYPE}
+     ! TYPE real,int,double
+     module procedure put_att_1d_id_{TYPE}
+     ! TYPE real,int,double
+     module procedure put_att_1d_desc_{TYPE}
+     ! TYPE real,int,double
+     module procedure put_att_1d_vid_{TYPE}
+  end interface
+
+
+  !>
+  !! @private
+  !<
+  public :: get_att
+  interface get_att
+     module procedure get_att_{TYPE}, get_att_desc_{TYPE}, get_att_id_{TYPE}
+     ! TYPE real,int,double
+     module procedure get_att_1d_{TYPE}, get_att_desc_1d_{TYPE}, get_att_1d_id_{TYPE}
+  end interface
+
+  !>
+  !!  @public 
+  !!  @defgroup PIO_put_att PIO_put_att
+  !!  @brief Writes an netcdf attribute to a file 
+  !<
+  !>
+  !! @public 
+  !! @defgroup PIO_get_att PIO_get_att
+  !! @brief Reads  an netcdf attribute from a file 
+  !<
+
+  private :: modName
+  character(len=*), parameter :: modName='pionfatt_mod'
+  interface
+     !> @brief Write a netCDF text attribute.
+     integer(C_INT) function PIOc_put_att_text (ncid, varid, name, len, op) &
+          bind(C,name="PIOc_put_att_text")
+       use iso_c_binding
+       integer(C_INT), value    :: ncid
+       integer(C_INT), value    :: varid
+       character(C_CHAR)        :: name(*)
+       integer(C_SIZE_T), value :: len
+       character(C_char)        :: op
+     end function PIOc_put_att_text
+  end interface
+  interface
+     integer(C_INT) function PIOc_get_att_text (ncid, varid, name, op) &
+          bind(C,name="PIOc_get_att_text")
+       use iso_c_binding
+       integer(C_INT), value    :: ncid
+       integer(C_INT), value    :: varid
+       character(C_CHAR)        :: name(*)
+       character(C_char)        :: op(*)
+     end function PIOc_get_att_text
+  end interface
+
+
+  interface
+     integer(C_INT) function PIOc_put_att_int (ncid, varid, name, xtype, len, op) &
+          bind(C,name="PIOc_put_att_int")
+       use iso_c_binding
+       integer(C_INT), value    :: ncid
+       integer(C_INT), value    :: varid
+       character(C_CHAR)        :: name(*)
+       integer(C_INT), value    :: xtype
+       integer(C_SIZE_T), value :: len
+       integer(C_INT)           :: op
+     end function PIOc_put_att_int
+  end interface
+  interface
+     integer(C_INT) function PIOc_put_att_float (ncid, varid, name, xtype, len, op) &
+          bind(C,name="PIOc_put_att_float")
+       use iso_c_binding
+       integer(C_INT), value    :: ncid
+       integer(C_INT), value    :: varid
+       character(C_CHAR)        :: name(*)
+       integer(C_INT), value    :: xtype
+       integer(C_SIZE_T), value :: len
+       real(C_FLOAT)            :: op
+     end function PIOc_put_att_float
+  end interface
+  interface
+     integer(C_INT) function PIOc_put_att_double (ncid, varid, name, xtype, len, op) &
+          bind(C,name="PIOc_put_att_double")
+       use iso_c_binding
+       integer(C_INT), value    :: ncid
+       integer(C_INT), value    :: varid
+       character(C_CHAR)        :: name(*)
+       integer(C_INT), value    :: xtype
+       integer(C_SIZE_T), value :: len
+       real(C_DOUBLE)           :: op
+     end function PIOc_put_att_double
+  end interface
+
+
+  interface
+     integer(C_INT) function PIOc_get_att_int (ncid, varid, name, op) &
+          bind(C,name="PIOc_get_att_int")
+       use iso_c_binding
+       integer(C_INT), value         :: ncid
+       integer(C_INT), value         :: varid
+       character(C_CHAR)             :: name(*)
+       integer(C_INT), intent(out)   :: op
+     end function PIOc_get_att_int
+  end interface
+    
+  interface
+     integer(C_INT) function PIOc_get_att_float (ncid, varid, name, op) &
+          bind(C,name="PIOc_get_att_float")
+       use iso_c_binding
+       integer(C_INT), value         :: ncid
+       integer(C_INT), value         :: varid
+       character(C_CHAR)             :: name(*)
+       real(C_FLOAT), intent(out) :: op
+     end function PIOc_get_att_float
+  end interface
+    
+  interface
+     integer(C_INT) function PIOc_get_att_double (ncid, varid, name, op) &
+          bind(C,name="PIOc_get_att_double")
+       use iso_c_binding
+       integer(C_INT), value         :: ncid
+       integer(C_INT), value         :: varid
+       character(C_CHAR)             :: name(*)
+       real(C_DOUBLE), intent(out)   :: op
+     end function PIOc_get_att_double
+  end interface
+    
+
+contains
+
+  !>
+  !! @public 
+  !! @ingroup PIO_put_att
+  !! @brief Writes an netcdf attribute to a file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varid : The netcdf variable identifier
+  !! @param name : name of the attribute to add
+  !! @param var : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+  integer function put_att_desc_{TYPE} (File, vdesc, name, values) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in)  :: vdesc
+    character(len=*), intent(in)  :: name
+    {VTYPE}, intent(in) :: values
+
+    ierr = put_att_id_{TYPE} (File%fh,vdesc%varid,name,values)
+
+  end function put_att_desc_{TYPE}
+  integer function put_att_vid_{TYPE} (File, varid, name, value) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    {VTYPE}, intent(in) :: value
+
+    ierr = put_att_id_{TYPE} (File%fh,varid,name,value)
+
+  end function put_att_vid_{TYPE}
+  ! TYPE int,real,double
+  integer function put_att_id_{TYPE} (ncid, varid, name, values) result(ierr)
+    use iso_c_binding
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    {VTYPE}, intent(in) :: values
+
+
+    ierr = PIOc_put_att_{NCTYPE} (ncid,varid-1,trim(name)//C_NULL_CHAR, PIO_{TYPE}, 1_C_SIZE_T, values)
+
+  end function put_att_id_{TYPE}
+  integer function put_att_id_text (ncid, varid, name, values) result(ierr)
+    use iso_c_binding
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    character(len=*), intent(in) :: values
+    character(c_char), allocatable :: cvar(:)
+    integer(C_SIZE_T) :: clen
+    integer :: i
+
+    clen = len_trim(values)
+    allocate(cvar(clen+1))
+    cvar = C_NULL_CHAR
+    do i=1,clen
+       cvar(i) = values(i:i)
+    end do
+    ierr = PIOc_put_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, clen, cvar(1))
+    deallocate(cvar)
+  end function put_att_id_text
+
+  integer function put_att_1d_id_text (ncid, varid, name, value) result(ierr)  
+    use iso_c_binding
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    character(len=*), intent(in) :: value(:)
+    character, allocatable :: nvalue(:)
+    integer :: slen, alen, i, j, k
+
+    slen = len(value(1))
+    alen = size(value)
+    allocate(nvalue(slen*alen))
+    
+    do i=1,alen 
+       j= len_trim(value(i))
+       do k=1,j
+          nvalue(k+(i-1)*slen) = value(i)(k:k)
+       end do
+       nvalue(j+1+(i-1)*slen) = C_NULL_CHAR
+    end do
+    ierr =  put_att_1d_id_text_internal (ncid, varid, name, slen*alen, nvalue)
+
+    deallocate(nvalue)
+
+  end function put_att_1d_id_text
+
+
+  integer function put_att_1d_id_text_internal (ncid, varid, name, arrlen, values) result(ierr)
+    use iso_c_binding
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    integer, intent(in) :: arrlen
+    character(len=*), intent(in) :: values(arrlen)
+    integer :: vallen
+
+    
+    ierr = PIOc_put_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, int(arrlen,C_SIZE_T),values(1))
+        
+
+  end function put_att_1d_id_text_internal
+
+
+
+  integer function get_att_id_text (ncid, varid, name, values) result(ierr)
+    use iso_c_binding
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    character(len=*), intent(out) :: values
+
+    values = ' '
+    ierr = PIOc_get_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, values)
+    call replace_c_null(values)
+  end function get_att_id_text
+
+  !pl The next line is needed by genf90.pl, do not remove it.
+  ! TYPE real,double,int
+  !>
+  !! @public 
+  !! @ingroup PIO_put_att
+  !! @brief Writes an netcdf attribute to a file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varid : The netcdf variable identifier
+  !! @param name : name of the attribute to add
+  !! @param values : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+  integer function put_att_1d_id_{TYPE} (ncid, varid, name, values) result(ierr)
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    {VTYPE}, intent(in) :: values(:)
+    integer(PIO_OFFSET_KIND) :: len
+
+    len = size(values)
+    ierr = put_att_1d_id_internal_{TYPE} (ncid, varid, name, len, values)
+
+  end function put_att_1d_id_{TYPE}
+
+  ! TYPE real,double,int
+  integer function put_att_1d_id_internal_{TYPE} (ncid, varid, name, len, values) result(ierr)
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    integer(PIO_OFFSET_KIND), intent(in) :: len
+    character(len=*), intent(in) :: name
+    {VTYPE}, intent(in), target :: values(*)
+
+
+    ierr = PIOc_put_att_{NCTYPE} (ncid, varid-1, trim(name)//C_NULL_CHAR, PIO_{TYPE} , len, values(1))
+
+  end function put_att_1d_id_internal_{TYPE}
+
+
+  ! TYPE real,int,double
+  !>
+  !! @public 
+  !! @ingroup PIO_put_att
+  !! @brief Writes an netcdf attribute to a file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varDesc @copydoc var_desc_t
+  !! @param name : name of the attribute to add
+  !! @param var : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+  integer function put_att_1d_desc_{TYPE} (File,varDesc,name,values) result(ierr)
+
+    type (File_desc_t), intent(inout) , target :: File
+    type (VAR_desc_t), intent(in)     :: varDesc
+    character(len=*), intent(in)      :: name
+    {VTYPE}, intent(in)      :: values(:)
+
+    ierr = put_att_1d_id_{TYPE} (File%fh,varDesc%varid,name,values)
+
+  end function put_att_1d_desc_{TYPE}
+
+  integer function put_att_1d_vid_{TYPE} (File,varid,name,value) result(ierr)
+
+    type (File_desc_t), intent(inout) , target :: File
+    integer, intent(in) :: varid
+    character(len=*), intent(in)      :: name
+    {VTYPE}, intent(in)      :: value(:)
+
+    ierr = put_att_1d_id_{TYPE} (File%fh,varid,name,value)
+
+  end function put_att_1d_vid_{TYPE}
+
+
+  !>
+  !! @public 
+  !! @ingroup PIO_get_att
+  !! @brief Reads an netcdf attribute from a  file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varDesc @copydoc var_desc_t
+  !! @param name : name of the attribute to get
+  !! @param values : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+  integer function get_att_desc_{TYPE} (File,varDesc,name,values) result(ierr)
+
+    type (File_desc_t), intent(inout) , target :: File
+    type (VAR_desc_t), intent(in)     :: varDesc
+    character(len=*), intent(in)      :: name
+    {VTYPE}, intent(out)      :: values
+
+    ierr = get_att_{TYPE} (File,varDesc%varid,name,values)
+
+  end function get_att_desc_{TYPE}
+
+  !>
+  !! @public 
+  !! @ingroup PIO_get_att
+  !! @brief Reads an netcdf attribute from a  file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varDesc @copydoc var_desc_t
+  !! @param name : name of the attribute to get
+  !! @param values : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+  ! TYPE int,real,double
+  integer function get_att_desc_1d_{TYPE} (File,varDesc,name,values) result(ierr)
+
+    type (File_desc_t), intent(inout) , target :: File
+    type (VAR_desc_t), intent(in)     :: varDesc
+    character(len=*), intent(in)      :: name
+    {VTYPE}, intent(out)      :: values(:)
+
+    character(len=*), parameter :: subName=modName//'::get_att_desc_1d_{TYPE}'
+
+    ierr = get_att_1d_id_{TYPE} (File%fh,varDesc%varid,name,values)
+
+  end function get_att_desc_1d_{TYPE}
+
+  !>
+  !! @public 
+  !! @ingroup PIO_get_att
+  !! @brief Reads an netcdf attribute from a  file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varid : The netcdf variable identifier
+  !! @param name : name of the attribute to get
+  !! @param values : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+  ! TYPE int,real,double
+  integer function get_att_id_{TYPE} (ncid, varid, name, values) result(ierr)
+    use iso_c_binding
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    {VTYPE}, intent(out), target :: values
+
+
+    ierr = PIOc_get_att_{NCTYPE} (ncid,varid-1,trim(name)//C_NULL_CHAR, values)
+
+  end function get_att_id_{TYPE}
+
+
+  
+  integer function get_att_{TYPE} (File,varid,name,values) result(ierr)
+    type (File_desc_t), intent(in) , target :: File
+    integer(i4), intent(in)        :: varid
+    character(len=*), intent(in)   :: name
+    {VTYPE}, intent(out)          :: values
+
+
+    ierr = get_att_id_{TYPE} (file%fh, varid, name, values)
+
+
+  end function get_att_{TYPE}
+
+  ! TYPE real,int,double
+  !>
+  !! @public 
+  !! @ingroup PIO_get_att
+  !! @brief Reads an netcdf attribute from a  file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varid : The netcdf variable identifier
+  !! @param name : name of the attribute to get
+  !! @param values : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+  integer function get_att_1d_{TYPE} (File,varid,name,values) result(ierr)
+    type (File_desc_t), intent(in) , target :: File
+    integer(i4), intent(in)        :: varid
+    character(len=*), intent(in)   :: name
+    {VTYPE}, intent(out)          :: values(:)
+
+    ierr = get_att_1d_id_{TYPE} (file%fh, varid, name, values)
+
+  end function get_att_1d_{TYPE}
+
+
+  ! TYPE real,int,double
+  integer function get_att_1d_id_{TYPE} (ncid,varid,name,values) result(ierr)
+    integer, intent(in) :: ncid
+    integer(i4), intent(in)        :: varid
+    character(len=*), intent(in)   :: name
+    {VTYPE}, intent(out) , target         :: values(*)
+
+    ierr = PIOc_get_att_{NCTYPE} (ncid, varid-1, trim(name)//C_NULL_CHAR, values(1))
+
+
+  end function get_att_1d_id_{TYPE}
+
+
+end module pionfatt_mod
+

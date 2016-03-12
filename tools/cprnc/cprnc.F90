@@ -17,7 +17,9 @@ program piocprnc
   type(file_t) :: file(2)
   type(dim_t) :: dimoptions(12)
   integer :: dimoptioncnt
-  integer :: nvars, numfsk1, ndiffs, nfilldiffs, numnotfound
+  integer :: nvars, ndiffs, nfilldiffs, numnotfound
+  integer :: num_sizes_differ
+  integer :: num_not_analyzed
 
 !
 ! Parse arg list
@@ -87,7 +89,8 @@ program piocprnc
 
       call match_vars( file(1), file(2) )
    end if
-   call compare_vars(numcases, file, nvars, ndiffs, nfilldiffs, numfsk1,numnotfound)
+   call compare_vars(numcases, file, nvars, ndiffs, nfilldiffs, &
+        num_sizes_differ, num_not_analyzed, numnotfound)
 
 
 !
@@ -98,14 +101,18 @@ program piocprnc
       write(6,700) 'SUMMARY of cprnc:'
       if(numcases==1) then
          write(6,700) '  A total number of ',nvars,' fields in file 1 were analyzed (non-compare mode)'
-         write(6,700) '  A total number of ',numfsk1,' fields in file 1 could not be analyzed'
+         write(6,700) '  A total number of ',num_not_analyzed, &
+              ' fields in file 1 could not be analyzed'
       else
          write(6,700) ' A total number of ',nvars,' fields were compared'
          write(6,700) '          of which ',ndiffs,' had non-zero differences'
          write(6,700) '               and ',nfilldiffs,' had differences in fill patterns'
-         write(6,700) ' A total number of ',numfsk1,' fields could not be analyzed'
+         write(6,700) '               and ',num_sizes_differ,' had different dimension sizes'
+         write(6,700) ' A total number of ',num_sizes_differ + num_not_analyzed, &
+              ' fields could not be analyzed'
          write(6,700) ' A total number of ',numnotfound,' fields on file 1 were not found on file2.'
-         if (nvars > 0 .and. ndiffs == 0 .and. nfilldiffs == 0 .and. numfsk1<nvars) then
+         if (nvars > 0 .and. ndiffs == 0 .and. nfilldiffs == 0 .and. &
+              num_sizes_differ == 0 .and. num_not_analyzed<nvars) then
             write(6,700) '  diff_test: the two files seem to be IDENTICAL '
          else
             write(6,700) '  diff_test: the two files seem to be DIFFERENT '

@@ -112,7 +112,7 @@ if [ -n "$add_iop" ]; then
 fi
 
 cd $rundir
-models=(cam cice clm2 pop cism cpl)
+models=(cam cice clm2 pop cism cpl rtm mosart)
 for model in ${models[*]}; do
     
     if [ "$model" = "cism" ]; then
@@ -127,6 +127,10 @@ for model in ${models[*]}; do
 	extensions=(h0 h1 h2 h3 h4 h5 h6 h7)
     elif [ "$model" = "pop" ]; then
 	extensions=(h)
+    elif [ "$model" = "rtm" ]; then
+	extensions=(h0 h1 h2)
+    elif [ "$model" = "mosart" ]; then
+	extensions=(h0 h1 h2)
     fi
 
     #------------------------------------------------------------------

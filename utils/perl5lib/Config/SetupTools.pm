@@ -503,7 +503,7 @@ sub validate_variable_value
 	    if ( $i =~ /USERDEFINED/) {
 		$logger->warn ("WARNING: in $nm (package $pkg_nm): Variable name $var " .
 		    "has not been defined");
-	    }elsif ( $i !~ /^\s*(${compare})$/ ) {
+	    }elsif ( $i !~ /^\s*(${compare})$/  and ! $value =~ /^\$.*/ ) {   # give it a pass if set to another variable
 		$logger->logdie( "ERROR: in $nm (package $pkg_nm): Variable name $var " .
 		    "has a value ($i) that is not a valid type " . $$type_ref{'type'} );
 	    }

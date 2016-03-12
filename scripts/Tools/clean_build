@@ -12,18 +12,22 @@ $ENV{CASEROOT}       = `./xmlquery CASEROOT       -value `;
 $ENV{DEBUG}          = `./xmlquery DEBUG          -value `;
 $ENV{USE_ESMF_LIB}   = `./xmlquery USE_ESMF_LIB   -value `;
 $ENV{COMP_INTERFACE} = `./xmlquery COMP_INTERFACE -value `;
+$ENV{BUILD_THREADED} = `./xmlquery BUILD_THREADED -value`;
+$ENV{PIO_VERSION} = `./xmlquery PIO_VERSION -value`;
+$ENV{CLM_CONFIG_OPTS} = `./xmlquery CLM_CONFIG_OPTS -value`;
+my $testcase = `./xmlquery TESTCASE -value`;
 
 sub usage {
     die <<EOF;
-    
+
 SYNOPSIS
     $CASE.clean_build [options]
-    Removes existing coupled model object files and libraries  
+    Removes existing coupled model object files and libraries
 
 OPTIONS
   all Cleans all objects
    no arguments implies -a -c -o -w -g -i -r -l
-   -a Cleans the atm objects 
+   -a Cleans the atm objects
    -c Cleans the cpl objects
    -o Cleans the ocn objects
    -w Cleans the wav objects
@@ -55,7 +59,7 @@ GetOptions(
     "s" => \$opts{csmshare},
     "t" => \$opts{gptl},
     "p" => \$opts{pio},
-) or usage();    
+) or usage();
 
 usage() if($opts{help});
 
@@ -82,7 +86,10 @@ if( $cnt==0){
     $opts{glc} = 1;
     $opts{ice} = 1;
     $opts{rof} = 1;
-    $opts{lnd} = 1;
+    # Do not clean shared land library in a test case unless explicitly requested
+    if(not defined $testcase or ($ENV{CLM_CONFIG_OPTS} =~ /clm4_0/)){
+	$opts{lnd} = 1;
+    }
 }
 
 if($opts{mct}+$opts{pio}+$opts{gptl}+$opts{csmshare} >= 1){
