@@ -493,6 +493,7 @@ int parse_packages_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd, "      use mpas_derived_types\n");
 	fortprintf(fd, "      use mpas_pool_routines\n");
 	fortprintf(fd, "      use mpas_io_units\n");
+	fortprintf(fd, "      implicit none\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: packagePool !< Input: MPAS Pool for containing package logicals.\n\n");
 	fortprintf(fd, "      integer :: iErr\n");
 	fortprintf(fd, "\n");
@@ -542,6 +543,7 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd2, "      use mpas_derived_types\n");
 	fortprintf(fd2, "      use mpas_pool_routines\n");
 	fortprintf(fd2, "      use mpas_io_units\n");
+	fortprintf(fd2, "      implicit none\n");
 	fortprintf(fd2, "      type (mpas_pool_type), intent(inout) :: configPool\n");
 	fortprintf(fd2, "      character (len=*), intent(in) :: namelistFilename\n");
 	fortprintf(fd2, "      type (dm_info), intent(in) :: dminfo\n");
@@ -590,10 +592,12 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 		fortprintf(fd, "      use mpas_dmpar\n");
 		fortprintf(fd, "      use mpas_pool_routines\n");
 		fortprintf(fd, "      use mpas_io_units\n");
+		fortprintf(fd, "      implicit none\n");
 		fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: configPool\n");
 		fortprintf(fd, "      integer, intent(in) :: unitNumber\n");
 		fortprintf(fd, "      type (dm_info), intent(in) :: dminfo\n");
 		fortprintf(fd, "      type (mpas_pool_type), pointer :: recordPool\n");
+		fortprintf(fd, "      integer :: ierr\n");
 		fortprintf(fd, "\n");
 
 		// Define variable defintions prior to reading the namelist in.
@@ -735,6 +739,8 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd, "      use mpas_derived_types\n");
 	fortprintf(fd, "      use mpas_pool_routines\n");
 	fortprintf(fd, "      use mpas_io_units\n");
+	fortprintf(fd, "\n");
+	fortprintf(fd, "      implicit none\n");
 	fortprintf(fd, "\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: readDimensions !< Input: Pool to pull read dimensions from\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: configPool !< Input: Pool containing namelist options with configs\n");
@@ -888,6 +894,8 @@ int parse_dimensions_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd, "      use mpas_decomp\n");
 	fortprintf(fd, "      use mpas_pool_routines\n");
 	fortprintf(fd, "      use mpas_io_units\n");
+	fortprintf(fd, "\n");
+	fortprintf(fd, "      implicit none\n");
 	fortprintf(fd, "\n");
 	fortprintf(fd, "      type (block_type), intent(inout) :: block !< Input: Pointer to block\n");
 	fortprintf(fd, "      type (mpas_streamManager_type), intent(inout) :: manager !< Input: Stream manager\n");
@@ -1607,6 +1615,8 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 	fortprintf(fd, "      use mpas_derived_types\n");
 	fortprintf(fd, "      use mpas_pool_routines\n");
 	fortprintf(fd, "      use mpas_io_units\n");
+	fortprintf(fd, "      use mpas_io, only : MPAS_REAL_FILLVAL, MPAS_INT_FILLVAL, MPAS_CHAR_FILLVAL\n");
+	fortprintf(fd, "      implicit none\n");
 	fortprintf(fd, "      type (block_type), intent(inout), pointer :: block\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: structPool\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: dimensionPool\n");
@@ -2465,6 +2475,7 @@ int parse_structs_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd, "   subroutine %s_generate_structs(block, structPool, dimensionPool, packagePool)\n", core_string);
 	fortprintf(fd, "      use mpas_derived_types\n");
 	fortprintf(fd, "      use mpas_io_units\n");
+	fortprintf(fd, "      implicit none\n");
 	fortprintf(fd, "      type (block_type), pointer, intent(inout) :: block\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: structPool\n");
 	fortprintf(fd, "      type (mpas_pool_type), intent(inout) :: dimensionPool\n");
