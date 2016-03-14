@@ -1142,7 +1142,8 @@ contains
          snowiceFormation, &
          frazilFormation, &
          meltOnset, &
-         freezeOnset
+         freezeOnset, &
+         oceanHeatFluxIceBottom
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          iceAreaCategoryInitial, &
@@ -1359,6 +1360,7 @@ contains
        call MPAS_pool_get_array(ocean_fluxes, "oceanSaltFlux", oceanSaltFlux)
        call MPAS_pool_get_array(ocean_fluxes, "oceanHeatFlux", oceanHeatFlux)
        call MPAS_pool_get_array(ocean_fluxes, "oceanShortwaveFlux", oceanShortwaveFlux)
+       call MPAS_pool_get_array(ocean_fluxes, "oceanHeatFluxIceBottom", oceanHeatFluxIceBottom)
 
        call MPAS_pool_get_array(shortwave, "surfaceShortwaveFlux", surfaceShortwaveFlux)
        call MPAS_pool_get_array(shortwave, "interiorShortwaveFlux", interiorShortwaveFlux)
@@ -1502,6 +1504,7 @@ contains
                seaFreezingTemperature(iCell), &
                oceanStressCellU(iCell), &
                oceanStressCellV(iCell), &
+               oceanHeatFluxIceBottom(iCell), &
                freezingMeltingPotential(iCell), &
                lateralIceMeltFraction(iCell), &
                snowfallRate(iCell), &

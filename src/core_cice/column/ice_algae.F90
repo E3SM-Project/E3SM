@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_algae.F90 1104 2016-01-28 00:10:05Z njeffery $
+!  SVN:$Id: ice_algae.F90 1109 2016-03-07 20:24:24Z njeffery $
 !=======================================================================
 !
 ! Compute sea ice biogeochemistry (vertical or skeletal layer)
@@ -675,7 +675,8 @@
 
       use ice_colpkg_tracers, only: nt_fbri, nt_zbgc_frac, &
                                     ntrcr, nlt_bgc_Nit, tr_bgc_Fe, tr_zaero, &
-                                    nlt_bgc_Fed, nlt_zaero, bio_index
+                                    nlt_bgc_Fed, nlt_zaero, bio_index, tr_bgc_N, &
+                                    nlt_bgc_N
       use ice_constants_colpkg, only: c0, c1, c2, p5, puny
       use ice_colpkg_shared, only: hi_ssl, dEdd_algae, solve_zbgc
 
@@ -1042,7 +1043,10 @@
                                  biocons, dt, nblyr, &
                                  D_sbdiag, D_spdiag, ML_diag)  
 
-            top_conc = c0        ! or frazil ice concentration 
+            top_conc = c0        ! or frazil ice concentration
+ 
+            ! assume diatoms actively maintain there relative position in the ice
+            if (mm .ne. nlt_bgc_N(1)) then  
             call regrid_stationary &
                                 (initcons_stationary,    hbri_old,    &
                                  hbri,                   dt,          &
@@ -1051,6 +1055,16 @@
                                  i_grid,                 flux_bio(mm),&
                                  l_stop,                 stop_label,  &
                                  meltb)
+           elseif (tr_bgc_N .and. meltb > c0) then  
+            call regrid_stationary &
+                                (initcons_stationary,    hbri_old,    &
+                                 hbri,                   dt,          &
+                                 ntrcr,                               &
+                                 nblyr,                  top_conc,    &
+                                 i_grid,                 flux_bio(mm),&
+                                 l_stop,                 stop_label,  &
+                                 meltb)
+            endif
             if (l_stop) return
 
             biomat_cons(:,mm) =  biocons(:) +  initcons_stationary(:)
@@ -1258,24 +1272,26 @@
          ! if dEdd_algae = F, then absorption is included in dEdd, and we don't include here
          chlabs     = (/ 0.03_dbl_kind, 0.01_dbl_kind, 0.05_dbl_kind/), & !these seem high
                                                                           !0.003 1/m/(mg/m^3)
-         alpha2max_low  = (/ 0.67_dbl_kind, 0.67_dbl_kind, 0.67_dbl_kind/), & 
+         alpha2max_low  = (/ 0.8_dbl_kind, 0.67_dbl_kind, 0.67_dbl_kind/), & !Kirst and Wiencke 1995, Arrigo (2003)
                          ! light limitation (1/(W/m^2))
                                                                        !low PAR value
          alpha2max_high  = (/ 0.25_dbl_kind, 0.25_dbl_kind, 0.25_dbl_kind/), & ! light limitation (1/(W/m^2))
                                                                        !high PAR value
-         beta2max   = (/ 0.01_dbl_kind, 0.0025_dbl_kind, 0.01_dbl_kind/), & 
+         beta2max   = (/ 0.018_dbl_kind, 0.0025_dbl_kind, 0.01_dbl_kind/), & !Jin 2006
                               ! corresponding light inhibition (1/W/m^2)
          !Eppley 1972 curve mux_max = 0.851(1.066)^T , at T = 0
-         mu_max     = (/ 0.851_dbl_kind, 0.851_dbl_kind, 0.851_dbl_kind/), & 
-                      ! (1/day) maximum growth rate 'Jin2006'   
+         mu_max     = (/ 1.44_dbl_kind, 0.851_dbl_kind, 0.851_dbl_kind/), &   ! Jin 2006 (0.06 /h)
+                      ! (/ 0.851_dbl_kind, 0.851_dbl_kind, 0.851_dbl_kind/), & 
+                      ! (1/day) maximum growth rate
          grow_Tdep  = (/0.06_dbl_kind, 0.06_dbl_kind, 0.06_dbl_kind/),& ! (1/C)and its T dependence
          fr_graze   = (/c0, p1, p1/) ,  & ! A93 val for S, set to zero in Jin 06   Diatoms are not grazed
-         mort_pre   = (/0.02_dbl_kind, 0.02_dbl_kind, 0.02_dbl_kind/),& ! (1/day) prefix to mortality
+         mort_pre   = (/0.007_dbl_kind, 0.007_dbl_kind, 0.007_dbl_kind/),& ! 0.02 (1/day) prefix to mortality
          mort_Tdep  = (/0.03_dbl_kind ,0.03_dbl_kind, 0.03_dbl_kind/) , & ! (1/C) T dependence of mortality
          k_exude    = (/c0, c0, c0/),    & ! algal carbon  exudation rate (1/d)
          K_Nit      = (/ c1, c1, c1/) ,  & ! nitrate half saturation (mmol/m^3) 
          K_Am       = (/ 0.3_dbl_kind, 0.3_dbl_kind, 0.3_dbl_kind/) ,  & ! ammonium half saturation (mmol/m^3) 
-         K_Sil      = (/3.0_dbl_kind , c0, c0/), & ! silicon half saturation (mmol/m^3)
+         K_Sil      = (/4.0_dbl_kind, c0, c0/) , & ! Jin, Eslinger and others (2001)
+                     !(/3.0_dbl_kind , c0, c0/), & ! silicon half saturation (mmol/m^3)
          K_Fe       = (/1.0_dbl_kind , 0.2_dbl_kind, 0.1_dbl_kind/) ! 0.2-1  (nM)
                      ! (nM) iron half saturation  or micromol/m^3
                      ! Timmermans et al 2004 for values 2e-4-1.1e-3 mmol/m^3 for Antarctic diatoms
@@ -1300,8 +1316,10 @@
          fr_graze_s = 0.5_dbl_kind  , & ! fraction of grazing spilled or slopped
          fr_graze_e = 0.5_dbl_kind  , & ! fraction of assimilation excreted 
          fr_mort2min= 0.5_dbl_kind  , & ! fractionation of mortality to Am
+         fr_dFe     = 0.3_dbl_kind  , & ! fraction of remineralized nitrogen (in units of algal iron) that becomes
+                                        ! dFe (the rest goes to pFe)  10%
          k_nitrif   = c0            , & !(1/day) nitrification rate   0.015_dbl_kind 
-         t_iron_conv= 65.0_dbl_kind , & ! desorption loss pFe to dFe (Parekh et al, 2004 use 61 days)
+         t_iron_conv= 3065.0_dbl_kind , & ! 65.0_dbl_kind desorption loss pFe to dFe (Parekh et al, 2004 use 61 days)
          max_loss   = 0.9_dbl_kind  , & ! restrict uptake to 90% of remaining value 
          max_dfe_doc1 = 0.2_dbl_kind    ! 0.1852_dbl_kind 
                                         ! (nM Fe/muM C) max ratio of dFe to saccharides allowed in the ice
@@ -1697,7 +1715,7 @@
 
           resp(k)   = fr_resp  * grow_N(k)  
           graze(k)  = fr_graze(k) * grow_N(k)
-          mort(k)   = min(max_loss * Nin(k)/dt, mort_pre(k) * exp(mort_Tdep(k)*dTemp)  * Nin(k) / secday)
+          mort(k)   = min(max_loss * Nin(k)/dt, mort_pre(k)* exp(mort_Tdep(k)*dTemp) * Nin(k) / secday)
  
         ! history variables
           grow_alg(k) = grow_N(k)
@@ -1785,10 +1803,10 @@
        if (tr_bgc_DON) then
        do n = 1, n_don   
           DON_r(n) =  kn_bac(n)/secday * DONin(n) * dt
-          DON_s(n) =  graze_N*f_don(n)*fr_graze_s * dt
+          DON_s(n) =  graze_N*f_don(n)*fr_graze_s * dt 
           Zoo_s_s = Zoo_s_s - DON_s(n)
           Zoo_s_b = Zoo_s_b + DON_r(n)*(c1-f_don_Am(n))
-        !  Am_s = Am_s + DON_r(n)*f_don_Am(n)
+          !Am_s = Am_s + DON_r(n)*f_don_Am(n)
       enddo
       endif
      
@@ -1807,11 +1825,11 @@
       enddo
 
       !--------------------------------------------------------------------
-      ! Iron sources from remineralization  (follows ammonium)
+      ! Iron sources from remineralization  (follows ammonium but reduced)
       ! only Fed_s(1)  has remineralized sources
       !--------------------------------------------------------------------
       
-      Fed_s(1) = Fed_s(1) + Am_s * R_Fe2N(1)    ! remineralization source
+      Fed_s(1) = Fed_s(1) + Am_s * R_Fe2N(1) * fr_dFe   ! remineralization source
 
       !--------------------------------------------------------------------
       !  Conversion to dissolved Fe from Particulate requires DOC(1)
@@ -1840,8 +1858,12 @@
           enddo    
        endif         
       endif
+
+      ! source from algal mortality/grazing and fraction of remineralized nitrogen that does 
+      ! not become immediately bioavailable
+
       do n = 1,n_fep
-         Fep_s(n) = rFep(n)* Zoo + Fep_s(n)           ! source from algal mortality/grazing
+         Fep_s(n) = Fep_s(n) + rFep(n)* (Zoo + Am_s * R_Fe2N(1) * (c1-fr_dFe))   
       enddo ! losses not direct to Fed 
 
       !--------------------------------------------------------------------

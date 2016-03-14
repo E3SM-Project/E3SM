@@ -426,7 +426,7 @@
 
          ibrine_sal(k) = (brine_sal(k+1)*igrp + brine_sal(k)*igrm) * rigr
          ibrine_rho(k) = (brine_rho(k+1)*igrp + brine_rho(k)*igrm) * rigr
-         iTin(k) = (bTin(k+1)*igrp + bTin(k)*igrm) * rigr
+         iTin      (k) = (bTin     (k+1)*igrp + bTin     (k)*igrm) * rigr
          iphin     (k) = max(puny, &
                          (bphin    (k+1)*igrp + bphin    (k)*igrm) * rigr)
          iphin     (k) = min(c1, iphin (k))

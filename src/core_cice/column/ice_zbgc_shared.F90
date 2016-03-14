@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_zbgc_shared.F90 1071 2015-10-28 22:12:56Z njeffery $
+!  SVN:$Id: ice_zbgc_shared.F90 1108 2016-03-07 18:42:44Z njeffery $
 !=======================================================================
 !
 ! Biogeochemistry variables
@@ -23,7 +23,7 @@
       ! bio parameters for algal_dyn
 
       real (kind=dbl_kind), parameter, dimension(max_algae), public :: &
-         R_Si2N    = (/ 1.4_dbl_kind,      & ! algal C to Sil (mole/mole) 
+         R_Si2N    = (/ 1.8_dbl_kind,      & ! algal C to Sil (mole/mole) 
                         c0,                &
                         c0/),              &
          R_S2N     = (/ 0.03_dbl_kind,     & ! algal S to N (mole/mole)
@@ -48,14 +48,15 @@
       real (kind=dbl_kind), parameter, public :: &
          R_gC2molC  = 12.01_dbl_kind,  & ! mg/mmol C
          fr_resp    = 0.05_dbl_kind ,  & ! fraction of algal growth lost due to respiration
-         tau_min    = 6.24e4_dbl_kind, & ! rapid mobile to stationary exchanges (s)
+         tau_min    = 5.2e3_dbl_kind,  & ! rapid mobile to stationary exchanges (s)
                                          ! 3.12e4_dbl_kind = 6 hours, 1.25e5_dbl_kind s = 1 day
-         tau_max    = 6.25e5_dbl_kind    ! long time mobile to stationary exchanges (s) 
+         tau_max    = 1.875e6_dbl_kind   ! long time mobile to stationary exchanges (s) = 15 days
                                          ! 6.25e5_dbl_kind = 5 days
 
-      real (kind=dbl_kind), parameter, public :: &  !Tagliabue 2009
-         R_dFe2dust  = 0.035_dbl_kind,  & ! g/g (3.5% content)
-         dustFe_sol  = 0.005_dbl_kind     ! solubility fraction              
+      real (kind=dbl_kind), parameter, public :: &  
+         R_dFe2dust  = 0.035_dbl_kind,  & ! g/g (3.5% content) Tagliabue 2009
+         dustFe_sol  = 0.005_dbl_kind     ! solubility fraction
+                       !(0.2-2.5% solubility of mineral; 17.8% solubility of Biomass burning)  Bowie 2009        
 
       ! scavenging coefficient for tracers in snow
       ! bottom to last 6 are from Flanner et al., 2007

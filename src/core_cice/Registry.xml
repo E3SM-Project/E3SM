@@ -1659,6 +1659,7 @@
 		<var name="oceanSaltFluxArea"                 type="real"     dimensions="nCells Time"              name_in_code="oceanSaltFluxArea"/>
 		<var name="oceanHeatFluxArea"                 type="real"     dimensions="nCells Time"              name_in_code="oceanHeatFluxArea"/>
 		<var name="oceanShortwaveFluxArea"            type="real"     dimensions="nCells Time"              name_in_code="oceanShortwaveFluxArea"/>
+		<var name="oceanHeatFluxIceBottom"            type="real"     dimensions="nCells Time"              name_in_code="oceanHeatFluxIceBottom"/>
 	</var_struct>
 
 	<!-- ocean atmosphere interaction -->
