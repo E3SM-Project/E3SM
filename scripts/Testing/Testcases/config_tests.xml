@@ -26,7 +26,7 @@
     <INFO_DBUG>1</INFO_DBUG>
     <STOP_OPTION>ndays</STOP_OPTION> 
     <STOP_N>22</STOP_N> 
-    <CCSM_TCOST></CCSM_TCOST>
+    <CCSM_TCOST>0</CCSM_TCOST>
     <DOUT_S>FALSE</DOUT_S> 
   </test>
   

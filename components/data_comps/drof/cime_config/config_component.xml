@@ -36,7 +36,7 @@
   </entry>
 
   <entry id="DROF_CPLHIST_DIR"> 
-    <type>char*256</type>
+    <type>char</type>
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
     <group>run_component_drof</group>
@@ -45,7 +45,7 @@
   </entry>
 
   <entry id="DROF_CPLHIST_CASE"> 
-    <type>char*256</type>
+    <type>char</type>
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
     <group>run_component_drof</group>

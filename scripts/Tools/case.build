@@ -1,0 +1,89 @@
+#!/usr/bin/env python2
+
+"""
+Script to build a case.
+"""
+
+from standard_script_setup import *
+
+import CIME.build as build
+from CIME.case import Case
+from CIME.SystemTests.system_tests_common import TESTRUNDIFF, TESTRUNFAIL, TESTRUNPASS, TESTBUILDFAIL, TESTRUNSLOWPASS
+from CIME.SystemTests.cme import CME
+from CIME.SystemTests.eri import ERI
+from CIME.SystemTests.erp import ERP
+from CIME.SystemTests.err import ERR
+from CIME.SystemTests.ers import ERS
+from CIME.SystemTests.nck import NCK
+from CIME.SystemTests.ncr import NCR
+from CIME.SystemTests.noc import NOC
+from CIME.SystemTests.pea import PEA
+from CIME.SystemTests.pem import PEM
+from CIME.SystemTests.pet import PET
+from CIME.SystemTests.pfs import PFS
+from CIME.SystemTests.seq import SEQ
+from CIME.SystemTests.sms import SMS
+from CIME.utils import expect
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [<casedir>] [--verbose]
+OR
+%s --help
+OR
+%s --test
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Build case \033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory to build")
+
+    parser.add_argument("--sharedlib-only", action="store_true",
+                        help="Only build sharedlibs")
+
+    parser.add_argument("-m", "--model-only", action="store_true",
+                        help="Assume shared libs already built")
+
+    args = parser.parse_args(args[1:])
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.caseroot, args.sharedlib_only, args.model_only
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if "--test" in sys.argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    caseroot, sharedlib_only, model_only = parse_command_line(sys.argv, description)
+    logging.info("calling build.case_build with caseroot=%s"
+                 %caseroot)
+
+    case = Case(caseroot)
+    testname = case.get_value('TESTCASE')
+
+    if(testname is not None):
+        logging.warn("Building test for %s" % testname)
+        try:
+            test = globals()[testname](caseroot, case)
+        except KeyError:
+            expect(False, "Could not find a test called '%s'" % testname)
+        test.build(sharedlib_only=sharedlib_only, model_only=model_only)
+    else:
+        build.case_build(caseroot, case=case, sharedlib_only=sharedlib_only,
+                     model_only=model_only)
+
+if __name__ == "__main__":
+    _main_func(__doc__)

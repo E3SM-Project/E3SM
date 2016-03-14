@@ -14,6 +14,7 @@ $ENV{USE_ESMF_LIB}   = `./xmlquery USE_ESMF_LIB   -value `;
 $ENV{COMP_INTERFACE} = `./xmlquery COMP_INTERFACE -value `;
 $ENV{BUILD_THREADED} = `./xmlquery BUILD_THREADED -value`;
 $ENV{PIO_VERSION} = `./xmlquery PIO_VERSION -value`;
+$ENV{CLM_CONFIG_OPTS} = `./xmlquery CLM_CONFIG_OPTS -value`;
 
 
 sub usage {
@@ -102,7 +103,7 @@ foreach my $lib (@opts){
     }
 }
 system($sysmod) == 0 or die "$sysmod failed: $?\n";
-my @lockedfiles = glob("LockedFiles/env_build*");
+my @lockedfiles = qw(LockedFiles/env_build.xml);
 foreach my $lf (@lockedfiles) {
     unlink($lf);
 }

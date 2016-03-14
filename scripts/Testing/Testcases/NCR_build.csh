@@ -87,7 +87,7 @@ set NTASKS_CPL  = `./xmlquery NTASKS_CPL  --value`
 
 ./case.clean_build 
 
-./case.build --testmode
+./case.build --testmode $*
 if ($status != 0) then
    exit -1    
 endif 
@@ -156,7 +156,7 @@ set NTASKS_CPL  = `./xmlquery NTASKS_CPL	--value`
 
 ./case.cleanbuild
 
-./case.build --testmode
+./case.build --testmode $*
 if ($status != 0) then
    exit -1    
 endif 

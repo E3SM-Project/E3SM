@@ -5,7 +5,10 @@ from standard_module_setup import *
 
 from env_base import EnvBase
 
+logger = logging.getLogger(__name__)
+
 class EnvTest(EnvBase):
+
     def __init__(self, case_root=os.getcwd(), infile="env_test.xml"):
         """
         initialize an object interface to file env_test.xml in the case directory

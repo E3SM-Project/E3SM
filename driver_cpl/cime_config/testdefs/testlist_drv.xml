@@ -4,7 +4,7 @@
     <machines>
       <machine name="yellowstone" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">0:10</option>
+          <option name="wallclock">2:00</option>
         </options>
       </machine>
     </machines>
@@ -19,6 +19,7 @@
       <machine name="edison" compiler="cray" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -42,26 +43,31 @@
       <machine name="hobart" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="gnu" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -70,32 +76,37 @@
     <machines>
       <machine name="yellowstone" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">0:10</option>
+          <option name="wallclock">2:00</option>
         </options>
       </machine>
       <machine name="hobart" compiler="nag" category="prealpha">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="eos" compiler="cray" category="prealpha">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="edison" compiler="intel" category="prealpha">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="bluewaters" compiler="pgi" category="prealpha">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="mira" compiler="ibm" category="prealpha">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -110,11 +121,13 @@
       <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -129,11 +142,13 @@
       <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -148,41 +163,37 @@
       <machine name="edison" compiler="intel" category="prealpha">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="melvin" compiler="gnu" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="skybridge" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="eos" compiler="intel" category="prealpha">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="eos" compiler="cray" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="bluewaters" compiler="pgi" category="prealpha">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="edison" compiler="cray" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -197,51 +208,37 @@
       <machine name="hobart" compiler="intel" category="prealpha">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="hobart" compiler="pgi" category="prealpha">
         <options>
           <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="melvin" compiler="gnu" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="skybridge" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="goldbach" compiler="intel" category="prealpha">
-        <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="goldbach" compiler="pgi" category="prealpha">
-        <options>
-          <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="stampede" compiler="intel" category="prealpha">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">0:10</option>
+          <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="pgi" category="prealpha">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="hobart" compiler="lahey" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -256,11 +253,13 @@
       <machine name="bluewaters" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="eos" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -270,16 +269,6 @@
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-        </options>
-      </machine>
-      <machine name="melvin" compiler="gnu" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="skybridge" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
         </options>
       </machine>
     </machines>
@@ -294,21 +283,25 @@
       <machine name="hobart" compiler="pgi" category="prealpha">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="edison" compiler="intel" category="prealpha">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">0:10</option>
+          <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="pgi" category="prealpha">
         <options>
-          <option name="wallclock">0:10</option>
+          <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -326,7 +319,7 @@
     <machines>
       <machine name="yellowstone" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">0:10</option>
+          <option name="wallclock">2:00</option>
         </options>
       </machine>
     </machines>
@@ -341,26 +334,31 @@
       <machine name="hobart" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="gnu" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -375,21 +373,13 @@
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="melvin" compiler="gnu" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="skybridge" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="eos" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -404,26 +394,31 @@
       <machine name="hobart" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="eos" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="gnu" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -438,21 +433,13 @@
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="melvin" compiler="gnu" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="skybridge" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="eos" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -467,11 +454,13 @@
       <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -486,11 +475,13 @@
       <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -499,7 +490,7 @@
     <machines>
       <machine name="yellowstone" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">0:10</option>
+          <option name="wallclock">2:00</option>
         </options>
       </machine>
     </machines>
@@ -508,7 +499,7 @@
     <machines>
       <machine name="yellowstone" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">0:10</option>
+          <option name="wallclock">2:00</option>
         </options>
       </machine>
     </machines>
@@ -523,16 +514,19 @@
       <machine name="yellowstone" compiler="gnu" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -547,21 +541,25 @@
       <machine name="eos" compiler="cray" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="gnu" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -576,21 +574,25 @@
       <machine name="eos" compiler="cray" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="gnu" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -600,16 +602,6 @@
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">2:00</option>
-        </options>
-      </machine>
-      <machine name="melvin" compiler="gnu" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="skybridge" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
         </options>
       </machine>
     </machines>
@@ -633,6 +625,7 @@
       <machine name="hobart" compiler="nag" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>
@@ -647,21 +640,25 @@
       <machine name="eos" compiler="cray" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="gnu" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
       <machine name="yellowstone" compiler="pgi" category="prebeta">
         <options>
           <option name="wallclock">4:00</option>
+          <option name="pecount">L</option>
         </options>
       </machine>
     </machines>

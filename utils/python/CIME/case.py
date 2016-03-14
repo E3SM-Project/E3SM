@@ -19,14 +19,19 @@ from CIME.XML.env_run           import EnvRun
 from CIME.XML.env_archive       import EnvArchive
 from CIME.XML.env_batch         import EnvBatch
 
+logger = logging.getLogger(__name__)
+
 class Case(object):
 
     def __init__(self, case_root=os.getcwd()):
         expect(os.path.isdir(case_root),
                "Case root directory '%s' does not exist" % case_root)
 
-        self._env_files = []
+        self._env_entryid_files = []
+        self._env_generic_files = []
+
         self._env_files_that_need_rewrite = set()
+
 
         if(os.path.isfile(os.path.join(case_root,"env_test.xml"))):
             self._env_files.append(EnvTest(case_root))
@@ -56,33 +61,45 @@ class Case(object):
     
     def get_value(self, item, attribute={}, resolved=True, subgroup=None):
         result = None
-        for env_file in self._env_files:
-            result = env_file.get_value(item, attribute, resolved, subgroup)
-            if(result is not None):
-                if(resolved):
+        for env_file in self._env_entryid_files:
+            # Wait and resolve in self rather than in env_file
+            result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
+            logging.debug("CASE %s %s"%(item,result))
+            if result is not None:
+                if resolved and type(result) is str:
                     return self.get_resolved_value(result)
                 return result
+
         logging.info("Not able to retreive value for item '%s'" % item)
 
+    def get_type_info(self, item, attribute={}):
+        result = None
+        for env_file in self._env_entryid_files:
+            result = env_file.get_type_info(item)
+            if result is not None:
+                return result
 
-    def get_resolved_value(self, item):
-        # TODO HACK - surely there is a better way?
+        logging.info("Not able to retreive type for item '%s'" % item)
+
+    def get_resolved_value(self, item, recurse=0):
         num_unresolved = item.count("$")
-        if (num_unresolved > 0):
-            for env_file in self._env_files:
+        recurse_limit = 10
+        if (num_unresolved > 0 and recurse < recurse_limit ):
+            for env_file in self._env_entryid_files:
                 result = env_file.get_resolved_value(item)
-                if (result.count("$") < num_unresolved):
-                    num_unresolved = result.count("$")
-                    item = result
-                    if ("$" not in item):
-                        return item
+                item = result
+            if ("$" not in item):
+                return item
+            else:
+                self.get_resolved_value(item,recurse=recurse+1)
 
+        if(recurse >= recurse_limit):
             logging.warning("Not able to fully resolve item '%s'" % item)
 
         return item
 
     def set_value(self, item, value, subgroup=None):
-        for env_file in self._env_files:
+        for env_file in self._env_entryid_files:
             result = env_file.set_value(item, value, subgroup)
             if (result is not None):
                 self._env_files_that_need_rewrite.add(env_file)

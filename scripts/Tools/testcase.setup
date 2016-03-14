@@ -142,14 +142,14 @@ if (! $baselineroot) {
 chdir($caseroot);
 
 # ------------------ testcase_begin ------------------------------------------
-# -- Make batch script using the BatchMaker module --- 
+# -- Make batch script using the BatchMaker module ---
 
-my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $caseroot, 
+my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $caseroot,
 						     cimeroot => $cimeroot,
-                                                     case     => $case,     
+                                                     case     => $case,
 						     mpilib   => $mpilib,
 						     machroot => $machdir,
-                                                     machine  => $mach,        
+                                                     machine  => $mach,
 						     compiler => $compiler,
                                                      threaded => $build_threaded,
                                                      job => 'test');
@@ -291,7 +291,7 @@ my $testcase_begin = <<'END_BEGIN';
     set msg = "${testname}_test"
     if( $testname == "ERR" && $resubmit <= 0 ) then
        echo "Second pass of ERR test"
-    else    
+    else
       # Reset all previous settings: obtain copy of original env_run.xml file
       if ( -e env_run.orig )  then
         cp env_run.orig env_run.xml
@@ -306,11 +306,13 @@ my $testcase_begin = <<'END_BEGIN';
    endif
 END_BEGIN
 
-print $testfh $testcase_begin;
-
 my $file = "${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script";
-(-f $file) or $logger->logdie ("ERROR testcase.setup: $file does not exist"); 
+if(! -f $file){
+    $logger->warn("$file not found, will try python version");
+}
 
+
+print $testfh $testcase_begin;
 $sysmod = "cat ${cimeroot}/scripts/Testing/Testcases/${testcase}" . "_script" . " >> $testfile";
 system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
 

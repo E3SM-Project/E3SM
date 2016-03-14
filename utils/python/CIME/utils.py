@@ -14,6 +14,7 @@ else:
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 165
+logger = logging.getLogger(__name__)
 
 def expect(condition, error_msg):
     """
@@ -47,7 +48,7 @@ def _read_cime_config_file():
     if(os.path.isfile(cime_config_file)):
         cime_config.read(cime_config_file)
     else:
-        logging.warning("File %s not found" % cime_config_file)
+        logger.debug("File %s not found" % cime_config_file)
         cime_config.add_section('main')
 
     return cime_config
@@ -70,7 +71,7 @@ def get_cime_root():
     """
     Return the absolute path to the root of CIME that contains this script
 
-    >>> os.path.isdir(os.path.join(get_cime_root(), get_acme_scripts_location_within_cime()))
+    >>> os.path.isdir(os.path.join(get_cime_root(), get_scripts_location_within_cime()))
     True
     """
     cime_config = get_cime_config()
@@ -84,7 +85,7 @@ def get_cime_root():
             assert script_absdir.endswith(get_python_libs_location_within_cime()), script_absdir
             cimeroot = os.path.abspath(os.path.join(script_absdir,"..",".."))
         cime_config.set('main','CIMEROOT',cimeroot)
-    logging.info( "CIMEROOT is " + cimeroot)
+    logger.debug( "CIMEROOT is " + cimeroot)
     return cimeroot
 
 def set_model(model):
@@ -149,7 +150,8 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     if (arg_stderr is _hack):
         arg_stderr = subprocess.PIPE
 
-    logging.info("RUN: %s" % cmd)
+    if (verbose or logger.level == logging.DEBUG):
+        logger.info("RUN: %s" % cmd)
 
     if (input_str is not None):
         stdin = subprocess.PIPE
@@ -168,9 +170,13 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     errput = errput.strip() if errput is not None else errput
     stat = proc.wait()
 
-    logging.info("  stat: %d\n" % stat)
-    logging.info("  output: %s\n" % output)
-    logging.info("  errput: %s\n" % errput)
+    if (verbose or logger.level == logging.DEBUG):
+        if stat != 0:
+            logger.info("  stat: %d\n" % stat)
+        if output:
+            logger.info("  output: %s\n" % output)
+        if errput:
+            logger.info("  errput: %s\n" % errput)
 
     if (ok_to_fail):
         return stat, output, errput
@@ -339,15 +345,15 @@ def get_current_commit(short=False, repo=None):
     output = run_cmd("git rev-parse %s HEAD" % ("--short" if short else ""), from_dir=repo)
     return output
 
-def get_acme_scripts_location_within_cime():
+def get_scripts_location_within_cime():
     """
-    From within CIME, return subdirectory where ACME scripts live.
+    From within CIME, return subdirectory where scripts live.
     """
-    return "scripts-python"
+    return "scripts"
 
 def get_cime_location_within_acme():
     """
-    From within ACME, return subdirectory where CIME lives.
+    From within acme, return subdirectory where CIME lives.
     """
     return "cime"
 
@@ -362,18 +368,18 @@ def get_acme_root():
     assert cime_absdir.endswith(get_cime_location_within_acme()), cime_absdir
     return os.path.normpath(cime_absdir[:len(cime_absdir)-len(get_cime_location_within_acme())])
 
-def get_acme_scripts_root():
+def get_scripts_root():
     """
-    Get absolute path to acme scripts
+    Get absolute path to scripts
 
-    >>> os.path.isdir(get_acme_scripts_root())
+    >>> os.path.isdir(get_scripts_root())
     True
     """
-    return os.path.join(get_cime_root(), get_acme_scripts_location_within_cime())
+    return os.path.join(get_cime_root(), get_scripts_location_within_cime())
 
 def get_python_libs_root():
     """
-    Get absolute path to acme scripts
+    Get absolute path to scripts
 
     >>> os.path.isdir(get_python_libs_root())
     True
@@ -382,7 +388,7 @@ def get_python_libs_root():
 
 def get_model_config_root(model=get_model()):
     """
-    Get absolute path to acme config area"
+    Get absolute path to model config area"
 
     >>> os.path.isdir(get_model_config_root())
     True
@@ -479,18 +485,18 @@ def get_project():
     """
     project = os.environ.get("PROJECT")
     if (project is not None):
-        logging.warn("project from env PROJECT "+project)
+        logger.info("Using project from env PROJECT "+project)
         return project
     project = os.environ.get("ACCOUNT")
     if (project is not None):
-        logging.warn("project from env ACCOUNT "+project)
+        logger.info("Using project from env ACCOUNT "+project)
         return project
 
     cime_config = get_cime_config()
     if (cime_config.has_option('main','PROJECT')):
         project = cime_config.get('main','PROJECT')
         if (project is not None):
-            logging.warn("project from .cime/config "+project)
+            logger.info("Using project from .cime/config "+project)
             return project
         projectfile = os.path.abspath(os.path.join(os.path.expanduser("~"),
                                                    ".cesm_proj"))
@@ -504,14 +510,126 @@ def get_project():
 def setup_standard_logging_options(parser):
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Print extra information")
-
     parser.add_argument("-d", "--debug", action="store_true",
                         help="Print debug information (very verbose)")
+    parser.add_argument("-s", "--silent", action="store_true",
+                        help="Print only warnings and error messages")
 
 def handle_standard_logging_options(args):
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'propagate': True,
+        'formatters': {
+            'verbose': {
+                'format': '%(name)-12s %(levelname)-8s %(message)s',
+                },
+            'debug': {
+                'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                },
+            'default':{
+                'format': '%(message)s',
+                },
+            },
+        'handlers': {
+            'console1': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'default',
+                'level' : logging.INFO,
+                },
+            'file1' : {
+                'class': 'logging.FileHandler',
+                'mode':'w',
+                'formatter':'debug',
+                'filename' : '%s.log'%sys.argv[0],
+                'level' : logging.DEBUG,
+                },
+            },
+        'root': {
+            'handlers': ['console1'],
+            }
+        }
+    root_logger=logging.getLogger()
+    # DEBUG trumps INFO trumps Silent (WARN)
+    if (args.debug == True):
+        LOGGING['root']['handlers'].append('file1')
+        LOGGING['handlers']['console1']['formatter'] = 'debug'
+        root_logger.setLevel(logging.DEBUG)
+        logger.warn("Log level set to DEBUG")
+    elif (args.verbose == True):
+        LOGGING['handlers']['console1']['formatter'] = 'verbose'
+        logger.warn("Log level set to VERBOSE")
+    elif (args.silent == True):
+        root_logger.setLevel(logging.WARN)
+
+    logging.config.dictConfig(LOGGING)
+
+def get_logging_options():
+    """
+    Use to pass same logging options as was used for current
+    executable to subprocesses.
+    """
     root_logger = logging.getLogger()
 
-    if (args.verbose == True):
-        root_logger.setLevel(logging.INFO)
-    if (args.debug == True):
-        root_logger.setLevel(logging.DEBUG)
+    if (root_logger.level == logging.INFO):
+        return "--verbose"
+    elif (root_logger.level == logging.DEBUG):
+        return "--debug"
+    elif (root_logger.level == logging.WARN):
+        return "--silent"
+    else:
+        return ""
+
+def convert_to_type(value, type_str, vid=""):
+    """
+    Convert value from string to another type.
+    vid is only for generating better error messages.
+    """
+    if value is not None:
+
+        if type_str == "char":
+            pass
+
+        elif type_str == "integer":
+            try:
+                value = int(value)
+            except ValueError:
+                expect(False, "Entry %s was listed as type int but value '%s' is not valid int" % (vid, value))
+
+        elif type_str == "logical":
+            expect(value in ["TRUE", "FALSE","true","false"],
+                   "Entry %s was listed as type logical but had val '%s' instead of TRUE or FALSE" % (vid, value))
+            value = value == "TRUE" or value == "true"
+
+        elif type_str == "real":
+            try:
+                value = float(value)
+            except:
+                expect(False, "Entry %s was listed as type real but value '%s' is not valid real" % (vid, value))
+
+        else:
+            expect(False, "Unknown type '%s'" % type_str)
+
+    return value
+
+def convert_to_string(value, type_str, vid=""):
+    """
+    Convert value back to string.
+    vid is only for generating better error messages.
+    """
+    if value is not None:
+        if type_str == "char":
+            expect(type(value) is str, "Wrong type for entry id '%s'" % vid)
+        elif type_str == "integer":
+            expect(type(value) is int, "Wrong type for entry id '%s'" % vid)
+            value = str(value)
+        elif type_str == "logical":
+            expect(type(value) is bool, "Wrong type for entry id '%s'" % vid)
+            value = "TRUE" if value else "FALSE"
+        elif type_str == "real":
+            expect(type(value) is float, "Wrong type for entry id '%s'" % vid)
+            value = str(value)
+        else:
+            expect(False, "Unknown type '%s'" % type_str)
+
+    return value

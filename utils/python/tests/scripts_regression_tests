@@ -12,12 +12,13 @@ from  CIME.XML.machines import Machines
 from  CIME.XML.files import Files
 from  CIME.case import Case
 
-SCRIPT_DIR = CIME.utils.get_acme_scripts_root()
-
+SCRIPT_DIR = CIME.utils.get_scripts_root()
+TOOLS_DIR = os.path.join(SCRIPT_DIR,"Tools")
 DART_CONFIG = "DartConfiguration.tcl"
 DART_BACKUP = "temp_dart_backup"
 MACHINE     = Machines()
 FAST_ONLY   = False
+NO_BATCH = False
 
 logging.basicConfig()
 
@@ -25,30 +26,30 @@ logging.basicConfig()
 class RunUnitTests(unittest.TestCase):
 ###############################################################################
 
-    def do_unit_tests(self, script):
-        stat, output, _ = run_cmd("./%s --test 2>&1" % script, ok_to_fail=True, from_dir=SCRIPT_DIR)
+    def do_unit_tests(self, script,from_dir=SCRIPT_DIR):
+        stat, output, _ = run_cmd("./%s --test 2>&1" % script, ok_to_fail=True, from_dir=from_dir)
         self.assertEqual(stat, 0, msg=output)
 
     def test_acme_bisect_unit_test(self):
-        self.do_unit_tests("acme_bisect")
+        self.do_unit_tests("acme_bisect",from_dir=TOOLS_DIR)
 
     def test_compare_namelists_unit_test(self):
-        self.do_unit_tests("compare_namelists")
+        self.do_unit_tests("compare_namelists",from_dir=TOOLS_DIR)
 
     def test_jenkins_generic_job_unit_test(self):
-        self.do_unit_tests("jenkins_generic_job")
+        self.do_unit_tests("jenkins_generic_job",from_dir=TOOLS_DIR)
 
     def test_simple_compare_unit_test(self):
-        self.do_unit_tests("simple_compare")
+        self.do_unit_tests("simple_compare", from_dir=TOOLS_DIR)
 
     def test_update_acme_tests_unit_test(self):
-        self.do_unit_tests("update_acme_tests")
+        self.do_unit_tests("update_acme_tests", from_dir=TOOLS_DIR)
 
     def test_list_acme_tests_unit_test(self):
-        self.do_unit_tests("list_acme_tests")
+        self.do_unit_tests("list_acme_tests", from_dir=TOOLS_DIR)
 
     def test_wait_for_tests_unit_test(self):
-        self.do_unit_tests("wait_for_tests")
+        self.do_unit_tests("wait_for_tests", from_dir=TOOLS_DIR)
 
     def test_resolve_variable_name(self):
         files = Files()
@@ -172,12 +173,13 @@ class TestWaitForTests(unittest.TestCase):
     ###########################################################################
     def simple_test(self, testdir, expected_results, extra_args=""):
     ###########################################################################
-        stat, output, errput = run_cmd("%s/wait_for_tests -p ACME_test TestStatus* %s" % (SCRIPT_DIR, extra_args), ok_to_fail=True, from_dir=testdir)
+        cmd = "%s/wait_for_tests -p ACME_test TestStatus* %s" % (TOOLS_DIR, extra_args)
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=testdir)
         if (expected_results == ["PASS"]*len(expected_results)):
-            self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s" % (output, errput))
+            self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
         else:
             self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE,
-                             msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\nwait_for_tests output:\n%s\n\nerrput:\n%s" % (output, errput))
+                             msg="COMMAND '%s' SHOULD HAVE DETECTED FAILED TESTS\nwait_for_tests output:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
 
         lines = [line for line in output.splitlines() if line.startswith("Test '")]
         self.assertEqual(len(lines), 10)
@@ -366,11 +368,15 @@ class TestCreateTest(TestCreateTestCommon):
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
-        stat, output, errput = run_cmd("%s/create_test acme_test_only_pass %s" % (SCRIPT_DIR, extra_args), ok_to_fail=True)
+        if NO_BATCH:
+            extra_args += " --no-batch"
+        cmd = "%s/create_test acme_test_only_pass %s" % (SCRIPT_DIR, extra_args)
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True)
         if (expect_works):
-            self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+            self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
         else:
-            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE, msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\ncreate_test output:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (output, errput, stat))
+            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE,
+                             msg="COMMAND '%s' SHOULD HAVE DETECTED FAILED TESTS\ncreate_test output:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (cmd, output, errput, stat))
 
     ###############################################################################
     def test_create_test_rebless_namelist(self):
@@ -432,7 +438,7 @@ class TestSystemTest(TestCreateTestCommon):
             for test in ct._tests:
                 if (phase == CIME.system_test.INITIAL_PHASE):
                     continue
-                elif (phase == CIME.system_test.BUILD_PHASE):
+                elif (phase == CIME.system_test.MODEL_BUILD_PHASE):
                     ct._update_test_status(test, phase, wait_for_tests.TEST_PENDING_STATUS)
 
                     if (test == build_fail_test):
@@ -501,7 +507,7 @@ class TestSystemTest(TestCreateTestCommon):
             sys.stdout = sys.__stdout__
 
         if (self._hasbatch):
-            run_cmd("%s/wait_for_tests *%s*/TestStatus*" % (SCRIPT_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
+            run_cmd("%s/wait_for_tests *%s*/TestStatus*" % (TOOLS_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
 
         test_statuses = glob.glob("%s/*%s*/TestStatus" % (self._testroot, test_id))
         self.assertEqual(len(tests), len(test_statuses))
@@ -509,7 +515,7 @@ class TestSystemTest(TestCreateTestCommon):
         for test_status in test_statuses:
             status, test_name = wait_for_tests.parse_test_status_file(test_status)
             if (test_name == build_fail_test):
-                self.assertEqual(status[CIME.system_test.BUILD_PHASE], wait_for_tests.TEST_FAIL_STATUS)
+                self.assertEqual(status[CIME.system_test.MODEL_BUILD_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             elif (test_name == run_fail_test):
                 self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             else:
@@ -524,11 +530,12 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
-        stat, output, errput = run_cmd("%s/jenkins_generic_job %s" % (SCRIPT_DIR, extra_args), ok_to_fail=True)
+        cmd = "%s/jenkins_generic_job %s" % (TOOLS_DIR, extra_args)
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True)
         if (expect_works):
-            self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (output, errput))
+            self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
         else:
-            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE, msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (output, errput))
+            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE, msg="COMMAND '%s' SHOULD HAVE DETECTED FAILED TESTS\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
 
     ###########################################################################
     def threaded_test(self, expect_works, extra_args):
@@ -575,7 +582,7 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
         self.assert_num_leftovers()
 
         build_name = "jenkins_generic_job_pass_%s" % CIME.utils.get_utc_timestamp()
-        self.simple_test(True, "-t acme_test_only_pass -p ACME_test -b %s -s -c %s --cdash-build-group=Nightly" % (self._baseline_name, build_name))
+        self.simple_test(True, "-t acme_test_only_pass -p ACME_test -b %s --submit-to-cdash -c %s --cdash-build-group=Nightly" % (self._baseline_name, build_name))
         self.assert_num_leftovers() # jenkins_generic_job should have automatically cleaned up leftovers from prior run
         self.assert_no_sentinel()
         assert_dashboard_has_build(self, build_name)
@@ -584,7 +591,7 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
     def test_jenkins_generic_job_kill(self):
     ###########################################################################
         build_name = "jenkins_generic_job_kill_%s" % CIME.utils.get_utc_timestamp()
-        run_thread = threading.Thread(target=self.threaded_test, args=(False, " -t acme_test_only_slow_pass -p ACME_test -b master --baseline-compare=no -s -c %s --cdash-build-group=Nightly" % build_name))
+        run_thread = threading.Thread(target=self.threaded_test, args=(False, " -t acme_test_only_slow_pass -p ACME_test -b master --baseline-compare=no --submit-to-cdash -c %s --cdash-build-group=Nightly" % build_name))
         run_thread.daemon = True
         run_thread.start()
 
@@ -608,17 +615,20 @@ class TestBlessTestResults(TestCreateTestCommon):
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
-        stat, output, errput = run_cmd("%s/create_test %s %s" % (SCRIPT_DIR, self._test_name, extra_args), ok_to_fail=True)
+        if NO_BATCH:
+            extra_args += " --no-batch"
+        cmd = "%s/create_test %s %s" % (SCRIPT_DIR, self._test_name, extra_args)
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True)
 
         if (self._hasbatch):
-            self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+            self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
             test_id = extra_args.split()[extra_args.split().index("-t") + 1]
-            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
+            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, test_id), ok_to_fail=True, from_dir=self._testroot)
 
         if (expect_works):
-            self.assertEqual(stat, 0, msg="COMMAND SHOULD HAVE WORKED\nOutput:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+            self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\nOutput:\n%s\n\nerrput:\n%s\n\ncode: %d" % (cmd, output, errput, stat))
         else:
-            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE, msg="COMMAND SHOULD HAVE DETECTED FAILED TESTS\nOutput:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (output, errput, stat))
+            self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE, msg="COMMAND '%s' SHOULD HAVE DETECTED FAILED TESTS\nOutput:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (cmd, output, errput, stat))
 
     ###############################################################################
     def test_create_test_rebless_namelist(self):
@@ -641,7 +651,7 @@ class TestBlessTestResults(TestCreateTestCommon):
         self.simple_test(False, "-c -b %s -t %s" % (self._baseline_name, test_id))
 
         # Bless
-        run_cmd("%s/bless_test_results --hist-only --force -b %s -t %s" % (SCRIPT_DIR, self._baseline_name, test_id))
+        run_cmd("%s/bless_test_results --hist-only --force -b %s -t %s" % (TOOLS_DIR, self._baseline_name, test_id))
 
         # Hist compare should now pass again
         self.simple_test(True, "-c -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
@@ -706,7 +716,7 @@ class TestUpdateACMETests(unittest.TestCase):
         self.assertTrue("ERS.f19_g16_rx1.E.melvin_gnu" in tests)
 
         if (CIME.utils.does_machine_have_batch()):
-            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True, from_dir=self._testroot)
+            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, self._baseline_name), ok_to_fail=True, from_dir=self._testroot)
             self.assertEqual(stat, 0,
                              msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
@@ -726,12 +736,16 @@ class FullSystemTest(TestCreateTestCommon):
         if (FAST_ONLY):
             self.skipTest("Skipping slow test")
 
-        stat, output, errput = run_cmd("%s/create_test cime_developer -t %s" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True)
+        create_test_cmd =  "%s/create_test cime_developer -t %s" % (SCRIPT_DIR, self._baseline_name)
+        if NO_BATCH:
+            create_test_cmd += " --no-batch"
+
+        stat, output, errput = run_cmd(create_test_cmd, ok_to_fail=True)
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
         if (MACHINE.has_batch_system()):
-            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (SCRIPT_DIR, self._baseline_name),
+            stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, self._baseline_name),
                                            ok_to_fail=True, from_dir=self._testroot)
             self.assertEqual(stat, 0,
                              msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
@@ -758,26 +772,33 @@ class TestCimeCase(TestCreateTestCommon):
         case = Case(casedir)
 
         build_complete = case.get_value("BUILD_COMPLETE")
-        self.assertEqual(build_complete, "FALSE",
+        self.assertFalse(build_complete,
                          msg="Build complete had wrong value '%s'" % build_complete)
 
-        case.set_value("BUILD_COMPLETE", "TRUE")
+        case.set_value("BUILD_COMPLETE", True)
         build_complete = case.get_value("BUILD_COMPLETE")
-        self.assertEqual(build_complete, "TRUE",
-                         msg="Build complete had wrong value '%s'" % build_complete)
+        self.assertTrue(build_complete,
+                        msg="Build complete had wrong value '%s'" % build_complete)
 
         case.flush()
 
         build_complete = run_cmd("./xmlquery BUILD_COMPLETE -value", from_dir=casedir)
-        self.assertEqual(build_complete, "TRUE",
-                         msg="Build complete had wrong value '%s'" % build_complete)
+        self.assertTrue(build_complete,
+                        msg="Build complete had wrong value '%s'" % build_complete)
+
+###############################################################################
 
 def _main_func():
-###############################################################################
+
     if ("--fast" in sys.argv):
         sys.argv.remove("--fast")
         global FAST_ONLY
         FAST_ONLY = True
+
+    if ("--no-batch" in sys.argv):
+        sys.argv.remove("--no-batch")
+        global NO_BATCH
+        NO_BATCH = True
 
     unittest.main(verbosity=2)
 

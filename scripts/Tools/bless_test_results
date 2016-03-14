@@ -158,14 +158,14 @@ def bless_history(test_name, baseline_tag, baseline_dir_for_test, testcase_dir_f
             stat = run_cmd(compgen_cmd, ok_to_fail=True, verbose=True)[0]
             if (stat != 0):
                 logging.warning("Hist file bless FAILED for test %s" % test_name)
-                return False
+                return False, "Bless command failed"
             else:
-                return True
+                return True, None
         else:
-            return True
+            return True, None
     else:
         logging.warning("Test '%s' was marked as DIFF but cprnc did not find diff?" % test_name)
-        return False
+        return False, "No diff found or missing baseline"
 
 ###############################################################################
 def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelists_only=False, hist_only=False, report_only=False, force=False, bless_tests=None):
@@ -194,7 +194,7 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
                     nl_no_bless = test_result[NAMELIST_PHASE] == wait_for_tests.TEST_PASS_STATUS
                 else:
                     logging.warning("Test '%s' did not make it to namelist phase" % test_name)
-                    broken_blesses.append(test_name)
+                    broken_blesses.append((test_name, "no namelist phase"))
                     nl_no_bless = True
             else:
                 nl_no_bless = True
@@ -202,18 +202,18 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
             # Compute hist status, False implies it diffed
             if (not namelists_only):
                 if (wait_for_tests.RUN_PHASE not in test_result):
-                    broken_blesses.append(test_name)
+                    broken_blesses.append((test_name, "no run phase"))
                     logging.warning("Test '%s' did not make it to run phase" % test_name)
                     hist_no_bless = True
                 elif (test_result[wait_for_tests.RUN_PHASE] == wait_for_tests.TEST_PASS_STATUS):
                     if (wait_for_tests.HIST_COMPARE_PHASE not in test_result):
-                        broken_blesses.append(test_name)
+                        broken_blesses.append((test_name, "no history compare performed"))
                         logging.warning("Test '%s' had no history compare phase" % test_name)
                         hist_no_bless = True
                     else:
                         hist_no_bless = test_result[wait_for_tests.HIST_COMPARE_PHASE] == wait_for_tests.TEST_PASS_STATUS
                 else:
-                    broken_blesses.append(test_name)
+                    broken_blesses.append((test_name, "test did not pass"))
                     logging.warning("Test '%s' did not pass, not safe to bless" % test_name)
                     hist_no_bless = True
             else:
@@ -233,7 +233,7 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
                 baseline_dir_for_test = os.path.join(baseline_area, test_name)
                 if (not os.path.isdir(baseline_dir_for_test)):
                     logging.warning("Problem, baseline dir '%s' does not exist" % baseline_dir_for_test)
-                    broken_blesses.append(test_name)
+                    broken_blesses.append((test_name, "missing baseline dir"))
                     continue
 
                 # Get testcase dir for this test
@@ -245,7 +245,7 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
 
                 if (len(globs) != 1):
                     logging.warning("Expected exactly one match for testcase area for test '%s', found '%s'" % (test_name, globs))
-                    broken_blesses.append(test_name)
+                    broken_blesses.append((test_name, "multiple matching testcase dirs"))
                     continue
 
                 testcase_dir_for_test = globs[0]
@@ -256,12 +256,13 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
 
                 # Bless hist files
                 if (not hist_no_bless):
-                    if (not bless_history(test_name, baseline_tag, baseline_dir_for_test, testcase_dir_for_test, report_only, force)):
-                        broken_blesses.append(test_name)
+                    success, reason = bless_history(test_name, baseline_tag, baseline_dir_for_test, testcase_dir_for_test, report_only, force)
+                    if (not success):
+                        broken_blesses.append((test_name, reason))
 
     # Make sure user knows that some tests were not blessed
     for broken_bless in broken_blesses:
-        logging.warning("FAILED TO BLESS TEST: %s" % broken_bless)
+        logging.warning("FAILED TO BLESS TEST: %s, reason %s" % (broken_bless, reason))
 
 ###############################################################################
 def _main_func(description):

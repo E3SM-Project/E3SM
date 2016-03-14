@@ -8,6 +8,8 @@ from CIME.utils import expect, run_cmd
 from CIME.XML.machines import Machines
 from CIME.XML.env_mach_specific import EnvMachSpecific
 
+logger = logging.getLogger(__name__)
+
 class EnvModule(object):
 
     # TODO - write env_mach_specific files into case
@@ -27,8 +29,8 @@ class EnvModule(object):
     def load_env_for_case(self):
         mach_specific = EnvMachSpecific(caseroot=self._caseroot)
 
-        module_nodes = mach_specific.get_node("modules")
-        env_nodes    = mach_specific.get_node("environment_variables")
+        module_nodes = mach_specific.get_nodes("modules")
+        env_nodes    = mach_specific.get_nodes("environment_variables")
 
         if (module_nodes is not None):
             modules_to_load = self._compute_module_actions(module_nodes)
@@ -100,7 +102,25 @@ class EnvModule(object):
             exec(py_module_code)
 
     def _load_soft_modules(self, modules_to_load):
-        expect(False, "Not yet implemented")
+        logging.info("Loading soft modules")
+        sh_mod_cmd = self._machine.get_module_system_cmd_path("sh")
+        for action,argument in modules_to_load:
+            cmd = "%s %s %s" % (sh_mod_cmd, action, argument)
+            logging.debug("Command=%s" % cmd)
+            output=run_cmd(cmd)
+
+            # Inject soft env variables into current environment
+            # output should be in VARNAME=value ; export VARNAME
+            for line in output.splitlines():
+                m=re.match(r'(\S+)\s*=\s*(\S+)\s',line)
+                if m:
+                    key = m.groups()[0]
+                    val = os.path.expandvars(m.groups()[1])
+                    logging.info('setting environment variable %s to %s' % (key,val))
+                    os.environ[key] = val
+                
+
+
 
     def _load_dotkit_modules(self, modules_to_load):
         expect(False, "Not yet implemented")

@@ -34,8 +34,8 @@
 #
 # ChangeLog:
 # -----------------------------------------------------------------------------
-# Modifications to Brian Eaton's original to relax the restrictions on 
-# source file name matching module name and only one module per source 
+# Modifications to Brian Eaton's original to relax the restrictions on
+# source file name matching module name and only one module per source
 # file.  Also added a new "-d depfile" option which allows an additional
 # file to be added to every dependence.
 #
@@ -117,8 +117,8 @@ chomp @src;
 
 my %module_files = ();
 
-# Attempt to parse each file for /^\s*module/ and extract module names 
-# for each file.  
+# Attempt to parse each file for /^\s*module/ and extract module names
+# for each file.
 my ($f, $name, $path, $suffix, $mod);
 my @suffixes = ('\.[fF]90', '\.[fF]','\.F90\.in' );
 foreach $f (@src) {
@@ -130,7 +130,7 @@ foreach $f (@src) {
 	# Search for module definitions.
 	if ( /^\s*MODULE\s+(\w+)\s*(\!.*)?$/i ) {
 	    ($mod = $1) =~ tr/A-Z/a-z/;
-            if ( defined $module_files{$mod} ) { 
+            if ( defined $module_files{$mod} ) {
                 die "Duplicate definitions of module $mod in $module_files{$mod} and $name: $!\n";
             }
             $module_files{$mod} = $name;
@@ -141,7 +141,7 @@ foreach $f (@src) {
 
 # Now make a list of .mod files in the file_paths.  If a source dependency
 # can't be found based on the module_files list above, then maybe a .mod
-# module dependency can if the mod file is visible.  
+# module dependency can if the mod file is visible.
 my %trumod_files = ();
 my ($dir);
 my ($f, $name, $path, $suffix, $mod);
@@ -189,16 +189,16 @@ foreach $f ( @src ) {
     push @check_includes, @{$file_includes{$f}};
 }
 
-#print STDERR "\%file_modules\n";
-#while ( ($k,$v) = each %file_modules ) {
-#    print STDERR "$k => @$v\n";
-#}
-#print STDERR "\%file_includes\n";
-#while ( ($k,$v) = each %file_includes ) {
-#    print STDERR "$k => @$v\n";
-#}
-#print STDERR "\@check_includes\n";
-#print STDERR "@check_includes\n";
+print STDERR "\%file_modules\n";
+while ( ($k,$v) = each %file_modules ) {
+    print STDERR "$k => @$v\n";
+}
+print STDERR "\%file_includes\n";
+while ( ($k,$v) = each %file_includes ) {
+    print STDERR "$k => @$v\n";
+}
+print STDERR "\@check_includes\n";
+print STDERR "@check_includes\n";
 
 # Find include file dependencies.
 my %include_depends = ();
@@ -288,7 +288,7 @@ foreach $f (sort keys %file_modules) {
 	$file = $1;
     }
     $target = $obj_dir."$file.o";
-    print "$target : @{$file_modules{$f}} @{$file_includes{$f}} $additional_file \n";
+    print "$target : $f @{$file_modules{$f}} @{$file_includes{$f}} $additional_file \n";
 }
 
 print "# The following section relates each module to the corresponding file.\n";
@@ -326,12 +326,12 @@ sub find_dependencies {
     my @suffixes = ('\.[fF]90', '\.[fF]','\.F90\.in' );
     ($name, $path, $suffix) = fileparse($file, @suffixes);
     $target = "$name.o";
-    my $include; 
+    my $include;
     while ( <FH> ) {
 	# Search for "#include" and strip filename when found.
 	if ( /^#include\s+[<"](.*)[>"]/ ) {
 	    $include = $1;
-	} 
+	}
 	# Search for Fortran include dependencies.
 	elsif ( /^\s*include\s+['"](.*)['"]/ ) {                   #" for emacs fontlock
 	    $include = $1;
@@ -355,7 +355,7 @@ sub find_dependencies {
 		}
 	    }
             # If we already have a .mod file around.
-            elsif ( defined $trumod_files{$module} ) { 
+            elsif ( defined $trumod_files{$module} ) {
                 push @mods, "$obj_dir".mangle_modfile($trumod_files{$module});
             }
 	}
@@ -444,7 +444,7 @@ OPTIONS
           targets in the dependency rules have the form dir/file.o.
      -w   Print warnings to STDERR about files or dependencies not found.
 ARGUMENTS
-     Filepath is the name of a file containing the directories (one per 
+     Filepath is the name of a file containing the directories (one per
      line) to be searched for dependencies.  Srcfiles is the name of a
      file containing the names of files (one per line) for which
      dependencies will be generated.
