@@ -55,9 +55,9 @@
 			<argument flag="-f">base_mesh.nc</argument>
 		</step>
 		<step executable="./metis">
-			<argument flag="graph.info">2</argument>
+			<argument flag="graph.info">16</argument>
 		</step>
-		<model_run procs="2" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<model_run procs="16" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 		<step executable="./MpasCellCuller.x">
 			<argument flag="">ocean.nc</argument>
 		</step>

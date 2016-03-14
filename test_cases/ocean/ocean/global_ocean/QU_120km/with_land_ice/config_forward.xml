@@ -10,7 +10,6 @@
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="template_forward.xml" path_base="script_resolution_dir"/>
-		<option name="config_run_duration">'00-00-01_00:00:00'</option>
 		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
 		<option name="config_check_ssh_consistency">.false.</option>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
@@ -24,7 +23,7 @@
 		<stream name="input">
 			<attribute name="filename_template">init.nc</attribute>
 		</stream>
-		<template file="output.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="minimal_output.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="land_ice_fluxes.xml" path_base="script_core_dir" path="templates/streams"/>
 		<stream name="output">
 			<attribute name="output_interval">00-01-00_00:00:00</attribute>
@@ -41,9 +40,9 @@
 
 	<run_script name="run.py">
 		<step executable="./metis">
-			<argument flag="graph.info">4</argument>
+			<argument flag="graph.info">16</argument>
 		</step>
 
-		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<model_run procs="16" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>
 </config>

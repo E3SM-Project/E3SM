@@ -12,5 +12,8 @@
 		<compare_fields file1="forward/output.nc">
 			<template file="prognostic_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
 		</compare_fields>
+		<compare_fields file1="forward/land_ice_fluxes.nc">
+			<template file="land_ice_flux_comparison.xml" path_base="script_core_dir" path="templates/validations"/>
+		</compare_fields>
 	</validation>
 </driver_script>
