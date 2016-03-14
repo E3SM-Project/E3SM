@@ -1482,12 +1482,12 @@ contains
     this%adsorb_to_labilep_col(begc:endc) = spval
     call hist_addfld1d (fname='ADSORBTION_P', units='gP/m^2/s', &
          avgflag='A', long_name='adsorb P flux', &
-         ptr_patch=this%adsorb_to_labilep_col, default='active')
+         ptr_col=this%adsorb_to_labilep_col, default='active')
          
     this%desorb_to_solutionp_col(begc:endc) = spval
     call hist_addfld1d (fname='DESORPTION_P', units='gP/m^2/s', &
          avgflag='A', long_name='desorp P flux', &
-         ptr_patch=this%desorb_to_solutionp_col, default='active')
+         ptr_col=this%desorb_to_solutionp_col, default='active')
          
   end subroutine InitHistory
 
