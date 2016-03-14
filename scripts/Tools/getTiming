@@ -212,12 +212,15 @@ class TimingParser:
         nprocs, ncount = self.gettime2('CPL:CLOCK_ADVANCE ')
         nsteps = ncount / nprocs
         adays = nsteps*tlen/atm_ncpl
-        self.adays = adays
         odays = adays
         if inittype == "TRUE":
             odays = adays - (tlen/ocn_ncpl)
         peminmax = max([m.rootpe for m in self.models.values()])+1
-
+        if ncpl_base_period in ["decade","year","day"]:
+            adays = int(adays)
+            if tlen % ocn_ncpl == 0:
+                odays = int(odays)
+        self.adays = adays
         maxoffset = 40
         extraoff = 20
         for m in self.models.values():
