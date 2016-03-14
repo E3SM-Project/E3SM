@@ -50,7 +50,7 @@
 <config_dt ocn_grid="oQU240">'01:00:00'</config_dt>
 <config_dt ocn_grid="oQU120">'00:30:00'</config_dt>
 <config_dt ocn_grid="mpas120">'00:30:00'</config_dt>
-<config_dt ocn_grid="oEC60to30">'00:20:00'</config_dt>
+<config_dt ocn_grid="oEC60to30">'00:15:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10">'00:06:00'</config_dt>
 <config_dt ocn_grid="oRRS15to5">'00:03:45'</config_dt>
 <config_time_integrator>'split_explicit'</config_time_integrator>
