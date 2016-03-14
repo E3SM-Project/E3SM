@@ -70,4 +70,5 @@ my @groups = qw(run_modes
                 am_mixedlayerdepths
                 am_timeseriesstats
                 am_pointwisestats
+                am_debugdiagnostics
                 );

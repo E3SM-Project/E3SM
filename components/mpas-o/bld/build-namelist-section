@@ -243,6 +243,7 @@ add_default($nl, 'config_cvmix_kpp_MonObOBL');
 add_default($nl, 'config_cvmix_kpp_interpolationOMLType');
 add_default($nl, 'config_cvmix_kpp_surface_layer_extent');
 add_default($nl, 'config_cvmix_kpp_surface_layer_averaging');
+add_default($nl, 'configure_cvmix_kpp_minimum_OBL_under_sea_ice');
 add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
 
 ###########################
@@ -252,6 +253,7 @@ add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
 add_default($nl, 'config_use_bulk_wind_stress');
 add_default($nl, 'config_use_bulk_thickness_flux');
 add_default($nl, 'config_flux_attenuation_coefficient');
+add_default($nl, 'config_flux_attenuation_coefficient_runoff');
 
 ######################################
 # Namelist group: shortwaveRadiation #
@@ -259,6 +261,7 @@ add_default($nl, 'config_flux_attenuation_coefficient');
 
 add_default($nl, 'config_sw_absorption_type');
 add_default($nl, 'config_jerlov_water_type');
+add_default($nl, 'config_surface_buoyancy_depth');
 add_default($nl, 'config_forcing_restart_file');
 
 ##############################
@@ -1066,4 +1069,14 @@ add_default($nl, 'config_AM_pointwiseStats_compute_interval');
 add_default($nl, 'config_AM_pointwiseStats_output_stream');
 add_default($nl, 'config_AM_pointwiseStats_compute_on_startup');
 add_default($nl, 'config_AM_pointwiseStats_write_on_startup');
+
+#######################################
+# Namelist group: AM_debugDiagnostics #
+#######################################
+
+add_default($nl, 'config_AM_debugDiagnostics_enable');
+add_default($nl, 'config_AM_debugDiagnostics_compute_interval');
+add_default($nl, 'config_AM_debugDiagnostics_output_stream');
+add_default($nl, 'config_AM_debugDiagnostics_compute_on_startup');
+add_default($nl, 'config_AM_debugDiagnostics_write_on_startup');
 

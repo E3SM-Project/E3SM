@@ -148,11 +148,9 @@ contains
 
     type (MPAS_Time_Type) :: alarmStartTime
     type (MPAS_TimeInterval_Type) :: alarmTimeStep
-    type (block_type), pointer :: block_ptr
+    type (block_type), pointer :: block
 
-    type (mpas_pool_type), pointer :: meshPool, statePool, &
-                                      forcingPool, diagnosticsPool, &
-                                      averagePool
+    type (MPAS_Pool_Type), pointer :: shortwave
 
     logical :: exists
 
@@ -183,6 +181,9 @@ contains
     logical, pointer :: tempLogicalConfig
     character(len=StrKIND), pointer :: tempCharConfig
     real (kind=RKIND), pointer :: tempRealConfig
+
+    real(kind=RKIND), pointer :: &
+         dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
 
     interface
        subroutine xml_stream_parser(xmlname, mgr_p, comm, ierr) bind(c)
@@ -267,7 +268,7 @@ contains
        write(stderrUnit, *) 'Start type is:', trim(starttype)
        call mpas_dmpar_global_abort(' ice_comp_mct ERROR: unknown starttype')
     end if
-   
+
 !-----------------------------------------------------------------------
 !
 !   first initializaiton phase of mpas-cice
@@ -473,6 +474,21 @@ contains
     !
     call mpas_bootstrap_framework_phase2(domain)
 
+    ! Determine time of next atmospheric shortwave calculation
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "shortwave", shortwave)
+       call MPAS_pool_get_array(shortwave, "dayOfNextShortwaveCalculation", dayOfNextShortwaveCalculation)
+       call seq_infodata_GetData(infodata, nextsw_cday=dayOfNextShortwaveCalculation )
+
+       ! Set dayOfNextShortwaveCalculation to -1 for continue and branch runs.
+       if (trim(runtype) /= 'initial') dayOfNextShortwaveCalculation = -1
+       write(stderrUnit,*) 'dayOfNextShortwaveCalculation = ', dayOfNextShortwaveCalculation
+
+       block => block % next
+    end do
+
     ! Initialize the MPAS-CICE core
     ierr = domain % core % core_init(domain, timeStamp)
     if ( ierr /= 0 ) then
@@ -604,6 +620,7 @@ contains
     ! Coupling prep
     call cice_column_coupling_prep(domain)
 
+
 !-----------------------------------------------------------------------
 !
 !   send intial state to driver
@@ -700,8 +717,8 @@ contains
 ! Variable related to MPAS-CICE
       real (kind=RKIND) :: dt
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: meshPool, statePool, forcingPool, diagnostics
-      character(len=strKIND), pointer :: xtime
+      type (MPAS_Pool_type), pointer :: &
+            shortwave
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp, streamName
@@ -711,6 +728,8 @@ contains
       logical, pointer :: config_write_output_on_startup
       logical, save :: first=.true.
       character (len=StrKIND), pointer :: config_restart_timestamp_name
+      real(kind=RKIND), pointer :: &
+            dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
 
       call mpas_io_units_set_stdout(iceStdOutUnit)
       call mpas_io_units_set_stderr(iceStdErrUnit)
@@ -731,6 +750,11 @@ contains
       ! Post coupling calls
       block => domain % blocklist
       do while (associated(block))
+
+         ! Determine time of next atmospheric shortwave calculation
+         call MPAS_pool_get_subpool(block % structs, "shortwave", shortwave)
+         call MPAS_pool_get_array(shortwave, "dayOfNextShortwaveCalculation", dayOfNextShortwaveCalculation)
+         call seq_infodata_GetData(infodata, nextsw_cday=dayOfNextShortwaveCalculation )
 
          ! perform post coupling operations
          call post_atmospheric_coupling(block)
@@ -772,16 +796,6 @@ contains
 
         ! pre-timestep analysis computation
         call cice_analysis_precompute(domain, ierr)
-
-        block => domain % blocklist
-        do while (associated(block))
-
-           call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnostics)
-           call MPAS_pool_get_array(diagnostics, "xtime", xtime)
-           xtime = timeStamp
-
-           block => block % next
-        end do
 
         call mpas_timer_start("time integration", .false.)
         call cice_timestep(domain, domain % clock, dt, itimestep)

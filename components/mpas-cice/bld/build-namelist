@@ -663,6 +663,12 @@ add_default($nl, 'config_min_friction_velocity');
 add_default($nl, 'config_ocean_heat_transfer_type');
 add_default($nl, 'config_sea_freezing_temperature_type');
 
+###############################
+# Namelist group: diagnostics #
+###############################
+
+add_default($nl, 'config_check_state');
+
 ##########################################
 # Namelist group: AM_highFrequencyOutput #
 ##########################################
@@ -884,6 +890,7 @@ my @groups = qw(cice_model
                 ridging
                 atmosphere
                 ocean
+                diagnostics
                 am_highfrequencyoutput
                 am_temperatures
                 am_regionalstatistics

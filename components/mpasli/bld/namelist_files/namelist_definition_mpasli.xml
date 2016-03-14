@@ -177,7 +177,7 @@ Default: Defined in namelist_defaults.xml
 	category="thermal_solver" group="thermal_solver">
 Selection of the method for initializing the ice temperature.
 
-Valid values: 'linear', 'file'
+Valid values: 'sfc_air_temperature', 'linear', 'file'
 Default: Defined in namelist_defaults.xml
 </entry>
 

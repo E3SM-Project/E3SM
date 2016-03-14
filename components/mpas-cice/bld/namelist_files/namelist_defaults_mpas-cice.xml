@@ -5,6 +5,8 @@
 
 <!-- cice_model -->
 <config_dt>1800.0</config_dt>
+<config_dt ice_grid="oQU240">3600.0</config_dt>
+<config_dt ice_grid="oQU120">3600.0</config_dt>
 <config_dt ice_grid="mpas120">3600.0</config_dt>
 <config_dt ice_grid="oEC60to30">1800.0</config_dt>
 <config_calendar_type>'gregorian_noleap'</config_calendar_type>
@@ -57,7 +59,7 @@
 <config_forcing_restart_file>'restart_forcing_timestamps'</config_forcing_restart_file>
 <config_forcing_precipitation_units>'mm_per_sec'</config_forcing_precipitation_units>
 <config_forcing_sst_type>'ncar'</config_forcing_sst_type>
-<config_update_ocean_fluxes>false</config_update_ocean_fluxes>
+<config_update_ocean_fluxes>.true.</config_update_ocean_fluxes>
 <config_include_pond_freshwater_feedback>false</config_include_pond_freshwater_feedback>
 
 <!-- unit_test -->
@@ -190,6 +192,9 @@
 <config_min_friction_velocity>0.0005</config_min_friction_velocity>
 <config_ocean_heat_transfer_type>'constant'</config_ocean_heat_transfer_type>
 <config_sea_freezing_temperature_type>'mushy'</config_sea_freezing_temperature_type>
+
+<!-- diagnostics -->
+<config_check_state>false</config_check_state>
 
 <!-- AM_highFrequencyOutput -->
 <config_AM_highFrequencyOutput_enable>.false.</config_AM_highFrequencyOutput_enable>

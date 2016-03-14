@@ -53,7 +53,7 @@ module mpaso_cpl_indices
   integer :: index_x2o_Si_ifrac        ! fractional ice wrt ocean
   integer :: index_x2o_Si_bpress       ! ice basal pressure
   integer :: index_x2o_So_duu10n       ! 10m wind speed squared           (m^2/s^2)
-  integer :: index_x2o_Sa_pslv         ! sea-level pressure               (Pa)
+  integer :: index_x2o_Sa_pbot         ! atm bottom pressure              (Pa)
   integer :: index_x2o_Sa_co2prog      ! bottom atm level prognostic CO2
   integer :: index_x2o_Sa_co2diag      ! bottom atm level diagnostic CO2
   integer :: index_x2o_Foxx_taux       ! zonal wind stress (taux)         (W/m2   )
@@ -161,7 +161,7 @@ contains
 
     index_x2o_Si_ifrac      = mct_avect_indexra(x2o,'Si_ifrac')
     index_x2o_Si_bpress     = mct_avect_indexra(x2o,'Si_bpress')
-    index_x2o_Sa_pslv       = mct_avect_indexra(x2o,'Sa_pslv')
+    index_x2o_Sa_pbot       = mct_avect_indexra(x2o,'Sa_pbot')
     index_x2o_So_duu10n     = mct_avect_indexra(x2o,'So_duu10n')
     index_x2o_Foxx_tauy     = mct_avect_indexra(x2o,'Foxx_tauy')
     index_x2o_Foxx_taux     = mct_avect_indexra(x2o,'Foxx_taux')

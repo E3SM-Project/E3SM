@@ -1081,6 +1081,14 @@ Valid values: Any positive real value, but typically should be between 1 and 20 
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="configure_cvmix_kpp_minimum_OBL_under_sea_ice" type="real"
+	category="cvmix" group="cvmix">
+The minimum allowable boundary layer depth with sea-ice is present
+
+Valid values: Any positive real value, but typically should be between 1 and 20 meters
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_cvmix_kpp_stop_OBL_search" type="real"
 	category="cvmix" group="cvmix">
 The search for boundary layer depth is terminated when bulk Richardson number is greater than config_cvmix_kpp_stop_OBL_search*config_cvmix_kpp_criticalBulkRichardsonNumber
@@ -1116,6 +1124,14 @@ Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_flux_attenuation_coefficient_runoff" type="real"
+	category="forcing" group="forcing">
+The length scale of exponential decay of river runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- shortwaveRadiation -->
 
@@ -1132,6 +1148,14 @@ Default: Defined in namelist_defaults.xml
 Integer value defining the water type used in Jerlov short wave absorption.
 
 Valid values: Integer values between 1 and 5
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_surface_buoyancy_depth" type="real"
+	category="shortwaveRadiation" group="shortwaveRadiation">
+Depth over which to apply penetrating SW to sfcBuoyancyFlux
+
+Valid values: Real Values greater than zero less than bottomDepth
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1877,7 +1901,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_rx1_inner_iteration_weight" type="real"
 	category="constrain_Haney_number" group="constrain_Haney_number">
-During inner iteration, layers with rx1 greater than rx1Max are thickened toward a target thickness by this fraction.  A smaller weights will result in less layer thickening but will require more inner iterations to converge.
+During inner iteration, layers with rx1 > rx1Max are thickened toward a target thickness by this fraction.  A smaller weights will result in less layer thickening but will require more inner iterations to converge.
 
 Valid values: a positive value less than or equal to 1
 Default: Defined in namelist_defaults.xml
@@ -5883,6 +5907,49 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_pointwiseStats_write_on_startup" type="logical"
 	category="AM_pointwiseStats" group="AM_pointwiseStats">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_debugDiagnostics -->
+
+<entry id="config_AM_debugDiagnostics_enable" type="logical"
+	category="AM_debugDiagnostics" group="AM_debugDiagnostics">
+If true, ocean analysis member debugDiagnostics is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_debugDiagnostics_compute_interval" type="char*1024"
+	category="AM_debugDiagnostics" group="AM_debugDiagnostics">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_debugDiagnostics_output_stream" type="char*1024"
+	category="AM_debugDiagnostics" group="AM_debugDiagnostics">
+Name of the stream that the debugDiagnostics analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_debugDiagnostics_compute_on_startup" type="logical"
+	category="AM_debugDiagnostics" group="AM_debugDiagnostics">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_debugDiagnostics_write_on_startup" type="logical"
+	category="AM_debugDiagnostics" group="AM_debugDiagnostics">
 Logical flag determining if an analysis member write occurs on start-up.
 
 Valid values: .true. or .false.
