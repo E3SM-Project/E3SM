@@ -3,6 +3,7 @@ Common functions used by cime python scripts
 Warning: you cannot use CIME Classes in this module as it causes circular dependancies
 """
 import logging
+import logging.config
 import sys
 import os
 import time
