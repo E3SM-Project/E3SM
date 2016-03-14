@@ -1091,9 +1091,7 @@
          qmlt            ! enthalpy of melted ice (J m-3) = zero in BL99 formulation
 
       real (kind=dbl_kind) :: &
-         qbotm       , &
-         qbotp       , &
-         qbot0
+         qbotp
 
       !-----------------------------------------------------------------
       ! Initialize
@@ -1191,15 +1189,12 @@
 
       if (ktherm == 2) then
 
-         qbotm = enthalpy_mush(Tbot, sss)
          qbotp = -Lfresh * rhoi * (c1 - phi_i_mushy)
-         qbot0 = qbotm - qbotp
 
          dhi = ebot_gro / qbotp     ! dhi > 0
 
-         hqtot = dzi(nilyr)*zqin(nilyr) + dhi*qbotm
+         hqtot = dzi(nilyr)*zqin(nilyr) + dhi*qbotp
          hstot = dzi(nilyr)*zSin(nilyr) + dhi*sss
-         emlt_ocn = emlt_ocn - qbot0 * dhi
 
       else
 
