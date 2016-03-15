@@ -387,10 +387,6 @@ contains
          ! call kpp ocean mixed layer scheme
          if (cvmixKPPOn) then
 
-            if (config_cvmix_kpp_matching.eq."MatchBoth") then
-               write(stderrUnit,*) "Use of MatchBoth for KPP matching is not encouraged"
-            endif
-
             ! copy data into cvmix_variables
             cvmix_variables % Mdiff_iface(:)=vertViscTopOfCell(:,iCell)
             cvmix_variables % Tdiff_iface(:)=vertDiffTopOfCell(:,iCell)
@@ -539,14 +535,8 @@ contains
             boundaryLayerDepth(iCell) = cvmix_variables % BoundaryLayerDepth
             indexBoundaryLayerDepth(iCell) = cvmix_variables % kOBL_depth
 
-            ! if using KPP with "MatchBoth"   matching, then the output from KPP is the full viscosity/diffusivity
-            ! if using KPP with "SimpleShape" matching, then the output from KPP needs to be added to current viscosity/diffusivity
-            if(config_cvmix_kpp_matching.eq."MatchBoth" .or. config_cvmix_kpp_matching.eq."SimpleShapes") then
-               vertViscTopOfCell(:,iCell) = cvmix_variables % Mdiff_iface(:)
-               vertDiffTopOfCell(:,iCell) = cvmix_variables % Tdiff_iface(:)
-            else
-               stop
-            endif
+            vertViscTopOfCell(:,iCell) = cvmix_variables % Mdiff_iface(:)
+            vertDiffTopOfCell(:,iCell) = cvmix_variables % Tdiff_iface(:)
 
             ! store non-local flux terms
             ! these flux terms must be multiplied by the surfaceTracerFlux field
@@ -818,6 +808,15 @@ contains
       ! initialize KPP boundary layer scheme
       !
       if (config_use_cvmix_kpp) then
+        if(config_cvmix_kpp_matching.eq."MatchBoth") then
+           write(stderrUnit,*) "WARNING: use of option MatchBoth is discouraged, use SimpleShapes instead"
+        elseif(.not. config_cvmix_kpp_matching.eq."SimpleShapes") then
+           write(stderrUnit,*) "ERROR: unknown value for config_cvmix_kpp_matching., supported values are:"
+           write(stderrUnit,*) "         SimpleShapes or MatchBoth"
+           err = 1
+           return 
+        endif
+
         call cvmix_init_kpp ( &
                ri_crit = config_cvmix_kpp_criticalBulkRichardsonNumber, &
                interp_type = config_cvmix_kpp_interpolationOMLType, &
