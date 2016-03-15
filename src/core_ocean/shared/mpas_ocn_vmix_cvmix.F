@@ -450,8 +450,8 @@ contains
 
                bulkRichardsonNumberShear(kIndexOBL,iCell) = max(deltaVelocitySquared, 1.0e-15_RKIND)
 
-               bulkRichardsonNumberBuoy(kIndexOBL,iCell) = gravity * (density(kIndexOBL,iCell) - &
-                                 sum(density(1:kav,iCell))/real(kav, kind=RKIND)) / rho_sw
+               bulkRichardsonNumberBuoy(kIndexOBL,iCell) = gravity * (potentialDensity(kIndexOBL,iCell) - &
+                                 sum(potentialDensity(1:kav,iCell))/real(kav, kind=RKIND)) / rho_sw
 
               enddo ! do kIndexOBL
 !             call mpas_timer_stop('Bulk Richardson kIndexOBL loop')
