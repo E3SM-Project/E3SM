@@ -69,6 +69,9 @@ contains
          cice_column_reinitialize_diagnostics_bgc, &
          cice_column_reinitialize_diagnostics_dynamics
 
+    use cice_diagnostics, only: &
+         cice_check_state
+
     type(domain_type), intent(inout) :: &
          domain !< Input/Output: 
 
@@ -160,6 +163,9 @@ contains
     call mpas_timer_start("Column post-dynamics")
     call cice_column_postdynamics_time_integration(domain, clock)
     call mpas_timer_stop("Column post-dynamics")
+
+    ! check the physical state of the model
+    call cice_check_state(domain)
 
   end subroutine cice_timestep!}}}
 
