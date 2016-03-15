@@ -301,7 +301,7 @@ print F
 		  print F "    if(name != NULL){ \n";
 		  print F "      int slen;\n";
 		  print F "      if(ios->iomaster)\n";
-		  print F "        slen = (int) strlen(name);\n";
+		  print F "        slen = (int) strlen(name) + 1;\n";
 		  print F "      mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 		  print F "      mpierr = MPI_Bcast(name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);\n    }\n";
 
@@ -316,7 +316,7 @@ print F
 		  print F  "    if(name != NULL){ \n";
 		  print F "      int slen;\n";
 		  print F "      if(ios->iomaster)\n";
-		  print F "        slen = (int) strlen(name);\n";
+		  print F "        slen = (int) strlen(name) + 1;\n";
 		  print F "      mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 		  print F "      mpierr = MPI_Bcast(name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);\n    }\n";
 		  print F "      if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
@@ -324,7 +324,7 @@ print F
 		  print F "    if(name != NULL){\n";
 		  print F "      int slen;\n";
 		  print F "      if(ios->iomaster)\n";
-		  print F "        slen = (int) strlen(name);\n";
+		  print F "        slen = (int) strlen(name) + 1;\n";
 		  print F "      mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 		  print F "      mpierr = MPI_Bcast(name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);\n    }\n";
 	      }elsif($func =~ /inq_vardimid/){

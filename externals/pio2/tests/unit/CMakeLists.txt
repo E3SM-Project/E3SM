@@ -1,5 +1,22 @@
 include (LibMPI)
 
+# Compiler-specific compiler options
+if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99")
+elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -c99")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -c99")
+elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99")
+elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99")
+endif()
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
+
 #==============================================================================
 #  PREPARE FOR TESTING
 #==============================================================================
@@ -26,6 +43,8 @@ if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
         PRIVATE -ffree-line-length-none)
 endif()
 
+add_executable (test_names EXCLUDE_FROM_ALL test_names.c)
+target_link_libraries (test_names pioc)
 add_executable (test_nc4 EXCLUDE_FROM_ALL test_nc4.c)
 target_link_libraries (test_nc4 pioc)
 
@@ -35,6 +54,7 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "NAG")
 #        PRIVATE -mismatch_all)
 endif ()
 
+add_dependencies (tests test_names)
 add_dependencies (tests test_nc4)
 add_dependencies (tests pio_unit_test)
 
@@ -42,6 +62,8 @@ add_dependencies (tests pio_unit_test)
 set (DEFAULT_TEST_TIMEOUT 240)
 
 if (PIO_USE_MPISERIAL)
+    add_test(NAME test_names
+        COMMAND test_names)
     add_test(NAME test_nc4
         COMMAND test_nc4)
     add_test(NAME pio_unit_test
@@ -49,6 +71,10 @@ if (PIO_USE_MPISERIAL)
     set_tests_properties(pio_unit_test
         PROPERTIES TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 else ()
+    add_mpi_test(test_names
+        EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/test_names
+        NUMPROCS 4
+        TIMEOUT ${DEFAULT_TEST_TIMEOUT})
     add_mpi_test(test_nc4
         EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/test_nc4
         NUMPROCS 4
