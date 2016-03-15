@@ -1256,10 +1256,10 @@
       <command name="load">esmf-6.3.0rp1-defio-mpi-O</command>
     </modules>
     <modules compiler="intel" mpilib="mpi-serial" debug="true">
-      <command name="load">esmf-6.3.0rp1-defio-uni-g</command>
+      <command name="load">esmf-6.3.0rp1-ncdfio-uni-g</command>
     </modules>
     <modules compiler="intel" mpilib="mpi-serial" debug="false">
-      <command name="load"> esmf-6.3.0rp1-defio-uni-O</command>
+      <command name="load"> esmf-6.3.0rp1-ncdfio-uni-O</command>
     </modules>
     <modules compiler="pgi">
       <command name="load">pgi/15.10</command>
