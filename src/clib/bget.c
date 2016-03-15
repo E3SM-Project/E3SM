@@ -397,6 +397,7 @@
     BGET CONFIGURATION
     ==================
 */
+//#define PIO_USE_MALLOC 1
 #ifdef PIO_USE_MALLOC
 #include <stdlib.h>
 #endif
@@ -610,11 +611,13 @@ void *bget(requested_size)
 #endif
 
 #ifdef PIO_USE_MALLOC
-    if(requested_size>maxsize){
-      maxsize=requested_size;
-      printf("%s %d %d\n",__FILE__,__LINE__,maxsize);
-    }
-    return(malloc(requested_size));
+    //    if(requested_size>maxsize){
+    //   maxsize=requested_size;
+    //   printf("%s %d %d\n",__FILE__,__LINE__,maxsize);
+    // }
+    buf = malloc(requested_size);
+    //    printf("bget allocate %ld %x\n",requested_size,buf);
+    return(buf);
 #endif 
 
 
@@ -875,6 +878,7 @@ void brel(buf)
     struct bfhead *b, *bn;
 
 #ifdef PIO_USE_MALLOC
+    //    printf("bget free %d %x\n",__LINE__,buf);
     free(buf);
     return;
 #endif    

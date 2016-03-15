@@ -547,3 +547,30 @@ int PIOc_iotask_rank(const int iosysid, int *iorank)
   
 }
 
+/**
+ ** @brief return true if this iotype is supported in the build, 0 otherwise
+ */
+
+int PIOc_iotype_available(const int iotype)
+{
+
+  switch(iotype){
+#ifdef _NETCDF
+#ifdef _NETCDF4
+    case PIO_IOTYPE_NETCDF4P:
+    case PIO_IOTYPE_NETCDF4C:
+      return(1);
+#endif
+    case PIO_IOTYPE_NETCDF:
+      return(1);
+#endif
+#ifdef _PNETCDF
+    case PIO_IOTYPE_PNETCDF:
+      return(1);
+      break;
+#endif
+    default:
+      return(0);
+    }
+
+}

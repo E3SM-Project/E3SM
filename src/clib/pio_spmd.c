@@ -248,6 +248,7 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
   CheckMPIReturn(MPI_Comm_size(comm, &nprocs),__FILE__,__LINE__);
   CheckMPIReturn(MPI_Comm_rank(comm, &mytask),__FILE__,__LINE__);
 
+
   if(max_requests == 0) {
 #ifdef DEBUG
     int totalrecv=0;

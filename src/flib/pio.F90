@@ -16,7 +16,7 @@ module pio
        pio_seterrorhandling, pio_setframe, pio_init, pio_get_local_array_size, &
        pio_freedecomp, pio_syncfile, &
        pio_finalize, pio_set_hint, pio_getnumiotasks, pio_file_is_open, &
-       PIO_deletefile, PIO_get_numiotasks
+       PIO_deletefile, PIO_get_numiotasks, PIO_iotype_available
 
   use pio_types, only : io_desc_t, file_desc_t, var_desc_t, iosystem_desc_t, &
        pio_int, pio_real, pio_double, pio_noerr, iotype_netcdf, &
@@ -44,15 +44,21 @@ module pio
        PIO_inq_varndims ,&
        PIO_inq_vardimid ,&
        PIO_inq_varnatts ,&
+       PIO_inq_var_deflate ,&
        PIO_inq_dimid ,      &
        PIO_inq_dimname ,  &
        PIO_inq_dimlen ,    &
+       PIO_inq_unlimdim, &
        PIO_def_dim   ,        &
        PIO_def_var   ,        &
+       PIO_def_var_deflate   ,        &
        PIO_redef     ,          &
-!       PIO_copy_att  ,       &   
        PIO_inquire_variable , &
-       PIO_inquire_dimension 
+       PIO_inquire_dimension, &
+       PIO_set_chunk_cache, &
+       PIO_get_chunk_cache, &
+       PIO_set_var_chunk_cache, &
+       PIO_get_var_chunk_cache
 
   use pionfatt_mod, only : PIO_put_att   => put_att,        &
        PIO_get_att   => get_att
