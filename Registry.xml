@@ -2369,8 +2369,8 @@
 			 packages="initMode"
 		/>
 		<var name="rx1MaxCell" type="real" dimensions="nCells Time" units="unitless"
-			 description="The maximum Haney number (rx1) in a vertical column, measured at cell centers."
-			 packages="initMode"
+  		         description="The Haney number (rx1) is ratio of vertical displacement to cell thickness between two neighboring horizontal cells.  It is computed at each edge.  This cell-based value is the maximum over all edges and vertical levels of each cell."
+			 packages="initMode;debugDiagnosticsAMPKG"
 		/>
 		<var name="rx1MaxEdge" type="real" dimensions="nEdges Time" units="unitless"
 			 description="The maximum Haney number (rx1) in a vertical column, measured at edges."
@@ -2378,7 +2378,7 @@
 		/>
 		<var name="globalRx1Max" type="real" dimensions="Time" units="unitless"
 			 description="The global maximum Haney number (rx1)."
-			 packages="initMode"
+			 packages="initMode;debugDiagnosticsAMPKG"
 		/>
 		<!-- diagnostic fields for Haney number constrained init -->
 		<var name="rx1InitSmoothingMask" type="integer" dimensions="nCells Time" units="unitless"
