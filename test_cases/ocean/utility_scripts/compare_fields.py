@@ -68,7 +68,7 @@ linf_norm = -(sys.float_info.max)
 
 pass_val = True
 
-print "Comparing field '%s'"%(args.variable)
+print "Beginning variable comparisons for all time levels of field '%s'. Note any time levels reported are 0-based."%(args.variable)
 if ( args.l2_norm or args.l1_norm or args.linf_norm ):
 	print "    Pass thresholds are:"
 	if ( args.l1_norm ):
