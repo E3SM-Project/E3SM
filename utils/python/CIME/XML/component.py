@@ -22,7 +22,7 @@ class Component(EntryID):
             compnode = self.get_node("components")
             comps = self.get_nodes("comp", root=compnode)
             for comp in comps:
-                components.append(comp.text())
+                components.append(comp.text)
             return components
         else:
             return EntryID.get_value(self, name, attribute, resolved)
