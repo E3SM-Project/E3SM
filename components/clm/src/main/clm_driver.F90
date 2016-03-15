@@ -13,7 +13,7 @@ module clm_driver
   use clm_varpar             , only : nlevtrc_soil
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_ed, use_betr  
   use clm_varctl             , only : use_cn, use_cndv, use_lch4, use_voc, use_noio, use_c13, use_c14
-  use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day
+  use clm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
   use clm_varpar             , only : nlevsno, nlevgrnd, crop_prog
   use spmdMod                , only : masterproc, mpicom
   use decompMod              , only : get_proc_clumps, get_clump_bounds, get_proc_bounds, bounds_type
@@ -134,6 +134,7 @@ module clm_driver
   use LandunitType           , only : lun                
   use ColumnType             , only : col                
   use PatchType              , only : pft
+  use shr_sys_mod            , only : shr_sys_flush
 
   !!----------------------------------------------------------------------------
   !! bgc interface & pflotran:
@@ -203,10 +204,16 @@ contains
     integer              :: kyr                     ! thousand years, equals 2 at end of first year
     character(len=256)   :: filer                   ! restart file name
     integer              :: ier                     ! error code
+    character(len=256)   :: dateTimeString
     type(bounds_type)    :: bounds_clump    
     type(bounds_type)    :: bounds_proc     
     !-----------------------------------------------------------------------
 
+    call get_curr_time_string(dateTimeString)
+    if (masterproc) then
+       write(iulog,*)'Beginning timestep   : ',trim(dateTimeString)
+       call shr_sys_flush(iulog)
+    endif
     ! Determine processor bounds and clumps for this processor
 
     call get_proc_bounds(bounds_proc)
@@ -1645,6 +1652,7 @@ contains
     real(r8):: tsum                    ! sum of ts
     real(r8):: tsxyav                  ! average ts for diagnostic output
     integer :: status(MPI_STATUS_SIZE) ! mpi status
+    character(len=256)   :: dateTimeString
     !------------------------------------------------------------------------
 
     call get_proc_global(ng=numg)
@@ -1667,8 +1675,9 @@ contains
     else
 
 #ifndef CPL_BYPASS
+       call get_curr_time_string(dateTimeString)
        if (masterproc) then
-          write(iulog,*)'clm: completed timestep ',nstep
+          write(iulog,*)'   Completed timestep: ',trim(dateTimeString)
           call shr_sys_flush(iulog)
        end if
 #endif
