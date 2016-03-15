@@ -450,21 +450,21 @@ int get_field_information(const char *vartype, const char *varval, char *default
 
 	if (strcmp(vartype, "real") == 0){
 		(*type) = REAL;
-		if(!varmissval){
+		if(!varmissval || strcmp(varmissval, "FILLVAL") == 0){
 			snprintf(missing_value, 1024, "MPAS_REAL_FILLVAL");
 		} else {
 			snprintf(missing_value, 1024, "%s", varmissval);
 		}
 	} else if (strcmp(vartype, "integer") == 0){
 		(*type) = INTEGER;
-		if(!varmissval){
+		if(!varmissval || strcmp(varmissval, "FILLVAL") == 0){
 			snprintf(missing_value, 1024, "MPAS_INT_FILLVAL");
 		} else {
 			snprintf(missing_value, 1024, "%s", varmissval);
 		}
 	} else if (strcmp(vartype, "text") == 0){
 		(*type) = CHARACTER;
-		if(!varmissval){
+		if(!varmissval || strcmp(varmissval, "FILLVAL") == 0){
 			snprintf(missing_value, 1024, "MPAS_CHAR_FILLVAL");
 		} else {
 			snprintf(missing_value, 1024, "'%s'", varmissval);
@@ -1339,8 +1339,12 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 				fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, 'units', '%s')\n", pointer_name, time_lev, varunits);
 			}
 
-			fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, 'missing_value', %s)\n", pointer_name, time_lev, missing_value);
-			fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, '_FillValue', %s)\n", pointer_name, time_lev, missing_value);
+			if ( vararrmissingval ) {
+				fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, 'missing_value', %s)\n", pointer_name, time_lev, missing_value);
+				// Uncomment to add _FillValue to match missing_value
+				// fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, '_FillValue', %s)\n", pointer_name, time_lev, missing_value);
+			}
+			fortprintf(fd, "         %s(%d) %% missingValue = %s\n", pointer_name, time_lev, missing_value);
 			fortprintf(fd, "         %s(%d) %% constituentNames(const_index) = '%s'\n", pointer_name, time_lev, varname);
 			fortprintf(fd, "      end if\n", spacing);
 		}
@@ -1526,8 +1530,12 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 			fortprintf(fd, "      call mpas_add_att(%s(%d) %% attLists(1) %% attList, 'long_name', '%s')\n", pointer_name, time_lev, vardesc);
 		}
 
-		fortprintf(fd, "      call mpas_add_att(%s(%d) %% attLists(1) %% attList, 'missing_value', %s)\n", pointer_name, time_lev, missing_value);
-		fortprintf(fd, "      call mpas_add_att(%s(%d) %% attLists(1) %% attList, '_FillValue', %s)\n", pointer_name, time_lev, missing_value);
+		if ( varmissingval != NULL ) {
+			fortprintf(fd, "      call mpas_add_att(%s(%d) %% attLists(1) %% attList, 'missing_value', %s)\n", pointer_name, time_lev, missing_value);
+			// Uncomment to add _FillValue to match missing_value
+			// fortprintf(fd, "      call mpas_add_att(%s(%d) %% attLists(1) %% attList, '_FillValue', %s)\n", pointer_name, time_lev, missing_value);
+		}
+		fortprintf(fd, "      %s(%d) %% missingValue = %s\n", pointer_name, time_lev, missing_value);
 
 		fortprintf(fd, "      %s(%d) %% block => block\n", pointer_name, time_lev);
 
