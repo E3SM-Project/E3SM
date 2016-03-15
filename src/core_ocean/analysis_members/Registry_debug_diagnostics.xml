@@ -34,8 +34,8 @@
 				packages="debugDiagnosticsAMPKG"
 				clobber_mode="truncate"
 				runtime_format="single_file">
-			<var name="xtime"/> 
-			<var name="rx1MaxCell"/> 
-			<var name="globalRx1Max"/> 
+			<var name="xtime"/>
+			<var name="rx1MaxCell"/>
+			<var name="globalRx1Max"/>
 		</stream>
 	</streams>
