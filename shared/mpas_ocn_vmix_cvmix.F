@@ -541,12 +541,9 @@ contains
 
             ! if using KPP with "MatchBoth"   matching, then the output from KPP is the full viscosity/diffusivity
             ! if using KPP with "SimpleShape" matching, then the output from KPP needs to be added to current viscosity/diffusivity
-            if(config_cvmix_kpp_matching.eq."MatchBoth") then
+            if(config_cvmix_kpp_matching.eq."MatchBoth" .or. config_cvmix_kpp_matching.eq."SimpleShapes") then
                vertViscTopOfCell(:,iCell) = cvmix_variables % Mdiff_iface(:)
                vertDiffTopOfCell(:,iCell) = cvmix_variables % Tdiff_iface(:)
-            elseif(config_cvmix_kpp_matching.eq."SimpleShapes") then
-               vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % Mdiff_iface(:)
-               vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % Tdiff_iface(:)
             else
                stop
             endif
