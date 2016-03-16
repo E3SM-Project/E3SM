@@ -113,7 +113,8 @@ contains
       real (kind=RKIND), dimension(:), allocatable:: pTop, div_hu,div_huTransport,div_huGMBolus
 
       real (kind=RKIND), dimension(:), pointer :: &
-        bottomDepth, fVertex, dvEdge, dcEdge, areaCell, areaTriangle, ssh, seaSurfacePressure, frazilSurfacePressure
+        bottomDepth, fVertex, dvEdge, dcEdge, areaCell, areaTriangle, ssh, seaSurfacePressure, frazilSurfacePressure, &
+        pressureAdjustedSSH
       real (kind=RKIND), dimension(:,:), pointer :: &
         weightsOnEdge, kiteAreasOnVertex, layerThicknessEdge, layerThickness, normalVelocity, normalTransportVelocity, &
         normalGMBolusVelocity, tangentialVelocity, pressure, circulation, kineticEnergyCell, montgomeryPotential, &
@@ -195,6 +196,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'gradSSH', gradSSH)
       call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
+      call mpas_pool_get_array(diagnosticsPool, 'pressureAdjustedSSH', pressureAdjustedSSH)
 
       call mpas_pool_get_array(meshPool, 'weightsOnEdge', weightsOnEdge)
       call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
@@ -799,13 +801,18 @@ contains
                                          diagnosticsPool, timeLevel)
       call mpas_timer_stop("land_ice_diagnostic_fields")
 
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         pressureAdjustedSSH(iCell) = ssh(iCell) + ( seaSurfacePressure(iCell) / ( gravity * rho_sw ) )
+      end do
+      !$omp end do
+
       !$omp do schedule(runtime) private(cell1, cell2)
       do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
 
-         gradSSH(1, iEdge) = edgeMask(1, iEdge) * ( (ssh(cell2) + seaSurfacePressure(cell2)) - (ssh(cell1) &
-                           + seaSurfacePressure(cell1)) ) / (gravity * rho_sw ) / dcEdge(iEdge)
+         gradSSH(1, iEdge) = edgeMask(1, iEdge) * ( pressureAdjustedSSH(cell2) - pressureAdjustedSSH(cell1) ) / dcEdge(iEdge)
       end do
       !$omp end do
 

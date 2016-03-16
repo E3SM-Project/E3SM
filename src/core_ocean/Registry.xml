@@ -2385,6 +2385,9 @@
 			description="A mask indicating where layer interface and thickness smoothing is to be performed during Haney number constrained initializaiton."
 			 packages="initMode"
 		/>
+		<var name="pressureAdjustedSSH" type="real" dimensions="nCells Time" units="m"
+			 description="sea surface height adjusted by sea surface pressure"
+		/>
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
 		<!-- **********************************************************************
