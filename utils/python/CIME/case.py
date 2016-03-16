@@ -58,11 +58,13 @@ class Case(object):
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
             result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
-            logging.debug("CASE %s %s"%(item,result))
+            logger.debug("File=%s Attribute=%s Value=%s"%(env_file.filename,item,result))
             if result is not None:
                 if resolved and type(result) is str:
                     return self.get_resolved_value(result)
                 return result
+        # Return empty result
+        return result
                 
         for env_file in self._env_generic_files:
             # Wait and resolve in self rather than in env_file
