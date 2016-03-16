@@ -27,6 +27,9 @@
 		<var name="kineticEnergyAt100m" type="real" dimensions="nCells Time" units="m^2 s^{-2}"
 			description="kinetic energy at a depth of approximately 100 m"
 		/>
+		<var name="kineticEnergyBarotropic" type="real" dimensions="nCells Time" units="m^2 s^{-2}"
+			description="kinetic energy computed from normalBarotropicVelocity"
+		/>
 		<var name="relativeVorticityAt100m" type="real" dimensions="nCells Time" units="s^{-1}"
 			description="relative vorticity at cell centers at a depth of approximately 100 m"
 		/>
@@ -58,6 +61,7 @@
 			<stream name="mesh"/>
 			<var name="xtime"/>
 			<var name="kineticEnergyAt100m"/>
+			<var name="kineticEnergyBarotropic"/>
 			<var name="relativeVorticityAt100m"/>
 			<var_array name="activeTracersAtSurface"/>
 		</stream>
