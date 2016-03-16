@@ -32,17 +32,17 @@ class Case(object):
 
         self._env_files_that_need_rewrite = set()
 
-
+        self._env_entryid_files.append(EnvRun(case_root))
+        self._env_entryid_files.append(EnvBuild(case_root))
+        self._env_entryid_files.append(EnvMachPes(case_root))
+        self._env_entryid_files.append(EnvCase(case_root))
+        self._env_entryid_files.append(EnvBatch(case_root))
         if(os.path.isfile(os.path.join(case_root,"env_test.xml"))):
-            self._env_files.append(EnvTest(case_root))
-            
-        self._env_files.append(EnvRun(case_root))
-        self._env_files.append(EnvMachSpecific(case_root))
-        self._env_files.append(EnvCase(case_root))
-        self._env_files.append(EnvMachPes(case_root))
-        self._env_files.append(EnvBuild(case_root))
-        self._env_files.append(EnvArchive(case_root))
-        self._env_files.append(EnvBatch(case_root))
+               self._env_entryid_files.append(EnvTest(case_root))
+        self._env_generic_files.append(EnvMachSpecific(case_root))
+        self._env_generic_files.append(EnvArchive(case_root))
+
+        self._case_root = case_root
 
     def __del__(self):
         self.flush()
@@ -53,12 +53,6 @@ class Case(object):
 
         self._env_files_that_need_rewrite = set()
 
-    # Retrieve value from an xml element/node <element_name attribute=attribute_value>value</element_name>
-    # item is the element_name and atrribute a dictionary containing attribute and/or 
-    # attribute and  attribute_value pairs
-    # resolved denotes ?
-    # subgroup ?
-    
     def get_value(self, item, attribute={}, resolved=True, subgroup=None):
         result = None
         for env_file in self._env_entryid_files:
