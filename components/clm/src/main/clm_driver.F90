@@ -81,42 +81,42 @@ module clm_driver
   use DaylengthMod           , only : UpdateDaylength
   use perf_mod
   !
-  use clm_initializeMod      , only : ch4_vars
-  use clm_initializeMod      , only : carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars
-  use clm_initializeMod      , only : carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars
-  use clm_initializeMod      , only : nitrogenstate_vars
-  use clm_initializeMod      , only : nitrogenflux_vars
-  use clm_initializeMod      , only : phosphorusstate_vars
-  use clm_initializeMod      , only : phosphorusflux_vars
-  use clm_initializeMod      , only : dgvs_vars
-  use clm_initializeMod      , only : crop_vars
-  use clm_initializeMod      , only : cnstate_vars
-  use clm_initializeMod      , only : dust_vars
-  use clm_initializeMod      , only : vocemis_vars
-  use clm_initializeMod      , only : drydepvel_vars
-  use clm_initializeMod      , only : aerosol_vars
-  use clm_initializeMod      , only : canopystate_vars
-  use clm_initializeMod      , only : energyflux_vars
-  use clm_initializeMod      , only : frictionvel_vars
-  use clm_initializeMod      , only : lakestate_vars
-  use clm_initializeMod      , only : photosyns_vars
-  use clm_initializeMod      , only : soilstate_vars
-  use clm_initializeMod      , only : soilhydrology_vars
-  use clm_initializeMod      , only : solarabs_vars
-  use clm_initializeMod      , only : soilhydrology_vars
-  use clm_initializeMod      , only : surfalb_vars
-  use clm_initializeMod      , only : surfrad_vars
-  use clm_initializeMod      , only : temperature_vars
-  use clm_initializeMod      , only : urbanparams_vars
-  use clm_initializeMod      , only : waterflux_vars
-  use clm_initializeMod      , only : waterstate_vars
-  use clm_initializeMod      , only : atm2lnd_vars
-  use clm_initializeMod      , only : lnd2atm_vars
-  use clm_initializeMod      , only : glc2lnd_vars
-  use clm_initializeMod      , only : lnd2glc_vars
-  use clm_initializeMod      , only : EDbio_vars
-  use clm_initializeMod      , only : soil_water_retention_curve
-  use clm_initializeMod      , only : chemstate_vars
+  use clm_instMod            , only : ch4_vars
+  use clm_instMod            , only : carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars
+  use clm_instMod            , only : carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars
+  use clm_instMod            , only : nitrogenstate_vars
+  use clm_instMod            , only : nitrogenflux_vars
+  use clm_instMod            , only : phosphorusstate_vars
+  use clm_instMod            , only : phosphorusflux_vars
+  use clm_instMod            , only : dgvs_vars
+  use clm_instMod            , only : crop_vars
+  use clm_instMod            , only : cnstate_vars
+  use clm_instMod            , only : dust_vars
+  use clm_instMod            , only : vocemis_vars
+  use clm_instMod            , only : drydepvel_vars
+  use clm_instMod            , only : aerosol_vars
+  use clm_instMod            , only : canopystate_vars
+  use clm_instMod            , only : energyflux_vars
+  use clm_instMod            , only : frictionvel_vars
+  use clm_instMod            , only : lakestate_vars
+  use clm_instMod            , only : photosyns_vars
+  use clm_instMod            , only : soilstate_vars
+  use clm_instMod            , only : soilhydrology_vars
+  use clm_instMod            , only : solarabs_vars
+  use clm_instMod            , only : soilhydrology_vars
+  use clm_instMod            , only : surfalb_vars
+  use clm_instMod            , only : surfrad_vars
+  use clm_instMod            , only : temperature_vars
+  use clm_instMod            , only : urbanparams_vars
+  use clm_instMod            , only : waterflux_vars
+  use clm_instMod            , only : waterstate_vars
+  use clm_instMod            , only : atm2lnd_vars
+  use clm_instMod            , only : lnd2atm_vars
+  use clm_instMod            , only : glc2lnd_vars
+  use clm_instMod            , only : lnd2glc_vars
+  use clm_instMod            , only : EDbio_vars
+  use clm_instMod            , only : soil_water_retention_curve
+  use clm_instMod            , only : chemstate_vars
   use betr_initializeMod     , only : betrtracer_vars
   use betr_initializeMod     , only : tracercoeff_vars
   use betr_initializeMod     , only : tracerflux_vars
@@ -138,7 +138,7 @@ module clm_driver
   !!----------------------------------------------------------------------------
   !! bgc interface & pflotran:
   use clm_varctl             , only : use_bgc_interface
-  use clm_initializeMod      , only : clm_bgc_data
+  use clm_instMod            , only : clm_bgc_data
   use clm_bgc_interfaceMod   , only : get_clm_bgc_data
   !! (1) clm_bgc through interface
   use clm_varctl             , only : use_clm_bgc
