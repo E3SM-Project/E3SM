@@ -78,7 +78,7 @@ class GenericXML(object):
         """
         nodes = self.get_nodes(nodename, attributes, root)
         
-        logging.info("Found %s nodes" , len(nodes))
+        logging.debug("Found %s nodes" , len(nodes))
         
         expect(len(nodes) == 1, "Incorrect number of matches, %d, for nodename '%s' and attrs '%s' in file '%s'" %
                (len(nodes), nodename, attributes, self.filename))
@@ -101,6 +101,7 @@ class GenericXML(object):
             root = self.root
         nodes = []
         xpath = ".//"+nodename
+        logger.debug("Attributes %s" , attributes , extra={})
         if attributes is not None:
             keys = list(attributes.keys())
             # xml.etree has limited support for xpath and does not allow more than
@@ -119,6 +120,7 @@ class GenericXML(object):
                 if not nodes:
                     return []
         else:
+            logger.debug("xpath: %s" , xpath , extra={attributes : None})
             nodes = root.findall(xpath)
 
         return nodes
