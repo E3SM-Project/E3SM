@@ -7,7 +7,7 @@
 
 #  set paths to source code, build directory and run directory
 set wdir   = /proj/imn/HOMME_ACME             # run directory
-set HOMME  = /home/imn/ACME/models/atm/homme                # HOMME svn checkout     
+set HOMME  = /home/imn/ACME/components/homme                # HOMME svn checkout     
 set input  = $HOMME/test/jw_baroclinic/openacc_work    # input files for test case
 set vdir   = $HOMME/test/vcoord            # vertical coordinate files
 set exedir = $HOMME/build/preqx

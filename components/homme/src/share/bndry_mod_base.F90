@@ -3,7 +3,7 @@
 #endif
 
 
-module bndry_mod
+module bndry_mod_base
   use parallel_mod, only : syncmp,parallel_t,abortmp,iam
   use edgetype_mod, only : Ghostbuffertr_t, Ghostbuffer3D_t,Edgebuffer_t,LongEdgebuffer_t
   use thread_mod, only : omp_in_parallel, omp_get_thread_num, omp_get_num_threads
@@ -1140,4 +1140,4 @@ contains
 
 
 
-end module bndry_mod
+end module bndry_mod_base

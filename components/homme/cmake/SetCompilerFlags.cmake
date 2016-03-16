@@ -222,68 +222,7 @@ ENDIF ()
 ##############################################################################
 OPTION(ENABLE_OPENACC "Whether to build with OpenACC support" FALSE)
 IF (${ENABLE_OPENACC})
-  IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL PGI)
-    # Need to add -acc to the Fortran FLAGS to see if it will compile 
-    # "call acc_init()"
-    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -acc")
-    TRY_COMPILE(OPENACC_SUCCESS
-                ${CMAKE_BINARY_DIR}/tests/compilerTests/
-                ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilerTests/openAccTest.f90
-                OUTPUT_VARIABLE COMPILE_OUTPUT)
-    IF (${OPENACC_SUCCESS})
-      MESSAGE(STATUS "Using OpenACC through PGI compiler")
-      SET(PREQX_USE_OPENACC TRUE)
-    ELSE()
-      MESSAGE(FATAL_ERROR "Unable to use OpenACC through the PGI compiler")
-    ENDIF()
-  ELSEIF (${CMAKE_Fortran_COMPILER_ID} STREQUAL Cray)
-    SET(PREQX_USE_OPENACC TRUE)
-    MESSAGE(STATUS "Using OpenACC through Cray compiler")
-  ELSE ()
-    MESSAGE(FATAL_ERROR "OpenACC only supported through the PGI and Cray compilers")
-  ENDIF()
-ENDIF ()
-
-##############################################################################
-# CUDA Fortran specific flags - only supporting PGI compiler
-##############################################################################
-OPTION(ENABLE_CUDA_FORTRAN "Whether to build with CUDA Fortran support" FALSE)
-IF (${ENABLE_CUDA_FORTRAN})
-  IF (NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL PGI)
-    MESSAGE(FATAL_ERROR "CUDA Fortran only supported through the PGI compiler")
-  ELSE ()
-    # Set PGI CUDA Fortran flags
-
-    # Set defaults as lowest version of CUDA and device capability allowed
-    # To do: determine a way to generalize this
-    IF (NOT CUDA_VERSION)
-      SET(CUDA_VERSION "4.1")
-    ENDIF ()
-
-    # Compute capability: cc2x is for devices with compute capability >= 2.0 
-    IF (NOT CUDA_DEVICE_CAPABILITY)
-      SET(CUDA_DEVICE_CAPABILITY "cc2x")
-    ENDIF ()
-
-    SET(CMAKE_Fortran_FLAGS 
-        "${CMAKE_Fortran_FLAGS} -ta=nvidia -Mcuda=${CUDA_VERSION},${CUDA_DEVICE_CAPABILITY},ptxinfo,keepgpu")
-
-    MESSAGE(STATUS "Testing PGI CUDA Fortran Compilation with flags: ${CMAKE_Fortran_FLAGS}")
-
-    TRY_COMPILE(CUDAFOR
-                ${CMAKE_BINARY_DIR}/tests/compilerTests/
-                ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilerTests/cudaFortranTest.f90
-                OUTPUT_VARIABLE COMPILE_OUTPUT)
-    IF (${CUDAFOR})
-      SET(PREQX_USE_CUDA_FORTRAN TRUE)
-      MESSAGE(STATUS "Succeeded. Using CUDA Fortran through PGI compiler")
-    ELSE()
-      SET(PREQX_USE_CUDA_FORTRAN FALSE)
-      MESSAGE(FATAL_ERROR "Unable to use CUDA Fortran through the PGI "
-              "compiler. Compilation failed with the following "
-              "output.\n${COMPILE_OUTPUT}")
-    ENDIF()
-  ENDIF()
+  SET(PREQX_USE_OPENACC TRUE)
 ENDIF ()
 
 ##############################################################################

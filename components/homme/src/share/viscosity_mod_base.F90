@@ -2,7 +2,7 @@
 #include "config.h"
 #endif
 
-module viscosity_mod
+module viscosity_mod_base
 !
 !  This module should be renamed "global_deriv_mod.F90"
 ! 
@@ -1032,4 +1032,4 @@ integer :: ie,k,q
 end subroutine
 
 #endif
-end module
+end module viscosity_mod_base

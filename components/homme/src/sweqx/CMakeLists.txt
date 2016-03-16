@@ -13,6 +13,16 @@ SET (SWEQX_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                         ${UTILS_TIMING_DIR} CACHE INTERNAL "include directories for sweqx")
 
 SET(SWEQX_SRCS
+               ${SRC_SHARE}/bndry_mod_base.F90
+               ${SRC_SHARE}/derivative_mod_base.F90
+               ${SRC_SHARE}/edge_mod_base.F90
+               ${SRC_SHARE}/solver_init_mod_base.F90
+               ${SRC_SHARE}/viscosity_mod_base.F90
+               ${SRC_BASE}/sweqx/bndry_mod.F90
+               ${SRC_BASE}/sweqx/derivative_mod.F90
+               ${SRC_BASE}/sweqx/edge_mod.F90
+               ${SRC_BASE}/sweqx/solver_init_mod.F90
+               ${SRC_BASE}/sweqx/viscosity_mod.F90
                ${SRC_BASE}/advance_mod.F90
                ${SRC_BASE}/checksum_mod.F90
                ${SRC_BASE}/common_io_mod.F90
@@ -32,16 +42,13 @@ SET(SWEQX_SRCS
                ${SRC_BASE}/types_mod.F90
                ${SRC_SHARE}/fvm_bsp_mod.F90
                ${SRC_SHARE}/fvm_transformation_mod.F90
-               ${SRC_SHARE}/bndry_mod.F90
                ${SRC_SHARE}/cg_mod.F90
                ${SRC_SHARE}/control_mod.F90
                ${SRC_SHARE}/coordinate_systems_mod.F90
                ${SRC_SHARE}/cube_mod.F90
-               ${SRC_SHARE}/derivative_mod.F90
                ${SRC_SHARE}/dimensions_mod.F90
                ${SRC_SHARE}/dof_mod.F90
                ${SRC_SHARE}/domain_mod.F90
-               ${SRC_SHARE}/edge_mod.F90
                ${SRC_SHARE}/element_mod.F90
                ${SRC_SHARE}/filter_mod.F90
                ${SRC_SHARE}/fvm_analytic_mod.F90
@@ -76,7 +83,6 @@ SET(SWEQX_SRCS
                ${SRC_SHARE}/spacecurve_mod.F90
                ${SRC_SHARE}/thread_mod.F90
                ${SRC_SHARE}/time_mod.F90
-               ${SRC_SHARE}/viscosity_mod.F90
                ${SRC_SHARE}/unit_tests_mod.F90
                ${SRC_UTILS}/shr_file_mod.F90
                ${SRC_UTILS}/shr_kind_mod.F90

@@ -3,24 +3,43 @@
 #include "config.h"
 #endif
 
-module edge_openacc_mod
-#if USE_OPENACC
-  use kinds, only: real_kind, int_kind, log_kind
-  use dimensions_mod, only: max_neigh_edges,nelemd,np,max_corner_elem
+module edge_mod
+  use edge_mod_base, only: initLongEdgeBuffer, FreeLongEdgeBuffer, LongEdgeVpack, LongEdgeVunpackMIN, initEdgeBuffer, initEdgeSBuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack,       &
+                           edgeVunpackMIN, edgeVunpackMAX, edgeDGVpack, edgeDGVunpack, edgeVunpackVert, edgerotate, buffermap, edgeDefaultVal, initGhostBuffer3D, FreeGhostBuffer3D, &
+                           ghostVpackfull, ghostVunpackfull, ghostVpack_unoriented, ghostVunpack_unoriented, ghostVpack3d, ghostVunpack3d, initGhostBufferTR, FreeGhostBufferTR,     &
+                           ghostVpack, ghostVunpack, ghostVpackR, ghostVunpackR, ghostVpack2d, ghostVunpack2d, ghostVpack2d_single, ghostVunpack2d_single, ghostVpack2d_level,       &
+                           ghostVunpack2d_level, edgeSpack, edgeSunpackMin, edgeSunpackMax
+  use kinds, only : int_kind, log_kind, real_kind
+  use dimensions_mod, only : max_neigh_edges, nelemd, np
+  use perf_mod, only: t_startf, t_stopf, t_adj_detailf ! _EXTERNAL
+  use thread_mod, only: nthreadshoriz, omp_get_num_threads, omp_get_thread_num
+  use coordinate_systems_mod, only : cartesian3D_t
+  use schedtype_mod, only : cycle_t, schedule_t, schedule
+  use parallel_mod, only : abortmp, haltmp, MPIreal_t, iam,parallel_t, &
+      MAX_ACTIVE_MSG, HME_status_size, BNDRY_TAG_BASE
+  use edgetype_mod, only : edgedescriptor_t, edgebuffer_t, &
+      Longedgebuffer_t, Ghostbuffertr_t, Ghostbuffer3d_t, initedgebuffer_callid
+  use element_mod, only : element_t
   implicit none
   private
 
-  public :: edgeSpack
-  public :: edgeSunpackMin
-  public :: edgeSunpackMax
-  public :: edgeVpack
-  public :: edgeVunpack
-  public :: edgeVunpackMin
-  public :: edgeVunpackMax
+  public :: initLongEdgeBuffer, FreeLongEdgeBuffer, LongEdgeVpack, LongEdgeVunpackMIN, initEdgeBuffer, initEdgeSBuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack,       &
+            edgeVunpackMIN, edgeVunpackMAX, edgeDGVpack, edgeDGVunpack, edgeVunpackVert, edgerotate, buffermap, edgeDefaultVal, initGhostBuffer3D, FreeGhostBuffer3D, &
+            ghostVpackfull, ghostVunpackfull, ghostVpack_unoriented, ghostVunpack_unoriented, ghostVpack3d, ghostVunpack3d, initGhostBufferTR, FreeGhostBufferTR,     &
+            ghostVpack, ghostVunpack, ghostVpackR, ghostVunpackR, ghostVpack2d, ghostVunpack2d, ghostVpack2d_single, ghostVunpack2d_single, ghostVpack2d_level,       &
+            ghostVunpack2d_level, edgeSpack, edgeSunpackMin, edgeSunpackMax
+  public :: edgeSpack_openacc
+  public :: edgeSunpackMin_openacc
+  public :: edgeSunpackMax_openacc
+  public :: edgeVpack_openacc
+  public :: edgeVunpack_openacc
+  public :: edgeVunpackMin_openacc
+  public :: edgeVunpackMax_openacc
+
 
 contains
 
-  subroutine edgeSpack(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeSpack_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
     use dimensions_mod, only : max_corner_elem
     use control_mod   , only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod      , only : t_startf, t_stopf
@@ -29,10 +48,10 @@ contains
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)     ,intent(inout) :: edge
     integer                ,intent(in   ) :: vlyr
-    real (kind=real_kind)  ,intent(in   ) :: v(vlyr,tdim,nelemd)
     integer                ,intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
+    real (kind=real_kind)  ,intent(in   ) :: v(vlyr,tdim,nelemd)
     ! Local variables
     integer :: i,k,ir,ll,is,ie,in,iw,el,kc,kk
     integer, parameter :: kchunk = 64
@@ -66,9 +85,9 @@ contains
       enddo
     enddo
     call t_stopf('edge_s_pack')
-  end subroutine edgeSpack
+  end subroutine edgeSpack_openacc
 
-  subroutine edgeSunpackMin(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeSunpackMin_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod, only: t_startf, t_stopf
@@ -76,10 +95,10 @@ contains
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)    , intent(in   ) :: edge
     integer               , intent(in   ) :: vlyr
-    real(kind=real_kind)  , intent(inout) :: v(vlyr,tdim,nelemd)
     integer               , intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
+    real(kind=real_kind)  , intent(inout) :: v(vlyr,tdim,nelemd)
     ! Local
     integer :: i,k,ll,is,ie,in,iw,el,kc,kk
     integer, parameter :: kchunk = 64
@@ -125,9 +144,9 @@ contains
       enddo
     enddo
     call t_stopf('edge_s_unpack_min')
-  end subroutine edgeSunpackMin
+  end subroutine edgeSunpackMin_openacc
 
-  subroutine edgeSunpackMax(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeSunpackMax_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod, only: t_startf, t_stopf
@@ -135,10 +154,10 @@ contains
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)    , intent(in   ) :: edge
     integer               , intent(in   ) :: vlyr
-    real(kind=real_kind)  , intent(inout) :: v(vlyr,tdim,nelemd)
     integer               , intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
+    real(kind=real_kind)  , intent(inout) :: v(vlyr,tdim,nelemd)
     ! Local
     integer :: i,k,ll,is,ie,in,iw,el,kc,kk
     integer, parameter :: kchunk = 64
@@ -184,9 +203,9 @@ contains
       enddo
     enddo
     call t_stopf('edge_s_unpack_max')
-  end subroutine edgeSunpackMax
+  end subroutine edgeSunpackMax_openacc
 
-  subroutine edgeVpack(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeVpack_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
     use dimensions_mod, only : max_corner_elem
     use control_mod   , only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod      , only : t_startf, t_stopf
@@ -195,10 +214,10 @@ contains
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)     ,intent(inout) :: edge
     integer                ,intent(in   ) :: vlyr
-    real (kind=real_kind)  ,intent(in   ) :: v(np,np,vlyr,tdim,nelemd)
     integer                ,intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
+    real (kind=real_kind)  ,intent(in   ) :: v(np,np,vlyr,tdim,nelemd)
     ! Local variables
     integer :: i,k,ir,ll,is,ie,in,iw,el,kc,kk
     integer, parameter :: kchunk = 32
@@ -247,9 +266,9 @@ contains
       enddo
     enddo
     call t_stopf('edge_pack')
-  end subroutine edgeVpack
+  end subroutine edgeVpack_openacc
 
-  subroutine edgeVunpack(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeVunpack_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod, only: t_startf, t_stopf
@@ -257,10 +276,10 @@ contains
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)    , intent(in   ) :: edge
     integer               , intent(in   ) :: vlyr
-    real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     integer               , intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
+    real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     ! Local
     integer :: i,k,ll,is,ie,in,iw,el,kc,kk,glob_k,loc_ind,ii,jj, j
     integer, parameter :: kchunk = 32
@@ -324,9 +343,9 @@ contains
       enddo
     enddo
     call t_stopf('edge_unpack')
-  end subroutine edgeVunpack
+  end subroutine edgeVunpack_openacc
 
-  subroutine edgeVunpackMin(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeVunpackMin_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod, only: t_startf, t_stopf
@@ -334,10 +353,10 @@ contains
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)    , intent(in   ) :: edge
     integer               , intent(in   ) :: vlyr
-    real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     integer               , intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
+    real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     ! Local
     integer :: i,k,ll,is,ie,in,iw,el,kc,kk,glob_k,loc_ind,ii,jj, j
     integer, parameter :: kchunk = 32
@@ -401,9 +420,9 @@ contains
       enddo
     enddo
     call t_stopf('edge_unpack_min')
-  end subroutine edgeVunpackMin
+  end subroutine edgeVunpackMin_openacc
 
-  subroutine edgeVunpackMax(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
+  subroutine edgeVunpackMax_openacc(edge,v,vlyr,kptr,elem,nets,nete,tdim,tl)
     use dimensions_mod, only : np, max_corner_elem
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     use perf_mod, only: t_startf, t_stopf
@@ -411,10 +430,10 @@ contains
     use edgetype_mod  , only : EdgeBuffer_t
     type(EdgeBuffer_t)    , intent(in   ) :: edge
     integer               , intent(in   ) :: vlyr
-    real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     integer               , intent(in   ) :: kptr
     type(element_t)        ,intent(in   ) :: elem(:)
     integer                ,intent(in   ) :: nets,nete,tdim,tl
+    real(kind=real_kind)  , intent(inout) :: v(np,np,vlyr,tdim,nelemd)
     ! Local
     integer :: i,k,ll,is,ie,in,iw,el,kc,kk,glob_k,loc_ind,ii,jj, j
     integer, parameter :: kchunk = 32
@@ -478,8 +497,7 @@ contains
       enddo
     enddo
     call t_stopf('edge_unpack_max')
-  end subroutine edgeVunpackMax
+  end subroutine edgeVunpackMax_openacc
 
-#endif
-end module edge_openacc_mod
+end module edge_mod
 

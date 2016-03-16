@@ -3,14 +3,17 @@
 #include "config.h"
 #endif
 
-module bndry_openacc_mod
-#if USE_OPENACC
-  use kinds     , only: real_kind
+module bndry_mod
+  use bndry_mod_base, only: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation, ghost_exchangeV, bndry_exchangeS, bndry_exchangeS_start, bndry_exchangeS_finish, sort_neighbor_buffer_mapping
+  use parallel_mod, only : syncmp,parallel_t,abortmp,iam
+  use edgetype_mod, only : Ghostbuffertr_t, Ghostbuffer3D_t,Edgebuffer_t,LongEdgebuffer_t
+  use thread_mod, only : omp_in_parallel, omp_get_thread_num, omp_get_num_threads
+  use kinds, only: real_kind
   implicit none
   private
-  integer, parameter :: maxCycles = 20
-  integer, parameter :: maxChunks = 64
-  real(kind=real_kind), parameter :: chunk_denom = 1.e5
+  integer, parameter, private :: maxCycles = 20
+  integer, parameter, private :: maxChunks = 64
+  real(kind=real_kind), parameter, private :: chunk_denom = 1.e5
 
   type send_stager_t
     integer :: nUpdateHost, nSendComp
@@ -24,12 +27,13 @@ module bndry_openacc_mod
     integer :: beg(maxchunks), end(maxchunks), len(maxchunks), asyncid(maxchunks), tag(maxchunks), req(maxchunks)
   end type recv_stager_t
 
-  type(send_stager_t) :: stg_send(maxCycles)
-  type(recv_stager_t) :: stg_recv(maxCycles)
+  type(send_stager_t), private :: stg_send(maxCycles)
+  type(recv_stager_t), private :: stg_recv(maxCycles)
 
+  public :: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation, ghost_exchangeV, bndry_exchangeS, bndry_exchangeS_start, bndry_exchangeS_finish, sort_neighbor_buffer_mapping
   public :: bndry_exchangeS_simple_overlap
-  public :: bndry_exchangeV_simple_overlap
   public :: bndry_exchangeV_timing
+  public :: bndry_exchangeV_simple_overlap
   public :: bndry_exchangeV_finer_overlap
 
 contains
@@ -514,8 +518,8 @@ contains
     use parallel_mod     , only: mpireal_t
     use openacc_utils_mod, only: update_host_async, acc_async_test_wrap
     implicit none
-    real(kind=real_kind), intent(in   ) :: buf(count)   !buffer from which to send data
     integer             , intent(in   ) :: count        !number of elements in buffer
+    real(kind=real_kind), intent(in   ) :: buf(count)   !buffer from which to send data
     integer             , intent(in   ) :: dest         !the MPI rank I'm sending data to
     integer             , intent(in   ) :: tag_root     !tag of the original send (I'll alter this for internal mpi_isend calls)
     integer             , intent(in   ) :: comm         !Communicator to use
@@ -576,8 +580,8 @@ contains
     use parallel_mod     , only: mpireal_t
     use openacc_utils_mod, only: update_device_async, copy_ondev_async
     implicit none
-    real(kind=real_kind), intent(in   ) :: buf(count)   !buffer in which to receive data
     integer             , intent(in   ) :: count        !number of elements in buffer
+    real(kind=real_kind), intent(in   ) :: buf(count)   !buffer in which to receive data
     integer             , intent(in   ) :: source       !the MPI rank I'm receiving data from
     integer             , intent(in   ) :: tag_root     !tag of the original send (I'll alter this for internal mpi_isend calls)
     integer             , intent(in   ) :: comm         !Communicator to use
@@ -634,6 +638,5 @@ contains
     if (stg_recv(myid)%nUpdateDev == nchunks) finished = .true.
   end function mpi_irecv_openacc_stage
 
-#endif
-end module bndry_openacc_mod
+end module bndry_mod
 
