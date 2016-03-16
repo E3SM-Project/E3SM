@@ -63,15 +63,19 @@ class EnvMachSpecific(GenericXML):
                 
         value = {}
         nodes = []
-        
+        logging.debug("env_mach_specific: get node with attribute value: %s" , item)
         # Find all nodes with attribute name and attribute value item
         # xpath .//*[name='item']
         if item :
-            nodes = self.get_node("*",{"name" : item})
-            
-            
+            nodes = self.get_nodes("*",{"name" : item})
+        else :
+           # Return error or all nodes
+           pass
+           
+        # Return value for first occurence of node with attribute value = item
         for node in nodes:
-            val = node.text    
+            val = node.text 
+            logging.debug("Found node with value for %s = %s" , item , val)   
             if val:
                 return val
         
