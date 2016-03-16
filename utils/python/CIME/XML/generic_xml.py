@@ -77,6 +77,9 @@ class GenericXML(object):
         Error unless exactly one match.
         """
         nodes = self.get_nodes(nodename, attributes, root)
+        
+        logging.info("Found %s nodes" , len(nodes))
+        
         expect(len(nodes) == 1, "Incorrect number of matches, %d, for nodename '%s' and attrs '%s' in file '%s'" %
                (len(nodes), nodename, attributes, self.filename))
         return nodes[0]
@@ -105,7 +108,7 @@ class GenericXML(object):
             # and create a result with the intersection of those lists
             for key in keys:
                 xpath = ".//%s[@%s=\'%s\']" % (nodename,key,attributes[key])
-                logger.debug("xpath is %s"%xpath)
+                logger.debug("xpath: %s" , xpath)
                 newnodes = root.findall(xpath)
                 if not nodes:
                     nodes = newnodes
@@ -132,7 +135,7 @@ class GenericXML(object):
         """
         get_value is expected to be defined by the derived classes, if you get here it is an error.
         """
-        logger.debug("Get Value for "+item)
+        logger.debug("Get Value for %s " , item)
         result = None
         if item in self.lookups.keys():
             result = self.lookups[item]
