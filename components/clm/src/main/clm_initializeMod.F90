@@ -922,9 +922,9 @@ contains
     vsfm_soilp_col_1d    =>    waterstate_vars%vsfm_soilp_col_1d  ! Output: [real(r8) (:)   ]  1D soil liquid pressure from VSFM [Pa]
     soilp_col            =>    waterstate_vars%soilp_col          ! Input:  [real(r8) (:)   ]  col soil liquid pressure
 
-    call t_startf('clm_init3')
-
     if (.not.use_vsfm) return
+
+    call t_startf('clm_init3')
 
 #ifdef USE_PETSC_LIB
 
