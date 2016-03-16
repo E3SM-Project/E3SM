@@ -20,8 +20,16 @@
 
   <entry id="PIO_STRIDE">
     <values>
-      <value>$PES_PER_NODE</value>
+      <value mach="babbage">16</value> 
+      <value mach="babbageknc">32</value>
+      <value mach="bluewaters">32</value>
+      <value mach="brutus">32</value>
+      <value mach="edison">24</value>
+      <value mach="eos">16</value>
+      <value mach="mira">256</value>
+      <value mach="titan">16</value>
       <value mach="yellowstone" grid="a%ne120.+oi%gx1">60</value>
+      <value mach="pronghorn">16</value>
     </values>
   </entry>
   
@@ -46,20 +54,16 @@
       <value>pnetcdf</value>
       <value mach="userdefined">netcdf</value>
       <value mach="eastwind">netcdf</value>
-      <value mach="constance">netcdf</value>
       <value mach="pleiades.*">netcdf</value>
-      <value mach="hobart" compiler="pgi">netcdf</value>
       <value mpilib="mpi-serial">netcdf</value>
+      <value mach="hobart" compiler="!intel">netcdf</value>
+      <value mach="hobart" compiler="intel" mpilib="!mpi-serial">pnetcdf</value> 
+      <value mach="hobart" compiler="intel" mpilib="mpi-serial">netcdf</value>
+      <value grid="l%1x1">netcdf</value>
+      <value grid="l%5x5">netcdf</value>
+      <value grid="l%CLM_USRDAT">netcdf</value>
     </values>
   </entry>
-
-  <entry id="PIO_REARRANGER">
-    <values>
-      <value>$PIO_VERSION</value>
-    </values>
-  </entry>
-
-
 
   <!--- uncomment and fill in relevant sections 
   <entry id="PIO_DEBUG_LEVEL">

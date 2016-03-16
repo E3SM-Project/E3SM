@@ -16,7 +16,7 @@ endif
 ./case.setup 
 
 cp -f env_mach_pes.xml env_mach_pes.xml.1
-cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml
+cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
 
 ./xmlchange -file env_run.xml -id BFBFLAG -val TRUE
 echo "b4b_flag=.true." >> user_nl_pop

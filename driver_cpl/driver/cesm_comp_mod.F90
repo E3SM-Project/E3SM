@@ -251,7 +251,6 @@ module cesm_comp_mod
    logical  :: rofrun_alarm           ! rof run alarm
    logical  :: wavrun_alarm           ! wav run alarm
    logical  :: tprof_alarm            ! timing profile alarm
-   logical  :: barrier_alarm          ! barrier alarm
    logical  :: t1hr_alarm             ! alarm every hour
    logical  :: t2hr_alarm             ! alarm every two hours 
    logical  :: t3hr_alarm             ! alarm every three hours 
@@ -1955,7 +1954,6 @@ end subroutine cesm_init
       history_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_history)
       histavg_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_histavg)
       tprof_alarm   = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_tprof)
-      barrier_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_barrier)
 
       ! this probably belongs in seq_timemgr somewhere using proper clocks
       t1hr_alarm = .false.
@@ -2836,7 +2834,7 @@ end subroutine cesm_init
                  infodata=infodata, infodata_string='ice2cpl_run', &
                  mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
                  timer_barrier='CPL:I2C_BARRIER', timer_comp_exch='CPL:I2C', &
-                 timer_map_exch='CPL:i2c_icei2icex', timer_infodata_exch='CPL:i2c_infoexch')
+                 timer_map_exch='CPL:i2c_icei2icex', timer_infodata_exch='CPL:r2c_infoexch')
          endif
 
          !----------------------------------------------------------
@@ -3557,12 +3555,6 @@ end subroutine cesm_init
          call t_stopf("sync2_tprof")
       endif
       call t_drvstopf  ('CPL:TPROF_WRITE',cplrun=.true.)
-
-      call t_drvstartf  ('CPL:BARRIERALARM',cplrun=.true.)
-      if (barrier_alarm) then
-         call mpi_barrier(mpicom_GLOID,ierr)
-      endif
-      call t_drvstopf   ('CPL:BARRIERALARM',cplrun=.true.)
 
    enddo   ! driver run loop
 

@@ -497,42 +497,35 @@ module seq_flds_mod
      !----------------------------------------------------------
 
      call seq_flds_add(dom_coord,'lat')
-     longname = 'latitude'
+     longname = ''
      stdname  = 'latitude'
      units    = 'degrees north'
      attname  = 'lat' 
      call metadata_set(attname, longname, stdname, units)
 
      call seq_flds_add(dom_coord,'lon')
-     longname = 'longitude'
+     longname = ''
      stdname  = 'longitude'
      units    = 'degrees east'
      attname  = 'lon' 
      call metadata_set(attname, longname, stdname, units)
 
-     call seq_flds_add(dom_coord,'hgt')
-     longname = 'height'
-     stdname  = 'height, depth, or levels'
-     units    = 'unitless'
-     attname  = 'hgt' 
-     call metadata_set(attname, longname, stdname, units)
-
      call seq_flds_add(dom_other,'area')
-     longname = 'cell_area_model'
-     stdname  = 'cell area from model'
+     longname = ''
+     stdname  = 'cell area'
      units    = 'radian^2'
      attname  = 'area' 
      call metadata_set(attname, longname, stdname, units)
 
      call seq_flds_add(dom_other,'aream')
-     longname = 'cell_area_mapping'
+     longname = ''
      stdname  = 'cell area from mapping file'
      units    = 'radian^2'
      attname  = 'aream'
      call metadata_set(attname, longname, stdname, units)
 
      call seq_flds_add(dom_other,'mask')
-     longname = 'mask'
+     longname = ''
      stdname  = 'mask'
      units    = '1'
      attname  = 'mask'

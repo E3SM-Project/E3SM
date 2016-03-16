@@ -8,12 +8,9 @@ two netcdf files.
 Quick Start Guide:
 ------------------
 
-On cime supported systems you can generate a Macros file using the following
-(assuming you are running the command from the directory cime/tools/cprnc):
-
-../configure -cimeroot ../../ -mach $machinename -compiler $compilername
-
-Then run make to build cprnc and put the resulting executable in
+On cime supported systems you can generate a Macros file using
+cime/machines/configure -mach $machinename -compiler $compilername
+then run make to build cprnc and put the resulting executable in 
 CCSM_CPRNC as defined in config_machines.xml   
 You can also build cprnc using cmake. 
 
