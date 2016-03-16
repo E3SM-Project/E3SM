@@ -480,6 +480,8 @@ execLine() {
     # mpirun.lsf is a special case
     if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
       echo "mpirun.lsf -pam \"-n ${NUM_MPI_PROCS}\" ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
+    elif [ "${MPI_EXEC}" = "runjob" ]; then
+      echo "runjob -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} --block \$COBALT_PARTNAME --verbose=INFO : $EXEC $OPT" >> $RUN_SCRIPT
     elif [ "${MPI_EXEC}" = "aprun" ] ; then
       if [[ $4 == *"_OMP"* ]]; then
         echo "aprun -n ${NUM_MPI_PROCS} -d ${OMP_NUMBER_THREADS} ${MPI_OPTIONS} $EXEC $OPT" >> $RUN_SCRIPT
@@ -509,6 +511,8 @@ serExecLine() {
     # mpirun.lsf is a special case
     if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
       echo "$EXEC" >> $RUN_SCRIPT
+    elif [ "${MPI_EXEC}" = "runjob" ]; then
+      echo "runjob -n 1 ${MPI_OPTIONS} --block \$COBALT_PARTNAME --verbose=INFO : $EXEC" >> $RUN_SCRIPT
     else
       echo "${MPI_EXEC} -n 1 ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
     fi
