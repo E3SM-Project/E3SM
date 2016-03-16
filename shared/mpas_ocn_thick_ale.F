@@ -156,12 +156,12 @@ contains
             SSH_ALE_Thickness(k) = SSH(iCell) * vertCoordMovementWeights(k) * restingThickness(k, iCell)
             thicknessSum = thicknessSum + vertCoordMovementWeights(k) * restingThickness(k, iCell)
          end do
-         SSH_ALE_Thickness = SSH_ALE_Thickness / thicknessSum
 
          ! Note that restingThickness is nonzero, and remaining terms are perturbations about zero.
-         ALE_Thickness(1:kMax, iCell) = &
-             restingThickness(1:kMax,iCell) &
-           + SSH_ALE_Thickness(1:kMax)
+         do k = 1, kMax
+            SSH_ALE_Thickness(k) = SSH_ALE_Thickness(k) / thicknessSum
+            ALE_Thickness(k, iCell) = restingThickness(k, iCell) + SSH_ALE_Thickness(k)
+         end do
       enddo
       !$omp end do
 
