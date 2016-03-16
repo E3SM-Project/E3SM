@@ -552,9 +552,11 @@ module ocn_forward_mode
 
          if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, &
                                              ierr=ierr) ) then
-            open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
-            write(22, *) trim(timeStamp)
-            close(22)
+            if ( domain % dminfo % my_proc_id == 0 ) then
+               open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
+               write(22, *) trim(timeStamp)
+               close(22)
+            end if
 
             if(trim(config_sw_absorption_type)=='ohlmann00') call ocn_shortwave_forcing_write_restart(domain)
          end if
