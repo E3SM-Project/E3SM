@@ -610,7 +610,7 @@
 		<nml_option name="configure_cvmix_kpp_minimum_OBL_under_sea_ice" type="real" default_value="10.0" units="m"
 					description="The minimum allowable boundary layer depth with sea-ice is present"
 					possible_values="Any positive real value, but typically should be between 1 and 20 meters"
-                />
+		/>
 		<nml_option name="config_cvmix_kpp_stop_OBL_search" type="real" default_value="100.0" units="non-dimensional"
 					description="The search for boundary layer depth is terminated when bulk Richardson number is greater than config_cvmix_kpp_stop_OBL_search*config_cvmix_kpp_criticalBulkRichardsonNumber"
 					possible_values="Any positive value"
@@ -644,8 +644,8 @@
 					possible_values="Integer values between 1 and 5"
 		/>
 		<nml_option name="config_surface_buoyancy_depth" type="real" default_value="1" units="m"
-                    description="Depth over which to apply penetrating SW to sfcBuoyancyFlux"
-		            possible_values="Real Values greater than zero less than bottomDepth"
+					description="Depth over which to apply penetrating SW to sfcBuoyancyFlux"
+					possible_values="Real Values greater than zero less than bottomDepth"
 		/>
 		<nml_option name="config_forcing_restart_file" type="character" default_value="Restart_forcing_time_stamp"
 					description="Filename for the restart timestamp in the forcing file"
@@ -2369,8 +2369,8 @@
 			 packages="initMode"
 		/>
 		<var name="rx1MaxCell" type="real" dimensions="nCells Time" units="unitless"
-			 description="The maximum Haney number (rx1) in a vertical column, measured at cell centers."
-			 packages="initMode"
+			 description="The Haney number (rx1) is ratio of vertical displacement to cell thickness between two neighboring horizontal cells.  It is computed at each edge.  This cell-based value is the maximum over all edges and vertical levels of each cell."
+			 packages="initMode;debugDiagnosticsAMPKG"
 		/>
 		<var name="rx1MaxEdge" type="real" dimensions="nEdges Time" units="unitless"
 			 description="The maximum Haney number (rx1) in a vertical column, measured at edges."
@@ -2378,7 +2378,7 @@
 		/>
 		<var name="globalRx1Max" type="real" dimensions="Time" units="unitless"
 			 description="The global maximum Haney number (rx1)."
-			 packages="initMode"
+			 packages="initMode;debugDiagnosticsAMPKG"
 		/>
 		<!-- diagnostic fields for Haney number constrained init -->
 		<var name="rx1InitSmoothingMask" type="integer" dimensions="nCells Time" units="unitless"
