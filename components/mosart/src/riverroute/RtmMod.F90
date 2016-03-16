@@ -543,11 +543,6 @@ contains
        end if
     end do
 
-!    if (masterproc) then
-!       write(iulog,*) 'tcx rlats = ',rlats
-!       write(iulog,*) 'tcx rlatn = ',rlatn
-!    endif
-
     ! Set edge longitudes
     rlonw(:) = edgew
     rlone(:) = edgee
@@ -557,10 +552,7 @@ contains
        rlone(i-1) = rlonw(i)
     end do
 
-!    if (masterproc) then
-!       write(iulog,*) 'tcx rlonw = ',rlonw
-!       write(iulog,*) 'tcx rlone = ',rlone
-!    endif
+    call t_stopf ('mosarti_grid')
 
     !-------------------------------------------------------
     ! Determine mosart ocn/land mask (global, all procs)
