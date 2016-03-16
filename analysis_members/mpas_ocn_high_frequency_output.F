@@ -160,13 +160,20 @@ contains
       type (mpas_pool_type), pointer :: highFrequencyOutputAMPool
       type (mpas_pool_type), pointer :: tracersPool
 
-      integer :: iLevel, iLevelTarget
-      integer, pointer :: nVertLevels
+      integer :: iLevel, iLevelTarget, iCell, iEdge, i
+      integer, pointer :: nVertLevels, nCells
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell
+
+      real (kind=RKIND) :: r_tmp, invAreaCell1
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, kineticEnergyAt100m, relativeVorticityAt100m
       real (kind=RKIND), dimension(:), pointer :: divergenceAt100m, relativeVorticityVertexAt100m
+      real (kind=RKIND), dimension(:), pointer :: kineticEnergyBarotropic, normalBarotropicVelocity, dvEdge, dcEdge, areaCell
       real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, relativeVorticityCell, activeTracersAtSurface
       real (kind=RKIND), dimension(:,:), pointer :: relativeVorticity, divergence
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+
+      character (len=StrKIND), pointer :: config_time_integrator
 
       err = 0
 
@@ -175,6 +182,7 @@ contains
       block => domain % blocklist
       do while (associated(block))
          ! get dimensions
+         call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
 
          ! get pointers to pools
@@ -224,6 +232,30 @@ contains
          relativeVorticityVertexAt100m = relativeVorticity(iLevelTarget,:)
          activeTracersAtSurface(1,:) = activeTracers(1,1,:)
          activeTracersAtSurface(2,:) = activeTracers(2,1,:)
+
+         ! 
+         ! compute barotropic kinetic energy
+         ! 
+         call mpas_pool_get_config(domain % configs, 'config_time_integrator',config_time_integrator)
+         if (trim(config_time_integrator) == 'split_explicit') then
+
+            call mpas_pool_get_array(statePool, 'normalBarotropicVelocity', normalBarotropicVelocity, 1)
+            call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+            call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+            call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+            call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+            call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+            call mpas_pool_get_array(highFrequencyOutputAMPool, 'kineticEnergyBarotropic', kineticEnergyBarotropic)
+
+            do iCell = 1, nCells
+               invAreaCell1 = 1.0_RKIND / areaCell(iCell)
+               do i = 1, nEdgesOnCell(iCell)
+                  iEdge = edgesOnCell(i, iCell)
+                  r_tmp = dvEdge(iEdge) * normalBarotropicVelocity(iEdge) * invAreaCell1
+                  kineticEnergyBarotropic(iCell) = kineticEnergyBarotropic(iCell) + 0.25 * r_tmp * dcEdge(iEdge) * normalBarotropicVelocity(iEdge)
+               end do
+            end do
+         endif
 
          block => block % next
       end do
