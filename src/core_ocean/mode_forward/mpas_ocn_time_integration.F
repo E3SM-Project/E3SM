@@ -146,7 +146,7 @@ module ocn_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
-      integer, dimension(:), pointer   :: maxLevelCell
+      integer, dimension(:), pointer :: maxLevelCell
       integer, dimension(:), pointer :: indexToCellID
       integer, pointer :: indexTemperature
       integer, pointer :: indexSalinity
@@ -218,7 +218,7 @@ module ocn_time_integration
               if(kineticEnergyCell(k,iCell).gt.4.0_RKIND) then
                  workValue = kineticEnergyCell(k,iCell)
                  workGlobalID(1) = k
-                 workGlobalID(2) = iCell
+                 workGlobalID(2) = indexToCellID(iCell)
                  workLat = latCell(iCell)
                  workLon = lonCell(iCell)
                  write(errorUnit, 10) 'KE= ', workValue, 'cell= ', workGlobalID(2), &
@@ -234,7 +234,7 @@ module ocn_time_integration
               if(activeTracers(indexTemperature,k,iCell).lt.-1.9_RKIND) then
                  workValue = activeTracers(indexTemperature,k,iCell)
                  workGlobalID(1) = k
-                 workGlobalID(2) = iCell
+                 workGlobalID(2) = indexToCellID(iCell)
                  workLat = latCell(iCell)
                  workLon = lonCell(iCell)
                  write(errorUnit, 10) 'T= ', workValue, 'cell= ', workGlobalID(2), &
@@ -249,7 +249,7 @@ module ocn_time_integration
               if(activeTracers(indexTemperature,k,iCell).gt.33.0_RKIND) then
                  workValue = activeTracers(indexTemperature,k,iCell)
                  workGlobalID(1) = k
-                 workGlobalID(2) = iCell
+                 workGlobalID(2) = indexToCellID(iCell)
                  workLat = latCell(iCell)
                  workLon = lonCell(iCell)
                  write(errorUnit, 10) 'T= ', workValue, 'cell= ', workGlobalID(2), &
@@ -264,7 +264,7 @@ module ocn_time_integration
               if(activeTracers(indexSalinity,k,iCell).lt.0.0_RKIND) then
                  workValue = activeTracers(indexSalinity,k,iCell)
                  workGlobalID(1) = k
-                 workGlobalID(2) = iCell
+                 workGlobalID(2) = indexToCellID(iCell)
                  workLat = latCell(iCell)
                  workLon = lonCell(iCell)
                  write(errorUnit, 10) 'S= ', workValue, 'cell= ', workGlobalID(2), &
@@ -279,7 +279,7 @@ module ocn_time_integration
               if(layerThickness(k,iCell).lt.1.0e-2_RKIND) then
                  workValue = layerThickness(k,iCell)
                  workGlobalID(1) = k
-                 workGlobalID(2) = iCell
+                 workGlobalID(2) = indexToCellID(iCell)
                  workLat = latCell(iCell)
                  workLon = lonCell(iCell)
                  write(errorUnit, 10) 'S= ', workValue, 'cell= ', workGlobalID(2), &
@@ -292,6 +292,7 @@ module ocn_time_integration
 
         !close unit
         close(errorUnit)
+        call mpas_release_unit(errorUnit)
 
       endif ! if(errorFlag)
 
@@ -301,7 +302,7 @@ module ocn_time_integration
       nanCheck = sum(normalVelocity)
       if (nanCheck /= nanCheck) then
          write(stderrUnit,*) 'Ocean Abort: NaN detected'
-         call mpas_dmpar_global_abort('Ocean Abort: NaN detected')
+         call mpas_dmpar_global_abort('MPAS-ocean: test_ocean_state: NaN detected')
       endif
 
    end subroutine test_ocean_state
