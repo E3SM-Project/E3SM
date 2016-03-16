@@ -39,11 +39,16 @@ def parse_command_line(args, description):
     parser.add_argument("--caseroot", default=os.getcwd(),
                         help="Case directory to build")
                         
-  
+    parser.add_argument("--listofsettings", nargs="*",
+                        help="Comma seperated list of option names (attribute values)")
 
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
+    
+    listofsettings = []
+    if( len(args.listofsettings) == 1 ):
+        listofsettings = args.listofsettings[0].split(',')
 
     return args
 
@@ -52,15 +57,60 @@ def parse_command_line(args, description):
 # Use same methods
 
 
+
+def xmlquerry(caseroot, listofsettings=None,  xmlattr=None, xmlval=None, subgroup=None,
+              noecho=False, warn=None):
+    
+    case = Case(caseroot)
+    values = []
+    
+    if(listofsettings):
+                
+        for xmlattr in listofsettings:
+            # type_str = case.get_type_info(xmlattr)
+        
+            value  = case.get_value(xmlattr, resolved=False, subgroup=subgroup)
+            result = "%s\t%s" %(xmlattr, value)
+            values.append(result)
+           
+            
+    else:
+        value = case.get_value(xmlattr, resolved=False, subgroup=subgroup)
+        result = "%s %s" %(xmlattr, value)
+        values.append(result)
+        # type_str = case.get_type_info(xmlattr)
+        
+    return values    
+  
+
 def _main_func(description):
     if ("--test" in sys.argv):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
+
+    # Declare cli arguments - add to args
+    listofsettings = None
+    xmlfile = None
+    xmlid = None
+    xmlval = None
+    subgroup= None
+    append = None 
+    noecho = None
+    warn = None
+
     args = parse_command_line(sys.argv, description)
     
-    logging.debug("CLI arguments:" , args)
-    
+    listofsettings = []
+    if( len(args.listofsettings) == 1 ):
+        listofsettings = args.listofsettings[0].split(',')
+    else :
+        # Something wrong
+        pass
+
+    logging.info("CLI arguments: %s" , args)
+  
+   
     case = Case(args.caseroot)
     item = "*"
     
@@ -70,17 +120,22 @@ def _main_func(description):
         item = args.item
         
     
-    logging.info("Searching for item '%s'" % item)
+    logging.info("Searching for item '%s'" , item)
         
     value = case.get_value( item )
   
-    if str(value):
-        print item , value
-    else:
-        for k,v in value.iteritems():
-            print k , v
-    
-   
+
+      #
+    # if str(value):
+    #     print item , value
+    # else:
+    #     for k,v in value.iteritems():
+    #         print k , v
+
+    xmlattr = item
+    print listofsettings
+    for res in xmlquerry(args.caseroot, listofsettings, xmlattr, xmlval, subgroup, noecho, warn) :
+        print res     
 
 
 if (__name__ == "__main__"):
