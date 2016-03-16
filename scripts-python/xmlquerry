@@ -42,7 +42,7 @@ def parse_command_line(args, description):
     parser.add_argument("--listofsettings", nargs="*",
                         help="Comma seperated list of option names (attribute values)")
 
-    args = parser.parse_args(args[1:])
+    args = parser.parse_args(args[0:])
 
     CIME.utils.handle_standard_logging_options(args)
     
