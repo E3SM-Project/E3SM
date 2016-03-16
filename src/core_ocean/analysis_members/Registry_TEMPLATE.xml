@@ -50,8 +50,8 @@
 				packages="temPlateAMPKG"
 				clobber_mode="truncate"
 				runtime_format="single_file">
-			<var name="xtime"/> 
-			<var name="example_variable1"/> 
-			<var name="example_variable2"/> 
+			<var name="xtime"/>
+			<var name="example_variable1"/>
+			<var name="example_variable2"/>
 		</stream>
 	</streams>
