@@ -19,6 +19,10 @@
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_AM_highFrequencyOutput_ref_thickness" type="real" default_value="100.0" units="m"
+			description="Value for normalizing kineticEnergyFromTransport."
+			possible_values="Any positive non-zero value."
+		/>
 	</nml_record>
 	<packages>
 		<package name="highFrequencyOutputAMPKG" description="This package includes variables required for the highFrequencyOutput analysis member."/>
@@ -28,17 +32,20 @@
 			description="kinetic energy at a depth of approximately 100 m"
 		/>
 		<var name="kineticEnergyBarotropic" type="real" dimensions="nCells Time" units="m^2 s^{-2}"
-			description="kinetic energy computed from normalBarotropicVelocity"
+			description="kinetic energy computed from barotropic velocity = sum(h*u)/sum(h) over the full depth of an edge"
+		/>
+		<var name="kineticEnergyFromTransport" type="real" dimensions="nCells Time" units="m^2 s^{-2}"
+			description="kinetic energy computed from barotropic velocity = sum(h*u)/H over the full depth of an edge, where H is a constant reference thickness specified in "
 		/>
 		<var name="relativeVorticityAt100m" type="real" dimensions="nCells Time" units="s^{-1}"
 			description="relative vorticity at cell centers at a depth of approximately 100 m"
 		/>
-                <var name="divergenceAt100m" type="real" dimensions="nCells Time" units="s^{-1}"
-                        description="divergence at cell centers at a depth of approximately 100 m"
-                />
-                <var name="relativeVorticityVertexAt100m" type="real" dimensions="nVertices Time" units="s^{-1}"
-                        description="relative vorticity at cell vertices at a depth of approximately 100 m"
-                />
+		<var name="divergenceAt100m" type="real" dimensions="nCells Time" units="s^{-1}"
+			description="divergence at cell centers at a depth of approximately 100 m"
+		/>
+		<var name="relativeVorticityVertexAt100m" type="real" dimensions="nVertices Time" units="s^{-1}"
+			description="relative vorticity at cell vertices at a depth of approximately 100 m"
+		/>
 		<var_array name="activeTracersAtSurface" type="real" dimensions="nCells Time">
 			<var name="temperatureAtSurface" array_group="activeTracersAtSurface" units="^\circ C" name_in_code="temperatureAtSurface"
 				description="sea surface temperature"
@@ -62,6 +69,7 @@
 			<var name="xtime"/>
 			<var name="kineticEnergyAt100m"/>
 			<var name="kineticEnergyBarotropic"/>
+			<var name="kineticEnergyFromTransport"/>
 			<var name="relativeVorticityAt100m"/>
 			<var_array name="activeTracersAtSurface"/>
 		</stream>

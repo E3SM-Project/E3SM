@@ -1925,7 +1925,7 @@ module ocn_time_integration_split
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
 
-               ! normalBarotropicVelocity = sum(u)/sum(h) on each column
+               ! normalBarotropicVelocity = sum(h*u)/sum(h) on each edge
                ! ocn_diagnostic_solve has not yet been called, so compute hEdge
                ! just for this edge.
 
