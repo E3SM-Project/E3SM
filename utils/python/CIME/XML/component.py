@@ -22,7 +22,31 @@ class Component(EntryID):
             compnode = self.get_node("components")
             comps = self.get_nodes("comp", root=compnode)
             for comp in comps:
-                components.append(comp.text())
+                components.append(comp.text)
             return components
+        elif name == "help":
+            rootnode = self.get_node("help")
+            helptext = rootnode.text
+            return helptext
+        elif name == "description":
+            rootnode = self.get_node("description")
+            compsets = {}
+            descs = self.get_nodes("desc", root=rootnode)
+            for desc in descs:
+                attrib = desc.attrib["compset"]
+                text = desc.text
+                compsets[attrib] = text
+            return compsets
         else:
             return EntryID.get_value(self, name, attribute, resolved)
+
+    def print_values(self):
+        description_text = self.get_value(name="description")
+        help_text = self.get_value(name="help")
+
+        print help_text
+        print "{:<30} {:<35} ".format('Compset Qualifier','Definition')
+        print "{:<30} {:<35} ".format('=================','==========')
+        for v in description_text.iteritems():
+            label, definition = v
+            print "{:<30} {:<35} ".format(label, definition)
