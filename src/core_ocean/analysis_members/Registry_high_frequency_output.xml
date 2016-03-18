@@ -19,10 +19,6 @@
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_highFrequencyOutput_ref_thickness" type="real" default_value="100.0" units="m"
-			description="Value for normalizing kineticEnergyFromTransport."
-			possible_values="Any positive non-zero value."
-		/>
 	</nml_record>
 	<packages>
 		<package name="highFrequencyOutputAMPKG" description="This package includes variables required for the highFrequencyOutput analysis member."/>
@@ -31,11 +27,11 @@
 		<var name="kineticEnergyAt100m" type="real" dimensions="nCells Time" units="m^2 s^{-2}"
 			description="kinetic energy at a depth of approximately 100 m"
 		/>
-		<var name="kineticEnergyBarotropic" type="real" dimensions="nCells Time" units="m^2 s^{-2}"
-			description="kinetic energy computed from barotropic velocity = sum(h*u)/sum(h) over the full depth of an edge"
+		<var name="barotropicSpeed" type="real" dimensions="nCells Time" units="m s^{-1}"
+			description="speed = sqrt(2*ke), where kinetic energy is computed from barotropic velocity = sum(h*u)/sum(h) over the full depth of an edge"
 		/>
-		<var name="kineticEnergyFromTransport" type="real" dimensions="nCells Time" units="m^2 s^{-2}"
-			description="kinetic energy computed from barotropic velocity = sum(h*u)/H over the full depth of an edge, where H is a constant reference thickness specified in "
+		<var name="barotropicTransportSpeed" type="real" dimensions="nCells Time" units="m^2 s^{-1}"
+			description="speed = sum(h*sqrt(2*ke)), where ke is kineticEnergyCell and the sum is over the full column at cell centers."
 		/>
 		<var name="relativeVorticityAt100m" type="real" dimensions="nCells Time" units="s^{-1}"
 			description="relative vorticity at cell centers at a depth of approximately 100 m"
@@ -68,8 +64,8 @@
 			<stream name="mesh"/>
 			<var name="xtime"/>
 			<var name="kineticEnergyAt100m"/>
-			<var name="kineticEnergyBarotropic"/>
-			<var name="kineticEnergyFromTransport"/>
+			<var name="barotropicSpeed"/>
+			<var name="barotropicTransportSpeed"/>
 			<var name="relativeVorticityAt100m"/>
 			<var_array name="activeTracersAtSurface"/>
 		</stream>
