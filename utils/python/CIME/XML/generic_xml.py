@@ -144,7 +144,10 @@ class GenericXML(object):
 
         return result
 
-    def set_value(self, vid, value):
+    def set_value(self, vid, value, ignore_type=True):
+        """
+        ignore_type is not used in this flavor
+        """
         valnodes = self.get_nodes(vid)
         if valnodes:
             for node in valnodes:

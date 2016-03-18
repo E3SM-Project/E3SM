@@ -57,12 +57,16 @@ class EntryID(GenericXML):
         else:
             return self._get_type_info(node)
 
-    def _set_value(self, node, vid, value, subgroup=None):
-        type_str = self._get_type_info(node)
-        node.set("value", convert_to_string(value, type_str, vid))
+    def _set_value(self, node, vid, value, subgroup=None, ignore_type=False):
+        if ignore_type:
+            expect(type(value) is str, "Value must be type string if ignore_type is true")
+            node.set("value",value)
+        else:
+            type_str = self._get_type_info(node)
+            node.set("value", convert_to_string(value, type_str, vid))
         return value
 
-    def set_value(self, vid, value, subgroup=None):
+    def set_value(self, vid, value, subgroup=None, ignore_type=False):
         """
         Set the value of an entry-id field to value
         Returns the value or None if not found
@@ -70,7 +74,7 @@ class EntryID(GenericXML):
         """
         node = self.get_optional_node("entry", {"id":vid})
         if node is not None:
-            return self._set_value(node, vid, value, subgroup)
+            return self._set_value(node, vid, value, subgroup, ignore_type)
         else:
             return None
 
