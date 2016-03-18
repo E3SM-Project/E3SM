@@ -693,7 +693,7 @@ contains
       ! at present, just copy k=1 tracer values onto surface values
       ! field will be updated below is better approximations are available
 
-!TDR need to consider how to handel tracersSurfaceValues
+!TDR need to consider how to handle tracersSurfaceValues
       !$omp do schedule(runtime)
       do iCell = 1, nCells
          tracersSurfaceValue(:, iCell) = activeTracers(:,1, iCell)
@@ -724,6 +724,7 @@ contains
           sumSurfaceLayer=0.0_RKIND
           do k=1,maxLevelCell(iCell)
            sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
+           rSurfaceLayer = maxLevelCell(iCell)
            if(sumSurfaceLayer.gt.surfaceLayerDepth) then
              sumSurfaceLayer = sumSurfaceLayer - layerThickness(k,iCell)
              rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThickness(k,iCell)
