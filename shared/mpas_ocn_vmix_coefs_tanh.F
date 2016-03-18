@@ -210,7 +210,7 @@ contains
       ! refBottomDepth is used here for simplicity.  Using zMid and h, which
       ! vary in time, would give the exact location of the top, but it
       ! would only change the diffusion value very slightly.
-      !$omp do schedule(runtime)
+      !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
          do k = 2, nVertLevels
             vertViscTopOfEdge(k, iEdge) = vertViscTopOfEdge(k, iEdge) - (config_max_visc_tanh - config_min_visc_tanh) / 2.0_RKIND &
@@ -295,7 +295,7 @@ contains
       ! refBottomDepth is used here for simplicity.  Using zMid and h, which
       ! vary in time, would give the exact location of the top, but it
       ! would only change the diffusion value very slightly.
-      !$omp do schedule(runtime)
+      !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
          do k=2,nVertLevels
             vertDiffTopOfCell(k, iCell) = vertDiffTopOfCell(k, iCell) - (config_max_diff_tanh - config_min_diff_tanh) / 2.0_RKIND &
