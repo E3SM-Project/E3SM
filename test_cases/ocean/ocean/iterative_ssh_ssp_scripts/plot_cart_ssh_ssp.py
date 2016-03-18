@@ -30,11 +30,11 @@ def computeCellPatches():
       #vertices[iVert,:] = expansion*(vertices[iVert,:]-middle) + middle
     polygon = Polygon(vertices, True)
     patches.append(polygon)
-    
+
   p = PatchCollection(patches, cmap=matplotlib.cm.jet, alpha=1.)
-    
+
   return p
-  
+
 def plotHorizField(field, title, prefix, vmin=None, vmax=None, figsize=[6,9]):
   outFileName = '%s/%s_%04i.png'%(options.outImageFolder,prefix,tIndex+1)
   #if(os.path.exists(outFileName)):
@@ -48,7 +48,7 @@ def plotHorizField(field, title, prefix, vmin=None, vmax=None, figsize=[6,9]):
   localPatches.set_array(field)
   localPatches.set_edgecolor('face')
   localPatches.set_clim(vmin=vmin, vmax=vmax)
-  
+
   plt.figure(figsize=figsize)
   ax = plt.subplot('111')
   ax.add_collection(localPatches)
@@ -58,7 +58,7 @@ def plotHorizField(field, title, prefix, vmin=None, vmax=None, figsize=[6,9]):
   ax.autoscale(tight=True)
   plt.title(title)
   plt.savefig(outFileName)
-  plt.close()  
+  plt.close()
 
 def plotVertField(field, title, prefix, vmin=None, vmax=None, figsize=[9,6], inY=None, inZ=None):
   outFileName = '%s/%s_%04i.png'%(options.outImageFolder,prefix,tIndex+1)
@@ -76,7 +76,7 @@ def plotVertField(field, title, prefix, vmin=None, vmax=None, figsize=[9,6], inY
   plt.ylim([numpy.amin(inZ),0])
   plt.title(title)
   plt.savefig(outFileName)
-  plt.close()  
+  plt.close()
 
 def plotHorizVertField(field, name, units, prefix, vmin=None, vmax=None):
   if(vmin is None):
@@ -114,7 +114,7 @@ def cellToSectionEdges(field):
   return fieldEdge
 
 parser = OptionParser()
-           
+
 parser.add_option("--outImageFolder", type="string", default="plots", dest="outImageFolder")
 parser.add_option("--inFolder", type="string", default=".", dest="inFolder")
 parser.add_option("--initFile", type="string", default='ocean.nc', dest="initFile")

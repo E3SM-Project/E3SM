@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<config case="">
+	<add_link source_path="script_core_dir" source="iterative_ssh_ssp_scripts/iterate_init.py" dest="iterate_init.py"/>
+	<add_link source_path="script_core_dir" source="scripts/plot_globalStats.py" dest="plot_globalStats.py"/>
+</config>

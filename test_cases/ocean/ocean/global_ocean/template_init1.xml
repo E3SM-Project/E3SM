@@ -22,7 +22,7 @@
 		<option name="config_global_ocean_depth_file">'temperature.nc'</option>
 		<option name="config_global_ocean_depth_dimname">'depth_t'</option>
 		<option name="config_global_ocean_depth_varname">'depth_t'</option>
-		<option name="config_global_ocean_depth_conversion_factor">0.01</option>
+		<option name="config_global_ocean_depth_conversion_factor">1.0</option>
 		<option name="config_global_ocean_temperature_file">'temperature.nc'</option>
 		<option name="config_global_ocean_salinity_file">'salinity.nc'</option>
 		<option name="config_global_ocean_tracer_nlat_dimname">'t_lat'</option>

@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<config case="">
-	<add_link source_path="script_configuration_dir" source="run_iter.py" dest="run_iter.py"/>
-	<add_link source_path="script_configuration_dir" source="plotStats.py" dest="plotStats.py"/>
-</config>

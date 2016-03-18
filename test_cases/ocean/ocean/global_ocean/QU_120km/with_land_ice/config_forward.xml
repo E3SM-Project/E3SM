@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 <config case="forward">
-	<add_link source="../init_step2/" dest="ic"/>
+	<add_link source="../init_iter/ocean.nc" dest="init.nc"/>
+	<add_link source="../init_iter/graph.info" dest="graph.info"/>
+	<add_link source="../init_iter/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
 	<add_executable source="metis" dest="metis"/>
@@ -8,24 +10,29 @@
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="template_forward.xml" path_base="script_resolution_dir"/>
-		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
 		<option name="config_check_ssh_consistency">.false.</option>
-		<option name="config_block_decomp_file_prefix">'ic/graph.info.part.'</option>
+		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<option name="config_land_ice_flux_mode">'standalone'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
 		<stream name="mesh">
-			<attribute name="filename_template">ic/ocean.nc</attribute>
+			<attribute name="filename_template">init.nc</attribute>
 		</stream>
 		<stream name="input">
-			<attribute name="filename_template">ic/ocean.nc</attribute>
+			<attribute name="filename_template">init.nc</attribute>
 		</stream>
 		<template file="minimal_output.xml" path_base="script_core_dir" path="templates/streams"/>
-		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
-		<stream name="forcing_data">
-			<attribute name="filename_template">ic/init_mode_forcing_data.nc</attribute>
+		<template file="land_ice_fluxes.xml" path_base="script_core_dir" path="templates/streams"/>
+		<stream name="output">
+			<attribute name="output_interval">00-01-00_00:00:00</attribute>
 		</stream>
+		<stream name="restart">
+			<attribute name="output_interval">00-01-00_00:00:00</attribute>
+		</stream>
+
+		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="shortwave_forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 
@@ -33,9 +40,9 @@
 
 	<run_script name="run.py">
 		<step executable="./metis">
-			<argument flag="ic/graph.info">4</argument>
+			<argument flag="graph.info">16</argument>
 		</step>
 
-		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<model_run procs="16" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>
 </config>
