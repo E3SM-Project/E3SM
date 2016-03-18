@@ -21,7 +21,7 @@ import argparse, doctest, shutil, glob
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-        usage="""\n%s [<changeargs>] [--verbose][--file file][--id id][--val value][--noecho][--append][--warn]
+        usage="""\n%s [<changeargs>] [--verbose][--file file][--id id][--val value][--noecho][--append][--warn][--force]
 OR
 %s --help
 OR
@@ -69,6 +69,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-subgroup","--subgroup",
                         help="apply to this subgroup only")
 
+    parser.add_argument("-f","--force", action="store_true",
+                        help="ignore typing checks and store value")
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
@@ -77,10 +80,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     if( len(args.listofsettings) == 1 ):
         listofsettings = args.listofsettings[0].split(',')
 
-    return args.caseroot, listofsettings, args.file, args.id, args.val, args.subgroup, args.append, args.noecho, args.warn
+    return args.caseroot, listofsettings, args.file, args.id, args.val, args.subgroup, args.append, args.noecho, args.warn, args.force
 
 def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=None, subgroup=None,
-              append=None, noecho=False, warn=None):
+              append=None, noecho=False, warn=None, force=False):
     case = Case(caseroot)
     if(listofsettings ):
         for setting in listofsettings:
@@ -89,13 +92,17 @@ def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=No
             if(append is True):
                 value = case.get_value(xmlid, resolved=False, subgroup=subgroup)
                 xmlval = "%s %s" %(xmlval, value)
-            case.set_value(xmlid, convert_to_type(xmlval, type_str, xmlid), subgroup)
+            if not force:
+                xmlval = convert_to_type(xmlval, type_str, xmlid)
+            case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
     else:
         if(append is True):
             value = case.get_value(xmlid, resolved=False, subgroup=subgroup)
             xmlval = "%s %s" %(xmlval, value)
         type_str = case.get_type_info(xmlid)
-        case.set_value(xmlid, convert_to_type(xmlval, type_str, xmlid), subgroup)
+        if not force:
+            xmlval = convert_to_type(xmlval, type_str, xmlid)
+        case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
     case.flush()
 
     if(noecho is False):
@@ -110,9 +117,9 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup, append, noecho, warn = parse_command_line(sys.argv, description)
+    caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup, append, noecho, warn, force = parse_command_line(sys.argv, description)
 
-    xmlchange(caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup, append, noecho, warn)
+    xmlchange(caseroot, listofsettings, xmlfile, xmlid, xmlval, subgroup, append, noecho, warn, force)
 
 if (__name__ == "__main__"):
     _main_func(__doc__)

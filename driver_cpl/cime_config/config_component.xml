@@ -355,7 +355,7 @@
   </entry>
 
   <entry id="REST_N">
-    <type>char</type>
+    <type>integer</type>
     <default_value>$STOP_N</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
