@@ -486,7 +486,7 @@ def generate_driver_scripts(config_file, configs):#{{{
 		script.write('"""\n')
 		script.write('This script was generated as part of a driver_script file by the setup_testcases.py script.\n')
 		script.write('"""\n')
-		script.write('import sys, os, subprocess\n')
+		script.write('import sys, os, shutil, glob, subprocess\n')
 		script.write("import xml.etree.ElementTree as ET\n")
 		script.write('import argparse\n')
 		script.write('\n')
@@ -502,8 +502,7 @@ def generate_driver_scripts(config_file, configs):#{{{
 
 		for case_name in case_dict.keys():
 			script.write('parser.add_argument("--no_%s", dest="no_%s", help="If set, %s case will not be run during execution of this script.", action="store_true")\n'%(case_name, case_name, case_name))
-
-		del case_dict
+			script.write('parser.add_argument("--finalize_%s", dest="finalize_%s", help="If set, %s case will have symlinks replaced with the files they point to, this occurs after any case runs that have been requested..", action="store_true")\n'%(case_name, case_name, case_name))
 
 		script.write('\n')
 		script.write('args = parser.parse_args()\n')
@@ -542,12 +541,28 @@ def generate_driver_scripts(config_file, configs):#{{{
 				script.write('os.chdir(base_path)\n')
 				process_env_define_step(child, configs, '', script)
 
-		# Write script footer, that ensures a 1 or a 0 are written if there was an error running any of the previous steps.
+		# Write script footer, that ensures a 1 is returned if the script encountered an error. This happens before finalizing a case directory.
 		script.write('if error:\n')
 		script.write('\tsys.exit(1)\n')
-		script.write('else:\n')
-		script.write('\tsys.exit(0)\n')
+
+		for case_name in case_dict.keys():
+			script.write('if args.finalize_%s:\n'%(case_name))
+			script.write('    old_dir = os.getcwd()\n')
+			script.write('    os.chdir("%s")\n'%(case_name))
+			script.write('    file_list = glob.glob("*")\n')
+			script.write('    for file in file_list:\n')
+			script.write('       if os.path.islink(file):\n')
+			script.write('          link_path = os.readlink(file)\n')
+			script.write('          os.unlink(file)\n')
+			script.write('          shutil.copyfile(link_path, file)\n')
+			#script.write('          subprocess.check_call(["cp", "--remove-destination", link_path, file], stdout=dev_null, stderr=dev_null)\n')
+			script.write('    os.chdir(old_dir)\n')
+			script.write('\n')
+
+
+		script.write('sys.exit(0)\n')
 		script.close()
+		del case_dict
 
 		# Make script executable
 		subprocess.check_call(['chmod', 'a+x', '%s/%s'%(init_path, name)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
@@ -909,10 +924,18 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
 	run_config_tree = ET.parse(run_definition_file)
 	run_config_root = run_config_tree.getroot()
 
+	dev_null = open('/dev/null', 'r+')
+
 	try:
 		executable_name = model_run_tag.attrib['executable']
 	except:
 		executable_name = 'model'
+
+	script.write('print "\\n"\n')
+	script.write('print "     *****************************"\n')
+	script.write('print "     ** Starting model run step **"\n')
+	script.write('print "     *****************************"\n')
+	script.write('print "\\n"\n')
 
 	# Process each part of the run script
 	for child in run_config_root:
@@ -924,7 +947,11 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
 					arg_text = grandchild.text
 
 					if arg_text == 'model':
-						grandchild.text = config.get('executables', executable_name)
+						executable_full_path = config.get('executables', executable_name)
+						executable_parts = executable_full_path.split('/')
+						executable_link = executable_parts[ len(executable_parts) - 1]
+						subprocess.check_call(['ln', '-sf', config.get('executables', executable_name), '.'], stdout=dev_null, stderr=dev_null)
+						grandchild.text = executable_link
 					elif arg_text.find('attr_') >= 0:
 						attr_array = arg_text.split('_')
 						try:
@@ -948,6 +975,13 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
 					sys.exit(1)
 				
 			process_env_define_step(child, configs, '', script)
+
+	script.write('print "\\n"\n')
+	script.write('print "     *****************************"\n')
+	script.write('print "     ** Finished model run step **"\n')
+	script.write('print "     *****************************"\n')
+	script.write('print "\\n"\n')
+	dev_null.close()
 #}}}
 #}}}
 
