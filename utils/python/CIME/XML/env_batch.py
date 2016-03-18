@@ -32,23 +32,60 @@ class EnvBatch(EnvBase):
 
         return val
 
-    def get_value(self, item, attribute={}, resolved=True, subgroup=None):
-        value = None
-        nodes = self.get_nodes("entry",{"id":item})
-        if len(nodes) > 0:
-            value = {} # Not consistent with return values for other classes' get_value methods
-            if subgroup is None:
-                nodes = self.get_nodes("job")
-            else:
-                nodes = self.get_nodes("job", {"name":subgroup})
+    # def get_value(self, item, attribute={}, resolved=True, subgroup=None):
+#         value = None
+#         logger.debug("Value=%s additional Attribute:%s" , item , attribute)
+#         nodes = self.get_nodes("entry",{"id":item})
+#         logger.debug("Nodes:%s" , nodes)
+#         if len(nodes) > 0:
+#             value = {} # Not consistent with return values for other classes' get_value methods
+#             if subgroup is None:
+#                 nodes = self.get_nodes("job")
+#             else:
+#                 nodes = self.get_nodes("job", {"name":subgroup})
+#
+#             for node in nodes:
+#                 logger.debug("Arguments for EnvBase.get_value: self=%s node=%s item=%s attribute=%s resolved=%s" , self, node , item , attribute , resolved)
+#                 # Call parent method
+#                 val = super(EnvBase , self).get_value( node,
+#                                         item, attribute, resolved , node.attrib[""])
+#                 # val = EnvBase.get_value(self, node,
+# #                                         item, attribute, resolved)
+#                 if val is not None:
+#                     value[node.attrib["name"]] = val
+#
+#         return value
 
+    def get_values(self, item, attribute={}, resolved=True, subgroup=None):
+        """Returns the value as a string of the first xml element with item as attribute value. 
+        <elememt_name attribute='attribute_value>value</element_name>"""
+                
+        nodes   = [] # List of identified xml elements  
+        results = [] # List of identified parameters 
+        logger.debug("Get node with attribute value: %s" , item)
+       
+        # Find all nodes with attribute name and attribute value item
+        # xpath .//*[name='item']
+        for job in self.get_nodes("job") :
+            
+            group = job.attrib['name']
+            
+            if item :
+                nodes = self.get_nodes("*",{"id" : item} , root=job)
+            else :
+               # Return all nodes
+               logger.debug("Retrieving all parameter")
+               nodes = self.get_nodes("*",{"id" : None } , root=job)
+          
+           
+            # Return value for first occurence of node with attribute value = item
             for node in nodes:
-                val = EnvBase.get_value(self, node,
-                                        item, attribute, resolved)
-                if val is not None:
-                    value[node.attrib["name"]] = val
-
-        return value
+                t   =  super(EnvBase , self).get_type( node )
+                val = { 'group' : group , 'attribute' : item , 'value' : node.attrib["value"] , 'type' : t , 'description' : self.get_description }
+                logger.debug("Found node with value for %s = %s" , item , val)   
+                results.append(val)
+        
+        return results
 
     def get_type_info(self, vid):
         nodes = self.get_nodes("entry",{"id":vid})

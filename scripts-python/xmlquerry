@@ -68,14 +68,24 @@ def xmlquerry(caseroot, listofsettings=None,  xmlattr=None, xmlval=None, subgrou
                 
         for xmlattr in listofsettings:
             # type_str = case.get_type_info(xmlattr)
-        
-            value  = case.get_value(xmlattr, resolved=False, subgroup=subgroup)
-            result = "%s\t%s" %(xmlattr, value)
-            values.append(result)
+            logging.info("Searching for %s", xmlattr)
+            logging.debug("Searching for %s", xmlattr)
+            results  = case.get_values(xmlattr, resolved=False, subgroup=subgroup)
+            
+            if ( len(results) > 0) :     
+                for node in results :
+                    
+                    val = ""
+                    if node["group"] :
+                        val = "%s:%s\t%s\ttype:%s" % (node["group"] , node["attribute"] , node["value"] , node['type'])
+                    else :
+                        val = "%s\t%s" %(xmlattr, node["value"])
+                   
+                    values.append(val)
            
             
     else:
-        value = case.get_value(xmlattr, resolved=False, subgroup=subgroup)
+        value = case.get_values(xmlattr, resolved=False, subgroup=subgroup)
         result = "%s %s" %(xmlattr, value)
         values.append(result)
         # type_str = case.get_type_info(xmlattr)
@@ -122,7 +132,7 @@ def _main_func(description):
     
     logging.info("Searching for item '%s'" , item)
         
-    value = case.get_value( item )
+    # value = case.get_value( item )
   
 
       #
@@ -131,6 +141,9 @@ def _main_func(description):
     # else:
     #     for k,v in value.iteritems():
     #         print k , v
+
+ 
+
 
     xmlattr = item
     print listofsettings

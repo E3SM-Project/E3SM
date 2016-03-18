@@ -21,7 +21,7 @@ class EnvMachSpecific(GenericXML):
         GenericXML.__init__(self, fullpath)
 
     
-    def get_values(self, item="*", attribute={}, resolved=True, subgroup=None):
+    def get_values2(self, item="*", attribute={}, resolved=True, subgroup=None):
             
         value = {}  
         root  = self.tree.getroot()
@@ -63,7 +63,7 @@ class EnvMachSpecific(GenericXML):
                 
         value = {}
         nodes = []
-        logging.debug("env_mach_specific: get node with attribute value: %s" , item)
+        logger.debug("Get node with attribute value: %s" , item)
         # Find all nodes with attribute name and attribute value item
         # xpath .//*[name='item']
         if item :
@@ -75,9 +75,36 @@ class EnvMachSpecific(GenericXML):
         # Return value for first occurence of node with attribute value = item
         for node in nodes:
             val = node.text 
-            logging.debug("Found node with value for %s = %s" , item , val)   
+            logger.debug("Found node with value for %s = %s" , item , val)   
             if val:
                 return val
         
         return None
+        
+    def get_values(self, item, attribute={}, resolved=True, subgroup=None):
+        """Returns the value as a string of the first xml element with item as attribute value. 
+        <elememt_name attribute='attribute_value>value</element_name>"""
+                
+        nodes   = [] # List of identified xml elements  
+        results = [] # List of identified parameters 
+        logger.debug("Get node with attribute value: %s" , item)
+       
+        # Find all nodes with attribute name and attribute value item
+        # xpath .//*[name='item']
+        if item :
+            nodes = self.get_nodes("*",{"name" : item})
+        else :
+           # Return all nodes
+           logger.debug("Retrieving all parameter")
+           nodes = self.get_nodes("*",{"name" : None })
+          
+           
+        # Return value for first occurence of node with attribute value = item
+        for node in nodes:
+            val = { 'group' : None , 'attribute' : item , 'value' : node.text , 'type' : None , 'description' : None }
+            logger.debug("Found node with value for %s = %s" , item , val)   
+            results.append(val)
+        
+        return results
+        
             

@@ -57,26 +57,70 @@ class Case(object):
         result = None
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
+            logger.debug("Before File=%s Attribute=%s Value=%s"%(env_file.filename,item,result))
             result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
-            logger.debug("File=%s Attribute=%s Value=%s"%(env_file.filename,item,result))
+            logger.debug("After File=%s Attribute=%s Value=%s"%(env_file.filename,item,result))
             if result is not None:
                 if resolved and type(result) is str:
                     return self.get_resolved_value(result)
                 return result
-        # Return empty result
-        return result
                 
         for env_file in self._env_generic_files:
             # Wait and resolve in self rather than in env_file
             result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
-            logging.debug("CASE %s %s"%(item,result))
+            logger.debug("Generic file:%s Item:%s Attribute:%s Value:%s"%(env_file.filenname, item,attribute ,result))
             if result is not None:
                 if resolved and type(result) is str:
                     return self.get_resolved_value(result)
                 return result
        
+        logger.info("Not able to retreive value for item '%s'" % item)
+        # Return empty result
+        return result
 
-        logging.info("Not able to retreive value for item '%s'" % item)
+
+    def get_values(self, item, attribute={}, resolved=True, subgroup=None):
+        results = []
+        for env_file in self._env_entryid_files:
+            # Wait and resolve in self rather than in env_file
+            result = None
+            logger.debug("Before File=%s Attribute=%s Value=%s"%(env_file.filename,item,result))
+            try:
+                result = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
+                # Method exists, and was used.  
+            except AttributeError:
+                # Method does not exist.  What now?
+                logger.debug("No get_values method for class %s" , env_file.__class__.__name__)
+            logger.debug("After File=%s Attribute=%s Value=%s"%(env_file.filename,item,result))
+            if result is not None and (len(result) >= 1):
+                if resolved and type(result) is str:
+                    # WRONG
+                    logger.info("Fix this line , it is an array not a string")
+                    results.append(self.get_resolved_value(result))
+                else :
+                    results = results + result
+                return results
+            
+        for env_file in self._env_generic_files:
+            # Wait and resolve in self rather than in env_file
+            logger.debug("Before generic File=%s Attribute=%s Value=%s"%(env_file.filename,item,result))
+            result = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
+            logger.debug("After generic File=%s Attribute=%s Value=%s"%(env_file.filename,item,result))
+            logger.debug("Generic file:%s Item:%s Attribute:%s Value:%s"%(env_file.filename, item,attribute ,result))
+            if result is not None and (len(result) >=1) :
+                if resolved and type(result) is str:
+                    logger.debug("Type string abd resolved is true")
+                    results.append(self.get_resolved_value(result))
+                else :
+                    logger.debug("Append result to return list (%s)" ,result)
+                    results = results + result
+                return results
+   
+        logger.info("Not able to retreive value for item '%s'" % item)
+        # Return empty result
+        return results
+        
+
 
     def get_type_info(self, item, attribute={}):
         result = None
