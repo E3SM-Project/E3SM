@@ -236,7 +236,7 @@ contains
 
       ! Compute - \kappa \nabla^4 u
       ! as  \nabla div(\nabla^2 u) + k \times \nabla ( k \cross curl(\nabla^2 u) )
-      !$omp do schedule(runtime) private(cell1, cell2, vertex1, vertex2, invDcEdge, invDvEdge, r_tmp, u_diffusion)
+      !$omp do schedule(runtime) private(cell1, cell2, vertex1, vertex2, invDcEdge, invDvEdge, r_tmp, u_diffusion, k)
       do iEdge=1,nEdgesSolve
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)

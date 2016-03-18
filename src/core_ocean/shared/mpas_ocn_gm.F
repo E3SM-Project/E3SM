@@ -330,7 +330,7 @@ contains
 
       ! slope can be unbounded in regions of neutral stability, reset to the large, but bounded, value
       ! values is hardwrite to 1.0, this is equivalent to a slope of 45 degrees
-      !$omp do schedule(runtime)
+      !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
          do k = 1, nVertLevels
             relativeSlopeTopOfEdge(k, iEdge) = max( min( relativeSlopeTopOfEdge(k, iEdge), 1.0_RKIND), -1.0_RKIND)
@@ -341,7 +341,7 @@ contains
       ! average relative slope to cell centers
       ! do this by computing (relative slope)^2, then taking sqrt
 
-      !$omp do schedule(runtime) private(i, iEdge, areaEdge, rtmp)
+      !$omp do schedule(runtime) private(i, iEdge, areaEdge, rtmp, k)
       do iCell = 1, nCells
          areaCellSum(:, iCell) = 1.0e-34_RKIND
          do i = 1, nEdgesOnCell(iCell)

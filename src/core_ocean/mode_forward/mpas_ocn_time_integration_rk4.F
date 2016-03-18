@@ -715,7 +715,7 @@ module ocn_time_integration_rk4
 
            call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-           !$omp do schedule(runtime)
+           !$omp do schedule(runtime) private(k)
            do iCell = 1, nCells
               do k = 1, maxLevelCell(iCell)
                  layerThicknessNew(k, iCell) = layerThicknessNew(k, iCell) + rk_weights(rk_step) * layerThicknessTend(k, iCell)
