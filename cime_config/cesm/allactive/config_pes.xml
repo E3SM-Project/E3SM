@@ -1372,13 +1372,13 @@
     <mach name="yellowstone">
       <pes pesize="X" compset="CAM5.+CLM.+CICE.+POP.+">
 	<PES_PER_NODE>16</PES_PER_NODE>
-	<MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+	<MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
 	<comment>none</comment>
 	<ntasks>
 	  <ntasks_atm>-108</ntasks_atm>
-	  <ntasks_lnd>-92</ntasks_lnd>
-	  <ntasks_rof>-92</ntasks_rof>
-	  <ntasks_ice>-16</ntasks_ice>
+	  <ntasks_lnd>-68</ntasks_lnd>
+	  <ntasks_rof>-68</ntasks_rof>
+	  <ntasks_ice>-40</ntasks_ice>
 	  <ntasks_ocn>-10</ntasks_ocn>
 	  <ntasks_glc>1</ntasks_glc>
 	  <ntasks_wav>1</ntasks_wav>
@@ -1398,7 +1398,7 @@
 	  <rootpe_atm>0</rootpe_atm>
 	  <rootpe_lnd>0</rootpe_lnd>
 	  <rootpe_rof>0</rootpe_rof>
-	  <rootpe_ice>-92</rootpe_ice>
+	  <rootpe_ice>-68</rootpe_ice>
 	  <rootpe_ocn>-108</rootpe_ocn>
 	  <rootpe_glc>0</rootpe_glc>
 	  <rootpe_wav>0</rootpe_wav>
