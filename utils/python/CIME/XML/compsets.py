@@ -35,11 +35,12 @@ class Compsets(GenericXML):
     def print_values(self):
         help_text = self.get_value(name="help")
         compsets_text = self.get_value("names")
-        print help_text
+        logger.info(" %s " %help_text)
 
-        print "{:<30} {:<35} ".format('Compset Alias','Compset Longname')
-        print "{:<30} {:<35} ".format('=============','================')
+        logger.info("       --------------------------------------") 
+        logger.info("       Compset Short Name: Compset Long Name ")
+        logger.info("       --------------------------------------") 
         for v in compsets_text.iteritems():
             label, definition = v
-            print "{:<30} {:<35} ".format(label, definition)
+            logger.info("   %20s : %s" %(label, definition))
 

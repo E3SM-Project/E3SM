@@ -1,5 +1,4 @@
-#!/usr/bin/env python2.7
-#FIXME - the above needs the explicit python2.7 - this is not general ???
+#!/usr/bin/env python2
 
 from Tools.standard_script_setup import *
 
@@ -13,34 +12,34 @@ from CIME.XML.machines  import Machines
 import argparse, doctest
 
 ###############################################################################
-def query_grids():  
+def query_grids(long_output):  
 ###############################################################################
 
     files = Files()
-    config_file = files.get_value("GRIDS_SPEC_FILE", resolved=True)
+    config_file = files.get_value("GRIDS_SPEC_FILE")
     expect(os.path.isfile(config_file),
            "Cannot find config_file %s on disk" %config_file)
 
-    parsed_xml = Grids(config_file)
-    if verbose:
-        parsed_xml.print_values(verbose=verbose)
+    grids = Grids(config_file)
+    if long_output:
+        grids.print_values(long_output=long_output)
     else:
-        parsed_xml.print_values()
+        grids.print_values()
 
 ###############################################################################
 def query_machines():  
 ###############################################################################
 
     files = Files()
-    config_file = files.get_value("MACHINES_SPEC_FILE", resolved=True)
+    config_file = files.get_value("MACHINES_SPEC_FILE")
     expect(os.path.isfile(config_file),
            "Cannot find config_file %s on disk" %config_file)
 
-    parsed_xml = Machines(config_file)
+    machines = Machines(config_file)
     if verbose:
-        parsed_xml.print_values(verbose=verbose)
+        machines.print_values(verbose=verbose)
     else:
-        parsed_xml.print_values()
+        machines.print_values()
 
 ###############################################################################
 def query_compsets(name):  
@@ -48,19 +47,19 @@ def query_compsets(name):
 
     # Determine valid component values by checking the value attributes for COMPSETS_SPEC_FILE
     files = Files()
-    components = files.get_components("COMPSETS_SPEC_FILE", resolved=True)
-    match_found = "unset"
+    components = files.get_components("COMPSETS_SPEC_FILE")
+    match_found = None
     for component in components:
         if component == name:
-            match_found = component
+            match_found = name
             break
 
     # If name is not a valid argument - exit with error
-    expect(match_found != "unset", 
+    expect(match_found is not None, 
            "Invalid input argument %s, valid input arguments are %s" % (name, components))
 
     # Determine the config_file for the target component 
-    config_file = files.get_value("COMPSETS_SPEC_FILE", attribute={"component":name}, resolved=True)
+    config_file = files.get_value("COMPSETS_SPEC_FILE", attribute={"component":name})
     expect((config_file),
            "Cannot find any config_component.xml file for %s" %name)
 
@@ -70,8 +69,8 @@ def query_compsets(name):
 
     # Now parse the compsets file and write out the compset alias and longname as well as the help text
     # determine component xml content 
-    parsed_xml = Compsets(config_file)
-    parsed_xml.print_values()
+    compsets = Compsets(config_file)
+    compsets.print_values()
 
 ###############################################################################
 def query_component(name):
@@ -81,23 +80,23 @@ def query_component(name):
     # These are then stored in comps_array
     files = Files()
     infile = files.get_value("CONFIG_DRV_FILE")
-    comps_object = Component(infile)
-    comps_array = comps_object.get_value("component")
+    config_drv = Component(infile)
+    components = config_drv.get_valid_model_components()
     
     # Loop through the elements for each component class (in config_files.xml) 
     # and see if there is a match for the the target component in the component attribute 
     match_found = False
     valid_components = list()
-    for comp in comps_array:
+    for comp in components:
         string = "CONFIG_%s_FILE"%comp 
 
         # determine all components in string
-        components = files.get_components(string, resolved=True)
+        components = files.get_components(string)
         for item in components:
             valid_components.append(item)
 
         # determine if config_file is on disk
-        config_file = files.get_value(string, attribute={"component":name}, resolved=True)
+        config_file = files.get_value(string, attribute={"component":name})
         if config_file is not None:
             match_found = True
             expect(os.path.isfile(config_file),
@@ -105,7 +104,7 @@ def query_component(name):
             break
 
     # If name is not a valid argument - exit with error
-    expect((match_found), 
+    expect(match_found, 
            "Invalid input argument %s, valid input arguments are %s" % (name, valid_components))
 
     # Check that file exists on disk, if not exit with error
@@ -113,8 +112,8 @@ def query_component(name):
            "Cannot find any config_component.xml file for %s" %name)
 
     # determine component xml content 
-    parsed_xml = Component(config_file)
-    parsed_xml.print_values()
+    component = Component(config_file)
+    component.print_values()
 
 ###############################################################################
 def parse_command_line(args):
@@ -126,23 +125,26 @@ def parse_command_line(args):
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("--query_compsets_setby", 
+    parser.add_argument("--query-compsets-setby", 
                         help="Query compsets that are set by the target component for %s model"%cime_model)
 
-    parser.add_argument("--query_component_name", 
+    parser.add_argument("--query-component-name", 
                         help="Query component settings that are set by the target component for %s model"%cime_model)
 
-    parser.add_argument("--query_grids", action="store_true",
+    parser.add_argument("--query-grids", action="store_true",
                         help="Query supported model grids for %s model" %cime_model)  
 
-    parser.add_argument("--grids_shortname", 
+    parser.add_argument("--grids-shortname", 
                         help="Query model grids for input grid short name for %s model - not implemented yet" %cime_model)  
 
-    parser.add_argument("--grids_alias", 
+    parser.add_argument("--grids-alias", 
                         help="Query model grids for input grid  alias for %s model - not implemented yet" %cime_model)  
 
-    parser.add_argument("--query_machines", action="store_true", 
+    parser.add_argument("--query-machines", action="store_true", 
                         help="Query supported machines for %s model" %cime_model)  
+
+    parser.add_argument("--long", action="store_true",
+                        help="Provide long output for queries")  
 
     args = parser.parse_args()
 
@@ -151,22 +153,24 @@ def parse_command_line(args):
     return args
 
 ###############################################################################
+def _main_func():
+###############################################################################
 
-args = parse_command_line(sys.argv)
+    args = parse_command_line(sys.argv)
 
-verbose = args.verbose
+    if args.query_grids:
+        query_grids(long_output=args.long)
+        
+    if args.query_compsets_setby:
+        query_compsets(name=args.query_compsets_setby)
+            
+    if args.query_component_name:
+        query_component(args.query_component_name)
+                
+    if args.query_machines:
+        query_machines()
 
-if args.query_grids:
-    query_grids()
+###############################################################################
 
-if args.query_compsets_setby:
-    query_compsets(name=args.query_compsets_setby)
-
-if args.query_component_name:
-    query_component(name=args.query_component_name)
-
-if args.query_machines:
-    query_machines()
-
-
-
+if __name__ == "__main__":
+    _main_func()

@@ -17,36 +17,36 @@ class Component(EntryID):
         EntryID.__init__(self,infile)
 
     def get_value(self, name, attribute={}, resolved=False):
-        if name == "component":
-            components = []
-            compnode = self.get_node("components")
-            comps = self.get_nodes("comp", root=compnode)
-            for comp in comps:
-                components.append(comp.text)
-            return components
-        elif name == "help":
-            rootnode = self.get_node("help")
-            helptext = rootnode.text
-            return helptext
-        elif name == "description":
-            rootnode = self.get_node("description")
-            compsets = {}
-            descs = self.get_nodes("desc", root=rootnode)
-            for desc in descs:
-                attrib = desc.attrib["compset"]
-                text = desc.text
-                compsets[attrib] = text
-            return compsets
-        else:
-            return EntryID.get_value(self, name, attribute, resolved)
+        return EntryID.get_value(self, name, attribute, resolved)
+
+    def get_valid_model_components(self):             
+        """
+        return a list of all possible valid generic (e.g. atm, clm, ...) model components 
+        from the entries in the model CONFIG_DRV_FILE
+        """
+        components = []
+        comps = self.get_nodes("comp", root=self.get_node("components"))
+        for comp in comps:
+            components.append(comp.text)
+        return components
 
     def print_values(self):
-        description_text = self.get_value(name="description")
-        help_text = self.get_value(name="help")
+        """
+        print values for help and description in target config_component.xml file
+        """
+        rootnode = self.get_node("help")
+        helptext = rootnode.text
 
-        print help_text
-        print "{:<30} {:<35} ".format('Compset Qualifier','Definition')
-        print "{:<30} {:<35} ".format('=================','==========')
-        for v in description_text.iteritems():
+        rootnode = self.get_node("description")
+        compsets = {}
+        descs = self.get_nodes("desc", root=rootnode)
+        for desc in descs:
+            attrib = desc.attrib["compset"]
+            text = desc.text
+            compsets[attrib] = text
+
+        logger.info(" %s" %helptext)
+        for v in compsets.iteritems():
             label, definition = v
-            print "{:<30} {:<35} ".format(label, definition)
+            logger.info("   %20s : %s" %(label, definition))
+        
