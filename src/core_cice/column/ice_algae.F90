@@ -203,7 +203,7 @@
                                 vice_old,  vsno_old,     &
                                 vicen,     vsnon,        &
                                 aicen,     flux_bio_atm, &
-                                zbgc_atmn, flux_bio,     &
+                                zbgc_atmn, flux_bion,    &
                                 nu_diag)
 
       call z_biogeochemistry   (n_cat,        dt,        &
@@ -909,6 +909,8 @@
          dust_Fe(nlt_bgc_Fed(1)) = dust_Fe(nlt_bgc_Fed(1)) + &
               (zbgc_snow(nlt_zaero(m)) + zbgc_atm(nlt_zaero(m))) * &
                R_dFe2dust * dustFe_sol
+         dust_Fe(nlt_zaero(m)) = -(zbgc_snow(nlt_zaero(m)) + zbgc_atm(nlt_zaero(m))) * &
+               dustFe_sol
        enddo  
       endif
 

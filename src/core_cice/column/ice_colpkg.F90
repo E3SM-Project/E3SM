@@ -4830,9 +4830,7 @@
 
       do k = 1, max_algae           
          ocean_bio_all(k)      = algalN(k)           ! N
-         ks = max_algae + 1
-         ocean_bio_all(ks + k) = R_C2N(k)*algalN(k)  ! C
-         ks = ks + max_doc + max_dic
+         ks = max_algae + max_doc + max_dic + 1
          ocean_bio_all(ks + k) = R_chl2N(k)*algalN(k)!chl
       enddo   
 
@@ -4861,13 +4859,13 @@
       ocean_bio_all(ks) =  R_S2N(1)*algalN(1) &      ! DMSPp
                         +  R_S2N(2)*algalN(2) &
                         +  R_S2N(3)*algalN(3) 
-      ks = ks + 1
+      ks = 2*max_algae + max_doc + 5 + max_dic
       ocean_bio_all(ks) = dmsp                       ! DMSPd
       ks = ks + 1
       ocean_bio_all(ks) = dms                        ! DMS
       ks = ks + 1
       ocean_bio_all(ks) = nit                        ! PON
-      ks = ks + 1
+      ks = 2*max_algae + max_doc + 7 + max_dic + max_don
       do k = 1, max_fe
          ocean_bio_all(ks + k) = fed(k)              ! fed
       enddo  
