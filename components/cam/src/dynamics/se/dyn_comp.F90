@@ -155,8 +155,6 @@ CONTAINS
     call omp_set_nested(.true.)
     if (vthreads > nthreads .or. vthreads < 1) &
          call endrun('Error: vthreads<1 or vthreads > NTHRDS_ATM')
-    if (vthreads < 1 ) &
-         call endrun('Error: vthreads<1')
     nthreads = nthreads / vthreads
     if(par%masterproc) then
        write(iulog,*) " "
