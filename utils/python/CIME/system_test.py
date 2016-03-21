@@ -14,6 +14,7 @@ from CIME.XML.env_test import EnvTest
 from CIME.XML.files import Files
 from CIME.XML.component import Component
 from CIME.XML.testlist import Testlist
+from CIME.case import Case
 import CIME.test_utils
 
 INITIAL_PHASE         = "INIT"
@@ -341,8 +342,6 @@ class SystemTest(object):
 
         if test_case != 'PFS':
             create_newcase_cmd += " -nosavetiming "
-        if case_opts is not None:
-            create_newcase_cmd += " -confopts _%s" % ("_".join(case_opts))
         if test_mods is not None:
             files = Files()
             (component,modspath) = test_mods.split('/',1)
@@ -360,6 +359,93 @@ class SystemTest(object):
     ###########################################################################
     def _xml_phase(self, test):
     ###########################################################################
+
+
+        # modify the CASEROOT xml files depending on the settings of case_opts from
+        # then call case.flush()
+
+        models = ('ATM' , 'LND', 'OCN', 'ICE', 'GLC', 'ROF', 'WAV', 'CPL')
+
+        case = Case(self._get_test_dir(test)) 
+        case_opts = CIME.utils.parse_test_name(test)[1]
+
+        if case_opts is not None:
+            logger.info("case_opts are %s " %case_opts) 
+            for opt in case_opts:
+
+                logger.debug("case_opt is %s" %opt)
+                if opt == 'D':
+                    case.set_value("DEBUG", True)
+                    logger.info (" DEBUG set to TRUE")
+
+                if opt == 'E':
+                    case.set_value("USE_ESMF_LIB", True)
+                    case.set_value("COMP_INTERFACE", "ESMF")
+                    logger.info (" USE_ESMF_LIB set to TRUE")
+                    logger.info (" COMP_INTERFACE set to ESMF")
+
+                if opt == 'CG':
+                    case.set_value("CALENDAR", "GREGORIAN")
+                    logger.info (" CALENDAR set to %s" %opt)
+
+                match =  re.search(r'^L([A-Za-z])([0-9]*)', opt, re.M)
+                if match:
+                    stop_option = {"y":"nyears", "m":"nmonths", "d":"ndays", "h":"nhours", 
+                                   "s":"nseconds", "n":"nsteps"}
+                    opt = match.group(1)
+                    case.set_value("STOP_OPTION",stop_option[opt])
+                    opti = match.group(2)
+                    case.set_value("STOP_N", int(opti))
+                    logger.info (" STOP_OPTION set to %s" %stop_option[opt])
+                    logger.info (" STOP_N      set to %s" %opti)
+
+                match =  re.search(r'^M(.+)', opt, re.M)
+                if match:
+                    opt = match.group(1)
+                    case.set_value("MPILIB", opt)
+                    logger.info (" MPILIB set to %s" %opt)
+
+                match =  re.search(r'^P([0-9]+)', opt, re.M)
+                if match:
+                    opti_tasks = match.group(1)
+                    for model in models:
+                        string = "NTASKS_" + model
+                        case.set_value(string, int(opti_tasks))
+                        string = "NTHRDS_" + model
+                        case.set_value(string, 1)
+                        string = "ROOTPE_" + model
+                        case.set_value(string, 0)
+                    logger.info (" NTASKS_xxx et to %s" %opti_tasks)
+                    logger.info (" NTHRDS_xxx set to %s" 1)
+                    logger.info (" ROOTPE_xxx set to %s" 0)
+
+                match =  re.search(r'^P([0-9]+)x([0-9]+)', opt, re.M)
+                if match:
+                    opti_tasks = match.group(1)
+                    opti_thrds = match.group(2)
+                    for model in models:
+                        string = "NTASKS_" + model
+                        case.set_value(string, int(opti_tasks))
+                        string = "NTHRDS_" + model
+                        case.set_value(string, int(opti_thrds))
+                        string = "ROOTPE_" + model
+                        case.set_value(string, 0)
+                    logger.info (" NTASKS_xxx set to %s" %opti_tasks)
+                    logger.info (" NTHRDS_xxx set to %s" %opti_thrds)
+                    logger.info (" ROOTPE_xxx set to %s" 0)
+
+                match =  re.search(r'^N([0-9]*)', opt, re.M)
+                if match:
+                    opti = match.group(1)
+                    for model in models:
+                        if model != 'CPL':
+                            string = "NINST_" + model
+                            case.set_value(string, int(opti))
+                    logger.info (" Numer if component instances set to %s" %opti)
+
+        case.flush()
+
+        # this writes the env_test file - 
 
         test_case = CIME.utils.parse_test_name(test)[0]
         envtest = EnvTest(self._get_test_dir(test))
@@ -394,6 +480,7 @@ class SystemTest(object):
         envtest.set_value("COMPARE_BASELINE", self._compare)
         envtest.set_value("CCSM_CPRNC", self._machobj.get_value("CCSM_CPRNC", resolved=False))
         envtest.write()
+
         return True
 
     ###########################################################################
