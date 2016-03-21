@@ -27,15 +27,21 @@
 		<var name="kineticEnergyAt100m" type="real" dimensions="nCells Time" units="m^2 s^{-2}"
 			description="kinetic energy at a depth of approximately 100 m"
 		/>
+		<var name="barotropicSpeed" type="real" dimensions="nCells Time" units="m s^{-1}"
+			description="speed = sqrt(2*ke), where kinetic energy is computed from barotropic velocity = sum(h*u)/sum(h) over the full depth of an edge"
+		/>
+		<var name="columnIntegratedSpeed" type="real" dimensions="nCells Time" units="m^2 s^{-1}"
+			description="speed = sum(h*sqrt(2*ke)), where ke is kineticEnergyCell and the sum is over the full column at cell centers."
+		/>
 		<var name="relativeVorticityAt100m" type="real" dimensions="nCells Time" units="s^{-1}"
 			description="relative vorticity at cell centers at a depth of approximately 100 m"
 		/>
-                <var name="divergenceAt100m" type="real" dimensions="nCells Time" units="s^{-1}"
-                        description="divergence at cell centers at a depth of approximately 100 m"
-                />
-                <var name="relativeVorticityVertexAt100m" type="real" dimensions="nVertices Time" units="s^{-1}"
-                        description="relative vorticity at cell vertices at a depth of approximately 100 m"
-                />
+		<var name="divergenceAt100m" type="real" dimensions="nCells Time" units="s^{-1}"
+			description="divergence at cell centers at a depth of approximately 100 m"
+		/>
+		<var name="relativeVorticityVertexAt100m" type="real" dimensions="nVertices Time" units="s^{-1}"
+			description="relative vorticity at cell vertices at a depth of approximately 100 m"
+		/>
 		<var_array name="activeTracersAtSurface" type="real" dimensions="nCells Time">
 			<var name="temperatureAtSurface" array_group="activeTracersAtSurface" units="^\circ C" name_in_code="temperatureAtSurface"
 				description="sea surface temperature"
@@ -58,6 +64,8 @@
 			<stream name="mesh"/>
 			<var name="xtime"/>
 			<var name="kineticEnergyAt100m"/>
+			<var name="barotropicSpeed"/>
+			<var name="columnIntegratedSpeed"/>
 			<var name="relativeVorticityAt100m"/>
 			<var_array name="activeTracersAtSurface"/>
 		</stream>

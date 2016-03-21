@@ -159,14 +159,24 @@ contains
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: highFrequencyOutputAMPool
       type (mpas_pool_type), pointer :: tracersPool
+      type (mpas_pool_type), pointer :: scratchPool
 
-      integer :: iLevel, iLevelTarget
-      integer, pointer :: nVertLevels
+      integer :: iLevel, iLevelTarget, iCell, iEdge, i, cell1, cell2, k
+      integer, pointer :: nVertLevels, nCells, nEdges
+      integer, dimension(:), pointer :: nEdgesOnCell, maxLevelEdgeTop, maxLevelCell
+      integer, dimension(:,:), pointer :: edgesOnCell, cellsOnEdge
+
+      real (kind=RKIND) :: invAreaCell1, layerThicknessEdge1, coeff
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, kineticEnergyAt100m, relativeVorticityAt100m
       real (kind=RKIND), dimension(:), pointer :: divergenceAt100m, relativeVorticityVertexAt100m
+      real (kind=RKIND), dimension(:), pointer :: barotropicSpeed, columnIntegratedSpeed, dvEdge, dcEdge, areaCell
       real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, relativeVorticityCell, activeTracersAtSurface
-      real (kind=RKIND), dimension(:,:), pointer :: relativeVorticity, divergence
+      real (kind=RKIND), dimension(:,:), pointer :: relativeVorticity, divergence, layerThickness, normalVelocity
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+
+      ! scratch space
+      type (field1DReal), pointer :: normalThicknessFluxSumField, layerThicknessSumEdgeField
+      real (kind=RKIND), dimension(:), pointer :: normalThicknessFluxSum, layerThicknessSumEdge
 
       err = 0
 
@@ -175,6 +185,8 @@ contains
       block => domain % blocklist
       do while (associated(block))
          ! get dimensions
+         call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
+         call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
 
          ! get pointers to pools
@@ -183,6 +195,7 @@ contains
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(domain % blocklist % structs, 'highFrequencyOutputAM', highFrequencyOutputAMPool)
 
          ! get static data from mesh pool
@@ -224,6 +237,73 @@ contains
          relativeVorticityVertexAt100m = relativeVorticity(iLevelTarget,:)
          activeTracersAtSurface(1,:) = activeTracers(1,1,:)
          activeTracersAtSurface(2,:) = activeTracers(2,1,:)
+
+         !
+         ! compute barotropic kinetic energy
+         !
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
+         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+         call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'barotropicSpeed', barotropicSpeed)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'columnIntegratedSpeed', columnIntegratedSpeed)
+
+         ! scratch arrays
+         call mpas_pool_get_field(scratchPool, 'normalThicknessFluxSum', normalThicknessFluxSumField)
+         call mpas_allocate_scratch_field(normalThicknessFluxSumField, .true.)
+         normalThicknessFluxSum => normalThicknessFluxSumField % array
+
+         call mpas_pool_get_field(scratchPool, 'layerThicknessSumEdge', layerThicknessSumEdgeField)
+         call mpas_allocate_scratch_field(layerThicknessSumEdgeField, .true.)
+         layerThicknessSumEdge => layerThicknessSumEdgeField % array
+
+         do iEdge = 1, nEdges
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+
+            ! normal Barotropic Velocity = sum(h*u)/sum(h) on each edge
+            layerThicknessEdge1 = 0.5_RKIND*( layerThickness(1,cell1) + layerThickness(1,cell2) )
+            normalThicknessFluxSum(iEdge) = layerThicknessEdge1 * normalVelocity(1,iEdge)
+            layerThicknessSumEdge(iEdge) = layerThicknessEdge1
+
+            do k=2, maxLevelEdgeTop(iEdge)
+               layerThicknessEdge1 = 0.5_RKIND*( layerThickness(k,cell1) + layerThickness(k,cell2) )
+
+               normalThicknessFluxSum(iEdge) = normalThicknessFluxSum(iEdge) + layerThicknessEdge1 * normalVelocity(k,iEdge)
+               layerThicknessSumEdge(iEdge) = layerThicknessSumEdge(iEdge) + layerThicknessEdge1
+            enddo
+         enddo
+
+         do iCell = 1, nCells
+            invAreaCell1 = 1.0_RKIND / areaCell(iCell)
+            barotropicSpeed(iCell) = 0.0_RKIND
+            !columnIntegratedSpeed(iCell) = 0.0_RKIND
+            do i = 1, nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i, iCell)
+
+               coeff = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell1
+               ! this is kinetic energy, in units of m^2/sec^2
+               barotropicSpeed(iCell)    = barotropicSpeed(iCell) &
+                    + coeff * (normalThicknessFluxSum(iEdge) / layerThicknessSumEdge(iEdge))**2
+
+            end do
+            barotropicSpeed(iCell)    = sqrt(2.0_RKIND*barotropicSpeed(iCell))
+
+            ! columnIntegratedSpeed = sum(h*sqrt(2*ke)), where ke is kineticEnergyCell
+            !   and the sum is over the full column at cell centers.
+            columnIntegratedSpeed(iCell) = layerThickness(1,iCell)*sqrt( 2.0_RKIND * kineticEnergyCell(1,iCell) )
+            do k=2, maxLevelCell(iCell)
+               columnIntegratedSpeed(iCell) = columnIntegratedSpeed(iCell) &
+                    + layerThickness(k,iCell)*sqrt( 2.0_RKIND * kineticEnergyCell(k,iCell) )
+            enddo
+
+         end do
 
          block => block % next
       end do

@@ -2642,6 +2642,14 @@
 			 units="m^{2} s^{-1}"
 			 description="Flux of thickness through an edge"
 		/>
+		<var name="normalThicknessFluxSum" persistence="scratch" type="real" dimensions="nEdges Time"
+			 units="m^{2} s^{-1}"
+			 description="Flux of thickness through an edge over full column, sum(h*u)"
+		/>
+		<var name="layerThicknessSumEdge" persistence="scratch" type="real" dimensions="nEdges Time"
+			 units="m"
+			 description="total thickness at edge, sum(h)"
+		/>
 		<var name="vorticityGradientTangentialComponent"
 			persistence="scratch"
 			type="real" dimensions="nVertLevels nEdges Time"
