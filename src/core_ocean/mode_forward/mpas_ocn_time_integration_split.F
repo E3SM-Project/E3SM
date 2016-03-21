@@ -175,9 +175,9 @@ module ocn_time_integration_split
       real (kind=RKIND), dimension(:,:), pointer :: vertAleTransportTop
       real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
       real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
-      real (kind=RKIND), dimension(:,:), pointer :: gradSSH
-      real (kind=RKIND), dimension(:,:), pointer :: gradSSHX, gradSSHY, gradSSHZ
-      real (kind=RKIND), dimension(:,:), pointer :: gradSSHZonal, gradSSHMeridional
+      real (kind=RKIND), dimension(:), pointer :: gradSSH
+      real (kind=RKIND), dimension(:), pointer :: gradSSHX, gradSSHY, gradSSHZ
+      real (kind=RKIND), dimension(:), pointer :: gradSSHZonal, gradSSHMeridional
       real (kind=RKIND), dimension(:,:), pointer :: surfaceVelocity, SSHGradient
 
       ! Diagnostics Field Pointers
@@ -1802,10 +1802,10 @@ module ocn_time_integration_split
                           velocityZonal, velocityMeridional, &
                           includeHalos = .true.)
 
-         call mpas_reconstruct(meshPool, gradSSH,         &
-                          gradSSHX, gradSSHY, gradSSHZ,   &
-                          gradSSHZonal, gradSSHMeridional &
-                         )
+         call mpas_reconstruct(meshPool, gradSSH,          &
+                          gradSSHX, gradSSHY, gradSSHZ,    &
+                          gradSSHZonal, gradSSHMeridional, &
+                          includeHalos = .true.)
          !$omp end master
          call mpas_threading_barrier()
          call mpas_timer_stop('se final mpas reconstruct')
@@ -1815,8 +1815,8 @@ module ocn_time_integration_split
             surfaceVelocity(indexSurfaceVelocityZonal, iCell) = velocityZonal(1, iCell)
             surfaceVelocity(indexSurfaceVelocityMeridional, iCell) = velocityMeridional(1, iCell)
 
-            SSHGradient(indexSSHGradientZonal, iCell) = gradSSHZonal(1, iCell)
-            SSHGradient(indexSSHGradientMeridional, iCell) = gradSSHMeridional(1, iCell)
+            SSHGradient(indexSSHGradientZonal, iCell) = gradSSHZonal(iCell)
+            SSHGradient(indexSSHGradientMeridional, iCell) = gradSSHMeridional(iCell)
          end do
          !$omp end do
 
