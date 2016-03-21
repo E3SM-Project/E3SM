@@ -169,7 +169,7 @@ contains
       real (kind=RKIND) :: invAreaCell1, layerThicknessEdge1, coeff
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, kineticEnergyAt100m, relativeVorticityAt100m
       real (kind=RKIND), dimension(:), pointer :: divergenceAt100m, relativeVorticityVertexAt100m
-      real (kind=RKIND), dimension(:), pointer :: barotropicSpeed, barotropicTransportSpeed, dvEdge, dcEdge, areaCell
+      real (kind=RKIND), dimension(:), pointer :: barotropicSpeed, columnIntegratedSpeed, dvEdge, dcEdge, areaCell
       real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, relativeVorticityCell, activeTracersAtSurface
       real (kind=RKIND), dimension(:,:), pointer :: relativeVorticity, divergence, layerThickness, normalVelocity
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
@@ -252,7 +252,7 @@ contains
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'barotropicSpeed', barotropicSpeed)
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'barotropicTransportSpeed', barotropicTransportSpeed)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'columnIntegratedSpeed', columnIntegratedSpeed)
 
          ! scratch arrays
          call mpas_pool_get_field(scratchPool, 'normalThicknessFluxSum', normalThicknessFluxSumField)
@@ -273,8 +273,6 @@ contains
             layerThicknessSumEdge(iEdge) = layerThicknessEdge1
 
             do k=2, maxLevelEdgeTop(iEdge)
-               ! ocn_diagnostic_solve has not yet been called, so compute hEdge
-               ! just for this edge.
                layerThicknessEdge1 = 0.5_RKIND*( layerThickness(k,cell1) + layerThickness(k,cell2) )
 
                normalThicknessFluxSum(iEdge) = normalThicknessFluxSum(iEdge) + layerThicknessEdge1 * normalVelocity(k,iEdge)
@@ -285,7 +283,7 @@ contains
          do iCell = 1, nCells
             invAreaCell1 = 1.0_RKIND / areaCell(iCell)
             barotropicSpeed(iCell) = 0.0_RKIND
-            !barotropicTransportSpeed(iCell) = 0.0_RKIND
+            !columnIntegratedSpeed(iCell) = 0.0_RKIND
             do i = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i, iCell)
 
@@ -293,18 +291,15 @@ contains
                ! this is kinetic energy, in units of m^2/sec^2
                barotropicSpeed(iCell)    = barotropicSpeed(iCell) &
                     + coeff * (normalThicknessFluxSum(iEdge) / layerThicknessSumEdge(iEdge))**2
-               ! this is kinetic energy, in units of m^2/sec^2
-               !barotropicTransportSpeed(iCell) = barotropicTransportSpeed(iCell) &
-               !     + coeff * (normalThicknessFluxSum(iEdge))**2
+
             end do
             barotropicSpeed(iCell)    = sqrt(2.0_RKIND*barotropicSpeed(iCell))
-            !barotropicTransportSpeed(iCell) = sqrt(2.0_RKIND*barotropicTransportSpeed(iCell))
 
-            ! barotropicTransportSpeed = sum(h*sqrt(2*ke)), where ke is kineticEnergyCell 
+            ! columnIntegratedSpeed = sum(h*sqrt(2*ke)), where ke is kineticEnergyCell 
             !   and the sum is over the full column at cell centers.
-            barotropicTransportSpeed(iCell) = layerThickness(1,iCell)*sqrt( 2.0_RKIND * kineticEnergyCell(1,iCell) )
+            columnIntegratedSpeed(iCell) = layerThickness(1,iCell)*sqrt( 2.0_RKIND * kineticEnergyCell(1,iCell) )
             do k=2, maxLevelCell(iCell)
-               barotropicTransportSpeed(iCell) = barotropicTransportSpeed(iCell) &
+               columnIntegratedSpeed(iCell) = columnIntegratedSpeed(iCell) &
                     + layerThickness(k,iCell)*sqrt( 2.0_RKIND * kineticEnergyCell(k,iCell) )
             enddo
 
