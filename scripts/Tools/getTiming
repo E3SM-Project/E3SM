@@ -143,8 +143,8 @@ class TimingParser:
         rundir = case.get_value("RUNDIR")
         run_type = case.get_value("RUN_TYPE")
         ncpl_base_period = case.get_value("NCPL_BASE_PERIOD")
-        atm_ncpl = int(case.get_value("ATM_NCPL"))
-        ocn_ncpl = int(case.get_value("OCN_NCPL"))
+        atm_ncpl = case.get_value("ATM_NCPL")
+        ocn_ncpl = case.get_value("OCN_NCPL")
         ccsm_compset = case.get_value("CCSM_COMPSET")
         if ccsm_compset is None:
             ccsm_compset = ""
