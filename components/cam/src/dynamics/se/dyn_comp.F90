@@ -278,6 +278,9 @@ CONTAINS
                                    "max_threads=",omp_get_max_threads()
        !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ie,ithr,nets,nete,hybrid)
 #endif
+#ifdef COLUMN_OPENMP
+       call omp_set_num_threads(vthreads)
+#endif
        ithr=omp_get_thread_num()
        nets=dom_mt(ithr)%start
        nete=dom_mt(ithr)%end
@@ -381,6 +384,10 @@ CONTAINS
        !if (iam==0) write (iulog,*) "dyn_run: nthreads=",nthreads,&
        !                            "max_threads=",omp_get_max_threads()
        !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,n)
+#endif
+#ifdef COLUMN_OPENMP
+       ! nested threads
+       call omp_set_num_threads(vthreads)
 #endif
        ithr=omp_get_thread_num()
        nets=dom_mt(ithr)%start
