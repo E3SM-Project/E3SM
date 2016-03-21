@@ -2133,7 +2133,16 @@ contains
          brineFraction, &
          modalBCabsorptionParameter, &
          bioTracerShortwave
-    
+
+    real(kind=RKIND), pointer :: &
+         dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
+
+    character(len=strKIND), pointer :: &
+         config_calendar_type
+
+    character(len=strKIND) :: &
+         calendarType ! needed for CESM like coupled simulations
+
     ! aerosols array
     real(kind=RKIND), dimension(:,:), allocatable :: &
          aerosolsArray
@@ -2159,13 +2168,6 @@ contains
     logical :: &
          setGetPhysicsTracers, &
          setGetBGCTracers
-
-    ! CCSM coupled variables
-    character(len=strKIND), parameter :: &
-         CCSMCalendarType = ""
-
-    real(kind=RKIND), parameter :: &
-         CCSMDayNextShortwaveCalculation = 0.0_RKIND
 
     ! day of year
     call get_day_of_year(clock, dayOfYear)
@@ -2228,6 +2230,7 @@ contains
        call MPAS_pool_get_array(atmos_coupling, "shortwaveIRDiffuseDown", shortwaveIRDiffuseDown)
        call MPAS_pool_get_array(atmos_coupling, "snowfallRate", snowfallRate)
 
+       call MPAS_pool_get_array(shortwave, "dayOfNextShortwaveCalculation", dayOfNextShortwaveCalculation)
        call MPAS_pool_get_array(shortwave, "solarZenithAngleCosine", solarZenithAngleCosine)
        call MPAS_pool_get_array(shortwave, "albedoVisibleDirectCategory", albedoVisibleDirectCategory)
        call MPAS_pool_get_array(shortwave, "albedoVisibleDiffuseCategory", albedoVisibleDiffuseCategory)
@@ -2259,6 +2262,14 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "bioTracerShortwave", bioTracerShortwave)
        call MPAS_pool_get_array(biogeochemistry, "verticalShortwaveGrid", verticalShortwaveGrid)
        call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
+
+       ! calendar type
+       call MPAS_pool_get_config(block % configs, "config_calendar_type", config_calendar_type)
+       if (trim(config_calendar_type) == "gregorian") then
+          calendarType = "GREGORIAN"
+       else
+          calendarType = "GREGORIAN_NOLEAP"
+       endif
 
        ! aerosols array
        allocate(aerosolsArray(4*nAerosols,nCategories))
@@ -2326,9 +2337,9 @@ contains
                ciceTracerObject % tracerArrayCategory(:,:), &
                latCell(iCell), & 
                lonCellColumn, &
-               CCSMCalendarType, &
+               calendarType, &
                daysInYear, &
-               CCSMDayNextShortwaveCalculation, &
+               dayOfNextShortwaveCalculation, &
                dayOfYear, &
                secondsIntoDay, &
                aerosolMassExtinctionCrossSection(:,:), &
