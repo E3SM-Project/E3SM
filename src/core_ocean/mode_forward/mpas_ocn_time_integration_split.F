@@ -923,7 +923,7 @@ module ocn_time_integration_split
               call mpas_pool_get_field(statePool, 'sshSubcycle', sshSubcycleField, newBtrSubcycleTime)
               call mpas_dmpar_exch_halo_field(sshSubcycleField)
               call mpas_timer_stop("se halo ssh")
-      
+
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
               ! Barotropic subcycle: VELOCITY CORRECTOR STEP
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
