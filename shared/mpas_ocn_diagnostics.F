@@ -114,7 +114,7 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: &
         bottomDepth, fVertex, dvEdge, dcEdge, areaCell, areaTriangle, ssh, seaSurfacePressure, frazilSurfacePressure, &
-        pressureAdjustedSSH
+        pressureAdjustedSSH, gradSSH
       real (kind=RKIND), dimension(:,:), pointer :: &
         weightsOnEdge, kiteAreasOnVertex, layerThicknessEdge, layerThickness, normalVelocity, normalTransportVelocity, &
         normalGMBolusVelocity, tangentialVelocity, pressure, circulation, kineticEnergyCell, montgomeryPotential, &
@@ -123,7 +123,7 @@ contains
         normalizedRelativeVorticityVertex, normalizedRelativeVorticityCell, density, displacedDensity, potentialDensity, &
         temperature, salinity, kineticEnergyVertex, kineticEnergyVertexOnCells, vertVelocityTop, vertTransportVelocityTop, &
         vertGMBolusVelocityTop, BruntVaisalaFreqTop, vorticityGradientNormalComponent, vorticityGradientTangentialComponent, &
-        gradSSH, RiTopOfCell, inSituThermalExpansionCoeff, inSituSalineContractionCoeff
+        RiTopOfCell, inSituThermalExpansionCoeff, inSituSalineContractionCoeff
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, derivTwo
       character :: c1*6
@@ -813,7 +813,7 @@ contains
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
 
-         gradSSH(1, iEdge) = edgeMask(1, iEdge) * ( pressureAdjustedSSH(cell2) - pressureAdjustedSSH(cell1) ) / dcEdge(iEdge)
+         gradSSH(iEdge) = edgeMask(1, iEdge) * ( pressureAdjustedSSH(cell2) - pressureAdjustedSSH(cell1) ) / dcEdge(iEdge)
       end do
       !$omp end do
 

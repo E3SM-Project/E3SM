@@ -155,9 +155,9 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:,:), pointer :: normalTransportVelocity, normalGMBolusVelocity
       real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
       real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional
-      real (kind=RKIND), dimension(:,:), pointer :: gradSSH
-      real (kind=RKIND), dimension(:,:), pointer :: gradSSHX, gradSSHY, gradSSHZ
-      real (kind=RKIND), dimension(:,:), pointer :: gradSSHZonal, gradSSHMeridional
+      real (kind=RKIND), dimension(:), pointer :: gradSSH
+      real (kind=RKIND), dimension(:), pointer :: gradSSHX, gradSSHY, gradSSHZ
+      real (kind=RKIND), dimension(:), pointer :: gradSSHZonal, gradSSHMeridional
       real (kind=RKIND), dimension(:,:), pointer :: surfaceVelocity, sshGradient
 
       ! State Array Pointers
@@ -1009,9 +1009,10 @@ module ocn_time_integration_rk4
                           velocityZonal, velocityMeridional, &
                           includeHalos = .true.)
 
-         call mpas_reconstruct(meshPool, gradSSH,         &
-                          gradSSHX, gradSSHY, gradSSHZ,   &
-                          gradSSHZonal, gradSSHMeridional)
+         call mpas_reconstruct(meshPool, gradSSH,          &
+                          gradSSHX, gradSSHY, gradSSHZ,    &
+                          gradSSHZonal, gradSSHMeridional, &
+                          includeHalos = .true.)
          !$omp end master
          call mpas_threading_barrier()
 
@@ -1020,8 +1021,8 @@ module ocn_time_integration_rk4
             surfaceVelocity(indexSurfaceVelocityZonal, iCell) = velocityZonal(1, iCell)
             surfaceVelocity(indexSurfaceVelocityMeridional, iCell) = velocityMeridional(1, iCell)
 
-            SSHGradient(indexSSHGradientZonal, iCell) = gradSSHZonal(1, iCell)
-            SSHGradient(indexSSHGradientMeridional, iCell) = gradSSHMeridional(1, iCell)
+            SSHGradient(indexSSHGradientZonal, iCell) = gradSSHZonal(iCell)
+            SSHGradient(indexSSHGradientMeridional, iCell) = gradSSHMeridional(iCell)
          end do
          !$omp end do
 
