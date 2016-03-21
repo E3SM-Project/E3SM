@@ -295,7 +295,7 @@ contains
             end do
             barotropicSpeed(iCell)    = sqrt(2.0_RKIND*barotropicSpeed(iCell))
 
-            ! columnIntegratedSpeed = sum(h*sqrt(2*ke)), where ke is kineticEnergyCell 
+            ! columnIntegratedSpeed = sum(h*sqrt(2*ke)), where ke is kineticEnergyCell
             !   and the sum is over the full column at cell centers.
             columnIntegratedSpeed(iCell) = layerThickness(1,iCell)*sqrt( 2.0_RKIND * kineticEnergyCell(1,iCell) )
             do k=2, maxLevelCell(iCell)
