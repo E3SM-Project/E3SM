@@ -1684,6 +1684,7 @@
 
 	<!-- shortwave radiation -->
 	<var_struct name="shortwave" time_levs="1" packages="pkgColumnPackage">
+		<var name="dayOfNextShortwaveCalculation"     type="real"     dimensions="Time"                                  name_in_code="dayOfNextShortwaveCalculation"/>
 		<var name="solarZenithAngleCosine"            type="real"     dimensions="nCells Time"                           name_in_code="solarZenithAngleCosine"/>
 		<var name="albedoVisibleDirectCategory"       type="real"     dimensions="nCategories nCells Time"               name_in_code="albedoVisibleDirectCategory"/>
 		<var name="albedoVisibleDiffuseCategory"      type="real"     dimensions="nCategories nCells Time"               name_in_code="albedoVisibleDiffuseCategory"/>
