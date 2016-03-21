@@ -153,6 +153,10 @@ CONTAINS
     endif
 #ifdef COLUMN_OPENMP
     call omp_set_nested(.true.)
+    if (vthreads > nthreads .or. vthreads < 1) &
+         call endrun('Error: vthreads<1 or vthreads > NTHRDS_ATM')
+    if (vthreads < 1 ) &
+         call endrun('Error: vthreads<1')
     nthreads = nthreads / vthreads
     if(par%masterproc) then
        write(iulog,*) " "
@@ -160,6 +164,9 @@ CONTAINS
        write(iulog,*) "dyn_init1: nthreads=",nthreads,"vthreads=",vthreads
        write(iulog,*) " "
     endif
+#else
+    if (vthreads>1) &
+         call endrun('Error: vthreads>1 requires -DCOLUMN_OPENMP')
 #endif
 #else
     nthreads = 1
