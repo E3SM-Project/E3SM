@@ -5,7 +5,7 @@ All interaction with and between the module files in XML/ takes place
 through the Case module.
 """
 
-from XML.standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 import CIME.utils
 from CIME.utils import expect, run_cmd
 from CIME.XML.machines import Machines
@@ -101,3 +101,7 @@ class Case(object):
 
         logging.warning("Not able to set value for item '%s'" % item)
 
+    def __iter__(self):
+        for entryid_file in self._env_entryid_files:
+            for key, val in entryid_file:
+                yield key, val

@@ -6,16 +6,16 @@
 This file defines compiler flags for building CIME.  General flags are listed first
 followed by flags specific to particular operating systems, followed by particular machines.
 
-More general flags are replaced by more specific flags. 
-Flags of the sort ADD_FLAG indicate that the field should be appended to an already existing FLAG definition.  
+More general flags are replaced by more specific flags.
+Flags of the sort ADD_FLAG indicate that the field should be appended to an already existing FLAG definition.
 
-Attributes indicate that an if clause should be added to the Macros so that these flags are added 
+Attributes indicate that an if clause should be added to the Macros so that these flags are added
 only under the conditions described by the attribute(s).
 
 The env_mach_specific file may set environment variables or load modules which set environment variables
-which are then  used in the Makefile.   For example the NETCDF_PATH on many machines is set by a module. 
+which are then  used in the Makefile.   For example the NETCDF_PATH on many machines is set by a module.
 
-Do not use variables CPPDEFS and SLIBS here, instead use ADD_CPPDEFS and ADD_SLIBS 
+Do not use variables CPPDEFS and SLIBS here, instead use ADD_CPPDEFS and ADD_SLIBS
 
 ========================================================================
  Serial/MPI compiler specification
@@ -25,8 +25,8 @@ SCC   and  SFC specifies the serial compiler
 MPICC and  MPICC specifies the mpi compiler
 
 if $MPILIB is set to mpi-serial then
-   CC = $SCC   
-   FC = $SFC  
+   CC = $SCC
+   FC = $SFC
    MPICC = $SCC
    MPIFC = $SFC
    INC_MPI = $(CIMEROOT)/externals/mct/mpi-serial
@@ -48,7 +48,7 @@ SCXX: serial C++ compiler
 MPICXX: mpi C++ compiler
 
 CXX_LINKER (CXX/FORTRAN): When C++ code is included in the build, do
-we use a C++ or Fortran linker? 
+we use a C++ or Fortran linker?
 
 In addition, some compilers require additional libraries or link-time
 flags, specified via CXX_LIBS or CXX_LDFLAGS, as in the following
@@ -74,7 +74,7 @@ for mct, etc.
 
 
 ===========================
---> 
+-->
 <!-- Define default values that can be overridden by specific
      compilers -->
 <compiler>
@@ -82,7 +82,7 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="ibm">
-  <!-- http://publib.boulder.ibm.com/infocenter/comphelp/v7v91/index.jsp 
+  <!-- http://publib.boulder.ibm.com/infocenter/comphelp/v7v91/index.jsp
  Notes:  (see xlf user's guide for the details)
   -lmass          => IBM-tuned intrinsic lib
   -qsmp=noauto    => enable SMP directives, but don't add any
@@ -94,7 +94,7 @@ for mct, etc.
   -qipa=level=2   => InterProcedure Analysis (eg. inlining) => slow compiles
   -p -pg          => enable profiling (use in both FFLAGS and LDFLAGS)
   -qreport        => for smp/omp only
-  -g              => always leave it on because overhead is minimal 
+  -g              => always leave it on because overhead is minimal
   -qflttrap=...   => enable default sigtrap (core dump)
   -C              => runtime array bounds checking (runs slow)
   -qinitauto=...  => initializes automatic variables
@@ -125,7 +125,7 @@ for mct, etc.
   <!-- Notes:  (see pgi man page & user's guide for the details) -->
   <!--  -Mextend        => Allow 132-column source lines -->
   <!--  -Mfixed         => Assume fixed-format source -->
-  <!--  -Mfree          => Assume free-format source --> 
+  <!--  -Mfree          => Assume free-format source -->
 
   <!--  -byteswapio     => Swap byte-order for unformatted i/o (big/little-endian) -->
 
@@ -200,7 +200,7 @@ for mct, etc.
   <!-- Notes:  (see pgi man page & user's guide for the details) -->
   <!--  -Mextend        => Allow 132-column source lines -->
   <!--  -Mfixed         => Assume fixed-format source -->
-  <!--  -Mfree          => Assume free-format source --> 
+  <!--  -Mfree          => Assume free-format source -->
 
   <!--  -byteswapio     => Swap byte-order for unformatted i/o (big/little-endian) -->
 
@@ -244,7 +244,7 @@ for mct, etc.
   <FFLAGS_NOOPT> -O0 -g -Ktrap=fp -Mbounds -Kieee  </FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="false"> -nomp </ADD_FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -mp </ADD_FFLAGS_NOOPT>
-  
+
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </ADD_FFLAGS>
   <ADD_FFLAGS MODEL="datm"> -Mnovect </ADD_FFLAGS>
   <ADD_FFLAGS MODEL="dlnd"> -Mnovect </ADD_FFLAGS>
@@ -409,7 +409,7 @@ for mct, etc.
   <ADD_FFLAGS DEBUG="FALSE"> -O </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="TRUE"> -g -Wall </ADD_CFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O </ADD_CFLAGS>
-  <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS 
+  <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
        so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
   <FFLAGS> -mcmodel=medium -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </FFLAGS>
   <CFLAGS> -mcmodel=medium </CFLAGS>
@@ -454,7 +454,7 @@ for mct, etc.
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="false"> -h noomp </ADD_FFLAGS_NOOPT>
   <FC_AUTO_R8> -s real64 </FC_AUTO_R8>
-  <LDFLAGS> -Wl,--allow-multiple-definition -h byteswapio </LDFLAGS>  
+  <LDFLAGS> -Wl,--allow-multiple-definition -h byteswapio </LDFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
@@ -522,7 +522,7 @@ for mct, etc.
 <compiler MACH="userdefined">
   <NETCDF_PATH> USERDEFINED_MUST_EDIT_THIS</NETCDF_PATH>
   <PNETCDF_PATH></PNETCDF_PATH>
-  <ADD_SLIBS># USERDEFINED $(shell $(NETCDF_PATH)/bin/nc-config --flibs)</ADD_SLIBS>  
+  <ADD_SLIBS># USERDEFINED $(shell $(NETCDF_PATH)/bin/nc-config --flibs)</ADD_SLIBS>
   <ADD_CPPDEFS></ADD_CPPDEFS>
   <CONFIG_ARGS></CONFIG_ARGS>
   <ESMF_LIBDIR></ESMF_LIBDIR>
@@ -544,13 +544,13 @@ for mct, etc.
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
   <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY  </GPTL_CPPDEFS>
-  <CMAKE_OPTS> -DCMAKE_SYSTEM_NAME=Catamount</CMAKE_OPTS> 
+  <CMAKE_OPTS> -DCMAKE_SYSTEM_NAME=Catamount</CMAKE_OPTS>
 </compiler>
 
 
 <compiler COMPILER="intel" MACH="edison">
-  <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>  
-  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>  
+  <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
   <ADD_SLIBS> ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm </ADD_SLIBS>
@@ -601,8 +601,8 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="gnu" MACH="melvin">
-  <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>  
-  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>  
+  <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
@@ -687,13 +687,13 @@ for mct, etc.
   <MPICC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpicc</MPICC>
   <MPIFC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpif90</MPIFC>
 </compiler>
- 
+
 <compiler COMPILER="intel" MACH="titan">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) </ADD_SLIBS>  
+  <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) </ADD_SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <ADD_SLIBS MPILIB="mpich"> -mkl=cluster </ADD_SLIBS>
   <ADD_SLIBS MPILIB="mpich2"> -mkl=cluster </ADD_SLIBS>
@@ -709,7 +709,7 @@ for mct, etc.
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <ADD_SLIBS> $(shell nf-config --flibs) </ADD_SLIBS>  
+  <ADD_SLIBS> $(shell nf-config --flibs) </ADD_SLIBS>
   <TRILINOS_PATH>/lustre/atlas/world-shared/cli900/cesm/software/Trilinos/Trilinos-11.10.2_gptl/titan-pgi-ci-nophal/install</TRILINOS_PATH>
   <CXX_LIBS> -lfmpich -lmpichf90_pgi $(PGI_PATH)/linux86-64/$(PGI_VERSION)/lib/f90main.o /opt/gcc/default/snos/lib64/libstdc++.a  </CXX_LIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
@@ -734,7 +734,7 @@ for mct, etc.
   <SFC> xlf2003_r </SFC>
   <MPIFC> mpxlf2003_r </MPIFC>
   <SCC> cc_r </SCC>
-  <MPICC> mpcc_r </MPICC>  
+  <MPICC> mpcc_r </MPICC>
   <ADD_CPPFLAGS> -DF2003 </ADD_CPPFLAGS>
   <ADD_CFLAGS> -qarch=auto -qtune=auto -qcache=auto </ADD_CFLAGS>
   <ADD_FFLAGS> -qarch=auto -qtune=auto -qcache=auto -qsclk=micro </ADD_FFLAGS>
@@ -976,10 +976,10 @@ for mct, etc.
  <MPI_PATH MPILIB="mvapich2"> $(MPI_LIB)</MPI_PATH >
  <ADD_CPPDEFS> -DnoI8 </ADD_CPPDEFS>
  <ADD_LDFLAGS compile_threaded="true">  </ADD_LDFLAGS>
- <!--  -C=Undefined flag doesn't work as it requires MPI and NETCDF to be 
+ <!--  -C=Undefined flag doesn't work as it requires MPI and NETCDF to be
       compiled with this flag, which is not available now. NAG has the following debug flags
       <ADD_FFLAGS DEBUG="TRUE">  -gline  -C=all  -g  -C=undefined -C=recursion -nan -O0 -v  </ADD_FFLAGS>
-      "-nan" is an important flag. currently, it doesn't work for pio, it is only used for "cam" model. 
+      "-nan" is an important flag. currently, it doesn't work for pio, it is only used for "cam" model.
  -->
  <ADD_FFLAGS DEBUG="TRUE" >  -gline  -C=all  -g  -O0 -v  </ADD_FFLAGS>
  <ADD_FFLAGS DEBUG="TRUE" MODEL="cam">  -gline  -C=all  -g  -nan -O0 -v  </ADD_FFLAGS>
@@ -1010,7 +1010,7 @@ for mct, etc.
   <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt</SLIBS>
 </compiler>
 
- 
+
 <compiler COMPILER="pgi" MACH="hopper">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
@@ -1119,15 +1119,5 @@ for mct, etc.
 	<TRILINOS_PATH>$(TRILINOS_PATH)</TRILINOS_PATH>
 	<ALBANY_PATH>$(ALBANY_PATH)</ALBANY_PATH>
 </compiler>
-
-<compiler MACH="caldera">
-  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <NETCDF_PATH>$(NETCDF)</NETCDF_PATH>
-  <PNETCDF_PATH>$(PNETCDF)</PNETCDF_PATH>
-  <!-- these flags enable nano timers -->
- <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
-</compiler>
-
-
 
 </config_compilers>

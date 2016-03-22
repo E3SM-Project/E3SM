@@ -195,3 +195,7 @@ class EntryID(GenericXML):
 
         return xmldiffs
 
+    def __iter__(self):
+        for node in self.get_nodes("entry"):
+            vid = node.attrib["id"]
+            yield vid, self.get_value(vid)

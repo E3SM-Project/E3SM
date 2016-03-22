@@ -2,10 +2,11 @@
 Interface to the config_machines.xml file.  This class inherits from GenericXML.py
 """
 from standard_module_setup import *
-import socket
 from generic_xml import GenericXML
 from files import Files
 from CIME.utils import expect
+
+import socket
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,6 @@ class Machines(GenericXML):
         Return the name of the machine
         """
         return self.name
-
 
     def get_node(self, nodename, attributes=None):
         """

@@ -63,7 +63,7 @@ class RunUnitTests(unittest.TestCase):
         self.assertEqual(stat, 0, msg=output)
 
     def test_CIMEXML_unit_tests(self):
-        # Find and run all the unit tests in the CIME directory tree
+        # Find and run all the unit tests in the XML directory tree
         stat, output, _ = run_cmd("python -m doctest *.py 2>&1", ok_to_fail=True, from_dir=os.path.join(LIB_DIR,"CIME","XML"))
         self.assertEqual(stat, 0, msg=output)
 
