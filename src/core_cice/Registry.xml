@@ -470,7 +470,9 @@
 	    <var name="atmosBlackCarbonFlux"/>     
 	    <var name="atmosDustFlux"/> 
             <var name="oceanDustIronFlux"/>	
-            <var name="atmosBioFluxes"/>
+            <var name="atmosBioFluxes"/>	
+            <var name="oceanBioFluxes"/>	
+            <var name="oceanBioConcentrations"/>
             <var name="snowScatteringAerosol"/>
             <var name="snowBodyAerosol"/>
             <var name="iceScatteringAerosol"/>
