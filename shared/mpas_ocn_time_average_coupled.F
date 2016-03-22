@@ -108,7 +108,7 @@ module ocn_time_average_coupled
         real (kind=RKIND), dimension(:,:), pointer :: surfaceVelocity, avgSurfaceVelocity
         real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue, avgTracersSurfaceValue
         real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
-        real (kind=RKIND), dimension(:,:), pointer :: gradSSHZonal, gradSSHMeridional
+        real (kind=RKIND), dimension(:), pointer :: gradSSHZonal, gradSSHMeridional
         integer :: iCell
         integer, pointer :: index_temperature, index_SSHzonal, index_SSHmeridional, nAccumulatedCoupled, nCells
         real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers, landIceTracerTransferVelocities, &
@@ -140,9 +140,9 @@ module ocn_time_average_coupled
            avgTracersSurfaceValue(:, iCell) = avgTracersSurfaceValue(:, iCell) / ( nAccumulatedCoupled + 1 )
 
            avgSSHGradient(index_SSHzonal, iCell) = ( avgSSHGradient(index_SSHzonal, iCell) * nAccumulatedCoupled &
-                                                 + gradSSHZonal(1, iCell) ) / ( nAccumulatedCoupled + 1 )
+                                                 + gradSSHZonal(iCell) ) / ( nAccumulatedCoupled + 1 )
            avgSSHGradient(index_SSHmeridional, iCell) = ( avgSSHGradient(index_SSHmeridional, iCell) * nAccumulatedCoupled &
-                                                 + gradSSHMeridional(1, iCell) ) / ( nAccumulatedCoupled + 1 )
+                                                 + gradSSHMeridional(iCell) ) / ( nAccumulatedCoupled + 1 )
            avgSurfaceVelocity(:, iCell) = ( avgSurfaceVelocity(:, iCell) * nAccumulatedCoupled + surfaceVelocity(:, iCell) ) &
                                         / ( nAccumulatedCoupled + 1 )
         end do
