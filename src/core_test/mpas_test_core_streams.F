@@ -130,6 +130,18 @@ module test_core_streams
          return
       end if
 
+      call MPAS_stream_mgr_create_stream(domain % streamManager, 'R8_time_stream', MPAS_STREAM_OUTPUT, 'r8_data.$Y-$M-$D-$d_$h.$m.$s.nc', &
+                                         filenameInterval="0001-00-00_00:00:00", &
+                                         realPrecision=MPAS_IO_DOUBLE_PRECISION, &
+                                         clobberMode=MPAS_STREAM_CLOBBER_TRUNCATE, &
+                                         ierr=local_ierr)
+      if (local_ierr /= MPAS_STREAM_MGR_NOERR) then
+         ierr = 1
+         write(stderrUnit,*) 'Error creating ''R8_stream''.'
+         return
+      end if
+
+
       call MPAS_stream_mgr_add_field(domain % streamManager, 'R4_stream', 'xtime', ierr=local_ierr)
       call MPAS_stream_mgr_add_field(domain % streamManager, 'R4_stream', 'cellPersistReal5D', ierr=local_ierr)
       call MPAS_stream_mgr_add_field(domain % streamManager, 'R4_stream', 'cellPersistReal4D', ierr=local_ierr)
@@ -140,8 +152,12 @@ module test_core_streams
 
       call MPAS_stream_mgr_add_stream_fields(domain % streamManager, 'R8_stream', 'R4_stream', ierr=local_ierr)
 
+      call MPAS_stream_mgr_add_stream_fields(domain % streamManager, 'R8_time_stream', 'R4_stream', ierr=local_ierr)
+
       call MPAS_stream_mgr_write(domain % streamManager, 'R4_stream', forceWriteNow=.true., ierr=local_ierr)
       call MPAS_stream_mgr_write(domain % streamManager, 'R8_stream', forceWriteNow=.true., ierr=local_ierr)
+      call MPAS_stream_mgr_write(domain % streamManager, 'R8_time_stream', forceWriteNow=.true., ierr=local_ierr)
+      call MPAS_stream_mgr_write(domain % streamManager, 'R8_time_stream', forceWriteNow=.true., writeTime="9999-01-01_00:00:00", ierr=local_ierr)
 
 
       !
