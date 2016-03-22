@@ -20,3 +20,12 @@ class Files(EntryID):
         """
         infile = os.path.join(get_cime_root(), "cime_config", get_model(), "config_files.xml")
         EntryID.__init__(self, infile)
+
+    def get_components(self, nodename, resolved=True):        
+        node = self.get_optional_node("entry", {"id":nodename})
+        valnodes = self.get_nodes("value", root=node)
+        values = list();
+        for valnode in valnodes:
+            value = valnode.attrib["component"]
+            values.append(value)
+        return values

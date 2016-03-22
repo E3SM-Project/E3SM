@@ -254,3 +254,24 @@ class Machines(GenericXML):
     def get_module_system_cmd_path(self, lang):
         cmd_nodes = self.get_node("cmd_path", attributes={"lang":lang})
         return cmd_nodes.text
+
+    def print_values(self, verbose=None):
+        # write out machines
+        machines = self.get_nodes(nodename="machine")
+        print  "Machines"
+        for machine in machines:
+            name = machine.attrib["MACH"]
+            desc = machine.find("DESC")
+            os   = machine.find("OS")
+            compilers = machine.find("COMPILERS")
+            max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
+            pes_per_node = machine.find("PES_PER_NODE")
+            support = machine.find("SUPPORTED_BY")
+
+            print  "  %s : %s "% (name , desc.text)
+            print  "      os             ",os.text 
+            print  "      compilers      ",compilers.text 
+            if pes_per_node is not None:
+                print  "      pes/node       ",pes_per_node.text 
+            if max_tasks_per_node is not None:
+                print  "      max_tasks/node ",max_tasks_per_node.text 
