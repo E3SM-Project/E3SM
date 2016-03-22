@@ -6,6 +6,7 @@ module docn_comp_mod
 ! !USES:
 
   use shr_const_mod
+  use shr_frz_mod, only: shr_frz_freezetemp
   use shr_sys_mod
   use shr_kind_mod     , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, &
                                CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
@@ -83,6 +84,7 @@ module docn_comp_mod
   type(mct_rearr) :: rearr
   type(mct_avect) :: avstrm   ! av of data from stream
   real(R8), pointer :: somtp(:)
+  real(R8), pointer :: tfreeze(:)
   integer , pointer :: imask(:)
   character(len=*),parameter :: flds_strm = 'strm_h:strm_qbot'
 
@@ -426,6 +428,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     kqbot = mct_aVect_indexRA(avstrm,'strm_qbot')
 
     allocate(somtp(lsize))
+    allocate(tfreeze(lsize))
     allocate(imask(lsize))
 
     kmask = mct_aVect_indexRA(ggrid%data,'mask')
@@ -686,6 +689,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
             o2x%rAttr(kq,n) = 0.0_R8
          enddo
       else   ! firstcall
+         tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz
          do n = 1,lsize
          if (imask(n) /= 0) then
             !--- pull out h from av for resuse below ---
@@ -702,8 +706,8 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
                 (x2o%rAttr(ksnow,n)+x2o%rAttr(krofi,n))*latice) * &  ! latent by prec and roff
                 dt/(cpsw*rhosw*hn)
              !--- compute ice formed or melt potential ---
-            o2x%rAttr(kq,n) = (TkFrzSw - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0
-            o2x%rAttr(kt,n) = max(TkFrzSw,o2x%rAttr(kt,n))                    ! reset temp
+            o2x%rAttr(kq,n) = (tfreeze(n) - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0
+            o2x%rAttr(kt,n) = max(tfreeze(n),o2x%rAttr(kt,n))                    ! reset temp
             somtp(n) = o2x%rAttr(kt,n)                                        ! save temp
          endif
          enddo
