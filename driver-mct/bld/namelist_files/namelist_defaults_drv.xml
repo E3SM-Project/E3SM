@@ -27,6 +27,10 @@
 <histavg_ymd>$AVGHIST_DATE</histavg_ymd>
 <max_cplstep_time>0.0</max_cplstep_time>
 
+<barrier_option>$BARRIER_OPTION</barrier_option>
+<barrier_n>$BARRIER_N</barrier_n>
+<barrier_ymd>$BARRIER_DATE</barrier_ymd>
+
 <!-- =========================================  -->
 <!--- seq_infodata_inparm                       -->
 <!-- =========================================  -->
@@ -149,6 +153,7 @@
 <pio_typename         >$PIO_TYPENAME</pio_typename>
 <pio_debug_level      >$PIO_DEBUG_LEVEL</pio_debug_level>
 <pio_blocksize        >$PIO_BLOCKSIZE</pio_blocksize>
+<pio_rearranger>$PIO_REARRANGER</pio_rearranger>
 <pio_buffer_size_limit>$PIO_BUFFER_SIZE_LIMIT</pio_buffer_size_limit>
 <pio_async_interface PIO_ASYNC_INTERFACE="TRUE">.true.</pio_async_interface>
 <pio_async_interface PIO_ASYNC_INTERFACE="FALSE">.false.</pio_async_interface>
