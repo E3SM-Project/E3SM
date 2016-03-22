@@ -39,7 +39,7 @@ EXEROOT, COMPILER
         for item in ["COMP", "NTASKS", "NTHRDS", "ROOTPE", "NINST", "PSTRID"]:
             values = []
             for model in models:
-                if item == NINST and model == "CPL":
+                if item == "NINST" and model == "CPL":
                     values.append(0) # no NINST for CPL, set to zero so lists are some length for all items
                 else:
                     values.append(case.get_value("_".join([item, model])))
@@ -194,14 +194,14 @@ EXEROOT, COMPILER
         """
         Get optimized mpirun command
         """
-        expect(has_opt_mpirun(mpirun_exe), "No opt mpirun")
+        expect(self.has_opt_mpirun(mpirun_exe), "No opt mpirun")
         return getattr(self, mpirun_exe).replace(self.DEFAULT_RUN_EXE_TEMPLATE_STR, model_exe)
 
     def document(self):
         """
         Get the pe layout document for insertion into the run script
         """
-        mydoc = \
+        doc = \
 """
 # ----------------------------------------
 # PE Layout:
@@ -213,7 +213,7 @@ EXEROOT, COMPILER
             doc += "#    %s ntasks=%d nthreads=%d rootpe=%d ninst=%d\n" % (comp, ntasks, nthrds, rootpe, ninst)
 
         doc += "#\n"
-        $doc .=  "#    total number of hw pes = %d\n" % self.full_sum
+        doc +=  "#    total number of hw pes = %d\n" % self.full_sum
 
         for comp, ntasks, nthrds, rootpe, pstrid in zip(self.COMP, self.NTASKS, self.NTHRDS, self.ROOTPE, self.PSTRID):
             tt = rootpe + (ntasks - 1) * pstrid
