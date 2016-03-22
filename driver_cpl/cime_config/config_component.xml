@@ -2980,7 +2980,7 @@
   </entry>
 
   <entry id="ATM_NCPL">
-    <type>char</type>
+    <type>integer</type>
     <default_value>48</default_value>
     <values>
       <value compset="_CAM[45]"             >48</value>
@@ -3018,7 +3018,7 @@
   </entry>
 
   <entry id="LND_NCPL">
-    <type>char</type>
+    <type>integer</type>
     <default_value>$ATM_NCPL</default_value>
     <values>
       <value compset="_DLND.*_CISM">1</value>
@@ -3031,7 +3031,7 @@
   </entry>
 
   <entry id="ICE_NCPL">
-    <type>char</type>
+    <type>integer</type>
     <default_value>$ATM_NCPL</default_value>
     <values>
       <value compset="_DLND.*_CISM">1</value>
@@ -3044,7 +3044,7 @@
   </entry>
 
   <entry id="OCN_NCPL">
-    <type>char</type>
+    <type>integer</type>
     <default_value>$ATM_NCPL</default_value>
     <values>
       <value compset="_POP2">1</value>
@@ -3065,7 +3065,7 @@
   </entry>
 
   <entry id="GLC_NCPL">
-    <type>char</type>
+    <type>integer</type>
     <default_value>1</default_value>
     <values>
       <value compset="_DLND.*_CISM">1</value>
@@ -3076,7 +3076,7 @@
   </entry>
 
   <entry id="ROF_NCPL">
-    <type>char</type>
+    <type>integer</type>
     <default_value>8</default_value>
     <values>
       <value compset="_DATM.*_POP2">$ATM_NCPL</value>
@@ -3093,7 +3093,7 @@
   </entry>
 
   <entry id="WAV_NCPL">
-    <type>char</type>
+    <type>integer</type>
     <default_value>$ATM_NCPL</default_value>
     <group>run_coupling</group>
     <file>env_run.xml</file>
