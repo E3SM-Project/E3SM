@@ -2140,27 +2140,27 @@
 			 description="component of horizontal velocity used to transport mass and tracers in the northward direction"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="gradSSH" type="real" dimensions="nVertLevels nEdges Time" units=""
+		<var name="gradSSH" type="real" dimensions="nEdges Time" units=""
 			 description="Gradient of sea surface height at edges."
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="gradSSHX" type="real" dimensions="nVertLevels nCells Time" units=""
+		<var name="gradSSHX" type="real" dimensions="nCells Time" units=""
 			 description="X Component of the gradient of sea surface height at cell centers."
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="gradSSHY" type="real" dimensions="nVertLevels nCells Time" units=""
+		<var name="gradSSHY" type="real" dimensions="nCells Time" units=""
 			 description="Y Component of the gradient of sea surface height at cell centers."
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="gradSSHZ" type="real" dimensions="nVertLevels nCells Time" units=""
+		<var name="gradSSHZ" type="real" dimensions="nCells Time" units=""
 			 description="Z Component of the gradient of sea surface height at cell centers."
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="gradSSHZonal" type="real" dimensions="nVertLevels nCells Time" units=""
+		<var name="gradSSHZonal" type="real" dimensions="nCells Time" units=""
 			 description="Zonal Component of the gradient of sea surface height at cell centers."
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="gradSSHMeridional" type="real" dimensions="nVertLevels nCells Time" units=""
+		<var name="gradSSHMeridional" type="real" dimensions="nCells Time" units=""
 			 description="Meridional Component of the gradient of sea surface height at cell centers."
 			 packages="forwardMode;analysisMode"
 		/>
