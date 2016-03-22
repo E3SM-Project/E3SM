@@ -98,7 +98,7 @@
   integer, parameter :: max_gas = nsoa + 1
   ! the +3 in max_aer are dst, ncl, so4
   integer, parameter :: max_aer = nsoa + npoa + nbc + 3
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOA )
   integer, parameter :: max_gas = nsoa + 1
   ! the +4 in max_aer are dst, ncl, so4, mom
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
@@ -120,7 +120,7 @@
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 5
 #endif
 
-#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ))
+#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOA ))
   integer, parameter :: ntot_amode_extd = ntot_amode
 #else
   integer, parameter :: ntot_amode_extd = ntot_amode + 1
@@ -163,7 +163,7 @@
   !    when nbc  > 1, iaer_bc  is index of the first bc  species
   !    when npom > 1, iaer_pom is index of the first pom species
   integer :: iaer_bc, iaer_dst, iaer_ncl, iaer_nh4, iaer_pom, iaer_soa, iaer_so4, &
-             iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc, iaer_mom, &
+             iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc, iaer_moa, &
              iaer_no3, iaer_cl, iaer_ca, iaer_co3
   integer :: i_agepair_pca, i_agepair_macc, i_agepair_mait
   integer :: lmap_gas(max_gas)
@@ -5191,7 +5191,7 @@ implicit none
       iaer_ca  = 0 ; iaer_co3 = 0 
       iaer_mpoly = 0 ; iaer_mprot = 0 
       iaer_mlip  = 0 ; iaer_mhum = 0 
-      iaer_mproc = 0 ; iaer_mom = 0
+      iaer_mproc = 0 ; iaer_moa = 0
 
       if (nsoa == 1) then
          name_gas(1) = 'SOAG'
@@ -5290,10 +5290,10 @@ implicit none
       iaer_co3 = naer
 #endif
 
-#if ( defined MODAL_AERO_4MODE_MOM )
+#if ( defined MODAL_AERO_4MODE_MOA )
       naer = naer + 1
       name_aerpfx(naer) = 'mom'
-      iaer_mom = naer
+      iaer_moa = naer
 #endif
 
       if (ntot_amode==9) then
@@ -5633,8 +5633,8 @@ implicit none
            'iaer_pom, iaer_bc, iaer_ncl, iaer_dst, iaer_ca, iaer_co3', &
             iaer_pom, iaer_bc, iaer_ncl, iaer_dst, iaer_ca, iaer_co3
          write(iulog,'(/a56,10i5)') &
-           'iaer_mom, ...mpoly, ...mprot, ...mlip, ...mhum, ...mproc', &
-            iaer_mom, iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc
+           'iaer_moa, ...mpoly, ...mprot, ...mlip, ...mhum, ...mproc', &
+            iaer_moa, iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc
          write(iulog,'(/a)') &
            'fac_eqvso4hyg_aer(1:naer)'
          write(iulog,'(4(a,1pe10.3,3x))') &

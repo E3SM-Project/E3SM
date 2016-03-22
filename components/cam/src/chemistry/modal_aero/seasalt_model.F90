@@ -24,7 +24,7 @@ module seasalt_model
   public :: nslt_om
   public :: F_eff_out                 ! Output effective enrichment ratio?
                                       !  (logical, currently set to FALSE) 
-  public :: has_mam_mom               ! run with marine organics?
+  public :: has_mam_moa               ! run with marine organics?
                                       !  (logical, set to TRUE if user supplies file)
   public :: advance_ocean_data        ! advance ocean data in time
   public :: init_ocean_data           ! initialize ocean data variables
@@ -52,13 +52,13 @@ module seasalt_model
        (/ 'ncl_a1', 'ncl_a2', 'ncl_a3', &
           'num_a1', 'num_a2', 'num_a3'/)
   integer, parameter :: om_num_ind = 0
-#elif( defined MODAL_AERO_4MODE_MOM )
+#elif( defined MODAL_AERO_4MODE_MOA )
   integer, parameter :: nslt_om = 3
   integer, parameter :: nnum_om = 1
   integer, parameter :: om_num_modes = 3
   character(len=6),parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
        (/ 'ncl_a1', 'ncl_a2', 'ncl_a3', &
-       'mom_a1', 'mom_a2', 'mom_a4', &
+       'moa_a1', 'moa_a2', 'moa_a4', &
        'num_a1', 'num_a2', 'num_a3', 'num_a4'/)
   integer, dimension(om_num_modes), parameter :: om_num_ind =  (/ 1, 2, 4 /)
 #elif (defined MODAL_AERO_9MODE)
@@ -95,7 +95,7 @@ module seasalt_model
 
   logical :: seasalt_active = .false.
 
-  logical :: debug_mam_mom = .false.
+  logical :: debug_mam_moa = .false.
 
 ! Parameters for organic sea salt emissions
     real(r8), parameter :: Aw_carbon = 12.0107_r8       ! Atomic weight oc carbon
@@ -140,10 +140,10 @@ module seasalt_model
    integer             :: fmoa = 1
 
 ! TODO SMB: Implement better mechanism for setting this switch.
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
-   logical :: has_mam_mom = .true.
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOA)
+   logical :: has_mam_moa = .true.
 #else
-   logical :: has_mam_mom = .false.
+   logical :: has_mam_moa = .false.
 #endif
 
 ! Order: mpoly, mprot, mlip
@@ -178,7 +178,7 @@ module seasalt_model
          (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8 /)  ! accu, aitken, coarse
     real(r8), parameter :: sst_sz_range_hi (nslt+nslt_om) = &
          (/ 1.0e-6_r8,   0.08e-6_r8, 10.0e-6_r8 /)  ! accu, aitken, coarse
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOA )
     real(r8), parameter :: sst_sz_range_lo (nslt+nslt_om) = &
          (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8, &  ! accu, aitken, coarse
             0.08e-6_r8,  0.02e-6_r8,  0.08e-6_r8 /) ! accu, aitken, POM accu
@@ -285,58 +285,58 @@ subroutine ocean_data_readnl(nlfile)
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'ocean_data_readnl'
 
-   character(len=32)   :: mam_mom_specifier(n_ocean_data)
-   character(len=256)  :: mam_mom_filename
-   character(len=256)  :: mam_mom_filelist
-   character(len=256)  :: mam_mom_datapath
-   character(len=32)   :: mam_mom_datatype
-   integer             :: mam_mom_cycle_yr
-   logical             :: mam_mom_rmv_file
-   integer             :: mam_mom_fixed_ymd
-   integer             :: mam_mom_fixed_tod
+   character(len=32)   :: mam_moa_specifier(n_ocean_data)
+   character(len=256)  :: mam_moa_filename
+   character(len=256)  :: mam_moa_filelist
+   character(len=256)  :: mam_moa_datapath
+   character(len=32)   :: mam_moa_datatype
+   integer             :: mam_moa_cycle_yr
+   logical             :: mam_moa_rmv_file
+   integer             :: mam_moa_fixed_ymd
+   integer             :: mam_moa_fixed_tod
 
-   real(r8)            :: mam_mom_bubble_thickness
-   integer             :: mam_mom_mixing_state
-   integer             :: mam_mom_parameterization
+   real(r8)            :: mam_moa_bubble_thickness
+   integer             :: mam_moa_mixing_state
+   integer             :: mam_moa_parameterization
 
-   namelist /mam_mom_nl/ &
-      mam_mom_specifier, &
-      mam_mom_filename,  &
-      mam_mom_filelist,  &
-      mam_mom_datapath,  &
-      mam_mom_datatype,  &
-      mam_mom_rmv_file,  &
-      mam_mom_cycle_yr,  &
-      mam_mom_fixed_ymd, &
-      mam_mom_fixed_tod, &
-      mam_mom_bubble_thickness, &
-      mam_mom_mixing_state, &
-      mam_mom_parameterization
+   namelist /mam_moa_nl/ &
+      mam_moa_specifier, &
+      mam_moa_filename,  &
+      mam_moa_filelist,  &
+      mam_moa_datapath,  &
+      mam_moa_datatype,  &
+      mam_moa_rmv_file,  &
+      mam_moa_cycle_yr,  &
+      mam_moa_fixed_ymd, &
+      mam_moa_fixed_tod, &
+      mam_moa_bubble_thickness, &
+      mam_moa_mixing_state, &
+      mam_moa_parameterization
 
    !-----------------------------------------------------------------------------
 
    ! Initialize namelist variables from local module variables.
-   mam_mom_specifier= specifier
-   mam_mom_filename = filename
-   mam_mom_filelist = filelist
-   mam_mom_datapath = datapath
-   mam_mom_datatype = datatype
-   mam_mom_rmv_file = rmv_file
-   mam_mom_cycle_yr = data_cycle_yr
-   mam_mom_fixed_ymd= fixed_ymd
-   mam_mom_fixed_tod= fixed_tod
+   mam_moa_specifier= specifier
+   mam_moa_filename = filename
+   mam_moa_filelist = filelist
+   mam_moa_datapath = datapath
+   mam_moa_datatype = datatype
+   mam_moa_rmv_file = rmv_file
+   mam_moa_cycle_yr = data_cycle_yr
+   mam_moa_fixed_ymd= fixed_ymd
+   mam_moa_fixed_tod= fixed_tod
 
-   mam_mom_bubble_thickness = l_bub
-   mam_mom_mixing_state     = mixing_state
-   mam_mom_parameterization = fmoa
+   mam_moa_bubble_thickness = l_bub
+   mam_moa_mixing_state     = mixing_state
+   mam_moa_parameterization = fmoa
 
    ! Read aerosol namelist
    if (masterproc) then
       unitn = getunit()
       open( unitn, file=trim(nlfile), status='old' )
-      call find_group_name(unitn, 'mam_mom_nl', status=ierr)
+      call find_group_name(unitn, 'mam_moa_nl', status=ierr)
       if (ierr == 0) then
-         read(unitn, mam_mom_nl, iostat=ierr)
+         read(unitn, mam_moa_nl, iostat=ierr)
          if (ierr /= 0) then
             call endrun(subname // ':: ERROR reading namelist')
          end if
@@ -345,31 +345,31 @@ subroutine ocean_data_readnl(nlfile)
       close(unitn)
    endif
 
-!      mam_mom_specifier, & ! Names of variables containing aerosol data in the prescribed aerosol datasets.
-!      mam_mom_filename,  & ! Filename of dataset for prescribed marine organic matter emissions.
-!      mam_mom_filelist,  & ! Filename of file that contains a sequence of filenames for prescribed
+!      mam_moa_specifier, & ! Names of variables containing aerosol data in the prescribed aerosol datasets.
+!      mam_moa_filename,  & ! Filename of dataset for prescribed marine organic matter emissions.
+!      mam_moa_filelist,  & ! Filename of file that contains a sequence of filenames for prescribed
 !                         & ! aerosols.  The filenames in this file are relative to the directory specied
-!                         & ! by mam_mom_datapath.
-!      mam_mom_datapath,  & ! Full pathname of the directory that contains the files specified in mam_mom_filelist.
-!      mam_mom_datatype,      & ! Type of time interpolation for data in mam_mom files.
+!                         & ! by mam_moa_datapath.
+!      mam_moa_datapath,  & ! Full pathname of the directory that contains the files specified in mam_moa_filelist.
+!      mam_moa_datatype,      & ! Type of time interpolation for data in mam_moa files.
 !                         & ! Can be set to 'CYCLICAL', 'SERIAL', 'INTERP_MISSING_MONTHS', or 'FIXED'.
-!      mam_mom_rmv_file,  & ! Remove the file containing prescribed aerosol deposition fluxes from local disk when no longer needed.
-!      mam_mom_cycle_yr,  & ! The  cycle year of the prescribed aerosol flux data
-!                         & ! if mam_mom_datatype  is 'CYCLICAL'.
-!      mam_mom_fixed_ymd, & ! The date at which the prescribed aerosol flux data is fixed
-!                         & ! if mam_mom_datatype is 'FIXED'.
-!      mam_mom_fixed_tod, & ! The time of day (seconds) corresponding to mam_mom_fixed_ymd
+!      mam_moa_rmv_file,  & ! Remove the file containing prescribed aerosol deposition fluxes from local disk when no longer needed.
+!      mam_moa_cycle_yr,  & ! The  cycle year of the prescribed aerosol flux data
+!                         & ! if mam_moa_datatype  is 'CYCLICAL'.
+!      mam_moa_fixed_ymd, & ! The date at which the prescribed aerosol flux data is fixed
+!                         & ! if mam_moa_datatype is 'FIXED'.
+!      mam_moa_fixed_tod, & ! The time of day (seconds) corresponding to mam_moa_fixed_ymd
 !                           ! at which the prescribed aerosol flux data is fixed
-!                           ! if mam_mom_datatype is 'FIXED'.
-! mam_mom_bubble_thickness, & ! Bubble film thickness (in m) for marine organic aerosol emission
+!                           ! if mam_moa_datatype is 'FIXED'.
+! mam_moa_bubble_thickness, & ! Bubble film thickness (in m) for marine organic aerosol emission
 !                             ! mechanism.  The physically reasonable range is approximately
 !                             ! (0.1 - 1) x 10 ^-6.
-! mam_mom_mixing_state, &   ! Switch to select mixing state assumption in marine organic aerosol
+! mam_moa_mixing_state, &   ! Switch to select mixing state assumption in marine organic aerosol
 !                           ! code. Currently implemented options: 0 : total external mixture, add
 !                           ! to mass; 1 : total external mixture, replace mass; 2 : total
 !                           ! internal mixture, add to mass; 3 : total internal mixture, replace
 !                           ! mass.
-! mam_mom_parameterization  ! Selection of alternate parameterizations for marine organic matter
+! mam_moa_parameterization  ! Selection of alternate parameterizations for marine organic matter
 !                           ! emissions.  Set fmoa=1 for Burrows et al., 2014 parameterization;
 !                           ! fmoa=2 for Gantt et al. (2011, ACP) parameterization; fmoa=3 for
 !                           ! simple parameterization based on Quinn et al., 2014; fmoa=4 for
@@ -378,54 +378,54 @@ subroutine ocean_data_readnl(nlfile)
 
 #ifdef SPMD
    ! Broadcast namelist variables
-   call mpibcast(mam_mom_specifier,len(mam_mom_specifier)*n_ocean_data,   mpichar, 0, mpicom)
-   call mpibcast(mam_mom_filename, len(mam_mom_filename),   mpichar, 0, mpicom)
-   call mpibcast(mam_mom_filelist, len(mam_mom_filelist),   mpichar, 0, mpicom)
-   call mpibcast(mam_mom_datapath, len(mam_mom_datapath),   mpichar, 0, mpicom)
-   call mpibcast(mam_mom_datatype, len(mam_mom_datatype),   mpichar, 0, mpicom)
-   call mpibcast(mam_mom_rmv_file, 1, mpilog, 0, mpicom)
-   call mpibcast(mam_mom_cycle_yr, 1, mpiint, 0, mpicom)
-   call mpibcast(mam_mom_fixed_ymd,1, mpiint, 0, mpicom)
-   call mpibcast(mam_mom_fixed_tod,1, mpiint, 0, mpicom)
+   call mpibcast(mam_moa_specifier,len(mam_moa_specifier)*n_ocean_data,   mpichar, 0, mpicom)
+   call mpibcast(mam_moa_filename, len(mam_moa_filename),   mpichar, 0, mpicom)
+   call mpibcast(mam_moa_filelist, len(mam_moa_filelist),   mpichar, 0, mpicom)
+   call mpibcast(mam_moa_datapath, len(mam_moa_datapath),   mpichar, 0, mpicom)
+   call mpibcast(mam_moa_datatype, len(mam_moa_datatype),   mpichar, 0, mpicom)
+   call mpibcast(mam_moa_rmv_file, 1, mpilog, 0, mpicom)
+   call mpibcast(mam_moa_cycle_yr, 1, mpiint, 0, mpicom)
+   call mpibcast(mam_moa_fixed_ymd,1, mpiint, 0, mpicom)
+   call mpibcast(mam_moa_fixed_tod,1, mpiint, 0, mpicom)
 
-   call mpibcast(mam_mom_bubble_thickness,1, mpir8, 0, mpicom)
-   call mpibcast(mam_mom_mixing_state,1, mpiint, 0, mpicom)
-   call mpibcast(mam_mom_parameterization,1, mpiint, 0, mpicom)
+   call mpibcast(mam_moa_bubble_thickness,1, mpir8, 0, mpicom)
+   call mpibcast(mam_moa_mixing_state,1, mpiint, 0, mpicom)
+   call mpibcast(mam_moa_parameterization,1, mpiint, 0, mpicom)
 #endif
 
    ! Update module variables with user settings.
-   specifier     = mam_mom_specifier
-   filename      = mam_mom_filename
-   filelist      = mam_mom_filelist
-   datapath      = mam_mom_datapath
-   datatype      = mam_mom_datatype
-   rmv_file      = mam_mom_rmv_file
-   data_cycle_yr = mam_mom_cycle_yr
-   fixed_ymd     = mam_mom_fixed_ymd
-   fixed_tod     = mam_mom_fixed_tod
+   specifier     = mam_moa_specifier
+   filename      = mam_moa_filename
+   filelist      = mam_moa_filelist
+   datapath      = mam_moa_datapath
+   datatype      = mam_moa_datatype
+   rmv_file      = mam_moa_rmv_file
+   data_cycle_yr = mam_moa_cycle_yr
+   fixed_ymd     = mam_moa_fixed_ymd
+   fixed_tod     = mam_moa_fixed_tod
 
-   l_bub         = mam_mom_bubble_thickness
-   mixing_state  = mam_mom_mixing_state
-   fmoa          = mam_mom_parameterization
+   l_bub         = mam_moa_bubble_thickness
+   mixing_state  = mam_moa_mixing_state
+   fmoa          = mam_moa_parameterization
 
-   if(masterproc .and. debug_mam_mom) then
-      write(iulog,*) 'Read namelist mam_mom_nl from file: '//trim(nlfile)
-      write(iulog,*) 'mam_mom_specifier = ',specifier
-      write(iulog,*) 'mam_mom_filename  = '//trim(filename)
-      write(iulog,*) 'mam_mom_filelist  = '//trim(filelist)
-      write(iulog,*) 'mam_mom_datapath  = '//trim(datapath)
-      write(iulog,*) 'mam_mom_datatype  = '//trim(datatype)
-      write(iulog,*) 'mam_mom_rmv_file  = ',rmv_file
-      write(iulog,*) 'mam_mom_cycle_yr  = ',data_cycle_yr
-      write(iulog,*) 'mam_mom_fixed_ymd = ',fixed_ymd
-      write(iulog,*) 'mam_mom_fixed_tod = ',fixed_tod
-      write(iulog,*) 'mam_mom_bubble_thickness = ',l_bub
-      write(iulog,*) 'mam_mom_mixing_state     = ',mixing_state
-      write(iulog,*) 'mam_mom_parameterization = ',fmoa
+   if(masterproc .and. debug_mam_moa) then
+      write(iulog,*) 'Read namelist mam_moa_nl from file: '//trim(nlfile)
+      write(iulog,*) 'mam_moa_specifier = ',specifier
+      write(iulog,*) 'mam_moa_filename  = '//trim(filename)
+      write(iulog,*) 'mam_moa_filelist  = '//trim(filelist)
+      write(iulog,*) 'mam_moa_datapath  = '//trim(datapath)
+      write(iulog,*) 'mam_moa_datatype  = '//trim(datatype)
+      write(iulog,*) 'mam_moa_rmv_file  = ',rmv_file
+      write(iulog,*) 'mam_moa_cycle_yr  = ',data_cycle_yr
+      write(iulog,*) 'mam_moa_fixed_ymd = ',fixed_ymd
+      write(iulog,*) 'mam_moa_fixed_tod = ',fixed_tod
+      write(iulog,*) 'mam_moa_bubble_thickness = ',l_bub
+      write(iulog,*) 'mam_moa_mixing_state     = ',mixing_state
+      write(iulog,*) 'mam_moa_parameterization = ',fmoa
    endif
 
-!   ! Turn on mam_mom aerosols if user has specified an input dataset.
-!   has_mam_mom = len_trim(filename) > 0
+!   ! Turn on mam_moa aerosols if user has specified an input dataset.
+!   has_mam_moa = len_trim(filename) > 0
 
 end subroutine ocean_data_readnl
 
@@ -469,7 +469,7 @@ end subroutine ocean_data_readnl
 
     fi(:ncol,:nsections) = fluxes( srf_temp, u10cubed, ncol )
 
-    calculate_organic_fraction: if ( has_mam_mom ) then
+    calculate_organic_fraction: if ( has_mam_moa ) then
 
        nullify(chla)
        nullify(mpoly)
@@ -529,7 +529,7 @@ end subroutine ocean_data_readnl
        if (mn>0) then
 !! Total number flux per mode
           section_loop_ssa_num: do i=1, nsections
-             if ( has_mam_mom ) then
+             if ( has_mam_moa ) then
              cflx_help2(:ncol) = 0.0_r8
              if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin)) then
                 cflx_help2(:ncol)=fi(:ncol,i)*ocnfrc(:ncol)*emis_scale  !++ ag: scale sea-salt
@@ -563,7 +563,7 @@ end subroutine ocean_data_readnl
 
        cflx(:ncol,mm)=0.0_r8
        section_loop_sslt_mass: do i=1, nsections
-          if ( has_mam_mom ) then
+          if ( has_mam_moa ) then
           if (Dg(i).ge.sst_sz_range_lo(ibin) .and. Dg(i).lt.sst_sz_range_hi(ibin)) then
              cflx_help2(:ncol) = 0.0_r8
              cflx_help2(:ncol)=fi(:ncol,i)*ocnfrc(:ncol)*emis_scale  &   !++ ag: scale sea-salt
@@ -598,11 +598,11 @@ end subroutine ocean_data_readnl
 
 enddo tracer_loop
 
-#if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM )
+#if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOA )
 
-add_om_species: if ( has_mam_mom ) then
+add_om_species: if ( has_mam_moa ) then
 ! Calculate emission of MOM mass.
-   if(masterproc .and. debug_mam_mom) then
+   if(masterproc .and. debug_mam_moa) then
       write(iulog, *) "Adding MOM species in seasalt_model.F90"
    endif
 
@@ -630,7 +630,7 @@ add_om_species: if ( has_mam_mom ) then
     else
        call endrun("Error: Unknown mixing_state value in seasalt_model.F90")
     end if
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOA )
     if ((mixing_state == 1) .or. (mixing_state == 0)) then
        emit_this_mode = (/ .false., .true., .true. /)
     else if ((mixing_state == 2) .or. (mixing_state == 3)) then
@@ -650,7 +650,7 @@ add_om_species: if ( has_mam_mom ) then
 
           ! add number tracers for organics-only modes
           if (emit_this_mode(m_om)) then
-             if(masterproc .and. debug_mam_mom) then
+             if(masterproc .and. debug_mam_moa) then
                 write(iulog,"(A30,A10,I3)") "Constituent name and number: ", trim(seasalt_names(nslt+m_om)), mn ! for debugging
              endif
              section_loop_OM_num: do i=1, nsections
@@ -682,7 +682,7 @@ add_om_species: if ( has_mam_mom ) then
     om_mode_loop: do m_om=1,nslt_om
 #if ( defined MODAL_AERO_9MODE )
        mm = seasalt_indices(nslt+(n-1)*om_num_modes+m_om)
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOA )
        mm = seasalt_indices(nslt+m_om)
 #endif
 
@@ -723,7 +723,7 @@ add_om_species: if ( has_mam_mom ) then
        end do om_type_loop
     endif
 
-    if (debug_mam_mom) then
+    if (debug_mam_moa) then
        call outfld('cflx_'//trim(seasalt_names(nslt+m_om))//'_debug',cflx(:ncol,mm),pcols,lchnk)
     endif
 
@@ -918,7 +918,7 @@ add_om_species: if ( has_mam_mom ) then
    g_per_m3(:, 2) = mprot_in(:)  * 1.0e-3_r8 * OM_to_OC_in(2) * Aw_carbon
    g_per_m3(:, 3) = mlip_in(:)   * 1.0e-3_r8 * OM_to_OC_in(3) * Aw_carbon
 
-   if (debug_mam_mom) then
+   if (debug_mam_moa) then
       call outfld('mpoly_debug',mpoly_in(:),pcols,lchnk)
    endif
 
@@ -964,7 +964,7 @@ add_om_species: if ( has_mam_mom ) then
 
    mass_frac_bub_tot(:) = sum(mass_frac_bub, dim=2)
 
-   if (debug_mam_mom) then
+   if (debug_mam_moa) then
       call outfld('mass_frac_bub_tot',mass_frac_bub_tot(:),pcols,lchnk)
    endif
 
@@ -995,7 +995,7 @@ add_om_species: if ( has_mam_mom ) then
       call omfrac_accu_aitk(mass_frac_bub(:, i), mass_frac_bub_section(:, i, :))
    end do
 
-   if (debug_mam_mom) then
+   if (debug_mam_moa) then
       call outfld('mass_frac_bub_poly',mass_frac_bub(:,1),pcols,lchnk)
       call outfld('mass_frac_bub_prot',mass_frac_bub(:,2),pcols,lchnk)
       call outfld('mass_frac_bub_lip',mass_frac_bub(:,3),pcols,lchnk)
@@ -1197,7 +1197,7 @@ subroutine init_ocean_data()
     enddo fldloop
 
 ! FOR DEBUGGING
-    debug: if (debug_mam_mom) then
+    debug: if (debug_mam_moa) then
        call addfld('mpoly_debug', horiz_only, 'A', ' ', 'mpoly_debug' ) 
        call add_default ('mpoly_debug', 1, ' ')
 
@@ -1216,7 +1216,7 @@ subroutine init_ocean_data()
        om_mode_loop: do m_om=1,nslt_om
 #if ( defined MODAL_AERO_9MODE )
           m = nslt+(n-1)*om_num_modes+m_om
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOA )
           m = nslt+m_om
 #endif
           call addfld('cflx_'//trim(seasalt_names(m))//'_debug', horiz_only, 'A', ' ', 'accumulation organic mass emissions' ) 

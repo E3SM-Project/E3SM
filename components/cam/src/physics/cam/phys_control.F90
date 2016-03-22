@@ -40,12 +40,12 @@ character(len=32) :: cam_chempkg          = unset_str  ! CAM chemistry package [
                                                        !  waccm_ghg | trop_mozart | trop_ghg | 
                                                        !  trop_bam | trop_mam3 | trop_mam4 | 
                                                        !  trop_mam4_resus | trop_mam4_resus_soag |
-                                                       !  trop_mam4_mom |
-                                                       !  trop_mam4_resus_mom | trop_mam7 |
+                                                       !  trop_mam4_moa |
+                                                       !  trop_mam4_resus_moa | trop_mam7 |
                                                        !  trop_mam9 |
                                                        !  linoz_mam3 | linoz_mam4_resus |
-                                                       !  linoz_mam4_resus_mom |
-                                                       !  linoz_mam4_resus_mom_soag |
+                                                       !  linoz_mam4_resus_moa |
+                                                       !  linoz_mam4_resus_moa_soag |
                                                        !  super_fast_llnl | super_fast_llnl_mam3 | 
                                                        !  waccm_mozart_mam3 | none
 character(len=16) :: waccmx_opt           = unset_str  ! WACCMX run option [ionosphere | neutral | off
@@ -305,15 +305,15 @@ subroutine phys_ctl_readnl(nlfile)
                       .or. cam_chempkg_is('trop_mam4') &
                       .or. cam_chempkg_is('trop_mam4_resus') &
                       .or. cam_chempkg_is('trop_mam4_resus_soag') &
-                      .or. cam_chempkg_is('trop_mam4_mom') &
-                      .or. cam_chempkg_is('trop_mam4_resus_mom') &
+                      .or. cam_chempkg_is('trop_mam4_moa') &
+                      .or. cam_chempkg_is('trop_mam4_resus_moa') &
                       .or. cam_chempkg_is('trop_mam7') &
                       .or. cam_chempkg_is('trop_mam9') &
                       .or. cam_chempkg_is('linoz_mam3') &
                       .or. cam_chempkg_is('linoz_mam4_resus') &
                       .or. cam_chempkg_is('linoz_mam4_resus_soag') &
-                      .or. cam_chempkg_is('linoz_mam4_resus_mom') &
-                      .or. cam_chempkg_is('linoz_mam4_resus_mom_soag') &
+                      .or. cam_chempkg_is('linoz_mam4_resus_moa') &
+                      .or. cam_chempkg_is('linoz_mam4_resus_moa_soag') &
                       .or. cam_chempkg_is('super_fast_llnl_mam3') &
                       .or. cam_chempkg_is('trop_mozart_mam3') &
                       .or. cam_chempkg_is('trop_strat_mam3') &

@@ -33,10 +33,10 @@
 
       solsym(: 31) = (/ 'O3              ','H2O2            ','H2SO4           ','SO2             ','DMS             ', &
                         'SOAG            ','so4_a1          ','pom_a1          ','soa_a1          ','bc_a1           ', &
-                        'dst_a1          ','ncl_a1          ','mom_a1          ','num_a1          ','so4_a2          ', &
-                        'soa_a2          ','ncl_a2          ','mom_a2          ','num_a2          ','dst_a3          ', &
+                        'dst_a1          ','ncl_a1          ','moa_a1          ','num_a1          ','so4_a2          ', &
+                        'soa_a2          ','ncl_a2          ','moa_a2          ','num_a2          ','dst_a3          ', &
                         'ncl_a3          ','so4_a3          ','bc_a3           ','pom_a3          ','soa_a3          ', &
-                        'mom_a3          ','num_a3          ','pom_a4          ','bc_a4           ','mom_a4          ', &
+                        'moa_a3          ','num_a3          ','pom_a4          ','bc_a4           ','moa_a4          ', &
                         'num_a4          ' /)
 
       adv_mass(: 31) = (/      47.998200_r8,      34.013600_r8,      98.078400_r8,      64.064800_r8,      62.132400_r8, &
