@@ -8,7 +8,7 @@ cd $CASEROOT
 # Reset all previous env_mach_pes settings
 if ( -e env_mach_pes.xml.1 )  then
   cp -f env_mach_pes.xml.1  env_mach_pes.xml
-  cp -f env_mach_pes.xml.1  LockedFiles/env_mach_pes.xml.locked
+  cp -f env_mach_pes.xml.1  LockedFiles/env_mach_pes.xml
 else
   echo " ERROR: env_mach_pes.xml.1 does not exists" 
   echo "   this would been produced in the build - must run case.test_build"
@@ -94,7 +94,7 @@ echo "   no restarts are written" >>& $TESTSTATUS_LOG
 ./xmlchange -file env_mach_pes.xml -id NTHRDS_ICE -val 1
 ./xmlchange -file env_mach_pes.xml -id NTHRDS_CPL -val 1
 
-cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
+cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml
 
 ./case.run
 if ($status != 0) then

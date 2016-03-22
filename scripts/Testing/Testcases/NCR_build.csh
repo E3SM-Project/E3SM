@@ -18,7 +18,7 @@ endif
 ./case.setup 
 
 cp -f env_mach_pes.xml env_mach_pes.xml.1
-cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
+cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml
 cp -f env_mach_pes.xml env_mach_pes.xml.1
 cp -f env_build.xml    env_build.xml.1
  
@@ -51,34 +51,34 @@ set NTASKS_ICE  = `./xmlquery NTASKS_ICE  -value`
 set NTASKS_GLC  = `./xmlquery NTASKS_GLC  -value`
 set NTASKS_CPL  = `./xmlquery NTASKS_CPL  -value`
 
-if ( $NTASKS_ATM > 1 ) then
-  @ ntask = $NTASKS_ATM / 2
-  ./xmlchange -file env_mach_pes.xml -id NTASKS_ATM  -val $ntask
-endif
-if ( $NTASKS_LND > 1 ) then
-  @ ntask = $NTASKS_LND / 2
-  ./xmlchange -file env_mach_pes.xml -id NTASKS_LND  -val $ntask
-endif
-if ( $NTASKS_ROF > 1 ) then
-  @ ntask = $NTASKS_ROF / 2
-  ./xmlchange -file env_mach_pes.xml -id NTASKS_ROF  -val $ntask
-endif
-if ( $NTASKS_WAV > 1 ) then
-  @ ntask = $NTASKS_WAV / 2
-  ./xmlchange -file env_mach_pes.xml -id NTASKS_WAV  -val $ntask
-endif
-if ( $NTASKS_OCN > 1 ) then
-  @ ntask = $NTASKS_OCN / 2
-  ./xmlchange -file env_mach_pes.xml -id NTASKS_OCN  -val $ntask
-endif
-if ( $NTASKS_ICE > 1 ) then
-  @ ntask = $NTASKS_ICE / 2
-  ./xmlchange -file env_mach_pes.xml -id NTASKS_ICE  -val $ntask
-endif
-if ( $NTASKS_GLC > 1 ) then
-  @ ntask = $NTASKS_GLC / 2
-  ./xmlchange -file env_mach_pes.xml -id NTASKS_GLC  -val $ntask
-endif
+ if ( $NTASKS_ATM > 1 ) then
+   @ ntask = $NTASKS_ATM / 2
+   ./xmlchange -file env_mach_pes.xml -id NTASKS_ATM  -val $ntask
+ endif
+ if ( $NTASKS_LND > 1 ) then
+   @ ntask = $NTASKS_LND / 2
+   ./xmlchange -file env_mach_pes.xml -id NTASKS_LND  -val $ntask
+ endif
+ if ( $NTASKS_ROF > 1 ) then
+   @ ntask = $NTASKS_ROF / 2
+   ./xmlchange -file env_mach_pes.xml -id NTASKS_ROF  -val $ntask
+ endif
+ if ( $NTASKS_WAV > 1 ) then
+   @ ntask = $NTASKS_WAV / 2
+   ./xmlchange -file env_mach_pes.xml -id NTASKS_WAV  -val $ntask
+ endif
+ if ( $NTASKS_OCN > 1 ) then
+   @ ntask = $NTASKS_OCN / 2
+   ./xmlchange -file env_mach_pes.xml -id NTASKS_OCN  -val $ntask
+ endif
+ if ( $NTASKS_ICE > 1 ) then
+   @ ntask = $NTASKS_ICE / 2
+   ./xmlchange -file env_mach_pes.xml -id NTASKS_ICE  -val $ntask
+ endif
+ if ( $NTASKS_GLC > 1 ) then
+   @ ntask = $NTASKS_GLC / 2
+   ./xmlchange -file env_mach_pes.xml -id NTASKS_GLC  -val $ntask
+ endif
 
 ./xmlchange -file env_build.xml -id NINST_BUILD -val 0
 

@@ -98,6 +98,8 @@
       <value component="clm"      >$SRCROOT/components/clm/cime_config/testdefs/testlist_clm.xml</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/testdefs/testlist_cice.xml</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/testdefs/testlist_pop.xml</value>
+      <value component="rtm"      >$SRCROOT/components/rtm/cime_config/testdefs/testlist_rtm.xml</value>
+      <value component="mosart"   >$SRCROOT/components/mosart/cime_config/testdefs/testlist_mosart.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>

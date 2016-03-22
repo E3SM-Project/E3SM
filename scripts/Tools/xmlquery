@@ -38,6 +38,7 @@ OPTIONS
 
      -fileonly            Only print the filename that the field is in.
      -valonly             Only print the value of the field.
+     -file                   Only consider variables in the specified file
      -value               Only print the value of the field without any equal or identifier.
      -noexpandxml         Do not expand any xml variables that the value is dependent on.
      -help [or -h]        Print usage to STDOUT.
@@ -82,6 +83,7 @@ my %opts = (
     fileonly		=>0,
     valonly		=>0,
     value	        =>0,
+    file =>0,
     noexpandxml	        =>0,
     help		=>0,
     listall		=>0,
@@ -92,6 +94,7 @@ GetOptions(
     "fileonly"     => \$opts{'fileonly'},
     "valonly"      => \$opts{'valonly'},
     "value"        => \$opts{'value'},
+    "file=s"           => \$opts{'file'},
     "noexpandxml"  => \$opts{'noexpandxml'},
     "h|help"       => \$opts{'help'},
     "loglevel=s"    => \$opts{loglevel},
@@ -146,8 +149,14 @@ sub _listids
     # expand_xml_var if needed
     my %xmlvars;
     my %xmlfile;
-    my @files = ('env_build.xml', 'env_case.xml', 'env_mach_pes.xml', 
+    my @files;
+    if($opts{file}){
+	@files = ( $opts{file} );
+	
+    }else{
+	@files = ('env_build.xml', 'env_case.xml', 'env_mach_pes.xml', 
 		 'env_mach_specific.xml', 'env_run.xml', 'env_test.xml', 'env_batch.xml'); 
+    }
     foreach my $file (@files) {
 	if (-f $file) {
 	    $logger->debug("Reading $file");

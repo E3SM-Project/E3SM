@@ -41,6 +41,7 @@ module shr_pio_mod
      integer :: pio_stride
      integer :: pio_numiotasks
      integer :: pio_iotype
+     integer :: pio_rearranger
   end type pio_comp_t
 
   character(len=16), allocatable :: io_compname(:)
@@ -74,13 +75,13 @@ contains
     integer, intent(inout) :: Global_Comm
 
 
-    integer :: i, pio_root, pio_stride, pio_numiotasks, pio_iotype
+    integer :: i, pio_root, pio_stride, pio_numiotasks, pio_iotype, pio_rearranger
     integer :: mpigrp_world, mpigrp, ierr, mpicom
     character(*),parameter :: subName =   '(shr_pio_init1) '
     integer :: pelist(3,1)
 
     call shr_pio_read_default_namelist(nlfilename, Global_Comm, pio_stride, pio_root, pio_numiotasks, &
-         pio_iotype, pio_async_interface)
+         pio_iotype, pio_async_interface, pio_rearranger)
 
 
     call MPI_comm_rank(Global_Comm, drank, ierr)
@@ -92,6 +93,7 @@ contains
        pio_comp_settings(i)%pio_stride = pio_stride
        pio_comp_settings(i)%pio_numiotasks = pio_numiotasks
        pio_comp_settings(i)%pio_iotype = pio_iotype
+       pio_comp_settings(i)%pio_rearranger = pio_rearranger
     end do
     if(pio_async_interface) then
 #ifdef NO_MPI2
@@ -173,13 +175,6 @@ contains
     if(pio_async_interface) then
        call pio_init(total_comps,mpi_comm_world, comp_comm, io_comm, iosystems)
        i=1
-       if(comp_comm_iam(i)==0) then
-          write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
-          write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
-          write(shr_log_unit,*) io_compname(i),' : pio_root = ',pio_comp_settings(i)%pio_root
-          write(shr_log_unit,*) io_compname(i),' : pio_iotype = ',pio_comp_settings(i)%pio_iotype
-       end if
-
     else
        do i=1,total_comps
           if(comp_iamin(i)) then
@@ -192,26 +187,25 @@ contains
 
              call shr_pio_read_component_namelist(nlfilename , comp_comm(i), pio_comp_settings(i)%pio_stride, &
                   pio_comp_settings(i)%pio_root, pio_comp_settings(i)%pio_numiotasks, &
-                  pio_comp_settings(i)%pio_iotype)
+                  pio_comp_settings(i)%pio_iotype, pio_comp_settings(i)%pio_rearranger)
+
+
              call pio_init(comp_comm_iam(i), comp_comm(i), pio_comp_settings(i)%pio_numiotasks, 0, &
                   pio_comp_settings(i)%pio_stride, &
-                  pio_rearr_subset, iosystems(i), &
+                  pio_comp_settings(i)%pio_rearranger, iosystems(i), &
                   base=pio_comp_settings(i)%pio_root)
-
-             if(comp_comm_iam(i)==0) then
-                write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
-                write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
-                write(shr_log_unit,*) io_compname(i),' : pio_root = ',pio_comp_settings(i)%pio_root
-                write(shr_log_unit,*) io_compname(i),' : pio_iotype = ',pio_comp_settings(i)%pio_iotype
-             end if
-
-
-
           end if
        end do
     end if
-
-
+    do i=1,total_comps
+       if(comp_comm_iam(i)==0) then
+          write(shr_log_unit,*) io_compname(i),' : pio_numiotasks = ',pio_comp_settings(i)%pio_numiotasks
+          write(shr_log_unit,*) io_compname(i),' : pio_stride = ',pio_comp_settings(i)%pio_stride
+          write(shr_log_unit,*) io_compname(i),' : pio_rearranger = ',pio_comp_settings(i)%pio_rearranger
+          write(shr_log_unit,*) io_compname(i),' : pio_root = ',pio_comp_settings(i)%pio_root
+          write(shr_log_unit,*) io_compname(i),' : pio_iotype = ',pio_comp_settings(i)%pio_iotype
+       end if
+    enddo
 
 
   end subroutine shr_pio_init2
@@ -351,21 +345,22 @@ contains
 
 
   subroutine shr_pio_read_default_namelist(nlfilename, Comm, pio_stride, pio_root, pio_numiotasks, &
-       pio_iotype, pio_async_interface)
+       pio_iotype, pio_async_interface, pio_rearranger)
     
     character(len=*), intent(in) :: nlfilename
     integer, intent(in) :: Comm
     logical, intent(out) :: pio_async_interface
-    integer, intent(out) :: pio_stride, pio_root, pio_numiotasks, pio_iotype
+    integer, intent(out) :: pio_stride, pio_root, pio_numiotasks, pio_iotype, pio_rearranger
 
     character(len=shr_kind_cs) :: pio_typename
     character(*),parameter :: subName =   '(shr_pio_read_default_namelist) '
 
     integer :: iam, ierr, npes, unitn
     logical :: iamroot
-
+    
     namelist /pio_default_inparm/ pio_stride, pio_root, pio_numiotasks, &
-         pio_typename, pio_async_interface, pio_debug_level, pio_blocksize, pio_buffer_size_limit
+         pio_typename, pio_async_interface, pio_debug_level, pio_blocksize, &
+         pio_buffer_size_limit, pio_rearranger
 
 
 
@@ -391,6 +386,7 @@ contains
     pio_buffer_size_limit = -99 ! io task memory buffer maximum set internally in pio when < 0
     pio_debug_level = 0 ! no debug info by default
     pio_async_interface = .false.   ! pio tasks are a subset of component tasks
+    pio_rearranger = PIO_REARR_SUBSET
 
     if(iamroot) then
        unitn=shr_file_getunit()
@@ -427,7 +423,8 @@ contains
        end if
     end if
 
-    call shr_pio_namelist_set(npes, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, iamroot)
+    call shr_pio_namelist_set(npes, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, &
+         iamroot, pio_rearranger)
 
     call shr_mpi_bcast(pio_debug_level, Comm)
     call shr_mpi_bcast(pio_blocksize, Comm)
@@ -435,15 +432,16 @@ contains
     call shr_mpi_bcast(pio_buffer_size_limit, Comm)
 
     call shr_mpi_bcast(pio_async_interface, Comm)
+    call shr_mpi_bcast(pio_rearranger, Comm)
     
 
   end subroutine shr_pio_read_default_namelist
 
-  subroutine shr_pio_read_component_namelist(nlfilename, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype)
+  subroutine shr_pio_read_component_namelist(nlfilename, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, pio_rearranger)
     character(len=*), intent(in) :: nlfilename
     integer, intent(in) :: Comm
 
-    integer, intent(inout) :: pio_stride, pio_root, pio_numiotasks, pio_iotype
+    integer, intent(inout) :: pio_stride, pio_root, pio_numiotasks, pio_iotype, pio_rearranger
     character(len=SHR_KIND_CS) ::  pio_typename
     integer :: unitn
     
@@ -451,9 +449,10 @@ contains
     logical :: iamroot
     character(*),parameter :: subName =   '(shr_pio_read_component_namelist) '
     integer :: pio_default_stride, pio_default_root, pio_default_numiotasks, pio_default_iotype
+    integer :: pio_default_rearranger
 
     namelist /pio_inparm/ pio_stride, pio_root, pio_numiotasks, &
-         pio_typename
+         pio_typename, pio_rearranger
 
 
 
@@ -472,6 +471,7 @@ contains
     pio_default_root = pio_root
     pio_default_numiotasks = pio_numiotasks
     pio_default_iotype = pio_iotype
+    pio_default_rearranger = pio_rearranger
 
 
     !--------------------------------------------------------------------------
@@ -481,12 +481,18 @@ contains
     pio_numiotasks = -99 ! set based on pio_stride   value when initialized < 0
     pio_root     = -99
     pio_typename = 'nothing'
+    pio_rearranger = -99
 
     if(iamroot) then
        unitn=shr_file_getunit()
        open( unitn, file=trim(nlfilename), status='old' , iostat=ierr)
        if( ierr /= 0) then
           write(shr_log_unit,*) 'No ',trim(nlfilename),' found, using defaults for pio settings'
+           pio_stride     = pio_default_stride
+           pio_root       = pio_default_root
+           pio_numiotasks = pio_default_numiotasks
+           pio_iotype     = pio_default_iotype
+           pio_rearranger = pio_default_rearranger
        else
           ierr = 1
           do while( ierr /= 0 )
@@ -515,24 +521,19 @@ contains
 
 
           call shr_pio_getiotypefromname(pio_typename, pio_iotype, pio_default_iotype)
-
-          if(pio_stride== -99) pio_stride = pio_default_stride
-          if(pio_root == -99) pio_root = pio_default_root
-          if(pio_numiotasks == -99) then
-#if defined(BGP) || defined(BGL)
-             if(pio_default_numiotasks < 0 ) then
-                pio_numiotasks = pio_default_numiotasks
-             else
-                pio_numiotasks = min(pio_default_numiotasks,npes/pio_stride)
-             end if
-#else
-             pio_numiotasks = min(pio_default_numiotasks,npes/pio_stride)
-#endif
-          endif
+       end if
+       if(pio_stride== -99) pio_stride = pio_default_stride
+       if(pio_root == -99) pio_root = pio_default_root
+       if(pio_rearranger == -99) pio_rearranger = pio_default_rearranger
+       if(pio_numiotasks == -99) then
+          pio_numiotasks = min(pio_default_numiotasks,npes/pio_stride)
        endif
-    end if
+    endif
 
-    call shr_pio_namelist_set(npes, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, iamroot)
+
+
+    call shr_pio_namelist_set(npes, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, &
+         iamroot, pio_rearranger)
 
 
   end subroutine shr_pio_read_component_namelist
@@ -567,10 +568,11 @@ contains
   end subroutine shr_pio_getiotypefromname
 
 !===============================================================================
-  subroutine shr_pio_namelist_set(npes,mycomm, pio_stride, pio_root, pio_numiotasks, pio_iotype, iamroot)
+  subroutine shr_pio_namelist_set(npes,mycomm, pio_stride, pio_root, pio_numiotasks, &
+       pio_iotype, iamroot, pio_rearranger)
     integer, intent(in) :: npes, mycomm
     integer, intent(inout) :: pio_stride, pio_root, pio_numiotasks
-    integer, intent(inout) :: pio_iotype
+    integer, intent(inout) :: pio_iotype, pio_rearranger
     logical, intent(in) :: iamroot
     character(*),parameter :: subName =   '(shr_pio_namelist_set) '
 
@@ -578,39 +580,42 @@ contains
     call shr_mpi_bcast(pio_stride  , mycomm)
     call shr_mpi_bcast(pio_root    , mycomm)
     call shr_mpi_bcast(pio_numiotasks, mycomm)
+    call shr_mpi_bcast(pio_rearranger, mycomm)
 
     if (pio_root<0) then
        pio_root = 1
     endif
     pio_root = min(pio_root,npes-1)
 
-
-#if defined(BGP) || defined(BGL)
-! On Bluegene machines a negative numiotasks refers to the number of iotasks per ionode, this code
-! allows for that special case.
-    if(pio_numiotasks<0) then
-       pio_stride=0       
-    else
-#endif
-
-
-
-
+! If you are asking for parallel IO then you should use at least two io pes
+    if(npes > 1 .and. pio_numiotasks == 1 .and. &
+         (pio_iotype .eq. PIO_IOTYPE_PNETCDF .or. &
+         pio_iotype .eq. PIO_IOTYPE_NETCDF4P)) then
+       pio_numiotasks = 2
+    endif
 
     !--------------------------------------------------------------------------
     ! check/set/correct io pio parameters
     !--------------------------------------------------------------------------
     if (pio_stride>0.and.pio_numiotasks<0) then
-       pio_numiotasks = npes/pio_stride
+       pio_numiotasks = max(1,npes/pio_stride)
     else if(pio_numiotasks>0 .and. pio_stride<0) then
-       pio_stride = npes/pio_numiotasks
+       pio_stride = max(1,npes/pio_numiotasks)
     else if(pio_numiotasks<0 .and. pio_stride<0) then
-       pio_stride = 4
-       pio_numiotasks = npes/pio_stride
-       pio_numiotasks = max(1, pio_numiotasks)
+       pio_stride = max(1,npes/4)
+       pio_numiotasks = max(1,npes/pio_stride)
     end if
+    if(pio_stride == 1) then
+       pio_root = 0
+    endif
+    if(pio_rearranger .ne. PIO_REARR_SUBSET .and. pio_rearranger .ne. PIO_REARR_BOX) then
+       write(shr_log_unit,*) 'pio_rearranger value, ',pio_rearranger,&
+            ', not supported - using PIO_REARR_BOX' 
+       pio_rearranger = PIO_REARR_BOX
+       
+    endif
 
-
+   
     if (pio_root + (pio_stride)*(pio_numiotasks-1) >= npes .or. &
          pio_stride<=0 .or. pio_numiotasks<=0 .or. pio_root < 0 .or. &
          pio_root > npes-1) then
@@ -633,9 +638,6 @@ contains
                pio_stride,pio_numiotasks, pio_root
        end if
     end if
-#if defined(BGP) || defined(BGL)
-    end if
-#endif
 
   end subroutine shr_pio_namelist_set
 

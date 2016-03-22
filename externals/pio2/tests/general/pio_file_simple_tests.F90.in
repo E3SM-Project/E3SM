@@ -1,0 +1,69 @@
+PIO_TF_TEST_SUB_BEGIN create_file_no_opts(iotype, filename)
+  implicit none
+  integer,  intent(in)  :: iotype
+  character(len=PIO_TF_MAX_STR_LEN),  intent(in)  :: filename
+
+  type(file_desc_t) :: pio_file
+  integer ierr
+
+  ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotype, filename)
+  PIO_TF_CHECK_ERR(ierr, "Could not create " // trim(filename))
+
+  ! netcdf files need to end define mode before closing
+  if (PIO_TF_Is_netcdf(iotype)) then
+    ierr = PIO_enddef(pio_file)
+    PIO_TF_CHECK_ERR(ierr, "Could not end define mode: " // trim(filename))
+  end if
+
+  call PIO_closefile(pio_file)
+
+PIO_TF_TEST_SUB_END create_file_no_opts
+
+PIO_TF_TEST_SUB_BEGIN open_file_no_write(iotype, filename)
+  implicit none
+  integer,  intent(in)  :: iotype
+  character(len=PIO_TF_MAX_STR_LEN),  intent(in)  :: filename
+
+  type(file_desc_t) :: pio_file
+  integer ierr
+
+  ! Test opening of file
+  ierr = PIO_openfile(pio_tf_iosystem_, pio_file, iotype, filename, PIO_nowrite)
+  PIO_TF_CHECK_ERR(ierr, "Could not open " // trim(filename))
+
+  ! Close file
+  call PIO_closefile(pio_file)
+
+PIO_TF_TEST_SUB_END open_file_no_write
+
+PIO_TF_TEST_SUB_BEGIN delete_file(filename)
+  implicit none
+  character(len=PIO_TF_MAX_STR_LEN),  intent(in)  :: filename
+
+  call PIO_deletefile(pio_tf_iosystem_, filename)
+PIO_TF_TEST_SUB_END delete_file
+
+PIO_TF_TEST_DRIVER_BEGIN
+  implicit none
+  character(len=PIO_TF_MAX_STR_LEN) :: dummy_file
+  integer :: i
+  ! iotypes = valid io types
+  integer, dimension(:), allocatable :: iotypes
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
+  integer :: num_iotypes
+
+  num_iotypes = 0
+  call PIO_TF_Get_iotypes(iotypes, iotype_descs, num_iotypes) 
+  dummy_file = "test_pio_file_simple_tests.testfile"
+  do i=1,num_iotypes
+    PIO_TF_TEST_RUN(create_file_no_opts(iotypes(i), dummy_file), trim(iotype_descs(i)))
+    PIO_TF_TEST_RUN(open_file_no_write(iotypes(i), dummy_file), trim(iotype_descs(i)))
+    PIO_TF_TEST_RUN(delete_file(dummy_file), trim(iotype_descs(i)))
+  end do
+  if(allocated(iotypes)) then
+    deallocate(iotypes)
+    deallocate(iotype_descs)
+  end if
+
+PIO_TF_TEST_DRIVER_END
+

@@ -77,8 +77,6 @@
     </submit_args>
     <directives>
       <directive> -N {{ job_id }}</directive>
-      <directive> -q {{ queue }}</directive>
-      <directive> -l walltime={{ wall_time }}</directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
       <!-- <directive> -j oe {{ output_error_path }} </directive> -->
       <directive> -j oe </directive>
@@ -146,14 +144,6 @@
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
-
-    <!-- edison is PBS -->
-    <batch_system MACH="edison" version="x.y">
-      <directives>
-	    <directive>-l mppwidth={{ mppwidth }}</directive>
-        <directive default="/bin/bash" > -S {{ shell }} </directive>
-      </directives>
-    </batch_system> 
 
     <!-- eos is PBS -->
     <batch_system MACH="eos" version="x.y">
