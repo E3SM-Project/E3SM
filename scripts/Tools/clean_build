@@ -86,7 +86,13 @@ if( $cnt==0){
     $opts{glc} = 1;
     $opts{ice} = 1;
     $opts{rof} = 1;
-    # Do not clean shared land library in a test case unless explicitly requested
+
+    # Do not clean shared land library in a test case unless explicitly
+    # requested. This is for the sake of test suites: We don't want tests that
+    # do a clean_build to clean the shared land libraries, because that would
+    # result in unnecessary rebuilds. (Another way to think about this is: the
+    # shared library, which is in a path specific to the build options, removes
+    # the need for the clean_build that is done as part of some tests' builds.)
     if(not defined $testcase or ($ENV{CLM_CONFIG_OPTS} =~ /clm4_0/)){
 	$opts{lnd} = 1;
     }
