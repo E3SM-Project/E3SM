@@ -96,7 +96,7 @@ module datm_comp_mod
   data   dTarc      / 0.49_R8, 0.06_R8,-0.73_R8,  -0.89_R8,-0.77_R8,-1.02_R8, &
   &                  -1.99_R8,-0.91_R8, 1.72_R8,   2.30_R8, 1.81_R8, 1.06_R8/
 
-  integer(IN) :: kz,ku,kv,ktbot,kptem,kshum,kdens,kpbot,kpslv,klwdn
+  integer(IN) :: kz,ktopo,ku,kv,ktbot,kptem,kshum,kdens,kpbot,kpslv,klwdn
   integer(IN) :: krc,krl,ksc,ksl,kswndr,kswndf,kswvdr,kswvdf,kswnet,kco2p,kco2d
   integer(IN) :: kbid,kbod,kbiw,koid,kood,koiw,kdw1,kdw2,kdw3,kdw4,kdd1,kdd2,kdd3,kdd4
   integer(IN) :: kanidr,kanidf,kavsdr,kavsdf
@@ -120,10 +120,11 @@ module datm_comp_mod
   !
   ! for anomaly forcing
   !
-  integer(IN),parameter :: ktrans  = 65
+  integer(IN),parameter :: ktrans  = 66
 
   character(16),parameter  :: avofld(1:ktrans) = &
-       (/"Sa_z            ","Sa_u            ","Sa_v            ","Sa_tbot         ", &
+       (/"Sa_z            ","Sa_topo         ", &
+         "Sa_u            ","Sa_v            ","Sa_tbot         ", &
          "Sa_ptem         ","Sa_shum         ","Sa_dens         ","Sa_pbot         ", &
          "Sa_pslv         ","Faxa_lwdn       ","Faxa_rainc      ","Faxa_rainl      ", &
          "Faxa_snowc      ","Faxa_snowl      ","Faxa_swndr      ","Faxa_swvdr      ", &
@@ -147,7 +148,8 @@ module datm_comp_mod
        /)
 
   character(16),parameter  :: avifld(1:ktrans) = &
-       (/"z               ","u               ","v               ","tbot            ", &
+       (/"z               ","topo            ", &
+         "u               ","v               ","tbot            ", &
          "ptem            ","shum            ","dens            ","pbot            ", &
          "pslv            ","lwdn            ","rainc           ","rainl           ", &
          "snowc           ","snowl           ","swndr           ","swvdr           ", &
@@ -171,6 +173,10 @@ module datm_comp_mod
   ! add stream for anomaly forcing
   integer(IN),parameter :: ktranss = 28
 
+  ! The stofld and stifld lists are used for fields that are read but not passed to the
+  ! coupler (e.g., they are used to compute fields that are passed to the coupler), and
+  ! other fields used in calculations. Fields that are simply read and passed directly to
+  ! the coupler do not need to be in these lists.
   character(16),parameter  :: stofld(1:ktranss) = &
        (/"strm_tbot       ","strm_wind       ","strm_z          ","strm_pbot       ", &
          "strm_shum       ","strm_tdew       ","strm_rh         ","strm_lwdn       ", &
@@ -540,6 +546,7 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     call mct_aVect_zero(a2x)
 
     kz    = mct_aVect_indexRA(a2x,'Sa_z')
+    ktopo = mct_aVect_indexRA(a2x,'Sa_topo')
     ku    = mct_aVect_indexRA(a2x,'Sa_u')
     kv    = mct_aVect_indexRA(a2x,'Sa_v')
     ktbot = mct_aVect_indexRA(a2x,'Sa_tbot')
