@@ -3,22 +3,36 @@
 #include "config.h"
 #endif
 
-module derivative_openacc_mod
-#if USE_OPENACC
-  use kinds, only: real_kind
-  use dimensions_mod, only: np, nelemd
+module derivative_mod
+  use derivative_mod_base, only: derivative_t, derivative_stag_t, subcell_integration, subcell_dss_fluxes, subcell_div_fluxes, subcell_Laplace_fluxes, allocate_subcell_integration_matrix,   &
+                                 derivinit, deriv_print, gradient, gradient_wk, vorticity, divergence, interpolate_gll2fvm_corners, interpolate_gll2fvm_points, interpolate_gll2spelt_points, &
+                                 remap_phys2gll, v2pinit, gradient_sphere_wk_testcov, gradient_sphere_wk_testcontra, ugradv_sphere, vorticity_sphere, vorticity_sphere_diag, curl_sphere,     &
+                                 curl_sphere_wk_testcov, vlaplace_sphere_wk, element_boundary_integral, edge_flux_u_cg, gll_to_dgmodal, dgmodal_to_gll, limiter_optim_iter_full, &
+                                 laplace_sphere_wk, divergence_sphere_wk, gradient_sphere, divergence_sphere
+  use kinds, only : real_kind, longdouble_kind
+  use dimensions_mod, only : np, nc, npdg, nep, nelemd, nlev
+  use quadrature_mod, only : quadrature_t, gauss, gausslobatto,legendre, jacobi
+  use parallel_mod, only : abortmp
+  ! needed for spherical differential operators:
+  use physical_constants, only : rrearth 
+  use element_mod, only : element_t
+  use control_mod, only : hypervis_scaling, hypervis_power
   implicit none
   private
 
-  public :: laplace_sphere_wk
-  public :: divergence_sphere_wk
-  public :: gradient_sphere
-  public :: divergence_sphere
+  public ::  derivative_t, derivative_stag_t, subcell_integration, subcell_dss_fluxes, subcell_div_fluxes, subcell_Laplace_fluxes, allocate_subcell_integration_matrix,   &
+             derivinit, deriv_print, gradient, gradient_wk, vorticity, divergence, interpolate_gll2fvm_corners, interpolate_gll2fvm_points, interpolate_gll2spelt_points, &
+             remap_phys2gll, v2pinit, gradient_sphere_wk_testcov, gradient_sphere_wk_testcontra, ugradv_sphere, vorticity_sphere, vorticity_sphere_diag, curl_sphere,     &
+             curl_sphere_wk_testcov, vlaplace_sphere_wk, element_boundary_integral, edge_flux_u_cg, gll_to_dgmodal, dgmodal_to_gll, limiter_optim_iter_full, &
+             laplace_sphere_wk, divergence_sphere_wk, gradient_sphere, divergence_sphere
+  public :: laplace_sphere_wk_openacc
+  public :: divergence_sphere_wk_openacc
+  public :: gradient_sphere_openacc
+  public :: divergence_sphere_openacc
 
 contains
 
-  subroutine laplace_sphere_wk(s,grads,deriv,elem,var_coef,laplace,len,nets,nete,ntl,tl)
-    use derivative_mod, only: derivative_t
+  subroutine laplace_sphere_wk_openacc(s,grads,deriv,elem,var_coef,laplace,len,nets,nete,ntl,tl)
     use element_mod, only: element_t
     use control_mod, only: hypervis_scaling, hypervis_power
     implicit none
@@ -35,7 +49,7 @@ contains
     integer :: i,j,k,ie
     ! Local
     real(kind=real_kind) :: oldgrads(2)
-    call gradient_sphere(s,deriv,elem(:),grads,len,nets,nete,ntl,tl)
+    call gradient_sphere_openacc(s,deriv,elem(:),grads,len,nets,nete,ntl,tl)
     !$acc parallel loop gang vector collapse(4) present(grads,elem(:)) private(oldgrads)
     do ie = nets , nete
       do k = 1 , len
@@ -58,12 +72,11 @@ contains
     enddo
     ! note: divergnece_sphere and divergence_sphere_wk are identical *after* bndry_exchange
     ! if input is C_0.  Here input is not C_0, so we should use divergence_sphere_wk().  
-    call divergence_sphere_wk(grads,deriv,elem(:),laplace,len,nets,nete,ntl,tl)
-  end subroutine laplace_sphere_wk
+    call divergence_sphere_wk_openacc(grads,deriv,elem(:),laplace,len,nets,nete,ntl,tl)
+  end subroutine laplace_sphere_wk_openacc
 
-  subroutine divergence_sphere_wk(v,deriv,elem,div,len,nets,nete,ntl,tl)
+  subroutine divergence_sphere_wk_openacc(v,deriv,elem,div,len,nets,nete,ntl,tl)
     use element_mod, only: element_t
-    use derivative_mod, only: derivative_t
     use physical_constants, only: rrearth
     implicit none
 !   input:  v = velocity in lat-lon coordinates
@@ -117,11 +130,10 @@ contains
         enddo
       enddo
     enddo
-  end subroutine divergence_sphere_wk
+  end subroutine divergence_sphere_wk_openacc
 
-  subroutine gradient_sphere(s,deriv,elem,ds,len,nets,nete,ntl,tl)
+  subroutine gradient_sphere_openacc(s,deriv,elem,ds,len,nets,nete,ntl,tl)
     use element_mod, only: element_t
-    use derivative_mod, only: derivative_t
     use physical_constants, only: rrearth
     implicit none
     !   input s:  scalar
@@ -171,13 +183,12 @@ contains
         enddo
       enddo
     enddo
-  end subroutine gradient_sphere
+  end subroutine gradient_sphere_openacc
 
-  subroutine divergence_sphere(v,deriv,elem,div,len,nets,nete,ntl,tl)
+  subroutine divergence_sphere_openacc(v,deriv,elem,div,len,nets,nete,ntl,tl)
 !   input:  v = velocity in lat-lon coordinates
 !   ouput:  div(v)  spherical divergence of v
     use element_mod   , only: element_t
-    use derivative_mod, only: derivative_t
     use physical_constants, only: rrearth
     implicit none
     real(kind=real_kind), intent(in   ) :: v(np,np,2,len,ntl,nelemd)  ! in lat-lon coordinates
@@ -227,8 +238,7 @@ contains
         enddo
       enddo
     enddo
-  end subroutine divergence_sphere
+  end subroutine divergence_sphere_openacc
 
-#endif
-end module derivative_openacc_mod
+end module derivative_mod
 

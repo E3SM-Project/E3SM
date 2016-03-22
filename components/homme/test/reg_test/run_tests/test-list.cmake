@@ -10,6 +10,13 @@ SET(HOMME_TESTS
   baro2d.cmake
   baroCamMoist.cmake
   baroCamMoist-SL.cmake
+  baroCamMoist-acc.cmake
   baro2d-imp.cmake
   templates.cmake
 )
+
+        
+#set_test_properties(  
+#  baroCamMoist-acc.cmake PROPERTY DEPENDS   baroCamMoist.cmake 
+#)
+

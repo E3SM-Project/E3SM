@@ -20,6 +20,7 @@ my $CAM_CONFIG_OPTS	= `./xmlquery  CAM_CONFIG_OPTS		-value`;
 my $CAM_NAMELIST_OPTS	= `./xmlquery  CAM_NAMELIST_OPTS	-value`;
 my $CAM_NML_USE_CASE	= `./xmlquery  CAM_NML_USE_CASE		-value`;
 my $CAM_DYCORE		= `./xmlquery  CAM_DYCORE		-value`;
+my $CAM_TARGET		= `./xmlquery  CAM_TARGET		-value`;
 my $CASEBUILD		= `./xmlquery  CASEBUILD		-value`;
 my $CCSM_CO2_PPMV	= `./xmlquery  CCSM_CO2_PPMV		-value`;
 my $CCSMROOT		= `./xmlquery  CCSMROOT			-value`;
@@ -84,7 +85,7 @@ if ($BUILD_COMPLETE eq 'FALSE') {
 	$ATM_GRID = $1;
 	$nlev="-nlev $3";
     }
-    $sysmod = "$CCSMROOT/components/cam/bld/configure -s -ccsm_seq -ice none -ocn $ocn -comp_intf $comp $scm -spmd $spmd -smp $smp -dyn $CAM_DYCORE -res $ATM_GRID $nlev $CAM_LIB_DIRS $CAM_CONFIG_OPTS";
+    $sysmod = "$CCSMROOT/components/cam/bld/configure -s -ccsm_seq -ice none -ocn $ocn -comp_intf $comp $scm -spmd $spmd -smp $smp -dyn $CAM_DYCORE -dyn_target $CAM_TARGET -res $ATM_GRID $nlev $CAM_LIB_DIRS $CAM_CONFIG_OPTS";
     system($sysmod) == 0 or die "ERROR cam.buildnml: $sysmod failed: $?\n";
 
 } else {

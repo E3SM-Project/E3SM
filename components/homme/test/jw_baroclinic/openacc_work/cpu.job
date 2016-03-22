@@ -1,6 +1,6 @@
 #!/bin/tcsh -f
 #PBS -A STF006
-#PBS -l nodes=24
+#PBS -l nodes=3
 #PBS -q batch
 #PBS -l walltime=0:45:00
 #PBS -N baroclinic
@@ -83,7 +83,7 @@ echo $mpirun
 
 set u_perturb = 1
 set rotate = 0
-set ne    = 30     # horizontal resolution   4,16,30,60,120,240
+set ne    =  8     # horizontal resolution   4,16,30,60,120,240
 set nlev  = 64     # vertical resolution  26,30,60,64,96
 set qsize = 50     # number of passive tracers
 set namelist = jw_baroclinic.nl  # CAM-style, vertically lagrangian
