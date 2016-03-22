@@ -57,17 +57,17 @@ mpas_attlist.o: mpas_kind_types.o mpas_io_units.o mpas_derived_types.o
 
 mpas_derived_types.o: mpas_kind_types.o mpas_constants.o $(TYPE_DEPS)
 
-mpas_domain_routines.o: mpas_derived_types.o mpas_pool_routines.o
+mpas_domain_routines.o: mpas_derived_types.o mpas_pool_routines.o mpas_dmpar.o
 
 mpas_field_routines.o: mpas_derived_types.o duplicate_field_array.inc duplicate_field_scalar.inc mpas_threading.o
 
-mpas_pool_routines.o: mpas_derived_types.o mpas_field_routines.o mpas_dmpar.o mpas_threading.o
+mpas_pool_routines.o: mpas_derived_types.o mpas_field_routines.o mpas_threading.o
 
 mpas_decomp.o: mpas_derived_types.o mpas_stream_manager.o
 
 mpas_hash.o : mpas_derived_types.o
 
-mpas_dmpar.o: mpas_sort.o streams.o mpas_kind_types.o mpas_derived_types.o mpas_hash.o mpas_io_units.o mpas_threading.o
+mpas_dmpar.o: mpas_sort.o streams.o mpas_kind_types.o mpas_derived_types.o mpas_hash.o mpas_io_units.o mpas_threading.o mpas_pool_routines.o
 
 mpas_sort.o: mpas_kind_types.o mpas_io_units.o
 

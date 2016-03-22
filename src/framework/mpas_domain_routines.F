@@ -22,6 +22,7 @@ module mpas_domain_routines
    use mpas_kind_types
    use mpas_derived_types
    use mpas_pool_routines
+   use mpas_dmpar
 
    contains
 
@@ -118,11 +119,18 @@ module mpas_domain_routines
       type (domain_type), pointer :: dom !< Input/Output: Domain to deallocate
 
       type (block_type), pointer :: block_ptr
+      type (mpas_exchange_group), pointer :: exchGroupPtr
 
       block_ptr => dom % blocklist
       do while (associated(block_ptr))
          call mpas_deallocate_block(block_ptr)
          block_ptr => block_ptr % next
+      end do
+
+      exchGroupPtr => dom % exchangeGroups
+      do while (associated(exchGroupPtr))
+         call mpas_dmpar_exch_group_destroy(dom, exchGroupPtr % groupName)
+         exchGroupPtr => dom % exchangeGroups
       end do
 
       call mpas_pool_destroy_pool(dom % configs)
