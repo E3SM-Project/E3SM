@@ -100,6 +100,7 @@ _TEST_SUITES = {
                            ("PET_PT_Ln9.ne30_ne30.FC5", "cam-outfrq9s"),
                            "PET_PT.f19_g16.X",
                            "PET_PT.f45_g37_rx1.A",
+                           "PET_PT_Ln9.ne30_oEC.A_WCYCL2000",
                            "PFS.ne30_ne30.FC5",
                            "SEQ_IOP_PFC.f19_g16.X",
                            "SEQ_PFC.f45_g37.B1850C5",
