@@ -19,7 +19,7 @@ module cam_restart
    use mpishorthand,     only: mpicom, mpir8, mpiint, mpilog
 #endif
    use units,            only: getunit
-   use shr_kind_mod,     only: shr_kind_cs
+   use shr_kind_mod,     only: shr_kind_cl
    use cam_logfile,      only: iulog
    use pio,              only: file_desc_t, pio_global, pio_noerr, &
                                pio_seterrorhandling, pio_bcast_error, pio_internal_error, &
@@ -46,7 +46,7 @@ module cam_restart
 
    integer, parameter :: nlen = 256       ! Length of character strings
    character(len=nlen):: pname = ' '      ! Full restart pathname
-   character(shr_kind_cs) :: tcase = ' '  ! Read in previous case name
+   character(shr_kind_cl) :: tcase = ' '  ! Read in previous case name
 
    ! Type of restart run
    logical :: nlres                       ! true => restart or branch run
