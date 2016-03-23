@@ -100,6 +100,7 @@ contains
    !--------------------------------------------------------------------
 
       type (domain_type), intent(inout) :: domain
+      type (block_type), pointer :: block_ptr
       type (mpas_pool_type), pointer :: meshPool
       integer, intent(out) :: iErr
 
@@ -215,6 +216,14 @@ contains
          write(stderrUnit,*) 'Removing inland seas.'
          call ocn_init_setup_global_ocean_cull_inland_seas(domain, iErr)
       end if
+
+       block_ptr => domain % blocklist
+       do while (associated(block_ptr))
+          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+
+          call ocn_mark_maxlevelcell(meshPool, iErr)
+          block_ptr => block_ptr % next
+       end do
 
    !--------------------------------------------------------------------
 
@@ -1060,13 +1069,13 @@ contains
        call mpas_deallocate_scratch_field(touchedCellField, .false.)
        call mpas_deallocate_scratch_field(oceanCellField, .false.)
 
-       block_ptr => domain % blocklist
-       do while (associated(block_ptr))
-          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+       !block_ptr => domain % blocklist
+       !do while (associated(block_ptr))
+       !   call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
 
-          call ocn_mark_maxlevelcell(meshPool, iErr)
-          block_ptr => block_ptr % next
-       end do
+       !   call ocn_mark_maxlevelcell(meshPool, iErr)
+       !   block_ptr => block_ptr % next
+       !end do
 
     end subroutine ocn_init_setup_global_ocean_cull_inland_seas!}}}
 
