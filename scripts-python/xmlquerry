@@ -76,10 +76,14 @@ def parse_command_line(args, description):
     
     # merge list from to command line options and remove duplicate names
     if( len(args.listofsettings) == 1 ):
-        args.attribute = list( set (args.attribute + args.listofsettings[0].split(',') ) )
+        args.attribute = args.attribute + args.listofsettings[0].split(',') 
 
-    if( len(args.attributes) >= 1) :
+    if( len(args.attributes) > 1) :
         args.attribute =  args.attribute + args.attributes   
+    
+    # in case it is a comma separated list
+    if( len(args.attributes) == 1) :
+        args.attribute =  args.attribute + args.attributes[0].split(',') 
     
     # remove duplicate names
     args.attribute = list( set (args.attribute ))
