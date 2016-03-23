@@ -21,42 +21,8 @@ class EnvMachSpecific(EnvBase):
 	    fullpath = infile
         else:
             fullpath = os.path.join(caseroot, infile)
-        GenericXML.__init__(self, fullpath)
+        GenericXML.__init__(self, fullpath)       
 
-    
-    def get_values2(self, item="*", attribute={}, resolved=True, subgroup=None):
-            
-        value = {}  
-        root  = self.tree.getroot()
-        xpath = [ ".//" + item + "[@name]" ]
-        xpathes = []
-        
-        # create search path for all attributes      
-        if bool(attribute) :
-            for key, attribute_value in attribute.iteritems():
-                if attribute_value :
-                    xpathes.append( ".//" + item + "[@" + key + "='" + attribute_value +"']" )
-                else:
-                    xpathes.append( ".//" + item + "[@" + key + "]" )
-        else:
-            xpathes.append(xpath)
-        
-        # Get all values and return results as dicitonary     
-        for xpath in xpathes:   
-            logging.debug("XPATH (env_mach_specific.py): "+ xpath)
-            
-            for node in root.findall(xpath):
-                if node.attrib:
-                    for a in node.attrib:
-                        value[node.attrib[a]] = node.text
-                else:
-                  value[node.tag] = node.text  
-                  
-        if value:
-            return value
-           
-        return None
-       
 
         
         
