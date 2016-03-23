@@ -79,18 +79,21 @@ class Case(object):
         return result
 
 
-    def get_values(self, item, attribute={}, resolved=True, subgroup=None):
+    def get_values(self, item=None, attribute={}, resolved=True, subgroup=None):
         results = []
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
             result = None
             logger.debug("Before File=%s Attribute=%s Value=%s"%(env_file.filename,item,result))
             try:
+                # env_batch has its own implementation of get_values otherwise in entry_id
                 result = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
                 # Method exists, and was used.  
             except AttributeError:
                 # Method does not exist.  What now?
-                logger.debug("No get_values method for class %s" , env_file.__class__.__name__)
+                logger.debug("No get_values method for class %s (%s)" , env_file.__class__.__name__ , AttributeError)
+                #result = super(EnvBase , env_file).get_values(item, attribute, resolved=False, subgroup=subgroup)
+                
             logger.debug("After File=%s Attribute=%s Value=%s"%(env_file.filename,item,result))
             if result is not None and (len(result) >= 1):
                 if resolved and type(result) is str:
