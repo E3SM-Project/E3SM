@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+# Authors: Jim Edwards , Andreas Wilke
 
 from standard_script_setup import *
 
@@ -8,6 +9,7 @@ from CIME.case import Case
 
 import argparse, doctest, shutil, glob
 import xml.etree.ElementTree as ET
+import textwrap
 
 
 ###############################################################################
@@ -26,29 +28,61 @@ def parse_command_line(args, description):
     #     );
 
 
-    parser = argparse.ArgumentParser()
+    
+    epilog="""\
+    AUTHOR AND CREDITS
+        Authors: Jim Edwards , Andreas Wilke
+
+        Based on legacy code with many contributers. (see ...)
+
+    COPYRIGHT AND LICENSE
+    
+        This library is free software; you can redistribute it and/or modify
+        it under the same terms as Python itself.
+    """
+        
+
+    parser = argparse.ArgumentParser(   description="Querry the xml files for attributes and return their values." , 
+                                        formatter_class=argparse.RawDescriptionHelpFormatter, epilog=textwrap.dedent(epilog) )
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("key",  
+    # Set command line options
+    parser.add_argument("attributes", nargs="*"  ,
                         help="attribute value in env_*.xml file ( <element_name attribute='attribute_value'>value</element_name> )")
-    parser.add_argument("-file", 
+    
+    parser.add_argument("--file", 
                         help="env*.xml file")
-    parser.add_argument("--item" , help="attribute name in item")
-    parser.add_argument("--attribute", nargs="*" , help="attribute name in item")
+  
+    parser.add_argument("--attribute", nargs="*" , help="list of attribute/option names" , default=[])
     
     parser.add_argument("--caseroot", default=os.getcwd(),
                         help="Case directory to build")
                         
-    parser.add_argument("--listofsettings", nargs="*",
+    parser.add_argument("--listofsettings", nargs="*", default=[] ,
                         help="Comma seperated list of option names (attribute values)")
+                        
+    parser.add_argument("--fileonly", default=False, action="store_true", 
+                        help="Only print the filename that the field is defined in.")
+    
+    parser.add_argument("--valonly", default=False, action="store_true", 
+                        help="Only print the field name and value.")
+    
+    parser.add_argument("--value", default=False, action="store_true", 
+                        help="Only print the value.")
 
-    args = parser.parse_args(args[0:])
+    args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
     
-    listofsettings = []
+    # merge list from to command line options and remove duplicate names
     if( len(args.listofsettings) == 1 ):
-        listofsettings = args.listofsettings[0].split(',')
+        args.attribute = list( set (args.attribute + args.listofsettings[0].split(',') ) )
+
+    if( len(args.attributes) >= 1) :
+        args.attribute =  args.attribute + args.attributes   
+    
+    # remove duplicate names
+    args.attribute = list( set (args.attribute ))
 
     return args
 
@@ -58,37 +92,56 @@ def parse_command_line(args, description):
 
 
 
-def xmlquerry(caseroot, listofsettings=None,  xmlattr=None, xmlval=None, subgroup=None,
-              noecho=False, warn=None):
+def xmlquerry(caseroot, args, listofattributes=[] ,  subgroup=None,
+              noecho=False, warn=None ):
     
-    case = Case(caseroot)
-    values = []
+    case    = Case(caseroot)
+    values  = []
+    results = [] # List of formatted strings containing the search results
     
-    if(listofsettings):
+    if(listofattributes and len(listofattributes) >= 1):
                 
-        for xmlattr in listofsettings:
+        for xmlattr in listofattributes:
             # type_str = case.get_type_info(xmlattr)
             logging.info("Searching for %s", xmlattr)
             logging.debug("Searching for %s", xmlattr)
-            results  = case.get_values(xmlattr, resolved=False, subgroup=subgroup)
-            
-            if ( len(results) > 0) :     
-                for node in results :
-                    
-                    val = ""
-                    if node["group"] :
-                        val = "%s:%s\t%s\ttype:%s" % (node["group"] , node["attribute"] , node["value"] , node['type'])
-                    else :
-                        val = "%s\t%s" %(xmlattr, node["value"])
-                   
-                    values.append(val)
-           
+            attribute_hits = case.get_values(xmlattr, resolved=False, subgroup=subgroup)    
+            results        = results + attribute_hits
             
     else:
-        value = case.get_values(xmlattr, resolved=False, subgroup=subgroup)
-        result = "%s %s" %(xmlattr, value)
-        values.append(result)
-        # type_str = case.get_type_info(xmlattr)
+        logging.debug("No attribute (%s) . Searching values for all attributes." , listofattributes)
+        results = case.get_values(None, resolved=False, subgroup=subgroup)
+        
+        
+    
+    # Formatting of return strings    
+    if ( len(results) > 0) :     
+        for node in results :
+            
+            val = ""
+            
+            # attribute formatting - add group if present
+            attr = node['attribute']
+            if node['group'] :
+                attr = "%s:%s" % (node['group'] , node['attribute'])
+            
+            # Formatting for different options
+            if args.fileonly :
+                val = "%s\t%s" % (attr , node["file"] )
+            elif args.valonly :
+                val = "%s\t%s" % (attr , node["value"])
+            elif args.value :
+                val = "%s" % (node["value"])
+            else :
+                if (node['description']) :
+                    wrapper=textwrap.TextWrapper()
+                    wrapper.initial_indent = "\t\t"
+                    wrapper.subsequent_indent = "\t\t"
+                    val = "%s\t%s\ttype:%s\n%s\n" %  (attr , node["value"] , node['type'] , wrapper.fill(node['description']) ) 
+                else :
+                    val = "%s\t%s\ttype:%s\t%s" %  (attr , node["value"] , node['type'] , node['description'] ) 
+           
+            values.append(val)    
         
     return values    
   
@@ -100,7 +153,7 @@ def _main_func(description):
 
 
     # Declare cli arguments - add to args
-    listofsettings = None
+    listofattributes = None
     xmlfile = None
     xmlid = None
     xmlval = None
@@ -109,45 +162,19 @@ def _main_func(description):
     noecho = None
     warn = None
 
+    # Initialize command line parser and get command line options
     args = parse_command_line(sys.argv, description)
     
-    listofsettings = []
-    if( len(args.listofsettings) == 1 ):
-        listofsettings = args.listofsettings[0].split(',')
-    else :
-        # Something wrong
-        pass
-
-    logging.info("CLI arguments: %s" , args)
+    logging.debug("CLI arguments: %s" , args)
   
-   
-    case = Case(args.caseroot)
-    item = "*"
+    # Initialize case ; read in all xml files from caseroot   
+    case = Case(args.caseroot)         
     
-    if args.key :
-        item = args.key
-    elif args.item :
-        item = args.item
+    logging.info("Searching for attributes '%s'" , args.attribute)
         
-    
-    logging.info("Searching for item '%s'" , item)
-        
-    # value = case.get_value( item )
-  
-
-      #
-    # if str(value):
-    #     print item , value
-    # else:
-    #     for k,v in value.iteritems():
-    #         print k , v
-
- 
-
-
-    xmlattr = item
-    print listofsettings
-    for res in xmlquerry(args.caseroot, listofsettings, xmlattr, xmlval, subgroup, noecho, warn) :
+    # querry for attributes and print results
+    for res in xmlquerry(args.caseroot , args, args.attribute, subgroup, noecho, warn) :
+       
         print res     
 
 
