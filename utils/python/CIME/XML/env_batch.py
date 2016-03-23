@@ -81,7 +81,7 @@ class EnvBatch(EnvBase):
             # Return value for first occurence of node with attribute value = item
             for node in nodes:
                 t   =  super(EnvBase , self).get_type( node )
-                val = { 'group' : group , 'attribute' : item , 'value' : node.attrib["value"] , 'type' : t , 'description' : self.get_description }
+                val = { 'group' : group , 'attribute' : item , 'value' : node.attrib["value"] , 'type' : t , 'description' : self.get_description(node) , 'file' : self.filename }
                 logger.debug("Found node with value for %s = %s" , item , val)   
                 results.append(val)
         
