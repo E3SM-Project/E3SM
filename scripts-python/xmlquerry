@@ -1,6 +1,22 @@
 #!/usr/bin/env python
 
-# Authors: Jim Edwards , Andreas Wilke
+
+"""
+Script to query env_*.xml files.
+If this tool is missing any feature that you need, please notify jgfouca@sandia.gov.
+
+    AUTHOR AND CREDITS
+        Authors: Jim Edwards , Andreas Wilke
+
+        Based on legacy code with many contributers. (see ...)
+
+    COPYRIGHT AND LICENSE
+    
+        This library is free software; you can redistribute it and/or modify
+        it under the same terms as Python itself.
+"""
+
+
 
 from standard_script_setup import *
 
@@ -15,35 +31,10 @@ import textwrap
 ###############################################################################
 def parse_command_line(args, description):
 ###############################################################################
-
-    # my %opts = (
-    #     fileonly        =>0,
-    #     valonly        =>0,
-    #     value            =>0,
-    #     file =>0,
-    #     noexpandxml            =>0,
-    #     help        =>0,
-    #     listall        =>0,
-    #     loglevel        =>"INFO",
-    #     );
-
-
-    
-    epilog="""\
-    AUTHOR AND CREDITS
-        Authors: Jim Edwards , Andreas Wilke
-
-        Based on legacy code with many contributers. (see ...)
-
-    COPYRIGHT AND LICENSE
-    
-        This library is free software; you can redistribute it and/or modify
-        it under the same terms as Python itself.
-    """
         
 
     parser = argparse.ArgumentParser(   description="Querry the xml files for attributes and return their values." , 
-                                        formatter_class=argparse.RawDescriptionHelpFormatter, epilog=textwrap.dedent(epilog) )
+                                        formatter_class=argparse.RawDescriptionHelpFormatter, epilog=textwrap.dedent(__doc__) )
     CIME.utils.setup_standard_logging_options(parser)
 
     # Set command line options
@@ -91,12 +82,11 @@ def parse_command_line(args, description):
     return args
 
 
-# Same reads from same file as xmlchange
-# Use same methods
 
 
 
-def xmlquerry(caseroot, args, listofattributes=[] ,  subgroup=None,
+
+def xmlquery(caseroot, args, listofattributes=[] ,  subgroup=None,
               noecho=False, warn=None ):
     
     case    = Case(caseroot)
@@ -156,15 +146,7 @@ def _main_func(description):
         sys.exit(1 if test_results.failed > 0 else 0)
 
 
-    # Declare cli arguments - add to args
-    listofattributes = None
-    xmlfile = None
-    xmlid = None
-    xmlval = None
-    subgroup= None
-    append = None 
-    noecho = None
-    warn = None
+
 
     # Initialize command line parser and get command line options
     args = parse_command_line(sys.argv, description)
@@ -177,7 +159,7 @@ def _main_func(description):
     logging.info("Searching for attributes '%s'" , args.attribute)
         
     # querry for attributes and print results
-    for res in xmlquerry(args.caseroot , args, args.attribute, subgroup, noecho, warn) :
+    for res in xmlquery(args.caseroot , args, args.attribute ) :
        
         print res     
 
