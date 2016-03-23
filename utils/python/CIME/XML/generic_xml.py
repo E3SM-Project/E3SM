@@ -109,21 +109,20 @@ class GenericXML(object):
             # and create a result with the intersection of those lists
             for key in keys:
                 xpath = ".//%s[@%s=\'%s\']" % (nodename,key,attributes[key])
-                logger.debug("xpath: %s" , xpath)
+                logger.debug("xpath: %s class:%s" , xpath , self.__class__.__name__)
                 newnodes = root.findall(xpath)
-                if not nodes:
+                logger.debug("Found %s nodes." , len(newnodes))
+                if len(nodes) == 0 :
                     nodes = newnodes
                 else:
-                    for node in nodes[:]:
-                        if node not in newnodes:
-                            nodes.remove(node)
-                if not nodes:
-                    return []
+                    nodes = nodes + newnodes
         else:
             logger.debug("xpath: %s" , xpath , extra={attributes : None})
             nodes = root.findall(xpath)
 
-        return nodes
+        l = list(set(nodes))
+        logger.debug("Returning %s nodes (%s)" , len(l), l)
+        return l
 
     def add_child(self, node, root=None):
         """
