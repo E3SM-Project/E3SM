@@ -30,7 +30,7 @@
 
   <file name ="env_mach_specific.xml">
     <header>
-    These variables should notbe changed.
+    These variables should not be changed.
     </header>
   </file>
 
