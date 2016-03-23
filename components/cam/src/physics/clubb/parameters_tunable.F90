@@ -801,9 +801,19 @@ module parameters_tunable
 
     end if
 
-    if (clubb_C1 /= init_value) C1 = clubb_C1
-    if (clubb_C2rt /= init_value) C2rt = clubb_C2rt
-    if (clubb_C6rt /= init_value) C6rt = clubb_C6rt
+    if (clubb_C1 /= init_value) then
+       C1 = clubb_C1
+       C1b = C1
+    end if
+    if (clubb_C2rt /= init_value) then
+       C2rt = clubb_C2rt
+       C2thl = C2rt
+       C2rtthl = C2rt*1.3_r8
+    end if
+    if (clubb_C6rt /= init_value) then
+       C6rt = clubb_C6rt
+       C6thl = C6rt
+    end if
     if (clubb_C6rtb /= init_value) C6rtb = clubb_C6rtb
     if (clubb_C7 /= init_value) C7 = clubb_C7
     if (clubb_C7b /= init_value) C7b = clubb_C7b
@@ -812,7 +822,10 @@ module parameters_tunable
     if (clubb_C11b /= init_value) C11b = clubb_C11b
     if (clubb_C14 /= init_value) C14 = clubb_C14
     if (clubb_beta /= init_value) beta = clubb_beta
-    if (clubb_gamma_coef /= init_value) gamma_coef = clubb_gamma_coef
+    if (clubb_gamma_coef /= init_value) then
+       gamma_coef = clubb_gamma_coef
+       gamma_coefb = gamma_coef
+    end if
     if (clubb_mu /= init_value) mu = clubb_mu
     if (clubb_nu1 /= init_value) nu1 = clubb_nu1
     if (clubb_c_K10 /= init_value) c_K10 = clubb_c_K10
