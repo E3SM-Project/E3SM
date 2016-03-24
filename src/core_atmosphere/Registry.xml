@@ -323,6 +323,8 @@
         <packages>
                 <package name="mp_kessler_in" description="parameterization of kessler microphysics."/>
                 <package name="mp_wsm6_in" description="parameterization of WSM6 cloud microphysics."/>
+                <package name="cu_kain_fritsch_in" description="parameterization of Kain Fritsch convection."/>
+                <package name="cu_tiedtke_in" description="parameterization of Tiedtke convection."/>
         </packages>
 
 
@@ -1152,28 +1154,27 @@
 
                 <var_array name="scalars" type="real" dimensions="nVertLevels nCells Time">
                         <var name="qv" array_group="moist" units="kg kg^{-1}"
-                             packages="mp_kessler_in;mp_wsm6_in" 
                              description="Water vapor mixing ratio"/>
 
                         <var name="qc" array_group="moist" units="kg kg^{-1}"
-                             packages="mp_kessler_in;mp_wsm6_in"
-                             description="Cloud water mixing ratio"/>
+                             description="Cloud water mixing ratio"
+                             packages="cu_tiedtke_in;mp_kessler_in;mp_wsm6_in"/>
 
                         <var name="qr" array_group="moist" units="kg kg^{-1}"
-                             packages="mp_kessler_in;mp_wsm6_in"
-                             description="Rain water mixing ratio"/>
+                             description="Rain water mixing ratio"
+                             packages="mp_kessler_in;mp_wsm6_in"/>
 
                         <var name="qi" array_group="moist" units="kg kg^{-1}"
-                             packages="mp_wsm6_in"
-                             description="Ice mixing ratio"/>
+                             description="Ice mixing ratio"
+                             packages="cu_tiedtke_in;mp_wsm6_in">
 
                         <var name="qs" array_group="moist" units="kg kg^{-1}"
-                             packages="mp_wsm6_in"
-                             description="Snow mixing ratio"/>
+                             description="Snow mixing ratio"
+                             packages="mp_wsm6_in"/>
 
                         <var name="qg" array_group="moist" units="kg kg^{-1}"
-                             packages="mp_wsm6_in"
-                             description="Graupel mixing ratio"/>
+                             description="Graupel mixing ratio"
+                             packages="mp_wsm6_in"/>
                 </var_array>
 
                 <var_array name="aerosols" type="real" dimensions="nAerLevels nCells Time">
@@ -1533,28 +1534,27 @@
                 <!-- scalar tendencies -->
                 <var_array name="scalars_tend" type="real" dimensions="nVertLevels nCells Time">
                         <var name="tend_qv" name_in_code="qv" array_group="moist" units="kg kg^{-1} s^{-1}"
-                             packages="mp_kessler_in;mp_wsm6_in"
                              description="Tendency of water vapor mixing ratio"/>
 
                         <var name="tend_qc" name_in_code="qc" array_group="moist" units="kg kg^{-1} s^{-1}"
-                             packages="mp_kessler_in;mp_wsm6_in"
-                             description="Tendency of cloud water mixing ratio"/>
+                             description="Tendency of cloud water mixing ratio"
+                             packages="cu_tiedtke_in;mp_kessler_in;mp_wsm6_in"/>
 
                         <var name="tend_qr" name_in_code="qr" array_group="moist" units="kg kg^{-1} s^{-1}"
-                             packages="mp_kessler_in;mp_wsm6_in"
-                             description="Tendency of rain water mixing ratio"/>
+                             description="Tendency of rain water mixing ratio"
+                             packages="mp_kessler_in;mp_wsm6_in"/>
 
                         <var name="tend_qi" name_in_code="qi" array_group="moist" units="kg kg^{-1} s^{-1}"
-                             packages="mp_wsm6_in"
-                             description="Tendency of ice mixing ratio"/>
+                             description="Tendency of ice mixing ratio"
+                             packages="cu_tiedtke_in;mp_wsm6_in"/>
 
                         <var name="tend_qs" name_in_code="qs" array_group="moist" units="kg kg^{-1} s^{-1}"
-                             packages="mp_wsm6_in"
-                             description="Tendency of snow ratio"/>
+                             description="Tendency of snow ratio"
+                             packages="mp_wsm6_in"/>
 
                         <var name="tend_qg" name_in_code="qg" array_group="moist" units="kg kg^{-1} s^{-1}"
-                             packages="mp_wsm6_in"
-                             description="Tendency of graupel mixing ratio"/>
+                             description="Tendency of graupel mixing ratio"
+                             packages="mp_wsm6_in"/>
                 </var_array>
         </var_struct>
 
@@ -1799,36 +1799,36 @@
                      description="10 cm maximum radar reflectivity"/>
 
                 <var name="i_rainnc" type="integer" dimensions="nCells Time" units="unitless"
-                     packages="mp_kessler_in;mp_wsm6_in"
-                     description="incidence of accumulated grid-scale precipitation greater than config_bucket_rainnc"/>
+                     description="incidence of accumulated grid-scale precipitation greater than config_bucket_rainnc"
+                     packages="mp_kessler_in;mp_wsm6_in"/>
 
                 <var name="sr" type="real" dimensions="nCells Time" units="unitless"
-                     packages="mp_wsm6_in"
-                     description="time-step ratio of frozen versus total grid-scale precipitation"/>
+                     description="time-step ratio of frozen versus total grid-scale precipitation"
+                     packages="mp_wsm6_in"/>
 
                 <var name="rainncv" type="real" dimensions="nCells Time" units="mm"
-                     packages="mp_kessler_in;mp_wsm6_in"
-                     description="time-step total grid-scale precipitation"/>
+                     description="time-step total grid-scale precipitation"
+                     packages="mp_kessler_in;mp_wsm6_in"/>
 
                 <var name="snowncv" type="real" dimensions="nCells Time" units="mm"
-                     packages="mp_wsm6_in"
-                     description="time-step grid-scale precipitation of snow"/>
+                     description="time-step grid-scale precipitation of snow"
+                     packages="mp_wsm6_in"/>
 
                 <var name="graupelncv" type="real" dimensions="nCells Time" units="mm"
-                     packages="mp_wsm6_in"
-                     description="time-step grid-scale precipitation of graupel"/>
+                     description="time-step grid-scale precipitation of graupel"
+                     packages="mp_wsm6_in"/>
 
                 <var name="rainnc" type="real" dimensions="nCells Time" units="mm"
-                     packages="mp_kessler_in;mp_wsm6_in"
-                     description="accumulated total grid-scale precipitation"/>
+                     description="accumulated total grid-scale precipitation"
+                     packages="mp_kessler_in;mp_wsm6_in"/>
 
                 <var name="snownc" type="real" dimensions="nCells Time" units="mm"
-                     packages="mp_wsm6_in"
-                     description="accumulated grid-scale precipitation of snow"/>
+                     description="accumulated grid-scale precipitation of snow"
+                     packages="mp_wsm6_in"/>
 
                 <var name="graupelnc" type="real" dimensions="nCells Time" units="mm"
-                     packages="mp_wsm6_in"
-                     description="accumulated grid-scale precipitation of graupel"/>
+                     description="accumulated grid-scale precipitation of graupel"
+                     packages="mp_wsm6_in"/>
 
                 <var name="precipw" type="real" dimensions="nCells Time" units="kg m^{-2}"
                      description="precipitable water"/>
@@ -1843,16 +1843,20 @@
                 <!-- raincv    : time-step convective precipitation                                               (mm)  -->
 
                 <var name="i_rainc" type="integer" dimensions="nCells Time" units="unitless"
-                     description="incidence of accumulated convective precipitation greater than config_bucket_rainc"/>
+                     description="incidence of accumulated convective precipitation greater than config_bucket_rainc"
+                     packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
 
                 <var name="cuprec" type="real" dimensions="nCells Time" units="mm s^{-1}"
-                     description="convective precipitation rate"/>
+                     description="convective precipitation rate"
+                     packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
 
                 <var name="rainc" type="real" dimensions="nCells Time" units="mm"
-                     description="accumulated convective precipitation"/>
+                     description="accumulated convective precipitation"
+                     packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
 
                 <var name="raincv" type="real" dimensions="nCells Time" units="mm"
-                     description="time-step convective precipitation"/>
+                     description="time-step convective precipitation"
+                     packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
 
                 <!-- ... KAIN_FRITSCH:                                                                                 -->
                 <!-- cubot     : lowest level of convection                                                        (-) -->
@@ -1861,16 +1865,20 @@
                 <!-- wavg0     : average vertical velocity (KF scheme only)                                    (m s-1) -->
 
                 <var name="nca" type="real" dimensions="nCells Time" units="s"
-                     description="relaxation time for KF parameterization of convection"/>
+                     description="relaxation time for KF parameterization of convection"
+                     packages="cu_kain_fritsch_in"/>
 
                 <var name="cubot" type="real" dimensions="nCells Time" units="unitless"
-                     description="index of highest level of convection"/>
+                     description="index of highest level of convection"
+                     packages="cu_kain_fritsch_in"/>
 
                 <var name="cutop" type="real" dimensions="nCells Time" units="unitless"
-                     description="index of lowest level of convection"/>
+                     description="index of lowest level of convection"
+                     packages="cu_kain_fritsch_in"/>
 
                 <var name="w0avg" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-                     description="time running-averaged vertical velocity"/>
+                     description="time running-averaged vertical velocity"
+                     packages="cu_kain_fritsch_in"/>
 
 
                 <!-- ================================================================================================== -->
@@ -1890,13 +1898,13 @@
                      description="exchange coefficient"/>
 
                 <!-- TEMPORARY: -->
-		<var name="kzh" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-1}"
+		              <var name="kzh" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-1}"
                      description="vertical diffusion coefficient of potential temperature"/>
 
-		<var name="kzm" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-1}"
+		              <var name="kzm" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-1}"
                      description="vertical diffusion coefficient of mommentum"/>
 
-		<var name="kzq" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-1}"
+		              <var name="kzq" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-1}"
                      description="vertical diffusion coefficient of water vapor and cloud condensates"/>
 
 
@@ -2492,39 +2500,49 @@
                 <!-- rqicuten  : tendency of cloud ice mixing ratio due to cumulus convection              (kg/kg s-1)  -->
 
                 <var name="rthcuten" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
-                     description="tendency of potential temperature due to cumulus convection"/>
+                     description="tendency of potential temperature due to cumulus convection"
+                     packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
 
                 <var name="rqvcuten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
-                     description="tendency of water vapor mixing ratio due to cumulus convection"/>
+                     description="tendency of water vapor mixing ratio due to cumulus convection"
+                     packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
 
                 <var name="rqccuten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
-                     description="tendency of cloud water mixing ratio due to cumulus convection"/>
+                     description="tendency of cloud water mixing ratio due to cumulus convection"
+                     packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
 
                 <var name="rqicuten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
-                     description="tendency of cloud ice mixing ratio due to cumulus convection"/>
+                     description="tendency of cloud ice mixing ratio due to cumulus convection"
+                     packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
 
                 <!-- KAIN_FRITSCH -->
                 <!-- rqrcuten  : tendency of rain mixing ratio due to cumulus convection                   (kg/kg s-1) -->
                 <!-- rqscuten  : tendency of snow mixing ratio due to cumulus convection                   (kg/kg s-1) -->
 
                 <var name="rqrcuten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
-                     description="tendency of rain mixing ratio due to cumulus convection"/>
+                     description="tendency of rain mixing ratio due to cumulus convection"
+                     packages="cu_kain_fritsch_in"/>
 
                 <var name="rqscuten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
-                     description="tendency of snow mixing ratio due to cumulus convection"/>
+                     description="tendency of snow mixing ratio due to cumulus convection"
+                     packages="cu_kain_fritsch_in"/>
 
                 <!-- TIEDTKE -->
                 <!-- rucuten   : tendency of zonal wind due to cumulus convection                              (m/s-1) -->
                 <!-- rvcuten   : tendency of meridional wind due to cumulus convection                         (m/s-1) -->
                 <!-- rqvdynten : tendency of water vapor due to horizontal and vertical advections         (kg/kg/s-1) -->
+
                 <var name="rqvdynten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
-                     description="tendency of water vapor due to horizontal and vertical advections"/>
+                     description="tendency of water vapor due to horizontal and vertical advections"
+                     packages="cu_tiedtke_in"/>
 
                 <var name="rucuten" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} s^{-1}"
-                     description="tendency of zonal wind due to cumulus convection"/>
+                     description="tendency of zonal wind due to cumulus convection"
+                     packages="cu_tiedtke_in"/>
 
                 <var name="rvcuten" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} s^{-1}"
-                     description="tendency of meridional wind due to cumulus convection"/>
+                     description="tendency of meridional wind due to cumulus convection"
+                     packages="cu_tiedtke_in"/>
 
 
                 <!-- ================================================================================================== -->

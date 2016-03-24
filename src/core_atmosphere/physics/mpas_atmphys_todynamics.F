@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_todynamics
  use mpas_kind_types
  use mpas_derived_types
@@ -19,36 +19,38 @@
  public:: physics_addtend
 
 
-!>\brief interface between the physics parameterizations and the non-hydrostatic dynamical core.
-!>\author Laura D. Fowler (send comments to laura@ucar.edu).
-!>\date 2013-05-01.
-!>
-!>\details
-!>
-!> subroutines in mpas_atmphys_todynamics:
-!> ---------------------------------------
-!> physics_addtend: add and mass-weigh tendencies before being added to dynamics tendencies.
-!> tend_toEdges   : interpolate wind-tendencies from centers to edges of grid-cells.
-!>
-!> add-ons and modifications to sourcecode:
-!> ----------------------------------------
-!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
-!>    * modified sourcecode to use pools.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
-!>    * renamed config_conv_deep_scheme to config_convection_scheme.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+!Interface between the physics parameterizations and the non-hydrostatic dynamical core.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
+!
+!
+! subroutines in mpas_atmphys_todynamics:
+! ---------------------------------------
+! physics_addtend: add and mass-weigh tendencies before being added to dynamics tendencies.
+! tend_toEdges   : interpolate wind-tendencies from centers to edges of grid-cells.
+!
+! add-ons and modifications to sourcecode:
+! ----------------------------------------
+! * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+! * modified sourcecode to use pools.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+! * renamed config_conv_deep_scheme to config_convection_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+! * renamed "tiedtke" with "cu_tiedtke".
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-22.
+! * modified the sourcecode to accomodate the packages "cu_kain_fritsch_in" and "cu_tiedtke_in".
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-24.
 
 
  contains
 
  
-!==================================================================================================
+!=================================================================================================================
  subroutine physics_addtend(block, mesh, state, diag, tend, tend_physics, configs, rk_step)
-!==================================================================================================
+!=================================================================================================================
 
 !input variables:
-!----------------
  type(block_type),intent(in),target:: block
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: state
@@ -58,11 +60,9 @@
  integer, intent(in):: rk_step
 
 !inout variables:
-!----------------
  type(mpas_pool_type),intent(inout):: tend
 
 !local variables:
-!----------------
  integer:: i,iCell,k,n
  integer,pointer:: index_qv, index_qc, index_qr, index_qi, index_qs, index_qg
  integer,pointer:: nCells,nCellsSolve,nEdges,nEdgesSolve,nVertLevels
@@ -92,7 +92,7 @@
  real(kind=RKIND),dimension(:,:),allocatable:: theta,tend_th
 !ldf end.
 
-!==================================================================================================
+!=================================================================================================================
  call mpas_pool_get_dimension(mesh, 'nCells', nCells)
  call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
  call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
@@ -124,14 +124,10 @@
  call mpas_pool_get_array(tend_physics, 'rqcblten', rqcblten)
  call mpas_pool_get_array(tend_physics, 'rqiblten', rqiblten)
 
- call mpas_pool_get_array(tend_physics, 'rucuten', rucuten)
- call mpas_pool_get_array(tend_physics, 'rvcuten', rvcuten)
  call mpas_pool_get_array(tend_physics, 'rthcuten', rthcuten)
  call mpas_pool_get_array(tend_physics, 'rqvcuten', rqvcuten)
  call mpas_pool_get_array(tend_physics, 'rqccuten', rqccuten)
- call mpas_pool_get_array(tend_physics, 'rqrcuten', rqrcuten)
  call mpas_pool_get_array(tend_physics, 'rqicuten', rqicuten)
- call mpas_pool_get_array(tend_physics, 'rqscuten', rqscuten)
 
  call mpas_pool_get_array(tend_physics, 'rthratenlw', rthratenlw)
  call mpas_pool_get_array(tend_physics, 'rthratensw', rthratensw)
@@ -183,7 +179,10 @@
 !add coupled tendencies due to convection:
  if(config_convection_scheme .ne. 'off') then
 
-    if(config_convection_scheme .eq. 'tiedtke') then
+    if(config_convection_scheme .eq. 'cu_tiedtke') then
+       call mpas_pool_get_array(tend_physics, 'rucuten', rucuten)
+       call mpas_pool_get_array(tend_physics, 'rvcuten', rvcuten)
+
        allocate(rucuten_Edge(nVertLevels,nEdges))
        rucuten_Edge(:,:) = 0.
        call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)
@@ -193,6 +192,16 @@
        enddo
        enddo
        deallocate(rucuten_Edge)
+    elseif(config_convection_scheme .eq. 'cu_kain_fritsch') then
+       call mpas_pool_get_array(tend_physics, 'rqrcuten', rqrcuten)
+       call mpas_pool_get_array(tend_physics, 'rqscuten', rqscuten)
+
+       do i = 1, nCellsSolve
+       do k = 1, nVertLevels
+          tend_qr(k,i) = tend_qr(k,i) + rqrcuten(k,i)*mass(k,i)
+          tend_qs(k,i) = tend_qs(k,i) + rqscuten(k,i)*mass(k,i)    
+       enddo
+       enddo
     endif
 
     do i = 1, nCellsSolve
@@ -200,11 +209,10 @@
        tend_th(k,i) = tend_th(k,i) + rthcuten(k,i)*mass(k,i)
        tend_qv(k,i) = tend_qv(k,i) + rqvcuten(k,i)*mass(k,i)
        tend_qc(k,i) = tend_qc(k,i) + rqccuten(k,i)*mass(k,i)
-       tend_qr(k,i) = tend_qr(k,i) + rqrcuten(k,i)*mass(k,i)
        tend_qi(k,i) = tend_qi(k,i) + rqicuten(k,i)*mass(k,i)
-       tend_qs(k,i) = tend_qs(k,i) + rqscuten(k,i)*mass(k,i)    
     enddo
     enddo
+    
  endif
 
 !add coupled tendencies due to longwave radiation:
@@ -259,22 +267,19 @@
 
  end subroutine  physics_addtend
 
-!==================================================================================================
+!=================================================================================================================
  subroutine tend_toEdges(block,mesh,Ux_tend,Uy_tend,U_tend)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
-!----------------
  type(block_type),intent(in),target:: block
  type(mpas_pool_type),intent(in):: mesh
  real(kind=RKIND),intent(in),dimension(:,:):: Ux_tend,Uy_tend 
 
 !output arguments:
-!-----------------
  real(kind=RKIND),intent(out),dimension(:,:):: U_tend
 
 !local variables:
-!-----------------
  type (field2DReal), pointer :: tempField
  type (field2DReal), target :: tempFieldTarget
  integer:: iCell,iEdge,k,j
@@ -285,7 +290,7 @@
  real(kind=RKIND),dimension(:,:),pointer:: east,north,edge_normal
  real(kind=RKIND),dimension(:,:),allocatable,target:: Ux_tend_halo,Uy_tend_halo
  
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_dimension(mesh, 'nCells', nCells)
  call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
@@ -347,6 +352,6 @@
  
  end subroutine tend_toEdges
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_todynamics
-!==================================================================================================
+!=================================================================================================================
