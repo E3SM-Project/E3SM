@@ -1371,9 +1371,9 @@ if (($chem_pkg ne 'none') || ($prog_species)) {
 }
 if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
-} elsif ($chem_pkg =~ '_mam4_mom' || $chem_pkg =~ '_mam4_resus_mom') {
+} elsif ($chem_pkg =~ '_mam4_mom' || $chem_pkg =~ '_mam4_resus_mom' ) {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
-} elsif ($chem_pkg =~ '_mam4' || $chem_pkg eq 'trop_mam4_resus' || $chem_pkg eq 'trop_mam4_resus_soag') {
+} elsif ($chem_pkg =~ '_mam4' ) {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE ';
 } elsif ($chem_pkg =~ '_mam7') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE ';
