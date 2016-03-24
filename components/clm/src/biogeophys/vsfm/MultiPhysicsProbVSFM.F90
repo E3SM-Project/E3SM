@@ -150,7 +150,7 @@ contains
 
     ! Initliaze the VSFM-MPP
     call VSFMMPPInitialize(this, begc, endc, ncols_ghost, &
-             soilstate_vars, waterstate_vars, soilhydrology_vars)
+             zc_col, soilstate_vars, waterstate_vars, soilhydrology_vars)
 
   end subroutine VSFMMPPSetup
 
@@ -265,7 +265,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPInitialize(vsfm_mpp, begc, endc, ncols_ghost, &
-       soilstate_vars, waterstate_vars, soilhydrology_vars)
+       zc_col, soilstate_vars, waterstate_vars, soilhydrology_vars)
 
     !
     ! !DESCRIPTION:
@@ -291,6 +291,7 @@ contains
     class(mpp_vsfm_type)                              :: vsfm_mpp
     integer, intent(in)                               :: begc,endc
     integer, intent(in)                               :: ncols_ghost          ! number of ghost/halo columns
+    PetscReal, pointer, intent(in)                    :: zc_col(:)
     type(soilstate_type) , intent(in)                 :: soilstate_vars
     type(waterstate_type), intent(in)                 :: waterstate_vars
     type(soilhydrology_type), intent(in)              :: soilhydrology_vars
@@ -308,7 +309,7 @@ contains
 
     ! Set initial coniditions
     call VSFMMPPSetSoils(vsfm_mpp, begc, endc, ncols_ghost, soilstate_vars     )
-    call VSFMMPPSetICs(  vsfm_mpp, begc, endc, soilhydrology_vars )
+    call VSFMMPPSetICs(  vsfm_mpp, begc, endc, zc_col, soilhydrology_vars )
 
     ! Get pointers to governing-equations
     cur_goveq => vsfm_soe%goveqns
@@ -344,7 +345,7 @@ contains
   end subroutine VSFMMPPInitialize
 
   !------------------------------------------------------------------------
-  subroutine VSFMMPPSetICs(vsfm_mpp, begc, endc, soilhydrology_vars)
+  subroutine VSFMMPPSetICs(vsfm_mpp, begc, endc, zc_col, soilhydrology_vars)
     !
     ! !DESCRIPTION:
     ! Sets inital conditions for VSFM solver
@@ -357,11 +358,12 @@ contains
     ! !ARGUMENTS
     class(mpp_vsfm_type)                 :: vsfm_mpp
     integer, intent(in)                  :: begc,endc
+    PetscReal, pointer, intent(in)       :: zc_col(:)
     type(soilhydrology_type), intent(in) :: soilhydrology_vars
 
     select case(vsfm_mpp%id)
     case (MPP_VSFM_SNES_CLM)
-       call VSFMMPPSetICsSNESCLM(vsfm_mpp, begc, endc, soilhydrology_vars)
+       call VSFMMPPSetICsSNESCLM(vsfm_mpp, begc, endc, zc_col, soilhydrology_vars)
     case default
        write(iulog,*) 'VSFMMPPSetICs: Unknown mpp_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -636,7 +638,7 @@ contains
   end subroutine VSFMMPPSetSoilsCLM
 
   !------------------------------------------------------------------------
-  subroutine VSFMMPPSetICsSNESCLM(vsfm_mpp, begc, endc, soilhydrology_vars)
+  subroutine VSFMMPPSetICsSNESCLM(vsfm_mpp, begc, endc, zc_col, soilhydrology_vars)
     !
     ! !DESCRIPTION:
     ! Sets inital conditions for VSFM solver from CLM
@@ -658,6 +660,7 @@ contains
     ! !ARGUMENTS
     class(mpp_vsfm_type)                              :: vsfm_mpp
     integer, intent(in)                               :: begc,endc
+    PetscReal, pointer, intent(in)                    :: zc_col(:)
     type(soilhydrology_type), intent(in)              :: soilhydrology_vars
     !
     ! !LOCAL VARIABLES:
@@ -749,7 +752,8 @@ contains
           endif
 
           press_p(icell) = 101325.d0 + &
-                           997.16d0*GRAVITY_CONSTANT*(-zwt_col(col_id) - goveq_richards_ode_pres%mesh%z(icell))
+                           997.16d0*GRAVITY_CONSTANT * &
+                           (-zwt_col(col_id) - (goveq_richards_ode_pres%mesh%z(icell) - zc_col(c)) )
        enddo
     enddo
 

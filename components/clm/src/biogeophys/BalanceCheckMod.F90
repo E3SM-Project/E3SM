@@ -230,6 +230,7 @@ contains
           qflx_ice_dynbal         =>    waterflux_vars%qflx_ice_dynbal_grc      , & ! Input:  [real(r8) (:)   ]  ice runoff due to dynamic land cover change (mm H2O /s)
           snow_sources            =>    waterflux_vars%snow_sources_col         , & ! Output: [real(r8) (:)   ]  snow sources (mm H2O /s)  
           snow_sinks              =>    waterflux_vars%snow_sinks_col           , & ! Output: [real(r8) (:)   ]  snow sinks (mm H2O /s)    
+          qflx_lateral            =>    waterflux_vars%qflx_lateral_col         , & ! Input:  [real(r8) (:)   ]  lateral flux of water to neighboring column (mm H2O /s)
 
           eflx_lwrad_out          =>    energyflux_vars%eflx_lwrad_out_patch    , & ! Input:  [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)
           eflx_lwrad_net          =>    energyflux_vars%eflx_lwrad_net_patch    , & ! Input:  [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm]
@@ -299,8 +300,10 @@ contains
              errh2o(c) = endwb(c) - begwb(c) &
                   - (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_irrig(c) &
                   - qflx_evap_tot(c) - qflx_surf(c)  - qflx_h2osfc_surf(c) &
-                  - qflx_qrgwl(c) - qflx_drain(c) - qflx_drain_perched(c) - qflx_snwcp_ice(c)) * dtime
+                  - qflx_qrgwl(c) - qflx_drain(c) - qflx_drain_perched(c) - qflx_snwcp_ice(c) &
+                  - qflx_lateral(c) ) * dtime
              dwb(c) = (endwb(c)-begwb(c))/dtime
+
           else
 
              errh2o(c) = 0.0_r8
@@ -362,6 +365,7 @@ contains
              write(iulog,*)'qflx_qrgwl     = ',qflx_qrgwl(indexc)
              write(iulog,*)'qflx_drain     = ',qflx_drain(indexc)
              write(iulog,*)'qflx_snwcp_ice = ',qflx_snwcp_ice(indexc)
+             write(iulog,*)'qflx_lateral   = ',qflx_lateral(indexc)
              write(iulog,*)'clm model is stopping'
              call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
 
@@ -385,6 +389,7 @@ contains
              write(iulog,*)'qflx_snwcp_ice     = ',qflx_snwcp_ice(indexc)
              write(iulog,*)'qflx_glcice_melt   = ',qflx_glcice_melt(indexc)
              write(iulog,*)'qflx_glcice_frz    = ',qflx_glcice_frz(indexc)
+             write(iulog,*)'qflx_lateral       = ',qflx_lateral(indexc)
              write(iulog,*)'clm model is stopping'
              call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if

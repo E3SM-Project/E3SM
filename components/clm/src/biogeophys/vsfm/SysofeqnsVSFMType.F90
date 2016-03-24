@@ -1137,8 +1137,12 @@ contains
           data_1d(iauxvar) = var_value
        enddo
 
+    case(AUXVAR_SS)
+       auxvars      => this%aux_vars_ss
+       iauxvar_off  = this%soe_auxvars_ss_offset(soe_auxvar_id)
+       nauxvar      = this%soe_auxvars_ss_ncells(soe_auxvar_id)
     case default
-       write(iulog,*) 'VSFMSOESetDataFromCLM: Unknown soe_auxvar_type'
+       write(iulog,*) 'VSFMSOEGetDataFromCLM: Unknown soe_auxvar_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
 
@@ -1161,6 +1165,7 @@ contains
     !
     use GoverningEquationBaseType     , only : goveqn_base_type
     use GoveqnRichardsODEPressureType , only : goveqn_richards_ode_pressure_type
+    use MultiPhysicsProbConstants     , only : AUXVAR_SS
     !
     implicit none
     !
@@ -1182,6 +1187,7 @@ contains
        select type(cur_goveq)
           class is (goveqn_richards_ode_pressure_type)
              call cur_goveq%ComputeLateralFlux()
+             call cur_goveq%SetDataInSOEAuxVar(AUXVAR_SS, this%aux_vars_ss)
        end select
 
        cur_goveq => cur_goveq%next

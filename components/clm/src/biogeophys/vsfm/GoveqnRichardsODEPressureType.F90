@@ -767,13 +767,17 @@ contains
     ! This is done as a part of post solve.
     !
     use MultiPhysicsProbConstants    , only : AUXVAR_INTERNAL
+    use MultiPhysicsProbConstants    , only : AUXVAR_SS
     use MultiPhysicsProbConstants    , only : VAR_LIQ_SAT
     use MultiPhysicsProbConstants    , only : VAR_MASS
     use MultiPhysicsProbConstants    , only : VAR_SOIL_MATRIX_POT
     use MultiPhysicsProbConstants    , only : FMWH2O
     use MultiPhysicsProbConstants    , only : PRESSURE_REF
     use MultiPhysicsProbConstants    , only : GRAVITY_CONSTANT
+    use MultiPhysicsProbConstants    , only : COND_MASS_RATE
     use SystemOfEquationsVSFMAuxType , only : sysofeqns_vsfm_auxvar_type
+    use ConditionType                , only : condition_type
+    use ConnectionSetType            , only : connection_set_type
     !
     implicit none
     !
@@ -788,10 +792,15 @@ contains
     PetscInt                                                       :: iauxvar_off
     PetscInt                                                       :: iconn
     PetscInt                                                       :: sum_conn
+    PetscInt                                                       :: auxVarCt_ge
+    PetscInt                                                       :: auxVarCt_soe
+    PetscInt                                                       :: condition_id
     PetscReal                                                      :: mass
     PetscReal                                                      :: smp
     PetscReal                                                      :: Pa_to_Meters
     character(len=256)                                             :: string
+    type(condition_type), pointer                                  :: cur_cond
+    type(connection_set_type), pointer                             :: cur_conn_set
 
     if (present(offset)) then
        iauxvar_off = offset
@@ -827,6 +836,56 @@ contains
              soe_avars(iauxvar+iauxvar_off)%soil_matrix_pot = smp
 
           endif
+       enddo
+
+    case (AUXVAR_SS)
+
+       condition_id = 0
+       sum_conn = 0
+
+       auxVarCt_soe = size(soe_avars)
+
+       cur_cond => this%source_sinks%first
+       do
+          if (.not.associated(cur_cond)) exit
+          condition_id = condition_id + 1
+
+          ! Find first soe-auxvar corresponding to goveqn-auxvar.
+          iauxvar_off = -1
+          do iauxvar = 1, auxVarCt_soe
+             if(  &
+                  soe_avars(iauxvar)%is_ss  &
+                  .and.  &
+                  soe_avars(iauxvar)%goveqn_id == this%id_in_list  &
+                  .and.  &
+                  soe_avars(iauxvar)%condition_id == condition_id  &
+                  ) then
+                iauxvar_off = iauxvar - 1
+                exit
+             end if
+          end do
+          if (iauxvar_off < 0) then
+             write(iulog,*) 'RichardsODEPressureSetDataInSOEAuxVar: iauxvar_off < 0'
+             call endrun(msg=errMsg(__FILE__, __LINE__))
+          end if
+
+          if (trim(cur_cond%name) == 'Lateral_flux') then
+
+             cur_conn_set => cur_cond%conn_set
+             do iconn = 1, cur_conn_set%num_connections
+                sum_conn = sum_conn + 1
+                select case(cur_cond%itype)
+                case (COND_MASS_RATE)
+                   soe_avars(iconn + iauxvar_off)%condition_value = cur_cond%value(iconn)
+                case default
+                   write(string,*) cur_cond%itype
+                   write(iulog,*) 'Unknown cur_cond%itype = ' // trim(string)
+                   call endrun(msg=errMsg(__FILE__, __LINE__))
+                end select
+             enddo
+          endif
+
+          cur_cond => cur_cond%next
        enddo
 
     case default

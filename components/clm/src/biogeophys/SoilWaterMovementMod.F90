@@ -908,7 +908,7 @@ contains
     !
     ! !USES:
     use shr_kind_mod              , only : r8 => shr_kind_r8
-    use decompMod                 , only : bounds_type
+    use decompMod                 , only : bounds_type, get_proc_bounds
     use clm_varcon                , only : denh2o
     use clm_varpar                , only : nlevsoi, max_patch_per_col, nlevgrnd
     use clm_time_manager          , only : get_step_size, get_nstep
@@ -925,6 +925,7 @@ contains
     use landunit_varcon           , only : istsoil, istcrop
     use clm_varctl                , only : iulog
     use shr_log_mod               , only : errMsg => shr_log_errMsg
+    use clm_varctl                , only : lateral_connectivity
 #ifdef USE_PETSC_LIB
     use MultiPhysicsProbVSFM      , only : vsfm_mpp
     use MultiPhysicsProbConstants , only : VAR_BC_SS_CONDITION
@@ -937,6 +938,7 @@ contains
     use MultiPhysicsProbConstants , only : AUXVAR_INTERNAL
     use MultiPhysicsProbConstants , only : AUXVAR_BC
     use MultiPhysicsProbConstants , only : AUXVAR_SS
+    use domainLateralMod          , only : ExchangeColumnLevelGhostData, ldomain_lateral
 #endif
     !
     ! !ARGUMENTS:
@@ -957,7 +959,7 @@ contains
     type(temperature_type)  , intent(in)    :: temperature_vars
     !
     ! !LOCAL VARIABLES:
-    integer              :: p,c,fc,j                                                         ! do loop indices
+    integer              :: p,c,fc,j,g                                                       ! do loop indices
     real(r8)             :: dtime                                                            ! land model time step (sec)
     real(r8)             :: temp(bounds%begc:bounds%endc)                                    ! accumulator for rootr weighting
     integer              :: pi                                                               ! pft index
@@ -970,11 +972,13 @@ contains
     real(r8)             :: total_mass_flux_drain_col   (bounds%begc:bounds%endc)            ! Drainage sink for VSFM solver at column level
     real(r8)             :: total_mass_flux_snowlyr_col (bounds%begc:bounds%endc)            ! Flux due to disappearance of snow for VSFM solver at column level
     real(r8)             :: total_mass_flux_sub_col     (bounds%begc:bounds%endc)            ! Sublimation sink for VSFM solver at column level
+    real(r8)             :: total_mass_flux_lateral_col (bounds%begc:bounds%endc)            ! Lateral flux computed by VSFM solver at column level
     real(r8)             :: vsfm_mass_prev_col          (bounds%begc:bounds%endc,1:nlevgrnd) ! Mass of water before a VSFM solve
     real(r8)             :: vsfm_dmass_col              (bounds%begc:bounds%endc)            ! Change in mass of water after a VSFM solve
     real(r8)             :: mass_beg_col                (bounds%begc:bounds%endc)            ! Total mass before a VSFM solve
     real(r8)             :: mass_end_col                (bounds%begc:bounds%endc)            ! Total mass after a VSFM solve
     integer              :: ier                                                              ! error status
+    type(bounds_type)    :: bounds_proc                                                      ! bounds
 
 #ifdef USE_PETSC_LIB
     PetscInt             :: jwt                                                              ! index of first unsaturated soil layer
@@ -1004,6 +1008,7 @@ contains
     PetscReal            :: total_mass_flux_drain                                            ! Sum of mass drainage mass flux of water for all active soil columns
     PetscReal            :: total_mass_flux_snowlyr                                          ! Sum of mass snow layer disappearance mass flux of water for all active soil columns
     PetscReal            :: total_mass_flux_sub                                              ! Sum of mass sublimation mass flux of water for all active soil columns
+    PetscReal            :: total_mass_flux_lateral                                          ! Sum of lateral mass flux for all active soil columns
     PetscReal            :: total_mass_flux                                                  ! Sum of mass ALL mass flux of water for all active soil columns
     PetscInt             :: iter_count                                                       ! How many times VSFM solver is called
 
@@ -1013,6 +1018,9 @@ contains
     PetscReal            :: abs_mass_error_col                                               ! Maximum absolute error for any active soil column
     PetscReal, parameter :: max_abs_mass_error_col  = 1.e-5                                  ! Acceptable mass balance error
     PetscBool            :: successful_step                                                  ! Is the solution return by VSFM acceptable
+    PetscReal, pointer   :: vsfm_soilp_col_ghosted_1d(:)
+    PetscReal, pointer   :: vsfm_fliq_col_ghosted_1d(:)
+    PetscReal, pointer   :: mflx_lateral_col_1d(:)
 #endif
     !-----------------------------------------------------------------------
 
@@ -1052,6 +1060,7 @@ contains
          qflx_sub_snow             =>    waterflux_vars%qflx_sub_snow_col           , & ! Input:  [real(r8) (:)   ]  ground surface dew formation (mm H2O /s) [+]
          qflx_drain                =>    waterflux_vars%qflx_drain_col              , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
          qflx_drain_perched        =>    waterflux_vars%qflx_drain_perched_col      , & ! Input:  [real(r8) (:)   ]  perched wt sub-surface runoff (mm H2O /s)
+         qflx_lateral              =>    waterflux_vars%qflx_lateral_col            , & ! Input:  [real(r8) (:)   ]  lateral flux of water to neighboring column (mm H2O /s)
          mflx_infl_col_1d          =>    waterflux_vars%mflx_infl_col_1d            , & ! Input:  [real(r8) (:)   ]  infiltration source in top soil control volume (kg H2O /s)
          mflx_dew_col_1d           =>    waterflux_vars%mflx_dew_col_1d             , & ! Input:  [real(r8) (:)   ]  (liquid+snow) dew source in top soil control volume (kg H2O /s)
          mflx_et_col_1d            =>    waterflux_vars%mflx_et_col_1d              , & ! Input:  [real(r8) (:)   ]  evapotranspiration sink from all soil coontrol volumes (kg H2O /s) (+ = to atm)
@@ -1141,6 +1150,7 @@ contains
       total_mass_flux_drain            = 0.d0
       total_mass_flux_snowlyr          = 0.d0
       total_mass_flux_sub              = 0.d0
+      total_mass_flux_lateral          = 0.d0
 
       mass_beg_col(:)                  = 0.d0
       mass_end_col(:)                  = 0.d0
@@ -1151,12 +1161,18 @@ contains
       total_mass_flux_drain_col(:)     = 0.d0
       total_mass_flux_snowlyr_col(:)   = 0.d0
       total_mass_flux_sub_col(:)       = 0.d0
+      total_mass_flux_lateral_col(:)   = 0.d0
 
       vsfm_mass_prev_col(:,:)          = 0.d0
       vsfm_dmass_col(:)                = 0.d0
 
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
+
+         if (lateral_connectivity) then
+            g    = col%gridCell(c)
+            area = ldomain_lateral%ugrid%areaGrid_ghosted(g)
+         endif
 
          ! [mm/s] --> [kg/s]   [m^2] [kg/m^3]  [m/mm]
          flux_unit_conversion     = area * denh2o * 1.0d-3
@@ -1233,8 +1249,8 @@ contains
          ! The mass flux associated with disapperance of snow layer over the
          ! last time step.
          idx = c-bounds%begc+1
-         mflx_snowlyr_col_1d(c-bounds%begc+1) = mflx_snowlyr_col(c) + &
-                                                mflx_neg_snow_col_1d(c-bounds%begc+1)
+         mflx_snowlyr_col_1d(c-bounds%begc+1) = mflx_snowlyr_col(c)*area + &
+                                                mflx_neg_snow_col_1d(c-bounds%begc+1)*area
          mflx_snowlyr_col(c) = 0._r8
 
       end do
@@ -1326,6 +1342,65 @@ contains
                                              vsfm_fliq_col_1d   &
                                             )
 
+      if (lateral_connectivity) then
+
+         call get_proc_bounds(bounds_proc)
+
+         allocate(vsfm_soilp_col_ghosted_1d((bounds_proc%endc_all - bounds_proc%begc_all+1)*nlevgrnd))
+         allocate(vsfm_fliq_col_ghosted_1d( (bounds_proc%endc_all - bounds_proc%begc_all+1)*nlevgrnd))
+         allocate(mflx_lateral_col_1d( (bounds_proc%endc - bounds_proc%begc+1)*nlevgrnd))
+
+         call ExchangeColumnLevelGhostData(bounds, nlevgrnd, vsfm_soilp_col_1d, vsfm_soilp_col_ghosted_1d)
+         call ExchangeColumnLevelGhostData(bounds, nlevgrnd, vsfm_fliq_col_1d,  vsfm_fliq_col_ghosted_1d )
+
+         soe_auxvar_id = 1;
+         call vsfm_mpp%sysofeqns%SetDataFromCLMForGhost(AUXVAR_INTERNAL           , &
+                                                        VAR_PRESSURE              , &
+                                                        soe_auxvar_id             , &
+                                                        vsfm_soilp_col_ghosted_1d   &
+                                                       )
+
+         soe_auxvar_id = 1;
+         call vsfm_mpp%sysofeqns%SetDataFromCLMForGhost(AUXVAR_INTERNAL          , &
+                                                        VAR_FRAC_LIQ_SAT         , &
+                                                        soe_auxvar_id            , &
+                                                        vsfm_fliq_col_ghosted_1d   &
+                                                       )
+
+         call vsfm_mpp%sysofeqns%ComputeLateralFlux(dtime)
+
+         soe_auxvar_id = vsfm_cond_id_for_lateral_flux;
+         call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_SS   , &
+                                               VAR_BC_SS_CONDITION      , &
+                                               soe_auxvar_id     , &
+                                               mflx_lateral_col_1d   &
+                                               )
+
+         do fc = 1, num_hydrologyc
+            c = filter_hydrologyc(fc)
+
+            g    = col%gridCell(c)
+            area = ldomain_lateral%ugrid%areaGrid_ghosted(g)
+
+            ! [mm/s] --> [kg/s]   [m^2] [kg/m^3]  [m/mm]
+            flux_unit_conversion     = area * denh2o * 1.0d-3
+
+            qflx_lateral(c) = 0._r8
+            do j = 1, nlevgrnd
+               idx = (c-bounds%begc)*nlevgrnd + j
+
+               total_mass_flux_lateral_col(c) = total_mass_flux_lateral_col(c) + mflx_lateral_col_1d(idx)
+               qflx_lateral(c)                = qflx_lateral(c)                - mflx_lateral_col_1d(idx)/flux_unit_conversion
+            enddo
+            total_mass_flux_lateral        = total_mass_flux_lateral + total_mass_flux_lateral_col(c)
+         enddo
+
+         deallocate(vsfm_soilp_col_ghosted_1d)
+         deallocate(vsfm_fliq_col_ghosted_1d)
+         deallocate(mflx_lateral_col_1d)
+
+      endif
+
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
 
@@ -1361,14 +1436,16 @@ contains
                                   total_mass_flux_dew_col(c)     + &
                                   total_mass_flux_drain_col(c)   + &
                                   total_mass_flux_snowlyr_col(c) + &
-                                  total_mass_flux_sub_col(c)
+                                  total_mass_flux_sub_col(c)     + &
+                                  total_mass_flux_lateral_col(c)
       end do
       total_mass_flux        = total_mass_flux_et        + &
                                total_mass_flux_infl      + &
                                total_mass_flux_dew       + &
                                total_mass_flux_drain     + &
                                total_mass_flux_snowlyr   + &
-                               total_mass_flux_sub
+                               total_mass_flux_sub       + &
+                               total_mass_flux_lateral
 
       ! Preform Pre-StepDT operations
       call vsfm_mpp%sysofeqns%PreStepDT()
@@ -1475,8 +1552,15 @@ contains
 
             ! Put the data in CLM's data structure
             mass_end        = 0.d0
+            area            = 1.d0 ! [m^2]
+
             do fc = 1,num_hydrologyc
                c = filter_hydrologyc(fc)
+
+               if (lateral_connectivity) then
+                  g    = col%gridCell(c)
+                  area = ldomain_lateral%ugrid%areaGrid_ghosted(g)
+               endif
 
                ! initialization
                jwt = -1
@@ -1485,8 +1569,8 @@ contains
                do j = nlevgrnd, 1, -1
                   idx = (c-bounds%begc)*nlevgrnd + j
 
-                  h2osoi_liq(c,j) = (1.d0 - frac_ice(c,j))*vsfm_mass_col_1d(idx)
-                  h2osoi_ice(c,j) = frac_ice(c,j)         *vsfm_mass_col_1d(idx)
+                  h2osoi_liq(c,j) = (1.d0 - frac_ice(c,j))*vsfm_mass_col_1d(idx)/area
+                  h2osoi_ice(c,j) = frac_ice(c,j)         *vsfm_mass_col_1d(idx)/area
 
                   mass_end        = mass_end        + vsfm_mass_col_1d(idx)
                   mass_end_col(c) = mass_end_col(c) + vsfm_mass_col_1d(idx)
@@ -1580,6 +1664,7 @@ contains
       write(iulog,*)'VSFM-DEBUG: drain_flux * dtime         = ',total_mass_flux_drain*get_step_size()
       write(iulog,*)'VSFM-DEBUG: snow_flux  * dtime         = ',total_mass_flux_snowlyr*get_step_size()
       write(iulog,*)'VSFM-DEBUG: sub_flux   * dtime         = ',total_mass_flux_sub*get_step_size()
+      write(iulog,*)'VSFM-DEBUG: lat_flux   * dtime         = ',total_mass_flux_lateral*get_step_size()
       write(iulog,*)'VSFM-DEBUG: total_mass_flux            = ',total_mass_flux/flux_unit_conversion
       write(iulog,*)'VSFM-DEBUG: et_flux                    = ',total_mass_flux_et
       write(iulog,*)'VSFM-DEBUG: infil_flux                 = ',total_mass_flux_infl
