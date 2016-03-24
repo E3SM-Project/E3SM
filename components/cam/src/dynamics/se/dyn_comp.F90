@@ -153,6 +153,8 @@ CONTAINS
     endif
 #ifdef COLUMN_OPENMP
     call omp_set_nested(.true.)
+    if (vthreads > nthreads .or. vthreads < 1) &
+         call endrun('Error: vthreads<1 or vthreads > NTHRDS_ATM')
     nthreads = nthreads / vthreads
     if(par%masterproc) then
        write(iulog,*) " "
@@ -160,6 +162,9 @@ CONTAINS
        write(iulog,*) "dyn_init1: nthreads=",nthreads,"vthreads=",vthreads
        write(iulog,*) " "
     endif
+#else
+    if (vthreads>1) &
+         call endrun('Error: vthreads>1 requires -DCOLUMN_OPENMP')
 #endif
 #else
     nthreads = 1
@@ -277,6 +282,8 @@ CONTAINS
        if (iam==0) write (iulog,*) "dyn_init2: nthreads=",nthreads,&
                                    "max_threads=",omp_get_max_threads()
        !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ie,ithr,nets,nete,hybrid)
+#endif
+#ifdef COLUMN_OPENMP
        call omp_set_num_threads(vthreads)
 #endif
        ithr=omp_get_thread_num()
@@ -382,6 +389,9 @@ CONTAINS
        !if (iam==0) write (iulog,*) "dyn_run: nthreads=",nthreads,&
        !                            "max_threads=",omp_get_max_threads()
        !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid,n)
+#endif
+#ifdef COLUMN_OPENMP
+       ! nested threads
        call omp_set_num_threads(vthreads)
 #endif
        ithr=omp_get_thread_num()
