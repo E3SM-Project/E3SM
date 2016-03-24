@@ -129,6 +129,7 @@ module atm_time_integration
       logical, pointer :: config_print_global_minmax_sca
       real (kind=RKIND), pointer :: config_dt
       character (len=StrKIND), pointer :: config_microp_scheme
+      character (len=StrKIND), pointer :: config_convection_scheme
 
       integer, pointer :: num_scalars, index_qv, nCells, nCellsSolve, nEdges, nEdgesSolve, nVertLevels
 
@@ -168,6 +169,7 @@ module atm_time_integration
       call mpas_pool_get_config(domain % blocklist % configs, 'config_monotonic', config_monotonic)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', config_dt)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_microp_scheme', config_microp_scheme)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_convection_scheme', config_convection_scheme)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_print_global_minmax_vel', config_print_global_minmax_vel)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_print_global_minmax_sca', config_print_global_minmax_sca)
 
@@ -576,15 +578,18 @@ module atm_time_integration
          call mpas_pool_get_array(state, 'scalars', scalars_1, 1)
          call mpas_pool_get_array(state, 'scalars', scalars_2, 2)
          call mpas_pool_get_dimension(state, 'index_qv', index_qv)
-         call mpas_pool_get_array(tend_physics, 'rqvdynten', rqvdynten)
 
-         !NOTE: The calculation of the tendency due to horizontal and vertical advection for the water vapor mixing ratio
-         !requires that the subroutine atm_advance_scalars_mono was called on the third Runge Kutta step, so that a halo
-         !update for the scalars at time_levs(1) is applied. A halo update for the scalars at time_levs(2) is done above. 
-         if (config_monotonic) then
-            rqvdynten(:,:) = ( scalars_2(index_qv,:,:) - scalars_1(index_qv,:,:) ) / config_dt
-         else
-            rqvdynten(:,:) = 0._RKIND
+         if(config_convection_scheme == 'cu_tiedtke') then
+            call mpas_pool_get_array(tend_physics, 'rqvdynten', rqvdynten)
+
+            !NOTE: The calculation of the tendency due to horizontal and vertical advection for the water vapor mixing ratio
+            !requires that the subroutine atm_advance_scalars_mono was called on the third Runge Kutta step, so that a halo
+            !update for the scalars at time_levs(1) is applied. A halo update for the scalars at time_levs(2) is done above. 
+            if (config_monotonic) then
+               rqvdynten(:,:) = ( scalars_2(index_qv,:,:) - scalars_1(index_qv,:,:) ) / config_dt
+            else
+               rqvdynten(:,:) = 0._RKIND
+            end if
          end if
 
          !simply set to zero negative mixing ratios of different water species (for now):

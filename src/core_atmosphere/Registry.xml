@@ -109,6 +109,8 @@
         <packages>
                 <package name="mp_kessler_in" description="parameterization of kessler microphysics."/>
                 <package name="mp_wsm6_in" description="parameterization of WSM6 cloud microphysics."/>
+                <package name="cu_kain_fritsch_in" description="parameterization of Kain Fritsch convection."/>
+                <package name="cu_tiedtke_in" description="parameterization of Tiedtke convection."/>
         </packages>
 
 
@@ -779,10 +781,10 @@
                 <var name="theta_m"   type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="m_ps"      type="real"     dimensions="nCells Time"/>
                 <var_array name="scalars" type="real" dimensions="nVertLevels nCells Time">
-                     <var name="qv"  array_group="moist"  packages="mp_kessler_in;mp_wsm6_in"/>
-                     <var name="qc"  array_group="moist"  packages="mp_kessler_in;mp_wsm6_in"/>
+                     <var name="qv"  array_group="moist"/>
+                     <var name="qc"  array_group="moist"  packages="cu_tiedtke_in;mp_kessler_in;mp_wsm6_in"/>
                      <var name="qr"  array_group="moist"  packages="mp_kessler_in;mp_wsm6_in"/>
-                     <var name="qi"  array_group="moist"  packages="mp_wsm6_in"/>
+                     <var name="qi"  array_group="moist"  packages="cu_tiedtke_in;mp_wsm6_in"/>
                      <var name="qs"  array_group="moist"  packages="mp_wsm6_in"/>
                      <var name="qg"  array_group="moist"  packages="mp_wsm6_in"/>
                 </var_array>
@@ -936,10 +938,10 @@
 
                 <!-- scalar tendencies -->
                 <var_array name="scalars_tend" type="real" dimensions="nVertLevels nCells Time">
-                     <var name="tend_qv"  name_in_code="qv"  array_group="moist"  packages="mp_kessler_in;mp_wsm6_in"/>
-                     <var name="tend_qc"  name_in_code="qc"  array_group="moist"  packages="mp_kessler_in;mp_wsm6_in"/>
+                     <var name="tend_qv"  name_in_code="qv"  array_group="moist"/>
+                     <var name="tend_qc"  name_in_code="qc"  array_group="moist"  packages="cu_tiedtke_in;mp_kessler_in;mp_wsm6_in"/>
                      <var name="tend_qr"  name_in_code="qr"  array_group="moist"  packages="mp_kessler_in;mp_wsm6_in"/>
-                     <var name="tend_qi"  name_in_code="qi"  array_group="moist"  packages="mp_wsm6_in"/>
+                     <var name="tend_qi"  name_in_code="qi"  array_group="moist"  packages="cu_tiedtke_in;mp_wsm6_in"/>
                      <var name="tend_qs"  name_in_code="qs"  array_group="moist"  packages="mp_wsm6_in"/>
                      <var name="tend_qg"  name_in_code="qg"  array_group="moist"  packages="mp_wsm6_in"/>
                 </var_array>
@@ -1061,10 +1063,10 @@
                 <!-- rainc     : accumulated time-step convective precipitation                                   (mm)  -->
                 <!-- raincv    : time-step convective precipitation                                               (mm)  -->
 
-                <var name="i_rainc"       type="integer"  dimensions="nCells Time"/>
-                <var name="cuprec"        type="real"     dimensions="nCells Time"/>
-                <var name="rainc"         type="real"     dimensions="nCells Time"/>
-                <var name="raincv"        type="real"     dimensions="nCells Time"/>
+                <var name="i_rainc"      type="integer" dimensions="nCells Time" packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
+                <var name="cuprec"       type="real"    dimensions="nCells Time" packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
+                <var name="rainc"        type="real"    dimensions="nCells Time" packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
+                <var name="raincv"       type="real"    dimensions="nCells Time" packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
 
                 <!-- ... KAIN_FRITSCH:                                                                                 -->
                 <!-- cubot     : lowest level of convection                                                        (-) -->
@@ -1072,10 +1074,10 @@
                 <!-- nca       : relaxation time for KF parameterization of convection                             (s) -->
                 <!-- wavg0     : average vertical velocity (KF scheme only)                                    (m s-1) -->
 
-                <var name="nca"           type="real"     dimensions="nCells Time"/>
-                <var name="cubot"         type="real"     dimensions="nCells Time"/>
-                <var name="cutop"         type="real"     dimensions="nCells Time"/>
-                <var name="w0avg"         type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="nca"          type="real"    dimensions="nCells Time" packages="cu_kain_fritsch_in"/>
+                <var name="cubot"        type="real"    dimensions="nCells Time" packages="cu_kain_fritsch_in"/>
+                <var name="cutop"        type="real"    dimensions="nCells Time" packages="cu_kain_fritsch_in"/>
+                <var name="w0avg"        type="real"    dimensions="nVertLevels nCells Time" packages="cu_kain_fritsch_in"/>
 
 
                 <!-- ================================================================================================== -->
@@ -1438,25 +1440,25 @@
                 <!-- rqccuten  : tendency of cloud water mixing ratio due to cumulus convection            (kg/kg s-1)  -->
                 <!-- rqicuten  : tendency of cloud ice mixing ratio due to cumulus convection              (kg/kg s-1)  -->
 
-                <var name="rthcuten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqvcuten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqccuten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqicuten"    type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rthcuten"     type="real"    dimensions="nVertLevels nCells Time" packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
+                <var name="rqvcuten"     type="real"    dimensions="nVertLevels nCells Time" packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
+                <var name="rqccuten"     type="real"    dimensions="nVertLevels nCells Time" packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
+                <var name="rqicuten"     type="real"    dimensions="nVertLevels nCells Time" packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
 
                 <!-- KAIN_FRITSCH -->
                 <!-- rqrcuten  : tendency of rain mixing ratio due to cumulus convection                   (kg/kg s-1) -->
                 <!-- rqscuten  : tendency of snow mixing ratio due to cumulus convection                   (kg/kg s-1) -->
 
-                <var name="rqrcuten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqscuten"    type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rqrcuten"     type="real"    dimensions="nVertLevels nCells Time" packages="cu_kain_fritsch_in"/>
+                <var name="rqscuten"     type="real"    dimensions="nVertLevels nCells Time" packages="cu_kain_fritsch_in"/>
 
                 <!-- TIEDTKE -->
                 <!-- rucuten   : tendency of zonal wind due to cumulus convection                              (m/s-1) -->
                 <!-- rvcuten   : tendency of meridional wind due to cumulus convection                         (m/s-1) -->
                 <!-- rqvdynten : tendency of water vapor due to horizontal and vertical advections         (kg/kg/s-1) -->
-                <var name="rqvdynten"   type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rucuten"     type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rvcuten"     type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rqvdynten"    type="real"    dimensions="nVertLevels nCells Time" packages="cu_tiedtke_in"/>
+                <var name="rucuten"      type="real"    dimensions="nVertLevels nCells Time" packages="cu_tiedtke_in"/>
+                <var name="rvcuten"      type="real"    dimensions="nVertLevels nCells Time" packages="cu_tiedtke_in"/>
 
 
                 <!-- ================================================================================================== -->
