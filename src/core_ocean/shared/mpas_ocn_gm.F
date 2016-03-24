@@ -371,10 +371,10 @@ contains
       !$omp end workshare
 
       ! use relativeSlopeTaperingCell as a temporary space for smoothing of relativeSlopeTopOfCell
+      relativeSlopeTaperingCell = relativeSlopeTopOfCell
+      relativeSlopeTaperingCell(1,:) = 0.0_RKIND
+      relativeSlopeTaperingCell(maxLevelCell(iCell):nVertLevels,:) = 0.0_RKIND
       do iter = 1, 5
-         relativeSlopeTaperingCell = relativeSlopeTopOfCell
-         relativeSlopeTaperingCell(1,:) = 0.0_RKIND
-         relativeSlopeTaperingCell(maxLevelCell(iCell),:) = 0.0_RKIND
          do iCell=1,nCells
            do k = 2, maxLevelCell(iCell)-1
              rtmp = relativeSlopeTopOfCell(k-1,iCell) + relativeSlopeTopOfCell(k+1,iCell)
@@ -405,9 +405,9 @@ contains
       if(config_use_Redi_surface_layer_tapering) then
          do iCell=1,nCells
            do k = 1, maxLevelCell(iCell)
-             rtmp = -zMid(k,iCell)/max(1.0,boundaryLayerDepth(iCell)) - config_Redi_surface_layer_tapering_extent
-             rtmp = max(0.0,rtmp)
-             rtmp = min(1.0,rtmp)
+             rtmp = -zMid(k,iCell)/max(1.0_RKIND,boundaryLayerDepth(iCell)) - config_Redi_surface_layer_tapering_extent
+             rtmp = max(0.0_RKIND,rtmp)
+             rtmp = min(1.0_RKIND,rtmp)
              relativeSlopeTaperingCell(k,iCell) = rtmp*relativeSlopeTaperingCell(k,iCell)
            end do
          end do
@@ -423,8 +423,8 @@ contains
          do iCell=1,nCells
            do k = 1, maxLevelCell(iCell)
              rtmp = (zMid(k,iCell)-zMid(maxLevelCell(iCell),iCell))/(config_Redi_bottom_layer_tapering_depth++epsGM)
-             rtmp = max(0.0,rtmp)
-             rtmp = min(1.0,rtmp)
+             rtmp = max(0.0_RKIND,rtmp)
+             rtmp = min(1.0_RKIND,rtmp)
              relativeSlopeTaperingCell(k,iCell) = rtmp*relativeSlopeTaperingCell(k,iCell)
            end do
          end do
