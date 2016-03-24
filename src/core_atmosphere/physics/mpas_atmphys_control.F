@@ -5,13 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!===============================================================================================================
-!===============================================================================================================
-
-!=============================================================================================================
-
-
-
+!=================================================================================================================
  module mpas_atmphys_control
  use mpas_kind_types
  use mpas_derived_types
@@ -54,6 +48,10 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 ! * renamed "wsm6" to "mp_wsm6" and "kessler" to "mp_kessler".
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-09.
+! * renamed "kain_fritsch" with "cu_kain_fritsch" and "tiedtke" with "cu_tiedtke".
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-22.
+! * renamed "kain_fritsch" with "cu_kain_fritsch" and "tiedtke" with "cu_tiedtke".
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-22.
 
 
  contains
@@ -79,7 +77,9 @@
                                   config_radt_sw_scheme,    &
                                   config_sfclayer_scheme
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
+
+ write(0,*) '--- enter subroutine physics_namelist_check:'
 
  call mpas_pool_get_config(configs,'config_physics_suite'    ,config_physics_suite    )
  call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
@@ -98,7 +98,7 @@
  if (trim(config_physics_suite) == 'mesoscale_reference') then
 
     if (trim(config_microp_scheme) == 'suite')     config_microp_scheme     = 'mp_wsm6'
-    if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'tiedtke'
+    if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'cu_tiedtke'
     if (trim(config_pbl_scheme) == 'suite')        config_pbl_scheme        = 'ysu'
     if (trim(config_gwdo_scheme) == 'suite')       config_gwdo_scheme       = 'off'
     if (trim(config_radt_lw_scheme) == 'suite')    config_radt_lw_scheme    = 'rrtmg_lw'
@@ -140,9 +140,9 @@
  endif
 
 !convection scheme:
- if(.not. (config_convection_scheme .eq. 'off'          .or. &
-           config_convection_scheme .eq. 'kain_fritsch' .or. &
-           config_convection_scheme .eq. 'tiedtke'      )) then
+ if(.not. (config_convection_scheme .eq. 'off'             .or. &
+           config_convection_scheme .eq. 'cu_kain_fritsch' .or. &
+           config_convection_scheme .eq. 'cu_tiedtke'      )) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for config_convection_scheme: ', &
           trim(config_convection_scheme)
@@ -274,9 +274,9 @@
 
  end subroutine physics_namelist_check
 
-!==================================================================================================
+!=================================================================================================================
  subroutine physics_registry_init(mesh,configs,sfc_input)
-!==================================================================================================
+!=================================================================================================================
 
 !input and inout arguments:
  type(mpas_pool_type),intent(in):: mesh
@@ -294,7 +294,7 @@
 !local variables:
  integer:: iCell
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
  call mpas_pool_get_config(configs,'config_lsm_scheme',config_lsm_scheme)
@@ -329,8 +329,8 @@
 
  end subroutine physics_registry_init
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_control
-!==================================================================================================
+!=================================================================================================================
 
 
