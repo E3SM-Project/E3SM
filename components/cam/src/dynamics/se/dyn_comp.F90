@@ -101,6 +101,7 @@ CONTAINS
     use phys_control,     only: use_gw_front
     use physics_buffer,   only: pbuf_add_field, dtype_r8
     use ppgrid,           only: pcols, pver
+    use cam_abortutils,   only : endrun
 
     ! PARAMETERS:
     type(file_desc_t),   intent(in)  :: fh       ! PIO file handle for initial or restart file
