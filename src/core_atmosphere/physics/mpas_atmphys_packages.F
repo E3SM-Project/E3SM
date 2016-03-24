@@ -34,7 +34,9 @@
 
 !local variables:
  character(len=StrKIND),pointer:: config_microp_scheme
+ character(len=StrKIND),pointer:: config_convection_scheme
  logical,pointer:: mp_kessler_in,mp_wsm6_in
+ logical,pointer:: cu_kain_fritsch_in,cu_tiedtke_in
 
  integer :: ierr
 
@@ -42,7 +44,7 @@
 
  ierr = 0
 
-!--- initialization of all packages for cloud microphysics parameterizations:
+!--- initialization of all packages for parameterizations of cloud microphysics:
 
  call mpas_pool_get_config(configs,'config_microp_scheme',config_microp_scheme)
 
@@ -68,6 +70,34 @@
     mp_kessler_in = .true.
  elseif(config_microp_scheme == 'mp_wsm6') then
     mp_wsm6_in = .true. 
+ endif
+
+!--- initialization of all packages for parameterizations of convection:
+
+ call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
+
+ nullify(cu_kain_fritsch_in)
+ call mpas_pool_get_package(packages,'cu_kain_fritsch_inActive',cu_kain_fritsch_in)
+
+ nullify(cu_tiedtke_in)
+ call mpas_pool_get_package(packages,'cu_tiedtke_inActive',cu_tiedtke_in)
+
+ if(.not.associated(cu_kain_fritsch_in) .or. &
+    .not.associated(cu_tiedtke_in)    ) then
+    write(stderrUnit,*) '===================================================================================='
+    write(stderrUnit,*) '* Error while setting up packages for convection options in atmosphere core.'
+    write(stderrUnit,*) '===================================================================================='
+    ierr = 1
+    return
+ endif
+
+ cu_kain_fritsch_in = .false.
+ cu_tiedtke_in      = .false.
+
+ if(config_convection_scheme == 'cu_kain_fritsch') then
+    cu_kain_fritsch_in = .true.
+ elseif(config_convection_scheme == 'cu_tiedtke') then
+    cu_tiedtke_in = .true.
  endif
 
  end function atmphys_setup_packages
