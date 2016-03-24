@@ -483,6 +483,8 @@ end function seq_io_sec2hms
           call mct_aVect_getRList(mstring,k,AV)
           itemc = mct_string_toChar(mstring)
           call mct_string_clean(mstring)
+!-------tcraig, this is a temporary mod to NOT write hgt
+        if (trim(itemc) /= "hgt") then
           name1 = trim(lpre)//'_'//trim(itemc)
           call seq_flds_lookup(itemc,longname=lname,stdname=sname,units=cunit)
 	  if (luse_float) then 
@@ -501,6 +503,8 @@ end function seq_io_sec2hms
                 rcode = pio_put_att(cpl_io_file,varid,"cell_methods","time: mean")
              endif
           endif
+!-------tcraig
+        endif
        enddo
        if (lwdata) call seq_io_enddef(filename)
     end if
@@ -515,11 +519,15 @@ end function seq_io_sec2hms
           call mct_aVect_getRList(mstring,k,AV)
           itemc = mct_string_toChar(mstring)
           call mct_string_clean(mstring)
+!-------tcraig, this is a temporary mod to NOT write hgt
+        if (trim(itemc) /= "hgt") then
           name1 = trim(lpre)//'_'//trim(itemc)
           rcode = pio_inq_varid(cpl_io_file,trim(name1),varid)
           call pio_setframe(cpl_io_file,varid,frame)
           tmpdata = av%rattr(k,:)
           call pio_write_darray(cpl_io_file, varid, iodesc, tmpdata, rcode, fillval=lfillvalue)
+!-------tcraig
+        endif
        enddo
        deallocate(tmpdata)
        call pio_freedecomp(cpl_io_file, iodesc)
@@ -677,6 +685,8 @@ end function seq_io_sec2hms
           call mct_aVect_getRList(mstring,k,AVS(1))
           itemc = mct_string_toChar(mstring)
           call mct_string_clean(mstring)
+!-------tcraig, this is a temporary mod to NOT write hgt
+        if (trim(itemc) /= "hgt") then
           name1 = trim(lpre)//'_'//trim(itemc)
           call seq_flds_lookup(itemc,longname=lname,stdname=sname,units=cunit)
 	  if (luse_float) then 
@@ -695,6 +705,8 @@ end function seq_io_sec2hms
                 rcode = pio_put_att(cpl_io_file,varid,"cell_methods","time: mean")
              endif
           endif
+!-------tcraig
+        endif
        enddo
        if (lwdata) call seq_io_enddef(filename)
     end if
@@ -721,6 +733,8 @@ end function seq_io_sec2hms
           call mct_aVect_getRList(mstring,k,AVS(1))
           itemc = mct_string_toChar(mstring)
           call mct_string_clean(mstring)
+!-------tcraig, this is a temporary mod to NOT write hgt
+        if (trim(itemc) /= "hgt") then
           name1 = trim(lpre)//'_'//trim(itemc)
           rcode = pio_inq_varid(cpl_io_file,trim(name1),varid)
           call pio_setframe(cpl_io_file,varid,frame)
@@ -731,6 +745,8 @@ end function seq_io_sec2hms
           enddo
          call pio_write_darray(cpl_io_file, varid, iodesc, data, rcode, fillval=lfillvalue)
          call pio_setdebuglevel(0)
+!-------tcraig
+        endif
        enddo
 
        deallocate(data)
@@ -897,6 +913,8 @@ end function seq_io_sec2hms
           call mct_aVect_getRList(mstring,k,avcomp1)
           itemc = mct_string_toChar(mstring)
           call mct_string_clean(mstring)
+!-------tcraig, this is a temporary mod to NOT write hgt
+        if (trim(itemc) /= "hgt") then
           name1 = trim(lpre)//'_'//trim(itemc)
           call seq_flds_lookup(itemc,longname=lname,stdname=sname,units=cunit)
 	  if (luse_float) then 
@@ -915,6 +933,8 @@ end function seq_io_sec2hms
                 rcode = pio_put_att(cpl_io_file,varid,"cell_methods","time: mean")
              endif
           endif
+!-------tcraig
+        endif
        enddo
        if (lwdata) call seq_io_enddef(filename)
     end if
@@ -943,6 +963,8 @@ end function seq_io_sec2hms
           call mct_aVect_getRList(mstring,k,avcomp1)
           itemc = mct_string_toChar(mstring)
           call mct_string_clean(mstring)
+!-------tcraig, this is a temporary mod to NOT write hgt
+        if (trim(itemc) /= "hgt") then
           name1 = trim(lpre)//'_'//trim(itemc)
           rcode = pio_inq_varid(cpl_io_file,trim(name1),varid)
           call pio_setframe(cpl_io_file,varid,frame)
@@ -956,6 +978,8 @@ end function seq_io_sec2hms
              enddo
           enddo
           call pio_write_darray(cpl_io_file, varid, iodesc, data, rcode, fillval=lfillvalue)
+!-------tcraig
+        endif
        enddo
 
        deallocate(data)

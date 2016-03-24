@@ -46,6 +46,7 @@
       <value>pnetcdf</value>
       <value mach="userdefined">netcdf</value>
       <value mach="eastwind">netcdf</value>
+      <value mach="constance">netcdf</value>
       <value mach="pleiades.*">netcdf</value>
       <value mach="hobart" compiler="pgi">netcdf</value>
       <value mpilib="mpi-serial">netcdf</value>

@@ -202,7 +202,7 @@ if (! $clean ) {
     } else {
 	_check_pelayouts_require_rebuild();
 	unlink("LockedFiles/env_build.xml") if(-e "LockedFiles/env_build.xml");
-	my $sysmod = "./Tools/check_lockedfiles --caseroot $caseroot";
+	my $sysmod = "./Tools/check_lockedfiles ";
 	system($sysmod) == 0 or $logger->logdie("ERROR case.setup: $sysmod failed: $?");
 
 	my $pestot = `$caseroot/Tools/taskmaker.pl -sumonly`;
@@ -433,6 +433,7 @@ sub _check_pelayouts_require_rebuild {
     }
 
 }
+
 #-----------------------------------------------------------------------------------------------
 sub _build_usernl_files {
     # Create user_nl_xxx files
