@@ -1674,9 +1674,16 @@
        |..CPL..|
        |......GLC......|
   -->
-  <grid name="l%0.9x1.25.+oi%gx1">
-     <mach name="any">
-        <pes pesize="any" compset="DATM.+CLM.+CICE.+POP.+CISM2">
+  <!-- Ideally, we wouldn't specify the atmosphere resolution here, because it
+       is irrelevant. However, ConfigPES doesn't seem to match the grid properly
+       unless the atmosphere resolution is specified. -->
+  <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1">
+     <!-- Ideally, we wouldn't match against yellowstone here. However, if we
+          set mach name="any", it seems that the ConfigPES logic just tries
+          looking in other blocks (which have a specific grid and specific
+          machine), and doesn't check this block -->
+     <mach name="yellowstone">
+        <pes pesize="any" compset="DATM.+CLM.+CICE.+POP">
            <comment>Load balanced for 1850_DATM%CRU_CLM50%BGC_CICE_POP2_MOSART_CISM2_SWAV on yellowstone</comment>
            <ntasks>
               <ntasks_atm>-2</ntasks_atm>
