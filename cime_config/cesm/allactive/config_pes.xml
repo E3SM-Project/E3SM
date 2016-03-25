@@ -1446,7 +1446,7 @@
   </grid>
   <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1" >
     <mach name="yellowstone">
-      <pes pesize="any" compset="BGC">
+      <pes pesize="any" compset="CAM.+CLM.+CICE.+POP.+BGC">
 	<comment>none</comment>
 	<ntasks>
 	  <ntasks_atm>300</ntasks_atm>
