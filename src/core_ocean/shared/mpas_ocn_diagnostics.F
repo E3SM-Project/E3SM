@@ -1306,7 +1306,8 @@ contains
       real (kind=RKIND), dimension(:), pointer :: surfaceStress, surfaceStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer ::  &
            layerThickness, zMid, zTop, densitySurfaceDisplaced, density, &
-           normalVelocity, activeTracersSurfaceFlux, thermalExpansionCoeff, salineContractionCoeff
+           normalVelocity, activeTracersSurfaceFlux, thermalExpansionCoeff, salineContractionCoeff, &
+           activeTracersSurfaceFluxRunoff
 
       real (kind=RKIND), dimension(:), pointer :: &
            indexSurfaceLayerDepth
@@ -1331,8 +1332,6 @@ contains
          timeLevel = 1
       end if
 
-      write(stderrUnit,*) 'blah1'
-
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
@@ -1356,8 +1355,6 @@ contains
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
 
-      write(stderrUnit,*) 'blash2'
-
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
       call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
@@ -1369,8 +1366,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'surfaceBuoyancyForcing', surfaceBuoyancyForcing)
       call mpas_pool_get_array(diagnosticsPool, 'normalVelocitySurfaceLayer', normalVelocitySurfaceLayer)
 
-      write(stderrUnit,*) 'blah3'
-
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', fractionAbsorbedRunoff)
       call mpas_pool_get_array(forcingPool, 'surfaceThicknessFlux', surfaceThicknessFlux)
@@ -1379,11 +1374,9 @@ contains
       call mpas_pool_get_array(forcingPool, 'surfaceStress', surfaceStress)
       call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', surfaceStressMagnitude)
 
-      write(stderrUnit,*) 'blah4'
-
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
       call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
-
+      call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFluxRunoff', activeTracersSurfaceFluxRunoff)
       ! allocate scratch space displaced density computation
       call mpas_pool_get_field(scratchPool, 'thermalExpansionCoeff', thermalExpansionCoeffField)
       call mpas_pool_get_field(scratchPool, 'salineContractionCoeff', salineContractionCoeffField)
@@ -1421,14 +1414,12 @@ contains
        totalThicknessFlux = fractionAbsorbed(1,iCell)*surfaceThicknessFlux(iCell) +    &
                        fractionAbsorbedRunoff(1,iCell)*surfaceThicknessFluxRunoff(iCell)
  
-       write(stderrUnit,*) 'bl = ', totalThicknessFlux,fractionAbsorbedRunoff(1,iCell)
-       write(stderrUnit,*) 'temp = ',activeTracers(indexTempFlux,1,iCell)
        surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (1,iCell) &
               * ( activeTracersSurfaceFlux(indexTempFlux,iCell) + penetrativeTemperatureFlux(iCell) &
-              - penetrativeTemperatureFluxOBL(iCell) - totalThicknessFlux * activeTracers(indexTempFlux, 1, iCell)) &
-              - salineContractionCoeff(1,iCell) &
+              - penetrativeTemperatureFluxOBL(iCell) - totalThicknessFlux * activeTracers(indexTempFlux, 1, iCell) &
+              +activeTracersSurfaceFluxRunoff(indexTempFlux,iCell)) - salineContractionCoeff(1,iCell) &
              * ( activeTracersSurfaceFlux(indexSaltFlux,iCell) - totalThicknessFlux * &
-             activeTracers(indexSaltFlux, 1, iCell) )
+             activeTracers(indexSaltFlux, 1, iCell) ) 
 
        ! at this point, surfaceBuoyancyForcing has units of m/s
        ! change into units of m^2/s^3 (which can be thought of as the flux of buoyancy, units of buoyancy * velocity )
