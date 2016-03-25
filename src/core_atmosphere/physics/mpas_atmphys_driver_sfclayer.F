@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_driver_sfclayer
  use mpas_kind_types
  use mpas_derived_types
@@ -33,147 +33,144 @@
  integer,private:: i,j
 
 
-!>\brief MPAS driver for parameterization of the surface layer.
-!>\author Laura D. Fowler (send comments to laura@ucar.edu).
-!>\date 2013-05-01.
-!>
-!>\details
-!>
-!> subroutines in mpas_atmphys_driver_sfclayer:
-!> --------------------------------------------
-!> allocate_sfclayer    : allocate local arrays for parameterization of surface layer.
-!> deallocate_sfclayer  : deallocate local arrays for parameterization of surface layer.
-!> init_sfclayer        : initialization of individual surface layer schemes.
-!> driver_sfclayer      : main driver (called from subroutine physics_driver).
-!> sfclayer_from_MPAS   : initialize local arrays.
-!> sfclayer_to_MPAS     : copy local arrays to MPAS arrays.
-!>
-!> WRF physics called from driver_sfclayer:
-!> ----------------------------------------
-!>    * module_sf_sfclay: Monin-Obukhov surface layer scheme.
-!>
-!> add-ons and modifications to sourcecode:
-!> ----------------------------------------
-!>    * removed the pre-processor option "do_hydrostatic_pressure" before call to the subroutine
-!>      sfclay.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
-!>    * updated the definition of the horizontal resolution to the actual mean distance between
-!>      cell centers.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-23.
-!>    * in call to subroutine sfclay, replaced the variable g (that originally pointed to gravity)
-!>      with gravity, for simplicity.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
-!>    * in subroutine sfclayer_from_MPAS, added initialization of ustm, cd, cda, ck, and cka. in
-!>      subroutine sfclayer_to_MPAS, filled diag_physics%ustm with ustm_p after call to subroutine
-!>      sfclay.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-16. 
-!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
-!>    * modified sourcecode to use pools.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
-!>    * added initialization of local logical "allowed_to read" in subroutine init_sfclayer. This
-!>      logical is actually not used in subroutine sfclayinit.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-25. 
+!MPAS driver for parameterization of the surface layer.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
+!
+! subroutines in mpas_atmphys_driver_sfclayer:
+! --------------------------------------------
+! allocate_sfclayer    : allocate local arrays for parameterization of surface layer.
+! deallocate_sfclayer  : deallocate local arrays for parameterization of surface layer.
+! init_sfclayer        : initialization of individual surface layer schemes.
+! driver_sfclayer      : main driver (called from subroutine physics_driver).
+! sfclayer_from_MPAS   : initialize local arrays.
+! sfclayer_to_MPAS     : copy local arrays to MPAS arrays.
+!
+! WRF physics called from driver_sfclayer:
+! ----------------------------------------
+! * module_sf_sfclay: Monin-Obukhov surface layer scheme.
+!
+! add-ons and modifications to sourcecode:
+! ----------------------------------------
+! * removed the pre-processor option "do_hydrostatic_pressure" before call to the subroutine sfclay.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
+! * updated the definition of the horizontal resolution to the actual mean distance between cell centers.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-08-23.
+! * in call to subroutine sfclay, replaced the variable g (that originally pointed to gravity)
+!   with gravity, for simplicity.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
+! * in subroutine sfclayer_from_MPAS, added initialization of ustm, cd, cda, ck, and cka. in
+!   subroutine sfclayer_to_MPAS, filled diag_physics%ustm with ustm_p after call to subroutine sfclay.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-04-16. 
+! * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+! * modified sourcecode to use pools.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+! * added initialization of local logical "allowed_to read" in subroutine init_sfclayer. This logical
+!   is actually not used in subroutine sfclayinit.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-09-25. 
+! * renamed "monin_obukhov" with "sf_monin_obukhov".
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-25.
 
 
  contains
 
 
-!==================================================================================================
+!=================================================================================================================
  subroutine allocate_sfclayer
-!==================================================================================================
+!=================================================================================================================
 
- if(.not.allocated(dx_p)     ) allocate(dx_p(ims:ime,jms:jme)     )
- if(.not.allocated(br_p)     ) allocate(br_p(ims:ime,jms:jme)     )
- if(.not.allocated(cd_p)     ) allocate(cd_p(ims:ime,jms:jme)     )
- if(.not.allocated(cda_p)    ) allocate(cda_p(ims:ime,jms:jme)    )
- if(.not.allocated(chs_p)    ) allocate(chs_p(ims:ime,jms:jme)    )
- if(.not.allocated(chs2_p)   ) allocate(chs2_p(ims:ime,jms:jme)   )
- if(.not.allocated(ck_p)     ) allocate(ck_p(ims:ime,jms:jme)     )
- if(.not.allocated(cka_p)    ) allocate(cka_p(ims:ime,jms:jme)    )
- if(.not.allocated(cpm_p)    ) allocate(cpm_p(ims:ime,jms:jme)    )
- if(.not.allocated(cqs2_p)   ) allocate(cqs2_p(ims:ime,jms:jme)   )
- if(.not.allocated(gz1oz0_p) ) allocate(gz1oz0_p(ims:ime,jms:jme) )
- if(.not.allocated(flhc_p)   ) allocate(flhc_p(ims:ime,jms:jme)   )
- if(.not.allocated(flqc_p)   ) allocate(flqc_p(ims:ime,jms:jme)   )
- if(.not.allocated(fh_p)     ) allocate(fh_p(ims:ime,jms:jme)     )
- if(.not.allocated(fm_p)     ) allocate(fm_p(ims:ime,jms:jme)     )
- if(.not.allocated(hfx_p)    ) allocate(hfx_p(ims:ime,jms:jme)    )
- if(.not.allocated(hpbl_p)   ) allocate(hpbl_p(ims:ime,jms:jme)   )
- if(.not.allocated(lh_p)     ) allocate(lh_p(ims:ime,jms:jme)     )
- if(.not.allocated(mavail_p) ) allocate(mavail_p(ims:ime,jms:jme) )
- if(.not.allocated(mol_p)    ) allocate(mol_p(ims:ime,jms:jme)    )
- if(.not.allocated(psih_p)   ) allocate(psih_p(ims:ime,jms:jme)   )
- if(.not.allocated(psim_p)   ) allocate(psim_p(ims:ime,jms:jme)   )
- if(.not.allocated(q2_p)     ) allocate(q2_p(ims:ime,jms:jme)     )
- if(.not.allocated(qfx_p)    ) allocate(qfx_p(ims:ime,jms:jme)    )
- if(.not.allocated(qgh_p)    ) allocate(qgh_p(ims:ime,jms:jme)    )
- if(.not.allocated(qsfc_p)   ) allocate(qsfc_p(ims:ime,jms:jme)   )
- if(.not.allocated(regime_p) ) allocate(regime_p(ims:ime,jms:jme) )
- if(.not.allocated(rmol_p)   ) allocate(rmol_p(ims:ime,jms:jme)   )
- if(.not.allocated(t2m_p)    ) allocate(t2m_p(ims:ime,jms:jme)    )
- if(.not.allocated(tsk_p)    ) allocate(tsk_p(ims:ime,jms:jme)    )
- if(.not.allocated(th2m_p)   ) allocate(th2m_p(ims:ime,jms:jme)   )
- if(.not.allocated(u10_p)    ) allocate(u10_p(ims:ime,jms:jme)    )
- if(.not.allocated(ust_p)    ) allocate(ust_p(ims:ime,jms:jme)    )
- if(.not.allocated(ustm_p)   ) allocate(ustm_p(ims:ime,jms:jme)   )
- if(.not.allocated(v10_p)    ) allocate(v10_p(ims:ime,jms:jme)    )
- if(.not.allocated(wspd_p)   ) allocate(wspd_p(ims:ime,jms:jme)   )
- if(.not.allocated(xland_p)  ) allocate(xland_p(ims:ime,jms:jme)  )
- if(.not.allocated(zol_p)    ) allocate(zol_p(ims:ime,jms:jme)    )
- if(.not.allocated(znt_p)    ) allocate(znt_p(ims:ime,jms:jme)    )
+ if(.not.allocated(dx_p)    ) allocate(dx_p(ims:ime,jms:jme)    )
+ if(.not.allocated(br_p)    ) allocate(br_p(ims:ime,jms:jme)    )
+ if(.not.allocated(cd_p)    ) allocate(cd_p(ims:ime,jms:jme)    )
+ if(.not.allocated(cda_p)   ) allocate(cda_p(ims:ime,jms:jme)   )
+ if(.not.allocated(chs_p)   ) allocate(chs_p(ims:ime,jms:jme)   )
+ if(.not.allocated(chs2_p)  ) allocate(chs2_p(ims:ime,jms:jme)  )
+ if(.not.allocated(ck_p)    ) allocate(ck_p(ims:ime,jms:jme)    )
+ if(.not.allocated(cka_p)   ) allocate(cka_p(ims:ime,jms:jme)   )
+ if(.not.allocated(cpm_p)   ) allocate(cpm_p(ims:ime,jms:jme)   )
+ if(.not.allocated(cqs2_p)  ) allocate(cqs2_p(ims:ime,jms:jme)  )
+ if(.not.allocated(gz1oz0_p)) allocate(gz1oz0_p(ims:ime,jms:jme))
+ if(.not.allocated(flhc_p)  ) allocate(flhc_p(ims:ime,jms:jme)  )
+ if(.not.allocated(flqc_p)  ) allocate(flqc_p(ims:ime,jms:jme)  )
+ if(.not.allocated(fh_p)    ) allocate(fh_p(ims:ime,jms:jme)    )
+ if(.not.allocated(fm_p)    ) allocate(fm_p(ims:ime,jms:jme)    )
+ if(.not.allocated(hfx_p)   ) allocate(hfx_p(ims:ime,jms:jme)   )
+ if(.not.allocated(hpbl_p)  ) allocate(hpbl_p(ims:ime,jms:jme)  )
+ if(.not.allocated(lh_p)    ) allocate(lh_p(ims:ime,jms:jme)    )
+ if(.not.allocated(mavail_p)) allocate(mavail_p(ims:ime,jms:jme))
+ if(.not.allocated(mol_p)   ) allocate(mol_p(ims:ime,jms:jme)   )
+ if(.not.allocated(psih_p)  ) allocate(psih_p(ims:ime,jms:jme)  )
+ if(.not.allocated(psim_p)  ) allocate(psim_p(ims:ime,jms:jme)  )
+ if(.not.allocated(q2_p)    ) allocate(q2_p(ims:ime,jms:jme)    )
+ if(.not.allocated(qfx_p)   ) allocate(qfx_p(ims:ime,jms:jme)   )
+ if(.not.allocated(qgh_p)   ) allocate(qgh_p(ims:ime,jms:jme)   )
+ if(.not.allocated(qsfc_p)  ) allocate(qsfc_p(ims:ime,jms:jme)  )
+ if(.not.allocated(regime_p)) allocate(regime_p(ims:ime,jms:jme))
+ if(.not.allocated(rmol_p)  ) allocate(rmol_p(ims:ime,jms:jme)  )
+ if(.not.allocated(t2m_p)   ) allocate(t2m_p(ims:ime,jms:jme)   )
+ if(.not.allocated(tsk_p)   ) allocate(tsk_p(ims:ime,jms:jme)   )
+ if(.not.allocated(th2m_p)  ) allocate(th2m_p(ims:ime,jms:jme)  )
+ if(.not.allocated(u10_p)   ) allocate(u10_p(ims:ime,jms:jme)   )
+ if(.not.allocated(ust_p)   ) allocate(ust_p(ims:ime,jms:jme)   )
+ if(.not.allocated(ustm_p)  ) allocate(ustm_p(ims:ime,jms:jme)  )
+ if(.not.allocated(v10_p)   ) allocate(v10_p(ims:ime,jms:jme)   )
+ if(.not.allocated(wspd_p)  ) allocate(wspd_p(ims:ime,jms:jme)  )
+ if(.not.allocated(xland_p) ) allocate(xland_p(ims:ime,jms:jme) )
+ if(.not.allocated(zol_p)   ) allocate(zol_p(ims:ime,jms:jme)   )
+ if(.not.allocated(znt_p)   ) allocate(znt_p(ims:ime,jms:jme)   )
 
  end subroutine allocate_sfclayer
 
-!==================================================================================================
+!=================================================================================================================
  subroutine deallocate_sfclayer
-!==================================================================================================
+!=================================================================================================================
 
- if(allocated(dx_p)     ) deallocate(dx_p     )
- if(allocated(br_p)     ) deallocate(br_p     )
- if(allocated(cd_p)     ) deallocate(cd_p     )
- if(allocated(cda_p)    ) deallocate(cda_p    )
- if(allocated(chs_p)    ) deallocate(chs_p    )
- if(allocated(chs2_p)   ) deallocate(chs2_p   )
- if(allocated(ck_p)     ) deallocate(ck_p     )
- if(allocated(cka_p)    ) deallocate(cka_p    )
- if(allocated(cpm_p)    ) deallocate(cpm_p    )
- if(allocated(cqs2_p)   ) deallocate(cqs2_p   )
- if(allocated(gz1oz0_p) ) deallocate(gz1oz0_p )
- if(allocated(flhc_p)   ) deallocate(flhc_p   )
- if(allocated(flqc_p)   ) deallocate(flqc_p   )
- if(allocated(fh_p)     ) deallocate(fh_p     )
- if(allocated(fm_p)     ) deallocate(fm_p     )
- if(allocated(hfx_p)    ) deallocate(hfx_p    )
- if(allocated(hpbl_p)   ) deallocate(hpbl_p   )
- if(allocated(lh_p)     ) deallocate(lh_p     )
- if(allocated(mavail_p) ) deallocate(mavail_p )
- if(allocated(mol_p)    ) deallocate(mol_p    )
- if(allocated(psih_p)   ) deallocate(psih_p   )
- if(allocated(psim_p)   ) deallocate(psim_p   )
- if(allocated(q2_p)     ) deallocate(q2_p     )
- if(allocated(qfx_p)    ) deallocate(qfx_p    )
- if(allocated(qgh_p)    ) deallocate(qgh_p    )
- if(allocated(qsfc_p)   ) deallocate(qsfc_p   )
- if(allocated(regime_p) ) deallocate(regime_p )
- if(allocated(rmol_p)   ) deallocate(rmol_p   )
- if(allocated(t2m_p)    ) deallocate(t2m_p    )
- if(allocated(tsk_p)    ) deallocate(tsk_p    )
- if(allocated(th2m_p)   ) deallocate(th2m_p   )
- if(allocated(u10_p)    ) deallocate(u10_p    )
- if(allocated(ust_p)    ) deallocate(ust_p    )
- if(allocated(ustm_p)   ) deallocate(ustm_p   )
- if(allocated(v10_p)    ) deallocate(v10_p    )
- if(allocated(wspd_p)   ) deallocate(wspd_p   )
- if(allocated(xland_p)  ) deallocate(xland_p  )
- if(allocated(zol_p)    ) deallocate(zol_p    )
- if(allocated(znt_p)    ) deallocate(znt_p    )
+ if(allocated(dx_p)    ) deallocate(dx_p    )
+ if(allocated(br_p)    ) deallocate(br_p    )
+ if(allocated(cd_p)    ) deallocate(cd_p    )
+ if(allocated(cda_p)   ) deallocate(cda_p   )
+ if(allocated(chs_p)   ) deallocate(chs_p   )
+ if(allocated(chs2_p)  ) deallocate(chs2_p  )
+ if(allocated(ck_p)    ) deallocate(ck_p    )
+ if(allocated(cka_p)   ) deallocate(cka_p   )
+ if(allocated(cpm_p)   ) deallocate(cpm_p   )
+ if(allocated(cqs2_p)  ) deallocate(cqs2_p  )
+ if(allocated(gz1oz0_p)) deallocate(gz1oz0_p)
+ if(allocated(flhc_p)  ) deallocate(flhc_p  )
+ if(allocated(flqc_p)  ) deallocate(flqc_p  )
+ if(allocated(fh_p)    ) deallocate(fh_p    )
+ if(allocated(fm_p)    ) deallocate(fm_p    )
+ if(allocated(hfx_p)   ) deallocate(hfx_p   )
+ if(allocated(hpbl_p)  ) deallocate(hpbl_p  )
+ if(allocated(lh_p)    ) deallocate(lh_p    )
+ if(allocated(mavail_p)) deallocate(mavail_p)
+ if(allocated(mol_p)   ) deallocate(mol_p   )
+ if(allocated(psih_p)  ) deallocate(psih_p  )
+ if(allocated(psim_p)  ) deallocate(psim_p  )
+ if(allocated(q2_p)    ) deallocate(q2_p    )
+ if(allocated(qfx_p)   ) deallocate(qfx_p   )
+ if(allocated(qgh_p)   ) deallocate(qgh_p   )
+ if(allocated(qsfc_p)  ) deallocate(qsfc_p  )
+ if(allocated(regime_p)) deallocate(regime_p)
+ if(allocated(rmol_p)  ) deallocate(rmol_p  )
+ if(allocated(t2m_p)   ) deallocate(t2m_p   )
+ if(allocated(tsk_p)   ) deallocate(tsk_p   )
+ if(allocated(th2m_p)  ) deallocate(th2m_p  )
+ if(allocated(u10_p)   ) deallocate(u10_p   )
+ if(allocated(ust_p)   ) deallocate(ust_p   )
+ if(allocated(ustm_p)  ) deallocate(ustm_p  )
+ if(allocated(v10_p)   ) deallocate(v10_p   )
+ if(allocated(wspd_p)  ) deallocate(wspd_p  )
+ if(allocated(xland_p) ) deallocate(xland_p )
+ if(allocated(zol_p)   ) deallocate(zol_p   )
+ if(allocated(znt_p)   ) deallocate(znt_p   )
 
  end subroutine deallocate_sfclayer
 
-!==================================================================================================
+!=================================================================================================================
  subroutine sfclayer_from_MPAS(mesh,diag_physics,sfc_input)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
@@ -187,7 +184,7 @@
                                          qfx,qgh,qsfc,lh,mol,psim,psih,regime,rmol,ust,ustm, &
                                          wspd,znt,zol
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_array(sfc_input   ,'skintemp',skintemp)
  call mpas_pool_get_array(sfc_input   ,'xland'   ,xland   )
@@ -270,9 +267,9 @@
 
  end subroutine sfclayer_from_MPAS
 
-!==================================================================================================
+!=================================================================================================================
  subroutine sfclayer_to_MPAS(diag_physics)
-!==================================================================================================
+!=================================================================================================================
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -283,7 +280,7 @@
                                          wspd,znt,zol
  real(kind=RKIND),dimension(:),pointer:: q2,t2m,th2m,u10,v10
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_array(diag_physics,'br'    , br    )
  call mpas_pool_get_array(diag_physics,'cpm'   , cpm   )
@@ -355,19 +352,19 @@
 
  end subroutine sfclayer_to_MPAS
 
-!==================================================================================================
+!=================================================================================================================
  subroutine init_sfclayer
-!==================================================================================================
+!=================================================================================================================
 
 !local variables:
  logical, parameter:: allowed_to_read = .false. !actually not used in subroutine sfclayinit.
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 ! write(0,*)
 ! write(0,*) '--- enter sfclayer_initialization:'
  sfclayer_select: select case (trim(sfclayer_scheme))
 
-    case("monin_obukhov")
+    case("sf_monin_obukhov")
 !       write(0,*) '    enter monin_obukhov initialization:'
        call sfclayinit(allowed_to_read)
 !       write(0,*) '    end monin_obukhov initialization'
@@ -379,9 +376,9 @@
 
  end subroutine init_sfclayer
 
-!==================================================================================================
+!=================================================================================================================
  subroutine driver_sfclayer(mesh,diag_physics,sfc_input)
-!==================================================================================================
+!=================================================================================================================
 
 !input and inout arguments:
  type(mpas_pool_type),intent(in):: mesh
@@ -394,9 +391,9 @@
 !local variables:
  real(kind=RKIND):: dx
 
-!--------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter subroutine driver_sfclayer:'
+!-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter subroutine driver_sfclayer:'
 
  call mpas_pool_get_array(mesh,'areaCell',areaCell)
 
@@ -405,7 +402,7 @@
 
  sfclayer_select: select case (trim(sfclayer_scheme))
 
-    case("monin_obukhov")
+    case("sf_monin_obukhov")
        dx = sqrt(maxval(areaCell))
        call sfclay( &
                    p3d      = pres_hyd_p , psfc     = psfc_p     , t3d      = t_p        , &
@@ -447,6 +444,6 @@
 
  end subroutine driver_sfclayer
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_driver_sfclayer
-!==================================================================================================
+!=================================================================================================================

@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_driver_gwdo
  use mpas_kind_types
  use mpas_derived_types
@@ -26,45 +26,45 @@
  integer,private:: i,j,k
 
 
-!>\brief MPAS driver for parameterization of gravity wave drag over orography.
-!>\author Laura D. Fowler (send comments to laura@ucar.edu).
-!>\date 2013-05-01.
-!>
-!>\details
-!>
-!> subroutines in mpas_atmphys_driver_gwdo:
-!> ----------------------------------------
-!> allocate_gwdo  : allocate local arrays for parameterization of gravity wave drag.
-!> deallocate_gwdo: deallocate local arrays for parameterization of gravity wave drag.
-!> driver_gwdo    : main driver (called from subroutine physics_driver).
-!> gwdo_from_MPAS : initialize local arrays.
-!> gwdo_to_MPAS   : copy local arrays to MPAS arrays.
-!>
-!> WRF physics called from driver_gwdo:
-!> --------------------------- --------
-!>    * module_bl_gwdo       : parameterization of gravity wave drag over orography. 
-!>
-!> add-ons and modifications to sourcecode:
-!> ----------------------------------------
-!>    * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutine gwdo. 
-!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
-!>    * changed the definition of dx_p to the mean distance between cell centers.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-23.
-!>    * in call to subroutine gwdo, replaced the variable g (that originally pointed to gravity)
-!>      with gravity, for simplicity.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
-!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
-!>    * modified sourcecode to use pools.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!MPAS driver for parameterization of gravity wave drag over orography.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
+!
+! subroutines in mpas_atmphys_driver_gwdo:
+! ----------------------------------------
+! allocate_gwdo  : allocate local arrays for parameterization of gravity wave drag.
+! deallocate_gwdo: deallocate local arrays for parameterization of gravity wave drag.
+! driver_gwdo    : main driver (called from subroutine physics_driver).
+! gwdo_from_MPAS : initialize local arrays.
+! gwdo_to_MPAS   : copy local arrays to MPAS arrays.
+!
+! WRF physics called from driver_gwdo:
+! --------------------------- --------
+! * module_bl_gwdo       : parameterization of gravity wave drag over orography. 
+!
+! add-ons and modifications to sourcecode:
+! ----------------------------------------
+! * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutine gwdo. 
+!   Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
+! * changed the definition of dx_p to the mean distance between cell centers.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-08-23.
+! * in call to subroutine gwdo, replaced the variable g (that originally pointed to gravity)
+!   with gravity, for simplicity.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
+! * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+! * modified sourcecode to use pools.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+! * renamed "ysu_gwdo" to "bl_gwdo_ysu".
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-25. 
 
 
  contains
 
 
-!==================================================================================================
+!=================================================================================================================
  subroutine allocate_gwdo
-!==================================================================================================
+!=================================================================================================================
 
  if(.not.allocated(dx_p)    ) allocate(dx_p(ims:ime,jms:jme)    )
  if(.not.allocated(var2d_p) ) allocate(var2d_p(ims:ime,jms:jme) )
@@ -88,9 +88,9 @@
 
  end subroutine allocate_gwdo
 
-!==================================================================================================
+!=================================================================================================================
  subroutine deallocate_gwdo
-!==================================================================================================
+!=================================================================================================================
 
  if(allocated(dx_p)    ) deallocate(dx_p    )
  if(allocated(var2d_p) ) deallocate(var2d_p )
@@ -114,9 +114,9 @@
 
  end subroutine deallocate_gwdo
 
-!==================================================================================================
+!=================================================================================================================
  subroutine gwdo_from_MPAS(mesh,sfc_input,diag_physics,tend_physics)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
@@ -130,7 +130,7 @@
  real(kind=RKIND),dimension(:),pointer  :: dcEdge_m,dusfcg,dvsfcg
  real(kind=RKIND),dimension(:,:),pointer:: dtaux3d,dtauy3d,rublten,rvblten
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_array(sfc_input,'oa1'  ,oa1  )
  call mpas_pool_get_array(sfc_input,'oa2'  ,oa2  )
@@ -189,9 +189,9 @@
 
  end subroutine gwdo_from_MPAS
  
-!==================================================================================================
+!=================================================================================================================
  subroutine gwdo_to_MPAS(diag_physics,tend_physics)
-!==================================================================================================
+!=================================================================================================================
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -201,7 +201,7 @@
  real(kind=RKIND),dimension(:),pointer  :: dusfcg,dvsfcg
  real(kind=RKIND),dimension(:,:),pointer:: dtaux3d,dtauy3d,rubldiff,rvbldiff,rublten,rvblten
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_array(diag_physics,'dusfcg'  ,dusfcg  )
  call mpas_pool_get_array(diag_physics,'dvsfcg'  ,dvsfcg  )
@@ -234,9 +234,9 @@
 
  end subroutine gwdo_to_MPAS
  
-!==================================================================================================
+!=================================================================================================================
  subroutine driver_gwdo(itimestep,mesh,sfc_input,diag_physics,tend_physics)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
@@ -251,16 +251,16 @@
  integer:: i,iCell,iEdge
  real(kind=RKIND),dimension(:),allocatable:: dx_max
 
-!--------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter subroutine driver_gwdo: dt_pbl=',dt_pbl
+!-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter subroutine driver_gwdo: dt_pbl=',dt_pbl
 
 !copy MPAS arrays to local arrays:
  call gwdo_from_MPAS(mesh,sfc_input,diag_physics,tend_physics)
 
  gwdo_select: select case (trim(gwdo_scheme))
 
-    case("ysu_gwdo")
+    case("bl_ysu_gwdo")
        call gwdo ( &
                   p3d       = pres_hydd_p , p3di      = pres2_hydd_p , pi3d    = pi_p      , &
                   u3d       = u_p         , v3d       = v_p          , t3d     = t_p       , & 
@@ -285,10 +285,10 @@
 
 !copy local arrays to MPAS grid:
  call gwdo_to_MPAS(diag_physics,tend_physics)
-! write(0,*) '--- end subroutine driver_gwdo'
+!write(0,*) '--- end subroutine driver_gwdo'
 
  end subroutine driver_gwdo
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_driver_gwdo
-!==================================================================================================
+!=================================================================================================================

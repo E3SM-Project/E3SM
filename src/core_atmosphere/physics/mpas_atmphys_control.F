@@ -48,10 +48,10 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
 ! * renamed "wsm6" to "mp_wsm6" and "kessler" to "mp_kessler".
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-09.
-! * renamed "kain_fritsch" with "cu_kain_fritsch" and "tiedtke" with "cu_tiedtke".
+! * renamed "kain_fritsch" to "cu_kain_fritsch" and "tiedtke" to "cu_tiedtke".
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-22.
-! * renamed "kain_fritsch" with "cu_kain_fritsch" and "tiedtke" with "cu_tiedtke".
-!   Laura D. Fowler (laura@ucar.edu) / 2016-03-22.
+! * renamed "ysu" to "bl_ysu", "ysu_gwdo" to "bl_gwdo_ysu", and "monin_obukhov" to "sf_monin_obukhov".
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-25. 
 
 
  contains
@@ -99,12 +99,12 @@
 
     if (trim(config_microp_scheme) == 'suite')     config_microp_scheme     = 'mp_wsm6'
     if (trim(config_convection_scheme) == 'suite') config_convection_scheme = 'cu_tiedtke'
-    if (trim(config_pbl_scheme) == 'suite')        config_pbl_scheme        = 'ysu'
+    if (trim(config_pbl_scheme) == 'suite')        config_pbl_scheme        = 'bl_ysu'
     if (trim(config_gwdo_scheme) == 'suite')       config_gwdo_scheme       = 'off'
     if (trim(config_radt_lw_scheme) == 'suite')    config_radt_lw_scheme    = 'rrtmg_lw'
     if (trim(config_radt_sw_scheme) == 'suite')    config_radt_sw_scheme    = 'rrtmg_sw'
     if (trim(config_radt_cld_scheme) == 'suite')   config_radt_cld_scheme   = 'cld_fraction'
-    if (trim(config_sfclayer_scheme) == 'suite')   config_sfclayer_scheme   = 'monin_obukhov'
+    if (trim(config_sfclayer_scheme) == 'suite')   config_sfclayer_scheme   = 'sf_monin_obukhov'
     if (trim(config_lsm_scheme) == 'suite')        config_lsm_scheme        = 'noah'
 
  else if (trim(config_physics_suite) == 'none') then
@@ -152,7 +152,7 @@
 
 !pbl scheme:
  if(.not. (config_pbl_scheme .eq. 'off' .or. &
-           config_pbl_scheme .eq. 'ysu')) then
+           config_pbl_scheme .eq. 'bl_ysu')) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for pbl_scheme: ', &
           trim(config_pbl_scheme)
@@ -162,15 +162,15 @@
 
 !gravity wave drag over orography scheme:
  if(.not. (config_gwdo_scheme .eq. 'off' .or. &
-           config_gwdo_scheme .eq. 'ysu_gwdo')) then
+           config_gwdo_scheme .eq. 'bl_ysu_gwdo')) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for gwdo_scheme: ', &
           trim(config_gwdo_scheme)
     call physics_error_fatal(mpas_err_message)
 
- elseif(config_gwdo_scheme .eq. 'ysu_gwdo' .and. config_pbl_scheme .ne. 'ysu') then
+ elseif(config_gwdo_scheme .eq. 'bl_ysu_gwdo' .and. config_pbl_scheme .ne. 'bl_ysu') then
 
-    write(mpas_err_message,'(A,A10)') 'turn YSU PBL scheme on with config_gwdo = ysu_gwdo:', &
+    write(mpas_err_message,'(A,A10)') 'turn YSU PBL scheme on with config_gwdo = bl_ysu_gwdo:', &
           trim(config_gwdo_scheme)
     call physics_error_fatal(mpas_err_message)
 
@@ -224,7 +224,7 @@
 
 !surface-layer scheme:
  if(.not. (config_sfclayer_scheme .eq. 'off'  .or. &
-           config_sfclayer_scheme .eq. 'monin_obukhov')) then
+           config_sfclayer_scheme .eq. 'sf_monin_obukhov')) then
  
     write(mpas_err_message,'(A,A10)') 'illegal value for surface layer scheme: ', &
           trim(config_sfclayer_scheme)
