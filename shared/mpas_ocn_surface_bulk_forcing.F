@@ -376,7 +376,7 @@ contains
                                                   seaIceHeatFlux, evaporationFlux, riverRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, seaIceSalinityFlux, iceRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux, penetrativeTemperatureFlux
-
+      real (kind=RKIND), dimension(:,:), pointer :: fractionAbsorbed, fractionAbsorbedRunoff
       real (kind=RKIND), dimension(:), pointer :: snowFlux, rainFlux
 
       err = 0
@@ -402,7 +402,8 @@ contains
       call mpas_pool_get_array(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFlux)
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
-
+      call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
+      call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', fractionAbsorbedRunoff)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
 
       ! Build surface fluxes at cell centers
@@ -431,7 +432,8 @@ contains
 
            ! Accumulate fluxes that use the surface temperature
             tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
-                      + (rainFlux(iCell) + riverRunoffFlux(iCell) + evaporationFlux(iCell)) *  &
+                      + (rainFlux(iCell) * fractionAbsorbed(1,iCell) + fractionAbsorbedRunoff(1,iCell) * riverRunoffFlux(iCell) &
+                      + evaporationFlux(iCell) * fractionAbsorbed(1,iCell)) *  &
                        tracerGroup(index_temperature_flux,1,iCell) / rho_sw
 
            ! Accumulate fluxes that use the freezing point
