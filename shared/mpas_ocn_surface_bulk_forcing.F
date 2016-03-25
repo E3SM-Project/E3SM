@@ -432,10 +432,12 @@ contains
 
            ! Accumulate fluxes that use the surface temperature
             tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
-                      + (rainFlux(iCell) * fractionAbsorbed(1,iCell) + fractionAbsorbedRunoff(1,iCell) * riverRunoffFlux(iCell) &
+                      + (rainFlux(iCell) * fractionAbsorbed(1,iCell) &
                       + evaporationFlux(iCell) * fractionAbsorbed(1,iCell)) *  &
                        tracerGroup(index_temperature_flux,1,iCell) / rho_sw
 
+            tracersSurfaceFluxRunoff(index_temperature_flux,iCell) = riverRunoffFlux(iCell) * &
+                    tracerGroup(index_temperature_flux,1,iCell)/rho_sw
            ! Accumulate fluxes that use the freezing point
            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
                + seaIceFreshWaterFlux(iCell) * ocn_freezing_temperature( tracerGroup(index_salinity_flux, 1, iCell) ) / rho_sw
