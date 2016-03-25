@@ -903,7 +903,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           rpdel = 1.0_real_kind/pdel
 
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,vco)
+!$omp parallel do private(k,i,j,v1,v2)
 #endif
           do k=1,nlev
              do j=1,np
@@ -947,9 +947,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
              end do
           end do
 
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j)
-#endif
           do k=1,nlev-1
              do j=1,np
                 do i=1,np
@@ -1123,7 +1120,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
 #if (defined COLUMN_OPENMP)
 ! Not sure about deriv here.
-!$omp parallel do private(k,i,j,gVscript)
+!$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
              do j=1,np
@@ -2192,7 +2189,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                    eta_ave_w*dptens(:,:,:,ie)/hypervis_subcycle
            endif
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,lap_t,lap_dp,lap_v,nu_scale_top,dpdn,dpdn0,utens_tmp,vtens_tmp,ttens_tmp,dptens_tmp)
+!$omp parallel do private(k,i,j,lap_t,lap_dp,lap_v,nu_scale_top,utens_tmp,vtens_tmp,ttens_tmp,dptens_tmp,laplace_fluxes)
 #endif
            do k=1,nlev
               ! advace in time.
@@ -2935,9 +2932,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         ! for reference: at mid layers we have:
         !    omega = v grad p  - integral_etatop^eta[ divdp ]
         ! ===========================================================
-#if (defined COLUMN_OPENMP)
-        !$omp parallel do private(k)
-#endif
         do k=1,nlev-1
            eta_dot_dpdn(:,:,k+1) = hvcoord%hybi(k+1)*sdot_sum(:,:) - eta_dot_dpdn(:,:,k+1)
         end do
@@ -2975,9 +2969,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ==============================================
      ! Compute phi + kinetic energy term: 10*nv*nv Flops
      ! ==============================================
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,E,Ephi,vtemp,vgrad_T,gpterm,glnps1,glnps2)
-#endif
      vertloop: do k=1,nlev
         do j=1,np
            do i=1,np
@@ -3243,7 +3234,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      if (dt2<0) then
         ! calling program just wanted DSS'd RHS, skip time advance
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
+!$omp parallel do private(k,tempflux)
 #endif
         do k=1,nlev
            elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*vtens1(:,:,k)
@@ -3262,7 +3253,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         elem(ie)%state%ps_v(:,:,np1) = -elem(ie)%spheremp(:,:)*sdot_sum
      else
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
+!$omp parallel do private(k,tempflux)
 #endif
         do k=1,nlev
            elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*( elem(ie)%state%v(:,:,1,k,nm1) + dt2*vtens1(:,:,k) )
