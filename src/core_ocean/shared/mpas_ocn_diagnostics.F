@@ -1331,6 +1331,8 @@ contains
          timeLevel = 1
       end if
 
+      write(stderrUnit,*) 'blah1'
+
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
@@ -1354,6 +1356,8 @@ contains
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
 
+      write(stderrUnit,*) 'blash2'
+
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
       call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
@@ -1365,6 +1369,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'surfaceBuoyancyForcing', surfaceBuoyancyForcing)
       call mpas_pool_get_array(diagnosticsPool, 'normalVelocitySurfaceLayer', normalVelocitySurfaceLayer)
 
+      write(stderrUnit,*) 'blah3'
+
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
       call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', fractionAbsorbedRunoff)
       call mpas_pool_get_array(forcingPool, 'surfaceThicknessFlux', surfaceThicknessFlux)
@@ -1373,13 +1379,14 @@ contains
       call mpas_pool_get_array(forcingPool, 'surfaceStress', surfaceStress)
       call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', surfaceStressMagnitude)
 
+      write(stderrUnit,*) 'blah4'
+
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
       call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
 
       ! allocate scratch space displaced density computation
       call mpas_pool_get_field(scratchPool, 'thermalExpansionCoeff', thermalExpansionCoeffField)
       call mpas_pool_get_field(scratchPool, 'salineContractionCoeff', salineContractionCoeffField)
-      call mpas_allocate_scratch_field(densitySurfaceDisplacedField, .true.)
       call mpas_allocate_scratch_field(thermalExpansionCoeffField, .true.)
       call mpas_allocate_scratch_field(salineContractionCoeffField, .true.)
       call mpas_threading_barrier()
@@ -1410,9 +1417,12 @@ contains
        !    2. Sm: salinity associated with surfaceThicknessFlux, PSU (here we assume Sm == salinitySurfaceValue and account for
        !           salinity flux in activeTracersSurfaceFlux array)
        !
+
        totalThicknessFlux = fractionAbsorbed(1,iCell)*surfaceThicknessFlux(iCell) +    &
                        fractionAbsorbedRunoff(1,iCell)*surfaceThicknessFluxRunoff(iCell)
-
+ 
+       write(stderrUnit,*) 'bl = ', totalThicknessFlux,fractionAbsorbedRunoff(1,iCell)
+       write(stderrUnit,*) 'temp = ',activeTracers(indexTempFlux,1,iCell)
        surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (1,iCell) &
               * ( activeTracersSurfaceFlux(indexTempFlux,iCell) + penetrativeTemperatureFlux(iCell) &
               - penetrativeTemperatureFluxOBL(iCell) - totalThicknessFlux * activeTracers(indexTempFlux, 1, iCell)) &
@@ -1444,7 +1454,6 @@ contains
       call mpas_threading_barrier()
 
       ! deallocate scratch space
-      call mpas_deallocate_scratch_field(densitySurfaceDisplacedField, .true.)
       call mpas_deallocate_scratch_field(thermalExpansionCoeffField, .true.)
       call mpas_deallocate_scratch_field(salineContractionCoeffField, .true.)
 
