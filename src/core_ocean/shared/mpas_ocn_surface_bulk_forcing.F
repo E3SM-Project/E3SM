@@ -397,7 +397,6 @@ contains
       call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
       call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
       call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
-      call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
 
       call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
       call mpas_pool_get_array(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFlux)
