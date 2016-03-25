@@ -1667,4 +1667,50 @@
     </mach>
   </grid>
 
+  <!-- J compset (all active except data atmosphere)
+       Laid out as follows:
+       |LND|ICE|ATM|OCN|
+       |ROF|
+       |..CPL..|
+       |......GLC......|
+  -->
+  <grid name="l%0.9x1.25.+oi%gx1">
+     <mach name="any">
+        <pes pesize="any" compset="DATM.+CLM.+CICE.+POP.+CISM2">
+           <comment>Load balanced for 1850_DATM%CRU_CLM50%BGC_CICE_POP2_MOSART_CISM2_SWAV on yellowstone</comment>
+           <ntasks>
+              <ntasks_atm>-2</ntasks_atm>
+              <ntasks_lnd>-18</ntasks_lnd>
+              <ntasks_rof>-18</ntasks_rof>
+              <ntasks_ice>-12</ntasks_ice>
+              <ntasks_ocn>-32</ntasks_ocn>
+              <ntasks_glc>-64</ntasks_glc>
+              <ntasks_wav>1</ntasks_wav>
+              <ntasks_cpl>-30</ntasks_cpl>
+           </ntasks>
+           <nthrds>
+	      <nthrds_atm>1</nthrds_atm>
+	      <nthrds_lnd>1</nthrds_lnd>
+	      <nthrds_rof>1</nthrds_rof>
+	      <nthrds_ice>1</nthrds_ice>
+	      <nthrds_ocn>1</nthrds_ocn>
+	      <nthrds_glc>1</nthrds_glc>
+	      <nthrds_wav>1</nthrds_wav>
+	      <nthrds_cpl>1</nthrds_cpl>
+           </nthrds>
+           <rootpe>
+              <rootpe_atm>-30</rootpe_atm>
+              <rootpe_lnd>0</rootpe_lnd>
+              <rootpe_rof>0</rootpe_rof>
+              <rootpe_ice>-18</rootpe_ice>
+              <rootpe_ocn>-32</rootpe_ocn>
+              <rootpe_glc>0</rootpe_glc>
+              <rootpe_wav>0</rootpe_wav>
+              <rootpe_cpl>0</rootpe_cpl>
+           </rootpe>
+        </pes>
+     </mach>
+  </grid>
+
+
 </config_pes>

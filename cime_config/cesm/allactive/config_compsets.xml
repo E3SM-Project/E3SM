@@ -274,6 +274,14 @@
     <lname>1850_CAM4_CLM40%CN_CICE_DOCN%SOM_RTM_SGLC_SWAV</lname>
   </compset>
 
+  <!-- All active except data atmosphere
+       Used for spinup and testing of CISM couplings -->
+
+  <compset>
+     <alias>J1850G2</alias>
+     <lname>1850_DATM%CRU_CLM50%BGC_CICE_POP2_MOSART_CISM2_SWAV</lname>
+  </compset>
+
   <entries>
 
  <entry id="RUN_TYPE">
