@@ -56,7 +56,7 @@ contains
     !  - Two-point flux for Richards equation, and
     !  - (optinal) Derivative of the flux w.r.t. to upwind and downwind pressure.
     !
-    ! Positive flux implies flow occurs from upwind to downwind control volume.
+    ! Negative flux implies flow occurs from upwind to downwind control volume.
     !
     ! !USES:
     use MultiPhysicsProbConstants, only : GRAVITY_CONSTANT, PRESSURE_REF

@@ -28,9 +28,12 @@ module GoveqnRichardsODEPressureType
   type, public, extends(goveqn_base_type) :: goveqn_richards_ode_pressure_type
      Vec :: accum_prev
 
-     type (rich_ode_pres_auxvar_type), pointer :: aux_vars_in(:)  ! Internal state.
-     type (rich_ode_pres_auxvar_type), pointer :: aux_vars_bc(:)  ! Boundary conditions.
-     type (rich_ode_pres_auxvar_type), pointer :: aux_vars_ss(:)  ! Source-sink.
+     PetscReal                        , pointer :: internal_flux(:) ! mass flux betwenn internal connections [kg/s]
+     PetscReal                        , pointer :: boundary_flux(:) ! mass flux between boundary connections [kg/s]
+
+     type (rich_ode_pres_auxvar_type) , pointer :: aux_vars_in(:)   ! Internal state.
+     type (rich_ode_pres_auxvar_type) , pointer :: aux_vars_bc(:)   ! Boundary conditions.
+     type (rich_ode_pres_auxvar_type) , pointer :: aux_vars_ss(:)   ! Source-sink.
   contains
      procedure, public :: AllocateAuxVars           => RichardsODEPressureAllocateAuxVars
      procedure, public :: SetDensityType            => RichardsODEPressureSetDensityType
@@ -94,15 +97,18 @@ contains
     !   + Source-sink condition.
     !
     ! !USES:
-    use ConditionType, only : condition_type
+    use ConnectionSetType , only : connection_set_type
+    use ConditionType     , only : condition_type
     !
     implicit none
     !
     ! !ARGUMENTS
     class(goveqn_richards_ode_pressure_type) :: this
     !
-    type(condition_type),pointer             :: cur_cond
+    type(condition_type)      , pointer      :: cur_cond
+    type(connection_set_type) , pointer      :: cur_conn_set
     PetscInt                                 :: ncells_cond
+    PetscInt                                 :: sum_conn
     PetscInt                                 :: icond
 
     ! Allocate memory and initialize aux vars: For internal connections
@@ -110,6 +116,17 @@ contains
     do icond = 1,this%mesh%ncells_all
        call this%aux_vars_in(icond)%Init()
     enddo
+
+    ! Find number of internal connections
+    cur_conn_set => this%mesh%intrn_conn_set_list%first
+    sum_conn = 0
+    do
+       if (.not.associated(cur_conn_set)) exit
+       sum_conn = sum_conn + cur_conn_set%num_connections
+       cur_conn_set => cur_conn_set%next
+    enddo
+    allocate(this%internal_flux(sum_conn))
+    this%internal_flux(:) = 0.d0
 
     ! Allocate memory and initialize aux vars: For boundary connections
     ncells_cond = 0
@@ -120,9 +137,11 @@ contains
        cur_cond => cur_cond%next
     enddo
     allocate(this%aux_vars_bc(ncells_cond))
+    allocate(this%boundary_flux(ncells_cond))
     do icond = 1,ncells_cond
        call this%aux_vars_bc(icond)%Init()
     enddo
+    this%boundary_flux(:) = 0.d0
 
     ! Allocate memory and initialize aux vars: For source sink connections
     ncells_cond = 0
@@ -1227,6 +1246,7 @@ contains
           ff(cell_id_up) = ff(cell_id_up) - flux;
           ff(cell_id_dn) = ff(cell_id_dn) + flux;
 
+          this%internal_flux(sum_conn) = flux*FMWH2O
        enddo
 
        cur_conn_set => cur_conn_set%next
@@ -1310,6 +1330,8 @@ contains
           endif
 
           ff(cell_id) = ff(cell_id) + flux;
+
+          this%boundary_flux(sum_conn) = flux*FMWH2O
 
        enddo
        cur_cond => cur_cond%next
