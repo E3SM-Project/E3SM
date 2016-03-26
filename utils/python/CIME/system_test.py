@@ -342,6 +342,7 @@ class SystemTest(object):
 
         if test_case != 'PFS':
             create_newcase_cmd += " -nosavetiming "
+
         if test_mods is not None:
             files = Files()
             (component,modspath) = test_mods.split('/',1)
@@ -360,15 +361,24 @@ class SystemTest(object):
     def _xml_phase(self, test):
     ###########################################################################
 
-
         # modify the CASEROOT xml files depending on the settings of case_opts from
         # then call case.flush()
 
-        models = ('ATM' , 'LND', 'OCN', 'ICE', 'GLC', 'ROF', 'WAV', 'CPL')
+        # Determine list of component classes that this coupler/driver knows how
+        # to deal with. This list follows the same order as compset longnames follow.
+        files = Files()
+        drv_config_file = files.get_value("CONFIG_DRV_FILE")
+        drv_comp = Component(drv_config_file)
+        component_classes = drv_comp.get_valid_model_components()
 
+        # Set up a case object
         case = Case(self._get_test_dir(test)) 
-        case_opts = CIME.utils.parse_test_name(test)[1]
 
+        # Determine the test_case from the test name
+        test_case = CIME.utils.parse_test_name(test)[0]
+        case_opts = CIME.utils.parse_test_name(test)[1] 
+
+        # Determine case_opts from the test_case
         if case_opts is not None:
             logger.info("case_opts are %s " %case_opts) 
             for opt in case_opts:
@@ -408,22 +418,22 @@ class SystemTest(object):
                 match =  re.search(r'^P([0-9]+)', opt, re.M)
                 if match:
                     opti_tasks = match.group(1)
-                    for model in models:
-                        string = "NTASKS_" + model
+                    for component_class in component_classes:
+                        string = "NTASKS_" + component_class
                         case.set_value(string, int(opti_tasks))
-                        string = "NTHRDS_" + model
+                        string = "NTHRDS_" + component_class
                         case.set_value(string, 1)
-                        string = "ROOTPE_" + model
+                        string = "ROOTPE_" + component_class
                         case.set_value(string, 0)
-                    logger.info (" NTASKS_xxx et to %s" %opti_tasks)
-                    logger.info (" NTHRDS_xxx set to %s" 1)
-                    logger.info (" ROOTPE_xxx set to %s" 0)
+                    logger.info (" NTASKS_xxx set to %s" %opti_tasks)
+                    logger.info (" NTHRDS_xxx set to %s 1")
+                    logger.info (" ROOTPE_xxx set to %s 0")
 
                 match =  re.search(r'^P([0-9]+)x([0-9]+)', opt, re.M)
                 if match:
                     opti_tasks = match.group(1)
                     opti_thrds = match.group(2)
-                    for model in models:
+                    for model in component_classes:
                         string = "NTASKS_" + model
                         case.set_value(string, int(opti_tasks))
                         string = "NTHRDS_" + model
@@ -432,30 +442,23 @@ class SystemTest(object):
                         case.set_value(string, 0)
                     logger.info (" NTASKS_xxx set to %s" %opti_tasks)
                     logger.info (" NTHRDS_xxx set to %s" %opti_thrds)
-                    logger.info (" ROOTPE_xxx set to %s" 0)
+                    logger.info (" ROOTPE_xxx set to %s 0")
 
                 match =  re.search(r'^N([0-9]*)', opt, re.M)
                 if match:
                     opti = match.group(1)
-                    for model in models:
-                        if model != 'CPL':
-                            string = "NINST_" + model
+                    for component_class in component_classes:
+                        if component_class != 'DRV':
+                            string = "NINST_" + component_class
                             case.set_value(string, int(opti))
                     logger.info (" Numer if component instances set to %s" %opti)
 
         case.flush()
 
-        # this writes the env_test file - 
-
-        test_case = CIME.utils.parse_test_name(test)[0]
+        # Create, fill and write an envtest object
         envtest = EnvTest(self._get_test_dir(test))
-
-        files = Files()
-        drv_config_file = files.get_value("CONFIG_DRV_FILE")
-        logger.debug("Found drv_config_file %s" % drv_config_file)
-
-        drv_comp = Component(drv_config_file)
         envtest.add_elements_by_group(drv_comp, {}, "env_test.xml")
+
         envtest.set_value("TESTCASE", test_case)
         envtest.set_value("TEST_TESTID", self._test_id)
         envtest.set_value("CASEBASEID", test)
