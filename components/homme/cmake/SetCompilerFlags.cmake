@@ -164,6 +164,7 @@ ENDIF ()
 # Two flavors:
 #   1) HORIZ_OPENMP OpenMP over elements (standard OPENMP)
 #   2) COLUMN_OPENMP OpenMP within an element (previously called ELEMENT_OPENMP)
+# COLUMN_OPENMP will be disabled by the openACC exectuables.
 ##############################################################################
 OPTION(ENABLE_OPENMP "OpenMP across elements" TRUE)
 OPTION(ENABLE_HORIZ_OPENMP "OpenMP across elements" TRUE)
