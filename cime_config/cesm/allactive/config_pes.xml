@@ -1686,14 +1686,14 @@
         <pes pesize="any" compset="DATM.+CLM.+CICE.+POP">
            <comment>Load balanced for 1850_DATM%CRU_CLM50%BGC_CICE_POP2_MOSART_CISM2_SWAV on yellowstone</comment>
            <ntasks>
-              <ntasks_atm>-2</ntasks_atm>
-              <ntasks_lnd>-18</ntasks_lnd>
-              <ntasks_rof>-18</ntasks_rof>
-              <ntasks_ice>-12</ntasks_ice>
-              <ntasks_ocn>-32</ntasks_ocn>
-              <ntasks_glc>-64</ntasks_glc>
+              <ntasks_atm>-1</ntasks_atm>
+              <ntasks_lnd>-21</ntasks_lnd>
+              <ntasks_rof>-21</ntasks_rof>
+              <ntasks_ice>-10</ntasks_ice>
+              <ntasks_ocn>-16</ntasks_ocn>
+              <ntasks_glc>-48</ntasks_glc>
               <ntasks_wav>1</ntasks_wav>
-              <ntasks_cpl>-30</ntasks_cpl>
+              <ntasks_cpl>-31</ntasks_cpl>
            </ntasks>
            <nthrds>
 	      <nthrds_atm>1</nthrds_atm>
@@ -1706,10 +1706,10 @@
 	      <nthrds_cpl>1</nthrds_cpl>
            </nthrds>
            <rootpe>
-              <rootpe_atm>-30</rootpe_atm>
+              <rootpe_atm>-31</rootpe_atm>
               <rootpe_lnd>0</rootpe_lnd>
               <rootpe_rof>0</rootpe_rof>
-              <rootpe_ice>-18</rootpe_ice>
+              <rootpe_ice>-21</rootpe_ice>
               <rootpe_ocn>-32</rootpe_ocn>
               <rootpe_glc>0</rootpe_glc>
               <rootpe_wav>0</rootpe_wav>
