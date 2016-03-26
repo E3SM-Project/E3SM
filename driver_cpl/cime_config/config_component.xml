@@ -3043,7 +3043,7 @@
     <group>run_component_cpl</group>
     <file>env_run.xml</file>
     <desc>
-      Only used for compsets with DATM and POP (currently C and G):
+      Only used for compsets with DATM and POP (currently C, G and J):
       If true, compute albedos to work with daily avg SW down
       If false (default), albedos are computed with the assumption that downward
       solar radiation from the atm component has a diurnal cycle and zenith-angle
@@ -3051,7 +3051,7 @@
       If true, albedos are computed with the assumption that downward
       solar radiation from the atm component is a daily average quantity and
       does not have a zenith-angle dependence. This is often the case when
-      using a data atm component. Only used for compsets with DATM and POP (currently C and G)
+      using a data atm component. Only used for compsets with DATM and POP (currently C, G and J)
     </desc>
   </entry>
 
@@ -3065,12 +3065,12 @@
     <group>run_component_cpl</group>
     <file>env_run.xml</file>
     <desc>
-      Only used for compsets with DATM and POP (currently C and G):
+      Only used for compsets with DATM and POP (currently C, G and J):
       If ocn, ocn provides EP balance factor for precipitation.
       Provides EP balance factor for precip for POP. A factor computed by
       POP is applied to precipitation so that precipitation balances
       evaporation and ocn global salinity does not drift. This is intended
-      for use when coupling POP to a DATM. Only used for C and G compsets.
+      for use when coupling POP to a DATM. Only used for C, G and J compsets.
       Default is off
     </desc>
   </entry>
