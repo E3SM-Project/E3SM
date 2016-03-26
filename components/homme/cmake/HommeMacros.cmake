@@ -1,29 +1,31 @@
-
 # String representation of pound since it is a cmake comment char.
 STRING(ASCII 35 POUND)
 
+function (prc var)
+  message("${var} ${${var}}")
+endfunction ()
+
 # Macro to create the individual tests
 macro(createTestExec execName execType macroNP macroNC 
-                     macroPLEV macroUSE_PIO macroWITH_ENERGY)
+                     macroPLEV macroUSE_PIO macroWITH_ENERGY macroQSIZE_D)
 
-  STRING(TOUPPER ${execType} EXEC_TYPE)
+# before calling this macro, be sure that these are set locally:
+# EXEC_INCLUDE_DIRS 
+# EXEC_SOURCES
 
   # Set the include directories
   SET(EXEC_MODULE_DIR "${CMAKE_CURRENT_BINARY_DIR}/${execName}_modules")
   INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                      ${${EXEC_TYPE}_INCLUDE_DIRS}
+                      ${EXEC_INCLUDE_DIRS}
                       ${EXEC_MODULE_DIR}
                       )
 
-  # Set the source files for this executable
-  SET(EXEC_SOURCES ${${EXEC_TYPE}_SRCS})
-
-  # Backup the cmake variables
-  SET(tempNP ${NUM_POINTS})
-  SET(tempNC ${NUM_CELLS})
-  SET(tempPLEV ${NUM_PLEV})
-  SET(tempUSE_PIO ${PIO})
-  SET(tempWITH_ENERGY ${ENERGY_DIAGNOSTICS})
+  MESSAGE(STATUS "Building ${execName} derived from ${execType} with:")
+  MESSAGE(STATUS "  NP = ${macroNP}")
+  MESSAGE(STATUS "  PLEV = ${macroPLEV}")
+  MESSAGE(STATUS "  QSIZE_D = ${macroQSIZE_D}")
+  MESSAGE(STATUS "  PIO = ${macroUSE_PIO}")
+  MESSAGE(STATUS "  ENERGY = ${macroWITH_ENERGY}")
 
   # Set the variable to the macro variables
   SET(NUM_POINTS ${macroNP})
@@ -44,6 +46,12 @@ macro(createTestExec execName execType macroNP macroNC
     SET(ENERGY_DIAGNOSTICS)
   ENDIF ()
 
+  IF (${macroQSIZE_D})
+    SET(QSIZE_D ${macroQSIZE_D})
+  ELSE() 
+    SET(QSIZE_D)
+  ENDIF ()
+
 
   # This is needed to compile the test executables with the correct options
   SET(THIS_CONFIG_HC ${CMAKE_CURRENT_BINARY_DIR}/config.h.c)
@@ -60,18 +68,10 @@ macro(createTestExec execName execType macroNP macroNC
 
   ADD_DEFINITIONS(-DHAVE_CONFIG_H)
   
-  IF (DEFINED USE_SRCMODS_PATH)
-    setSrcMods(USE_SRCMODS_PATH EXEC_SOURCES )
-  ENDIF()
-
   ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
 
   # Add this executable to a list 
-  SET(EXEC_LIST ${EXEC_LIST} ${execName} PARENT_SCOPE)
-
-  # More thought needs to go into this option
-  #IF (macroWITH_ENERGY)
-  #ENDIF ()
+  SET(EXEC_LIST ${EXEC_LIST} ${execName} CACHE INTERNAL "List of configured executables")
 
   TARGET_LINK_LIBRARIES(${execName} pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
@@ -91,14 +91,9 @@ macro(createTestExec execName execType macroNP macroNC
 
   INSTALL(TARGETS ${execName} RUNTIME DESTINATION tests)
 
-  # Restore the original the cmake variables
-  SET(NUM_POINTS ${tempNP})
-  SET(NUM_CELLS ${tempNC})
-  SET(NUM_PLEV ${tempPLEV})
-  SET(PIO ${tempUSE_PIO})
-  SET(ENERGY_DIAGNOSTICS ${tempWITH_ENERGY})
-
 endmacro(createTestExec)
+
+
 
 macro (copyDirFiles testDir)
   # Copy all of the files into the binary dir
@@ -365,12 +360,6 @@ endmacro(printTestSummary)
 
 # Macro to create the individual tests
 macro(createTest testFile)
-
-  IF (${IS_BIG_ENDIAN}) 
-    SET(NAMELIST_DIR namelists/big_endian)
-  ELSE ()
-    SET(NAMELIST_DIR namelists/little_endian)
-  ENDIF ()
 
   SET (THIS_TEST_INPUT ${HOMME_SOURCE_DIR}/test/reg_test/run_tests/${testFile})
 
