@@ -4,7 +4,7 @@ Interface to the env_batch.xml file.  This class inherits from EnvBase
 from standard_module_setup import *
 
 from env_base import EnvBase
-
+from CIME.utils import convert_to_string
 logger = logging.getLogger(__name__)
 
 class EnvBatch(EnvBase):
@@ -15,18 +15,23 @@ class EnvBatch(EnvBase):
         """
         EnvBase.__init__(self, case_root, infile)
 
-    def set_value(self, item, value, subgroup=None):
+    def set_value(self, item, value, subgroup=None, ignore_type=False):
         val = None
+        # allow the user to set all instances of item if subgroup is not provided
         if subgroup is None:
             nodes = self.get_nodes("entry", {"id":item})
             for node in nodes:
-                val = EnvBase.set_value(self, node, value)
+                type_str = self._get_type_info(node)
+                node.set("value", convert_to_string(value, type_str, item))
+                val = value
         else:
             nodes = self.get_nodes("job",{"name":subgroup})
             for node in nodes:
                 vnode = self.get_optional_node("entry", {"id":item}, root=node)
                 if vnode is not None:
-                    val = EnvBase.set_value(self, vnode, value)
+                    type_str = self._get_type_info(vnode)
+                    vnode.set("value", convert_to_string(value, type_str, item))
+                    val = value
 
         return val
 
@@ -47,3 +52,15 @@ class EnvBatch(EnvBase):
                     value[node.attrib["name"]] = val
 
         return value
+
+    def get_type_info(self, vid):
+        nodes = self.get_nodes("entry",{"id":vid})
+        type_info = None
+        for node in nodes:
+            new_type_info = self._get_type_info(node)
+            if type_info is None:
+                type_info = new_type_info
+            else:
+                expect( type_info == new_type_info,
+                        "Inconsistent type_info for entry id=%s %s %s" % (vid, new_type_info, type_info))
+        return type_info
