@@ -3,9 +3,9 @@ Common interface to XML files which follow the entry id format,
 this is an abstract class and is expected to
 be used by other XML interface modules and not directly.
 """
-from standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, convert_to_string, convert_to_type
-from generic_xml import GenericXML
+from CIME.XML.generic_xml import GenericXML
 
 logger = logging.getLogger(__name__)
 

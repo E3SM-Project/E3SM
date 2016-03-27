@@ -8,10 +8,7 @@ import sys
 import os
 import time
 import re
-if sys.version_info[0] == 2:
-    from ConfigParser import SafeConfigParser as config_parser
-else:
-    from configparser import ConfigParser as config_parser
+from ConfigParser import SafeConfigParser as config_parser
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 165
@@ -634,3 +631,22 @@ def convert_to_string(value, type_str, vid=""):
             expect(False, "Unknown type '%s'" % type_str)
 
     return value
+
+def convert_to_seconds(time_str):
+    """
+    Convert time value in [[HH:]MM:]SS to seconds
+
+    >>> convert_to_seconds("42")
+    42
+    >>> convert_to_seconds("01:01:01")
+    3661
+    """
+    components = time_str.split[":"]
+    expect(len(components) < 3, "Unusual time string: '%s'" % time_str)
+
+    components.reverse()
+    result = 0
+    for idx, component in enumerate(components):
+        result += int(component) * pow(60, idx)
+
+    return result

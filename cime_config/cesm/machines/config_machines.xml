@@ -1962,8 +1962,9 @@
       <env name="OMP_STACKSIZE">64M</env>
     </environment_variables>
   </machine>
+
   <default_run_suffix>
-    <default_run_exe>$config{'EXEROOT'}/cesm.exe </default_run_exe>
+    <default_run_exe>$EXEROOT/cesm.exe </default_run_exe>
     <default_run_misc_suffix> >> cesm.log.$LID 2>&amp;1 </default_run_misc_suffix>
   </default_run_suffix>
 

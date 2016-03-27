@@ -12,6 +12,7 @@ from CIME.XML.env_mach_pes import EnvMachPes
 from CIME.case import Case
 from CIME.utils import expect, run_cmd
 from CIME.setup_tools import set_compiler
+from CIME.batch_maker import get_batch_maker
 
 import shutil, time, glob
 
@@ -144,7 +145,7 @@ def case_setup(caseroot, clean, test_mode):
         # Create Macros file only if it does not exist
         if not os.path.exists("Macros"):
             logger.debug("Creating Macros file for %s" % mach)
-            set_compiler(TODO)
+            set_compiler(case=case)
         else:
             logger.debug("Macros script already created ...skipping")
 
@@ -215,7 +216,7 @@ def case_setup(caseroot, clean, test_mode):
 
             # Use BatchFactory to get the appropriate instance of a BatchMaker,
             # use it to create our batch scripts
-            batchmaker = BatchFactory(case, "run")
+            batchmaker = get_batch_maker("run", case=case)
 
             input_batch_script  = os.path.join(case.get_value("MACHDIR"), "template.case.run")
             batchmaker.make_batch_script(input_batch_script, "case.run")

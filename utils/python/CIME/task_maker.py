@@ -99,7 +99,7 @@ EXEROOT, COMPILER
 
         # Compute task and thread settings for batch commands
         full_sum = 0
-        sum = maxt[0]
+        sum_ = maxt[0]
         task_geom = "(0"
         thread_geom = " %d" % maxt[0]
         task_count = 1
@@ -111,11 +111,11 @@ EXEROOT, COMPILER
 
         task_per_node, total_node_count, max_total_node_count = 0, 0, 0
         for c1 in xrange(1, total_tasks):
-            sum += maxt[c1]
+            sum_ += maxt[c1]
 
             if maxt[c1] > self.MAX_TASKS_PER_NODE:
                 full_sum += self.MAX_TASKS_PER_NODE
-                sum = maxt[c1]
+                sum_ = maxt[c1]
                 task_geom += ")(%d" % c1
             else:
                 task_geom += ",%d" % c1
@@ -144,7 +144,7 @@ EXEROOT, COMPILER
         max_task_per_node = min(self.MAX_TASKS_PER_NODE / max_thread_count, self.PES_PER_NODE, max_task_count)
         max_total_node_count = int(math.ceil(float(max_task_count) / max_task_per_node))
 
-        full_sum += sum
+        full_sum += sum_
         self.full_sum = full_sum
         task_geom += ")"
         self.task_geom = task_geom
@@ -209,7 +209,7 @@ EXEROOT, COMPILER
 #   Maximum threads per task: %d
 """ % (self.total_tasks, self.max_threads)
 
-        for comp, ntasks, nthrds, rootpe, in zip(self.COMP, self.NTASKS, self.NTHRDS, self.ROOTPE):
+        for comp, ntasks, nthrds, rootpe, ninst in zip(self.COMP, self.NTASKS, self.NTHRDS, self.ROOTPE, self.NINST):
             doc += "#    %s ntasks=%d nthreads=%d rootpe=%d ninst=%d\n" % (comp, ntasks, nthrds, rootpe, ninst)
 
         doc += "#\n"

@@ -12,13 +12,13 @@ from  CIME.XML.machines import Machines
 from  CIME.XML.files import Files
 from  CIME.case import Case
 
-SCRIPT_DIR = CIME.utils.get_scripts_root()
-TOOLS_DIR = os.path.join(SCRIPT_DIR,"Tools")
+SCRIPT_DIR  = CIME.utils.get_scripts_root()
+TOOLS_DIR   = os.path.join(SCRIPT_DIR,"Tools")
 DART_CONFIG = "DartConfiguration.tcl"
 DART_BACKUP = "temp_dart_backup"
 MACHINE     = Machines()
 FAST_ONLY   = False
-NO_BATCH = False
+NO_BATCH    = False
 
 logging.basicConfig()
 

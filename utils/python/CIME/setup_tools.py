@@ -70,7 +70,7 @@ def _parse_hash(macros, fd, depth, output_format, cmakedebug=""):
     if output_format == "make" and depth > 0:
         fd.write("%sendif\n\n" % (" " * width))
 
-def set_compiler(compiler_file_arg, case=None, macros_file="Macros", output_format="make"):
+def set_compiler(compiler_file_arg=None, case=None, macros_file="Macros", output_format="make"):
     """
     Parse the config_compiler.xml file into a Macros file for the
     given machine and compiler. Search the user's ~/.cime directory

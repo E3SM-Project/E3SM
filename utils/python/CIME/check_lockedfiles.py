@@ -11,6 +11,9 @@ from CIME.XML.env_mach_pes import EnvMachPes
 import glob
 
 def check_lockedfiles(caseroot=os.getcwd()):
+    """
+    Check that all lockedfiles match what's in case
+    """
     lockedfiles = glob.glob(os.path.join(caseroot, "LockedFiles", "*.xml"))
     for lfile in lockedfiles:
         fpart = os.path.basename(lfile)
@@ -36,10 +39,10 @@ def check_lockedfiles(caseroot=os.getcwd()):
                           (key, repr(diffs[key][0]), repr(diffs[key][1])))
                 if objname == "env_mach_pes":
                     expect(False, "Invoke case.setup -clean followed by case.setup")
-                if objname == "env_case":
+                elif objname == "env_case":
                     expect(False, "Cannot change file env_case.xml, please"
                            " recover the original copy from LockedFiles")
-                if objname == "env_build":
+                elif objname == "env_build":
                     logging.warn("Setting build complete to False")
                     f1obj.set_value("BUILD_COMPLETE", False)
                     if "PIO_VERSION" in diffs.keys():
@@ -50,4 +53,6 @@ def check_lockedfiles(caseroot=os.getcwd()):
                     else:
                         f1obj.set_value("BUILD_STATUS", 1)
                         f1obj.write()
-
+                else:
+                    # JGF : Error?
+                    pass
