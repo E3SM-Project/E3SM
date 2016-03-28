@@ -2336,7 +2336,7 @@ end subroutine ALE_parametric_coords
   real(kind=real_kind), pointer, dimension(:,:,:)               :: DSSvar
   real(kind=real_kind) :: dp0(nlev)
   integer :: ie,q,i,j,k, kptr
-  integer :: rhs_viss = 0
+  integer :: rhs_viss
 
 !  call t_barrierf('sync_euler_step', hybrid%par%comm)
 #if (defined COLUMN_OPENMP)
@@ -2470,7 +2470,7 @@ end subroutine ALE_parametric_coords
       call neighbor_minmax_start(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
       call biharmonic_wk_scalar(elem,qtens_biharmonic,deriv,edgeAdv,hybrid,nets,nete) 
       do ie = nets , nete
-#if (defined COLUMN_OPENMP)
+#if (defined COLUMN_OPENMP_notB4B)
 !$omp parallel do private(k, q)
 #endif
         do q = 1 , qsize
