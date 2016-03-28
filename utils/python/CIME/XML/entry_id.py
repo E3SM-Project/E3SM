@@ -43,7 +43,7 @@ class EntryID(GenericXML):
 
         # Fall back to default value
         value = self.get_optional_node("default_value", root=node)
-        if value.text is not None:
+        if value is not None and value.text is not None:
             node.set("value", value.text)
             return value.text
 
@@ -197,9 +197,6 @@ class EntryID(GenericXML):
                 # initialize an empty list
                 self.groups[gname] = newgroup
                 self.add_child(newgroup)
-                print "ADDING %s to NEW      group %s" %(node.attrib["id"],gname)
-            else:
-                print "ADDING %s to existing group %s" %(node.attrib["id"],gname)
 
 	    # Set the default value, it may be determined by a regular
             # expression match to a dictionary value in attlist matching a
