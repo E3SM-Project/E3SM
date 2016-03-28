@@ -128,14 +128,14 @@ class Case(object):
         files = Files()
         components = files.get_components("COMPSETS_SPEC_FILE")
         logger.info(" Possible components for COMPSETS_SPEC_FILE are %s" % components)
-        
+
         # Loop through all of the files listed in COMPSETS_SPEC_FILE and find the file
         # that has a match for either the alias or the longname in that order
         for component in components:
-            
+
             # Determine the compsets file for the possible target component
             file = files.get_value("COMPSETS_SPEC_FILE", {"component":component})
-            
+
             # If the file exists, read it and see if there is a match for the compset alias or longname
             if (os.path.isfile(file)):
                 compsets = Compsets(file)
@@ -144,7 +144,7 @@ class Case(object):
                     self._compset = match
                     self._target_component = component
                     logger.debug("Successful compset match %s found in file %s " %(self._compset, file))
-                    return 
+                    return
 
         logger.debug("Could not find a compset match for either alias or longname in %s" %file)
 
@@ -152,7 +152,7 @@ class Case(object):
         files = Files()
         gridfile = files.get_value("GRIDS_SPEC_FILE")
         logger.debug(" Grid specification file is %s" % gridfile)
-        
+
         grids = Grids(gridfile)
         self._grid, self._component_grids, self._domains, self._gridmaps \
             = grids.get_grid_match(name=grid_name, compset=self._compset)
@@ -206,8 +206,9 @@ class Case(object):
             print "DEBUG: number of nodes is ",len(nodes)
             for node in nodes:
                 env_file.root.append(node)
+                print env_file.root.text
             env_file.write() # does not work here
-            
+
 
         # # loop over all elements of both component_classes and components - and get config_component_file for
         # # for each component
@@ -216,7 +217,7 @@ class Case(object):
         #     comp_class = self._component_classes[i]
         #     comp_name  = self._components[i-1]
 	#     node_name = 'CONFIG_' + comp_class + '_FILE';
-        #     comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=True) 
+        #     comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=True)
         #     comp_comp = Component(comp_config_file)
         #     print "DEBUG: ",i,comp_class,comp_name,node_name,comp_config_file
         #     for env_file in self._env_entryid_files:

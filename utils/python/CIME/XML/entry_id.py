@@ -43,9 +43,10 @@ class EntryID(GenericXML):
 
         # Fall back to default value
         value = self.get_optional_node("default_value", root=node)
-        if value is not None:
+        if value.text is not None:
             node.set("value", value.text)
             return value.text
+
 
     def _get_type_info(self, node):
         type_node = self.get_optional_node("type", root=node)
@@ -166,8 +167,7 @@ class EntryID(GenericXML):
             childnode = self.get_node(childname,root=node)
             content = childnode.text
             if content == childcontent:
-                print "DEBUG: childcontent",childcontent, node.attrib["id"]
-                elements.append(node)
+                elements.append(deepcopy(node))
 
         return elements
 
@@ -194,8 +194,9 @@ class EntryID(GenericXML):
             if gname not in self.groups.keys():
                 newgroup = ET.Element("group")
                 newgroup.set("id",gname)
+                # initialize an empty list
+                self.groups[gname] = newgroup
                 self.add_child(newgroup)
-                #self.groups[gname] = deepcopy(newgroup)
                 print "ADDING %s to NEW      group %s" %(node.attrib["id"],gname)
             else:
                 print "ADDING %s to existing group %s" %(node.attrib["id"],gname)
@@ -209,7 +210,7 @@ class EntryID(GenericXML):
             node = self.cleanupnode(node)
 
 	    # Add the entry element to the group
-            # self.groups[gname].append(node) # commenting this appears to make env_run.xml write out the file - but without the clean or id
+            self.groups[gname].append(node)
             logger.debug ("Adding to group " + gname)
 
         return nodelist
