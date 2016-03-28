@@ -16,15 +16,15 @@
       <test name="CME_Ld5">
         <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
       </test>
+      <test name="ERR">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">edison</machine>
+      </test>
       <test name="ERS_E_Ld7">
         <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
       </test>
       <test name="ERS_Ld7">
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">bluewaters</machine>
         <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
-      </test>
-      <test name="ERR">
-        <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">edison</machine>
       </test>
       <test name="PET_PT">
         <machine compiler="gnu" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
@@ -272,6 +272,13 @@
     <grid name="f19_g16">
       <test name="ERS_Ld5">
         <machine compiler="intel" testtype="prebeta" testmods="cice/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="J1850G2">
+    <grid name="f09_g16_gl4">
+      <test name="SMS_Ld5">
+        <machine compiler="gnu" testtype="prebeta" testmods="allactive/cism/test_coupling">yellowstone</machine>
       </test>
     </grid>
   </compset>
