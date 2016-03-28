@@ -35,7 +35,7 @@
 !local variables:
  character(len=StrKIND),pointer:: config_microp_scheme
  character(len=StrKIND),pointer:: config_convection_scheme
- logical,pointer:: mp_kessler_in,mp_wsm6_in
+ logical,pointer:: mp_kessler_in,mp_thompson_aerosols_in,mp_thompson_in,mp_wsm6_in
  logical,pointer:: cu_kain_fritsch_in,cu_tiedtke_in
 
  integer :: ierr
@@ -44,6 +44,9 @@
 
  ierr = 0
 
+ write(0,*)
+ write(0,*) '--- enter subroutine atmphys_setup_packages:'
+
 !--- initialization of all packages for parameterizations of cloud microphysics:
 
  call mpas_pool_get_config(configs,'config_microp_scheme',config_microp_scheme)
@@ -51,11 +54,19 @@
  nullify(mp_kessler_in)
  call mpas_pool_get_package(packages,'mp_kessler_inActive',mp_kessler_in)
 
+ nullify(mp_thompson_aerosols_in)
+ call mpas_pool_get_package(packages,'mp_thompson_aerosols_inActive',mp_thompson_aerosols_in)
+
+ nullify(mp_thompson_in)
+ call mpas_pool_get_package(packages,'mp_thompson_inActive',mp_thompson_in)
+
  nullify(mp_wsm6_in)
  call mpas_pool_get_package(packages,'mp_wsm6_inActive',mp_wsm6_in)
 
- if(.not.associated(mp_kessler_in) .or. &
-    .not.associated(mp_wsm6_in)  ) then
+ if(.not.associated(mp_kessler_in)            .or. &
+    .not.associated(mp_thompson_aerosols_in)  .or. &
+    .not.associated(mp_thompson_in)           .or. &
+    .not.associated(mp_wsm6_in)             ) then
     write(stderrUnit,*) '===================================================================================='
     write(stderrUnit,*) '* Error while setting up packages for cloud microphysics options in atmosphere core.'
     write(stderrUnit,*) '===================================================================================='
@@ -63,14 +74,24 @@
     return
  endif
 
- mp_kessler_in = .false.
- mp_wsm6_in    = .false.
+ mp_kessler_in           = .false.
+ mp_thompson_aerosols_in = .false.
+ mp_thompson_in          = .false.
+ mp_wsm6_in              = .false.
 
  if(config_microp_scheme == 'mp_kessler') then
     mp_kessler_in = .true.
+ elseif(config_microp_scheme == 'mp_thompson_aerosols') then
+    mp_thompson_aerosols_in = .true.
+ elseif(config_microp_scheme == 'mp_thompson') then
+    mp_thompson_in = .true.
  elseif(config_microp_scheme == 'mp_wsm6') then
     mp_wsm6_in = .true. 
  endif
+
+ write(0,*) '--- microp_scheme           = ', trim(config_microp_scheme)
+ write(0,*) '--- mp_thompson_in          = ', mp_thompson_in
+ write(0,*) '--- mp_thompson_aerosols_in = ', mp_thompson_aerosols_in
 
 !--- initialization of all packages for parameterizations of convection:
 
@@ -99,6 +120,10 @@
  elseif(config_convection_scheme == 'cu_tiedtke') then
     cu_tiedtke_in = .true.
  endif
+
+ write(0,*) '--- convection_scheme       = ', trim(config_convection_scheme)
+ write(0,*) '--- cu_kain_fritsch_in      = ', cu_kain_fritsch_in
+ write(0,*) '--- cu_tiedtke_in           = ', cu_tiedtke_in
 
  end function atmphys_setup_packages
 
