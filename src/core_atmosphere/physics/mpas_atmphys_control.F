@@ -52,6 +52,8 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-22.
 ! * renamed "ysu" to "bl_ysu", "ysu_gwdo" to "bl_gwdo_ysu", and "monin_obukhov" to "sf_monin_obukhov".
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-25. 
+! * added the options mp_thompson_aerosols and mp_thompson.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-25.
 
 
  contains
@@ -126,13 +128,14 @@
     call physics_error_fatal(mpas_err_message)
 
  end if
- 
 
 !cloud microphysics scheme:
- if(.not. (config_microp_scheme .eq. 'off'        .or. &
-           config_microp_scheme .eq. 'mp_kessler' .or. &
+ if(.not. (config_microp_scheme .eq. 'off'                  .or. &
+           config_microp_scheme .eq. 'mp_kessler'           .or. &
+           config_microp_scheme .eq. 'mp_thompson_aerosols' .or. &
+           config_microp_scheme .eq. 'mp_thompson'          .or. &
            config_microp_scheme .eq. 'mp_wsm6'     )) then
-          
+
     write(mpas_err_message,'(A,A10)') 'illegal value for config_microp_scheme:', &
           trim(config_microp_scheme)
     call physics_error_fatal(mpas_err_message)
@@ -269,8 +272,7 @@
  write(0,*) '    config_radt_lw_scheme      = ', trim(config_radt_lw_scheme)
  write(0,*) '    config_radt_sw_scheme      = ', trim(config_radt_sw_scheme)
  write(0,*) '    config_sfclayer_scheme     = ', trim(config_sfclayer_scheme)
-
-! write(0,*) '--- end subroutine physics_namelist_check:'
+ write(0,*)
 
  end subroutine physics_namelist_check
 
@@ -332,5 +334,4 @@
 !=================================================================================================================
  end module mpas_atmphys_control
 !=================================================================================================================
-
 
