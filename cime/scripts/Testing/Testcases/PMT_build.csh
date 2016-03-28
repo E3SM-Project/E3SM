@@ -63,9 +63,21 @@ if ( $NTASKS_OCN > 1) then
     @ ntask = $NTASKS_OCN / 2
     ./xmlchange -file env_mach_pes.xml -id NTASKS_OCN -val $ntask
 endif
+if ( $NTASKS_CPL > 1) then
+    @ ntask = $NTASKS_CPL / 2
+    ./xmlchange -file env_mach_pes.xml -id NTASKS_CPL -val $ntask
+endif
 if ( $NTASKS_GLC > 1) then
     @ ntask = $NTASKS_GLC / 2
     ./xmlchange -file env_mach_pes.xml -id NTASKS_GLC -val $ntask
+endif
+if ( $NTASKS_ROF > 1) then
+    @ ntask = $NTASKS_ROF / 2
+    ./xmlchange -file env_mach_pes.xml -id NTASKS_ROF -val $ntask
+endif
+if ( $NTASKS_WAV > 1) then
+    @ ntask = $NTASKS_WAV / 2
+    ./xmlchange -file env_mach_pes.xml -id NTASKS_WAV -val $ntask
 endif
 
 # Double the number of threads
@@ -85,13 +97,21 @@ if ($NTHRDS_OCN == 1) then
     @ nthrd = $NTHRDS_OCN * 2
     ./xmlchange -file env_mach_pes.xml -id NTHRDS_OCN -val $nthrd
 endif
-if ($NTHRDS_ICE == 1) then
-    @ nthrd = $NTHRDS_ICE * 2
-    ./xmlchange -file env_mach_pes.xml -id NTHRDS_ICE -val $nthrd
+if ($NTHRDS_CPL == 1) then
+    @ nthrd = $NTHRDS_CPL * 2
+    ./xmlchange -file env_mach_pes.xml -id NTHRDS_CPL -val $nthrd
 endif
-if ($NTHRDS_ICE == 1) then
+if ($NTHRDS_GLC == 1) then
     @ nthrd = $NTHRDS_GLC * 2
     ./xmlchange -file env_mach_pes.xml -id NTHRDS_GLC -val $nthrd
+endif
+if ($NTHRDS_ROF == 1) then
+    @ nthrd = $NTHRDS_ROF * 2
+    ./xmlchange -file env_mach_pes.xml -id NTHRDS_ROF -val $nthrd
+endif
+if ($NTHRDS_WAV == 1) then
+    @ nthrd = $NTHRDS_WAV * 2
+    ./xmlchange -file env_mach_pes.xml -id NTHRDS_WAV -val $nthrd
 endif
 
 # Build with half the tasks and double the threads
