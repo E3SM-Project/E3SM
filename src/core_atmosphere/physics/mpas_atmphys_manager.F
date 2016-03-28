@@ -378,7 +378,6 @@
 
  logical,pointer:: config_frac_seaice
 
- integer,pointer:: config_n_microp
  integer,pointer:: cam_dim1
  integer,pointer:: nMonths
  integer,pointer:: nAerosols,nAerLevels,nOznLevels
@@ -406,15 +405,14 @@
  call mpas_pool_get_config(configs,'config_radt_sw_scheme'   ,config_radt_sw_scheme   )
  call mpas_pool_get_config(configs,'config_sfclayer_scheme'  ,config_sfclayer_scheme  )
 
- call mpas_pool_get_config(configs,'config_conv_interval'         ,config_conv_interval         )
- call mpas_pool_get_config(configs,'config_pbl_interval'          ,config_pbl_interval          )
- call mpas_pool_get_config(configs,'config_radtlw_interval'       ,config_radtlw_interval       )
- call mpas_pool_get_config(configs,'config_radtsw_interval'       ,config_radtsw_interval       )
- call mpas_pool_get_config(configs,'config_bucket_update'         ,config_bucket_update         )
- call mpas_pool_get_config(configs,'config_camrad_abs_update'     ,config_camrad_abs_update     )
- call mpas_pool_get_config(configs,'config_greeness_update'       ,config_greeness_update       )
- call mpas_pool_get_config(configs,'config_frac_seaice'           ,config_frac_seaice           )
- call mpas_pool_get_config(configs,'config_n_microp'              ,config_n_microp              )
+ call mpas_pool_get_config(configs,'config_conv_interval'    ,config_conv_interval    )
+ call mpas_pool_get_config(configs,'config_pbl_interval'     ,config_pbl_interval     )
+ call mpas_pool_get_config(configs,'config_radtlw_interval'  ,config_radtlw_interval  )
+ call mpas_pool_get_config(configs,'config_radtsw_interval'  ,config_radtsw_interval  )
+ call mpas_pool_get_config(configs,'config_bucket_update'    ,config_bucket_update    )
+ call mpas_pool_get_config(configs,'config_camrad_abs_update',config_camrad_abs_update)
+ call mpas_pool_get_config(configs,'config_greeness_update'  ,config_greeness_update  )
+ call mpas_pool_get_config(configs,'config_frac_seaice'      ,config_frac_seaice      )
 
  call mpas_pool_get_config(configs,'config_dt',config_dt)
 
@@ -450,7 +448,7 @@
             '     KDS =', i4,3x,'KDE =', i8,//, &
             '     ITS =', i4,3x,'ITE =', i8,/,  &
             '     JTS =', i4,3x,'JTE =', i8,/,  &
-            '     KTS =', i4,3x,'KTE =', i8)
+            '     KTS =', i4,3x,'KTE =', i8,/)
 
  startTime = mpas_get_clock_time(clock, MPAS_START_TIME, ierr)
  call mpas_get_time(curr_time=startTime,YYYY=yr,H=h,M=m,S=s,S_n=s_n,S_d=s_d,DoY=DoY,ierr=ierr)
@@ -644,8 +642,8 @@
  jms=1   ; jme=1
  kms=1   ; kme = nVertLevels+1
 
- ids=ims ; ide=ime
- jds=jms ; jde=jme
+ ids=ims ; ide=ime + 1
+ jds=jms ; jde=jme + 1
  kds=kms ; kde=kme 
 
  its=ims ; ite = ime 
@@ -674,10 +672,18 @@
 
 !initialization of local physics time-steps:
 !... dynamics:
- dt_dyn     = config_dt
+ dt_dyn    = config_dt
 !... cloud microphysics:
- n_microp   = config_n_microp
- dt_microp  = dt_dyn/n_microp  !for now.
+ dt_microp = dt_dyn
+ n_microp  = 1
+ if(trim(microp_scheme)=='mp_thompson' .or. trim(microp_scheme)=='mp_thompson_aerosols') then
+    dt_microp = 90._RKIND
+    n_microp  = max(nint(dt_dyn/dt_microp),1)
+    dt_microp = dt_dyn / n_microp
+    if(dt_dyn <= dt_microp) dt_microp = dt_dyn
+ endif
+ write(0,*) '--- dt_microp = ', dt_microp
+ write(0,*) '--- n_microp  = ', n_microp
 !... convection:
  l_conv = .false.
  n_cu   = nint(dt_cu/dt_dyn)
