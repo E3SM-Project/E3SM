@@ -3051,7 +3051,10 @@
       If true, albedos are computed with the assumption that downward
       solar radiation from the atm component is a daily average quantity and
       does not have a zenith-angle dependence. This is often the case when
-      using a data atm component. Only used for compsets with DATM and POP (currently C, G and J)
+      using a data atm component. Only used for compsets with DATM and POP (currently C, G and J).
+      NOTE: This should really depend on the datm forcing and not the compset per se.
+      So, for example, whether it is set in a J compset should depend on
+      what datm forcing is used.
     </desc>
   </entry>
 
