@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_interface
  use mpas_kind_types
  use mpas_derived_types
@@ -71,10 +71,9 @@
  contains
 
 
-!==================================================================================================
+!=================================================================================================================
  subroutine allocate_forall_physics
-!==================================================================================================
-
+!=================================================================================================================
  if(.not.allocated(psfc_p) ) allocate(psfc_p(ims:ime,jms:jme)         )
  if(.not.allocated(ptop_p) ) allocate(ptop_p(ims:ime,jms:jme)         )
 
@@ -117,10 +116,9 @@
  
  end subroutine allocate_forall_physics
 
-!==================================================================================================
+!=================================================================================================================
  subroutine deallocate_forall_physics
-!==================================================================================================
-
+!=================================================================================================================
  if(allocated(psfc_p)  ) deallocate(psfc_p  )
  if(allocated(ptop_p)  ) deallocate(ptop_p  )
 
@@ -162,10 +160,9 @@
  
  end subroutine deallocate_forall_physics
 
-!==================================================================================================
+!=================================================================================================================
  subroutine MPAS_to_physics(mesh,state,time_lev,diag,diag_physics)
-!==================================================================================================
-
+!=================================================================================================================
 !input variables:
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: state
@@ -193,17 +190,16 @@
  real(kind=RKIND):: z0,z1,z2,w1,w2
  real(kind=RKIND):: rho_a,rho1,rho2,tem1,tem2
 
-!--------------------------------------------------------------------------------------------------
-
-! write(0,*)
-! write(0,*) '--- enter subroutine MPAS_to_phys:'
-! write(0,*) 'ims=',ims,' ime=',ime
-! write(0,*) 'jms=',jms,' jme=',jme
-! write(0,*) 'kms=',kms,' kme=',kme
-! write(0,*)
-! write(0,*) 'its=',its,' ite=',ite
-! write(0,*) 'jts=',jts,' jte=',jte
-! write(0,*) 'kts=',kts,' kte=',kte
+!-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter subroutine MPAS_to_phys:'
+!write(0,*) 'ims=',ims,' ime=',ime
+!write(0,*) 'jms=',jms,' jme=',jme
+!write(0,*) 'kms=',kms,' kme=',kme
+!write(0,*)
+!write(0,*) 'its=',its,' ite=',ite
+!write(0,*) 'jts=',jts,' jte=',jte
+!write(0,*) 'kts=',kts,' kte=',kte
 
 !initialization:
  call mpas_pool_get_array(mesh,'latCell',latCell)
@@ -411,33 +407,36 @@
 
  end subroutine MPAS_to_physics
 
-!==================================================================================================
- subroutine microphysics_from_MPAS(mesh,state,time_lev,diag)
-!==================================================================================================
-
+!=================================================================================================================
+ subroutine microphysics_from_MPAS(mesh,state,time_lev,diag,diag_physics)
+!=================================================================================================================
 !input variables:
+ type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: state
  type(mpas_pool_type),intent(in):: diag
- type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: diag_physics
 
  integer:: time_lev
 
 !local pointers:
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
- real(kind=RKIND),dimension(:,:),pointer  :: zgrid
+ integer,pointer:: index_ni,index_nr,index_nc,index_nifa,index_nwfa
+ real(kind=RKIND),dimension(:),pointer    :: nwfa2d,nt_c,mu_c
+ real(kind=RKIND),dimension(:,:),pointer  :: zgrid,w
  real(kind=RKIND),dimension(:,:),pointer  :: zz,exner,pressure_b,rtheta_p,rtheta_b
  real(kind=RKIND),dimension(:,:),pointer  :: rho_zz,theta_m,pressure_p
  real(kind=RKIND),dimension(:,:),pointer  :: qv,qc,qr,qi,qs,qg
+ real(kind=RKIND),dimension(:,:),pointer  :: ni,nr,nc,nifa,nwfa
+ real(kind=RKIND),dimension(:,:),pointer  :: rainprod,evapprod
+ real(kind=RKIND),dimension(:,:),pointer  :: re_cloud,re_ice,re_snow
  real(kind=RKIND),dimension(:,:,:),pointer:: scalars
 
 !local variables:
  integer:: i,k,j
 
-!--------------------------------------------------------------------------------------------------
-
-!initialization:
-! write(0,*)
-! write(0,*) '--- enter subroutine microphysics_from_MPAS:'
+!-----------------------------------------------------------------------------------------------------------------
+ write(0,*)
+ write(0,*) '--- enter subroutine microphysics_from_MPAS:'
 
  call mpas_pool_get_array(mesh,'zgrid',zgrid)
  call mpas_pool_get_array(mesh,'zz'   ,zz   )
@@ -448,23 +447,43 @@
  call mpas_pool_get_array(diag,'rtheta_base'  ,rtheta_b  )
  call mpas_pool_get_array(diag,'rtheta_p'     ,rtheta_p  )
 
+ call mpas_pool_get_array(diag_physics,'nwfa2d'  ,nwfa2d  )
+ call mpas_pool_get_array(diag_physics,'nt_c'    ,nt_c    )
+ call mpas_pool_get_array(diag_physics,'mu_c'    ,mu_c    )
+ call mpas_pool_get_array(diag_physics,'rainprod',rainprod)
+ call mpas_pool_get_array(diag_physics,'evapprod',evapprod)
+ call mpas_pool_get_array(diag_physics,'re_cloud',re_cloud)
+ call mpas_pool_get_array(diag_physics,'re_ice'  ,re_ice  )
+ call mpas_pool_get_array(diag_physics,'re_snow' ,re_snow )
+
  call mpas_pool_get_array(state,'rho_zz' ,rho_zz ,time_lev)
  call mpas_pool_get_array(state,'theta_m',theta_m,time_lev)
+ call mpas_pool_get_array(state,'w'      ,w      ,time_lev)
 
- call mpas_pool_get_dimension(state,'index_qv',index_qv)
- call mpas_pool_get_dimension(state,'index_qc',index_qc)
- call mpas_pool_get_dimension(state,'index_qr',index_qr)
- call mpas_pool_get_dimension(state,'index_qi',index_qi)
- call mpas_pool_get_dimension(state,'index_qs',index_qs)
- call mpas_pool_get_dimension(state,'index_qg',index_qg)
+ call mpas_pool_get_dimension(state,'index_qv'  ,index_qv  )
+ call mpas_pool_get_dimension(state,'index_qc'  ,index_qc  )
+ call mpas_pool_get_dimension(state,'index_qr'  ,index_qr  )
+ call mpas_pool_get_dimension(state,'index_qi'  ,index_qi  )
+ call mpas_pool_get_dimension(state,'index_qs'  ,index_qs  )
+ call mpas_pool_get_dimension(state,'index_qg'  ,index_qg  )
+ call mpas_pool_get_dimension(state,'index_ni'  ,index_ni  )
+ call mpas_pool_get_dimension(state,'index_nr'  ,index_nr  )
+ call mpas_pool_get_dimension(state,'index_nc'  ,index_nc  )
+ call mpas_pool_get_dimension(state,'index_nifa',index_nifa)
+ call mpas_pool_get_dimension(state,'index_nwfa',index_nwfa)
 
  call mpas_pool_get_array(state,'scalars',scalars,time_lev)
- qv => scalars(index_qv,:,:)
- qc => scalars(index_qc,:,:)
- qr => scalars(index_qr,:,:)
- qi => scalars(index_qi,:,:)
- qs => scalars(index_qs,:,:)
- qg => scalars(index_qg,:,:)
+ qv   => scalars(index_qv,:,:)
+ qc   => scalars(index_qc,:,:)
+ qr   => scalars(index_qr,:,:)
+ qi   => scalars(index_qi,:,:)
+ qs   => scalars(index_qs,:,:)
+ qg   => scalars(index_qg,:,:)
+ ni   => scalars(index_ni,:,:)
+ nr   => scalars(index_nr,:,:)
+ nc   => scalars(index_nc,:,:)
+ nifa => scalars(index_nifa,:,:)
+ nwfa => scalars(index_nwfa,:,:)
 
 !initialize variables needed in the cloud microphysics schemes:
  do j = jts, jte
@@ -482,6 +501,7 @@
 
     z_p(i,k,j)    = zgrid(k,i)
     dz_p(i,k,j)   = zgrid(k+1,i) - zgrid(k,i)
+    w_p(i,k,j)    = w(k,i)
  enddo
  enddo
  enddo
@@ -489,7 +509,7 @@
 !additional initialization as function of cloud microphysics scheme:
  microp_select_init: select case(microp_scheme)
 
-    case ("mp_wsm6")
+    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
        do j = jts, jte
        do k = kts, kte
        do i = its, ite
@@ -500,21 +520,71 @@
        enddo
        enddo
 
+    microp2_select: select case(microp_scheme)
+
+       case("mp_thompson","mp_thompson_aerosols")
+          !number concentrations:
+          do j = jts,jte
+          do i = its,ite
+             muc_p(i,j) = mu_c(i)
+             ntc_p(i,j) = nt_c(i)
+          enddo
+          enddo
+          do j = jts, jte
+          do k = kts, kte
+          do i = its, ite
+             ni_p(i,k,j) = ni(k,i)
+             nr_p(i,k,j) = nr(k,i)
+             rainprod_p(i,k,j) = rainprod(k,i)
+             evapprod_p(i,k,j) = evapprod(k,i)
+             recloud_p(i,k,j)  = re_cloud(k,i)
+             reice_p(i,k,j)    = re_ice(k,i)
+             resnow_p(i,k,j)   = re_snow(k,i)
+          enddo
+          enddo
+          enddo
+
+       microp3_select: select case(microp_scheme)
+
+          case("mp_thompson_aerosols")
+             do j = jts, jte
+             do i = its, ite
+                nwfa2d_p(i,j) = nwfa2d(i)
+             enddo
+             enddo
+
+             do j = jts, jte
+             do k = kts, kte
+             do i = its, ite
+                nc_p(i,k,j)   = nc(k,i)
+                nwfa_p(i,k,j) = nwfa(k,i)
+                nifa_p(i,k,j) = nifa(k,i)
+             enddo
+             enddo
+             enddo
+             
+          case default
+
+       end select microp3_select
+
+       case default
+
+    end select microp2_select
+
     case default
 
  end select microp_select_init
 
-! write(0,*) '--- end subroutine microphysics_from_MPAS.'
+ write(0,*) '--- end subroutine microphysics_from_MPAS.'
 
 !formats:
  201 format(2i6,10(1x,e15.8))
 
  end subroutine microphysics_from_MPAS
 
-!==================================================================================================
- subroutine microphysics_to_MPAS(mesh,state,time_lev,diag,tend,itimestep)
-!==================================================================================================
-
+!=================================================================================================================
+ subroutine microphysics_to_MPAS(mesh,state,time_lev,diag,diag_physics,tend,itimestep)
+!=================================================================================================================
 !input variables:
  integer,intent(in):: itimestep
  integer,intent(in):: time_lev
@@ -524,9 +594,12 @@
  type(mpas_pool_type),intent(inout):: state
  type(mpas_pool_type),intent(inout):: diag
  type(mpas_pool_type),intent(inout):: tend
+ type(mpas_pool_type),intent(inout):: diag_physics
 
 !local pointers:
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
+ integer,pointer:: index_ni,index_nr,index_nc,index_nifa,index_nwfa
+ real(kind=RKIND),dimension(:),pointer    :: nwfa2d
  real(kind=RKIND),dimension(:),pointer    :: rdzw
  real(kind=RKIND),dimension(:),pointer    :: surface_pressure,tend_sfc_pressure
  real(kind=RKIND),dimension(:,:),pointer  :: zgrid
@@ -534,6 +607,9 @@
  real(kind=RKIND),dimension(:,:),pointer  :: rho_zz,theta_m,pressure_p
  real(kind=RKIND),dimension(:,:),pointer  :: rt_diabatic_tend
  real(kind=RKIND),dimension(:,:),pointer  :: qv,qc,qr,qi,qs,qg
+ real(kind=RKIND),dimension(:,:),pointer  :: ni,nr,nc,nifa,nwfa
+ real(kind=RKIND),dimension(:,:),pointer  :: rainprod,evapprod
+ real(kind=RKIND),dimension(:,:),pointer  :: re_cloud,re_ice,re_snow
  real(kind=RKIND),dimension(:,:,:),pointer:: scalars
 
 !local variables:
@@ -541,7 +617,7 @@
  integer:: i,k,j
  real(kind=RKIND):: rho1,rho2,tem1,tem2
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
 ! write(0,*)
 ! write(0,*) '--- enter subroutine microphysics_to_MPAS:'
@@ -559,25 +635,42 @@
  call mpas_pool_get_array(diag,'rtheta_p'        ,rtheta_p        )
  call mpas_pool_get_array(diag,'surface_pressure',surface_pressure)
 
+ call mpas_pool_get_array(diag_physics,'nwfa2d'  ,nwfa2d  )
+ call mpas_pool_get_array(diag_physics,'rainprod',rainprod)
+ call mpas_pool_get_array(diag_physics,'evapprod',evapprod)
+ call mpas_pool_get_array(diag_physics,'re_cloud',re_cloud)
+ call mpas_pool_get_array(diag_physics,'re_ice'  ,re_ice  )
+ call mpas_pool_get_array(diag_physics,'re_snow' ,re_snow )
+
  call mpas_pool_get_array(tend,'tend_sfc_pressure',tend_sfc_pressure)
 
  call mpas_pool_get_array(state,'rho_zz' ,rho_zz ,time_lev)
  call mpas_pool_get_array(state,'theta_m',theta_m,time_lev)
 
- call mpas_pool_get_dimension(state,'index_qv',index_qv)
- call mpas_pool_get_dimension(state,'index_qc',index_qc)
- call mpas_pool_get_dimension(state,'index_qr',index_qr)
- call mpas_pool_get_dimension(state,'index_qi',index_qi)
- call mpas_pool_get_dimension(state,'index_qs',index_qs)
- call mpas_pool_get_dimension(state,'index_qg',index_qg)
+ call mpas_pool_get_dimension(state,'index_qv'  ,index_qv  )
+ call mpas_pool_get_dimension(state,'index_qc'  ,index_qc  )
+ call mpas_pool_get_dimension(state,'index_qr'  ,index_qr  )
+ call mpas_pool_get_dimension(state,'index_qi'  ,index_qi  )
+ call mpas_pool_get_dimension(state,'index_qs'  ,index_qs  )
+ call mpas_pool_get_dimension(state,'index_qg'  ,index_qg  )
+ call mpas_pool_get_dimension(state,'index_ni'  ,index_ni  )
+ call mpas_pool_get_dimension(state,'index_nr'  ,index_nr  )
+ call mpas_pool_get_dimension(state,'index_nc'  ,index_nc  )
+ call mpas_pool_get_dimension(state,'index_nifa',index_nifa)
+ call mpas_pool_get_dimension(state,'index_nwfa',index_nwfa)
 
  call mpas_pool_get_array(state,'scalars',scalars,time_lev)
- qv => scalars(index_qv,:,:)
- qc => scalars(index_qc,:,:)
- qr => scalars(index_qr,:,:)
- qi => scalars(index_qi,:,:)
- qs => scalars(index_qs,:,:)
- qg => scalars(index_qg,:,:)
+ qv   => scalars(index_qv,:,:)
+ qc   => scalars(index_qc,:,:)
+ qr   => scalars(index_qr,:,:)
+ qi   => scalars(index_qi,:,:)
+ qs   => scalars(index_qs,:,:)
+ qg   => scalars(index_qg,:,:)
+ ni   => scalars(index_ni,:,:)
+ nr   => scalars(index_nr,:,:)
+ nc   => scalars(index_nc,:,:)
+ nifa => scalars(index_nifa,:,:)
+ nwfa => scalars(index_nwfa,:,:)
 
  call mpas_pool_get_array(tend,'rt_diabatic_tend',rt_diabatic_tend)
 
@@ -627,18 +720,61 @@
 !variables specific to different cloud microphysics schemes:
  microp_select_init: select case(microp_scheme)
 
-    case ("mp_wsm6")
-
+    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
        do j = jts, jte
        do k = kts, kte
        do i = its, ite
-          !mass mixing ratios:
           qi(k,i) = qi_p(i,k,j)
           qs(k,i) = qs_p(i,k,j)
           qg(k,i) = qg_p(i,k,j)
        enddo
        enddo
        enddo
+
+    microp2_select: select case(microp_scheme)
+
+       case("mp_thompson","mp_thompson_aerosols")
+          !number concentrations:
+          do j = jts, jte
+          do k = kts, kte
+          do i = its, ite
+             ni(k,i) = ni_p(i,k,j)
+             nr(k,i) = nr_p(i,k,j)
+             rainprod(k,i) = rainprod_p(i,k,j)
+             evapprod(k,i) = evapprod_p(i,k,j)
+             re_cloud(k,i) = recloud_p(i,k,j)
+             re_ice(k,i)   = reice_p(i,k,j)
+             re_snow(k,i)  = resnow_p(i,k,j)
+          enddo
+          enddo
+          enddo
+
+       microp3_select: select case(microp_scheme)
+
+          case("mp_thompson_aerosols")
+             do j = jts, jte
+             do i = its, ite
+                nwfa2d(i) = nwfa2d_p(i,j)
+             enddo
+             enddo
+
+             do j = jts, jte
+             do k = kts, kte
+             do i = its, ite
+                nc(k,i)   = nc_p(i,k,j)
+                nwfa(k,i) = nwfa_p(i,k,j)
+                nifa(k,i) = nifa_p(i,k,j)
+             enddo
+             enddo
+             enddo
+             
+          case default
+
+       end select microp3_select
+
+       case default
+
+    end select microp2_select
 
     case default
 

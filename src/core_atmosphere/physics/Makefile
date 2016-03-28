@@ -10,6 +10,7 @@ dummy:
 OBJS_init = \
 	mpas_atmphys_constants.o     \
 	mpas_atmphys_date_time.o     \
+	mpas_atmphys_functions.o     \
 	mpas_atmphys_utilities.o     \
 	mpas_atmphys_o3climatology.o
 
@@ -26,7 +27,9 @@ OBJS = \
 	mpas_atmphys_driver_radiation_lw.o \
 	mpas_atmphys_driver_radiation_sw.o \
 	mpas_atmphys_driver_sfclayer.o     \
+	mpas_atmphys_finalize.o            \
 	mpas_atmphys_init.o                \
+	mpas_atmphys_init_microphysics.o   \
 	mpas_atmphys_landuse.o             \
 	mpas_atmphys_lsm_noahinit.o        \
 	mpas_atmphys_manager.o             \
@@ -91,6 +94,9 @@ mpas_atmphys_driver_convection.o: \
 	./physics_wrf/module_cu_kfeta.o \
 	./physics_wrf/module_cu_tiedtke.o
 
+mpas_atmphys_finalize.o: \
+	./physics_wrf/module_mp_thompson.o
+
 mpas_atmphys_driver_gwdo.o: \
 	mpas_atmphys_vars.o \
 	./physics_wrf/module_bl_gwdo.o
@@ -104,9 +110,11 @@ mpas_atmphys_driver_lsm.o: \
 
 mpas_atmphys_driver_microphysics.o: \
 	mpas_atmphys_constants.o \
+	mpas_atmphys_init_microphysics.o \
 	mpas_atmphys_interface.o \
 	mpas_atmphys_vars.o \
 	./physics_wrf/module_mp_kessler.o \
+	./physics_wrf/module_mp_thompson.o \
 	./physics_wrf/module_mp_wsm6.o
 
 mpas_atmphys_driver_pbl.o: \
@@ -147,6 +155,9 @@ mpas_atmphys_init.o: \
 	mpas_atmphys_driver_sfclayer.o \
 	mpas_atmphys_landuse.o \
 	mpas_atmphys_o3climatology.o
+
+mpas_atmphys_init_microphysics.o: \
+	./physics_wrf/module_mp_thompson.o
 
 mpas_atmphys_interface.o: \
 	mpas_atmphys_constants.o \
