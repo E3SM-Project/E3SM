@@ -74,17 +74,17 @@ class BatchMaker(object):
         """
         self.task_maker = TaskMaker(case=self.case)
         self.sumpes = self.task_maker.full_sum
-        self.tasks_per_node = self.task_maker.tasks_per_node
+        self.tasks_per_node = self.task_maker.task_per_node
         self.MAX_TASKS_PER_NODE = self.task_maker.MAX_TASKS_PER_NODE
-        self.tasks_per_numa = self.task_maker.tasks_per_numa
+        self.tasks_per_numa = self.task_maker.task_per_numa
         self.fullsum = self.task_maker.full_sum
         self.task_count = self.task_maker.full_sum
         self.sumtasks = self.task_maker.total_tasks
         self.num_tasks = self.task_maker.total_tasks
         self.totaltasks = self.task_maker.total_tasks
         self.maxthreads = self.task_maker.max_threads
-        self.taskgeometry = self.task_maker.task_geometry
-        self.threadgeometry = self.task_maker.thread_geometry
+        self.taskgeometry = self.task_maker.task_geom
+        self.threadgeometry = self.task_maker.thread_geom
         self.taskcount = self.task_maker.task_count
         self.num_nodes = self.task_maker.node_count
         self.thread_count = self.task_maker.thread_count
@@ -148,7 +148,8 @@ class BatchMaker(object):
         # if we didn't find a walltime previously, use the default.
         if not self.wall_time:
             self.wall_time = self.config_machines_parser.get_default_walltime()
-            expect(self.wall_time, "No wall time available?")
+            if not self.wall_time:
+                self.wall_time = "0"
 
         if self.wall_time_max and \
                 convert_to_seconds(self.wall_time_max) < convert_to_seconds(self.wall_time):
@@ -190,7 +191,7 @@ within model's Machines directory, and add a batch system type for this machine
         mpi_attribs = {
             "compiler" : self.case.get_value("COMPILER"),
             "mpilib"   : self.case.get_value("MPILIB"),
-            "threaded" : self.case.get_value("build_threaded")
+            "threaded" : self.case.get_value("BUILD_THREADED")
             }
 
         executable, args = self.config_machines_parser.get_mpirun(mpi_attribs, self)
@@ -205,7 +206,7 @@ within model's Machines directory, and add a batch system type for this machine
         """
         batch_directives = self.batch_parser.get_batch_directives(self)
 
-        self.batch_directives = "\n".join(batch_directives)
+        self.batchdirectives = "\n".join(batch_directives)
 
     def transform_vars(self, text, defaults={}):
         """
@@ -224,7 +225,7 @@ within model's Machines directory, and add a batch system type for this machine
             if repl is not None:
                 text = text.replace(whole_match, repl)
             elif hasattr(self, variable.lower()):
-                text = text.replace(whole_match, getattr(self, variable.lower()))
+                text = text.replace(whole_match, str(getattr(self, variable.lower())))
             elif variable in defaults:
                 text = text.replace(whole_match, defaults[variable])
             else:
@@ -241,7 +242,7 @@ within model's Machines directory, and add a batch system type for this machine
         with open(output_filename, "w") as fd:
             fd.write(template_text)
 
-        os.chmod(output_filename, os.stat(output_filename) | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        os.chmod(output_filename, os.stat(output_filename).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     def get_batch_system_type_for_machine(self):
         return self.batch_system

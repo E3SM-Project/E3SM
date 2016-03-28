@@ -26,7 +26,7 @@ COMP_OCN NTASKS_OCN NTHRDS_OCN ROOTPE_OCN PSTRID_OCN NINST_OCN
 COMP_GLC NTASKS_GLC NTHRDS_GLC ROOTPE_GLC PSTRID_GLC NINST_GLC
 COMP_WAV NTASKS_WAV NTHRDS_WAV ROOTPE_WAV PSTRID_WAV NINST_WAV
 MAX_TASKS_PER_NODE PES_PER_NODE PIO_NUMTASKS PIO_ASYNC_INTERFACE
-EXEROOT, COMPILER
+EXEROOT COMPILER
 """.split()
 
         for layout_string in self.layout_strings:
@@ -95,7 +95,7 @@ EXEROOT, COMPILER
             if maxt[c1] > max_threads:
                 max_threads = maxt[c1]
 
-            self.sum_threads[c1] = self.sum_threads[c1-1] + maxt[c1-1]
+            self.sum_threads.append(self.sum_threads[c1-1] + maxt[c1-1])
 
         # Compute task and thread settings for batch commands
         full_sum = 0

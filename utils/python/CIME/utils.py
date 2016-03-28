@@ -14,7 +14,7 @@ from ConfigParser import SafeConfigParser as config_parser
 TESTS_FAILED_ERR_CODE = 165
 logger = logging.getLogger(__name__)
 
-def expect(condition, error_msg):
+def expect(condition, error_msg, exc_type=SystemExit):
     """
     Similar to assert except doesn't generate an ugly stacktrace. Useful for
     checking user error, not programming error.
@@ -29,7 +29,7 @@ def expect(condition, error_msg):
         # Uncomment these to bring up a debugger when an expect fails
         #import pdb
         #pdb.set_trace()
-        raise SystemExit("ERROR: %s" % error_msg)
+        raise exc_type("ERROR: %s" % error_msg)
 
 # Should only be called from get_cime_config()
 def _read_cime_config_file():

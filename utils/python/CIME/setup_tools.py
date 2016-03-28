@@ -48,13 +48,13 @@ def _parse_hash(macros, fd, depth, output_format, cmakedebug=""):
                     if output_format == "make":
                         fd.write("%sifeq ($(%s), %s) \n" % (" " * width, key, key2))
 
-                    _parse_hash(value2, depth + 1, output_format, key2)
+                    _parse_hash(value2, fd, depth + 1, output_format, key2)
         else:
             if output_format == "make":
                 if key.startswith("ADD_"):
-                    fd.write("%s %s += %s\n", " " * width, key[4:], value)
+                    fd.write("%s %s += %s\n" % (" " * width, key[4:], value))
                 else:
-                    fd.write("%s %s += %s\n", " " * width, key, value)
+                    fd.write("%s %s += %s\n" % (" " * width, key, value))
 
             else:
                 value = value.replace("(", "{").replace(")", "}")

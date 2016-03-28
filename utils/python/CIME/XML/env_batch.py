@@ -15,7 +15,7 @@ class EnvBatch(EnvBase):
         """
         EnvBase.__init__(self, case_root, infile)
 
-    def set_value(self, item, value, subgroup=None, ignore_type=False):
+    def set_value(self, item, value, subgroup="run", ignore_type=False):
         val = None
         # allow the user to set all instances of item if subgroup is not provided
         if subgroup is None:
@@ -24,11 +24,11 @@ class EnvBatch(EnvBase):
                 self._set_value(node, item, value, ignore_type)
                 val = value
         else:
-            nodes = self.get_nodes("job",{"name":subgroup})
+            nodes = self.get_nodes("job", {"name":subgroup})
             for node in nodes:
                 vnode = self.get_optional_node("entry", {"id":item}, root=node)
                 if vnode is not None:
-                    val = EnvBase.set_value(self, vnode, value, ignore_type)
+                    val = EnvBase._set_value(self, vnode, item, value, ignore_type=ignore_type)
 
         return val
 

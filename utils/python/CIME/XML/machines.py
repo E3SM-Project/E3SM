@@ -312,13 +312,13 @@ class Machines(GenericXML):
             is_default = False
             for key, value in attribs.iteritems():
                 if key in xml_attribs:
-                    if xml_attribs[key] != value:
-                        all_match = False
-                        break
-                    elif key == "name" and xml_attribs[key] == "default":
+                    if xml_attribs[key] == value:
+                        matches += 1
+                    elif key == "mpilib" and xml_attribs[key] == "default":
                         is_default = True
                     else:
-                        matches += 0
+                        all_match = False
+                        break
 
             for key in xml_attribs:
                 expect(key in attribs, "Unhandled MPI property '%s'" % key)
