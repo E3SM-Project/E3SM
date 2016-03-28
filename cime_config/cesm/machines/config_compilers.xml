@@ -79,6 +79,7 @@ for mct, etc.
      compilers -->
 <compiler>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
+  <ADD_CPPDEFS MODEL="pop"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
 </compiler>
 
 <compiler COMPILER="ibm">
@@ -501,12 +502,6 @@ for mct, etc.
   <LAPACK_LIBDIR> /glade/apps/opt/lib </LAPACK_LIBDIR>
   <PIO_TYPENAME>netcdf</PIO_TYPENAME>
 </compiler>
-
-
-<compiler>
-  <ADD_CPPDEFS MODEL="pop"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
-</compiler>
-
 
 <compiler MACH="yellowstone">
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>

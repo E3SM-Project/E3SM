@@ -79,6 +79,7 @@ for mct, etc.
      compilers -->
 <compiler>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
+  <ADD_CPPDEFS MODEL="pop"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
 </compiler>
 
 <compiler COMPILER="ibm">
@@ -658,11 +659,6 @@ for mct, etc.
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -lblas </ADD_SLIBS>
   <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
 </compiler>
-
-<compiler>
-  <ADD_CPPDEFS MODEL="pop"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
-</compiler>
-
 
 <compiler MACH="oic2" COMPILER="gnu">
   <NETCDF_PATH>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/</NETCDF_PATH>

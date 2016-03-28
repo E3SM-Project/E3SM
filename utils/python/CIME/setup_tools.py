@@ -30,12 +30,12 @@ def _add_to_macros(node, macros):
 
         else:
             cond_macros = macros["_COND_"]
-            for key, value in attrib.iteritems():
+            for key, value2 in attrib.iteritems():
                 if key not in cond_macros:
                     cond_macros[key] = {}
-                if value not in cond_macros[key]:
-                    cond_macros[key][value] = {}
-                cond_macros = cond_macros[key][value]
+                if value2 not in cond_macros[key]:
+                    cond_macros[key][value2] = {}
+                cond_macros = cond_macros[key][value2]
 
             cond_macros[name] = value
 
@@ -102,14 +102,12 @@ def set_compiler(compiler_file_arg=None, case=None, macros_file="Macros", output
     # and handle them seperately
     macros = {"_COND_" : {}}
 
-    # Do parent first
-    if (compilers.parent_node is not compilers.compiler_node):
-        _add_to_macros(compilers.parent_node, macros)
-
-    _add_to_macros(compilers.compiler_node, macros)
+    # Do worst matches first
+    for compiler_node in reversed(compilers.compiler_nodes):
+        _add_to_macros(compiler_node, macros)
 
     compcpp = compiler.upper()
-    macros["ADD_CPPDEFS"] += " -D%s -DCPR%s " % (os, compcpp)
+    macros["ADD_CPPDEFS"] += " -D%s -DCPR%s " % (os_, compcpp)
 
     # A few things can be used from environ if not in XML
     for item in ["MPI_PATH", "NETCDF_PATH"]:

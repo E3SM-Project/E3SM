@@ -19,12 +19,11 @@ class Compilers(GenericXML):
 
         GenericXML.__init__(self, infile)
 
-        self.machine       = machine
-        self.os            = os_
-        self.mpilib        = mpilib
-        self.compiler_node = None
-        self.parent_node   = None
-        self.compiler      = compiler
+        self.machine        = machine
+        self.os             = os_
+        self.mpilib         = mpilib
+        self.compiler_nodes = None # Listed from highest to lowest precedence
+        self.compiler       = compiler
 
         if self.compiler is not None:
             self.set_compiler(compiler)
@@ -35,47 +34,24 @@ class Compilers(GenericXML):
         """
         return self.compiler
 
-    def get_compiler_node(self, nodename, attributes=None):
-        """
-        Return data on a node for a compiler
-        """
-        expect(self.compiler_node is not None, "Compiler not set, use parent get_node?")
-        result = self.get_optional_node(nodename, attributes, root=self.compiler_node)
-        if result is None:
-            return self.get_node(nodename, attributes, root=self.parent_node)
-
     def get_optional_compiler_node(self, nodename, attributes=None):
         """
         Return data on a node for a compiler
         """
-        expect(self.compiler_node is not None, "Compiler not set, use parent get_node?")
-        result = self.get_optional_node(nodename, attributes, root=self.compiler_node)
-        if result is None:
-            return self.get_optional_node(nodename, attributes, root=self.parent_node)
+        expect(self.compiler_nodes is not None, "Compiler not set, use parent get_node?")
+        for compiler_node in self.compiler_nodes:
+            result = self.get_optional_node(nodename, attributes, root=compiler_node)
+            if result is not None:
+                return result
 
-    def _is_compatible(self, compiler_node, machine, os_, mpilib):
-        for xmlid, value in [ ("MACH", machine), ("OS", os_), ("MPILIB", mpilib) ]:
+        return None
+
+    def _is_compatible(self, compiler_node, compiler, machine, os_, mpilib):
+        for xmlid, value in [ ("COMPILER", compiler), ("MACH", machine), ("OS", os_), ("MPILIB", mpilib) ]:
             if value is not None and xmlid in compiler_node.attrib and value != compiler_node.attrib[xmlid]:
                 return False
 
         return True
-
-    def list_available_compilers(self, machine=None, os_=None, mpilib=None):
-        """
-        Return a list of compilers defined for a given CIME_MODEL
-        """
-        machine = machine if machine else self.machine
-        os_     = os_ if os_ else self.os
-        mpilib  = mpilib if mpilib else self.mpilib
-
-        compilers = set()
-        nodes  = self.get_nodes("compiler")
-        for node in nodes:
-            if self._is_compatible(node, machine, os_, mpilib):
-                compiler = node.attrib["COMPILER"]
-                compilers.add(compiler)
-
-        return list(compilers)
 
     def set_compiler(self, compiler, machine=None, os_=None, mpilib=None):
         """
@@ -94,28 +70,19 @@ class Compilers(GenericXML):
         os_     = os_ if os_ else self.os
         mpilib  = mpilib if mpilib else self.mpilib
 
-        if self.compiler != compiler or self.machine != machine or self.os != os_ or self.mpilib != mpilib or self.compiler_node is None:
-            nodes = self.get_nodes("compiler", {"COMPILER" : compiler})
-            most_general_match = (None, 99)
-            most_specific_match = (None, 0)
+        if self.compiler != compiler or self.machine != machine or self.os != os_ or self.mpilib != mpilib or self.compiler_nodes is None:
+            self.compiler_nodes = []
+            compiler_nodes = {}
+            nodes = self.get_nodes("compiler")
             for node in nodes:
-                if self._is_compatible(node, machine, os_, mpilib):
+                if self._is_compatible(node, compiler, machine, os_, mpilib):
                     num_attrib = len(node.attrib)
+                    expect (num_attrib not in compiler_nodes,
+                            "Ambiguous compiler node with attibs '%s', already found a compiler with %d matches" % (node.attrib, num_attrib))
+                    compiler_nodes[num_attrib] = node
 
-                    expect(num_attrib != most_general_match[1], "Ambiguous compiler match")
-                    expect(num_attrib != most_specific_match[1], "Ambiguous compiler match")
-
-                    if num_attrib < most_general_match[1]:
-                        most_general_match = (node, num_attrib)
-
-                    if num_attrib > most_specific_match[1]:
-                        most_specific_match = (node, num_attrib)
-
-
-            expect(most_specific_match[0] is not None, "No compiler %s found" % compiler)
-
-            self.compiler_node = most_specific_match[0]
-            self.parent_node   = most_general_match[0]
+            for _, node in reversed(sorted(compiler_nodes.iteritems())):
+                self.compiler_nodes.append(node)
 
             self.compiler = compiler
             self.machine  = machine
@@ -126,7 +93,7 @@ class Compilers(GenericXML):
         """
         Get Value of fields in the config_compilers.xml file
         """
-        expect(self.compiler_node is not None, "Compiler object has no compiler defined")
+        expect(self.compiler_nodes is not None, "Compiler object has no compiler defined")
         value = None
 
         node = self.get_optional_compiler_node(name)
