@@ -4,7 +4,7 @@ Interface to the env_batch.xml file.  This class inherits from EnvBase
 from standard_module_setup import *
 
 from env_base import EnvBase
-
+from CIME.utils import convert_to_string
 logger = logging.getLogger(__name__)
 
 class EnvBatch(EnvBase):

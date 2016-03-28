@@ -106,31 +106,16 @@ OPTIONS
   -mpilib <name>           Specify a mpi library for the target machine (optional)
                            default: default mpi library for the target machine
                            allowed: openmpi, mpich, ibm, mpi-serial, etc
-                                    redundant with _M confopts setting
   -mach_dir <path>         Specify the locations of the Machines directory (optional).
                            default: \$cimeroot/machines
   -user_mods_dir <path>    Path to directory with user_nl_* files and xmlchange
                            commands to utilize (optional). For non-test cases, this
                            can also include SourceMods
-  -confopts <value>        Specify some additional configuration options (optional) as follows:
-                           _AOA  = aoflux on atm grid
-                           _AOE  = aoflux on exch grid
-                           _CG   = gregorian calendar
-                           _D    = debug
-                           _E    = esmf interfaces
-                           _IOP* = PnetCDF IO test where * is  A(atm), C(cpl), G(glc),
-                                   I(ice), L(lnd), O(ocn), W(wav) or blank (all components)
-                           _L*   = set run length y, m, d, h, s, n(nsteps) plus integer
-                                   (ie _Lm6 for 6 months)
-                           _M*   = set the mpilib where * is default, mpi-serial, mpich, etc
-                           _N*   = set NINST_ env value to * where * is an integer
-                           _P*   = set pecount to specific values include
-                                   T,S,M,L,X,1,1x1,16,16x1,4x4,16x1D, etc
   -petype  <name>          Valid values are [threaded | mpionly]
                            Force pes to be all threaded or all mpi
 			   default: this is not set
   -pecount <name>          Value of S,M,L,X1,X2 (optional).
-                           default: M, partially redundant with confopts _P
+                           default: M
   -user_compset <name>     Long name for new user compset to use (optional)
                            This assumes that all of the compset settings in the
                            long name have been defined in cime_config/config_compsets.xml
@@ -152,8 +137,6 @@ OPTIONS
 EXAMPLES
 
   #  ./create_newcase -case mycase1 -res f19_g16 -compset B1850CN -mach yellowstone
-  #  ./create_newcase -case mycase2 -res f19_g16 -compset B1850CN -mach yellowstone -confopts _D_P16
-  #  ./create_newcase -case mycase5 -res f19_g16 -compset B1850CN -mach yellowstone -confopts _CG_E -pes_file mypes_file
 
 EOF
 }
@@ -171,7 +154,6 @@ my %opts = (
 GetOptions(
     "case=s"                    => \$opts{'case'},
     "compset=s"                 => \$opts{'compset'},
-    "confopts=s"                => \$opts{'confopts'},
     "project=s"                 => \$opts{'project'},
     "compiler=s"                => \$opts{'compiler'},
     "mpilib=s"                  => \$opts{'mpilib'},
@@ -235,7 +217,6 @@ my $caseroot; # set in _check_input_options
 my $grid;     # set in _check_input_options
 my $compset; # set in _check_input_options
 my $compiler; # set in _check_input_options
-my $confopts; # set in _set_confopts
 my $mach_dir;
 my $machine;
 my $testname;
@@ -443,15 +424,6 @@ ConfigMachine::setMachineValues($file, $pes_setby, $machine, $config);
 #}
 
 #------------------------------------------------------------------------------------------
-# *** Set the input configure options if appropriate and also some additional $config variables
-#------------------------------------------------------------------------------------------
-if (defined $opts{'confopts'}) {
-    $confopts = $opts{'confopts'};
-    _set_confopts($confopts, $config);
-}
-
-
-#------------------------------------------------------------------------------------------
 # *** Set the case pe-layout
 #------------------------------------------------------------------------------------------
 ConfigPes::setPes($pecount, $pes_setby, \%opts, $config);
@@ -549,15 +521,6 @@ $logger->info( "$testsforcase") if(defined $testsforcase);
 if (defined $opts{'testname'}) {
     $testname = $opts{'testname'};
     _set_test("$cfgdir/Testing/Testcases/config_tests.xml", $testname, $config);
-}
-
-#------------------------------------------------------------------------------------------
-# *** Set the input configure options if appropriate and also some additional $config variables
-#------------------------------------------------------------------------------------------
-#TODO - need to fix this
-if (defined $opts{'confopts'}) {
-    $confopts = $opts{'confopts'};
-    _set_confopts($confopts, $config);
 }
 
 #------------------------------------------------------------------------------------------
@@ -698,91 +661,12 @@ sub _check_input_options
     }
 }
 
-#-------------------------------------------------------------------------------
-sub _set_confopts
-{
-    # Print all currently supported valid grids
-
-    my ($coptions, $config) = @_;
-
-    $logger->info( "  confopts = $coptions");
-    if ($coptions =~ "_D" || $coptions =~ "_ED") {
-	$config->set('DEBUG', "TRUE");
-	$logger->info("    confopts DEBUG ON ");
-    }
-    if ($coptions =~ "_E" || $coptions =~ "_DE") {
-	$config->set('USE_ESMF_LIB', "TRUE");
-	$config->set('COMP_INTERFACE', "ESMF");
-	$logger->info("    confopts COMP_INTERFACE ESMF set ");
-    }
-    if ($coptions =~ "_P") {
-	my $popt = $coptions;
-	$popt =~ s/.*_P([A-Za-z0-9]*)_?.*/$1/;
-	$pecount = $popt;
-	$logger->info("    confopts pecount set to $pecount");
-    }
-    if ($coptions =~ "_M") {
-	my $mopt = $coptions;
-	$mopt =~ s/.*_M([A-Za-z0-9\-]*)_?.*/$1/;
-	$mpilib = $mopt;
-        if($mpilib =~ /\w+/){
-  	  $logger->info("    mpilib set to $mpilib ");
-        }else{
-	  $logger->logdie( "M option found but no MPILIB provided");
-        }
-    }
-    if ($coptions =~ "_L") {
-	my $lopt = $coptions;
-	$lopt =~ s/.*_L([A-Za-z0-9]*)_?.*/$1/;
-	my $loptc = substr($lopt,0,1);
-	my $lopti = substr($lopt,1);
-	my $lopts = 'unknown';
-	if ($loptc =~ "y") {$lopts = 'nyears'}
-	if ($loptc =~ "m") {$lopts = 'nmonths'}
-	if ($loptc =~ "d") {$lopts = 'ndays'}
-	if ($loptc =~ "h") {$lopts = 'nhours'}
-	if ($loptc =~ "s") {$lopts = 'nseconds'}
-	if ($loptc =~ "n") {$lopts = 'nsteps'}
-	if ($lopts =~ "unknown") {
-	    $logger->info("$0 _L confopts run length undefined, only y m d h s n allowed");
-	    exit -1;
-	}
-	$config->set('STOP_OPTION', $lopts);
-	$config->set('STOP_N', $lopti);
-	$logger->info("    confopts run length set to $lopt . $lopts . $lopti ");
-    }
-    if ($coptions =~ "_N") {
-	my $nopt = $coptions;
-	$nopt =~ s/.*_N([0-9]*)_?.*/$1/;
-	$config->set('NINST_ATM', $nopt);
-	$config->set('NINST_LND', $nopt);
-	$config->set('NINST_OCN', $nopt);
-	$config->set('NINST_ICE', $nopt);
-	$config->set('NINST_GLC', $nopt);
-	$config->set('NINST_ROF', $nopt);
-	$config->set('NINST_WAV', $nopt);
-	$logger->info("    confopts instances set to $nopt ");
-    }
-    if ($coptions =~ "_CG") {
-	$config->set('CALENDAR', "GREGORIAN");
-	$logger->info("    confopts CALENDAR set to GREGORIAN ");
-    }
-    if ($coptions =~ "_AOA") {
-	$config->set('AOFLUX_GRID', "atm");
-	$logger->info("    confopts AOFLUX_GRID set to atm ");
-    }
-    if ($coptions =~ "_AOE") {
-	$config->set('AOFLUX_GRID', "exch");
-	$logger->info("    confopts AOFLUX_GRID set to exch ");
-    }
-}
 
 #-------------------------------------------------------------------------------
 sub _set_mpi_library
 {
     # set the mpi library, $mpilib
-    # $mpilib can be set by -mpilib, confopts, or automatically
-    # precedent is confopts, mpilib, automatic, default
+    # $mpilib can be set by -mpilib, automatically (precedent is mpilib, automatic, default)
 
     my ($mpilib, $config) = @_;
 
