@@ -883,11 +883,9 @@ sub _create_caseroot_tools
 	"$cimeroot/scripts/Tools/README.post_process",
 	);
     foreach my $file (@files) {
-	$sysmod = "cp -p $file $caseroot";
+	$sysmod = "ln -s $file $caseroot";
 	system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
     }
-    $sysmod = "chmod u+w $caseroot/create_production_test";
-    system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
 
     my $machines_file = $config->get('MACHINES_SPEC_FILE');
     my $machines_dir  = dirname($machines_file);

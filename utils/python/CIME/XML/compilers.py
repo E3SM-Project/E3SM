@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class Compilers(GenericXML):
 
-    def __init__(self, machine=None, os_= None, mpilib=None, infile=None):
+    def __init__(self, compiler=None, machine=None, os_= None, mpilib=None, infile=None):
         """
         initialize an object
         """
@@ -19,36 +19,39 @@ class Compilers(GenericXML):
 
         GenericXML.__init__(self, infile)
 
-        self.machine  = machine
-        self.os       = os_
-        self.mpilib   = mpilib
-        self.compiler = None
-        self.parent   = None
-        self.name     = None
+        self.machine       = machine
+        self.os            = os_
+        self.mpilib        = mpilib
+        self.compiler_node = None
+        self.parent_node   = None
+        self.compiler      = compiler
+
+        if self.compiler is not None:
+            self.set_compiler(compiler)
 
     def get_compiler(self):
         """
         Return the name of the compiler
         """
-        return self.name
+        return self.compiler
 
-    def get_node(self, nodename, attributes=None):
+    def get_compiler_node(self, nodename, attributes=None):
         """
         Return data on a node for a compiler
         """
-        expect(self.compiler is not None, "Compiler not set, use parent get_node?")
-        result = GenericXML.get_optional_node(self, nodename, attributes, root=self.compiler)
+        expect(self.compiler_node is not None, "Compiler not set, use parent get_node?")
+        result = self.get_optional_node(nodename, attributes, root=self.compiler_node)
         if result is None:
-            return GenericXML.get_node(self, nodename, attributes, root=self.parent)
+            return self.get_node(nodename, attributes, root=self.parent_node)
 
-    def get_optional_node(self, nodename, attributes=None):
+    def get_optional_compiler_node(self, nodename, attributes=None):
         """
         Return data on a node for a compiler
         """
-        expect(self.compiler is not None, "Compiler not set, use parent get_node?")
-        result = GenericXML.get_optional_node(self, nodename, attributes, root=self.compiler)
+        expect(self.compiler_node is not None, "Compiler not set, use parent get_node?")
+        result = self.get_optional_node(nodename, attributes, root=self.compiler_node)
         if result is None:
-            return GenericXML.get_optional_node(self, nodename, attributes, root=self.parent)
+            return self.get_optional_node(nodename, attributes, root=self.parent_node)
 
     def _is_compatible(self, compiler_node, machine, os_, mpilib):
         for xmlid, value in [ ("MACH", machine), ("OS", os_), ("MPILIB", mpilib) ]:
@@ -91,8 +94,8 @@ class Compilers(GenericXML):
         os_     = os_ if os_ else self.os
         mpilib  = mpilib if mpilib else self.mpilib
 
-        if self.name != compiler or self.machine != machine or self.os != os_ or self.mpilib != mpilib:
-            nodes = GenericXML.get_nodes(self, "compiler", {"COMPILER" : compiler})
+        if self.compiler != compiler or self.machine != machine or self.os != os_ or self.mpilib != mpilib or self.compiler_node is None:
+            nodes = self.get_nodes("compiler", {"COMPILER" : compiler})
             most_general_match = (None, 99)
             most_specific_match = (None, 0)
             for node in nodes:
@@ -111,24 +114,22 @@ class Compilers(GenericXML):
 
             expect(most_specific_match[0] is not None, "No compiler %s found" % compiler)
 
-            self.compiler = most_specific_match[0]
-            self.parent   = most_general_match[0]
+            self.compiler_node = most_specific_match[0]
+            self.parent_node   = most_general_match[0]
 
-            self.name    = compiler
-            self.machine = machine
-            self.os      = os_
-            self.mpilib  = mpilib
-
-        return compiler
+            self.compiler = compiler
+            self.machine  = machine
+            self.os       = os_
+            self.mpilib   = mpilib
 
     def get_value(self, name, resolved=True):
         """
         Get Value of fields in the config_compilers.xml file
         """
-        expect(self.compiler is not None, "Compiler object has no compiler defined")
+        expect(self.compiler_node is not None, "Compiler object has no compiler defined")
         value = None
 
-        node = self.get_optional_node(name)
+        node = self.get_optional_compiler_node(name)
         if node is not None:
             value = node.text
 

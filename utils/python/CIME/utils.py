@@ -641,8 +641,8 @@ def convert_to_seconds(time_str):
     >>> convert_to_seconds("01:01:01")
     3661
     """
-    components = time_str.split[":"]
-    expect(len(components) < 3, "Unusual time string: '%s'" % time_str)
+    components = time_str.split(":")
+    expect(len(components) < 4, "Unusual time string: '%s'" % time_str)
 
     components.reverse()
     result = 0

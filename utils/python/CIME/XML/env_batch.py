@@ -32,21 +32,23 @@ class EnvBatch(EnvBase):
 
         return val
 
-    def get_value(self, item, attribute={}, resolved=True, subgroup=None):
+    def get_value(self, item, attribute={}, resolved=True, subgroup="run"):
+        """
+        Must default subgroup to something in order to provide single return value
+        """
         value = None
-        nodes = self.get_nodes("entry",{"id":item})
-        if len(nodes) > 0:
-            value = {} # Not consistent with return values for other classes' get_value methods
-            if subgroup is None:
-                nodes = self.get_nodes("job")
-            else:
-                nodes = self.get_nodes("job", {"name":subgroup})
 
-            for node in nodes:
-                val = EnvBase.get_value(self, node,
-                                        item, attribute, resolved)
-                if val is not None:
-                    value[node.attrib["name"]] = val
+        job_node = self.get_optional_node("job", {"name":subgroup})
+        if job_node is not None:
+            node = self.get_optional_node(item, attribute, root=job_node)
+            if node is not None:
+                value = self.get_resolved_value(node.text)
+
+                # Return value as right type if we were able to fully resolve
+                # otherwise, we have to leave as string.
+                if "$" not in value:
+                    type_str = self._get_type_info(node)
+                    value = convert_to_type(value, type_str, item)
 
         return value
 
@@ -61,3 +63,10 @@ class EnvBatch(EnvBase):
                 expect( type_info == new_type_info,
                         "Inconsistent type_info for entry id=%s %s %s" % (vid, new_type_info, type_info))
         return type_info
+
+    def get_jobs(self):
+        result = []
+        for node in self.get_nodes("job"):
+            result.append(node.attrib["name"])
+
+        return result

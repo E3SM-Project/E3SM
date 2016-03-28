@@ -103,4 +103,7 @@ class Case(object):
     def __iter__(self):
         for entryid_file in self._env_entryid_files:
             for key, val in entryid_file:
-                yield key, val
+                if type(val) is str and '$' in val:
+                    yield key, self.get_resolved_value(val)
+                else:
+                    yield key, val

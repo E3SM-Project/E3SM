@@ -31,7 +31,9 @@ def _add_to_macros(node, macros):
         else:
             cond_macros = macros["_COND_"]
             for key, value in attrib.iteritems():
-                if key not in cond_macros or value not in cond_macros[key]:
+                if key not in cond_macros:
+                    cond_macros[key] = {}
+                if value not in cond_macros[key]:
                     cond_macros[key][value] = {}
                 cond_macros = cond_macros[key][value]
 
@@ -87,8 +89,10 @@ def set_compiler(compiler_file_arg=None, case=None, macros_file="Macros", output
     # JGF: Which should take precedence?
     for compiler_file in [os.path.join(os.environ["HOME"], ".cime", "config_compilers.xml"),
                           compiler_file_arg]:
-        if os.path.exists(compiler_file):
-            compilers = Compilers(machine=machine, os_=os_, mpilib=mpilib, infile=compiler_file)
+        if compiler_file is None or os.path.exists(compiler_file):
+            compilers = Compilers(compiler=compiler, machine=machine, os_=os_, mpilib=mpilib, infile=compiler_file)
+            if compiler_file is None:
+                compiler_file = compilers.filename
             break
 
     expect(compilers is not None, "File does not exist: %s" % compiler_file_arg)
@@ -99,10 +103,10 @@ def set_compiler(compiler_file_arg=None, case=None, macros_file="Macros", output
     macros = {"_COND_" : {}}
 
     # Do parent first
-    if (compilers.parent is not compilers.compiler):
-        _add_to_macros(compilers.parent, macros)
+    if (compilers.parent_node is not compilers.compiler_node):
+        _add_to_macros(compilers.parent_node, macros)
 
-    _add_to_macros(compilers.compiler, macros)
+    _add_to_macros(compilers.compiler_node, macros)
 
     compcpp = compiler.upper()
     macros["ADD_CPPDEFS"] += " -D%s -DCPR%s " % (os, compcpp)
@@ -174,4 +178,4 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING "Choose the type of buil
                         fd.write("add_flags(CMAKE_EXE_LINKER_FLAGS %s)\n\n" % value)
 
         # Recursively print the conditionals, combining tests to avoid repetition
-        _parse_hash(macros["_COND"], fd, 0, output_format)
+        _parse_hash(macros["_COND_"], fd, 0, output_format)

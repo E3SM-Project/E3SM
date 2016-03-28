@@ -7,7 +7,6 @@ can be defined by providing a batch_system MACH="mach" block.
 
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
-from CIME.XML.files import Files
 from CIME.utils import expect, get_cime_root, get_model
 
 logger = logging.getLogger(__name__)
@@ -37,35 +36,35 @@ class Batch(GenericXML):
         """
         return self.batch_system
 
-    def get_node(self, nodename, attributes=None):
+    def get_batch_node(self, nodename, attributes=None):
         """
         Return data on a node for a batch system
         """
         expect(self.batch_system_node is not None, "Batch system not set, use parent get_node?")
 
         if self.machine_node is not None:
-            result = GenericXML.get_optional_node(self, nodename, attributes, root=self.machine_node)
+            result = self.get_optional_node(nodename, attributes, root=self.machine_node)
             if result is None:
-                return GenericXML.get_node(self, nodename, attributes, root=self.batch_system_node)
+                return self.get_node(nodename, attributes, root=self.batch_system_node)
             else:
                 return result
         else:
-            return GenericXML.get_node(self, nodename, attributes, root=self.batch_system_node)
+            return self.get_node(nodename, attributes, root=self.batch_system_node)
 
-    def get_optional_node(self, nodename, attributes=None):
+    def get_optional_batch_node(self, nodename, attributes=None):
         """
         Return data on a node for a batch system
         """
         expect(self.batch_system_node is not None, "Batch system not set, use parent get_node?")
 
         if self.machine_node is not None:
-            result = GenericXML.get_optional_node(self, nodename, attributes, root=self.machine_node)
+            result = self.get_optional_node(nodename, attributes, root=self.machine_node)
             if result is None:
-                return GenericXML.get_optional_node(self, nodename, attributes, root=self.batch_system_node)
+                return self.get_optional_node(nodename, attributes, root=self.batch_system_node)
             else:
                 return result
         else:
-            return GenericXML.get_optional_node(self, nodename, attributes, root=self.batch_system_node)
+            return self.get_optional_node(nodename, attributes, root=self.batch_system_node)
 
     def set_batch_system(self, batch_system, machine=None):
         """
@@ -73,11 +72,11 @@ class Batch(GenericXML):
         """
         machine = machine if machine is not None else self.machine
         if self.batch_system != batch_system or self.batch_system_node is None:
-            self.batch_system_node = GenericXML.get_optional_node(self, "batch_system", {"type" : batch_system})
+            self.batch_system_node = self.get_optional_node("batch_system", {"type" : batch_system})
             expect(self.batch_system_node is not None, "No batch system '%s' found" % batch_system)
 
             if machine is not None:
-                self.machine_node = GenericXML.get_optional_node(self, "batch_system", {"MACH" : machine})
+                self.machine_node = self.get_optional_node("batch_system", {"MACH" : machine})
                 self.machine = machine
 
         return batch_system
@@ -89,7 +88,7 @@ class Batch(GenericXML):
         expect(self.batch_system_node is not None, "Batch object has no batch system defined")
         value = None
 
-        node = self.get_optional_node(name)
+        node = self.get_optional_batch_node(name)
         if node is not None:
             value = node.text
 
@@ -110,14 +109,14 @@ class Batch(GenericXML):
         """
         result = []
         if self.machine_node is not None:
-            nodes = GenericXML.get_nodes(self, "directive", root=self.machine_node)
+            nodes = self.get_nodes("directive", root=self.machine_node)
             for node in nodes:
                 directive = self.get_resolved_value(node.text)
                 directive = batch_maker.transform_vars(directive)
 
                 result.append(directive)
 
-        nodes = GenericXML.get_nodes(self, "directive", root=self.batch_system_node)
+        nodes = self.get_nodes("directive", root=self.batch_system_node)
         for node in nodes:
             directive = self.get_resolved_value(node.text)
             directive = batch_maker.transform_vars(directive)

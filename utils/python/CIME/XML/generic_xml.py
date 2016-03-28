@@ -76,7 +76,7 @@ class GenericXML(object):
 
         Error unless exactly one match.
         """
-        nodes = self.get_nodes(nodename, attributes, root)
+        nodes = self.get_nodes(nodename, attributes=attributes, root=root)
         expect(len(nodes) == 1, "Incorrect number of matches, %d, for nodename '%s' and attrs '%s' in file '%s'" %
                (len(nodes), nodename, attributes, self.filename))
         return nodes[0]
@@ -87,7 +87,7 @@ class GenericXML(object):
 
         Return None if no match.
         """
-        nodes = self.get_nodes(nodename, attributes, root)
+        nodes = self.get_nodes(nodename, attributes=attributes, root=root)
 
         expect(len(nodes) <= 1, "Multiple matches for nodename '%s' and attrs '%s' in file '%s'" %
                (nodename, attributes, self.filename))
@@ -99,12 +99,11 @@ class GenericXML(object):
         nodes = []
         xpath = ".//"+nodename
         if attributes is not None:
-            keys = list(attributes.keys())
             # xml.etree has limited support for xpath and does not allow more than
             # one attribute in an xpath query so we query seperately for each attribute
             # and create a result with the intersection of those lists
-            for key in keys:
-                xpath = ".//%s[@%s=\'%s\']" % (nodename,key,attributes[key])
+            for key, value in attributes.iteritems():
+                xpath = ".//%s[@%s=\'%s\']" % (nodename, key, value)
                 logger.debug("xpath is %s"%xpath)
                 newnodes = root.findall(xpath)
                 if not nodes:
@@ -134,7 +133,7 @@ class GenericXML(object):
         """
         logger.debug("Get Value for "+item)
         result = None
-        if item in self.lookups.keys():
+        if item in self.lookups:
             result = self.lookups[item]
 
         if result is None:
@@ -175,21 +174,24 @@ class GenericXML(object):
         if item_data is None:
             return None
 
+        if type(item_data) is not str:
+            return item_data
+
         for m in env_ref_re.finditer(item_data):
-            logger.debug("look for "+item_data+ " in env")
+            logger.debug("look for %s in env" % item_data)
             env_var = m.groups()[0]
             expect(env_var in os.environ, "Undefined env var '%s'" % env_var)
             item_data = item_data.replace(m.group(), os.environ[env_var])
 
         for m in reference_re.finditer(item_data):
             var = m.groups()[0]
-            logger.debug("find: " + var)
+            logger.debug("find: %s" % var)
             ref = self.get_value(var)
             if ref is not None:
-                logger.debug("resolve: " + ref)
-                item_data = item_data.replace(m.group(), self.get_resolved_value(ref))
+                logger.debug("resolve: %s" % ref)
+                item_data = item_data.replace(m.group(), str(self.get_resolved_value(ref)))
             elif var in os.environ:
-                logging.warn("resolve from env: " + var)
+                logging.warn("resolve from env: %s" % var)
                 item_data = item_data.replace(m.group(), os.environ[var])
 
         return item_data

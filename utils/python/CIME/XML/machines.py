@@ -19,8 +19,8 @@ class Machines(GenericXML):
         otherwise if a files object is provided it will be used
         otherwise create a files object from default values
         """
-        self.machine = None
-        self.name    = None
+        self.machine_node = None
+        self.machine      = None
 
         if infile is None:
             if files is None:
@@ -38,35 +38,14 @@ class Machines(GenericXML):
         """
         Return the name of the machine
         """
-        return self.name
-
-    def get_node(self, nodename, attributes=None):
-        """
-        Return data on a node for a machine
-        """
-        expect(self.machine is not None, "Machine not set, use parent get_node?")
-        return GenericXML.get_node(self, nodename, attributes, root=self.machine)
-
-    def get_nodes(self, nodename, attributes=None):
-        """
-        Return data on a node for a machine
-        """
-        expect(self.machine is not None, "Machine not set, use parent get_node?")
-        return GenericXML.get_nodes(self, nodename, attributes, root=self.machine)
-
-    def get_optional_node(self, nodename, attributes=None):
-        """
-        Return data on a node for a machine
-        """
-        expect(self.machine is not None, "Machine not set, use parent get_node?")
-        return GenericXML.get_optional_node(self, nodename, attributes, root=self.machine)
+        return self.machine
 
     def list_available_machines(self):
         """
         Return a list of machines defined for a given CIME_MODEL
         """
         machines = []
-        nodes  = GenericXML.get_nodes(self, "machine")
+        nodes  = self.get_nodes("machine")
         for node in nodes:
             mach = node.get("MACH")
             machines.append(mach)
@@ -79,12 +58,12 @@ class Machines(GenericXML):
         """
         machine = None
         nametomatch = socket.gethostname().split(".")[0]
-        nodes = GenericXML.get_nodes(self, "machine")
+        nodes = self.get_nodes("machine")
 
         for node in nodes:
             machtocheck = node.get("MACH")
             logger.debug("machine is " + machtocheck)
-            regex_str_node = GenericXML.get_optional_node(self, "NODENAME_REGEX", root=node)
+            regex_str_node = self.get_optional_node("NODENAME_REGEX", root=node)
             regex_str = machtocheck if regex_str_node is None else regex_str_node.text
 
             if regex_str is not None:
@@ -112,10 +91,10 @@ class Machines(GenericXML):
         ...
         SystemExit: ERROR: No machine trump found
         """
-        if self.name != machine:
-            self.machine = GenericXML.get_optional_node(self, "machine", {"MACH" : machine})
-            expect(self.machine is not None, "No machine %s found" % machine)
-            self.name = machine
+        if self.machine != machine:
+            self.machine_node = self.get_optional_node("machine", {"MACH" : machine})
+            expect(self.machine_node is not None, "No machine %s found" % machine)
+            self.machine = machine
 
         return machine
 
@@ -123,7 +102,7 @@ class Machines(GenericXML):
         """
         Get Value of fields in the config_machines.xml file
         """
-        expect(self.machine is not None, "Machine object has no machine defined")
+        expect(self.machine_node is not None, "Machine object has no machine defined")
         value = None
 
         # COMPILER and MPILIB are special, if called without arguments they get the default value from the
@@ -133,7 +112,7 @@ class Machines(GenericXML):
         elif name == "MPILIB":
             value = self.get_default_MPIlib()
         else:
-            node = self.get_optional_node(name)
+            node = self.get_optional_node(name, root=self.machine_node)
             if node is not None:
                 value = node.text
 
@@ -155,10 +134,10 @@ class Machines(GenericXML):
         lists and return the first value if reqval is not provided and reqval
         if it is a valid setting for the machine
         """
-        expect(self.machine is not None, "Machine object has no machine defined")
+        expect(self.machine_node is not None, "Machine object has no machine defined")
         supported_values = self.get_value(listname)
         expect(supported_values is not None,
-               "No list found for " + listname + " on machine " + self.name)
+               "No list found for " + listname + " on machine " + self.machine)
         supported_values = supported_values.split(",")
 
         if reqval is None or reqval == "UNSET":
@@ -168,7 +147,7 @@ class Machines(GenericXML):
                 return reqval
 
         expect(False, "%s value %s not supported for machine %s" %
-               (listname, reqval, self.name))
+               (listname, reqval, self.machine))
 
     def get_default_compiler(self):
         """
@@ -225,10 +204,10 @@ class Machines(GenericXML):
         False
         """
         result = False
-        batch_system = self.get_optional_node("batch_system")
+        batch_system = self.get_optional_node("batch_system", root=self.machine_node)
         if batch_system is not None:
             result = (batch_system.get("type") != "none")
-        logger.debug("Machine %s has batch: %s" % (self.name, result))
+        logger.debug("Machine %s has batch: %s" % (self.machine, result))
         return result
 
     def get_batch_system_type(self):
@@ -239,7 +218,7 @@ class Machines(GenericXML):
         >>> machobj.get_batch_system_type()
         'slurm'
         """
-        batch_system = self.get_node("batch_system")
+        batch_system = self.get_node("batch_system", root=self.machine_node)
         return batch_system.get("type")
 
     def get_module_system_type(self):
@@ -251,26 +230,26 @@ class Machines(GenericXML):
         >>> machobj.get_module_system_type()
         'module'
         """
-        module_system = self.get_node("module_system")
+        module_system = self.get_node("module_system", root=self.machine_node)
         return module_system.get("type")
 
     def get_module_system_init_path(self, lang):
-        init_nodes = self.get_node("init_path", attributes={"lang":lang})
+        init_nodes = self.get_node("init_path", attributes={"lang":lang}, root=self.machine_node)
         return init_nodes.text
 
     def get_module_system_cmd_path(self, lang):
-        cmd_nodes = self.get_node("cmd_path", attributes={"lang":lang})
+        cmd_nodes = self.get_node("cmd_path", attributes={"lang":lang}, root=self.machine_node)
         return cmd_nodes.text
 
     def get_default_queue(self):
-        node = self.get_optional_node("queue", attributes={"default" : "true"})
+        node = self.get_optional_node("queue", attributes={"default" : "true"}, root=self.machine_node)
         if node is not None:
             return node.text
         else:
             return None
 
     def get_all_queues(self):
-        nodes = self.get_nodes("queue")
+        nodes = self.get_nodes("queue", root=self.machine_node)
         results = []
         for node in nodes:
             results.append(node.text)
@@ -278,7 +257,7 @@ class Machines(GenericXML):
         return results
 
     def get_queue_attribute(self, queue, attrib):
-        nodes = self.get_nodes("queue")
+        nodes = self.get_nodes("queue", root=self.machine_node)
         for node in nodes:
             if node.text == queue and attrib in node.attrib:
                 return node.attrib[attrib]
@@ -286,7 +265,7 @@ class Machines(GenericXML):
         return None
 
     def get_walltimes(self):
-        nodes = self.get_nodes("walltime")
+        nodes = self.get_nodes("walltime", root=self.machine_node)
         results = []
         for node in nodes:
             results.append(node.text)
@@ -294,14 +273,14 @@ class Machines(GenericXML):
         return results
 
     def get_default_walltime(self):
-        node = self.get_optional_node("walltime", attributes={"default" : "true"})
+        node = self.get_optional_node("walltime", attributes={"default" : "true"}, root=self.machine_node)
         if node is not None:
             return node.text
         else:
             return None
 
     def get_walltime_estcost(self, walltime):
-        nodes = self.get_nodes("walltime")
+        nodes = self.get_nodes("walltime", root=self.machine_node)
         for node in nodes:
             if node.text == walltime and "ccsm_estcost" in node.attrib:
                 return int(node.attrib["ccsm_estcost"])
@@ -309,9 +288,9 @@ class Machines(GenericXML):
         return None
 
     def get_suffix(self, suffix_type):
-        node = GenericXML.get_optional_node(self, "default_run_suffix")
+        node = self.get_optional_node("default_run_suffix")
         if node is not None:
-            suffix_node = GenericXML.get_optional_node(self, suffix_type, root=node)
+            suffix_node = self.get_optional_node(suffix_type, root=node)
             if suffix_node is not None:
                 return suffix_node.text
 
@@ -321,7 +300,7 @@ class Machines(GenericXML):
         """
         Find best match, return (executable, {arg_name : text})
         """
-        mpirun_nodes = self.get_nodes("mpirun")
+        mpirun_nodes = self.get_nodes("mpirun", root=self.machine_node)
         best_match = None
         best_num_matched = -1
         default_match = None
@@ -360,9 +339,9 @@ class Machines(GenericXML):
         the_match = best_match if best_match is not None else default_match
 
         args = {}
-        arg_node = GenericXML.get_optional_node(self, "arguments", root=the_match)
+        arg_node = self.get_optional_node("arguments", root=the_match)
         if arg_node is not None:
-            arg_nodes = GenericXML.get_nodes(self, "arg", root=arg_node)
+            arg_nodes = self.get_nodes("arg", root=arg_node)
             for arg_node in arg_nodes:
                 arg_value = self.get_resolved_value(arg_node.text)
                 if "default" in arg_node.attrib:
@@ -372,6 +351,6 @@ class Machines(GenericXML):
 
                 args[arg_node.attrib["name"]] = arg_value
 
-        executable = GenericXML.get_node(self, "executable", root=the_match)
+        executable = self.get_node("executable", root=the_match)
 
         return executable.text, args

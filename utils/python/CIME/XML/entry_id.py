@@ -106,9 +106,13 @@ class EntryID(GenericXML):
         if resolved:
             val = self.get_resolved_value(val)
 
-        # Return value as right type
-        type_str = self._get_type_info(node)
-        return convert_to_type(val, type_str, vid)
+        # Return value as right type if we were able to fully resolve
+        # otherwise, we have to leave as string.
+        if "$" in val:
+            return val
+        else:
+            type_str = self._get_type_info(node)
+            return convert_to_type(val, type_str, vid)
 
     def get_values(self, vid, att, resolved=True):
         """
