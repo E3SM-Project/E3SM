@@ -159,13 +159,6 @@
       </test>
     </grid>
   </compset>
-  <compset name="BC4SSOAL40SPR">
-    <grid name="f19_g16">
-      <test name="ERS_Ld7">
-        <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
-      </test>
-    </grid>
-  </compset>
   <compset name="BC4TMOZL40SPR">
     <grid name="f45_g37">
       <test name="ERS_Ld7">
@@ -173,19 +166,11 @@
       </test>
     </grid>
   </compset>
-  <compset name="BC4WCMAL40SPR">
+  <compset name="BW1850">
     <grid name="f19_g16">
-      <test name="ERS_Ld7">
+      <test name="ERS_Ld3">
         <machine compiler="gnu" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
-      </test>
-    </grid>
-  </compset>
-  <compset name="BC4WTSML40SPR">
-    <grid name="f19_g16">
-      <test name="ERS_Ld7">
-        <machine compiler="pgi" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
-        <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
       </test>
     </grid>
   </compset>
