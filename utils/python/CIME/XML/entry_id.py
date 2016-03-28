@@ -7,6 +7,8 @@ from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, convert_to_string, convert_to_type
 from CIME.XML.generic_xml import GenericXML
 
+from copy import deepcopy
+
 logger = logging.getLogger(__name__)
 
 class EntryID(GenericXML):
@@ -29,9 +31,12 @@ class EntryID(GenericXML):
         # </entry>
         valnodes = self.get_nodes("value", root=node)
         for valnode in valnodes:
-            for att in valnode.keys():
-                if att.key in attributes:
-                    if re.search(attributes[att.key], att.text):
+            # loop through all the keys in valnode attributes
+            for key,value in valnode.attrib.iteritems():
+                # determine if key is in attributes dictionary
+                if key in attributes:
+                    if re.search(value, attributes[key]):
+                        # set node value to valnode.text
                         node.set("value", valnode.text)
                         logger.debug("id %s value %s" % (node.get("id"), valnode.text))
                         return valnode.text
@@ -58,6 +63,11 @@ class EntryID(GenericXML):
             return self._get_type_info(node)
 
     def _set_value(self, node, vid, value, subgroup=None, ignore_type=False):
+        """
+        Set the value of an entry-id field to value
+        Returns the value or None if not found
+        subgroup is ignored in the general routine and applied in specific methods
+        """
         if ignore_type:
             expect(type(value) is str, "Value must be type string if ignore_type is true")
             node.set("value",value)
@@ -76,11 +86,13 @@ class EntryID(GenericXML):
         if node is not None:
             return self._set_value(node, vid, value, subgroup, ignore_type)
         else:
+            # Add item to GenericXML object in the lookup dictionary
+            GenericXML.set_value(self,vid, value)  #***THIS IS NEW ***
             return None
 
     def get_value(self, vid, attribute={}, resolved=True, subgroup=None):
         """
-        get a value for entry with id attribute vid.
+        Get a value for entry with id attribute vid.
         or from the values field if the attribute argument is provided
         and matches
         """
@@ -154,29 +166,58 @@ class EntryID(GenericXML):
             childnode = self.get_node(childname,root=node)
             content = childnode.text
             if content == childcontent:
+                print "DEBUG: childcontent",childcontent, node.attrib["id"]
                 elements.append(node)
 
         return elements
 
     def add_elements_by_group(self, srcobj, attlist, infile):
+        """
+        Add elements from srcdoc to self under the appropriate
+        group element, entries to be added must have a child element
+        <file> with value "infile"
+        """
+        # First get the list of entries in srcdoc with matching file children
         nodelist = srcobj.get_elements_from_child_content('file', infile)
-        for node in nodelist:
-            gnode = node.find(".//group")
+
+        # For matchs found: Remove {<group>, <file>, <values>}
+        # children from each entry and set the default value for the
+        # new entries in self - putting the entries as children of
+        # group elements in file $file
+        for src_node in nodelist:
+	    node  = deepcopy(src_node)
+            gnode = src_node.find(".//group")
             gname = gnode.text
+
+	    # If group with id=$gname does not exist in self.groups
+	    # then create the group node and add it to infile file
             if gname not in self.groups.keys():
                 newgroup = ET.Element("group")
                 newgroup.set("id",gname)
                 self.add_child(newgroup)
-                self.groups[gname] = newgroup
+                #self.groups[gname] = deepcopy(newgroup)
+                print "ADDING %s to NEW      group %s" %(node.attrib["id"],gname)
+            else:
+                print "ADDING %s to existing group %s" %(node.attrib["id"],gname)
 
+	    # Set the default value, it may be determined by a regular
+            # expression match to a dictionary value in attlist matching a
+            # value attribute in node
             self.set_default_value(node, attlist)
+
+            # Remove {<group>, <file>, <values>} from the entry element
             node = self.cleanupnode(node)
-            self.groups[gname].append(node)
+
+	    # Add the entry element to the group
+            # self.groups[gname].append(node) # commenting this appears to make env_run.xml write out the file - but without the clean or id
             logger.debug ("Adding to group " + gname)
 
         return nodelist
 
     def cleanupnode(self, node):
+        """
+        Remove the <group>, <file>, <values> and <value> childnodes from node
+        """
         fnode = node.find(".//file")
         gnode = node.find(".//group")
         node.remove(fnode)

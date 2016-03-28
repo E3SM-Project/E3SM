@@ -150,6 +150,7 @@ class GenericXML(object):
             for node in valnodes:
                 node.text = value
         else:
+            print "DEBUG: adding %s %s to lookup" %(vid,value)
             self.lookups[vid] = value
 
     def get_resolved_value(self, raw_value):
