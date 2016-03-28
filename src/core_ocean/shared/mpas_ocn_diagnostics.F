@@ -1300,11 +1300,14 @@ contains
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceThicknessFlux, &
            surfaceBuoyancyForcing, surfaceFrictionVelocity, penetrativeTemperatureFluxOBL, &
-           normalVelocitySurfaceLayer
+           normalVelocitySurfaceLayer, surfaceThicknessFluxRunoff
+      real (kind=RKIND), dimension(:,:), pointer :: fractionAbsorbed, fractionAbsorbedRunoff
+
       real (kind=RKIND), dimension(:), pointer :: surfaceStress, surfaceStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer ::  &
            layerThickness, zMid, zTop, densitySurfaceDisplaced, density, &
-           normalVelocity, activeTracersSurfaceFlux, thermalExpansionCoeff, salineContractionCoeff
+           normalVelocity, activeTracersSurfaceFlux, thermalExpansionCoeff, salineContractionCoeff, &
+           activeTracersSurfaceFluxRunoff
 
       real (kind=RKIND), dimension(:), pointer :: &
            indexSurfaceLayerDepth
@@ -1318,7 +1321,7 @@ contains
       ! local
       integer :: iCell, iEdge, i, k, err, timeLevel
       integer, pointer :: indexTempFlux, indexSaltFlux
-      real (kind=RKIND) :: numerator, denominator, turbulentVelocitySquared
+      real (kind=RKIND) :: numerator, denominator, turbulentVelocitySquared, totalThicknessFlux
       real (kind=RKIND) :: buoyContribution, shearContribution, factor, deltaVelocitySquared, delU2, invAreaCell
 
       type (field2DReal), pointer :: densitySurfaceDisplacedField, thermalExpansionCoeffField, salineContractionCoeffField
@@ -1363,31 +1366,26 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'surfaceBuoyancyForcing', surfaceBuoyancyForcing)
       call mpas_pool_get_array(diagnosticsPool, 'normalVelocitySurfaceLayer', normalVelocitySurfaceLayer)
 
+      call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
+      call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', fractionAbsorbedRunoff)
       call mpas_pool_get_array(forcingPool, 'surfaceThicknessFlux', surfaceThicknessFlux)
+      call mpas_pool_get_array(forcingPool, 'surfaceThicknessFluxRunoff', surfaceThicknessFluxRunoff)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'surfaceStress', surfaceStress)
       call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', surfaceStressMagnitude)
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
       call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
-
+      call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFluxRunoff', activeTracersSurfaceFluxRunoff)
       ! allocate scratch space displaced density computation
-      call mpas_pool_get_field(scratchPool, 'densitySurfaceDisplaced', densitySurfaceDisplacedField)
       call mpas_pool_get_field(scratchPool, 'thermalExpansionCoeff', thermalExpansionCoeffField)
       call mpas_pool_get_field(scratchPool, 'salineContractionCoeff', salineContractionCoeffField)
-      call mpas_allocate_scratch_field(densitySurfaceDisplacedField, .true.)
       call mpas_allocate_scratch_field(thermalExpansionCoeffField, .true.)
       call mpas_allocate_scratch_field(salineContractionCoeffField, .true.)
       call mpas_threading_barrier()
 
-      densitySurfaceDisplaced => densitySurfaceDisplacedField % array
       thermalExpansionCoeff => thermalExpansionCoeffField % array
       salineContractionCoeff => salineContractionCoeffField % array
-
-      ! compute EOS by displacing SST/SSS to every vertical layer in column
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 0, 'surfaceDisplaced', &
-                                         densitySurfaceDisplaced, err, thermalExpansionCoeff, salineContractionCoeff, &
-                                         timeLevel)
 
       !$omp do schedule(runtime) private(invAreaCell, deltaVelocitySquared, i, iEdge, factor, delU2, k, buoyContribution, &
       !$omp                              shearContribution)
@@ -1412,11 +1410,15 @@ contains
        !    2. Sm: salinity associated with surfaceThicknessFlux, PSU (here we assume Sm == salinitySurfaceValue and account for
        !           salinity flux in activeTracersSurfaceFlux array)
        !
+
+       totalThicknessFlux = fractionAbsorbed(1,iCell)*surfaceThicknessFlux(iCell) +    &
+                       fractionAbsorbedRunoff(1,iCell)*surfaceThicknessFluxRunoff(iCell)
+
        surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (1,iCell) &
               * ( activeTracersSurfaceFlux(indexTempFlux,iCell) + penetrativeTemperatureFlux(iCell) &
-              - penetrativeTemperatureFluxOBL(iCell) - surfaceThicknessFlux(iCell) * activeTracers(indexTempFlux, 1, iCell)) &
-              - salineContractionCoeff(1,iCell) &
-             * ( activeTracersSurfaceFlux(indexSaltFlux,iCell) - surfaceThicknessFlux(iCell) * &
+              - penetrativeTemperatureFluxOBL(iCell) - totalThicknessFlux * activeTracers(indexTempFlux, 1, iCell) &
+              +activeTracersSurfaceFluxRunoff(indexTempFlux,iCell)) - salineContractionCoeff(1,iCell) &
+             * ( activeTracersSurfaceFlux(indexSaltFlux,iCell) - totalThicknessFlux * &
              activeTracers(indexSaltFlux, 1, iCell) )
 
        ! at this point, surfaceBuoyancyForcing has units of m/s
@@ -1443,7 +1445,6 @@ contains
       call mpas_threading_barrier()
 
       ! deallocate scratch space
-      call mpas_deallocate_scratch_field(densitySurfaceDisplacedField, .true.)
       call mpas_deallocate_scratch_field(thermalExpansionCoeffField, .true.)
       call mpas_deallocate_scratch_field(salineContractionCoeffField, .true.)
 
