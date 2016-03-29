@@ -293,7 +293,7 @@ if ($opts{'user_compset'}) {
     }
 }
 #TODO - add support_level to config and query it here
-($pes_setby, $support_level) = ConfigCompsetGrid::getCompsetLongname($files_spec_file, $compset, $config);
+($pes_setby, $support_level) = ConfigCompsetGrid::getCompsetLongname($files_spec_file, $compset, $config, $opts{'user_compset'});
 $compset_longname = $config->get('COMPSET');
 my $compset_resolved = 1;
 if($opts{'user_compset'}){

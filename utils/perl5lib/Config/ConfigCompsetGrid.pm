@@ -24,8 +24,7 @@ my $desc_comp = "";
 sub getCompsetLongname
 {
     # Determine compset longname, alias and support level
-    my ($input_file, $input_compset, $config) = @_;
-
+    my ($input_file, $input_compset, $config, $user_provided_compset) = @_;
     $input_compset =~ s/^\s+//; # strip any leading whitespace
     $input_compset =~ s/\s+$//; # strip any trailing whitespace
 
@@ -104,15 +103,18 @@ sub getCompsetLongname
 
     }
     if (! defined $pes_setby) {
-	my $outstr = "WARNING: create_newcase: no compset match was found in any of the following files:";
-	foreach my $node_file (@nodes) {
-	    my $file = $node_file->textContent();
-	    $file =~ s/\$CIMEROOT/$cimeroot/;
-	    $file =~ s/\$SRCROOT/$srcroot/;
-	    $file =~ s/\$MODEL/$model/;
-	    $outstr .= "$file\n";
+	if (! $user_provided_compset){
+	    my $outstr = "ERROR: create_newcase: no compset match was found in any of the following files:";
+	    foreach my $node_file (@nodes) {
+		my $file = $node_file->textContent();
+		$file =~ s/\$CIMEROOT/$cimeroot/;
+		$file =~ s/\$SRCROOT/$srcroot/;
+		$file =~ s/\$MODEL/$model/;
+		$outstr .= "$file\n";
+	    }
+
+	    $logger->logdie ($outstr);
 	}
-	$logger->logwarn ($outstr);
     } else {
 	$logger->info( "File specifying possible compsets: $compsets_file ");
 	$logger->info( "Primary component (specifies possible compsets, pelayouts and pio settings): $pes_setby ");
