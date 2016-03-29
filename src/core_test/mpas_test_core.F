@@ -129,6 +129,8 @@ module test_core
          write(stderrUnit, *) 'Stream I/O tests: FAILURE'
       end if
 
+      call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true.)
+
       deallocate(threadErrs)
 
    end function test_core_run!}}}
