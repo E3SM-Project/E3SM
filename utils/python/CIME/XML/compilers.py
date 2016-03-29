@@ -22,7 +22,7 @@ class Compilers(GenericXML):
         self.machine        = machine
         self.os             = os_
         self.mpilib         = mpilib
-        self.compiler_nodes = None # Listed from highest to lowest precedence
+        self.compiler_nodes = None # Listed from last to first
         self.compiler       = compiler
 
         if self.compiler is not None:
@@ -72,17 +72,12 @@ class Compilers(GenericXML):
 
         if self.compiler != compiler or self.machine != machine or self.os != os_ or self.mpilib != mpilib or self.compiler_nodes is None:
             self.compiler_nodes = []
-            compiler_nodes = {}
             nodes = self.get_nodes("compiler")
             for node in nodes:
                 if self._is_compatible(node, compiler, machine, os_, mpilib):
-                    num_attrib = len(node.attrib)
-                    expect (num_attrib not in compiler_nodes,
-                            "Ambiguous compiler node with attibs '%s', already found a compiler with %d matches" % (node.attrib, num_attrib))
-                    compiler_nodes[num_attrib] = node
+                    self.compiler_nodes.append(node)
 
-            for _, node in reversed(sorted(compiler_nodes.iteritems())):
-                self.compiler_nodes.append(node)
+            self.compiler_nodes.reverse()
 
             self.compiler = compiler
             self.machine  = machine
