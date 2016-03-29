@@ -1681,7 +1681,8 @@
      <!-- Ideally, we wouldn't match against yellowstone here. However, if we
           set mach name="any", it seems that the ConfigPES logic just tries
           looking in other blocks (which have a specific grid and specific
-          machine), and doesn't check this block -->
+          machine), and doesn't check this block. (See
+          https://github.com/CESM-Development/cime/issues/403) -->
      <mach name="yellowstone">
         <pes pesize="any" compset="DATM.+CLM.+CICE.+POP">
            <comment>Load balanced for 1850_DATM%CRU_CLM50%BGC_CICE_POP2_MOSART_CISM2_SWAV on yellowstone</comment>

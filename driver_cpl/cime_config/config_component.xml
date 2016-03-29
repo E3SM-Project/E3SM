@@ -3032,6 +3032,8 @@
   </entry>
 
 
+  <!-- Logic for CPL_ALBAV should be reworked to depend on datm forcing rather
+       than compset: see https://github.com/ESMCI/cime/issues/120 -->
   <entry id="CPL_ALBAV">
     <type>logical</type>
     <valid_values>true,false</valid_values>
