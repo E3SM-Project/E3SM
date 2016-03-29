@@ -17,16 +17,15 @@ BEGIN{
 
 # Global variable
 my %compgrid;
-my %newxml;    
+my %newxml;
 my $desc_comp = "";
 
 #-----------------------------------------------------------------------------------------------
 sub getCompsetLongname
 {
     # Determine compset longname, alias and support level
-    my ($input_file, $input_compset, $config) = @_;
-
-    $input_compset =~ s/^\s+//; # strip any leading whitespace 
+    my ($input_file, $input_compset, $config, $user_provided_compset) = @_;
+    $input_compset =~ s/^\s+//; # strip any leading whitespace
     $input_compset =~ s/\s+$//; # strip any trailing whitespace
 
     # Note - the value of the config variable 'COMPSETS_SPEC_FILE' gives the full pathname of the
@@ -69,7 +68,7 @@ sub getCompsetLongname
 	my @alias_nodes = $xml2->findnodes(".//compset[alias=\"$input_compset\"]");
 	if (@alias_nodes) {
 	    if ($#alias_nodes > 0) {
-		
+
 		$logger->logdie ("ERROR create_newcase: more than one match for compset alias $input_compset in file $file ");
 	    } else {
 		my @name_nodes = $alias_nodes[0]->findnodes(".//lname");
@@ -82,7 +81,7 @@ sub getCompsetLongname
 	    $config->set('COMPSETS_SPEC_FILE', $compsets_file);
 	    $config->set('COMPSET', "$compset_longname");
 	    last;
-	} 
+	}
 
 	# If no alias match - then determine if there is a match for the longname
 	my @lname_nodes = $xml2->findnodes(".//compset[lname=\"$input_compset\"]");
@@ -100,24 +99,27 @@ sub getCompsetLongname
 	    $config->set('COMPSETS_SPEC_FILE', "$compsets_file");
 	    $config->set('COMPSET', "$compset_longname");
 	    last;
-	} 
+	}
 
     }
     if (! defined $pes_setby) {
-	my $outstr = "ERROR create_newcase: no compset match was found in any of the following files:";
-	foreach my $node_file (@nodes) {
-	    my $file = $node_file->textContent();
-	    $file =~ s/\$CIMEROOT/$cimeroot/;
-	    $file =~ s/\$SRCROOT/$srcroot/;
-	    $file =~ s/\$MODEL/$model/;
-	    $outstr .= "$file\n";
+	if (! $user_provided_compset){
+	    my $outstr = "ERROR: create_newcase: no compset match was found in any of the following files:";
+	    foreach my $node_file (@nodes) {
+		my $file = $node_file->textContent();
+		$file =~ s/\$CIMEROOT/$cimeroot/;
+		$file =~ s/\$SRCROOT/$srcroot/;
+		$file =~ s/\$MODEL/$model/;
+		$outstr .= "$file\n";
+	    }
+
+	    $logger->logdie ($outstr);
 	}
-	$logger->logdie ($outstr);
     } else {
 	$logger->info( "File specifying possible compsets: $compsets_file ");
 	$logger->info( "Primary component (specifies possible compsets, pelayouts and pio settings): $pes_setby ");
 	$logger->info("Compset: $compset_longname ");
-    }   
+    }
 
     return ($pes_setby, $support_level);
 }
@@ -162,11 +164,11 @@ sub getGridLongname
     }elsif (@nodes_alias) {
 	foreach my $node (@nodes_alias){
 	    if($node->hasAttributes()){
-		my $attr = $node->getAttribute('compset');		
+		my $attr = $node->getAttribute('compset');
 		if($compset_longname =~ m/$attr/){
 		    $grid_node = $node;
 		}
-	    }elsif(! defined $grid_node){    
+	    }elsif(! defined $grid_node){
 #           This is the default value, it is overwritten by any compset match value
 		$grid_node = $node;
 	    }
@@ -174,19 +176,19 @@ sub getGridLongname
     } elsif (@nodes_sname) {
 	foreach my $node (@nodes_sname){
 	    if($node->hasAttributes()){
-		my $attr = $node->getAttribute('compset');		
+		my $attr = $node->getAttribute('compset');
 		if($compset_longname =~ m/$attr/){
 		    $grid_node = $node;
 		}
-	    }elsif(! defined $grid_node){    
+	    }elsif(! defined $grid_node){
 #           This is the default value, it is overwritten by any compset match value
 		$grid_node = $node;
 	    }
 	}
-    } else { 
+    } else {
 	die " ERROR: no supported grid match for target grid $grid_input ";
     }
-    
+
     # set the compset grid alias and longname
     foreach my $node ($grid_node->findnodes(".//*")) {
 	my $name = $node->nodeName();
@@ -194,7 +196,7 @@ sub getGridLongname
 	if ($name eq 'lname') {$grid_longname   = $node->textContent();}
 	if ($name eq 'sname') {$grid_shortname  = $node->textContent();}
 	if ($name eq 'alias') {$grid_aliasname  = $node->textContent();}
-    }	
+    }
 
     # determine compgrid hash (global variable)
     # Assume the following order for specifying a grid name
@@ -203,15 +205,15 @@ sub getGridLongname
     $grid_longname =~ /(a%)(.+)(_l%)/ ; $compgrid{'atm'}  = $2;
     $grid_longname =~ /(l%)(.+)(_oi%)/; $compgrid{'lnd'}  = $2;
     $grid_longname =~ /(oi%)(.+)(_r%)/; $compgrid{'ocn'}  = $2; $compgrid{'ice'} = $2;
-    $grid_longname =~ /(r%)(.+)(_m%)/ ; $compgrid{'rof'}  = $2; 
-    $grid_longname =~ /(g%)(.+)(_w%)/ ; $compgrid{'glc'}  = $2; 
-    $grid_longname =~ /(w%)(.+)$/     ; $compgrid{'wav'}  = $2; 
-    $grid_longname =~ /(m%)(.+)(_g%)/ ; $compgrid{'mask'} = $2; 
+    $grid_longname =~ /(r%)(.+)(_m%)/ ; $compgrid{'rof'}  = $2;
+    $grid_longname =~ /(g%)(.+)(_w%)/ ; $compgrid{'glc'}  = $2;
+    $grid_longname =~ /(w%)(.+)$/     ; $compgrid{'wav'}  = $2;
+    $grid_longname =~ /(m%)(.+)(_g%)/ ; $compgrid{'mask'} = $2;
 
     my @nodes = $xml->findnodes(".//grid[lname=\"$grid_longname\"]");
     if ($#nodes < 0) {
 	die "ERROR ConfigCompsetGrid::checkGrid : no match found for $grid_longname \n";
-    } 
+    }
     my $attr = $nodes[0]->getAttribute('compset');
 
     if (defined $attr) {
@@ -221,7 +223,7 @@ sub getGridLongname
 	}
     }
     $logger->info("grid longname is : $grid_longname");
-    
+
     return ($grid_longname);
 }
 
@@ -229,37 +231,37 @@ sub getGridLongname
 sub setGridDomain
 {
     my ($grids_file, $config) = @_;
-    
+
     my $parser = XML::LibXML->new( no_blanks => 1);
     my $xml = $parser->parse_file($grids_file);
-  
+
     # set the component grid names
     foreach my $key (keys %compgrid) {
 	my $comp = uc $key;
 	my $grid = $compgrid{$key};
 	my $mask = $compgrid{'mask'};
-	
+
 	if ($config->is_valid_name("${comp}_GRID")) {
 	    my @nodes = $xml->findnodes(".//domain[\@name=\"$grid\"]");
 	    if (@nodes) {$config->set("${comp}_GRID", $nodes[0]->getAttribute('name'));}
-	}	
-	
+	}
+
 	if ($config->is_valid_name("${comp}_NX")) {
 	    my @nodes = $xml->findnodes(".//domain[\@name=\"$grid\"]/nx");
 	    if (@nodes) {$config->set("${comp}_NX", $nodes[0]->textContent());}
 	}
-	
+
 	if ($config->is_valid_name("${comp}_NY")) {
 	    my @nodes = $xml->findnodes(".//domain[\@name=\"$grid\"]/ny");
 	    if (@nodes) { $config->set("${comp}_NY", $nodes[0]->textContent());}
 	}
-	
-	# Note domain files are only specified for ATM, LND, ICE and OCN components 
+
+	# Note domain files are only specified for ATM, LND, ICE and OCN components
 	if ($comp eq 'ATM' || $comp eq 'LND' || $comp eq 'ICE' || $comp eq 'OCN') {
 	    my @nodes;
 	    my $var = "$comp" . "_DOMAIN_FILE";
 	    if ($config->is_valid_name($var)) {
-		if ($comp eq 'ATM' || $comp eq 'LND') {	    
+		if ($comp eq 'ATM' || $comp eq 'LND') {
 		    @nodes = $xml->findnodes(".//domain[\@name=\"$grid\"]/file[\@lnd_mask=\"$mask\"]");
 		} else {
 		    @nodes = $xml->findnodes(".//domain[\@name=\"$grid\"]/file[\@ocn_mask=\"$mask\"]");
@@ -268,7 +270,7 @@ sub setGridDomain
 	    }
 	    my $var = "$comp" . "_DOMAIN_PATH";
 	    if ($config->is_valid_name($var)) {
-		if ($comp eq 'ATM' || $comp eq 'LND') {	    
+		if ($comp eq 'ATM' || $comp eq 'LND') {
 		    @nodes = $xml->findnodes(".//domain[\@name=\"$grid\"]/path[\@lnd_mask=\"$mask\"]");
 		} else {
 		    @nodes = $xml->findnodes(".//domain[\@name=\"$grid\"]/path[\@ocn_mask=\"$mask\"]");
@@ -276,10 +278,10 @@ sub setGridDomain
 		if (@nodes) {$config->set($var,$nodes[0]->textContent());}
 	    }
 	}
-	
+
     }
 
-# TODO - does this still need to be here ???    
+# TODO - does this still need to be here ???
 #    if ($compgrid{'cism'} ne 'null') {
 #	$config->set('CISM_GRID',$compgrid{'cism'});
 #    }
@@ -290,7 +292,7 @@ sub setGridMaps
 {
     # set grid mapping variables
     my ($grids_file, $config) = @_;
-    
+
     my $parser = XML::LibXML->new( no_blanks => 1);
     my $xml = $parser->parse_file($grids_file);
 
@@ -392,7 +394,7 @@ sub setCompsetGeneralVars
 
     my $compset_longname = $config->get('COMPSET');
     my $grid_longname    = $config->get('GRID');
-    my $compsets_file    = $config->get('COMPSETS_SPEC_FILE');	
+    my $compsets_file    = $config->get('COMPSETS_SPEC_FILE');
 
     my $parser = XML::LibXML->new( no_blanks => 1);
     my $xml_compset = $parser->parse_file($compsets_file);
@@ -418,24 +420,24 @@ sub setCompsetGeneralVars
 	  VALUE: foreach my $child ($node->findnodes("./values/value")) {
 	      my $compset_match = $child->getAttribute('compset');
 	      my $grid_match    = $child->getAttribute('grid');
-	      
+
 	      if (! defined $compset_match) {
 		  $compset_match = $compset_longname;
 	      }
 	      if (! defined $grid_match) {
 		  $grid_match    = $grid_longname;
 	      }
-	      
-	      if ($compset_longname =~ m/$compset_match/ && $grid_longname =~ m/$grid_match/) {	    
+
+	      if ($compset_longname =~ m/$compset_match/ && $grid_longname =~ m/$grid_match/) {
 		  my $new_val =  $child->textContent();
-		  $newxml{$id} = $new_val; 
+		  $newxml{$id} = $new_val;
 		  $config->set($id, $new_val);
 		  last VALUE;
 	      }
 	  }
 	} else {
 	    my $cimeroot = $config->get('CIMEROOT');
-	    $logger->logdie( "ERROR : $id is not a valid name in $compsets_file 
+	    $logger->logdie( "ERROR : $id is not a valid name in $compsets_file
 	    *** See possible values in file $cimeroot/driver_cpl/cimeconfig/config_cime.xml ***");
 	}
     }
@@ -445,15 +447,15 @@ sub setCompsetGeneralVars
 sub setComponent {
 
     # set variable value for compset component
-    # first determine if there is a additive or merge values for the variable value 
+    # first determine if there is a additive or merge values for the variable value
     # for additive attributes on variables, new values are added to the end
-    # of the string UNLESS there is already a match.  As an example:						
+    # of the string UNLESS there is already a match.  As an example:
     # If initially CAM_CONFIG_OPTS is "-phys cam4 -chem none" and a new value
-    # of CAM_CONFIG_OPTS is matched that has CAM_CONFIG_OPTS set to "-phys cam5"			
+    # of CAM_CONFIG_OPTS is matched that has CAM_CONFIG_OPTS set to "-phys cam5"
     # then the final CAM_CONFIG_OPTS  is "-phys cam5 -chem none"
     # All other xml variables take on the value of the last match. As an example
     # Assume there are two matches for xml variable RUN_STARTDATE, date1 and date2,
-    # with date1 appearing first. The final value of RUN_STARTDATE will be date2.			
+    # with date1 appearing first. The final value of RUN_STARTDATE will be date2.
 
     my ($setup_comp_file, $config) = @_;
 
@@ -473,22 +475,22 @@ sub setComponent {
 	}
     }
     if (! defined $found_match) {
-	$logger->fatal( "ERROR ConfigCompsetGrid::setComponent: no match found in desc elements in file 
-	         $setup_comp_file 
-	      for $compset_longname  
+	$logger->fatal( "ERROR ConfigCompsetGrid::setComponent: no match found in desc elements in file
+	         $setup_comp_file
+	      for $compset_longname
 	        Possible matches are: ");
 	foreach my $node ($xml->findnodes(".//description/desc")) {
 	    my $match = $node->getAttribute('compset');
 	    my $desc  = $node->textContent();
 	    $logger->fatal("     $match: $desc ");
 	}
-	$logger->logdie ("Exiting"); 
+	$logger->logdie ("Exiting");
     }
 
     # Now set the actual values of the variable
     my $new_val;
     my @variable_nodes = $xml->findnodes('.//entry');
-    foreach my $variable_node (@variable_nodes) 
+    foreach my $variable_node (@variable_nodes)
     {
 	my $name     = $variable_node->getAttribute('id');
 	my @additive = $variable_node->findnodes("./values[\@additive=\"yes\"]");
@@ -501,7 +503,7 @@ sub setComponent {
 	    } else {
 		my $compset_match = $value_node->getAttribute('compset');
 		my $grid_match    = $value_node->getAttribute('grid');
-		my $match = 'no'; 
+		my $match = 'no';
 		if ($compset_match && $grid_match) {
 		    if  (($compset_longname =~ /$compset_match/) && ($grid_longname =~ /$grid_match/)) {
 			$match = 'yes';
@@ -532,7 +534,7 @@ sub setComponent {
 		    } else {
 			$new_val = $input_val;
 		    }
-		    $newxml{$name} = $new_val; 
+		    $newxml{$name} = $new_val;
 		    $config->set($name, $new_val);
 
 		}
@@ -542,7 +544,7 @@ sub setComponent {
 
     # set variable description
     my @desc_nodes = $xml->findnodes('.//description/desc');
-    foreach my $desc_node (@desc_nodes) 
+    foreach my $desc_node (@desc_nodes)
     {
 	my $compset_match = $desc_node->getAttribute('compset');
 	if  ($compset_longname =~ /$compset_match/) {
@@ -559,16 +561,16 @@ sub setComponent {
 	}
     }
 
-   
+
     # Special case for CLMUSRDAT in compset name
     if ($compset_longname =~ /(.+CLMUSRDAT%)(.*)/){
      	$config->set('CLM_USRDAT_NAME',$2);
      	$newxml{"CLM_USR_DATNAME"} = $2;
-    } 
+    }
 }
 
 #-------------------------------------------------------------------------------
-sub printGridCompsetInfo 
+sub printGridCompsetInfo
 {
     my ($grids_file,  $config) = @_;
 
@@ -579,38 +581,38 @@ sub printGridCompsetInfo
     my @grids;
     my $desc_grid = "";
 
-    my $atm_nx   = $config->get('ATM_NX'); 
-    my $atm_ny   = $config->get('ATM_NY'); 
+    my $atm_nx   = $config->get('ATM_NX');
+    my $atm_ny   = $config->get('ATM_NY');
     my $atm_grid = $config->get('ATM_GRID');
     push (@grids, $atm_grid);
 
-    my $lnd_nx   = $config->get('LND_NX'); 
-    my $lnd_ny   = $config->get('LND_NY'); 
+    my $lnd_nx   = $config->get('LND_NX');
+    my $lnd_ny   = $config->get('LND_NY');
     my $lnd_grid = $config->get('LND_GRID');
     push (@grids, $lnd_grid);
 
-    my $ice_nx   = $config->get('ICE_NX'); 
-    my $ice_ny   = $config->get('ICE_NY'); 
+    my $ice_nx   = $config->get('ICE_NX');
+    my $ice_ny   = $config->get('ICE_NY');
     my $ice_grid = $config->get('ICE_GRID');
     push (@grids, $ice_grid);
 
-    my $ocn_nx   = $config->get('OCN_NX'); 
-    my $ocn_ny   = $config->get('OCN_NY'); 
+    my $ocn_nx   = $config->get('OCN_NX');
+    my $ocn_ny   = $config->get('OCN_NY');
     my $ocn_grid = $config->get('OCN_GRID');
     push (@grids, $ocn_grid);
 
-    my $rof_nx   = $config->get('ROF_NX'); 
-    my $rof_ny   = $config->get('ROF_NY'); 
+    my $rof_nx   = $config->get('ROF_NX');
+    my $rof_ny   = $config->get('ROF_NY');
     my $rof_grid = $config->get('ROF_GRID');
     push (@grids, $rof_grid);
 
-    my $glc_nx   = $config->get('GLC_NX'); 
-    my $glc_ny   = $config->get('GLC_NY'); 
+    my $glc_nx   = $config->get('GLC_NX');
+    my $glc_ny   = $config->get('GLC_NY');
     my $glc_grid = $config->get('GLC_GRID');
     push (@grids, $glc_grid);
 
-    my $wav_nx    = $config->get('WAV_NX'); 
-    my $wav_ny    = $config->get('WAV_NY'); 
+    my $wav_nx    = $config->get('WAV_NX');
+    my $wav_ny    = $config->get('WAV_NY');
     my $wav_grid  = $config->get('WAV_GRID');
     push (@grids, $wav_grid);
 
@@ -620,7 +622,7 @@ sub printGridCompsetInfo
     my $parser = XML::LibXML->new( no_blanks => 1);
     my $xml_domain = $parser->parse_file($grids_file);
 
-    my $support; 
+    my $support;
     foreach my $grid (@grids)
     {
 	my @nodes = $xml_domain->findnodes(".//domain[\@name=\"grid\"]/support");
@@ -669,26 +671,26 @@ sub printGridCompsetInfo
     foreach my $id (sort @ids) {
 	my $value = $newxml{$id};
 	$outstr .=     "  $id: $value \n";
-    } 
+    }
     print $fh_case $outstr;
     $logger->info($outstr);
     $fh_case->close();
-}	
+}
 
 
 #-----------------------------------------------------------------------------------------------
 #                               Private routines
 #-----------------------------------------------------------------------------------------------
-sub _setComponentAdditiveNewVal 
+sub _setComponentAdditiveNewVal
 {
     # input arguments
     my ($current_val, $input_val) = @_;
 
     my $new_val;
     # if $current_val is not empty
-    if ($current_val !~ m/^\s*$/)  { 
+    if ($current_val !~ m/^\s*$/)  {
 	$new_val = $current_val;
-	
+
 	# Split into separate options, separated by '-'.
 	# The regex is used to ensure '-' is only noticed if it is
 	# either the first character or follows a space.
@@ -706,7 +708,7 @@ sub _setComponentAdditiveNewVal
 	    my ($optname) = $nameopt =~ m/^(\w+)\s/;
 	    my $name_found = 0;
 	    if (defined $optname) {
-	    
+
 		# Check current options for values to replace.
 		foreach my $curopt (@curopts) {
 		    if ($curopt =~ m/^$optname\s/) {
@@ -729,29 +731,29 @@ sub _setComponentAdditiveNewVal
 	$new_val = $input_val;
     }
     return $new_val
-}	
+}
 
 #-------------------------------------------------------------------------------
-sub _setComponentMergeNewVal 
+sub _setComponentMergeNewVal
 {
     # input arguments
     my ($current_val, $input_val) = @_;
-    
+
     my $new_val;
     if ($input_val =~ /$current_val/) {
 	$new_val = $input_val;
     } else {
-	$new_val = "$current_val" . " $input_val"; 
+	$new_val = "$current_val" . " $input_val";
     }
     return $new_val;
-}	
+}
 
 #-------------------------------------------------------------------------------
 sub _clean
 {
     my ($name) = @_;
-    
-    $name =~ s/^\s+//; # strip any leading whitespace 
+
+    $name =~ s/^\s+//; # strip any leading whitespace
     $name =~ s/\s+$//; # strip any trailing whitespace
     return ($name);
 }
