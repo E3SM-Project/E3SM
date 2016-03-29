@@ -679,6 +679,9 @@ add_default($nl, 'pio_buffer_size_limit');
 # If pio_async_interface is .true. or {component}_PIO_* variable is not set or set to -99
 # the component variable will be set using the pio_* value.
 
+
+# Validate that the namelist is correct
+$definition->validate($nl);
 #-----------------------------------------------------------------------------------------------
 # (1) Write output namelist file (drv_in) and input dataset list (drv.input_data_list) 
 #-----------------------------------------------------------------------------------------------
@@ -912,6 +915,9 @@ foreach my $model (qw(cpl atm lnd ice ocn glc rof wav)) {
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'GLC_PIO_TYPENAME'}");
 	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'GLC_PIO_REARRANGER'}");
 	}
+        # Validate that the namelist is correct
+        $definition->validate($nlio);
+
 	$nlio->write($modeliofile, 'groups'=>\@iogroup);
 	if ($print>=2) { print "Writing io namelist to $modeliofile $eol"; }	
 	$inst_index = $inst_index + 1;
