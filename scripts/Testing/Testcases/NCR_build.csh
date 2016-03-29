@@ -14,7 +14,7 @@ else
   cp -f env_mach_pes.xml env_mach_pes.xml.1
 endif
 
-./case.setup -clean -testmode
+./case.setup --clean --test-mode
 ./case.setup 
 
 cp -f env_mach_pes.xml env_mach_pes.xml.1
@@ -82,7 +82,7 @@ set NTASKS_CPL  = `./xmlquery NTASKS_CPL  --value`
 
 ./xmlchange --file env_build.xml --id NINST_BUILD --val 0
 
-./case.setup -clean -testmode
+./case.setup --clean --test-mode
 ./case.setup
 
 ./case.clean_build 
@@ -151,7 +151,7 @@ set NTASKS_CPL  = `./xmlquery NTASKS_CPL	--value`
 ./xmlchange --file env_mach_pes.xml --id ROOTPE_GLC  --val $rootp
 ./xmlchange --file env_build.xml    --id NINST_BUILD --val 0
 
-./case.setup -clean -testmode
+./case.setup --clean --test-mode
 ./case.setup
 
 ./case.cleanbuild

@@ -18,7 +18,7 @@ endif
 # settings are in the run script
 # note that the following two commands will eliminate all the batch files except
 # for the test file and copy the env_mach_pes.xml to the LockedFiles directory
-./case.setup -clean -testmode
+./case.setup --clean --test-mode
 ./case.setup
 
 set STOP_N      = `./xmlquery STOP_N      --value`

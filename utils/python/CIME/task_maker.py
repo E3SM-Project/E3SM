@@ -209,8 +209,8 @@ EXEROOT COMPILER
 #   Maximum threads per task: %d
 """ % (self.total_tasks, self.max_threads)
 
-        for comp, ntasks, nthrds, rootpe, ninst in zip(self.COMP, self.NTASKS, self.NTHRDS, self.ROOTPE, self.NINST):
-            doc += "#    %s ntasks=%d nthreads=%d rootpe=%d ninst=%d\n" % (comp, ntasks, nthrds, rootpe, ninst)
+        for comp, ntasks, nthrds, rootpe, ninst, pstrid in zip(self.COMP, self.NTASKS, self.NTHRDS, self.ROOTPE, self.NINST, self.PSTRID):
+            doc += "#    %s ntasks=%d nthreads=%d rootpe=%d ninst=%d pstrid=%d\n" % (comp, ntasks, nthrds, rootpe, ninst, pstrid)
 
         doc += "#\n"
         doc +=  "#    total number of hw pes = %d\n" % self.full_sum

@@ -38,7 +38,7 @@ def check_lockedfiles(caseroot=os.getcwd()):
                     print("  found difference in %s : case %s locked %s" %
                           (key, repr(diffs[key][0]), repr(diffs[key][1])))
                 if objname == "env_mach_pes":
-                    expect(False, "Invoke case.setup -clean followed by case.setup")
+                    expect(False, "Invoke case.setup --clean followed by case.setup")
                 elif objname == "env_case":
                     expect(False, "Cannot change file env_case.xml, please"
                            " recover the original copy from LockedFiles")

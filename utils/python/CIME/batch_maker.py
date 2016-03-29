@@ -198,7 +198,7 @@ within model's Machines directory, and add a batch system type for this machine
 
         mpi_arg_string = " ".join(args.values())
 
-        self.mpirun = "%s %s %s" % (executable, mpi_arg_string, default_run_suffix)
+        self.mpirun = "qx(%s %s %s);" % (executable, mpi_arg_string, default_run_suffix)
 
     def _set_batch_directives(self):
         """
@@ -223,9 +223,10 @@ within model's Machines directory, and add a batch system type for this machine
 
             repl = self.case.get_value(variable.upper())
             if repl is not None:
-                text = text.replace(whole_match, repl)
+                text = text.replace(whole_match, "" if repl is None else repl)
             elif hasattr(self, variable.lower()):
-                text = text.replace(whole_match, str(getattr(self, variable.lower())))
+                repl = getattr(self, variable.lower())
+                text = text.replace(whole_match, str("" if repl is None else repl))
             elif variable in defaults:
                 text = text.replace(whole_match, defaults[variable])
             else:

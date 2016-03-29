@@ -29,7 +29,7 @@ class PEA(SystemTestsCommon):
             logging.warn("Starting bld for %s"%mpilib)
             self._case.set_value("MPILIB",mpilib)
             self._case.flush()
-            run_cmd("./case.setup -clean ")
+            run_cmd("./case.setup --clean ")
             run_cmd("./case.setup")
             run_cmd('./case.clean_build')
             SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)

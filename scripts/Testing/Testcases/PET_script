@@ -20,7 +20,7 @@ endif
 # settings are in the run script
 # note that the following two commands will eliminate all the batch files except
 # for the test file and copy the env_mach_pes.xml to the LockedFiles directory
-./case.setup -clean -testmode
+./case.setup --clean --test-mode
 ./case.setup
 
 # Set env_run.xml values for run

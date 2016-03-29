@@ -299,7 +299,7 @@ def case_setup(caseroot, clean, test_mode):
         logger.info("Some files have been saved to %s" % backup_dir)
 
         with open("CaseStatus", "a") as fd:
-            fd.write("case.setup -clean %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
+            fd.write("case.setup --clean %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
 
 ###############################################################################
 def _main_func(description):
