@@ -283,12 +283,9 @@ def case_setup(caseroot, clean, test_mode):
             os.makedirs(backup_dir)
 
         # back up relevant files
-        for fileglob in ["case.run", "env_build.xml", "env_mach_pes.xml", "Macros*"]:
+        for fileglob in ["env_build.xml", "env_mach_pes.xml", "Macros*"]:
             for filename in glob.glob(fileglob):
                 shutil.copy(filename, backup_dir)
-
-        # remove relevant files from $caseroot
-        os.remove("case.run")
 
         # only do the following if are NOT in testmode
         if not test_mode:
