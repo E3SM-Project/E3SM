@@ -926,6 +926,7 @@ contains
     use clm_varctl                , only : iulog
     use shr_log_mod               , only : errMsg => shr_log_errMsg
     use clm_varctl                , only : lateral_connectivity
+    use clm_varctl                , only : vsfm_lateral_model_type
 #ifdef USE_PETSC_LIB
     use MultiPhysicsProbVSFM      , only : vsfm_mpp
     use MultiPhysicsProbConstants , only : VAR_BC_SS_CONDITION
@@ -935,6 +936,8 @@ contains
     use MultiPhysicsProbConstants , only : VAR_FRAC_LIQ_SAT
     use MultiPhysicsProbConstants , only : VAR_MASS
     use MultiPhysicsProbConstants , only : VAR_SOIL_MATRIX_POT
+    use MultiPhysicsProbConstants , only : VAR_LATERAL_MASS_EXCHANGED
+    use MultiPhysicsProbConstants , only : VAR_BC_MASS_EXCHANGED
     use MultiPhysicsProbConstants , only : AUXVAR_INTERNAL
     use MultiPhysicsProbConstants , only : AUXVAR_BC
     use MultiPhysicsProbConstants , only : AUXVAR_SS
@@ -973,6 +976,8 @@ contains
     real(r8)             :: total_mass_flux_snowlyr_col (bounds%begc:bounds%endc)            ! Flux due to disappearance of snow for VSFM solver at column level
     real(r8)             :: total_mass_flux_sub_col     (bounds%begc:bounds%endc)            ! Sublimation sink for VSFM solver at column level
     real(r8)             :: total_mass_flux_lateral_col (bounds%begc:bounds%endc)            ! Lateral flux computed by VSFM solver at column level
+    real(r8)             :: total_mass_flux_seepage_col (bounds%begc:bounds%endc)            ! Seepage flux computed by VSFM solver at column level
+    real(r8)             :: qflx_seepage                (bounds%begc:bounds%endc)            ! Seepage flux computed by VSFM solver at column level
     real(r8)             :: vsfm_mass_prev_col          (bounds%begc:bounds%endc,1:nlevgrnd) ! Mass of water before a VSFM solve
     real(r8)             :: vsfm_dmass_col              (bounds%begc:bounds%endc)            ! Change in mass of water after a VSFM solve
     real(r8)             :: mass_beg_col                (bounds%begc:bounds%endc)            ! Total mass before a VSFM solve
@@ -1021,6 +1026,8 @@ contains
     PetscReal, pointer   :: vsfm_soilp_col_ghosted_1d(:)
     PetscReal, pointer   :: vsfm_fliq_col_ghosted_1d(:)
     PetscReal, pointer   :: mflx_lateral_col_1d(:)
+    PetscReal, pointer   :: lat_mass_exc_col_1d(:)
+    PetscReal, pointer   :: seepage_mass_exc_col_1d(:)
 #endif
     !-----------------------------------------------------------------------
 
@@ -1061,6 +1068,7 @@ contains
          qflx_drain                =>    waterflux_vars%qflx_drain_col              , & ! Input:  [real(r8) (:)   ]  sub-surface runoff (mm H2O /s)
          qflx_drain_perched        =>    waterflux_vars%qflx_drain_perched_col      , & ! Input:  [real(r8) (:)   ]  perched wt sub-surface runoff (mm H2O /s)
          qflx_lateral              =>    waterflux_vars%qflx_lateral_col            , & ! Input:  [real(r8) (:)   ]  lateral flux of water to neighboring column (mm H2O /s)
+         qflx_surf                 =>    waterflux_vars%qflx_surf_col               , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)
          mflx_infl_col_1d          =>    waterflux_vars%mflx_infl_col_1d            , & ! Input:  [real(r8) (:)   ]  infiltration source in top soil control volume (kg H2O /s)
          mflx_dew_col_1d           =>    waterflux_vars%mflx_dew_col_1d             , & ! Input:  [real(r8) (:)   ]  (liquid+snow) dew source in top soil control volume (kg H2O /s)
          mflx_et_col_1d            =>    waterflux_vars%mflx_et_col_1d              , & ! Input:  [real(r8) (:)   ]  evapotranspiration sink from all soil coontrol volumes (kg H2O /s) (+ = to atm)
@@ -1342,7 +1350,7 @@ contains
                                              vsfm_fliq_col_1d   &
                                             )
 
-      if (lateral_connectivity) then
+      if (vsfm_lateral_model_type == 'source_sink') then
 
          call get_proc_bounds(bounds_proc)
 
@@ -1389,15 +1397,21 @@ contains
             do j = 1, nlevgrnd
                idx = (c-bounds%begc)*nlevgrnd + j
 
-               total_mass_flux_lateral_col(c) = total_mass_flux_lateral_col(c) + mflx_lateral_col_1d(idx)
-               qflx_lateral(c)                = qflx_lateral(c)                - mflx_lateral_col_1d(idx)/flux_unit_conversion
+               total_mass_flux_lateral_col(c) =      &
+                    total_mass_flux_lateral_col(c) + &
+                    mflx_lateral_col_1d(idx)
+
+               qflx_lateral(c) = qflx_lateral(c) - &
+                    mflx_lateral_col_1d(idx)/flux_unit_conversion
             enddo
-            total_mass_flux_lateral        = total_mass_flux_lateral + total_mass_flux_lateral_col(c)
+
+            total_mass_flux_lateral = total_mass_flux_lateral + &
+                 total_mass_flux_lateral_col(c)
          enddo
 
-         deallocate(vsfm_soilp_col_ghosted_1d)
-         deallocate(vsfm_fliq_col_ghosted_1d)
-         deallocate(mflx_lateral_col_1d)
+         deallocate(vsfm_soilp_col_ghosted_1d )
+         deallocate(vsfm_fliq_col_ghosted_1d  )
+         deallocate(mflx_lateral_col_1d       )
 
       endif
 
@@ -1550,6 +1564,122 @@ contains
                                                   vsfm_soilp_col_1d   &
                                                  )
 
+            qflx_seepage(:) = 0._r8
+
+            if (vsfm_lateral_model_type == 'source_sink') then
+
+               ! Get following fluxes from VSFM:
+               ! (i) seepage mass exchanged.
+
+               call get_proc_bounds(bounds_proc)
+
+               allocate(seepage_mass_exc_col_1d( (bounds_proc%endc - bounds_proc%begc+1)         ))
+               seepage_mass_exc_col_1d = 0.d0
+
+               soe_auxvar_id = 1;
+               call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_BC              ,  &
+                                                     VAR_BC_MASS_EXCHANGED  ,  &
+                                                     soe_auxvar_id          ,  &
+                                                     seepage_mass_exc_col_1d   &
+                                                     )
+
+               do fc = 1, num_hydrologyc
+                  c = filter_hydrologyc(fc)
+
+                  g    = col%gridCell(c)
+                  area = ldomain_lateral%ugrid%areaGrid_ghosted(g)
+
+                  ! [mm/s] --> [kg/s]   [m^2] [kg/m^3]  [m/mm]
+                  flux_unit_conversion     = area * denh2o * 1.0d-3
+
+                  idx = (c-bounds%begc) + 1
+
+                  qflx_seepage(c)                = seepage_mass_exc_col_1d(idx)/flux_unit_conversion/dtime
+                  total_mass_flux_seepage_col(c) = -seepage_mass_exc_col_1d(idx)/dtime
+
+                  total_mass_flux_col(c) = total_mass_flux_et_col(c)      + &
+                                           total_mass_flux_infl_col(c)    + &
+                                           total_mass_flux_dew_col(c)     + &
+                                           total_mass_flux_drain_col(c)   + &
+                                           total_mass_flux_snowlyr_col(c) + &
+                                           total_mass_flux_sub_col(c)     + &
+                                           total_mass_flux_lateral_col(c) + &
+                                           total_mass_flux_seepage_col(c)
+               enddo
+
+            else if (vsfm_lateral_model_type == 'three_dimensional') then
+
+               ! Get following fluxes from VSFM:
+               ! (i) lateral mass exchanged, and
+               ! (ii) seepage mass exchanged.
+
+               call get_proc_bounds(bounds_proc)
+
+               allocate(lat_mass_exc_col_1d(     (bounds_proc%endc - bounds_proc%begc+1)*nlevgrnd))
+               allocate(seepage_mass_exc_col_1d( (bounds_proc%endc - bounds_proc%begc+1)         ))
+
+               lat_mass_exc_col_1d(:) = 0.d0
+               seepage_mass_exc_col_1d(:) = 0.d0
+
+               soe_auxvar_id = 1
+               call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL            , &
+                                                     VAR_LATERAL_MASS_EXCHANGED , &
+                                                     soe_auxvar_id              , &
+                                                     lat_mass_exc_col_1d          &
+                                                     )
+
+               soe_auxvar_id = 1;
+               call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_BC              ,  &
+                                                     VAR_BC_MASS_EXCHANGED  ,  &
+                                                     soe_auxvar_id          ,  &
+                                                     seepage_mass_exc_col_1d   &
+                                                     )
+
+               total_mass_flux_lateral_col(:)   = 0.d0
+               total_mass_flux_lateral          = 0.d0
+
+               do fc = 1, num_hydrologyc
+                  c = filter_hydrologyc(fc)
+
+                  g    = col%gridCell(c)
+                  area = ldomain_lateral%ugrid%areaGrid_ghosted(g)
+
+                  ! [mm/s] --> [kg/s]   [m^2] [kg/m^3]  [m/mm]
+                  flux_unit_conversion     = area * denh2o * 1.0d-3
+
+                  qflx_lateral(c) = 0._r8
+                  do j = 1, nlevgrnd
+                     idx = (c-bounds%begc)*nlevgrnd + j
+
+                     total_mass_flux_lateral_col(c) = &
+                          total_mass_flux_lateral_col(c) + &
+                          lat_mass_exc_col_1d(idx)/dtime
+
+                     qflx_lateral(c)  = qflx_lateral(c) - &
+                          lat_mass_exc_col_1d(idx)/flux_unit_conversion/dtime
+
+                  enddo
+
+                  idx = (c-bounds%begc) + 1
+                  qflx_seepage(c)                = seepage_mass_exc_col_1d(idx)/flux_unit_conversion/dtime
+                  total_mass_flux_seepage_col(c) = -seepage_mass_exc_col_1d(idx)/dtime
+
+                  total_mass_flux_col(c) = total_mass_flux_et_col(c)      + &
+                                           total_mass_flux_infl_col(c)    + &
+                                           total_mass_flux_dew_col(c)     + &
+                                           total_mass_flux_drain_col(c)   + &
+                                           total_mass_flux_snowlyr_col(c) + &
+                                           total_mass_flux_sub_col(c)     + &
+                                           total_mass_flux_lateral_col(c) + &
+                                           total_mass_flux_seepage_col(c)
+
+                  total_mass_flux_lateral = total_mass_flux_lateral + &
+                       total_mass_flux_lateral_col(c)
+               enddo
+
+               deallocate(lat_mass_exc_col_1d)
+            endif
+
             ! Put the data in CLM's data structure
             mass_end        = 0.d0
             area            = 1.d0 ! [m^2]
@@ -1591,7 +1721,6 @@ contains
                abs_mass_error_col = max(abs_mass_error_col,                     &
                                         abs(mass_beg_col(c) - mass_end_col(c) + &
                                             total_mass_flux_col(c)*get_step_size()))
-
                qcharge(c) = 0._r8
 
                if (jwt == -1 .or. jwt == nlevgrnd) then
@@ -1646,6 +1775,13 @@ contains
          end if
 
       end do
+
+      ! Add seepage flux from VSFM to surface runoff
+      do fc = 1, num_hydrologyc
+         c = filter_hydrologyc(fc)
+
+         qflx_surf(c) = qflx_surf(c) + qflx_seepage(c)
+      enddo
 
       call SNESSetTolerances(vsfm_mpp%sysofeqns%snes, atol_default, rtol_default, stol_default, &
                              max_it_default, max_f_default, ierr); CHKERRQ(ierr)

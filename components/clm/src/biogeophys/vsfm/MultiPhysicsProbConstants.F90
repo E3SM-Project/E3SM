@@ -14,6 +14,11 @@ module MultiPhysicsProbConstants
 
 #include "finclude/petscsys.h"
 
+  PetscInt, parameter, public :: DISCRETIZATION_VERTICAL_ONLY     = 1
+  PetscInt, parameter, public :: DISCRETIZATION_HORIZONTAL_ONLY   = 2
+  PetscInt, parameter, public :: DISCRETIZATION_THREE_DIM         = 3
+  PetscInt, parameter, public :: DISCRETIZATION_VERTICAL_WITH_SS  = 4
+
   ! mpp_itype
   PetscInt, parameter, public :: MPP_VSFM_SNES_CLM                 = 11
 
@@ -67,6 +72,8 @@ module MultiPhysicsProbConstants
   PetscInt, parameter, public :: VAR_MASS                          = 610
   PetscInt, parameter, public :: VAR_SOIL_MATRIX_POT               = 611
   PetscInt, parameter, public :: VAR_FRAC_LIQ_SAT                  = 612
+  PetscInt, parameter, public :: VAR_LATERAL_MASS_EXCHANGED        = 613
+  PetscInt, parameter, public :: VAR_BC_MASS_EXCHANGED             = 614
 
   !
   PetscInt, parameter, public :: AUXVAR_INTERNAL                   = 701
@@ -76,6 +83,9 @@ module MultiPhysicsProbConstants
   PetscInt, parameter, public :: PETSC_TS                          = 801
   PetscInt, parameter, public :: PETSC_SNES                        = 802
   PetscInt, parameter, public :: PETSC_KSP                         = 803
+
+  PetscInt, parameter, public :: CONN_VERTICAL                     = 901
+  PetscInt, parameter, public :: CONN_HORIZONTAL                   = 902
 
   !
   PetscReal, parameter, public :: PRESSURE_REF                     = 101325.d0     ! [Pa]

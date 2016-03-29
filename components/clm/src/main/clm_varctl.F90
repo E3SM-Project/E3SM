@@ -303,6 +303,7 @@ module clm_varctl
   logical          , public :: use_vsfm                    = .false.
   character(len=32), public :: vsfm_satfunc_type           = 'smooth_brooks_corey_bz3'
   logical          , public :: vsfm_use_dynamic_linesearch = .false.
+  character(len=32), public :: vsfm_lateral_model_type     = 'none'
 
   !----------------------------------------------------------
   ! To retrieve namelist

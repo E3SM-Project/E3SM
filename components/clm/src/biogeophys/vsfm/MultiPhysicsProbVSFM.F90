@@ -80,7 +80,8 @@ contains
   end subroutine VSFMMPPInit
 
   !------------------------------------------------------------------------
-  subroutine VSFMMPPSetup(this, begg, endg, begc, endc, ncols_ghost, filter_hydrologyc, &
+  subroutine VSFMMPPSetup(this, begg, endg, begc, endc, discretization_type, &
+       ncols_ghost, filter_hydrologyc, &
        xc_col, yc_col, zc_col, area_col, grid_owner, &
        soilstate_vars, waterstate_vars, soilhydrology_vars)
     !
@@ -105,6 +106,7 @@ contains
     class(mpp_vsfm_type)                 :: this
     integer, intent(in)                  :: begg,endg
     integer, intent(in)                  :: begc,endc
+    integer, intent(in)                  :: discretization_type
     integer, intent(in)                  :: ncols_ghost          ! number of ghost/halo columns
     integer, intent(in)                  :: filter_hydrologyc(:) ! column filter for soil points
     PetscReal, pointer, intent(in)       :: xc_col(:)
@@ -126,10 +128,12 @@ contains
     this%nmesh = 1
     allocate(this%meshes(this%nmesh))
 
-    this%id           = MPP_VSFM_SNES_CLM
-    this%solver_type  = PETSC_SNES
-    soe_type          = SOE_RE_ODE
-    call this%meshes(1)%Create(MESH_CLM_SOIL_COL, begg, endg, begc, endc, ncols_ghost, &
+    this%id                  = MPP_VSFM_SNES_CLM
+    this%solver_type         = PETSC_SNES
+    soe_type                 = SOE_RE_ODE
+
+    call this%meshes(1)%Create(MESH_CLM_SOIL_COL, begg, endg, begc, endc, &
+                               discretization_type, ncols_ghost, &
                                xc_col, yc_col, zc_col, area_col, grid_owner, &
                                waterstate_vars, soilhydrology_vars)
 

@@ -933,6 +933,7 @@ contains
              call cur_goveq%GetFromSOEAuxVarsIntrn(this%aux_vars_in, 0)
              call cur_goveq%UpdateAuxVarsIntrn()
              call cur_goveq%SetDataInSOEAuxVar(AUXVAR_INTERNAL, this%aux_vars_in)
+             call cur_goveq%SetDataInSOEAuxVar(AUXVAR_BC      , this%aux_vars_bc)
 
           end select
           cur_goveq => cur_goveq%next
@@ -1141,13 +1142,17 @@ contains
        auxvars      => this%aux_vars_ss
        iauxvar_off  = this%soe_auxvars_ss_offset(soe_auxvar_id)
        nauxvar      = this%soe_auxvars_ss_ncells(soe_auxvar_id)
+    case(AUXVAR_BC)
+       auxvars      => this%aux_vars_bc
+       iauxvar_off  = this%soe_auxvars_bc_offset(soe_auxvar_id)
+       nauxvar      = this%soe_auxvars_bc_ncells(soe_auxvar_id)
     case default
-       write(iulog,*) 'VSFMSOEGetDataFromCLM: Unknown soe_auxvar_type'
+       write(iulog,*) 'VSFMSOEGetDataForCLM: Unknown soe_auxvar_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
 
     if (size(data_1d) > nauxvar) then
-       write(iulog,*) 'VSFMSOEGetDataFromCLM: size(data_1d) > nauxvar'
+       write(iulog,*) 'VSFMSOEGetDataForCLM: size(data_1d) > nauxvar'
        write(iulog,*) 'size(data_1d) = ',size(data_1d)
        write(iulog,*) 'nauxvar       = ', nauxvar
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -1202,14 +1207,30 @@ contains
     ! This subroutines copies solution vector at previous CLM time step
     ! before StepDT is called.
     !
+    use GoverningEquationBaseType     , only : goveqn_base_type
+    use GoveqnRichardsODEPressureType , only : goveqn_richards_ode_pressure_type
+    !
     implicit none
     !
     ! !ARGUMENTS
-    class(sysofeqns_vsfm_type)    :: this
-    PetscErrorCode                :: ierr
+    class(sysofeqns_vsfm_type)      :: this
+    !
+    class(goveqn_base_type),pointer :: cur_goveq
+    PetscErrorCode                  :: ierr
+    PetscInt                        :: iauxvar
 
     call VecCopy(this%soln_prev_clm, this%soln_prev, ierr); CHKERRQ(ierr)
     call VecCopy(this%soln_prev_clm, this%soln     , ierr); CHKERRQ(ierr)
+
+    cur_goveq => this%goveqns
+    do
+       if (.not.associated(cur_goveq)) exit
+       select type(cur_goveq)
+          class is (goveqn_richards_ode_pressure_type)
+          call cur_goveq%PreStepDT()
+       end select
+       cur_goveq => cur_goveq%next
+    enddo
 
   end subroutine VSFMSPreStepDT
 

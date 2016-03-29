@@ -898,7 +898,7 @@ contains
     ! CLM initialization - third phase
     !
     ! !USES:
-    use spmdMod                , only : mpicom
+    use spmdMod                , only : mpicom, npes
     use clm_varctl             , only : use_vsfm
     use filterMod              , only : filter
     use decompMod              , only : get_proc_clumps
@@ -912,6 +912,7 @@ contains
     use decompMod              , only : get_proc_total_ghosts
     use shr_infnan_mod         , only : isnan => shr_infnan_isnan
     use domainMod              , only : ldomain
+    use clm_varctl             , only : vsfm_lateral_model_type
 #ifdef USE_PETSC_LIB
     use domainLateralMod       , only : ldomain_lateral, ScatterDataG2L
     use MultiPhysicsProbVSFM     , only : vsfm_mpp
@@ -919,6 +920,9 @@ contains
     use MultiPhysicsProbConstants, only : VAR_SOIL_MATRIX_POT
     use MultiPhysicsProbConstants, only : VAR_PRESSURE
     use MultiPhysicsProbConstants, only : AUXVAR_INTERNAL
+    use MultiPhysicsProbConstants, only : DISCRETIZATION_VERTICAL_ONLY
+    use MultiPhysicsProbConstants, only : DISCRETIZATION_THREE_DIM
+    use MultiPhysicsProbConstants, only : DISCRETIZATION_VERTICAL_WITH_SS
 #endif
     !
     ! !ARGUMENTS
@@ -964,6 +968,7 @@ contains
     PetscInt              :: idx                   ! 1D index for (c,j)
     PetscInt              :: soe_auxvar_id         ! Index of system-of-equation's (SoE's) auxvar
     PetscErrorCode        :: ierr                  ! get error code from PETSc
+    PetscInt              :: discretization_type   !
 #endif
      integer              :: ncells_ghost          ! total number of ghost gridcells on the processor
      integer              :: nlunits_ghost         ! total number of ghost landunits on the processor
@@ -998,6 +1003,15 @@ contains
     if (nclumps /= 1) then
        call endrun(msg='ERROR clm_initializeMod: '//&
            'VSFM model only supported for clumps = 1')
+    endif
+
+    if (npes > 1) then
+       if (vsfm_lateral_model_type /= 'none' .or. &
+           vsfm_lateral_model_type /= 'source_sink') then
+       call endrun(msg='ERROR clm_initializeMod: ' // &
+            'For a parallel run, vsfm_lateral_model_type should be ' // &
+            'none or source_sink' // errMsg(__FILE__, __LINE__))
+       endif
     endif
 
     nc = 1
@@ -1083,11 +1097,27 @@ contains
 
     endif
 
+    if (vsfm_lateral_model_type == 'none') then
+       discretization_type = DISCRETIZATION_VERTICAL_ONLY
+
+    else if (vsfm_lateral_model_type == 'source_sink') then
+       discretization_type = DISCRETIZATION_VERTICAL_WITH_SS
+
+    else if (vsfm_lateral_model_type == 'three_dimensional') then
+       discretization_type = DISCRETIZATION_THREE_DIM
+
+    else
+       call endrun(msg='ERROR clm_initializeMod: ' // &
+            'Unknown vsfm_lateral_model_type = ' // trim(vsfm_lateral_model_type) // &
+            errMsg(__FILE__, __LINE__))
+    endif
+
     ! Allocate memory and setup data structure for VSFM-MPP
     call vsfm_mpp%Setup(bounds_proc%begg,            &
                         bounds_proc%endg,            &
                         bounds_proc%begc,            &
                         bounds_proc%endc,            &
+                        discretization_type,         &
                         ncols_ghost,                 &
                         filter(nc)%hydrologyc,       &
                         xc_col, yc_col, zc_col,      &

@@ -36,7 +36,7 @@ module GoverningEquationBaseType
 
      PetscReal                       :: dtime                                ! time step [sec]
 
-                                                                             ! Track variables supplied by other governing equations.
+     ! Track variables supplied by other governing equations.
      PetscInt                        :: nvars_needed_from_other_goveqns      !
      PetscInt, pointer               :: var_ids_needed_from_other_goveqns(:) !
 

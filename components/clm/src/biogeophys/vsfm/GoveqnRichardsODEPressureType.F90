@@ -30,6 +30,8 @@ module GoveqnRichardsODEPressureType
 
      PetscReal                        , pointer :: internal_flux(:) ! mass flux betwenn internal connections [kg/s]
      PetscReal                        , pointer :: boundary_flux(:) ! mass flux between boundary connections [kg/s]
+     PetscReal                        , pointer :: lat_mass_exc(:)  ! lateral mass exchanged [kg]
+     PetscReal                        , pointer :: bnd_mass_exc(:)  ! mass exchanged through boundary conditions [kg]
 
      type (rich_ode_pres_auxvar_type) , pointer :: aux_vars_in(:)   ! Internal state.
      type (rich_ode_pres_auxvar_type) , pointer :: aux_vars_bc(:)   ! Boundary conditions.
@@ -53,6 +55,7 @@ module GoveqnRichardsODEPressureType
      procedure, public :: UpdateAuxVarsBC           => RichardsODEPressureUpdateAuxVarsBC
      procedure, public :: UpdateAuxVarsSS           => RichardsODEPressureUpdateAuxVarsSS
      procedure, public :: PreSolve                  => RichardsODEPressurePreSolve
+     procedure, public :: PreStepDT                 => RichardsODEPressurePreStepDT
      procedure, public :: NumConditions             => RichardsODEPressureNumConditions
      procedure, public :: NumCellsInConditions      => RichardsODEPressureNumCellsInConditions
      procedure, public :: GetConditionNames         => RichardsODEPressureGetConditionNames
@@ -128,6 +131,9 @@ contains
     allocate(this%internal_flux(sum_conn))
     this%internal_flux(:) = 0.d0
 
+    allocate(this%lat_mass_exc(this%mesh%ncells_all))
+    this%lat_mass_exc = 0.d0
+
     ! Allocate memory and initialize aux vars: For boundary connections
     ncells_cond = 0
     cur_cond => this%boundary_conditions%first
@@ -138,10 +144,12 @@ contains
     enddo
     allocate(this%aux_vars_bc(ncells_cond))
     allocate(this%boundary_flux(ncells_cond))
+    allocate(this%bnd_mass_exc(ncells_cond))
     do icond = 1,ncells_cond
        call this%aux_vars_bc(icond)%Init()
     enddo
     this%boundary_flux(:) = 0.d0
+    this%bnd_mass_exc(:) = 0.d0
 
     ! Allocate memory and initialize aux vars: For source sink connections
     ncells_cond = 0
@@ -786,6 +794,7 @@ contains
     ! This is done as a part of post solve.
     !
     use MultiPhysicsProbConstants    , only : AUXVAR_INTERNAL
+    use MultiPhysicsProbConstants    , only : AUXVAR_BC
     use MultiPhysicsProbConstants    , only : AUXVAR_SS
     use MultiPhysicsProbConstants    , only : VAR_LIQ_SAT
     use MultiPhysicsProbConstants    , only : VAR_MASS
@@ -794,6 +803,7 @@ contains
     use MultiPhysicsProbConstants    , only : PRESSURE_REF
     use MultiPhysicsProbConstants    , only : GRAVITY_CONSTANT
     use MultiPhysicsProbConstants    , only : COND_MASS_RATE
+    use MultiPhysicsProbConstants    , only : CONN_HORIZONTAL
     use SystemOfEquationsVSFMAuxType , only : sysofeqns_vsfm_auxvar_type
     use ConditionType                , only : condition_type
     use ConnectionSetType            , only : connection_set_type
@@ -817,6 +827,8 @@ contains
     PetscReal                                                      :: mass
     PetscReal                                                      :: smp
     PetscReal                                                      :: Pa_to_Meters
+    PetscInt                                                       :: cell_id_up
+    PetscInt                                                       :: cell_id_dn
     character(len=256)                                             :: string
     type(condition_type), pointer                                  :: cur_cond
     type(connection_set_type), pointer                             :: cur_conn_set
@@ -835,6 +847,31 @@ contains
           call endrun(msg=errMsg(__FILE__, __LINE__))
        endif
 
+       ! Interior cells
+       cur_conn_set => this%mesh%intrn_conn_set_list%first
+       sum_conn = 0
+       do
+          if (.not.associated(cur_conn_set)) exit
+
+          do iconn = 1, cur_conn_set%num_connections
+             sum_conn = sum_conn + 1
+
+             cell_id_up = cur_conn_set%id_up(sum_conn)
+             cell_id_dn = cur_conn_set%id_dn(sum_conn)
+
+             if (cur_conn_set%type == CONN_HORIZONTAL) then
+
+                this%lat_mass_exc(cell_id_up) = this%lat_mass_exc(cell_id_up) + &
+                     this%internal_flux(sum_conn)*this%dtime
+
+                this%lat_mass_exc(cell_id_dn) = this%lat_mass_exc(cell_id_dn) - &
+                     this%internal_flux(sum_conn)*this%dtime
+             endif
+
+          enddo
+          cur_conn_set => cur_conn_set%next
+       enddo
+
        do iauxvar = 1, size(this%aux_vars_in)
           if (this%mesh%is_active(iauxvar)) then
              soe_avars(iauxvar+iauxvar_off)%liq_sat =  &
@@ -847,6 +884,8 @@ contains
                   this%mesh%vol(iauxvar)                  ! [m^3]
 
              soe_avars(iauxvar+iauxvar_off)%mass = mass
+             soe_avars(iauxvar+iauxvar_off)%lateral_mass_exchanged = &
+                  this%lat_mass_exc(iauxvar)
 
              Pa_to_Meters = this%aux_vars_in(iauxvar)%den*FMWH2O*GRAVITY_CONSTANT
              smp          = (this%aux_vars_in(iauxvar)%pressure - &
@@ -906,6 +945,29 @@ contains
 
           cur_cond => cur_cond%next
        enddo
+
+    case (AUXVAR_BC)
+
+       ! Boundary condition cells
+       cur_cond => this%boundary_conditions%first
+       sum_conn = 0
+       do
+          if (.not.associated(cur_cond)) exit
+          cur_conn_set => cur_cond%conn_set
+
+          do iconn = 1, cur_conn_set%num_connections
+             sum_conn = sum_conn + 1
+
+             this%bnd_mass_exc(sum_conn) = this%bnd_mass_exc(sum_conn) + &
+                  this%boundary_flux(sum_conn)*this%dtime
+
+             soe_avars(sum_conn)%boundary_mass_exchanged = &
+                  this%bnd_mass_exc(sum_conn)
+
+          enddo
+          cur_cond => cur_cond%next
+       enddo
+
 
     case default
        write(iulog,*) 'RichardsODESetDataInSOEAuxVar: soe_avar_type not supported'
@@ -1881,6 +1943,23 @@ contains
     call VecRestoreArrayF90(this%accum_prev, f_p, ierr); CHKERRQ(ierr)
 
   end subroutine RichardsODEPressurePreSolve
+
+  !------------------------------------------------------------------------
+
+  subroutine RichardsODEPressurePreStepDT(this)
+    !
+    ! !DESCRIPTION:
+    ! Performs pre-step computation
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(goveqn_richards_ode_pressure_type) :: this
+
+    this%lat_mass_exc(:) = 0.d0
+    this%bnd_mass_exc(:) = 0.d0
+
+  end subroutine RichardsODEPressurePreStepDT
 
   !------------------------------------------------------------------------
 

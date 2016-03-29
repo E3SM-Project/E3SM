@@ -12,6 +12,7 @@ module ConnectionSetType
   type, public :: connection_set_type
 
      PetscInt                                     :: id              ! identifier
+     PetscInt                                     :: type            ! horizontal or vertical
 
      PetscInt                                     :: num_connections ! total num. of connections
      PetscInt, pointer                            :: id_up(:)        ! IDs of upwind cells [-]
@@ -65,6 +66,7 @@ contains
     allocate(conn_set)
 
     conn_set%id                = 0
+    conn_set%type              = 0
     conn_set%num_connections   = num_connections
 
     allocate(conn_set%id_up       (num_connections)); conn_set%id_up  (:) = 0

@@ -107,7 +107,8 @@ contains
   end subroutine Init
 
   !------------------------------------------------------------------------
-  subroutine Create(this, mesh_itype, begg, endg, begc, endc, ncols_ghost, &
+  subroutine Create(this, mesh_itype, begg, endg, begc, endc, &
+       discretization_type, ncols_ghost, &
        xc_col, yc_col, zc_col, &
        area_col, grid_owner, &
      waterstate_vars, soilhydrology_vars)
@@ -125,6 +126,7 @@ contains
     integer                  , intent(in) :: mesh_itype
     integer                  , intent(in) :: begg,endg
     integer                  , intent(in) :: begc,endc
+    integer                  , intent(in) :: discretization_type
     integer                  , intent(in) :: ncols_ghost
     PetscReal, pointer       , intent(in) :: xc_col(:)
     PetscReal, pointer       , intent(in) :: yc_col(:)
@@ -136,7 +138,8 @@ contains
 
     select case(mesh_itype)
     case (MESH_CLM_SOIL_COL)
-       call this%CreateFromCLMCols(begg, endg, begc, endc, ncols_ghost, &
+       call this%CreateFromCLMCols(begg, endg, begc, endc, &
+              discretization_type, ncols_ghost, &
               xc_col, yc_col, zc_col, area_col, grid_owner)
     case default
        write(iulog,*)'MeshType: Create() Unknown mesh_type = ',mesh_itype
@@ -146,7 +149,8 @@ contains
   end subroutine Create
 
   !------------------------------------------------------------------------
-  subroutine CreateFromCLMCols(this, begg, endg, begc, endc, ncols_ghost, &
+  subroutine CreateFromCLMCols(this, begg, endg, begc, endc, &
+       discretization_type, ncols_ghost, &
        xc_col, yc_col, zc_col, area_col, grid_owner)
     !
     ! !DESCRIPTION:
@@ -163,6 +167,10 @@ contains
     use ConnectionSetType           , only : ConnectionSetNew
     use MultiPhysicsProbConstants   , only : MESH_ALONG_GRAVITY
     use MultiPhysicsProbConstants   , only : MESH_CLM_SOIL_COL
+    use MultiPhysicsProbConstants   , only : DISCRETIZATION_THREE_DIM
+    use MultiPhysicsProbConstants   , only : DISCRETIZATION_VERTICAL_WITH_SS
+    use MultiPhysicsProbConstants   , only : CONN_VERTICAL
+    use MultiPhysicsProbConstants   , only : CONN_HORIZONTAL
     use ConnectionSetType           , only : connection_set_type
     use ConnectionSetType           , only : ConnectionSetListAddSet
     use domainLateralMod            , only : ldomain_lateral
@@ -173,6 +181,7 @@ contains
     class(mesh_type)                :: this
     integer            , intent(in) :: begg,endg
     integer            , intent(in) :: begc,endc
+    integer            , intent(in) :: discretization_type
     integer            , intent(in) :: ncols_ghost
     PetscReal, pointer , intent(in) :: xc_col(:)
     PetscReal, pointer , intent(in) :: yc_col(:)
@@ -185,6 +194,8 @@ contains
     PetscInt                          :: icell
     PetscInt                          :: iconn
     PetscInt                          :: nconn
+    PetscInt                          :: nconn_vert
+    PetscInt                          :: nconn_horz
     PetscInt                          :: id_up, id_dn
     PetscInt                          :: first_active_hydro_col_id
     PetscInt                          :: col_id
@@ -279,37 +290,11 @@ contains
        enddo
     enddo
 
-    nconn = (this%nlev - 1)*(endc - begc + 1)
-    conn_set => ConnectionSetNew(nconn)
+    nconn_horz = 0
 
-    iconn = 0
-    do c = begc, endc
-       do j = 1, this%nlev-1
-          iconn = iconn + 1
-
-          id_up = (c-begc)*this%nlev + j
-          id_dn = id_up + 1
-
-          conn_set%id_up(iconn) = id_up
-          conn_set%id_dn(iconn) = id_dn
-
-          conn_set%area(iconn) = area_col(c)
-
-          conn_set%dist_up(iconn) = 0.5_r8*this%dz(id_up)
-          conn_set%dist_dn(iconn) = 0.5_r8*this%dz(id_dn)
-
-          conn_set%dist_unitvec(iconn)%arr(1) = 0._r8
-          conn_set%dist_unitvec(iconn)%arr(2) = 0._r8
-          conn_set%dist_unitvec(iconn)%arr(3) = -1._r8
-
-       enddo
-    enddo
-
-    call ConnectionSetListAddSet(this%intrn_conn_set_list, conn_set)
-    nullify(conn_set)
-
-    if (lateral_connectivity) then
-
+    ! Determine number of horizontal connections
+    if (discretization_type == DISCRETIZATION_THREE_DIM        .or. &
+        discretization_type == DISCRETIZATION_VERTICAL_WITH_SS ) then
        !
        ! Sets up lateral connection between columns of type 'istsoil'
        !
@@ -319,7 +304,7 @@ contains
        !   field defined in domain netcdf file have at least ONE
        !   column of 'istsoil' type
 
-       nconn = 0
+       nconn_horz = 0
 
        ltype = istsoil
        ctype = istsoil
@@ -362,7 +347,7 @@ contains
                 enddo
 
                 if (c_idx_up > -1 .and. c_idx_dn > -1) then
-                   nconn = nconn + 1
+                   nconn_horz = nconn_horz + 1
                 else
                    write(iulog,*)'CreateFromCLMCols: No column of ctype = ', ctype, &
                         ' found between following grid cells: ',g_up,g_dn
@@ -372,10 +357,61 @@ contains
           enddo
        enddo
 
-       nconn = nconn * this%nlev
-       conn_set => ConnectionSetNew(nconn)
+       nconn_horz = nconn_horz * this%nlev
 
-       iconn = 0
+    endif
+
+    ! Number of vertical connections
+    nconn_vert = (this%nlev - 1)*(endc - begc + 1)
+
+    ! Total number of connections
+    nconn = nconn_vert + nconn_horz
+
+    conn_set => ConnectionSetNew(nconn)
+
+    ! Set vertical connections
+    iconn = 0
+    do c = begc, endc
+       do j = 1, this%nlev-1
+          iconn = iconn + 1
+
+          id_up = (c-begc)*this%nlev + j
+          id_dn = id_up + 1
+
+          conn_set%type         = CONN_VERTICAL
+          conn_set%id_up(iconn) = id_up
+          conn_set%id_dn(iconn) = id_dn
+
+          conn_set%area(iconn) = area_col(c)
+
+          conn_set%dist_up(iconn) = 0.5_r8*this%dz(id_up)
+          conn_set%dist_dn(iconn) = 0.5_r8*this%dz(id_dn)
+
+          conn_set%dist_unitvec(iconn)%arr(1) = 0._r8
+          conn_set%dist_unitvec(iconn)%arr(2) = 0._r8
+          conn_set%dist_unitvec(iconn)%arr(3) = -1._r8
+
+       enddo
+    enddo
+
+    ! If it is not a 3D problem, then internal connections are done
+    if (discretization_type /= DISCRETIZATION_THREE_DIM) then
+       call ConnectionSetListAddSet(this%intrn_conn_set_list, conn_set)
+       nullify(conn_set)
+    endif
+
+    if (discretization_type == DISCRETIZATION_THREE_DIM        .or. &
+        discretization_type == DISCRETIZATION_VERTICAL_WITH_SS ) then
+
+       if (discretization_type == DISCRETIZATION_VERTICAL_WITH_SS) then
+          ! Set up a new connection set to hold horizontal connections
+          conn_set => ConnectionSetNew(nconn_horz)
+          iconn = 0
+       else
+          ! Contine adding horizontal connections in the internal
+          ! connection list
+       endif
+
        do icell = 1, ldomain_lateral%ugrid%ngrid_local
 
           do iedge = 1, ldomain_lateral%ugrid%maxEdges
@@ -436,6 +472,7 @@ contains
                       id_up = (c_idx_up - begc)*this%nlev + j
                       id_dn = (c_idx_dn - begc)*this%nlev + j
 
+                      conn_set%type         = CONN_HORIZONTAL
                       conn_set%id_up(iconn) = id_up
                       conn_set%id_dn(iconn) = id_dn
 
@@ -461,8 +498,14 @@ contains
           enddo
        enddo
 
-       call ConnectionSetListAddSet(this%lateral_conn_set_list, conn_set)
-       nullify(conn_set)
+       if (discretization_type == DISCRETIZATION_VERTICAL_WITH_SS) then
+          call ConnectionSetListAddSet(this%lateral_conn_set_list, conn_set)
+          nullify(conn_set)
+
+       else if (discretization_type == DISCRETIZATION_THREE_DIM) then
+          call ConnectionSetListAddSet(this%intrn_conn_set_list, conn_set)
+          nullify(conn_set)
+       endif
 
     endif
 
