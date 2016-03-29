@@ -166,7 +166,7 @@
       </test>
     </grid>
   </compset>
-  <compset name="BW1850">
+  <compset name="B1850Cw">
     <grid name="f19_g16">
       <test name="ERS_Ld3">
         <machine compiler="gnu" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
