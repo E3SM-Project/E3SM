@@ -312,9 +312,16 @@ class Machines(GenericXML):
             is_default = False
             for key, value in attribs.iteritems():
                 if key in xml_attribs:
-                    if xml_attribs[key] == value:
+                    if xml_attribs[key].lower() == "false":
+                        xml_attrib = False
+                    elif xml_attribs[key].lower() == "true":
+                        xml_attrib = True
+                    else:
+                        xml_attrib = xml_attribs[key]
+
+                    if xml_attrib == value:
                         matches += 1
-                    elif key == "mpilib" and xml_attribs[key] == "default":
+                    elif key == "mpilib" and xml_attrib == "default":
                         is_default = True
                     else:
                         all_match = False
