@@ -315,7 +315,7 @@ contains
   end subroutine SOEBasePostStepDT
 
   !------------------------------------------------------------------------
-  subroutine SOEBaseStepDT(this, dt, converged, ierr)
+  subroutine SOEBaseStepDT(this, dt, converged, converged_reason, ierr)
     !
     ! !DESCRIPTION:
     ! Solves SoE by calling appropriate subroutine dependning on the choice
@@ -331,13 +331,14 @@ contains
     class(sysofeqns_base_type) :: this
     PetscReal                  :: dt
     PetscBool,intent(out)      :: converged
+    PetscInt,intent(out)       :: converged_reason
     PetscErrorCode             :: ierr
 
     select case(this%solver_type)
     case (PETSC_TS)
        call SOEBaseStepDT_TS(this, dt, ierr)
     case (PETSC_SNES)
-       call SOEBaseStepDT_SNES(this, dt, converged, ierr)
+       call SOEBaseStepDT_SNES(this, dt, converged, converged_reason, ierr)
     case default
        write(iulog,*) 'VSFMMPPSetup: Unknown this%solver_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -372,7 +373,7 @@ contains
   end subroutine SOEBaseStepDT_TS
 
   !------------------------------------------------------------------------
-  subroutine SOEBaseStepDT_SNES(soe, dt, converged, ierr)
+  subroutine SOEBaseStepDT_SNES(soe, dt, converged, converged_reason, ierr)
     !
     ! !DESCRIPTION:
     ! Solves SoE via PETSc SNES
@@ -390,6 +391,7 @@ contains
     class(sysofeqns_base_type) :: soe
     PetscErrorCode             :: ierr
     PetscBool,intent(out)      :: converged
+    PetscInt,intent(out)       :: converged_reason
     PetscReal                  :: dt
     !
     ! !LOCAL VARIABLES:
@@ -488,6 +490,8 @@ contains
 
        ! Get reason why SNES iteration stopped
        call SNESGetConvergedReason(soe%snes, snes_reason, ierr); CHKERRQ(ierr)
+
+       converged_reason = snes_reason
 
        ! Did SNES converge?
        if (snes_reason < 0) then

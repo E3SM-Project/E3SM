@@ -948,6 +948,8 @@ contains
     implicit none
 #ifdef USE_PETSC_LIB
 #include "finclude/petscsys.h"
+#include "finclude/petscsnes.h"
+#include "finclude/petscsnes.h90"
 #endif
     !
     type(bounds_type)       , intent(in)    :: bounds               ! bounds
@@ -997,12 +999,14 @@ contains
     PetscErrorCode       :: ierr                                                             ! PETSc return error code
 
     PetscBool            :: converged                                                        ! Did VSFM solver converge to a solution with given PETSc SNES tolerances
+    PetscInt             :: converged_reason                                                 ! SNES converged due to which criteria
     PetscReal            :: atol_default                                                     ! Default SNES absolute convergance tolerance
     PetscReal            :: rtol_default                                                     ! Default SNES relative convergance tolerance
     PetscReal            :: stol_default                                                     ! Default SNES solution convergance tolerance
     PetscInt             :: max_it_default                                                   ! Default SNES maximum number of iteration
     PetscInt             :: max_f_default                                                    ! Default SNES maximum number of function evaluation
     PetscReal            :: stol                                                             ! solution convergance tolerance
+    PetscReal            :: rtol                                                             ! relative convergance tolerance
     PetscReal,parameter  :: stol_alternate = 1.d-10                                          ! Alternate solution convergance tolerance
 
     PetscReal            :: mass_beg                                                         ! Sum of mass of water for all active soil columns before VSFM is called
@@ -1476,6 +1480,7 @@ contains
       CHKERRQ(ierr)
 
       stol = stol_default
+      rtol = rtol_default
 
       !
       ! Solve the VSFM.
@@ -1492,7 +1497,7 @@ contains
 
          call SNESSetTolerances(vsfm_mpp%sysofeqns%snes , &
                                 atol_default            , &
-                                rtol_default            , &
+                                rtol                    , &
                                 stol                    , &
                                 max_it_default          , &
                                 max_f_default           , &
@@ -1500,7 +1505,7 @@ contains
                                );
          CHKERRQ(ierr)
 
-         call vsfm_mpp%sysofeqns%StepDT(dtime, converged, ierr); CHKERRQ(ierr)
+         call vsfm_mpp%sysofeqns%StepDT(dtime, converged, converged_reason, ierr); CHKERRQ(ierr)
 
          if (.not. converged) then
 
@@ -1750,7 +1755,13 @@ contains
                ! solution tolerance (stol) for SNES.
 
                mass_bal_err_count  = mass_bal_err_count + 1
-               stol                = stol/10._r8
+
+               if (converged_reason == SNES_CONVERGED_FNORM_RELATIVE) then
+                  rtol = rtol/10._r8
+               else if (converged_reason == SNES_CONVERGED_SNORM_RELATIVE) then
+                  stol = stol/10._r8
+               endif
+
                dtime               = get_step_size()
                successful_step     = PETSC_FALSE
                abs_mass_error_col  = 0._r8
