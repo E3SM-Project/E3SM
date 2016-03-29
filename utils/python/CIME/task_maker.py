@@ -2,6 +2,7 @@
 """
 
 from CIME.XML.standard_module_setup import *
+from CIME.XML.component import Component
 from CIME.utils import expect, run_cmd
 from CIME.case import Case
 
@@ -15,36 +16,28 @@ class TaskMaker(object):
         self.case = case if case is not None else Case()
         self.remove_dead_tasks = remove_dead_tasks
 
-        self.layout_strings = \
-"""
-COMP_CPL NTASKS_CPL NTHRDS_CPL ROOTPE_CPL PSTRID_CPL
-COMP_ATM NTASKS_ATM NTHRDS_ATM ROOTPE_ATM PSTRID_ATM NINST_ATM
-COMP_LND NTASKS_LND NTHRDS_LND ROOTPE_LND PSTRID_LND NINST_LND
-COMP_ROF NTASKS_ROF NTHRDS_ROF ROOTPE_ROF PSTRID_ROF NINST_ROF
-COMP_ICE NTASKS_ICE NTHRDS_ICE ROOTPE_ICE PSTRID_ICE NINST_ICE
-COMP_OCN NTASKS_OCN NTHRDS_OCN ROOTPE_OCN PSTRID_OCN NINST_OCN
-COMP_GLC NTASKS_GLC NTHRDS_GLC ROOTPE_GLC PSTRID_GLC NINST_GLC
-COMP_WAV NTASKS_WAV NTHRDS_WAV ROOTPE_WAV PSTRID_WAV NINST_WAV
-MAX_TASKS_PER_NODE PES_PER_NODE PIO_NUMTASKS PIO_ASYNC_INTERFACE
-EXEROOT COMPILER
-""".split()
+        drv_comp = Component()
+        models = drv_comp.get_valid_model_components()
 
-        for layout_string in self.layout_strings:
-            setattr(self, layout_string, case.get_value(layout_string))
-
-        self.DEFAULT_RUN_EXE_TEMPLATE_STR = "__DEFAULT_RUN_EXE__"
-        self.MAX_TASKS_PER_NODE = 1 if self.MAX_TASKS_PER_NODE < 1 else self.MAX_TASKS_PER_NODE
-
-        models = ["CPL", "ATM", "LND", "ROF", "ICE", "OCN", "GLC", "WAV"]
         for item in ["COMP", "NTASKS", "NTHRDS", "ROOTPE", "NINST", "PSTRID"]:
             values = []
             for model in models:
+                model = "CPL" if model == "DRV" else model
                 if item == "NINST" and model == "CPL":
                     values.append(0) # no NINST for CPL, set to zero so lists are some length for all items
                 else:
-                    values.append(case.get_value("_".join([item, model])))
+                    vid = "_".join([item, model])
+                    value = case.get_value(vid)
+                    setattr(self, vid, value)
+                    values.append(value)
 
             setattr(self, item, values)
+
+        for item in ["MAX_TASKS_PER_NODE", "PES_PER_NODE", "PIO_NUMTASKS", "PIO_ASYNC_INTERFACE", "EXEROOT", "COMPILER"]:
+            setattr(self, item, case.get_value(item))
+
+        self.DEFAULT_RUN_EXE_TEMPLATE_STR = "__DEFAULT_RUN_EXE__"
+        self.MAX_TASKS_PER_NODE = 1 if self.MAX_TASKS_PER_NODE < 1 else self.MAX_TASKS_PER_NODE
 
         self._compute_values()
 

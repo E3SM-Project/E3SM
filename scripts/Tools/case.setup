@@ -9,6 +9,7 @@ from standard_script_setup import *
 from CIME.check_lockedfiles import check_lockedfiles
 from CIME.preview_namelists import preview_namelists
 from CIME.XML.env_mach_pes import EnvMachPes
+from CIME.XML.component import Component
 from CIME.case import Case
 from CIME.utils import expect, run_cmd
 from CIME.setup_tools import set_compiler
@@ -58,7 +59,7 @@ OR
     return args.caseroot, args.clean, args.test_mode
 
 ###############################################################################
-def _check_pelayouts_require_rebuild(case):
+def _check_pelayouts_require_rebuild(case, models):
 ###############################################################################
     """
     Create if we require a rebuild, expects cwd is caseroot
@@ -68,7 +69,7 @@ def _check_pelayouts_require_rebuild(case):
         # Look to see if $comp_PE_CHANGE_REQUIRES_REBUILD is defined
         # for any component
         env_mach_pes_locked = EnvMachPes(infile=locked_pes)
-        for comp in ["ATM", "LND", "ROF", "OCN", "ICE", "GLC", "WAV"]:
+        for comp in models:
             if case.get_value("%s_PE_CHANGE_REQUIRES_REBUILD" % comp):
                 # Changing these values in env_mach_pes.xml will force
                 # you to clean the corresponding component
@@ -139,6 +140,10 @@ def case_setup(caseroot, clean, test_mode):
 
     # Create batch script
     if not clean:
+        drv_comp = Component()
+        models = drv_comp.get_valid_model_components()
+        models.remove("DRV")
+
         mach = case.get_value("MACH")
         expect(mach is not None, "xml variable MACH is not set")
 
@@ -155,8 +160,9 @@ def case_setup(caseroot, clean, test_mode):
                 if vid.startswith("NTASKS_") and value != 1:
                     case.set_value(vid, 1)
 
-        # Check ninst. JGF: What does NINST stand for? Less hardcoded way to get comps?
-        for comp in ["ATM", "LND", "ROF", "OCN", "ICE", "GLC", "WAV"]:
+        # Check ninst.
+        # In CIME there can be multiple instances of each component model (an ensemble) NINST is the instance of that component.
+        for comp in models:
             ninst  = case.get_value("NINST_%s" % comp)
             ntasks = case.get_value("NTASKS_%s" % comp)
             if ninst > ntasks:
@@ -171,7 +177,7 @@ def case_setup(caseroot, clean, test_mode):
         if os.path.exists("case.run"):
             logger.info("Machine/Decomp/Pes configuration has already been done ...skipping")
         else:
-            _check_pelayouts_require_rebuild(case)
+            _check_pelayouts_require_rebuild(case, models)
 
             if os.path.exists("LockedFiles/env_build.xml"):
                 os.remove("LockedFiles/env_build.xml")
@@ -245,7 +251,7 @@ def case_setup(caseroot, clean, test_mode):
         if not os.path.exists("user_nl_cpl"):
             logger.info("Creating user_nl_xxx files for components and cpl")
             # loop over models
-            for model in ["ATM", "LND", "ROF", "OCN", "ICE", "GLC", "WAV"]:
+            for model in models:
                 comp = case.get_value("COMP_%s" % model)
                 _build_usernl_files(case, model, comp)
                 if comp == "cism":
