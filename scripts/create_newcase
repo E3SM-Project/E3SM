@@ -295,9 +295,14 @@ if ($opts{'user_compset'}) {
 #TODO - add support_level to config and query it here
 ($pes_setby, $support_level) = ConfigCompsetGrid::getCompsetLongname($files_spec_file, $compset, $config);
 $compset_longname = $config->get('COMPSET');
+my $compset_resolved = 1;
 if($opts{'user_compset'}){
     if($compset_longname ne $compset or $pes_setby ne $opts{'user_pes_setby'}){
-	$logger->logdie("Could not resolve user compset $compset");
+	# compset did not resolve, try brute force
+	$compset_resolved = 0;
+	$compset_longname = $opts{'user_compset'};
+	$config->set('COMPSET',$compset_longname);
+	$pes_setby = $opts{'user_pes_setby'};
     }
 }
 
@@ -471,9 +476,9 @@ ConfigCompsetGrid::setComponent($file, $config);
 # and also check that compset is supported for target grid
 # Note- this needs to come last since it will overwrite any values set above
 
-
-ConfigCompsetGrid::setCompsetGeneralVars($config);
-
+if ($compset_resolved) {
+    ConfigCompsetGrid::setCompsetGeneralVars($config);
+}
 
 # Special case - if land and river grids are different AND there is no mapping file
 # between land and river then set the river mode  to null if the river component is rtm
