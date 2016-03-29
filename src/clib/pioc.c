@@ -530,6 +530,9 @@ int PIOc_finalize(const int iosysid)
   if(ios->comp_comm != MPI_COMM_NULL){
     MPI_Comm_free(&(ios->comp_comm));
   }
+  if(ios->union_comm != MPI_COMM_NULL){
+    MPI_Comm_free(&(ios->union_comm));
+  }
 
   return pio_delete_iosystem_from_list(iosysid);
 
