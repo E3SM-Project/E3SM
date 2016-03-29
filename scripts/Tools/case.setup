@@ -250,14 +250,14 @@ def case_setup(caseroot, clean, test_mode):
         # Create user_nl files for the required number of instances
         if not os.path.exists("user_nl_cpl"):
             logger.info("Creating user_nl_xxx files for components and cpl")
-            # loop over models
-            for model in models:
-                comp = case.get_value("COMP_%s" % model)
-                _build_usernl_files(case, model, comp)
-                if comp == "cism":
-                    run_cmd("%s/../components/cism/cime_config/cism.template %s" % (cimeroot, caseroot))
+        # loop over models
+        for model in models:
+            comp = case.get_value("COMP_%s" % model)
+            _build_usernl_files(case, model, comp)
+            if comp == "cism":
+                run_cmd("%s/../components/cism/cime_config/cism.template %s" % (cimeroot, caseroot))
 
-            _build_usernl_files(case, "drv", "cpl")
+        _build_usernl_files(case, "drv", "cpl")
 
         # Run preview namelists for scripts
         preview_namelists(case=case)
@@ -275,7 +275,10 @@ def case_setup(caseroot, clean, test_mode):
         with open("CaseStatus", "a") as fd:
             fd.write("case.setup %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
 
-    elif not os.path.exists("case.run"):
+    else:
+        if not os.path.exists("case.run"):
+            logger.info("clean option has already been invoked ... skipping ")
+            return
         # Clean batch script
 
         backup_dir = "PESetupHist/b.%s" % time.strftime("%y%m%d-%H%M%S")
@@ -283,9 +286,11 @@ def case_setup(caseroot, clean, test_mode):
             os.makedirs(backup_dir)
 
         # back up relevant files
-        for fileglob in ["env_build.xml", "env_mach_pes.xml", "Macros*"]:
+        for fileglob in ["case.run", "env_build.xml", "env_mach_pes.xml", "Macros*"]:
             for filename in glob.glob(fileglob):
                 shutil.copy(filename, backup_dir)
+
+        os.remove("case.run")
 
         # only do the following if are NOT in testmode
         if not test_mode:
