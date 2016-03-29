@@ -1132,7 +1132,7 @@ contains
     do nt = 2,nt_rtm
        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
     enddo
-    write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
+    if (masterproc) write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
     call mct_aVect_init(avsrc_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avdst_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
 
@@ -1243,7 +1243,7 @@ contains
     do nt = 2,nt_rtm
        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
     enddo
-    write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
+    if (masterproc) write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
     call mct_aVect_init(avsrc_direct,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avdst_direct,rList=rList,lsize=rtmCTL%lnumr)
 
@@ -2567,7 +2567,7 @@ contains
      do nt = 2,nt_rtm
         write(rList,'(a,i3.3)') trim(rList)//':tr',nt
      enddo
-     write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
+     if (masterproc) write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
      call mct_aVect_init(avsrc_eroutUp,rList=rList,lsize=rtmCTL%lnumr)
      call mct_aVect_init(avdst_eroutUp,rList=rList,lsize=rtmCTL%lnumr)
 
