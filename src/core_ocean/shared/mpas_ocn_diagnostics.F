@@ -36,8 +36,6 @@ module ocn_diagnostics
    private
    save
 
-   type (timer_node), pointer :: diagEOSTimer
-
    !--------------------------------------------------------------------
    !
    ! Public parameters
@@ -466,7 +464,7 @@ contains
       !
       ! equation of state
       !
-      call mpas_timer_start("equation of state", .false., diagEOSTimer)
+      call mpas_timer_start("equation of state")
 
       ! compute in-place density
       if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
@@ -487,7 +485,7 @@ contains
       ! That is, layer k has been displaced to the depth of layer k+1.
       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, 1, 'relative', displacedDensity, err, timeLevelIn=timeLevel)
 
-      call mpas_timer_stop("equation of state", diagEOSTimer)
+      call mpas_timer_stop("equation of state")
 
       !
       ! Pressure

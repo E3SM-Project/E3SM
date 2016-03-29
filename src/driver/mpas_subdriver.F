@@ -346,7 +346,9 @@ module mpas_subdriver
       end if
 
       call mpas_timer_stop('total time')
+      call mpas_timer_write_header()
       call mpas_timer_write()
+      call mpas_timer_finalize(domain_ptr)
 
 
       !

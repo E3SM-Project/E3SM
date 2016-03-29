@@ -57,8 +57,6 @@ module ocn_test
    !--------------------------------------------------------------------
 
    logical :: hmixOn
-   type (timer_node), pointer :: del2Timer, del2TensorTimer, leithTimer, del4Timer, del4TensorTimer
-
 
 !***********************************************************************
 

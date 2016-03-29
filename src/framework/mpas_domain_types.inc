@@ -11,6 +11,9 @@
       ! Also store parallelization info here
       type (dm_info), pointer :: dminfo
 
+      ! Store exchange group information here
+      type (mpas_exchange_group), pointer :: exchangeGroups => null()
+
       ! Domain specific constants
       logical :: on_a_sphere = .true.
       logical :: is_periodic = .false.
@@ -21,6 +24,9 @@
       character (len=StrKIND) :: streams_filename = '' !< Constant: Name of stream configuration file
       character (len=StrKIND) :: mesh_spec = '' !< mesh_spec attribute, read in from input file.
       character (len=StrKIND) :: parent_id = '' !< parent_id attribute, read in from input file.
+
+      ! Pointer to timer root
+      type (mpas_timer_root), pointer :: timer_root => null()
 
       ! Back pointer to core
       type (core_type), pointer :: core => null()

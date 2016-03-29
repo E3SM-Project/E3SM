@@ -21,12 +21,13 @@
       character (len=StrKIND), dimension(5) :: dimNames
       integer, dimension(5) :: dimSizes
       real (kind=RKIND) :: defaultValue
+      real (kind=RKIND) :: missingValue
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
       logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
+      type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
       type (field5DReal), pointer :: prev, next
@@ -53,12 +54,13 @@
       character (len=StrKIND), dimension(4) :: dimNames
       integer, dimension(4) :: dimSizes
       real (kind=RKIND) :: defaultValue
+      real (kind=RKIND) :: missingValue
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
       logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
+      type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
       type (field4DReal), pointer :: prev, next
@@ -86,12 +88,13 @@
       character (len=StrKIND), dimension(3) :: dimNames
       integer, dimension(3) :: dimSizes
       real (kind=RKIND) :: defaultValue
+      real (kind=RKIND) :: missingValue
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
       logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
+      type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
       type (field3DReal), pointer :: prev, next
@@ -118,12 +121,13 @@
       character (len=StrKIND), dimension(2) :: dimNames
       integer, dimension(2) :: dimSizes
       real (kind=RKIND) :: defaultValue
+      real (kind=RKIND) :: missingValue
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
       logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
+      type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
       type (field2DReal), pointer :: prev, next
@@ -150,12 +154,13 @@
       character (len=StrKIND), dimension(1) :: dimNames
       integer, dimension(1) :: dimSizes
       real (kind=RKIND) :: defaultValue
+      real (kind=RKIND) :: missingValue
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
       logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
+      type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
       type (field1DReal), pointer :: prev, next
@@ -180,11 +185,12 @@
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       real (kind=RKIND) :: defaultValue
+      real (kind=RKIND) :: missingValue
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
-      type (att_list_type), pointer :: attList => null()     
+      type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
       type (field0DReal), pointer :: prev, next
@@ -210,13 +216,14 @@
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(3) :: dimNames
       integer :: defaultValue
+      integer :: missingValue
       integer, dimension(3) :: dimSizes
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
       logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
+      type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
       type (field3DInteger), pointer :: prev, next
@@ -242,13 +249,14 @@
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(2) :: dimNames
       integer :: defaultValue
+      integer :: missingValue
       integer, dimension(2) :: dimSizes
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
       logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
+      type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
       type (field2DInteger), pointer :: prev, next
@@ -274,13 +282,14 @@
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(1) :: dimNames
       integer :: defaultValue
+      integer :: missingValue
       integer, dimension(1) :: dimSizes
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
       logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
+      type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
       type (field1DInteger), pointer :: prev, next
@@ -305,11 +314,12 @@
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       integer :: defaultValue
+      integer :: missingValue
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
-      type (att_list_type), pointer :: attList => null()     
+      type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
       type (field0DInteger), pointer :: prev, next
@@ -336,12 +346,13 @@
       character (len=StrKIND), dimension(1) :: dimNames
       integer, dimension(1) :: dimSizes
       character (len=StrKIND) :: defaultValue
+      character (len=StrKIND) :: missingValue
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
       logical :: isPersistent
-      type (att_list_type), pointer :: attList => null()     
+      type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
       type (field1DChar), pointer :: prev, next
@@ -366,11 +377,12 @@
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND) :: defaultValue
+      character (len=StrKIND) :: missingValue
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
-      type (att_list_type), pointer :: attList => null()     
+      type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
       type (field0DChar), pointer :: prev, next
@@ -395,11 +407,12 @@
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       logical :: defaultValue
+      logical :: missingValue
       logical :: isDecomposed
       logical :: hasTimeDimension
       logical :: isActive
       logical :: isVarArray
-      type (att_list_type), pointer :: attList => null()     
+      type (att_lists_type), dimension(:), pointer :: attLists => null()     
 
       ! Pointers to the prev and next blocks for this field on this task
       type (field0DLogical), pointer :: prev, next

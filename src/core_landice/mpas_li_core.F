@@ -137,8 +137,6 @@ module li_core
       ! === Initialize modules ===
       ! ===
 
-      call mpas_timer_init(domain)
-
       call li_velocity_init(domain, err_tmp)
       err = ior(err, err_tmp)
 

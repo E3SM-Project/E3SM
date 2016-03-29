@@ -1,5 +1,0 @@
-<driver_script name="642_cell_spherical_test.py">
-	<case name="test">
-		<step executable="./run.py"/>
-	</case>
-</driver_script>

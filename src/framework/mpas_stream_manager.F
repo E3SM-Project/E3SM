@@ -275,9 +275,6 @@ module mpas_stream_manager
     !>  argument may take on values MPAS_IO_SINGLE_PRECISION,
     !>  MPAS_IO_DOUBLE_PRECISION, or MPAS_IO_NATIVE_PRECISION; if this argument is
     !>  not supplied, native precision is assumed.
-    !>  Note: Setting the precision of real fields is only supported at present
-    !>  for converting double-precision to single-precision on output; input is
-    !>  automatically converted from single- do double-precision if necessary.
     !>  The optional argument clobberMode determines how the stream manager will
     !>  deal with existing files; possible options include MPAS_STREAM_CLOBBER_NEVER, 
     !>  MPAS_STREAM_CLOBBER_APPEND, MPAS_STREAM_CLOBBER_TRUNCATE, 
@@ -2313,10 +2310,13 @@ module mpas_stream_manager
     !>  The "forceWriteNow" argument optionally specifies that all streams -- or 
     !>  the stream specified by the "streamID" argument -- should be written by 
     !>  the call regardless of whether any alarms associated with the stream(s) 
-    !>  are ringing.
+    !>  are ringing. The "writeTime" argument optionally specifies a time stamp
+    !>  to be used for expanding a filename template, when it is not passed in,
+    !>  the current time of the streamManager's clock is used to expand filename
+    !>  templates.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_write(manager, streamID, timeLevel, mgLevel, forceWriteNow, ierr) !{{{
+    subroutine MPAS_stream_mgr_write(manager, streamID, timeLevel, mgLevel, forceWriteNow, writeTime, ierr) !{{{
 
         implicit none
 
@@ -2325,6 +2325,7 @@ module mpas_stream_manager
         integer, intent(in), optional :: timeLevel
         integer, intent(in), optional :: mgLevel
         logical, intent(in), optional :: forceWriteNow
+        character (len=*), intent(in), optional :: writeTime
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
@@ -2332,6 +2333,7 @@ module mpas_stream_manager
         integer :: local_mgLevel
         logical :: local_forceWrite
         integer :: local_ierr
+        type (MPAS_Time_type) :: local_writeTime
         integer :: temp_ierr
         integer :: threadNum
 
@@ -2364,6 +2366,13 @@ module mpas_stream_manager
         end if
 
 
+        if ( present(writeTime) ) then
+            call mpas_set_time(local_writeTime, dateTimeString=writeTime, ierr=ierr)
+        else
+            local_writeTime = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
+        end if
+
+
         if ( threadNum == 0 ) then
            !
            ! If a stream is specified, we process just that stream; otherwise,
@@ -2382,7 +2391,7 @@ module mpas_stream_manager
                        return 
                    end if
 
-                   call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, local_ierr)
+                   call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, local_ierr)
                else
                    STREAM_ERROR_WRITE('Stream '//trim(streamID)//' does not exist in call to MPAS_stream_mgr_write().')
                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -2398,7 +2407,7 @@ module mpas_stream_manager
                    if (stream_cursor % direction == MPAS_STREAM_OUTPUT .or. &
                        stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
 
-                       call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, temp_ierr)
+                       call write_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, temp_ierr)
                        if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
                            local_ierr = temp_ierr
                        end if
@@ -2424,7 +2433,7 @@ module mpas_stream_manager
     !>  Private subroutine to handle the details of actually writing a stream.
     !
     !-----------------------------------------------------------------------
-    subroutine write_stream(manager, stream, timeLevel, mgLevel, forceWritenow, ierr) !{{{
+    subroutine write_stream(manager, stream, timeLevel, mgLevel, forceWritenow, writeTime, ierr) !{{{
 
         implicit none
 
@@ -2433,10 +2442,11 @@ module mpas_stream_manager
         integer, intent(in) :: timeLevel
         integer, intent(in) :: mgLevel
         logical, intent(in) :: forceWriteNow
+        type (MPAS_Time_type), intent(in) :: writeTime
         integer, intent(out) :: ierr
 
         type (MPAS_stream_list_type), pointer :: alarm_cursor
-        type (MPAS_Time_type) :: now_time, ref_time
+        type (MPAS_Time_type) :: ref_time
         type (MPAS_TimeInterval_type) :: temp_interval
         type (MPAS_TimeInterval_type) :: filename_interval
         character (len=StrKIND) :: now_string, time_string
@@ -2516,9 +2526,8 @@ module mpas_stream_manager
            !
            if (.not. stream % valid) then
                if ( stream % filename_interval /= 'none' ) then
-                   now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
                    call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
-                   call mpas_build_stream_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, stream % filename, ierr=local_ierr)
+                   call mpas_build_stream_filename(stream % referenceTime, writeTime, filename_interval, stream % filename_template, stream % filename, ierr=local_ierr)
                else
                    call mpas_get_time(stream % referenceTime, dateTimeString=time_string)
                    call mpas_expand_string(time_string, stream % filename_template, stream % filename)
@@ -2562,8 +2571,7 @@ module mpas_stream_manager
                ! File exists on disk, prior to creating stream. Need to seek the record to ensure we're writing to the correct place.
                if ( recordSeek ) then
                    STREAM_DEBUG_WRITE(' -- File exists on disk: ' COMMA trim(stream % filename))
-                   now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
-                   call mpas_get_time(now_time, dateTimeString=now_string)
+                   call mpas_get_time(writeTime, dateTimeString=now_string)
     
                    ! Look for exact record (in the case of overwriting)
                    ! This also gets the number of records in the file.
@@ -2589,10 +2597,9 @@ module mpas_stream_manager
                stream % valid = .true.
            else
                if ( stream % filename_interval /= 'none' ) then
-                   now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
                    call mpas_set_timeInterval(filename_interval, timeString=stream % filename_interval)
     
-                   call mpas_build_stream_filename(stream % referenceTime, now_time, filename_interval, stream % filename_template, temp_filename, ierr=local_ierr)
+                   call mpas_build_stream_filename(stream % referenceTime, writeTime, filename_interval, stream % filename_template, temp_filename, ierr=local_ierr)
                else
                    call mpas_get_time(stream % referenceTime, dateTimeString=time_string)
                    call mpas_expand_string(time_string, stream % filename_template, temp_filename)
@@ -2649,8 +2656,7 @@ module mpas_stream_manager
                    ! File exists on disk, prior to creating stream. Need to seek the record to ensure we're writing to the correct place.
                    if ( recordSeek ) then
                        STREAM_DEBUG_WRITE(' -- File exists on disk: ' COMMA trim(stream % filename))
-                       now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
-                       call mpas_get_time(now_time, dateTimeString=now_string)
+                       call mpas_get_time(writeTime, dateTimeString=now_string)
            
                        ! Look for exact record (in the case of overwriting)
                        ! This also gets the number of records in the file.
@@ -2675,8 +2681,7 @@ module mpas_stream_manager
                else
                    stream % nRecords = stream % nRecords + 1
                    if ( stream % clobber_mode == MPAS_STREAM_CLOBBER_OVERWRITE .or. stream % clobber_mode == MPAS_STREAM_CLOBBER_APPEND ) then
-                       now_time = mpas_get_clock_time(manager % streamClock, MPAS_NOW, ierr=local_ierr)
-                       call mpas_get_time(now_time, dateTimeString=now_string)
+                       call mpas_get_time(writeTime, dateTimeString=now_string)
            
                        ! Look for exact record (in the case of overwriting)
                        ! This also gets the number of records in the file.
@@ -2886,7 +2891,7 @@ module mpas_stream_manager
    
                    ! Verify that the stream is an input stream
                    if (stream_cursor % direction == MPAS_STREAM_INPUT .or. &
-                       stream_cursor % direction /= MPAS_STREAM_INPUT_OUTPUT) then
+                       stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
    
                        !
                        ! What should be the meaning of actualWhen if we read multiple streams in this call?
@@ -3675,9 +3680,8 @@ module mpas_stream_manager
                                 call mpas_pool_get_field(allFields, itr % memberName, char0d, timeLevel)
                                 call MPAS_streamAddField(stream % stream, char0d)
                             case (1)
-!                                call mpas_pool_get_field(allFields, itr % memberName, char1d, timeLevel)
-!                                call MPAS_streamAddField(stream % stream, char1d)
-                                 write(stderrUnit,*) 'Error: In build_stream, unsupported type field1DChar.'
+                                 call mpas_pool_get_field(allFields, itr % memberName, char1d, timeLevel)
+                                 call MPAS_streamAddField(stream % stream, char1d)
                         end select
                 end select
 
@@ -3998,7 +4002,7 @@ module mpas_stream_manager
 
                         if ( is_decomposed_dim(real1DField % dimNames(1))) then
                             STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
-                            call mpas_dmpar_exch_halo_field(real1DField)
+                            call mpas_dmpar_field_halo_exch(real1DField % block % domain, fieldItr % memberName, timeLevel=timeLevel)
                         end if
                     else if ( fieldInfo % fieldType == MPAS_POOL_INTEGER ) then
                         if ( timeLevel <= fieldInfo % nTimeLevels ) then
@@ -4008,7 +4012,7 @@ module mpas_stream_manager
                         end if
                         if ( is_decomposed_dim(int1DField % dimNames(1))) then
                             STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
-                            call mpas_dmpar_exch_halo_field(int1DField)
+                            call mpas_dmpar_field_halo_exch(int1DField % block % domain, fieldItr % memberName, timeLevel=timeLevel)
                         end if
                     end if
 
@@ -4021,7 +4025,7 @@ module mpas_stream_manager
                         end if
                         if ( is_decomposed_dim(real2DField % dimNames(2))) then
                             STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
-                            call mpas_dmpar_exch_halo_field(real2DField)
+                            call mpas_dmpar_field_halo_exch(real2DField % block % domain, fieldItr % memberName, timeLevel=timeLevel)
                         end if
                     else if ( fieldInfo % fieldType == MPAS_POOL_INTEGER ) then
                         if ( timeLevel <= fieldInfo % nTimeLevels ) then
@@ -4031,7 +4035,7 @@ module mpas_stream_manager
                         end if
                         if ( is_decomposed_dim(int2DField % dimNames(2))) then
                             STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
-                            call mpas_dmpar_exch_halo_field(int2DField)
+                            call mpas_dmpar_field_halo_exch(int2DField % block % domain, fieldItr % memberName, timeLevel=timeLevel)
                         end if
                     end if
 
@@ -4044,7 +4048,7 @@ module mpas_stream_manager
                         end if
                         if ( is_decomposed_dim(real3DField % dimNames(3))) then
                             STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
-                            call mpas_dmpar_exch_halo_field(real3DField)
+                            call mpas_dmpar_field_halo_exch(real3DField % block % domain, fieldItr % memberName, timeLevel=timeLevel)
                         end if
                     else if ( fieldInfo % fieldType == MPAS_POOL_INTEGER ) then
                         if ( timeLevel <= fieldInfo % nTimeLevels ) then
@@ -4054,7 +4058,7 @@ module mpas_stream_manager
                         end if
                         if ( is_decomposed_dim(int3DField % dimNames(3))) then
                             STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
-                            call mpas_dmpar_exch_halo_field(int3DField)
+                            call mpas_dmpar_field_halo_exch(int3DField % block % domain, fieldItr % memberName, timeLevel=timeLevel)
                         end if
                     end if
 
@@ -4067,7 +4071,7 @@ module mpas_stream_manager
                         end if
                         if ( is_decomposed_dim(real4DField % dimNames(4))) then
                             STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
-                            call mpas_dmpar_exch_halo_field(real4DField)
+                            call mpas_dmpar_field_halo_exch(real4DField % block % domain, fieldItr % memberName, timeLevel=timeLevel)
                         end if
                     end if
 
@@ -4080,7 +4084,7 @@ module mpas_stream_manager
                         end if
                         if ( is_decomposed_dim(real5DField % dimNames(5))) then
                             STREAM_DEBUG_WRITE(' -- Exchange halo for '//trim(fieldItr % memberName))
-                            call mpas_dmpar_exch_halo_field(real5DField)
+                            call mpas_dmpar_field_halo_exch(real5DField % block % domain, fieldItr % memberName, timeLevel=timeLevel)
                         end if
                     end if
                 end if
