@@ -199,19 +199,36 @@ OPTIONS
      -l_ncpl "LND_NCPL"       Number of CLM coupling time-steps in a day.
      -mask "landmask"         Type of land-mask (default, navy, gx3v5, gx1v5 etc.)
                               "-mask list" to list valid land masks.
+     -methane                 Toggle for prognostic methane model.
+                              This flag is only allowed for bgc=cn mode (default is off)
+			      This turns on namelist variable: use_lch4
      -namelist "namelist"     Specify namelist settings directly on the commandline by supplying
                               a string containing FORTRAN namelist syntax, e.g.,
                                  -namelist "&clm_inparm dt=1800 /"
+     -nitrif_denitrif         Toggle for nitrification-denitrification process.
+                              This flag is only allowed for bgc=cn mode (default is off)
+			      This turns on namelist variable: use_nitrif_denitrif
      -no-megan                DO NOT PRODUCE a megan_emis_nl namelist that will go into the
                               "drv_flds_in" file for the driver to pass VOCs to the atm.
                               MEGAN (Model of Emissions of Gases and Aerosols from Nature)
                               (Note: buildnml copies the file for use by the driver)
      -[no-]note               Add note to output namelist  [do NOT add note] about the
                               arguments to build-namelist.
+     -nutrient                CLM4.5 Only. Nutirients considered with active BCG cycle [c | cn | cnp]
+                              (default is cn)
+                                c    = Carbon only
+                                cn   = Carbon + Nitrogen
+                                cnp  = Carbon + Nitrogen + Phosphorous
+     -nutrient_comp_pathway   CLM4.5 Only. Nutrient competition pathway [rd | eca]
+                                rd   = Relative demand (RD)
+                                eca  = Equilibrium chemistry approximation (ECA)
      -rcp "value"             Representative concentration pathway (rcp) to use for
                               future scenarios.
                               "-rcp list" to list valid rcp settings.
      -s                       Turns on silent mode - only fatal messages issued.
+     -soil_decomp             CLM4.5 Only. Soil decomposition model [ctc | century]
+                                ctc      = Convergent Trophic Cascade
+                                century  = CENTURY Soil Organic Matter Model
      -test                    Enable checking that input datasets exist on local filesystem.
      -use_case "case"         Specify a use case which will provide default values.
                               "-use_case list" to list valid use-cases.
@@ -283,6 +300,11 @@ sub process_commandline {
                vichydro              => 0,
                maxpft                => "default",
                betr_mode             => "default",               
+               methane               => 0,
+               nitrif_denitrif       => 0,
+               nutrient              => "default",
+               nutrient_comp_pathway => "default",
+               soil_decomp           => "default",
              );
 
   GetOptions(
@@ -329,6 +351,11 @@ sub process_commandline {
              "v|verbose"                 => \$opts{'verbose'},
              "version"                   => \$opts{'version'},
              "betr_mode=s"               => \$opts{'betr_mode'},             
+             "methane"                   => \$opts{'methane'},
+             "nitrif_denitrif"           => \$opts{'nitrif_denitrif'},
+             "nutrient=s"                => \$opts{'nutrient'},
+             "nutrient_comp_pathway=s"   => \$opts{'nutrient_comp_pathway'},
+             "soil_decomp=s"             => \$opts{'soil_decomp'},
             )  or usage();
 
   # Give usage message.
@@ -636,7 +663,13 @@ sub process_namelist_commandline_options {
   setup_cmdl_chk_res($opts, $defaults);
   setup_cmdl_resolution($opts, $nl_flags, $definition, $defaults);
   setup_cmdl_mask($opts, $nl_flags, $definition, $defaults, $nl);
+  setup_cmdl_check_bgc($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_bgc($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
+  setup_cmdl_nitrif_denitrif($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
+  setup_cmdl_methane($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
+  setup_cmdl_soil_decomp($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
+  setup_cmdl_nutrient($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
+  setup_cmdl_nutrient_comp($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_crop($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_maxpft($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_glc_nec($opts, $nl_flags, $definition, $defaults, $nl);
@@ -814,6 +847,56 @@ sub setup_cmdl_betr_mode {
 
 
 #-------------------------------------------------------------------------------
+sub setup_cmdl_check_bgc {
+  # BGC - alias for group of biogeochemistry related use_XXX namelists
+
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
+
+  my $var;
+  my $val;
+
+  $var = "nitrif_denitrif";
+  $val = $opts->{$var};
+  if ( $val eq 1 ) {
+    $val = ".true.";
+    $var = "use_nitrif_denitrif";
+    if ( defined($nl->get_value($var)) && ($nl->get_value($var) ne $val)) {
+      fatal_error("$var has a value (".$nl_flags->{$var}.") that is NOT consistent with the commandline setting of -nitrif_denitrif\n");
+    }
+  }
+
+  $var = "methane";
+  $val = $opts->{$var};
+  if ( $val eq 1 ) {
+    $val = ".true.";
+    $var = "use_lch4";
+    if ( defined($nl->get_value($var)) && ($nl->get_value($var) ne $val)) {
+      fatal_error("$var has a value (".$nl_flags->{$var}.") that is NOT consistent with the commandline setting of -methane\n");
+    }
+  }
+
+  $var = "soil_decomp";
+  $val = $opts->{$var};
+  if ($val eq "ctc"){
+    $var = "use_century_decomp";
+    $val = ".false.";
+
+    if ( defined($nl->get_value($var)) && ($nl->get_value($var) ne $val)) {
+      fatal_error("$var has a value (".$nl->get_value($var).") that is NOT consistent with the commandline setting of -soil_decomp ctc\n");
+    }
+
+  } elsif ($val eq "century") {
+    $var = "use_century_decomp";
+    $val = ".true.";
+
+    if ( defined($nl->get_value($var)) && ($nl->get_value($var) ne $val)) {
+      fatal_error("$var has a value (".$nl->get_value($var).") that is NOT consistent with the commandline setting of -soil_decomp century\n");
+    }
+  }
+
+} # end check_bgc
+
+#-------------------------------------------------------------------------------
 sub setup_cmdl_bgc {
   # BGC - alias for group of biogeochemistry related use_XXX namelists
 
@@ -915,6 +998,288 @@ sub setup_cmdl_bgc {
 
   }
 } # end bgc
+
+#-------------------------------------------------------------------------------
+
+sub setup_cmdl_nitrif_denitrif {
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
+
+  my $var = "nitrif_denitrif";
+  my $val = $opts->{$var};
+
+  if ( $val eq 1 ) {
+    if ( $physv->as_long() ne $physv->as_long("clm4_5") ) {
+      fatal_error("-nitrif_denitrif option can ONLY be used for clm4_5");
+    } else {
+
+      $var = "bgc_mode";
+      if ($nl_flags->{$var} ne "cn") {
+        fatal_error("-nitrif_denitrif option can ONLY be used for clm4_5 with -bgc cn");
+      } else {
+
+        $var = "use_nitrif_denitrif";
+        $val = $nl->get_value($var);
+        $val = ".true.";
+
+        my $group = $definition->get_group_name($var);
+        $nl_flags->{$var} = $val;
+        $nl->set_variable_value($group, $var, $val);
+
+        if (  ! $definition->is_valid_value( $var, $val ) ) {
+          my @valid_values   = $definition->get_valid_values( $var );
+          fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+        }
+      }
+    }
+  }
+} # nitrif_denitrif
+
+#-------------------------------------------------------------------------------
+
+sub setup_cmdl_methane {
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
+
+  my $var = "methane";
+  my $val = $opts->{$var};
+
+  if ( $val eq 1 ) {
+    if ( $physv->as_long() ne $physv->as_long("clm4_5") ) {
+      fatal_error("-methane option can ONLY be used with clm4_5");
+    } else {
+    }
+  }
+
+  if ( $val eq 1 ) {
+    if ( $physv->as_long() ne $physv->as_long("clm4_5") ) {
+      fatal_error("-methane option can ONLY be used for clm4_5");
+    } else {
+
+      $var = "bgc_mode";
+      if ($nl_flags->{$var} ne "cn") {
+        fatal_error("-methane option can ONLY be used for clm4_5 with -bgc cn");
+      } else {
+
+        $val = $nl_flags->{'use_nitrif_denitrif'};
+        if ($val ne ".true.") {
+          $var = "use_nitrif_denitrif";
+          fatal_error("-methane used with $var = $val, thus it is NOT valid.\n");
+        } else {
+          $var = "use_lch4";
+          $val = ".true.";
+
+          my $group = $definition->get_group_name($var);
+          $nl_flags->{$var} = $val;
+          $nl->set_variable_value($group, $var, $val);
+
+          if (  ! $definition->is_valid_value( $var, $val ) ) {
+            my @valid_values   = $definition->get_valid_values( $var );
+            fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+          }
+        }
+      }
+    }
+  }
+} # methane
+
+#-------------------------------------------------------------------------------
+
+sub setup_cmdl_nutrient {
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
+
+  my $var = "nutrient";
+  my $val = $opts->{$var};
+
+  if ( $val ne "default" && $physv->as_long() ne $physv->as_long("clm4_5") ) {
+    fatal_error("-nutrient option used without clm4_5 physics.");
+  } else {
+    if ($val ne "default"){
+
+      if ($nl_flags->{"bgc_mode"} ne "cn"){
+        fatal_error("-nutrient nutrient_option can ONLY be used with clm4_5 with -bgc cn");
+      } else {
+
+        if ($val eq "c"){
+          $var = "suplnitro";
+          $val = "'ALL'";
+
+          my $group = $definition->get_group_name($var);
+          $nl_flags->{$var} = $val;
+          $nl->set_variable_value($group, $var, $val);
+
+          if (  ! $definition->is_valid_value( $var, $val ) ) {
+            my @valid_values   = $definition->get_valid_values( $var );
+            fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+          }
+
+          $var = "suplphos";
+          $val = "'ALL'";
+
+          my $group = $definition->get_group_name($var);
+          $nl_flags->{$var} = $val;
+          $nl->set_variable_value($group, $var, $val);
+
+          if (  ! $definition->is_valid_value( $var, $val ) ) {
+            my @valid_values   = $definition->get_valid_values( $var );
+            fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+          }
+
+        } elsif ($val eq "cn") {
+          $var = "suplnitro";
+          $val = "'NONE'";
+
+          my $group = $definition->get_group_name($var);
+          $nl_flags->{$var} = $val;
+          $nl->set_variable_value($group, $var, $val);
+
+          if (  ! $definition->is_valid_value( $var, $val ) ) {
+            my @valid_values   = $definition->get_valid_values( $var );
+            fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+          }
+
+          $var = "suplphos";
+          $val = "'ALL'";
+
+          my $group = $definition->get_group_name($var);
+          $nl_flags->{$var} = $val;
+          $nl->set_variable_value($group, $var, $val);
+
+          if (  ! $definition->is_valid_value( $var, $val ) ) {
+            my @valid_values   = $definition->get_valid_values( $var );
+            fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+          }
+
+        } elsif ($val eq "cnp") {
+          $var = "suplnitro";
+          $val = "'NONE'";
+
+          my $group = $definition->get_group_name($var);
+          $nl_flags->{$var} = $val;
+          $nl->set_variable_value($group, $var, $val);
+
+          if (  ! $definition->is_valid_value( $var, $val ) ) {
+            my @valid_values   = $definition->get_valid_values( $var );
+            fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+          }
+
+          $var = "suplphos";
+          $val = "'NONE'";
+
+          my $group = $definition->get_group_name($var);
+          $nl_flags->{$var} = $val;
+          $nl->set_variable_value($group, $var, $val);
+
+          if (  ! $definition->is_valid_value( $var, $val ) ) {
+            my @valid_values   = $definition->get_valid_values( $var );
+            fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+          }
+
+        } else {
+          fatal_error("-nutrient has a value ($val) that is not valid. Valid values are: [c, cn, cnp] \n");
+        }
+      }
+    }
+  }
+} # nutrient
+
+#-------------------------------------------------------------------------------
+sub setup_cmdl_nutrient_comp {
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
+
+  my $var = "nutrient_comp_pathway";
+  my $val = $opts->{$var};
+
+  if ( $val ne "default" && $physv->as_long() ne $physv->as_long("clm4_5") ) {
+    fatal_error("-nutrient_comp_pathway used without clm4_5 physics.");
+  } else {
+    if ($val ne "default"){
+
+      if ($nl_flags->{"bgc_mode"} ne "cn"){
+        fatal_error("-nutrient_comp_pathway option can ONLY be used with clm4_5 with -bgc cn");
+      } else {
+
+        if ($val eq "rd"){
+          $var = "nu_com";
+          $val = "'RD'";
+
+          my $group = $definition->get_group_name($var);
+          $nl_flags->{$var} = $val;
+          $nl->set_variable_value($group, $var, $val);
+
+          if (  ! $definition->is_valid_value( $var, $val ) ) {
+            my @valid_values   = $definition->get_valid_values( $var );
+            fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+          }
+
+        } elsif ($val eq "eca") {
+          $var = "nu_com";
+          $val = "'ECA'";
+
+          my $group = $definition->get_group_name($var);
+          $nl_flags->{$var} = $val;
+          $nl->set_variable_value($group, $var, $val);
+
+          if (  ! $definition->is_valid_value( $var, $val ) ) {
+            my @valid_values   = $definition->get_valid_values( $var );
+            fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+          }
+
+        } else {
+          fatal_error("-nutrient_comp_pathway has a value ($val) that is not valid. Valid values are: [rd, eca] \n");
+        }
+      }
+    }
+  }
+} # nutrient_comp
+
+#-------------------------------------------------------------------------------
+sub setup_cmdl_soil_decomp {
+  my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
+
+  my $var = "soil_decomp";
+  my $val = $opts->{$var};
+
+  if ( $val ne "default" && $physv->as_long() ne $physv->as_long("clm4_5") ) {
+    fatal_error("-soil_decomp used without clm4_5 physics.");
+  } else {
+    if ($val ne "default"){
+
+      if ($nl_flags->{"bgc_mode"} ne "cn"){
+        fatal_error("-soil_decomp option can ONLY be used with clm4_5 with -bgc cn");
+      } else {
+
+        if ($val eq "ctc"){
+          $var = "use_century_decomp";
+          $val = ".false.";
+
+          my $group = $definition->get_group_name($var);
+          $nl_flags->{$var} = $val;
+          $nl->set_variable_value($group, $var, $val);
+
+          if (  ! $definition->is_valid_value( $var, $val ) ) {
+            my @valid_values   = $definition->get_valid_values( $var );
+            fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+          }
+
+        } elsif ($val eq "century") {
+          $var = "use_century_decomp";
+          $val = ".true.";
+
+          my $group = $definition->get_group_name($var);
+          $nl_flags->{$var} = $val;
+          $nl->set_variable_value($group, $var, $val);
+
+          if (  ! $definition->is_valid_value( $var, $val ) ) {
+            my @valid_values   = $definition->get_valid_values( $var );
+            fatal_error("$var has a value ($val) that is NOT valid. Valid values are: @valid_values\n");
+          }
+
+        } else {
+          fatal_error("-soil_decomp has a value ($val) that is not valid. Valid values are: [rd, eca] \n");
+        }
+      }
+    }
+  }
+} # setup_cmdl_soil_decomp
 
 #-------------------------------------------------------------------------------
 
