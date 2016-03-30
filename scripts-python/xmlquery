@@ -24,7 +24,6 @@ from CIME.utils import expect, run_cmd
 from CIME.case import Case
 
 import argparse, doctest, shutil, glob
-import xml.etree.ElementTree as ET
 import textwrap
 
 
