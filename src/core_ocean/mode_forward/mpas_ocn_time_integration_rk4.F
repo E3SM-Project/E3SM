@@ -212,6 +212,7 @@ module ocn_time_integration_rk4
          call mpas_threading_barrier()
 
          call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
+         call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
 
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityNew, 2)
@@ -224,11 +225,19 @@ module ocn_time_integration_rk4
          call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergenceNew, 2)
 
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+
+         !$omp do schedule(runtime) private(k)
+         do iEdge = 1, nEdges
+            do k = 1, maxLevelEdgeTop(iEdge)
+               normalVelocityNew(k, iEdge) = normalVelocityCur(k, iEdge)
+            end do
+         end do
+         !$omp end do
 
          !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
             do k = 1, maxLevelCell(iCell)
-               normalVelocityNew(k, iCell) = normalVelocityCur(k, iCell)
                layerThicknessNew(k, iCell) = layerThicknessCur(k, iCell)
             end do
          end do
@@ -570,6 +579,7 @@ module ocn_time_integration_rk4
               call mpas_pool_get_array(tendPool, 'lowFreqDivergence', lowFreqDivergenceTend)
 
               call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+              call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
               call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
               call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
@@ -577,10 +587,18 @@ module ocn_time_integration_rk4
               call mpas_threading_barrier()
 
               !$omp do schedule(runtime) private(k)
+              do iEdge = 1, nEdges
+                 do k = 1, maxLevelEdgeTop(iEdge)
+                    normalVelocityProvis(k, iEdge) = normalVelocityCur(k, iEdge) + rk_substep_weights(rk_step) &
+                                                   * normalVelocityTend(k, iEdge)
+                 end do
+              end do
+              !$omp end do
+
+
+              !$omp do schedule(runtime) private(k)
               do iCell = 1, nCells
                  do k = 1, maxLevelCell(iCell)
-                    normalVelocityProvis(k, iCell) = normalVelocityCur(k, iCell) + rk_substep_weights(rk_step) &
-                                                   * normalVelocityTend(k, iCell)
                     layerThicknessProvis(k, iCell) = layerThicknessCur(k, iCell) + rk_substep_weights(rk_step) &
                                                    * layerThicknessTend(k, iCell)
                  end do
@@ -725,7 +743,7 @@ module ocn_time_integration_rk4
 
            !$omp do schedule(runtime)
            do iEdge = 1, nEdges
-              normalVelocityNew(:, iEdge) = normalVelocityNew(:, iEdge) + rk_weights(rk_step) * normalVelocityTend(k, iEdge)
+              normalVelocityNew(:, iEdge) = normalVelocityNew(:, iEdge) + rk_weights(rk_step) * normalVelocityTend(:, iEdge)
            end do
            !$omp end do
 
