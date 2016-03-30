@@ -24,6 +24,10 @@ logger = logging.getLogger(__name__)
 class Case(object):
 
     def __init__(self, case_root=os.getcwd()):
+        
+        # Init first, if no valid case_root expect fails and tears down object, __del__ expects self._env_files_that_need_rewrite
+        self._env_files_that_need_rewrite = set()
+        
         expect(os.path.isdir(case_root),
                "Case root directory '%s' does not exist" % case_root)
 
@@ -32,6 +36,7 @@ class Case(object):
         self._env_generic_files = []
 
         self._env_files_that_need_rewrite = set()
+      
 
         self._env_entryid_files.append(EnvRun(case_root))
         self._env_entryid_files.append(EnvBuild(case_root))
