@@ -2,8 +2,10 @@
 
 
 """
-Script to query env_*.xml files.
-If this tool is missing any feature that you need, please notify jgfouca@sandia.gov.
+This utility allows the CIME user to view a field in a env_*xml file via a commandline interface.
+
+If this tool is missing any feature that you need, please go to github and create an issue (https://github.com/ESMCI/cime/issues). Detailed information is available at https://github.com/ESMCI/cime.
+notify jgfouca@sandia.gov.
 
     AUTHOR AND CREDITS
         Authors: Jim Edwards , .... 
