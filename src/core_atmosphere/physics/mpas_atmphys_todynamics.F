@@ -41,6 +41,9 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-22.
 ! * modified the sourcecode to accomodate the packages "cu_kain_fritsch_in" and "cu_tiedtke_in".
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-24.
+! * added the options cu_grell_freitas and cu_grell_freitas_momentum for the calculation of the
+!   u-wind tendency.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
 
 
  contains
@@ -179,7 +182,9 @@
 !add coupled tendencies due to convection:
  if(config_convection_scheme .ne. 'off') then
 
-    if(config_convection_scheme .eq. 'cu_tiedtke') then
+    if(config_convection_scheme == 'cu_tiedtke'               .or. &
+       config_convection_scheme == 'cu_grell_freitas'         .or. &
+       config_convection_scheme == 'cu_grell_freitas_momentum') then
        call mpas_pool_get_array(tend_physics, 'rucuten', rucuten)
        call mpas_pool_get_array(tend_physics, 'rvcuten', rvcuten)
 

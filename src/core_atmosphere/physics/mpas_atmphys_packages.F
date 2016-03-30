@@ -36,7 +36,7 @@
  character(len=StrKIND),pointer:: config_microp_scheme
  character(len=StrKIND),pointer:: config_convection_scheme
  logical,pointer:: mp_kessler_in,mp_thompson_aerosols_in,mp_thompson_in,mp_wsm6_in
- logical,pointer:: cu_kain_fritsch_in,cu_tiedtke_in
+ logical,pointer:: cu_grell_freitas_in,cu_kain_fritsch_in,cu_tiedtke_in
 
  integer :: ierr
 
@@ -97,14 +97,18 @@
 
  call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
 
+ nullify(cu_grell_freitas_in)
+ call mpas_pool_get_package(packages,'cu_grell_freitas_inActive',cu_grell_freitas_in)
+
  nullify(cu_kain_fritsch_in)
  call mpas_pool_get_package(packages,'cu_kain_fritsch_inActive',cu_kain_fritsch_in)
 
  nullify(cu_tiedtke_in)
  call mpas_pool_get_package(packages,'cu_tiedtke_inActive',cu_tiedtke_in)
 
- if(.not.associated(cu_kain_fritsch_in) .or. &
-    .not.associated(cu_tiedtke_in)    ) then
+ if(.not.associated(cu_grell_freitas_in) .or. &
+    .not.associated(cu_kain_fritsch_in)  .or. &
+    .not.associated(cu_tiedtke_in)     ) then
     write(stderrUnit,*) '===================================================================================='
     write(stderrUnit,*) '* Error while setting up packages for convection options in atmosphere core.'
     write(stderrUnit,*) '===================================================================================='
@@ -112,16 +116,20 @@
     return
  endif
 
- cu_kain_fritsch_in = .false.
- cu_tiedtke_in      = .false.
+ cu_grell_freitas_in = .false.
+ cu_kain_fritsch_in  = .false.
+ cu_tiedtke_in       = .false.
 
- if(config_convection_scheme == 'cu_kain_fritsch') then
+ if(config_convection_scheme=='cu_grell_freitas' .or. config_convection_scheme=='cu_grell_freitas_momentum') then
+    cu_grell_freitas_in = .true.
+ elseif(config_convection_scheme == 'cu_kain_fritsch') then
     cu_kain_fritsch_in = .true.
  elseif(config_convection_scheme == 'cu_tiedtke') then
     cu_tiedtke_in = .true.
  endif
 
  write(0,*) '--- convection_scheme       = ', trim(config_convection_scheme)
+ write(0,*) '--- cu_grell_freitas_in     = ', cu_grell_freitas_in
  write(0,*) '--- cu_kain_fritsch_in      = ', cu_kain_fritsch_in
  write(0,*) '--- cu_tiedtke_in           = ', cu_tiedtke_in
 

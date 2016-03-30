@@ -85,6 +85,9 @@
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 !>    * renamed config_conv_deep_scheme to config_convection_scheme.
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+!>    * in the call to driver_convection, added block%configs needed for the implementation of the
+!>      Grell-Freitas convection scheme.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
 
 
  contains
@@ -228,7 +231,7 @@
     call update_convection_step1(mesh,diag_physics,tend_physics)
     if(l_conv) then
        call allocate_convection
-       call driver_convection(itimestep,mesh,sfc_input,diag_physics,tend_physics)
+       call driver_convection(itimestep,block%configs,mesh,sfc_input,diag_physics,tend_physics)
        call deallocate_convection
     endif
     !update diagnostics:

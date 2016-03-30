@@ -111,7 +111,8 @@
                 <package name="mp_thompson_aerosols_in" description="parameterization of Thompson cloud microphysics with aerosols."/>
                 <package name="mp_thompson_in" description="parameterization of Thompson cloud microphysics."/>
                 <package name="mp_wsm6_in" description="parameterization of WSM6 cloud microphysics."/>
-                <package name="cu_kain_fritsch_in" description="parameterization of Kain Fritsch convection."/>
+                <package name="cu_grell_freitas_in" description="parameterization of Grell-Freitas convection."/>
+                <package name="cu_kain_fritsch_in" description="parameterization of Kain-Fritsch convection."/>
                 <package name="cu_tiedtke_in" description="parameterization of Tiedtke convection."/>
         </packages>
 
@@ -477,6 +478,14 @@
 			<var name="xicem"/>
 			<var name="z0"/>
 			<var name="zs"/>
+			<var name="k22_shallow"/>
+			<var name="kbcon_shallow"/>
+			<var name="ktop_shallow"/>
+			<var name="ktop_deep"/>
+			<var name="xmb_total"/>
+			<var name="xmb_shallow"/>
+			<var name="qc_cu"/>
+			<var name="qi_cu"/>
 			<var name="rthcuten"/>
 			<var name="rqvcuten"/>
 			<var name="rqccuten"/>
@@ -484,6 +493,7 @@
 			<var name="rqrcuten"/>
 			<var name="rqscuten"/>
 			<var name="rqvdynten"/>
+			<var name="rthdynten"/>
 			<var name="rucuten"/>
 			<var name="rvcuten"/>
 			<var name="rublten"/>
@@ -1016,6 +1026,9 @@
                 <nml_option name="config_radt_sw_scheme"             type="character"     default_value="suite"      in_defaults="false"/>
                 <nml_option name="config_sfclayer_scheme"            type="character"     default_value="suite"      in_defaults="false"/>
 
+                <nml_option name="config_gfconv_closure_deep"        type="integer"       default_value="0"          in_defaults="false"/>
+                <nml_option name="config_gfconv_closure_shallow"     type="integer"       default_value="8"          in_defaults="false"/>
+
                 <nml_option name="config_bucket_radt"                type="real"          default_value="1.0e9"      in_defaults="false"/>
                 <nml_option name="config_bucket_rainc"               type="real"          default_value="100.0"      in_defaults="false"/>
                 <nml_option name="config_bucket_rainnc"              type="real"          default_value="100.0"      in_defaults="false"/>
@@ -1090,21 +1103,35 @@
                 <!-- rainc     : accumulated time-step convective precipitation                                   (mm)  -->
                 <!-- raincv    : time-step convective precipitation                                               (mm)  -->
 
-                <var name="i_rainc"      type="integer" dimensions="nCells Time" packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
-                <var name="cuprec"       type="real"    dimensions="nCells Time" packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
-                <var name="rainc"        type="real"    dimensions="nCells Time" packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
-                <var name="raincv"       type="real"    dimensions="nCells Time" packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
+                <var name="i_rainc"       type="integer" dimensions="nCells Time" packages="cu_grell_freitas_in;cu_kain_fritsch_in;cu_tiedtke_in"/>
+                <var name="cuprec"        type="real"    dimensions="nCells Time" packages="cu_grell_freitas_in;cu_kain_fritsch_in;cu_tiedtke_in"/>
+                <var name="rainc"         type="real"    dimensions="nCells Time" packages="cu_grell_freitas_in;cu_kain_fritsch_in;cu_tiedtke_in"/>
+                <var name="raincv"        type="real"    dimensions="nCells Time" packages="cu_grell_freitas_in;cu_kain_fritsch_in;cu_tiedtke_in"/>
 
                 <!-- ... KAIN_FRITSCH:                                                                                 -->
-                <!-- cubot     : lowest level of convection                                                        (-) -->
-                <!-- cutop     : highest level of convection                                                       (-) -->
                 <!-- nca       : relaxation time for KF parameterization of convection                             (s) -->
                 <!-- wavg0     : average vertical velocity (KF scheme only)                                    (m s-1) -->
 
-                <var name="nca"          type="real"    dimensions="nCells Time" packages="cu_kain_fritsch_in"/>
-                <var name="cubot"        type="real"    dimensions="nCells Time" packages="cu_kain_fritsch_in"/>
-                <var name="cutop"        type="real"    dimensions="nCells Time" packages="cu_kain_fritsch_in"/>
-                <var name="w0avg"        type="real"    dimensions="nVertLevels nCells Time" packages="cu_kain_fritsch_in"/>
+                <var name="nca"           type="real"    dimensions="nCells Time" packages="cu_kain_fritsch_in"/>
+                <var name="w0avg"         type="real"    dimensions="nVertLevels nCells Time" packages="cu_kain_fritsch_in"/>
+
+                <!-- ... GRELL-FREITAS ONLY:                                                                           -->
+                <var name="k22_shallow"   type="integer"  dimensions="nCells Time" packages="cu_grell_freitas_in"/>
+                <var name="kbcon_shallow" type="integer"  dimensions="nCells Time" packages="cu_grell_freitas_in"/>
+                <var name="ktop_shallow"  type="integer"  dimensions="nCells Time" packages="cu_grell_freitas_in"/>
+                <var name="ktop_deep"     type="integer"  dimensions="nCells Time" packages="cu_grell_freitas_in"/>
+
+                <var name="xmb_total"     type="real"     dimensions="nCells Time" packages="cu_grell_freitas_in"/>
+                <var name="xmb_shallow"   type="real"     dimensions="nCells Time" packages="cu_grell_freitas_in"/>
+
+                <var name="qc_cu"         type="real"     dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in"/>
+                <var name="qi_cu"         type="real"     dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in"/>
+
+                <!-- ... KAIN_FRITSCH AND GRELL-FREITAS:                                                               -->
+                <!-- cubot     : lowest level of convection                                                        (-) -->
+                <!-- cutop     : highest level of convection                                                       (-) -->
+                <var name="cubot"         type="real"    dimensions="nCells Time" packages="cu_grell_freitas_in;cu_kain_fritsch_in"/>
+                <var name="cutop"         type="real"    dimensions="nCells Time" packages="cu_grell_freitas_in;cu_kain_fritsch_in"/>
 
 
                 <!-- ================================================================================================== -->
@@ -1467,10 +1494,10 @@
                 <!-- rqccuten  : tendency of cloud water mixing ratio due to cumulus convection            (kg/kg s-1)  -->
                 <!-- rqicuten  : tendency of cloud ice mixing ratio due to cumulus convection              (kg/kg s-1)  -->
 
-                <var name="rthcuten"     type="real"    dimensions="nVertLevels nCells Time" packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
-                <var name="rqvcuten"     type="real"    dimensions="nVertLevels nCells Time" packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
-                <var name="rqccuten"     type="real"    dimensions="nVertLevels nCells Time" packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
-                <var name="rqicuten"     type="real"    dimensions="nVertLevels nCells Time" packages="cu_kain_fritsch_in;cu_tiedtke_in"/>
+                <var name="rthcuten"     type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_kain_fritsch_in;cu_tiedtke_in"/>
+                <var name="rqvcuten"     type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_kain_fritsch_in;cu_tiedtke_in"/>
+                <var name="rqccuten"     type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_kain_fritsch_in;cu_tiedtke_in"/>
+                <var name="rqicuten"     type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_kain_fritsch_in;cu_tiedtke_in"/>
 
                 <!-- KAIN_FRITSCH -->
                 <!-- rqrcuten  : tendency of rain mixing ratio due to cumulus convection                   (kg/kg s-1) -->
@@ -1479,13 +1506,16 @@
                 <var name="rqrcuten"     type="real"    dimensions="nVertLevels nCells Time" packages="cu_kain_fritsch_in"/>
                 <var name="rqscuten"     type="real"    dimensions="nVertLevels nCells Time" packages="cu_kain_fritsch_in"/>
 
-                <!-- TIEDTKE -->
+                <!-- TIEDTKE AND GRELL -->
                 <!-- rucuten   : tendency of zonal wind due to cumulus convection                              (m/s-1) -->
                 <!-- rvcuten   : tendency of meridional wind due to cumulus convection                         (m/s-1) -->
                 <!-- rqvdynten : tendency of water vapor due to horizontal and vertical advections         (kg/kg/s-1) -->
-                <var name="rqvdynten"    type="real"    dimensions="nVertLevels nCells Time" packages="cu_tiedtke_in"/>
-                <var name="rucuten"      type="real"    dimensions="nVertLevels nCells Time" packages="cu_tiedtke_in"/>
-                <var name="rvcuten"      type="real"    dimensions="nVertLevels nCells Time" packages="cu_tiedtke_in"/>
+                <!-- rthdynten : tendency of potential temperature due to horizontal and vertical advections   (K/s-1) -->
+
+                <var name="rqvdynten"    type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_tiedtke_in"/>
+                <var name="rthdynten"    type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_tiedtke_in"/>
+                <var name="rucuten"      type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_tiedtke_in"/>
+                <var name="rvcuten"      type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_tiedtke_in"/>
 
 
                 <!-- ================================================================================================== -->
