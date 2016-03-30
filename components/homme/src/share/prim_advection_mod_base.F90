@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include "omp_config.h"
 #define NEWEULER_B4B 1
 #define OVERLAP 1
 
@@ -1551,9 +1552,7 @@ end subroutine ALE_parametric_coords
   integer :: rhs_viss
 
 !  call t_barrierf('sync_euler_step', hybrid%par%comm)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
+OMP_SIMD
   do k = 1 , nlev
     dp0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
@@ -1596,9 +1595,7 @@ end subroutine ALE_parametric_coords
     ! initialize dp, and compute Q from Qdp (and store Q in Qtens_biharmonic)
     do ie = nets , nete
       ! add hyperviscosity to RHS.  apply to Q at timelevel n0, Qdp(n0)/dp
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
+OMP_SIMD
       do k = 1 , nlev    !  Loop index added with implicit inversion (AAM)
         dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - rhs_multiplier*dt*elem(ie)%derived%divdp_proj(:,:,k)
       enddo
@@ -1813,9 +1810,7 @@ end subroutine ALE_parametric_coords
     if ( DSSopt == DSSdiv_vdp_ave ) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
 
     call edgeVunpack( edgeAdvp1 , DSSvar(:,:,1:nlev) , nlev , qsize*nlev , ie )
-#if (defined COLUMN_OPENMP)
- !$omp parallel do private(k)
-#endif
+OMP_SIMD
     do k = 1 , nlev
       DSSvar(:,:,k) = DSSvar(:,:,k) * elem(ie)%rspheremp(:,:)
     enddo
