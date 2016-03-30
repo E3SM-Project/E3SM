@@ -8,18 +8,23 @@ MODULE WRM_type_mod
 
 ! !USES:
   use shr_kind_mod  , only :  r8 => shr_kind_r8, SHR_KIND_CL
+  use mct_mod, only : mct_gsmap, mct_sMatP, mct_avect
 
   implicit none
   private
-  
+
+  type(mct_gsmap),public :: gsmap_wg      ! gsmap for grid decomposition in wrm
+  type(mct_gsmap),public :: gsmap_wd      ! gsmap for dam decomposition in wrm
+
+  type(mct_sMatP),public :: sMatP_g2d     ! sparse matrix plus for gridcell sums to dam
+  type(mct_sMatP),public :: sMatP_d2g     ! sparse matrix plus for dam sums to gridcells
+  type(mct_avect),public :: aVect_wg      ! avect for wrm grid
+  type(mct_avect),public :: aVect_wd      ! avect for wrm dam
+
 ! control information for subbasin-based representation
   type WRMcontrol_subw
      integer :: NDam             ! number of dams
      integer :: localNumDam      ! number of dams on decomposition
-
-     integer :: month            ! month of the simulation
-     integer :: year             ! year of the simulation
-     integer :: WRMFlag          ! Flag for  using the water resources management model or not
      integer :: ExtractionFlag   ! Flag for whether including Water Demand extraction : 1--> water extraction from each subbasin , uses extraction module ; 0 --> no extraction
      integer :: ExtractionMainChannelFlag   ! Flag for whether including Water Demand extraction from the main channel, only if unregulated flow ( bells and whistle here based on RegulationFlag is 1, etc)
      integer :: RegulationFlag   ! Flag whether to use reseervoir regulation or not : 1 --> use reservoir module; 0--> natural flow
@@ -27,9 +32,8 @@ MODULE WRM_type_mod
      integer :: TotalDemandFlag  ! Flag to indicate if the demand includes irrigation and non irrigation demands
      integer :: GroundWaterFlag  ! Flag to know if demand needs to be separated with GW-SW
 
-     character(len=350) :: paraFile         ! the path of the parameter files
-     character(len=350) :: paraPath         ! the path of the parameter files
-     character(len=350) :: demandPath       ! the path of the water demand data
+     character(len=256) :: paraFile         ! the path of the parameter files
+     character(len=256) :: demandPath       ! the path of the water demand data
      character(len=350) :: grndwaterPath    ! the path for the groundwater demand share
      character(len=350) :: outPath          ! the path of the output file(s)
      character(len=350) :: damListFile      ! name of the file containing Dam list
@@ -39,20 +43,23 @@ MODULE WRM_type_mod
   end type WRMcontrol_subw
   
      ! --- Topographic and geometric properties, applicable for both grid- and subbasin-based representations
+     ! --- nd=number of dams, b:e=begr:endr
   type WRMspatialunit
      ! grid properties
-     integer , pointer :: mask(:)           ! (nd) mask of a cell, value = reservoir GRanD ID, 0=reservoir (later, can add run-on-the-river)
-     integer , pointer :: icell(:)          ! (nd) subbasin ID the Ndam
-     integer , pointer :: INVicell(:)       ! (b:e) give the reservoir ID 1->NDAM located in icell
-     integer , pointer :: INVisubw(:)       ! (??) need the equivilent for subw for the extraction module
-     integer           :: NUnitID           ! max ID number of the units - needed by WRM
-     integer , pointer :: isDam(:)          ! (b:e) Dam ID
+     integer , pointer :: icell(:)          ! (nd) local gridcell    associated with local dam count
+     integer , pointer :: damID(:)          ! (nd) global dam ID     associated with local dam count
+     integer , pointer :: grdID(:)          ! (nd) global grid cell  associated with local dam count
+     integer , pointer :: INVicell(:)       ! (b:e) local dam count  associated with local gridcell
+     integer , pointer :: isDam(:)          ! (b:e) global dam ID    associated with local gridcell
+     integer , pointer :: myDamNum(:)       ! (b:e) number of dams   associated with local gridcell
+     integer , pointer :: myDam(:,:)        ! (mdn,b:e) list of dams associated with local gridcell
+
      character(len=100), pointer :: DamName(:) ! (nd) dam name
-     integer , pointer :: dam_depend(:,:)   ! (nd,b:e) dependence of each dam to subbasins - array of IDs
+!tcx     integer , pointer :: dam_depend(:,:)   ! (nd,b:e) dependence of each dam to subbasins - array of IDs
      integer , pointer :: dam_Ndepend(:)    ! (b:e) give the number of dependent subbasins to each reservoir
-     integer , pointer :: subw_depend(:,:)  ! (b:e,nd) dependence of each subbasin to a certain number of dams, map IDs
-     integer , pointer :: subw_Ndepend(:)   ! (b:e) number of reservoir from which the subbasin depends
-     integer , pointer :: subw_damlist(:)   ! (1:Ndams) global dams needed on this pe
+!     integer , pointer :: subw_depend(:,:)  ! (b:e,nd) dependence of each subbasin to a certain number of dams, map IDs
+!     integer , pointer :: subw_Ndepend(:)   ! (b:e) number of reservoir from which the subbasin depends
+
      real(r8), pointer :: Surfarea(:)       ! (nd) surface area of the reservoir
      real(r8), pointer :: InstCap(:)        ! (nd) instance energy capacity (MW)
      real(r8), pointer :: StorCap(:)        ! (nd) maximum storage capacity of the reservoir
@@ -96,6 +103,7 @@ MODULE WRM_type_mod
      real(r8), pointer :: supply(:)         ! (b:e) supply of surface water [m3]
      real(r8), pointer :: deficit(:)        ! (b:e) unmet demand [m3]
      real(r8), pointer :: demand(:)         ! (b:e) total withdrawl water demand [m3]
+     real(r8), pointer :: demand0(:)        ! (b:e) baseline total withdrawl water rate demand [m3/s]
      real(r8), pointer :: WithDemIrrig(:)   ! (b:e) withdrawal demand for irrigation [m3]
      real(r8), pointer :: WithDemNonIrrig(:)! (b:e) withdrawal demand non irrigation [m3]
      real(r8), pointer :: ConDemIrrig(:)    ! (b:e) consumptive demand irrigation [m3]
@@ -107,7 +115,8 @@ MODULE WRM_type_mod
      real(r8), pointer :: GWShareNonIrrig(:)! (b:e) share of non irrigation demand assigned to gw
      real(r8), pointer :: GWShareIrrig(:)   ! (b:e) share of irrigation demand assigned to gw
 
-     real(r8), pointer :: storage(:)        ! (nd) storage in the reservoir uhits
+     real(r8), pointer :: storage(:)        ! (nd) storage in the reservoir units
+     real(r8), pointer :: storageG(:)       ! (b:e) same as storage on gridcells
      real(r8), pointer :: pre_release(:,:)  ! (nd,13) pre-release without the interannual fluctutation
      real(r8), pointer :: release(:)        ! (nd) pre-release with the interannual fluctutation
      real(r8), pointer :: FCrelease (:)     ! (nd) Flood control release to get to storage target

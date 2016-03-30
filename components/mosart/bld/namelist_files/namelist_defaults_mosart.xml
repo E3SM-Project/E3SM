@@ -19,6 +19,7 @@ for the CLM data in the CESM distribution
 <delt_mosart>3600</delt_mosart> 
 <ice_runoff>.true.</ice_runoff>
 <wrmflag>.false.</wrmflag>
+<barrier_timers>.false.</barrier_timers>
 
 <decomp_option>'roundrobin'</decomp_option> 
 <smat_option>'Xonly'</smat_option> 
@@ -30,5 +31,17 @@ for the CLM data in the CESM distribution
 
 <frivinp_rtm rof_grid="r05" >rof/mosart/MOSART_Global_half_20151205a.nc</frivinp_rtm>
 <frivinp_rtm rof_grid="NLDAS" >rof/mosart/MOSART_NLDAS_8th.nc</frivinp_rtm>
+
+<!-- WRM -->
+
+<paraFile rof_grid="NLDAS" >rof/mosart/US_reservoir_8th_NLDAS2.nc</paraFile>
+<demandPath rof_grid="NLDAS" >/pic/scratch/tcraig/wm_data/NLDAS2_GCAM_water_demand_</demandPath>
+<ExtractionFlag>1</ExtractionFlag>
+<ExtractionMainChannelFlag>1</ExtractionMainChannelFlag>
+<RegulationFlag>1</RegulationFlag>
+<ReturnFlowFlag>0</ReturnFlowFlag>
+<TotalDemandFlag>1</TotalDemandFlag>
+<GroundWaterFlag>0</GroundWaterFlag>
+
 
 </namelist_defaults>

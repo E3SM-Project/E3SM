@@ -40,8 +40,8 @@ module RtmMod
   use MOSART_physics_mod, only : updatestate_hillslope, updatestate_subnetwork, &
                                  updatestate_mainchannel
 #ifdef INCLUDE_WRM
+  use WRM_type_mod    , only : ctlSubwWRM, WRMUnit, StorWater
   use WRM_subw_IO_mod , only : WRM_init
-  use WRM_modules     , only : Euler_WRM
 #endif
   use RtmIO
   use mct_mod
@@ -99,7 +99,6 @@ module RtmMod
   logical :: do_rtmflood
   logical :: do_rtm
 
-  character(len=256) :: nlfilename_rof = 'mosart_in' 
 !
 !EOP
 !-----------------------------------------------------------------------
@@ -191,6 +190,7 @@ contains
     integer ,allocatable :: gindex(:)         ! global index
     integer           :: cnt, lsize, gsize    ! counter
     integer           :: igrow,igcol,iwgt     ! mct field indices
+    character(len=256):: nlfilename_rof       ! namelist filename
     type(mct_avect)   :: avtmp, avtmpG        ! temporary avects
     type(mct_sMat)    :: sMat                 ! temporary sparse matrix, needed for sMatP
     character(len=*),parameter :: subname = '(Rtmini) '
@@ -206,13 +206,14 @@ contains
          rtmhist_fincl1,  rtmhist_fincl2, rtmhist_fincl3, &
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
          rtmhist_avgflag_pertape, decomp_option, wrmflag, &
-         smat_option, delt_mosart
+         smat_option, delt_mosart, barrier_timers
 
     ! Preset values
     do_rtm      = .true.
     do_rtmflood = .false.
     ice_runoff  = .true.
     wrmflag     = .false.
+    barrier_timers = .false.
     finidat_rtm = ' '
     nrevsn_rtm  = ' '
     coupling_period   = -1
@@ -250,10 +251,11 @@ contains
     call mpi_bcast (decomp_option, len(decomp_option), MPI_CHARACTER, 0, mpicom_rof, ier)
     call mpi_bcast (smat_option  , len(smat_option)  , MPI_CHARACTER, 0, mpicom_rof, ier)
 
-    call mpi_bcast (do_rtm,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
-    call mpi_bcast (do_rtmflood, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
-    call mpi_bcast (ice_runoff,  1, MPI_LOGICAL, 0, mpicom_rof, ier)
-    call mpi_bcast (wrmflag,     1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (do_rtm,         1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (do_rtmflood,    1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (ice_runoff,     1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (wrmflag,        1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (barrier_timers, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
 
     call mpi_bcast (rtmhist_nhtfrq, size(rtmhist_nhtfrq), MPI_INTEGER,   0, mpicom_rof, ier)
     call mpi_bcast (rtmhist_mfilt , size(rtmhist_mfilt) , MPI_INTEGER,   0, mpicom_rof, ier)
@@ -281,9 +283,10 @@ contains
       !write(iulog,*) '   hostname              = ',trim(hostname)
        write(iulog,*) '   coupling_period       = ',coupling_period
        write(iulog,*) '   delt_mosart           = ',delt_mosart
-       write(iulog,*) '   decomp option         = ',trim(decomp_option)
-       write(iulog,*) '   smat option           = ',trim(smat_option)
+       write(iulog,*) '   decomp_option         = ',trim(decomp_option)
+       write(iulog,*) '   smat_option           = ',trim(smat_option)
        write(iulog,*) '   wrmflag               = ',wrmflag
+       write(iulog,*) '   barrier_timers        = ',barrier_timers
        if (nsrest == nsrStartup .and. finidat_rtm /= ' ') then
           write(iulog,*) '   MOSART initial data   = ',trim(finidat_rtm)
        end if
@@ -518,16 +521,16 @@ contains
     edgew = minval(rlonc) - 0.5*abs(rlonc(1) - rlonc(2))
 
     if ( edgen .ne.  90._r8 )then
-       write(iulog,*) 'Regional grid: edgen = ', edgen
+       if (masterproc) write(iulog,*) 'Regional grid: edgen = ', edgen
     end if
     if ( edges .ne. -90._r8 )then
-       write(iulog,*) 'Regional grid: edges = ', edges
+       if (masterproc) write(iulog,*) 'Regional grid: edges = ', edges
     end if
     if ( edgee .ne. 180._r8 )then
-       write(iulog,*) 'Regional grid: edgee = ', edgee
+       if (masterproc) write(iulog,*) 'Regional grid: edgee = ', edgee
     end if
     if ( edgew .ne.-180._r8 )then
-       write(iulog,*) 'Regional grid: edgew = ', edgew
+       if (masterproc) write(iulog,*) 'Regional grid: edgew = ', edgew
     end if
 
     ! Set edge latitudes (assumes latitudes are constant for a given longitude)
@@ -561,6 +564,8 @@ contains
 !       write(iulog,*) 'tcx rlonw = ',rlonw
 !       write(iulog,*) 'tcx rlone = ',rlone
 !    endif
+
+    call t_stopf('mosarti_grid')
 
     !-------------------------------------------------------
     ! Determine mosart ocn/land mask (global, all procs)
@@ -1044,7 +1049,6 @@ contains
        call shr_sys_abort(subname//' ERROR rtmCTL mask')
     endif
 
-
     !-------------------------------------------------------
     ! Compute Sparse Matrix for downstream advection
     !-------------------------------------------------------
@@ -1056,6 +1060,7 @@ contains
        gindex(nr-rtmCTL%begr+1) = rtmCTL%gindex(nr)
     enddo
     call mct_gsMap_init( gsMap_r, gindex, mpicom_rof, ROFID, lsize, gsize )
+!   write(iulog,*) subname,' gsMap_r lsize = ',iam,mct_gsMap_lsize(gsMap_r,mpicom_rof)
     deallocate(gindex)
 
     if (smat_option == 'opt') then
@@ -1070,16 +1075,16 @@ contains
        enddo
 
        call mct_sMat_init(sMat, gsize, gsize, cnt)
-       igrow = mct_sMat_indexIA(sMat,'grow')
-       igcol = mct_sMat_indexIA(sMat,'gcol')
+       igcol = mct_sMat_indexIA(sMat,'gcol')   ! src
+       igrow = mct_sMat_indexIA(sMat,'grow')   ! dst
        iwgt  = mct_sMat_indexRA(sMat,'weight')
        cnt = 0
        do nr = rtmCTL%begr,rtmCTL%endr
           if (rtmCTL%dsig(nr) > 0) then
              cnt = cnt + 1
-             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-             sMat%data%iAttr(igrow,cnt) = rtmCTL%dsig(nr)
              sMat%data%iAttr(igcol,cnt) = rtmCTL%gindex(nr)
+             sMat%data%iAttr(igrow,cnt) = rtmCTL%dsig(nr)
+             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
           endif
        enddo
 
@@ -1107,17 +1112,17 @@ contains
           enddo
 
           call mct_sMat_init(sMat, gsize, gsize, cnt)
+          igcol = mct_sMat_indexIA(sMat,'gcol')   ! src
           igrow = mct_sMat_indexIA(sMat,'grow')
-          igcol = mct_sMat_indexIA(sMat,'gcol')
           iwgt  = mct_sMat_indexRA(sMat,'weight')
 
           cnt = 0
           do n = 1,rtmlon*rtmlat
              if (avtmpG%rAttr(2,n) > 0) then
                 cnt = cnt + 1
-                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
                 sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
+                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
+                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
              endif
           enddo
           call mct_avect_clean(avtmpG)
@@ -1140,9 +1145,11 @@ contains
     do nt = 2,nt_rtm
        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
     enddo
-    write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
+!    write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
     call mct_aVect_init(avsrc_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avdst_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
+!    write(iulog,*) subname,' avsrc_dnstrm lsize = ',iam,mct_aVect_lsize(avsrc_dnstrm)
+!    write(iulog,*) subname,' avdst_dnstrm lsize = ',iam,mct_aVect_lsize(avdst_dnstrm)
 
     lsize = mct_smat_gNumEl(sMatP_dnstrm%Matrix,mpicom_rof)
     if (masterproc) write(iulog,*) subname," Done initializing SmatP_dnstrm, nElements = ",lsize
@@ -1167,21 +1174,21 @@ contains
        cnt = rtmCTL%endr - rtmCTL%begr + 1
 
        call mct_sMat_init(sMat, gsize, gsize, cnt)
+       igcol = mct_sMat_indexIA(sMat,'gcol')   ! src
        igrow = mct_sMat_indexIA(sMat,'grow')
-       igcol = mct_sMat_indexIA(sMat,'gcol')
        iwgt  = mct_sMat_indexRA(sMat,'weight')
        cnt = 0
        do nr = rtmCTL%begr,rtmCTL%endr
           if (rtmCTL%outletg(nr) > 0) then
              cnt = cnt + 1
-             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-             sMat%data%iAttr(igrow,cnt) = rtmCTL%outletg(nr)
              sMat%data%iAttr(igcol,cnt) = rtmCTL%gindex(nr)
+             sMat%data%iAttr(igrow,cnt) = rtmCTL%outletg(nr)
+             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
           else
              cnt = cnt + 1
-             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-             sMat%data%iAttr(igrow,cnt) = rtmCTL%gindex(nr)
              sMat%data%iAttr(igcol,cnt) = rtmCTL%gindex(nr)
+             sMat%data%iAttr(igrow,cnt) = rtmCTL%gindex(nr)
+             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
           endif
        enddo
        if (cnt /= rtmCTL%endr - rtmCTL%begr + 1) then
@@ -1209,22 +1216,22 @@ contains
           cnt = rtmlon*rtmlat
 
           call mct_sMat_init(sMat, gsize, gsize, cnt)
+          igcol = mct_sMat_indexIA(sMat,'gcol')   ! src
           igrow = mct_sMat_indexIA(sMat,'grow')
-          igcol = mct_sMat_indexIA(sMat,'gcol')
           iwgt  = mct_sMat_indexRA(sMat,'weight')
 
           cnt = 0
           do n = 1,rtmlon*rtmlat
              if (avtmpG%rAttr(2,n) > 0) then
                 cnt = cnt + 1
-                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
                 sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
+                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
+                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
              else
                 cnt = cnt + 1
-                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(1,n)
                 sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
+                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(1,n)
+                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
              endif
           enddo
           if (cnt /= rtmlon*rtmlat) then
@@ -1251,9 +1258,11 @@ contains
     do nt = 2,nt_rtm
        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
     enddo
-    write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
+!    write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
     call mct_aVect_init(avsrc_direct,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avdst_direct,rList=rList,lsize=rtmCTL%lnumr)
+!    write(iulog,*) subname,' avsrc_direct lsize = ',iam,mct_aVect_lsize(avsrc_direct)
+!    write(iulog,*) subname,' avdst_direct lsize = ',iam,mct_aVect_lsize(avdst_direct)
 
     lsize = mct_smat_gNumEl(sMatP_direct%Matrix,mpicom_rof)
     if (masterproc) write(iulog,*) subname," Done initializing SmatP_direct, nElements = ",lsize
@@ -1413,15 +1422,15 @@ contains
 !
 ! !LOCAL VARIABLES:
 !EOP
-    integer  :: i, j, n, nr, ns, nt, n2, nf ! indices
-    real(r8) :: budget_terms(30,nt_rtm)     ! BUDGET terms
-        ! BUDGET terms 1-10 are for volumes (m3)
-        ! BUDGET terms 11-30 are for flows (m3/s)
+    integer  :: i, j, n, nr, ns, nt, n2, nf, idam ! indices
+    real(r8) :: budget_terms(50,nt_rtm)     ! BUDGET terms
+        ! BUDGET terms 1-10, 41-50 are for volumes (m3)
+        ! BUDGET terms 11-40 are for flows (m3/s)
     real(r8) :: budget_input, budget_output, budget_volume, budget_total, &
                 budget_euler, budget_eroutlag
     real(r8),save :: budget_accum(nt_rtm)   ! BUDGET accumulator over run
     integer ,save :: budget_accum_cnt       ! counter for budget_accum
-    real(r8) :: budget_global(30,nt_rtm)    ! global budget sum
+    real(r8) :: budget_global(50,nt_rtm)    ! global budget sum
     logical  :: budget_check                ! do global budget check
     real(r8) :: volr_init                   ! temporary storage to compute dvolrdt
     real(r8),parameter :: budget_tolerance = 1.0e-6   ! budget tolerance, m3/day
@@ -1432,7 +1441,7 @@ contains
     real(r8) :: delt                        ! delt associated with subcycling
     real(r8) :: delt_coupling               ! real value of coupling_period
     integer , save :: nsub_save             ! previous nsub
-    real(r8), save :: delt_save             ! previous delt
+    real(r8), save :: delt_save = -1.0      ! previous delt
     logical , save :: first_call = .true.   ! first time flag (for backwards compatibility)
     character(len=256) :: filer             ! restart file name
     integer  :: cnt                         ! counter for gridcells
@@ -1482,8 +1491,8 @@ contains
     rtmCTL%dvolrdtocn = spval
 
     ! BUDGET 
-    ! BUDGET terms 1-10 are for volumes (m3)
-    ! BUDGET terms 11-30 are for flows (m3/s)
+    ! BUDGET terms 1-10, 41-50 are for volumes (m3)
+    ! BUDGET terms 11-40 are for flows (m3/s)
 !    if (budget_check) then
        call t_startf('mosartr_budget')
        do nt = 1,nt_rtm
@@ -1500,6 +1509,15 @@ contains
                                rtmCTL%qgwl(nr,nt) + rtmCTL%qdto(nr,nt)
        enddo
        enddo
+
+#ifdef INCLUDE_WRM
+       if (wrmflag) then
+          nt = 1
+          do idam = 1,ctlSubwWRM%LocalNumDam
+             budget_terms(43,nt) = budget_terms(43,nt) + StorWater%storage(idam)
+          enddo
+       endif
+#endif
        call t_stopf('mosartr_budget')
 !    endif
 
@@ -1708,19 +1726,9 @@ contains
 
     do ns = 1,nsub
 
-       if (wrmflag) then
-#ifdef INCLUDE_WRM
-          call t_startf('mosartr_euler')
-          call Euler_WRM()
-          call t_stopf('mosartr_euler')
-#else
-          call shr_sys_abort(trim(subname)//' ERROR WRM not compiled')
-#endif
-       else
-          call t_startf('mosartr_euler')
-          call Euler()
-          call t_stopf('mosartr_euler')
-       endif
+       call t_startf('mosartr_euler')
+       call Euler()
+       call t_stopf('mosartr_euler')
 
 ! tcraig - NOT using this now, but leave it here in case it's useful in the future
 !   for some runoff terms.
@@ -1819,8 +1827,8 @@ contains
     !-----------------------------------
 
     ! BUDGET 
-    ! BUDGET terms 1-10 are for volumes (m3)
-    ! BUDGET terms 11-30 are for flows (m3/s)
+    ! BUDGET terms 1-10, 41-50 are for volumes (m3)
+    ! BUDGET terms 11-40 are for flows (m3/s)
     ! BUDGET only ocean runoff and direct gets out of the system
 !    if (budget_check) then
        call t_startf('mosartr_budget')
@@ -1849,15 +1857,28 @@ contains
           budget_terms(19,nt) = budget_terms(19,nt) + rtmCTL%flood(nr)
           budget_terms(22,nt) = budget_terms(22,nt) + rtmCTL%flood(nr)
        enddo
+#ifdef INCLUDE_WRM
+       if (wrmflag) then
+          nt = 1
+          do nr = rtmCTL%begr,rtmCTL%endr
+             budget_terms(42,nt) = budget_terms(42,nt) + StorWater%supply(nr)
+             budget_terms(22,nt) = budget_terms(22,nt) + StorWater%supply(nr)
+          enddo
+          do idam = 1,ctlSubwWRM%LocalNumDam
+             budget_terms(44,nt) = budget_terms(44,nt) + StorWater%storage(idam)
+          enddo
+       endif
+#endif
 
        ! accumulate the budget total over the run to make sure it's decreasing on avg
        budget_accum_cnt = budget_accum_cnt + 1
        do nt = 1,nt_rtm
-          budget_volume = (budget_terms( 2,nt) - budget_terms( 1,nt)) / delt_coupling
+          budget_volume = (budget_terms( 2,nt) - budget_terms( 1,nt) + &
+                           budget_terms(44,nt) - budget_terms(43,nt)) / delt_coupling
           budget_input  = (budget_terms(13,nt) + budget_terms(14,nt) + &
                            budget_terms(15,nt) + budget_terms(16,nt))
           budget_output = (budget_terms(18,nt) + budget_terms(19,nt) + &
-                           budget_terms(21,nt))
+                           budget_terms(21,nt) + budget_terms(42,nt))
           budget_total  = budget_volume - budget_input + budget_output
           budget_accum(nt) = budget_accum(nt) + budget_total
           budget_terms(30,nt) = budget_accum(nt)/budget_accum_cnt
@@ -1869,7 +1890,7 @@ contains
        !--- check budget
 
        ! convert fluxes from m3/s to m3 by mult by coupling_period
-       budget_terms(11:30,:) = budget_terms(11:30,:) * delt_coupling
+       budget_terms(11:40,:) = budget_terms(11:40,:) * delt_coupling
 
        ! convert terms from m3 to million m3
        budget_terms(:,:) = budget_terms(:,:) * 1.0e-6_r8
@@ -1881,11 +1902,12 @@ contains
        if (masterproc) then
           write(iulog,'(2a,i10,i6)') trim(subname),' MOSART BUDGET diagnostics (million m3) for ',ymd,tod
           do nt = 1,nt_rtm
-            budget_volume = (budget_global( 2,nt) - budget_global( 1,nt))
+            budget_volume = (budget_global( 2,nt) - budget_global( 1,nt) + &
+                             budget_global(44,nt) - budget_global(43,nt))
             budget_input  = (budget_global(13,nt) + budget_global(14,nt) + &
                              budget_global(15,nt) + budget_global(16,nt))
             budget_output = (budget_global(18,nt) + budget_global(19,nt) + &
-                             budget_global(21,nt))
+                             budget_global(21,nt) + budget_global(42,nt))
             budget_total  = budget_volume - budget_input + budget_output
             budget_euler  = budget_volume - budget_global(20,nt) + budget_global(18,nt)
             budget_eroutlag = budget_global(23,nt) - budget_global(24,nt)
@@ -1898,6 +1920,8 @@ contains
            !write(iulog,'(2a,i4,f22.6)') trim(subname),'   volumet final = ',nt,budget_global(4,nt)
            !write(iulog,'(2a,i4,f22.6)') trim(subname),'   volumer  init = ',nt,budget_global(5,nt)
            !write(iulog,'(2a,i4,f22.6)') trim(subname),'   volumer final = ',nt,budget_global(6,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   storage  init = ',nt,budget_global(43,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   storage final = ',nt,budget_global(44,nt)
            !write(iulog,'(2a)') trim(subname),'----------------'
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   input surface = ',nt,budget_global(13,nt)
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   input subsurf = ',nt,budget_global(14,nt)
@@ -1910,6 +1934,7 @@ contains
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   output flow   = ',nt,budget_global(18,nt)
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   output direct = ',nt,budget_global(21,nt)
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   output flood  = ',nt,budget_global(19,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),'   output supply = ',nt,budget_global(42,nt)
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   output total  = ',nt,budget_global(22,nt)
            !write(iulog,'(2a,i4,f22.6)') trim(subname),'   output check  = ',nt,budget_output - budget_global(22,nt)
            !write(iulog,'(2a)') trim(subname),'----------------'
@@ -2208,7 +2233,7 @@ contains
      call shr_sys_flush(iulog)
 
      do n=rtmCtl%begr, rtmCTL%endr
-        if (TUnit%area(n) < 0._r8) TUnit%area(n) = rtmCTL%area(n)
+        if (TUnit%area(n) <= 0._r8) TUnit%area(n) = rtmCTL%area(n)
         if (TUnit%area(n) /= rtmCTL%area(n)) then
            write(iulog,*) subname,' ERROR area mismatch',TUnit%area(n),rtmCTL%area(n)
            call shr_sys_abort(subname//' ERROR area mismatch')
@@ -2507,16 +2532,16 @@ contains
         enddo
 
         call mct_sMat_init(sMat, gsize, gsize, cnt)
+        igcol = mct_sMat_indexIA(sMat,'gcol')   ! src
         igrow = mct_sMat_indexIA(sMat,'grow')
-        igcol = mct_sMat_indexIA(sMat,'gcol')
         iwgt  = mct_sMat_indexRA(sMat,'weight')
         cnt = 0
         do iunit = rtmCTL%begr,rtmCTL%endr
            if (TUnit%dnID(iunit) > 0) then
               cnt = cnt + 1
-              sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-              sMat%data%iAttr(igrow,cnt) = TUnit%dnID(iunit)
               sMat%data%iAttr(igcol,cnt) = TUnit%ID0(iunit)
+              sMat%data%iAttr(igrow,cnt) = TUnit%dnID(iunit)
+              sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
            endif
         enddo
 
@@ -2542,17 +2567,17 @@ contains
            enddo
 
            call mct_sMat_init(sMat, gsize, gsize, cnt)
+           igcol = mct_sMat_indexIA(sMat,'gcol')   ! src
            igrow = mct_sMat_indexIA(sMat,'grow')
-           igcol = mct_sMat_indexIA(sMat,'gcol')
            iwgt  = mct_sMat_indexRA(sMat,'weight')
 
            cnt = 0
            do n = 1,rtmlon*rtmlat
               if (avtmpG%rAttr(2,n) > 0) then
                  cnt = cnt + 1
-                 sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-                 sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
                  sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
+                 sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
+                 sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
               endif
            enddo
            call mct_avect_clean(avtmpG)
@@ -2575,7 +2600,7 @@ contains
      do nt = 2,nt_rtm
         write(rList,'(a,i3.3)') trim(rList)//':tr',nt
      enddo
-     write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
+!    write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
      call mct_aVect_init(avsrc_eroutUp,rList=rList,lsize=rtmCTL%lnumr)
      call mct_aVect_init(avdst_eroutUp,rList=rList,lsize=rtmCTL%lnumr)
 

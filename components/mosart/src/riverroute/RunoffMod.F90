@@ -111,7 +111,6 @@ module RunoffMod
   ! constrol information 
   public :: Tcontrol
   type Tcontrol
-     integer  :: NUnit            ! numer of Grides in the model domain, which is equal to the number of cells, nrows*ncols
      integer  :: NSTART           ! the # of the time step to start the routing. Previous NSTART - 1 steps will be passed over.
      integer  :: NSTEPS           ! number of time steps specified in the modeling
      integer  :: NWARMUP          ! time steps for model warming up
@@ -130,8 +129,6 @@ module RunoffMod
      character(len=100) :: baseName    ! name of the case study, e.g., columbia
      character(len=200) :: ctlFile     ! the name of the control file
      character(len=100) :: ctlPath     ! the path of the control file
-     character(len=200) :: paraFile    ! the path of the parameter files
-     character(len=100) :: paraPath    ! the path of the parameter files
      character(len=100) :: runoffPath  ! the path of the runoff data
      character(len=100) :: outPath     ! the path of the output file(s)
      integer :: numStation             ! number of basins to be simulated

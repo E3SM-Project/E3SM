@@ -16,7 +16,7 @@ module RtmVar
   real(r8), public, parameter :: spval    = 1.e36_r8        ! special value for real data
   integer , public, parameter :: ispval   = -9999           ! special value for int data
   real(r8) :: re = SHR_CONST_REARTH*0.001_r8                ! radius of earth (km)
-  logical , public :: barrier_timers = .false.              ! barrier timers
+  logical , public :: barrier_timers                        ! barrier timers
 
   ! Run control variables
   character(len=256), public :: caseid  = ' '          ! case id

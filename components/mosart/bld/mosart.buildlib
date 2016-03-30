@@ -20,6 +20,7 @@ chdir "${OBJROOT}/rof/obj";
 open(file,">tmp_filepath") or die "ERROT: mosart.buildexe could not open file Filepath to write";
 print file "$CASEROOT/SourceMods/src.mosart \n";
 print file "$CCSMROOT/components/mosart/src/riverroute \n";
+print file "$CCSMROOT/components/mosart/src/wrm \n";
 print file "$CCSMROOT/components/mosart/src/cpl \n";
 print file "$CCSMROOT/components/mosart/src/cpl_share \n";
 close(file);
@@ -32,7 +33,7 @@ if (-f "Filepath") {
     system($sysmod) == 0 or die "ERROR: mosart.buidexe $sysmod failed: $?\n";
 }
 
-my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=mosart COMPLIB=$LIBROOT/librof.a -f $CASETOOLS/Makefile";
+my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=mosart COMPLIB=$LIBROOT/librof.a USER_CPPDEFS=\"-DINCLUDE_WRM\" -f $CASETOOLS/Makefile";
 system($sysmod) == 0 or die "ERROR: mosart.buildexe $sysmod failed: $?\n";
 
 exit(0);

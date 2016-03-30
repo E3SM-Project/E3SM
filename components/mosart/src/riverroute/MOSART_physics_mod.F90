@@ -13,10 +13,22 @@ MODULE MOSART_physics_mod
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use shr_const_mod , only : SHR_CONST_REARTH, SHR_CONST_PI
   use shr_sys_mod   , only : shr_sys_abort
-  use RtmVar        , only : iulog, barrier_timers
+  use RtmVar        , only : iulog, barrier_timers, wrmflag
   use RunoffMod     , only : Tctl, TUnit, TRunoff, TPara, rtmCTL, &
                              SMatP_eroutUp, avsrc_eroutUp, avdst_eroutUp
-  use RtmSpmd       , only : masterproc, mpicom_rof
+  use RtmSpmd       , only : masterproc, mpicom_rof, iam
+  use RtmTimeManager, only : get_curr_date
+#ifdef INCLUDE_WRM
+  use WRM_type_mod  , only : ctlSubwWRM, WRMUnit, StorWater
+  use WRM_modules   , only : irrigationExtractionSubNetwork, &
+                             irrigationExtractionMainChannel, &
+                             Regulation, ExtractionRegulatedFlow, &
+                             RegulationRelease, WRM_storage_targets
+  use WRM_returnflow, only : insert_returnflow_channel, &
+                             insert_returnflow_soilcolumn, &
+                             estimate_returnflow_deficit
+  use WRM_subw_io_mod, only : WRM_readDemand
+#endif
   use rof_cpl_indices, only : nt_rtm, rtm_tracers
   use perf_mod, only: t_startf, t_stopf
   use mct_mod
@@ -32,9 +44,6 @@ MODULE MOSART_physics_mod
   public updatestate_hillslope
   public updatestate_subnetwork
   public updatestate_mainchannel
-  public hillsloperouting
-  public subnetworkrouting
-  public mainchannelrouting
 
 !-----------------------------------------------------------------------
                    
@@ -46,9 +55,40 @@ MODULE MOSART_physics_mod
   ! !DESCRIPTION: solve the ODEs with Euler algorithm
     implicit none    
     
-    integer :: iunit, m, k, unitUp, cnt, ier   !local index
+    integer :: iunit, idam, m, k, unitUp, cnt, ier   !local index
     real(r8) :: temp_erout, localDeltaT
     real(r8) :: negchan
+    integer  :: yr,mon,day,tod
+    character(len=*),parameter :: subname = '(Euler)'
+    !------------------
+
+    call get_curr_date(yr, mon, day, tod)
+
+    !------------------
+    ! WRM prep
+    !------------------
+
+#ifdef INCLUDE_WRM
+    if (wrmflag) then
+       if ( ctlSubwWRM%ReturnFlowFlag > 0) then
+          call insert_returnflow_soilcolumn
+       endif
+       !call readPotentialEvap(trim(theTime))
+       if ( day == 1 .and. tod == 0) then    ! tcx should this be all timesteps on day=1
+          do idam=1,ctlSubwWRM%NDam
+             if ( mon .eq. WRMUnit%MthStOp(idam)) then
+               WRMUnit%StorMthStOp(idam) = StorWater%Storage(idam)
+             end if
+          enddo
+          call WRM_readDemand()
+          call RegulationRelease()
+          call WRM_storage_targets()
+       end if
+       StorWater%demand = StorWater%demand0 * Tctl%DeltaT
+       StorWater%supply = 0._r8
+       StorWater%deficit =0._r8
+    endif
+#endif
 
     !------------------
     ! hillslope
@@ -68,6 +108,17 @@ MODULE MOSART_physics_mod
     endif
     end do
     call t_stopf('mosartr_hillslope')
+
+#ifdef INCLUDE_WRM
+    if (wrmflag) then
+       call t_startf('mosartr_wrm_IESubN')
+       ! extraction from available surface runoff 
+       if (ctlSubwWRM%ExtractionFlag > 0) then
+          call irrigationExtractionSubNetwork
+       end if
+       call t_stopf('mosartr_wrm_IESubN')
+    endif
+#endif
 
     TRunoff%flow = 0._r8
     TRunoff%erout_prev = 0._r8
@@ -182,6 +233,33 @@ MODULE MOSART_physics_mod
              end do
              temp_erout = temp_erout / TUnit%numDT_r(iunit)
              TRunoff%erout(iunit,nt) = temp_erout
+#ifdef INCLUDE_WRM
+             if (wrmflag) then
+                if (nt == 1) then
+                   localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
+                   if (ctlSubwWRM%ExtractionMainChannelFlag > 0 .AND. ctlSubwWRM%ExtractionFlag > 0 ) then
+                      call IrrigationExtractionMainChannel(iunit, localDeltaT )
+                      if (ctlSubwWRM%TotalDemandFlag > 0 .AND. ctlSubwWRM%ReturnFlowFlag > 0 ) then
+                         call insert_returnflow_channel(iunit, localDeltaT )
+                      endif
+                      ! update main channel storage as well
+                      temp_erout = temp_erout - TRunoff%erout(iunit,nt) ! change in erout after regulation and extraction
+                      TRunoff%dwr(iunit,nt) =  temp_erout
+                      TRunoff%wr(iunit,nt) = TRunoff%wr(iunit,nt) + TRunoff%dwr(iunit,nt) * localDeltaT
+                      call UpdateState_mainchannel(iunit,nt)
+                   endif
+!                   if ( ctlSubwWRM%RegulationFlag>0 .and. WRMUnit%INVicell(iunit) > 0 .and. WRMUnit%MeanMthFlow(iunit,13) > 0.01_r8 ) then
+!                      call Regulation(iunit, localDeltaT)
+! tcx moved out of loop
+!                      if ( ctlSubwWRM%ExtractionFlag > 0 ) then
+!                         call ExtractionRegulatedFlow(iunit, localDeltaT)
+!                      endif
+!                   endif
+                endif
+                ! do not update wr after regulation or extraction from reservoir release. Because of the regulation, 
+                ! the wr might get to crazy uncontrolled values, assume in this case wr is not changed. The storage in reservoir handles it.
+             endif
+#endif
              TRunoff%flow(iunit,nt) = TRunoff%flow(iunit,nt) - TRunoff%erout(iunit,nt)
           endif
        end do ! iunit
@@ -191,6 +269,45 @@ MODULE MOSART_physics_mod
 
        call t_stopf('mosartr_chanroute')    
     end do
+
+    !------------------
+    ! WRM ExtractionRegulatedFlow
+    !------------------
+
+#ifdef INCLUDE_WRM
+    if (wrmflag) then
+       localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
+       if (ctlSubwWRM%RegulationFlag>0) then
+          call t_startf('mosartr_wrm_Reg')
+          do iunit=rtmCTL%begr,rtmCTL%endr
+             if (TUnit%mask(iunit) > 0  .and. WRMUnit%INVicell(iunit) > 0 .and. WRMUnit%MeanMthFlow(iunit,13) > 0.01_r8 ) then
+                call Regulation(iunit, localDeltaT)
+             endif
+          enddo
+          call t_stopf('mosartr_wrm_Reg')
+          if (ctlSubwWRM%ExtractionFlag > 0 ) then
+             call t_startf('mosartr_wrm_ERFlow')
+             call ExtractionRegulatedFlow(localDeltaT)
+             call t_stopf('mosartr_wrm_ERFlow')
+          endif
+       endif
+    endif
+#endif
+
+    !------------------
+    ! WRM post Euler updates
+    !------------------
+
+#ifdef INCLUDE_WRM
+    if (wrmflag) then
+       call t_startf('mosartr_wrm_estrfdef')
+       call estimate_returnflow_deficit()
+       if (ctlSubwWRM%ExtractionFlag > 0) then
+          StorWater%deficit = StorWater%demand
+       endif
+       call t_stopf('mosartr_wrm_estrfdef')
+    endif
+#endif
 
 ! check for negative channel storage
     if (negchan < -1.e-10) then
@@ -212,6 +329,7 @@ MODULE MOSART_physics_mod
     
     integer, intent(in) :: iunit, nt
     real(r8), intent(in) :: theDeltaT    
+    character(len=*),parameter :: subname = '(hillslopeRouting)'
 
 !  !TRunoff%ehout(iunit,nt) = -CREHT(TUnit%hslp(iunit), TUnit%nh(iunit), TUnit%Gxr(iunit), TRunoff%yh(iunit,nt))
     TRunoff%ehout(iunit,nt) = -CREHT_nosqrt(TUnit%hslpsqrt(iunit), TUnit%nh(iunit), TUnit%Gxr(iunit), TRunoff%yh(iunit,nt))
@@ -230,6 +348,7 @@ MODULE MOSART_physics_mod
     implicit none    
     integer, intent(in) :: iunit,nt
     real(r8), intent(in) :: theDeltaT
+    character(len=*),parameter :: subname = '(subnetworkRouting)'
 
 !  !if(TUnit%tlen(iunit) <= 1e100_r8) then ! if no tributaries, not subnetwork channel routing
     if(TUnit%tlen(iunit) <= TUnit%hlen(iunit)) then ! if no tributaries, not subnetwork channel routing
@@ -261,6 +380,7 @@ MODULE MOSART_physics_mod
     implicit none    
     integer, intent(in) :: iunit, nt
     real(r8), intent(in) :: theDeltaT    
+    character(len=*),parameter :: subname = '(mainchannelRouting)'
 
     if(Tctl%RoutingMethod == 1) then
        call Routing_KW(iunit, nt, theDeltaT)
@@ -286,6 +406,7 @@ MODULE MOSART_physics_mod
     real(r8), intent(in) :: theDeltaT    
     integer  :: k
     real(r8) :: temp_gwl, temp_dwr, temp_gwl0
+    character(len=*),parameter :: subname = '(Routing_KW)'
 
     ! estimate the inflow from upstream units
     TRunoff%erin(iunit,nt) = 0._r8
@@ -360,6 +481,7 @@ MODULE MOSART_physics_mod
     implicit none    
     integer, intent(in) :: iunit, nt   
     real(r8), intent(in) :: theDeltaT
+    character(len=*),parameter :: subname = '(Routing_MC)'
    
   end subroutine Routing_MC
 
@@ -370,6 +492,7 @@ MODULE MOSART_physics_mod
     implicit none    
     integer, intent(in) :: iunit, nt
     real(r8), intent(in) :: theDeltaT
+    character(len=*),parameter :: subname = '(Routing_THREW)'
    
   end subroutine Routing_THREW
 
@@ -380,6 +503,7 @@ MODULE MOSART_physics_mod
     implicit none    
     integer, intent(in) :: iunit, nt
     real(r8), intent(in) :: theDeltaT
+    character(len=*),parameter :: subname = '(Routing_DW)'
    
   end subroutine Routing_DW
 
@@ -389,6 +513,7 @@ MODULE MOSART_physics_mod
   ! !DESCRIPTION: update the state variables at hillslope
     implicit none    
     integer, intent(in) :: iunit, nt
+    character(len=*),parameter :: subname = '(updateState_hillslope)'
 
     TRunoff%yh(iunit,nt) = TRunoff%wh(iunit,nt) !/ TUnit%area(iunit) / TUnit%frac(iunit) 
 
@@ -400,18 +525,20 @@ MODULE MOSART_physics_mod
   ! !DESCRIPTION: update the state variables in subnetwork channel
     implicit none    
     integer, intent(in) :: iunit,nt
+    character(len=*),parameter :: subname = '(updateState_subnetwork)'
 
-       if(TUnit%tlen(iunit) > 0._r8 .and. TRunoff%wt(iunit,nt) > 0._r8) then
-          TRunoff%mt(iunit,nt) = GRMR(TRunoff%wt(iunit,nt), TUnit%tlen(iunit)) 
-          TRunoff%yt(iunit,nt) = GRHT(TRunoff%mt(iunit,nt), TUnit%twidth(iunit))
-          TRunoff%pt(iunit,nt) = GRPT(TRunoff%yt(iunit,nt), TUnit%twidth(iunit))
-          TRunoff%rt(iunit,nt) = GRRR(TRunoff%mt(iunit,nt), TRunoff%pt(iunit,nt))
-       else
-          TRunoff%mt(iunit,nt) = 0._r8
-          TRunoff%yt(iunit,nt) = 0._r8
-          TRunoff%pt(iunit,nt) = 0._r8
-          TRunoff%rt(iunit,nt) = 0._r8
-       end if
+    if (TUnit%tlen(iunit) > 0._r8 .and. TRunoff%wt(iunit,nt) > 0._r8) then
+       TRunoff%mt(iunit,nt) = GRMR(TRunoff%wt(iunit,nt), TUnit%tlen(iunit)) 
+       TRunoff%yt(iunit,nt) = GRHT(TRunoff%mt(iunit,nt), TUnit%twidth(iunit))
+       TRunoff%pt(iunit,nt) = GRPT(TRunoff%yt(iunit,nt), TUnit%twidth(iunit))
+       TRunoff%rt(iunit,nt) = GRRR(TRunoff%mt(iunit,nt), TRunoff%pt(iunit,nt))
+    else
+       TRunoff%mt(iunit,nt) = 0._r8
+       TRunoff%yt(iunit,nt) = 0._r8
+       TRunoff%pt(iunit,nt) = 0._r8
+       TRunoff%rt(iunit,nt) = 0._r8
+    end if
+
   end subroutine updateState_subnetwork
 
 !-----------------------------------------------------------------------
@@ -420,29 +547,32 @@ MODULE MOSART_physics_mod
   ! !DESCRIPTION: update the state variables in main channel
     implicit none    
     integer, intent(in) :: iunit, nt
+    character(len=*),parameter :: subname = '(updateState_mainchannel)'
 
-       if(TUnit%rlen(iunit) > 0._r8 .and. TRunoff%wr(iunit,nt) > 0._r8) then
-          TRunoff%mr(iunit,nt) = GRMR(TRunoff%wr(iunit,nt), TUnit%rlen(iunit)) 
-          TRunoff%yr(iunit,nt) = GRHR(TRunoff%mr(iunit,nt), TUnit%rwidth(iunit), TUnit%rwidth0(iunit), TUnit%rdepth(iunit))
-          TRunoff%pr(iunit,nt) = GRPR(TRunoff%yr(iunit,nt), TUnit%rwidth(iunit), TUnit%rwidth0(iunit), TUnit%rdepth(iunit))
-          TRunoff%rr(iunit,nt) = GRRR(TRunoff%mr(iunit,nt), TRunoff%pr(iunit,nt))
-       else
-          TRunoff%mr(iunit,nt) = 0._r8
-          TRunoff%yr(iunit,nt) = 0._r8
-          TRunoff%pr(iunit,nt) = 0._r8
-          TRunoff%rr(iunit,nt) = 0._r8
-       end if
+    if (TUnit%rlen(iunit) > 0._r8 .and. TRunoff%wr(iunit,nt) > 0._r8) then
+       TRunoff%mr(iunit,nt) = GRMR(TRunoff%wr(iunit,nt), TUnit%rlen(iunit)) 
+       TRunoff%yr(iunit,nt) = GRHR(TRunoff%mr(iunit,nt), TUnit%rwidth(iunit), TUnit%rwidth0(iunit), TUnit%rdepth(iunit))
+       TRunoff%pr(iunit,nt) = GRPR(TRunoff%yr(iunit,nt), TUnit%rwidth(iunit), TUnit%rwidth0(iunit), TUnit%rdepth(iunit))
+       TRunoff%rr(iunit,nt) = GRRR(TRunoff%mr(iunit,nt), TRunoff%pr(iunit,nt))
+    else
+       TRunoff%mr(iunit,nt) = 0._r8
+       TRunoff%yr(iunit,nt) = 0._r8
+       TRunoff%pr(iunit,nt) = 0._r8
+       TRunoff%rr(iunit,nt) = 0._r8
+    end if
+
   end subroutine updateState_mainchannel
 
 !-----------------------------------------------------------------------
     
   function CRVRMAN(slp_, n_, rr_) result(v_)
-  ! Function for calculating channel velocity according to Manning's equation.
+  ! ! Function for calculating channel velocity according to Manning's equation.
     implicit none
     real(r8), intent(in) :: slp_, n_, rr_ ! slope, manning's roughness coeff., hydraulic radius
     real(r8)             :: v_            ! v_ is  discharge
     
     real(r8) :: ftemp,vtemp
+    character(len=*),parameter :: subname = '(CRVRMAN)'
 
     if(rr_ <= 0._r8) then
        v_ = 0._r8
@@ -460,18 +590,19 @@ MODULE MOSART_physics_mod
 !debug          write(iulog,*) 'tcx check crvrman ',vtemp, v_
 !debug       endif
     end if
-    return
+
   end function CRVRMAN
 
 !-----------------------------------------------------------------------
     
   function CRVRMAN_nosqrt(sqrtslp_, n_, rr_) result(v_)
-  ! Function for calculating channel velocity according to Manning's equation.
+  ! ! Function for calculating channel velocity according to Manning's equation.
     implicit none
     real(r8), intent(in) :: sqrtslp_, n_, rr_ ! sqrt(slope), manning's roughness coeff., hydraulic radius
     real(r8)             :: v_            ! v_ is  discharge
     
     real(r8) :: ftemp, vtemp
+    character(len=*),parameter :: subname = '(CRVRMAN_nosqrt)'
 
     if(rr_ <= 0._r8) then
        v_ = 0._r8
@@ -489,111 +620,120 @@ MODULE MOSART_physics_mod
 !debug          write(iulog,*) 'tcx check crvrman_nosqrt ',vtemp, v_
 !debug       endif
     end if
-    return
+
   end function CRVRMAN_nosqrt
 
 !-----------------------------------------------------------------------
 
   function CREHT(hslp_, nh_, Gxr_, yh_) result(eht_)
-  ! Function for overland from hillslope into the sub-network channels
+  ! ! Function for overland from hillslope into the sub-network channels
     implicit none
     real(r8), intent(in) :: hslp_, nh_, Gxr_, yh_ ! topographic slope, manning's roughness coeff., drainage density, overland flow depth
     real(r8)                   :: eht_            ! velocity, specific discharge
     
     real(r8) :: vh_
+    character(len=*),parameter :: subname = '(CREHT)'
+
     vh_ = CRVRMAN(hslp_,nh_,yh_)
     eht_ = Gxr_*yh_*vh_
-    return
+
   end function CREHT
 
 !-----------------------------------------------------------------------
 
   function CREHT_nosqrt(sqrthslp_, nh_, Gxr_, yh_) result(eht_)
-  ! Function for overland from hillslope into the sub-network channels
+  ! ! Function for overland from hillslope into the sub-network channels
     implicit none
     real(r8), intent(in) :: sqrthslp_, nh_, Gxr_, yh_ ! topographic slope, manning's roughness coeff., drainage density, overland flow depth
     real(r8)                   :: eht_            ! velocity, specific discharge
     
     real(r8) :: vh_
+    character(len=*),parameter :: subname = '(CREHT_nosqrt)'
+
     vh_ = CRVRMAN_nosqrt(sqrthslp_,nh_,yh_)
     eht_ = Gxr_*yh_*vh_
-    return
+
   end function CREHT_nosqrt
 
 !-----------------------------------------------------------------------
 
   function GRMR(wr_, rlen_) result(mr_)
-  ! Function for estimate wetted channel area
+  ! ! Function for estimate wetted channel area
     implicit none
     real(r8), intent(in) :: wr_, rlen_      ! storage of water, channel length
     real(r8)             :: mr_             ! wetted channel area
+    character(len=*),parameter :: subname = '(GRMR)'
     
     mr_ = wr_ / rlen_
-    return
+
   end function GRMR
   
 !-----------------------------------------------------------------------
 
   function GRHT(mt_, twid_) result(ht_)
-  ! Function for estimating water depth assuming rectangular channel
+  ! ! Function for estimating water depth assuming rectangular channel
     implicit none
     real(r8), intent(in) :: mt_, twid_      ! wetted channel area, channel width
     real(r8)             :: ht_             ! water depth
+    character(len=*),parameter :: subname = '(GRHT)'
     
     if(mt_ <= TINYVALUE) then
        ht_ = 0._r8
     else
        ht_ = mt_ / twid_
     end if
-    return
+
   end function GRHT
 
 !-----------------------------------------------------------------------
 
   function GRPT(ht_, twid_) result(pt_)
-  ! Function for estimating wetted perimeter assuming rectangular channel
+  ! ! Function for estimating wetted perimeter assuming rectangular channel
     implicit none
     real(r8), intent(in) :: ht_, twid_      ! water depth, channel width
     real(r8)             :: pt_             ! wetted perimeter
+    character(len=*),parameter :: subname = '(GRPT)'
     
     if(ht_ <= TINYVALUE) then
        pt_ = 0._r8
     else
        pt_ = twid_ + 2._r8 * ht_
     end if
-    return
+
   end function GRPT
 
 !-----------------------------------------------------------------------
 
   function GRRR(mr_, pr_) result(rr_)
-  ! Function for estimating hydraulic radius
+  ! ! Function for estimating hydraulic radius
     implicit none
     real(r8), intent(in) :: mr_, pr_        ! wetted area and perimeter
     real(r8)             :: rr_             ! hydraulic radius
+    character(len=*),parameter :: subname = '(GRRR)'
     
     if(pr_ <= TINYVALUE) then
        rr_ = 0._r8
     else
        rr_ = mr_ / pr_
     end if
-    return
+
   end function GRRR
 
 !-----------------------------------------------------------------------
 
   function GRHR(mr_, rwidth_, rwidth0_, rdepth_) result(hr_)
-  ! Function for estimating maximum water depth assuming rectangular channel and tropezoidal flood plain
-  ! here assuming the channel cross-section consists of three parts, from bottom to up,
-  ! part 1 is a rectangular with bankfull depth (rdep) and bankfull width (rwid)
-  ! part 2 is a tropezoidal, bottom width rwid and top width rwid0, height 0.1*((rwid0-rwid)/2), assuming slope is 0.1
-  ! part 3 is a rectagular with the width rwid0
+  ! ! Function for estimating maximum water depth assuming rectangular channel and tropezoidal flood plain
+  ! ! here assuming the channel cross-section consists of three parts, from bottom to up,
+  ! ! part 1 is a rectangular with bankfull depth (rdep) and bankfull width (rwid)
+  ! ! part 2 is a tropezoidal, bottom width rwid and top width rwid0, height 0.1*((rwid0-rwid)/2), assuming slope is 0.1
+  ! ! part 3 is a rectagular with the width rwid0
     implicit none
     real(r8), intent(in) :: mr_, rwidth_, rwidth0_, rdepth_ ! wetted channel area, channel width, flood plain wid, water depth
     real(r8)             :: hr_                             ! water depth
     
     real(r8) :: SLOPE1  ! slope of flood plain, TO DO
     real(r8) :: deltamr_
+    character(len=*),parameter :: subname = '(GRHR)'
 
     SLOPE1 = SLOPE1def
     if(mr_ <= TINYVALUE) then
@@ -612,17 +752,17 @@ MODULE MOSART_physics_mod
           end if
        end if
     end if
-    return
+
   end function GRHR
   
 !-----------------------------------------------------------------------
 
   function GRPR(hr_, rwidth_, rwidth0_,rdepth_) result(pr_)
-  ! Function for estimating maximum water depth assuming rectangular channel and tropezoidal flood plain
-  ! here assuming the channel cross-section consists of three parts, from bottom to up,
-  ! part 1 is a rectangular with bankfull depth (rdep) and bankfull width (rwid)
-  ! part 2 is a tropezoidal, bottom width rwid and top width rwid0, height 0.1*((rwid0-rwid)/2), assuming slope is 0.1
-  ! part 3 is a rectagular with the width rwid0
+  ! ! Function for estimating maximum water depth assuming rectangular channel and tropezoidal flood plain
+  ! ! here assuming the channel cross-section consists of three parts, from bottom to up,
+  ! ! part 1 is a rectangular with bankfull depth (rdep) and bankfull width (rwid)
+  ! ! part 2 is a tropezoidal, bottom width rwid and top width rwid0, height 0.1*((rwid0-rwid)/2), assuming slope is 0.1
+  ! ! part 3 is a rectagular with the width rwid0
     implicit none
     real(r8), intent(in) :: hr_, rwidth_, rwidth0_, rdepth_ ! wwater depth, channel width, flood plain wid, water depth
     real(r8)             :: pr_                             ! water depth
@@ -630,6 +770,7 @@ MODULE MOSART_physics_mod
     real(r8) :: SLOPE1  ! slope of flood plain, TO DO
     real(r8) :: deltahr_
     logical, save :: first_call = .true.
+    character(len=*),parameter :: subname = '(GRPR)'
 
     SLOPE1 = SLOPE1def
     if (first_call) then
@@ -653,7 +794,7 @@ MODULE MOSART_physics_mod
           end if
        end if
     end if
-    return
+
   end function GRPR 
   
 !-----------------------------------------------------------------------
@@ -662,11 +803,13 @@ MODULE MOSART_physics_mod
   ! !DESCRIPTION: create a new file. if a file with the same name exists, delete it then create a new one
     implicit none
     character(len=*), intent(in) :: fname ! file name
-      integer, intent(in) :: nio            !unit of the file to create
-    
+    integer, intent(in) :: nio            !unit of the file to create
+
     integer :: ios
     logical :: filefound
     character(len=1000) :: cmd
+    character(len=*),parameter :: subname = '(createFile)'
+
     inquire (file=fname, exist=filefound)
     if(filefound) then
        cmd = 'rm '//trim(fname)
@@ -676,6 +819,7 @@ MODULE MOSART_physics_mod
     if(ios /= 0) then
        print*, "cannot create file ", fname
     end if
+
   end subroutine createFile
   
 !-----------------------------------------------------------------------
@@ -686,23 +830,25 @@ MODULE MOSART_physics_mod
     integer, intent(in) :: nio        ! unit of the file to print
     
     integer :: IDlist(1:5) = (/151,537,687,315,2080/)
+    integer :: nt
     integer :: ios,ii                    ! flag of io status
-            
+    character(len=*),parameter :: subname = '(printTest)'
 
     write(unit=nio,fmt="(15(e20.11))") TRunoff%etin(IDlist(1),1)/TUnit%area(IDlist(1)), TRunoff%erlateral(IDlist(1),1)/TUnit%area(IDlist(1)), TRunoff%flow(IDlist(1),1), &
                                        TRunoff%etin(IDlist(2),1)/TUnit%area(IDlist(2)), TRunoff%erlateral(IDlist(2),1)/TUnit%area(IDlist(2)), TRunoff%flow(IDlist(2),1), &
                      TRunoff%etin(IDlist(3),1)/TUnit%area(IDlist(3)), TRunoff%erlateral(IDlist(3),1)/TUnit%area(IDlist(3)), TRunoff%flow(IDlist(3),1), &
                      TRunoff%etin(IDlist(4),1)/TUnit%area(IDlist(4)), TRunoff%erlateral(IDlist(4),1)/TUnit%area(IDlist(4)), TRunoff%flow(IDlist(4),1), &
                      TRunoff%etin(IDlist(5),1)/TUnit%area(IDlist(5)), TRunoff%erlateral(IDlist(5),1)/TUnit%area(IDlist(5)), TRunoff%flow(IDlist(5),1)
-    !write(unit=nio,fmt="((a10),(e20.11))") theTime, liqWater%flow(ii)
-    !write(unit=nio,fmt="((a10),6(e20.11))") theTime, liqWater%qsur(ii), liqWater%qsub(ii), liqWater%etin(ii)/(TUnit%area(ii)*TUnit%frac(ii)), liqWater%erlateral(ii)/(TUnit%area(ii)*TUnit%frac(ii)), liqWater%erin(ii), liqWater%flow(ii)
-    !if(liqWater%yr(ii) > 0._r8) then
-    !    write(unit=nio,fmt="((a10),6(e20.11))") theTime, liqWater%mr(ii)/liqWater%yr(ii),liqWater%yr(ii), liqWater%vr(ii), liqWater%erin(ii), liqWater%erout(ii)/(TUnit%area(ii)*TUnit%frac(ii)), liqWater%flow(ii)
+    !nt = 1
+    !write(unit=nio,fmt="((a10),(e20.11))") theTime, TRunoff%flow(ii,nt)
+    !write(unit=nio,fmt="((a10),6(e20.11))") theTime, TRunoff%qsur(ii,nt), TRunoff%qsub(ii,nt), TRunoff%etin(ii,nt)/(TUnit%area(ii)*TUnit%frac(ii)), TRunoff%erlateral(ii,nt)/(TUnit%area(ii)*TUnit%frac(ii)), TRunoff%erin(ii,nt), TRunoff%flow(ii,nt)
+    !if(TRunoff%yr(ii,nt) > 0._r8) then
+    !    write(unit=nio,fmt="((a10),6(e20.11))") theTime, TRunoff%mr(ii,nt)/TRunoff%yr(ii,nt),TRunoff%yr(ii,nt), TRunoff%vr(ii,nt), TRunoff%erin(ii,nt), TRunoff%erout(ii,nt)/(TUnit%area(ii)*TUnit%frac(ii)), TRunoff%flow(ii,nt)
       !else
-    !    write(unit=nio,fmt="((a10),6(e20.11))") theTime, liqWater%mr(ii)-liqWater%mr(ii),liqWater%yr(ii), liqWater%vr(ii), liqWater%erin(ii), liqWater%erout(ii)/(TUnit%area(ii)*TUnit%frac(ii)), liqWater%flow(ii)
+    !    write(unit=nio,fmt="((a10),6(e20.11))") theTime, TRunoff%mr(ii,nt)-TRunoff%mr(ii,nt),TRunoff%yr(ii,nt), TRunoff%vr(ii,nt), TRunoff%erin(ii,nt), TRunoff%erout(ii,nt)/(TUnit%area(ii)*TUnit%frac(ii)), TRunoff%flow(ii,nt)
     !end if
-    !write(unit=nio,fmt="((a10),7(e20.11))") theTime, liqWater%erlateral(ii)/(TUnit%area(ii)*TUnit%frac(ii)), liqWater%wr(ii),liqWater%mr(ii), liqWater%yr(ii), liqWater%pr(ii), liqWater%rr(ii), liqWater%flow(ii)
-    !write(unit=nio,fmt="((a10),7(e20.11))") theTime, liqWater%yh(ii), liqWater%dwh(ii),liqWater%etin(ii), liqWater%vr(ii), liqWater%erin(ii), liqWater%erout(ii)/(TUnit%area(ii)*TUnit%frac(ii)), liqWater%flow(ii)
+    !write(unit=nio,fmt="((a10),7(e20.11))") theTime, TRunoff%erlateral(ii,nt)/(TUnit%area(ii)*TUnit%frac(ii)), TRunoff%wr(ii,nt),TRunoff%mr(ii,nt), TRunoff%yr(ii,nt), TRunoff%pr(ii,nt), TRunoff%rr(ii,nt), TRunoff%flow(ii,nt)
+    !write(unit=nio,fmt="((a10),7(e20.11))") theTime, TRunoff%yh(ii,nt), TRunoff%dwh(ii,nt),TRunoff%etin(ii,nt), TRunoff%vr(ii,nt), TRunoff%erin(ii,nt), TRunoff%erout(ii,nt)/(TUnit%area(ii)*TUnit%frac(ii)), TRunoff%flow(ii,nt)
   
   end subroutine printTest
 

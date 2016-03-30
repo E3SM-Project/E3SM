@@ -42,7 +42,7 @@ chdir "$CASEBUILD/mosartconf";
 #--------------------------------------------------------------------
 
 my $check_grid = "fail";
-my @rof_grid_supported = ("null", "r05", "r01");
+my @rof_grid_supported = ("null", "r05", "r01", "NLDAS");
 foreach my $grid (@rof_grid_supported) {
     if (${ROF_GRID} eq $grid) {
 	$check_grid = "OK";

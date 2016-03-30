@@ -667,7 +667,7 @@
          <DOUT_S_ROOT>/pic/scratch/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
          <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
          <CCSM_BASELINE>/pic/projects/climate/acme_baselines</CCSM_BASELINE>
-         <CCSM_CPRNC>/pic/projects/climate/acme_baselines/cprnc</CCSM_CPRNC>
+         <CCSM_CPRNC>/pic/projects/climate/acme_baselines/bin/cprnc/cprnc</CCSM_CPRNC>
          <BATCHQUERY>squeue</BATCHQUERY>
          <BATCHSUBMIT>sbatch</BATCHSUBMIT>
 	 <BATCHREDIRECT></BATCHREDIRECT>

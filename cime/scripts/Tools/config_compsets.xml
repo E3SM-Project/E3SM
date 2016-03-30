@@ -1649,6 +1649,8 @@ DOCN%COPY => docn copy mode
 <RUN_STARTDATE compset="CLM[45].*_CISM.*_TEST"   >1980-01-15</RUN_STARTDATE> 
 <RUN_STARTDATE compset="CLM[45]%[^_]*CNDV.*_TEST">1997-12-31</RUN_STARTDATE> 
 
+<RUN_STARTDATE compset="DATM%NLDAS.*_MOSART">1997-01-01</RUN_STARTDATE> 
+
 <RUN_STARTDATE compset="2000.*_DLND.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">0001-01-01</RUN_STARTDATE>
 <RUN_STARTDATE compset="1850.*_DLND.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">0001-01-01</RUN_STARTDATE>
 <RUN_STARTDATE compset="20TR.*_DLND.*_CISM" grid="a%0.9x1.25_l%0.9x1.25_oi%gx1v6">1850-01-01</RUN_STARTDATE>
@@ -1916,6 +1918,10 @@ DOCN%COPY => docn copy mode
 <!-- ================================================================================== -->
 <!-- SECTION: drv hybrid initialization reference cases -->
 <!-- ================================================================================== -->
+
+nldas
+<RUN_REFCASE grid="a%NLDAS_l%NLDAS_oi%NLDAS_r%NLDAS_m%NLDAS" compset="2000_DATM%NLDAS_CLM40%CN_SICE_SOCN_MOSART_SGLC_SWAV">RUN.NLDAS_NLDAS.IMCNNLDAS.constance_intel.spin01</RUN_REFCASE> 
+<RUN_REFDATE grid="a%NLDAS_l%NLDAS_oi%NLDAS_r%NLDAS_m%NLDAS" compset="2000_DATM%NLDAS_CLM40%CN_SICE_SOCN_MOSART_SGLC_SWAV">1997-01-01</RUN_REFDATE>
 
 <RUN_REFCASE grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05" compset="1850_CAM4%WCCM_CLM40%CN">b40.1850.track1.2deg.wcm.007</RUN_REFCASE> 
 <RUN_REFDATE grid="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05" compset="1850_CAM4%WCCM_CLM40%CN">0156-01-01</RUN_REFDATE>

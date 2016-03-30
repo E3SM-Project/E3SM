@@ -11,6 +11,10 @@ module RtmHistFlds
   use shr_kind_mod   , only: r8 => shr_kind_r8
   use RunoffMod      , only : rtmCTL
   use RtmHistFile    , only : RtmHistAddfld, RtmHistPrintflds
+  use RtmVar         , only : wrmflag
+#ifdef INCLUDE_WRM
+  use WRM_type_mod  , only : ctlSubwWRM, WRMUnit, StorWater
+#endif
   use rof_cpl_indices, only : nt_rtm, rtm_tracers  
 
   implicit none
@@ -126,6 +130,31 @@ contains
          avgflag='A', long_name='MOSART input direct to ocean runoff: '//trim(rtm_tracers(2)), &
          ptr_rof=rtmCTL%qdto_nt2, default='active')
 
+#ifdef INCLUDE_WRM
+    if (wrmflag) then
+
+      call RtmHistAddfld (fname='WRM_SUPPLY', units='m3',  &
+         avgflag='A', long_name='WRM supply provided ', &
+         ptr_rof=StorWater%supply, default='active')
+
+      call RtmHistAddfld (fname='WRM_DEMAND', units='m3',  &
+         avgflag='A', long_name='WRM supply provided ', &
+         ptr_rof=StorWater%demand, default='active')
+
+      call RtmHistAddfld (fname='WRM_DEMAND0', units='m3',  &
+         avgflag='A', long_name='WRM demand requested ', &
+         ptr_rof=StorWater%demand0, default='active')
+
+      call RtmHistAddfld (fname='WRM_DEFICIT', units='m3',  &
+         avgflag='A', long_name='WRM deficit ', &
+         ptr_rof=StorWater%deficit, default='active')
+
+      call RtmHistAddfld (fname='WRM_STORAGE', units='m3',  &
+         avgflag='A', long_name='WRM storage ', &
+         ptr_rof=StorWater%storageG, default='active')
+    endif
+#endif
+
     ! Print masterlist of history fields
 
     call RtmHistPrintflds()
@@ -141,6 +170,7 @@ contains
     ! Set mosart history fields as 1d poitner arrays
     !
     implicit none
+    integer :: idam, ig
     !-----------------------------------------------------------------------
 
     ! Currently only have two tracers
@@ -177,6 +207,16 @@ contains
 
     rtmCTL%qdto_nt1(:)       = rtmCTL%qdto(:,1)
     rtmCTL%qdto_nt2(:)       = rtmCTL%qdto(:,2)
+
+#ifdef INCLUDE_WRM
+    if (wrmflag) then
+       StorWater%storageG = 0._r8
+       do idam = 1, ctlSubwWRM%localNumDam
+          ig = WRMUnit%icell(idam)
+          StorWater%storageG(ig) = StorWater%storage(idam)
+       enddo
+    endif
+#endif
 
   end subroutine RtmHistFldsSet
 

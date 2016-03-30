@@ -69,6 +69,15 @@ Default: .false.
 Note that mosart flood is not supported in CESM1.1
 </entry>
 
+<entry id="barrier_timers" 
+       type="logical" 
+       category="mosart"
+       group="mosart_inparm" 
+       valid_values="" >
+If .true., turn on barriers around some timers
+Default: .false.
+</entry>
+
 <entry id="decomp_option" 
        type="char*32" 
        category="mosart"
@@ -199,6 +208,75 @@ Per tape series history write frequency.
   negative means hours
 (i.e. 24 means every 24 time-steps and -24 means every day
 <default>Default: 0,-24,-24</default>
+</entry>
+
+<!-- ========================================================================================  -->
+<!-- WRM Namelist -->
+<!-- ========================================================================================  -->
+
+<entry id="paraFile" 
+       type="char*256" 
+       category="wrm"
+       group="wrm_inparm" 
+       input_pathname="abs" 
+       valid_values="" >
+WRM input file
+</entry>
+
+<entry id="demandPath" 
+       type="char*256" 
+       category="wrm"
+       group="wrm_inparm" 
+       valid_values="" >
+WRM water demand dataset
+</entry>
+
+<entry id="ExtractionFlag" 
+       type="integer" 
+       category="wrm"
+       group="wrm_inparm" 
+       valid_values="" >
+Extraction Flag, 0 = false
+</entry>
+
+<entry id="ExtractionMainChannelFlag" 
+       type="integer" 
+       category="wrm"
+       group="wrm_inparm" 
+       valid_values="" >
+Extraction Main Channel Flag, 0 = false
+</entry>
+
+<entry id="RegulationFlag" 
+       type="integer" 
+       category="wrm"
+       group="wrm_inparm" 
+       valid_values="" >
+Regulation Flag, 0 = false
+</entry>
+
+<entry id="ReturnFlowFlag" 
+       type="integer" 
+       category="wrm"
+       group="wrm_inparm" 
+       valid_values="" >
+Return Flow Flag, 0 = false
+</entry>
+
+<entry id="TotalDemandFlag" 
+       type="integer" 
+       category="wrm"
+       group="wrm_inparm" 
+       valid_values="" >
+Total Demand Flag, 0 = false
+</entry>
+
+<entry id="GroundWaterFlag" 
+       type="integer" 
+       category="wrm"
+       group="wrm_inparm" 
+       valid_values="" >
+Ground Water Flag, 0 = false
 </entry>
 
 </namelist_definition>

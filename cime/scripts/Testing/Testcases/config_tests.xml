@@ -200,6 +200,10 @@
           CCSM_TCOST="4"
           DOUT_S="FALSE" />
 
+<ccsmtest NAME="RUN"
+          DESC="standard run setup (default length)"
+          />
+
 <ccsmtest NAME="SBN"
           DESC="smoke build-namelist test (just run preview_namelist and check_input_data)"
           INFO_DBUG="1"
