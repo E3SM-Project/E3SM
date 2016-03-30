@@ -87,29 +87,42 @@ def parse_command_line(args, description):
 
 
 
-def xmlquery(caseroot, args, listofattributes=[] ,  subgroup=None,
-              noecho=False, warn=None ):
-    
+def xmlquery(caseroot, args, listofattributes=[] ,  subgroup=None, noecho=False, warn=None ):
+	
+    """
+	Return list of attributes and their values , print formatted
+
+	Test:
+	
+	>>> list_of_attributes = xmlquery(os.getcwd(),{ "valonly" :True})
+	>>> type(list_of_attributes) is list
+	True
+	>>> len(list_of_attributes) > 0
+	True
+	  
+    """
+	
+	# Initialize case ; read in all xml files from caseroot   
     case    = Case(caseroot)
     values  = []
     results = [] # List of formatted strings containing the search results
     
     if(listofattributes and len(listofattributes) >= 1):
-                
+        
         for xmlattr in listofattributes:
             # type_str = case.get_type_info(xmlattr)
             logging.debug("Searching for %s", xmlattr)
-            attribute_hits = case.get_values(xmlattr, resolved=False, subgroup=subgroup)    
+            attribute_hits = case.get_values(xmlattr, resolved=False, subgroup=subgroup)
             results        = results + attribute_hits
-            
+
     else:
         logging.debug("No attribute (%s) . Searching values for all attributes." , listofattributes)
         results = case.get_values(None, resolved=False, subgroup=subgroup)
         
-        
     
-    # Formatting of return strings    
-    if ( len(results) > 0) :     
+    
+    # Formatting of return strings
+    if ( len(results) > 0) :
         for node in results :
             
             val = ""
@@ -131,15 +144,17 @@ def xmlquery(caseroot, args, listofattributes=[] ,  subgroup=None,
                     wrapper=textwrap.TextWrapper()
                     wrapper.initial_indent = "\t\t"
                     wrapper.subsequent_indent = "\t\t"
-                    val = "%s\t%s\ttype:%s\n%s\n" %  (attr , node["value"] , node['type'] , wrapper.fill(node['description']) ) 
+                    val = "%s\t%s\ttype:%s\n%s\n" %  (attr , node["value"] , node['type'] , wrapper.fill(node['description']) )
                 else :
-                    val = "%s\t%s\ttype:%s\t%s" %  (attr , node["value"] , node['type'] , node['description'] ) 
-           
-            values.append(val)    
-        
+                    val = "%s\t%s\ttype:%s\t%s" %  (attr , node["value"] , node['type'] , node['description'] )
+            
+            values.append(val)
+    
     return values    
   
-
+  
+  
+	
 def _main_func(description):
     if ("--test" in sys.argv):
         test_results = doctest.testmod(verbose=True)
@@ -151,11 +166,8 @@ def _main_func(description):
     # Initialize command line parser and get command line options
     args = parse_command_line(sys.argv, description)
     
-    logging.debug("CLI arguments: %s" , args)
-  
-    # Initialize case ; read in all xml files from caseroot   
-    case = Case(args.caseroot)         
-    
+	# Debug statement - obvious 
+    logging.debug("CLI arguments: %s" , args)  
     logging.debug("Searching for attributes '%s'" , args.attribute)
         
     # querry for attributes and print results
