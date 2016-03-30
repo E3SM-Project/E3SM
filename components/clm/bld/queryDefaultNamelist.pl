@@ -34,10 +34,7 @@ else { $cfgdir = $cwd; }
 
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir to the list of paths that Perl searches for modules
-my @dirs = ( $cfgdir, "$cfgdir/perl5lib",
-             "$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib",
-             "$cfgdir/../../../../models/utils/perl5lib",
-           );
+my @dirs = ( $cfgdir, "$cfgdir/../../../cime/utils/perl5lib" );
 unshift @INC, @dirs;
 my $result = eval "require XML::Lite";
 if ( ! defined($result) ) {
@@ -181,8 +178,8 @@ EOF
   }
   # List of input options
   my %inputopts;
-  my $datmblddir             = "$cfgdir/../../../../models/atm/datm/bld";
-  my $drvblddir              = "$cfgdir/../../../../models/drv/bld";
+  my $datmblddir             = "$cfgdir/../../../cime/components/data_comps/datm/bld";
+  my $drvblddir              = "$cfgdir/../../../cime/driver_cpl/bld";
   my $model                  = $opts{'model'};
   my @nl_definition_files    = ( "$datmblddir/namelist_files/namelist_definition_datm.xml",
                                  "$drvblddir/namelist_files/namelist_definition_drv.xml",
