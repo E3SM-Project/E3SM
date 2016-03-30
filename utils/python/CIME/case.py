@@ -29,8 +29,10 @@ logger = logging.getLogger(__name__)
 class Case(object):
 
     def __init__(self, case_root=os.getcwd()):
-        expect(os.path.isdir(case_root),
-               "Case root directory '%s' does not exist" % case_root)
+        #expect(os.path.isdir(case_root),
+        #       "Case root directory '%s' does not exist" % case_root)
+
+        #FIXME - define a method for when case_root does not exist
 
         self._env_files_that_need_rewrite = set()
 
@@ -172,9 +174,6 @@ class Case(object):
         # attributes used for multi valued defaults ($attlist is a hash reference)
         attlist = {"component":self._target_component, "compset":self._compset, "grid":self._grid}
 
-        for env_file in self._env_entryid_files:
-            env_file.write()
-
         # Determine list of component classes that this coupler/driver knows how
         # to deal with. This list follows the same order as compset longnames follow.
         files = Files()
@@ -200,13 +199,12 @@ class Case(object):
         self._get_compset_components()
 
         # get grid info and overwrite files with that data
-        files = Files()
-        gridfile = files.get_value("GRIDS_SPEC_FILE")
-        logger.debug(" Grid specification file is %s" % gridfile)
-
-        grids = Grids(gridfile)
-        gridinfo = grids.get_grid_info(name=grid_name, compset=self._compset)
+        files      = Files()
+        gridfile   = files.get_value("GRIDS_SPEC_FILE")
+        grids      = Grids(gridfile)
+        gridinfo   = grids.get_grid_info(name=grid_name, compset=self._compset)
         self._grid = gridinfo["GRID"]
+        logger.debug(" Grid specification file is %s" % gridfile)
 
         self._get_component_config_data()
 
@@ -214,7 +212,6 @@ class Case(object):
             for key,value in env_file.lookups.iteritems():
                 self.set_value(key,value)
             for key,value in gridinfo.iteritems():
-                #print "DEBUG: setting key to %s and value to %s " %(key,value)
                 self.set_value(key,value)
 
         logger.info(" Component that sets compsets is: %s" %self._target_component)
@@ -222,4 +219,3 @@ class Case(object):
         logger.info(" Grid is: %s " %self._grid )
         logger.info(" Components in compset are: %s " %self._components)
         logger.info(" Component grids in compset are: %s " %self._component_grids)
->>>>>>> first pass at create_newcase

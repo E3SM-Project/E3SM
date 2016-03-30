@@ -29,32 +29,36 @@ class EntryID(GenericXML):
         #   <value A="a3">Z</value>
         #  </values>
         # </entry>
-        
-        # FIXME - this does not handle cases where there is more than
-        # one attribute in the match (i.e. some values have grid and
-        # compset attributes and some have just one of these) Need to
-        # loop through all of the value nodes and find the one with
-        # the maximum matches for attributes and then set the value to
-        # that one
 
-        valnodes = self.get_nodes("value", root=node)
-        for valnode in valnodes:
+        match_value = None
+        match_max = 0
+        for valnode in self.get_nodes("value", root=node):
             # loop through all the keys in valnode (value nodes) attributes
             for key,value in valnode.attrib.iteritems():
                 # determine if key is in attributes dictionary
+                match_count = 0
                 if key in attributes:
                     if re.search(value, attributes[key]):
-                        # set node value to valnode.text
-                        node.set("value", valnode.text)
-                        logger.debug("id %s value %s" % (node.get("id"), valnode.text))
-                        return valnode.text
+                        match_count += 1
+                    else:
+                        match_count = 0
+                        break
+            if match_count > 0 and match_count > match_max:
+                match_max = match_count
+                match_value = valnode.text
+
+        if match_max > 0:
+            node.set("value", match_value)
+            logger.info("id %s value %s" % (node.attrib["id"], match_value))
+            return match_value
 
         # Fall back to default value
         value = self.get_optional_node("default_value", root=node)
-        if value is not None and value.text is not None:
+        if value is not None:
+            if value.text is None:
+                value.text = ""
             node.set("value", value.text)
             return value.text
-
 
     def _get_type_info(self, node):
         type_node = self.get_optional_node("type", root=node)
@@ -96,7 +100,7 @@ class EntryID(GenericXML):
             return self._set_value(node, vid, value, subgroup, ignore_type)
         else:
             # Add item to GenericXML object in the lookup dictionary
-            GenericXML.set_value(self,vid, value) 
+            GenericXML.set_value(self,vid, value)
             return None
 
     def get_value(self, vid, attribute={}, resolved=True, subgroup=None):
