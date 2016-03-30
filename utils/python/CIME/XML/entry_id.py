@@ -57,7 +57,7 @@ class EntryID(GenericXML):
         else:
             return self._get_type_info(node)
     
-    def get_default(self, node):
+    def _get_default(self, node):
         default = self.get_optional_node("default_value", root=node)
         if default is not None:
             return default.text
@@ -66,7 +66,7 @@ class EntryID(GenericXML):
         
     
     # Get type description , expect child with tag "type" for node         
-    def get_type (self, node):
+    def _get_type (self, node):
         type_node = self.get_optional_node("type", root=node)
         if type_node is not None:
             return type_node.text
@@ -75,7 +75,7 @@ class EntryID(GenericXML):
             return "char"
             
     # Get description , expect child with tag "description" for parent node
-    def get_description (self, node):
+    def _get_description (self, node):
         type_node = self.get_optional_node("desc", root=node)
         if type_node is not None:
             return type_node.text
@@ -83,7 +83,7 @@ class EntryID(GenericXML):
             return None
 
     # Get group , expect child with tag "group" for parent node        
-    def get_group (self, node):
+    def _get_group (self, node):
         type_node = self.get_optional_node("group", root=node)
         if type_node is not None:
             return type_node.text
@@ -154,7 +154,7 @@ class EntryID(GenericXML):
         
         nodes   = [] # List of identified xml elements  
         results = [] # List of identified parameters 
-        logger.debug("Here Get node with attribute value: %s" , item)
+        
        
         # Find all nodes with attribute name and attribute value item
         # xpath .//*[name='item']
@@ -174,12 +174,12 @@ class EntryID(GenericXML):
         for node in nodes :
             logger.debug("Node tag=%s attribute=%s" , node.tag , node.attrib )
             
-            group   = self.get_group(node)
+            group   = self._get_group(node)
             val     = node.attrib['value']
             attr    = node.attrib['id']
-            t       = self.get_type(node)
-            desc    = self.get_description(node)
-            default = self.get_default(node)
+            t       = self._get_type(node)
+            desc    = self._get_description(node)
+            default = self._get_default(node)
             file    = None
             try :     
                 file    = self.filename
