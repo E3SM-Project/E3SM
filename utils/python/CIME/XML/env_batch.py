@@ -32,29 +32,27 @@ class EnvBatch(EnvBase):
 
         return val
 
-    # def get_value(self, item, attribute={}, resolved=True, subgroup=None):
-#         value = None
-#         logger.debug("Value=%s additional Attribute:%s" , item , attribute)
-#         nodes = self.get_nodes("entry",{"id":item})
-#         logger.debug("Nodes:%s" , nodes)
-#         if len(nodes) > 0:
-#             value = {} # Not consistent with return values for other classes' get_value methods
-#             if subgroup is None:
-#                 nodes = self.get_nodes("job")
-#             else:
-#                 nodes = self.get_nodes("job", {"name":subgroup})
-#
-#             for node in nodes:
-#                 logger.debug("Arguments for EnvBase.get_value: self=%s node=%s item=%s attribute=%s resolved=%s" , self, node , item , attribute , resolved)
-#                 # Call parent method
-#                 val = super(EnvBase , self).get_value( node,
-#                                         item, attribute, resolved , node.attrib[""])
-#                 # val = EnvBase.get_value(self, node,
-# #                                         item, attribute, resolved)
-#                 if val is not None:
-#                     value[node.attrib["name"]] = val
-#
-#         return value
+    def get_value(self, item, attribute={}, resolved=True, subgroup=None):
+        value = None
+        logger.debug("Value=%s additional Attribute:%s" , item , attribute)
+        nodes = self.get_nodes("entry",{"id":item})
+        logger.debug("Nodes:%s" , nodes)
+        if len(nodes) > 0:
+            value = {} # Not consistent with return values for other classes' get_value methods
+            if subgroup is None:
+                nodes = self.get_nodes("job")
+            else:
+                nodes = self.get_nodes("job", {"name":subgroup})
+
+            for node in nodes:
+                logger.debug("Arguments for EnvBase.get_value: self=%s node=%s item=%s attribute=%s resolved=%s" , self, node , item , attribute , resolved)
+                # Call parent method
+                val = EnvBase.get_value(self, node,
+                                         item, attribute, resolved)
+                if val is not None:
+                    value[node.attrib["name"]] = val
+
+        return value
 
     def get_values(self, item, attribute={}, resolved=True, subgroup=None):
         """Returns the value as a string of the first xml element with item as attribute value. 
