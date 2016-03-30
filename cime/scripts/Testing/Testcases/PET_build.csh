@@ -61,7 +61,8 @@ cp -f env_mach_pes.xml env_mach_pes.xml.1
 
 # Since possibly changed the PE layout as above - must run cesm_setup -clean WITHOUT the -testmode flag
 # in order for the $CASE.test script to be regenerated with the correct batch processor settings
-./cesm_setup -clean 
+./cesm_setup -clean
+rm *.testdriver # ./cesm_setup will regenerate, instead of appending to the existing testdriver
 ./cesm_setup 
 
 ./$CASE.build
