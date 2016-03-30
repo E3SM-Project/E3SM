@@ -52,9 +52,9 @@ if ( $OCN_GRID eq 'oEC60to30' ) {
 	$ic_prefix .= 'ocean.QU.240km';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'oQU120' ) {
-	$grid_date .= '151209';
-	$grid_prefix .= 'ocean.QU.120km';
-	$ic_prefix .= 'ocean.QU.120km';
+	$grid_date .= '160318';
+ 	$grid_prefix .= 'ocean.QU.120km';
+ 	$ic_prefix .= 'ocean.QU.120km';
 	$decomp_prefix .= 'mpas-o.graph.info.';
 } elsif ( $OCN_GRID eq 'mpas120' ) {
 	$grid_date .= '151031';
@@ -572,6 +572,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-o/$STREAM_NAME" ) {
 	print $stream_file '    <var name="dThreshMLD"/>' . "\n";
 	print $stream_file '    <var name="tGradMLD"/>' . "\n";
 	print $stream_file '    <var name="dGradMLD"/>' . "\n";
+	print $stream_file '	<var name="daysSinceStartOfSim"/>' . "\n";
 	print $stream_file '</stream>' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="timeSeriesStatsRestart"' . "\n";

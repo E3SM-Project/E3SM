@@ -18,6 +18,7 @@ my @groups = qw(cice_model
                 ridging
                 atmosphere
                 ocean
+                diagnostics
                 am_highfrequencyoutput
                 am_temperatures
                 am_regionalstatistics
