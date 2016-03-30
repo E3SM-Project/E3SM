@@ -137,7 +137,6 @@
     <batch_system MACH="edison" version="x.y">
       <directives>
         <directive> -A {{ account }} </directive>
-        <directive>--partition={{ queue }}</directive>
       </directives>
     </batch_system> 
 
@@ -156,7 +155,6 @@
    <batch_system MACH="skybridge" version="x.y">
      <directives>
        <directive>--account={{ project }}</directive>
-       <directive>--partition={{ queue }}</directive>
      </directives>
    </batch_system>
 
@@ -175,7 +173,6 @@
    <batch_system MACH="redsky" version="x.y">
      <directives>
        <directive>--account={{ project }}</directive>
-       <directive>--partition={{ queue }}</directive>
      </directives>
    </batch_system>
 

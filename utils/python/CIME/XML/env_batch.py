@@ -1,8 +1,8 @@
 """
 Interface to the env_batch.xml file.  This class inherits from EnvBase
 """
-from standard_module_setup import *
-
+from CIME.XML.standard_module_setup import *
+from CIME.utils import convert_to_type
 from env_base import EnvBase
 
 logger = logging.getLogger(__name__)
@@ -40,9 +40,9 @@ class EnvBatch(EnvBase):
 
         job_node = self.get_optional_node("job", {"name":subgroup})
         if job_node is not None:
-            node = self.get_optional_node(item, attribute, root=job_node)
+            node = self.get_optional_node("entry", {"id":item}, root=job_node)
             if node is not None:
-                value = self.get_resolved_value(node.text)
+                value = self.get_resolved_value(node.attrib["value"])
 
                 # Return value as right type if we were able to fully resolve
                 # otherwise, we have to leave as string.

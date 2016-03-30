@@ -75,7 +75,7 @@ class BatchMaker(object):
         self.task_maker = TaskMaker(case=self.case)
         self.sumpes = self.task_maker.full_sum
         self.tasks_per_node = self.task_maker.task_per_node
-        self.MAX_TASKS_PER_NODE = self.task_maker.MAX_TASKS_PER_NODE
+        self.max_tasks_per_node = self.task_maker.MAX_TASKS_PER_NODE
         self.tasks_per_numa = self.task_maker.task_per_numa
         self.fullsum = self.task_maker.full_sum
         self.task_count = self.task_maker.full_sum
@@ -102,17 +102,15 @@ class BatchMaker(object):
 
     def _set_queue(self):
         self.queue = self.env_batch.get_value("JOB_QUEUE", subgroup=self.job)
+        self.ccsm_estcost = self.case.get_value("CCSM_ESTCOST")
+
         self.wall_time_max = None
         if self.queue:
             return
 
-        self.CCSM_ESTCOST = self.case.get_value("CCSM_ESTCOST")
-
         # Make sure to check default queue first.
-        default_queue = self.config_machines_parser.get_default_queue()
+        self.queue = self.config_machines_parser.get_default_queue()
         all_queues = self.config_machines_parser.get_all_queues()
-        if default_queue is not None:
-            all_queues.insert(0, default_queue)
 
         for queue in all_queues:
             jobmin = self.config_machines_parser.get_queue_attribute(queue, "jobmin")
@@ -140,7 +138,7 @@ class BatchMaker(object):
         if not self.wall_time:
             for wall_time in self.config_machines_parser.get_walltimes():
                 estcost = self.config_machines_parser.get_walltime_estcost(wall_time)
-                if estcost is not None and self.CCSM_ESTCOST > estcost:
+                if estcost is not None and self.ccsm_estcost > estcost:
                     self.wall_time = wall_time
         else:
             return
@@ -221,12 +219,12 @@ within model's Machines directory, and add a batch system type for this machine
             variable = m.groups()[0]
             whole_match = m.group()
 
-            repl = self.case.get_value(variable.upper())
-            if repl is not None:
-                text = text.replace(whole_match, "" if repl is None else repl)
-            elif hasattr(self, variable.lower()):
+            if hasattr(self, variable.lower()):
                 repl = getattr(self, variable.lower())
                 text = text.replace(whole_match, str("" if repl is None else repl))
+            elif self.case.get_value(variable.upper()) is not None:
+                repl = self.case.get_value(variable.upper())
+                text = text.replace(whole_match, "" if repl is None else repl)
             elif variable in defaults:
                 text = text.replace(whole_match, defaults[variable])
             else:
