@@ -54,6 +54,7 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-25. 
 ! * added the options mp_thompson_aerosols and mp_thompson.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-25.
+! * added the options cu_grell_freitas and cu_grell_freitas_momentum.
 
 
  contains
@@ -143,9 +144,11 @@
  endif
 
 !convection scheme:
- if(.not. (config_convection_scheme .eq. 'off'             .or. &
-           config_convection_scheme .eq. 'cu_kain_fritsch' .or. &
-           config_convection_scheme .eq. 'cu_tiedtke'      )) then
+ if(.not. (config_convection_scheme .eq. 'off'                       .or. &
+           config_convection_scheme .eq. 'cu_grell_freitas'          .or. &
+           config_convection_scheme .eq. 'cu_grell_freitas_momentum' .or. &
+           config_convection_scheme .eq. 'cu_kain_fritsch'           .or. &
+           config_convection_scheme .eq. 'cu_tiedtke'                )) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for config_convection_scheme: ', &
           trim(config_convection_scheme)

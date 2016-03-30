@@ -36,8 +36,11 @@
 ! * added empty subroutine atmphys_vars_init that does not do anything, but needed for 
 !   compiling MPAS with some compilers.
 !   Laura D. Fowler (laura@ucar.edu) / 2015-01-12.
-! * added local variables needed for the Thompson microphysics paramerterization of convection.
+! * added local variables needed for the Thompson microphysics parameterization of convection.
 !   Laura D. Fowler (laura@ucar.edu) / 2015-03-28.
+! * added local parameter imomentum to include the calculation of the momentum tendencies due to convection
+!   in the Grell-Freitas parameterization of convection.
+!   Laura D. Fowler (laura@ucar.edu) / 2015-03-30.
 
 
 !=================================================================================================================
@@ -87,6 +90,7 @@
 
 !... arrays related to surface:
  real(kind=RKIND),dimension(:,:),allocatable:: &
+    ht_p,             &!
     psfc_p,           &!surface pressure                                                       [Pa]
     ptop_p             !model-top pressure                                                     [Pa]
 
@@ -237,13 +241,41 @@
 
 !... tiedtke specific arrays:
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    znu_p,            &!
-    rqvdynten_p,      &!
-    rqvdynblten_p      !
+    znu_p              !
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     rucuten_p,        &!
     rvcuten_p          !
+
+!... grell-freitas specific parameters and arrays:
+    integer, parameter:: ishallow  = 1 !shallow convection used with grell scheme.
+    integer, parameter:: imomentum = 1 !momentum used with grell scheme.
+
+ integer,dimension(:,:),allocatable:: &
+    k22_shallow_p,    &!
+    kbcon_shallow_p,  &!
+    ktop_shallow_p,   &!
+    kbot_shallow_p,   &!
+    ktop_deep_p        !
+
+ real(kind=RKIND),dimension(:,:),allocatable:: &
+    xmb_total_p,      &!
+    xmb_shallow_p      !
+
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    qccu_p,           &!
+    qicu_p             !
+
+
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    rthraten_p         !
+
+!... grell and tiedkte specific arrays:
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    rqvdynten_p,      &!
+    rqvdynblten_p,    &!
+    rthdynten_p,      &!
+    rthdynblten_p      !
 
 !=================================================================================================================
 !... variables and arrays related to parameterization of pbl:
