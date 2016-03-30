@@ -115,13 +115,10 @@ if ($NTHRDS_WAV == 1) then
 endif
 
 # Build with half the tasks and double the threads
-./cesm_setup -clean -testmode
-./cesm_setup
-./xmlchange -file env_build.xml -id SMP_BUILD -val 0
-
 ./cesm_setup -clean
+rm *.testdriver # ./cesm_setup appends, so remove the existing testdriver
 ./cesm_setup
-./$CASE.clean_build -all 
+./$CASE.clean_build all
 
 ./$CASE.build
 if ($status != 0) then
