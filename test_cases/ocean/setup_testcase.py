@@ -948,7 +948,8 @@ def process_model_run_step(model_run_tag, configs, script):#{{{
 						executable_full_path = config.get('executables', executable_name)
 						executable_parts = executable_full_path.split('/')
 						executable_link = executable_parts[ len(executable_parts) - 1]
-						subprocess.check_call(['ln', '-sf', config.get('executables', executable_name), '.'], stdout=dev_null, stderr=dev_null)
+						link_path = '%s/%s/%s'%(config.get('script_paths', 'work_dir'), config.get('script_paths', 'case_dir'), executable_link)
+						subprocess.check_call(['ln', '-sf', config.get('executables', executable_name), link_path], stdout=dev_null, stderr=dev_null)
 						grandchild.text = executable_link
 					elif arg_text.find('attr_') >= 0:
 						attr_array = arg_text.split('_')
