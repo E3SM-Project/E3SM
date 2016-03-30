@@ -40,24 +40,24 @@ def parse_command_line(args, description):
     parser.add_argument("attributes", nargs="*"  ,
                         help="attribute value in env_*.xml file ( <element_name attribute='attribute_value'>value</element_name> )")
     
-    parser.add_argument("--file", 
+    parser.add_argument("-file" , "--file",
                         help="env*.xml file")
   
-    parser.add_argument("--attribute", nargs="*" , help="list of attribute/option names" , default=[])
+    parser.add_argument("-attribute", "--attribute", nargs="*" , help="list of attribute/option names" , default=[])
     
-    parser.add_argument("--caseroot", default=os.getcwd(),
+    parser.add_argument("-caseroot" , "--caseroot", default=os.getcwd(),
                         help="Case directory to build")
                         
     parser.add_argument("--listofsettings", nargs="*", default=[] ,
                         help="Comma seperated list of option names (attribute values)")
                         
-    parser.add_argument("--fileonly", default=False, action="store_true", 
+    parser.add_argument("-fileonly", "--fileonly", default=False, action="store_true", 
                         help="Only print the filename that the field is defined in.")
     
-    parser.add_argument("--valonly", default=False, action="store_true", 
+    parser.add_argument("-valonly", "--valonly", default=False, action="store_true", 
                         help="Only print the field name and value.")
     
-    parser.add_argument("--value", default=False, action="store_true", 
+    parser.add_argument("-value", "--value", default=False, action="store_true", 
                         help="Only print the value.")
 
     args = parser.parse_args(args[1:])
@@ -96,7 +96,6 @@ def xmlquery(caseroot, args, listofattributes=[] ,  subgroup=None,
                 
         for xmlattr in listofattributes:
             # type_str = case.get_type_info(xmlattr)
-            logging.info("Searching for %s", xmlattr)
             logging.debug("Searching for %s", xmlattr)
             attribute_hits = case.get_values(xmlattr, resolved=False, subgroup=subgroup)    
             results        = results + attribute_hits
@@ -155,7 +154,7 @@ def _main_func(description):
     # Initialize case ; read in all xml files from caseroot   
     case = Case(args.caseroot)         
     
-    logging.info("Searching for attributes '%s'" , args.attribute)
+    logging.debug("Searching for attributes '%s'" , args.attribute)
         
     # querry for attributes and print results
     for res in xmlquery(args.caseroot , args, args.attribute ) :
