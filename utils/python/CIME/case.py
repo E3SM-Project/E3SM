@@ -57,24 +57,23 @@ class Case(object):
         result = None
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
-            logger.debug("Before File=%s Attribute=%s Value=%s"%(env_file.filename,item,result))
+           
             result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
-            logger.debug("After File=%s Attribute=%s Value=%s"%(env_file.filename,item,result))
+          
             if result is not None:
                 if resolved and type(result) is str:
                     return self.get_resolved_value(result)
                 return result
                 
         for env_file in self._env_generic_files:
-            # Wait and resolve in self rather than in env_file
+      
             result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
-            logger.debug("Generic file:%s Item:%s Attribute:%s Value:%s"%(env_file.filenname, item,attribute ,result))
+    
             if result is not None:
                 if resolved and type(result) is str:
                     return self.get_resolved_value(result)
                 return result
        
-        logger.info("Not able to retreive value for item '%s'" % item)
         # Return empty result
         return result
 
@@ -84,7 +83,7 @@ class Case(object):
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
             result = None
-            logger.debug("Before File=%s Attribute=%s Value=%s"%(env_file.filename,item,result))
+           
             try:
                 # env_batch has its own implementation of get_values otherwise in entry_id
                 result = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
@@ -92,9 +91,8 @@ class Case(object):
             except AttributeError:
                 # Method does not exist.  What now?
                 logger.debug("No get_values method for class %s (%s)" , env_file.__class__.__name__ , AttributeError)
-                #result = super(EnvBase , env_file).get_values(item, attribute, resolved=False, subgroup=subgroup)
-                
-            logger.debug("After File=%s Attribute=%s Value=%s"%(env_file.filename,item,result))
+               
+
             if result is not None and (len(result) >= 1):
                 if resolved and type(result) is str:
                     # WRONG
@@ -105,21 +103,19 @@ class Case(object):
                 return results
             
         for env_file in self._env_generic_files:
-            # Wait and resolve in self rather than in env_file
-            logger.debug("Before generic File=%s Attribute=%s Value=%s"%(env_file.filename,item,result))
+
             result = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
-            logger.debug("After generic File=%s Attribute=%s Value=%s"%(env_file.filename,item,result))
-            logger.debug("Generic file:%s Item:%s Attribute:%s Value:%s"%(env_file.filename, item,attribute ,result))
+      
             if result is not None and (len(result) >=1) :
                 if resolved and type(result) is str:
-                    logger.debug("Type string abd resolved is true")
+                    logger.debug("Type string and resolved is true")
                     results.append(self.get_resolved_value(result))
                 else :
                     logger.debug("Append result to return list (%s)" ,result)
                     results = results + result
                 return results
    
-        logger.info("Not able to retreive value for item '%s'" % item)
+        logger.info("Not able to retrieve value for item '%s'" % item)
         # Return empty result
         return results
         
