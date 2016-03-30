@@ -61,10 +61,6 @@ class Compilers(GenericXML):
         >>> machobj.set_compiler("gnu")
         >>> machobj.get_compiler()
         'gnu'
-        >>> machobj.set_compiler("trump")
-        Traceback (most recent call last):
-        ...
-        SystemExit: ERROR: No compiler trump found
         """
         machine = machine if machine else self.machine
         os_     = os_ if os_ else self.os

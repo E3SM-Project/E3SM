@@ -279,6 +279,7 @@ def case_setup(caseroot, clean, test_mode):
         if not os.path.exists("case.run"):
             logger.info("clean option has already been invoked ... skipping ")
             return
+
         # Clean batch script
 
         backup_dir = "PESetupHist/b.%s" % time.strftime("%y%m%d-%H%M%S")
