@@ -27,6 +27,7 @@ class Case(object):
         expect(os.path.isdir(case_root),
                "Case root directory '%s' does not exist" % case_root)
 
+        logger.debug("Initializing Case.")       
         self._env_entryid_files = []
         self._env_generic_files = []
 
@@ -43,6 +44,8 @@ class Case(object):
         self._env_generic_files.append(EnvArchive(case_root))
 
         self._case_root = case_root
+  
+       
 
     def __del__(self):
         self.flush()
@@ -79,6 +82,14 @@ class Case(object):
 
 
     def get_values(self, item=None, attribute={}, resolved=True, subgroup=None):
+        """Return info object for given item, return all info for all item if item is empty.
+        
+        >>>x = get_values()
+        >>>type(x) == 'list'
+        True 
+        
+        """
+  
         results = []
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
@@ -115,7 +126,7 @@ class Case(object):
                     results = results + result
                 return results
    
-        logger.info("Not able to retrieve value for item '%s'" % item)
+        logger.warning("Not able to retrieve any value")
         # Return empty result
         return results
         
@@ -156,3 +167,8 @@ class Case(object):
 
         logging.warning("Not able to set value for item '%s'" % item)
 
+
+
+if (__name__ == "__main__"):
+    import doctest
+    doctest.testmod()
