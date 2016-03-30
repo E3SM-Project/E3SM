@@ -9,7 +9,7 @@ from env_base import EnvBase
 
 logger = logging.getLogger(__name__)
 
-#class EnvMachSpecific(GenericXML):
+# Is not of type EntryID but can use functions from EntryID (e.g get_type) otherwise need to implement own functions and make GenericXML parent class 
 class EnvMachSpecific(EnvBase):
 
     def __init__(self, caseroot, infile="env_mach_specific.xml"):
