@@ -24,7 +24,7 @@ my $desc_comp = "";
 sub getCompsetLongname
 {
     # Determine compset longname, alias and support level
-    my ($input_file, $input_compset, $config, $user_provided_compset) = @_;
+    my ($input_file, $input_compset, $config, $user_provided_compset, $user_pes_setby) = @_;
     $input_compset =~ s/^\s+//; # strip any leading whitespace
     $input_compset =~ s/\s+$//; # strip any trailing whitespace
 
@@ -63,6 +63,14 @@ sub getCompsetLongname
 	$file =~ s/\$MODEL/$model/;
 	if (! -f $file ) {next;}
 	my $xml2 = XML::LibXML->new( no_blanks => 1)->parse_file("$file");
+	my $comp = $node_file->getAttribute('component');
+	if (defined $user_pes_setby and $user_pes_setby eq $comp){
+	    $pes_setby = $comp;
+	    $compsets_file = $file;
+	    $compset_longname = $input_compset;
+	    last;
+	}
+
 
 	# First determine if there is a match for the alias - if so stop
 	my @alias_nodes = $xml2->findnodes(".//compset[alias=\"$input_compset\"]");
@@ -76,10 +84,8 @@ sub getCompsetLongname
 		    $compset_longname = $name_node->textContent();
 		}
 	    }
-	    $pes_setby = $node_file->getAttribute('component');
+	    $pes_setby = $comp;
 	    $compsets_file = $file;
-	    $config->set('COMPSETS_SPEC_FILE', $compsets_file);
-	    $config->set('COMPSET', "$compset_longname");
 	    last;
 	}
 
@@ -94,34 +100,33 @@ sub getCompsetLongname
 		    $compset_longname = $name_node->textContent();
 		}
 	    }
-	    $pes_setby = $node_file->getAttribute('component');
+	    $pes_setby = $comp;
 	    $compsets_file = $file;
-	    $config->set('COMPSETS_SPEC_FILE', "$compsets_file");
-	    $config->set('COMPSET', "$compset_longname");
 	    last;
 	}
 
     }
-    if (! defined $pes_setby) {
-	if (! $user_provided_compset){
-	    my $outstr = "ERROR: create_newcase: no compset match was found in any of the following files:";
-	    foreach my $node_file (@nodes) {
-		my $file = $node_file->textContent();
-		$file =~ s/\$CIMEROOT/$cimeroot/;
-		$file =~ s/\$SRCROOT/$srcroot/;
-		$file =~ s/\$MODEL/$model/;
-		$outstr .= "$file\n";
-	    }
 
-	    $logger->logdie ($outstr);
-	}
-    } else {
+    if (defined $pes_setby) {
+	$config->set('COMPSETS_SPEC_FILE', "$compsets_file");
+	$config->set('COMPSET', "$compset_longname");
 	$logger->info( "File specifying possible compsets: $compsets_file ");
 	$logger->info( "Primary component (specifies possible compsets, pelayouts and pio settings): $pes_setby ");
 	$logger->info("Compset: $compset_longname ");
+    }else{
+	my $outstr = "ERROR: create_newcase: no compset match was found in any of the following files:";
+	foreach my $node_file (@nodes) {
+	    my $file = $node_file->textContent();
+	    $file =~ s/\$CIMEROOT/$cimeroot/;
+	    $file =~ s/\$SRCROOT/$srcroot/;
+		$file =~ s/\$MODEL/$model/;
+	    $outstr .= "$file\n";
+	}
+	$logger->logdie ($outstr);
+
     }
 
-    return ($pes_setby, $support_level);
+    return ($compset_longname, $pes_setby, $support_level);
 }
 
 
