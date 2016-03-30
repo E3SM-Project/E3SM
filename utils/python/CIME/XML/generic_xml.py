@@ -37,6 +37,7 @@ class GenericXML(object):
         else:
             # if file does not exist create a root xml element
             # and set it's id to file
+            logger.warning("File %s does not exists." , infile)
             self.filename = infile
             root = ET.Element("xml")
             root.set("version", "1.0")
