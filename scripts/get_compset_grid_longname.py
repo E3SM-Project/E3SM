@@ -1,7 +1,7 @@
 #!/usr/bin/env python2.7
 
 from Tools.standard_script_setup import *
-from CIME.utils        import expect
+from CIME.utils        import expect, run_cmd
 from CIME.case         import Case
 
 from CIME.XML.files    import Files
@@ -72,13 +72,19 @@ cime_model = CIME.utils.get_model()
 compset_input = "A"
 grid_input    = "f19_g16_rx1"
 
-case = Case()
+casedir = "./foop"
+
+# make case directory
+cwd = os.getcwd()
+casedir = cwd + "/foop"
+os.mkdir(casedir)
+os.chdir(casedir)
+
+# write xml files in case directory
+case = Case(case_root=casedir)
 case.configure(compset_input, grid_input)
-
-
-#write out all of the xml files
-#for file in case._env_entryid_files:
-#    file.write()
+for file in case._env_entryid_files:
+    file.write()
 
 
 

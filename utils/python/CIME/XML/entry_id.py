@@ -29,9 +29,17 @@ class EntryID(GenericXML):
         #   <value A="a3">Z</value>
         #  </values>
         # </entry>
+        
+        # FIXME - this does not handle cases where there is more than
+        # one attribute in the match (i.e. some values have grid and
+        # compset attributes and some have just one of these) Need to
+        # loop through all of the value nodes and find the one with
+        # the maximum matches for attributes and then set the value to
+        # that one
+
         valnodes = self.get_nodes("value", root=node)
         for valnode in valnodes:
-            # loop through all the keys in valnode attributes
+            # loop through all the keys in valnode (value nodes) attributes
             for key,value in valnode.attrib.iteritems():
                 # determine if key is in attributes dictionary
                 if key in attributes:
@@ -88,7 +96,7 @@ class EntryID(GenericXML):
             return self._set_value(node, vid, value, subgroup, ignore_type)
         else:
             # Add item to GenericXML object in the lookup dictionary
-            GenericXML.set_value(self,vid, value)  #***THIS IS NEW ***
+            GenericXML.set_value(self,vid, value) 
             return None
 
     def get_value(self, vid, attribute={}, resolved=True, subgroup=None):
