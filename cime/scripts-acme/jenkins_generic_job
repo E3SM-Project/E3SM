@@ -11,7 +11,7 @@ import acme_util
 acme_util.check_minimum_python_version(2, 7)
 import wait_for_tests
 
-import argparse, sys, os, shutil, glob, doctest, time, signal
+import argparse, sys, os, shutil, glob, doctest, signal
 
 from acme_util import expect, warning, verbose_print
 
@@ -112,8 +112,6 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
     """
     Return True if all tests passed
     """
-    start_time = time.time()
-
     use_batch = acme_util.does_machine_have_batch()
     compilers, test_suite, scratch_root, proxy = \
         acme_util.get_machine_info(["COMPILERS", "TESTS", "CESMSCRATCHROOT", "PROXY"])
@@ -237,8 +235,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
                                                      False, # don't ignore namelist diffs
                                                      cdash_build_name,
                                                      cdash_project,
-                                                     cdash_build_group,
-                                                     start_time)
+                                                     cdash_build_group)
         if (not tests_passed and use_batch and wait_for_tests.SIGNAL_RECEIVED):
             # Cleanup
             cleanup_queue(our_jobs)
