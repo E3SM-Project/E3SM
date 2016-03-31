@@ -2,7 +2,7 @@
 # holding source files needed for building the library
 # and executable preqx.
 
-
+macro(preqx_setup)
 
 SET(UTILS_SHARE_DIR ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR         ${HOMME_SOURCE_DIR}/src)
@@ -11,9 +11,8 @@ SET(PHYSICS_DIR     ${HOMME_SOURCE_DIR}/physics)
 SET(UTILS_TIMING_DIR ${CMAKE_BINARY_DIR}/utils/timing)
 
 # Make INCLUDE_DIRS global so the tests can access it
-SET (PREQX_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
-                        ${UTILS_TIMING_DIR}
-                        ${SRC_SHARE_DIR} CACHE INTERNAL "include directories for preqx")
+SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
+                        ${UTILS_TIMING_DIR} )
 
 SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/bndry_mod_base.F90
@@ -113,7 +112,7 @@ SET(PREQX_SRCS_F90
   ${PHYSICS_DIR}/heldsuarez/held_suarez_mod.F90 
   ${PHYSICS_DIR}/column_model_mod.F90 
   ${PHYSICS_DIR}/column_types_mod.F90 
-  CACHE INTERNAL "")
+)
 
 
 SET(PREQX_SRCS_C
@@ -127,7 +126,7 @@ IF (DEFINED PREQX_CUSTOM_FLAGS_FILE)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(PREQX_SRCS ${PREQX_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_F90} CACHE INTERNAL "Sources for preqx")
+SET(EXEC_SOURCES ${PREQX_SRCS} ${PREQX_SRCS_C} ${PREQX_SRCS_F90} )
 
 # Set up defaults
 IF (NOT PREQX_NP)
@@ -145,28 +144,28 @@ ENDIF ()
 IF (NOT PREQX_NC)
   SET (PREQX_NC 4)
 ENDIF ()
-IF (PREQX_QSIZE_D)
+IF (NOT QSIZE_D)
+  SET (QSIZE_D 4)
+ENDIF ()
+# for some of matt's old scripts which use preqx_qsize_d
+IF (PREQX_QSIZE_D)      
   SET (QSIZE_D ${PREQX_QSIZE_D})
 ENDIF ()
 
-MESSAGE(STATUS "Building preqx with:")
-MESSAGE(STATUS "  NP = ${PREQX_NP}")
-MESSAGE(STATUS "  NC = ${PREQX_NC}")
-MESSAGE(STATUS "  PLEV = ${PREQX_PLEV}")
-MESSAGE(STATUS "  PIO = ${PREQX_USE_PIO}")
-MESSAGE(STATUS "  ENERGY = ${PREQX_USE_ENERGY}")
-
 SET(USE_OPENACC FALSE)
-
 IF (${ENABLE_HORIZ_OPENMP} AND ${ENABLE_COLUMN_OPENMP})
   SET(NESTED_OPENMP TRUE CACHE BOOL "Both horizontal and column threading")
 ENDIF ()
 
-# The following macro handles the compilation with the appropriate variables
+endmacro(preqx_setup)
+
+
+
+preqx_setup()
 ############################################################################
 # createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
 ############################################################################
 createTestExec(preqx preqx ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
-               ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY})
+               ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
 
 

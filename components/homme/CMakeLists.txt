@@ -168,6 +168,7 @@ ADD_SUBDIRECTORY(utils/cprnc)
 
 ADD_SUBDIRECTORY(utils/timing)
 
+SET(EXEC_LIST ""  CACHE INTERNAL "List of configured executables")
 IF(${BUILD_HOMME_SWEQX})
   ADD_SUBDIRECTORY(src/sweqx)
 ENDIF()

@@ -16,7 +16,3 @@ SET(HOMME_TESTS
 )
 
         
-#set_test_properties(  
-#  baroCamMoist-acc.cmake PROPERTY DEPENDS   baroCamMoist.cmake 
-#)
-

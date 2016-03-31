@@ -1,6 +1,7 @@
 # Relevant Directories within the HOMME repository
 # holding source files needed for building the library
 # and executable swim.
+macro(swim_setup)
 
 INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
@@ -11,10 +12,10 @@ SET(SRC_SHARE_DIR    ${HOMME_SOURCE_DIR}/src/share)
 SET(UTILS_TRILINOS_DIR ${HOMME_SOURCE_DIR}/utils/trilinos)
 SET(UTILS_TIMING_DIR ${CMAKE_BINARY_DIR}/utils/timing)
 
-# Make INCLUDE_DIRS global so the tests can access it
-SET (SWIM_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
-                       ${UTILS_TIMING_DIR}
-                       ${SRC_SHARE_DIR} CACHE INTERNAL "include directories for swim") 
+
+SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
+                       ${UTILS_TIMING_DIR} )
+                       
 
 # Make SRCS global so the tests can access it
 SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
@@ -105,7 +106,7 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
 )
 
 
-SET(SWIM_SRCS ${SWIM_SRCS} ${SRC_DIR}/main.F90 CACHE INTERNAL "Sources for swim")
+SET(EXEC_SOURCES ${SWIM_SRCS} ${SRC_DIR}/main.F90 )
 
 #Set up defaults
 IF (NOT SWIM_NP)
@@ -123,19 +124,16 @@ ENDIF ()
 IF (NOT SWIM_USE_ENERGY)
   SET (SWIM_USE_ENERGY FALSE)
 ENDIF ()
+IF (NOT QSIZE_D)
+  SET (QSIZE_D 4)
+ENDIF ()
 
-MESSAGE(STATUS "Building swim with:")
-MESSAGE(STATUS "  NP = ${SWIM_NP}")
-MESSAGE(STATUS "  NC = ${SWIM_NC}")
-MESSAGE(STATUS "  PLEV = ${SWIM_PLEV}")
-MESSAGE(STATUS "  PIO = ${SWIM_USE_PIO}")
-MESSAGE(STATUS "  ENERGY = ${SWIM_USE_ENERGY}")
+endmacro(swim_setup)
 
-# The following macro handles the compilation with the appropriate variables
-############################################################################
+
+swim_setup()
 # createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
-############################################################################
-createTestExec(swim swim ${SWIM_NP} ${SWIM_NC} ${SWIM_PLEV} ${SWIM_USE_PIO} ${SWIM_USE_ENERGY})
+createTestExec(swim swim ${SWIM_NP} ${SWIM_NC} ${SWIM_PLEV} ${SWIM_USE_PIO} ${SWIM_USE_ENERGY} ${QSIZE_D})
 
 SET_PROPERTY(TARGET swim PROPERTY LINKER_LANGUAGE Fortran)
 

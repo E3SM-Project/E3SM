@@ -164,10 +164,11 @@ ENDIF ()
 # Two flavors:
 #   1) HORIZ_OPENMP OpenMP over elements (standard OPENMP)
 #   2) COLUMN_OPENMP OpenMP within an element (previously called ELEMENT_OPENMP)
+# COLUMN_OPENMP will be disabled by the openACC exectuables.
 ##############################################################################
 OPTION(ENABLE_OPENMP "OpenMP across elements" TRUE)
 OPTION(ENABLE_HORIZ_OPENMP "OpenMP across elements" TRUE)
-OPTION(ENABLE_COLUMN_OPENMP "OpenMP within an element" FALSE)
+OPTION(ENABLE_COLUMN_OPENMP "OpenMP within an element" TRUE)
 
 # If OpenMP is turned off also turn off ENABLE_HORIZ_OPENMP
 IF (NOT ${ENABLE_OPENMP}) 
@@ -205,25 +206,20 @@ IF (ENABLE_HORIZ_OPENMP OR ENABLE_COLUMN_OPENMP)
   ENDIF()
  IF (${ENABLE_HORIZ_OPENMP})
    # Set this as global so it can be picked up by all executables
-   SET(HORIZ_OPENMP TRUE CACHE BOOL "Threading in the horizontal direction")
+#   SET(HORIZ_OPENMP TRUE CACHE BOOL "Threading in the horizontal direction")
+   SET(HORIZ_OPENMP TRUE BOOL "Threading in the horizontal direction")
    MESSAGE(STATUS "  Using HORIZ_OPENMP")
  ENDIF ()
  
  IF (${ENABLE_COLUMN_OPENMP})
    # Set this as global so it can be picked up by all executables
-   SET(COLUMN_OPENMP TRUE CACHE BOOL "Threading in the horizontal direction")
+#   SET(COLUMN_OPENMP TRUE CACHE BOOL "Threading in the horizontal direction")
+   SET(COLUMN_OPENMP TRUE BOOL "Threading in the horizontal direction")
    MESSAGE(STATUS "  Using COLUMN_OPENMP")
  ENDIF ()
 ENDIF ()
 ##############################################################################
 
-##############################################################################
-# OpenACC specific flag - only supporting PGI compiler
-##############################################################################
-OPTION(ENABLE_OPENACC "Whether to build with OpenACC support" FALSE)
-IF (${ENABLE_OPENACC})
-  SET(PREQX_USE_OPENACC TRUE)
-ENDIF ()
 
 ##############################################################################
 # Intel Phi (MIC) specific flags - only supporting the Intel compiler
