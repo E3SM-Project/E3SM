@@ -1002,6 +1002,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	int ndims, type, hasTime, decomp, in_stream;
 	int persistence;
 	char *string, *tofree, *token;
+	char temp_str[1024];
 	char pointer_name[1024];
 	char spacing[1024], sub_spacing[1024];
 	char default_value[1024];
@@ -1332,11 +1333,35 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 			fortprintf(fd, "      end if\n");
 			fortprintf(fd, "      if (const_index > 0) then\n", spacing);
 			if ( vardesc != NULL ) {
-				fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, 'long_name', '%s')\n", pointer_name, time_lev, vardesc);
+				string = strdup(vardesc);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, 'long_name', '%s')\n", pointer_name, time_lev, temp_str);
 			}
 
 			if ( varunits != NULL ) {
-				fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, 'units', '%s')\n", pointer_name, time_lev, varunits);
+				string = strdup(varunits);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s(%d) %% attLists(const_index) %% attList, 'units', '%s')\n", pointer_name, time_lev, temp_str);
 			}
 
 			if ( vararrmissingval ) {
@@ -1408,6 +1433,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	int ndims, type, hasTime, decomp, in_stream;
 	int persistence;
 	char *string, *tofree, *token;
+	char temp_str[1024];
 	char pointer_name[1024];
 	char package_spacing[1024];
 	char default_value[1024];
@@ -1523,11 +1549,35 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 		fortprintf(fd, "      allocate(%s(%d) %% attLists(1))\n", pointer_name, time_lev);
 
 		if ( varunits != NULL ) {
-			fortprintf(fd, "      call mpas_add_att(%s(%d) %% attLists(1) %% attList, 'units', '%s')\n", pointer_name, time_lev, varunits);
+			string = strdup(varunits);
+			tofree = string;
+			token = strsep(&string, "'");
+
+			sprintf(temp_str, "%s", token);
+
+			while ( ( token = strsep(&string, "'") ) != NULL ) {
+				sprintf(temp_str, "%s''%s", temp_str, token);
+			}
+
+			free(tofree);
+
+			fortprintf(fd, "      call mpas_add_att(%s(%d) %% attLists(1) %% attList, 'units', '%s')\n", pointer_name, time_lev, temp_str);
 		}
 
 		if ( vardesc != NULL ) {
-			fortprintf(fd, "      call mpas_add_att(%s(%d) %% attLists(1) %% attList, 'long_name', '%s')\n", pointer_name, time_lev, vardesc);
+			string = strdup(vardesc);
+			tofree = string;
+			token = strsep(&string, "'");
+
+			sprintf(temp_str, "%s", token);
+
+			while ( ( token = strsep(&string, "'") ) != NULL ) {
+				sprintf(temp_str, "%s''%s", temp_str, token);
+			}
+
+			free(tofree);
+
+			fortprintf(fd, "      call mpas_add_att(%s(%d) %% attLists(1) %% attList, 'long_name', '%s')\n", pointer_name, time_lev, temp_str);
 		}
 
 		if ( varmissingval != NULL ) {
