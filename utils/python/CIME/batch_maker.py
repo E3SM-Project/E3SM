@@ -118,7 +118,7 @@ class BatchMaker(object):
 
             # if the fullsum is between the min and max # jobs, then use this queue.
             if jobmin is not None and jobmax is not None and self.fullsum >= jobmin and self.fullsum <= jobmax:
-                self.queue = default_queue
+                self.queue = queue
                 self.wall_time_max = self.config_machines_parser.get_queue_attribute(self.queue, "walltimemax")
                 break
 
@@ -196,7 +196,7 @@ within model's Machines directory, and add a batch system type for this machine
 
         mpi_arg_string = " ".join(args.values())
 
-        self.mpirun = "qx(%s %s %s);" % (executable, mpi_arg_string, default_run_suffix)
+        self.mpirun = "qx(%s %s %s);" % (executable if executable is not None else "", mpi_arg_string, default_run_suffix)
 
     def _set_batch_directives(self):
         """
