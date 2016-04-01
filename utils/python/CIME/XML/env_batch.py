@@ -4,7 +4,7 @@ Interface to the env_batch.xml file.  This class inherits from EnvBase
 from CIME.XML.standard_module_setup import *
 from CIME.utils import convert_to_type
 from env_base import EnvBase
-
+from CIME.utils import convert_to_string
 logger = logging.getLogger(__name__)
 
 class EnvBatch(EnvBase):
@@ -28,7 +28,7 @@ class EnvBatch(EnvBase):
             for node in nodes:
                 vnode = self.get_optional_node("entry", {"id":item}, root=node)
                 if vnode is not None:
-                    val = EnvBase._set_value(self, vnode, item, value, ignore_type=ignore_type)
+                    val = self._set_value(vnode, item, value, ignore_type=ignore_type)
 
         return val
 

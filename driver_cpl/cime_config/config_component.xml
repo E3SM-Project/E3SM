@@ -375,6 +375,44 @@
     </desc>
   </entry>
 
+  <entry id="BARRIER_OPTION">
+    <type>char</type>
+    <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
+    <default_value>never</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      sets frequency of full model barrier (same options as STOP_OPTION) for synchronization with BARRIER_N and BARRIER_DATE
+    </desc>
+    <values>
+      <value compset="DATM.+CLM">ndays</value>   <!-- Daily barrier needed for concurrent PE layouts so that DATM doesn't get ahead -->
+    </values>
+  </entry>
+
+  <entry id="BARRIER_N">
+    <type>char</type>
+    <default_value>1</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      sets periodic model barriers with BARRIER_OPTION and BARRIER_DATE for synchronization
+    </desc>
+    <values>
+      <value compset="DATM.+CLM">1</value>   <!-- Daily barrier needed for concurrent PE layouts so that DATM doesn't get ahead -->
+    </values>
+  </entry>
+
+  <entry id="BARRIER_DATE">
+    <type>char</type>
+    <default_value>-999</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Alternative date in yyyymmdd format
+      sets periodic model barriers with BARRIER_OPTION and BARRIER_N for synchronization
+    </desc>
+  </entry>
+
   <entry id="CONTINUE_RUN">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -405,6 +443,18 @@
     Long runs can easily outstrip supercomputer queue time limits. For
     this reason, a case is usually run as a series of jobs, each
     restarting where the previous finished.
+    </desc>
+  </entry>
+
+  <entry id="RESUBMIT_SETS_CONTINUE_RUN">
+    <type>logical</type>
+    <default_value>TRUE</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>This flag controls whether the RESUBMIT flag causes
+      CONTINUE_RUN to toggle from FALSE to TRUE.  The default is
+      TRUE.  This flag might be used in conjunction with COMP_RUN_BARRIERS for
+      timing tests.
     </desc>
   </entry>
 
@@ -641,7 +691,7 @@
     <default_value></default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
-    <desc>email address of person (or group) that supports the build and port for this machine (do not edit)</desc>
+    <desc>email address of person (or group) that supports the build and port for this machine (do not edit)></desc>
   </entry>
 
   <entry id="MPILIB">
@@ -709,7 +759,6 @@
       If TRUE, the component libraries are always built with OpenMP capability.</desc>
   </entry>
 
-
   <entry id="USE_PETSC">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -774,7 +823,7 @@
     <default_value>FALSE</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
-    <desc>Status output: if TRUE, models have been built successfully. (DO NOT EDIT)</desc>
+    <desc>Status output: if TRUE, models have been built successfully. (DO NOT EDIT)></desc>
   </entry>
 
   <entry id="SMP_BUILD">
@@ -801,7 +850,7 @@
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
-    <desc>Status: ninst status of previous build, coded string. (DO NOT EDIT)</desc>
+    <desc>Status: ninst status of previous build, coded string. (DO NOT EDIT)></desc>
   </entry>
 
   <entry id="NINST_VALUE">
@@ -914,7 +963,10 @@
     <default_value>FALSE</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
-    <desc>Turns on component barriers for component timing</desc>
+    <desc>Turns on component barriers for component timing.
+          This variable is for testing and debugging only and should never
+          be set for a production run.
+    </desc>
   </entry>
 
   <entry id="CCSM_PCOST">
@@ -2980,7 +3032,7 @@
   </entry>
 
   <entry id="ATM_NCPL">
-    <type>char</type>
+    <type>integer</type>
     <default_value>48</default_value>
     <values>
       <value compset="_CAM[45]"             >48</value>
@@ -3000,6 +3052,7 @@
       <value compset=".+" grid="a%ne60np4"  >96</value>
       <value compset=".+" grid="a%ne120np4" >96</value>
       <value compset=".+" grid="a%ne240np4" >96</value>
+      <value compset=".+" grid="a%T42"      >72</value>
       <value compset=".+" grid="a%T85"      >144</value>
       <value compset=".+" grid="a%T341"     >288</value>
       <value compset=".+" grid="1x1"        >48</value>
@@ -3018,7 +3071,7 @@
   </entry>
 
   <entry id="LND_NCPL">
-    <type>char</type>
+    <type>integer</type>
     <default_value>$ATM_NCPL</default_value>
     <values>
       <value compset="_DLND.*_CISM">1</value>
@@ -3031,7 +3084,7 @@
   </entry>
 
   <entry id="ICE_NCPL">
-    <type>char</type>
+    <type>integer</type>
     <default_value>$ATM_NCPL</default_value>
     <values>
       <value compset="_DLND.*_CISM">1</value>
@@ -3044,7 +3097,7 @@
   </entry>
 
   <entry id="OCN_NCPL">
-    <type>char</type>
+    <type>integer</type>
     <default_value>$ATM_NCPL</default_value>
     <values>
       <value compset="_POP2">1</value>
@@ -3065,7 +3118,7 @@
   </entry>
 
   <entry id="GLC_NCPL">
-    <type>char</type>
+    <type>integer</type>
     <default_value>1</default_value>
     <values>
       <value compset="_DLND.*_CISM">1</value>
@@ -3076,7 +3129,7 @@
   </entry>
 
   <entry id="ROF_NCPL">
-    <type>char</type>
+    <type>integer</type>
     <default_value>8</default_value>
     <values>
       <value compset="_DATM.*_POP2">$ATM_NCPL</value>
@@ -3093,7 +3146,7 @@
   </entry>
 
   <entry id="WAV_NCPL">
-    <type>char</type>
+    <type>integer</type>
     <default_value>$ATM_NCPL</default_value>
     <group>run_coupling</group>
     <file>env_run.xml</file>

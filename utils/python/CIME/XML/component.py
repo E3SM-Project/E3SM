@@ -25,9 +25,32 @@ class Component(EntryID):
         return EntryID.get_value(self, name, attribute, resolved)
 
     def get_valid_model_components(self):
+        """
+        return a list of all possible valid generic (e.g. atm, clm, ...) model components
+        from the entries in the model CONFIG_DRV_FILE
+        """
         components = []
-        compnode = self.get_node("components")
-        comps = self.get_nodes("comp", root=compnode)
+        comps = self.get_nodes("comp", root=self.get_node("components"))
         for comp in comps:
             components.append(comp.text)
         return components
+
+    def print_values(self):
+        """
+        print values for help and description in target config_component.xml file
+        """
+        rootnode = self.get_node("help")
+        helptext = rootnode.text
+
+        rootnode = self.get_node("description")
+        compsets = {}
+        descs = self.get_nodes("desc", root=rootnode)
+        for desc in descs:
+            attrib = desc.attrib["compset"]
+            text = desc.text
+            compsets[attrib] = text
+
+        logger.info(" %s" %helptext)
+        for v in compsets.iteritems():
+            label, definition = v
+            logger.info("   %20s : %s" %(label, definition))

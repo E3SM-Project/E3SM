@@ -27,7 +27,7 @@ def expect(condition, error_msg, exc_type=SystemExit):
     """
     if (not condition):
         # Uncomment these to bring up a debugger when an expect fails
-        #import pdb
+        # import pdb
         #pdb.set_trace()
         raise exc_type("ERROR: %s" % error_msg)
 

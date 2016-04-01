@@ -103,22 +103,33 @@ class EnvModule(object):
 
     def _load_soft_modules(self, modules_to_load):
         logging.info("Loading soft modules")
+        sh_init_cmd = self._machine.get_module_system_init_path("sh")
         sh_mod_cmd = self._machine.get_module_system_cmd_path("sh")
-        for action,argument in modules_to_load:
-            cmd = "%s %s %s" % (sh_mod_cmd, action, argument)
-            logging.debug("Command=%s" % cmd)
-            output=run_cmd(cmd)
+        
+        cmd = "source %s && source $SOFTENV_ALIASES && source $SOFTENV_LOAD" % (sh_init_cmd)
 
-            # Inject soft env variables into current environment
-            # output should be in VARNAME=value ; export VARNAME
-            for line in output.splitlines():
-                m=re.match(r'(\S+)\s*=\s*(\S+)\s',line)
-                if m:
-                    key = m.groups()[0]
-                    val = os.path.expandvars(m.groups()[1])
-                    logging.info('setting environment variable %s to %s' % (key,val))
-                    os.environ[key] = val
+        for action,argument in modules_to_load:
+            cmd += " && %s %s %s" % (sh_mod_cmd, action, argument)
+
+        cmd += " && env"
+        logging.debug("Command=%s" % cmd)
+        output=run_cmd(cmd)
+
+        newenv = {}
+        for line in output.splitlines():
+            m=re.match(r'^(\S+)=(\S+)$',line)
+            if m:
+                key = m.groups()[0]
+                val = m.groups()[1]
                 
+                newenv[key] = val
+
+
+        for key in newenv:
+            if key in os.environ and key not in newenv:
+                del(os.environ[key])
+            else:
+                os.environ[key] = newenv[key]
 
 
 

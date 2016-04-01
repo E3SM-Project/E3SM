@@ -16,7 +16,7 @@ set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 #======================================================================
 
 cd $CASEROOT
-echo "doing a ${STOP_N} ${STOP_OPTION} test with no restart files" >>& $TESTSTATUS_LOG 
+echo "doing a ${STOP_N} ${STOP_OPTION} test with no restart files" >>& $TESTSTATUS_LOG
 
 ./case.run
 if ($status != 0) then
@@ -31,9 +31,9 @@ if (-e $CplLogFile) then
        echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
        echo "" >>& $TESTSTATUS_LOG
        exit -1;
-    else 
-       echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
-       echo "" >>& $TESTSTATUS_LOG 
+    else
+       echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
+       echo "" >>& $TESTSTATUS_LOG
     endif
 else
    echo "ERROR: no coupler log created, model run failed" >>& $TESTSTATUS_LOG
@@ -45,10 +45,11 @@ endif
 #======================================================================
 
 echo "DONE ${CASEBASEID} : (test finished, successful coupler log) " >>& $TESTSTATUS_LOG
+echo "PASS ${CASEBASEID} : test functionality summary " >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
 echo "--- Test Functionality: ---" >>& $TESTSTATUS_OUT
-
+echo "PASS ${CASEBASEID} : test functionality summary " >>& $TESTSTATUS_OUT
 echo "this test just measures performance - so there are no PASS/FAIL metrics"
 
 
