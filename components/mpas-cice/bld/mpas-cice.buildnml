@@ -48,10 +48,26 @@ if ( $ICE_GRID eq 'oEC60to30' ) {
 	$grid_date .= '121116';
 	$grid_prefix .= 'cice120km';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
+} elsif ( $ICE_GRID eq 'oQU120' ) {
+	$grid_date .= '151209';
+	$grid_prefix .= 'seaice.oQU120km';
+	$decomp_prefix .= 'mpas-cice.graph.info.';
+} elsif ( $ICE_GRID eq 'oQU240' ) {
+	$grid_date .= '151209';
+	$grid_prefix .= 'seaice.oQU240km';
+	$decomp_prefix .= 'mpas-cice.graph.info.';
 } elsif ( $ICE_GRID eq 'mpasgx1' ) {
 	$grid_date .= '121116';
 	$grid_prefix .= 'grid_gx1';
 	$decomp_prefix .= 'mpas-cice.graph.info.';
+} elsif ( $ICE_GRID eq 'oRRS30to10' ) {
+        $grid_date .= '151031';
+        $grid_prefix .= 'seaice.RRS.30-10km';
+        $decomp_prefix .= 'mpas-cice.graph.info.';
+} elsif ( $ICE_GRID eq 'oRRS15to5' ) {
+        $grid_date .= '151209';
+        $grid_prefix .= 'seaice.RRS.15to5km';
+        $decomp_prefix .= 'mpas-cice.graph.info.';
 }
 
 chdir "$CASEBUILD/mpas-ciceconf";
@@ -178,6 +194,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '                  filename_template="rst.mpas-cice.$Y-$M-$D_$h.$m.$s.nc"' . "\n";
 	print $stream_file '                  filename_interval="output_interval"' . "\n";
 	print $stream_file '                  input_interval="initial_only"' . "\n";
+	print $stream_file '                  clobber_mode="replace_files"' . "\n";
 	print $stream_file '                  output_interval="00-00-00_00:00:01" />' . "\n";
 	print $stream_file '' . "\n";
 	print $stream_file '<stream name="output"' . "\n";
@@ -335,6 +352,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '        packages="timeSeriesStatsMonthlyAMPKG"' . "\n";
 	print $stream_file '        output_interval="00-01-00_00:00:00" >' . "\n";
 	print $stream_file '' . "\n";
+	print $stream_file '	<var name="daysSinceStartOfSim"/>' . "\n";
 	print $stream_file '	<var name="icePresent"/>' . "\n";
 	print $stream_file '	<var name="iceAreaCell"/>' . "\n";
 	print $stream_file '	<var name="iceVolumeCell"/>' . "\n";
@@ -408,6 +426,7 @@ if ( -e "$CASEROOT/SourceMods/src.mpas-cice/$STREAM_NAME" ) {
 	print $stream_file '        packages="timeSeriesStatsClimatologyAMPKG"' . "\n";
 	print $stream_file '        output_interval="10-00-00_00:00:00" >' . "\n";
 	print $stream_file '' . "\n";
+	print $stream_file '	<var name="daysSinceStartOfSim"/>' . "\n";
 	print $stream_file '	<var name="icePresent"/>' . "\n";
 	print $stream_file '	<var name="iceAreaCell"/>' . "\n";
 	print $stream_file '	<var name="iceVolumeCell"/>' . "\n";

@@ -1278,6 +1278,17 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- diagnostics -->
+
+<entry id="config_check_state" type="logical"
+	category="diagnostics" group="diagnostics">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- AM_highFrequencyOutput -->
 
 <entry id="config_AM_highFrequencyOutput_enable" type="logical"
