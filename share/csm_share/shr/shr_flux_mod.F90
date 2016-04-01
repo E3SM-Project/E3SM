@@ -813,6 +813,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                Qdel   = Qnsol + Qsol * &
                   (0.137_R8 + 11.0_R8*Dcool - 6.6e-5/Dcool *(1.0_R8 - exp((-1.0_R8*Dcool)/8.0e-4)))
                Hb = (Qdel/rcpocn)+(Fd*betaS/alphaT)
+               Hb = min(Hb , 0.0_R8)
                lambdaV = lambdaC*(1.0_R8 + ( (0.0_R8-Hb)*16.0_R8*molvisc(tBulk(n))* &
                     shr_const_g*alphaT*molPr(tBulk(n))**2/ustarw**4)**0.75)**(-1/3)
                cSkin(n) =  MIN(0.0_R8, lambdaV * molPr(tBulk(n)) * Qdel / ustarw / rcpocn )   
