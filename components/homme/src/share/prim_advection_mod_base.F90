@@ -1600,7 +1600,7 @@ OMP_SIMD
         dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - rhs_multiplier*dt*elem(ie)%derived%divdp_proj(:,:,k)
       enddo
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k)
+!$omp parallel do private(q,k) collapse(2)
 #endif
       do q = 1 , qsize
         do k=1,nlev
@@ -1638,7 +1638,7 @@ OMP_SIMD
         do ie = nets , nete
 #ifdef NEWEULER_B4B
 #if (defined COLUMN_OPENMP)
-       !$omp parallel do private(k, q)
+       !$omp parallel do private(k, q) collapse(2)
 #endif
           do k = 1 , nlev
             do q = 1 , qsize
@@ -1656,7 +1656,7 @@ OMP_SIMD
             dpdissk(:,:,k) = elem(ie)%derived%dpdiss_ave(:,:,k)/dp0(k)
           enddo
 #if (defined COLUMN_OPENMP)
-        !$omp parallel do private(q,k)
+        !$omp parallel do private(q,k) collapse(2)
 #endif
           do q = 1 , qsize
             do k = 1 , nlev
@@ -1699,7 +1699,7 @@ OMP_SIMD
 
       do ie = nets , nete
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k, q)
+!$omp parallel do private(k, q) collapse(2)
 #endif
         do q = 1 , qsize
           do k = 1 , nlev    !  Loop inversion (AAM)
