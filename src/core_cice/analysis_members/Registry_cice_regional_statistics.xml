@@ -62,6 +62,23 @@
 			description="Maximum sea-ice pressure by region"
 		/>
 	</var_struct>
+	<var_struct name="regionalStatisticsAMTesting" time_levs="1" packages="regionalStatisticsAMPKG">
+		<var name="regionArea"  type="real" dimensions="nRegions Time"/>
+		<var name="regionCellCount"  type="integer" dimensions="nRegions Time"/>
+		<var name="iceCoveredCells"  type="integer" dimensions="nRegions Time"/>
+		<var name="iceAggregateTest1D"  type="real" dimensions="nCells Time"/>
+		<var name="iceAggregateTest2D"  type="real" dimensions="nCategories nCells Time"/>
+		<var name="cellAggregateTest1D"  type="real" dimensions="nCells Time"/>
+		<var name="cellAggregateTest2D"  type="real" dimensions="nCategories nCells Time"/>
+		<var name="iceArealAverageTest1D"  type="real" dimensions="nCells Time"/>
+		<var name="iceArealAverageTest2D"  type="real" dimensions="nCategories nCells Time"/>
+		<var name="cellArealAverageTest1D"  type="real" dimensions="nCells Time"/>
+		<var name="cellArealAverageTest2D"  type="real" dimensions="nCategories nCells Time"/>
+		<var name="minTest1D"  type="real" dimensions="nCells Time"/>
+		<var name="minTest2D"  type="real" dimensions="nCategories nCells Time"/>
+		<var name="maxTest1D"  type="real" dimensions="nCells Time"/>
+		<var name="maxTest2D"  type="real" dimensions="nCategories nCells Time"/>
+	</var_struct>
 	<streams>
 		<stream name="regionalStatisticsOutput" type="output"
 				filename_template="analysis_members/regionalStatistics.nc"
@@ -80,5 +97,12 @@
 			<var name="averageAlbedo"/> 
 			<var name="maximumIceVolume"/> 
 			<var name="maximumIcePressure"/> 
+		</stream>
+		<stream name="regionalStatistics_aggregate" type="none"
+				filename_template="none"
+				filename_interval="none"
+				output_interval="none"
+				packages="regionalStatisticsAMPKG"
+				runtime_format="single_file">
 		</stream>
 	</streams>
