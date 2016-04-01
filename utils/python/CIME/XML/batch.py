@@ -94,6 +94,7 @@ class Batch(GenericXML):
         """
         result = []
         directive_prefix = self.get_node("batch_directive", root=self.batch_system_node).text
+        directive_prefix = "" if directive_prefix is None else directive_prefix
         if self.machine_node is not None:
             nodes = self.get_nodes("directive", root=self.machine_node)
             for node in nodes:

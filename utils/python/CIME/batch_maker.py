@@ -222,7 +222,7 @@ within model's Machines directory, and add a batch system type for this machine
                 text = text.replace(whole_match, str("" if repl is None else repl))
             elif self.case.get_value(variable.upper()) is not None:
                 repl = self.case.get_value(variable.upper())
-                text = text.replace(whole_match, "" if repl is None else repl)
+                text = text.replace(whole_match, str("" if repl is None else repl))
             elif variable in defaults:
                 text = text.replace(whole_match, defaults[variable])
             else:
