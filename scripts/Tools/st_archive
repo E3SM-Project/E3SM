@@ -355,9 +355,10 @@ sub getDname
     $logger->debug("In getDname...");
 
     my $DIR = $config{'RUNDIR'};
+    my $CASE = $config{'CASE'};
     opendir( my $dh, $DIR ) or $logger->logdie("st_archive: Error - cannot open directory $DIR. Exiting...");
 
-    my @files = sort( grep(m/^*\.cpl\.r.(.*).nc$/, readdir $dh) );
+    my @files = sort( grep(m/^${CASE}\.cpl\.r.(.*).nc$/, readdir $dh) );
 
     my @names = split(/\./,$files[$#files]);
 
@@ -522,7 +523,10 @@ sub moveFiles
 # also get the file that matches the dname for this suffix and
 # copy to the restdir for a complete restart set
 #
-    my @restFiles = grep(/${dname}/, @files);
+##    my @restFiles = grep(/${dname}/, @files);
+    my $CASE = $config{'CASE'};
+    my @intFiles = grep(/${dname}/, @files);
+    my @restFiles = grep(/${CASE}/, @intFiles);
     if( $#restFiles == 0 ) {
 	my @path = split /\//, $restFiles[$#restFiles]; 
 	if ( $#path >= 0 ) {
