@@ -1844,7 +1844,7 @@
 
 	<!-- Regions -->
 	<var_struct name="regions" time_levs="1">
-		<var name="regionMask" type="integer" dimensions="nRegions nCells" name_in_code="regionMask"/>
+		<var name="regionCellMasks" type="integer" dimensions="nRegions nCells" name_in_code="regionCellMasks"/>
 	</var_struct>
 
 	<!-- Diagnostics -->

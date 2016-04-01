@@ -203,7 +203,7 @@ contains
            latCell
 
       integer, dimension(:,:), pointer :: &
-           regionMask
+           regionCellMasks
 
       integer, pointer :: &
            nCells
@@ -223,24 +223,24 @@ contains
 
          call MPAS_pool_get_array(meshPool, "latCell", latCell)
 
-         call MPAS_pool_get_array(regionsPool, "regionMask", regionMask)
+         call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
 
          ! initialize to zero everywhere
-         regionMask = 0
+         regionCellMasks = 0
 
          ! global
-         regionMask(1,:) = 1
+         regionCellMasks(1,:) = 1
 
          ! northern hemisphere
          do iCell = 1, nCells
             if (latCell(iCell) >= 0.0_RKIND) &
-                 regionMask(2,iCell) = 1
+                 regionCellMasks(2,iCell) = 1
          enddo ! iCell
 
          ! southern hemisphere
          do iCell = 1, nCells
             if (latCell(iCell) < 0.0_RKIND) &
-                 regionMask(3,iCell) = 1
+                 regionCellMasks(3,iCell) = 1
          enddo ! iCell
 
          block => block % next
@@ -303,7 +303,7 @@ contains
          iceCoveredCells
 
     integer, dimension(:,:), pointer :: &
-         regionMask
+         regionCellMasks
 
     integer, pointer :: &
          nCellsSolve, &
@@ -336,7 +336,7 @@ contains
 
        call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
        call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
-       call MPAS_pool_get_array(regionsPool, "regionMask", regionMask)
+       call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
 
        call MPAS_pool_get_array(regionalStatisticsAMTestingPool, "regionArea", regionArea)
        call MPAS_pool_get_array(regionalStatisticsAMTestingPool, "regionCellCount", regionCellCount)
@@ -361,7 +361,7 @@ contains
        iceCoveredCells = 0
        do iRegion = 1, nRegions
           do iCell = 1, nCellsSolve
-             if (regionMask(iRegion,iCell) == 1) then
+             if (regionCellMasks(iRegion,iCell) == 1) then
                 regionArea     (iRegion) = regionArea     (iRegion) + areaCell(iCell)
                 regionCellCount(iRegion) = regionCellCount(iRegion) + 1
                 if (iceAreaCell(iCell) > 0.0_RKIND) then
@@ -474,7 +474,7 @@ contains
 
              do iCell = 1, nCellsSolve
 
-                if (indexToCellID(iCell) == iCellRandom .and. regionMask(iRegion,iCell) == 1) then
+                if (indexToCellID(iCell) == iCellRandom .and. regionCellMasks(iRegion,iCell) == 1) then
                    lFoundIt = 1
                    minTest1D(iCell) = -1.0_RKIND - real(iRegion * 10, RKIND)
                    maxTest1D(iCell) =  1.0_RKIND + real(iRegion * 10, RKIND)
@@ -1072,7 +1072,7 @@ contains
            vVelocityCell
 
       integer, dimension(:,:), pointer :: &
-           regionMask
+           regionCellMasks
 
       real(kind=RKIND), dimension(:), pointer :: &
            totalIceArea, &
@@ -1148,7 +1148,7 @@ contains
          call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
          call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
 
-         call MPAS_pool_get_array(regionsPool, 'regionMask', regionMask)
+         call MPAS_pool_get_array(regionsPool, 'regionCellMasks', regionCellMasks)
 
          call MPAS_pool_get_array(regionalStatisticsAMPool, 'uVelocityCell', uVelocityCell)
          call MPAS_pool_get_array(regionalStatisticsAMPool, 'vVelocityCell', vVelocityCell)
@@ -1160,7 +1160,7 @@ contains
          do iCell = 1, nCellsSolve
             do iRegion = 1, nRegions
 
-               if (regionMask(iRegion,iCell) == 1) then
+               if (regionCellMasks(iRegion,iCell) == 1) then
 
                   ! total ice area
                   iSum = (iRegion-1) * nSums + 1
@@ -1218,7 +1218,7 @@ contains
                   iMax = (iRegion-1) * nMaxs + 2
                   globalMaxsIn(iMax) = max(globalMaxsIn(iMax), icePressure(iCell))
 
-               endif ! regionMask == 1
+               endif ! regionCellMasks == 1
 
             enddo ! iRegion
          enddo ! iCell
@@ -1400,7 +1400,7 @@ contains
          areaCell
 
     integer, dimension(:,:), pointer :: &
-         regionMask
+         regionCellMasks
 
     real(kind=RKIND), dimension(:), allocatable :: &
          outputFieldArrayTmp
@@ -1444,7 +1444,7 @@ contains
        ! get other needed arrays
        call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
        call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
-       call MPAS_pool_get_array(regionsPool, "regionMask", regionMask)
+       call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
 
        ! get the needed dimensions
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
@@ -1453,7 +1453,7 @@ contains
        do iCell = 1, nCellsSolve
           do iRegion = 1, nRegions
 
-             if (regionMask(iRegion,iCell) == 1) then
+             if (regionCellMasks(iRegion,iCell) == 1) then
 
                 outputFieldArrayTmp(iRegion) = outputFieldArrayTmp(iRegion) + &
                      inputFieldArray(iCell) * &
@@ -1519,7 +1519,7 @@ contains
          areaCell
 
     integer, dimension(:,:), pointer :: &
-         regionMask
+         regionCellMasks
 
     real(kind=RKIND), dimension(:,:), allocatable :: &
          outputFieldArrayTmp
@@ -1560,7 +1560,7 @@ contains
        ! get other needed arrays
        call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
        call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
-       call MPAS_pool_get_array(regionsPool, "regionMask", regionMask)
+       call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
 
        ! get the needed dimensions
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
@@ -1569,7 +1569,7 @@ contains
        do iCell = 1, nCellsSolve
           do iRegion = 1, nRegions
 
-             if (regionMask(iRegion,iCell) == 1) then
+             if (regionCellMasks(iRegion,iCell) == 1) then
 
                 do iDim = 1, size(outputFieldArray,1)
 
@@ -1636,7 +1636,7 @@ contains
          areaCell
 
     integer, dimension(:,:), pointer :: &
-         regionMask
+         regionCellMasks
 
     real(kind=RKIND), dimension(:), allocatable :: &
          outputFieldArrayTmp
@@ -1678,7 +1678,7 @@ contains
 
        ! get other needed arrays
        call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
-       call MPAS_pool_get_array(regionsPool, "regionMask", regionMask)
+       call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
 
        ! get the needed dimensions
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
@@ -1687,7 +1687,7 @@ contains
        do iCell = 1, nCellsSolve
           do iRegion = 1, nRegions
 
-             if (regionMask(iRegion,iCell) == 1) then
+             if (regionCellMasks(iRegion,iCell) == 1) then
 
                 outputFieldArrayTmp(iRegion) = outputFieldArrayTmp(iRegion) + &
                      inputFieldArray(iCell) * &
@@ -1749,7 +1749,7 @@ contains
          areaCell
 
     integer, dimension(:,:), pointer :: &
-         regionMask
+         regionCellMasks
 
     real(kind=RKIND), dimension(:,:), allocatable :: &
          outputFieldArrayTmp
@@ -1788,7 +1788,7 @@ contains
 
        ! get other needed arrays
        call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
-       call MPAS_pool_get_array(regionsPool, "regionMask", regionMask)
+       call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
 
        ! get the needed dimensions
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
@@ -1797,7 +1797,7 @@ contains
        do iCell = 1, nCellsSolve
           do iRegion = 1, nRegions
 
-             if (regionMask(iRegion,iCell) == 1) then
+             if (regionCellMasks(iRegion,iCell) == 1) then
 
                 do iDim = 1, size(outputFieldArray,1)
 
@@ -1866,7 +1866,7 @@ contains
          areaCell
 
     integer, dimension(:,:), pointer :: &
-         regionMask
+         regionCellMasks
 
     real(kind=RKIND), dimension(:), allocatable :: &
          outputFieldArrayTmp
@@ -1920,7 +1920,7 @@ contains
        ! get other needed arrays
        call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
        call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
-       call MPAS_pool_get_array(regionsPool, "regionMask", regionMask)
+       call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
 
        ! get the needed dimensions
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
@@ -1929,7 +1929,7 @@ contains
        do iCell = 1, nCellsSolve
           do iRegion = 1, nRegions
 
-             if (regionMask(iRegion,iCell) == 1) then
+             if (regionCellMasks(iRegion,iCell) == 1) then
 
                 outputFieldArrayTmp(iRegion) = outputFieldArrayTmp(iRegion) + &
                      inputFieldArray(iCell) * &
@@ -2015,7 +2015,7 @@ contains
          areaCell
 
     integer, dimension(:,:), pointer :: &
-         regionMask
+         regionCellMasks
 
     real(kind=RKIND), dimension(:,:), allocatable :: &
          outputFieldArrayTmp
@@ -2066,7 +2066,7 @@ contains
        ! get other needed arrays
        call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
        call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
-       call MPAS_pool_get_array(regionsPool, "regionMask", regionMask)
+       call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
 
        ! get the needed dimensions
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
@@ -2075,7 +2075,7 @@ contains
        do iCell = 1, nCellsSolve
           do iRegion = 1, nRegions
 
-             if (regionMask(iRegion,iCell) == 1) then
+             if (regionCellMasks(iRegion,iCell) == 1) then
 
                 do iDim = 1, size(outputFieldArray,1)
 
@@ -2162,7 +2162,7 @@ contains
          areaCell
 
     integer, dimension(:,:), pointer :: &
-         regionMask
+         regionCellMasks
 
     real(kind=RKIND), dimension(:), allocatable :: &
          outputFieldArrayTmp
@@ -2214,7 +2214,7 @@ contains
 
        ! get other needed arrays
        call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
-       call MPAS_pool_get_array(regionsPool, "regionMask", regionMask)
+       call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
 
        ! get the needed dimensions
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
@@ -2223,7 +2223,7 @@ contains
        do iCell = 1, nCellsSolve
           do iRegion = 1, nRegions
 
-             if (regionMask(iRegion,iCell) == 1) then
+             if (regionCellMasks(iRegion,iCell) == 1) then
 
                 outputFieldArrayTmp(iRegion) = outputFieldArrayTmp(iRegion) + &
                      inputFieldArray(iCell) * &
@@ -2304,7 +2304,7 @@ contains
          areaCell
 
     integer, dimension(:,:), pointer :: &
-         regionMask
+         regionCellMasks
 
     real(kind=RKIND), dimension(:,:), allocatable :: &
          outputFieldArrayTmp
@@ -2353,7 +2353,7 @@ contains
 
        ! get other needed arrays
        call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
-       call MPAS_pool_get_array(regionsPool, "regionMask", regionMask)
+       call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
 
        ! get the needed dimensions
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
@@ -2362,7 +2362,7 @@ contains
        do iCell = 1, nCellsSolve
           do iRegion = 1, nRegions
 
-             if (regionMask(iRegion,iCell) == 1) then
+             if (regionCellMasks(iRegion,iCell) == 1) then
 
                 do iDim = 1, size(outputFieldArray,1)
 
@@ -2445,7 +2445,7 @@ contains
          inputFieldArray
 
     integer, dimension(:,:), pointer :: &
-         regionMask
+         regionCellMasks
 
     real(kind=RKIND), dimension(:), allocatable :: &
          outputFieldArrayTmp
@@ -2485,7 +2485,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "regions", regionsPool)
 
        ! get other needed arrays
-       call MPAS_pool_get_array(regionsPool, "regionMask", regionMask)
+       call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
 
        ! get the needed dimensions
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
@@ -2494,7 +2494,7 @@ contains
        do iCell = 1, nCellsSolve
           do iRegion = 1, nRegions
 
-             if (regionMask(iRegion,iCell) == 1) then
+             if (regionCellMasks(iRegion,iCell) == 1) then
 
                 outputFieldArrayTmp(iRegion) = min(outputFieldArrayTmp(iRegion), inputFieldArray(iCell))
 
@@ -2550,7 +2550,7 @@ contains
          inputFieldArray
 
     integer, dimension(:,:), pointer :: &
-         regionMask
+         regionCellMasks
 
     real(kind=RKIND), dimension(:,:), allocatable :: &
          outputFieldArrayTmp
@@ -2587,7 +2587,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "regions", regionsPool)
 
        ! get other needed arrays
-       call MPAS_pool_get_array(regionsPool, "regionMask", regionMask)
+       call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
 
        ! get the needed dimensions
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
@@ -2596,7 +2596,7 @@ contains
        do iCell = 1, nCellsSolve
           do iRegion = 1, nRegions
 
-             if (regionMask(iRegion,iCell) == 1) then
+             if (regionCellMasks(iRegion,iCell) == 1) then
 
                 do iDim = 1, size(outputFieldArray,1)
 
@@ -2658,7 +2658,7 @@ contains
          inputFieldArray
 
     integer, dimension(:,:), pointer :: &
-         regionMask
+         regionCellMasks
 
     real(kind=RKIND), dimension(:), allocatable :: &
          outputFieldArrayTmp
@@ -2698,7 +2698,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "regions", regionsPool)
 
        ! get other needed arrays
-       call MPAS_pool_get_array(regionsPool, "regionMask", regionMask)
+       call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
 
        ! get the needed dimensions
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
@@ -2707,7 +2707,7 @@ contains
        do iCell = 1, nCellsSolve
           do iRegion = 1, nRegions
 
-             if (regionMask(iRegion,iCell) == 1) then
+             if (regionCellMasks(iRegion,iCell) == 1) then
 
                 outputFieldArrayTmp(iRegion) = max(outputFieldArrayTmp(iRegion), inputFieldArray(iCell))
 
@@ -2763,7 +2763,7 @@ contains
          inputFieldArray
 
     integer, dimension(:,:), pointer :: &
-         regionMask
+         regionCellMasks
 
     real(kind=RKIND), dimension(:,:), allocatable :: &
          outputFieldArrayTmp
@@ -2800,7 +2800,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "regions", regionsPool)
 
        ! get other needed arrays
-       call MPAS_pool_get_array(regionsPool, "regionMask", regionMask)
+       call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
 
        ! get the needed dimensions
        call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
@@ -2809,7 +2809,7 @@ contains
        do iCell = 1, nCellsSolve
           do iRegion = 1, nRegions
 
-             if (regionMask(iRegion,iCell) == 1) then
+             if (regionCellMasks(iRegion,iCell) == 1) then
 
                 do iDim = 1, size(outputFieldArray,1)
 
