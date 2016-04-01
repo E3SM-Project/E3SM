@@ -111,11 +111,9 @@ class BatchMaker(object):
         # Make sure to check default queue first.
         self.queue = self.config_machines_parser.get_default_queue()
         all_queues = self.config_machines_parser.get_all_queues()
-
         for queue in all_queues:
-            jobmin = self.config_machines_parser.get_queue_attribute(queue, "jobmin")
-            jobmax = self.config_machines_parser.get_queue_attribute(queue, "jobmax")
-
+            jobmin = int(self.config_machines_parser.get_queue_attribute(queue, "jobmin"))
+            jobmax = int(self.config_machines_parser.get_queue_attribute(queue, "jobmax"))
             # if the fullsum is between the min and max # jobs, then use this queue.
             if jobmin is not None and jobmax is not None and self.fullsum >= jobmin and self.fullsum <= jobmax:
                 self.queue = queue
