@@ -121,8 +121,8 @@ class BatchMaker(object):
                 break
 
         if self.queue:
-            self.case.set_value("JOB_QUEUE", self.queue)
-            logger.info("Using queue %s" % self.queue)
+            self.case.set_value("JOB_QUEUE", self.queue, subgroup=self.job)
+            logger.info("Using queue %s for job %s" % (self.queue,self.job))
 
     def _set_wall_time(self):
         # Get the wallclock time from env_batch.xml if its defined there

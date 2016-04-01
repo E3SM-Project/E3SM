@@ -228,8 +228,12 @@ def case_setup(caseroot, clean, test_mode):
             batchmaker.make_batch_script(input_batch_script, "case.run")
 
             if testcase:
+                batchmaker.set_job("test")
                 testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
-                if not os.path.exists(testscript):
+                if os.path.exists(testscript):
+                    # Short term fix to be removed when csh tests are removed
+                    batchmaker._set_queue()
+                else:
                     input_batch_script = os.path.join(case.get_value("MACHDIR"), "python.case.test")
                     batchmaker.make_batch_script(input_batch_script, "case.test")
 
