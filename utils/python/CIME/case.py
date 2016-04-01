@@ -5,8 +5,7 @@ All interaction with and between the module files in XML/ takes place
 through the Case module.
 """
 
-from XML.standard_module_setup import *
-import CIME.utils
+from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, run_cmd
 from CIME.XML.machines import Machines
 
@@ -37,8 +36,8 @@ class Case(object):
         self._env_entryid_files.append(EnvMachPes(case_root))
         self._env_entryid_files.append(EnvCase(case_root))
         self._env_entryid_files.append(EnvBatch(case_root))
-        if(os.path.isfile(os.path.join(case_root,"env_test.xml"))):
-               self._env_entryid_files.append(EnvTest(case_root))
+        if os.path.isfile(os.path.join(case_root,"env_test.xml")):
+            self._env_entryid_files.append(EnvTest(case_root))
         self._env_generic_files.append(EnvMachSpecific(case_root))
         self._env_generic_files.append(EnvArchive(case_root))
 
@@ -66,7 +65,7 @@ class Case(object):
 
         logging.info("Not able to retreive value for item '%s'" % item)
 
-    def get_type_info(self, item, attribute={}):
+    def get_type_info(self, item):
         result = None
         for env_file in self._env_entryid_files:
             result = env_file.get_type_info(item)
@@ -101,3 +100,10 @@ class Case(object):
 
         logging.warning("Not able to set value for item '%s'" % item)
 
+    def __iter__(self):
+        for entryid_file in self._env_entryid_files:
+            for key, val in entryid_file:
+                if type(val) is str and '$' in val:
+                    yield key, self.get_resolved_value(val)
+                else:
+                    yield key, val

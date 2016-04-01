@@ -2,7 +2,7 @@
 setenv CIMEROOT `./xmlquery CIMEROOT    --value`
 if( -e env_mach_pes.xml.orig) then
     cp env_mach_pes.xml.orig env_mach_pes.xml
-    ./case.setup -clean
+    ./case.setup --clean
 else
     cp env_mach_pes.xml env_mach_pes.xml.orig
 endif
@@ -42,7 +42,7 @@ if( ( $ocnroot > 0 ) && ( $ocnroot < $maxtasks ) ) then
   ./xmlchange ROOTPE_OCN=$maxtasks
 endif
 
-./case.setup -clean
+./case.setup --clean
 ./case.setup
 
 ./case.build --testmode $*

@@ -1,11 +1,12 @@
 """
 Interface to the config_machines.xml file.  This class inherits from GenericXML.py
 """
-from standard_module_setup import *
-import socket
-from generic_xml import GenericXML
-from files import Files
+from CIME.XML.standard_module_setup import *
+from CIME.XML.generic_xml import GenericXML
+from CIME.XML.files import Files
 from CIME.utils import expect
+
+import socket, re
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +19,8 @@ class Machines(GenericXML):
         otherwise if a files object is provided it will be used
         otherwise create a files object from default values
         """
-        self.machine = None
-        self.name    = None
+        self.machine_node = None
+        self.machine      = None
 
         if infile is None:
             if files is None:
@@ -37,22 +38,7 @@ class Machines(GenericXML):
         """
         Return the name of the machine
         """
-        return self.name
-
-
-    def get_node(self, nodename, attributes=None):
-        """
-        Return data on a node for a machine
-        """
-        expect(self.machine is not None, "Machine not set, use parent get_node?")
-        return GenericXML.get_node(self, nodename, attributes, root=self.machine)
-
-    def get_optional_node(self, nodename, attributes=None):
-        """
-        Return data on a node for a machine
-        """
-        expect(self.machine is not None, "Machine not set, use parent get_node?")
-        return GenericXML.get_optional_node(self, nodename, attributes, root=self.machine)
+        return self.machine
 
     def list_available_machines(self):
         """
@@ -77,7 +63,7 @@ class Machines(GenericXML):
         for node in nodes:
             machtocheck = node.get("MACH")
             logger.debug("machine is " + machtocheck)
-            regex_str_node = GenericXML.get_optional_node(self, "NODENAME_REGEX", root=node)
+            regex_str_node = self.get_optional_node("NODENAME_REGEX", root=node)
             regex_str = machtocheck if regex_str_node is None else regex_str_node.text
 
             if regex_str is not None:
@@ -105,10 +91,10 @@ class Machines(GenericXML):
         ...
         SystemExit: ERROR: No machine trump found
         """
-        if self.name != machine:
-            self.machine = GenericXML.get_optional_node(self, "machine", {"MACH" : machine})
-            expect(self.machine is not None, "No machine %s found" % machine)
-            self.name = machine
+        if self.machine != machine:
+            self.machine_node = self.get_optional_node("machine", {"MACH" : machine})
+            expect(self.machine_node is not None, "No machine %s found" % machine)
+            self.machine = machine
 
         return machine
 
@@ -116,7 +102,7 @@ class Machines(GenericXML):
         """
         Get Value of fields in the config_machines.xml file
         """
-        expect(self.machine is not None, "Machine object has no machine defined")
+        expect(self.machine_node is not None, "Machine object has no machine defined")
         value = None
 
         # COMPILER and MPILIB are special, if called without arguments they get the default value from the
@@ -126,7 +112,7 @@ class Machines(GenericXML):
         elif name == "MPILIB":
             value = self.get_default_MPIlib()
         else:
-            node = self.get_optional_node(name)
+            node = self.get_optional_node(name, root=self.machine_node)
             if node is not None:
                 value = node.text
 
@@ -148,10 +134,10 @@ class Machines(GenericXML):
         lists and return the first value if reqval is not provided and reqval
         if it is a valid setting for the machine
         """
-        expect(self.machine is not None, "Machine object has no machine defined")
+        expect(self.machine_node is not None, "Machine object has no machine defined")
         supported_values = self.get_value(listname)
         expect(supported_values is not None,
-               "No list found for " + listname + " on machine " + self.name)
+               "No list found for " + listname + " on machine " + self.machine)
         supported_values = supported_values.split(",")
 
         if reqval is None or reqval == "UNSET":
@@ -161,7 +147,7 @@ class Machines(GenericXML):
                 return reqval
 
         expect(False, "%s value %s not supported for machine %s" %
-               (listname, reqval, self.name))
+               (listname, reqval, self.machine))
 
     def get_default_compiler(self):
         """
@@ -218,10 +204,10 @@ class Machines(GenericXML):
         False
         """
         result = False
-        batch_system = self.get_optional_node("batch_system")
+        batch_system = self.get_optional_node("batch_system", root=self.machine_node)
         if batch_system is not None:
             result = (batch_system.get("type") != "none")
-        logger.debug("Machine %s has batch: %s" % (self.name, result))
+        logger.debug("Machine %s has batch: %s" % (self.machine, result))
         return result
 
     def get_batch_system_type(self):
@@ -232,7 +218,7 @@ class Machines(GenericXML):
         >>> machobj.get_batch_system_type()
         'slurm'
         """
-        batch_system = self.get_node("batch_system")
+        batch_system = self.get_node("batch_system", root=self.machine_node)
         return batch_system.get("type")
 
     def get_module_system_type(self):
@@ -244,16 +230,137 @@ class Machines(GenericXML):
         >>> machobj.get_module_system_type()
         'module'
         """
-        module_system = self.get_node("module_system")
+        module_system = self.get_node("module_system", root=self.machine_node)
         return module_system.get("type")
 
     def get_module_system_init_path(self, lang):
-        init_nodes = self.get_node("init_path", attributes={"lang":lang})
+        init_nodes = self.get_node("init_path", attributes={"lang":lang}, root=self.machine_node)
         return init_nodes.text
 
     def get_module_system_cmd_path(self, lang):
-        cmd_nodes = self.get_node("cmd_path", attributes={"lang":lang})
+        cmd_nodes = self.get_node("cmd_path", attributes={"lang":lang}, root=self.machine_node)
         return cmd_nodes.text
+
+    def get_default_queue(self):
+        node = self.get_optional_node("queue", attributes={"default" : "true"}, root=self.machine_node)
+        if node is not None:
+            return node.text
+        else:
+            return None
+
+    def get_all_queues(self):
+        nodes = self.get_nodes("queue", root=self.machine_node)
+        results = []
+        for node in nodes:
+            results.append(node.text)
+
+        return results
+
+    def get_queue_attribute(self, queue, attrib):
+        nodes = self.get_nodes("queue", root=self.machine_node)
+        for node in nodes:
+            if node.text == queue and attrib in node.attrib:
+                return node.attrib[attrib]
+
+        return None
+
+    def get_walltimes(self):
+        nodes = self.get_nodes("walltime", root=self.machine_node)
+        results = []
+        for node in nodes:
+            results.append(node.text)
+
+        return results
+
+    def get_default_walltime(self):
+        node = self.get_optional_node("walltime", attributes={"default" : "true"}, root=self.machine_node)
+        if node is not None:
+            return node.text
+        else:
+            return None
+
+    def get_walltime_estcost(self, walltime):
+        nodes = self.get_nodes("walltime", root=self.machine_node)
+        for node in nodes:
+            if node.text == walltime and "ccsm_estcost" in node.attrib:
+                return int(node.attrib["ccsm_estcost"])
+
+        return None
+
+    def get_suffix(self, suffix_type):
+        node = self.get_optional_node("default_run_suffix")
+        if node is not None:
+            suffix_node = self.get_optional_node(suffix_type, root=node)
+            if suffix_node is not None:
+                return suffix_node.text
+
+        return None
+
+    def get_mpirun(self, attribs, batch_maker):
+        """
+        Find best match, return (executable, {arg_name : text})
+        """
+        mpirun_nodes = self.get_nodes("mpirun", root=self.machine_node)
+        best_match = None
+        best_num_matched = -1
+        default_match = None
+        best_num_matched_default = -1
+        for mpirun_node in mpirun_nodes:
+            xml_attribs = mpirun_node.attrib
+            all_match = True
+            matches = 0
+            is_default = False
+            for key, value in attribs.iteritems():
+                if key in xml_attribs:
+                    if xml_attribs[key].lower() == "false":
+                        xml_attrib = False
+                    elif xml_attribs[key].lower() == "true":
+                        xml_attrib = True
+                    else:
+                        xml_attrib = xml_attribs[key]
+
+                    if xml_attrib == value:
+                        matches += 1
+                    elif key == "mpilib" and xml_attrib == "default":
+                        is_default = True
+                    else:
+                        all_match = False
+                        break
+
+            for key in xml_attribs:
+                expect(key in attribs, "Unhandled MPI property '%s'" % key)
+
+            if all_match:
+                if is_default:
+                    if matches > best_num_matched_default:
+                        default_match = mpirun_node
+                        best_num_matched_default = matches
+                else:
+                    if matches > best_num_matched:
+                        best_match = mpirun_node
+                        best_num_matched = matches
+
+        expect(best_match is not None or default_match is not None,
+               "Could not find a matching MPI for attributes: %s" % attribs)
+
+        the_match = best_match if best_match is not None else default_match
+
+        args = {}
+        arg_node = self.get_optional_node("arguments", root=the_match)
+        if arg_node is not None:
+            arg_nodes = self.get_nodes("arg", root=arg_node)
+            for arg_node in arg_nodes:
+                arg_value = self.get_resolved_value(arg_node.text)
+                if "default" in arg_node.attrib:
+                    arg_value = batch_maker.transform_vars(arg_value, {arg_node.attrib["name"] : arg_node.attrib["default"]})
+                else:
+                    arg_value = batch_maker.transform_vars(arg_value)
+
+                args[arg_node.attrib["name"]] = arg_value
+
+        executable = self.get_node("executable", root=the_match)
+
+        return executable.text, args
 
     def print_values(self, verbose=None):
         # write out machines
@@ -269,9 +376,9 @@ class Machines(GenericXML):
             support = machine.find("SUPPORTED_BY")
 
             print  "  %s : %s "% (name , desc.text)
-            print  "      os             ",os.text 
-            print  "      compilers      ",compilers.text 
+            print  "      os             ",os.text
+            print  "      compilers      ",compilers.text
             if pes_per_node is not None:
-                print  "      pes/node       ",pes_per_node.text 
+                print  "      pes/node       ",pes_per_node.text
             if max_tasks_per_node is not None:
-                print  "      max_tasks/node ",max_tasks_per_node.text 
+                print  "      max_tasks/node ",max_tasks_per_node.text

@@ -8,16 +8,13 @@ import sys
 import os
 import time
 import re
-if sys.version_info[0] == 2:
-    from ConfigParser import SafeConfigParser as config_parser
-else:
-    from configparser import ConfigParser as config_parser
+from ConfigParser import SafeConfigParser as config_parser
 
 # Return this error code if the scripts worked but tests failed
 TESTS_FAILED_ERR_CODE = 165
 logger = logging.getLogger(__name__)
 
-def expect(condition, error_msg):
+def expect(condition, error_msg, exc_type=SystemExit):
     """
     Similar to assert except doesn't generate an ugly stacktrace. Useful for
     checking user error, not programming error.
@@ -32,7 +29,7 @@ def expect(condition, error_msg):
         # Uncomment these to bring up a debugger when an expect fails
         # import pdb
         #pdb.set_trace()
-        raise SystemExit("ERROR: %s" % error_msg)
+        raise exc_type("ERROR: %s" % error_msg)
 
 # Should only be called from get_cime_config()
 def _read_cime_config_file():
@@ -634,3 +631,22 @@ def convert_to_string(value, type_str, vid=""):
             expect(False, "Unknown type '%s'" % type_str)
 
     return value
+
+def convert_to_seconds(time_str):
+    """
+    Convert time value in [[HH:]MM:]SS to seconds
+
+    >>> convert_to_seconds("42")
+    42
+    >>> convert_to_seconds("01:01:01")
+    3661
+    """
+    components = time_str.split(":")
+    expect(len(components) < 4, "Unusual time string: '%s'" % time_str)
+
+    components.reverse()
+    result = 0
+    for idx, component in enumerate(components):
+        result += int(component) * pow(60, idx)
+
+    return result

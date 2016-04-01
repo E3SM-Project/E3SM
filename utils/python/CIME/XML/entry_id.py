@@ -3,9 +3,9 @@ Common interface to XML files which follow the entry id format,
 this is an abstract class and is expected to
 be used by other XML interface modules and not directly.
 """
-from standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, convert_to_string, convert_to_type
-from generic_xml import GenericXML
+from CIME.XML.generic_xml import GenericXML
 
 logger = logging.getLogger(__name__)
 
@@ -106,9 +106,13 @@ class EntryID(GenericXML):
         if resolved:
             val = self.get_resolved_value(val)
 
-        # Return value as right type
-        type_str = self._get_type_info(node)
-        return convert_to_type(val, type_str, vid)
+        # Return value as right type if we were able to fully resolve
+        # otherwise, we have to leave as string.
+        if "$" in val:
+            return val
+        else:
+            type_str = self._get_type_info(node)
+            return convert_to_type(val, type_str, vid)
 
     def get_values(self, vid, att, resolved=True):
         """
@@ -195,3 +199,7 @@ class EntryID(GenericXML):
 
         return xmldiffs
 
+    def __iter__(self):
+        for node in self.get_nodes("entry"):
+            vid = node.attrib["id"]
+            yield vid, self.get_value(vid)

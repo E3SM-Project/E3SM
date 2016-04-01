@@ -12,7 +12,7 @@ if ( -e env_mach_pes.xml.1 )  then
   cp -f env_mach_pes.xml.1 env_mach_pes.xml
 endif
 
-./case.setup -clean -testmode
+./case.setup --clean --test-mode
 ./case.setup 
 
 cp -f env_mach_pes.xml env_mach_pes.xml.1
@@ -96,11 +96,11 @@ if ($NTHRDS_ICE == 1) then
 endif
 
 # Build with half the tasks and double the threads
-./case.setup -clean -testmode
+./case.setup --clean --test-mode
 ./case.setup
 ./xmlchange --file env_build.xml --id SMP_BUILD --val 0
 
-./case.setup -clean
+./case.setup --clean
 ./case.setup
 ./case.clean_build -all 
 

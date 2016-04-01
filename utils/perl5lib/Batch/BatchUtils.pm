@@ -229,10 +229,6 @@ sub submitSingleJob()
 	$logger->info("Running job script: $runcmd");
 	system("$runcmd");
     }
-    chomp $output;
-
-    my $jobid = $self->getJobID($output);
-    $logger->debug( "Job ID: $jobid");
 
     return $jobid;
 }

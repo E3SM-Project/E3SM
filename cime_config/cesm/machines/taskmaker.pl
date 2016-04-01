@@ -80,7 +80,7 @@ else { # more than two arguments
 # add the list of ALL *xml fields to a hash
 #-------------------------------------------------------------------------------
 my $parser = XML::LibXML->new( no_blanks => 1);
-my $caseroot = $ENV{CASEROOT};
+my $caseroot = getcwd;
 my @files = <${caseroot}/*xml>;
 
 my %xmlvars = ();
