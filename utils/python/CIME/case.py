@@ -48,13 +48,15 @@ class Case(object):
         self._env_generic_files.append(EnvMachSpecific(case_root))
         self._env_generic_files.append(EnvArchive(case_root))
 
-        self._case_root = case_root
-        self._target_component = None
-        self._compset = None
-        self._grid = None
-        self._components = []
-        self._component_classes = []
-        self._component_grids = []
+        # FIXME - the following should probably not all be defined
+        self._case_root              = case_root
+        self._target_component       = None
+        self._compset                = None
+        self._grid                   = None
+        self._components             = []
+        self._component_classes      = []
+        self._component_grids        = []
+        self._component_config_files = []
 
     def __del__(self):
         self.flush()
@@ -151,7 +153,7 @@ class Case(object):
 
         logger.debug("Could not find a compset match for either alias or longname in %s" %file)
 
-    def _get_compset_components(self):
+    def get_compset_components(self):
         elements = self._compset.split('_')
         for element in elements:
             # ignore the initial date in the compset longname
@@ -161,7 +163,8 @@ class Case(object):
                 element_component = element.split('%')[0].lower()
                 element_component = re.sub(r'[0-9]*',"",element_component)
                 self._components.append(element_component)
-                
+        return self._components
+
     def __iter__(self):
         for entryid_file in self._env_entryid_files:
             for key, val in entryid_file:
@@ -193,16 +196,24 @@ class Case(object):
             component = Component(comp_config_file)
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(component, attlist, os.path.basename(env_file.filename));
+            self._component_config_files.append((node_name,comp_config_file)) 
+
+        # Add the group and elements for the config_files.xml 
+        for env_file in self._env_entryid_files:
+            env_file.add_elements_by_group(files, attlist, os.path.basename(env_file.filename));
 
     def configure(self, compset_name, grid_name):
         self._get_compset_longname(compset_name)
-        self._get_compset_components()
+        self.get_compset_components()
 
         # get grid info and overwrite files with that data
-        files      = Files()
-        gridfile   = files.get_value("GRIDS_SPEC_FILE")
-        grids      = Grids(gridfile)
-        gridinfo   = grids.get_grid_info(name=grid_name, compset=self._compset)
+        if self.get_value("GRIDS_SPEC_FILE") is not None:
+            gridfile = self.get_value("GRIDS_SPEC_FILE")
+        else:
+            files = Files()
+            gridfile = files.get_value("GRIDS_SPEC_FILE")
+        grids = Grids(gridfile)
+        gridinfo = grids.get_grid_info(name=grid_name, compset=self._compset)
         self._grid = gridinfo["GRID"]
         logger.debug(" Grid specification file is %s" % gridfile)
 
@@ -213,6 +224,9 @@ class Case(object):
                 self.set_value(key,value)
             for key,value in gridinfo.iteritems():
                 self.set_value(key,value)
+            for idx, config_file in enumerate(self._component_config_files):
+                self.set_value(config_file[0],config_file[1])
+            self.set_value("COMPSET",self._compset)
 
         logger.info(" Component that sets compsets is: %s" %self._target_component)
         logger.info(" Compset is: %s " %self._compset)

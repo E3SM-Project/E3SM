@@ -19,13 +19,17 @@ class Machines(GenericXML):
         otherwise if a files object is provided it will be used
         otherwise create a files object from default values
         """
+
         self.machine_node = None
-        self.machine      = None
+        self.machine = None
+        self.name    = None
+        self.machines_dir = None
 
         if infile is None:
             if files is None:
                 files = Files()
             infile = files.get_value("MACHINES_SPEC_FILE")
+            self.machines_dir = os.path.dirname(infile)
 
         GenericXML.__init__(self, infile)
 
@@ -33,6 +37,12 @@ class Machines(GenericXML):
             machine = self.probe_machine_name()
 
         self.set_machine(machine)
+
+    def get_machines_dir(self):
+        """
+        Return the directory of the machines file
+        """
+        return self.machines_dir
 
     def get_machine_name(self):
         """
