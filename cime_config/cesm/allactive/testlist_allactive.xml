@@ -2,6 +2,9 @@
 <testlist>
   <compset name="B1850">
     <grid name="f09_g16">
+      <test name="SMS_D">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">edison</machine>
+      </test>
       <test name="ERI">
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">bluewaters</machine>
         <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">edison</machine>
