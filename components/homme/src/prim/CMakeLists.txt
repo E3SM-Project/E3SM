@@ -1,6 +1,7 @@
 # Relevant Directories within the HOMME repository
 # holding source files needed for building the library
 # and executable prim.
+macro(prim_setup)
 
 INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
@@ -13,9 +14,8 @@ SET(UTILS_TIMING_DIR ${CMAKE_BINARY_DIR}/utils/timing)
 SET(UTILS_TRILINOS_DIR ${HOMME_SOURCE_DIR}/utils/trilinos)
 
 # Make INCLUDE_DIRS global so the tests can access it
-SET (PRIM_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
-                       ${UTILS_TIMING_DIR}
-                       ${SRC_SHARE_DIR} CACHE INTERNAL "include directories for prim")
+SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
+                       ${UTILS_TIMING_DIR} )
 
 # Make SRCS global so the tests can access it
 SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
@@ -120,7 +120,7 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
 )
 
 
-SET(PRIM_SRCS ${PRIM_SRCS} ${SRC_DIR}/prim_main.F90 CACHE INTERNAL "Sources for prim")
+SET(EXEC_SOURCES ${PRIM_SRCS} ${SRC_DIR}/prim_main.F90 )
 
 # Set up defaults
 IF (NOT PRIM_NP)
@@ -138,20 +138,16 @@ ENDIF ()
 IF (NOT PRIM_NC)
   SET (PRIM_NC 4)
 ENDIF ()
+IF (NOT QSIZE_D)
+  SET (QSIZE_D 4)
+ENDIF ()
 
-MESSAGE(STATUS "Building prim with:")
-MESSAGE(STATUS "  NP = ${PRIM_NP}")
-MESSAGE(STATUS "  NC = ${PRIM_NC}")
-MESSAGE(STATUS "  PLEV = ${PRIM_PLEV}")
-MESSAGE(STATUS "  PIO = ${PRIM_USE_PIO}")
-MESSAGE(STATUS "  ENERGY = ${PRIM_USE_ENERGY}")
+endmacro(prim_setup)
 
-# The following macro handles the compilation with the appropriate variables
-############################################################################
+prim_setup()
 # createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
-############################################################################
 createTestExec(prim prim ${PRIM_NP} ${PRIM_NC} ${PRIM_PLEV} 
-               ${PRIM_USE_PIO}  ${PRIM_USE_ENERGY})
+               ${PRIM_USE_PIO}  ${PRIM_USE_ENERGY} ${QSIZE_D})
 
 SET_PROPERTY(TARGET prim PROPERTY LINKER_LANGUAGE Fortran)
 

@@ -8,7 +8,7 @@
 # The name of this test (should be the basename of this file)
 SET(TEST_NAME swtc6)
 # The specifically compiled executable that this test uses
-SET(EXEC_NAME swtcC)
+SET(EXEC_NAME swtcA)
 
 SET(NUM_CPUS 16)
 
