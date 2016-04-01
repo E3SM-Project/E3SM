@@ -76,6 +76,9 @@
 ! * added the implementation of the Grell-Freitas convection scheme (options cu_grell_freitas and
 !   cu_grell_freitas_momentum).
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
+! * reorganized the calls to mpas_pool_.. as functions of the parameterization of convection. this makes the
+!   code cleaner, now that we are using physics packages.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-04-01.
 
 
  contains
@@ -300,12 +303,12 @@
 
  call mpas_pool_get_dimension(mesh,'nCells',nCells)
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
- call mpas_pool_get_array(diag_physics,'nca',nca)
 
  convection_select: select case(convection_scheme)
 
     case ("cu_kain_fritsch")
 !      write(0,*) '    enter kain-fritsch initialization:'
+       call mpas_pool_get_array(diag_physics,'nca',nca)
        if(.not. config_do_restart) then
           do iCell = 1, nCells
              nca(iCell) = -100._RKIND
@@ -567,48 +570,13 @@
  write(0,*)
  write(0,*) '--- enter subroutine convection_from_MPAS:'
 
- call mpas_pool_get_config(configs,'config_len_disp',len_disp)
+ call mpas_pool_get_array(diag_physics,'cuprec',cuprec)
+ call mpas_pool_get_array(diag_physics,'raincv',raincv)
 
- call mpas_pool_get_array(mesh,'areaCell'   ,areaCell   )
- call mpas_pool_get_array(mesh,'meshDensity',meshDensity)
- call mpas_pool_get_array(mesh,'zgrid'      ,zgrid      )
-
- call mpas_pool_get_array(sfc_input,'xland',xland)
-
- call mpas_pool_get_array(diag_physics,'gsw'          ,gsw          )
- call mpas_pool_get_array(diag_physics,'hfx'          ,hfx          )
- call mpas_pool_get_array(diag_physics,'qfx'          ,qfx          )
- call mpas_pool_get_array(diag_physics,'kpbl'         ,kpbl         )
- call mpas_pool_get_array(diag_physics,'dcEdge_m'     ,dcEdge_m     )
- call mpas_pool_get_array(diag_physics,'nca'          ,nca          )
- call mpas_pool_get_array(diag_physics,'cubot'        ,cubot        )
- call mpas_pool_get_array(diag_physics,'cutop'        ,cutop        )
- call mpas_pool_get_array(diag_physics,'cuprec'       ,cuprec       )
- call mpas_pool_get_array(diag_physics,'raincv'       ,raincv       )
- call mpas_pool_get_array(diag_physics,'w0avg'        ,w0avg        )
- call mpas_pool_get_array(diag_physics,'xmb_total'    ,xmb_total    )
- call mpas_pool_get_array(diag_physics,'xmb_shallow'  ,xmb_shallow  )
- call mpas_pool_get_array(diag_physics,'k22_shallow'  ,k22_shallow  )
- call mpas_pool_get_array(diag_physics,'kbcon_shallow',kbcon_shallow)
- call mpas_pool_get_array(diag_physics,'ktop_shallow' ,ktop_shallow )
- call mpas_pool_get_array(diag_physics,'ktop_deep'    ,ktop_deep    )
- call mpas_pool_get_array(diag_physics,'qc_cu'        ,qc_cu        )
- call mpas_pool_get_array(diag_physics,'qi_cu'        ,qi_cu        )
-
- call mpas_pool_get_array(tend_physics,'rthblten'  ,rthblten  )
- call mpas_pool_get_array(tend_physics,'rthdynten' ,rthdynten )
- call mpas_pool_get_array(tend_physics,'rthratenlw',rthratenlw)
- call mpas_pool_get_array(tend_physics,'rthratensw',rthratensw)
- call mpas_pool_get_array(tend_physics,'rqvblten'  ,rqvblten  )
- call mpas_pool_get_array(tend_physics,'rqvdynten' ,rqvdynten )
- call mpas_pool_get_array(tend_physics,'rthcuten'  ,rthcuten  )
- call mpas_pool_get_array(tend_physics,'rqvcuten'  ,rqvcuten  )
- call mpas_pool_get_array(tend_physics,'rqccuten'  ,rqccuten  )
- call mpas_pool_get_array(tend_physics,'rqicuten'  ,rqicuten  )
- call mpas_pool_get_array(tend_physics,'rqrcuten'  ,rqrcuten  )
- call mpas_pool_get_array(tend_physics,'rqscuten'  ,rqscuten  )
- call mpas_pool_get_array(tend_physics,'rucuten'   ,rucuten   )
- call mpas_pool_get_array(tend_physics,'rvcuten'   ,rvcuten   )
+ call mpas_pool_get_array(tend_physics,'rthcuten',rthcuten)
+ call mpas_pool_get_array(tend_physics,'rqvcuten',rqvcuten)
+ call mpas_pool_get_array(tend_physics,'rqccuten',rqccuten)
+ call mpas_pool_get_array(tend_physics,'rqicuten',rqicuten)
 
  do j = jts,jte
  do i = its,ite
@@ -626,6 +594,38 @@
  convection_select: select case(convection_scheme)
 
     case ("cu_grell_freitas","cu_grell_freitas_momentum")
+       call mpas_pool_get_config(configs,'config_len_disp',len_disp)
+
+       call mpas_pool_get_array(mesh,'areaCell'   ,areaCell   )
+       call mpas_pool_get_array(mesh,'meshDensity',meshDensity)
+       call mpas_pool_get_array(mesh,'zgrid'      ,zgrid      )
+
+       call mpas_pool_get_array(sfc_input,'xland',xland)
+
+       call mpas_pool_get_array(diag_physics,'gsw'          ,gsw          )
+       call mpas_pool_get_array(diag_physics,'hfx'          ,hfx          )
+       call mpas_pool_get_array(diag_physics,'qfx'          ,qfx          )
+       call mpas_pool_get_array(diag_physics,'kpbl'         ,kpbl         )
+       call mpas_pool_get_array(diag_physics,'cubot'        ,cubot        )
+       call mpas_pool_get_array(diag_physics,'cutop'        ,cutop        )
+       call mpas_pool_get_array(diag_physics,'xmb_total'    ,xmb_total    )
+       call mpas_pool_get_array(diag_physics,'xmb_shallow'  ,xmb_shallow  )
+       call mpas_pool_get_array(diag_physics,'k22_shallow'  ,k22_shallow  )
+       call mpas_pool_get_array(diag_physics,'kbcon_shallow',kbcon_shallow)
+       call mpas_pool_get_array(diag_physics,'ktop_shallow' ,ktop_shallow )
+       call mpas_pool_get_array(diag_physics,'ktop_deep'    ,ktop_deep    )
+       call mpas_pool_get_array(diag_physics,'qc_cu'        ,qc_cu        )
+       call mpas_pool_get_array(diag_physics,'qi_cu'        ,qi_cu        )
+
+       call mpas_pool_get_array(tend_physics,'rqvblten'  ,rqvblten  )
+       call mpas_pool_get_array(tend_physics,'rqvdynten' ,rqvdynten )
+       call mpas_pool_get_array(tend_physics,'rthblten'  ,rthblten  )
+       call mpas_pool_get_array(tend_physics,'rthdynten' ,rthdynten )
+       call mpas_pool_get_array(tend_physics,'rthratenlw',rthratenlw)
+       call mpas_pool_get_array(tend_physics,'rthratensw',rthratensw)
+       call mpas_pool_get_array(tend_physics,'rucuten'   ,rucuten   )
+       call mpas_pool_get_array(tend_physics,'rvcuten'   ,rvcuten   )
+
        do j = jts,jte
        do i = its,ite
           dx_p(i,j) = len_disp / meshDensity(i)**0.25
@@ -650,6 +650,7 @@
           do k = kts,kte
              qccu_p(i,k,j)      = qc_cu(k,i)
              qicu_p(i,k,j)      = qi_cu(k,i)
+
              rthblten_p(i,k,j)  = rthblten(k,i)
              rthdynten_p(i,k,j) = rthdynten(k,i)
              rthraten_p(i,k,j)  = rthratenlw(k,i) + rthratensw(k,i)
@@ -662,6 +663,17 @@
        enddo
 
     case ("cu_kain_fritsch")
+       call mpas_pool_get_array(mesh,'areaCell',areaCell)
+
+       call mpas_pool_get_array(diag_physics,'dcEdge_m',dcEdge_m)
+       call mpas_pool_get_array(diag_physics,'cubot'   ,cubot   )
+       call mpas_pool_get_array(diag_physics,'cutop'   ,cutop   )
+       call mpas_pool_get_array(diag_physics,'nca'     ,nca     )
+       call mpas_pool_get_array(diag_physics,'w0avg'   ,w0avg   )
+
+       call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
+       call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
+
        do j = jts,jte
        do i = its,ite
           !area of grid-cell:       
@@ -687,6 +699,15 @@
        enddo
 
     case ("cu_tiedtke")
+       call mpas_pool_get_array(sfc_input,'xland',xland)
+       call mpas_pool_get_array(diag_physics,'hfx',hfx)
+       call mpas_pool_get_array(diag_physics,'qfx',qfx)
+
+       call mpas_pool_get_array(tend_physics,'rqvblten' ,rqvblten )
+       call mpas_pool_get_array(tend_physics,'rqvdynten',rqvdynten)
+       call mpas_pool_get_array(tend_physics,'rucuten'  ,rucuten  )
+       call mpas_pool_get_array(tend_physics,'rvcuten'  ,rvcuten  )
+
        do j = jts,jte
        do i = its,ite
           xland_p(i,j) = xland(i)
@@ -707,7 +728,7 @@
     case default
 
  end select convection_select
- 
+
  end subroutine convection_from_MPAS
 
 !=================================================================================================================
@@ -728,29 +749,13 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
- call mpas_pool_get_array(diag_physics,'nca'          ,nca          )
- call mpas_pool_get_array(diag_physics,'cubot'        ,cubot        )
- call mpas_pool_get_array(diag_physics,'cutop'        ,cutop        )
- call mpas_pool_get_array(diag_physics,'cuprec'       ,cuprec       )
- call mpas_pool_get_array(diag_physics,'raincv'       ,raincv       )
- call mpas_pool_get_array(diag_physics,'w0avg'        ,w0avg        )
- call mpas_pool_get_array(diag_physics,'xmb_total'    ,xmb_total    )
- call mpas_pool_get_array(diag_physics,'xmb_shallow'  ,xmb_shallow  )
- call mpas_pool_get_array(diag_physics,'k22_shallow'  ,k22_shallow  )
- call mpas_pool_get_array(diag_physics,'kbcon_shallow',kbcon_shallow)
- call mpas_pool_get_array(diag_physics,'ktop_shallow' ,ktop_shallow )
- call mpas_pool_get_array(diag_physics,'ktop_deep'    ,ktop_deep    )
- call mpas_pool_get_array(diag_physics,'qc_cu'        ,qc_cu        )
- call mpas_pool_get_array(diag_physics,'qi_cu'        ,qi_cu        )
+ call mpas_pool_get_array(diag_physics,'cuprec',cuprec)
+ call mpas_pool_get_array(diag_physics,'raincv',raincv)
 
  call mpas_pool_get_array(tend_physics,'rthcuten',rthcuten)
  call mpas_pool_get_array(tend_physics,'rqvcuten',rqvcuten)
  call mpas_pool_get_array(tend_physics,'rqccuten',rqccuten)
  call mpas_pool_get_array(tend_physics,'rqicuten',rqicuten)
- call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
- call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
- call mpas_pool_get_array(tend_physics,'rucuten' ,rucuten )
- call mpas_pool_get_array(tend_physics,'rvcuten' ,rvcuten )
 
  do j = jts,jte
  do i = its,ite
@@ -768,6 +773,20 @@
  convection_select: select case(convection_scheme)
 
     case ("cu_grell_freitas","cu_grell_freitas_momentum")
+       call mpas_pool_get_array(diag_physics,'cubot'        ,cubot        )
+       call mpas_pool_get_array(diag_physics,'cutop'        ,cutop        )
+       call mpas_pool_get_array(diag_physics,'xmb_total'    ,xmb_total    )
+       call mpas_pool_get_array(diag_physics,'xmb_shallow'  ,xmb_shallow  )
+       call mpas_pool_get_array(diag_physics,'k22_shallow'  ,k22_shallow  )
+       call mpas_pool_get_array(diag_physics,'kbcon_shallow',kbcon_shallow)
+       call mpas_pool_get_array(diag_physics,'ktop_shallow' ,ktop_shallow )
+       call mpas_pool_get_array(diag_physics,'ktop_deep'    ,ktop_deep    )
+       call mpas_pool_get_array(diag_physics,'qc_cu'        ,qc_cu        )
+       call mpas_pool_get_array(diag_physics,'qi_cu'        ,qi_cu        )
+
+       call mpas_pool_get_array(tend_physics,'rucuten',rucuten)
+       call mpas_pool_get_array(tend_physics,'rvcuten',rvcuten)
+
        do j = jts,jte
        do i = its,ite
           cubot(i)         = cubot_p(i,j)
@@ -789,6 +808,14 @@
        enddo
 
     case ("cu_kain_fritsch")
+       call mpas_pool_get_array(diag_physics,'cubot',cubot)
+       call mpas_pool_get_array(diag_physics,'cutop',cutop)
+       call mpas_pool_get_array(diag_physics,'nca'  ,nca  )
+       call mpas_pool_get_array(diag_physics,'w0avg',w0avg)
+
+       call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
+       call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
+
        do j = jts,jte
        do i = its,ite
           cubot(i) = cubot_p(i,j)
@@ -803,6 +830,9 @@
        enddo
 
     case ("cu_tiedtke")
+       call mpas_pool_get_array(tend_physics,'rucuten',rucuten)
+       call mpas_pool_get_array(tend_physics,'rvcuten',rvcuten)
+
        do j = jts,jte
        do k = kts,kte
        do i = its,ite
@@ -842,22 +872,21 @@
  call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
  call mpas_pool_get_dimension(mesh,'nVertLevels',nVertLevels)
 
- call mpas_pool_get_array(diag_physics,'nca'   ,nca   )
- call mpas_pool_get_array(diag_physics,'cubot' ,cubot )
- call mpas_pool_get_array(diag_physics,'cutop' ,cutop )
- call mpas_pool_get_array(diag_physics,'cuprec',cuprec)
- call mpas_pool_get_array(diag_physics,'raincv',raincv)
-
- call mpas_pool_get_array(tend_physics,'rthcuten',rthcuten)
- call mpas_pool_get_array(tend_physics,'rqvcuten',rqvcuten)
- call mpas_pool_get_array(tend_physics,'rqccuten',rqccuten)
- call mpas_pool_get_array(tend_physics,'rqicuten',rqicuten)
- call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
- call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
-
  convection_select: select case(convection_scheme)
 
     case ("cu_kain_fritsch")
+      call mpas_pool_get_array(diag_physics,'nca'   ,nca   )
+      call mpas_pool_get_array(diag_physics,'cubot' ,cubot )
+      call mpas_pool_get_array(diag_physics,'cutop' ,cutop )
+      call mpas_pool_get_array(diag_physics,'cuprec',cuprec)
+      call mpas_pool_get_array(diag_physics,'raincv',raincv)
+
+      call mpas_pool_get_array(tend_physics,'rthcuten',rthcuten)
+      call mpas_pool_get_array(tend_physics,'rqvcuten',rqvcuten)
+      call mpas_pool_get_array(tend_physics,'rqccuten',rqccuten)
+      call mpas_pool_get_array(tend_physics,'rqicuten',rqicuten)
+      call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
+      call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
 
        do iCell = 1, nCellsSolve
           !decreases the characteristic time period that convection remains active. When nca_p
