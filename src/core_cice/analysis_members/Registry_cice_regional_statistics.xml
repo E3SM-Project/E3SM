@@ -98,11 +98,52 @@
 			<var name="maximumIceVolume"/> 
 			<var name="maximumIcePressure"/> 
 		</stream>
-		<stream name="regionalStatistics_aggregate" type="none"
-				filename_template="none"
-				filename_interval="none"
-				output_interval="none"
-				packages="regionalStatisticsAMPKG"
-				runtime_format="single_file">
+		<stream name="regionalStatistics_ice_aggregate"
+			type="none"
+			filename_template="none"
+			filename_interval="none"
+			packages="regionalStatisticsAMPKG"
+			output_interval="none"
+			runtime_format="single_file" >
+		</stream>
+		<stream name="regionalStatistics_cell_aggregate"
+			type="none"
+			filename_template="none"
+			filename_interval="none"
+			packages="regionalStatisticsAMPKG"
+			output_interval="none"
+			runtime_format="single_file" >
+		</stream>
+		<stream name="regionalStatistics_ice_areal_average"
+			type="none"
+			filename_template="none"
+			filename_interval="none"
+			packages="regionalStatisticsAMPKG"
+			output_interval="none"
+			runtime_format="single_file" >
+		</stream>
+		<stream name="regionalStatistics_cell_areal_average"
+			type="none"
+			filename_template="none"
+			filename_interval="none"
+			packages="regionalStatisticsAMPKG"
+			output_interval="none"
+			runtime_format="single_file" >
+		</stream>
+		<stream name="regionalStatistics_min"
+			type="none"
+			filename_template="none"
+			filename_interval="none"
+			packages="regionalStatisticsAMPKG"
+			output_interval="none"
+			runtime_format="single_file" >
+		</stream>
+		<stream name="regionalStatistics_max"
+			type="none"
+			filename_template="none"
+			filename_interval="none"
+			packages="regionalStatisticsAMPKG"
+			output_interval="none"
+			runtime_format="single_file" >
 		</stream>
 	</streams>

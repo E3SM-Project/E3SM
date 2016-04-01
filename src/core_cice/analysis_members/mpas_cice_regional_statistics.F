@@ -495,8 +495,6 @@ contains
           ! see if any processor has found it
           call MPAS_dmpar_sum_int(domain % dminfo, lFoundIt, lFoundItGlobal)
 
-          write(stderrUnit,*) "wibble:", iCellRandom, lFoundIt, lFoundItGlobal
-
           if (lFoundItGlobal == 1) then
              exit
           else if (lFoundItGlobal > 1) then
