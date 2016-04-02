@@ -172,7 +172,7 @@ logical var_coef1
       
       ! apply inverse mass matrix, then apply laplace again
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k, j, i, v)
+!$omp parallel do private(k, j, i)
 #endif
       do k=1,nlev
          do j=1,np

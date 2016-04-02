@@ -858,7 +858,7 @@ contains
           elem(ie)%state%lnps(:,:,nfilt) = mp*elem(ie)%state%lnps(:,:,nfilt)
 
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j)
+!$omp parallel do private(k,i,j,kptr)
 #endif
           do k=1,nlev
              call filter_P(elem(ie)%state%T(:,:,k,nfilt),flt)
