@@ -255,7 +255,7 @@ contains
        !     end do
 
 #if (defined COLUMN_OPENMP)
-       !$omp parallel do private(k,i,j,v1,v2,vtemp)
+       !$omp parallel do private(k,i,j,v1,v2,vtemp,dp,p,grad_p,rdp,divdp,vort)
 #endif
        do k=1,nlev
           if (rsplit==0) then
@@ -1240,7 +1240,7 @@ contains
                      eta_ave_w*dptens(:,:,:,ie)/hypervis_subcycle
              endif
 #if (defined COLUMN_OPENMP)
-             !$omp parallel do private(k,i,j,lap_t,lap_dp,lap_v,nu_scale_top,dpdn,dpdn0,utens_tmp,vtens_tmp,ttens_tmp,dptens_tmp)
+!$omp parallel do private(k,i,j,lap_t,lap_dp,lap_v,nu_scale_top,utens_tmp,vtens_tmp,ttens_tmp,dptens_tmp,laplace_fluxes)
 #endif
              do k=1,nlev
                 ! advance in time.

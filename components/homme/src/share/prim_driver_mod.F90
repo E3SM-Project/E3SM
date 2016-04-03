@@ -1957,7 +1957,7 @@ contains
     do ie=nets,nete
 
 #if (defined COLUMN_OPENMP)
-!$omp parallel do default(shared), private(k)
+!$omp parallel do default(shared), private(k,dp)
 #endif
        do k=1,nlev
           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
