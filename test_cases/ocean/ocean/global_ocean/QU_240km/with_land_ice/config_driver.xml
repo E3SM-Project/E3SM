@@ -6,7 +6,7 @@
 		<step executable="./run.py" quiet="true" pre_message=" * Running init_step2" post_message=" - Complete"/>
 	</case>
 	<step executable="./iterate_init.py">
- 		<argument flag="">--iteration_count=5</argument>
+ 		<argument flag="">--iteration_count=15</argument>
  		<argument flag="">--plot_globalStats</argument>
 	</step>
 	<case name="forward">

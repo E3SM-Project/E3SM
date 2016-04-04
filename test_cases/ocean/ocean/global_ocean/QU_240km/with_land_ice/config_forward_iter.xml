@@ -2,7 +2,6 @@
 <config case="forward_iter">
 	<add_link source="../init_step2/" dest="ic"/>
 
-	<add_executable source="model" dest="ocean_model"/>
 	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="forward">
