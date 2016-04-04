@@ -68,19 +68,27 @@
 	<var_struct name="forcing" time_levs="1">
 		<var_struct name="tracersSurfaceFlux" time_levs="1">
 			<var_array name="activeTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="activeTracersPKG">
-				<var name="temperatureSurfaceFlux" array_group="activeGRP" units="^\circ C m s^{-1}"
+				<var name="temperatureSurfaceFlux" array_group="activeTracerFluxGRP" units="^\circ C m s^{-1}"
 					 description="Flux of temperature through the ocean surface. Positive into ocean."
 				/>
-				<var name="salinitySurfaceFlux" array_group="activeGRP" units="PSU m s^{-1}"
+				<var name="salinitySurfaceFlux" array_group="activeTracerFluxGRP" units="PSU m s^{-1}"
 					 description="Flux of salinity through the ocean surface. Positive into ocean."
 				/>
 			</var_array>
 			<var_array name="activeTracersSurfaceFluxRunoff" type="real" dimensions="nCells Time" packages="activeTracersPKG">
-				<var name="temperatureSurfaceFluxRunoff" array_group="activeGRP" units="^\circ C m s^{-1}"
+				<var name="temperatureSurfaceFluxRunoff" array_group="activeRunoffFluxGRP" units="^\circ C m s^{-1}"
 					 description="Flux of temperature through the ocean surface due to river runoff. Positive into ocean."
 				/>
-				<var name="salinitySurfaceFluxRunoff" array_group="activeGRP" units="PSU m s^{-1}"
+				<var name="salinitySurfaceFluxRunoff" array_group="activeRunoffFluxGRP" units="PSU m s^{-1}"
 					 description="Flux of salinity through the ocean surface due to river runoff. Positive into ocean."
+				/>
+			</var_array>
+			<var_array name="nonLocalSurfaceTracerFlux" type="real" dimensions="nCells Time" packages="activeTracersPKG">
+				<var name="nonLocalTemperatureSurfaceFlux" array_group="activeNonLocalGRP" units="^\circ C m s^{-1}"
+					description="total flux of temperature (including thickness contributions) through ocean surface"
+				/>
+				<var name="nonLocalSalinitySurfaceFlux" array_group="activeNonLocalGRP" units="PSU m s^{-1}"
+					description="total flux of salinity (including thickness contributions) through ocean surface"
 				/>
 			</var_array>
 		</var_struct>
