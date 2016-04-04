@@ -139,13 +139,11 @@ def _create_caseroot_tools(case, caseroot, cimeroot, machine):
                 cimeroot + "/scripts/Tools/check_case", 
                 cimeroot + "/scripts/Tools/create_production_test",
                 cimeroot + "/scripts/Tools/xmlchange", 
-                cimeroot + "/scripts/Tools/xmlquery", 
-                cimeroot + "/scripts/Tools/st_archive")
+                cimeroot + "/scripts/Tools/xmlquery")
     try:
         for exefile in exefiles:
-            dst_file = caseroot + "/" + os.path.basename(exefile)
-            copyfile(exefile, dst_file)
-            os.chmod(dst_file, os.stat(dst_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
+            destfile = caseroot + "/" + os.path.basename(exefile)
+            os.symlink(exefile, destfile)
     except Exception as e:
         logger.warning("FAILED to set up exefiles: %s" % str(e))
 
@@ -162,11 +160,10 @@ def _create_caseroot_tools(case, caseroot, cimeroot, machine):
                  machines_dir + "/mkDepends") 
     try:
         for toolfile in toolfiles:
-            dst_file = caseroot + "/Tools/" + os.path.basename(toolfile)
-            copyfile(toolfile, dst_file)
-            os.chmod(dst_file, os.stat(dst_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
+            destfile = caseroot + "/" + os.path.basename(toolfile)
+            os.symlink(toolfile, destfile)
     except Exception as e:
-        logger.warning("FAILED to set up toolfiles: %s" % str(e))
+        logger.warning("FAILED to set up toolfiles: %s %s %s" % (str(e), toolfile, destfile))
 
     # set up infon files
     infofiles = (cimeroot + "/scripts/Tools/README.post_process")

@@ -266,16 +266,20 @@ class Case(object):
         for nodename in nodenames:
             value = machobj.get_value(nodename)
             self.set_value(nodename, value, ignore_type="True")
+
         if compiler is None:
             compiler = machobj.get_default_compiler()
         else:
             expect(machobj.is_valid_compiler(compiler),
                    "compiler %s is not supported on machine %s" %(compiler, machine_name))
+        self.set_value("COMPILER",compiler)
+
         if mpilib is None:
             mpilib = machobj.get_default_MPIlib()
         else:
             expect(machobj.is_valid_MPIlib(mpilib),
                    "MPIlib %s is not supported on machine %s" %(mpilib, machine_name))
+        self.set_value("MPILIB",mpilib)
 
         # the following go into the env_mach_specific file
         vars = ("module_system", "environment_variables", "batch_system", "mpirun")
