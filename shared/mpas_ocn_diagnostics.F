@@ -1433,7 +1433,7 @@ contains
                - fracAbsorbed * surfaceThicknessFlux(iCell) * activeTracers(indexSaltFlux,1,iCell)
 
        surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (1,iCell) &
-              * nonLocalSurfaceTracerFlux(indexTempFlux,iCell) & 
+              * nonLocalSurfaceTracerFlux(indexTempFlux,iCell) &
               - salineContractionCoeff(1,iCell) * nonLocalSurfaceTracerFlux(indexSaltFlux,iCell)
 
        ! at this point, surfaceBuoyancyForcing has units of m/s
