@@ -115,7 +115,7 @@ class BatchMaker(object):
             jobmin = queue.get("jobmin")
             jobmax = queue.get("jobmax")
             # if the fullsum is between the min and max # jobs, then use this queue.
-            if jobmin is not None and jobmax is not None and self.fullsum >= jobmin and self.fullsum <= jobmax:
+            if jobmin is not None and jobmax is not None and self.fullsum >= int(jobmin) and self.fullsum <= int(jobmax):
                 self.queue = queue
                 self.wall_time_max = self.queue.get("walltimemax")
                 break
