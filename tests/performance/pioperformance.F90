@@ -32,6 +32,11 @@ program pioperformance
 #ifdef BGQTRY
   external :: print_memusage
 #endif
+#ifdef _PIO1
+  integer, parameter :: PIO_FILL_INT   = 02147483647
+  real, parameter    :: PIO_FILL_FLOAT = 9.969209968E+36
+  double precision, parameter :: PIO_FILL_DOUBLE = 9.969209968E+36
+#endif
   !
   ! Initialize MPI
   !
@@ -163,11 +168,18 @@ contains
     character(len=*), parameter :: rearr_name(2) = (/'   BOX','SUBSET'/)
 
     nullify(compmap)
-    if(mype.eq.0) print *,trim(filename)
+
     if(trim(filename) .eq. 'ROUNDROBIN' .or. trim(filename).eq.'BLOCK') then
        call init_ideal_dof(filename, mype, npe_base, ndims, gdims, compmap, varsize)
     else
+       ! Changed to support PIO1 as well
+#ifdef _PIO1
+       call pio_readdof(filename, compmap, MPI_COMM_WORLD, 81, ndims, gdims)
+#else
        call pio_readdof(filename, ndims, gdims, compmap, MPI_COMM_WORLD)
+#endif
+
+!    print *,__FILE__,__LINE__,' gdims=',ndims
     endif
     maplen = size(compmap)
 !    color = 0
@@ -249,8 +261,10 @@ contains
                 ierr =  PIO_CreateFile(iosystem, File, iotype, trim(fname), mode)
 
                 call WriteMetadata(File, gdims, vari, varr, vard, unlimdimindof)
+
                 call MPI_Barrier(comm,ierr)
                 call t_stampf(wall(1), usr(1), sys(1))
+
                 if(.not. unlimdimindof) then
 #ifdef VARINT
                    call PIO_InitDecomp(iosystem, PIO_INT, gdims, compmap, iodesc_i4, rearr=rearr)
@@ -262,7 +276,8 @@ contains
                    call PIO_InitDecomp(iosystem, PIO_DOUBLE, gdims, compmap, iodesc_r8, rearr=rearr)
 #endif
                 endif
-!                print *,__FILE__,__LINE__,minval(dfld),maxval(dfld),minloc(dfld),maxloc(dfld)
+
+                ! print *,__FILE__,__LINE__,minval(dfld),maxval(dfld),minloc(dfld),maxloc(dfld)
 
                 do frame=1,nframes
                    recnum = frame
@@ -550,7 +565,9 @@ contains
        ndims=ndims-1
    endif
    allocate(dimid(ndims+1))
+
    do i=1,ndims
+
       write(dimname,'(a,i6.6)') 'dim',i  
       iostat = PIO_def_dim(File, trim(dimname), int(gdims(i),pio_offset_kind), dimid(i))
    enddo
