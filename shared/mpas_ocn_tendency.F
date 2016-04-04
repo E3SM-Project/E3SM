@@ -443,7 +443,8 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: &
         normalTransportVelocity, layerThickness,vertAleTransportTop, layerThicknessEdge, vertDiffTopOfCell, &
         tend_layerThickness, normalThicknessFlux, tracerGroupSurfaceFlux, fractionAbsorbed, zMid, relativeSlopeTopOfEdge, &
-        relativeSlopeTapering, relativeSlopeTaperingCell, fractionAbsorbedRunoff, tracerGroupSurfaceFluxRunoff
+        relativeSlopeTapering, relativeSlopeTaperingCell, fractionAbsorbedRunoff, tracerGroupSurfaceFluxRunoff, &
+        nonLocalSurfaceTracerFlux
 
       !
       ! three dimensional pointers
@@ -583,6 +584,10 @@ contains
                modifiedGroupName = trim(groupItr % memberName) // "SurfaceFlux"
                call mpas_pool_get_array(tracersSurfaceFluxPool, trim(modifiedGroupName), tracerGroupSurfaceFlux)
 
+               ! Get Array of total surface temp/salt flux (includes thickness
+               ! tendencies
+               call mpas_pool_get_array(tracersSurfaceFluxPool, 'nonLocalSurfaceTracerFlux', nonLocalSurfaceTracerFlux)
+               
                ! Get surface flux due to river runoff array
                modifiedGroupName = trim(groupItr % memberName) // "SurfaceFluxRunoff"
                call mpas_pool_get_array(tracersSurfaceFluxPool, trim(modifiedGroupName), tracerGroupSurfaceFluxRunoff)
@@ -803,7 +808,11 @@ contains
                !
                if (config_use_cvmix_kpp) then
                  call mpas_timer_start("non-local flux from KPP")
-                 call ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, tracerGroupSurfaceFlux, tracerGroupTend, err)
+                 if( trim(groupItr % memberName) == 'activeTracers' ) then
+                     call ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, nonLocalSurfaceTracerFlux, tracerGroupTend, err)
+                 else
+                     call ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, tracerGroupSurfaceFlux, tracerGroupTend, err)
+                 endif
                  call mpas_timer_stop("non-local flux from KPP")
                end if
 
