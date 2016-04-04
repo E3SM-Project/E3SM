@@ -221,6 +221,8 @@ def _create_caseroot_sourcemods(case, caseroot, cimeroot, components):
 def _create_caseroot(case, caseroot, cimeroot, components, machine):
 ###############################################################################
 
+    #logger.info(" Creating Caseroot %s" %caseroot)
+    print "DEBUG: caseroot is ",caseroot
     logger.info(" Creating Caseroot")
 
     # Make the case directory
@@ -259,7 +261,7 @@ def _main_func():
     # Determine 
     if os.path.exists(case):
         caseroot = os.path.dirname(case)
-        case = os.path.basename(casename)
+        case = os.path.basename(case)
     else:
         caseroot = os.path.join(os.getcwd(),case)
 
@@ -269,12 +271,13 @@ def _main_func():
     # Set values for env_case.xml 
     caseobj.set_value("CASE", case)
     caseobj.set_value("CASEROOT", caseroot)
-    caseobj.set_value("SRCROOT", srcroot);
+    caseobj.set_value("SRCROOT", srcroot)
+    caseobj.set_value("MACH", machine)
     if user_grid_file is not None:
         caseobj.set_value("GRIDS_SPEC_FILE", user_grid_file);
     
     # Configure the Case
-    caseobj.configure(compset, grid)
+    caseobj.configure(compset, grid, machine)
     
     components = caseobj.get_compset_components()
     _create_caseroot(case, caseroot, cimeroot, components, machine)
@@ -282,6 +285,8 @@ def _main_func():
     # Write out the case files
     for file in caseobj._env_entryid_files:
         file.write()
+    caseobj._env_generic_files[0].write()
+
 
 ###############################################################################
 

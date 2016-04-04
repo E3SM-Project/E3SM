@@ -16,16 +16,6 @@ class GenericXML(object):
         """
         self.tree = None
 
-        # Hold arbitary values. In create_newcase we may set values
-        # for xml files that haven't been created yet. We need a place
-        # to store them until we are ready to create the file. At file
-        # creation we get the values for those fields from this lookup
-        # table and then remove the entry. This was what I came up
-        # with in the perl anyway and I think that we still need it
-        # here.
-        self.lookups = {}
-        self.lookups['CIMEROOT'] = get_cime_root()
-
         if infile == None:
             # if file is not defined just return
             self.filename = None
@@ -129,16 +119,8 @@ class GenericXML(object):
         """
         get_value is expected to be defined by the derived classes, if you get here it is an error.
         """
-        logger.debug("Get Value for "+item)
+        logger.debug("No value available for item '%s'" % item)
         result = None
-        if item in self.lookups:
-            result = self.lookups[item]
-
-        if result is None:
-            logger.debug("No value available for item '%s'" % item)
-        elif resolved:
-            result = self.get_resolved_value(result)
-
         return result
 
     def set_value(self, vid, value, ignore_type=True):
@@ -149,8 +131,8 @@ class GenericXML(object):
         if valnodes:
             for node in valnodes:
                 node.text = value
-        else:
-            self.lookups[vid] = value
+                return value
+        return None
 
     def get_resolved_value(self, raw_value):
         """
@@ -193,4 +175,5 @@ class GenericXML(object):
                 item_data = item_data.replace(m.group(), os.environ[var])
 
         return item_data
+
 

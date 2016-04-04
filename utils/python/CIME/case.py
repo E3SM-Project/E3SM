@@ -8,6 +8,7 @@ through the Case module.
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, run_cmd
 from CIME.XML.machines          import Machines
+from CIME.XML.pes               import Pes
 from CIME.XML.files             import Files
 from CIME.XML.component         import Component
 from CIME.XML.compsets          import Compsets
@@ -48,14 +49,19 @@ class Case(object):
         self._env_generic_files.append(EnvMachSpecific(case_root))
         self._env_generic_files.append(EnvArchive(case_root))
 
-        # FIXME - the following should probably not all be defined
-        self._case_root              = case_root
-        self._target_component       = None
-        self._compset                = None
-        self._grid                   = None
-        self._components             = []
-        self._component_classes      = []
-        self._component_grids        = []
+        # Hold arbitary values. In create_newcase we may set values
+        # for xml files that haven't been created yet. We need a place
+        # to store them until we are ready to create the file. At file
+        # creation we get the values for those fields from this lookup
+        # table and then remove the entry. This was what I came up
+        # with in the perl anyway and I think that we still need it here.
+        self.lookups = {}
+        self.lookups['CIMEROOT'] = get_cime_root()
+
+        self._compsetname = None
+        self._target_component = None
+        self._gridname = None
+        self._components = []
         self._component_config_files = []
 
     def __del__(self):
@@ -77,6 +83,18 @@ class Case(object):
                 if resolved and type(result) is str:
                     return self.get_resolved_value(result)
                 return result
+
+        result = None
+        if item in self.lookups.keys():
+            result = self.lookups[item]
+
+        if result is None:
+            logger.debug("No value available for item '%s'" % item)
+        elif resolved:
+            result = self.get_resolved_value(result)
+            # Return value as right type
+            type_str = self._get_type_info(node)
+            return convert_to_type(result, type_str, item)
 
         logging.info("Not able to retreive value for item '%s'" % item)
 
@@ -122,6 +140,8 @@ class Case(object):
             if (result is not None):
                 self._env_files_that_need_rewrite.add(env_file)
                 return result
+        if result is None:
+            self.lookups[item] = value
 
     def _get_compset_longname(self, compset_name):
         """
@@ -146,15 +166,15 @@ class Case(object):
                 compsets = Compsets(file)
                 match = compsets.get_compset_match(name=compset_name)
                 if match is not None:
-                    self._compset = match
+                    self._compsetname = match
                     self._target_component = component
-                    logger.debug("Successful compset match %s found in file %s " %(self._compset, file))
+                    logger.debug("Successful compset match %s found in file %s " %(self._compsetname, file))
                     return
 
         logger.debug("Could not find a compset match for either alias or longname in %s" %file)
 
     def get_compset_components(self):
-        elements = self._compset.split('_')
+        elements = self._compsetname.split('_')
         for element in elements:
             # ignore the initial date in the compset longname
             if re.search(r'^\d+$',element):
@@ -175,7 +195,7 @@ class Case(object):
 
     def _get_component_config_data(self):
         # attributes used for multi valued defaults ($attlist is a hash reference)
-        attlist = {"component":self._target_component, "compset":self._compset, "grid":self._grid}
+        attlist = {"component":self._target_component, "compset":self._compsetname, "grid":self._gridname}
 
         # Determine list of component classes that this coupler/driver knows how
         # to deal with. This list follows the same order as compset longnames follow.
@@ -187,9 +207,9 @@ class Case(object):
 
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
-        self._component_classes = drv_comp.get_valid_model_components()
-        for i in xrange(1,len(self._component_classes)):
-            comp_class = self._component_classes[i]
+        component_classes =drv_comp.get_valid_model_components()
+        for i in xrange(1,len(component_classes)):
+            comp_class = component_classes[i]
             comp_name  = self._components[i-1]
 	    node_name = 'CONFIG_' + comp_class + '_FILE';
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=True)
@@ -202,7 +222,12 @@ class Case(object):
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(files, attlist, os.path.basename(env_file.filename));
 
-    def configure(self, compset_name, grid_name):
+        for key,value in self.lookups.items():
+            result = self.set_value(key,value)
+            if result is not None:
+                del self.lookups[key]
+
+    def configure(self, compset_name, grid_name, machine_name=None, compiler=None, mpilib=None):
         self._get_compset_longname(compset_name)
         self.get_compset_components()
 
@@ -213,23 +238,69 @@ class Case(object):
             files = Files()
             gridfile = files.get_value("GRIDS_SPEC_FILE")
         grids = Grids(gridfile)
-        gridinfo = grids.get_grid_info(name=grid_name, compset=self._compset)
-        self._grid = gridinfo["GRID"]
+        gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
+        self._gridname = gridinfo["GRID"]
         logger.debug(" Grid specification file is %s" % gridfile)
 
         self._get_component_config_data()
 
-        for env_file in self._env_entryid_files:
-            for key,value in env_file.lookups.iteritems():
-                self.set_value(key,value)
-            for key,value in gridinfo.iteritems():
-                self.set_value(key,value)
-            for idx, config_file in enumerate(self._component_config_files):
-                self.set_value(config_file[0],config_file[1])
-            self.set_value("COMPSET",self._compset)
+        for key,value in gridinfo.iteritems():
+            self.set_value(key,value)
+
+        # Add the group and elements for the config_files.xml 
+        for idx, config_file in enumerate(self._component_config_files):
+            self.set_value(config_file[0],config_file[1])
+
+        # set machine values in env_xxx files
+        machobj = Machines(machine=machine_name)
+        nodenames = machobj.get_node_names()
+
+        if "COMPILER" in nodenames: nodenames.remove("COMPILER")
+        if "MPILIB" in nodenames: nodenames.remove("MPILIB")
+        nodenames =  [x for x in nodenames if 
+                      '_system' not in x and '_variables' not in x and 'mpirun' not in x]
+
+        # FIXME - the following did not work if ignore_type was not set to True
+        # FIXME - had to remove PROJECT_REQUIRED to get this to work
+        nodenames =  [x for x in nodenames if 'PROJECT_REQUIRED' not in x]
+        for nodename in nodenames:
+            value = machobj.get_value(nodename)
+            self.set_value(nodename, value, ignore_type="True")
+        if compiler is None:
+            compiler = machobj.get_default_compiler()
+        else:
+            expect(machobj.is_valid_compiler(compiler),
+                   "compiler %s is not supported on machine %s" %(compiler, machine_name))
+        if mpilib is None:
+            mpilib = machobj.get_default_MPIlib()
+        else:
+            expect(machobj.is_valid_MPIlib(mpilib),
+                   "MPIlib %s is not supported on machine %s" %(mpilib, machine_name))
+
+        # the following go into the env_mach_specific file
+        vars = ("module_system", "environment_variables", "batch_system", "mpirun")
+        for var in vars:
+            nodes = machobj.get_first_child_nodes(var)
+            for node in nodes:
+                self._env_generic_files[0].add_child(node)
+
+        # set pe payout
+        pesobj = Pes(self._target_component)
+
+        #FIXME - add pesize_opts as optional argument below
+        pes_ntasks, pes_nthrds, pes_rootpe = pesobj.find_pes_layout(self._gridname, self._compsetname, machine_name)
+
+        for key, value in pes_ntasks.iteritems():
+            self.set_value(key,int(value))
+        for key, value in pes_nthrds.iteritems():
+            self.set_value(key,int(value))
+        for key, value in pes_rootpe.iteritems():
+            self.set_value(key,int(value))
+
+        self.set_value("COMPSET",self._compsetname)
 
         logger.info(" Component that sets compsets is: %s" %self._target_component)
-        logger.info(" Compset is: %s " %self._compset)
-        logger.info(" Grid is: %s " %self._grid )
+        logger.info(" Compset is: %s " %self._compsetname)
+        logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)
         logger.info(" Component grids in compset are: %s " %self._component_grids)

@@ -22,7 +22,6 @@ class Machines(GenericXML):
 
         self.machine_node = None
         self.machine = None
-        self.name    = None
         self.machines_dir = None
 
         if infile is None:
@@ -49,6 +48,38 @@ class Machines(GenericXML):
         Return the name of the machine
         """
         return self.machine
+
+    def get_node_names(self):
+        """
+        Return the names of all the child nodes for the target machine
+        """
+        nodes = self.machine.findall("./")
+        node_names = []
+        for node in nodes:
+            node_names.append(node.tag)
+        return node_names
+
+    def get_first_child_nodes(self, nodename):
+        """
+        Return the names of all the child nodes for the target machine
+        """
+        nodes = self.machine.findall("./" + nodename)
+        return nodes
+
+    def get_node(self, nodename, attributes=None):
+        """
+        Return data on a node for a machine
+        """
+        expect(self.machine is not None, "Machine not set, use parent get_node?")
+        return GenericXML.get_node(self, nodename, attributes, root=self.machine)
+
+    def get_optional_node(self, nodename, attributes=None):
+        """
+        Return data on a node for a machine
+        """
+        expect(self.machine is not None, "Machine not set, use parent get_node?")
+        return GenericXML.get_optional_node(self, nodename, attributes, root=self.machine)
+>>>>>>> added capability for parsing conf_pes.xml and creating correct values in env_mach_pes.xml
 
     def list_available_machines(self):
         """

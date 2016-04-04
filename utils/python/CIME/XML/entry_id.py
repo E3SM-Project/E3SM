@@ -111,8 +111,8 @@ class EntryID(GenericXML):
         """
         val = None
         node = self.get_optional_node("entry", {"id":vid})
+
         if node is None:
-            val = GenericXML.get_value(self, vid, resolved)
             return val
 
         if attribute:
@@ -123,10 +123,6 @@ class EntryID(GenericXML):
             val = node.get("value")
         else:
             val = self.set_default_value(node)
-
-        if val is None:
-            # if all else fails
-            val = GenericXML.get_value(self,vid,resolved)
 
         if resolved:
             val = self.get_resolved_value(val)
