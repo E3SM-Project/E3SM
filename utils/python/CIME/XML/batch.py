@@ -99,14 +99,14 @@ class Batch(GenericXML):
             nodes = self.get_nodes("directive", root=self.machine_node)
             for node in nodes:
                 directive = self.get_resolved_value(node.text)
-                directive = batch_maker.transform_vars(directive)
+                directive = batch_maker.transform_vars(directive, default=node.get("default"))
 
                 result.append("%s %s" % (directive_prefix, directive))
 
         nodes = self.get_nodes("directive", root=self.batch_system_node)
         for node in nodes:
             directive = self.get_resolved_value("" if node.text is None else node.text)
-            directive = batch_maker.transform_vars(directive)
+            directive = batch_maker.transform_vars(directive, default=node.get("default"))
 
             result.append("%s %s" % (directive_prefix, directive))
 

@@ -28,9 +28,9 @@ class LTArchive(GenericXML):
         nodes = self.get_nodes("machine")
         default = None
         for node in nodes:
-            if node.attrib["name"] == self.machine:
+            if node.get("name") == self.machine:
                 return self.get_node("lt_archive_args", root=node).text
-            elif node.attrib["name"] == "default":
+            elif node.get("name") == "default":
                 default = self.get_node("lt_archive_args", root=node).text
 
         return default

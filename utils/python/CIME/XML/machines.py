@@ -242,50 +242,16 @@ class Machines(GenericXML):
         return cmd_nodes.text
 
     def get_default_queue(self):
-        node = self.get_optional_node("queue", attributes={"default" : "true"}, root=self.machine_node)
-        if node is not None:
-            return node.text
-        else:
-            return None
+        return self.get_optional_node("queue", attributes={"default" : "true"}, root=self.machine_node)
 
     def get_all_queues(self):
-        nodes = self.get_nodes("queue", root=self.machine_node)
-        results = []
-        for node in nodes:
-            results.append(node.text)
-
-        return results
-
-    def get_queue_attribute(self, queue, attrib):
-        nodes = self.get_nodes("queue", root=self.machine_node)
-        for node in nodes:
-            if node.text == queue and attrib in node.attrib:
-                return node.attrib[attrib]
-
-        return None
+        return self.get_nodes("queue", root=self.machine_node)
 
     def get_walltimes(self):
-        nodes = self.get_nodes("walltime", root=self.machine_node)
-        results = []
-        for node in nodes:
-            results.append(node.text)
-
-        return results
+        return self.get_nodes("walltime", root=self.machine_node)
 
     def get_default_walltime(self):
-        node = self.get_optional_node("walltime", attributes={"default" : "true"}, root=self.machine_node)
-        if node is not None:
-            return node.text
-        else:
-            return None
-
-    def get_walltime_estcost(self, walltime):
-        nodes = self.get_nodes("walltime", root=self.machine_node)
-        for node in nodes:
-            if node.text == walltime and "ccsm_estcost" in node.attrib:
-                return int(node.attrib["ccsm_estcost"])
-
-        return None
+        return self.get_optional_node("walltime", attributes={"default" : "true"}, root=self.machine_node)
 
     def get_suffix(self, suffix_type):
         node = self.get_optional_node("default_run_suffix")
@@ -351,32 +317,28 @@ class Machines(GenericXML):
             arg_nodes = self.get_nodes("arg", root=arg_node)
             for arg_node in arg_nodes:
                 arg_value = self.get_resolved_value(arg_node.text)
-                if "default" in arg_node.attrib:
-                    arg_value = batch_maker.transform_vars(arg_value, {arg_node.attrib["name"] : arg_node.attrib["default"]})
-                else:
-                    arg_value = batch_maker.transform_vars(arg_value)
+                arg_value = batch_maker.transform_vars(arg_value, arg_node.get("default"))
 
-                args[arg_node.attrib["name"]] = arg_value
+                args[arg_node.get("name")] = arg_value
 
         executable = self.get_node("executable", root=the_match)
 
         return executable.text, args
 
-    def print_values(self, verbose=None):
+    def print_values(self):
         # write out machines
         machines = self.get_nodes(nodename="machine")
         print  "Machines"
         for machine in machines:
-            name = machine.attrib["MACH"]
+            name = machine.get("MACH")
             desc = machine.find("DESC")
-            os   = machine.find("OS")
+            os_  = machine.find("OS")
             compilers = machine.find("COMPILERS")
             max_tasks_per_node = machine.find("MAX_TASKS_PER_NODE")
             pes_per_node = machine.find("PES_PER_NODE")
-            support = machine.find("SUPPORTED_BY")
 
             print  "  %s : %s "% (name , desc.text)
-            print  "      os             ",os.text
+            print  "      os             ", os_.text
             print  "      compilers      ",compilers.text
             if pes_per_node is not None:
                 print  "      pes/node       ",pes_per_node.text

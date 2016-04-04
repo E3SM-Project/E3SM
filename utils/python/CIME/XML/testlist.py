@@ -40,14 +40,14 @@ class Testlist(GenericXML):
                     for mach in machnodes:
                         thistest = {}
                         if machine is None or (machine is not None and mach.text == machine):
-                            thistest["compiler"] = mach.attrib["compiler"]
-                            thistest["category"] = mach.attrib["testtype"]
+                            thistest["compiler"] = mach.get("compiler")
+                            thistest["category"] = mach.get("testtype")
                             thistest["machine"] = mach.text
-                            thistest["testname"] = tnode.attrib["name"]
-                            thistest["grid"] = gnode.attrib["name"]
-                            thistest["compset"] = cnode.attrib["name"]
+                            thistest["testname"] = tnode.get("name")
+                            thistest["grid"] = gnode.get("name")
+                            thistest["compset"] = cnode.get("name")
                             if ("testmods" in mach.attrib):
-                                thistest["testmods"] = mach.attrib["testmods"]
+                                thistest["testmods"] = mach.get("testmods")
                             tests.append(thistest)
         return tests
 
@@ -67,21 +67,22 @@ class Testlist(GenericXML):
             thistest = {}
 
             if machnodes:
-                for key in tnode.attrib.keys():
+                for key, value in tnode.items():
                     if key == "name":
-                        thistest["testname"] = tnode.attrib[key]
+                        thistest["testname"] = value
                     else:
-                        thistest[key] = tnode.attrib[key]
+                        thistest[key] = value
 
                 for mach in machnodes:
-                    for key in mach.attrib.keys():
+                    for key, value in mach.items():
                         if key == "name":
-                            thistest["machine"] = mach.attrib[key]
+                            thistest["machine"] = value
                         else:
-                            thistest[key] = mach.attrib[key]
+                            thistest[key] = value
+
                     optionnodes = self.get_nodes("option", root=mach)
                     for onode in optionnodes:
-                       thistest[onode.attrib['name']] = onode.text
+                       thistest[onode.get('name')] = onode.text
                     tests.append(thistest)
 
         return tests

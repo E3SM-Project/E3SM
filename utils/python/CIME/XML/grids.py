@@ -31,7 +31,7 @@ class Grids(GenericXML):
             domain_nodes = self.get_nodes(nodename="domain")
             gridmap_nodes = self.get_nodes(nodename="gridmap")
 
-        # write out grid elements 
+        # write out grid elements
         grid_nodes = self.get_nodes(nodename="grid")
         for grid_node in grid_nodes:
             lname   = grid_node.find("lname")
@@ -45,9 +45,9 @@ class Grids(GenericXML):
                 logger.info("   short name: %s" %sname.text)
             if alias is not None:
                 logger.info("   alias: %s" %alias.text)
-            for attr in grid_node.attrib:
+            for attr, value in grid_node.items():
                 if  attr == 'compset':
-                    logger.info("   compset match: %s" %grid_node.attrib["compset"])
+                    logger.info("   compset match: %s" % value)
 
             # in long_output mode add domain description and mapping fiels
             if long_output is not None:
@@ -55,14 +55,14 @@ class Grids(GenericXML):
                 # get component grids (will contain duplicates)
                 component_grids = self._get_component_grids(lname)
 
-                # write out out only unique non-null component grids 
+                # write out out only unique non-null component grids
                 for domain in list(set(component_grids)):
                     if domain != 'null':
                         logger.info("   domain is %s" %domain)
-                        domain_node = self.get_node(nodename="domain", attributes={"name":domain}) 
+                        domain_node = self.get_node(nodename="domain", attributes={"name":domain})
                         for child in domain_node:
                             logger.info("        %s: %s" %(child.tag, child.text))
-                            
+
                 # write out mapping files
                 grids = [ ("atm_grid", component_grids[0]), ("lnd_grid", component_grids[1]), ("ocn_grid", component_grids[2]), \
                           ("rof_grid", component_grids[3]), ("glc_grid", component_grids[5]), ("wav_grid", component_grids[6]) ]

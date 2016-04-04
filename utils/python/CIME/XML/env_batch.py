@@ -42,7 +42,7 @@ class EnvBatch(EnvBase):
         if job_node is not None:
             node = self.get_optional_node("entry", {"id":item}, root=job_node)
             if node is not None:
-                value = self.get_resolved_value(node.attrib["value"])
+                value = self.get_resolved_value(node.get("value"))
 
                 # Return value as right type if we were able to fully resolve
                 # otherwise, we have to leave as string.
@@ -67,6 +67,6 @@ class EnvBatch(EnvBase):
     def get_jobs(self):
         result = []
         for node in self.get_nodes("job"):
-            result.append(node.attrib["name"])
+            result.append(node.get("name"))
 
         return result

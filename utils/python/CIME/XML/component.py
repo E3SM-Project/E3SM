@@ -46,7 +46,7 @@ class Component(EntryID):
         compsets = {}
         descs = self.get_nodes("desc", root=rootnode)
         for desc in descs:
-            attrib = desc.attrib["compset"]
+            attrib = desc.get("compset")
             text = desc.text
             compsets[attrib] = text
 

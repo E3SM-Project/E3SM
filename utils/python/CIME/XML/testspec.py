@@ -21,7 +21,7 @@ class TestSpec(GenericXML):
         if os.path.isfile(infile):
             testnodes = self.get_nodes('test')
             for node in testnodes:
-                self._testnodes[node.attrib["name"]] = node
+                self._testnodes[node.get("name")] = node
         else:
             self.root.set('version', _VERSION)
 
@@ -65,7 +65,7 @@ class TestSpec(GenericXML):
         root = self._testnodes[testname]
         pnode = self.get_optional_node("section", {"name":phase}, root=root)
         if pnode is not None:
-           pnode.set("status", status)
+            pnode.set("status", status)
         else:
             pnode = ET.Element("section")
             pnode.set("name", phase)
