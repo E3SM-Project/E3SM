@@ -1055,7 +1055,7 @@ def add_links(config_file, configs):#{{{
 			old_cwd = os.getcwd()
 			os.chdir(base_path)
 
-			subprocess.check_call(['ln', '-sf', '%s'%(source_file), '%s'%(dest)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
+			subprocess.check_call(['ln', '-sfn', '%s'%(source_file), '%s'%(dest)], stdout=dev_null, stderr=dev_null, env=os.environ.copy())
 			os.chdir(old_cwd)
 			del source
 			del dest
