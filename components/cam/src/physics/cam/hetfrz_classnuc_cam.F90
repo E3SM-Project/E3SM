@@ -472,11 +472,13 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
    spec_idx = -1
 
    ! Allocate space for copy of cloud borne aerosols before modification by droplet nucleation.
-   allocate(aer_cb(pcols,pver,ncnst,begchunk:endchunk), stat=istat)
+   !pw: zero-basing the lchunk index to work around PGI bug/feature.
+   allocate(aer_cb(pcols,pver,ncnst,0:(endchunk-begchunk)), stat=istat)
    call alloc_err(istat, routine, 'aer_cb', pcols*pver*ncnst*(endchunk-begchunk+1))
 
    ! Allocate space for copy of interstitial aerosols with modified basis
-   allocate(aer(pcols,pver,ncnst,begchunk:endchunk), stat=istat)
+   !pw: zero-basing the lchunk index to work around PGI bug/feature.
+   allocate(aer(pcols,pver,ncnst,0:(endchunk-begchunk)), stat=istat)
    call alloc_err(istat, routine, 'aer', pcols*pver*ncnst*(endchunk-begchunk+1))
 
    ! The following code sets the species and mode indices for each constituent
@@ -587,6 +589,7 @@ subroutine hetfrz_classnuc_cam_calc( &
 
    integer :: itim_old
    integer :: i, k
+   integer :: lchnk_zb                  ! zero-based local chunk id
 
    real(r8) :: rho(pcols,pver)          ! air density (kg m-3)
 
@@ -642,6 +645,8 @@ subroutine hetfrz_classnuc_cam_calc( &
       nc    => state%q(:pcols,:pver,numliq_idx), &
       pmid  => state%pmid               )
 
+   lchnk_zb = lchnk - begchunk
+
    itim_old = pbuf_old_tim_idx()
    call pbuf_get_field(pbuf, ast_idx, ast, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
 
@@ -663,7 +668,7 @@ subroutine hetfrz_classnuc_cam_calc( &
    ! Convert interstitial and cloud borne aerosols from a mass to a volume basis before
    ! being used in get_aer_num
    do i = 1, ncnst
-      aer_cb(:ncol,:,i,lchnk) = aer_cb(:ncol,:,i,lchnk) * rho(:ncol,:)
+      aer_cb(:ncol,:,i,lchnk_zb) = aer_cb(:ncol,:,i,lchnk_zb) * rho(:ncol,:)
 
       ! Check whether constituent is a mass or number mixing ratio
       if (spec_idx(i) == 0) then
@@ -671,7 +676,7 @@ subroutine hetfrz_classnuc_cam_calc( &
       else
          call rad_cnst_get_aer_mmr(0, mode_idx(i), spec_idx(i), 'a', state, pbuf, ptr2d)
       end if
-      aer(:ncol,:,i,lchnk) = ptr2d(:ncol,:) * rho(:ncol,:)
+      aer(:ncol,:,i,lchnk_zb) = ptr2d(:ncol,:) * rho(:ncol,:)
    end do
 
    ! Init top levels of outputs of get_aer_num
@@ -709,7 +714,7 @@ subroutine hetfrz_classnuc_cam_calc( &
    ! output aerosols as reference information for heterogeneous freezing
    do i = 1, ncol
       do k = top_lev, pver
-         call get_aer_num(i, k, ncnst, aer(:,:,:,lchnk), aer_cb(:,:,:,lchnk), rho(i,k), &
+         call get_aer_num(i, k, ncnst, aer(:,:,:,lchnk_zb), aer_cb(:,:,:,lchnk_zb), rho(i,k), &
             total_aer_num(i,k,:), coated_aer_num(i,k,:), uncoated_aer_num(i,k,:),       &
             total_interstitial_aer_num(i,k,:), total_cloudborne_aer_num(i,k,:),         &
             hetraer(i,k,:), awcam(i,k,:), awfacm(i,k,:), dstcoat(i,k,:),                &
@@ -887,11 +892,11 @@ subroutine hetfrz_classnuc_cam_save_cbaero(state, pbuf)
    type(physics_buffer_desc),   pointer       :: pbuf(:)
 
    ! local variables
-   integer :: i, lchnk
+   integer :: i, lchnk_zb
    real(r8), pointer :: ptr2d(:,:)
    !-------------------------------------------------------------------------------
 
-   lchnk = state%lchnk
+   lchnk_zb = state%lchnk - begchunk
 
    ! loop over the cloud borne constituents required by this module and save
    ! a local copy
@@ -904,7 +909,8 @@ subroutine hetfrz_classnuc_cam_save_cbaero(state, pbuf)
       else
          call rad_cnst_get_aer_mmr(0, mode_idx(i), spec_idx(i), 'c', state, pbuf, ptr2d)
       end if
-      aer_cb(:,:,i,lchnk) = ptr2d
+      aer_cb(:,:,i,lchnk_zb) = ptr2d
+
    end do
 
 end subroutine hetfrz_classnuc_cam_save_cbaero
