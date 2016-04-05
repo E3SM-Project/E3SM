@@ -1,3 +1,8 @@
+	<dims>
+		<dim name="nTransects" definition="1" units="unitless"
+			 description="The number of transects used for critical passages."
+		/>
+	</dims>
 	<nml_record name="global_ocean" mode="init" configuration="global_ocean">
 		<nml_option name="config_global_ocean_minimum_depth" type="real" default_value="15" units="m"
 					description="Minimum depth where column contains all water-filled cells.  The first layer with refBottomDepth greater than this value is included in whole, i.e. no partial bottom cells are used in this layer."
@@ -155,6 +160,10 @@
 					description="Logical flag that controls if topograhy should be smoothed after being interpolated."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_global_ocean_deepen_critical_passages" type="logical" default_value=".true." units="unitless"
+					description="Logical flag that controls if critical passages are deepened to a minimum depth."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_global_ocean_depress_by_land_ice" type="logical" default_value=".false." units="unitless"
 					description="Logical flag that controls if sea surface pressure and layer thicknesses should be altered by an overlying ice sheet/shelf."
 					possible_values=".true. or .false."
@@ -277,6 +286,8 @@
 	<packages>
 		<package name="landIceInit" description="This package includes variables needed for initializing land ice in the init mode"
 		/>
+		<package name="criticalPassages" description="This package includes variables needed for deepening critical passages"
+		/>
 	</packages>
 	<var_struct name="landIceInit" time_levs="1" packages="landIceInit">
 		<var name="landIceDraftObserved" type="real" dimensions="nCells" units="m"
@@ -290,5 +301,16 @@
 		/>
 		<var name="landIceGroundedFracObserved" type="real" dimensions="nCells" units="unitless"
 			 description="Fraction of grounded land ice, read in from data file"
+		/>
+	</var_struct>
+	<var_struct name="criticalPassages" time_levs="1" mode="init" packages="criticalPassages">
+		<var name="transectCellMasks" type="integer" dimensions="nTransects nCells" units="unitless"
+			 description="Masks for transects describing critical passages"
+		/>
+		<var name="depthTransects" type="real" dimensions="nTransects" units="m"
+			 description="Minimum depth of critical passages"
+		/>
+		<var name="criticalPassageLevel" type="integer" dimensions="nTransects" units="unitless"
+			 description="the vertical level corresponding to the depth of the critical passage"
 		/>
 	</var_struct>
