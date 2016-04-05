@@ -160,7 +160,8 @@ def _create_caseroot_tools(case, caseroot, cimeroot, machine):
                  machines_dir + "/mkDepends") 
     try:
         for toolfile in toolfiles:
-            destfile = caseroot + "/" + os.path.basename(toolfile)
+            destfile = caseroot + "/Tools/" + os.path.basename(toolfile)
+            print "DEBUG: destfile is ",destfile
             os.symlink(toolfile, destfile)
     except Exception as e:
         logger.warning("FAILED to set up toolfiles: %s %s %s" % (str(e), toolfile, destfile))

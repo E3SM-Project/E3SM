@@ -53,7 +53,7 @@ class Machines(GenericXML):
         """
         Return the names of all the child nodes for the target machine
         """
-        nodes = self.machine.findall("./")
+        nodes = self.machine_node.findall("./")
         node_names = []
         for node in nodes:
             node_names.append(node.tag)
@@ -63,23 +63,8 @@ class Machines(GenericXML):
         """
         Return the names of all the child nodes for the target machine
         """
-        nodes = self.machine.findall("./" + nodename)
+        nodes = self.machine_node.findall("./" + nodename)
         return nodes
-
-    def get_node(self, nodename, attributes=None):
-        """
-        Return data on a node for a machine
-        """
-        expect(self.machine is not None, "Machine not set, use parent get_node?")
-        return GenericXML.get_node(self, nodename, attributes, root=self.machine)
-
-    def get_optional_node(self, nodename, attributes=None):
-        """
-        Return data on a node for a machine
-        """
-        expect(self.machine is not None, "Machine not set, use parent get_node?")
-        return GenericXML.get_optional_node(self, nodename, attributes, root=self.machine)
->>>>>>> added capability for parsing conf_pes.xml and creating correct values in env_mach_pes.xml
 
     def list_available_machines(self):
         """
@@ -120,6 +105,7 @@ class Machines(GenericXML):
 
         return machine
 
+
     def set_machine(self, machine):
         """
         Sets the machine block in the Machines object
@@ -133,11 +119,12 @@ class Machines(GenericXML):
         SystemExit: ERROR: No machine trump found
         """
         if self.machine != machine:
-            self.machine_node = self.get_optional_node("machine", {"MACH" : machine})
+            self.machine_node = GenericXML.get_optional_node(self, "machine", {"MACH" : machine})
             expect(self.machine_node is not None, "No machine %s found" % machine)
             self.machine = machine
 
         return machine
+
 
     def get_value(self, name, resolved=True):
         """

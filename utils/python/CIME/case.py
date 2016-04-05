@@ -6,24 +6,24 @@ through the Case module.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, run_cmd
-from CIME.XML.machines          import Machines
-from CIME.XML.pes               import Pes
-from CIME.XML.files             import Files
-from CIME.XML.component         import Component
-from CIME.XML.compsets          import Compsets
-from CIME.XML.grids             import Grids
+from CIME.utils                     import expect, run_cmd, get_cime_root
+from CIME.XML.machines              import Machines
+from CIME.XML.pes                   import Pes
+from CIME.XML.files                 import Files
+from CIME.XML.component             import Component
+from CIME.XML.compsets              import Compsets
+from CIME.XML.grids                 import Grids
 
-from CIME.XML.env_test          import EnvTest
-from CIME.XML.env_mach_specific import EnvMachSpecific
-from CIME.XML.env_case          import EnvCase
-from CIME.XML.env_mach_pes      import EnvMachPes
-from CIME.XML.env_build         import EnvBuild
-from CIME.XML.env_run           import EnvRun
-from CIME.XML.env_archive       import EnvArchive
-from CIME.XML.env_batch         import EnvBatch
+from CIME.XML.env_test              import EnvTest
+from CIME.XML.env_mach_specific     import EnvMachSpecific
+from CIME.XML.env_case              import EnvCase
+from CIME.XML.env_mach_pes          import EnvMachPes
+from CIME.XML.env_build             import EnvBuild
+from CIME.XML.env_run               import EnvRun
+from CIME.XML.env_archive           import EnvArchive
+from CIME.XML.env_batch             import EnvBatch
 
-from CIME.XML.generic_xml       import GenericXML
+from CIME.XML.generic_xml           import GenericXML
 
 logger = logging.getLogger(__name__)
 
@@ -231,11 +231,12 @@ class Case(object):
         self._get_compset_longname(compset_name)
         self.get_compset_components()
 
+        files = Files()
+
         # get grid info and overwrite files with that data
         if self.get_value("GRIDS_SPEC_FILE") is not None:
             gridfile = self.get_value("GRIDS_SPEC_FILE")
         else:
-            files = Files()
             gridfile = files.get_value("GRIDS_SPEC_FILE")
         grids = Grids(gridfile)
         gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
@@ -281,6 +282,9 @@ class Case(object):
                    "MPIlib %s is not supported on machine %s" %(mpilib, machine_name))
         self.set_value("MPILIB",mpilib)
 
+        machdir = machobj.get_machines_dir()
+        self.set_value("MACHDIR", machdir)
+
         # the following go into the env_mach_specific file
         vars = ("module_system", "environment_variables", "batch_system", "mpirun")
         for var in vars:
@@ -307,4 +311,3 @@ class Case(object):
         logger.info(" Compset is: %s " %self._compsetname)
         logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)
-        logger.info(" Component grids in compset are: %s " %self._component_grids)
