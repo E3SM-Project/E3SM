@@ -37,24 +37,29 @@ class BatchMaker(object):
         self.case = case if case is not None else Case()
         self.job = job
 
-        # set up paths to the template files, this could and should be
-        # extracted out somehow??
-        self.job_id = case.get_value("CASE")
-        if "pleiades" in case.get_value("MACH"):
-            # pleiades jobname needs to be limited to 15 chars
-            self.job_id = self.job_id[:15]
-
-        self.output_error_path = case.get_value("CASE")
-
-        self.env_batch = EnvBatch()
-
-        self.config_machines_parser = Machines(machine=case.get_value("MACH"))
-        self.batch_system = self.config_machines_parser.get_batch_system_type()
-        self.batch_parser = Batch(self.batch_system, machine=self.config_machines_parser.get_machine_name())
-
         self.override_node_count = None
 
-        self._initialize()
+        # set up paths to the template files, this could and should be
+        # extracted out somehow??
+        self.job_id = self.case.get_value("CASE")
+        mach = self.case.get_value("MACH")
+        if mach is None:
+            # Unit test, no viable case
+            pass
+        else:
+            if "pleiades" in self.case.get_value("MACH"):
+                # pleiades jobname needs to be limited to 15 chars
+                self.job_id = self.job_id[:15]
+
+            self.output_error_path = self.case.get_value("CASE")
+
+            self.env_batch = EnvBatch()
+
+            self.config_machines_parser = Machines(machine=self.case.get_value("MACH"))
+            self.batch_system = self.config_machines_parser.get_batch_system_type()
+            self.batch_parser = Batch(self.batch_system, machine=self.config_machines_parser.get_machine_name())
+
+            self._initialize()
 
     def _initialize(self):
         self._set_task_info()
@@ -211,12 +216,16 @@ within model's Machines directory, and add a batch system type for this machine
         """
         Do the variable substitution for any variables that need transforms
         recursively.
+
+        >>> bm = BatchMaker("run")
+        >>> bm.transform_vars("{{ cesm_stdout }}","cesm.stdout")
+        'cesm.stdout'
         """
-        directive_re = re.compile(r"{{ (\w+) }}")
+        directive_re = re.compile(r"{{ (\w+) }}", flags=re.M)
         # loop through directive text, replacing each string enclosed with
         # template characters with the necessary values.
-        while directive_re.search(text, re.M):
-            m = directive_re.search(text, re.M)
+        while directive_re.search(text):
+            m = directive_re.search(text)
             variable = m.groups()[0]
             whole_match = m.group()
 
