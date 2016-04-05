@@ -14,7 +14,6 @@
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init2.xml" path_base="script_core_dir" path="global_ocean"/>
-		<option name="config_global_ocean_depth_conversion_factor">0.01</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
@@ -23,11 +22,11 @@
 
 	<run_script name="run.py">
 		<step executable="./metis">
-			<argument flag="graph.info">2</argument>
+			<argument flag="graph.info">4</argument>
 		</step>
 		<step executable="./metis">
-			<argument flag="graph.info">2</argument>
+			<argument flag="graph.info">4</argument>
 		</step>
-		<model_run procs="2" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>
 </config>
