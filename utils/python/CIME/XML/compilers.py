@@ -48,7 +48,7 @@ class Compilers(GenericXML):
 
     def _is_compatible(self, compiler_node, compiler, machine, os_, mpilib):
         for xmlid, value in [ ("COMPILER", compiler), ("MACH", machine), ("OS", os_), ("MPILIB", mpilib) ]:
-            if value is not None and xmlid in compiler_node.attrib and value != compiler_node.attrib[xmlid]:
+            if value is not None and xmlid in compiler_node.attrib and value != compiler_node.get(xmlid):
                 return False
 
         return True

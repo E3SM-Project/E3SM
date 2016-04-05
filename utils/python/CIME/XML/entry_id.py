@@ -29,11 +29,11 @@ class EntryID(GenericXML):
         # </entry>
         valnodes = self.get_nodes("value", root=node)
         for valnode in valnodes:
-            for att in valnode.attributes:
+            for att in valnode.keys():
                 if att.key in attributes:
                     if re.search(attributes[att.key], att.text):
                         node.set("value", valnode.text)
-                        logger.debug("id %s value %s" % (node.attrib["id"], valnode.text))
+                        logger.debug("id %s value %s" % (node.get("id"), valnode.text))
                         return valnode.text
 
         # Fall back to default value
@@ -128,7 +128,7 @@ class EntryID(GenericXML):
 
         valnodes = self.get_nodes("value", root=node)
         for valnode in valnodes:
-            vatt = valnode.attrib[att]
+            vatt = valnode.get(att)
             if resolved:
                 values[vatt] = self.get_resolved_value(valnode.text)
             else:
@@ -190,7 +190,7 @@ class EntryID(GenericXML):
         xmldiffs = {}
         f1nodes = self.get_nodes("entry")
         for node in f1nodes:
-            vid = node.attrib["id"]
+            vid = node.get("id")
             f2val = other.get_value(vid, resolved=False)
             if f2val is not None:
                 f1val = self.get_value(vid, resolved=False)
@@ -201,5 +201,5 @@ class EntryID(GenericXML):
 
     def __iter__(self):
         for node in self.get_nodes("entry"):
-            vid = node.attrib["id"]
+            vid = node.get("id")
             yield vid, self.get_value(vid)

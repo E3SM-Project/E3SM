@@ -1,9 +1,11 @@
 #!/usr/bin/env python
-""" CIME test status reporting script. 
-Purpose:  Give basic and detailed summaries of CIME(CESM) tests, 
-and send the test results back to the test database. 
+"""
+CIME test status reporting script.
+Purpose:  Give basic and detailed summaries of CIME(CESM) tests,
+and send the test results back to the test database.
 Authors: Jay Shollenberger and Ben Andre
-""" 
+"""
+
 from __future__ import print_function
 import sys
 if sys.hexversion < 0x02070000:
@@ -25,7 +27,6 @@ import getpass
 
 testdburl = "https://csegweb.cgd.ucar.edu/testdb/cgi-bin/processXMLtest.cgi"
 
-
 class CimeTestStatus():
     # create an enum for the line type
     LINE_TYPE_SEPERATOR = 0
@@ -38,7 +39,7 @@ class CimeTestStatus():
         self._current_section = None
     def __repr__(self):
         return pprint.pformat(self._test_status)
-    
+
     def parse(self, filename):
         """Parse the TestStatus file and turn it and save data into the object
         so it can be serialized
@@ -46,7 +47,7 @@ class CimeTestStatus():
         self._buffer_file(filename)
         if self._status_buffer:
             self._extract_test_name()
-            self._parse_teststatus() 
+            self._parse_teststatus()
 
 
     def _buffer_file(self, filename):
@@ -198,7 +199,7 @@ class CimeTestStatus():
     # --------------------------------------------------------------------------
     def _add_result_to_test_status(self, key, value, section=None):
         """ Set up the test status dictionaries with the appropriate test results
-            and sections. 
+            and sections.
         """
         use_section = None
         if self._current_section:
@@ -233,8 +234,8 @@ class CimeTestStatus():
         return root
 
     def rawteststatus(self):
-        """ Return the read-in output of $Test/TestStatus so 
-            we can print out the status of all the tests.  
+        """ Return the read-in output of $Test/TestStatus so
+            we can print out the status of all the tests.
         """
         return self._raw_status
 
@@ -246,11 +247,11 @@ class CimeTestStatus():
     def histcomparestatus(self):
         """ Return the history file comparison summary
         """
-            
+
         if 'test functionality' in self._test_status:
-            if 'summary' in self._test_status['test functionality']: 
+            if 'summary' in self._test_status['test functionality']:
                 return self._test_status['test functionality']['summary']
-            else: 
+            else:
                 return None
         else:
             return None
@@ -258,9 +259,9 @@ class CimeTestStatus():
         """ Return the Baseline comparison status
         """
         if 'baseline comparison' in self._test_status:
-            if 'summary' in self._test_status['baseline comparison']: 
+            if 'summary' in self._test_status['baseline comparison']:
                 return self._test_status['baseline comparison']['summary']
-            else: 
+            else:
                 return None
         else:
             return None
@@ -276,13 +277,13 @@ class CimeTestStatus():
         return self._test_status['test functionality']['summary'] + " " + self._test_status['name']
 
     def baselinecompareline(self):
-        """ get the status of the baseline comparison plus the name 
+        """ get the status of the baseline comparison plus the name
         """
         return self._test_status['baseline comparison']['summary'] + " " + self._test_status['name']
 
     def histcomparefail(self):
-        """ get the failing history files as a string 
-            disregard the summary, only print the fields that failed. 
+        """ get the failing history files as a string
+            disregard the summary, only print the fields that failed.
         """
         histcomparefails = (self._test_status['name'] + "\n")
         testfunc = self._test_status['test functionality']
@@ -290,13 +291,13 @@ class CimeTestStatus():
             if key != 'summary' and testfunc[key] == 'FAIL':
                 histcomparefails += ( key + " : " )
                 histcomparefails += (testfunc[key] + "\n")
-        if len(histcomparefails) > 0: 
+        if len(histcomparefails) > 0:
             return histcomparefails
         else:
             return None
-    
+
     def baselinecomparefail(self):
-        """ Return the baseline comparison failures.  
+        """ Return the baseline comparison failures.
             Disregard the status, and get the files that failed
         """
         blcomparefail = (self._test_status['name'] + "\n")
@@ -317,52 +318,52 @@ def findSpecs(args):
         testspecfiles.append(specfile)
     else:
         testspecfiles = glob.glob("testspec*xml")
-    
+
     for file in testspecfiles:
         if not os.path.isfile(file):
             print("could not find test spec file " + file + ", aborting")
             sys.exit(1)
-        
-    
+
+
     return testspecfiles
-            
+
 
 def getSuiteInfo(specfile):
-    """ Read the test spec, get relevant test info 
+    """ Read the test spec, get relevant test info
     """
 
     tree = etree.parse(specfile)
     root = tree.getroot()
     suiteinfo = {}
     testlist = []
-    
+
     for tr in root.findall('testroot'):
-        suiteinfo['testroot'] = tr.text    
-    
+        suiteinfo['testroot'] = tr.text
+
     for cr in root.findall('cimeroot'):
         suiteinfo['cimeroot'] = cr.text
-    
+
     for bltag in root.findall('baselinetag'):
         suiteinfo['baselinetag'] = bltag.text
-    
+
     for compiler in root.findall("./testlist/compiler"):
         suiteinfo['compiler'] = compiler.text
-    
+
     for mpilib in root.findall('mpilib'):
         suiteinfo['mpilib'] = mpilib.text
-    
+
     for t in root.findall('test'):
-        testlist.append(t.attrib['case'])
+        testlist.append(t.get('case'))
         if 'machine' not in suiteinfo.keys():
             machnodelist = t.findall('mach')
             suiteinfo['machine'] = machnodelist[0].text
-        if 'compiler' not in suiteinfo.keys(): 
+        if 'compiler' not in suiteinfo.keys():
             compnodelist = t.findall('compiler')
             suiteinfo['compiler'] = compnodelist[0].text
-    
+
     suiteinfo['testlist'] = testlist
     return suiteinfo
-            
+
 def getTestStatuses(suiteinfo):
     """Get the status of each test
     """
@@ -382,15 +383,15 @@ def printStatus(cimetests):
 
 
 def printSummary(suiteinfo, cimetests):
-    """ Print a detailed test suite summary.  Note the 
-        count of test failures, print the tests sorted by status. 
-        If history or baseline comparison failures are noted, the 
-        failing history files will be printed. 
+    """ Print a detailed test suite summary.  Note the
+        count of test failures, print the tests sorted by status.
+        If history or baseline comparison failures are noted, the
+        failing history files will be printed.
     """
     banner = '=' * 80
-    
-    
-    # Get the count of tests by status. 
+
+
+    # Get the count of tests by status.
     passpattern = re.compile('PASS|DONE')
     passes = [t for t in cimetests if passpattern.match(t.overallstatus())]
     cfails = [t for t in cimetests if t.overallstatus() == 'CFAIL']
@@ -402,17 +403,17 @@ def printSummary(suiteinfo, cimetests):
     builds =   [t for t in cimetests if t.overallstatus() == 'BUILD' ]
     testcomparefails = [t for t in cimetests if t.histcomparestatus() == 'FAIL']
     baselinecomparefails = [t for t in cimetests if t.baselinecomparestatus() == 'FAIL']
-    
+
     # Print the test counts by status
     print(banner)
     print("Test summary for " + suiteinfo['machine'] + " " + suiteinfo['compiler'])
-    if passes: 
+    if passes:
         print(len(passes), "   Tests passed")
     if testcomparefails:
         print(len(testcomparefails) , "   Tests failed the history file comparison")
     if baselinecomparefails:
         print(len(baselinecomparefails) , "   Tests failed the baseline comparison")
-    
+
     if sfails:
         print(len(sfails), " Tests had script errors")
     if cfails:
@@ -426,7 +427,7 @@ def printSummary(suiteinfo, cimetests):
     if tfails:
         print(len(gens), " Tests are test fail (TFAIL) ")
     print(banner)
-    
+
     if testcomparefails:
         print(banner)
         print("The following tests failed the history file comparison:")
@@ -435,13 +436,13 @@ def printSummary(suiteinfo, cimetests):
             print(t.histcomparefail())
         print(banner)
 
-    if baselinecomparefails: 
+    if baselinecomparefails:
         print(banner)
         print("The following tests failed the baseline comparison:")
         for t in baselinecomparefails:
             print(t.baselinecomparefail())
         print(banner)
-   
+
     if passes:
         print(banner)
         print("These tests passed ")
@@ -496,12 +497,12 @@ def printSummary(suiteinfo, cimetests):
 
 def sendTestReport(args, suiteinfo, cimetests, auth):
     """ Send the test report to the test database web app
-        pack everything up in an xml representation, and 
-        POST away..  
+        pack everything up in an xml representation, and
+        POST away..
     """
-    
+
     # add the suite info, test type, and tag name to the
-    # xml data. 
+    # xml data.
     testrecord = etree.Element('testrecord');
     mach = etree.SubElement(testrecord, 'mach')
     mach.text = suiteinfo['machine']
@@ -518,13 +519,13 @@ def sendTestReport(args, suiteinfo, cimetests, auth):
     baselinetag = etree.SubElement(testrecord, 'baselinetag')
     baselinetag.text = suiteinfo['baselinetag']
 
-    # add the test xml to each test. 
+    # add the test xml to each test.
     for test in cimetests:
         testelement = test.as_xml()
         testrecord.append(testelement)
 
-    # Get the testdb username/password, and POST 
-    # the data. 
+    # Get the testdb username/password, and POST
+    # the data.
     print("sending test report for " + suiteinfo['machine'] + " " + suiteinfo['compiler'])
     data = urllib.urlencode({'username':auth['username'],
                              'password':auth['password'],
@@ -534,17 +535,17 @@ def sendTestReport(args, suiteinfo, cimetests, auth):
         urllib2.urlopen(req)
     except urllib2.URLError as e:
         print("Error when posting data: " + e.reason)
-        
+
     if(args.debug):
         from xml.dom import minidom
         doc = minidom.parseString(etree.tostring(testrecord))
-        with open('cimeteststatus.dump.xml', 'w') as xmlout: 
+        with open('cimeteststatus.dump.xml', 'w') as xmlout:
             doc.writexml(xmlout, addindent='  ', newl='\n')
-    
-def authenticate(): 
+
+def authenticate():
     """ Get the authentication information from the command line
     """
-    auth = {} 
+    auth = {}
     print("enter TestDB username:")
     auth['username'] = sys.stdin.readline()
     auth['username'] = auth['username'].rstrip('\n')
@@ -552,7 +553,7 @@ def authenticate():
     return auth
 
 def main():
-    """ Parse the arguments, get the suite information from the test spec, 
+    """ Parse the arguments, get the suite information from the test spec,
     get the test statuses, then print a raw status, test summary, or send the
     test report.
     """
@@ -565,13 +566,13 @@ def main():
     tgroup.add_argument('-t', '--testreport', action='store_true', help='Send the test report to CSEG\'s Test Database', required=False)
     tgroup.add_argument( '-tn', '--tagname', help='The tag name being sent to the CSEG test database', required=False)
     tgroup.add_argument( '-tt', '--testtype', help='The test type being sent to the CSEG test database', required=False)
-    
+
     args = parser.parse_args()
-    
+
     testspecfiles = findSpecs(args)
     suiteinfolist = []
 
-    """ For each test spec file, get the suite info, then either send the test report, 
+    """ For each test spec file, get the suite info, then either send the test report,
         print the summary, or print the status output
     """
     for specfile in testspecfiles:
@@ -582,17 +583,17 @@ def main():
             print("testtype and tagname must be defined to send test reports")
             sys.exit(1)
         else:
-            auth = authenticate()         
+            auth = authenticate()
     for suiteinfo in suiteinfolist:
         cimetests = getTestStatuses(suiteinfo)
         if(args.testreport==True):
-            sendTestReport(args, suiteinfo, cimetests, auth)        
+            sendTestReport(args, suiteinfo, cimetests, auth)
         elif(args.summary==True):
             printSummary(suiteinfo, cimetests)
         else:
-            printStatus(cimetests)        
-         
-    
+            printStatus(cimetests)
+
+
 if __name__ == "__main__":
     main()
 

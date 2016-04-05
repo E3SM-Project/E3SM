@@ -51,10 +51,8 @@ class GenericXML(object):
         logger.debug("read: " + infile)
         self.tree = ET.parse(infile)
         self.root = self.tree.getroot()
-        if "version" in self.root.attrib:
-            self.version = self.root.attrib["version"]
-        else:
-            self.version = "1.0"
+        self.version = self.root.get("version")
+        self.version = "1.0" if self.version is None else self.version
         logger.debug("File version is "+self.version)
 
     def write(self, outfile=None):

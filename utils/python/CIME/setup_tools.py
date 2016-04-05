@@ -107,7 +107,10 @@ def set_compiler(compiler_file_arg=None, case=None, macros_file="Macros", output
         _add_to_macros(compiler_node, macros)
 
     compcpp = compiler.upper()
-    macros["ADD_CPPDEFS"] += " -D%s -DCPR%s " % (os_, compcpp)
+    if "ADD_CPPDEFS" in macros:
+        macros["ADD_CPPDEFS"] += " -D%s -DCPR%s " % (os_, compcpp)
+    else:
+        macros["ADD_CPPDEFS"] = " -D%s -DCPR%s " % (os_, compcpp)
 
     # A few things can be used from environ if not in XML
     for item in ["MPI_PATH", "NETCDF_PATH"]:

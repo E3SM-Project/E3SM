@@ -37,24 +37,29 @@ class BatchMaker(object):
         self.case = case if case is not None else Case()
         self.job = job
 
-        # set up paths to the template files, this could and should be
-        # extracted out somehow??
-        self.job_id = case.get_value("CASE")
-        if "pleiades" in case.get_value("MACH"):
-            # pleiades jobname needs to be limited to 15 chars
-            self.job_id = self.job_id[:15]
-
-        self.output_error_path = case.get_value("CASE")
-
-        self.env_batch = EnvBatch()
-
-        self.config_machines_parser = Machines(machine=case.get_value("MACH"))
-        self.batch_system = self.config_machines_parser.get_batch_system_type()
-        self.batch_parser = Batch(self.batch_system, machine=self.config_machines_parser.get_machine_name())
-
         self.override_node_count = None
 
-        self._initialize()
+        # set up paths to the template files, this could and should be
+        # extracted out somehow??
+        self.job_id = self.case.get_value("CASE")
+        mach = self.case.get_value("MACH")
+        if mach is None:
+            # Unit test, no viable case
+            pass
+        else:
+            if "pleiades" in self.case.get_value("MACH"):
+                # pleiades jobname needs to be limited to 15 chars
+                self.job_id = self.job_id[:15]
+
+            self.output_error_path = self.case.get_value("CASE")
+
+            self.env_batch = EnvBatch()
+
+            self.config_machines_parser = Machines(machine=self.case.get_value("MACH"))
+            self.batch_system = self.config_machines_parser.get_batch_system_type()
+            self.batch_parser = Batch(self.batch_system, machine=self.config_machines_parser.get_machine_name())
+
+            self._initialize()
 
     def _initialize(self):
         self._set_task_info()
@@ -112,16 +117,17 @@ class BatchMaker(object):
         self.queue = self.config_machines_parser.get_default_queue()
         all_queues = self.config_machines_parser.get_all_queues()
         for queue in all_queues:
-            jobmin = int(self.config_machines_parser.get_queue_attribute(queue, "jobmin"))
-            jobmax = int(self.config_machines_parser.get_queue_attribute(queue, "jobmax"))
+            jobmin = queue.get("jobmin")
+            jobmax = queue.get("jobmax")
             # if the fullsum is between the min and max # jobs, then use this queue.
-            if jobmin is not None and jobmax is not None and self.fullsum >= jobmin and self.fullsum <= jobmax:
+            if jobmin is not None and jobmax is not None and self.fullsum >= int(jobmin) and self.fullsum <= int(jobmax):
                 self.queue = queue
-                self.wall_time_max = self.config_machines_parser.get_queue_attribute(self.queue, "walltimemax")
+                self.wall_time_max = self.queue.get("walltimemax")
                 break
 
         if self.queue:
-            self.case.set_value("JOB_QUEUE", self.queue, subgroup=self.job)
+            self.case.set_value("JOB_QUEUE", self.queue.text, subgroup=self.job)
+            self.queue = self.queue.text # Change to string
             logger.info("Using queue %s for job %s" % (self.queue,self.job))
 
     def _set_wall_time(self):
@@ -135,16 +141,18 @@ class BatchMaker(object):
         # then set the walltime.
         if not self.wall_time:
             for wall_time in self.config_machines_parser.get_walltimes():
-                estcost = self.config_machines_parser.get_walltime_estcost(wall_time)
-                if estcost is not None and self.ccsm_estcost > estcost:
-                    self.wall_time = wall_time
+                estcost = wall_time.get("ccsm_estcost")
+                if estcost is not None and self.ccsm_estcost > int(estcost):
+                    self.wall_time = wall_time.text
         else:
             return
 
         # if we didn't find a walltime previously, use the default.
         if not self.wall_time:
             self.wall_time = self.config_machines_parser.get_default_walltime()
-            if not self.wall_time:
+            if self.wall_time:
+                self.wall_time = self.wall_time.text
+            else:
                 self.wall_time = "0"
 
         if self.wall_time_max and \
@@ -204,27 +212,31 @@ within model's Machines directory, and add a batch system type for this machine
 
         self.batchdirectives = "\n".join(batch_directives)
 
-    def transform_vars(self, text, defaults={}):
+    def transform_vars(self, text, default=None):
         """
         Do the variable substitution for any variables that need transforms
         recursively.
+
+        >>> bm = BatchMaker("run")
+        >>> bm.transform_vars("{{ cesm_stdout }}","cesm.stdout")
+        'cesm.stdout'
         """
-        directive_re = re.compile(r"{{ (\w+) }}")
+        directive_re = re.compile(r"{{ (\w+) }}", flags=re.M)
         # loop through directive text, replacing each string enclosed with
         # template characters with the necessary values.
-        while directive_re.search(text, re.M):
-            m = directive_re.search(text, re.M)
+        while directive_re.search(text):
+            m = directive_re.search(text)
             variable = m.groups()[0]
             whole_match = m.group()
 
-            if hasattr(self, variable.lower()):
+            if hasattr(self, variable.lower()) and getattr(self, variable.lower()) is not None:
                 repl = getattr(self, variable.lower())
-                text = text.replace(whole_match, str("" if repl is None else repl))
+                text = text.replace(whole_match, str(repl))
             elif self.case.get_value(variable.upper()) is not None:
                 repl = self.case.get_value(variable.upper())
-                text = text.replace(whole_match, str("" if repl is None else repl))
-            elif variable in defaults:
-                text = text.replace(whole_match, defaults[variable])
+                text = text.replace(whole_match, str(repl))
+            elif default is not None:
+                text = text.replace(whole_match, default)
             else:
                 logger.warn("Could not replace variable '%s'" % variable)
                 text = text.replace(whole_match, "")
