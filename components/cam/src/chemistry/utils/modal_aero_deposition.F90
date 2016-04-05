@@ -136,7 +136,7 @@ subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_nd
    ! is needed for MAM7 prognostic fluxes to be active
    bin_fluxes = .true.  
 
-#ifdef MODAL_AERO_7MODE
+#if( (defined MODAL_AERO_7MODE) || (defined MODAL_AERO_9MODE) )
       ! assign additional indices for MAM7 species:
       call cnst_get_ind('bc_a3',  idx_bc3)
       call cnst_get_ind('pom_a3', idx_pom3)
@@ -273,7 +273,7 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
 
 #endif
 
-#ifdef MODAL_AERO_7MODE
+#if( (defined MODAL_AERO_7MODE) || (defined MODAL_AERO_9MODE) )
       ! MAM7
       
       ! in SNICAR+MAM, bcphiwet represents BC mixed internally within hydrometeors
@@ -486,7 +486,7 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
 #endif
 
 
-#ifdef MODAL_AERO_7MODE
+#if( (defined MODAL_AERO_7MODE) || (defined MODAL_AERO_9MODE) )
       ! MAM7
 
       ! in SNICAR+MAM, bcphodry represents BC mixed external to hydrometeors
