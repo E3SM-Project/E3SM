@@ -926,17 +926,19 @@ contains
           landIceFraction(:) = 0.0_RKIND
           modifySSHMask(:) = 0
            do iCell = 1, nCells
-             if(landIceGroundedFracObserved(iCell) >= groundedThreshold) then
+             ! XSAD: this is now taken care of using the Antarctic land coverage mask
+             !       from the geometric_features repository
+             !if(landIceGroundedFracObserved(iCell) >= groundedThreshold) then
                 ! Land ice is grounded.  Remove the full column from the ocean.
                 ! Note: land ice data file has grounded_mask variable.  This
                 ! could also be used
                 !    as another option to choose cells for removal.
-                maxLevelCell(iCell) = -1
+                !maxLevelCell(iCell) = -1
                 ! Set bottom depth to be zero.  Culling of inland seas is based
                 ! on bottom depth.
-                bottomDepth(iCell) = 0.0_RKIND
-                cycle
-             end if
+                !bottomDepth(iCell) = 0.0_RKIND
+                !cycle
+             !end if
 
              if(landIceFracObserved(iCell) > landIceFracThreshold) then
                 landIceFraction(iCell) = landIceFracObserved(iCell)
