@@ -213,38 +213,38 @@ contains
 
       err = 0
 
-      block => domain % blocklist
-      do while (associated(block))
+      !block => domain % blocklist
+      !do while (associated(block))
 
-         call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-         call MPAS_pool_get_subpool(block % structs, "regions", regionsPool)
+      !   call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+      !   call MPAS_pool_get_subpool(block % structs, "regions", regionsPool)
 
-         call MPAS_pool_get_dimension(meshPool, "nCells", nCells)
+      !   call MPAS_pool_get_dimension(meshPool, "nCells", nCells)
 
-         call MPAS_pool_get_array(meshPool, "latCell", latCell)
+      !   call MPAS_pool_get_array(meshPool, "latCell", latCell)
 
-         call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
+      !   call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
 
-         ! initialize to zero everywhere
-         regionCellMasks = 0
+      !   ! initialize to zero everywhere
+      !   regionCellMasks = 0
 
-         ! global
-         regionCellMasks(1,:) = 1
+      !   ! global
+      !   regionCellMasks(1,:) = 1
 
-         ! northern hemisphere
-         do iCell = 1, nCells
-            if (latCell(iCell) >= 0.0_RKIND) &
-                 regionCellMasks(2,iCell) = 1
-         enddo ! iCell
+      !   ! northern hemisphere
+      !   do iCell = 1, nCells
+      !      if (latCell(iCell) >= 0.0_RKIND) &
+      !           regionCellMasks(2,iCell) = 1
+      !   enddo ! iCell
 
-         ! southern hemisphere
-         do iCell = 1, nCells
-            if (latCell(iCell) < 0.0_RKIND) &
-                 regionCellMasks(3,iCell) = 1
-         enddo ! iCell
+      !   ! southern hemisphere
+      !   do iCell = 1, nCells
+      !      if (latCell(iCell) < 0.0_RKIND) &
+      !           regionCellMasks(3,iCell) = 1
+      !   enddo ! iCell
 
-         block => block % next
-      enddo
+      !   block => block % next
+      !enddo
 
       ! initialize the runtime regional statistics system
       call init_runtime_regional_statistics(domain)

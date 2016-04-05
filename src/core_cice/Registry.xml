@@ -57,7 +57,7 @@
 		<dim name="nzAerosolsSnowLayers"  definition="2*nzAerosols"/>
 		<dim name="nzAerosolsIceLayers"   definition="nBioLayersP1*nzAerosols"/>
 		<dim name="nZBGCTracers"       definition="29"/>
-		<dim name="nRegions"       definition="3"/>
+		<dim name="nRegions"/>
 		<dim name="nPoints" definition="1" units="unitless" description="The number of points for AM_pointwiseStats"/>
 		<dim name="nPointGroups" definition="1" units="unitless" description="The number of points groups"/>
 		<dim name="maxPointsInGroup" definition="1" units="unitless" description="The maximum number of points in any group."/>
@@ -319,6 +319,15 @@
 		  immutable="true">
 	    <stream name="mesh"/>
 	    <var name="fVertex"/>
+	  </stream>
+
+	  <stream name="regions" 
+		  type="input"
+		  filename_template="regions.nc"
+		  filename_interval="none"
+		  input_interval="initial_only"
+		  immutable="true">
+	    <var name="regionCellMasks"/>
 	  </stream>
 
 	  <stream name="restart" 
