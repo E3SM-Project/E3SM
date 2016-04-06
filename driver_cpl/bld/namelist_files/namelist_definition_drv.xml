@@ -462,7 +462,7 @@ type="logical"
 category="control" 
 group="seq_infodata_inparm">
 If true, turn on diurnal cycle in computing atm/ocn fluxes
-default: false
+default: true
 </entry>
 
 <entry 
