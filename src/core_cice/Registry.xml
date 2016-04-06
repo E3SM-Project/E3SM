@@ -321,7 +321,7 @@
 	    <var name="fVertex"/>
 	  </stream>
 
-	  <stream name="regions" 
+	  <stream name="regions"
 		  type="input"
 		  filename_template="regions.nc"
 		  filename_interval="none"
