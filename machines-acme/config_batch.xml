@@ -85,7 +85,7 @@
       <!-- <directive> -j oe {{ output_error_path }} </directive> -->
       <directive> -j oe </directive>
       <directive default="ae"  > -m {{ mail_options }} </directive>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }} </directive>
     </directives>
   </batch_system>
 
@@ -99,6 +99,7 @@
       <directive> -N {{ job_id }}</directive>
       <directive> -l walltime={{ wall_time }}</directive>
       <directive> -j oe </directive>
+      <directive> -A {{ project }} </directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
       <directive default="ae"  > -m {{ mail_options }} </directive>
       <directive default="/bin/bash" > -S {{ shell }}</directive>
@@ -111,9 +112,6 @@
      <batch_directive>#SBATCH</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>
      <depend_string> --dependency=afterok:jobid</depend_string>
-     <submit_args>
-       <arg flag="--account" name="project"/>
-     </submit_args>
      <directives>
        <directive> --job-name={{ job_id }}</directive>
        <directive> --nodes={{ num_nodes }}</directive>
@@ -122,6 +120,7 @@
        <directive> --exclusive                        </directive>
        <directive> --time={{ wall_time }}</directive>
        <directive> --partition={{ queue }}</directive>
+       <directive> --account={{ project }}</directive>
      </directives>
    </batch_system>
 
@@ -130,14 +129,6 @@
       <directives>
         <directive>-A {{ project }}</directive>
         <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-      </directives>
-    </batch_system> 
-
-    <!-- edison is SLURM as of Jan-4-2016 -->
-    <batch_system MACH="edison" version="x.y">
-      <directives>
-        <directive> -A {{ account }} </directive>
-        <directive>--partition={{ queue }}</directive>
       </directives>
     </batch_system> 
 
@@ -151,15 +142,6 @@
     </directives>
    </batch_system>
 
-     <!-- skybridge is slurm -->
-
-   <batch_system MACH="skybridge" version="x.y">
-     <directives>
-       <directive>--account={{ project }}</directive>
-       <directive>--partition={{ queue }}</directive>
-     </directives>
-   </batch_system>
-
    <!-- Constance is slurm -->
 
    <batch_system MACH="constance" version="x.y">
@@ -170,13 +152,6 @@
        <directive>--output=slurm.out</directive>
        <directive>--error=slurm.err</directive>
     </directives>
-   </batch_system>
-
-   <batch_system MACH="redsky" version="x.y">
-     <directives>
-       <directive>--account={{ project }}</directive>
-       <directive>--partition={{ queue }}</directive>
-     </directives>
    </batch_system>
 
    <batch_system MACH="mustang" version="x.y">
@@ -210,6 +185,22 @@
      <directives>
        <directive>-A {{ project }}</directive>
        <directive>-l nodes={{ num_nodes }}</directive>
+     </directives>
+   </batch_system>
+
+   <batch_system MACH="lawrencium-lr2" version="x.y">
+     <directives>
+       <directive>--partition=lr2</directive>
+       <directive>--account={{ project }}</directive>
+       <directive>--exclusive</directive>
+     </directives>
+   </batch_system>
+
+   <batch_system MACH="lawrencium-lr3" version="x.y">
+     <directives>
+       <directive>--partition=lr3</directive>
+       <directive>--account={{ project }}</directive>
+       <directive>--exclusive</directive>
      </directives>
    </batch_system>
 
