@@ -191,7 +191,7 @@ subroutine zm_convi(limcnv_in, no_deep_pbl_in)
       write(iulog,*) 'tuning parameters zm_convi: c0_lnd',c0_lnd, ', c0_ocn', c0_ocn 
       write(iulog,*) 'tuning parameters zm_convi: ke',ke
       write(iulog,*) 'tuning parameters zm_convi: dmpdz',dmpdz
-      write(iulog,*) 'tuning parameters zm_convi: alfa',alfa
+      write(iulog,*) 'tuning parameters zm_convi: alfa',alfa_scalar
       write(iulog,*) 'tuning parameters zm_convi: no_deep_pbl',no_deep_pbl
    endif
 
