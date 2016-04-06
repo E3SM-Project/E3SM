@@ -46,6 +46,7 @@ module zm_conv
    real(r8) :: zmconv_ke     = unset_r8 
    real(r8) :: zmconv_tau    = unset_r8   
    real(r8) :: zmconv_dmpdz    = unset_r8   
+   real(r8) :: zmconv_alfa    = unset_r8   
    logical  :: zmconv_trigmem= .false.    
 
    real(r8) rl         ! wg latent heat of vaporization.
@@ -58,6 +59,7 @@ module zm_conv
    real(r8) :: c0_lnd       ! set from namelist input zmconv_c0_lnd
    real(r8) :: c0_ocn       ! set from namelist input zmconv_c0_ocn
    real(r8) :: dmpdz        ! Parcel fractional mass entrainment rate (/m)
+   real(r8) :: alfa_scalar  ! maximum downdraft mass flux fraction  
    logical  :: trigmem      ! set from namelist input zmconv_trigmem
    real(r8) tau   ! convective time scale
    real(r8),parameter :: c1 = 6.112_r8
@@ -96,7 +98,7 @@ subroutine zmconv_readnl(nlfile)
    character(len=*), parameter :: subname = 'zmconv_readnl'
 
    namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_ke, zmconv_tau, & 
-           zmconv_dmpdz, zmconv_trigmem
+           zmconv_dmpdz, zmconv_alfa, zmconv_trigmem
    !-----------------------------------------------------------------------------
 
    zmconv_tau = 3600._r8
@@ -128,6 +130,13 @@ subroutine zmconv_readnl(nlfile)
            !BSINGH - special case for 30 layer model
           if(pver == 30)dmpdz=-1.e-3_r8        ! Entrainment rate. (-ve for /m)
       end if
+
+      if ( zmconv_alfa /= unset_r8 ) then
+           alfa_scalar = zmconv_alfa
+      else
+           alfa_scalar = 0.1_r8
+      end if
+
    end if
 
 #ifdef SPMD
@@ -137,6 +146,7 @@ subroutine zmconv_readnl(nlfile)
    call mpibcast(ke,                1, mpir8,  0, mpicom)
    call mpibcast(tau,               1, mpir8,  0, mpicom)
    call mpibcast(dmpdz,             1, mpir8,  0, mpicom)
+   call mpibcast(alfa_scalar,       1, mpir8,  0, mpicom)
    call mpibcast(trigmem,           1, mpir8,  0, mpicom)
 #endif
 
@@ -181,6 +191,7 @@ subroutine zm_convi(limcnv_in, no_deep_pbl_in)
       write(iulog,*) 'tuning parameters zm_convi: c0_lnd',c0_lnd, ', c0_ocn', c0_ocn 
       write(iulog,*) 'tuning parameters zm_convi: ke',ke
       write(iulog,*) 'tuning parameters zm_convi: dmpdz',dmpdz
+      write(iulog,*) 'tuning parameters zm_convi: alfa',alfa
       write(iulog,*) 'tuning parameters zm_convi: no_deep_pbl',no_deep_pbl
    endif
 
@@ -2623,7 +2634,7 @@ subroutine cldprp(lchnk   , &
 !
 ! in normal downdraft strength run alfa=0.2.  In test4 alfa=0.1
 !
-      alfa(i) = 0.1_r8
+      alfa(i) = alfa_scalar 
       jt(i) = min(jt(i),jb(i)-1)
       jd(i) = max(j0(i),jt(i)+1)
       jd(i) = min(jd(i),jb(i))
