@@ -133,10 +133,13 @@ def _create_caseroot_tools(case, caseroot, cimeroot, machine):
 
     # setup executable files in caseroot/
     exefiles = (cimeroot + "/scripts/Tools/case.setup",  
+                cimeroot + "/scripts/Tools/case.build",
+                cimeroot + "/scripts/Tools/case.submit",
+                cimeroot + "/scripts/Tools/preview_namelists", 
                 cimeroot + "/scripts/Tools/testcase.setup", 
                 cimeroot + "/scripts/Tools/check_input_data",
-                cimeroot + "/scripts/Tools/archive_metadata.sh", 
                 cimeroot + "/scripts/Tools/check_case", 
+                cimeroot + "/scripts/Tools/archive_metadata.sh", 
                 cimeroot + "/scripts/Tools/create_production_test",
                 cimeroot + "/scripts/Tools/xmlchange", 
                 cimeroot + "/scripts/Tools/xmlquery")
@@ -161,7 +164,6 @@ def _create_caseroot_tools(case, caseroot, cimeroot, machine):
     try:
         for toolfile in toolfiles:
             destfile = caseroot + "/Tools/" + os.path.basename(toolfile)
-            print "DEBUG: destfile is ",destfile
             os.symlink(toolfile, destfile)
     except Exception as e:
         logger.warning("FAILED to set up toolfiles: %s %s %s" % (str(e), toolfile, destfile))
@@ -185,7 +187,7 @@ def _create_caseroot_sourcemods(case, caseroot, cimeroot, components):
 ###############################################################################
 
     for component in components:
-        directory = caseroot + "/SourceMods/src" + component
+        directory = caseroot + "/SourceMods/src." + component
         if not os.path.exists(directory):
             os.makedirs(directory)
 
@@ -220,7 +222,6 @@ def _create_caseroot(case, caseroot, cimeroot, components, machine):
 ###############################################################################
 
     #logger.info(" Creating Caseroot %s" %caseroot)
-    print "DEBUG: caseroot is ",caseroot
     logger.info(" Creating Caseroot")
 
     # Make the case directory

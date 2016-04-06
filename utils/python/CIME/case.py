@@ -252,6 +252,9 @@ class Case(object):
         for idx, config_file in enumerate(self._component_config_files):
             self.set_value(config_file[0],config_file[1])
 
+        #--------------------------------------------
+        # machine
+        #--------------------------------------------
         # set machine values in env_xxx files
         machobj = Machines(machine=machine_name)
         nodenames = machobj.get_node_names()
@@ -292,7 +295,16 @@ class Case(object):
             for node in nodes:
                 self._env_generic_files[0].add_child(node)
 
-        # set pe payout
+        #--------------------------------------------
+        # batch system
+        #--------------------------------------------
+        batch_system = machobj.get_batch_system_type()
+        #FIXME - this needs to be filled in - this is just a place holeder
+
+
+        #--------------------------------------------
+        # pe payout
+        #--------------------------------------------
         pesobj = Pes(self._target_component)
 
         #FIXME - add pesize_opts as optional argument below

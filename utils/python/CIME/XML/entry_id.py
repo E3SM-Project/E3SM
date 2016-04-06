@@ -181,11 +181,11 @@ class EntryID(GenericXML):
 
     def add_elements_by_group(self, srcobj, attlist, infile):
         """
-        Add elements from srcdoc to self under the appropriate
+        Add elements from srcobj to self under the appropriate
         group element, entries to be added must have a child element
         <file> with value "infile"
         """
-        # First get the list of entries in srcdoc with matching file children
+        # First get the list of entries in srcobj with matching file children
         nodelist = srcobj.get_elements_from_child_content('file', infile)
 
         # For matchs found: Remove {<group>, <file>, <values>}
@@ -225,9 +225,11 @@ class EntryID(GenericXML):
         Remove the <group>, <file>, <values> and <value> childnodes from node
         """
         fnode = node.find(".//file")
-        gnode = node.find(".//group")
         node.remove(fnode)
+        gnode = node.find(".//group")
         node.remove(gnode)
+        dnode = node.find(".//default_value")
+        node.remove(dnode)
         vnode = node.find(".//values")
         if vnode is not None:
             node.remove(vnode)
