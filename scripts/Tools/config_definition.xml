@@ -773,6 +773,42 @@
 	    ></entry>
      -->
 
+  <entry id="OCN2GLC_FMAPNAME"
+	 type="char"
+	 valid_values=""
+	 value="idmap"
+	 group="run_domain"
+	 sdesc="ocn2glc flux mapping file"
+	 ></entry>
+
+  <!---
+     <entry id="OCN2GLC_FMAPTYPE"
+	    type="char"
+	    valid_values="X,Y"
+	    value="Y"
+	    group="run_domain"
+	    sdesc="ocn2glc flux mapping file decomp type"
+	    ></entry>
+     -->
+
+  <entry id="OCN2GLC_SMAPNAME"
+	 type="char"
+	 valid_values=""
+	 value="idmap"
+	 group="run_domain"
+	 sdesc="ocn2glc state mapping file"
+	 ></entry>
+
+  <!---
+     <entry id="OCN2GLC_SMAPTYPE"
+	    type="char"
+	    valid_values="X,Y"
+	    value="Y"
+	    group="run_domain"
+	    sdesc="ocn2glc state mapping file decomp type"
+	    ></entry>
+     -->
+
   <entry id="ATM2LND_FMAPNAME" 
 	 type="char"
 	 valid_values="" 
@@ -917,6 +953,25 @@
 	    ></entry>
      -->
 
+  <entry id="GLC2OCN_FMAPNAME"
+	 type="char"
+	 valid_values=""
+	 value="idmap"
+	 group="run_domain"
+	 sdesc="glc2ocn flux mapping file"
+	 ></entry>
+
+  <!---
+     <entry id="GLC2OCN_FMAPTYPE"
+	    type="char"
+	    valid_values="X,Y"
+	    value="Y"
+	    group="run_domain"
+	    sdesc="glc2ocn flux mapping file decomp type"
+	    ></entry>
+     -->
+
+
   <entry id="GLC2OCN_RMAPNAME" 
 	 type="char"
 	 valid_values="" 
@@ -932,6 +987,25 @@
 	    value="Y" 
 	    group="run_domain"
 	    sdesc="glc2ocn runoff mapping file decomp type"
+	    ></entry>
+     -->
+
+
+  <entry id="GLC2OCN_SMAPNAME"
+	 type="char"
+	 valid_values=""
+	 value="idmap"
+	 group="run_domain"
+	 sdesc="glc2ocn state mapping file"
+	 ></entry>
+
+  <!---
+     <entry id="GLC2OCN_SMAPTYPE"
+	    type="char"
+	    valid_values="X,Y"
+	    value="Y"
+	    group="run_domain"
+	    sdesc="glc2ocn state mapping file decomp type"
 	    ></entry>
      -->
 
@@ -1287,6 +1361,14 @@
 	 value="fv" 
 	 group="build_component_cam"
 	 sdesc="CAM dynamical core"
+	 ></entry>
+
+  <entry id="CAM_TARGET" 
+	 type="char"
+	 valid_values="preqx,preqx_acc" 
+	 value="preqx" 
+	 group="build_component_cam"
+	 sdesc="CAM-SE cmake target (only used with CAM_DYCORE == 'se')"
 	 ></entry>
 
   <entry id="CAM_NML_USE_CASE" 
@@ -3256,7 +3338,7 @@
   <entry id="DRV_THREADING" 
 	 type="logical"
 	 valid_values="TRUE,FALSE"  
-	 value="FALSE" 
+	 value="TRUE"
 	 group="run_flags"
 	 sdesc="Turns on component varying thread control in the driver"
 	 ></entry>
@@ -3287,8 +3369,8 @@
 
   <entry id="TIMER_DETAIL" 
          type="integer"
-         valid_values="0,1,2"  
-         value="1" 
+         valid_values="0,1,2,3,4,5,6,7,8,9,10,11,12"
+         value="2" 
          group="run_flags"
          sdesc="timer output detail"
          ></entry>
@@ -3754,6 +3836,16 @@
 		this reason, a case is usually run as a series of jobs, each
 		restarting where the previous finished."
 
+	 ></entry>
+
+  <entry id="RESUBMIT_QUEUED"
+	 type="integer"
+	 valid_values=""
+	 value="0"
+	 group="run_rest"
+	 sdesc="Sends N number of jobs to the queue"
+     ldesc="Sends N number of jobs to the queue. This is independent on
+        SUBMIT. This actaully sets SUBMIT to 0"
 	 ></entry>
 
   <entry id="CHECK_TIMING" 

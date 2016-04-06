@@ -375,6 +375,12 @@ sub postRun()
             if(@success)
             {
                 appendCaseStatus("run SUCCESSFUL $sdate");
+                if ($config{'RESUBMIT_QUEUED'} > 0) {
+                    my $prevdir = getcwd;
+                    chdir $config{'CASEROOT'};
+                    not system "./xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE" or die "Could not change env_run.xml file";
+                    chdir($prevdir);
+                }
             }
             else
             {

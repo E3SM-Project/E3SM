@@ -1,9 +1,10 @@
 #
 PERFOBJS=\
-prim_advection_mod.o \
-edge_mod.o \
-derivative_mod.o \
-bndry_mod.o \
+prim_advection_mod_base.o \
+vertremap_mod_base.o \
+edge_mod_base.o \
+derivative_mod_base.o \
+bndry_mod_base.o \
 prim_advance_mod.o \
 uwshcu.o
 
