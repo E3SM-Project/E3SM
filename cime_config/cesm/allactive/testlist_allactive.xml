@@ -2,9 +2,6 @@
 <testlist>
   <compset name="B1850">
     <grid name="f09_g16">
-      <test name="SMS_D">
-        <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">edison</machine>
-      </test>
       <test name="ERI">
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">bluewaters</machine>
         <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">edison</machine>
@@ -26,6 +23,9 @@
       </test>
     </grid>
     <grid name="f19_g16">
+      <test name="SMS_D">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">edison</machine>
+      </test>
       <test name="CME_Ld5">
         <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
       </test>
