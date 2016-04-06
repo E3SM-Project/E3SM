@@ -2,7 +2,6 @@
 <config case="forward_iter">
 	<add_link source="../init_step2/" dest="ic"/>
 
-	<add_executable source="model" dest="ocean_model"/>
 	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="forward">
@@ -48,8 +47,8 @@
 
 	<run_script name="run.py">
 		<step executable="./metis">
-			<argument flag="ic/graph.info">16</argument>
+			<argument flag="ic/graph.info">4</argument>
 		</step>
-		<model_run procs="16" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>
 </config>
