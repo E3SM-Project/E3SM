@@ -96,6 +96,9 @@ contains
          config_dynamics_subcycle_number, &
          config_elastic_subcycle_number
 
+    ! set up the dynamically locked cell mask
+    call dynamically_locked_cell_mask(domain)
+
     ! set timesteps even with velocity turned off
     block => domain % blocklist
     do while (associated(block))
@@ -171,6 +174,85 @@ contains
     endif
 
   end subroutine cice_init_velocity_solver!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  dynamically_locked_cell_mask
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 6th April 2016
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine dynamically_locked_cell_mask(domain)
+
+    type (domain_type), intent(inout) :: &
+         domain !< Input/Output:
+
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         velocitySolverPool, &
+         meshPool, &
+         boundaryPool
+
+    integer, dimension(:), pointer :: &
+         dynamicallyLockedCellsMask, &
+         nEdgesOnCell, &
+         interiorVertex
+
+    integer, dimension(:,:), pointer :: &
+         verticesOnCell
+
+    integer, pointer :: &
+         nCells
+
+    integer :: &
+         iCell, &
+         iVertexOnCell, &
+         iVertex
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(block % structs, "boundary", boundaryPool)
+
+       call MPAS_pool_get_array(velocitySolverPool, "dynamicallyLockedCellsMask", dynamicallyLockedCellsMask)
+
+       call MPAS_pool_get_array(boundaryPool, "interiorVertex", interiorVertex)
+
+       call MPAS_pool_get_array(meshPool, "nEdgesOnCell", nEdgesOnCell)
+       call MPAS_pool_get_array(meshPool, "verticesOnCell", verticesOnCell)
+
+       call MPAS_pool_get_dimension(block % dimensions, "nCells", nCells)
+
+       do iCell = 1, nCells
+
+          dynamicallyLockedCellsMask(iCell) = 1
+
+          do iVertexOnCell = 1, nEdgesOnCell(iCell)
+
+             iVertex = verticesOnCell(iVertexOnCell,iCell)
+
+             if (interiorVertex(iVertex) == 1) then
+                dynamicallyLockedCellsMask(iCell) = 0
+                exit
+             endif
+
+          enddo ! iVertexOnCell
+
+       enddo ! iCell
+
+       block => block % next
+    enddo
+
+  end subroutine dynamically_locked_cell_mask
 
 !-----------------------------------------------------------------------
 ! Time stepping

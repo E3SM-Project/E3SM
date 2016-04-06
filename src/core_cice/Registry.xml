@@ -1577,6 +1577,7 @@
 		<var name="replacementPressure"               type="real"     dimensions="nCells Time"                   name_in_code="replacementPressure"/>
 		<var name="divergence"                        type="real"     dimensions="nCells Time"                   name_in_code="divergence"/>
 		<var name="shear"                             type="real"     dimensions="nCells Time"                   name_in_code="shear"/>
+		<var name="dynamicallyLockedCellsMask"        type="integer"  dimensions="nCells Time"                   name_in_code="dynamicallyLockedCellsMask"/>
 	</var_struct>
 
 	<!-- weak formulation -->
