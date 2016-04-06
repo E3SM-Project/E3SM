@@ -45,6 +45,8 @@ def download_if_in_repo(svn_loc, input_data_root, rel_path):
             logging.warning("svn export failed with output: %s and errput %s" % (output, errput))
             return False
         else:
+            # Make sure it is group r/w
+            os.chmod(full_path, 0664)
             return True
 
 def check_input_data(case=None, svn_loc=None, input_data_root=None, data_list_dir="Buildconf", download=False):
