@@ -781,6 +781,9 @@ contains
       integer, dimension(:,:), pointer :: &
            regionCellMasks
 
+      integer, dimension(:), pointer :: &
+           dynamicallyLockedCellsMask
+
       real(kind=RKIND), dimension(:), pointer :: &
            totalIceArea, &
            totalIceExtent, &
@@ -790,6 +793,8 @@ contains
            rmsIceSpeed, &
            averageAlbedo, &
            maximumIceVolume, &
+           maximumIceVolumeLocked, &
+           maximumIceVolumeNotlocked, &
            maximumIcePressure
 
       real(kind=RKIND), dimension(:), allocatable :: &
@@ -798,9 +803,11 @@ contains
            globalSumsOut, &
            globalMaxsOut
 
+      integer, parameter :: &
+           nSums = 8, &
+           nMaxs = 4
+
       integer :: &
-           nSums, &
-           nMaxs, &
            iSum, &
            iMax
 
@@ -815,9 +822,6 @@ contains
       dminfo = domain % dminfo
 
       call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nRegions", nRegions)
-
-      nSums = 8
-      nMaxs = 2
 
       allocate(globalSumsIn(nRegions*nSums))
       allocate(globalMaxsIn(nRegions*nMaxs))
@@ -854,6 +858,7 @@ contains
          call MPAS_pool_get_array(velocitySolverPool, "icePressure", icePressure)
          call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
          call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
+         call MPAS_pool_get_array(velocitySolverPool, "dynamicallyLockedCellsMask", dynamicallyLockedCellsMask)
 
          call MPAS_pool_get_array(regionsPool, 'regionCellMasks', regionCellMasks)
 
@@ -921,8 +926,20 @@ contains
                   iMax = (iRegion-1) * nMaxs + 1
                   globalMaxsIn(iMax) = max(globalMaxsIn(iMax), iceVolumeCell(iCell))
 
-                  ! maximum ice pressure
+                  ! maximum locked ice volume
                   iMax = (iRegion-1) * nMaxs + 2
+                  if (dynamicallyLockedCellsMask(iCell) == 1) then
+                     globalMaxsIn(iMax) = max(globalMaxsIn(iMax), iceVolumeCell(iCell))
+                  endif
+
+                  ! maximum un-locked ice volume
+                  iMax = (iRegion-1) * nMaxs + 3
+                  if (dynamicallyLockedCellsMask(iCell) == 0) then
+                     globalMaxsIn(iMax) = max(globalMaxsIn(iMax), iceVolumeCell(iCell))
+                  endif
+
+                  ! maximum ice pressure
+                  iMax = (iRegion-1) * nMaxs + 4
                   globalMaxsIn(iMax) = max(globalMaxsIn(iMax), icePressure(iCell))
 
                endif ! regionCellMasks == 1
@@ -951,21 +968,25 @@ contains
       call MPAS_pool_get_array(regionalStatisticsAMPool, 'rmsIceSpeed', rmsIceSpeed)
       call MPAS_pool_get_array(regionalStatisticsAMPool, 'averageAlbedo', averageAlbedo)
       call MPAS_pool_get_array(regionalStatisticsAMPool, 'maximumIceVolume', maximumIceVolume)
+      call MPAS_pool_get_array(regionalStatisticsAMPool, 'maximumIceVolumeLocked', maximumIceVolumeLocked)
+      call MPAS_pool_get_array(regionalStatisticsAMPool, 'maximumIceVolumeNotLocked', maximumIceVolumeNotLocked)
       call MPAS_pool_get_array(regionalStatisticsAMPool, 'maximumIcePressure', maximumIcePressure)
 
       do iRegion = 1, nRegions
 
-         totalIceArea(iRegion)       = globalSumsOut((iRegion-1) * nSums + 1)
-         totalIceExtent(iRegion)     = globalSumsOut((iRegion-1) * nSums + 2)
-         totalIceVolume(iRegion)     = globalSumsOut((iRegion-1) * nSums + 3)
-         totalSnowVolume(iRegion)    = globalSumsOut((iRegion-1) * nSums + 4)
-         totalKineticEnergy(iRegion) = globalSumsOut((iRegion-1) * nSums + 5)
-         rmsIceSpeed(iRegion)        = globalSumsOut((iRegion-1) * nSums + 5) / &
-                                       max(globalSumsOut((iRegion-1) * nSums + 6), 1e-11_RKIND)
-         averageAlbedo(iRegion)      = globalSumsOut((iRegion-1) * nSums + 7) / &
-                                       max(globalSumsOut((iRegion-1) * nSums + 8), 1e-11_RKIND)
-         maximumIceVolume(iRegion)   = globalMaxsOut((iRegion-1) * nMaxs + 1)
-         maximumIcePressure(iRegion) = globalMaxsOut((iRegion-1) * nMaxs + 2)
+         totalIceArea(iRegion)              = globalSumsOut((iRegion-1) * nSums + 1)
+         totalIceExtent(iRegion)            = globalSumsOut((iRegion-1) * nSums + 2)
+         totalIceVolume(iRegion)            = globalSumsOut((iRegion-1) * nSums + 3)
+         totalSnowVolume(iRegion)           = globalSumsOut((iRegion-1) * nSums + 4)
+         totalKineticEnergy(iRegion)        = globalSumsOut((iRegion-1) * nSums + 5)
+         rmsIceSpeed(iRegion)               = globalSumsOut((iRegion-1) * nSums + 5) / &
+                                              max(globalSumsOut((iRegion-1) * nSums + 6), 1e-11_RKIND)
+         averageAlbedo(iRegion)             = globalSumsOut((iRegion-1) * nSums + 7) / &
+                                              max(globalSumsOut((iRegion-1) * nSums + 8), 1e-11_RKIND)
+         maximumIceVolume(iRegion)          = globalMaxsOut((iRegion-1) * nMaxs + 1)
+         maximumIceVolumeLocked(iRegion)    = globalMaxsOut((iRegion-1) * nMaxs + 2)
+         maximumIceVolumeNotLocked(iRegion) = globalMaxsOut((iRegion-1) * nMaxs + 3)
+         maximumIcePressure(iRegion)        = globalMaxsOut((iRegion-1) * nMaxs + 4)
 
       enddo ! iRegion
 

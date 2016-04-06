@@ -58,6 +58,12 @@
 		<var name="maximumIceVolume" type="real" dimensions="nRegions Time" units="km^2"
 			description="Maximum sea-ice volume by region"
 		/>
+		<var name="maximumIceVolumeLocked" type="real" dimensions="nRegions Time" units="km^2"
+			description="Maximum sea-ice volume by region for dynamically locked cells"
+		/>
+		<var name="maximumIceVolumeNotLocked" type="real" dimensions="nRegions Time" units="km^2"
+			description="Maximum sea-ice volume by region for non-dynamically locked cells"
+		/>
 		<var name="maximumIcePressure" type="real" dimensions="nRegions Time" units="kN/m"
 			description="Maximum sea-ice pressure by region"
 		/>
@@ -79,6 +85,8 @@
 			<var name="rmsIceSpeed"/> 
 			<var name="averageAlbedo"/> 
 			<var name="maximumIceVolume"/> 
+			<var name="maximumIceVolumeLocked"/>
+			<var name="maximumIceVolumeNotLocked"/>
 			<var name="maximumIcePressure"/> 
 		</stream>
 		<stream name="regionalStatistics_ice_aggregate"
