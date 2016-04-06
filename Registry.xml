@@ -62,6 +62,12 @@
 		<dim name="maxPointsInGroup" definition="1" units="unitless"
 			 description="The maximum number of points in any group."
 		/>
+		<dim name="nTransects" definition="1" units="unitless"
+			 description="The number of transects for AM transectTransport"
+		/>
+		<dim name="maxEdgesInTransect" definition="1" units="unitless"
+			 description="Max number of edges in a transect for AM transectTransport"
+		/>
 	</dims>
 
 	<!--*************************************-->
