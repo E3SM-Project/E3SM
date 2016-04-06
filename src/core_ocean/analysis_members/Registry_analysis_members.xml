@@ -14,3 +14,4 @@
 #include "Registry_time_series_stats.xml"
 #include "Registry_pointwise_stats.xml"
 #include "Registry_debug_diagnostics.xml"
+#include "Registry_transect_transport.xml"
