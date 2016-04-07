@@ -7047,6 +7047,12 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
                ! Finish the halo exchange (should be the same as end_halo_exch)
                call mpas_dmpar_exch_group_unpack_buffers(domain % blocklist % allFields, exchGroupPtr)
+
+               ! Print out buffers for debugging
+               !call mpas_dmpar_exch_group_print_buffers(exchGroupPtr)
+
+               ! Destroy the buffers
+               call mpas_dmpar_exch_group_destroy_buffers(exchGroupPtr)
                return
             end if
          end if
@@ -7508,6 +7514,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       if ( threadNum == 0 ) then
          commListPtr => exchangeGroup % recvList
          do while ( associated(commListPtr) )
+            DMPAR_DEBUG_WRITE('    -- Starting recv: ' COMMA commListPtr % procID COMMA commListPtr % nList COMMA size(commListPtr % rbuffer) )
             call MPI_Irecv(commListPtr % rbuffer, commListPtr % nList, MPI_REALKIND, commListPtr % procID, commListPtr % procID, dminfo % comm, commListPtr % reqID, mpi_ierr)
 
             commListPtr => commListPtr % next
@@ -7543,6 +7550,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       if ( threadNum == 0 ) then
          commListPtr => exchangeGroup % sendList
          do while ( associated(commListPtr) )
+            DMPAR_DEBUG_WRITE('    -- Starting send: ' COMMA commListPtr % procID COMMA commListPtr % nList COMMA size(commListPtr % rbuffer) )
             call MPI_Isend(commListPtr % rbuffer, commListPtr % nList, MPI_REALKIND, commListPtr % procID, dminfo % my_proc_id, dminfo % comm, commListPtr % reqID, mpi_ierr)
 
             commListPtr => commListPtr % next
@@ -7940,6 +7948,36 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       call mpas_threading_barrier()
 
+   end subroutine mpas_dmpar_exch_group_unpack_buffers!}}}
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_destroy_buffers
+!
+!> \brief MPAS dmpar exchange group destroy buffers routine
+!> \author Doug Jacobsen
+!> \date   04/07/2016
+!> \details
+!>  This private routine destroys buffers. Additionally, it includes MPI_Wait
+!>  commands to finish receiving messages before destroying buffers.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_destroy_buffers(exchangeGroup, iErr)!{{{
+      type (mpas_exchange_group), intent(inout) :: exchangeGroup
+      integer, optional, intent(out) :: iErr
+
+      type (mpas_communication_list), pointer :: commListPtr
+
+      integer :: mpi_ierr
+      integer :: threadNum
+
+      if ( present(iErr) ) then
+         iErr = MPAS_DMPAR_NOERR
+      end if
+
+      threadNum = mpas_threading_get_thread_num()
+
+      call mpas_threading_barrier()
+
       if ( threadNum == 0 ) then
          ! Wait for isends to finish
          commListPtr => exchangeGroup % sendList
@@ -7956,7 +7994,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       call mpas_threading_barrier()
 
-   end subroutine mpas_dmpar_exch_group_unpack_buffers!}}}
+   end subroutine mpas_dmpar_exch_group_destroy_buffers!}}}
+
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -9541,6 +9580,81 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       end do
 
    end subroutine mpas_dmpar_exch_group_unpack_buffer_field5d_real!}}}
+
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_exch_group_print_buffers
+!
+!> \brief MPAS dmpar exchange group buffer info routine.
+!> \author Doug Jacobsen
+!> \date   04/07/2016
+!> \details
+!>  This private routine prints out information about communication list buffers.
+!>  It is mostly used for debugging.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_exch_group_print_buffers(exchangeGroup)!{{{
+      type (mpas_exchange_group), intent(inout) :: exchangeGroup
+
+      type (mpas_exchange_list), pointer :: exchListPtr
+      type (mpas_communication_list), pointer :: commListPtr
+
+      integer :: iBuffer, threadNum
+
+      threadNum = mpas_threading_get_thread_num()
+
+      call mpas_threading_barrier()
+
+      if ( threadNum == 0 ) then
+         write(stderrUnit, *) ''
+         write(stderrUnit, *) ' -------- Buffer Summary -------'
+         write(stderrUnit, *) ' Thread: ', threadNum, ' writing out send lists'
+         commListPtr => exchangeGroup % sendList
+         do while ( associated(commListPtr) )
+            write(stderrUnit, *) ''
+            write(stderrUnit, *) '    Send list header: '
+            write(stderrUnit, *) '         proc: ', commListPtr % procID
+            write(stderrUnit, *) '         size check: ', commListPtr % nlist, size( commListPtr % rbuffer )
+            write(stderrUnit, *) '         bufferOffset: ', commListPtr % bufferOffset
+            write(stderrUnit, *) '         reqId: ', commListPtr % reqId
+            write(stderrUnit, *) '         ibuffer assc: ', associated( commListPtr % ibuffer )
+            write(stderrUnit, *) '         rbuffer assc: ', associated( commListPtr % rbuffer )
+            write(stderrUnit, *) '         next assc: ', associated( commListPtr % next )
+            do iBuffer = 1, size(commListPtr % rbuffer)
+               write(stderrUnit, *) '   IDX: ', iBuffer, ' VAL: ', commListPtr % rbuffer(iBuffer)
+            end do
+            commListPtr => commListPtr % next
+         end do
+
+         write(stderrUnit, *) ''
+         write(stderrUnit, *) ' Thread: ', threadNum, ' writing out recv lists'
+         commListPtr => exchangeGroup % recvList
+         do while ( associated(commListPtr) )
+            write(stderrUnit, *) ''
+            write(stderrUnit, *) '    Recv list header: '
+            write(stderrUnit, *) '         proc: ', commListPtr % procID
+            write(stderrUnit, *) '         size check: ', commListPtr % nlist, size( commListPtr % rbuffer )
+            write(stderrUnit, *) '         bufferOffset: ', commListPtr % bufferOffset
+            write(stderrUnit, *) '         reqId: ', commListPtr % reqId
+            write(stderrUnit, *) '         ibuffer assc: ', associated( commListPtr % ibuffer )
+            write(stderrUnit, *) '         rbuffer assc: ', associated( commListPtr % rbuffer )
+            write(stderrUnit, *) '         next assc: ', associated( commListPtr % next )
+            do iBuffer = 1, size(commListPtr % rbuffer)
+               write(stderrUnit, *) '   IDX: ', iBuffer, ' VAL: ', commListPtr % rbuffer(iBuffer)
+            end do
+            commListPtr => commListPtr % next
+         end do
+
+         write(stderrUnit, *) ''
+         write(stderrUnit, *) ' -------- End Buffer Summary -------'
+         write(stderrUnit, *) ''
+
+      end if
+
+      call mpas_threading_barrier()
+
+   end subroutine mpas_dmpar_exch_group_print_buffers!}}}
+
 
 end module mpas_dmpar
 
