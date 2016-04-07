@@ -57,7 +57,7 @@
 		<dim name="nzAerosolsSnowLayers"  definition="2*nzAerosols"/>
 		<dim name="nzAerosolsIceLayers"   definition="nBioLayersP1*nzAerosols"/>
 		<dim name="nZBGCTracers"       definition="29"/>
-		<dim name="nRegions"       definition="3"/>
+		<dim name="nRegions"           definition="3"/>
 		<dim name="nPoints" definition="1" units="unitless" description="The number of points for AM_pointwiseStats"/>
 		<dim name="nPointGroups" definition="1" units="unitless" description="The number of points groups"/>
 		<dim name="maxPointsInGroup" definition="1" units="unitless" description="The maximum number of points in any group."/>
@@ -319,6 +319,16 @@
 		  immutable="true">
 	    <stream name="mesh"/>
 	    <var name="fVertex"/>
+	  </stream>
+
+	  <stream name="regions"
+		  type="input"
+		  filename_template="regions.nc"
+		  filename_interval="none"
+		  input_interval="initial_only"
+		  immutable="true">
+	    <var name="regionCellMasks"/>
+	    <var name="regionNames"/>
 	  </stream>
 
 	  <stream name="restart" 
@@ -1568,6 +1578,7 @@
 		<var name="replacementPressure"               type="real"     dimensions="nCells Time"                   name_in_code="replacementPressure"/>
 		<var name="divergence"                        type="real"     dimensions="nCells Time"                   name_in_code="divergence"/>
 		<var name="shear"                             type="real"     dimensions="nCells Time"                   name_in_code="shear"/>
+		<var name="dynamicallyLockedCellsMask"        type="integer"  dimensions="nCells Time"                   name_in_code="dynamicallyLockedCellsMask"/>
 	</var_struct>
 
 	<!-- weak formulation -->
@@ -1844,7 +1855,8 @@
 
 	<!-- Regions -->
 	<var_struct name="regions" time_levs="1">
-		<var name="regionMask" type="integer" dimensions="nRegions nCells" name_in_code="regionMask"/>
+		<var name="regionCellMasks"                   type="integer"  dimensions="nRegions nCells"               name_in_code="regionCellMasks"/>
+		<var name="regionNames"                       type="text"     dimensions="nRegions"                      name_in_code="regionNames"/>
 	</var_struct>
 
 	<!-- Diagnostics -->
