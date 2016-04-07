@@ -7105,7 +7105,11 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       call mpas_dmpar_exch_group_add_field(domain, groupName, fieldName, timeLevel=timeLevel, haloLayers=haloLayers)
 
+      call mpas_threading_barrier()
+
       call mpas_dmpar_exch_group_full_halo_exch(domain, groupName)
+
+      call mpas_threading_barrier()
 
       call mpas_dmpar_exch_group_destroy(domain, groupName)
 
@@ -7153,6 +7157,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
       threadNum = mpas_threading_get_thread_num()
 
+      ! Only master thread can create buffers.
       if ( threadNum == 0 ) then
          ! Allocate communication lists, and setup dead header nodes
          allocate(exchangeGroup % sendList)
@@ -7164,131 +7169,127 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
          nullify(exchangeGroup % recvList % next)
          exchangeGroup % recvList % procID = -1
          exchangeGroup % recvList % nList = 0
-      end if
 
-      call mpas_threading_barrier()
+         exchFieldListPtr => exchangeGroup % fieldList
+         do while ( associated(exchFieldListPtr) )
+            DMPAR_DEBUG_WRITE(' -- Building buffers for field ' // trim(exchFieldListPtr % fieldName))
+            do iTimeLevel = 1, size(exchFieldListPtr % timeLevels)
+               if ( exchFieldListPtr % timeLevels(iTimeLevel) ) then
+                  if ( exchFieldListPtr % fieldType == MPAS_POOL_REAL ) then
+                     if ( exchFieldListPtr % nDims == 1 ) then
+                        call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField1D, iTimeLevel)
 
-      exchFieldListPtr => exchangeGroup % fieldList
-      do while ( associated(exchFieldListPtr) )
-         DMPAR_DEBUG_WRITE(' -- Building buffers for field ' // trim(exchFieldListPtr % fieldName))
-         do iTimeLevel = 1, size(exchFieldListPtr % timeLevels)
-            if ( exchFieldListPtr % timeLevels(iTimeLevel) ) then
-               if ( exchFieldListPtr % fieldType == MPAS_POOL_REAL ) then
-                  if ( exchFieldListPtr % nDims == 1 ) then
-                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField1D, iTimeLevel)
+                        if ( realField1D % isActive ) then
+                           do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                              if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                                 call mpas_dmpar_exch_group_aggregate_exch_list(realField1D % sendList, exchangeGroup % sendList, &
+                                                                                realField1D % dimSizes, iHalo)
+                                 call mpas_dmpar_exch_group_aggregate_exch_list(realField1D % recvList, exchangeGroup % recvList, &
+                                                                                realField1D % dimSizes, iHalo, .true.)
+                              end if
+                           end do
+                        end if
+                     else if ( exchFieldListPtr % nDims == 2 ) then
+                        call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField2D, iTimeLevel)
 
-                     if ( realField1D % isActive ) then
-                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
-                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
-                              call mpas_dmpar_exch_group_aggregate_exch_list(realField1D % sendList, exchangeGroup % sendList, &
-                                                                             realField1D % dimSizes, iHalo)
-                              call mpas_dmpar_exch_group_aggregate_exch_list(realField1D % recvList, exchangeGroup % recvList, &
-                                                                             realField1D % dimSizes, iHalo, .true.)
-                           end if
-                        end do
+                        if ( realField2D % isActive ) then
+                           do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                              if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                                 call mpas_dmpar_exch_group_aggregate_exch_list(realField2D % sendList, exchangeGroup % sendList, &
+                                                                                realField2D % dimSizes, iHalo)
+                                 call mpas_dmpar_exch_group_aggregate_exch_list(realField2D % recvList, exchangeGroup % recvList, &
+                                                                                realField2D % dimSizes, iHalo, .true.)
+                              end if
+                           end do
+                        end if
+                     else if ( exchFieldListPtr % nDims == 3 ) then
+                        call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField3D, iTimeLevel)
+
+                        if ( realField3D % isActive ) then
+                           do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                              if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                                 call mpas_dmpar_exch_group_aggregate_exch_list(realField3D % sendList, exchangeGroup % sendList, &
+                                                                                realField3D % dimSizes, iHalo)
+                                 call mpas_dmpar_exch_group_aggregate_exch_list(realField3D % recvList, exchangeGroup % recvList, &
+                                                                                realField3D % dimSizes, iHalo, .true.)
+                              end if
+                           end do
+                        end if
+                     else if ( exchFieldListPtr % nDims == 4 ) then
+                        call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField4D, iTimeLevel)
+
+                        if ( realField4D % isActive ) then
+                           do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                              if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                                 call mpas_dmpar_exch_group_aggregate_exch_list(realField4D % sendList, exchangeGroup % sendList, &
+                                                                                realField4D % dimSizes, iHalo)
+                                 call mpas_dmpar_exch_group_aggregate_exch_list(realField4D % recvList, exchangeGroup % recvList, &
+                                                                                realField4D % dimSizes, iHalo, .true.)
+                              end if
+                           end do
+                        end if
+                     else if ( exchFieldListPtr % nDims == 5 ) then
+                        call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField5D, iTimeLevel)
+
+                        if ( realField5D % isActive ) then
+                           do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                              if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                                 call mpas_dmpar_exch_group_aggregate_exch_list(realField5D % sendList, exchangeGroup % sendList, &
+                                                                                realField5D % dimSizes, iHalo)
+                                 call mpas_dmpar_exch_group_aggregate_exch_list(realField5D % recvList, exchangeGroup % recvList, &
+                                                                                realField5D % dimSizes, iHalo, .true.)
+                              end if
+                           end do
+                        end if
                      end if
-                  else if ( exchFieldListPtr % nDims == 2 ) then
-                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField2D, iTimeLevel)
+                  else if ( exchFieldListPtr % fieldType == MPAS_POOL_INTEGER ) then
+                     if ( exchFieldListPtr % nDims == 1 ) then
+                        call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, intField1D, iTimeLevel)
 
-                     if ( realField2D % isActive ) then
-                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
-                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
-                              call mpas_dmpar_exch_group_aggregate_exch_list(realField2D % sendList, exchangeGroup % sendList, &
-                                                                             realField2D % dimSizes, iHalo)
-                              call mpas_dmpar_exch_group_aggregate_exch_list(realField2D % recvList, exchangeGroup % recvList, &
-                                                                             realField2D % dimSizes, iHalo, .true.)
-                           end if
-                        end do
-                     end if
-                  else if ( exchFieldListPtr % nDims == 3 ) then
-                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField3D, iTimeLevel)
+                        if ( intField1D % isActive ) then
+                           do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                              if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                                 call mpas_dmpar_exch_group_aggregate_exch_list(intField1D % sendList, exchangeGroup % sendList, &
+                                                                                intField1D % dimSizes, iHalo)
+                                 call mpas_dmpar_exch_group_aggregate_exch_list(intField1D % recvList, exchangeGroup % recvList, &
+                                                                                intField1D % dimSizes, iHalo, .true.)
+                              end if
+                           end do
+                        end if
+                     else if ( exchFieldListPtr % nDims == 2 ) then
+                        call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, intField2D, iTimeLevel)
 
-                     if ( realField3D % isActive ) then
-                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
-                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
-                              call mpas_dmpar_exch_group_aggregate_exch_list(realField3D % sendList, exchangeGroup % sendList, &
-                                                                             realField3D % dimSizes, iHalo)
-                              call mpas_dmpar_exch_group_aggregate_exch_list(realField3D % recvList, exchangeGroup % recvList, &
-                                                                             realField3D % dimSizes, iHalo, .true.)
-                           end if
-                        end do
-                     end if
-                  else if ( exchFieldListPtr % nDims == 4 ) then
-                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField4D, iTimeLevel)
+                        if ( intField2D % isActive ) then
+                           do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                              if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                                 call mpas_dmpar_exch_group_aggregate_exch_list(intField2D % sendList, exchangeGroup % sendList, &
+                                                                                intField2D % dimSizes, iHalo)
+                                 call mpas_dmpar_exch_group_aggregate_exch_list(intField2D % recvList, exchangeGroup % recvList, &
+                                                                                intField2D % dimSizes, iHalo, .true.)
+                              end if
+                           end do
+                        end if
+                     else if ( exchFieldListPtr % nDims == 3 ) then
+                        call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, intField3D, iTimeLevel)
 
-                     if ( realField4D % isActive ) then
-                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
-                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
-                              call mpas_dmpar_exch_group_aggregate_exch_list(realField4D % sendList, exchangeGroup % sendList, &
-                                                                             realField4D % dimSizes, iHalo)
-                              call mpas_dmpar_exch_group_aggregate_exch_list(realField4D % recvList, exchangeGroup % recvList, &
-                                                                             realField4D % dimSizes, iHalo, .true.)
-                           end if
-                        end do
-                     end if
-                  else if ( exchFieldListPtr % nDims == 5 ) then
-                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, realField5D, iTimeLevel)
-
-                     if ( realField5D % isActive ) then
-                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
-                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
-                              call mpas_dmpar_exch_group_aggregate_exch_list(realField5D % sendList, exchangeGroup % sendList, &
-                                                                             realField5D % dimSizes, iHalo)
-                              call mpas_dmpar_exch_group_aggregate_exch_list(realField5D % recvList, exchangeGroup % recvList, &
-                                                                             realField5D % dimSizes, iHalo, .true.)
-                           end if
-                        end do
-                     end if
-                  end if
-               else if ( exchFieldListPtr % fieldType == MPAS_POOL_INTEGER ) then
-                  if ( exchFieldListPtr % nDims == 1 ) then
-                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, intField1D, iTimeLevel)
-
-                     if ( intField1D % isActive ) then
-                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
-                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
-                              call mpas_dmpar_exch_group_aggregate_exch_list(intField1D % sendList, exchangeGroup % sendList, &
-                                                                             intField1D % dimSizes, iHalo)
-                              call mpas_dmpar_exch_group_aggregate_exch_list(intField1D % recvList, exchangeGroup % recvList, &
-                                                                             intField1D % dimSizes, iHalo, .true.)
-                           end if
-                        end do
-                     end if
-                  else if ( exchFieldListPtr % nDims == 2 ) then
-                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, intField2D, iTimeLevel)
-
-                     if ( intField2D % isActive ) then
-                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
-                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
-                              call mpas_dmpar_exch_group_aggregate_exch_list(intField2D % sendList, exchangeGroup % sendList, &
-                                                                             intField2D % dimSizes, iHalo)
-                              call mpas_dmpar_exch_group_aggregate_exch_list(intField2D % recvList, exchangeGroup % recvList, &
-                                                                             intField2D % dimSizes, iHalo, .true.)
-                           end if
-                        end do
-                     end if
-                  else if ( exchFieldListPtr % nDims == 3 ) then
-                     call mpas_pool_get_field(allFieldsPool, exchFieldListPtr % fieldName, intField3D, iTimeLevel)
-
-                     if ( intField3D % isActive ) then
-                        do iHalo = 1, size(exchFieldListPtr % haloLayers)
-                           if ( exchFieldListPtr % haloLayers(iHalo) ) then
-                              call mpas_dmpar_exch_group_aggregate_exch_list(intField3D % sendList, exchangeGroup % sendList, &
-                                                                             intField3D % dimSizes, iHalo)
-                              call mpas_dmpar_exch_group_aggregate_exch_list(intField3D % recvList, exchangeGroup % recvList, &
-                                                                             intField3D % dimSizes, iHalo, .true.)
-                           end if
-                        end do
+                        if ( intField3D % isActive ) then
+                           do iHalo = 1, size(exchFieldListPtr % haloLayers)
+                              if ( exchFieldListPtr % haloLayers(iHalo) ) then
+                                 call mpas_dmpar_exch_group_aggregate_exch_list(intField3D % sendList, exchangeGroup % sendList, &
+                                                                                intField3D % dimSizes, iHalo)
+                                 call mpas_dmpar_exch_group_aggregate_exch_list(intField3D % recvList, exchangeGroup % recvList, &
+                                                                                intField3D % dimSizes, iHalo, .true.)
+                              end if
+                           end do
+                        end if
                      end if
                   end if
                end if
-            end if
+            end do
+
+            exchFieldListPtr => exchFieldListPtr % next
          end do
 
-         exchFieldListPtr => exchFieldListPtr % next
-      end do
-
-      if ( threadNum == 0 ) then
          ! Remove dead header nodes on communication lists
          commListPtr => exchangeGroup % sendList
          if ( associated(exchangeGroup % sendList % next) ) then
