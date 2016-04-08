@@ -263,6 +263,8 @@ def _main_func():
     caseobj.set_value("CASEROOT", caseroot)
     caseobj.set_value("SRCROOT", srcroot)
     caseobj.set_value("MACH", machine)
+    if project:
+        caseobj.set_value("PROJECT",project)
     if user_grid_file is not None:
         caseobj.set_value("GRIDS_SPEC_FILE", user_grid_file);
 
