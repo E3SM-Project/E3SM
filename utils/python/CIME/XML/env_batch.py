@@ -81,8 +81,7 @@ class EnvBatch(EnvBase):
 
         expect(len(cjobs)==0," Looks like job groups have already been created")
 
-        indices = sorted(enumerate(group),reverse=True)
-        for (i, child) in indices:
+        for child in reversed(group):
             childnodes.append(deepcopy(child))
             group.remove(child)
 
