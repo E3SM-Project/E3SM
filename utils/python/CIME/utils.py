@@ -27,7 +27,7 @@ def expect(condition, error_msg, exc_type=SystemExit):
     """
     if (not condition):
         # Uncomment these to bring up a debugger when an expect fails
-        # import pdb
+        #import pdb
         #pdb.set_trace()
         raise exc_type("ERROR: %s" % error_msg)
 
@@ -590,8 +590,8 @@ def convert_to_type(value, type_str, vid=""):
 
         elif type_str == "integer":
             try:
-                value = int(value)
-            except ValueError:
+                value = int(eval(value))
+            except:
                 expect(False, "Entry %s was listed as type int but value '%s' is not valid int" % (vid, value))
 
         elif type_str == "logical":
@@ -610,12 +610,12 @@ def convert_to_type(value, type_str, vid=""):
 
     return value
 
-def convert_to_string(value, type_str, vid=""):
+def convert_to_string(value, type_str=None, vid=""):
     """
     Convert value back to string.
     vid is only for generating better error messages.
     """
-    if value is not None:
+    if value is not None and type(value) is not str:
         if type_str == "char":
             expect(type(value) is str, "Wrong type for entry id '%s'" % vid)
         elif type_str == "integer":
@@ -650,3 +650,20 @@ def convert_to_seconds(time_str):
         result += int(component) * pow(60, idx)
 
     return result
+
+def which(program):
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None

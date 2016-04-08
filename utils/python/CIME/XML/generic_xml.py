@@ -4,7 +4,7 @@ be used by other XML interface modules and not directly.
 """
 from standard_module_setup import *
 from xml.dom import minidom
-from CIME.utils import expect, get_cime_root
+from CIME.utils import expect, get_cime_root, which
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +54,14 @@ class GenericXML(object):
 
         logger.debug("write: " + outfile)
         xmlstr = ET.tostring(self.root)
-        doc = minidom.parseString(xmlstr)
-        with open(outfile,'w') as xmlout:
-            doc.writexml(xmlout,addindent='  ')
+        # xmllint provides a better format option for the output file
+        xmllint = which("xmllint")
+        if xmllint is not None:
+            run_cmd("%s --format --output %s -"%(xmllint,outfile), input_str=xmlstr)
+        else:
+            doc = minidom.parseString(xmlstr)
+            with open(outfile,'w') as xmlout:
+                doc.writexml(xmlout,addindent='  ')
 
     def get_node(self, nodename, attributes=None, root=None):
         """

@@ -13,6 +13,7 @@ from CIME.XML.files                 import Files
 from CIME.XML.component             import Component
 from CIME.XML.compsets              import Compsets
 from CIME.XML.grids                 import Grids
+from CIME.XML.batch                 import Batch
 
 from CIME.XML.env_test              import EnvTest
 from CIME.XML.env_mach_specific     import EnvMachSpecific
@@ -48,7 +49,7 @@ class Case(object):
         self._env_generic_files = []
         self._env_generic_files.append(EnvMachSpecific(case_root))
         self._env_generic_files.append(EnvArchive(case_root))
-
+        self._files = self._env_entryid_files + self._env_generic_files
         # Hold arbitary values. In create_newcase we may set values
         # for xml files that haven't been created yet. We need a place
         # to store them until we are ready to create the file. At file
@@ -66,6 +67,13 @@ class Case(object):
 
     def __del__(self):
         self.flush()
+
+    def _get_env(self, short_name):
+          full_name = "env_%s.xml" % (short_name)
+          for env_file in self._files:
+              if os.path.basename(env_file.filename) == full_name:
+                  return env_file
+          expect(False, "Could not find object for %s in case"%full_name)
 
     def flush(self):
         for env_file in self._env_files_that_need_rewrite:
@@ -203,7 +211,7 @@ class Case(object):
         drv_config_file = files.get_value("CONFIG_DRV_FILE")
         drv_comp = Component(drv_config_file)
         for env_file in self._env_entryid_files:
-            nodes = env_file.add_elements_by_group(drv_comp, attlist, os.path.basename(env_file.filename));
+            nodes = env_file.add_elements_by_group(drv_comp, attlist);
 
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
@@ -215,12 +223,12 @@ class Case(object):
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=True)
             component = Component(comp_config_file)
             for env_file in self._env_entryid_files:
-                env_file.add_elements_by_group(component, attlist, os.path.basename(env_file.filename));
+                env_file.add_elements_by_group(component, attlist);
             self._component_config_files.append((node_name,comp_config_file))
 
         # Add the group and elements for the config_files.xml
         for env_file in self._env_entryid_files:
-            env_file.add_elements_by_group(files, attlist, os.path.basename(env_file.filename));
+            env_file.add_elements_by_group(files, attlist);
 
         for key,value in self.lookups.items():
             result = self.set_value(key,value)
@@ -257,6 +265,7 @@ class Case(object):
         #--------------------------------------------
         # set machine values in env_xxx files
         machobj = Machines(machine=machine_name)
+        machine_name = machobj.get_machine_name()
         nodenames = machobj.get_node_names()
 
         if "COMPILER" in nodenames: nodenames.remove("COMPILER")
@@ -294,11 +303,17 @@ class Case(object):
             for node in nodes:
                 self._env_generic_files[0].add_child(node)
 
+
         #--------------------------------------------
         # batch system
         #--------------------------------------------
         batch_system = machobj.get_batch_system_type()
-        #FIXME - this needs to be filled in - this is just a place holeder
+        batch = Batch(batch_system=batch_system, machine=machine_name)
+        bjobs = batch.get_batch_jobs()
+        env_batch = self._get_env("batch")
+        env_batch.create_job_groups(bjobs)
+        self._env_files_that_need_rewrite.add(env_batch)
+
 
 
         #--------------------------------------------

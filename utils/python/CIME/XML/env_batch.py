@@ -5,6 +5,8 @@ from CIME.XML.standard_module_setup import *
 from CIME.utils import convert_to_type
 from env_base import EnvBase
 from CIME.utils import convert_to_string
+from copy import deepcopy
+
 logger = logging.getLogger(__name__)
 
 class EnvBatch(EnvBase):
@@ -68,5 +70,26 @@ class EnvBatch(EnvBase):
         result = []
         for node in self.get_nodes("job"):
             result.append(node.get("name"))
-
         return result
+
+    def create_job_groups(self, bjobs):
+        # only expect one group in this file
+        group = self.get_node("group")
+        # look to see if any jobs are already defined
+        cjobs = self.get_jobs()
+        childnodes = list()
+
+        expect(len(cjobs)==0," Looks like job groups have already been created")
+
+        indices = sorted(enumerate(group),reverse=True)
+        for (i, child) in indices:
+            childnodes.append(deepcopy(child))
+            group.remove(child)
+
+        for (job,template) in bjobs:
+            newjob = ET.Element("job")
+            newjob.set("name",job.replace("case.",""))
+            for child in childnodes:
+                newjob.append(deepcopy(child))
+            group.append(newjob)
+

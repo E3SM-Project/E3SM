@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python2
 
 from Tools.standard_script_setup import *
 
@@ -8,19 +8,12 @@ from CIME.XML.component import Component
 from CIME.XML.compsets  import Compsets
 from CIME.XML.grids     import Grids
 from CIME.XML.machines  import Machines
+from CIME.XML.batch  import Batch
 from CIME.case          import Case
-
-from CIME.XML.env_case  import EnvCase  # temporary
-from CIME.XML.env_build import EnvBuild # temporary
-from CIME.XML.env_run   import EnvRun   # temporary
-from CIME.XML.env_batch import EnvBatch # temporary
-from CIME.XML.env_test  import EnvTest  # temporary
 
 from shutil import copyfile
 
-import os
 import stat
-import argparse, doctest
 
 logger = logging.getLogger(__name__)
 

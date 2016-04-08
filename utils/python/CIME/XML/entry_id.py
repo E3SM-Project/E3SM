@@ -179,13 +179,16 @@ class EntryID(GenericXML):
 
         return elements
 
-    def add_elements_by_group(self, srcobj, attlist, infile):
+    def add_elements_by_group(self, srcobj, attlist, infile=None):
         """
         Add elements from srcobj to self under the appropriate
         group element, entries to be added must have a child element
         <file> with value "infile"
         """
+        if infile is None:
+            infile = os.path.basename(self.filename)
         # First get the list of entries in srcobj with matching file children
+
         nodelist = srcobj.get_elements_from_child_content('file', infile)
 
         # For matchs found: Remove {<group>, <file>, <values>}

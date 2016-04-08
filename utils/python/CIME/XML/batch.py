@@ -111,3 +111,14 @@ class Batch(GenericXML):
             result.append("%s %s" % (directive_prefix, directive))
 
         return result
+
+    def get_batch_jobs(self):
+        """
+        Return a list of touples with the first element the name of the case script
+        and the second the template to start from
+        """
+        batch_jobs = list()
+        jnode = self.get_node("batch_jobs")
+        for child in jnode:
+            batch_jobs.append([child.get("name"),child.text])
+        return batch_jobs
