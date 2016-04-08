@@ -259,7 +259,7 @@ def _main_func():
     caseobj = Case(caseroot)
 
     # Set values for env_case.xml
-    caseobj.set_value("CASE", case)
+    caseobj.set_value("CASE", os.path.basename(case))
     caseobj.set_value("CASEROOT", caseroot)
     caseobj.set_value("SRCROOT", srcroot)
     caseobj.set_value("MACH", machine)

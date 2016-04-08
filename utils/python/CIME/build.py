@@ -362,6 +362,7 @@ and prestage the restart data to $RUNDIR manually
         # prestage the reference case's files.
 
         if (not os.path.exists(rundir)):
+            logger.debug("Creating run directory: %s"%rundir)
             os.makedirs(rundir)
 
         refcasefiles = glob.glob("%s/%s/*%s*" % (din_loc_root, refdir, run_refcase))
