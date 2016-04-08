@@ -6,7 +6,7 @@ through the Case module.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils                     import expect, run_cmd, get_cime_root
+from CIME.utils                     import expect, run_cmd, get_cime_root, convert_to_type
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
@@ -216,9 +216,9 @@ class Case(object):
             component = Component(comp_config_file)
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(component, attlist, os.path.basename(env_file.filename));
-            self._component_config_files.append((node_name,comp_config_file)) 
+            self._component_config_files.append((node_name,comp_config_file))
 
-        # Add the group and elements for the config_files.xml 
+        # Add the group and elements for the config_files.xml
         for env_file in self._env_entryid_files:
             env_file.add_elements_by_group(files, attlist, os.path.basename(env_file.filename));
 
@@ -248,7 +248,7 @@ class Case(object):
         for key,value in gridinfo.iteritems():
             self.set_value(key,value)
 
-        # Add the group and elements for the config_files.xml 
+        # Add the group and elements for the config_files.xml
         for idx, config_file in enumerate(self._component_config_files):
             self.set_value(config_file[0],config_file[1])
 
@@ -261,15 +261,14 @@ class Case(object):
 
         if "COMPILER" in nodenames: nodenames.remove("COMPILER")
         if "MPILIB" in nodenames: nodenames.remove("MPILIB")
-        nodenames =  [x for x in nodenames if 
+        nodenames =  [x for x in nodenames if
                       '_system' not in x and '_variables' not in x and 'mpirun' not in x]
 
-        # FIXME - the following did not work if ignore_type was not set to True
-        # FIXME - had to remove PROJECT_REQUIRED to get this to work
-        nodenames =  [x for x in nodenames if 'PROJECT_REQUIRED' not in x]
         for nodename in nodenames:
             value = machobj.get_value(nodename)
-            self.set_value(nodename, value, ignore_type="True")
+            type_str = self.get_type_info(nodename)
+            if type_str is not None:
+                self.set_value(nodename, convert_to_type(value, type_str, nodename))
 
         if compiler is None:
             compiler = machobj.get_default_compiler()

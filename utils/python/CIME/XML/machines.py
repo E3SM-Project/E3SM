@@ -6,7 +6,7 @@ from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
 from CIME.utils import expect
 
-import socket, re
+import socket
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +119,7 @@ class Machines(GenericXML):
         SystemExit: ERROR: No machine trump found
         """
         if self.machine != machine:
-            self.machine_node = GenericXML.get_optional_node(self, "machine", {"MACH" : machine})
+            self.machine_node = self.get_optional_node("machine", {"MACH" : machine})
             expect(self.machine_node is not None, "No machine %s found" % machine)
             self.machine = machine
 

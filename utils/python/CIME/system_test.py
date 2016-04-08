@@ -343,19 +343,13 @@ class SystemTest(object):
             raise StandardError("Test '%s' has compiler that does"
                                 " not match instance compliler '%s'" % (test, self._compiler))
 
-        scratch_dir = self._machobj.get_value("CESMSCRATCHROOT")
-        if self._project is not None:
-            scratch_dir = scratch_dir.replace("$PROJECT", self._project)
-        sharedlibroot = os.path.join(scratch_dir, "sharedlibroot.%s" % self._test_id)
-
-        create_newcase_cmd = "%s -model %s -case %s -res %s -mach %s -compiler %s -compset"\
-                             " %s -testname %s -project %s -sharedlibroot %s" % \
+        create_newcase_cmd = "%s -case %s -res %s -mach %s -compiler %s -compset %s"\
+                               " -project %s"%\
                               (os.path.join(self._cime_root, "scripts", "create_newcase"),
-                               self._cime_model, test_dir, grid, machine, compiler, compset,
-                               test_case, self._project, sharedlibroot)
+                               test_dir, grid, machine, compiler, compset, self._project)
 
-        if test_case != 'PFS':
-            create_newcase_cmd += " -nosavetiming "
+#        if test_case != 'PFS':
+#            create_newcase_cmd += " -nosavetiming "
 
         if test_mods is not None:
             files = Files()
@@ -390,6 +384,16 @@ class SystemTest(object):
 
         # Determine the test_case from the test name
         test_case, case_opts = CIME.utils.parse_test_name(test)[:2]
+
+        # Set user test options
+        scratch_dir = self._machobj.get_value("CESMSCRATCHROOT")
+        if self._project is not None:
+            scratch_dir = scratch_dir.replace("$PROJECT", self._project)
+        sharedlibroot = os.path.join(scratch_dir, "sharedlibroot.%s" % self._test_id)
+
+        case.set_value("SHAREDLIBROOT",sharedlibroot)
+        if test_case == "PFS":
+            case.set_value("SAVE_TIMING",True)
 
         # Determine case_opts from the test_case
         if case_opts is not None:
