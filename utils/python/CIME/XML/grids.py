@@ -5,56 +5,72 @@ This is not an abstract class - but inherits from the abstact class GenericXML
 
 from standard_module_setup import *
 from CIME.utils import expect, convert_to_string, convert_to_type
+from CIME.XML.files import Files
 from generic_xml import GenericXML
 
 logger = logging.getLogger(__name__)
 
 class Grids(GenericXML):
 
-    def __init__(self, infile=None):
+    def __init__(self, infile=None, files=None):
+        if infile is None:
+            if files is None:
+                files = Files()
+            infile = files.get_value("GRIDS_SPEC_FILE")
+        logger.debug(" Grid specification file is %s" % infile)
+
         GenericXML.__init__(self, infile)
-        self.groups={}
 
     def get_grid_info(self, name, compset):
-        # FIXME - the following can be simplified
-        # search for all grid nodes
+        """
+        Find the matching grid node
+        """
         nodes = self.get_nodes("grid")
+        gridinfo = {}
 
         # first search for all grids that have a compset match - if one is found then return
         for node in nodes:
-            if node.attrib:
-                attrib = node.attrib["compset"]
+            if "compset" in node.attrib:
+                attrib = node.get("compset")
                 compsetRE = re.compile(attrib)
                 compset_match = re.search(attrib,compset)
                 if compset_match is not None:
-                    alias = self.get_node("alias",root=node)
-                    sname = self.get_node("sname",root=node)
-                    lname = self.get_node("lname",root=node)
-                    if alias.text == name or lname.text == name or sname.text == name:
-                        logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname.text))
-                        component_grids = self._get_component_grids(lname.text)
+                    alias = self.get_value("alias",root=node)
+                    sname = self.get_value("sname",root=node)
+                    lname = self.get_value("lname",root=node)
+                    if alias == name or lname == name or sname == name:
+                        logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname))
+                        component_grids = self._get_component_grids(lname)
                         domains  = self._get_domains(component_grids)
                         gridmaps = self._get_gridmaps(component_grids)
-                        gridinfo = {}
                         gridinfo.update(domains)
                         gridinfo.update(gridmaps)
-                        gridinfo["GRID"] = lname.text
+                        gridinfo["GRID"] = lname
                         return gridinfo
 
 
         # if no matches were found for a possible compset match, then search for just a grid match with no
         # compset attribute
         for node in nodes:
-            if not node.attrib:
-                sname = self.get_node("sname",root=node)
-                alias = self.get_node("alias",root=node)
-                lname = self.get_node("lname",root=node)
-                if alias.text == name or lname.text == name or sname.text == name:
-                    logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname.text))
-                    component_grids = self._get_component_grids(lname.text)
-                    domain_file, domain_path = self._get_domains(component_grids)
-                    gridmaps = self._get_gridmaps(component_grids)
-                    return longname.text, component_grids, domain_file, domain_path, gridmaps
+            if "compset" not in node.attrib:
+                sname = self.get_value("sname",root=node)
+                alias = self.get_value("alias",root=node)
+                lname = self.get_value("lname",root=node)
+                if alias == name or lname == name or sname == name:
+                    logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname))
+                    component_grids = self._get_component_grids(lname)
+                    gridinfo.update(self._get_domains(component_grids))
+                    gridinfo.update(self._get_gridmaps(component_grids))
+                    gridinfo["GRID"] = lname
+
+        return gridinfo
+
+    def get_value(self, item, attributes=None, root=None):
+        if root is None:
+            root = self.root
+        node = self.get_optional_node(item,attributes=attributes, root=root)
+        if node is not None:
+            return node.text
 
     def _get_component_grids(self, name):
         gridRE = re.compile(r"[_]{0,1}[a-z]{1,2}%")
@@ -84,16 +100,16 @@ class Grids(GenericXML):
                 mask_name = "ocn_mask"
             root = self.get_optional_node(nodename="domain", attributes={"name":grid[1]})
             if root is not None:
-                domains[grid[0]+"_NX"] = int(self.get_optional_node(nodename="nx", root=root).text)
-                domains[grid[0]+"_NY"] = int(self.get_optional_node(nodename="ny", root=root).text)
+                domains[grid[0]+"_NX"] = int(self.get_value("nx", root=root))
+                domains[grid[0]+"_NY"] = int(self.get_value("ny", root=root))
                 domains[grid[0] + "_GRID"] = grid[1]
                 if mask_name is not None:
-                    file = self.get_optional_node(nodename="file", attributes={mask_name:mask}, root=root)
-                    path = self.get_optional_node(nodename="path", attributes={mask_name:mask}, root=root)
+                    file = self.get_value("file", attributes={mask_name:mask}, root=root)
+                    path = self.get_value("path", attributes={mask_name:mask}, root=root)
                     if file is not None:
-                        domains[file_name] = file.text
+                        domains[file_name] = file
                         if path is not None:
-                            domains[path_name] = path.text
+                            domains[path_name] = path
 
         return domains
 
@@ -123,8 +139,7 @@ class Grids(GenericXML):
 
     def print_values(self, long_output=None):
         # write out help message
-        help_node = self.get_node("help")
-        helptext = help_node.text
+        helptext = self.get_value("help")
         logger.info("%s " %helptext)
 
         # if long output mode is on, then also obtain nodes for domains and maps
@@ -135,25 +150,23 @@ class Grids(GenericXML):
         # write out grid elements
         grid_nodes = self.get_nodes(nodename="grid")
         for grid_node in grid_nodes:
-            lname   = grid_node.find("lname")
-            sname   = grid_node.find("sname")
-            support = grid_node.find("support")
-            alias   = grid_node.find("alias")
+            lname = self.get_value("lname",root=grid_node)
+            sname = self.get_value("sname",root=grid_node)
+            alias = self.get_value("alias",root=grid_node)
+            support = self.get_value("support",root=grid_node)
             logger.info("------------------------------------------------")
-            logger.info("model grid: %s" %lname.text)
+            logger.info("model grid: %s" %lname)
             logger.info("------------------------------------------------")
             if sname is not None:
-                logger.info("   short name: %s" %sname.text)
+                logger.info("   short name: %s" %sname)
             if alias is not None:
-                logger.info("   alias: %s" %alias.text)
-            for attr, value in grid_node.items():
+                logger.info("   alias: %s" %alias)
+            for attr in grid_node.attrib:
                 if  attr == 'compset':
                     logger.info("   compset match: %s" % value)
 
             # in long_output mode add domain description and mapping fiels
             if long_output is not None:
-                # get component grids (will contain duplicates)
-                component_grids = self._get_component_grids(lname)
                 # write out out only unique non-null component grids
                 for domain in list(set(component_grids)):
                     if domain != 'null':
@@ -161,6 +174,8 @@ class Grids(GenericXML):
                         domain_node = self.get_node(nodename="domain", attributes={"name":domain})
                         for child in domain_node:
                             logger.info("        %s: %s" %(child.tag, child.text))
+                # get component grids (will contain duplicates)
+                component_grids = self._get_component_grids(lname)
 
                 # write out mapping files
                 grids = [ ("atm_grid", component_grids[0]), ("lnd_grid", component_grids[1]), ("ocn_grid", component_grids[2]), \

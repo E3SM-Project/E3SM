@@ -242,14 +242,9 @@ class Case(object):
         files = Files()
 
         # get grid info and overwrite files with that data
-        if self.get_value("GRIDS_SPEC_FILE") is not None:
-            gridfile = self.get_value("GRIDS_SPEC_FILE")
-        else:
-            gridfile = files.get_value("GRIDS_SPEC_FILE")
-        grids = Grids(gridfile)
+        grids = Grids(self.get_value("GRIDS_SPEC_FILE"), files=files)
         gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
         self._gridname = gridinfo["GRID"]
-        logger.debug(" Grid specification file is %s" % gridfile)
 
         self._get_component_config_data()
 
@@ -312,6 +307,7 @@ class Case(object):
         bjobs = batch.get_batch_jobs()
         env_batch = self._get_env("batch")
         env_batch.create_job_groups(bjobs)
+
         self._env_files_that_need_rewrite.add(env_batch)
 
 

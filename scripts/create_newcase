@@ -126,6 +126,7 @@ def _create_caseroot_tools(case, caseroot, cimeroot, machine):
     # setup executable files in caseroot/
     exefiles = (cimeroot + "/scripts/Tools/case.setup",
                 cimeroot + "/scripts/Tools/case.build",
+                cimeroot + "/scripts/Tools/case.clean_build",
                 cimeroot + "/scripts/Tools/case.submit",
                 cimeroot + "/scripts/Tools/preview_namelists",
                 cimeroot + "/scripts/Tools/testcase.setup",
