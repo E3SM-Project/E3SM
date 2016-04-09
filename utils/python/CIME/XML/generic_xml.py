@@ -53,7 +53,12 @@ class GenericXML(object):
             outfile = self.filename
 
         logger.debug("write: " + outfile)
-        xmlstr = ET.tostring(self.root)
+        try:
+            xmlstr = ET.tostring(self.root)
+        except:
+            ET.dump(self.root)
+            expect(False, "Could not write file %s, xml formatting error"%self.filename)
+            
         # xmllint provides a better format option for the output file
         xmllint = which("xmllint")
         if xmllint is not None:

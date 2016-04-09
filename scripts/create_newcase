@@ -214,8 +214,7 @@ def _create_caseroot_sourcemods(case, caseroot, cimeroot, components):
 def _create_caseroot(case, caseroot, cimeroot, components, machine):
 ###############################################################################
 
-    #logger.info(" Creating Caseroot %s" %caseroot)
-    logger.info(" Creating Caseroot")
+    logger.info(" Creating Caseroot %s" %caseroot)
 
     # Make the case directory
     os.mkdir(caseroot)
