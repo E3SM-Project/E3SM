@@ -730,6 +730,8 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <CAM_CONFIG_OPTS compset="_CAM%ADIAB"     >-phys adiabatic</CAM_CONFIG_OPTS>              
 <CAM_CONFIG_OPTS compset="_AQUAP"          >-ocn aquaplanet</CAM_CONFIG_OPTS>              
 
+<CAM_CONFIG_OPTS compset="_CLM45%[^_]*SPBC"     >-bc_dep_to_snow_updates</CAM_CONFIG_OPTS>
+
 <!-- ======================================= -->
 <!--          USER_DEFINED section           -->
 <!-- Add new values for                      -->
