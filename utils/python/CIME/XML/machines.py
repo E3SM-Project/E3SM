@@ -35,6 +35,12 @@ class Machines(GenericXML):
         if machine is None:
             machine = self.probe_machine_name()
 
+        if self.machine_node is None:
+            infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
+            if os.path.exists(infile):
+                GenericXML.__init__(self, infile)
+                machine = self.probe_machine_name()
+            
         self.set_machine(machine)
 
     def get_machines_dir(self):
@@ -101,6 +107,7 @@ class Machines(GenericXML):
                     break
 
         if machine is None:
+            # Check for a local definition
             logger.warning("Could not probe machine for hostname '%s'" % nametomatch)
 
         return machine
