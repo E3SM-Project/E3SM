@@ -88,6 +88,10 @@
 !>    * in the call to driver_convection, added block%configs needed for the implementation of the
 !>      Grell-Freitas convection scheme.
 !>      Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
+!>    * modified the call to the subroutines driver_sfclayer and driver_pbl for the implementation
+!>      of the MYNN surface layer scheme and PBL schemes. itimestep and block%configs are added to
+!>      the argument list.
+!>      Laura D. Fowler (laura@ucar.edu) / 2015-01-06.
 
 
  contains
@@ -114,8 +118,6 @@
                                  atm_input,    &
                                  sfc_input
 
- real(kind=RKIND),pointer:: config_bucket_radt
-
  character(len=StrKIND),pointer:: config_bucket_update,     &
                                   config_convection_scheme, &
                                   config_gwdo_scheme,       &
@@ -124,6 +126,8 @@
                                   config_radt_lw_scheme,    &
                                   config_radt_sw_scheme,    &
                                   config_sfclayer_scheme
+
+ real(kind=RKIND),pointer:: config_bucket_radt
 
 !local variables:
  type(block_type),pointer:: block
@@ -202,7 +206,7 @@
     !call to surface-layer scheme:
     if(config_sfclayer_scheme .ne. 'off') then
        call allocate_sfclayer
-       call driver_sfclayer(mesh,diag_physics,sfc_input)
+       call driver_sfclayer(itimestep,block%configs,mesh,diag_physics,sfc_input)
        call deallocate_sfclayer
     endif
 
@@ -216,7 +220,7 @@
     !call to pbl schemes:
     if(config_pbl_scheme .ne. 'off' .and. config_sfclayer_scheme .ne. 'off') then
        call allocate_pbl
-       call driver_pbl(sfc_input,diag_physics,tend_physics)
+       call driver_pbl(itimestep,block%configs,sfc_input,diag_physics,tend_physics)
        call deallocate_pbl
     endif
 
