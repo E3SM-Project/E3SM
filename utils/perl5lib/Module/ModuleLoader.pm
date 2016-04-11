@@ -8,6 +8,7 @@ package Module::ModuleLoader;
 use strict;
 use warnings;
 use diagnostics;
+use Data::Dumper;
 use XML::LibXML;
 use Cwd;
 use Log::Log4perl qw(get_logger);
@@ -289,7 +290,7 @@ sub findModulesForCase()
     }
     my $parser = XML::LibXML->new(no_blanks => 1);
     my $casemoduleparser = $parser->parse_file($self->{machspecificfile});
-    my @allmodulenodes = $casemoduleparser->findnodes("/machine[\@MACH=\'$machine\']/module_system/modules");
+    my @allmodulenodes = $casemoduleparser->findnodes("//module_system/modules");
 
     my @foundmodules = $self->findModules(\@allmodulenodes);
     $self->{modulestoload} = \@foundmodules;
@@ -474,11 +475,10 @@ sub loadModuleModules()
     $self->findEnvVars();
 
     my $modulestoload = $self->{modulestoload};
-
-    foreach my $mod(@$modulestoload)
+    foreach my $mod (@$modulestoload)
     {
         #print "mod seqnum: $mod->{seqnum}\n";
-        #print "mod action: $mod->{action}\n";
+	#print "mod action: $mod->{action}\n";
         #print "mod actupon: $mod->{actupon}\n";
         my $cmd;
         if($mod->{action} =~ /xmlchange/)
