@@ -516,7 +516,8 @@ contains
 
                                          hydromet_pdf_parameter, &
 
-                                         zm2zt_api, setup_grid_heights_api, &
+                                    !    zm2zt_api, setup_grid_heights_api, &
+                                         setup_grid_heights_api, &
 
                                          iirrm, iiNrm, iirsm, iirim, &
                                          iirgm, iiNsm, &
@@ -533,6 +534,7 @@ contains
                                          iiPDF_w, iiPDF_Nr, &
                                          iiPDF_ri, iiPDF_Ni, &
                                          iiPDF_Ncn
+      use grid_class, only:              zm2zt_api=>zm2zt
    
       use silhs_api_module, only :       lh_subcolumn_generator_api, & ! Ncn_to_Nc, &
                                          lh_clipped_variables_type, &
@@ -1010,29 +1012,37 @@ contains
             if(k.le.pver) then
                meansc_ice(i,k) = meansc( ICE_LH_out( stncol+1:stncol+num_subcols, k ), & 
                                       weights(stncol+1:stncol+num_subcols), &
-                                      real(num_subcols,r8) )
+                                    ! real(num_subcols,r8) )
+                                      num_subcols )
                meansc_liq(i,k) = meansc( RCM_LH_out( stncol+1:stncol+num_subcols, k ), &
                                       weights( stncol+1:stncol+num_subcols ), &
-                                      real(num_subcols,r8) )
+                                    ! real(num_subcols,r8) )
+                                      num_subcols )
 
                meansc_vap(i,k) = meansc( RVM_LH_out( stncol+1:stncol+num_subcols, k ), &
                                       weights( stncol+1:stncol+num_subcols ), &
-                                      real(num_subcols,r8) )
+                                    ! real(num_subcols,r8) )
+                                      num_subcols )
       	       meansc_nice(i,k) = meansc( NICE_LH_out( stncol+1:stncol+num_subcols, k ), &
                                       weights( stncol+1:stncol+num_subcols ), &
-                                      real(num_subcols,r8) )
+                                    ! real(num_subcols,r8) )
+                                      num_subcols )
       	       meansc_nliq(i,k) = meansc( NCLW_LH_out( stncol+1:stncol+num_subcols, k ), &
                                       weights( stncol+1:stncol+num_subcols ), &
-                                      real(num_subcols,r8) )
+                                    ! real(num_subcols,r8) )
+                                      num_subcols )
                stdsc_ice(i,k) = stdsc( ICE_LH_out( stncol+1:stncol+num_subcols, k ), &
                                     weights( stncol+1:stncol+num_subcols ), &
-                                    meansc_ice( i, k ), real(num_subcols,r8) )
+                                  ! meansc_ice( i, k ), real(num_subcols,r8) )
+                                    meansc_ice( i, k ), num_subcols )
                stdsc_liq(i,k) = stdsc( RCM_LH_out( stncol+1:stncol+num_subcols, k ), &
                                     weights( stncol+1:stncol+num_subcols ), &
-                                    meansc_liq( i, k ), real(num_subcols,r8) )
+                                  ! meansc_liq( i, k ), real(num_subcols,r8) )
+                                    meansc_liq( i, k ), num_subcols )
                stdsc_vap(i,k) = stdsc( RVM_LH_out( stncol+1:stncol+num_subcols, k ), &
                                     weights( stncol+1:stncol+num_subcols ), &
-                                    meansc_vap( i, k ), real(num_subcols,r8) )
+                                  ! meansc_vap( i, k ), real(num_subcols,r8) )
+                                    meansc_vap( i, k ), num_subcols )
             endif
          enddo
 
@@ -1086,7 +1096,8 @@ contains
                ! Recalculate the weighted subcolumn mean
                tmp_mean = meansc( ICE_ADJ_out( stncol+1:stncol+num_subcols, k ), & 
                                       weights(stncol+1:stncol+num_subcols), &
-                                      real(num_subcols,r8) )
+                                    ! real(num_subcols,r8) )
+                                      num_subcols )
                ! Calculate the difference between the weighted mean and grid mean
                diff_mean = state%q(i,k,ixcldice)-tmp_mean
                ! Add the difference to each subcolumn
@@ -1095,7 +1106,8 @@ contains
                ! Recalculate the weight subcolumn mean for ice num conc
                tmp_mean = meansc( NICE_ADJ_out( stncol+1:stncol+num_subcols, k ), & 
                                       weights(stncol+1:stncol+num_subcols), &
-                                      real(num_subcols,r8) )
+                                    ! real(num_subcols,r8) )
+                                      num_subcols )
                ! Calculate the difference between the weighted mean and grid mean
                diff_mean = state%q(i,k,ixnumice)-tmp_mean
                ! Add the difference to each subcolumn
@@ -1109,11 +1121,13 @@ contains
                ! Test adjusted means for debugging
                tmp_mean = meansc( ICE_ADJ_out( stncol+1:stncol+num_subcols, k ), & 
                                       weights(stncol+1:stncol+num_subcols), &
-                                      real(num_subcols,r8) )
+                                    ! real(num_subcols,r8) )
+                                      num_subcols )
                diff_mean = state%q(i,k,ixcldice)-tmp_mean
                tmp_mean = meansc( NICE_ADJ_out( stncol+1:stncol+num_subcols, k ), & 
                                       weights(stncol+1:stncol+num_subcols), &
-                                      real(num_subcols,r8) )
+                                    ! real(num_subcols,r8) )
+                                      num_subcols )
                diff_mean = state%q(i,k,ixnumice)-tmp_mean
             endif
          enddo ! k = 1,pver
@@ -1263,30 +1277,38 @@ contains
 
 #ifdef SILHS
    real(r8) function meansc(arr_in, w_in, ns) result(val)
-      real(r8), intent(in) :: ns                         ! Length of Array
+!     real(r8), intent(in) :: ns                         ! Length of Array
+      integer, intent(in) :: ns                         ! Length of Array
       real(r8), dimension(ns), intent(in) :: arr_in      ! Input array
       real(r8), dimension(ns), intent(in) :: w_in        ! Weights
       real(r8) :: acc  ! accumulator
       integer :: i
+      real(r8) :: r_ns
+      r_ns = real(ns,r8)
       acc = 0
       val = 0
       do i=1,ns
          acc = acc + arr_in(i)*w_in(i)
       enddo
-      val = acc/ns
+!     val = acc/ns
+      val = acc/r_ns
    end function
 
    real(r8) function stdsc(arr_in, w_in, mn_in, ns) result(val)
-      real(r8), intent(in) :: ns  ! Number of elements (subcolumns)
+!     real(r8), intent(in) :: ns  ! Number of elements (subcolumns)
+      integer, intent(in) :: ns  ! Number of elements (subcolumns)
       real(r8), dimension(ns), intent(in) :: arr_in, w_in  !Input array and weights
       real(r8), intent(in) :: mn_in   ! The mean of arr_in
       real(r8) :: accvar, var
       integer :: i
+      real(r8) :: r_ns
+      r_ns = real(ns,r8)
       accvar = 0
       do i=1,ns
          accvar = accvar + ((arr_in(i)-mn_in)**2)*w_in(i)
       enddo
-      var = accvar/ns
+!     var = accvar/ns
+      var = accvar/r_ns
       val = sqrt(var)
    end function
 
