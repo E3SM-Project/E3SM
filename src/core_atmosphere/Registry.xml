@@ -114,6 +114,8 @@
                 <package name="cu_grell_freitas_in" description="parameterization of Grell-Freitas convection."/>
                 <package name="cu_kain_fritsch_in" description="parameterization of Kain-Fritsch convection."/>
                 <package name="cu_tiedtke_in" description="parameterization of Tiedtke convection."/>
+                <package name="bl_ysu_in" description="parameterization of YSU Planetary Boundary Layer."/>
+                <package name="bl_mynn_in" description="parameterization of MYNN Planetary Boundary Layer."/>
         </packages>
 
 
@@ -375,6 +377,14 @@
 			<var name="cubot"/>
 			<var name="cutop"/>
 			<var name="w0avg"/>
+                        <var name="qcg"/>
+                        <var name="sh3d"/>
+                        <var name="qke"/>
+                        <var name="qke_adv"/>
+                        <var name="cov"/>
+                        <var name="qsq"/>
+                        <var name="tsq"/>
+                        <var name="tke_pbl"/>
 			<var name="kpbl"/>
 			<var name="hpbl"/>
 			<var name="hfx"/>
@@ -502,6 +512,7 @@
 			<var name="rqvblten"/>
 			<var name="rqcblten"/>
 			<var name="rqiblten"/>
+			<var name="rniblten"/>
 			<var name="rthratensw"/>
 			<var name="rthratenlw"/>
 			<var name="pin"/>
@@ -802,14 +813,14 @@
                 <var name="m_ps"      type="real"     dimensions="nCells Time"/>
                 <var_array name="scalars" type="real" dimensions="nVertLevels nCells Time">
                      <var name="qv"     array_group="moist"/>
-                     <var name="qc"     array_group="moist"    packages="cu_tiedtke_in;mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                     <var name="qc"     array_group="moist"    packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
                      <var name="qr"     array_group="moist"    packages="mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                     <var name="qi"     array_group="moist"    packages="cu_tiedtke_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                     <var name="qi"     array_group="moist"    packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
                      <var name="qs"     array_group="moist"    packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
                      <var name="qg"     array_group="moist"    packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
                      <var name="nr"     array_group="number"   packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-                     <var name="ni"     array_group="number"   packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-                     <var name="nc"     array_group="number"   packages="mp_thompson_aerosols_in"/>
+                     <var name="ni"     array_group="number"   packages="bl_mynn_in;mp_thompson_aerosols_in;mp_thompson_in"/>
+                     <var name="nc"     array_group="number"   packages="bl_mynn_in;mp_thompson_aerosols_in"/>
                      <var name="nwfa"   array_group="aerosols" packages="mp_thompson_aerosols_in"/>
                      <var name="nifa"   array_group="aerosols" packages="mp_thompson_aerosols_in"/>
                 </var_array>
@@ -970,8 +981,8 @@
                      <var name="tend_qs"     name_in_code="qs"     array_group="moist"    packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
                      <var name="tend_qg"     name_in_code="qg"     array_group="moist"    packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
                      <var name="tend_nr"     name_in_code="nr"     array_group="number"   packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-                     <var name="tend_ni"     name_in_code="ni"     array_group="number"   packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-                     <var name="tend_nc"     name_in_code="nc"     array_group="number"   packages="mp_thompson_aerosols_in"/>
+                     <var name="tend_ni"     name_in_code="ni"     array_group="number"   packages="bl_mynn_in;mp_thompson_aerosols_in;mp_thompson_in"/>
+                     <var name="tend_nc"     name_in_code="nc"     array_group="number"   packages="bl_mynn_in;mp_thompson_aerosols_in"/>
                      <var name="tend_nwfa"   name_in_code="nwfa"   array_group="aerosols" packages="mp_thompson_aerosols_in"/>
                      <var name="tend_nifa"   name_in_code="nifa"   array_group="aerosols" packages="mp_thompson_aerosols_in"/>
                 </var_array>
@@ -1141,14 +1152,47 @@
                 <!-- hpbl      : PBL height                                                                        (m)  -->
                 <!-- exch_h    : exchange coefficient                                                              (-)  -->
 
-                <var name="kpbl"          type="integer"  dimensions="nCells Time"/>
-                <var name="hpbl"          type="real"     dimensions="nCells Time"/>
-                <var name="exch_h"        type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="kpbl"          type="integer"  dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="hpbl"          type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+		<var name="kzh"           type="real"     dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+		<var name="kzm"           type="real"     dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+		<var name="kzq"           type="real"     dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
 
-                <!-- TEMPORARY: -->
-		<var name="kzh"                               type="real"     dimensions="nVertLevels nCells Time"/>
-		<var name="kzm"                               type="real"     dimensions="nVertLevels nCells Time"/>
-		<var name="kzq"                               type="real"     dimensions="nVertLevels nCells Time"/>
+                <!-- YSU PBL SCHEME: -->
+                <var name="exch_h"        type="real"     dimensions="nVertLevels nCells Time" packages="bl_ysu_in"/>
+
+                <!-- MYNN PBL SCHEME: -->
+                <!-- delta     : entrainment layer depth from PBL scheme                                            [m] -->
+                <!-- el_pbl    : mixing length from PBL scheme                                                      [m] -->
+                <!-- wstar     : mixed velocity scale from PBL scheme                                             [m/s] -->
+                <!-- cov       : liquid water - liquid water potential temperature covariance                 [K kg/kg] -->
+                <!-- qke       : twice turbulent kinetic energy                                                [m2 s-2] -->
+                <!-- qke_adv   : twice turbulent kinetic energy                                                [m2 s-2] -->
+                <!-- qsq       : liquid water variance                                                       [(kg/kg)2] -->
+                <!-- tsq       : liquid water potential temperature variance                                       [K2] -->
+                <!-- tke_pbl   : turbulent kinetic energy from PBL                                             [m2/s-2] -->
+
+                <!-- dqke      : TKE change                                                                    [m2/s-2] -->
+                <!-- qbuoy     : TKE production - buoyancy                                                     [m2/s-2] -->
+                <!-- qdiss     : TKE dissipation                                                               [m2/s-2] -->
+                <!-- qshear    : TKE production - shear                                                        [m2/s-2] -->
+                <!-- qwt       : TKE vertical distribution                                                     [m2/s-2] -->
+
+                <var name="delta"         type="real"    dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="wstar"         type="real"    dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="cov"           type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in"/>
+                <var name="el_pbl"        type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in"/>
+                <var name="qke"           type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in"/>
+                <var name="qke_adv"       type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in"/>
+                <var name="qsq"           type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in"/>
+                <var name="tsq"           type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in"/>
+                <var name="tke_pbl"       type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in"/>
+
+                <var name="dqke"          type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in"/>
+                <var name="qbuoy"         type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in"/>
+                <var name="qdiss"         type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in"/>
+                <var name="qshear"        type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in"/>
+                <var name="qwt"           type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in"/>
 
 
                 <!-- ================================================================================================== -->
@@ -1191,44 +1235,58 @@
                 <!--  t2m       :temperature at 2m                                                                  [K] -->
                 <!--  th2m      :potential temperature at 2m                                                        [K] -->
 
-                <var name="hfx"           type="real"     dimensions="nCells Time"/>
-                <var name="mavail"        type="real"     dimensions="nCells Time"/>
-                <var name="mol"           type="real"     dimensions="nCells Time"/>
-                <var name="qfx"           type="real"     dimensions="nCells Time"/>
-                <var name="qsfc"          type="real"     dimensions="nCells Time"/>
-                <var name="ust"           type="real"     dimensions="nCells Time"/>
-                <var name="ustm"          type="real"     dimensions="nCells Time"/>
-                <var name="zol"           type="real"     dimensions="nCells Time"/>
-                <var name="znt"           type="real"     dimensions="nCells Time"/>
+                <var name="hfx"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="mavail"        type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="mol"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="qfx"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="qsfc"          type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="ust"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="ustm"          type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="zol"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="znt"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
 
-                <var name="br"            type="real"     dimensions="nCells Time"/>
-                <var name="cd"            type="real"     dimensions="nCells Time"/>
-                <var name="cda"           type="real"     dimensions="nCells Time"/>
-                <var name="chs"           type="real"     dimensions="nCells Time"/>
-                <var name="chs2"          type="real"     dimensions="nCells Time"/>
-                <var name="cqs2"          type="real"     dimensions="nCells Time"/>
-                <var name="ck"            type="real"     dimensions="nCells Time"/>
-                <var name="cka"           type="real"     dimensions="nCells Time"/>
-                <var name="cpm"           type="real"     dimensions="nCells Time"/>
-                <var name="flhc"          type="real"     dimensions="nCells Time"/>
-                <var name="flqc"          type="real"     dimensions="nCells Time"/>
-                <var name="gz1oz0"        type="real"     dimensions="nCells Time"/>
-                <var name="lh"            type="real"     dimensions="nCells Time"/>
-                <var name="psim"          type="real"     dimensions="nCells Time"/>
-                <var name="psih"          type="real"     dimensions="nCells Time"/>
-                <var name="qgh"           type="real"     dimensions="nCells Time"/>
-                <var name="regime"        type="real"     dimensions="nCells Time"/>
-                <var name="rmol"          type="real"     dimensions="nCells Time"/>
-                <var name="wspd"          type="real"     dimensions="nCells Time"/>
-                <var name="fh"            type="real"     dimensions="nCells Time"/>
-                <var name="fm"            type="real"     dimensions="nCells Time"/>
+                <var name="br"            type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="cd"            type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="cda"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="chs"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="chs2"          type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="cqs2"          type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="ck"            type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="cka"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="cpm"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="flhc"          type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="flqc"          type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="gz1oz0"        type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="lh"            type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="psim"          type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="psih"          type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="qgh"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="regime"        type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="rmol"          type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="wspd"          type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+
+                <!-- ADDITIONAL VARIABLES ONLY NEEDED IN THE MONIN_OBUKOHV SURFACE LAYER SCHEME (SFCLAY): -->
+                <!--  fh        :integrated function for heat                                                       [-] -->
+                <!--  fm        :integrated function for momentum                                                   [-] -->
+
+                <var name="fh"            type="real"     dimensions="nCells Time" packages="bl_ysu_in"/>
+                <var name="fm"            type="real"     dimensions="nCells Time" packages="bl_ysu_in"/>
+
+                <!-- ADDITIONAL VARIABLES ONLY NEEDED IN THE MYNN SURFACE LAYER SCHEME (SFCLAY_MYNN): -->
+                <!--  ch        :surface exchange coefficient for heat                                            [m/s] -->
+                <!--  qcg       :cloud water mixing ratio at the ground surface                                 [kg/kg] -->
+                <!--  sh3d      :stability function for heat                                                        [-] -->
+
+                <var name="ch"            type="real"     dimensions="nCells Time" packages="bl_mynn_in"/>
+                <var name="qcg"           type="real"     dimensions="nCells Time" packages="bl_mynn_in"/>
+                <var name="sh3d"          type="real"     dimensions="nVertLevels nCells Time" packages="bl_mynn_in"/>
 
                 <!-- DIAGNOSTICS: -->
-                <var name="u10"           type="real"     dimensions="nCells Time"/>
-                <var name="v10"           type="real"     dimensions="nCells Time"/>
-                <var name="q2"            type="real"     dimensions="nCells Time"/>
-                <var name="t2m"           type="real"     dimensions="nCells Time"/>
-                <var name="th2m"          type="real"     dimensions="nCells Time"/>
+                <var name="u10"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="v10"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="q2"            type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="t2m"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="th2m"          type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
 
 
                 <!-- ================================================================================================== -->
@@ -1510,13 +1568,15 @@
                 <!-- rucuten   : tendency of zonal wind due to cumulus convection                              (m/s-1) -->
                 <!-- rvcuten   : tendency of meridional wind due to cumulus convection                         (m/s-1) -->
                 <!-- rqvdynten : tendency of water vapor due to horizontal and vertical advections         (kg/kg/s-1) -->
-                <!-- rthdynten : tendency of potential temperature due to horizontal and vertical advections   (K/s-1) -->
 
                 <var name="rqvdynten"    type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_tiedtke_in"/>
-                <var name="rthdynten"    type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_tiedtke_in"/>
                 <var name="rucuten"      type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_tiedtke_in"/>
                 <var name="rvcuten"      type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_tiedtke_in"/>
 
+                <!-- GRELL ONLY -->
+                <!-- rthdynten : tendency of potential temperature due to horizontal and vertical advections   (K/s-1) -->
+
+                <var name="rthdynten"    type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in"/>
 
                 <!-- ================================================================================================== -->
                 <!-- ... TENDENCIES FROM PARAMETERIZATION OF PLANETARY BOUNDARY LAYER PROCESSES:                        -->
@@ -1527,13 +1587,15 @@
                 <!-- rqvblten  : tendency of water vapor mixing ratio due to pbl processes                 (kg/kg s-1)  -->
                 <!-- rqcblten  : tendency of cloud water mixing ratio due to pbl processes                 (kg/kg s-1)  -->
                 <!-- rqiblten  : tendency of cloud ice mixing ratio due to pbl processes                   (kg/kg s-1)  -->
+                <!-- rniblten  : tendency of cloud ice number concentration due to pbl processes             (m-3 s-1)  -->
 
-                <var name="rublten"     type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rvblten"     type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rthblten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqvblten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqcblten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqiblten"    type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rublten"      type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="rvblten"      type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="rthblten"     type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="rqvblten"     type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="rqcblten"     type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="rqiblten"     type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="rniblten"     type="real"    dimensions="nVertLevels nCells Time" packages="bl_mynn_in"/>
 
 
                 <!-- ================================================================================================== -->
