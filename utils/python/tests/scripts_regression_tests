@@ -27,6 +27,7 @@ class RunUnitTests(unittest.TestCase):
 ###############################################################################
 
     def do_unit_tests(self, script,from_dir=SCRIPT_DIR):
+        os.environ["CIMEROOT"] = CIME.utils.get_cime_root()
         stat, output, _ = run_cmd("./%s --test 2>&1" % script, ok_to_fail=True, from_dir=from_dir)
         self.assertEqual(stat, 0, msg=output)
 

@@ -40,7 +40,7 @@ class Machines(GenericXML):
             if os.path.exists(infile):
                 GenericXML.__init__(self, infile)
                 machine = self.probe_machine_name()
-            
+
         self.set_machine(machine)
 
     def get_machines_dir(self):
