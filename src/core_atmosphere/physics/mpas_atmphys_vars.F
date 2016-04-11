@@ -36,11 +36,15 @@
 ! * added empty subroutine atmphys_vars_init that does not do anything, but needed for 
 !   compiling MPAS with some compilers.
 !   Laura D. Fowler (laura@ucar.edu) / 2015-01-12.
-! * added local variables needed for the Thompson microphysics parameterization of convection.
-!   Laura D. Fowler (laura@ucar.edu) / 2015-03-28.
+! * added local variables needed for the Thompson parameterization of cloud microphysics.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-28.
+! * added local variables needed for the Grell-Freitas parameterization of deep and shallow convection.
+! * Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
 ! * added local parameter imomentum to include the calculation of the momentum tendencies due to convection
 !   in the Grell-Freitas parameterization of convection.
-!   Laura D. Fowler (laura@ucar.edu) / 2015-03-30.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
+! * added local arrays needed in the MYNN surface layer scheme and PBL scheme (for versions WRF 3.6.1 and 3.8).
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-31.
 
 
 !=================================================================================================================
@@ -124,7 +128,12 @@
     qi_p,             &!cloud ice mixing ratio                                              [kg/kg]
     qs_p,             &!snow mixing ratio                                                   [kg/kg]
     qg_p               !graupel mixing ratio                                                [kg/kg]
- 
+
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    ni_p,             &!
+    nr_p,             &!
+    nc_p               !
+
 !... arrays located at w (vertical velocity) points, or at interface between layers:
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     w_p,              &!vertical velocity                                                     [m/s]
@@ -173,6 +182,10 @@
     f_qs = .true.,    &!
     f_qg = .true.      !
 
+ logical,parameter:: &
+    f_qnc = .true.,   &!
+    f_qni = .true.     !
+
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     f_ice,            &!fraction of cloud ice (used in WRF only).
     f_rain             !fraction of rain (used in WRF only).
@@ -196,9 +209,6 @@
     ntc_p,            &!
     muc_p              !
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    ni_p,             &!
-    nr_p,             &!
-    nc_p,             &!
     nifa_p,           &!
     nwfa_p,           &!
     rainprod_p,       &!
@@ -263,9 +273,9 @@
     xmb_shallow_p      !
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    rthdynten_p,      &!
     qccu_p,           &!
     qicu_p             !
-
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     rthraten_p         !
@@ -274,7 +284,6 @@
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     rqvdynten_p,      &!
     rqvdynblten_p,    &!
-    rthdynten_p,      &!
     rthdynblten_p      !
 
 !=================================================================================================================
@@ -282,17 +291,17 @@
 !=================================================================================================================
 
  integer,dimension(:,:),allocatable:: &
-    kpbl_p             !index of PBL top                                                        [-]
+    kpbl_p             !index of PBL top                                                                       [-]
 
  real(kind=RKIND),public:: dt_pbl
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
-    ctopo_p,          &!correction to topography                                                [-]
-    ctopo2_p,         &!correction to topography 2                                              [-]                  
-    hpbl_p             !PBL height                                                              [m]
+    ctopo_p,          &!correction to topography                                                               [-]
+    ctopo2_p,         &!correction to topography 2                                                             [-]
+    hpbl_p             !PBL height                                                                             [m]
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    exch_p             !exchange coefficient                                                    [-]
+    exch_p             !exchange coefficient                                                                   [-]
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     rublten_p,        &!
@@ -307,74 +316,133 @@
     kzm_p,            &!
     kzq_p              !
 
+!... MYNN PBL scheme (module_bl_mynn.F):
+ integer,parameter:: grav_settling = 0
+ integer,parameter:: icloud_bl     = 0          !no coupling of subgrid-scale clouds with radiation. 
+
+ logical,parameter:: bl_mynn_tkeadvect = .false.!
+ integer,parameter:: bl_mynn_tkebudget = 0      !
+ integer,parameter:: bl_mynn_cloudpdf  = 2      !
+ integer,parameter:: bl_mynn_cloudmix  = 1      !
+ integer,parameter:: bl_mynn_mixlength = 2      !
+ integer,parameter:: bl_mynn_mixqt     = 0      !
+ integer,parameter:: bl_mynn_edmf      = 1      !option to activate mass-flux scheme (=0:regular MYNN).
+ integer,parameter:: bl_mynn_edmf_mom  = 1
+ integer,parameter:: bl_mynn_edmf_tke  = 0
+ integer,parameter:: bl_mynn_edmf_part = 0
+
+
+ real(kind=RKIND),dimension(:,:),allocatable:: &
+    delta_p,          &
+    uoce_p,           &!
+    voce_p,           &!
+    vdfg_p,           &!
+    wstar_p            !
+
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    dqke_p,           &!
+    qbuoy_p,          &!
+    qdiss_p,          &!
+    qke_p,            &!
+    qkeadv_p,         &!
+    qshear_p,         &!
+    qwt_p,            &!
+    tkepbl_p           !
+
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    rniblten_p,       &!
+    edmfa_p,          &!
+    edmfw_p,          &!
+    edmfqt_p,         &!
+    edmfthl_p,        &!
+    edmfent_p,        &!
+    edmfqc_p,         &!
+    qcbl_p,           &!
+    cldfrabl_p         !
+
 !=================================================================================================================
 !... variables and arrays related to parameterization of gravity wave drag over orography:
 !=================================================================================================================
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
-    var2d_p,          &!orographic variance                                                    [m2]
-    con_p,            &!orographic convexity                                                   [m2]
-    oa1_p,            &!orographic direction asymmetry function                                 [-]
-    oa2_p,            &!orographic direction asymmetry function                                 [-]
-    oa3_p,            &!orographic direction asymmetry function                                 [-]
-    oa4_p,            &!orographic direction asymmetry function                                 [-]
-    ol1_p,            &!orographic direction asymmetry function                                 [-]
-    ol2_p,            &!orographic direction asymmetry function                                 [-]
-    ol3_p,            &!orographic direction asymmetry function                                 [-]
-    ol4_p              !orographic direction asymmetry function                                 [-]
+    var2d_p,          &!orographic variance                                                                   [m2]
+    con_p,            &!orographic convexity                                                                  [m2]
+    oa1_p,            &!orographic direction asymmetry function                                                [-]
+    oa2_p,            &!orographic direction asymmetry function                                                [-]
+    oa3_p,            &!orographic direction asymmetry function                                                [-]
+    oa4_p,            &!orographic direction asymmetry function                                                [-]
+    ol1_p,            &!orographic direction asymmetry function                                                [-]
+    ol2_p,            &!orographic direction asymmetry function                                                [-]
+    ol3_p,            &!orographic direction asymmetry function                                                [-]
+    ol4_p              !orographic direction asymmetry function                                                [-]
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
-    dx_p               !mean distance between cell centers                                      [m]
+    dx_p               !mean distance between cell centers                                                     [m]
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
-    dusfcg_p,         &!vertically-integrated gwdo u-stress                              [Pa m s-1]
-    dvsfcg_p           !vertically-integrated gwdo v -stress                             [Pa m s-1]
+    dusfcg_p,         &!vertically-integrated gwdo u-stress                                             [Pa m s-1]
+    dvsfcg_p           !vertically-integrated gwdo v -stress                                            [Pa m s-1]
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    dtaux3d_p,        &!gravity wave drag over orography u-stress                           [m s-1]
-    dtauy3d_p          !gravity wave drag over orography u-stress                           [m s-1]
+    dtaux3d_p,        &!gravity wave drag over orography u-stress                                          [m s-1]
+    dtauy3d_p          !gravity wave drag over orography u-stress                                          [m s-1]
 
-!==================================================================================================
+!=================================================================================================================
 !... variables and arrays related to parameterization of surface layer:
-!==================================================================================================
+!=================================================================================================================
+
  real(kind=RKIND),dimension(:,:),allocatable:: &
-    br_p,             &!bulk richardson number                                                  [-]
-    cd_p,             &!momentum exchange coeff at 10 meters                                    [?]
-    cda_p,            &!momentum exchange coeff at the lowest model level                       [?]
+    br_p,             &!bulk richardson number                                                                 [-]
+    cd_p,             &!momentum exchange coeff at 10 meters                                                   [?]
+    cda_p,            &!momentum exchange coeff at the lowest model level                                      [?]
     cpm_p,            &!
     chs_p,            &!
     chs2_p,           &!
-    ck_p,             &!enthalpy exchange coeff at 10 meters                                    [?]
-    cka_p,            &!enthalpy exchange coeff at the lowest model level                       [?]
+    ck_p,             &!enthalpy exchange coeff at 10 meters                                                   [?]
+    cka_p,            &!enthalpy exchange coeff at the lowest model level                                      [?]
     cqs2_p,           &!
-    gz1oz0_p,         &!log of z1 over z0                                                       [-]
-    flhc_p,           &!exchange coefficient for heat                                           [-]
-    flqc_p,           &!exchange coefficient for moisture                                       [-]
-    hfx_p,            &!upward heat flux at the surface                                      [W/m2]
-    fh_p,             &!integrated stability function for heat                                  [-]
-    fm_p,             &!integrated stability function for momentum                              [-]             
-    lh_p,             &!latent heat flux at the surface                                      [W/m2]
-    mavail_p,         &!surface moisture availability                                           [-]
-    mol_p,            &!T* in similarity theory                                                 [K]
-    pblh_p,           &!PBL height                                                              [m]
-    psih_p,           &!similarity theory for heat                                              [-]
-    psim_p,           &!similarity theory for momentum                                          [-]
-    q2_p,             &!specific humidity at 2m                                             [kg/kg]
-    qfx_p,            &!upward moisture flux at the surface                               [kg/m2/s]
+    gz1oz0_p,         &!log of z1 over z0                                                                      [-]
+    flhc_p,           &!exchange coefficient for heat                                                          [-]
+    flqc_p,           &!exchange coefficient for moisture                                                      [-]
+    hfx_p,            &!upward heat flux at the surface                                                     [W/m2]
+    lh_p,             &!latent heat flux at the surface                                                     [W/m2]
+    mavail_p,         &!surface moisture availability                                                          [-]
+    mol_p,            &!T* in similarity theory                                                                [K]
+    pblh_p,           &!PBL height                                                                             [m]
+    psih_p,           &!similarity theory for heat                                                             [-]
+    psim_p,           &!similarity theory for momentum                                                         [-]
+    q2_p,             &!specific humidity at 2m                                                            [kg/kg]
+    qfx_p,            &!upward moisture flux at the surface                                              [kg/m2/s]
     qgh_p,            &!
-    qsfc_p,           &!specific humidity at lower boundary                                 [kg/kg]
-    regime_p,         &!flag indicating PBL regime (stable_p,unstable_p,etc...)                 [-]
-    rmol_p,           &!1 / Monin Ob length                                                     [-]
-    t2m_p,            &!temperature at 2m                                                       [K]
-    th2m_p,           &!potential temperature at 2m                                             [K]
-    u10_p,            &!u at 10 m                                                             [m/s]
-    ust_p,            &!u* in similarity theory                                               [m/s]
-    ustm_p,           &!u* in similarity theory       without vconv correction                [m/s]
-    v10_p,            &!v at 10 m                                                             [m/s]
-    wspd_p,           &!wind speed                                                            [m/s]
-    znt_p,            &!time-varying roughness length                                           [m]
+    qsfc_p,           &!specific humidity at lower boundary                                                [kg/kg]
+    regime_p,         &!flag indicating PBL regime (stable_p,unstable_p,etc...)                                [-]
+    rmol_p,           &!1 / Monin Ob length                                                                    [-]
+    t2m_p,            &!temperature at 2m                                                                      [K]
+    th2m_p,           &!potential temperature at 2m                                                            [K]
+    u10_p,            &!u at 10 m                                                                            [m/s]
+    ust_p,            &!u* in similarity theory                                                              [m/s]
+    ustm_p,           &!u* in similarity theory       without vconv correction                               [m/s]
+    v10_p,            &!v at 10 m                                                                            [m/s]
+    wspd_p,           &!wind speed                                                                           [m/s]
+    znt_p,            &!time-varying roughness length                                                          [m]
     zol_p              !
 
+!... arrays only in monin_obukohv (module_sf_sfclay.F):
+ real(kind=RKIND),dimension(:,:),allocatable:: &
+    fh_p,             &!integrated stability function for heat                                                 [-]
+    fm_p               !integrated stability function for momentum                                             [-]
+
+!... arrays only in mynn surface layer scheme (module_sf_mynn.F):
+ real(kind=RKIND),dimension(:,:),allocatable:: &
+    ch_p,             &!surface exchange coeff for heat                                                      [m/s]
+    qcg_p              !cloud water mixing ratio at the ground surface                                     [kg/kg]
+
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    cov_p,            &!liquid water-liquid water potential temperature covariance                       [K kg/kg]
+    qsq_p,            &!liquid water variance                                                          [(kg/kg)^2]
+    tsq_p,            &!liquid water potential temperature variance                                          [K^2]
+    sh3d_p,           &!stability function for heat                                                            [-]
+    elpbl_p            !length scale from PBL                                                                  [m]
 
 !=================================================================================================================
 !... variables and arrays related to parameterization of short-wave radiation:
