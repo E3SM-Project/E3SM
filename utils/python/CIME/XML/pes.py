@@ -19,7 +19,7 @@ class Pes(GenericXML):
         """
         self.pes = None
         self.pes_dir = None
-        
+
         if infile is None:
             if files is None:
                 files = Files()
@@ -28,151 +28,40 @@ class Pes(GenericXML):
 
         GenericXML.__init__(self, infile)
 
-    def find_pes_layout(self, grid, compset, machine, pesize_opts=None):
+    def find_pes_layout(self, grid, compset, machine, pesize_opts='M'):
         pe_select = None
         grid_match = None
         mach_match = None
         compset_match = None
         pesize_match = None
+        max_points = -1
+        # Get all the nodes
+        grid_nodes = self.get_nodes("grid")
+        for grid_node in grid_nodes:
+            grid_match = grid_node.get("name")
+            if grid_match == "any" or  re.search(grid_match,grid):
+                mach_nodes = self.get_nodes("mach",root=grid_node)
+                for mach_node in mach_nodes:
+                    mach_match = mach_node.get("name")
+                    if mach_match == "any" or re.search(mach_match, machine):
+                        pes_nodes = self.get_nodes("pes", root=mach_node)
+                        for pes_node in pes_nodes:
+                            pesize_match = pes_node.get("pesize")
+                            compset_match = pes_node.get("compset")
+                            if (pesize_match == "any" or (pesize_opts is not None and \
+                                                        re.search(pesize_match, pesize_opts))) and \
+                                                        (compset_match == "any" or \
+                                                        re.search(compset_match,compset)):
 
-        # Find default which will be overwritten by any match below 
-        nodes = self.root.findall(".//grid[@name='any']/mach[@name='any']")
-        for node in nodes:
-            pes_node = self.get_nodes(nodename="pes", attributes={"pesize":"any", "compset":"any"}, root=node)
-            if len(pes_node) == 0:
-                continue
-            elif len(pes_node) == 1:
-                pe_select = node
-                break
-
-        # Find nodes with grid= not 'any' and mach='any' - this override the default for $grid_match and $mach_match
-        nodes = self.root.findall(".//grid")
-        for node in nodes:
-            mach_node = self.get_node(nodename="mach", root=node)
-            grid_attr = node.attrib["name"]
-            mach_attr = mach_node.attrib["name"]
-            # go to the next node if grid is 'any' and mach is not 'any'
-            if grid_attr == "any" and mach_attr != 'any': 
-                continue 
-            # determine if there is a match between the grid_attr and the grid longname
-            match =  re.search(grid_attr, grid)
-            if match:
-                grid_match = grid_attr
-                mach_match = 'any'
-                pe_select = node
-                print "1 found grid match for grid_attr %s and  grid %s" %(grid_attr, grid)
-                break
-
-        # Find nodes with grid = 'any' and mach = not 'any'
-        # The first match found will overwrite the above grid_match and mach_match default
-        nodes = self.root.findall(".//grid")
-        for node in nodes:
-            mach_node = self.get_node(nodename="mach", root=node)
-            grid_attr = node.attrib["name"]
-            mach_attr = mach_node.attrib["name"]
-            # go to the next node if grid is not 'any' and mach is 'any'
-            if grid_attr != "any" and mach_attr == 'any': 
-                continue 
-            # determine if there is a match between the mach_attr and the machine name
-            match =  re.search(mach_attr, machine)
-            if match:
-                grid_match = 'any'
-                mach_match = mach_attr
-                pe_select = node
-                print "2 found machine match for mach_attr %s and  machine %s" %(mach_attr, machine)
-                break
-
-        # Find nodes with grid = not 'any' and mach = not 'any'
-        # The first match found will overwrite the above grid_match and mach_match default
-        nodes = self.root.findall(".//grid")
-        for node in nodes:
-            mach_node = self.get_node(nodename="mach", root=node)
-            grid_attr = node.attrib["name"]
-            mach_attr = mach_node.attrib["name"]
-            # go to the next node if grid is 'any' and mach is 'any'
-            if grid_attr == "any" and mach_attr == 'any': 
-                continue 
-            # determine if there is a match between the mach_attr and the machine name
-            matchm =  re.search(mach_attr, machine)
-            matchg =  re.search(grid_attr, grid)
-            if matchg and matchm:
-                grid_match = grid_attr
-                mach_match = mach_attr
-                pe_select = node
-                print "3 found a grid/machine match for mach_attr %s and  machine %s" %(mach_attr, machine)
-                print "3 found a grid/machine match for grid_attr %s and  grid %s" %(grid_attr, grid)
-                break
-
-        # Now grid_match and mach_match are set
-        # Determine the values of compset_match and pe_size_match
-        nodes = self.root.findall(".//grid")
-        for node in nodes:
-            mach_node = self.get_node(nodename="mach", root=node)
-            grid_attr = node.attrib["name"]
-            mach_attr = mach_node.attrib["name"]
-
-            # go to the next node if grid and mach do not match grid_match and mach_match, respectively
-            matchg = grid_attr == grid_match
-            matchm = mach_attr == mach_match
-            if not matchg or not matchm:
-                continue 
-
-                pes_node = self.get_node(nodename="pes", root=mach_node)
-                compset_attr = pes_node.attrib["compset"]
-                pesize_attr = pes_node.attrib["pesize"]
-
-                if compset_match is None and pesize_match is None:
-                    matchc =  re.search(compset_attr, compset)
-                    matchp = None
-                    if pesize_opts is not None:
-                        matchp = re.search(pesize_attr, pesize_opts)
-                    if matchc and matchp:
-                        compset_match = compset_attr;
-                        pesize_match  = pesize_attr;
-                        pe_select = node
-                        print "4 found a compset/pesize match for mach_attr %s and  pesize_opts %s" %(mach_attr, pesize_opts)
-                        print "4 found a compset/pesize match for compset_attr %s and  compset %s" %(compset_attr, compset)
-                        break
-
-                if compset_match is None and pesize_match is None:
-                    matchc = re.search(compset_attr, compset)
-                    matchp = pesize_attr == 'any'
-                    if matchc and matchp:
-                        compset_match = compset_attr;
-                        pesize_match  = pesize_attr;
-                        print "5 found a compset/pesize match for mach_attr %s and  pesize_opts %s" %(mach_attr, pesize_opts)
-                        pe_select = node
-                        print "5 found a compset/pesize match for compset_attr %s and  compset %s" %(compset_attr, compset)
-                        break
-
-                if compset_match is None and pesize_match is None:
-                    matchc = compset == 'any'
-                    matchp = None
-                    if pesize_opts is not None:
-                        matchp =  re.search(pesize_attr, pesize_opts)
-                    if matchc and matchp:
-                        compset_match = compset_attr;
-                        pesize_match  = pesize_attr;
-                        pesize_match  = pesize_attr;
-                        pe_select = node
-                        print "6 found a compset/pesize match for mach_attr %s and  pesize_opts %s" %(mach_attr, pesize_opts)
-                        print "6 found a compset/pesize match for compset_attr %s and  compset %s" %(compset_attr, compset)
-                        break
-
-                if compset_match is None and pesize_match is None:
-                    matchc = re.search(compset_attr, compset)
-                    matchp = None
-                    if pesize_opts is not None:
-                        matchp =  re.search(pesize_attr, pesize_opts)
-                    if matchc and matchp:
-                        compset_match = compset_attr;
-                        pesize_match  = pesize_attr;
-                        pe_select = node
-                        print "7 found a compset/pesize match for mach_attr %s and  pesize_opts %s" %(mach_attr, pesize_opts)
-                        print "7 found a compset/pesize match for compset_attr %s and  compset %s" %(compset_attr, compset)
-                        break
+                               points = int(grid_match!="any")*4+int(mach_match!="any")*3+int(compset_match!="any")*2+int(pesize_match!="any")
+                               if points > max_points:
+                                   pe_select = pes_node
+                                   max_points = points
+                               elif points == max_points:
+                                   expect(False, "We dont expect to be here" )
 
         pes_ntasks = {}
+
         nodes = pe_select.findall(".//ntasks/*")
         for node in nodes:
             name = node.tag.upper()
@@ -200,7 +89,7 @@ class Pes(GenericXML):
         logger.info("Pes setting: compset       is %s " %compset)
         logger.info("Pes setting: grid match    is %s " %grid_match )
         logger.info("Pes setting: machine match is %s " %mach_match)
-        logger.info("Pes setting: compset_match is %s " %compset_match) 
-        logger.info("Pes setting: pesize match  is %s " %pesize_match) 
+        logger.info("Pes setting: compset_match is %s " %compset_match)
+        logger.info("Pes setting: pesize match  is %s " %pesize_match)
 
         return pes_ntasks, pes_nthrds, pes_rootpe

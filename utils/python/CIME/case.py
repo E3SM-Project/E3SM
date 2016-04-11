@@ -235,7 +235,7 @@ class Case(object):
             if result is not None:
                 del self.lookups[key]
 
-    def configure(self, compset_name, grid_name, machine_name=None, compiler=None, mpilib=None):
+    def configure(self, compset_name, grid_name, machine_name=None, pecount=None, compiler=None, mpilib=None):
         self._get_compset_longname(compset_name)
         self.get_compset_components()
 
@@ -318,7 +318,8 @@ class Case(object):
         pesobj = Pes(self._target_component)
 
         #FIXME - add pesize_opts as optional argument below
-        pes_ntasks, pes_nthrds, pes_rootpe = pesobj.find_pes_layout(self._gridname, self._compsetname, machine_name)
+        pes_ntasks, pes_nthrds, pes_rootpe = pesobj.find_pes_layout(self._gridname, self._compsetname,
+                                                                    machine_name, pesize_opts=pecount)
 
         for key, value in pes_ntasks.iteritems():
             self.set_value(key,int(value))
@@ -334,6 +335,6 @@ class Case(object):
         logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)
 
-    def set_initial_test_values(self, testname):
+    def set_initial_test_values(self):
         testobj = self._get_env("test")
         testobj.set_initial_values(self)

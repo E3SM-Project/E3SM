@@ -9,12 +9,13 @@ from CIME.utils import run_cmd
 import CIME.build as build
 
 class SystemTestsCommon(object):
-    def __init__(self, testname, caseroot=os.getcwd(), case=None):
+    def __init__(self, caseroot=os.getcwd(), case=None):
         """
         initialize a CIME system test object, if the file LockedFiles/env_run.orig.xml
         does not exist copy the current env_run.xml file.  If it does exist restore values
         changed in a previous run of the test.
         """
+        print caseroot
         self._caseroot = caseroot
                 # Needed for sh scripts
         os.environ["CASEROOT"] = caseroot
@@ -23,7 +24,6 @@ class SystemTestsCommon(object):
         else:
             self._case = case
 
-        self._testname = testname
 
         if os.path.isfile(os.path.join(caseroot, "LockedFiles", "env_run.orig.xml")):
             self.compare_env_run()
@@ -36,7 +36,7 @@ class SystemTestsCommon(object):
             shutil.copy("env_run.xml",
                         os.path.join(lockedfiles, "env_run.orig.xml"))
 
-        self._case.set_initial_test_values(self._testname)
+        self._case.set_initial_test_values()
 
 
     def build(self, sharedlib_only=False, model_only=False):

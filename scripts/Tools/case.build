@@ -75,7 +75,7 @@ def _main_func(description):
     testname = case.get_value('TESTCASE')
 
     if(testname is not None):
-        logging.warn("Building test for %s" % testname)
+        logging.warn("Building test for %s in directory %s" % (testname, caseroot))
         try:
             test = globals()[testname](caseroot, case)
         except KeyError:

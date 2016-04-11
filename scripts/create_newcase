@@ -55,15 +55,8 @@ def parse_command_line(args):
     parser.add_argument("-project", "--project", default="00000",
                         help="Specify a project id")
 
-    parser.add_argument("-pes_file", "--pes_file",
-                        help="Specify full pathname of pes file to use."
-                        "This file will contain settings that will overwrite the default settings")
-
     parser.add_argument("-pecount", "--pecount", choices=('S','M','L','X1','X2'), default="M",
                         help="Specify a target size description for the number of cores")
-
-    parser.add_argument("-petype", "--petype", choices=('threaded','mpionly','unset'), default="unset",
-                        help="Force pes to be all threaded or all mpi")
 
     parser.add_argument("-mach_dir", "--mach-dir",
                         help="Specify the locations of the Machines directory, other than the default"
@@ -92,8 +85,6 @@ def parse_command_line(args):
                         help="Alternative path for source root directory. By defualt this is set to"
                         "cimeroot/../")
 
-    # -sharedlibroot       Used for re-using build components when building multiple cases, default is \$EXEROOT
-
     args = parser.parse_args()
 
     CIME.utils.handle_standard_logging_options(args)
@@ -109,7 +100,7 @@ def parse_command_line(args):
 
 
     return args.case, args.compset, args.resolution, args.machine, args.compiler,\
-        args.mpilib, args.project, args.pes_file, args.pecount, args.petype, \
+        args.mpilib, args.project, args.pecount, \
         args.mach_dir, args.user_mods_dir, args.user_compset, args.user_pes_setby, \
         args.user_grid_file, args.srcroot
 
@@ -239,7 +230,7 @@ def _main_func():
 ###############################################################################
 
     case, compset, grid, machine, \
-        compiler, mpilib, project, pes_file, pecount, petype, \
+        compiler, mpilib, project, pecount,  \
         machine_dir, usermods_dir, user_compset, user_pes_setby, user_grid_file, srcroot \
         = parse_command_line(sys.argv)
 
@@ -248,11 +239,13 @@ def _main_func():
         srcroot  = os.path.join(cimeroot,"/../")
 
     # Determine
-    if os.path.exists(case):
+    if os.path.isabs(case):
         caseroot = os.path.dirname(case)
         case = os.path.basename(case)
     else:
         caseroot = os.path.join(os.getcwd(),case)
+
+    expect(not os.path.exists(caseroot), "Caseroot directory already exists")
 
     # Set the case object
     caseobj = Case(caseroot)
@@ -268,7 +261,7 @@ def _main_func():
         caseobj.set_value("GRIDS_SPEC_FILE", user_grid_file);
 
     # Configure the Case
-    caseobj.configure(compset, grid, machine)
+    caseobj.configure(compset, grid, machine, pecount)
 
     components = caseobj.get_compset_components()
     _create_caseroot(case, caseroot, cimeroot, components, machine)
