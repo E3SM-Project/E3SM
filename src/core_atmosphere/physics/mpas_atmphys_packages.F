@@ -35,8 +35,10 @@
 !local variables:
  character(len=StrKIND),pointer:: config_microp_scheme
  character(len=StrKIND),pointer:: config_convection_scheme
+ character(len=StrKIND),pointer:: config_pbl_scheme
  logical,pointer:: mp_kessler_in,mp_thompson_aerosols_in,mp_thompson_in,mp_wsm6_in
  logical,pointer:: cu_grell_freitas_in,cu_kain_fritsch_in,cu_tiedtke_in
+ logical,pointer:: bl_mynn_in,bl_ysu_in
 
  integer :: ierr
 
@@ -90,8 +92,10 @@
  endif
 
  write(0,*) '--- microp_scheme           = ', trim(config_microp_scheme)
+ write(0,*) '--- mp_kessler_in           = ', mp_kessler_in
  write(0,*) '--- mp_thompson_in          = ', mp_thompson_in
  write(0,*) '--- mp_thompson_aerosols_in = ', mp_thompson_aerosols_in
+ write(0,*) '--- mp_wsm6_in              = ', mp_wsm6_in
 
 !--- initialization of all packages for parameterizations of convection:
 
@@ -132,6 +136,38 @@
  write(0,*) '--- cu_grell_freitas_in     = ', cu_grell_freitas_in
  write(0,*) '--- cu_kain_fritsch_in      = ', cu_kain_fritsch_in
  write(0,*) '--- cu_tiedtke_in           = ', cu_tiedtke_in
+
+!--- initialization of all packages for parameterizations of surface layer and planetary boundary layer:
+
+ call mpas_pool_get_config(configs,'config_pbl_scheme',config_pbl_scheme)
+
+ nullify(bl_mynn_in)
+ call mpas_pool_get_package(packages,'bl_mynn_inActive',bl_mynn_in)
+
+ nullify(bl_ysu_in)
+ call mpas_pool_get_package(packages,'bl_ysu_inActive',bl_ysu_in)
+
+ if(.not.associated(bl_mynn_in) .or. &
+    .not.associated(bl_ysu_in)) then
+    write(stderrUnit,*) '===================================================================================='
+    write(stderrUnit,*) '* Error while setting up packages for planetary layer  options in atmosphere core.'
+    write(stderrUnit,*) '===================================================================================='
+    ierr = 1
+    return
+ endif
+
+ bl_mynn_in = .false.
+ bl_ysu_in  = .false.
+
+ if(config_pbl_scheme=='bl_mynn') then
+    bl_mynn_in = .true.
+ elseif(config_pbl_scheme == 'bl_ysu') then
+    bl_ysu_in = .true.
+ endif
+
+ write(0,*) '--- pbl_scheme              = ', trim(config_pbl_scheme)
+ write(0,*) '--- bl_mynn_in              = ', bl_mynn_in
+ write(0,*) '--- bl_ysu_in               = ', bl_ysu_in
 
  end function atmphys_setup_packages
 
