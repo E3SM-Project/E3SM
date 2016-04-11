@@ -13,6 +13,7 @@ class CME(SystemTestsCommon):
         initialize an object interface to the CME test
         """
         SystemTestsCommon.__init__(self, caseroot, case)
+        self._testname = "CME"
 
     def build(self, sharedlib_only=False, model_only=False):
         """

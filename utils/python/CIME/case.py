@@ -333,3 +333,7 @@ class Case(object):
         logger.info(" Compset is: %s " %self._compsetname)
         logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)
+
+    def set_initial_test_values(self, testname):
+        testobj = self._get_env("test")
+        testobj.set_initial_values(self)
