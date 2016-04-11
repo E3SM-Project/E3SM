@@ -27,63 +27,66 @@ def parse_command_line(args):
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("-case", "--case", required=True,
+    parser.add_argument("--case", "-case", required=True,
                         help="(required) Specify the case name. "
                         "If not a full pathname, then the current working directory is assumed")
 
-    parser.add_argument("-compset", "--compset", required=True,
+    parser.add_argument("--compset", "-compset", required=True,
                         help="(required) Specify a compset. "
                         "To see list of current compsets, use the utility manage_case in this directory")
 
-    parser.add_argument("-res", "--resolution", required=True,
+    parser.add_argument("--res", "-resolution", required=True,
                         help="(required) Specify a model grid resolution. "
                         "To see list of current compsets, use the utility manage_case in this directory")
 
-    parser.add_argument("-mach", "--machine", required=True,
+    parser.add_argument("--mach", "-machine", required=True,
                         help="(required) Specify a machine. "
                         "To see list of current compsets, use the utility manage_case in this directory")
 
-    parser.add_argument("-compiler", "--compiler",
+    parser.add_argument("--compiler", "-compiler",
                         help="Specify a compiler. "
                         "To see list of supported compilers for each machine, use the utility manage_case in this directory")
 
-    parser.add_argument("-mpilib", "--mpilib",
+    parser.add_argument("--mpilib", "-mpilib",
                         help="Specify the mpilib. "
                         "To see list of supported mpilibs for each machine, use the utility manage_case in this directory. "
                         "The default is mpi-serial, but will be replaced by default mpi library for the target machine.")
 
-    parser.add_argument("-project", "--project", default="00000",
+    parser.add_argument("--project", "-project", default="00000",
                         help="Specify a project id")
 
-    parser.add_argument("-pecount", "--pecount", choices=('S','M','L','X1','X2'), default="M",
+    parser.add_argument("--pecount", "-pecount", choices=('S','M','L','X1','X2'), default="M",
                         help="Specify a target size description for the number of cores")
 
-    parser.add_argument("-mach_dir", "--mach-dir",
+    parser.add_argument("--mach_dir", "-mach-dir",
                         help="Specify the locations of the Machines directory, other than the default"
                         "The default is CIMEROOT/machines")
 
-    parser.add_argument("-user_mods_dir", "--user-mods-dir",
+    parser.add_argument("--user_mods_dir", "-user-mods-dir",
                         help="Path to directory with user_nl_* files and xmlchange "
                         "commands to utilize. This can also include SourceMods")
 
-    parser.add_argument("-user_compset", "--user-compset",
+    parser.add_argument("--user_compset", "-user-compset",
                         help="Long name for new user compset to use"
                         "This assumes that all of the compset settings in the"
                         "long name have been defined by the target model components")
 
-    parser.add_argument("-user_grid_file", "--user-grid-file",
+    parser.add_argument("--user_grid_file", "-user-grid-file",
                         help="Full pathname of grid file to use"
                         "This should be a copy of cime_config/config_grids.xml"
                         "with the new user grid changes added to it")
 
-    parser.add_argument("-user_pes_setby", "--user-pes-setby",
+    parser.add_argument("--user_pes_setby", "-user-pes-setby",
                         help="Only used and required for --user-compset argument."
                         "Component that sets the pe-layouts and pio settings"
                         "For CESM this is [allactive, cam, clm, cice, cism, pop")
 
-    parser.add_argument("-srcroot", "--srcroot",
+    parser.add_argument("--srcroot", "-srcroot",
                         help="Alternative path for source root directory. By defualt this is set to"
                         "cimeroot/../")
+
+    # hidden argument indicating called from create_test
+    parser.add_argument("--test", "-test", action="store_true")
 
     args = parser.parse_args()
 
@@ -99,10 +102,10 @@ def parse_command_line(args):
                "User_grid_file %s does not exist " %args.user_grid_file)
 
 
-    return args.case, args.compset, args.resolution, args.machine, args.compiler,\
+    return args.case, args.compset, args.res, args.mach, args.compiler,\
         args.mpilib, args.project, args.pecount, \
         args.mach_dir, args.user_mods_dir, args.user_compset, args.user_pes_setby, \
-        args.user_grid_file, args.srcroot
+        args.user_grid_file, args.srcroot, args.test
 
 
 
@@ -204,12 +207,11 @@ def _create_caseroot_sourcemods(case, caseroot, cimeroot, components):
 ###############################################################################
 def _create_caseroot(case, caseroot, cimeroot, components, machine):
 ###############################################################################
-
-    logger.info(" Creating Caseroot %s" %caseroot)
-
-    # Make the case directory
-    os.mkdir(caseroot)
-    os.chdir(caseroot)
+    if not os.path.exists(caseroot):
+        # Make the case directory
+        logger.info(" Creating Case directory %s" %caseroot)
+        os.mkdir(caseroot)
+        os.chdir(caseroot)
 
     # Create relevant directories in $caseroot
     newdirs = ("SourceMods", "LockedFiles", "Buildconf", "Tools")
@@ -231,7 +233,7 @@ def _main_func():
 
     case, compset, grid, machine, \
         compiler, mpilib, project, pecount,  \
-        machine_dir, usermods_dir, user_compset, user_pes_setby, user_grid_file, srcroot \
+        machine_dir, usermods_dir, user_compset, user_pes_setby, user_grid_file, srcroot, test \
         = parse_command_line(sys.argv)
 
     cimeroot  = CIME.utils.get_cime_root()
@@ -240,12 +242,14 @@ def _main_func():
 
     # Determine
     if os.path.isabs(case):
-        caseroot = os.path.dirname(case)
+        caseroot = case
         case = os.path.basename(case)
     else:
         caseroot = os.path.join(os.getcwd(),case)
 
-    expect(not os.path.exists(caseroot), "Caseroot directory already exists")
+        #FIXME: create_test creates the caseroot before calling create_newcase
+    expect(not test or not os.path.exists(caseroot),
+           "Case directory %s already exists"%caseroot)
 
     # Set the case object
     caseobj = Case(caseroot)

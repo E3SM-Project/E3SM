@@ -344,8 +344,8 @@ class SystemTest(object):
             raise StandardError("Test '%s' has compiler that does"
                                 " not match instance compliler '%s'" % (test, self._compiler))
 
-        create_newcase_cmd = "%s -case %s -res %s -mach %s -compiler %s -compset %s"\
-                               " -project %s"%\
+        create_newcase_cmd = "%s --case %s --res %s --mach %s --compiler %s --compset %s"\
+                               " --project %s --test"%\
                               (os.path.join(self._cime_root, "scripts", "create_newcase"),
                                test_dir, grid, machine, compiler, compset, self._project)
 

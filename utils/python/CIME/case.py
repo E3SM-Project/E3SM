@@ -31,10 +31,7 @@ logger = logging.getLogger(__name__)
 class Case(object):
 
     def __init__(self, case_root=os.getcwd()):
-        #expect(os.path.isdir(case_root),
-        #       "Case root directory '%s' does not exist" % case_root)
 
-        #FIXME - define a method for when case_root does not exist
 
         self._env_files_that_need_rewrite = set()
 
