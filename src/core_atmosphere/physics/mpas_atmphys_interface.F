@@ -24,48 +24,47 @@
 
  integer:: i,j,k
 
-!>\brief interface for conversion between variables used in the MPAS dynamical core and variables
-!> needed in the physics parameterizations.  
-!>\author Laura D. Fowler (send comments to laura@ucar.edu).
-!>\date 2013-05-01.
-!>
-!>\details
-!>
-!> subroutines in mpas_atmphys_interface_nhyd:
-!> -------------------------------------------
-!> allocate_forall_physics  : allocation of all meteorological variables needed in the physics.
-!> deallocate_forall_physics: deallocation of all meteorological variables needed in the physics.
-!> MPAS_to_physics          : conversion of input "MPAS" variables to "physics" variables.
-!> microphysics_from_MPAS   : initialize local arrays needed in cloud microphysics schemes.
-!> microphysics_to_MPAS     : copy local arrays needed in cloud microphysics schemesto MPAS arrays.
-!>
-!> add-ons and modifications to sourcecode:
-!> ----------------------------------------
-!>    * In subroutine MPAS_to_physics, moved the calculation of the local arrays qv_p,qc_p, and
-!>      qr_p above the calculation of th_p so that we do not need to use the pointer qv.
-!>    * In subroutine microphysics_from_MPAS, moved the calculation of the local arrays qv_p,qc_p,
-!>      and qr_p above the calculation of th_p so that we do not need to use the pointer qv.
-!>    * In subroutine microphysics_to_MPAS, since microphysics schemes update the temperature and
-!>      water vapor mixing ratio, we first update the total pressure and exner functions. Then, we
-!>      update the modified potential temperature and calculate the diabatic tendency due to cloud
-!>      microphysics processes.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-11-07.
-!>    * Replaced the variable g (that originally pointed to gravity) with gravity, for simplicity.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
-!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
-!>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
-!>    * Added calculation of the surface pressure tendency. Moved the calculation of znu_p below 
-!>      the calculation of the surface pressure to avoid dividing by zero if the surface pressure
-!>      is not output in the init file.
-!>      Laura D. Fowler (birch.mmm.ucar.ecu) / 2014-06-23. 
-!>    * Renamed module mpas_atmphys_interface_nhyd to mpas_atmphys_interface.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-19.
-!>    * In subroutine microphysics_to_MPAS, reverted the calculation of cloud microphysics tendency
-!>      rt_diabatic_tend, and update of the state variables to git hash identifier 7a66f273e182f4.
-!>      This change reflects the fact that we want to compute rt_diabatic_tend at constant volume.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-1-015. 
+! interface for conversion between variables used in the MPAS dynamical core and variables needed in the
+! physics parameterizations.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
+
+! subroutines in mpas_atmphys_interface_nhyd:
+! -------------------------------------------
+! allocate_forall_physics  : allocation of all meteorological variables needed in the physics.
+! deallocate_forall_physics: deallocation of all meteorological variables needed in the physics.
+! MPAS_to_physics          : conversion of input "MPAS" variables to "physics" variables.
+! microphysics_from_MPAS   : initialize local arrays needed in cloud microphysics schemes.
+! microphysics_to_MPAS     : copy local arrays needed in cloud microphysics schemesto MPAS arrays.
+!
+! add-ons and modifications to sourcecode:
+! ----------------------------------------
+! * in subroutine MPAS_to_physics, moved the calculation of the local arrays qv_p,qc_p, and qr_p above the 
+!   calculation of th_p so that we do not need to use the pointer qv.
+! * in subroutine microphysics_from_MPAS, moved the calculation of the local arrays qv_p,qc_p, and qr_p above 
+!   the calculation of th_p so that we do not need to use the pointer qv.
+! * in subroutine microphysics_to_MPAS, since microphysics schemes update the temperature and water vapor
+!   mixing ratio, we first update the total pressure and exner functions. Then, we update the modified
+!   potential temperature and calculate the diabatic tendency due to cloud microphysics processes.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-11-07.
+! * replaced the variable g (that originally pointed to gravity) with gravity, for simplicity.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
+! * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+! * modified sourcecode to use pools.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+! * added calculation of the surface pressure tendency. Moved the calculation of znu_p below the calculation 
+!   of the surface pressure to avoid dividing by zero if the surface pressure is not output in the init file.
+!   Laura D. Fowler (birch.mmm.ucar.ecu) / 2014-06-23. 
+! * renamed module mpas_atmphys_interface_nhyd to mpas_atmphys_interface.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-09-19.
+! * in subroutine microphysics_to_MPAS, reverted the calculation of cloud microphysics tendency rt_diabatic_tend, 
+!   and update of the state variables to git hash identifier 7a66f273e182f4. This change reflects the fact that
+!   we want to compute rt_diabatic_tend at constant volume.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-01-015. 
+! * added the initialization of local variables needed in the parameterization of the MYNN surface layer scheme
+!   and planetary boundary layer scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
 
 
  contains
@@ -74,6 +73,7 @@
 !=================================================================================================================
  subroutine allocate_forall_physics
 !=================================================================================================================
+
  if(.not.allocated(psfc_p) ) allocate(psfc_p(ims:ime,jms:jme)         )
  if(.not.allocated(ptop_p) ) allocate(ptop_p(ims:ime,jms:jme)         )
 
@@ -105,6 +105,15 @@
  if(.not.allocated(qs_p)   ) allocate(qs_p(ims:ime,kms:kme,jms:jme)   )
  if(.not.allocated(qg_p)   ) allocate(qg_p(ims:ime,kms:kme,jms:jme)   )
 
+ pbl_select: select case (trim(pbl_scheme))
+    case("bl_mynn")
+       if(.not.allocated(ni_p)) allocate(ni_p(ims:ime,kms:kme,jms:jme))
+       if(.not.allocated(nc_p)) allocate(nc_p(ims:ime,kms:kme,jms:jme))
+
+    case default
+
+ end select pbl_select
+
 !... arrays used for calculating the hydrostatic pressure and exner function:
  if(.not.allocated(psfc_hyd_p)  ) allocate(psfc_hyd_p(ims:ime,jms:jme)          )
  if(.not.allocated(psfc_hydd_p) ) allocate(psfc_hydd_p(ims:ime,jms:jme)         )
@@ -119,6 +128,7 @@
 !=================================================================================================================
  subroutine deallocate_forall_physics
 !=================================================================================================================
+
  if(allocated(psfc_p)  ) deallocate(psfc_p  )
  if(allocated(ptop_p)  ) deallocate(ptop_p  )
 
@@ -150,6 +160,15 @@
  if(allocated(qs_p)    ) deallocate(qs_p    )
  if(allocated(qg_p)    ) deallocate(qg_p    )
 
+ pbl_select: select case (trim(pbl_scheme))
+    case("bl_mynn")
+       if(allocated(ni_p)) deallocate(ni_p)
+       if(allocated(nc_p)) deallocate(nc_p)
+
+    case default
+
+ end select pbl_select
+
  if(allocated(psfc_hyd_p)  ) deallocate(psfc_hyd_p  )
  if(allocated(psfc_hydd_p) ) deallocate(psfc_hydd_p )
  if(allocated(pres_hyd_p)  ) deallocate(pres_hyd_p  )
@@ -163,6 +182,7 @@
 !=================================================================================================================
  subroutine MPAS_to_physics(mesh,state,time_lev,diag,diag_physics)
 !=================================================================================================================
+
 !input variables:
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: state
@@ -175,6 +195,7 @@
 
 !local pointers:
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
+ integer,pointer:: index_nc,index_ni
  real(kind=RKIND),dimension(:),pointer    :: latCell,lonCell
  real(kind=RKIND),dimension(:),pointer    :: fzm,fzp,rdzw
  real(kind=RKIND),dimension(:),pointer    :: surface_pressure,plrad
@@ -182,6 +203,7 @@
  real(kind=RKIND),dimension(:,:),pointer  :: zz,exner,pressure_b,rtheta_p,rtheta_b
  real(kind=RKIND),dimension(:,:),pointer  :: rho_zz,theta_m,pressure_p,u,v,w
  real(kind=RKIND),dimension(:,:),pointer  :: qv,qc,qr,qi,qs,qg
+ real(kind=RKIND),dimension(:,:),pointer  :: nc,ni
  real(kind=RKIND),dimension(:,:,:),pointer:: scalars
 
 !local variables:
@@ -251,7 +273,7 @@
     qi_p(i,k,j) = max(0.,qi(k,i))
     qs_p(i,k,j) = max(0.,qs(k,i))
     qg_p(i,k,j) = max(0.,qg(k,i))
-    
+
     !arrays located at theta points:
     u_p(i,k,j) = u(k,i)
     v_p(i,k,j) = v(k,i)
@@ -271,6 +293,24 @@
  enddo
  enddo
  enddo
+
+ pbl_select: select case (trim(pbl_scheme))
+    case("bl_mynn")
+       call mpas_pool_get_dimension(state,'index_ni',index_ni)
+       ni => scalars(index_ni,:,:)
+
+       do j = jts,jte
+       do k = kts,kte
+       do i = its,ite
+          nc_p(i,k,j) = 0._RKIND
+          ni_p(i,k,j) = max(0.,ni(k,i))
+       enddo
+       enddo
+       enddo
+
+    case default
+
+ end select pbl_select
 
 !calculation of the surface pressure using hydrostatic assumption down to the surface::
  do j = jts,jte
