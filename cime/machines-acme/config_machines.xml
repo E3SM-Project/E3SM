@@ -555,6 +555,46 @@
     <PES_PER_NODE>2</PES_PER_NODE>
 </machine>
 
+<machine MACH="sierra">
+         <DESC>LLNL Linux Cluster, Linux (pgi), 12 pes/node, batch system is Moab</DESC>
+         <COMPILERS>intel, pgi</COMPILERS>
+         <MPILIBS>mpich,mpi-serial</MPILIBS>
+         <RUNDIR>/p/lscratche/$CCSMUSER/ACME/$CASE/run</RUNDIR>
+         <EXEROOT>/p/lscratche/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/p/lscratche/$USER</CESMSCRATCHROOT>
+         <DIN_LOC_ROOT>/p/lscratchd/ma21/ccsm3data/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/p/lscratchd/ma21/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/p/lscratche/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
+         <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
+         <CCSM_BASELINE>/p/lscratchd/$CCSMUSER/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
+         <OS>LINUX</OS>
+         <BATCHQUERY>mshow</BATCHQUERY>
+         <BATCHSUBMIT>msub</BATCHSUBMIT>
+	 <BATCHREDIRECT></BATCHREDIRECT>
+         <SUPPORTED_BY>wlin -at- bnl.gov</SUPPORTED_BY>
+         <GMAKE_J>8</GMAKE_J>
+         <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+	 <batch_system type="sierra_slurm" version="x.y">
+	   <queues>
+	     <queue jobmin="1" jobmax="9999" default="true">pbatch</queue>
+	   </queues>
+	   <walltimes>
+	     <walltime default="true">walltime=01:00:00</walltime>
+	   </walltimes>
+	 </batch_system>
+	 <mpirun mpilib="mpich">
+	   <executable>srun</executable>
+	   <arguments>
+	     <arg name="num_nodes"> -N {{ num_nodes }}</arg>
+	   </arguments>
+	 </mpirun>
+	 <mpirun mpilib="mpi-serial">
+           <executable></executable>
+	 </mpirun>
+</machine>
+
 <machine MACH="mira">
          <DESC>ANL IBM BG/Q, os is BGP, 16 pes/node, batch system is cobalt</DESC>
          <NODENAME_REGEX>mira</NODENAME_REGEX>
