@@ -13,6 +13,7 @@
  use mpas_dmpar
 
  use mpas_atmphys_constants, only: R_d,R_v,degrad
+ use mpas_atmphys_vars, only: pbl_scheme,convection_scheme
 
  implicit none
  private
@@ -41,9 +42,14 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-22.
 ! * modified the sourcecode to accomodate the packages "cu_kain_fritsch_in" and "cu_tiedtke_in".
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-24.
+! * added the calculation of rthdynten which is the tendency of potential temperature due to horizontal and
+!   vertical advections needed in the Grell-Freitas scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
 ! * added the options cu_grell_freitas and cu_grell_freitas_momentum for the calculation of the
 !   u-wind tendency.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
+! * added the option bl_mynn for the calculation of the tendency for the cloud ice number concentration.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
 
 
  contains
@@ -58,16 +64,20 @@
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: state
  type(mpas_pool_type),intent(in):: diag
- type(mpas_pool_type),intent(inout):: tend_physics
  type(mpas_pool_type),intent(in):: configs
  integer, intent(in):: rk_step
 
 !inout variables:
  type(mpas_pool_type),intent(inout):: tend
+ type(mpas_pool_type),intent(inout):: tend_physics
 
 !local variables:
+ character(len=StrKIND), pointer :: config_pbl_scheme, config_convection_scheme, &
+                                    config_radt_lw_scheme, config_radt_sw_scheme
+
  integer:: i,iCell,k,n
- integer,pointer:: index_qv, index_qc, index_qr, index_qi, index_qs, index_qg
+ integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
+ integer,pointer:: index_ni
  integer,pointer:: nCells,nCellsSolve,nEdges,nEdgesSolve,nVertLevels
 
  real(kind=RKIND),dimension(:,:),pointer:: mass          ! time level 2 rho_zz
@@ -76,20 +86,20 @@
  real(kind=RKIND),dimension(:,:,:),pointer:: scalars
  real(kind=RKIND),dimension(:,:),pointer:: rthblten,rqvblten,rqcblten, &
                                            rqiblten,rublten,rvblten
+ real(kind=RKIND),dimension(:,:),pointer:: rniblten
  real(kind=RKIND),dimension(:,:),pointer:: rthcuten,rqvcuten,rqccuten, &
                                            rqrcuten,rqicuten,rqscuten, &
                                            rucuten,rvcuten
  real(kind=RKIND),dimension(:,:),pointer:: rthratenlw,rthratensw                                    
+ real(kind=RKIND),dimension(:,:),pointer:: rthdynten
  
- real(kind=RKIND),dimension(:,:),pointer:: tend_theta,tend_u
+ real(kind=RKIND),dimension(:,:),pointer  :: tend_theta,tend_theta_euler,tend_diabatic,tend_u
  real(kind=RKIND),dimension(:,:,:),pointer:: tend_scalars
- real(kind=RKIND),dimension(:,:),pointer:: tend_qv,tend_qc,tend_qr,tend_qi,tend_qs,tend_qg
+ real(kind=RKIND),dimension(:,:),pointer  :: tend_qv,tend_qc,tend_qr,tend_qi,tend_qs,tend_qg
+ real(kind=RKIND),dimension(:,:),pointer  :: tend_ni
 
- real(kind=RKIND):: tem
+ real(kind=RKIND):: coeff
  real(kind=RKIND),dimension(:,:),allocatable:: rublten_Edge,rucuten_Edge
-
- character(len=StrKIND), pointer :: config_pbl_scheme, config_convection_scheme, &
-                                    config_radt_lw_scheme, config_radt_sw_scheme
 
 !ldf (2011-12-16):
  real(kind=RKIND),dimension(:,:),allocatable:: theta,tend_th
@@ -112,32 +122,41 @@
  call mpas_pool_get_array(state, 'rho_zz', mass, 2)
  call mpas_pool_get_array(diag , 'rho_edge', mass_edge)
 
- call mpas_pool_get_dimension(state, 'index_qv', index_qv)
- call mpas_pool_get_dimension(state, 'index_qc', index_qc)
- call mpas_pool_get_dimension(state, 'index_qr', index_qr)
- call mpas_pool_get_dimension(state, 'index_qi', index_qi)
- call mpas_pool_get_dimension(state, 'index_qs', index_qs)
- call mpas_pool_get_dimension(state, 'index_qg', index_qg)
+ call mpas_pool_get_dimension(state,'index_qv',index_qv)
+ call mpas_pool_get_dimension(state,'index_qc',index_qc)
+ call mpas_pool_get_dimension(state,'index_qr',index_qr)
+ call mpas_pool_get_dimension(state,'index_qi',index_qi)
+ call mpas_pool_get_dimension(state,'index_qs',index_qs)
+ call mpas_pool_get_dimension(state,'index_qg',index_qg)
  qv => scalars(index_qv,:,:)
 
- call mpas_pool_get_array(tend_physics, 'rublten', rublten)
- call mpas_pool_get_array(tend_physics, 'rvblten', rvblten)
- call mpas_pool_get_array(tend_physics, 'rthblten', rthblten)
- call mpas_pool_get_array(tend_physics, 'rqvblten', rqvblten)
- call mpas_pool_get_array(tend_physics, 'rqcblten', rqcblten)
- call mpas_pool_get_array(tend_physics, 'rqiblten', rqiblten)
+ call mpas_pool_get_array(tend,'rt_diabatic_tend',tend_diabatic)
 
- call mpas_pool_get_array(tend_physics, 'rthcuten', rthcuten)
- call mpas_pool_get_array(tend_physics, 'rqvcuten', rqvcuten)
- call mpas_pool_get_array(tend_physics, 'rqccuten', rqccuten)
- call mpas_pool_get_array(tend_physics, 'rqicuten', rqicuten)
+ call mpas_pool_get_array(tend_physics,'rublten' ,rublten )
+ call mpas_pool_get_array(tend_physics,'rvblten' ,rvblten )
+ call mpas_pool_get_array(tend_physics,'rthblten',rthblten)
+ call mpas_pool_get_array(tend_physics,'rqvblten',rqvblten)
+ call mpas_pool_get_array(tend_physics,'rqcblten',rqcblten)
+ call mpas_pool_get_array(tend_physics,'rqiblten',rqiblten)
+
+ call mpas_pool_get_array(tend_physics,'rucuten' ,rucuten )
+ call mpas_pool_get_array(tend_physics,'rvcuten' ,rvcuten )
+ call mpas_pool_get_array(tend_physics,'rthcuten',rthcuten)
+ call mpas_pool_get_array(tend_physics,'rqvcuten',rqvcuten)
+ call mpas_pool_get_array(tend_physics,'rqccuten',rqccuten)
+ call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
+ call mpas_pool_get_array(tend_physics,'rqicuten',rqicuten)
+ call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
 
  call mpas_pool_get_array(tend_physics, 'rthratenlw', rthratenlw)
  call mpas_pool_get_array(tend_physics, 'rthratensw', rthratensw)
 
- call mpas_pool_get_array(tend, 'u', tend_u)
- call mpas_pool_get_array(tend, 'theta_m', tend_theta)
- call mpas_pool_get_array(tend, 'scalars_tend', tend_scalars)
+ call mpas_pool_get_array(tend_physics, 'rthdynten' , rthdynten)
+
+ call mpas_pool_get_array(tend,'u'           , tend_u         )
+ call mpas_pool_get_array(tend,'theta_m'     , tend_theta     )
+ call mpas_pool_get_array(tend,'theta_euler' ,tend_theta_euler)
+ call mpas_pool_get_array(tend,'scalars_tend',tend_scalars    )
  tend_qv => tend_scalars(index_qv,:,:)
  tend_qc => tend_scalars(index_qc,:,:)
  tend_qr => tend_scalars(index_qr,:,:)
@@ -164,7 +183,7 @@
     call tend_toEdges(block,mesh,rublten,rvblten,rublten_Edge)
     do i = 1, nEdgesSolve
     do k  = 1, nVertLevels
-       tend_u(k,i)=tend_u(k,i)+rublten_Edge(k,i)*mass_edge(k,i)
+       tend_u(k,i) = tend_u(k,i) + rublten_Edge(k,i)*mass_edge(k,i)
     enddo
     enddo
     deallocate(rublten_Edge)
@@ -177,37 +196,30 @@
        tend_qi(k,i) = tend_qi(k,i) + rqiblten(k,i)*mass(k,i)
     enddo
     enddo
+
+    pbl_select: select case (trim(pbl_scheme))
+
+       case("bl_mynn")
+          call mpas_pool_get_dimension(state,'index_ni',index_ni)
+          tend_ni => tend_scalars(index_ni,:,:)
+          tend_ni = 0._RKIND
+
+          call mpas_pool_get_array(tend_physics,'rniblten',rniblten)
+
+          do i = 1, nCellsSolve
+          do k = 1, nVertLevels
+             tend_ni(k,i) = tend_ni(k,i) + rniblten(k,i)*mass(k,i)
+          enddo
+          enddo
+
+       case default         
+
+     end select pbl_select
+
  endif
 
 !add coupled tendencies due to convection:
  if(config_convection_scheme .ne. 'off') then
-
-    if(config_convection_scheme == 'cu_tiedtke'               .or. &
-       config_convection_scheme == 'cu_grell_freitas'         .or. &
-       config_convection_scheme == 'cu_grell_freitas_momentum') then
-       call mpas_pool_get_array(tend_physics, 'rucuten', rucuten)
-       call mpas_pool_get_array(tend_physics, 'rvcuten', rvcuten)
-
-       allocate(rucuten_Edge(nVertLevels,nEdges))
-       rucuten_Edge(:,:) = 0.
-       call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)
-       do i = 1, nEdgesSolve
-       do k  = 1, nVertLevels
-          tend_u(k,i)=tend_u(k,i)+rucuten_Edge(k,i)*mass_edge(k,i)
-       enddo
-       enddo
-       deallocate(rucuten_Edge)
-    elseif(config_convection_scheme .eq. 'cu_kain_fritsch') then
-       call mpas_pool_get_array(tend_physics, 'rqrcuten', rqrcuten)
-       call mpas_pool_get_array(tend_physics, 'rqscuten', rqscuten)
-
-       do i = 1, nCellsSolve
-       do k = 1, nVertLevels
-          tend_qr(k,i) = tend_qr(k,i) + rqrcuten(k,i)*mass(k,i)
-          tend_qs(k,i) = tend_qs(k,i) + rqscuten(k,i)*mass(k,i)    
-       enddo
-       enddo
-    endif
 
     do i = 1, nCellsSolve
     do k = 1, nVertLevels
@@ -217,7 +229,44 @@
        tend_qi(k,i) = tend_qi(k,i) + rqicuten(k,i)*mass(k,i)
     enddo
     enddo
+
+    convection_select: select case(convection_scheme)
     
+       case('cu_grell_freitas','cu_grell_freitas_momentum','cu_tiedtke')
+          allocate(rucuten_Edge(nVertLevels,nEdges))
+          rucuten_Edge(:,:) = 0.
+          call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)
+          do i = 1, nEdgesSolve
+          do k  = 1, nVertLevels
+             tend_u(k,i) = tend_u(k,i) + rucuten_Edge(k,i)*mass_edge(k,i)
+          enddo
+          enddo
+          deallocate(rucuten_Edge)
+
+          convection2_select: select case(convection_scheme)
+             case('cu_grell_freitas','cu_grell_freitas_momentum')
+                do i = 1, nCellsSolve
+                do k = 1, nVertLevels
+                   coeff = 1._RKIND/(1._RKIND + R_v/R_d*qv(k,i))
+                   rthdynten(k,i) = coeff*(tend_theta(k,i)-tend_theta_euler(k,i) &
+                                  - mass(k,i)*tend_diabatic(k,i))/mass(k,i)
+                enddo
+                enddo
+
+          end select convection2_select
+
+       case('cu_kain_fritsch')
+          do i = 1, nCellsSolve
+          do k = 1, nVertLevels
+             tend_qr(k,i) = tend_qr(k,i) + rqrcuten(k,i)*mass(k,i)
+             tend_qs(k,i) = tend_qs(k,i) + rqscuten(k,i)*mass(k,i)
+          enddo
+          enddo
+
+        case default
+
+    end select convection_select
+
  endif
 
 !add coupled tendencies due to longwave radiation:
