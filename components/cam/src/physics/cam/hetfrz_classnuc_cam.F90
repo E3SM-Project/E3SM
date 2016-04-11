@@ -1587,7 +1587,7 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
                      ( aer(ii,kk,so4_coarse) + aer(ii,kk,mom_coarse) )
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 
          awfacm(3) = ( aer(ii,kk,bc_coarse) + aer(ii,kk,soa_coarse) + &
-                       aer(ii,kk,pom_coarse )/ &
+                       aer(ii,kk,pom_coarse) )/ &
                      ( aer(ii,kk,soa_coarse) + aer(ii,kk,pom_coarse) + &
                        aer(ii,kk,so4_coarse) + aer(ii,kk,bc_coarse) )
 #else
