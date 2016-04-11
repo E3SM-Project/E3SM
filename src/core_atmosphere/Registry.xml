@@ -328,6 +328,8 @@
                 <package name="cu_grell_freitas_in" description="parameterization of Grell-Freitas convection."/>
                 <package name="cu_kain_fritsch_in" description="parameterization of Kain-Fritsch convection."/>
                 <package name="cu_tiedtke_in" description="parameterization of Tiedtke convection."/>
+                <package name="bl_ysu_in" description="parameterization of YSU Planetary Boundary Layer."/>
+                <package name="bl_mynn_in" description="parameterization of MYNN Planetary Boundary Layer."/>
         </packages>
 
 
@@ -593,6 +595,14 @@
 			<var name="cubot"/>
 			<var name="cutop"/>
 			<var name="w0avg"/>
+                        <var name="qcg"/>
+                        <var name="sh3d"/>
+                        <var name="qke"/>
+                        <var name="qke_adv"/>
+                        <var name="cov"/>
+                        <var name="qsq"/>
+                        <var name="tsq"/>
+                        <var name="tke_pbl"/>
 			<var name="kpbl"/>
 			<var name="hpbl"/>
 			<var name="hfx"/>
@@ -720,6 +730,7 @@
 			<var name="rqvblten"/>
 			<var name="rqcblten"/>
 			<var name="rqiblten"/>
+			<var name="rniblten"/>
 			<var name="rthratensw"/>
 			<var name="rthratenlw"/>
 			<var name="pin"/>
@@ -1178,7 +1189,7 @@
 
                         <var name="qc" array_group="moist" units="kg kg^{-1}"
                              description="Cloud water mixing ratio"
-                             packages="cu_tiedtke_in;mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                             packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
 
                         <var name="qr" array_group="moist" units="kg kg^{-1}"
                              description="Rain water mixing ratio"
@@ -1186,7 +1197,7 @@
 
                         <var name="qi" array_group="moist" units="kg kg^{-1}"
                              description="Ice mixing ratio"
-                             packages="cu_tiedtke_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in">
+                             packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
 
                         <var name="qs" array_group="moist" units="kg kg^{-1}"
                              description="Snow mixing ratio"
@@ -1198,7 +1209,7 @@
 
                         <var name="ni" array_group="number" units="nb kg^{-1}"
                              description="Cloud ice number concentration"
-                             packages="mp_thompson_aerosols_in;mp_thompson_in"/>
+                             packages="bl_mynn_in;mp_thompson_aerosols_in;mp_thompson_in"/>
 
                         <var name="nr" array_group="number" units="nb kg^{-1}"
                              decription="Rain number concentration"
@@ -1206,7 +1217,7 @@
 
                         <var name="nc" array_group="number" units="nb kg^{-1}"
                              description="Cloud water number concentration"
-                             packages="mp_thompson_aerosols_in"/>
+                             packages="bl_mynn_in;mp_thompson_aerosols_in"/>
 
                         <var name="nwfa" array_group="aerosols" units="nb kg^{-1}"
                              description="Number concentration of hygroscopic (water friendly) aerosols"
@@ -1598,7 +1609,7 @@
 
                         <var name="tend_ni" name_in_code="ni" array_group="number" units="nb kg^{-1} s^{-1}"
                              description="Tendency of cloud ice number concentration"
-                             packages="mp_thompson_aerosols_in;mp_thompson_in"/>
+                             packages="bl_mynn_in;mp_thompson_aerosols_in;mp_thompson_in"/>
 
                         <var name="tend_nr" name_in_code="nr" array_group="number" units="nb kg^{-1} s^{-1}" 
                              description="Tendency of rain number concentration"
@@ -1606,7 +1617,7 @@
 
                         <var name="tend_nc" name_in_code="nc" array_group="number" units="nb kg^{-1} s^{-1}"
                              description="Tendency of cloud water number concentration"
-                             packages="mp_thompson_aerosols_in"/>
+                             packages="bl_mynn_in;mp_thompson_aerosols_in"/>
 
                         <var name="tend_nwfa" name_in_code="nwfa" array_group="aerosols" units="nb kg^{-1} s^{-1}"
                              description="Tendency of number concentration of hygroscopic (water friendly) aerosols"
@@ -2024,23 +2035,86 @@
                 <!-- exch_h    : exchange coefficient                                                              (-)  -->
 
                 <var name="kpbl" type="integer" dimensions="nCells Time" units="unitless"
-                     description="index level of PBL top"/>
+                     description="index level of PBL top"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="hpbl" type="real" dimensions="nCells Time" units="m"
-                     description="Planetary Boundary Layer (PBL) height"/>
+                     description="Planetary Boundary Layer (PBL) height"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
+                <!-- YSU PBL SCHEME: -->
                 <var name="exch_h" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-1}"
-                     description="exchange coefficient"/>
+                     description="exchange coefficient"
+                     packages="bl_ysu_in"/>
 
-                <!-- TEMPORARY: -->
 		              <var name="kzh" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-1}"
-                     description="vertical diffusion coefficient of potential temperature"/>
+                     description="vertical diffusion coefficient of potential temperature"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
 		              <var name="kzm" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-1}"
-                     description="vertical diffusion coefficient of mommentum"/>
+                     description="vertical diffusion coefficient of mommentum"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
 		              <var name="kzq" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-1}"
-                     description="vertical diffusion coefficient of water vapor and cloud condensates"/>
+                     description="vertical diffusion coefficient of water vapor and cloud condensates"
+                     packages="bl_mynn_in;bl_ysu_in"/>
+
+                <!-- MYNN PBL SCHEME: -->
+                <var name="delta" type="real" dimensions="nCells Time" units="m"
+                     description="entrainment layer depth from PBL scheme"
+                     packages="bl_mynn_in;bl_ysu_in"/>
+
+                <var name="wstar" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="mixed velocity scale from PBL scheme"
+                     packages="bl_mynn_in;bl_ysu_in"/>
+
+                <var name="cov" type="real" dimensions="nVertLevels nCells Time" units="K kg kg^{-1}"
+                     description="liquid water - liquid water potential temperature covariance"
+                     packages="bl_mynn_in"/>
+
+                <var name="el_pbl" type="real" dimensions="nVertLevels nCells Time" units="m"
+                     description="mixing length from PBL scheme"
+                     packages="bl_mynn_in"/>
+
+                <var name="qke" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-2}"
+                     description="twice turbulent kinetic energy"
+                     packages="bl_mynn_in"/>
+
+                <var name="qke_adv" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-2}"
+                     description="twice turbulent kinetic energy"
+                     packages="bl_mynn_in"/>
+
+                <var name="qsq" type="real" dimensions="nVertLevels nCells Time" units="{kg kg^{-1}}^2"
+                     description="liquid water variance"
+                     packages="bl_mynn_in"/>
+
+                <var name="tsq" type="real" dimensions="nVertLevels nCells Time" units="K^{2}"
+                     description="liquid water potential temperature variance"
+                     packages="bl_mynn_in"/>
+
+                <var name="tke_pbl" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-2}"
+                     description="turbulent kinetic energy from PBL"
+                     packages="bl_mynn_in"/>
+
+                <var name="dqke" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-2}"
+                     description="TKE change"
+                     packages="bl_mynn_in"/>
+
+                <var name="qbuoy" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-2}"
+                     description="TKE production - buoyancy"
+                     packages="bl_mynn_in"/>
+
+                <var name="qdiss" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-2}"
+                     description="TKE dissipation"
+                     packages="bl_mynn_in"/>
+
+                <var name="qshear" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-2}"
+                     description="TKE production - shear"
+                     packages="bl_mynn_in"/>
+
+                <var name="qwt" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-2}"
+                     description="TKE vertical distribution"
+                     packages="bl_mynn_in"/>
 
 
                 <!-- ================================================================================================== -->
@@ -2084,94 +2158,124 @@
                 <!--  th2m      :potential temperature at 2m                                                        [K] -->
 
                 <var name="hfx" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="upward heat flux at the surface"/>
+                     description="upward heat flux at the surface"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="mavail" type="real" dimensions="nCells Time" units="unitless"
-                     description="surface moisture availability (between 0 and 1)"/>
+                     description="surface moisture availability (between 0 and 1)"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="mol" type="real" dimensions="nCells Time" units="K"
-                     description="T* in similarity theory"/>
+                     description="T* in similarity theory"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="qfx" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
-                     description="upward moisture flux at the surface"/>
+                     description="upward moisture flux at the surface"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="qsfc" type="real"  dimensions="nCells Time" units="kg kg^{-1}"
-                     description="specific humidity at lower boundary"/>
+                     description="specific humidity at lower boundary"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="ust" type="real" dimensions="nCells Time" units="m s^{-1}"
-                     description="U* in similarity theory"/>
+                     description="U* in similarity theory"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="ustm" type="real" dimensions="nCells Time" units="m s^{-1}"
-                     description="U* in similarity theory without vconv"/>
+                     description="U* in similarity theory without vconv"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="zol" type="real" dimensions="nCells Time" units="unitless"
-                     description="z/L height over Monin-Obukhov length"/>
+                     description="z/L height over Monin-Obukhov length"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="znt" type="real" dimensions="nCells Time" units="m"
-                     description="Roughness length"/>
+                     description="Roughness length"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="br" type="real" dimensions="nCells Time" units="unitless"
-                     description="Richardson number"/>
+                     description="Richardson number"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="cd" type="real" dimensions="nCells Time" units="unitless"
-                     description="drag coefficient at 10-meter"/>
+                     description="drag coefficient at 10-meter"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="cda" type="real" dimensions="nCells Time" units="unitless"
-                     description="drag coefficient at lowest model level"/>
+                     description="drag coefficient at lowest model level"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="chs" type="real" dimensions="nCells Time" units="m s^{-1}"
-                     description="surface exchange coefficient for heat and moisture"/>
+                     description="surface exchange coefficient for heat and moisture"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="chs2" type="real" dimensions="nCells Time" units="m s^{-1}"
-                     description="surface exchange coefficient for heat at 2-meter"/>
+                     description="surface exchange coefficient for heat at 2-meter"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="cqs2" type="real" dimensions="nCells Time" units="m s^{-1}"
-                     description="surface exchange coefficient for moisture at 2-meter"/>
+                     description="surface exchange coefficient for moisture at 2-meter"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="ck" type="real" dimensions="nCells Time" units="unitless"
-                     description="enthalpy exchange coeff at 10-meter"/>
+                     description="enthalpy exchange coeff at 10-meter"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="cka" type="real" dimensions="nCells Time" units="unitless"
-                     description="enthalpy exchange coefficient at lowest model level"/>
+                     description="enthalpy exchange coefficient at lowest model level"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="cpm" type="real" dimensions="nCells Time" units="J K^{-1} kg^{-1}"
-                     description="specific heat of dry air at constant pressure at lowest model level"/>
+                     description="specific heat of dry air at constant pressure at lowest model level"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="flhc" type="real" dimensions="nCells Time" units="W m^{-2} K^{-1}"
-                     description="exchange coefficient for heat"/>
+                     description="exchange coefficient for heat"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="flqc" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
-                     description="exchange coefficient for moisture"/>
+                     description="exchange coefficient for moisture"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="gz1oz0" type="real" dimensions="nCells Time" units="unitless"
-                     description="log(z/z0) where z0 is roughness length"/>
+                     description="log(z/z0) where z0 is roughness length"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="lh" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="latent heat flux at the surface"/>
+                     description="latent heat flux at the surface"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="psim" type="real" dimensions="nCells Time" units="unitless"
-                     description="similarity stability function for momentum"/>
+                     description="similarity stability function for momentum"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="psih" type="real" dimensions="nCells Time" units="unitless"
-                     description="similarity stability function for heat"/>
+                     description="similarity stability function for heat"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="qgh" type="real" dimensions="nCells Time" units="kg kg^{-1}"
-                     description="lowest level saturation mixing ratio"/>
+                     description="lowest level saturation mixing ratio"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="regime" type="real" dimensions="nCells Time" units="unitless"
-                     description="flag indicating the PBL regime (stable,unstable,...)"/>
+                     description="flag indicating the PBL regime (stable,unstable,...)"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="rmol" type="real" dimensions="nCells Time" units="unitless"
-                     description="1./L Monin Obukhov length"/>
+                     description="1./L Monin Obukhov length"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="wspd" type="real" dimensions="nCells Time" units="m s^{-1}"
-                     description="wind speed at lowest model level"/>
+                     description="wind speed at lowest model level"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="fh" type="real" dimensions="nCells Time" units="unitless"
-                     description="integrated stability function for heat"/>
+                     description="integrated stability function for heat"
+                     packages="bl_ysu_in"/>
 
                 <var name="fm" type="real" dimensions="nCells Time" units="unitless"
-                     description="integrated stability function for moisture"/>
+                     description="integrated stability function for moisture"
+                     packages="bl_ysu_in"/>
 
                 <!-- DIAGNOSTICS: -->
                 <var name="u10" type="real" dimensions="nCells Time" units="m s^{-1}"
@@ -2189,6 +2293,19 @@
                 <var name="th2m" type="real" dimensions="nCells Time" units="K"
                      description="2-meter potential temperature"/>
 
+                <!-- ADDITIONAL VARIABLES ONLY NEEDED IN THE MYNN SURFACE LAYER SCHEME (SFCLAY_MYNN): -->
+                <var name="ch" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="surface exchange coefficient for heat"
+                     packages="bl_mynn_in"/>
+
+                <var name="qcg" type="real" dimensions="nCells Time" units="kg kg^{-1}"
+                     description="cloud water mixing ratio at the ground surface"
+                     packages="bl_mynn_in"/>
+
+                <var name="sh3d" type="real" dimensions="nVertLevels nCells Time" units="unitless"
+                     description="stability function for heat"
+                     packages="bl_mynn_in"/>
+
 
                 <!-- ================================================================================================== -->
                 <!-- ... PARAMETERIZATION OF GRAVITY WAVE DRAG OVER OROGRAPHY:                                          -->
@@ -2199,7 +2316,7 @@
                 <!--  dtaux3d    : gravity wave drag over orography u-stress                                    (m s-1) -->
                 <!--  dtauy3d    : gravity wave drag over orography v-stress                                    (m s-1) -->
 
-		<var name="dusfcg" type="real" dimensions="nCells Time" units="Pa m s^{-1}"
+		              <var name="dusfcg" type="real" dimensions="nCells Time" units="Pa m s^{-1}"
                      description="vertically-integrated gravity wave drag over orography u-stress"/>
 
                 <var name="dvsfcg" type="real" dimensions="nCells Time" units="Pa m s^{-1}"
@@ -2694,24 +2811,35 @@
                 <!-- rqvblten  : tendency of water vapor mixing ratio due to pbl processes                 (kg/kg s-1)  -->
                 <!-- rqcblten  : tendency of cloud water mixing ratio due to pbl processes                 (kg/kg s-1)  -->
                 <!-- rqiblten  : tendency of cloud ice mixing ratio due to pbl processes                   (kg/kg s-1)  -->
+                <!-- rniblten  : tendency of cloud ice number concentration due to pbl processes             (m-3 s-1)  -->
 
                 <var name="rublten" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} s^{-1}"
-                     description="tendency of zonal wind due to pbl processes"/>
+                     description="tendency of zonal wind due to pbl processes"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="rvblten" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} s^{-1}"
-                     description="tendency of meridional wind due to pbl processes"/>
+                     description="tendency of meridional wind due to pbl processes"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="rthblten" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
-                     description="tendency of potential temperature due to pbl processes"/>
+                     description="tendency of potential temperature due to pbl processes"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="rqvblten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
-                     description="tendency of water vapor mixing ratio due to pbl processes"/>
+                     description="tendency of water vapor mixing ratio due to pbl processes"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="rqcblten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
-                     description="tendency of cloud water mixing ratio due to pbl processes"/>
+                     description="tendency of cloud water mixing ratio due to pbl processes"
+                     packages="bl_mynn_in;bl_ysu_in"/>
 
                 <var name="rqiblten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
-                     description="tendency of cloud ice mixing ratio due to pbl processes"/>
+                     description="tendency of cloud ice mixing ratio due to pbl processes"
+                     packages="bl_mynn_in;bl_ysu_in"/>
+
+                <var name="rniblten" type="real" dimensions="nVertLevels nCells Time" units="nb kg^{-1} s^{-1}"
+                     description="tendency of cloud ice number concentration due to pbl processes"
+                     packages="bl_mynn_in"/>
 
 
                 <!-- ================================================================================================== -->
