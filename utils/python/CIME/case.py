@@ -144,6 +144,7 @@ class Case(object):
         for env_file in self._env_entryid_files:
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
+                logger.debug("Will rewrite file %s",env_file.filename)
                 self._env_files_that_need_rewrite.add(env_file)
                 return result
         if result is None:
@@ -365,3 +366,7 @@ class Case(object):
     def set_initial_test_values(self):
         testobj = self._get_env("test")
         testobj.set_initial_values(self)
+
+    def get_batch_jobs(self):
+        batchobj = self._get_env("batch")
+        return batchobj.get_jobs()

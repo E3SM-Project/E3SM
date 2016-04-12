@@ -37,6 +37,8 @@ class SystemTestsCommon(object):
                         os.path.join(lockedfiles, "env_run.orig.xml"))
 
         self._case.set_initial_test_values()
+        run_cmd("./case.setup --clean")
+        run_cmd("./case.setup ")
 
 
     def build(self, sharedlib_only=False, model_only=False):

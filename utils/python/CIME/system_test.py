@@ -372,7 +372,8 @@ class SystemTest(object):
         test_case = CIME.utils.parse_test_name(test)[0]
 
         # Create, fill and write an envtest object
-        envtest = EnvTest(self._get_test_dir(test))
+        test_dir = self._get_test_dir(test)
+        envtest = EnvTest(test_dir)
 
         # Determine list of component classes that this coupler/driver knows how
         # to deal with. This list follows the same order as compset longnames follow.
@@ -495,9 +496,16 @@ class SystemTest(object):
                 else:
                     expect(False, "Could not parse option '%s' " %opt)
 
-
         envtest.write()
-
+        lockedfiles = os.path.join(test_dir, "Lockedfiles")
+        try:
+            os.stat(lockedfiles)
+        except:
+            os.mkdir(lockedfiles)
+        shutil.copy(os.path.join(test_dir,"env_run.xml"),
+                    os.path.join(lockedfiles, "env_run.orig.xml"))
+        case = Case(test_dir)
+        envtest.set_initial_values(case)
         return True
 
     ###########################################################################

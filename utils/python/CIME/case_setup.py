@@ -181,28 +181,27 @@ def case_setup(caseroot, clean, test_mode):
 
             # Use BatchFactory to get the appropriate instance of a BatchMaker,
             # use it to create our batch scripts
-            batchmaker = get_batch_maker("run", case=case)
-
-            input_batch_script  = os.path.join(case.get_value("MACHDIR"), "template.case.run")
-            batchmaker.make_batch_script(input_batch_script, "case.run")
-
-            if testcase:
-                batchmaker.set_job("test")
-                testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
-                if os.path.exists(testscript):
-                    # Short term fix to be removed when csh tests are removed
-                    batchmaker._set_queue()
+            batch_jobs = case.get_batch_jobs()
+            batchmaker = None
+            for (job, template, task_count) in batch_jobs:
+                logger.info("Writing %s script"%job)
+                if batchmaker is None:
+                    batchmaker = get_batch_maker(job, case=case)
                 else:
-                    input_batch_script = os.path.join(case.get_value("MACHDIR"), "python.case.test")
-                    batchmaker.make_batch_script(input_batch_script, "case.test")
+                    if task_count == "default":
+                        batchmaker.override_node_count = None
+                    else:
+                        batchmaker.override_node_count = int(task_count)
+                    batchmaker.set_job(job)
 
-            # Make archive scripts
-            for archive in ["st_archive", "lt_archive"]:
-                logger.info("Creating batch script case.%s" % archive)
-                batchmaker.override_node_count = 1
-                batchmaker.set_job(archive)
-                batchmaker.make_batch_script(os.path.join(case.get_value("MACHDIR"), "template.%s" % archive),
-                                             "case.%s" % archive)
+                input_batch_script  = os.path.join(case.get_value("MACHDIR"), template)
+                if job == "case.test" and testcase is not None:
+                    testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
+                    # Short term fix to be removed when csh tests are removed
+                    if not os.path.exists(testscript):
+                        batchmaker.make_batch_script(input_batch_script, job)
+                else:
+                    batchmaker.make_batch_script(input_batch_script, job)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked

@@ -29,12 +29,16 @@ class EnvTest(EnvBase):
         """
         tnode = self.get_node("test")
         for child in tnode:
-            logger.info("Setting %s to %s for test"%(child.tag,child.text))
-            if "$" in child.text:
-                case.set_value(child.tag,child.text,ignore_type=True)
-            else:
-                item_type = case.get_type_info(child.tag)
-                case.set_value(child.tag,convert_to_type(child.text,item_type,child.tag))
+            if child.text is not None:
+                logger.info("Setting %s to %s for test"%(child.tag,child.text))
+                if "$" in child.text:
+                    case.set_value(child.tag,child.text,ignore_type=True)
+                else:
+                    item_type = case.get_type_info(child.tag)
+                    value = convert_to_type(child.text,item_type,child.tag)
+                    case.set_value(child.tag,value)
+        case.flush()
+        return
 
     def set_test_parameter(self, name, value):
         """

@@ -17,7 +17,7 @@ class EnvBatch(EnvBase):
         """
         EnvBase.__init__(self, case_root, infile)
 
-    def set_value(self, item, value, subgroup="run", ignore_type=False):
+    def set_value(self, item, value, subgroup=None, ignore_type=False):
         val = None
         # allow the user to set all instances of item if subgroup is not provided
         if subgroup is None:
@@ -69,7 +69,10 @@ class EnvBatch(EnvBase):
     def get_jobs(self):
         result = []
         for node in self.get_nodes("job"):
-            result.append(node.get("name"))
+            name = node.get("name")
+            template = self.get_value("template", subgroup=name)
+            task_count = self.get_value("task_count", subgroup=name)
+            result.append((name, template, task_count))
         return result
 
     def create_job_groups(self, bjobs):
@@ -85,9 +88,14 @@ class EnvBatch(EnvBase):
             childnodes.append(deepcopy(child))
             group.remove(child)
 
-        for (job,template) in bjobs:
+        for name,template,task_count in bjobs:
             newjob = ET.Element("job")
-            newjob.set("name",job.replace("case.",""))
+            newjob.set("name",name)
+            template_node = ET.SubElement(newjob, "entry", {"id":"template","value":template})
+            task_count_node  =  ET.SubElement(newjob, "entry", {"id":"task_count", "value":task_count})
+            for node in (template_node, task_count_node):
+                node = ET.SubElement(node, "type")
+                node.text = "char"
             for child in childnodes:
                 newjob.append(deepcopy(child))
             group.append(newjob)

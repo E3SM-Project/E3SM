@@ -95,13 +95,11 @@ class EntryID(GenericXML):
         Returns the value or None if not found
         subgroup is ignored in the general routine and applied in specific methods
         """
+        val = None
         node = self.get_optional_node("entry", {"id":vid})
         if node is not None:
-            return self._set_value(node, vid, value, subgroup, ignore_type)
-        else:
-            # Add item to GenericXML object in the lookup dictionary
-            GenericXML.set_value(self,vid, value)
-            return None
+            val = self._set_value(node, vid, value, subgroup, ignore_type)
+        return val
 
     def get_value(self, vid, attribute={}, resolved=True, subgroup=None):
         """

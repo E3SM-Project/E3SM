@@ -3620,7 +3620,7 @@
 
  <entry id="PROJECT">
    <type>char</type>
-   <default_value>PROJECT_UNSET</default_value>
+   <default_value></default_value>
    <group>job_submission</group>
    <file>env_batch.xml</file>
    <desc>project for project-sensitive build and run paths, and job scripts</desc>

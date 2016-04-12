@@ -195,7 +195,6 @@ sub submitSingleJob()
     my %config = %{$self->{'caseconfig'}};
     my $dependarg = '';
     my $submitargs = '';
-
     $submitargs = $self->getSubmitArguments($scriptname, $dependentJobId);
 
     if(! defined $submitargs && length($submitargs) <= 0)
@@ -362,8 +361,8 @@ sub getSubmitArguments()
     # We need the script name and the dependent job id.
     my $scriptname = shift;
     my $dependentjobid = shift;
-    $scriptname =~ /\w+\.(\w+)$/;
-    $self->{job} = $1;
+#    $scriptname =~ /\w+\.(\w+)$/;
+    $self->{job} = $scriptname;
     $logger->debug(" scriptname: $scriptname job $self->{job}");
     # Get BatchMaker instance, we need its instance data.
     my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot},
@@ -374,7 +373,6 @@ sub getSubmitArguments()
 							 machine => $self->{machine},
 							 compiler => $self->{compiler},
                                                           job => $self->{job} );
-
 
     # Find the submit arguments for this particular batch system.
     my $xml = XML::LibXML->new(no_blanks => 1);
