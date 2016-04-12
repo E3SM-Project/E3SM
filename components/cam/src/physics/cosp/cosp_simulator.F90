@@ -75,7 +75,11 @@ SUBROUTINE COSP_SIMULATOR(gbx,sgx,sghydro,cfg,vgrid,sgradar,sglidar,isccp,misr,m
   type(cosp_radarstats),intent(inout) :: stradar ! Summary statistics from radar simulator
   type(cosp_lidarstats),intent(inout) :: stlidar ! Summary statistics from lidar simulator
   ! Local variables
-  integer :: i,j,k,isim
+  ! Disable the use of timer, which causes runtime problem for pgi and pgi_acc
+  ! it can be renabled if deemed necessary, by uncommenting all related to isim
+  ! and tsim here and in cosp_constants.F90
+  ! integer :: i,j,k,isim
+  integer :: i,j,k
   logical :: inconsistent
   ! Timing variables
   integer :: t0,t1
@@ -95,7 +99,7 @@ SUBROUTINE COSP_SIMULATOR(gbx,sgx,sghydro,cfg,vgrid,sgradar,sglidar,isccp,misr,m
 
 
   !+++++++++ Radar model ++++++++++
-  isim = I_RADAR
+! isim = I_RADAR
   if (cfg%Lradar_sim) then
 !   call system_clock(t0)
     call cosp_radar(gbx,sgx,sghydro,sgradar)
@@ -104,7 +108,7 @@ SUBROUTINE COSP_SIMULATOR(gbx,sgx,sghydro,cfg,vgrid,sgradar,sglidar,isccp,misr,m
   endif
 
   !+++++++++ Lidar model ++++++++++
-  isim = I_LIDAR
+! isim = I_LIDAR
   if (cfg%Llidar_sim) then
 !   call system_clock(t0)
     call cosp_lidar(gbx,sgx,sghydro,sglidar)
@@ -113,7 +117,7 @@ SUBROUTINE COSP_SIMULATOR(gbx,sgx,sghydro,cfg,vgrid,sgradar,sglidar,isccp,misr,m
   endif
 
   !+++++++++ ISCCP simulator ++++++++++
-  isim = I_ISCCP
+! isim = I_ISCCP
   if (cfg%Lisccp_sim) then
 !   call system_clock(t0)
     call cosp_isccp_simulator(gbx,sgx,isccp)
@@ -122,7 +126,7 @@ SUBROUTINE COSP_SIMULATOR(gbx,sgx,sghydro,cfg,vgrid,sgradar,sglidar,isccp,misr,m
   endif
 
   !+++++++++ MISR simulator ++++++++++
-  isim = I_MISR
+! isim = I_MISR
   if (cfg%Lmisr_sim) then
 !   call system_clock(t0)
     call cosp_misr_simulator(gbx,sgx,misr)
@@ -131,7 +135,7 @@ SUBROUTINE COSP_SIMULATOR(gbx,sgx,sghydro,cfg,vgrid,sgradar,sglidar,isccp,misr,m
   endif
 
   !+++++++++ MODIS simulator ++++++++++
-  isim = I_MODIS
+! isim = I_MODIS
   if (cfg%Lmodis_sim) then
 !   call system_clock(t0)
     call cosp_modis_simulator(gbx,sgx,sghydro,isccp, modis)
@@ -140,7 +144,7 @@ SUBROUTINE COSP_SIMULATOR(gbx,sgx,sghydro,cfg,vgrid,sgradar,sglidar,isccp,misr,m
   endif
 
   !+++++++++ RTTOV ++++++++++ 
-  isim = I_RTTOV
+! isim = I_RTTOV
 #ifdef RTTOV
   if (cfg%Lrttov_sim) then 
 !   call system_clock(t0)
@@ -151,7 +155,7 @@ SUBROUTINE COSP_SIMULATOR(gbx,sgx,sghydro,cfg,vgrid,sgradar,sglidar,isccp,misr,m
 #endif
 
   !+++++++++++ Summary statistics +++++++++++
-  isim = I_STATS
+! isim = I_STATS
   if (cfg%Lstats) then
 !   call system_clock(t0)
     call cosp_stats(gbx,sgx,cfg,sgradar,sglidar,vgrid,stradar,stlidar)
