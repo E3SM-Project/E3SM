@@ -82,7 +82,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$CIMEROOT/cime_config/$MODEL//allactive/config_pes.xml</value>
+      <value component="allactive">$CIMEROOT/cime_config/$MODEL/allactive/config_pes.xml</value>
       <value component="drv"      >$CIMEROOT/driver_cpl/cime_config/config_pes.xml</value>
       <value component="cam"      >$SRCROOT/components/cam/cime_config/config_pes.xml</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/config_pes.xml</value>
