@@ -35,5 +35,5 @@ class EnvMachPes(EnvBase):
             value = -1*value*self.get_value("PES_PER_NODE")
         if "ROOTPE" in vid and value < 0:
             value = -1*value*self.get_value("PES_PER_NODE")
-        value = EnvBase.set_value(self, vid, value, subgroup, ignore_type)
-
+        val = EnvBase.set_value(self, vid, value, subgroup, ignore_type)
+        return val

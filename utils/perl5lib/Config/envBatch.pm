@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use XML::LibXML;
 use Log::Log4perl qw(get_logger);
-
+use Data::Dumper;
 my $logger;
 
 BEGIN{
@@ -31,7 +31,6 @@ sub read {
     my $xml = XML::LibXML->new( no_blanks=>1)->parse_file($file);
 
     my @jobs = $xml->findnodes(".//job");
-    
     foreach my $job (@jobs){
 	my $name = $job->getAttribute('name');
 	foreach my $entry ($job->findnodes(".//entry")){
@@ -41,13 +40,12 @@ sub read {
 	    $self->{$name}{$id}=$value;
 	}
     }
-    
 }
 
 sub get
 {
     my ($self, $job) = @_;
-    
+
     return($self->{$job});
 }
 
@@ -55,11 +53,11 @@ sub get
 sub set
 {
     my($self, $id, $job, $value)  = @_;
-  
+
     if(defined $value){
-  
+
     $self->{$job}{$id} = $value;
-   
+
     qx(./xmlchange -noecho -file env_batch.xml -id $id -val $value -subgroup $job);
   }
 }

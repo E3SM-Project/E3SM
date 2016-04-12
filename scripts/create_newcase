@@ -35,11 +35,11 @@ def parse_command_line(args):
                         help="(required) Specify a compset. "
                         "To see list of current compsets, use the utility manage_case in this directory")
 
-    parser.add_argument("--res", "-resolution", required=True,
+    parser.add_argument("--res", "-res", required=True,
                         help="(required) Specify a model grid resolution. "
                         "To see list of current compsets, use the utility manage_case in this directory")
 
-    parser.add_argument("--mach", "-machine", required=True,
+    parser.add_argument("--mach", "-mach", required=True,
                         help="(required) Specify a machine. "
                         "To see list of current compsets, use the utility manage_case in this directory")
 
@@ -52,37 +52,37 @@ def parse_command_line(args):
                         "To see list of supported mpilibs for each machine, use the utility manage_case in this directory. "
                         "The default is mpi-serial, but will be replaced by default mpi library for the target machine.")
 
-    parser.add_argument("--project", "-project", default="00000",
+    parser.add_argument("--project", "-project",
                         help="Specify a project id")
 
     parser.add_argument("--pecount", "-pecount", choices=('S','M','L','X1','X2'), default="M",
                         help="Specify a target size description for the number of cores")
 
-    parser.add_argument("--mach_dir", "-mach-dir",
+    parser.add_argument("--mach-dir", "-mach_dir",
                         help="Specify the locations of the Machines directory, other than the default"
                         "The default is CIMEROOT/machines")
 
-    parser.add_argument("--user_mods_dir", "-user-mods-dir",
+    parser.add_argument("--user-mods-dir", "-user_mods_dir",
                         help="Path to directory with user_nl_* files and xmlchange "
                         "commands to utilize. This can also include SourceMods")
 
-    parser.add_argument("--user_compset", "-user-compset",
+    parser.add_argument("--user-compset", "-user_compset",
                         help="Long name for new user compset to use"
                         "This assumes that all of the compset settings in the"
                         "long name have been defined by the target model components")
 
-    parser.add_argument("--user_grid_file", "-user-grid-file",
+    parser.add_argument("--user-grid-file", "-user_grid_file",
                         help="Full pathname of grid file to use"
                         "This should be a copy of cime_config/config_grids.xml"
                         "with the new user grid changes added to it")
 
-    parser.add_argument("--user_pes_setby", "-user-pes-setby",
+    parser.add_argument("--user-pes-setby", "-user_pes_setby",
                         help="Only used and required for --user-compset argument."
                         "Component that sets the pe-layouts and pio settings"
                         "For CESM this is [allactive, cam, clm, cice, cism, pop")
 
     parser.add_argument("--srcroot", "-srcroot",
-                        help="Alternative path for source root directory. By defualt this is set to"
+                        help="Alternative path for source root directory. By default this is set to"
                         "cimeroot/../")
 
     # hidden argument indicating called from create_test

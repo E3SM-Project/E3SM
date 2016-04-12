@@ -1,21 +1,21 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 #==============================================================================
 # File:  BatchMaker.pm
-# Purpose: Provide a class hierarchy to ease the job of making batch scripts for 
+# Purpose: Provide a class hierarchy to ease the job of making batch scripts for
 #          each CESM-ported machine.  We have class hierarchy and a factory class
-#          to facilitate getting the right BatchMaker class for the appropriate 
-#          machine. 
+#          to facilitate getting the right BatchMaker class for the appropriate
+#          machine.
 #
-#          BatchMaker: This is the base class which contains functionality 
-#          common to making batch scripts for every machine. This class should 
-#          never be instantiated directly, use BatchFactory for this. 
+#          BatchMaker: This is the base class which contains functionality
+#          common to making batch scripts for every machine. This class should
+#          never be instantiated directly, use BatchFactory for this.
 #
 #
 #          BatchFactory:  This is the factory class responsible for returning
-#          the correct BatchMaker_$machine class . 
+#          the correct BatchMaker_$machine class .
 #
 #          We can have subclasses based on the batch system type, then subclasses
-#          of those based on the machine. 
+#          of those based on the machine.
 #
 #==============================================================================
 use strict;
@@ -39,7 +39,7 @@ BEGIN{
 }
 
 #==============================================================================
-#  Class constructor.  We need to know where in the filesystem we are, 
+#  Class constructor.  We need to know where in the filesystem we are,
 #  so caseroot, case, machroot, machine, cimeroot
 #==============================================================================
 sub new
@@ -75,8 +75,8 @@ sub new
     $self->{'output_error_path'} = $self->{'case'};
     $self->{'configbatch'} = "$self->{'machroot'}/config_batch.xml";
     $self->{'configmachines'} = "$self->{'machroot'}/config_machines.xml";
-    
-    # we need ProjectTools. 
+
+    # we need ProjectTools.
     my $cimeroot = "$self->{'cimeroot'}";
     push(@INC, "$cimeroot/utils/per5lib");
 
@@ -88,14 +88,14 @@ sub new
     return $self;
 }
 #==============================================================================
-# Do the variable substitution for any variables that need transforms 
-# recursively. 
+# Do the variable substitution for any variables that need transforms
+# recursively.
 #==============================================================================
 sub transformVars()
 {
     my $self = shift;
     my $text = shift;
-    
+
     my @lines = split(/\n/, $text);
     foreach my $line(@lines)
     {
@@ -114,12 +114,12 @@ sub transformVars()
             {
                 $line =~ s/$needstransform/$self->{$var}/g;
             }
-            
+
         }
     }
     $text = join("\n", @lines);
 
-    # recursively call this function if we still have things to transform, 
+    # recursively call this function if we still have things to transform,
     # otherwise return the transformed text
     if($text =~ /{{ \w+ }}/)
     {
@@ -133,7 +133,7 @@ sub transformVars()
 
 
 #==============================================================================
-# Gets the XML::LibXML parser for config_batch.xml, then stash it in the object 
+# Gets the XML::LibXML parser for config_batch.xml, then stash it in the object
 # as a parameter
 #==============================================================================
 sub getBatchConfigParser()
@@ -151,7 +151,7 @@ sub getBatchConfigParser()
 }
 
 #==============================================================================
-# Gets the XML::LibXML parser for config_batch.xml, then stash it in the object 
+# Gets the XML::LibXML parser for config_batch.xml, then stash it in the object
 # as a parameter
 #==============================================================================
 sub getConfigMachinesParser()
@@ -168,12 +168,12 @@ sub getConfigMachinesParser()
 }
 
 #==============================================================================
-# make the actual batch script.  
-# get the filename, call the appropriate methods to get: task info, 
+# make the actual batch script.
+# get the filename, call the appropriate methods to get: task info,
 # the queue, the walltime, set the project, set the values for the batch
-# directives, insert the code to actually run the model based on your machine. 
-# Finally, writeBatchScript substitutes the values into the run template, 
-# and writes the new batch script into the case root. 
+# directives, insert the code to actually run the model based on your machine.
+# Finally, writeBatchScript substitutes the values into the run template,
+# and writes the new batch script into the case root.
 #==============================================================================
 sub makeBatchScript()
 {
@@ -186,7 +186,7 @@ sub makeBatchScript()
     {
 	die "$inputfilename does not exist!";
     }
-    
+
     $self->getBatchSystemTypeForMachine();
     $logger->debug("In makeBatchScript 2");
     $self->setTaskInfo();
@@ -210,7 +210,7 @@ sub makeBatchScript()
 }
 
 #==============================================================================
-# get the batch system type for this machine. 
+# get the batch system type for this machine.
 #==============================================================================
 sub getBatchSystemTypeForMachine()
 {
@@ -225,17 +225,17 @@ sub getBatchSystemTypeForMachine()
 	die "Could not find batch system for machine $self->{'machine'}, aborting";
     }
     $self->{'batch_system'} = $batchtypes[0]->getAttribute('type');
-    
+
 }
 
 #==============================================================================
-# Get batch directives, optionally setting up the data needed if not already 
-# done. 
+# Get batch directives, optionally setting up the data needed if not already
+# done.
 #==============================================================================
 sub getBatchDirectives()
 {
     my $self = shift;
-    
+
     if(! defined $self->{'batchdirectives'})
     {
 
@@ -250,9 +250,9 @@ sub getBatchDirectives()
 
 }
 #==============================================================================
-# Get a particular field of data from the instance data that gets stored 
+# Get a particular field of data from the instance data that gets stored
 # in this object.  There should really be a separate BatchData class, but
-# this is good enough for now.  
+# this is good enough for now.
 #==============================================================================
 sub getField()
 {
@@ -278,15 +278,15 @@ sub getField()
 }
 
 #==============================================================================
-# Get the batch directives for this machine from config_batch.xml, 
+# Get the batch directives for this machine from config_batch.xml,
 #==============================================================================
 sub setBatchDirectives()
 {
     my $self = shift;
     my $batchparser = $self->getBatchConfigParser();
     my $configmachinesparser = $self->getConfigMachinesParser();
-    
-    # get the batch directive for this particular queueing system. 
+
+    # get the batch directive for this particular queueing system.
 
     my @batch_directive = $batchparser->findnodes("/config_batch/batch_system[\@type=\'$self->{'batch_system'}\']/batch_directive");
 
@@ -302,23 +302,23 @@ sub setBatchDirectives()
 	die "could not find any directives for the machine $self->{'machine'}";
     }
 
-    #This should be empty every time this method is called. 
+    #This should be empty every time this method is called.
     $self->{'batchdirectives'} = '';
 
-    # iterate through all the directives found.  Get the name attribute and the 
-    # text content for each directive. 
+    # iterate through all the directives found.  Get the name attribute and the
+    # text content for each directive.
     foreach my $directive(@directives)
     {
-	
-	# For every directive we find, we have to replace what is contained within the double-underscores 
+
+	# For every directive we find, we have to replace what is contained within the double-underscores
 	# with the actual instance variable..
 	#
 
 	my $directiveLine = $self->{'batch_directive'} . " ";
 	my $dvalue = $directive->textContent();
 	my $valueToUse = undef;
-	
-	# Do the variable transform if necessary. 
+
+	# Do the variable transform if necessary.
         # strip the special characters
 	while($dvalue =~ /({{ \w+ }})/)
 	{
@@ -327,45 +327,45 @@ sub setBatchDirectives()
 	    $stringToReplace =~ s/{{ //g;
 	    $stringToReplace =~ s/ }}//g;
 	    my $actualValue;
-	    
-            # If the instance data for the variable doesn't exist, and we have a default, 
-            # use the default value we find. 
+
+            # If the instance data for the variable doesn't exist, and we have a default,
+            # use the default value we find.
 	    if(! defined $self->{$stringToReplace} && $directive->hasAttribute('default'))
 	    {
 		$actualValue = $directive->getAttribute('default');
 		$directiveLine .= $actualValue;
 		$dvalue =~ s/$matchedString/$actualValue/g;
 	    }
-	    # If we DO have instance data for the variable, and there is no default, use the 
-            # instance data. 
+	    # If we DO have instance data for the variable, and there is no default, use the
+            # instance data.
 	    elsif(! $directive->hasAttribute('default') &&  defined $self->{$stringToReplace})
 	    {
 		$actualValue = $self->{$stringToReplace};
 		$dvalue =~ s/$matchedString/$actualValue/g;
 	    }
-	    # If we don't have either instance data to use, or a default value we can use, 
-            # get rid of the variable entirely. 
+	    # If we don't have either instance data to use, or a default value we can use,
+            # get rid of the variable entirely.
 	    elsif(! $directive->hasAttribute('default') && ! defined $self->{$stringToReplace})
 	    {
 		$dvalue = '';
 	    }
 	}
-	# If we have data in the dvalue for the directive, add the directive 
-        # to our batchdirectives instance data. 
+	# If we have data in the dvalue for the directive, add the directive
+        # to our batchdirectives instance data.
 	if(length($dvalue) > 0)
 	{
 
 	    my $directiveLine = $self->{'batch_directive'} . " " . $dvalue;
 	    $self->{'batchdirectives'} .= $directiveLine . "\n";
 	}
-    }		
+    }
 }
 
 #==============================================================================
-# uses TaskMaker.pm to get the appropriate pe layout values for the run.  
-# Set the value as instance variables in the object.  
+# uses TaskMaker.pm to get the appropriate pe layout values for the run.
+# Set the value as instance variables in the object.
 # This can also be called from overrideNodeCount, in which case values can be
-# manually overridden. 
+# manually overridden.
 #==============================================================================
 sub setTaskInfo()
 {
@@ -418,7 +418,7 @@ sub set
 
 
 #==============================================================================
-# setwalltime must be called before setqueue, we need the chosen walltime before setting the queue. 
+# setwalltime must be called before setqueue, we need the chosen walltime before setting the queue.
 #==============================================================================
 sub setWallTime()
 {
@@ -438,12 +438,12 @@ sub setWallTime()
     $self->getEstCost();
     my $batchparser = $self->{'batchparser'};
     my $configmachinesparser = $self->{'configmachinesparser'};
-    
-    # loop through the walltime values, and set the walltime based on the reported EST_COST of the run. 
+
+    # loop through the walltime values, and set the walltime based on the reported EST_COST of the run.
     my @walltimes = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system/walltimes/walltime");
 
-    # go through the walltime elements, and if our estimated cost is greater than the element's estimated cost, 
-    # then set the walltime. 
+    # go through the walltime elements, and if our estimated cost is greater than the element's estimated cost,
+    # then set the walltime.
     foreach my $welem(@walltimes)
     {
 	next if ! defined $welem->getAttribute('ccsm_estcost');
@@ -453,7 +453,7 @@ sub setWallTime()
 	    $self->{'wall_time'} = $welem->textContent();
 	}
     }
-    # if we didn't find a walltime previously, use the default. 
+    # if we didn't find a walltime previously, use the default.
     if (! defined $self->{'wall_time'})
     {
 	my @defwtimeelems = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system/walltimes/walltime[\@default=\'true\']");
@@ -479,12 +479,12 @@ sub setWallTime()
 }
 
 #==============================================================================
-# use the ProjectTools module to set both the account and project.  
+# use the ProjectTools module to set both the account and project.
 #==============================================================================
 sub setProject()
 {
     my $self = shift;
-    
+
     if(defined $self->{job}){
 	if($self->{envBatch}{$self->{job}}{PROJECT_REQUIRED} eq "TRUE"){
 	    $self->{project} = $self->{envBatch}{$self->{job}}{PROJECT};
@@ -494,8 +494,8 @@ sub setProject()
 }
 
 #==============================================================================
-# Get the estimated cost for this run.  This value is currently calculated as part of case_setup. 
-# TODO: modularize the cost calculation??? 
+# Get the estimated cost for this run.  This value is currently calculated as part of case_setup.
+# TODO: modularize the cost calculation???
 #==============================================================================
 sub getEstCost()
 {
@@ -506,12 +506,12 @@ sub getEstCost()
 }
 
 #==============================================================================
-# set the run queue for the selected machine, based on the walltime and the node count. 
+# set the run queue for the selected machine, based on the walltime and the node count.
 #==============================================================================
 sub setQueue()
 {
     my $self = shift;
-    
+
     # Get the queue from env_batch.xml if its defined there
     # otherwise get the default from config_machines.xml
     # and set it in env_batch.xml
@@ -522,8 +522,8 @@ sub setQueue()
     }
 
     my $queue = $self->{envBatch}{$self->{job}}{JOB_QUEUE};
-    
-    
+
+
 
     if(defined $queue && ! ($queue =~ /^\s*$/ )){
 	$self->{queue} = $queue;
@@ -532,26 +532,26 @@ sub setQueue()
     }
 
 
-    $logger->debug("setQueue 1");
-    #get the batch config parser, and the estimated cost of the run. 
-    $self->getBatchConfigParser();	
-    $logger->debug("setQueue 2");
+#    $logger->debug("setQueue 1");
+    #get the batch config parser, and the estimated cost of the run.
+    $self->getBatchConfigParser();
+#    $logger->debug("setQueue 2");
 
     $self->getConfigMachinesParser();
-    $logger->debug("setQueue 3");
+#    $logger->debug("setQueue 3");
     $self->getEstCost();
     my $batchparser = $self->{'batchparser'};
     my $configmachinesparser = $self->{'configmachinesparser'};
 
     $logger->debug("calling parser");
 
-    # First, set the queue based on the default queue defined in config_batch.xml. 
+    # First, set the queue based on the default queue defined in config_batch.xml.
     my @defaultqueue = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system/queues/queue[\@default=\'true\']");
 
     $logger->debug("setting queue");
-    
-    # set the default queue IF we have a default queue defined, some machines (blues) do not allow one to 
-    # specifiy the queue directly. 
+
+    # set the default queue IF we have a default queue defined, some machines (blues) do not allow one to
+    # specifiy the queue directly.
     if(@defaultqueue)
     {
         my $defelement = $defaultqueue[0];
@@ -567,32 +567,32 @@ sub setQueue()
     }
 
     # We may have a default queue at this point, but if there is a queue that our job's node count
-    # falls in between, then we should use that queue. 
+    # falls in between, then we should use that queue.
     my @qelems = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system/queues/queue");
     foreach my $qelem(@qelems)
     {
-	# get the minimum/maximum # nodes allowed for each queue.  
+	# get the minimum/maximum # nodes allowed for each queue.
 	my $jobmin = undef;
 	my $jobmax = undef;
 	$jobmin = $qelem->getAttribute('jobmin');
 	$jobmax = $qelem->getAttribute('jobmax');
 	$self->{walltimemax} = $qelem->getAttribute('walltimemax');
-	# if the fullsum is between the min and max # jobs, then use this queue.  
+	# if the fullsum is between the min and max # jobs, then use this queue.
 	if(defined $jobmin && defined $jobmax && $self->{'fullsum'} >= $jobmin && $self->{'fullsum'} <= $jobmax)
 	{
-            # get the minimum/maximum # nodes allowed for each queue.  
+            # get the minimum/maximum # nodes allowed for each queue.
 
             my $jobmin = $qelem->getAttribute('jobmin');
             my $jobmax = $qelem->getAttribute('jobmax');
 
-            # if the fullsum is between the min and max # jobs, then use this queue.  
+            # if the fullsum is between the min and max # jobs, then use this queue.
             if(defined $jobmin && defined $jobmax && $self->{'fullsum'} >= $jobmin && $self->{'fullsum'} <= $jobmax)
             {
                 $self->{'queue'} = $qelem->textContent();
             }
 	}
     }
-    if(defined $self->{queue}){  
+    if(defined $self->{queue}){
       $self->{envBatch}->set("JOB_QUEUE",$self->{job},$self->{queue});
       $logger->debug("Using queue $self->{queue} ");
     }
@@ -600,15 +600,15 @@ sub setQueue()
 }
 
 #==============================================================================
-# set the cesm run command per machine.  
+# set the cesm run command per machine.
 #==============================================================================
 sub setCESMRun()
 {
     my $self = shift;
     my $batchparser = $self->{'batchparser'};
     my $configmachinesparser = $self->{'configmachinesparser'};
-    
-    # get the default run suffix, this should be the same for all machines. 
+
+    # get the default run suffix, this should be the same for all machines.
     my @suffixes = $configmachinesparser->findnodes("/config_machines/default_run_suffix");
     if(! @suffixes)
     {
@@ -630,10 +630,10 @@ sub setCESMRun()
     else{
         $defaultrunmiscsuffix = $suffixes[0]->textContent();
     }
-    
+
     #my $defaultrunsuffix = $suffixes[0]->textContent();
     my $defaultrunsuffix = $defaultrunexe . $defaultrunmiscsuffix;
-    # get the batch system type for this machine.  
+    # get the batch system type for this machine.
     my @batchtype = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system");
 
 
@@ -646,17 +646,17 @@ sub setCESMRun()
 
     $self->{'batchsystem'} = $batchtype[0]->getAttribute('type');
     my $config = $self->{'config'};
-    
-    # First, get all the mpirun elements.  
+
+    # First, get all the mpirun elements.
     my @mpielems = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/mpirun");
     my $chosenmpielem = undef;
-    
-    # Iterate through all the mpi elements. 
+
+    # Iterate through all the mpi elements.
     foreach my $mpielem(@mpielems)
     {
-	# if any of the attributes match any of our instance variables, 
-	# we have a match, break out of the attribute loop, and use that as our 
-	# chosen mpi run element. 
+	# if any of the attributes match any of our instance variables,
+	# we have a match, break out of the attribute loop, and use that as our
+	# chosen mpi run element.
 	if(! $mpielem->hasAttributes())
 	{
 	    $chosenmpielem = $mpielem;
@@ -664,7 +664,7 @@ sub setCESMRun()
 	else
 	{
 	    my $attrMatch = 1;
-	    
+
 	    my @mpiattrs = $mpielem->getAttributes();
 	    foreach my $attr(@mpiattrs)
 	    {
@@ -682,8 +682,8 @@ sub setCESMRun()
 	    }
 	}
     }
-    
-    # if we don't have an mpirun command, find the default. 
+
+    # if we don't have an mpirun command, find the default.
     if(! defined $chosenmpielem)
     {
 	my @defaultmpielems = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/mpirun[\@mpilib=\'default\']");
@@ -692,7 +692,7 @@ sub setCESMRun()
 	    if(! $defelem->hasAttributes() )
 	    {
 		$chosenmpielem = $defelem;
-	    }	
+	    }
 	    else
 	    {
 		my $attrMatch = 1;
@@ -706,7 +706,7 @@ sub setCESMRun()
 		    if(defined $self->{$lcAttrName} && (lc $self->{$attrName} ne lc $attrValue))
 		    {
 			$attrMatch = 0;
-			last;	
+			last;
 		    }
 		}
 		if($attrMatch)
@@ -714,24 +714,24 @@ sub setCESMRun()
 		    $chosenmpielem = $defelem;
 		    last;
 		}
-		
+
 	    }
 	}
 	#$chosenmpielem = $defaultmpielems[0];
     }
-    
+
     # die if we haven't found an mpirun for this machine by now..
     if(! defined $chosenmpielem)
     {
 	die "no mpirun could be found for this machine!";
     }
-    
+
     my $mpiargstring = '';
     my $executableString = undef;
     my @exeelems = $chosenmpielem->findnodes("./executable");
 
-    # Iterate through the executable elements, get the mpirun, etc 
-    # arguments. 
+    # Iterate through the executable elements, get the mpirun, etc
+    # arguments.
     foreach my $exeelem(@exeelems)
     {
         $executableString = $exeelem->textContent();
@@ -742,36 +742,36 @@ sub setCESMRun()
             foreach my $arg(@arguments)
             {
                 my $tmpArg = undef;
-                
-                
+
+
                 my $argName = $arg->getAttribute('name');
                 my $argValue = $arg->textContent();
-                
+
                 # If the arg value is wrapped in double underscores, we
-                # we need to replace the double underscore with either 
+                # we need to replace the double underscore with either
                 # actual value if defined, the default value if defined and no
-                # instance variable exists, or discard the argument completely 
-                # if neither are defined. 
+                # instance variable exists, or discard the argument completely
+                # if neither are defined.
                 while($argValue =~ /({{ \w+ }})/)
                 {
                     # get the matched string, and get the
-                    # string we need to replace without the underscores. 
+                    # string we need to replace without the underscores.
                     my $matchedString = $1;
                     my $stringToReplace = $matchedString;
                     $stringToReplace =~ s/{{ //g;
                     $stringToReplace =~ s/ }}//g;
 
-                    # the actual argument is stored here, 
+                    # the actual argument is stored here,
                     # this way we can transform the thing as we
-                    # need to 
-                    
-                    # if we don't have an instance variable, and we do have a default value, 
-                    # use the default value for the double underscore substitution. 
+                    # need to
+
+                    # if we don't have an instance variable, and we do have a default value,
+                    # use the default value for the double underscore substitution.
                     if(! defined $self->{$stringToReplace} && $arg->hasAttribute('default'))
                     {
                         my $defaultAttr = $arg->getAttribute('default');
                         $argValue =~ s/$matchedString/$defaultAttr/g;
-                        
+
                     }
                     elsif( defined $self->{$stringToReplace} && ! $arg->hasAttribute('default'))
                     {
@@ -781,7 +781,7 @@ sub setCESMRun()
                         #print "actual argument is now: $argValue\n";
                     }
                     elsif(! defined $self->{$stringToReplace} && ! $arg->hasAttribute('default'))
-                    {	
+                    {
                         $argValue = '';
                     }
                 }
@@ -790,15 +790,15 @@ sub setCESMRun()
         }
         else{
             # Check if the user has specified "args=default" indicating
-            # that the executable's mpi args are generated by the 
+            # that the executable's mpi args are generated by the
             # taskmaker
-            # 
+            #
             if($exeelem->hasAttribute('args'))
             {
                 my $attrValue = $exeelem->getAttribute('args');
                 if($attrValue eq 'default')
                 {
-                    if($self->{'taskmaker'}->hasOptMpirun($executableString) && 
+                    if($self->{'taskmaker'}->hasOptMpirun($executableString) &&
                        (!defined $self->{'overridenodecount'}))
                     {
                         $mpiargstring .= $self->{'taskmaker'}->optMpirun($executableString, $defaultrunexe);
@@ -809,14 +809,14 @@ sub setCESMRun()
             }
         }
     }
-    
+
     $self->{'mpirun'} .= "qx( " . $executableString . " " . $mpiargstring .  " " . $defaultrunsuffix . ");";
 }
 
 
 #==============================================================================
 # substitute all the template strings with the actual values, and write the new
-# run script into the case root. 
+# run script into the case root.
 #==============================================================================
 sub writeBatchScript()
 {
@@ -827,12 +827,12 @@ sub writeBatchScript()
     open (my $RUNTMPL, "<", $inputfilename) or die "could not open run template $inputfilename, $!";
     my $templatetext = join("", <$RUNTMPL>);
     close $RUNTMPL;
-    
-    # transform the template variables to their actual values. 
-    
+
+    # transform the template variables to their actual values.
+
     $templatetext = $self->transformVars($templatetext);
-    
-    # write the new run script. 
+
+    # write the new run script.
     open (my $RUNSCRIPT, ">", $outputfilename) or die "could not open new script, $!";
     print $RUNSCRIPT $templatetext;
     close $RUNSCRIPT;
@@ -840,29 +840,29 @@ sub writeBatchScript()
 }
 
 #==============================================================================
-# Get the long-term archiver options from $CIMEROOT/cime_config/cesm/machines 
+# Get the long-term archiver options from $CIMEROOT/cime_config/cesm/machines
 # These options will be used when creating the lt_archive run scrip
 #==============================================================================
 sub getLtArchiveOptions()
 {
     my $self = shift;
-    
+
     my $lt_archive_file = $self->{machroot} . "/config_lt_archive.xml";
     my $ltarchxml = XML::LibXML->new(no_blanks => 1);
     my $ltarchparser = $ltarchxml->parse_file($lt_archive_file) or die "could not parse $lt_archive_file, $! $?";
     my $ltarchroot = $ltarchparser->getDocumentElement();
-    
+
     my $lt_archive_args;
     my @argnodes;
-    
+
     @argnodes = $ltarchroot->findnodes("//machine[\@name=\'$self->{machine}\']/lt_archive_args");
-    
+
     # First, search for the machine-specific lt_archive_args
     if(! @argnodes)
     {
         @argnodes = $ltarchroot->findnodes("//machine[\@name=\'default\']/lt_archive_args");
     }
-    
+
     # if no default is found, then set lt_archive_args to empty
     if(! @argnodes)
     {
@@ -887,11 +887,11 @@ sub overrideNodeCount()
 }
 
 #==============================================================================
-# Simple factory class to get the right BatchMaker class for each machine.  
-# The only downside to this strategy is that we have to have a BatchMaker_${machine} 
-# class for every machine we port. 
+# Simple factory class to get the right BatchMaker class for each machine.
+# The only downside to this strategy is that we have to have a BatchMaker_${machine}
+# class for every machine we port.
 # TODO: REFACTOR this so that if no machine or batch class is found, then the base
-# class is returned. 
+# class is returned.
 #==============================================================================
 package Batch::BatchFactory;
 use Data::Dumper;
@@ -903,8 +903,8 @@ sub getBatchMaker()
     {
 	die "BatchFactory: params{'machine'} must be defined!";
     }
-    
-    
+
+
     my $machine = $params{'machine'};
     my $batchmaker = Batch::BatchMaker->new(%params);
     my $subclassname = "Batch::BatchMaker_" . $machine;
@@ -915,10 +915,10 @@ sub getBatchMaker()
 	$subclassname = "Batch::BatchMaker_" . $newmachname;
     }
 
-    # Try to call the _test method on the class. 
+    # Try to call the _test method on the class.
     # If we get an error, it means the class doesn't
     # exist, and we need to return an instance of the base
-    # class. 
+    # class.
     my $rv = eval
     {
 	bless $batchmaker, $subclassname;
@@ -933,7 +933,7 @@ sub getBatchMaker()
     else
     {
 	bless $batchmaker, "Batch::BatchMaker";
-	return $batchmaker;	
+	return $batchmaker;
     }
 }
 #==============================================================================
@@ -1032,7 +1032,7 @@ sub setTaskInfo()
     }
 
     $self->{'mppsum'} = $taskmaker->sumPES();
-    
+
     if($self->{maxthreads} == 1){
 	$self->{mppwidth} = $self->{mppsum};
     }else{
@@ -1042,7 +1042,7 @@ sub setTaskInfo()
     if($self->{mppwidth} < $pes_per_node){
 	$self->{mppwidth} = $pes_per_node;
     }
-    
+
     if(defined $self->{'overridenodecount'})
     {
         $self->{mppwidth} = 24;
@@ -1056,7 +1056,7 @@ sub setTaskInfo()
 sub setCESMRun()
 {
     my $self = shift;
-    
+
     # For the aprun command we only want -S tasks_per_numa
     # and -cc numa_node to be set if the tasks per node is > 1
     if($self->{'tasks_per_node'} > 1)
@@ -1146,7 +1146,7 @@ E1
 E2
 	my $code = "$code1\n$code2\n";
     $self->{'mpirun'} = "$code\n";
-    
+
 }
 
 #==============================================================================
@@ -1209,11 +1209,11 @@ sub writeBatchScript()
     {
         my $hostfilename = $self->{caseroot} . "/hostfile";
         open my $HFILE, "<", $hostfilename or die "could not open $hostfilename for writing!";
-        print $HFILE $ENV{'HOSTNAME'}; 
+        print $HFILE $ENV{'HOSTNAME'};
         close $HFILE;
         $ENV{'MP_HOSTFILE'} = $hostfilename;
         $ENV{'MP_PROCS'} = 1;
-        
+
     }
     $self->SUPER::writeBatchScript();
 }
