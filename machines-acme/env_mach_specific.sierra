@@ -1,10 +1,22 @@
 #! /bin/csh -f
 
 source /usr/global/tools/dotkit/init.csh
-use -q pgi-11.1
+if ( $COMPILER == "pgi") then
+use -q pgi-14.3
 use -q mvapich2-pgi-1.7
 use -q netcdf-pgi-4.1.3
 setenv NETCDF /usr/local/tools/netcdf-pgi-4.1.3/
+setenv PNETCDF_PATH /usr/local/tools/parallel-netcdf-pgi-1.6.1/
+endif
+
+if ( $COMPILER == "intel") then
+use -q intel-14.0
+use -q mvapich2-intel-2.1
+use -q netcdf-intel-4.1.3
+setenv NETCDF /usr/local/tools/netcdf-intel-4.1.3/
+setenv PNETCDF_PATH /usr/local/tools/parallel-netcdf-intel-1.6.1/
+endif
+
 if ( $?PERL ) then
   printenv
 endif
