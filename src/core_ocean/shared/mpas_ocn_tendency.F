@@ -667,7 +667,7 @@ contains
 
                   call mpas_timer_start("MacroMolecules surface flux", .false.)
                   call ocn_tracer_MacroMolecules_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
-                     nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)!{{{
+                     nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)
                   call mpas_timer_stop("MacroMolecules surface flux")
                endif
 

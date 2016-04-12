@@ -528,12 +528,8 @@ module ocn_forward_mode
          call mpas_timer_stop("time integration")
 
          ! Move time level 2 fields back into time level 1 for next time step
-         block_ptr => domain % blocklist
-         do while(associated(block_ptr))
-            call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
-            call mpas_pool_shift_time_levels(statePool)
-            block_ptr => block_ptr % next
-         end do
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
+         call mpas_pool_shift_time_levels(statePool)
 
          call ocn_analysis_compute(domain, err)
          call ocn_analysis_restart(domain, err)
