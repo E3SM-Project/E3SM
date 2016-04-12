@@ -110,15 +110,17 @@ if ( $COMPILER == "gnu" ) then
   soft add +gcc-5.3.0 
   soft add +netcdf-4.4.0-gcc-5.3.0-serial
   soft add +pnetcdf-1.6.1-gcc-5.3.0-mvapich2-2.2b
-  setenv NETCDFROOT /blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/netcdf-4.4.0-jegmtu756jg64u6y7kjmk5vr5j5nqskn
-
+  #setenv NETCDFROOT /blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/netcdf-4.4.0-jegmtu756jg64u6y7kjmk5vr5j5nqskn
+  setenv NETCDFROOT /blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/netcdf-fortran-4.4.3-nd3qjav6dgtbljym2k6qhykswvumcpeh/
+  #setenv NETCDFROOT /home/awilke/Debug/netcdf
+  
   if ( $MPILIB == "mpi-serial") then
    setenv PNETCDFROOT ""
   else if ( $MPILIB == "mvapich") then
 
     soft add +mvapich2-2.2b-gcc-5.3.0
     setenv PNETCDFROOT /blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/parallel-netcdf-1.6.1-cotgtotj6smsjzc7fmhydvgfpn3dezmd
-	
+	#setenv PNETCDFROOT
   else
     # default - mvapich + pnetcdf
 	soft add +mvapich2-2.2b-gcc-5.3.0
