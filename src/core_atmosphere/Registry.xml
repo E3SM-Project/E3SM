@@ -425,7 +425,6 @@
 			<var name="shdmin"/>
 			<var name="shdmax"/>
 			<var name="snoalb"/>
-			<var name="ter"/>
 			<var name="albedo12m"/>
 			<var name="greenfrac"/>
 			<var name="sfc_albbck"/>
@@ -603,6 +602,10 @@
                         <var name="qsq"/>
                         <var name="tsq"/>
                         <var name="tke_pbl"/>
+                        <var name="wstar"/>
+                        <var name="delta"/>
+                        <var name="el_pbl"/>
+                        <var name="ch"/>
 			<var name="kpbl"/>
 			<var name="hpbl"/>
 			<var name="hfx"/>
@@ -859,7 +862,6 @@
 			<var name="ozmixm"/>
 			<var name="mminlu"/>
 			<var name="xland"/>
-			<var name="ter"/>
 			<var name="skintemp"/>
 			<var name="snow"/>
 			<var name="snowh"/>
@@ -1589,7 +1591,7 @@
 
                         <var name="tend_qc" name_in_code="qc" array_group="moist" units="kg kg^{-1} s^{-1}"
                              description="Tendency of cloud water mixing ratio"
-                             packages="cu_tiedtke_in;mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                             packages="bl_mynn_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
 
                         <var name="tend_qr" name_in_code="qr" array_group="moist" units="kg kg^{-1} s^{-1}"
                              description="Tendency of rain water mixing ratio"
@@ -1597,7 +1599,7 @@
 
                         <var name="tend_qi" name_in_code="qi" array_group="moist" units="kg kg^{-1} s^{-1}"
                              description="Tendency of ice mixing ratio"
-                             packages="cu_tiedtke_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                             packages="bl_mynn_in;cu_tiedtke_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
 
                         <var name="tend_qs" name_in_code="qs" array_group="moist" units="kg kg^{-1} s^{-1}"
                              description="Tendency of snow ratio"
@@ -1940,7 +1942,7 @@
                      description="one-moment constant cloud water droplet concentration"
                      packages="mp_thompson_aerosols_in;mp_thompson_in"/>
 
-                <var name="mu_c" type="real" dimensions="nCells" units="dimensionless"
+                <var name="mu_c" type="real" dimensions="nCells" units="unitless"
                      description="gamma shape parameter"
                      packages="mp_thompson_aerosols_in;mp_thompson_in"/>
 
@@ -2269,14 +2271,6 @@
                      description="wind speed at lowest model level"
                      packages="bl_mynn_in;bl_ysu_in"/>
 
-                <var name="fh" type="real" dimensions="nCells Time" units="unitless"
-                     description="integrated stability function for heat"
-                     packages="bl_ysu_in"/>
-
-                <var name="fm" type="real" dimensions="nCells Time" units="unitless"
-                     description="integrated stability function for moisture"
-                     packages="bl_ysu_in"/>
-
                 <!-- DIAGNOSTICS: -->
                 <var name="u10" type="real" dimensions="nCells Time" units="m s^{-1}"
                      description="10-meter zonal wind"/>
@@ -2292,6 +2286,15 @@
 
                 <var name="th2m" type="real" dimensions="nCells Time" units="K"
                      description="2-meter potential temperature"/>
+
+                <!-- ADDITIONAL VARIABLES ONLY NEEDED IN THE MONIN_OBUKOHV SURFACE LAYER SCHEME (SFCLAY): -->
+                <var name="fh" type="real" dimensions="nCells Time" units="unitless"
+                     description="integrated stability function for heat"
+                     packages="bl_ysu_in"/>
+
+                <var name="fm" type="real" dimensions="nCells Time" units="unitless"
+                     description="integrated stability function for moisture"
+                     packages="bl_ysu_in"/>
 
                 <!-- ADDITIONAL VARIABLES ONLY NEEDED IN THE MYNN SURFACE LAYER SCHEME (SFCLAY_MYNN): -->
                 <var name="ch" type="real" dimensions="nCells Time" units="m s^{-1}"
@@ -2975,6 +2978,7 @@
 
                 <var name="tslb" type="real" dimensions="nSoilLevels nCells Time" units="K"
                      description="soil layer temperature"/>
+
 
                 <!-- ================================================================================================== -->
                 <!-- ... PARAMETERIZATION OF GRAVITY WAVE DRAG OVER OROGRAPHY:                                          -->
