@@ -60,6 +60,7 @@ class Case(object):
         self._gridname = None
         self._compsetsfile = None
         self._pesfile = None
+        self._gridfile = None
         self._components = []
         self._component_config_files = []
 
@@ -182,6 +183,7 @@ class Case(object):
                     self._compsetsfile = compsets_filename
                     self._compsetname = match
 
+                    self.set_value("COMPSETS_SPEC_FILE" , compsets_filename)
                     self.set_value("TESTS_SPEC_FILE"    , tests_filename)
                     self.set_value("TESTS_MODS_DIR"     , tests_mods_dir)
                     self.set_value("USER_MODS_DIR"      , user_mods_dir)
@@ -250,7 +252,8 @@ class Case(object):
 
     def configure(self, compset_name, grid_name, machine_name, 
                   pecount=None, compiler=None, mpilib=None, 
-                  user_compset=False, pesfile=None):
+                  user_compset=False, pesfile=None,
+                  user_grid=False, gridfile=None):
 
         #--------------------------------------------
         # compset and pesfile
@@ -260,27 +263,30 @@ class Case(object):
             self._pesfile = pesfile
         else:
             self._set_compset_and_pesfile(compset_name)
-
-        self.set_value("COMPSETS_SPEC_FILE" , self._compsetsfile)
-        self.set_value("PES_SPEC_FILE"      , self._pesfile)
+        self.set_value("PES_SPEC_FILE", self._pesfile)
 
         self.get_compset_components()
 
         #--------------------------------------------
         # grid
         #--------------------------------------------
-        files = Files()
-        grids = Grids(self.get_value("GRIDS_SPEC_FILE"), files=files)
+        if user_grid is True and gridfile is not None:
+            self.set_value("GRIDS_SPEC_FILE", gridfile);
+            print "DEBUG: grid file is ",gridfile
+        else:
+            files = Files()
+            gridfile = files.get_value("GRIDS_SPEC_FILE")
+        grids = Grids(gridfile)
+
         gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
         self._gridname = gridinfo["GRID"]
+        for key,value in gridinfo.iteritems():
+            self.set_value(key,value)
 
         #--------------------------------------------
         # component config data
         #--------------------------------------------
         self._get_component_config_data()
-
-        for key,value in gridinfo.iteritems():
-            self.set_value(key,value)
 
         # Add the group and elements for the config_files.xml
         for idx, config_file in enumerate(self._component_config_files):
