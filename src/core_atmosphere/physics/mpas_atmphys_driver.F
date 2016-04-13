@@ -92,6 +92,8 @@
 !>      of the MYNN surface layer scheme and PBL schemes. itimestep and block%configs are added to
 !>      the argument list.
 !>      Laura D. Fowler (laura@ucar.edu) / 2015-01-06.
+!>    * now only call subroutine update_convection_step2 when config_convection_scheme is not off.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-04/13. 
 
 
  contains
@@ -239,7 +241,8 @@
        call deallocate_convection
     endif
     !update diagnostics:
-    call update_convection_step2(block%configs,mesh,diag_physics)
+    if(config_convection_scheme .ne. 'off') &
+       call update_convection_step2(block%configs,mesh,diag_physics)
 
     !deallocate arrays shared by all physics parameterizations:
     call deallocate_forall_physics
