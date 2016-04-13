@@ -22,7 +22,6 @@ module mpas_pool_routines
    use mpas_derived_types
    use mpas_io_units
    use mpas_field_routines
-   use mpas_dmpar
    use mpas_threading
    
    interface mpas_pool_add_field
@@ -3265,6 +3264,11 @@ module mpas_pool_routines
       integer :: hash, endl
       type (mpas_pool_member_type), pointer :: ptr
 
+      info % fieldType = -1
+      info % nDims = -1
+      info % nTimeLevels = -1
+      info % nHaloLayers = -1
+      info % isActive = .false.
 
       endl = len_trim(key)
       call pool_hash(hash, key, endl)
@@ -3280,91 +3284,170 @@ module mpas_pool_routines
                   info % fieldType = ptr % data % contentsType
                   info % nDims = ptr % data % contentsDims
                   info % nTimeLevels = ptr % data % contentsTimeLevs
+                  info % nHaloLayers = 0
 
                   if ( info % fieldType == MPAS_POOL_REAL ) then
                      if ( info % nDims == 0 ) then
                         if ( info % nTimeLevels > 1 ) then 
                            info % isActive = ptr % data % r0a(1) % isActive
+                           if ( associated(ptr % data % r0a(1) % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % r0a(1) % sendList % halos)
+                           end if
                         else
                            info % isActive = ptr % data % r0 % isActive
+                           if ( associated(ptr % data % r0 % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % r0 % sendList % halos)
+                           end if
                         end if
                      else if ( info % nDims == 1 ) then
                         if ( info % nTimeLevels > 1 ) then 
                            info % isActive = ptr % data % r1a(1) % isActive
+                           if ( associated(ptr % data % r1a(1) % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % r1a(1) % sendList % halos)
+                           end if
                         else
                            info % isActive = ptr % data % r1 % isActive
+                           if ( associated(ptr % data % r1 % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % r1 % sendList % halos)
+                           end if
                         end if
                      else if ( info % nDims == 2 ) then
                         if ( info % nTimeLevels > 1 ) then 
                            info % isActive = ptr % data % r2a(1) % isActive
+                           if ( associated(ptr % data % r2a(1) % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % r2a(1) % sendList % halos)
+                           end if
                         else
                            info % isActive = ptr % data % r2 % isActive
+                           if ( associated(ptr % data % r2 % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % r2 % sendList % halos)
+                           end if
                         end if
                      else if ( info % nDims == 3 ) then
                         if ( info % nTimeLevels > 1 ) then 
                            info % isActive = ptr % data % r3a(1) % isActive
+                           if ( associated(ptr % data % r3a(1) % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % r3a(1) % sendList % halos)
+                           end if
                         else
                            info % isActive = ptr % data % r3 % isActive
+                           if ( associated(ptr % data % r3 % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % r3 % sendList % halos)
+                           end if
                         end if
                      else if ( info % nDims == 4 ) then
                         if ( info % nTimeLevels > 1 ) then 
                            info % isActive = ptr % data % r4a(1) % isActive
+                           if ( associated(ptr % data % r4a(1) % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % r4a(1) % sendList % halos)
+                           end if
                         else
                            info % isActive = ptr % data % r4 % isActive
+                           if ( associated(ptr % data % r4 % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % r4 % sendList % halos)
+                           end if
                         end if
                      else if ( info % nDims == 5 ) then
                         if ( info % nTimeLevels > 1 ) then 
                            info % isActive = ptr % data % r5a(1) % isActive
+                           if ( associated(ptr % data % r5a(1) % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % r5a(1) % sendList % halos)
+                           end if
                         else
                            info % isActive = ptr % data % r5 % isActive
+                           if ( associated(ptr % data % r5 % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % r5 % sendList % halos)
+                           end if
                         end if
                      end if
                   else if (info % fieldType == MPAS_POOL_INTEGER ) then
                      if ( info % nDims == 0 ) then
                         if ( info % nTimeLevels > 1 ) then 
                            info % isActive = ptr % data % i0a(1) % isActive
+                           if ( associated(ptr % data % i0a(1) % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % i0a(1) % sendList % halos)
+                           end if
                         else
                            info % isActive = ptr % data % i0 % isActive
+                           if ( associated(ptr % data % i0 % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % i0 % sendList % halos)
+                           end if
                         end if
                      else if ( info % nDims == 1 ) then
                         if ( info % nTimeLevels > 1 ) then 
                            info % isActive = ptr % data % i1a(1) % isActive
+                           if ( associated(ptr % data % i1a(1) % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % i1a(1) % sendList % halos)
+                           end if
                         else
                            info % isActive = ptr % data % i1 % isActive
+                           if ( associated(ptr % data % i1 % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % i1 % sendList % halos)
+                           end if
                         end if
                      else if ( info % nDims == 2 ) then
                         if ( info % nTimeLevels > 1 ) then 
                            info % isActive = ptr % data % i2a(1) % isActive
+                           if ( associated(ptr % data % i2a(1) % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % i2a(1) % sendList % halos)
+                           end if
                         else
                            info % isActive = ptr % data % i2 % isActive
+                           if ( associated(ptr % data % i2 % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % i2 % sendList % halos)
+                           end if
                         end if
                      else if ( info % nDims == 3 ) then
                         if ( info % nTimeLevels > 1 ) then 
                            info % isActive = ptr % data % i3a(1) % isActive
+                           if ( associated(ptr % data % i3a(1) % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % i3a(1) % sendList % halos)
+                           end if
                         else
                            info % isActive = ptr % data % i3 % isActive
+                           if ( associated(ptr % data % i3 % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % i3 % sendList % halos)
+                           end if
                         end if
                      end if
                   else if (info % fieldType == MPAS_POOL_CHARACTER ) then
                      if ( info % nDims == 0 ) then
                         if ( info % nTimeLevels > 1 ) then 
                            info % isActive = ptr % data % c0a(1) % isActive
+                           if ( associated(ptr % data % c0a(1) % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % c0a(1) % sendList % halos)
+                           end if
                         else
                            info % isActive = ptr % data % c0 % isActive
+                           if ( associated(ptr % data % c0 % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % c0 % sendList % halos)
+                           end if
                         end if
                      else if ( info % nDims == 1 ) then
                         if ( info % nTimeLevels > 1 ) then 
                            info % isActive = ptr % data % c1a(1) % isActive
+                           if ( associated(ptr % data % c1a(1) % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % c1a(1) % sendList % halos)
+                           end if
                         else
                            info % isActive = ptr % data % c1 % isActive
+                           if ( associated(ptr % data % c1 % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % c1 % sendList % halos)
+                           end if
                         end if
                      end if
                   else if (info % fieldType == MPAS_POOL_LOGICAL ) then
                      if ( info % nDims == 0 ) then
                         if ( info % nTimeLevels > 1 ) then 
                            info % isActive = ptr % data % l0a(1) % isActive
+                           if ( associated(ptr % data % l0a(1) % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % l0a(1) % sendList % halos)
+                           end if
                         else
                            info % isActive = ptr % data % l0 % isActive
+                           if ( associated(ptr % data % l0 % sendList) ) then
+                              info % nHaloLayers = size(ptr % data % l0 % sendList % halos)
+                           end if
                         end if
                      end if
                   end if

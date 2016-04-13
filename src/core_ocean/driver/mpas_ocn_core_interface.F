@@ -13,6 +13,7 @@ module ocn_core_interface
    use mpas_constants
    use mpas_io_units
    use ocn_core
+   use mpas_attlist
 
    use ocn_forward_mode
    use ocn_analysis_mode

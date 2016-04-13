@@ -12,6 +12,7 @@ module li_core_interface
    use mpas_dmpar
    use mpas_constants
    use mpas_io_units
+   use mpas_attlist
    use li_core
 
    public

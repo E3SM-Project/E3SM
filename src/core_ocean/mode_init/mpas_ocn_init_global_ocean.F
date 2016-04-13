@@ -296,6 +296,7 @@ contains
        topoLat % isActive = .true.
        topoLat % hasTimeDimension = .false.
        topoLat % block => domain % blocklist
+       allocate(topoLat % attLists(1))
        allocate(topoLat % array(nLatTopo))
 
        topoLon % fieldName = trim(config_global_ocean_topography_lon_varname)
@@ -306,6 +307,7 @@ contains
        topoLon % isActive = .true.
        topoLon % hasTimeDimension = .false.
        topoLon % block => domain % blocklist
+       allocate(topoLon % attLists(1))
        allocate(topoLon % array(nLonTopo))
 
        topoIC % fieldName = trim(config_global_ocean_topography_varname)
@@ -318,6 +320,7 @@ contains
        topoIC % isActive = .true.
        topoIC % hasTimeDimension = .false.
        topoIC % block => domain % blocklist
+       allocate(topoIC % attLists(1))
        allocate(topoIC % array(nLonTopo, nLatTopo))
 
        ! Add topoLat, topoLon, and topoIC fields to stream
@@ -336,6 +339,7 @@ contains
           oceanFracIC % isActive = .true.
           oceanFracIC % hasTimeDimension = .false.
           oceanFracIC % block => domain % blocklist
+          allocate(oceanFracIC % attLists(1))
           allocate(oceanFracIC % array(nLonTopo, nLatTopo))
 
           call MPAS_streamAddField(topographyStream, oceanFracIC, iErr)
@@ -422,6 +426,7 @@ contains
        landIceThkLat % isActive = .true.
        landIceThkLat % hasTimeDimension = .false.
        landIceThkLat % block => domain % blocklist
+       allocate(landIceThkLat % attLists(1))
        allocate(landIceThkLat % array(nLatLandIceThk))
 
        landIceThkLon % fieldName = trim(config_global_ocean_land_ice_topo_lon_varname)
@@ -432,6 +437,7 @@ contains
        landIceThkLon % isActive = .true.
        landIceThkLon % hasTimeDimension = .false.
        landIceThkLon % block => domain % blocklist
+       allocate(landIceThkLon % attLists(1))
        allocate(landIceThkLon % array(nLonLandIceThk))
 
        landIceThkIC % fieldName = trim(config_global_ocean_land_ice_topo_thickness_varname)
@@ -444,6 +450,7 @@ contains
        landIceThkIC % isActive = .true.
        landIceThkIC % hasTimeDimension = .false.
        landIceThkIC % block => domain % blocklist
+       allocate(landIceThkIC % attLists(1))
        allocate(landIceThkIC % array(nLonLandIceThk, nLatLandIceThk))
 
        landIceDraftIC % fieldName = trim(config_global_ocean_land_ice_topo_draft_varname)
@@ -456,6 +463,7 @@ contains
        landIceDraftIC % isActive = .true.
        landIceDraftIC % hasTimeDimension = .false.
        landIceDraftIC % block => domain % blocklist
+       allocate(landIceDraftIC % attLists(1))
        allocate(landIceDraftIC % array(nLonLandIceThk, nLatLandIceThk))
 
        landIceFracIC % fieldName = trim(config_global_ocean_land_ice_topo_ice_frac_varname)
@@ -468,6 +476,7 @@ contains
        landIceFracIC % isActive = .true.
        landIceFracIC % hasTimeDimension = .false.
        landIceFracIC % block => domain % blocklist
+       allocate(landIceFracIC % attLists(1))
        allocate(landIceFracIC % array(nLonLandIceThk, nLatLandIceThk))
 
        groundedFracIC % fieldName = trim(config_global_ocean_land_ice_topo_grounded_frac_varname)
@@ -480,6 +489,7 @@ contains
        groundedFracIC % isActive = .true.
        groundedFracIC % hasTimeDimension = .false.
        groundedFracIC % block => domain % blocklist
+       allocate(groundedFracIC % attLists(1))
        allocate(groundedFracIC % array(nLonLandIceThk, nLatLandIceThk))
 
        ! Add landIceThkLat, landIceThkLon, and landIceThkIC fields to stream
@@ -1132,6 +1142,7 @@ contains
        depthIC % isActive = .true.
        depthIC % hasTimeDimension = .false.
        depthIC % block => domain % blocklist
+       allocate(depthIC % attLists(1))
        allocate(depthIC % array(nDepth))
 
        ! Add depth field to stream
@@ -1216,6 +1227,7 @@ contains
        tracerLat % isActive = .true.
        tracerLat % hasTimeDimension = .false.
        tracerLat % block => domain % blocklist
+       allocate(tracerLat % attLists(1))
        allocate(tracerLat % array(nLatTracer))
 
        tracerLon % fieldName = trim(config_global_ocean_tracer_lon_varname)
@@ -1226,6 +1238,7 @@ contains
        tracerLon % isActive = .true.
        tracerLon % hasTimeDimension = .false.
        tracerLon % block => domain % blocklist
+       allocate(tracerLon % attLists(1))
        allocate(tracerLon % array(nLonTracer))
 
        ! Add tracerLat and tracerLon fields to stream
@@ -1306,6 +1319,7 @@ contains
        swDataLat % isActive = .true.
        swDataLat % hasTimeDimension = .false.
        swDataLat % block => domain % blocklist
+       allocate(swDataLat % attLists(1))
        allocate(swDataLat % array(nLatSW))
 
        swDataLon % fieldName = trim(config_global_ocean_swData_lon_varname)
@@ -1316,6 +1330,7 @@ contains
        swDataLon % isActive = .true.
        swDataLon % hasTimeDimension = .false.
        swDataLon % block => domain % blocklist
+       allocate(swDataLon % attLists(1))
        allocate(swDataLon % array(nLonSW))
 
        ! Add tracerLat and tracerLon fields to stream
@@ -1394,6 +1409,7 @@ contains
        temperatureIC % isActive = .true.
        temperatureIC % hasTimeDimension = .false.
        temperatureIC % block => domain % blocklist
+       allocate(temperatureIC % attLists(1))
        allocate(temperatureIC % array(nLonTracer, nLatTracer, nDepth))
 
        ! Add temperature field to stream
@@ -1460,6 +1476,7 @@ contains
        salinityIC % isActive = .true.
        salinityIC % hasTimeDimension = .false.
        salinityIC % block => domain % blocklist
+       allocate(salinityIC % attLists(1))
        allocate(salinityIC % array(nLonTracer, nLatTracer, nDepth))
 
        ! Add salinity field to stream
@@ -1908,6 +1925,7 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
    zenithAngleIC % isActive = .true.
    zenithAngleIC % hasTimeDimension = .false.
    zenithAngleIC % block => domain % blocklist
+   allocate(zenithAngleIC % attLists(1))
    allocate(zenithAngleIC % array(nLonSW, nLatSW))
 
    ! Setup zenithAngle field for stream to be read in
@@ -1921,6 +1939,7 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
    chlorophyllIC % isActive = .true.
    chlorophyllIC % hasTimeDimension = .false.
    chlorophyllIC % block => domain % blocklist
+   allocate(chlorophyllIC % attLists(1))
    allocate(chlorophyllIC % array(nLonSW, nLatSW))
 
    ! Setup zenithAngle field for stream to be read in
@@ -1934,6 +1953,7 @@ subroutine ocn_init_setup_global_ocean_interpolate_swData(domain, iErr)!{{{
    clearSKYIC % isActive = .true.
    clearSKYIC % hasTimeDimension = .false.
    clearSKYIC % block => domain % blocklist
+   allocate(clearSKYIC % attLists(1))
    allocate(clearSKYIC % array(nLonSW, nLatSW))
    ! Add chlorophyll field to stream
 
@@ -2103,6 +2123,7 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
        windLat % isActive = .true.
        windLat % hasTimeDimension = .false.
        windLat % block => domain % blocklist
+       allocate(windLat % attLists(1))
        allocate(windLat % array(nLatWind))
 
        windLon % fieldName = trim(config_global_ocean_windstress_lon_varname)
@@ -2113,6 +2134,7 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
        windLon % isActive = .true.
        windLon % hasTimeDimension = .false.
        windLon % block => domain % blocklist
+       allocate(windLon % attLists(1))
        allocate(windLon % array(nLonWind))
 
        zonalWindIC % fieldName = trim(config_global_ocean_windstress_zonal_varname)
@@ -2125,6 +2147,7 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
        zonalWindIC % isActive = .true.
        zonalWindIC % hasTimeDimension = .false.
        zonalWindIC % block => domain % blocklist
+       allocate(zonalWindIC % attLists(1))
        allocate(zonalWindIC % array(nLonWind, nLatWind))
 
        meridionalWindIC % fieldName = trim(config_global_ocean_windstress_meridional_varname)
@@ -2137,6 +2160,7 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
        meridionalWindIC % isActive = .true.
        meridionalWindIC % hasTimeDimension = .false.
        meridionalWindIC % block => domain % blocklist
+       allocate(meridionalWindIC % attLists(1))
        allocate(meridionalWindIC % array(nLonWind, nLatWind))
 
        ! Add windLat, windLon, and windIC fields to stream
