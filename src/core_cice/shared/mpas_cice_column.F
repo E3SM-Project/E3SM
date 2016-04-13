@@ -4231,7 +4231,8 @@ contains
          albedoVisibleDirectOcean, &
          albedoIRDirectOcean, &
          albedoVisibleDiffuseOcean, &
-         albedoIRDiffuseOcean
+         albedoIRDiffuseOcean, &
+         landIceMask
 
     real(kind=RKIND) :: &
          sensibleTransferCoefficient, &
@@ -4247,6 +4248,9 @@ contains
 
     integer, pointer :: &
          nCellsSolve
+
+    logical, pointer :: &
+         config_use_test_ice_shelf
 
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
 
@@ -4359,12 +4363,39 @@ contains
                oceanHeatFluxConvergence(iCell), &
                freezingMeltingPotential(iCell), &
                config_dt)
-          
 
        enddo ! iCell
 
        block => block % next
     enddo
+
+    ! remove frazil from below ice shelves if were testing that
+    call MPAS_pool_get_config(domain % configs, "config_use_test_ice_shelf", config_use_test_ice_shelf)
+
+    if (config_use_test_ice_shelf) then
+
+       block => domain % blocklist
+       do while (associated(block))
+
+          call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCoupling)
+
+          call MPAS_pool_get_array(oceanCoupling, "freezingMeltingPotential", freezingMeltingPotential)
+          call MPAS_pool_get_array(oceanCoupling, "landIceMask", landIceMask)
+
+          call MPAS_pool_get_dimension(oceanCoupling, "nCellsSolve", nCellsSolve)
+
+          do iCell = 1, nCellsSolve
+
+             if (landIceMask(iCell) == 1.0_RKIND) then
+                freezingMeltingPotential(iCell) = 0.0_RKIND
+             endif
+
+          enddo ! iCell
+
+          block => block % next
+       enddo
+
+    endif !
 
   end subroutine cice_column_ocean_mixed_layer
 

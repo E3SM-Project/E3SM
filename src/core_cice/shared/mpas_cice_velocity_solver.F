@@ -170,7 +170,89 @@ contains
 
     endif
 
+    ! initialize the land ice shelve mask
+    call init_ice_shelve_vertex_mask(domain)
+
   end subroutine cice_init_velocity_solver!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_ice_shelve_vertex_mask
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 9th April 2016
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_ice_shelve_vertex_mask(domain)
+
+    type (domain_type), intent(inout) :: &
+         domain !< Input/Output:
+
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         oceanCouplingPool, &
+         meshPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         landIceMask
+
+    integer, dimension(:), pointer :: &
+         landIceMaskVertex
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnVertex
+
+    integer, pointer :: &
+         vertexDegree, &
+         nVerticesSolve
+
+    integer :: &
+         iCell, &
+         iVertex, &
+         iCellOnVertex
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+
+       call MPAS_pool_get_array(oceanCouplingPool, "landIceMask", landIceMask)
+       call MPAS_pool_get_array(oceanCouplingPool, "landIceMaskVertex", landIceMaskVertex)
+
+       call MPAS_pool_get_array(meshPool, "cellsOnVertex", cellsOnVertex)
+
+       call MPAS_pool_get_dimension(block % dimensions, "vertexDegree", vertexDegree)
+       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+
+       landIceMaskVertex(:) = 0
+
+       do iVertex = 1, nVerticesSolve
+
+          do iCellOnVertex = 1, vertexDegree
+
+             iCell = cellsOnVertex(iCellOnVertex,iVertex)
+
+             if (landIceMask(iCell) == 1.0_RKIND) then
+
+                landIceMaskVertex(iVertex) = 1
+
+             endif
+
+          enddo ! iCellOnVertex
+
+       enddo ! iVertex
+
+       block => block % next
+    enddo
+
+  end subroutine init_ice_shelve_vertex_mask
 
 !-----------------------------------------------------------------------
 ! Time stepping
@@ -514,14 +596,16 @@ contains
     type(MPAS_pool_type), pointer :: &
          meshPool, &
          velocitySolverPool, &
-         icestatePool
+         icestatePool, &
+         oceanCouplingPool
 
     integer, dimension(:), pointer :: &
          solveStress
 
     real(kind=RKIND), dimension(:), pointer :: &
          iceAreaCellInitial, &
-         totalMassCell
+         totalMassCell, &
+         landIceMask
 
     integer :: &
          iCell, &
@@ -545,6 +629,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
        call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
 
        call MPAS_pool_get_array(meshPool, "nEdgesOnCell", nEdgesOnCell)
        call MPAS_pool_get_array(meshPool, "cellsOnCell", cellsOnCell)
@@ -554,12 +639,15 @@ contains
        call MPAS_pool_get_array(icestatePool, "iceAreaCellInitial", iceAreaCellInitial)
        call MPAS_pool_get_array(icestatePool, "totalMassCell", totalMassCell)
 
+       call MPAS_pool_get_array(oceanCouplingPool, "landIceMask", landIceMask)
+
        do iCell = 1, nCells
 
           solveStress(iCell) = 0
 
           if (iceAreaCellInitial(iCell) > ciceAreaMinimum .and. &
-              totalMassCell(iCell) > ciceMassMinimum) then
+              totalMassCell(iCell) > ciceMassMinimum .and. &
+              landIceMask(iCell) == 0.0_RKIND) then
 
              ! this cell has sufficient ice
              solveStress(iCell) = 1
@@ -572,7 +660,8 @@ contains
                 iCellNeighbour = cellsOnCell(iCellOnCell,iCell)
 
                 if (iceAreaCellInitial(iCellNeighbour) > ciceAreaMinimum .and. &
-                    totalMassCell(iCellNeighbour) > ciceMassMinimum) then
+                    totalMassCell(iCellNeighbour) > ciceMassMinimum .and. &
+                    landIceMask(iCellNeighbour) == 0.0_RKIND) then
 
                    solveStress(iCell) = 1
                    exit
@@ -619,7 +708,8 @@ contains
     type(MPAS_pool_type), pointer :: &
          velocitySolverPool, &
          icestatePool, &
-         boundaryPool
+         boundaryPool, &
+         oceanCouplingPool
 
     integer, dimension(:), pointer :: &
          solveVelocity
@@ -629,7 +719,8 @@ contains
          totalMassVertex
 
     integer, dimension(:), pointer :: &
-         interiorVertex
+         interiorVertex, &
+         landIceMaskVertex
 
     integer :: &
          iVertex
@@ -647,6 +738,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
        call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
        call MPAS_pool_get_subpool(block % structs, "boundary", boundaryPool)
+       call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
 
        call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
 
@@ -655,13 +747,16 @@ contains
 
        call MPAS_pool_get_array(boundaryPool, "interiorVertex", interiorVertex)
 
+       call MPAS_pool_get_array(oceanCouplingPool, "landIceMaskVertex", landIceMaskVertex)
+
        do iVertex = 1, nVerticesSolve
 
           solveVelocity(iVertex) = 0
 
           if (interiorVertex(iVertex) == 1 .and. &
-               iceAreaVertex(iVertex) > ciceAreaMinimum .and. &
-               totalMassVertex(iVertex) > ciceMassMinimum) then
+              landIceMaskVertex(iVertex) == 0 .and. &
+              iceAreaVertex(iVertex) > ciceAreaMinimum .and. &
+              totalMassVertex(iVertex) > ciceMassMinimum) then
 
              ! this vertex has sufficient ice
              solveVelocity(iVertex) = 1
