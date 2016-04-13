@@ -219,10 +219,9 @@ def _create_caseroot(case, caseroot, cimeroot, components, machine):
         os.mkdir(newdir)
 
     # Open a new README.case file in $caseroot
-    #file = "$caseroot/README.case";
-    #fh = IO::File->new($file, '>' ) or $logger->logdie( "can't open file: $file\n");
-    #print $fh "$commandline\n\n\n";
-    #fh->close;
+    with open(os.path.join(caseroot,"README.case"), "w") as fd:
+        for arg in sys.argv:
+            fd.write(" %s"%arg)
 
     _create_caseroot_sourcemods(case, caseroot, cimeroot, components);
     _create_caseroot_tools(case, caseroot, cimeroot, machine);
