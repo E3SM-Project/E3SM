@@ -22,7 +22,9 @@ def get_tests_from_xml(xml_machine=None,xml_category=None,xml_compiler=None, xml
         testlistfiles.append(xml_testlist)
     else:
         files = Files()
-        test_spec_files = files.get_values("TESTS_SPEC_FILE","component")
+        test_spec_files = files.get_values("TESTS_SPEC_FILE",att="component")
+        print test_spec_files
+        expect(False, "This is broken")
         for spec_file in test_spec_files.viewvalues():
             if(os.path.isfile(spec_file)):
                 testlistfiles.append(spec_file)

@@ -32,11 +32,6 @@ class Machines(GenericXML):
 
         GenericXML.__init__(self, infile)
 
-        if machine:
-            self.set_machine(machine)
-        else:
-            self.machine = self.probe_machine_name()
-
         """
         Append the contents of $HOME/.cime/config_machines.xml if it exists
         This could cause problems if node matchs are repeated when only one is expected
@@ -44,8 +39,12 @@ class Machines(GenericXML):
         infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
         if os.path.exists(infile):
             GenericXML.__init__(self, infile)
-            if not self.machine:
-                self.machine = self.probe_machine_name()
+
+        if machine is None:
+            machine = self.probe_machine_name()
+
+        expect(machine is not None, "Could not initialize machine object")
+        self.set_machine(machine)
 
     def get_machines_dir(self):
         """
@@ -129,7 +128,7 @@ class Machines(GenericXML):
         ...
         SystemExit: ERROR: No machine trump found
         """
-        if self.machine != machine:
+        if self.machine != machine or self.machine_node is None:
             self.machine_node = self.get_optional_node("machine", {"MACH" : machine})
             expect(self.machine_node is not None, "No machine %s found" % machine)
             self.machine = machine

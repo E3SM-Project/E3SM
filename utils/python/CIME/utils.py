@@ -129,7 +129,7 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     >>> run_cmd('echo foo')
     'foo'
 
-    >>> run_cmd('ls file_i_hope_doesnt_exist') 
+    >>> run_cmd('ls file_i_hope_doesnt_exist')
     Traceback (most recent call last):
         ...
     SystemExit: ERROR: Command: 'ls file_i_hope_doesnt_exist' failed with error 'ls: cannot access file_i_hope_doesnt_exist: No such file or directory'
@@ -632,7 +632,7 @@ def convert_to_string(value, type_str=None, vid=""):
     if value is None:
         value = ""
         logger.debug("Attempt to convert None value for vid %s %s"%(vid,value))
-            
+
     return value
 
 def convert_to_seconds(time_str):

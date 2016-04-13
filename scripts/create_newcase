@@ -72,7 +72,7 @@ def parse_command_line(args):
                         "compset along name have been defined for all of its components"
                         "If the compset name is found as a supported compset, then it will be treated as such.")
 
-    parser.add_argument("--pesfile", 
+    parser.add_argument("--pesfile",
                         help="Only used and required for --user-compset argument."
                         "Full pathname of the pes specification file"
 			"This argument is required if --user-compset is True")
@@ -94,7 +94,9 @@ def parse_command_line(args):
                         "cimeroot/../")
 
     # hidden argument indicating called from create_test
-    parser.add_argument("--test", "-test", action="store_true")
+    parser.add_argument("--test", "-test", action="store_true",
+                        help="Used to indicate that create_newcase was called from create_test"
+                        "- do not use otherwise")
 
     args = parser.parse_args()
 
@@ -265,8 +267,9 @@ def _main_func():
     else:
         caseroot = os.path.join(os.getcwd(),case)
 
-    #FIXME: create_test creates the caseroot before calling create_newcase
-    expect(not test or not os.path.exists(caseroot),
+    # create_test creates the caseroot before calling create_newcase
+    # otherwise throw an error if this directory exists
+    expect(not (os.path.exists(caseroot) and not test),
            "Case directory %s already exists"%caseroot)
 
     # Set the case object

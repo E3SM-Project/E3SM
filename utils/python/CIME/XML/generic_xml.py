@@ -144,7 +144,6 @@ class GenericXML(object):
         logger.debug("Get Value for "+item)
         return None
 
-
     def set_value(self, vid, value, ignore_type=True):
         """
         ignore_type is not used in this flavor
@@ -190,8 +189,15 @@ class GenericXML(object):
             if ref is not None:
                 logger.debug("resolve: " + str(ref))
                 item_data = item_data.replace(m.group(), self.get_resolved_value(str(ref)))
+            elif var == "CIMEROOT":
+                cimeroot = get_cime_root()
+                item_data = item_data.replace(m.group(), cimeroot)
+            elif var == "SRCROOT":
+                srcroot = os.path.join(get_cime_root(),"..")
+                item_data = item_data.replace(m.group(), srcroot)
             elif var in os.environ:
                 logging.debug("resolve from env: " + var)
                 item_data = item_data.replace(m.group(), os.environ[var])
+
 
         return item_data
