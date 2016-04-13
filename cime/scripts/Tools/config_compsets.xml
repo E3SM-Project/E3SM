@@ -729,6 +729,8 @@ GEOS => GEOS5 meteorology for "stand-alone" CAM
 <CAM_CONFIG_OPTS compset="_CAM%ADIAB"     >-phys adiabatic</CAM_CONFIG_OPTS>              
 <CAM_CONFIG_OPTS compset="_AQUAP"          >-ocn aquaplanet</CAM_CONFIG_OPTS>              
 
+<CAM_CONFIG_OPTS compset="_CLM45%[^_]*BC"     >-bc_dep_to_snow_updates</CAM_CONFIG_OPTS>
+
 <!-- ======================================= -->
 <!--          USER_DEFINED section           -->
 <!-- Add new values for                      -->
@@ -915,7 +917,7 @@ CAM[45]%L60  => CAM with 60 layers and full gravity wave spectrum:
 <CLM_CONFIG_OPTS compset="_CLM45"                >-phys clm4_5</CLM_CONFIG_OPTS>
 <CLM_CONFIG_OPTS compset="_CLM50"                >-phys clm5_0</CLM_CONFIG_OPTS>
 
-<CLM_CONFIG_OPTS compset="_CLM45%[^_]*SPBC" >-phys clm4_5 -cppdefs -DMODAL_AER</CLM_CONFIG_OPTS>
+<CLM_CONFIG_OPTS compset="_CLM45%[^_]*BC" >-phys clm4_5 -cppdefs -DMODAL_AER</CLM_CONFIG_OPTS>
 
 <!-- ======================================= -->
 <!--          USER_DEFINED section           -->
@@ -1075,7 +1077,7 @@ CLM50%[^_]*BGC   => clm5.0 BGC (CN with vertically resolved soil BGC, based on C
 <CICE_MODE compset="CICE_">prognostic</CICE_MODE>
 <CICE_MODE compset="CICE%PRES_">prescribed</CICE_MODE>
 
-<CICE_CONFIG_OPTS compset="_CLM45%[^_]*SPBC"     >-bc_dep_to_snow_updates</CICE_CONFIG_OPTS>
+<CICE_CONFIG_OPTS compset="_CLM45%[^_]*BC"     >-bc_dep_to_snow_updates</CICE_CONFIG_OPTS>
 
 <CICE_NAMELIST_OPTS compset="_CAM5">cam5=.true.</CICE_NAMELIST_OPTS>  
 
