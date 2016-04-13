@@ -174,7 +174,6 @@ module ocn_time_integration_rk4
       type (field2DReal), pointer :: normalizedRelativeVorticityEdgeField, divergenceField, relativeVorticityField
 
       ! State/Tend Field Pointers
-      type (field2DReal), pointer :: highFreqThicknessField, lowFreqDivergenceField
       type (field2DReal), pointer :: normalVelocityField, layerThicknessField
       type (field3DReal), pointer :: tracersGroupField
 
@@ -359,22 +358,18 @@ module ocn_time_integration_rk4
         ! Update halos for diagnostic variables.
         call mpas_timer_start("RK4-boundary layer depth halo update")
         if (config_use_cvmix_kpp) then
-           call mpas_pool_get_field(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepthField)
-           call mpas_dmpar_exch_halo_field(boundaryLayerDepthField)
+           call mpas_dmpar_field_halo_exch(domain, 'boundaryLayerDepth')
         end if
         call mpas_timer_stop("RK4-boundary layer depth halo update")
 
 
         call mpas_timer_start("RK4-diagnostic halo update")
 
-        call mpas_pool_get_field(diagnosticsPool, 'normalizedRelativeVorticityEdge', normalizedRelativeVorticityEdgeField)
-        call mpas_pool_get_field(diagnosticsPool, 'divergence', divergenceField)
-        call mpas_pool_get_field(diagnosticsPool, 'relativeVorticity', relativeVorticityField)
 
-        call mpas_dmpar_exch_halo_field(normalizedRelativeVorticityEdgeField)
-        if (config_mom_del4 > 0.0_RKIND) then
-           call mpas_dmpar_exch_halo_field(divergenceField)
-           call mpas_dmpar_exch_halo_field(relativeVorticityField)
+        call mpas_dmpar_field_halo_exch(domain, 'normalizedRelativeVorticityEdge')
+        if (config_mom_del4 > 0.0) then
+           call mpas_dmpar_field_halo_exch(domain, 'divergence')
+           call mpas_dmpar_field_halo_exch(domain, 'relativeVorticity')
         end if
         call mpas_timer_stop("RK4-diagnostic halo update")
         call mpas_threading_barrier()
@@ -403,13 +398,9 @@ module ocn_time_integration_rk4
 
            call mpas_timer_start("RK4-prognostic halo update")
 
-           call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
+           call mpas_dmpar_field_halo_exch(domain, 'tendHighFreqThickness')
+           call mpas_dmpar_field_halo_exch(domain, 'tendLowFreqDivergence')
 
-           call mpas_pool_get_field(tendPool, 'highFreqThickness', highFreqThicknessField)
-           call mpas_pool_get_field(tendPool, 'lowFreqDivergence', lowFreqDivergenceField)
-
-           call mpas_dmpar_exch_halo_field(highFreqThicknessField)
-           call mpas_dmpar_exch_halo_field(lowFreqDivergenceField)
            call mpas_timer_stop("RK4-prognostic halo update")
            call mpas_threading_barrier()
 
@@ -520,22 +511,17 @@ module ocn_time_integration_rk4
         ! Update halos for prognostic variables.
 
         call mpas_timer_start("RK4-prognostic halo update")
+
+        call mpas_dmpar_field_halo_exch(domain, 'tendNormalVelocity')
+        call mpas_dmpar_field_halo_exch(domain, 'tendLayerThickness')
+
         call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
-
-        call mpas_pool_get_field(tendPool, 'normalVelocity', normalVelocityField)
-        call mpas_pool_get_field(tendPool, 'layerThickness', layerThicknessField)
         call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
-
-        call mpas_dmpar_exch_halo_field(normalVelocityField)
-        call mpas_dmpar_exch_halo_field(layerThicknessField)
 
         call mpas_pool_begin_iteration(tracersTendPool)
         do while ( mpas_pool_get_next_member(tracersTendPool, groupItr) )
            if ( groupItr % memberType == MPAS_POOL_FIELD ) then
-              call mpas_pool_get_field(tracersTendPool, trim(groupItr % memberName), tracersGroupField)
-              if ( tracersGroupField % isActive ) then
-                 call mpas_dmpar_exch_halo_field(tracersGroupField)
-              end if
+              call mpas_dmpar_field_halo_exch(domain, trim(groupItr % memberName))
            end if
         end do
 
@@ -911,20 +897,16 @@ module ocn_time_integration_rk4
       ! conducted on tendencies, not on the velocity and tracer fields.  So this update is required to
       ! communicate the change due to implicit vertical mixing across the boundary.
       call mpas_timer_start("RK4-implicit vert mix halos")
+
       call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
-      call mpas_pool_get_field(statePool, 'normalVelocity', normalVelocityField, 2)
-
-      call mpas_dmpar_exch_halo_field(normalVelocityField)
+      call mpas_dmpar_field_halo_exch(domain, 'normalVelocity', timeLevel=2)
 
       call mpas_pool_begin_iteration(tracersPool)
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
          if ( groupItr % memberType == MPAS_POOL_FIELD ) then
-            call mpas_pool_get_field(tracersPool, groupItr % memberName, tracersGroupField, 2)
-            if ( tracersGroupField % isActive ) then
-               call mpas_dmpar_exch_halo_field(tracersGroupField)
-            end if
+            call mpas_dmpar_field_halo_exch(domain, groupItr % memberName, timeLevel=2)
          end if
       end do
 

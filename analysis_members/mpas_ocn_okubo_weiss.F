@@ -519,7 +519,6 @@ contains
       integer, dimension(:), pointer :: nEdgesOnCell, indexToCellID
       integer, dimension(:,:), pointer :: cellsOnCell
 
-      type (field2DInteger), pointer :: OW_cc_id_field
 
       integer, pointer :: nCellsSolve
       integer k, iCell, i, iOtherCell, cellIdx, otherCellIdx
@@ -533,8 +532,6 @@ contains
       call mpas_pool_get_subpool(block % structs, 'okuboWeissAM', okuboWeissAMPool)
 
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-
-      call mpas_pool_get_field(okuboWeissAMPool, 'eddyID', OW_cc_id_field)
 
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
@@ -616,7 +613,7 @@ contains
       ! By the nature of eddies being local, components should not stretch over
       ! many components and thus this quickly converges.
       do communcationLoop = 1, 20
-         call mpas_dmpar_exch_halo_field(OW_cc_id_field)
+         call mpas_dmpar_field_halo_exch(block % domain, 'eddyID')
 
          ! Loop over the ghost cells updated with data from adjacent blocks
          ! and merge
