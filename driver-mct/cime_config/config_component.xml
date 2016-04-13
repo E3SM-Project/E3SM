@@ -907,15 +907,6 @@
     <desc>Shared library root, (set automatically to $EXEROOT - DO NOT EDIT)</desc>
   </entry>
 
-  <entry id="SHAREDLIBROOTDIR">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value>$EXEROOT</default_value>
-    <group>build_derived</group>
-    <file>env_build.xml</file>
-    <desc>Shared library root directory, neeed for cleaning shared builds (set automatically to $EXEROOT - DO NOT EDIT)</desc>
-  </entry>
-
   <!-- ===================================================================== -->
   <!-- definitions performance -->
   <!-- ===================================================================== -->
