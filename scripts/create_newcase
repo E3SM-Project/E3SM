@@ -67,9 +67,10 @@ def parse_command_line(args):
                         "commands to utilize. This can also include SourceMods")
 
     parser.add_argument("--user-compset", action="store_true",
-                        help="Long name for new user compset to use"
+                        help="If set, then the --compset argument is treated as a user specified compset."
                         "This assumes that all of the compset settings in the"
-                        "long name have been defined by the target model components")
+                        "compset along name have been defined for all of its components"
+                        "If the compset name is found as a supported compset, then it will be treated as such.")
 
     parser.add_argument("--pesfile", 
                         help="Only used and required for --user-compset argument."
@@ -77,9 +78,10 @@ def parse_command_line(args):
 			"This argument is required if --user-compset is True")
 
     parser.add_argument("--user-grid", action="store_true",
-                        help="Long name for new user grid to use"
-                        "This assumes that all of the grid settings in the"
-                        "long name have been defined in the grid file pointed to by --gridfile")
+                        help="If set, then the -grid argument is treated as a user specified grid."
+                        "As such, the additional argument --gridfile must also be specified"
+                        "and all of the grid settings in the --res argument name (which must be a grid longname"
+                        "have been defined in the grid file pointed to by --gridfile")
 
     parser.add_argument("--gridfile",
                         help="Full pathname of config grid file to use"
@@ -113,7 +115,7 @@ def parse_command_line(args):
 
     if args.user_compset:
         expect(args.pesfile is not None,
-               "User pes specification file must be set if the user compset is requested")
+               "--pesfile is required if --user-compset is set")
 
     if args.user_grid:
         expect(args.gridfile is not None,
@@ -279,17 +281,10 @@ def _main_func():
         caseobj.set_value("PROJECT",project)
 
     # Configure the Case
-    opts = "pecount=%s" %(pecount)
-    if compiler is not None:
-        opts = opts + ", compiler=%s, pesfile=%s" %(compiler)
-    if compiler is not None:
-        opts = opts + ", mpilib=%s, mpilib=%s" %(mpilib)
-    if user_compset is True and pesfile is not None:
-        opts = opts + ", user_compset=%s, pesfile=%s" %(user_compset, pesfile)
-    if user_grid is True and gridfile is not None:
-        opts = opts + ", user_grid=%s, gridfile=%s" %(user_grid, gridfile)
-
-    caseobj.configure(compset, grid, machine, opts)
+    caseobj.configure(compset, grid, machine, 
+                      pecount=pecount, compiler=compiler, mpilib=mpilib, 
+                      user_compset=user_compset, pesfile=pesfile, 
+                      user_grid=user_grid, gridfile=gridfile)
 
     components = caseobj.get_compset_components()
     _create_caseroot(case, caseroot, cimeroot, components, machine)

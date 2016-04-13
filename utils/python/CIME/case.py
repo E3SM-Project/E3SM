@@ -151,7 +151,7 @@ class Case(object):
         if result is None:
             self.lookups[item] = value
 
-    def _set_compset_and_pesfile(self, compset_name):
+    def _set_compset_and_pesfile(self, compset_name, user_compset=False, pesfile=None):
         """
         Loop through all the compset files and find the compset
         specifation file that matches either the input 'compset_name'.
@@ -187,14 +187,22 @@ class Case(object):
                     self.set_value("TESTS_SPEC_FILE"    , tests_filename)
                     self.set_value("TESTS_MODS_DIR"     , tests_mods_dir)
                     self.set_value("USER_MODS_DIR"      , user_mods_dir)
+                    self.set_value("PES_SPEC_FILE"      , pes_filename)
                     
                     logger.info("Compset longname is %s " %(match))
                     logger.info("Compset specification file is %s" %(compsets_filename))
                     logger.info("Pes     specification file is %s" %(pes_filename))
                     return
 
-        expect(False,
-               "Could not find a compset match for either alias or longname in %s" %(compset_name))
+        if user_compset is True:
+            #Do not error out for user_compset
+            logger.info("Could not find a compset match for either alias or longname in %s" %(compset_name))
+            self._compsetname = compset_name
+            self._pesfile = pesfile
+            self.set_value("PES_SPEC_FILE", pesfile)
+        else:
+            expect(False,
+                   "Could not find a compset match for either alias or longname in %s" %(compset_name))
 
     def get_compset_components(self):
         elements = self._compsetname.split('_')
@@ -236,9 +244,10 @@ class Case(object):
             comp_name  = self._components[i-1]
 	    node_name = 'CONFIG_' + comp_class + '_FILE';
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=True)
-            component = Component(comp_config_file)
+            print "DEBUG: comp_config_file is ",comp_config_file
+            compobj = Component(comp_config_file)
             for env_file in self._env_entryid_files:
-                env_file.add_elements_by_group(component, attlist);
+                env_file.add_elements_by_group(compobj, attlist);
             self._component_config_files.append((node_name,comp_config_file))
 
         # Add the group and elements for the config_files.xml
@@ -256,23 +265,19 @@ class Case(object):
                   user_grid=False, gridfile=None):
 
         #--------------------------------------------
-        # compset and pesfile
+        # compset, pesfile, and compset components
         #--------------------------------------------
-        if user_compset is True and pesfile is not None:
-            self._compsetname = compset_name
-            self._pesfile = pesfile
-        else:
-            self._set_compset_and_pesfile(compset_name)
-        self.set_value("PES_SPEC_FILE", self._pesfile)
+        self._set_compset_and_pesfile(compset_name, user_compset=user_compset, pesfile=pesfile)
 
         self.get_compset_components()
+        #FIXME - if --user-compset is True then need to determine that
+        #all of the compset settings are valid
 
         #--------------------------------------------
         # grid
         #--------------------------------------------
         if user_grid is True and gridfile is not None:
             self.set_value("GRIDS_SPEC_FILE", gridfile);
-            print "DEBUG: grid file is ",gridfile
         else:
             files = Files()
             gridfile = files.get_value("GRIDS_SPEC_FILE")
@@ -334,7 +339,6 @@ class Case(object):
             nodes = machobj.get_first_child_nodes(var)
             for node in nodes:
                 self._env_generic_files[0].add_child(node)
-
 
         #--------------------------------------------
         # batch system
