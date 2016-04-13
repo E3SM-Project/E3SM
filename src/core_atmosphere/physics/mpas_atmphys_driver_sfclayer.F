@@ -501,7 +501,7 @@
 
        do j = jts,jte
        do i = its,ite
-          ch(i)    = ch_p(i,j)
+          ch(i) = ch_p(i,j)
        enddo
        enddo
        write(0,*) '--- end sf_mynn to_MPAS:'
