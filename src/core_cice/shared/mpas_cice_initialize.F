@@ -1304,13 +1304,15 @@ contains
     type (MPAS_pool_type), pointer :: &
          mesh, &
          velocity_solver, &
-         boundary
+         boundary, &
+         ocean_coupling
 
     integer, pointer :: &
          nVertices
 
     integer, dimension(:), pointer :: &
-         interiorVertex
+         interiorVertex, &
+         landIceMaskVertex
 
     real(kind=RKIND), dimension(:), pointer :: &
          uVelocity, &
@@ -1329,17 +1331,21 @@ contains
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
+    call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
 
     call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
 
     call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
     call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
 
+    call MPAS_pool_get_array(ocean_coupling, "landIceMaskVertex", landIceMaskVertex)
+
     call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
     do iVertex = 1, nVertices
 
-       if (interiorVertex(iVertex) == 1) then
+       if (interiorVertex(iVertex) == 1 .and. &
+           landIceMaskVertex(iVertex) == 0) then
           
           uVelocity(iVertex) = config_initial_uvelocity
           vVelocity(iVertex) = config_initial_vvelocity
@@ -1390,7 +1396,8 @@ contains
          nVertices
 
     integer, dimension(:), pointer :: &
-         interiorVertex
+         interiorVertex, &
+         landIceMaskVertex
 
     real(kind=RKIND), dimension(:), pointer :: &
          uVelocity, &
@@ -1417,6 +1424,7 @@ contains
 
     call MPAS_pool_get_array(ocean_coupling, "uOceanVelocity", uOceanVelocity)
     call MPAS_pool_get_array(ocean_coupling, "vOceanVelocity", vOceanVelocity)
+    call MPAS_pool_get_array(ocean_coupling, "landIceMaskVertex", landIceMaskVertex)
 
     call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
@@ -1433,7 +1441,8 @@ contains
 
     do iVertex = 1, nVertices
     
-       if (interiorVertex(iVertex) == 1) then
+       if (interiorVertex(iVertex) == 1 .and. &
+           landIceMaskVertex(iVertex) == 0) then
 
           uVelocity(iVertex) = uOceanVelocityVertex(iVertex)
           vVelocity(iVertex) = vOceanVelocityVertex(iVertex)
