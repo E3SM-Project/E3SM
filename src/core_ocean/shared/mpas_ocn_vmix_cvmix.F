@@ -153,7 +153,7 @@ contains
       real (kind=RKIND) :: r, layerSum, bulkRichardsonNumberStop, sfc_layer_depth, invAreaCell, deltaVelocitySquared
       real (kind=RKIND) :: normalVelocityAv, factor, delU2
       real (kind=RKIND) :: sigma, turbulentScalarVelocityScalePoint
-      real (kind=RKIND), dimension(:), allocatable :: Nsqr_iface, turbulentScalarVelocityScale, tmp
+      real (kind=RKIND), dimension(:), allocatable :: Nsqr_iface, turbulentScalarVelocityScale
       real (kind=RKIND), dimension(:), allocatable, target :: RiSmoothed, BVFSmoothed
       logical :: bulkRichardsonFlag
 
@@ -304,9 +304,11 @@ contains
 
       allocate(Nsqr_iface(nVertLevels+1))
       allocate(turbulentScalarVelocityScale(nVertLevels))
-      allocate(tmp(nVertLevels+1))
       allocate(RiSmoothed(nVertLevels+1))
       allocate(BVFSmoothed(nVertLevels+1))
+
+      Nsqr_iface(:) = 0.0_RKIND
+      turbulentScalarVelocityScale(:) = 0.0_RKIND
 
       call mpas_timer_start('cvmix cell loop', .false.)
       !$omp do schedule(runtime) private(k, bulkRichardsonNumberStop, kIndexOBL, bulkRichardsonFlag)
@@ -594,7 +596,6 @@ contains
 
       deallocate(Nsqr_iface)
       deallocate(turbulentScalarVelocityScale)
-      deallocate(tmp)
       deallocate(RiSmoothed)
       deallocate(BVFSmoothed)
 
