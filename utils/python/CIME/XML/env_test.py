@@ -30,7 +30,7 @@ class EnvTest(EnvBase):
         tnode = self.get_node("test")
         for child in tnode:
             if child.text is not None:
-                logger.info("Setting %s to %s for test"%(child.tag,child.text))
+                logger.debug("Setting %s to %s for test"%(child.tag,child.text))
                 if "$" in child.text:
                     case.set_value(child.tag,child.text,ignore_type=True)
                 else:
