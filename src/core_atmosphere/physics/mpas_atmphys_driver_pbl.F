@@ -56,8 +56,10 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 ! * renamed "ysu" with "bl_ysu".
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-25.
-! * added the implementation of the MYNN PBL scheme (from WRF 3.6.1)..
+! * added the implementation of the MYNN PBL scheme (from WRF 3.6.1).
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
+! * corrected the initialization of sh3d for the mynn parameterization.
+!   Laura D. Fowler (laura2ucar.edu) / 2016-04-13.
 
 
  contains
@@ -228,7 +230,7 @@
 
 !local pointers for MYNN scheme:
  real(kind=RKIND),dimension(:),pointer  :: ch,delta,qsfc,qcg,rmol,skintemp,wstar
- real(kind=RKIND),dimension(:,:),pointer:: cov,qke,qsq,tsq,tke_pbl,qke_adv,el_pbl
+ real(kind=RKIND),dimension(:,:),pointer:: cov,qke,qsq,tsq,sh3d,tke_pbl,qke_adv,el_pbl
 
 !-----------------------------------------------------------------------------------------------------------------
 
@@ -303,6 +305,7 @@
        call mpas_pool_get_array(diag_physics,'qsq'    ,qsq      )
        call mpas_pool_get_array(diag_physics,'tsq'    ,tsq      )
        call mpas_pool_get_array(diag_physics,'tke_pbl',tke_pbl  )
+       call mpas_pool_get_array(diag_physics,'sh3d'   ,sh3d     )
 
        do j = jts,jte
        do i = its,ite
@@ -331,6 +334,7 @@
           tsq_p(i,k,j)      = tsq(k,i)
           tkepbl_p(i,k,j)   = tke_pbl(k,i)
           qkeadv_p(i,k,j)   = qke_adv(k,i)
+          sh3d_p(i,k,j)     = sh3d(k,i)
           rniblten_p(i,k,j) = 0._RKIND
 
           !... outputs:
@@ -386,7 +390,7 @@
 
 !local pointers for MYNN scheme:
  real(kind=RKIND),dimension(:),pointer  :: delta,wstar
- real(kind=RKIND),dimension(:,:),pointer:: cov,qke,qsq,tsq,tke_pbl,qke_adv,el_pbl,dqke,qbuoy, &
+ real(kind=RKIND),dimension(:,:),pointer:: cov,qke,qsq,tsq,sh3d,tke_pbl,qke_adv,el_pbl,dqke,qbuoy, &
                                            qdiss,qshear,qwt
 
 !-----------------------------------------------------------------------------------------------------------------
@@ -451,6 +455,7 @@
        call mpas_pool_get_array(diag_physics,'qsq'     ,qsq     )
        call mpas_pool_get_array(diag_physics,'tsq'     ,tsq     )
        call mpas_pool_get_array(diag_physics,'tke_pbl' ,tke_pbl )
+       call mpas_pool_get_array(diag_physics,'sh3d'    ,sh3d    )
        call mpas_pool_get_array(diag_physics,'dqke'    ,dqke    )
        call mpas_pool_get_array(diag_physics,'qbuoy'   ,qbuoy   )
        call mpas_pool_get_array(diag_physics,'qdiss'   ,qdiss   )
@@ -471,6 +476,7 @@
           qke(k,i)      = qke_p(i,k,j)
           qsq(k,i)      = qsq_p(i,k,j)
           tsq(k,i)      = tsq_p(i,k,j)
+          sh3d(k,i)     = sh3d_p(i,k,j)
           tke_pbl(k,i)  = tkepbl_p(i,k,j)
           qke_adv(k,i)  = qkeadv_p(i,k,j)
           !... outputs:
