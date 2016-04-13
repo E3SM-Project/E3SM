@@ -112,11 +112,11 @@ if ( $COMPILER == "gnu" ) then
   if ( $MPILIB == "mpi-serial") then
    setenv PNETCDFROOT ""
   else if ( $MPILIB == "mvapich") then
-    soft add +mvapich2-2.2b-gcc-5.2-psm
+    soft add +mvapich2-2.2b-gcc-5.2
     setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm
   else
     # default - mvapich + pnetcdf
-    soft add +mvapich2-2.2b-gcc-5.2-psm
+    soft add +mvapich2-2.2b-gcc-5.2
     setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm
   endif
 endif
