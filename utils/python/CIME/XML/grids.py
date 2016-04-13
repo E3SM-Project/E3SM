@@ -62,8 +62,10 @@ class Grids(GenericXML):
                     gridinfo.update(self._get_domains(component_grids))
                     gridinfo.update(self._get_gridmaps(component_grids))
                     gridinfo["GRID"] = lname
+                    return gridinfo
 
-        return gridinfo
+        expect (False,
+                "grid '%s'  is not supported, use manage_case to determine supported grids " %name)
 
     def get_value(self, item, attributes=None, root=None):
         if root is None:

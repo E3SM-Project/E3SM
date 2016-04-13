@@ -32,7 +32,6 @@ class Case(object):
 
     def __init__(self, case_root=os.getcwd()):
 
-
         self._env_files_that_need_rewrite = set()
 
         self._env_entryid_files = []
@@ -47,6 +46,7 @@ class Case(object):
         self._env_generic_files.append(EnvMachSpecific(case_root))
         self._env_generic_files.append(EnvArchive(case_root))
         self._files = self._env_entryid_files + self._env_generic_files
+
         # Hold arbitary values. In create_newcase we may set values
         # for xml files that haven't been created yet. We need a place
         # to store them until we are ready to create the file. At file
@@ -57,8 +57,10 @@ class Case(object):
         self.lookups['CIMEROOT'] = get_cime_root()
 
         self._compsetname = None
-        self._target_component = None
         self._gridname = None
+        self._compsetsfile = None
+        self._pesfile = None
+        self._gridfile = None
         self._components = []
         self._component_config_files = []
 
@@ -149,12 +151,13 @@ class Case(object):
         if result is None:
             self.lookups[item] = value
 
-    def _get_compset_longname(self, compset_name):
+    def _set_compset_and_pesfile(self, compset_name):
         """
-        Find the compset longname and the target component that sets
-        the compset, given the input compset name (which could be a
-        long name or an alias) component whose compset file contained
-        an entry that matched the compset longname
+        Loop through all the compset files and find the compset
+        specifation file that matches either the input 'compset_name'.
+        Note that the input compset name (i.e. compset_name) can be
+        either a longname or an alias.  This will also set the
+        compsets and pes specfication files.
         """
         files = Files()
         components = files.get_components("COMPSETS_SPEC_FILE")
@@ -164,20 +167,34 @@ class Case(object):
         # that has a match for either the alias or the longname in that order
         for component in components:
 
-            # Determine the compsets file for the possible target component
-            file = files.get_value("COMPSETS_SPEC_FILE", {"component":component})
-
+            # Determine the compsets file for this component
+            compsets_filename = files.get_value("COMPSETS_SPEC_FILE", {"component":component})
+            pes_filename      = files.get_value("PES_SPEC_FILE"     , {"component":component})
+            tests_filename    = files.get_value("TESTS_SPEC_FILE"   , {"component":component}, resolved=False)
+            tests_mods_dir    = files.get_value("TESTS_MODS_DIR"    , {"component":component}, resolved=False)
+            user_mods_dir     = files.get_value("USER_MODS_DIR"     , {"component":component}, resolved=False)
+            
             # If the file exists, read it and see if there is a match for the compset alias or longname
-            if (os.path.isfile(file)):
-                compsets = Compsets(file)
+            if (os.path.isfile(compsets_filename)):
+                compsets = Compsets(compsets_filename)
                 match = compsets.get_compset_match(name=compset_name)
                 if match is not None:
+                    self._pesfile = pes_filename
+                    self._compsetsfile = compsets_filename
                     self._compsetname = match
-                    self._target_component = component
-                    logger.debug("Successful compset match %s found in file %s " %(self._compsetname, file))
+
+                    self.set_value("COMPSETS_SPEC_FILE" , compsets_filename)
+                    self.set_value("TESTS_SPEC_FILE"    , tests_filename)
+                    self.set_value("TESTS_MODS_DIR"     , tests_mods_dir)
+                    self.set_value("USER_MODS_DIR"      , user_mods_dir)
+                    
+                    logger.info("Compset longname is %s " %(match))
+                    logger.info("Compset specification file is %s" %(compsets_filename))
+                    logger.info("Pes     specification file is %s" %(pes_filename))
                     return
 
-        logger.debug("Could not find a compset match for either alias or longname in %s" %file)
+        expect(False,
+               "Could not find a compset match for either alias or longname in %s" %(compset_name))
 
     def get_compset_components(self):
         elements = self._compsetname.split('_')
@@ -201,7 +218,7 @@ class Case(object):
 
     def _get_component_config_data(self):
         # attributes used for multi valued defaults ($attlist is a hash reference)
-        attlist = {"component":self._target_component, "compset":self._compsetname, "grid":self._gridname}
+        attlist = {"compset":self._compsetname, "grid":self._gridname}
 
         # Determine list of component classes that this coupler/driver knows how
         # to deal with. This list follows the same order as compset longnames follow.
@@ -233,21 +250,43 @@ class Case(object):
             if result is not None:
                 del self.lookups[key]
 
-    def configure(self, compset_name, grid_name, machine_name=None, pecount=None, compiler=None, mpilib=None):
-        self._get_compset_longname(compset_name)
+    def configure(self, compset_name, grid_name, machine_name, 
+                  pecount=None, compiler=None, mpilib=None, 
+                  user_compset=False, pesfile=None,
+                  user_grid=False, gridfile=None):
+
+        #--------------------------------------------
+        # compset and pesfile
+        #--------------------------------------------
+        if user_compset is True and pesfile is not None:
+            self._compsetname = compset_name
+            self._pesfile = pesfile
+        else:
+            self._set_compset_and_pesfile(compset_name)
+        self.set_value("PES_SPEC_FILE", self._pesfile)
+
         self.get_compset_components()
 
-        files = Files()
+        #--------------------------------------------
+        # grid
+        #--------------------------------------------
+        if user_grid is True and gridfile is not None:
+            self.set_value("GRIDS_SPEC_FILE", gridfile);
+            print "DEBUG: grid file is ",gridfile
+        else:
+            files = Files()
+            gridfile = files.get_value("GRIDS_SPEC_FILE")
+        grids = Grids(gridfile)
 
-        # get grid info and overwrite files with that data
-        grids = Grids(self.get_value("GRIDS_SPEC_FILE"), files=files)
         gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
         self._gridname = gridinfo["GRID"]
-
-        self._get_component_config_data()
-
         for key,value in gridinfo.iteritems():
             self.set_value(key,value)
+
+        #--------------------------------------------
+        # component config data
+        #--------------------------------------------
+        self._get_component_config_data()
 
         # Add the group and elements for the config_files.xml
         for idx, config_file in enumerate(self._component_config_files):
@@ -308,12 +347,10 @@ class Case(object):
 
         self._env_files_that_need_rewrite.add(env_batch)
 
-
-
         #--------------------------------------------
         # pe payout
         #--------------------------------------------
-        pesobj = Pes(self._target_component)
+        pesobj = Pes(self._pesfile)
 
         #FIXME - add pesize_opts as optional argument below
         pes_ntasks, pes_nthrds, pes_rootpe = pesobj.find_pes_layout(self._gridname, self._compsetname,
@@ -328,7 +365,6 @@ class Case(object):
 
         self.set_value("COMPSET",self._compsetname)
 
-        logger.info(" Component that sets compsets is: %s" %self._target_component)
         logger.info(" Compset is: %s " %self._compsetname)
         logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)

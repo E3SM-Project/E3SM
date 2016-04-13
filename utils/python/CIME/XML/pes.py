@@ -10,22 +10,11 @@ from CIME.utils import expect
 logger = logging.getLogger(__name__)
 
 class Pes(GenericXML):
-    def __init__(self, target_component, infile=None, files=None):
+    def __init__(self, infile):
         """
-        initialize an object
-        if a filename is provided it will be used,
-        otherwise if a files object is provided it will be used
-        otherwise create a files object from default values
+        initialize a files object given input pes specification file
         """
-        self.pes = None
-        self.pes_dir = None
-
-        if infile is None:
-            if files is None:
-                files = Files()
-                infile = files.get_value("PES_SPEC_FILE", {"component":target_component})
-                self.pes_dir = os.path.dirname(infile)
-
+        print "DEBUG: infile is ",infile
         GenericXML.__init__(self, infile)
 
     def find_pes_layout(self, grid, compset, machine, pesize_opts='M'):

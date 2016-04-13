@@ -66,22 +66,28 @@ def parse_command_line(args):
                         help="Path to directory with user_nl_* files and xmlchange "
                         "commands to utilize. This can also include SourceMods")
 
-    parser.add_argument("--user-compset", "-user_compset",
+    parser.add_argument("--user-compset", action="store_true",
                         help="Long name for new user compset to use"
                         "This assumes that all of the compset settings in the"
                         "long name have been defined by the target model components")
 
-    parser.add_argument("--user-grid-file", "-user_grid_file",
-                        help="Full pathname of grid file to use"
-                        "This should be a copy of cime_config/config_grids.xml"
-                        "with the new user grid changes added to it")
-
-    parser.add_argument("--user-pes-setby", "-user_pes_setby",
+    parser.add_argument("--pesfile", 
                         help="Only used and required for --user-compset argument."
-                        "Component that sets the pe-layouts and pio settings"
-                        "For CESM this is [allactive, cam, clm, cice, cism, pop")
+                        "Full pathname of the pes specification file"
+			"This argument is required if --user-compset is True")
 
-    parser.add_argument("--srcroot", "-srcroot",
+    parser.add_argument("--user-grid", action="store_true",
+                        help="Long name for new user grid to use"
+                        "This assumes that all of the grid settings in the"
+                        "long name have been defined in the grid file pointed to by --gridfile")
+
+    parser.add_argument("--gridfile",
+                        help="Full pathname of config grid file to use"
+                        "This should be a copy of cime_config/config_grids.xml"
+                        "with the new user grid changes added to it"
+			"This argument is required if --user-grid is True")
+
+    parser.add_argument("--srcroot",
                         help="Alternative path for source root directory. By default this is set to"
                         "cimeroot/../")
 
@@ -97,16 +103,26 @@ def parse_command_line(args):
                "Input non-default directory srcroot %s does not exist " %args.srcroot)
         args.srcroot = os.path.abspath(args.srcroot)
 
-    if args.user_grid_file is not None:
-        expect(os.path.isfile(args.user_grid_file),
-               "User_grid_file %s does not exist " %args.user_grid_file)
+    if args.gridfile is not None:
+        expect(os.path.isfile(args.gridfile),
+               "Grid specification file %s does not exist " %args.gridfile)
 
+    if args.pesfile is not None:
+        expect(os.path.isfile(args.pesfile),
+               "Pes specification file %s cannot be found " %args.pesfile)
+
+    if args.user_compset:
+        expect(args.pesfile is not None,
+               "User pes specification file must be set if the user compset is requested")
+
+    if args.user_grid:
+        expect(args.gridfile is not None,
+               "User grid specification file must be set if the user grid is requested")
 
     return args.case, args.compset, args.res, args.mach, args.compiler,\
         args.mpilib, args.project, args.pecount, \
-        args.mach_dir, args.user_mods_dir, args.user_compset, args.user_pes_setby, \
-        args.user_grid_file, args.srcroot, args.test
-
+        args.mach_dir, args.user_mods_dir, args.user_compset, args.pesfile, \
+        args.user_grid, args.gridfile, args.srcroot, args.test
 
 
 ###############################################################################
@@ -230,9 +246,10 @@ def _create_caseroot(case, caseroot, cimeroot, components, machine):
 def _main_func():
 ###############################################################################
 
-    case, compset, grid, machine, \
-        compiler, mpilib, project, pecount,  \
-        machine_dir, usermods_dir, user_compset, user_pes_setby, user_grid_file, srcroot, test \
+    case, compset, grid, machine, compiler, \
+        mpilib, project, pecount,  \
+        machine_dir, usermods_dir, user_compset, pesfile, \
+        user_grid, gridfile, srcroot, test \
         = parse_command_line(sys.argv)
 
     cimeroot  = CIME.utils.get_cime_root()
@@ -246,7 +263,7 @@ def _main_func():
     else:
         caseroot = os.path.join(os.getcwd(),case)
 
-        #FIXME: create_test creates the caseroot before calling create_newcase
+    #FIXME: create_test creates the caseroot before calling create_newcase
     expect(not test or not os.path.exists(caseroot),
            "Case directory %s already exists"%caseroot)
 
@@ -260,11 +277,19 @@ def _main_func():
     caseobj.set_value("MACH", machine)
     if project:
         caseobj.set_value("PROJECT",project)
-    if user_grid_file is not None:
-        caseobj.set_value("GRIDS_SPEC_FILE", user_grid_file);
 
     # Configure the Case
-    caseobj.configure(compset, grid, machine, pecount)
+    opts = "pecount=%s" %(pecount)
+    if compiler is not None:
+        opts = opts + ", compiler=%s, pesfile=%s" %(compiler)
+    if compiler is not None:
+        opts = opts + ", mpilib=%s, mpilib=%s" %(mpilib)
+    if user_compset is True and pesfile is not None:
+        opts = opts + ", user_compset=%s, pesfile=%s" %(user_compset, pesfile)
+    if user_grid is True and gridfile is not None:
+        opts = opts + ", user_grid=%s, gridfile=%s" %(user_grid, gridfile)
+
+    caseobj.configure(compset, grid, machine, opts)
 
     components = caseobj.get_compset_components()
     _create_caseroot(case, caseroot, cimeroot, components, machine)
@@ -273,7 +298,6 @@ def _main_func():
     for file in caseobj._env_entryid_files:
         file.write()
     caseobj._env_generic_files[0].write()
-
 
 ###############################################################################
 
