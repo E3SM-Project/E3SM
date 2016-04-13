@@ -28,6 +28,7 @@ class GenericXML(object):
         else:
             # if file does not exist create a root xml element
             # and set it's id to file
+            expect("$" not in infile,"File path not fully resolved %s"%infile)
             self.filename = infile
             root = ET.Element("xml")
             root.set("version", "1.0")

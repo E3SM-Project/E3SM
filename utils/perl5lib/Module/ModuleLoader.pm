@@ -532,9 +532,9 @@ sub loadNoneModules()
     my $machine = $self->{machine};
     my $parser = XML::LibXML->new(no_blanks => 1);
     my $xml;
-    if( -e "$ENV{'HOME'}/.cesm/config_machines.xml")
+    if( -e "$ENV{'HOME'}/.cime/config_machines.xml")
     {
-        $xml = $parser->parse_file("$ENV{'HOME'}/.cesm/config_machines.xml");
+        $xml = $parser->parse_file("$ENV{'HOME'}/.cime/config_machines.xml");
     }
     elsif( -e $self->{machspecificfile})
     {
@@ -544,7 +544,10 @@ sub loadNoneModules()
     {
         $xml = $parser->parse_file($self->{configmachinesfile});
     }
-
+    # Hack until we can get rid of this crappy code
+    open(F,">.env_mach_specific.csh");
+    print F "#!/usr/bin/env csh\n";
+    
     my @envnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/environment_variables");
     foreach my $envnode(@envnodes)
     {
@@ -613,11 +616,14 @@ sub loadNoneModules()
                       {
                           $ENV{$name} = $value;
 			  $logger->info("setting environment variable $name=$value");
+			  print F "setenv $name $value\n";
                       }
                   }
               }
          }
     }
+
+    close(F);
 }
 sub loadSoftModules()
 {

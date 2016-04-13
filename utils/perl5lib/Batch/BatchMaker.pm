@@ -220,11 +220,13 @@ sub getBatchSystemTypeForMachine()
     my $configmachinesparser = $self->{'configmachinesparser'};
     my @batchtypes = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$mach\']/batch_system");
 
-    if(!@batchtypes)
+    if(@batchtypes)
     {
-	die "Could not find batch system for machine $self->{'machine'}, aborting";
+	$self->{'batchtype'} = $batchtypes[0]->getAttribute('type');
+    }else{
+	$self->{'batchtype'} = 'none';
+	$logger->warn("Could not find batch system for machine $self->{'machine'}, using none");
     }
-    $self->{'batch_system'} = $batchtypes[0]->getAttribute('type');
 
 }
 
@@ -288,15 +290,15 @@ sub setBatchDirectives()
 
     # get the batch directive for this particular queueing system.
 
-    my @batch_directive = $batchparser->findnodes("/config_batch/batch_system[\@type=\'$self->{'batch_system'}\']/batch_directive");
+    my @batch_directive = $batchparser->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\']/batch_directive");
 
     if(!@batch_directive)
     {
-	die "Cannot find batch directive for the batch system type $self->{'batch_system'}";
+	die "Cannot find batch directive for the batch system type $self->{'batchtype'}";
     }
     $self->{'batch_directive'} = $batch_directive[0]->textContent();
 
-    my @directives = $batchparser->findnodes("/config_batch/batch_system[\@type=\'$self->{'batch_system'}\' or \@MACH=\'$self->{machine}\']/directives/directive");
+    my @directives = $batchparser->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\' or \@MACH=\'$self->{machine}\']/directives/directive");
     if(!@directives)
     {
 	die "could not find any directives for the machine $self->{'machine'}";

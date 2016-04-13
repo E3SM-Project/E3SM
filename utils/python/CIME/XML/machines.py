@@ -32,16 +32,20 @@ class Machines(GenericXML):
 
         GenericXML.__init__(self, infile)
 
-        if machine is None:
-            machine = self.probe_machine_name()
+        if machine:
+            self.set_machine(machine)
+        else:
+            self.machine = self.probe_machine_name()
 
-        if self.machine_node is None:
-            infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
-            if os.path.exists(infile):
-                GenericXML.__init__(self, infile)
-                machine = self.probe_machine_name()
-
-        self.set_machine(machine)
+        """
+        Append the contents of $HOME/.cime/config_machines.xml if it exists
+        This could cause problems if node matchs are repeated when only one is expected
+        """
+        infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
+        if os.path.exists(infile):
+            GenericXML.__init__(self, infile)
+            if not self.machine:
+                self.machine = self.probe_machine_name()
 
     def get_machines_dir(self):
         """
@@ -102,7 +106,7 @@ class Machines(GenericXML):
                 logger.debug("machine regex string is " + regex_str)
                 regex = re.compile(regex_str)
                 if regex.match(nametomatch):
-                    logger.info("Found machine: %s matches %s" % (machtocheck, nametomatch))
+                    logger.debug("Found machine: %s matches %s" % (machtocheck, nametomatch))
                     machine = machtocheck
                     break
 
