@@ -71,7 +71,7 @@ def parse_command_line(args):
                         "This assumes that all of the compset settings in the"
                         "long name have been defined by the target model components")
 
-    parser.add_argument("--pesfile", 
+    parser.add_argument("--pesfile",
                         help="Only used and required for --user-compset argument."
                         "Full pathname of the pes specification file"
 			"This argument is required if --user-compset is True")
@@ -92,7 +92,9 @@ def parse_command_line(args):
                         "cimeroot/../")
 
     # hidden argument indicating called from create_test
-    parser.add_argument("--test", "-test", action="store_true")
+    parser.add_argument("--test", "-test", action="store_true",
+                        help="Used to indicate that create_newcase was called from create_test"
+                        "- do not use otherwise")
 
     args = parser.parse_args()
 
@@ -263,8 +265,9 @@ def _main_func():
     else:
         caseroot = os.path.join(os.getcwd(),case)
 
-    #FIXME: create_test creates the caseroot before calling create_newcase
-    expect(not test or not os.path.exists(caseroot),
+    # create_test creates the caseroot before calling create_newcase
+    # otherwise throw an error if this directory exists
+    expect(not (os.path.exists(caseroot) and not test),
            "Case directory %s already exists"%caseroot)
 
     # Set the case object
@@ -281,9 +284,9 @@ def _main_func():
     # Configure the Case
     opts = "pecount=%s" %(pecount)
     if compiler is not None:
-        opts = opts + ", compiler=%s, pesfile=%s" %(compiler)
-    if compiler is not None:
-        opts = opts + ", mpilib=%s, mpilib=%s" %(mpilib)
+        opts = opts + ", compiler=%s" %(compiler)
+    if mpilib is not None:
+        opts = opts + ", mpilib=%s" %(mpilib)
     if user_compset is True and pesfile is not None:
         opts = opts + ", user_compset=%s, pesfile=%s" %(user_compset, pesfile)
     if user_grid is True and gridfile is not None:

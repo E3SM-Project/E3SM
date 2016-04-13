@@ -14,6 +14,7 @@ from CIME.XML.component             import Component
 from CIME.XML.compsets              import Compsets
 from CIME.XML.grids                 import Grids
 from CIME.XML.batch                 import Batch
+from CIME.XML.pio                 import PIO
 
 from CIME.XML.env_test              import EnvTest
 from CIME.XML.env_mach_specific     import EnvMachSpecific
@@ -169,11 +170,12 @@ class Case(object):
 
             # Determine the compsets file for this component
             compsets_filename = files.get_value("COMPSETS_SPEC_FILE", {"component":component})
+            print "Component %s filename %s"%(component, compsets_filename)
             pes_filename      = files.get_value("PES_SPEC_FILE"     , {"component":component})
             tests_filename    = files.get_value("TESTS_SPEC_FILE"   , {"component":component}, resolved=False)
             tests_mods_dir    = files.get_value("TESTS_MODS_DIR"    , {"component":component}, resolved=False)
             user_mods_dir     = files.get_value("USER_MODS_DIR"     , {"component":component}, resolved=False)
-            
+
             # If the file exists, read it and see if there is a match for the compset alias or longname
             if (os.path.isfile(compsets_filename)):
                 compsets = Compsets(compsets_filename)
@@ -187,7 +189,7 @@ class Case(object):
                     self.set_value("TESTS_SPEC_FILE"    , tests_filename)
                     self.set_value("TESTS_MODS_DIR"     , tests_mods_dir)
                     self.set_value("USER_MODS_DIR"      , user_mods_dir)
-                    
+
                     logger.info("Compset longname is %s " %(match))
                     logger.info("Compset specification file is %s" %(compsets_filename))
                     logger.info("Pes     specification file is %s" %(pes_filename))
@@ -226,7 +228,7 @@ class Case(object):
         drv_config_file = files.get_value("CONFIG_DRV_FILE")
         drv_comp = Component(drv_config_file)
         for env_file in self._env_entryid_files:
-            nodes = env_file.add_elements_by_group(drv_comp, attlist);
+            nodes = env_file.add_elements_by_group(drv_comp, attributes=attlist);
 
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
@@ -238,7 +240,7 @@ class Case(object):
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=True)
             component = Component(comp_config_file)
             for env_file in self._env_entryid_files:
-                env_file.add_elements_by_group(component, attlist);
+                env_file.add_elements_by_group(component, attributes=attlist);
             self._component_config_files.append((node_name,comp_config_file))
 
         # Add the group and elements for the config_files.xml
@@ -250,8 +252,8 @@ class Case(object):
             if result is not None:
                 del self.lookups[key]
 
-    def configure(self, compset_name, grid_name, machine_name, 
-                  pecount=None, compiler=None, mpilib=None, 
+    def configure(self, compset_name, grid_name, machine_name,
+                  pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
                   user_grid=False, gridfile=None):
 
@@ -273,9 +275,6 @@ class Case(object):
         if user_grid is True and gridfile is not None:
             self.set_value("GRIDS_SPEC_FILE", gridfile);
             print "DEBUG: grid file is ",gridfile
-        else:
-            files = Files()
-            gridfile = files.get_value("GRIDS_SPEC_FILE")
         grids = Grids(gridfile)
 
         gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
@@ -365,9 +364,11 @@ class Case(object):
 
         self.set_value("COMPSET",self._compsetname)
 
+        self._set_pio_xml()
         logger.info(" Compset is: %s " %self._compsetname)
         logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)
+
 
     def set_initial_test_values(self):
         testobj = self._get_env("test")
@@ -376,3 +377,14 @@ class Case(object):
     def get_batch_jobs(self):
         batchobj = self._get_env("batch")
         return batchobj.get_jobs()
+
+    def _set_pio_xml(self):
+        pioobj = PIO()
+        grid = self.get_value("GRID")
+        compiler = self.get_value("COMPILER")
+        mach = self.get_value("MACH")
+        compset = self.get_value("COMPSET")
+        defaults = pioobj.get_defaults(grid=grid,compset=compset,mach=mach,compiler=compiler)
+        for vid, value in defaults.items():
+            self.set_value(vid,value)
+

@@ -211,10 +211,22 @@
    </batch_system>
 
    <batch_jobs>
-     <job name="case.run">template.case.run</job>
-     <job name="case.test">python.case.test</job>
-     <job name="case.st_archive">template.st_archive</job>
-     <job name="case.lt_archive">template.lt_archive</job>
+     <job name="case.run">
+       <template>template.case.run</template>
+       <task_count>default</task_count>
+     </job>
+     <job name="case.test">
+       <template>python.case.test</template>
+       <task_count>default</task_count>
+     </job>
+     <job name="case.st_archive">
+       <template>template.st_archive</template>
+       <task_count>1</task_count>
+     </job>
+     <job name="case.lt_archive">
+       <template>template.lt_archive</template>
+       <task_count>1</task_count>
+     </job>
    </batch_jobs>
 </config_batch>
 
