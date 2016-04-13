@@ -211,7 +211,6 @@
 			<var name="shdmin"/>
 			<var name="shdmax"/>
 			<var name="snoalb"/>
-			<var name="ter"/>
 			<var name="albedo12m"/>
 			<var name="greenfrac"/>
 			<var name="sfc_albbck"/>
@@ -385,6 +384,10 @@
                         <var name="qsq"/>
                         <var name="tsq"/>
                         <var name="tke_pbl"/>
+                        <var name="wstar"/>
+                        <var name="delta"/>
+                        <var name="el_pbl"/>
+                        <var name="ch"/>
 			<var name="kpbl"/>
 			<var name="hpbl"/>
 			<var name="hfx"/>
@@ -641,7 +644,6 @@
 			<var name="ozmixm"/>
 			<var name="mminlu"/>
 			<var name="xland"/>
-			<var name="ter"/>
 			<var name="skintemp"/>
 			<var name="snow"/>
 			<var name="snowh"/>
@@ -975,9 +977,9 @@
                 <!-- scalar tendencies -->
                 <var_array name="scalars_tend" type="real" dimensions="nVertLevels nCells Time">
                      <var name="tend_qv"     name_in_code="qv"     array_group="moist"/>
-                     <var name="tend_qc"     name_in_code="qc"     array_group="moist"    packages="cu_tiedtke_in;mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                     <var name="tend_qc"     name_in_code="qc"     array_group="moist"    packages="bl_mynn_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
                      <var name="tend_qr"     name_in_code="qr"     array_group="moist"    packages="mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                     <var name="tend_qi"     name_in_code="qi"     array_group="moist"    packages="cu_tiedtke_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                     <var name="tend_qi"     name_in_code="qi"     array_group="moist"    packages="bl_mynn_in;cu_tiedtke_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
                      <var name="tend_qs"     name_in_code="qs"     array_group="moist"    packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
                      <var name="tend_qg"     name_in_code="qg"     array_group="moist"    packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
                      <var name="tend_nr"     name_in_code="nr"     array_group="number"   packages="mp_thompson_aerosols_in;mp_thompson_in"/>
@@ -1235,10 +1237,10 @@
                 <!--  t2m       :temperature at 2m                                                                  [K] -->
                 <!--  th2m      :potential temperature at 2m                                                        [K] -->
 
-                <var name="hfx"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="hfx"           type="real"     dimensions="nCells Time"/>
                 <var name="mavail"        type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
                 <var name="mol"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
-                <var name="qfx"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
+                <var name="qfx"           type="real"     dimensions="nCells Time"/>
                 <var name="qsfc"          type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
                 <var name="ust"           type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
                 <var name="ustm"          type="real"     dimensions="nCells Time" packages="bl_mynn_in;bl_ysu_in"/>
@@ -1277,7 +1279,7 @@
                 <!--  qcg       :cloud water mixing ratio at the ground surface                                 [kg/kg] -->
                 <!--  sh3d      :stability function for heat                                                        [-] -->
 
-                <var name="ch"            type="real"     dimensions="nCells Time" packages="bl_mynn_in"/>
+                <var name="ch"            type="real"     dimensions="nCells Time"/>
                 <var name="qcg"           type="real"     dimensions="nCells Time" packages="bl_mynn_in"/>
                 <var name="sh3d"          type="real"     dimensions="nVertLevels nCells Time" packages="bl_mynn_in"/>
 
@@ -1655,7 +1657,6 @@
                 <var name="shdmin"      type="real"     dimensions="nCells"/>
                 <var name="shdmax"      type="real"     dimensions="nCells"/>
                 <var name="snoalb"      type="real"     dimensions="nCells"/>
-                <var name="ter"         type="real"     dimensions="nCells"/>
                 <var name="albedo12m"   type="real"     dimensions="nMonths nCells"/>
                 <var name="greenfrac"   type="real"     dimensions="nMonths nCells"/>
 
