@@ -62,7 +62,7 @@ class SystemTestsCommon(object):
         f2obj = EnvRun(self._caseroot, os.path.join("LockedFiles", "env_run.orig.xml"))
         diffs = f1obj.compare_xml(f2obj)
         for key in diffs.keys():
-            if key in expected:
+            if expected is not None and key in expected:
                 logging.warn("  Resetting %s for test"%key)
                 f1obj.set_value(key, f2obj.get_value(key, resolved=False))
             else:

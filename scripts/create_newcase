@@ -226,13 +226,13 @@ def _create_caseroot(case, caseroot, cimeroot, components, machine):
     if not os.path.exists(caseroot):
         # Make the case directory
         logger.info(" Creating Case directory %s" %caseroot)
-        os.mkdir(caseroot)
+        os.makedirs(caseroot)
         os.chdir(caseroot)
 
     # Create relevant directories in $caseroot
     newdirs = ("SourceMods", "LockedFiles", "Buildconf", "Tools")
     for newdir in newdirs:
-        os.mkdir(newdir)
+        os.makedirs(newdir)
 
     # Open a new README.case file in $caseroot
     with open(os.path.join(caseroot,"README.case"), "w") as fd:
