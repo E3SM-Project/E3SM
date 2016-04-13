@@ -73,6 +73,11 @@
 !>    * in subroutine lsm_to_MPAS, removed updating isltyp, ivgtyp, shdmin, and shdmax as they
 !>      are constant in the Noah lsm.
 !>      Laura D. Fowler (laura@ucar.edu) / 2015-04-11.
+!>    * in subroutine lsm_from_MPAS, modified the calculation of rain_bl, now that the convection
+!>      and cloud microphysics parameterizations are contained in "packages." The original
+!>      calculation failed when configuration_convection_scheme or config_microphysics_scheme
+!>      was set of 'off'.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-04-13.  
 
 !>
 !> DOCUMENTATION:
@@ -216,15 +221,19 @@
  end subroutine deallocate_lsm
 
 !==================================================================================================
- subroutine lsm_from_MPAS(mesh,diag_physics,sfc_input)
+ subroutine lsm_from_MPAS(configs,mesh,diag_physics,sfc_input)
 !==================================================================================================
 
 !input arguments:
+ type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: sfc_input
 
 !local pointers:
+ character(len=StrKIND),pointer:: config_microp_scheme,    &
+                                  config_convection_scheme
+
  integer,dimension(:),pointer:: isltyp,ivgtyp
 
  real(kind=RKIND),dimension(:),pointer  :: acsnom,acsnow,canwat,chs,chs2,chklowq,cpm,cqs2,glw, &
@@ -241,6 +250,9 @@
  integer:: ip,iEdg
 
 !--------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_convection_scheme',config_convection_scheme)
+ call mpas_pool_get_config(configs,'config_microp_scheme'    ,config_microp_scheme    )
 
  call mpas_pool_get_array(diag_physics,'acsnom'    ,acsnom    )
  call mpas_pool_get_array(diag_physics,'acsnow'    ,acsnow    )
@@ -262,8 +274,6 @@
  call mpas_pool_get_array(diag_physics,'qgh'       ,qgh       )
  call mpas_pool_get_array(diag_physics,'qsfc'      ,qsfc      )
  call mpas_pool_get_array(diag_physics,'br'        ,br        )
- call mpas_pool_get_array(diag_physics,'raincv'    ,raincv    )
- call mpas_pool_get_array(diag_physics,'rainncv'   ,rainncv   )
  call mpas_pool_get_array(diag_physics,'sfc_albedo',sfc_albedo)
  call mpas_pool_get_array(diag_physics,'sfc_emibck',sfc_emibck)
  call mpas_pool_get_array(diag_physics,'sfc_emiss' ,sfc_emiss )
@@ -272,7 +282,6 @@
  call mpas_pool_get_array(diag_physics,'smstot'    ,smstot    )
  call mpas_pool_get_array(diag_physics,'snotime'   ,snotime   )
  call mpas_pool_get_array(diag_physics,'snopcx'    ,snopcx    )
- call mpas_pool_get_array(diag_physics,'sr'        ,sr        ) 
  call mpas_pool_get_array(diag_physics,'udrunoff'  ,udrunoff  )
  call mpas_pool_get_array(diag_physics,'z0'        ,z0        )
  call mpas_pool_get_array(diag_physics,'znt'       ,znt       )
@@ -344,7 +353,6 @@
     smstot_p(i,j)     = smstot(i)
     snotime_p(i,j)    = snotime(i)
     snopcx_p(i,j)     = snopcx(i)
-    sr_p(i,j)         = sr(i)
     udrunoff_p(i,j)   = udrunoff(i)
     z0_p(i,j)         = z0(i)
     znt_p(i,j)        = znt(i)
@@ -370,7 +378,34 @@
 
  do j = jts,jte
  do i = its,ite
-    rainbl_p(i,j) = raincv(i) + rainncv(i)
+    sr_p(i,j)     = 0._RKIND
+    rainbl_p(i,j) = 0._RKIND
+ enddo
+ enddo
+
+ if(config_microp_scheme .ne. 'off') then
+    call mpas_pool_get_array(diag_physics,'sr'     ,sr     ) 
+    call mpas_pool_get_array(diag_physics,'rainncv',rainncv)
+
+    do j = jts,jte
+    do i = its,ite
+       sr_p(i,j) = sr(i)
+       rainbl_p(i,j) = rainbl_p(i,j) + rainncv(i)
+    enddo
+    enddo
+ endif
+ if(config_convection_scheme .ne. 'off') then
+    call mpas_pool_get_array(diag_physics,'raincv',raincv)
+
+    do j = jts,jte
+    do i = its,ite
+       rainbl_p(i,j) = rainbl_p(i,j) + raincv(i)
+    enddo
+    enddo
+ endif
+
+ do j = jts,jte
+ do i = its,ite
     swdown_p(i,j) = gsw(i) / (1._RKIND - sfc_albedo(i))
  enddo
  enddo
@@ -378,15 +413,18 @@
  end subroutine lsm_from_MPAS
  
 !==================================================================================================
- subroutine lsm_to_MPAS(mesh,diag_physics,sfc_input)
+ subroutine lsm_to_MPAS(configs,mesh,diag_physics,sfc_input)
 !==================================================================================================
 
 !input arguments:
+ type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: sfc_input
 
 !local pointers:
+ character(len=StrKIND),pointer:: config_microp_scheme
+
  integer,dimension(:),pointer:: isltyp,ivgtyp
 
  real(kind=RKIND),dimension(:),pointer  :: acsnom,acsnow,canwat,chs,chs2,chklowq,cpm,cqs2,glw, &
@@ -402,6 +440,8 @@
  integer:: ip,iEdg
 
 !--------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_microp_scheme',config_microp_scheme)
 
  call mpas_pool_get_array(diag_physics,'acsnom'    ,acsnom    )
  call mpas_pool_get_array(diag_physics,'acsnow'    ,acsnow    )
@@ -433,7 +473,6 @@
  call mpas_pool_get_array(diag_physics,'smstot'    ,smstot    )
  call mpas_pool_get_array(diag_physics,'snotime'   ,snotime   )
  call mpas_pool_get_array(diag_physics,'snopcx'    ,snopcx    )
- call mpas_pool_get_array(diag_physics,'sr'        ,sr        ) 
  call mpas_pool_get_array(diag_physics,'udrunoff'  ,udrunoff  )
  call mpas_pool_get_array(diag_physics,'z0'        ,z0        )
  call mpas_pool_get_array(diag_physics,'znt'       ,znt       )
@@ -498,7 +537,6 @@
     smstot(i)     = smstot_p(i,j)
     snotime(i)    = snotime_p(i,j)
     snopcx(i)     = snopcx_p(i,j)
-    sr(i)         = sr_p(i,j)
     udrunoff(i)   = udrunoff_p(i,j)
     z0(i)         = z0_p(i,j)
     znt(i)        = znt_p(i,j)
@@ -515,6 +553,16 @@
     xland(i)      = xland_p(i,j)
  enddo
  enddo
+
+ if(config_microp_scheme .ne. 'off') then
+    call mpas_pool_get_array(diag_physics,'sr',sr) 
+
+    do j = jts,jte
+    do i = its,ite
+       sr(i) = sr_p(i,j)
+    enddo
+    enddo
+ endif
 
  end subroutine lsm_to_MPAS
  
@@ -582,7 +630,7 @@
  102 format(3i6,8(1x,e15.8))
 
 !copy MPAS arrays to local arrays:
- call lsm_from_MPAS(mesh,diag_physics,sfc_input)
+ call lsm_from_MPAS(configs,mesh,diag_physics,sfc_input)
 ! write(0,*) '--- end lsm_from_MPAS'
 
 !call to land-surface scheme:
@@ -631,7 +679,7 @@
  end select lsm_select
 
 !copy local arrays to MPAS grid:
- call lsm_to_MPAS(mesh,diag_physics,sfc_input)
+ call lsm_to_MPAS(configs,mesh,diag_physics,sfc_input)
 ! write(0,*) '--- end subroutine driver_lsm'
 
  end subroutine driver_lsm
