@@ -535,13 +535,6 @@ def handle_standard_logging_options(args):
                 'formatter': 'default',
                 'level' : logging.INFO,
                 },
-            'file1' : {
-                'class': 'logging.FileHandler',
-                'mode':'w',
-                'formatter':'debug',
-                'filename' : '%s.log'%sys.argv[0],
-                'level' : logging.DEBUG,
-                },
             },
         'root': {
             'handlers': ['console1'],
@@ -550,6 +543,14 @@ def handle_standard_logging_options(args):
     root_logger=logging.getLogger()
     # DEBUG trumps INFO trumps Silent (WARN)
     if (args.debug == True):
+        file1 = {
+                'class': 'logging.FileHandler',
+                'mode':'w',
+                'formatter':'debug',
+                'filename' : '%s.log'%os.path.basename(sys.argv[0]),
+                'level' : logging.DEBUG,
+                }
+        LOGGING['handlers']['file1'] = file1
         LOGGING['root']['handlers'].append('file1')
         LOGGING['handlers']['console1']['formatter'] = 'debug'
         root_logger.setLevel(logging.DEBUG)
@@ -559,7 +560,6 @@ def handle_standard_logging_options(args):
         logger.warn("Log level set to VERBOSE")
     elif (args.silent == True):
         root_logger.setLevel(logging.WARN)
-
     logging.config.dictConfig(LOGGING)
 
 def get_logging_options():
