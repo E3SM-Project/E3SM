@@ -59,6 +59,9 @@
 ! * changed the argument list in the call to subroutine microphysics_init, needed to include the Thompson
 !   parameterization of cloud microphysics.
 !   Laura D. Fowler (laura@ucar.edu) / 2015-03-28.
+! * modified the initialization of i_rainc and i_rainnc, now that the convection and cloud microphysics
+!   parameterizations are in "packages."
+!   Laura D. Fowler (laura@ucar.edu) / 2106-04-13.
 
 
  contains
@@ -145,8 +148,6 @@
  call mpas_pool_get_array(mesh,'dcEdge'      ,dcEdge      )
 
  call mpas_pool_get_array(diag_physics,'dcEdge_m'    ,dcEdge_m    )
- call mpas_pool_get_array(diag_physics,'i_rainc'     ,i_rainc     )
- call mpas_pool_get_array(diag_physics,'i_rainnc'    ,i_rainnc    )
 
  call mpas_pool_get_array(diag_physics,'i_acswdnb'   ,i_acswdnb   )
  call mpas_pool_get_array(diag_physics,'i_acswdnbc'  ,i_acswdnbc  )
@@ -220,9 +221,15 @@
 !initialization of counters i_rainc and i_rainnc. i_rainc and i_rainnc track the number of
 !times the accumulated convective (rainc) and grid-scale (rainnc) rain exceed the prescribed
 !threshold value:
- if(.not. config_do_restart) then
+ if(.not. config_do_restart .and. config_convection_scheme.ne.'off') then
+    call mpas_pool_get_array(diag_physics,'i_rainc',i_rainc)
     do iCell = 1, nCellsSolve
        i_rainc(iCell)  = 0
+    enddo
+ endif
+ if(.not. config_do_restart .and. config_microp_scheme.ne.'off') then
+    call mpas_pool_get_array(diag_physics,'i_rainnc',i_rainnc)
+    do iCell = 1, nCellsSolve
        i_rainnc(iCell) = 0
     enddo
  endif
