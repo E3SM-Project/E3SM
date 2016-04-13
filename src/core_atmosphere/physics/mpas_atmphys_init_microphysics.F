@@ -9,6 +9,7 @@
 
 !=================================================================================================================
  module mpas_atmphys_init_microphysics
+ use mpas_dmpar
  use mpas_kind_types
  use mpas_derived_types
  use mpas_pool_routines
@@ -26,6 +27,11 @@
 ! droplets based on distributions of CCNs and INs (aerosol-aware parameterization).
 ! Laura D. Fowler (send comments to laura@ucar.edu).
 ! 2016-03-28.
+!
+! add-ons and modifications to sourcecode:
+! ----------------------------------------
+! * added "use mpas_dmpar" at the top of the module.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-04-04.
 
 
  contains
