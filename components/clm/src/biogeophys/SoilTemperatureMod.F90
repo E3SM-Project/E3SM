@@ -100,14 +100,36 @@ module SoilTemperatureMod
   public :: SetMatrix_StandingSurfaceWater      ! Set up the matrix entries corresponding to standing surface water
   public :: SetMatrix_StandingSurfaceWater_Soil ! Set up the matrix entries corresponding to standing surface water-soil interaction
   public :: SetMatrix_Soil_StandingSurfaceWater ! Set up the matrix entries corresponding to soil-standing surface water interction
+  public :: init_soil_temperature               ! Initializes soil tempreature model
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: SoilThermProp      ! Set therm conduct. and heat cap of snow/soil layers
   private :: PhaseChangeH2osfc  ! When surface water freezes move ice to bottom snow layer
   private :: PhaseChange_beta   ! Calculation of the phase change within snow and soil layers
+  integer, parameter :: default_thermal_model  = 0
+  integer, parameter :: petsc_thermal_model    = 1
+  integer            :: thermal_model
   !-----------------------------------------------------------------------
 
 contains
+
+  !-----------------------------------------------------------------------
+  subroutine init_soil_temperature()
+    !
+    !DESCRIPTION
+    !  Initializes the soil tempreature model
+    !
+    use clm_varctl, only : use_petsc_thermal_model
+    ! !ARGUMENTS:
+
+    if (.not.use_petsc_thermal_model) then
+       thermal_model = default_thermal_model
+    else
+       write(iulog,*)'use_petsc_thermal_model=.true. not yet supported'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+  end subroutine init_soil_temperature
 
   !-----------------------------------------------------------------------
   subroutine SoilTemperature(bounds, num_urbanl, filter_urbanl, num_nolakec, filter_nolakec, &

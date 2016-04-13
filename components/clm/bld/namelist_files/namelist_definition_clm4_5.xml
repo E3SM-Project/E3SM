@@ -1621,4 +1621,14 @@ Type of lateral flow formulation supported in VSFM.
     three_dimensional  = 3D VSFM solution (only supported for serial run)
 </entry>
 
+<!-- ========================================================================================  -->
+<!-- Namelist options related to PETSc-based thermal model                                     -->
+<!-- ========================================================================================  -->
+
+<entry id="use_petsc_thermal_model" type="logical" category="default_settings"
+        group="clm_inparm" valid_values="">
+Runtime flag to turn on/off PETSc based thermal model.
+</entry>
+
+
 </namelist_definition>

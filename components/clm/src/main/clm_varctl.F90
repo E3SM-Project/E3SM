@@ -306,6 +306,11 @@ module clm_varctl
   character(len=32), public :: vsfm_lateral_model_type     = 'none'
 
   !----------------------------------------------------------
+  ! PETSc-based thermal model switches
+  !----------------------------------------------------------
+  logical, public :: use_petsc_thermal_model = .false.
+
+  !----------------------------------------------------------
   ! To retrieve namelist
   !----------------------------------------------------------
   character(len=SHR_KIND_CL), public :: NLFilename_in ! Namelist filename
