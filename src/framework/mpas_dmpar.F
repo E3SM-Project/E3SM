@@ -7518,8 +7518,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       if ( threadNum == 0 ) then
          commListPtr => exchangeGroup % recvList
          do while ( associated(commListPtr) )
-            DMPAR_DEBUG_WRITE('    -- Starting recv: ' COMMA commListPtr % procID COMMA commListPtr % nList
-                              COMMA size(commListPtr % rbuffer) )
+            DMPAR_DEBUG_WRITE('    -- Starting recv: ' COMMA commListPtr % procID COMMA commListPtr % nList COMMA size(commListPtr % rbuffer) )
             call MPI_Irecv(commListPtr % rbuffer, commListPtr % nList, MPI_REALKIND, commListPtr % procID, commListPtr % procID, &
                            dminfo % comm, commListPtr % reqID, mpi_ierr)
 
@@ -7556,8 +7555,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       if ( threadNum == 0 ) then
          commListPtr => exchangeGroup % sendList
          do while ( associated(commListPtr) )
-            DMPAR_DEBUG_WRITE('    -- Starting send: ' COMMA commListPtr % procID COMMA commListPtr % nList
-                              COMMA size(commListPtr % rbuffer) )
+            DMPAR_DEBUG_WRITE('    -- Starting send: ' COMMA commListPtr % procID COMMA commListPtr % nList COMMA size(commListPtr % rbuffer) )
             call MPI_Isend(commListPtr % rbuffer, commListPtr % nList, MPI_REALKIND, commListPtr % procID, dminfo % my_proc_id, &
                            dminfo % comm, commListPtr % reqID, mpi_ierr)
 
