@@ -121,6 +121,7 @@
 		<nml_option name="config_perform_unit_test"           type="logical"       default_value="false"/>
 		<nml_option name="config_unit_test_type"              type="character"     default_value=""/>
 		<nml_option name="config_unit_test_subtype"           type="character"     default_value=""/>
+		<nml_option name="config_use_test_ice_shelf"          type="logical"       default_value="false"/>
 	</nml_record>
 	<nml_record name="velocity_solver" in_defaults="true">
 		<nml_option name="config_dynamics_subcycle_number"    type="integer"       default_value="1"           possible_values="any positive integer"/> 
@@ -1531,6 +1532,8 @@
 		<var name="seaSurfaceTiltV"                   type="real"     dimensions="nCells Time"              name_in_code="seaSurfaceTiltV"/>
 		<var name="oceanMixedLayerDepth"              type="real"     dimensions="nCells Time"              name_in_code="oceanMixedLayerDepth"/>
 		<var name="oceanHeatFluxConvergence"          type="real"     dimensions="nCells Time"              name_in_code="oceanHeatFluxConvergence"/>
+		<var name="landIceMask"                       type="real"     dimensions="nCells Time"              name_in_code="landIceMask"/>
+		<var name="landIceMaskVertex"                 type="integer"  dimensions="nVertices Time"           name_in_code="landIceMaskVertex"/>
 	</var_struct>
 
 	<!-- boundary variables -->

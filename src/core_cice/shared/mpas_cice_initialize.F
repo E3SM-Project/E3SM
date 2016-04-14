@@ -75,6 +75,9 @@ contains
     ! initialize junk values
     call init_junk_values(domain)
 
+    ! initialize landice mask if needed for testing
+    call init_test_ice_shelf_mask(domain)
+
     ! mesh initialization
     call cice_init_mesh(domain)
 
@@ -574,7 +577,8 @@ contains
          latCell, &
          airTemperature, &
          seaSurfaceTemperature, &
-         seaFreezingTemperature
+         seaFreezingTemperature, &
+         landIceMask
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          initialSalinityProfile, &
@@ -633,6 +637,7 @@ contains
 
     call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
     call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
+    call MPAS_pool_get_array(ocean_coupling, "landIceMask", landIceMask)
 
     call MPAS_pool_get_array(initial, "initialSalinityProfile", initialSalinityProfile)
     call MPAS_pool_get_array(initial, "initialMeltingTemperatureProfile", initialMeltingTemperatureProfile)
@@ -650,7 +655,8 @@ contains
 
        if (seaSurfaceTemperature(iCell) <= seaFreezingTemperature(iCell) + 0.2_RKIND .and. &
           (latCell(iCell) > config_initial_latitude_north * ciceDegreesToRadians .or. &
-           latCell(iCell) < config_initial_latitude_south * ciceDegreesToRadians)) then
+           latCell(iCell) < config_initial_latitude_south * ciceDegreesToRadians) .and. &
+          landIceMask(iCell) == 0.0_RKIND) then
 
           ! has ice
           do iCategory = 1, nCategories
@@ -1298,13 +1304,15 @@ contains
     type (MPAS_pool_type), pointer :: &
          mesh, &
          velocity_solver, &
-         boundary
+         boundary, &
+         ocean_coupling
 
     integer, pointer :: &
          nVertices
 
     integer, dimension(:), pointer :: &
-         interiorVertex
+         interiorVertex, &
+         landIceMaskVertex
 
     real(kind=RKIND), dimension(:), pointer :: &
          uVelocity, &
@@ -1323,17 +1331,21 @@ contains
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocity_solver)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
+    call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
 
     call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
 
     call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
     call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
 
+    call MPAS_pool_get_array(ocean_coupling, "landIceMaskVertex", landIceMaskVertex)
+
     call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
     do iVertex = 1, nVertices
 
-       if (interiorVertex(iVertex) == 1) then
+       if (interiorVertex(iVertex) == 1 .and. &
+           landIceMaskVertex(iVertex) == 0) then
           
           uVelocity(iVertex) = config_initial_uvelocity
           vVelocity(iVertex) = config_initial_vvelocity
@@ -1384,7 +1396,8 @@ contains
          nVertices
 
     integer, dimension(:), pointer :: &
-         interiorVertex
+         interiorVertex, &
+         landIceMaskVertex
 
     real(kind=RKIND), dimension(:), pointer :: &
          uVelocity, &
@@ -1411,6 +1424,7 @@ contains
 
     call MPAS_pool_get_array(ocean_coupling, "uOceanVelocity", uOceanVelocity)
     call MPAS_pool_get_array(ocean_coupling, "vOceanVelocity", vOceanVelocity)
+    call MPAS_pool_get_array(ocean_coupling, "landIceMaskVertex", landIceMaskVertex)
 
     call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
@@ -1427,7 +1441,8 @@ contains
 
     do iVertex = 1, nVertices
     
-       if (interiorVertex(iVertex) == 1) then
+       if (interiorVertex(iVertex) == 1 .and. &
+           landIceMaskVertex(iVertex) == 0) then
 
           uVelocity(iVertex) = uOceanVelocityVertex(iVertex)
           vVelocity(iVertex) = vOceanVelocityVertex(iVertex)
@@ -1953,6 +1968,96 @@ contains
     enddo
 
   end subroutine initialize_coupler_fields
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+! init_test_ice_shelf_mask
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 9th April 2016
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_test_ice_shelf_mask(domain)
+
+    use cice_constants, only: &
+         ciceDegreesToRadians, &
+         ciceRadiansToDegrees
+
+    type(domain_type), intent(inout) :: &
+         domain
+
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         oceanCouplingPool, &
+         meshPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         landIceMask, &
+         latCell, &
+         lonCell
+
+    integer, pointer :: &
+         nCells
+
+    integer :: &
+         iCell
+
+    real(kind=RKIND) :: &
+         lonLimitWest = -66.10_RKIND, &
+         lonLimitEast = -11.26_RKIND , &
+         latLimit     = -71.94_RKIND
+
+    logical, pointer :: &
+         config_use_test_ice_shelf
+
+    call MPAS_pool_get_config(domain % configs, "config_use_test_ice_shelf", config_use_test_ice_shelf)
+
+    if (config_use_test_ice_shelf) then
+
+       lonLimitWest = lonLimitWest + 360.0_RKIND
+       lonLimitEast = lonLimitEast + 360.0_RKIND
+
+       block => domain % blocklist
+       do while (associated(block))
+
+          call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
+          call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+
+          call MPAS_pool_get_array(oceanCouplingPool, "landIceMask", landIceMask)
+
+          call MPAS_pool_get_array(meshPool, "latCell", latCell)
+          call MPAS_pool_get_array(meshPool, "lonCell", lonCell)
+
+          call MPAS_pool_get_dimension(block % dimensions, "nCells", nCells)
+
+          do iCell = 1, nCells
+
+             if (lonCell(iCell) > lonLimitWest * ciceDegreesToRadians .and. &
+                 lonCell(iCell) < lonLimitEast * ciceDegreesToRadians .and. &
+                 latCell(iCell) < latLimit     * ciceDegreesToRadians) then
+
+                landIceMask(iCell) = 1.0_RKIND
+
+             else
+
+                landIceMask(iCell) = 0.0_RKIND
+
+             endif
+
+          enddo ! iCell
+
+          block => block % next
+       enddo
+
+    endif
+
+  end subroutine init_test_ice_shelf_mask
 
 !-----------------------------------------------------------------------
 

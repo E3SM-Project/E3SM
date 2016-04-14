@@ -7,7 +7,7 @@
 		 The package should be named: [name]AMPKG where again [name] is the camel case name (e.g. globalStatsAMPKG)
 		 Pools and streams should be named with the camel case name as well (e.g. globalStatsOutput and globalStatsAM)
 	-->
-	<nml_record name="AM_temPlate" mode="forward;analysis">
+	<nml_record name="AM_temPlate">
 		<nml_option name="config_AM_temPlate_enable" type="logical" default_value=".false." units="unitless"
 			description="If true, ocean analysis member temPlate is called."
 			possible_values=".true. or .false."
@@ -42,7 +42,6 @@
 	</var_struct>
 	<streams>
 		<stream name="temPlateOutput" type="output"
-				mode="forward;analysis"
 				filename_template="analysis_members/cice_temPlate.$Y-$M-$D.nc"
 				filename_interval="01-00-00_00:00:00"
 				output_interval="00-00-01_00:00:00"
