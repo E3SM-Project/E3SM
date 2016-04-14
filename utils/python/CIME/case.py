@@ -76,9 +76,13 @@ class Case(object):
                   return env_file
           expect(False, "Could not find object for %s in case"%full_name)
 
-    def flush(self):
-        for env_file in self._env_files_that_need_rewrite:
-            env_file.write()
+    def flush(self, flushall=False):
+        if flushall:
+            for env_file in self._files:
+                env_file.write()
+        else:
+            for env_file in self._env_files_that_need_rewrite:
+                env_file.write()
 
         self._env_files_that_need_rewrite = set()
 
