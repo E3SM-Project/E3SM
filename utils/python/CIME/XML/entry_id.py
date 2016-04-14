@@ -22,6 +22,7 @@ class EntryID(GenericXML):
         Set the value of an entry to the default value for that entry
         """
         value = self._get_value_match(node, attributes)
+        vid = node.get("id")
         if value is None:
             # Fall back to default value
             val_node = self.get_optional_node("default_value", root=node)
@@ -31,7 +32,6 @@ class EntryID(GenericXML):
             logger.debug("node is %s value is %s"%(node.get("id"),value))
         if value is None:
             value = ""
-        node.set("value",value)
         return value
 
     def get_value_match(self, vid, attributes={}):
@@ -221,16 +221,18 @@ class EntryID(GenericXML):
                 self.groups[gname] = newgroup
                 self.add_child(newgroup)
 
-	    # Set the default value, it may be determined by a regular
-            # expression match to a dictionary value in attributes matching a
-            # value attribute in node
-            self.get_default_value(node, attributes)
-
             # Remove {<group>, <file>, <values>} from the entry element
             node = self.cleanupnode(node)
 
 	    # Add the entry element to the group
             self.groups[gname].append(node)
+
+	    # Set the default value, it may be determined by a regular
+            # expression match to a dictionary value in attributes matching a
+            # value attribute in node
+            value = srcobj.get_default_value(src_node, attributes)
+
+            self._set_value(node,value)
             logger.debug ("Adding to group " + gname)
 
         return nodelist
