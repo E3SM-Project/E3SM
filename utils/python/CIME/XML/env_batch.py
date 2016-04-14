@@ -23,14 +23,14 @@ class EnvBatch(EnvBase):
         if subgroup is None:
             nodes = self.get_nodes("entry", {"id":item})
             for node in nodes:
-                self._set_value(node, item, value, ignore_type)
+                self._set_value(node, value, vid=item, ignore_type=ignore_type)
                 val = value
         else:
             nodes = self.get_nodes("job", {"name":subgroup})
             for node in nodes:
                 vnode = self.get_optional_node("entry", {"id":item}, root=node)
                 if vnode is not None:
-                    val = self._set_value(vnode, item, value, ignore_type=ignore_type)
+                    val = self._set_value(vnode, value, vid=item, ignore_type=ignore_type)
 
         return val
 
