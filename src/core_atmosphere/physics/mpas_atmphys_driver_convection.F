@@ -79,6 +79,9 @@
 ! * reorganized the calls to mpas_pool_.. as functions of the parameterization of convection. this makes the
 !   code cleaner, now that we are using physics packages.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-01.
+! * in the calls to subroutine cu_grell_freitas and cu_grell_freitas_momentum, added the array pratec for the
+!   calculation of rainc.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-04-14.
 
 
  contains
@@ -394,73 +397,78 @@
 
     case ("cu_grell_freitas")
        dx_1d = len_disp
-       write(0,*) '--- enter subroutine gfdrv:',dx_1d
-       write(0,*) '--- gfconv_closure_deep    =', gfconv_closure_deep
-       write(0,*) '--- gfconv_closure_shallow =', gfconv_closure_shallow
+!      write(0,*) '--- enter subroutine cu_grell_freitas:',dx_1d
+!      write(0,*) '--- gfconv_closure_deep    =', gfconv_closure_deep
+!      write(0,*) '--- gfconv_closure_shallow =', gfconv_closure_shallow
        call cu_grell_freitas( &
-             itimestep     = itimestep           , dt              = dt_dyn                 , &
-             dxCell        = dx_p                , areaCell        = area_p                 , &
-             u             = u_p                 , v               = v_p                    , &
-             w             = w_p                 , t               = t_p                    , &
-             q             = qv_p                , rho             = rho_p                  , &
-             p             = pres_hyd_p          , pi              = pi_p                   , &
-             p8w           = pres2_hyd_p         , dz8w            = dz_p                   , &
-             ht            = ht_p                , xland           = xland_p                , &
-             gsw           = gsw_p               , xlv             = xlv                    , &
-             cp            = cp                  , g               = gravity                , &
-             r_v           = R_v                 , hfx             = hfx_p                  , &
-             qfx           = qfx_p               , rthblten        = rthblten_p             , &
-             rqvblten      = rqvblten_p          , rthften         = rthdynten_p            , &
-             rqvften       = rqvdynten_p         , rthraten        = rthraten_p             , &
-             kpbl          = kpbl_p              , raincv          = raincv_p               , &
-             ichoice_deep  = gfconv_closure_deep , ichoice_shallow = gfconv_closure_shallow , &
-             ishallow_g3   = ishallow            , htop            = cutop_p                , &
-             hbot          = cubot_p             , ktop_deep       = ktop_deep_p            , &
-             k22_shallow   = k22_shallow_p       , kbcon_shallow   = kbcon_shallow_p        , &
-             ktop_shallow  = ktop_shallow_p      , xmb_total       = xmb_total_p            , &
-             xmb_shallow   = xmb_shallow_p       , gdc             = qccu_p                 , &
-             gdc2          = qicu_p              , rthcuten        = rthcuten_p             , &
-             rqvcuten      = rqvcuten_p          , rqccuten        = rqccuten_p             , &
-             rqicuten      = rqicuten_p                                                     , & 
-             ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde          , &
-             ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme          , &
-             its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte            &
+             itimestep       = itimestep              , dt            = dt_dyn          , &
+             dxCell          = dx_p                   , areaCell      = area_p          , &
+             u               = u_p                    , v             = v_p             , &
+             w               = w_p                    , t             = t_p             , &
+             q               = qv_p                   , rho           = rho_p           , &
+             p               = pres_hyd_p             , pi            = pi_p            , &
+             p8w             = pres2_hyd_p            , dz8w          = dz_p            , &
+             ht              = ht_p                   , xland         = xland_p         , &
+             gsw             = gsw_p                  , xlv           = xlv             , &
+             cp              = cp                     , g             = gravity         , &
+             r_v             = R_v                    , hfx           = hfx_p           , &
+             qfx             = qfx_p                  , rthblten      = rthblten_p      , &
+             rqvblten        = rqvblten_p             , rthften       = rthdynten_p     , &
+             rqvften         = rqvdynten_p            , rthraten      = rthraten_p      , &
+             kpbl            = kpbl_p                 , raincv        = raincv_p        , &
+             pratec          = pratec_p               , htop          = cutop_p         , &
+             hbot            = cubot_p                , ktop_deep     = ktop_deep_p     , &
+             k22_shallow     = k22_shallow_p          , kbcon_shallow = kbcon_shallow_p , &
+             ktop_shallow    = ktop_shallow_p         , xmb_total     = xmb_total_p     , &
+             xmb_shallow     = xmb_shallow_p          , gdc           = qccu_p          , &
+             gdc2            = qicu_p                 , rthcuten      = rthcuten_p      , &
+             rqvcuten        = rqvcuten_p             , rqccuten      = rqccuten_p      , &
+             rqicuten        = rqicuten_p                                               , & 
+             ichoice_deep    = gfconv_closure_deep                                      , &
+             ichoice_shallow = gfconv_closure_shallow                                   , &
+             ishallow_g3     = ishallow                                                 , &
+             ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde      , &
+             ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme      , &
+             its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
                             )
 
     case ("cu_grell_freitas_momentum")
        dx_1d = len_disp
-       write(0,*) '--- enter subroutine gfdrv:',dx_1d
-       write(0,*) '--- gfconv_closure_deep    =', gfconv_closure_deep
-       write(0,*) '--- gfconv_closure_shallow =', gfconv_closure_shallow
+!      write(0,*) '--- enter subroutine grell_freitas_momentum:',dx_1d
+!      write(0,*) '--- gfconv_closure_deep    =', gfconv_closure_deep
+!      write(0,*) '--- gfconv_closure_shallow =', gfconv_closure_shallow
        call cu_grell_freitas_momentum( &
-             itimestep     = itimestep           , dt              = dt_dyn                 , &
-             dxCell        = dx_p                , areaCell        = area_p                 , &
-             u             = u_p                 , v               = v_p                    , &
-             w             = w_p                 , t               = t_p                    , &
-             q             = qv_p                , rho             = rho_p                  , &
-             p             = pres_hyd_p          , pi              = pi_p                   , &
-             p8w           = pres2_hyd_p         , dz8w            = dz_p                   , &
-             ht            = ht_p                , xland           = xland_p                , &
-             gsw           = gsw_p               , xlv             = xlv                    , &
-             cp            = cp                  , g               = gravity                , &
-             r_v           = R_v                 , hfx             = hfx_p                  , &
-             qfx           = qfx_p               , rthblten        = rthblten_p             , &
-             rqvblten      = rqvblten_p          , rthften         = rthdynten_p            , &
-             rqvften       = rqvdynten_p         , rthraten        = rthraten_p             , &
-             kpbl          = kpbl_p              , raincv          = raincv_p               , &
-             ichoice_deep  = gfconv_closure_deep , ichoice_shallow = gfconv_closure_shallow , &
-             ishallow_g3   = ishallow            , imomentum       = imomentum              , &
-             htop          = cutop_p             , hbot            = cubot_p                , & 
-             ktop_deep     = ktop_deep_p         , k22_shallow     = k22_shallow_p          , &
-             kbcon_shallow = kbcon_shallow_p     , ktop_shallow    = ktop_shallow_p         , &
-             xmb_total     = xmb_total_p         , xmb_shallow     = xmb_shallow_p          , &
-             gdc           = qccu_p              , gdc2            = qicu_p                 , &
-             rthcuten      = rthcuten_p          , rqvcuten        = rqvcuten_p             , &
-             rqccuten      = rqccuten_p          , rqicuten        = rqicuten_p             , &
-             rucuten       = rucuten_p           , rvcuten         = rvcuten_p              , &
-             ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde          , &
-             ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme          , &
-             its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte            &
+             itimestep       = itimestep              , dt            = dt_dyn          , &
+             dxCell          = dx_p                   , areaCell      = area_p          , &
+             u               = u_p                    , v             = v_p             , &
+             w               = w_p                    , t             = t_p             , &
+             q               = qv_p                   , rho           = rho_p           , &
+             p               = pres_hyd_p             , pi            = pi_p            , &
+             p8w             = pres2_hyd_p            , dz8w          = dz_p            , &
+             ht              = ht_p                   , xland         = xland_p         , &
+             gsw             = gsw_p                  , xlv           = xlv             , &
+             cp              = cp                     , g             = gravity         , &
+             r_v             = R_v                    , hfx           = hfx_p           , &
+             qfx             = qfx_p                  , rthblten      = rthblten_p      , &
+             rqvblten        = rqvblten_p             , rthften       = rthdynten_p     , &
+             rqvften         = rqvdynten_p            , rthraten      = rthraten_p      , &
+             kpbl            = kpbl_p                 , raincv        = raincv_p        , &
+             pratec          = pratec_p               , htop          = cutop_p         , &
+             hbot            = cubot_p                , ktop_deep     = ktop_deep_p     , &
+             k22_shallow     = k22_shallow_p          , kbcon_shallow = kbcon_shallow_p , &
+             ktop_shallow    = ktop_shallow_p         , xmb_total     = xmb_total_p     , &
+             xmb_shallow     = xmb_shallow_p          , gdc           = qccu_p          , &
+             gdc2            = qicu_p                 , rthcuten      = rthcuten_p      , &
+             rqvcuten        = rqvcuten_p             , rqccuten      = rqccuten_p      , &
+             rqicuten        = rqicuten_p             , rucuten       = rucuten_p       , &
+             rvcuten         = rvcuten_p                                                , &
+             ichoice_deep    = gfconv_closure_deep                                      , &
+             ichoice_shallow = gfconv_closure_shallow                                   , &
+             ishallow_g3     = ishallow                                                 , &
+             imomentum       = imomentum                                                , &
+             ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde      , &
+             ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme      , &
+             its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
                             )
 
     case ("cu_kain_fritsch")
@@ -958,7 +966,6 @@
        i_rainc(iCell) = i_rainc(iCell) + 1
        rainc(iCell)   = rainc(iCell) - bucket_rainc
     endif
-
  enddo
 
  end subroutine update_convection_step2

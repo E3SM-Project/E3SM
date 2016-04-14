@@ -40,16 +40,16 @@ CONTAINS
 !     Laura D. Fowler (laura@ucar.edu) / 2015-03-30.
 
  subroutine cu_grell_freitas( &
-               itimestep,dt,dxcell,areacell                  &
-              ,u,v,t,w,q,p,pi,rho,dz8w,p8w                   &
-              ,xland,ht,hfx,qfx,gsw,rqvften,rthften          &
-              ,rthblten,rqvblten,rthraten,kpbl,xlv,cp,g,r_v  &
-              ,ichoice_deep,ichoice_shallow,ishallow_g3      &
-              ,htop,hbot,ktop_deep,k22_shallow,kbcon_shallow &
-              ,ktop_shallow,xmb_total,xmb_shallow,raincv     &
-              ,gdc,gdc2,rthcuten,rqvcuten,rqccuten,rqicuten  &
-              ,ims, ime, jms, jme, kms,kme                   &
-              ,ids, ide, jds, jde, kds,kde                   &
+               itimestep,dt,dxcell,areacell                     &
+              ,u,v,t,w,q,p,pi,rho,dz8w,p8w                      &
+              ,xland,ht,hfx,qfx,gsw,rqvften,rthften             &
+              ,rthblten,rqvblten,rthraten,kpbl,xlv,cp,g,r_v     &
+              ,ichoice_deep,ichoice_shallow,ishallow_g3         &
+              ,htop,hbot,ktop_deep,k22_shallow,kbcon_shallow    &
+              ,ktop_shallow,xmb_total,xmb_shallow,raincv,pratec &
+              ,gdc,gdc2,rthcuten,rqvcuten,rqccuten,rqicuten     &
+              ,ims, ime, jms, jme, kms,kme                      &
+              ,ids, ide, jds, jde, kds,kde                      &
               ,its, ite, jts, jte, kts,kte)
 
  implicit none
@@ -103,7 +103,7 @@ CONTAINS
 !inout arguments:
  integer,dimension(ims:ime,jms:jme),intent(inout):: k22_shallow,kbcon_shallow,ktop_shallow,ktop_deep
 
- real,dimension(ims:ime,jms:jme),intent(inout):: hbot,htop,raincv,xmb_total,xmb_shallow
+ real,dimension(ims:ime,jms:jme),intent(inout):: hbot,htop,raincv,pratec,xmb_total,xmb_shallow
  real,dimension(ims:ime,kms:kme,jms:jme),intent(inout):: rthcuten,rqvcuten,rqccuten,rqicuten
  real,dimension(ims:ime,kms:kme,jms:jme),intent(inout),optional:: gdc,gdc2
 
@@ -139,6 +139,12 @@ CONTAINS
  itf = min(ite,ide-1)
  ktf = min(kte,kde-1)
  jtf = min(jte,jde-1)
+!write(0,*) '--- its = ', its
+!write(0,*) '--- kts = ', kts
+!write(0,*) '--- jts = ', jts
+!write(0,*) '--- itf = ', itf
+!write(0,*) '--- ktf = ', ktf
+!write(0,*) '--- jtf = ', jtf
 
  ipr = ite
  jpr = jte
@@ -150,6 +156,7 @@ CONTAINS
        htop(i,j)      = real(kts)
        xmb_total(i,j) = 0.
        raincv(i,j)    = 0.
+       pratec(i,j)    = 0.
 
        !shallow convection:
        k22_shallow(i,j)   = 0
@@ -362,6 +369,7 @@ CONTAINS
        xmb_total(i,j) = xmb(i)
        if(pret(i) .gt. 0.) then
           cuten(i) = 1.
+          pratec(i,j)    = pret(i)
           raincv(i,j)    = pret(i)*dt
           ktop_deep(i,j) = ktop(i)
           
