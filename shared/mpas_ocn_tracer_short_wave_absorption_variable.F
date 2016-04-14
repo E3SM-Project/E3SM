@@ -152,7 +152,7 @@ contains
 
       call mpas_pool_get_array(swForcingPool,'zenithAngle',zenithAngle)
       call mpas_pool_get_array(swForcingPool,'clearSkyRadiation',clearSkyRadiation)
-      !$omp do schedule(runtime) private(depth, k, cloudRatio)
+      !$omp do schedule(runtime) private(depth, k, cloudRatio, depLev)
       do iCell = 1, nCells
         depth = 0.0_RKIND
         cloudRatio = min(1.0_RKIND, 1.0_RKIND - penetrativeTemperatureFlux(iCell)/hflux_factor/clearSkyRadiation(iCell))
