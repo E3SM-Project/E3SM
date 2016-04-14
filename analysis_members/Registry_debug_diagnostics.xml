@@ -19,6 +19,10 @@
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_AM_debugDiagnostics_check_state" type="logical" default_value=".false." units="unitless"
+			description="Logical flag determining if state checking happens when the debug diagnostics AM is called."
+			possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<packages>
 		<package name="debugDiagnosticsAMPKG" description="This package includes variables required for the debugDiagnostics analysis member."/>
