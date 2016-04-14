@@ -6,7 +6,8 @@ through the Case module.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils                     import expect, run_cmd, get_cime_root, convert_to_type
+from shutil import copyfile
+from CIME.utils                     import expect, run_cmd, get_cime_root, convert_to_type, get_model
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
@@ -55,7 +56,7 @@ class Case(object):
         # table and then remove the entry. This was what I came up
         # with in the perl anyway and I think that we still need it here.
         self.lookups = {}
-        self.lookups['CIMEROOT'] = get_cime_root()
+        self.lookups['CIMEROOT'] = os.path.abspath(get_cime_root())
 
         self._compsetname = None
         self._gridname = None
@@ -104,7 +105,7 @@ class Case(object):
             type_str = self._get_type_info(node)
             return convert_to_type(result, type_str, item)
 
-        logging.info("Not able to retreive value for item '%s'" % item)
+        logging.debug("Not able to retreive value for item '%s'" % item)
 
     def get_type_info(self, item):
         result = None
@@ -113,7 +114,7 @@ class Case(object):
             if result is not None:
                 return result
 
-        logging.info("Not able to retreive type for item '%s'" % item)
+        logging.debug("Not able to retreive type for item '%s'" % item)
 
     def get_resolved_value(self, item, recurse=0):
         num_unresolved = item.count("$")
@@ -184,12 +185,13 @@ class Case(object):
                     self._compsetsfile = compsets_filename
                     self._compsetname = match
 
-                    self.set_value("COMPSETS_SPEC_FILE" , compsets_filename)
+                    self.set_value("COMPSETS_SPEC_FILE" ,
+                                   files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
                     self.set_value("TESTS_SPEC_FILE"    , tests_filename)
                     self.set_value("TESTS_MODS_DIR"     , tests_mods_dir)
                     self.set_value("USER_MODS_DIR"      , user_mods_dir)
-                    self.set_value("PES_SPEC_FILE"      , pes_filename)
-
+                    self.set_value("PES_SPEC_FILE"      ,
+                                   files.get_value("PES_SPEC_FILE"     , {"component":component}, resolved=False))
                     logger.info("Compset longname is %s " %(match))
                     logger.info("Compset specification file is %s" %(compsets_filename))
                     logger.info("Pes     specification file is %s" %(pes_filename))
@@ -346,6 +348,7 @@ class Case(object):
         batch = Batch(batch_system=batch_system, machine=machine_name)
         bjobs = batch.get_batch_jobs()
         env_batch = self._get_env("batch")
+        env_batch.set_value("batch_system", batch_system)
         env_batch.create_job_groups(bjobs)
 
         self._env_files_that_need_rewrite.add(env_batch)
@@ -391,4 +394,118 @@ class Case(object):
         defaults = pioobj.get_defaults(grid=grid,compset=compset,mach=mach,compiler=compiler)
         for vid, value in defaults.items():
             self.set_value(vid,value)
+
+    def _create_caseroot_tools(self):
+        cime_model = get_model()
+        machines_dir = self.get_value("MACHDIR")
+        cimeroot = self.get_value("CIMEROOT")
+        caseroot = self.get_value("CASEROOT")
+        # setup executable files in caseroot/
+        exefiles = (cimeroot + "/scripts/Tools/case.setup",
+                    cimeroot + "/scripts/Tools/case.build",
+                    cimeroot + "/scripts/Tools/case.clean_build",
+                    cimeroot + "/scripts/Tools/case.submit",
+                    cimeroot + "/scripts/Tools/preview_namelists",
+                    cimeroot + "/scripts/Tools/testcase.setup",
+                    cimeroot + "/scripts/Tools/check_input_data",
+                    cimeroot + "/scripts/Tools/check_case",
+                    cimeroot + "/scripts/Tools/archive_metadata.sh",
+                    cimeroot + "/scripts/Tools/create_production_test",
+                    cimeroot + "/scripts/Tools/xmlchange",
+                    cimeroot + "/scripts/Tools/xmlquery")
+        try:
+            for exefile in exefiles:
+                destfile = caseroot + "/" + os.path.basename(exefile)
+                os.symlink(exefile, destfile)
+        except Exception as e:
+            logger.warning("FAILED to set up exefiles: %s" % str(e))
+
+        # set up utility files in caseroot/Tools/
+        toolfiles = (os.path.join(cimeroot, "scripts", "Tools", "check_lockedfiles"),
+                     os.path.join(cimeroot, "scripts", "Tools", "lt_archive.sh"),
+                     os.path.join(cimeroot, "scripts", "Tools", "st_archive"),
+                     os.path.join(cimeroot, "scripts", "Tools", "getTiming"),
+                     os.path.join(cimeroot, "scripts", "Tools", "compare_namelists.pl"),
+                     os.path.join(machines_dir,"/taskmaker.pl"),
+                     os.path.join(machines_dir,"/Makefile"),
+                     os.path.join(machines_dir,"/mkSrcfiles"),
+                     os.path.join(machines_dir,"/mkDepends"))
+        for toolfile in toolfiles:
+            destfile = os.path.join(self.get_value("CASEROOT"),"Tools",os.path.basename(toolfile))
+            try:
+                os.symlink(toolfile, destfile)
+            except Exception as e:
+                logger.warning("FAILED to set up toolfiles: %s %s %s" % (str(e), toolfile, destfile))
+
+            # set up infon files
+            # infofiles = os.path.join(os.path.join(cimeroot, "scripts", "Tools", README.post_process")
+    #FIXME - the following does not work
+    # print "DEBUG: infofiles are ",infofiles
+    #    try:
+    #        for infofile in infofiles:
+    #            print "DEBUG: infofile is %s, %s"  %(infofile, os.path.basename(infofile))
+    #            dst_file = caseroot + "/" + os.path.basename(infofile)
+    #            copyfile(infofile, dst_file)
+    #            os.chmod(dst_file, os.stat(dst_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    #    except Exception as e:
+    #        logger.warning("FAILED to set up infofiles: %s" % str(e))
+
+    def _create_caseroot_sourcemods(self):
+        components = self.get_compset_components()
+        caseroot = self.get_value("CASEROOT")
+        for component in components:
+            directory = os.path.join(caseroot,"SourceMods","src.%s"%component)
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+
+        directory = os.path.join(caseroot, "SourceMods", "src.share")
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        directory = os.path.join(caseroot,"SourceMods","src.drv")
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        if get_model() is "cesm":
+        # Note: this is CESM specific, given that we are referencing cism explitly
+            if "cism" in components:
+                directory = os.path.join(caseroot, "SourceMods", "src.cism", "glimmer-cism")
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
+                readme_file = os.path.join(directory, "README")
+
+                str_to_write = """
+                Put source mods for the glimmer-cism library in the glimmer-cism subdirectory
+                This includes any files that are in the glimmer-cism subdirectory of $cimeroot/../components/cism
+                Anything else (e.g., mods to source_glc or drivers) goes in this directory, NOT in glimmer-cism/"""
+
+                with open(readme_file, "w") as fd:
+                    fd.write(str_to_write)
+
+    def create_caseroot(self):
+        caseroot = self.get_value("CASEROOT")
+        if not os.path.exists(caseroot):
+        # Make the case directory
+            logger.info(" Creating Case directory %s" %caseroot)
+            os.makedirs(caseroot)
+        os.chdir(caseroot)
+
+    # Create relevant directories in $caseroot
+        newdirs = ("SourceMods", "LockedFiles", "Buildconf", "Tools")
+        for newdir in newdirs:
+            os.makedirs(newdir)
+
+        # Open a new README.case file in $caseroot
+        with open(os.path.join(caseroot,"README.case"), "w") as fd:
+            for arg in sys.argv:
+                fd.write(" %s"%arg)
+
+        # Copy the st_archive xml into place
+        cimeroot = self.get_value("CIMEROOT")
+        copyfile(os.path.join(cimeroot, "cime_config", get_model() , "archive.xml" ),
+                 os.path.join(caseroot,"env_archive.xml"))
+
+        self._create_caseroot_sourcemods()
+        self._create_caseroot_tools()
+
 

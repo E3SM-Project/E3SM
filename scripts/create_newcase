@@ -2,13 +2,7 @@
 
 from Tools.standard_script_setup import *
 
-from CIME.utils         import expect, get_model, run_cmd
-from CIME.XML.files     import Files
-from CIME.XML.component import Component
-from CIME.XML.compsets  import Compsets
-from CIME.XML.grids     import Grids
-from CIME.XML.machines  import Machines
-from CIME.XML.batch  import Batch
+from CIME.utils         import expect, get_model
 from CIME.case          import Case
 
 from shutil import copyfile
@@ -29,7 +23,8 @@ def parse_command_line(args):
 
     parser.add_argument("--case", "-case", required=True,
                         help="(required) Specify the case name. "
-                        "If not a full pathname, then the current working directory is assumed")
+                        "If not a full pathname, then the case is created "
+			"under then current working directory ")
 
     parser.add_argument("--compset", "-compset", required=True,
                         help="(required) Specify a compset. "
@@ -130,123 +125,6 @@ def parse_command_line(args):
 
 
 ###############################################################################
-def _create_caseroot_tools(case, caseroot, cimeroot, machine):
-###############################################################################
-
-    cime_model = CIME.utils.get_model()
-    machobj = Machines(machine=machine)
-    machines_dir = machobj.get_machines_dir()
-
-    # setup executable files in caseroot/
-    exefiles = (cimeroot + "/scripts/Tools/case.setup",
-                cimeroot + "/scripts/Tools/case.build",
-                cimeroot + "/scripts/Tools/case.clean_build",
-                cimeroot + "/scripts/Tools/case.submit",
-                cimeroot + "/scripts/Tools/preview_namelists",
-                cimeroot + "/scripts/Tools/testcase.setup",
-                cimeroot + "/scripts/Tools/check_input_data",
-                cimeroot + "/scripts/Tools/check_case",
-                cimeroot + "/scripts/Tools/archive_metadata.sh",
-                cimeroot + "/scripts/Tools/create_production_test",
-                cimeroot + "/scripts/Tools/xmlchange",
-                cimeroot + "/scripts/Tools/xmlquery")
-    try:
-        for exefile in exefiles:
-            destfile = caseroot + "/" + os.path.basename(exefile)
-            os.symlink(exefile, destfile)
-    except Exception as e:
-        logger.warning("FAILED to set up exefiles: %s" % str(e))
-
-    # set up utility files in caseroot/Tools/
-    toolfiles = (cimeroot + "/cime_config/" + cime_model + "/archive.xml",
-                 cimeroot + "/scripts/Tools/check_lockedfiles",
-                 cimeroot + "/scripts/Tools/lt_archive.sh",
-                 cimeroot + "/scripts/Tools/st_archive",
-                 cimeroot + "/scripts/Tools/getTiming",
-                 cimeroot + "/scripts/Tools/compare_namelists.pl",
-                 machines_dir + "/taskmaker.pl",
-                 machines_dir + "/Makefile",
-                 machines_dir + "/mkSrcfiles",
-                 machines_dir + "/mkDepends")
-    try:
-        for toolfile in toolfiles:
-            destfile = caseroot + "/Tools/" + os.path.basename(toolfile)
-            os.symlink(toolfile, destfile)
-    except Exception as e:
-        logger.warning("FAILED to set up toolfiles: %s %s %s" % (str(e), toolfile, destfile))
-
-    # set up infon files
-    infofiles = (cimeroot + "/scripts/Tools/README.post_process")
-    #FIXME - the following does not work
-    # print "DEBUG: infofiles are ",infofiles
-    #    try:
-    #        for infofile in infofiles:
-    #            print "DEBUG: infofile is %s, %s"  %(infofile, os.path.basename(infofile))
-    #            dst_file = caseroot + "/" + os.path.basename(infofile)
-    #            copyfile(infofile, dst_file)
-    #            os.chmod(dst_file, os.stat(dst_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
-    #    except Exception as e:
-    #        logger.warning("FAILED to set up infofiles: %s" % str(e))
-
-
-###############################################################################
-def _create_caseroot_sourcemods(case, caseroot, cimeroot, components):
-###############################################################################
-
-    for component in components:
-        directory = caseroot + "/SourceMods/src." + component
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
-    directory = caseroot + "/SourceMods/src.share"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-    directory = caseroot + "/SourceMods/src.drv"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-    cime_model = CIME.utils.get_model()
-    if cime_model is "cesm":
-        # Note: this is CESM specific, given that we are referencing cism explitly
-        if "cism" in components:
-            directory = caseroot + "/SourceMods/src.cism/glimmer-cism"
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-                readme_file = os.path.join(directory, "README")
-
-                str_to_write = """
-                Put source mods for the glimmer-cism library in the glimmer-cism subdirectory
-                This includes any files that are in the glimmer-cism subdirectory of $cimeroot/../components/cism
-                Anything else (e.g., mods to source_glc or drivers) goes in this directory, NOT in glimmer-cism/"""
-
-                with open(readme_file, "w") as fd:
-                    fd.write(str_to_write)
-
-
-###############################################################################
-def _create_caseroot(case, caseroot, cimeroot, components, machine):
-###############################################################################
-    if not os.path.exists(caseroot):
-        # Make the case directory
-        logger.info(" Creating Case directory %s" %caseroot)
-        os.makedirs(caseroot)
-        os.chdir(caseroot)
-
-    # Create relevant directories in $caseroot
-    newdirs = ("SourceMods", "LockedFiles", "Buildconf", "Tools")
-    for newdir in newdirs:
-        os.makedirs(newdir)
-
-    # Open a new README.case file in $caseroot
-    with open(os.path.join(caseroot,"README.case"), "w") as fd:
-        for arg in sys.argv:
-            fd.write(" %s"%arg)
-
-    _create_caseroot_sourcemods(case, caseroot, cimeroot, components);
-    _create_caseroot_tools(case, caseroot, cimeroot, machine);
-
-###############################################################################
 def _main_func():
 ###############################################################################
 
@@ -256,11 +134,12 @@ def _main_func():
         user_grid, gridfile, srcroot, test \
         = parse_command_line(sys.argv)
 
-    cimeroot  = CIME.utils.get_cime_root()
-    if srcroot is None:
-        srcroot  = os.path.join(cimeroot,"/../")
+    cimeroot  = os.path.abspath(CIME.utils.get_cime_root())
 
-    # Determine
+    if srcroot is None:
+        srcroot  = os.path.dirname(cimeroot)
+
+    # Is case relative or full path?
     if os.path.isabs(case):
         caseroot = case
         case = os.path.basename(case)
@@ -284,18 +163,15 @@ def _main_func():
         caseobj.set_value("PROJECT",project)
 
     # Configure the Case
-    caseobj.configure(compset, grid, machine, 
-                      pecount=pecount, compiler=compiler, mpilib=mpilib, 
-                      user_compset=user_compset, pesfile=pesfile, 
+    caseobj.configure(compset, grid, machine,
+                      pecount=pecount, compiler=compiler, mpilib=mpilib,
+                      user_compset=user_compset, pesfile=pesfile,
                       user_grid=user_grid, gridfile=gridfile)
 
-    components = caseobj.get_compset_components()
-    _create_caseroot(case, caseroot, cimeroot, components, machine)
+    caseobj.create_caseroot()
 
     # Write out the case files
-    for file in caseobj._env_entryid_files:
-        file.write()
-    caseobj._env_generic_files[0].write()
+    caseobj.flush()
 
 ###############################################################################
 
