@@ -45,6 +45,9 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
 ! * added local arrays needed in the MYNN surface layer scheme and PBL scheme (for versions WRF 3.6.1 and 3.8).
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-31.
+! * changed the value of bl_mynn_cloudpdf from 2 to 0 which is the closure option used when the MYNN surface
+!   layer scheme and PBL scheme were originally implemented.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-04.14.
 
 
 !=================================================================================================================
@@ -322,7 +325,7 @@
 
  logical,parameter:: bl_mynn_tkeadvect = .false.!
  integer,parameter:: bl_mynn_tkebudget = 0      !
- integer,parameter:: bl_mynn_cloudpdf  = 2      !
+ integer,parameter:: bl_mynn_cloudpdf  = 0      !
  integer,parameter:: bl_mynn_cloudmix  = 1      !
  integer,parameter:: bl_mynn_mixlength = 2      !
  integer,parameter:: bl_mynn_mixqt     = 0      !
