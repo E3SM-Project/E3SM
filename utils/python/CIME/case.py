@@ -279,7 +279,7 @@ class Case(object):
 
         gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
         self._gridname = gridinfo["GRID"]
-        for key,value in gridinfo.iteritems():
+        for key,value in gridinfo.items():
             self.set_value(key,value)
 
         #--------------------------------------------
@@ -329,11 +329,11 @@ class Case(object):
 
         # the following go into the env_mach_specific file
         vars = ("module_system", "environment_variables", "batch_system", "mpirun")
+        env_mach_specific_obj = self._get_env("mach_specific")
         for var in vars:
             nodes = machobj.get_first_child_nodes(var)
             for node in nodes:
-                self._env_generic_files[0].add_child(node)
-
+                env_mach_specific_obj.add_child(node)
 
         #--------------------------------------------
         # batch system
@@ -354,13 +354,13 @@ class Case(object):
         #FIXME - add pesize_opts as optional argument below
         pes_ntasks, pes_nthrds, pes_rootpe = pesobj.find_pes_layout(self._gridname, self._compsetname,
                                                                     machine_name, pesize_opts=pecount)
-
-        for key, value in pes_ntasks.iteritems():
-            self.set_value(key,int(value))
-        for key, value in pes_nthrds.iteritems():
-            self.set_value(key,int(value))
-        for key, value in pes_rootpe.iteritems():
-            self.set_value(key,int(value))
+        mach_pes_obj = self._get_env("mach_pes")
+        for key, value in pes_ntasks.items():
+            mach_pes_obj.set_value(key,int(value))
+        for key, value in pes_nthrds.items():
+            mach_pes_obj.set_value(key,int(value))
+        for key, value in pes_rootpe.items():
+            mach_pes_obj.set_value(key,int(value))
 
         self.set_value("COMPSET",self._compsetname)
 
