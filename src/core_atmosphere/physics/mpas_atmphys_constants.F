@@ -8,7 +8,7 @@
 !==================================================================================================
  module mpas_atmphys_constants
  use mpas_kind_types
- use mpas_constants, only : pii, cp, gravity, R_d => rgas
+ use mpas_constants, only : pii, cp, gravity, R_d => rgas, rvord
 
  implicit none
  public
@@ -30,6 +30,8 @@
 !>    * added empty subroutine atmphys_constants_init that does not do anything, but needed for 
 !>      compiling MPAS with some compilers.
 !>      Laura D. Fowler (laura@ucar.edu) / 2015-01-12.
+!>    * added the variable rvord needed in the MYNN planetary boundary layer scheme from WRF 3.8.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-04-14. 
 
  
 !==================================================================================================
