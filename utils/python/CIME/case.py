@@ -162,7 +162,7 @@ class Case(object):
         """
         files = Files()
         components = files.get_components("COMPSETS_SPEC_FILE")
-        logger.info(" Possible components for COMPSETS_SPEC_FILE are %s" % components)
+        logger.debug(" Possible components for COMPSETS_SPEC_FILE are %s" % components)
 
         # Loop through all of the files listed in COMPSETS_SPEC_FILE and find the file
         # that has a match for either the alias or the longname in that order
@@ -197,7 +197,7 @@ class Case(object):
 
         if user_compset is True:
             #Do not error out for user_compset
-            logger.info("Could not find a compset match for either alias or longname in %s" %(compset_name))
+            logger.warn("Could not find a compset match for either alias or longname in %s" %(compset_name))
             self._compsetname = compset_name
             self._pesfile = pesfile
             self.set_value("PES_SPEC_FILE", pesfile)
@@ -245,7 +245,7 @@ class Case(object):
             comp_name  = self._components[i-1]
 	    node_name = 'CONFIG_' + comp_class + '_FILE';
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=True)
-            print "DEBUG: comp_config_file is ",comp_config_file
+            logger.debug( "DEBUG: comp_config_file is %s"%comp_config_file)
             compobj = Component(comp_config_file)
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist);

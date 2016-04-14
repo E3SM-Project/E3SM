@@ -28,13 +28,15 @@ class EnvMachPes(EnvBase):
 # We need a set value until we full transition from perl
 #
 
-    def set_value(self, vid, value, subgroup=None, ignore_type=False):
-                
+    def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False):
+        if vid is None:
+            vid = node.get("id")
+
         if "NTASKS" in vid and value < 0:
             value = -1*value*self.get_value("PES_PER_NODE")
         if "NTHRDS" in vid and value < 0:
             value = -1*value*self.get_value("PES_PER_NODE")
         if "ROOTPE" in vid and value < 0:
             value = -1*value*self.get_value("PES_PER_NODE")
-        val = EnvBase.set_value(self, vid, value, subgroup, ignore_type)
+        val = EnvBase._set_value(self, node, value, vid, subgroup, ignore_type)
         return val

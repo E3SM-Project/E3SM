@@ -134,7 +134,7 @@ class Grids(GenericXML):
                         gridmap = (child.tag, child.text)
                         if gridmap is not None:
                             gridmaps[child.tag] = child.text
-                            logger.info(" %s: %s" %gridmap)
+                            logger.debug(" %s: %s" %gridmap)
 
         return gridmaps
 
