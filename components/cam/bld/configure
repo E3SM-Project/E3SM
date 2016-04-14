@@ -221,6 +221,7 @@ OPTIONS
                         Makefile defaults.
      -cosp              Enable the COSP simulator.
      -debug             Switch to turn on building CAM with debugging compiler options.
+     -bc_dep_to_snow_updates  Switch on new treatment of BC/dust deposition to ice/snoe
      -rain_evap_to_coarse_aero   Switch to turn on BC, POM and SOA in the MAM3 and MAM4 coarse mode (mam mode 3)
      -defaults <file>   Specify a configuration file which will be used to supply defaults instead of
                         one of the config_files/defaults_*.xml files.  This file is used to specify model
@@ -322,6 +323,7 @@ GetOptions(
     "cppdefs=s"                 => \$opts{'cppdefs'},
     "debug"                     => \$opts{'debug'},
     "rain_evap_to_coarse_aero"  => \$opts{'rain_evap_to_coarse_aero'},
+    "bc_dep_to_snow_updates"    => \$opts{'bc_dep_to_snow_updates'},
     "defaults=s"                => \$opts{'defaults'},
     "dyn=s"                     => \$opts{'dyn'},
     "dyn_target=s"              => \$opts{'dyn_target'},
@@ -829,6 +831,13 @@ if (defined $opts{'waccmx'}) {
     $cfg_ref->set('waccmx', $opts{'waccmx'});
 }
 my $waccmx = $cfg_ref->get('waccmx');
+
+# Use new treatment of BC/dust deposition to ice/snow?
+my $bc_dep_to_snow_updates_opt = (defined $opts{'bc_dep_to_snow_updates'}) ? 1 : 0;
+$cfg_ref->set('bc_dep_to_snow_updates', $bc_dep_to_snow_updates_opt);
+my $bc_dep_to_snow_updates = $bc_dep_to_snow_updates_opt ? 1:0;
+
+if ($print>=2) { print "Is bc_dep_to_snow_updates active (0-NO; 1-YES)?: $bc_dep_to_snow_updates$eol"; }
 
 # Use "rain_evap_to_coarse_aero" in MAM3 or MAM4? [BSINGH -  For extra coarse mode species for BC, POM and SOA]
 my $rain_evap_to_coarse_aero_opt = (defined $opts{'rain_evap_to_coarse_aero'}) ? 1 : 0;
@@ -1369,6 +1378,10 @@ if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE ';
 } elsif ($chem_pkg =~ '_mam9') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_9MODE ';
+}
+
+if ($bc_dep_to_snow_updates == 1) {
+    $chem_cppdefs = "$chem_cppdefs  -DMODAL_AER"
 }
 
 if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_mam4' || $chem_pkg eq 'trop_mam4_resus' || $chem_pkg eq 'trop_mam4_resus_soag' || $chem_pkg eq 'trop_mam4_resus_mom')) {
