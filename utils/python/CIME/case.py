@@ -397,7 +397,7 @@ class Case(object):
 
     def _create_caseroot_tools(self):
         cime_model = get_model()
-        machines_dir = self.get_value("MACHDIR")
+        machines_dir = os.path.abspath(self.get_value("MACHDIR"))
         cimeroot = self.get_value("CIMEROOT")
         caseroot = self.get_value("CASEROOT")
         # setup executable files in caseroot/
@@ -415,7 +415,7 @@ class Case(object):
                     cimeroot + "/scripts/Tools/xmlquery")
         try:
             for exefile in exefiles:
-                destfile = caseroot + "/" + os.path.basename(exefile)
+                destfile = os.path.join(caseroot,os.path.basename(exefile))
                 os.symlink(exefile, destfile)
         except Exception as e:
             logger.warning("FAILED to set up exefiles: %s" % str(e))
@@ -426,12 +426,13 @@ class Case(object):
                      os.path.join(cimeroot, "scripts", "Tools", "st_archive"),
                      os.path.join(cimeroot, "scripts", "Tools", "getTiming"),
                      os.path.join(cimeroot, "scripts", "Tools", "compare_namelists.pl"),
-                     os.path.join(machines_dir,"/taskmaker.pl"),
-                     os.path.join(machines_dir,"/Makefile"),
-                     os.path.join(machines_dir,"/mkSrcfiles"),
-                     os.path.join(machines_dir,"/mkDepends"))
+                     os.path.join(machines_dir,"taskmaker.pl"),
+                     os.path.join(machines_dir,"Makefile"),
+                     os.path.join(machines_dir,"mkSrcfiles"),
+                     os.path.join(machines_dir,"mkDepends"))
         for toolfile in toolfiles:
-            destfile = os.path.join(self.get_value("CASEROOT"),"Tools",os.path.basename(toolfile))
+            destfile = os.path.join(caseroot,"Tools",os.path.basename(toolfile))
+            expect(os.path.isfile(toolfile)," File %s does not exist"%toolfile)
             try:
                 os.symlink(toolfile, destfile)
             except Exception as e:
