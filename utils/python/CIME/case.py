@@ -434,6 +434,7 @@ class Case(object):
                      os.path.join(machines_dir,"Makefile"),
                      os.path.join(machines_dir,"mkSrcfiles"),
                      os.path.join(machines_dir,"mkDepends"))
+
         for toolfile in toolfiles:
             destfile = os.path.join(caseroot,"Tools",os.path.basename(toolfile))
             expect(os.path.isfile(toolfile)," File %s does not exist"%toolfile)
@@ -442,6 +443,16 @@ class Case(object):
             except Exception as e:
                 logger.warning("FAILED to set up toolfiles: %s %s %s" % (str(e), toolfile, destfile))
 
+        # Copy any system or compiler Depends files to the case
+        machine = self.get_value("MACH")
+        compiler = self.get_value("COMPILER")
+        for dep in (machine, compiler):
+            dfile = "Depends.%s"%dep
+            if os.path.isfile(os.path.join(machines_dir,dfile)):
+                copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot,dfile))
+        dfile = "Depends.%s.%s"%(machine,compiler)
+        if os.path.isfile(os.path.join(machines_dir,dfile)):
+            copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot, dfile))
             # set up infon files
             # infofiles = os.path.join(os.path.join(cimeroot, "scripts", "Tools", README.post_process")
     #FIXME - the following does not work
