@@ -1,8 +1,7 @@
 """
-Interface to the config_machines.xml file.  This class inherits from GenericXML.py
+Interface to the config_pes.xml file.  This class inherits from GenericXML.py
 """
 from standard_module_setup import *
-import socket
 from generic_xml import GenericXML
 from files import Files
 from CIME.utils import expect
@@ -14,7 +13,7 @@ class Pes(GenericXML):
         """
         initialize a files object given input pes specification file
         """
-        print "DEBUG: infile is ",infile
+        logger.debug("DEBUG: infile is %s"%infile)
         GenericXML.__init__(self, infile)
 
     def find_pes_layout(self, grid, compset, machine, pesize_opts='M'):

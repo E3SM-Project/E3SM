@@ -738,8 +738,8 @@ endif
 
 ifndef CLIBS
    ifdef ULIBDEP
-     # For each occurrence of something like /path/cesm1_5_alphafoo/libbar.a in ULIBDEP,
-     # CLIBS will contain -L/path/cesm1_5_alphafoo -lbar
+     # For each occurrence of something like /path/to/foo/libbar.a in ULIBDEP,
+     # CLIBS will contain -L/path/to/foo -lbar
      CLIBS := $(foreach LIBDEP,$(strip $(ULIBDEP)), -L$(dir $(LIBDEP)) $(patsubst lib%.a,-l%,$(notdir $(LIBDEP))))
    endif
 endif

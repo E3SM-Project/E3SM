@@ -76,7 +76,7 @@ class EnvBatch(EnvBase):
         return result
 
     def create_job_groups(self, bjobs):
-        # only expect one group in this file
+        # only the job_submission group is repeated
         group = self.get_node("group", {"id":"job_submission"})
         # look to see if any jobs are already defined
         cjobs = self.get_jobs()

@@ -138,7 +138,6 @@ if($cimeroot ne $newcimeroot)
 {
     my $warning = <<EOF;
 $banner
-$cimeroot <> $newcimeroot
 Please be advised, it is NOT recommended to clone cases from different versions of CESM.
 $banner
 EOF
