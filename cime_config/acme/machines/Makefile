@@ -435,7 +435,7 @@ rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
 
 
 ifdef COSP_LIBDIR
-INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/glade/p/work/jedwards/sandboxes/cesm1_5_alpha
+INCLDIR+=-I$(COSP_LIBDIR) -I$(COSP_LIBDIR)/../
 $(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
 	$(MAKE) -C $(COSP_LIBDIR) F90='$(FC)' F90FLAGS='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FC_AUTO_R8)' \
 	F90FLAGS_noauto='$(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS)' \
@@ -615,7 +615,7 @@ CMAKE_ENV_VARS += CC=$(CC) \
 .PHONY: $(GLC_DIR)/Makefile
 $(GLC_DIR)/Makefile:
 	cd $(GLC_DIR); \
-	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(CIMEROOT)/glade/p/work/jedwards/sandboxes/cesm1_5_alphacomponents/cism/glimmer-cism
+	$(CMAKE_ENV_VARS) cmake $(CMAKE_OPTS) $(CIMEROOT)/../components/cism/glimmer-cism
 
 $(PIO_LIBDIR)/Makefile:
 	cd $(PIO_LIBDIR); \
@@ -738,8 +738,8 @@ endif
 
 ifndef CLIBS
    ifdef ULIBDEP
-     # For each occurrence of something like /path/glade/p/work/jedwards/sandboxes/cesm1_5_alphafoo/libbar.a in ULIBDEP,
-     # CLIBS will contain -L/path/glade/p/work/jedwards/sandboxes/cesm1_5_alphafoo -lbar
+     # For each occurrence of something like /path/cesm1_5_alphafoo/libbar.a in ULIBDEP,
+     # CLIBS will contain -L/path/cesm1_5_alphafoo -lbar
      CLIBS := $(foreach LIBDEP,$(strip $(ULIBDEP)), -L$(dir $(LIBDEP)) $(patsubst lib%.a,-l%,$(notdir $(LIBDEP))))
    endif
 endif
