@@ -28,7 +28,7 @@
 ! physics parameterizations.
 !Laura D. Fowler (send comments to laura@ucar.edu).
 !2013-05-01.
-
+!
 ! subroutines in mpas_atmphys_interface_nhyd:
 ! -------------------------------------------
 ! allocate_forall_physics  : allocation of all meteorological variables needed in the physics.
@@ -63,7 +63,7 @@
 !   we want to compute rt_diabatic_tend at constant volume.
 !   Laura D. Fowler (laura@ucar.edu) / 2014-01-015. 
 ! * added the initialization of local variables needed in the parameterization of the MYNN surface layer scheme
-!   and planetary boundary layer scheme.
+!   and planetary boundary layer scheme from WRF 3.6.1 and WRF 3.8..
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
 
 
@@ -106,7 +106,7 @@
  if(.not.allocated(qg_p)   ) allocate(qg_p(ims:ime,kms:kme,jms:jme)   )
 
  pbl_select: select case (trim(pbl_scheme))
-    case("bl_mynn")
+    case("bl_mynn","bl_mynn_wrf38")
        if(.not.allocated(ni_p)) allocate(ni_p(ims:ime,kms:kme,jms:jme))
        if(.not.allocated(nc_p)) allocate(nc_p(ims:ime,kms:kme,jms:jme))
 
@@ -161,7 +161,7 @@
  if(allocated(qg_p)    ) deallocate(qg_p    )
 
  pbl_select: select case (trim(pbl_scheme))
-    case("bl_mynn")
+    case("bl_mynn","bl_mynn_wrf38")
        if(allocated(ni_p)) deallocate(ni_p)
        if(allocated(nc_p)) deallocate(nc_p)
 
@@ -295,14 +295,16 @@
  enddo
 
  pbl_select: select case (trim(pbl_scheme))
-    case("bl_mynn")
+    case("bl_mynn","bl_mynn_wrf38")
+       call mpas_pool_get_dimension(state,'index_nc',index_nc)
        call mpas_pool_get_dimension(state,'index_ni',index_ni)
+       nc => scalars(index_nc,:,:)
        ni => scalars(index_ni,:,:)
 
        do j = jts,jte
        do k = kts,kte
        do i = its,ite
-          nc_p(i,k,j) = 0._RKIND
+          nc_p(i,k,j) = max(0.,nc(k,i))
           ni_p(i,k,j) = max(0.,ni(k,i))
        enddo
        enddo

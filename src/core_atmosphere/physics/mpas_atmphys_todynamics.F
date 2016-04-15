@@ -199,7 +199,7 @@
 
     pbl_select: select case (trim(pbl_scheme))
 
-       case("bl_mynn")
+       case("bl_mynn","bl_mynn_wrf38")
           call mpas_pool_get_dimension(state,'index_ni',index_ni)
           tend_ni => tend_scalars(index_ni,:,:)
           tend_ni = 0._RKIND
