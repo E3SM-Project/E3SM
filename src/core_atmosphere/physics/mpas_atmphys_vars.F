@@ -327,13 +327,12 @@
  integer,parameter:: bl_mynn_tkebudget = 0      !
  integer,parameter:: bl_mynn_cloudpdf  = 0      !
  integer,parameter:: bl_mynn_cloudmix  = 1      !
- integer,parameter:: bl_mynn_mixlength = 2      !
+ integer,parameter:: bl_mynn_mixlength = 1      !
  integer,parameter:: bl_mynn_mixqt     = 0      !
- integer,parameter:: bl_mynn_edmf      = 1      !option to activate mass-flux scheme (=0:regular MYNN).
- integer,parameter:: bl_mynn_edmf_mom  = 1
+ integer,parameter:: bl_mynn_edmf      = 0      !option to activate mass-flux scheme (=0:regular MYNN).
+ integer,parameter:: bl_mynn_edmf_mom  = 0
  integer,parameter:: bl_mynn_edmf_tke  = 0
  integer,parameter:: bl_mynn_edmf_part = 0
-
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
     delta_p,          &
