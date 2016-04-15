@@ -228,9 +228,18 @@ contains
 
     SHR_ASSERT_ALL((ubound(source)           == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))
     SHR_ASSERT_ALL((ubound(rt)              == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))
-    SHR_ASSERT_ALL(((/ubound(trcin_mobile,1),ubound(trcin_mobile,2),size(trcin_mobile,3)/)          == (/bounds%endc, ubj, ntrcs/)), errMsg(__FILE__,__LINE__))
-    SHR_ASSERT_ALL(((/ubound(bot_concflx,1),ubound(bot_concflx,2),size(bot_concflx,3)/)             == (/bounds%endc, 2, ntrcs/))  , errMsg(__FILE__,__LINE__))
-    SHR_ASSERT_ALL(((/ubound(trc_concflx_air,1),ubound(trc_concflx_air,2),size(trc_concflx_air,3)/) == (/bounds%endc, 2, ntrcs/))  , errMsg(__FILE__,__LINE__))
+
+    SHR_ASSERT_ALL((ubound(trcin_mobile , 1)  == (/bounds%endc/))  , errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(trcin_mobile , 2)  == (/ubj/))          , errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((size(trcin_mobile   , 3)  == (/3/))            , errMsg(__FILE__,__LINE__))
+
+    SHR_ASSERT_ALL((ubound(bot_concflx,1) == (/bounds%endc/))  , errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(bot_concflx,2) == (/2/))            , errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((size(bot_concflx,  3) == (/ntrcs/))        , errMsg(__FILE__,__LINE__))
+
+    SHR_ASSERT_ALL((ubound(trc_concflx_air, 1) == (/bounds%endc/)) , errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((ubound(trc_concflx_air, 2) == (/2/))           , errMsg(__FILE__,__LINE__))
+    SHR_ASSERT_ALL((size(trc_concflx_air,   3) == (/3/))           , errMsg(__FILE__,__LINE__))
 
 
     if(.not. source_only) then
@@ -376,9 +385,17 @@ contains
    SHR_ASSERT_ALL((ubound(source)    == (/bounds%endc, ubj,  ntrcs/)), errMsg(__FILE__,__LINE__))
    SHR_ASSERT_ALL((ubound(dtracer)       == (/bounds%endc, ubj, ntrcs/)) , errMsg(__FILE__,__LINE__))
 
-   SHR_ASSERT_ALL(((/ubound(trcin_mobile , 1) , ubound(trcin_mobile , 2), size(trcin_mobile , 3)/)   == (/bounds%endc, ubj, ntrcs/)) , errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL(((/ubound(bot_flux     , 1) , ubound(bot_flux     , 2), size(bot_flux     , 3)/)   == (/bounds%endc, 2, ntrcs/))   , errMsg(__FILE__,__LINE__))
-   SHR_ASSERT_ALL(((/ubound(trc_concflx_air, 1), ubound(trc_concflx_air,2),size(trc_concflx_air,3)/) == (/bounds%endc, 2, ntrcs/))   , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(trcin_mobile , 1)  == (/bounds%endc/))  , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(trcin_mobile , 2)  == (/ubj/))          , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((size(trcin_mobile   , 3)  == (/ntrcs/))        , errMsg(__FILE__,__LINE__))
+
+   SHR_ASSERT_ALL((ubound(bot_flux     , 1)   == (/bounds%endc/)) , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(bot_flux     , 2)   == (/2/))           , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((size(bot_flux       , 3)   == (/ntrcs/))       , errMsg(__FILE__,__LINE__))
+
+   SHR_ASSERT_ALL((ubound(trc_concflx_air, 1) == (/bounds%endc/)) , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((ubound(trc_concflx_air, 2) == (/2/))           , errMsg(__FILE__,__LINE__))
+   SHR_ASSERT_ALL((size(trc_concflx_air,   3) == (/ntrcs/))       , errMsg(__FILE__,__LINE__))
 
    !assemble the tridiagonal maxtrix
    if(present(botbc_type))then
