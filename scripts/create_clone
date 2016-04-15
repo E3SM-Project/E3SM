@@ -171,6 +171,7 @@ $sysmod = "rm -rf $caseroot/LockedFiles/*"; system ($sysmod); if ($? == -1) {die
 $sysmod = "rm -rf $caseroot/logs/*"       ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "rm -rf $caseroot/timing/*"     ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "rm -rf $caseroot/TestStatus*"  ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "rm -rf $caseroot/env_test.xml"  ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 # Remove case.* scripts
 $sysmod = "rm -f $caseroot/case.*";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}

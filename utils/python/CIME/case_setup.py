@@ -266,6 +266,13 @@ def case_setup(caseroot, clean, test_mode):
                 os.remove("case.test")
                 logger.info("Successfully cleaned test script case.test")
 
+            if os.path.exists("case.testdriver"):
+                shutil.copy("case.testdriver", backup_dir)
+                os.remove("case.testdriver")
+                logger.info("Successfully cleaned test script case.testdriver")
+
+        logger.info("Successfully cleaned batch script case.run")
+
         logger.info("Successfully cleaned batch script case.run")
         logger.info("Some files have been saved to %s" % backup_dir)
 

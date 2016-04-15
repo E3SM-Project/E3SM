@@ -15,7 +15,8 @@ from CIME.XML.component             import Component
 from CIME.XML.compsets              import Compsets
 from CIME.XML.grids                 import Grids
 from CIME.XML.batch                 import Batch
-from CIME.XML.pio                 import PIO
+from CIME.XML.pio                   import PIO
+from CIME.XML.archive               import Archive
 
 from CIME.XML.env_test              import EnvTest
 from CIME.XML.env_mach_specific     import EnvMachSpecific
@@ -380,7 +381,6 @@ class Case(object):
         logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)
 
-
     def set_initial_test_values(self):
         testobj = self._get_env("test")
         testobj.set_initial_values(self)
@@ -504,11 +504,6 @@ class Case(object):
         with open(os.path.join(caseroot,"README.case"), "w") as fd:
             for arg in sys.argv:
                 fd.write(" %s"%arg)
-
-        # Copy the st_archive xml into place
-        cimeroot = self.get_value("CIMEROOT")
-        copyfile(os.path.join(cimeroot, "cime_config", get_model() , "archive.xml" ),
-                 os.path.join(caseroot,"env_archive.xml"))
 
         self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
