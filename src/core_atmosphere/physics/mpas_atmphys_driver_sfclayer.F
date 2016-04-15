@@ -16,6 +16,7 @@
 
 !wrf physics:
  use module_sf_mynn
+ use module_sf_mynn_wrf38
  use module_sf_sfclay
 
  implicit none
@@ -72,8 +73,10 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2014-09-25. 
 ! * renamed "monin_obukhov" with "sf_monin_obukhov".
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-25.
-! * added the implementation of the MYNN surface layer scheme (from WRF 3.6.1).
-!   Laura D. Fowler (laura@ucar.edu) / 2015-03-31.
+! * added the implementation of the MYNN surface layer scheme from WRF 3.6.1.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
+! * added the implementation of the MYNN surface layer scheme from WRF 3.8.
+!   Laura D. Fowler (laura@ucar.edu) /2016-04-14..
 
 
  contains
@@ -127,18 +130,20 @@
        if(.not.allocated(fh_p)) allocate(fh_p(ims:ime,jms:jme))
        if(.not.allocated(fm_p)) allocate(fm_p(ims:ime,jms:jme))
 
-    case("sf_mynn")
-       write(0,*) '--- allocate sf_mynn:'
+    case("sf_mynn","sf_mynn_wrf38")
+       write(0,*) '--- allocate sf_mynn or sf_mynn_wrf38:'
        if(.not.allocated(snowh_p)) allocate(snowh_p(ims:ime,jms:jme))
        if(.not.allocated(ch_p)   ) allocate(ch_p(ims:ime,jms:jme)   )
        if(.not.allocated(qcg_p)  ) allocate(qcg_p(ims:ime,jms:jme)  )
 
-       if(.not.allocated(cov_p)  ) allocate(cov_p(ims:ime,kms:kme,jms:jme)  )
-       if(.not.allocated(qsq_p)  ) allocate(qsq_p(ims:ime,kms:kme,jms:jme)  )
-       if(.not.allocated(tsq_p)  ) allocate(tsq_p(ims:ime,kms:kme,jms:jme)  )
-       if(.not.allocated(sh3d_p) ) allocate(sh3d_p(ims:ime,kms:kme,jms:jme) )
-       if(.not.allocated(elpbl_p)) allocate(elpbl_p(ims:ime,kms:kme,jms:jme))
-       write(0,*) '--- end allocate sf_mynn:'
+       if(.not.allocated(cov_p)     ) allocate(cov_p(ims:ime,kms:kme,jms:jme)     )
+       if(.not.allocated(qsq_p)     ) allocate(qsq_p(ims:ime,kms:kme,jms:jme)     )
+       if(.not.allocated(tsq_p)     ) allocate(tsq_p(ims:ime,kms:kme,jms:jme)     )
+       if(.not.allocated(sh3d_p)    ) allocate(sh3d_p(ims:ime,kms:kme,jms:jme)    )
+       if(.not.allocated(elpbl_p)   ) allocate(elpbl_p(ims:ime,kms:kme,jms:jme)   )
+       if(.not.allocated(qcbl_p)    ) allocate(qcbl_p(ims:ime,kms:kme,jms:jme)    )
+       if(.not.allocated(cldfrabl_p)) allocate(cldfrabl_p(ims:ime,kms:kme,jms:jme))
+       write(0,*) '--- end allocate sf_mynn or sf_mynn_wrf38:'
 
     case default
 
@@ -194,18 +199,20 @@
        if(allocated(fh_p)) deallocate(fh_p)
        if(allocated(fm_p)) deallocate(fm_p)
 
-    case("sf_mynn")
-       write(0,*) '--- deallocate sf_mynn:'
+    case("sf_mynn","sf_mynn_wrf38")
+       write(0,*) '--- deallocate sf_mynn or sf_mynn_wrf38:'
        if(allocated(snowh_p)) deallocate(snowh_p)
        if(allocated(ch_p)   ) deallocate(ch_p   )
        if(allocated(qcg_p)  ) deallocate(qcg_p  )
 
-       if(allocated(cov_p)  ) deallocate(cov_p  )
-       if(allocated(qsq_p)  ) deallocate(qsq_p  )
-       if(allocated(tsq_p)  ) deallocate(tsq_p  )
-       if(allocated(sh3d_p) ) deallocate(sh3d_p )
-       if(allocated(elpbl_p)) deallocate(elpbl_p)
-       write(0,*) '--- end deallocate sf_mynn:'
+       if(allocated(cov_p)     ) deallocate(cov_p     )
+       if(allocated(qsq_p)     ) deallocate(qsq_p     )
+       if(allocated(tsq_p)     ) deallocate(tsq_p     )
+       if(allocated(sh3d_p)    ) deallocate(sh3d_p    )
+       if(allocated(elpbl_p)   ) deallocate(elpbl_p   )
+       if(allocated(qcbl_p)    ) deallocate(qcbl_p    )
+       if(allocated(cldfrabl_p)) deallocate(cldfrabl_p)
+       write(0,*) '--- end deallocate sf_mynn or sf_mynn_wrf38:'
 
     case default
 
@@ -332,8 +339,8 @@
        enddo
        enddo
 
-    case("sf_mynn")
-       write(0,*) '--- sf_mynn from_MPAS:'
+    case("sf_mynn","sf_mynn_wrf38")
+       write(0,*) '--- sf_mynn from_MPAS or sf_mynn_wrf38:'
        !input variables:
        call mpas_pool_get_array(diag_physics,'qcg'   ,qcg   )
        call mpas_pool_get_array(sfc_input   ,'snowh' ,snowh )
@@ -359,15 +366,17 @@
        do k = kts,kte
        do i = its,ite
           !input variables:
-          cov_p(i,k,j)   = cov(k,i)
-          qsq_p(i,k,j)   = qsq(k,i)
-          tsq_p(i,k,j)   = tsq(k,i)
-          sh3d_p(i,k,j)  = sh3d(k,i)
-          elpbl_p(i,k,j) = el_pbl(k,i)
+          cov_p(i,k,j)      = cov(k,i)
+          qsq_p(i,k,j)      = qsq(k,i)
+          tsq_p(i,k,j)      = tsq(k,i)
+          sh3d_p(i,k,j)     = sh3d(k,i)
+          elpbl_p(i,k,j)    = el_pbl(k,i)
+          qcbl_p(i,k,j)     = 0._RKIND
+          cldfrabl_p(i,k,j) = 0._RKIND
        enddo
        enddo
        enddo
-       write(0,*) '--- end sf_mynn from_MPAS:'
+       write(0,*) '--- end sf_mynn or sf_mynn_wrf38 from_MPAS:'
 
     case default
 
@@ -495,8 +504,8 @@
        enddo
        enddo
 
-    case("sf_mynn")
-       write(0,*) '--- sf_mynn to_MPAS:'
+    case("sf_mynn","sf_mynn_wrf38")
+       write(0,*) '--- sf_mynn or sf_mynn_wrf38 to_MPAS:'
        call mpas_pool_get_array(diag_physics,'ch',ch)
 
        do j = jts,jte
@@ -504,7 +513,7 @@
           ch(i) = ch_p(i,j)
        enddo
        enddo
-       write(0,*) '--- end sf_mynn to_MPAS:'
+       write(0,*) '--- end sf_mynn or sf_mynn_wrf38 to_MPAS:'
 
     case default
 
@@ -534,6 +543,11 @@
        write(0,*) '    enter mynn surface layer initialization:'
        call mynn_sf_init_driver(allowed_to_read)
        write(0,*) '    end mynn surface layer initialization:'
+
+    case("sf_mynn_wrf38")
+       write(0,*) '    enter mynn surface layer initialization (wrf 3.8):'
+       call mynn_sf_init_driver_wrf38(allowed_to_read)
+       write(0,*) '    end mynn surface layer initialization (wrf 3.8):'
 
     case default
 
@@ -643,6 +657,48 @@
                    its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte    &
                        )
        write(0,*) '--- end subroutine sf_mynn:'
+
+    case("sf_mynn_wrf38")
+       write(0,*) '--- enter subroutine sf_mynn_wrf38:'
+!      201 format(i3,i7,10(1x,e15.8))
+!      do j = jts,jte
+!      do i = its,ite
+!         write(0,201) j,i,dx_p(i,j)
+!      enddo
+!      enddo
+!      stop
+       call sfclay_mynn_wrf38( &
+                   p3d       = pres_hyd_p , pi3d      = pi_p       , psfcpa    = psfc_p     , &
+                   th3d      = th_p       , t3d       = t_p        , u3d       = u_p        , &
+                   v3d       = v_p        , qv3d      = qv_p       , qc3d      = qc_p       , &
+                   rho3d     = rho_p      , dz8w      = dz_p       , cp        = cp         , &
+                   g         = gravity    , rovcp     = rcp        , R         = R_d        , &
+                   xlv       = xlv        , chs       = chs_p      , chs2      = chs2_p     , &
+                   cqs2      = cqs2_p     , cpm       = cpm_p      , znt       = znt_p      , &
+                   ust       = ust_p      , pblh      = hpbl_p     , mavail    = mavail_p   , &
+                   zol       = zol_p      , mol       = mol_p      , regime    = regime_p   , &
+                   psim      = psim_p     , psih      = psih_p     , xland     = xland_p    , &
+                   hfx       = hfx_p      , qfx       = qfx_p      , lh        = lh_p       , &
+                   tsk       = tsk_p      , flhc      = flhc_p     , flqc      = flqc_p     , &
+                   qgh       = qgh_p      , qsfc      = qsfc_p     , rmol      = rmol_p     , &
+                   u10       = u10_p      , v10       = v10_p      , th2       = th2m_p     , &
+                   t2        = t2m_p      , q2        = q2_p       , snowh     = snowh_p    , &
+                   gz1oz0    = gz1oz0_p   , wspd      = wspd_p     , br        = br_p       , &
+                   isfflx    = isfflx     , dxCell    = dx_p       , svp1      = svp1       , &
+                   svp2      = svp2       , svp3      = svp3       , svpt0     = svpt0      , &
+                   ep1       = ep_1       , ep2       = ep_2       , karman    = karman     , &
+                   ustm      = ustm_p     , ck        = ck_p       , cka       = cka_p      , &
+                   cd        = cd_p       , cda       = cda_p      , isftcflx  = isftcflx   , &
+                   iz0tlnd   = iz0tlnd    , itimestep = initflag   , ch        = ch_p       , &
+                   cov       = cov_p      , tsq       = tsq_p      , qsq       = qsq_p      , &
+                   sh3d      = sh3d_p     , el_pbl    = elpbl_p    , qcg       = qcg_p      , &
+                   icloud_bl = icloud_bl  , qc_bl     = qcbl_p     , cldfra_bl = cldfrabl_p , &
+                   bl_mynn_cloudpdf = bl_mynn_cloudpdf           ,                            &
+                   ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde    , &
+                   ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme    , &
+                   its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte      &
+                       )
+       write(0,*) '--- end subroutine sf_mynn_wrf38:'
 
     case default
 
