@@ -78,7 +78,7 @@ def _build_usernl_files(case, model, comp):
                     shutil.copy(model_nl, nlfile)
 
 ###############################################################################
-def case_setup(caseroot, clean, test_mode):
+def case_setup(caseroot, clean=False, test_mode=False, reset=False):
 ###############################################################################
     os.chdir(caseroot)
 
@@ -98,6 +98,48 @@ def case_setup(caseroot, clean, test_mode):
                "Parameter '%s' must be defined" % vid)
 
     # Create batch script
+    if reset or clean:
+#        if not os.path.exists("case.run"):
+#            logger.info("clean option has already been invoked ... skipping ")
+#            return
+
+        # Clean batch script
+
+        backup_dir = "PESetupHist/b.%s" % time.strftime("%y%m%d-%H%M%S")
+        if not os.path.isdir(backup_dir):
+            os.makedirs(backup_dir)
+
+        # back up relevant files
+        for fileglob in ["case.run", "env_build.xml", "env_mach_pes.xml", "Macros*"]:
+            for filename in glob.glob(fileglob):
+                shutil.copy(filename, backup_dir)
+
+        os.remove("case.run")
+
+        # only do the following if are NOT in testmode
+        if not test_mode:
+            # rebuild the models (even on restart)
+            case.set_value("BUILD_COMPLETE", False)
+
+            # backup and then clean test script
+            if os.path.exists("case.test"):
+                shutil.copy("case.test", backup_dir)
+                os.remove("case.test")
+                logger.info("Successfully cleaned test script case.test")
+
+            if os.path.exists("case.testdriver"):
+                shutil.copy("case.testdriver", backup_dir)
+                os.remove("case.testdriver")
+                logger.info("Successfully cleaned test script case.testdriver")
+
+        logger.info("Successfully cleaned batch script case.run")
+
+        logger.info("Successfully cleaned batch script case.run")
+        logger.info("Some files have been saved to %s" % backup_dir)
+
+        with open("CaseStatus", "a") as fd:
+            fd.write("case.setup --clean %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
+
     if not clean:
         drv_comp = Component()
         models = drv_comp.get_valid_model_components()
@@ -237,44 +279,3 @@ def case_setup(caseroot, clean, test_mode):
         with open("CaseStatus", "a") as fd:
             fd.write("case.setup %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
 
-    else:
-        if not os.path.exists("case.run"):
-            logger.info("clean option has already been invoked ... skipping ")
-            return
-
-        # Clean batch script
-
-        backup_dir = "PESetupHist/b.%s" % time.strftime("%y%m%d-%H%M%S")
-        if not os.path.isdir(backup_dir):
-            os.makedirs(backup_dir)
-
-        # back up relevant files
-        for fileglob in ["case.run", "env_build.xml", "env_mach_pes.xml", "Macros*"]:
-            for filename in glob.glob(fileglob):
-                shutil.copy(filename, backup_dir)
-
-        os.remove("case.run")
-
-        # only do the following if are NOT in testmode
-        if not test_mode:
-            # rebuild the models (even on restart)
-            case.set_value("BUILD_COMPLETE", False)
-
-            # backup and then clean test script
-            if os.path.exists("case.test"):
-                shutil.copy("case.test", backup_dir)
-                os.remove("case.test")
-                logger.info("Successfully cleaned test script case.test")
-
-            if os.path.exists("case.testdriver"):
-                shutil.copy("case.testdriver", backup_dir)
-                os.remove("case.testdriver")
-                logger.info("Successfully cleaned test script case.testdriver")
-
-        logger.info("Successfully cleaned batch script case.run")
-
-        logger.info("Successfully cleaned batch script case.run")
-        logger.info("Some files have been saved to %s" % backup_dir)
-
-        with open("CaseStatus", "a") as fd:
-            fd.write("case.setup --clean %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))

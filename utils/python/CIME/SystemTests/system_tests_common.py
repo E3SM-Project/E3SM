@@ -6,6 +6,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.case import Case
 from CIME.XML.env_run import EnvRun
 from CIME.utils import run_cmd
+from CIME.case_setup import case_setup
 import CIME.build as build
 
 class SystemTestsCommon(object):
@@ -37,8 +38,7 @@ class SystemTestsCommon(object):
                         os.path.join(lockedfiles, "env_run.orig.xml"))
 
         self._case.set_initial_test_values()
-        run_cmd("./case.setup --clean")
-        run_cmd("./case.setup ")
+        case_setup(self._caseroot, reset=True)
 
 
     def build(self, sharedlib_only=False, model_only=False):

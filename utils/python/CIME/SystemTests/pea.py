@@ -4,6 +4,7 @@ Implementation of the CIME PEA test.  This class inherits from SystemTestsCommon
 import shutil
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
+from CIME.case_setup import case_setup
 import CIME.utils
 from system_tests_common import SystemTestsCommon
 
@@ -29,8 +30,7 @@ class PEA(SystemTestsCommon):
             logging.warn("Starting bld for %s"%mpilib)
             self._case.set_value("MPILIB",mpilib)
             self._case.flush()
-            run_cmd("./case.setup --clean ")
-            run_cmd("./case.setup")
+            case_setup(self._caseroot, reset=True)
             run_cmd('./case.clean_build')
             SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
             if (not sharedlib_only):
