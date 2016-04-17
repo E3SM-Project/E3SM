@@ -3175,7 +3175,7 @@ end subroutine print_active_fldlst
                flag_xyfill, fillvalue)
 
         case ('L')
-          call hbuf_accum_addlcltime(hbuf, field, nacs, dimind, pcols,   &
+          call hbuf_accum_addlcltime(hbuf, ufield, nacs, dimind, pcols,   &
                flag_xyfill, fillvalue, c,                                &
                otape(t)%hlist(f)%field%decomp_type,                      &
                lcltod_start(t), lcltod_stop(t))
