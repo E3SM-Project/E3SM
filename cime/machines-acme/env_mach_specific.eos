@@ -30,7 +30,7 @@ endif
 
 if ( $COMPILER == "intel" ) then
 #    module load PrgEnv-intel/5.2.40
-    module load    intel/15.0.2.164 #intel/14.0.2.144
+    module load    intel/16.0.1.150 
 endif    
 if ( $COMPILER == "cray" ) then
     module load PrgEnv-cray
