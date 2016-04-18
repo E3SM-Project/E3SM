@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-module mpas_threading
+module mpas_threading2
 
 
     contains
@@ -171,4 +171,4 @@ module mpas_threading
 
     end subroutine mpas_threading_finalize
  
-end module mpas_threading
+end module mpas_threading2

@@ -48,7 +48,7 @@ module mpas_subdriver
       use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
       use mpas_timekeeping, only : mpas_get_clock_time, mpas_get_time
       use mpas_bootstrapping, only : mpas_bootstrap_framework_phase1, mpas_bootstrap_framework_phase2
-      use mpas_threading, only : mpas_threading_init
+      use mpas_threading2, only : mpas_threading_init
  
       implicit none
 
@@ -349,7 +349,7 @@ module mpas_subdriver
    subroutine mpas_finalize()
 
       use mpas_stream_manager, only : MPAS_stream_mgr_finalize
-      use mpas_threading, only : mpas_threading_finalize
+      use mpas_threading2, only : mpas_threading_finalize
    
       implicit none
 
