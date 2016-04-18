@@ -1301,7 +1301,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceThicknessFlux, &
            surfaceBuoyancyForcing, surfaceFrictionVelocity, penetrativeTemperatureFluxOBL, &
            normalVelocitySurfaceLayer, surfaceThicknessFluxRunoff
-      real (kind=RKIND), pointer :: config_flux_attenuation_coefficient
+      real (kind=RKIND), pointer :: config_flux_attenuation_coefficient, config_flux_attenuation_coefficient_runoff
 
       real (kind=RKIND), dimension(:), pointer :: surfaceStress, surfaceStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer ::  &
@@ -1321,7 +1321,7 @@ contains
       ! local
       integer :: iCell, iEdge, i, k, err, timeLevel
       integer, pointer :: indexTempFlux, indexSaltFlux
-      real (kind=RKIND) :: numerator, denominator, turbulentVelocitySquared, fracAbsorbed
+      real (kind=RKIND) :: numerator, denominator, turbulentVelocitySquared, fracAbsorbed, fracAbsorbedRunoff
       real (kind=RKIND) :: buoyContribution, shearContribution, factor, deltaVelocitySquared, delU2, invAreaCell
 
       type (field2DReal), pointer :: densitySurfaceDisplacedField, thermalExpansionCoeffField, salineContractionCoeffField
@@ -1335,6 +1335,8 @@ contains
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
       call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient', config_flux_attenuation_coefficient)
+      call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient_runoff',   &
+              config_flux_attenuation_coefficient_runoff)
       ! set the parameter turbulentVelocitySquared
       turbulentVelocitySquared = 0.001_RKIND
 
@@ -1420,14 +1422,14 @@ contains
 
        ! Compute fraction of thickness flux that is in the top model layer
        fracAbsorbed = 1.0_RKIND - exp(zTop(1,iCell) / config_flux_attenuation_coefficient)
-
+       fracAbsorbedRunoff = 1.0_RKIND - exp(zTop(1,iCell) / config_flux_attenuation_coefficient_runoff)
        ! Store the total tracer flux below in nonLocalSurfaceTemperatureFlux for use in the CVMix nonlocal
        ! transport code.  This includes tracer forcing due to thickness
 
        nonLocalSurfaceTracerFlux(indexTempFlux, iCell) = activeTracersSurfaceFlux(indexTempFlux,iCell) &
                + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell) - fracAbsorbed * &
                surfaceThicknessFlux(iCell) * activeTracers(indexTempFlux,1,iCell) + &
-               activeTracersSurfaceFluxRunoff(indexTempFlux,iCell)
+               activeTracersSurfaceFluxRunoff(indexTempFlux,iCell) * fracAbsorbedRunoff
 
        nonLocalSurfaceTracerFlux(indexSaltFlux,iCell) = activeTracersSurfaceFlux(indexSaltFlux,iCell) &
                - fracAbsorbed * surfaceThicknessFlux(iCell) * activeTracers(indexSaltFlux,1,iCell)
