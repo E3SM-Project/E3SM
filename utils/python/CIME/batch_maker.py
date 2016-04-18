@@ -69,6 +69,7 @@ class BatchMaker(object):
         self._set_lt_archive_options()
         self._set_model_run()
         self._set_batch_directives()
+        self.env_batch.write()
 
     def _set_task_info(self):
         """
@@ -108,33 +109,32 @@ class BatchMaker(object):
     def _set_queue(self):
         self.queue = self.env_batch.get_value("JOB_QUEUE", subgroup=self.job)
         self.ccsm_estcost = self.case.get_value("CCSM_ESTCOST")
-
         self.wall_time_max = None
         if self.queue:
             return
 
         # Make sure to check default queue first.
-        self.queue = self.config_machines_parser.get_default_queue()
-        all_queues = self.config_machines_parser.get_all_queues()
+        all_queues = list()
+        all_queues.append( self.config_machines_parser.get_default_queue())
+        all_queues = all_queues + self.config_machines_parser.get_all_queues()
         for queue in all_queues:
-            jobmin = queue.get("jobmin")
-            jobmax = queue.get("jobmax")
-            # if the fullsum is between the min and max # jobs, then use this queue.
-            if jobmin is not None and jobmax is not None and self.fullsum >= int(jobmin) and self.fullsum <= int(jobmax):
-                self.queue = queue
-                self.wall_time_max = self.queue.get("walltimemax")
-                break
+            if queue is not None:
+                jobmin = queue.get("jobmin")
+                jobmax = queue.get("jobmax")
+                # if the fullsum is between the min and max # jobs, then use this queue.
+                if jobmin is not None and jobmax is not None and self.fullsum >= int(jobmin) and self.fullsum <= int(jobmax):
+                    self.queue = queue.text
+                    self.wall_time_max = queue.get("walltimemax")
+                    break
 
         if self.queue:
-            self.case.set_value("JOB_QUEUE", self.queue.text, subgroup=self.job)
-            self.queue = self.queue.text # Change to string
+            self.case.set_value("JOB_QUEUE", self.queue, subgroup=self.job)
             logger.info("Using queue %s for job %s" % (self.queue,self.job))
 
     def _set_wall_time(self):
         # Get the wallclock time from env_batch.xml if its defined there
         # otherwise get the default from config_machines.xml
         # and set it in env_batch.xml
-
         self.wall_time = self.env_batch.get_value("JOB_WALLCLOCK_TIME", subgroup=self.job)
 
         # go through the walltime elements, and if our estimated cost is greater than the element's estimated cost,
@@ -164,6 +164,9 @@ class BatchMaker(object):
     def _set_project(self):
         if self.env_batch.get_value("PROJECT_REQUIRED", subgroup=self.job):
             self.project = self.env_batch.get_value("PROJECT", subgroup=self.job)
+            if not self.project:
+                project = find_project()
+                self.env_batch.set_value("PROJECT", project, subgroup=self.job)
         else:
             self.project = None
 
@@ -284,4 +287,11 @@ def get_batch_maker(job, case=None):
     else:
         return batch_maker
 
+
+def find_project():
+    project = None
+    for envvar in ("PROJECT", "ACCOUNT"):
+        project = os.environ.get(envvar)
+        if project is not None:
+            return project
 

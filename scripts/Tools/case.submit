@@ -38,14 +38,14 @@ sub main
     $logger = Log::Log4perl::get_logger();
 
     %config	= SetupTools::getAllResolved();
-    my $machine	= $config{'MACH'};
+    my $machine		= $config{'MACH'};
     my $machroot	= $config{'MACHDIR'};
     my $compiler	= $config{'COMPILER'};
-    my $mpilib	= $config{'MPILIB'};
+    my $mpilib		= $config{'MPILIB'};
     my $caseroot	= $config{'CASEROOT'};
-    my $case	= $config{'CASE'};
-    my $model       = $config{'MODEL'};
-    my $debug       = $config{'DEBUG'};
+    my $case		= $config{'CASE'};
+    my $model		= $config{'MODEL'};
+    my $debug		= $config{'DEBUG'};
     # Check the case only once..
     if(!$opts{resubmit}){
 	$logger->info( "checking the case..");
@@ -74,9 +74,9 @@ sub main
 
     my $job;
     if(defined $config{TESTCASE}){
-	$job = "test";
+	$job = "case.test";
     }else{
-	$job = "run";
+	$job = "case.run";
     }
     $logger->debug( "Job = $job");
     my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case	   => $case,

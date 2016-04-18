@@ -14,6 +14,7 @@ from CIME.XML.env_test import EnvTest
 from CIME.XML.files import Files
 from CIME.XML.component import Component
 from CIME.XML.testlist import Testlist
+from CIME.XML.tests import Tests
 from CIME.case import Case
 import CIME.test_utils
 
@@ -343,19 +344,10 @@ class SystemTest(object):
             raise StandardError("Test '%s' has compiler that does"
                                 " not match instance compliler '%s'" % (test, self._compiler))
 
-        scratch_dir = self._machobj.get_value("CESMSCRATCHROOT")
-        if self._project is not None:
-            scratch_dir = scratch_dir.replace("$PROJECT", self._project)
-        sharedlibroot = os.path.join(scratch_dir, "sharedlibroot.%s" % self._test_id)
-
-        create_newcase_cmd = "%s -model %s -case %s -res %s -mach %s -compiler %s -compset"\
-                             " %s -testname %s -project %s -sharedlibroot %s" % \
+        create_newcase_cmd = "%s --case %s --res %s --mach %s --compiler %s --compset %s"\
+                               " --project %s --test"%\
                               (os.path.join(self._cime_root, "scripts", "create_newcase"),
-                               self._cime_model, test_dir, grid, machine, compiler, compset,
-                               test_case, self._project, sharedlibroot)
-
-        if test_case != 'PFS':
-            create_newcase_cmd += " -nosavetiming "
+                               test_dir, grid, machine, compiler, compset, self._project)
 
         if test_mods is not None:
             files = Files()
@@ -374,9 +366,11 @@ class SystemTest(object):
     ###########################################################################
     def _xml_phase(self, test):
     ###########################################################################
+        test_case = CIME.utils.parse_test_name(test)[0]
 
-        # modify the CASEROOT xml files depending on the settings of case_opts from
-        # then call case.flush()
+        # Create, fill and write an envtest object
+        test_dir = self._get_test_dir(test)
+        envtest = EnvTest(test_dir)
 
         # Determine list of component classes that this coupler/driver knows how
         # to deal with. This list follows the same order as compset longnames follow.
@@ -384,100 +378,7 @@ class SystemTest(object):
         drv_config_file = files.get_value("CONFIG_DRV_FILE")
         drv_comp = Component(drv_config_file)
         component_classes = drv_comp.get_valid_model_components()
-
-        # Set up a case object
-        case = Case(self._get_test_dir(test))
-
-        # Determine the test_case from the test name
-        test_case, case_opts = CIME.utils.parse_test_name(test)[:2]
-
-        # Determine case_opts from the test_case
-        if case_opts is not None:
-            logger.debug("case_opts are %s " %case_opts)
-            for opt in case_opts:
-
-                logger.debug("case_opt is %s" %opt)
-                if opt == 'D':
-                    case.set_value("DEBUG", True)
-                    logger.debug (" DEBUG set to TRUE")
-
-                elif opt == 'E':
-                    case.set_value("USE_ESMF_LIB", True)
-                    case.set_value("COMP_INTERFACE", "ESMF")
-                    logger.debug (" USE_ESMF_LIB set to TRUE")
-                    logger.debug (" COMP_INTERFACE set to ESMF")
-
-                elif opt == 'CG':
-                    case.set_value("CALENDAR", "GREGORIAN")
-                    logger.debug (" CALENDAR set to %s" %opt)
-
-                elif opt.startswith('L'):
-                    match =  re.match('L([A-Za-z])([0-9]*)', opt)
-                    stop_option = {"y":"nyears", "m":"nmonths", "d":"ndays", "h":"nhours",
-                                   "s":"nseconds", "n":"nsteps"}
-                    opt = match.group(1)
-                    case.set_value("STOP_OPTION",stop_option[opt])
-                    opti = match.group(2)
-                    case.set_value("STOP_N", int(opti))
-                    logger.debug (" STOP_OPTION set to %s" %stop_option[opt])
-                    logger.debug (" STOP_N      set to %s" %opti)
-
-                elif opt.startswith('M'):
-                    match =  re.match('M(.+)', opt)
-                    mpilib = opt[1:]
-                    case.set_value("MPILIB", opt)
-                    logger.debug (" MPILIB set to %s" %opt)
-
-                elif opt.startswith('P'):
-                    match =  re.match('P([0-9]+)', opt)
-                    opti_tasks = None
-                    if match:
-                        opti_tasks = match.group(1)
-                        for component_class in component_classes:
-                            if component_class == "DRV":
-                                component_class = "CPL"
-                            string = "NTASKS_" + component_class
-                            case.set_value(string, int(opti_tasks))
-                            string = "NTHRDS_" + component_class
-                            case.set_value(string, 1)
-                            string = "ROOTPE_" + component_class
-                            case.set_value(string, 0)
-                        opti_thrds = 1
-                    else:
-                        match =  re.match('P([0-9]+)x([0-9]+)', opt)
-                        if match:
-                            opti_tasks = match.group(1)
-                            opti_thrds = match.group(2)
-                            for component_class in component_classes:
-                                if component_class == "DRV":
-                                    component_class = "CPL"
-                                string = "NTASKS_" + component_class
-                                case.set_value(string, int(opti_tasks))
-                                string = "NTHRDS_" + component_class
-                                case.set_value(string, int(opti_thrds))
-                                string = "ROOTPE_" + component_class
-                                case.set_value(string, 0)
-                    expect(opti_tasks is not None, "No match found for PE option %s"%opt)
-                    logger.debug (" NTASKS_xxx set to %s" %opti_tasks)
-                    logger.debug (" NTHRDS_xxx set to %s" %opti_thrds)
-                    logger.debug (" ROOTPE_xxx set to %s 0")
-
-                elif opt.startswith('N'):
-                    opti = opt[1:]
-                    for component_class in component_classes:
-                        if component_class != 'DRV':
-                            string = "NINST_" + component_class
-                            case.set_value(string, int(opti))
-                    logger.debug (" Numer if component instances set to %s" %opti)
-                else:
-                    expect(False, "Could not parse option '%s' " %opt)
-
-        case.flush()
-
-        # Create, fill and write an envtest object
-        envtest = EnvTest(self._get_test_dir(test))
         envtest.add_elements_by_group(drv_comp, {}, "env_test.xml")
-
         envtest.set_value("TESTCASE", test_case)
         envtest.set_value("TEST_TESTID", self._test_id)
         envtest.set_value("CASEBASEID", test)
@@ -497,12 +398,114 @@ class SystemTest(object):
 
         if self._generate or self._compare:
             envtest.set_value("BASELINE_ROOT", self._baseline_root)
-
         envtest.set_value("GENERATE_BASELINE", self._generate)
         envtest.set_value("COMPARE_BASELINE", self._compare)
         envtest.set_value("CCSM_CPRNC", self._machobj.get_value("CCSM_CPRNC", resolved=False))
-        envtest.write()
 
+        """
+        Add the test instructions from config_test to env_test in the case
+        """
+        config_test = Tests()
+        testnode = config_test.get_test_node(test_case)
+        envtest.add_test(testnode)
+
+        # Determine the test_case from the test name
+        test_case, case_opts = CIME.utils.parse_test_name(test)[:2]
+
+        # Determine case_opts from the test_case
+        if case_opts is not None:
+            logger.debug("case_opts are %s " %case_opts)
+            for opt in case_opts:
+
+                logger.debug("case_opt is %s" %opt)
+                if opt == 'D':
+                    envtest.set_test_parameter("DEBUG", "TRUE")
+                    logger.debug (" DEBUG set to TRUE")
+
+                elif opt == 'E':
+                    envtest.set_test_parameter("USE_ESMF_LIB", "TRUE")
+                    envtest.set_test_parameter("COMP_INTERFACE", "ESMF")
+                    logger.debug (" USE_ESMF_LIB set to TRUE")
+                    logger.debug (" COMP_INTERFACE set to ESMF")
+
+                elif opt == 'CG':
+                    envtest.set_test_parameter("CALENDAR", "GREGORIAN")
+                    logger.debug (" CALENDAR set to %s" %opt)
+
+                elif opt.startswith('L'):
+                    match =  re.match('L([A-Za-z])([0-9]*)', opt)
+                    stop_option = {"y":"nyears", "m":"nmonths", "d":"ndays", "h":"nhours",
+                                   "s":"nseconds", "n":"nsteps"}
+                    opt = match.group(1)
+                    envtest.set_test_parameter("STOP_OPTION",stop_option[opt])
+                    opti = match.group(2)
+                    envtest.set_test_parameter("STOP_N", opti)
+                    logger.debug (" STOP_OPTION set to %s" %stop_option[opt])
+                    logger.debug (" STOP_N      set to %s" %opti)
+
+                elif opt.startswith('M'):
+                    match =  re.match('M(.+)', opt)
+                    mpilib = opt[1:]
+                    envtest.set_test_parameter("MPILIB", opt)
+                    logger.debug (" MPILIB set to %s" %opt)
+
+                elif opt.startswith('P'):
+                    match =  re.match('P([0-9]+)', opt)
+                    opti_tasks = None
+                    if match:
+                        opti_tasks = match.group(1)
+                        for component_class in component_classes:
+                            if component_class == "DRV":
+                                component_class = "CPL"
+                            string = "NTASKS_" + component_class
+                            envtest.set_test_parameter(string, opti_tasks)
+                            string = "NTHRDS_" + component_class
+                            envtest.set_test_parameter(string, str(1))
+                            string = "ROOTPE_" + component_class
+                            envtest.set_test_parameter(string, str(0))
+                        opti_thrds = 1
+                    else:
+                        match =  re.match('P([0-9]+)x([0-9]+)', opt)
+                        if match:
+                            opti_tasks = match.group(1)
+                            opti_thrds = match.group(2)
+                            for component_class in component_classes:
+                                if component_class == "DRV":
+                                    component_class = "CPL"
+                                string = "NTASKS_" + component_class
+                                envtest.set_test_parameter(string, opti_tasks)
+                                string = "NTHRDS_" + component_class
+                                envtest.set_test_parameter(string, opti_thrds)
+                                string = "ROOTPE_" + component_class
+                                envtest.set_test_parameter(string, str(0))
+                    expect(opti_tasks is not None, "No match found for PE option %s"%opt)
+                    logger.debug (" NTASKS_xxx set to %s" %opti_tasks)
+                    logger.debug (" NTHRDS_xxx set to %s" %opti_thrds)
+                    logger.debug (" ROOTPE_xxx set to %s 0")
+
+                elif opt.startswith('N'):
+                    opti = opt[1:]
+                    for component_class in component_classes:
+                        if component_class != 'DRV':
+                            string = "NINST_" + component_class
+                            envtest.set_test_parameter(string, opti)
+                    logger.debug (" Numer if component instances set to %s" %opti)
+                else:
+                    expect(False, "Could not parse option '%s' " %opt)
+
+        envtest.write()
+        lockedfiles = os.path.join(test_dir, "Lockedfiles")
+        try:
+            os.stat(lockedfiles)
+        except:
+            os.mkdir(lockedfiles)
+        shutil.copy(os.path.join(test_dir,"env_run.xml"),
+                    os.path.join(lockedfiles, "env_run.orig.xml"))
+        case = Case(test_dir)
+        case.set_value("SHAREDLIBROOT",
+                       os.path.join(self._test_root,
+                                    "sharedlibroot.%s"%self._test_id))
+        envtest.set_initial_values(case)
         return True
 
     ###########################################################################

@@ -249,7 +249,7 @@ my $sum = $maxt[0];  # sum of all tasks on one node
 my $taskgeom = "(0";
 my $thrdgeom = " $maxt[0]";
 my $taskcnt = 1;
-my $thrdcnt = $maxt[0];
+my $thrdcnt = $maxt[0] > 0 ? $maxt[0] : 1;
 my $aprun = "";
 my $pbsrs = "";
 
@@ -280,6 +280,7 @@ for ($c1=1; $c1 < $tottasks; $c1++){     # assign each task to a node
 }
 $fullsum = $fullsum + $sum;
 $taskgeom = $taskgeom.")";
+
 $taskpernode = $MAXTPN / $thrdcnt;
 $taskpernode = ($taskpernode > $taskcnt) ? $taskcnt : $taskpernode;
 if ($COMPILER eq "intel" && $taskpernode>1){
