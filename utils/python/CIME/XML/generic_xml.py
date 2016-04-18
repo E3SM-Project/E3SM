@@ -3,8 +3,9 @@ Common interface to XML files, this is an abstract class and is expected to
 be used by other XML interface modules and not directly.
 """
 from standard_module_setup import *
+from distutils.spawn import find_executable
 from xml.dom import minidom
-from CIME.utils import expect, get_cime_root, convert_to_string, which
+from CIME.utils import expect, get_cime_root, convert_to_string
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +15,7 @@ class GenericXML(object):
         """
         Initialize an object
         """
-        if not hasattr(self, 'tree'):
-            self.tree = None   # if not defined
+        self.tree = None
 
         if infile == None:
             # if file is not defined just return
@@ -65,7 +65,7 @@ class GenericXML(object):
             expect(False, "Could not write file %s, xml formatting error"%self.filename)
 
         # xmllint provides a better format option for the output file
-        xmllint = which("xmllint")
+        xmllint = find_executable("xmllint")
         if xmllint is not None:
             run_cmd("%s --format --output %s -"%(xmllint,outfile), input_str=xmlstr)
         else:
@@ -139,7 +139,8 @@ class GenericXML(object):
 
     def get_value(self, item, resolved=True, settype=True):
         """
-        get_value is expected to be defined by the derived classes, if you get here it is an error.
+        get_value is expected to be defined by the derived classes, if you get here
+        the value was not found in the class.
         """
         logger.debug("Get Value for "+item)
         return None

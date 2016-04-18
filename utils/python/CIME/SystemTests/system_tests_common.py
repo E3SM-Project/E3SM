@@ -17,7 +17,7 @@ class SystemTestsCommon(object):
         """
         print caseroot
         self._caseroot = caseroot
-                # Needed for sh scripts
+        # Needed for sh scripts
         os.environ["CASEROOT"] = caseroot
         if case is None:
             self._case = Case()

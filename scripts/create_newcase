@@ -10,7 +10,7 @@ import stat
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def parse_command_line(args):
+def parse_command_line(args, cimeroot):
 ###############################################################################
 
     cime_model = CIME.utils.get_model()
@@ -82,7 +82,7 @@ def parse_command_line(args):
                         "with the new user grid changes added to it"
 			"This argument is required if --user-grid is True")
 
-    parser.add_argument("--srcroot",
+    parser.add_argument("--srcroot",default=os.path.dirname(cimeroot),
                         help="Alternative path for source root directory. By default this is set to"
                         "cimeroot/../")
 
@@ -125,24 +125,16 @@ def parse_command_line(args):
 ###############################################################################
 def _main_func():
 ###############################################################################
+    cimeroot  = os.path.abspath(CIME.utils.get_cime_root())
 
     case, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
         machine_dir, usermods_dir, user_compset, pesfile, \
         user_grid, gridfile, srcroot, test \
-        = parse_command_line(sys.argv)
+        = parse_command_line(sys.argv, cimeroot)
 
-    cimeroot  = os.path.abspath(CIME.utils.get_cime_root())
-
-    if srcroot is None:
-        srcroot  = os.path.dirname(cimeroot)
-
-    # Is case relative or full path?
-    if os.path.isabs(case):
-        caseroot = case
-        case = os.path.basename(case)
-    else:
-        caseroot = os.path.join(os.getcwd(),case)
+    caseroot = os.path.abspath(case)
+    case = os.path.basename(case)
 
     # create_test creates the caseroot before calling create_newcase
     # otherwise throw an error if this directory exists

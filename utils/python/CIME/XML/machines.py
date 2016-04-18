@@ -38,7 +38,7 @@ class Machines(GenericXML):
         """
         infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
         if os.path.exists(infile):
-            GenericXML.__init__(self, infile)
+            GenericXML.read(self, infile)
 
         if machine is None:
             machine = self.probe_machine_name()

@@ -41,37 +41,24 @@ class Pes(GenericXML):
                                                         (compset_match == "any" or \
                                                         re.search(compset_match,compset)):
 
-                               points = int(grid_match!="any")*4+int(mach_match!="any")*3+int(compset_match!="any")*2+int(pesize_match!="any")
+                               points = int(grid_match!="any")*4+int(mach_match!="any")*3+\
+                                   int(compset_match!="any")*2+int(pesize_match!="any")
                                if points > max_points:
                                    pe_select = pes_node
                                    max_points = points
                                elif points == max_points:
                                    expect(False, "We dont expect to be here" )
 
-        pes_ntasks = {}
-
-        nodes = pe_select.findall(".//ntasks/*")
-        for node in nodes:
-            name = node.tag.upper()
-            value = node.text
-            pes_ntasks[name] = value
-            logger.debug("%s %s " %(name, value))
-
-        pes_nthrds = {}
-        nodes = pe_select.findall(".//nthrds/*")
-        for node in nodes:
-            name = node.tag.upper()
-            value = node.text
-            pes_nthrds[name] = value
-            logger.debug("%s %s " %(name, value))
-
-        pes_rootpe = {}
-        nodes = pe_select.findall(".//rootpe/*")
-        for node in nodes:
-            name = node.tag.upper()
-            value = node.text
-            pes_rootpe[name] = value
-            logger.debug("%s %s " %(name, value))
+        pes_ntasks, pes_nthrds, pes_rootpe = {}, {}, {}
+        for pes_data, xpath in [(pes_ntasks, "ntasks"),
+                                (pes_nthrds, "nthrds"),
+                                (pes_rootpe, "rootpe")]:
+            nodes = pe_select.findall(".//%s/*" % xpath)
+            for node in nodes:
+                name = node.tag.upper()
+                value = node.text
+                pes_data[name] = value
+                logger.debug("%s %s " % (name, value))
 
         logger.info("Pes setting: grid          is %s " %grid)
         logger.info("Pes setting: compset       is %s " %compset)

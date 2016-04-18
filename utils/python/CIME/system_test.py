@@ -349,9 +349,6 @@ class SystemTest(object):
                               (os.path.join(self._cime_root, "scripts", "create_newcase"),
                                test_dir, grid, machine, compiler, compset, self._project)
 
-#        if test_case != 'PFS':
-#            create_newcase_cmd += " -nosavetiming "
-
         if test_mods is not None:
             files = Files()
             (component,modspath) = test_mods.split('/',1)

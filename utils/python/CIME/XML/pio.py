@@ -18,7 +18,7 @@ class PIO(EntryID):
         EntryID.__init__(self, infile)
 
     def get_defaults(self, grid=None, compset=None, mach=None, compiler=None):
-# should we have a env_pio file
+        # should we have a env_pio file
         defaults = {}
         for node in self.get_nodes("entry"):
             attributes = {"grid":grid,"compset":compset,"mach":mach,"compiler":compiler}
