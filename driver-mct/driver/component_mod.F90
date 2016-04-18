@@ -925,6 +925,11 @@ contains
     !---------------------------------------------------------------
     ! Description
     ! Run component model
+    ! Note that the optional arguments, seq_flds_x2c_fluxes and
+    !   seq_flds_c2x_fluxes, are not passed for external models (ESP)
+    !   since these type of models do not interact through the coupler.
+    !   The absence of these inputs should be used to avoid coupler-
+    !   based actions in component_run
     !
     ! Arguments
     type(ESMF_Clock)     , intent(inout)   :: EClock
@@ -1059,6 +1064,13 @@ contains
        run_barriers, ymd, tod, comp_layout)
 
     !---------------------------------------------------------------
+    ! Description
+    ! Run component model
+    ! Note that the optional arguments, seq_flds_x2c_fluxes and
+    !   seq_flds_c2x_fluxes, are not passed for external models (ESP)
+    !   since these type of models do not interact through the coupler.
+    !   The absence of these inputs should be used to avoid coupler-
+    !   based actions in component_run
     !
     ! Arguments
     type(ESMF_Clock)         , intent(inout)        :: EClock
