@@ -111,12 +111,9 @@ if ( $COMPILER == "gnu" || $COMPILER == "gcc-5.3" ) then
   #soft add +netcdf-4.4.0-gcc-5.3.0-serial
   soft add +netcdf-c-4.4.0-f77-4.4.3-gcc-5.3.0-serial
   soft add +pnetcdf-1.6.1-gcc-5.3.0-mvapich2-2.2b
-  #setenv NETCDFROOT /blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/netcdf-4.4.0-jegmtu756jg64u6y7kjmk5vr5j5nqskn
-  #setenv NETCDFROOT /blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/netcdf-fortran-4.4.3-nd3qjav6dgtbljym2k6qhykswvumcpeh/
-  #setenv NETCDFROOT /home/awilke/Debug/netcdf
+
   setenv NETCDFROOT /blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/netcdf-4.4.0-xezev3j3kyay6obokfjvwfzqc2l6uwh5
-  #setenv NETCDF_Fortran_INCLUDE_DIR
-  #setenv NETCDF_Fortran_LIBRARY /blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/netcdf-4.4.0-jdajbs2zwz4qtm3a3mbg33dsfr4egdh3/lib
+
   if ( $MPILIB == "mpi-serial") then
    setenv PNETCDFROOT ""
   else if ( $MPILIB == "mvapich") then
@@ -140,11 +137,11 @@ if ( $COMPILER == "gcc-5.2" ) then
   if ( $MPILIB == "mpi-serial") then
    setenv PNETCDFROOT ""
   else if ( $MPILIB == "mvapich") then
-	soft add +mvapich2-2.2b-gcc-5.2
+	soft add +mvapich2-2.2b-gcc-5.2-psm
     setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm
   else
     # default - mvapich + pnetcdf
-    soft add +mvapich2-2.2b-gcc-5.2
+    soft add +mvapich2-2.2b-gcc-5.2-psm
     setenv PNETCDFROOT /soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm
   endif
 endif
