@@ -34,8 +34,6 @@
 !urban physics: MPAS does not plan to run the urban physics option.
  integer,parameter:: sf_urban_physics = 0 !activate urban canopy model (=0: no urban canopy) 
 
- integer,private:: i,j,k,n
-
 !>\brief MPAS driver for parameterization of land surface processes.
 !>\author Laura D. Fowler (send comments to laura@ucar.edu).
 !>\date 2013-05-01.
@@ -216,13 +214,14 @@
  end subroutine deallocate_lsm
 
 !==================================================================================================
- subroutine lsm_from_MPAS(mesh,diag_physics,sfc_input)
+ subroutine lsm_from_MPAS(mesh,diag_physics,sfc_input,its,ite)
 !==================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: sfc_input
+ integer,intent(in):: its,ite
 
 !local pointers:
  integer,dimension(:),pointer:: isltyp,ivgtyp
@@ -239,6 +238,7 @@
 !local variables and arrays:
  logical:: do_fill
  integer:: ip,iEdg
+ integer:: i,j,n
 
 !--------------------------------------------------------------------------------------------------
 
@@ -378,13 +378,14 @@
  end subroutine lsm_from_MPAS
  
 !==================================================================================================
- subroutine lsm_to_MPAS(mesh,diag_physics,sfc_input)
+ subroutine lsm_to_MPAS(mesh,diag_physics,sfc_input,its,ite)
 !==================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: sfc_input
+ integer,intent(in):: its,ite
 
 !local pointers:
  integer,dimension(:),pointer:: isltyp,ivgtyp
@@ -400,6 +401,7 @@
 
 !local variables and arrays:
  integer:: ip,iEdg
+ integer:: i,j,n
 
 !--------------------------------------------------------------------------------------------------
 
@@ -551,13 +553,14 @@
  end subroutine init_lsm
 
 !==================================================================================================
- subroutine driver_lsm(itimestep,configs,mesh,diag_physics,sfc_input)
+ subroutine driver_lsm(itimestep,configs,mesh,diag_physics,sfc_input,its,ite)
 !==================================================================================================
 
 !input arguments:
  integer,intent(in):: itimestep
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: configs
+ integer,intent(in):: its,ite
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -582,7 +585,7 @@
  102 format(3i6,8(1x,e15.8))
 
 !copy MPAS arrays to local arrays:
- call lsm_from_MPAS(mesh,diag_physics,sfc_input)
+ call lsm_from_MPAS(mesh,diag_physics,sfc_input,its,ite)
 ! write(0,*) '--- end lsm_from_MPAS'
 
 !call to land-surface scheme:
@@ -631,7 +634,7 @@
  end select lsm_select
 
 !copy local arrays to MPAS grid:
- call lsm_to_MPAS(mesh,diag_physics,sfc_input)
+ call lsm_to_MPAS(mesh,diag_physics,sfc_input,its,ite)
 ! write(0,*) '--- end subroutine driver_lsm'
 
  end subroutine driver_lsm

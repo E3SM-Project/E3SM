@@ -30,8 +30,6 @@
  integer,parameter,private:: scm_force_flux = 0  !SCM surface forcing by surface fluxes.
                                                  !0=no 1=yes (WRF single column model option only).
 
- integer,private:: i,j
-
 
 !>\brief MPAS driver for parameterization of the surface layer.
 !>\author Laura D. Fowler (send comments to laura@ucar.edu).
@@ -172,13 +170,17 @@
  end subroutine deallocate_sfclayer
 
 !==================================================================================================
- subroutine sfclayer_from_MPAS(mesh,diag_physics,sfc_input)
+ subroutine sfclayer_from_MPAS(mesh,diag_physics,sfc_input,its,ite)
 !==================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: sfc_input
  type(mpas_pool_type),intent(inout):: diag_physics
+ integer,intent(in):: its,ite
+
+!local variables:
+ integer:: i,j
 
 !local pointers:
  real(kind=RKIND),dimension(:),pointer:: skintemp,xland
@@ -271,11 +273,15 @@
  end subroutine sfclayer_from_MPAS
 
 !==================================================================================================
- subroutine sfclayer_to_MPAS(diag_physics)
+ subroutine sfclayer_to_MPAS(diag_physics,its,ite)
 !==================================================================================================
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
+ integer,intent(in):: its,ite
+
+!local variables:
+ integer:: i,j
 
 !local pointers:
  real(kind=RKIND),dimension(:),pointer:: br,cpm,chs,chs2,cqs2,fh,fm,flhc,flqc,gz1oz0,hfx,    &
@@ -380,13 +386,14 @@
  end subroutine init_sfclayer
 
 !==================================================================================================
- subroutine driver_sfclayer(mesh,diag_physics,sfc_input)
+ subroutine driver_sfclayer(mesh,diag_physics,sfc_input,its,ite)
 !==================================================================================================
 
 !input and inout arguments:
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: sfc_input
  type(mpas_pool_type),intent(inout):: diag_physics
+ integer,intent(in):: its,ite
 
 !local pointers:
  real(kind=RKIND),dimension(:),pointer:: areaCell
@@ -401,7 +408,7 @@
  call mpas_pool_get_array(mesh,'areaCell',areaCell)
 
 !copy all MPAS arrays to rectanguler grid:
- call sfclayer_from_MPAS(mesh,diag_physics,sfc_input)
+ call sfclayer_from_MPAS(mesh,diag_physics,sfc_input,its,ite)
 
  sfclayer_select: select case (trim(sfclayer_scheme))
 
@@ -441,7 +448,7 @@
  end select sfclayer_select
 
 !copy local arrays to MPAS grid:
- call sfclayer_to_MPAS(diag_physics)
+ call sfclayer_to_MPAS(diag_physics,its,ite)
 
 ! write(0,*) '--- end subroutine driver_sfclayer'
 

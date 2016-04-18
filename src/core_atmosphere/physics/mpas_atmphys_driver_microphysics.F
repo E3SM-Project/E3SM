@@ -183,7 +183,7 @@
  end subroutine microphysics_init
 
 !==================================================================================================
- subroutine microphysics_driver(configs,mesh,state,time_lev,diag,diag_physics,tend,itimestep)
+ subroutine microphysics_driver(configs,mesh,state,time_lev,diag,diag_physics,tend,itimestep,its,ite)
 !==================================================================================================
 
 !input arguments:
@@ -192,6 +192,7 @@
 
  integer,intent(in):: time_lev
  integer,intent(in):: itimestep
+ integer,intent(in):: its,ite
     
 !inout arguments:
  type(mpas_pool_type),intent(inout):: state
@@ -223,13 +224,16 @@
 ! write(0,*) '    kts= ',kts,' kte=',kte
 
 !... allocation of microphysics arrays:
+!$OMP MASTER
  call allocate_microphysics
+!$OMP END MASTER
+!$OMP BARRIER
 
 !... initialization of precipitation related arrays:
- call precip_from_MPAS(diag_physics,mesh)
+ call precip_from_MPAS(diag_physics,mesh,its,ite)
 
 !... initialization of soundings for non-hydrostatic dynamical cores.
- call microphysics_from_MPAS(mesh,state,time_lev,diag)
+ call microphysics_from_MPAS(mesh,state,time_lev,diag,its,ite)
 
 !--------------------------------------------------------------------------------------------------
 
@@ -293,7 +297,7 @@
     ! Ensure that we only call compute_radar_reflectivity() if we are using an MPS that
     !    supports the computation of simulated radar reflectivity
     if (trim(microp_scheme) == "wsm6") then
-       call compute_radar_reflectivity(diag_physics)
+       call compute_radar_reflectivity(diag_physics,its,ite)
     else
        write(0,*) '*** NOTICE: NOT computing simulated radar reflectivity'
        write(0,*) '            since WSM6 microphysics scheme was not selected'
@@ -301,19 +305,22 @@
 
     ! calculate the relative humidity over water if the temperature is strictly greater than 0.C,
     ! over ice otherwise.
-    call compute_relhum(mesh,diag)
+    call compute_relhum(mesh,diag,its,ite)
 
  end if
 
 !... copy updated precipitation from the wrf-physics grid back to the geodesic-dynamics grid:
- call precip_to_MPAS(configs,mesh,diag_physics)
+ call precip_to_MPAS(configs,mesh,diag_physics,its,ite)
 
 !... copy updated cloud microphysics variables from the wrf-physics grid back to the geodesic-
 !    dynamics grid:
- call microphysics_to_MPAS(mesh,state,time_lev,diag,tend,itimestep)
+ call microphysics_to_MPAS(mesh,state,time_lev,diag,tend,itimestep,its,ite)
 
 !... deallocation of all microphysics arrays:
+!$OMP BARRIER
+!$OMP MASTER
  call deallocate_microphysics
+!$OMP END MASTER
 
 !formats:
  200 format(i3,i6,10(1x,e15.8))
@@ -324,11 +331,12 @@
  end subroutine microphysics_driver
 
 !==================================================================================================
- subroutine precip_from_MPAS(diag_physics,mesh)
+ subroutine precip_from_MPAS(diag_physics,mesh,its,ite)
 !==================================================================================================
 
 !input variables:
  type(mpas_pool_type) ,intent(in):: mesh
+ integer,intent(in):: its,ite
 
 !output variables:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -357,7 +365,7 @@
  enddo
  enddo
 
- do iCell = 1, nCellsSolve
+ do iCell = its,ite
     rainncv(iCell) = 0._RKIND
  enddo
 
@@ -377,7 +385,7 @@
        enddo
        enddo
 
-       do iCell = 1, nCellsSolve
+       do iCell = its,ite
           snowncv(iCell)    = 0._RKIND
           graupelncv(iCell) = 0._RKIND
           sr(iCell)         = 0._RKIND
@@ -390,12 +398,13 @@
  end subroutine precip_from_MPAS
 
 !==================================================================================================
- subroutine precip_to_MPAS(configs,mesh,diag_physics)
+ subroutine precip_to_MPAS(configs,mesh,diag_physics,its,ite)
 !==================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
+ integer,intent(in):: its,ite
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -429,7 +438,7 @@
  call mpas_pool_get_array(diag_physics,'snowncv'   ,snowncv   )
  call mpas_pool_get_array(diag_physics,'sr'        ,sr        )
 
- do i = 1, nCellsSolve
+ do i = its,ite
     precipw(i) = 0._RKIND    
  enddo
 
@@ -487,11 +496,12 @@
  end subroutine precip_to_MPAS
 
 !==================================================================================================
- subroutine compute_radar_reflectivity(diag_physics)
+ subroutine compute_radar_reflectivity(diag_physics,its,ite)
 !==================================================================================================
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
+ integer,intent(in):: its,ite
 
 !local pointers:
  real(kind=RKIND),dimension(:),pointer:: refl10cm_max
@@ -563,11 +573,12 @@
  end subroutine compute_radar_reflectivity
 
 !==================================================================================================
- subroutine compute_relhum(mesh,diag)
+ subroutine compute_relhum(mesh,diag,its,ite)
 !==================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
+ integer,intent(in):: its,ite
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag
@@ -589,7 +600,7 @@
 
  call mpas_pool_get_array(diag,'relhum',relhum)
 
- relhum(1:nVertLevels,1:nCellsSolve) = 0._RKIND
+ relhum(1:nVertLevels,its:ite) = 0._RKIND
 
  if(.not.allocated(p1d)  ) allocate(p1d(kts:kte)  )
  if(.not.allocated(t1d)  ) allocate(t1d(kts:kte)  )

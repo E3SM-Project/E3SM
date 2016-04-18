@@ -22,6 +22,8 @@ module atm_core
       use mpas_timekeeping
       use mpas_kind_types
       use mpas_stream_manager
+      use mpas_performance, only : mpas_performance_init
+      use mpas_atm_dimensions, only : mpas_atm_set_dims
 
       implicit none
 
@@ -43,8 +45,24 @@ module atm_core
       character (len=StrKIND), pointer :: xtime
       type (MPAS_Time_Type) :: startTime
 
+      integer, pointer :: nVertLevels, maxEdges, maxEdges2, num_scalars
+
       ierr = 0
 
+      !
+      ! Set up inner dimensions used by arrays in optimized dynamics routines
+      !
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
+      call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(state, 'maxEdges', maxEdges)
+      call mpas_pool_get_dimension(state, 'maxEdges2', maxEdges2)
+      call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
+      call mpas_atm_set_dims(nVertLevels, maxEdges, maxEdges2, num_scalars)
+
+      !
+      ! Initialize performance module
+      !
+      call mpas_performance_init()
 
       !
       ! Set "local" clock to point to the clock contained in the domain type
@@ -55,7 +73,7 @@ module atm_core
       call mpas_pool_get_config(domain % blocklist % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', dt)
 
-      
+
       !
       ! If this is a restart run, read the restart stream, else read the input
       ! stream.
@@ -178,7 +196,7 @@ module atm_core
          if (trim(config_stop_time) /= "none") then
             call mpas_set_time(curr_time=stopTime, dateTimeString=config_stop_time, ierr=local_err)
             if(startTime + runduration /= stopTime) then
-               write(0,*) 'Warning: config_run_duration and config_stop_time are inconsitent: using config_run_duration.'
+               write(0,*) 'Warning: config_run_duration and config_stop_time are inconsistent: using config_run_duration.'
             end if
          end if
       else if (trim(config_stop_time) /= "none") then
@@ -208,7 +226,7 @@ module atm_core
       use mpas_atmphys_init
       use mpas_atmphys_manager
 #endif
-   
+
       implicit none
    
       type (dm_info), intent(in) :: dminfo
@@ -224,35 +242,94 @@ module atm_core
       type (mpas_pool_type), pointer :: diag_physics
       type (mpas_pool_type), pointer :: atm_input
 
-      integer :: iCell
+      integer :: iCell,iEdge,iVertex
       
       real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
-      real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, meshScalingDel4, areaCell, invAreaCell
+      real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, meshScalingDel4
+      real (kind=RKIND), dimension(:), pointer :: areaCell, invAreaCell
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, invDvEdge
+      real (kind=RKIND), dimension(:), pointer :: dcEdge, invDcEdge
+      real (kind=RKIND), dimension(:), pointer :: areaTriangle, invAreaTriangle
+      integer, pointer :: nCells, nEdges, nVertices, nVertLevels, nEdgesSolve
+      integer :: thread
       character(len=StrKIND), pointer :: mminlu
 
-      integer, pointer :: nEdgesSolve, nCells
-   
       logical, pointer :: config_do_restart, config_do_DAcycling
 
+      call atm_compute_signs(mesh)
    
       call mpas_pool_get_subpool(block % structs, 'diag', diag)
+      call mpas_pool_get_subpool(block % structs, 'state', state)
+
       call mpas_pool_get_subpool(block % structs, 'state', state)
 
       call mpas_pool_get_config(block % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(block % configs, 'config_do_DAcycling', config_do_DAcycling)
 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!! Compute inverses to avoid divides later
+      
       call mpas_pool_get_array(mesh, 'areaCell', areaCell)
       call mpas_pool_get_array(mesh, 'invAreaCell', invAreaCell)
-      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
-  
+      
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)      
+      call mpas_pool_get_array(mesh, 'invDvEdge', invDvEdge)
+      call mpas_pool_get_array(mesh, 'invDcEdge', invDcEdge)      
+      
+      call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(mesh, 'invAreaTriangle', invAreaTriangle)
+      
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)      
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
+ 
       do iCell=1,nCells 
          invAreaCell(iCell) = 1.0_RKIND / areaCell(iCell)
       end do
+        
+      do iEdge=1,nEdges 
+         invDvEdge(iEdge) = 1.0_RKIND / dvEdge(iEdge)
+      end do
+      
+      do iEdge=1,nEdges 
+         invDcEdge(iEdge) = 1.0_RKIND / dcEdge(iEdge)
+      end do
+      
+      do iVertex=1,nVertices
+         invAreaTriangle(iVertex) = 1.0_RKIND / areaTriangle(iVertex)
+      end do
+      
+      !!!!! End compute inverses
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      call mpas_pool_get_dimension(state, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(state, 'nVertLevels', nVertLevels)
 
-      if (.not. config_do_restart .or. (config_do_restart .and. config_do_DAcycling)) then
-         call atm_init_coupled_diagnostics( state, 1, diag, mesh, block % configs)
-      end if
-      call atm_compute_solve_diagnostics(dt, state, 1, diag, mesh, block % configs)
+      allocate(ke_vertex(nVertLevels,nVertices+1))  ! ke_vertex is a module variable defined in mpas_atm_time_integration.F
+      allocate(ke_edge(nVertLevels,nEdges+1))       ! ke_edge is a module variable defined in mpas_atm_time_integration.F
+
+!$OMP PARALLEL DO
+      do thread=1,block % nThreads
+         if (.not. config_do_restart .or. (config_do_restart .and. config_do_DAcycling)) then
+            call atm_init_coupled_diagnostics(state, 1, diag, mesh, block % configs, &
+                                          block % cellThreadStart(thread), block % cellThreadEnd(thread), &
+                                          block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
+                                          block % edgeThreadStart(thread), block % edgeThreadEnd(thread), &
+                                          block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread), &
+                                          block % vertexSolveThreadStart(thread), block % vertexSolveThreadEnd(thread), &
+                                          block % edgeSolveThreadStart(thread), block % edgeSolveThreadEnd(thread))
+         end if
+
+         call atm_compute_solve_diagnostics(dt, state, 1, diag, mesh, block % configs, &
+                                            block % cellThreadStart(thread), block % cellThreadEnd(thread), &
+                                            block % vertexThreadStart(thread), block % vertexThreadEnd(thread), &
+                                            block % edgeThreadStart(thread), block % edgeThreadEnd(thread))
+      end do
+!$OMP END PARALLEL DO
+
+      deallocate(ke_vertex)
+      deallocate(ke_edge)
 
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
@@ -656,6 +733,7 @@ module atm_core
    
       use mpas_decomp
       use mpas_timekeeping
+      use mpas_performance, only : mpas_performance_finalize
    
       implicit none
    
@@ -666,6 +744,11 @@ module atm_core
 
       call mpas_destroy_clock(clock, ierr)
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
+
+      !
+      ! Finalize performance module
+      !
+      call mpas_performance_finalize()
    
    end function atm_core_finalize
 
@@ -707,6 +790,96 @@ module atm_core
       end if
 
    end subroutine atm_compute_mesh_scaling
+
+
+   subroutine atm_compute_signs(mesh)
+
+      implicit none
+
+      type (mpas_pool_type), intent(inout) :: mesh
+
+      integer :: i, j, iCell, iVtx
+      integer, pointer :: nCells, nVertices, nEdges, vertexDegree
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnVertex, verticesOnEdge, cellsOnEdge, edgesOnCell
+      integer, dimension(:,:), pointer :: verticesOnCell, cellsOnVertex, kiteForCell
+      real (kind=RKIND), dimension(:,:), pointer :: edgesOnVertex_sign, edgesOnCell_sign
+      real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3, zb_cell, zb3_cell
+
+
+      call mpas_pool_get_array(mesh, 'edgesOnVertex', edgesOnVertex)
+      call mpas_pool_get_array(mesh, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'verticesOnCell', verticesOnCell)
+      call mpas_pool_get_array(mesh, 'cellsOnVertex', cellsOnVertex)
+      call mpas_pool_get_array(mesh, 'edgesOnVertex_sign', edgesOnVertex_sign)
+      call mpas_pool_get_array(mesh, 'edgesOnCell_sign', edgesOnCell_sign)
+      call mpas_pool_get_array(mesh, 'kiteForCell', kiteForCell)
+      call mpas_pool_get_array(mesh, 'zb', zb)
+      call mpas_pool_get_array(mesh, 'zb3', zb3)
+      call mpas_pool_get_array(mesh, 'zb_cell', zb_cell)
+      call mpas_pool_get_array(mesh, 'zb3_cell', zb3_cell)
+
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'vertexDegree', vertexDegree)
+
+
+      do iVtx=1,nVertices
+         do i=1,vertexDegree
+            if (edgesOnVertex(i,iVtx) <= nEdges) then
+               if (iVtx == verticesOnEdge(2,edgesOnVertex(i,iVtx))) then
+                  edgesOnVertex_sign(i,iVtx) = 1.0
+               else
+                  edgesOnVertex_sign(i,iVtx) = -1.0
+               end if
+            else
+               edgesOnVertex_sign(i,iVtx) = 0.0
+            end if
+         end do
+      end do
+
+      do iCell=1,nCells
+         do i=1,nEdgesOnCell(iCell)
+            if (edgesOnCell(i,iCell) <= nEdges) then
+               if (iCell == cellsOnEdge(1,edgesOnCell(i,iCell))) then
+                  edgesOnCell_sign(i,iCell) = 1.0
+                  zb_cell(:,i,iCell) = zb(:,1,edgesOnCell(i,iCell))
+                  zb3_cell(:,i,iCell) = zb3(:,1,edgesOnCell(i,iCell))
+               else
+                  edgesOnCell_sign(i,iCell) = -1.0
+                  zb_cell(:,i,iCell) = zb(:,2,edgesOnCell(i,iCell))
+                  zb3_cell(:,i,iCell) = zb3(:,2,edgesOnCell(i,iCell))
+               end if
+            else
+               edgesOnCell_sign(i,iCell) = 0.0
+            end if
+         end do
+      end do
+
+      do iCell=1,nCells
+         do i=1,nEdgesOnCell(iCell)
+            iVtx = verticesOnCell(i,iCell)
+            if (iVtx <= nVertices) then
+               do j=1,vertexDegree
+                  if (iCell == cellsOnVertex(j,iVtx)) then
+                     kiteForCell(i,iCell) = j
+                     exit
+                  end if
+               end do
+               if (j > vertexDegree) then
+                  write(stderrUnit,*) 'Unexpected error while identifying kiteForCell'
+               end if
+            else
+               kiteForCell(i,iCell) = 1
+            end if
+         end do
+      end do
+
+   end subroutine atm_compute_signs
 
 
    subroutine atm_compute_damping_coefs(mesh, configs)
@@ -757,96 +930,49 @@ module atm_core
 
       integer :: iEdge, iCell1, iCell2, k, iCell, nz, nz1
       real (kind=RKIND) :: d1, d2, d3
-      real (kind=RKIND), dimension(:,:), pointer :: cpr, cpl, zgrid, pzp, pzm
+      real (kind=RKIND), dimension(:,:), pointer :: zgrid, pzp, pzm
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nCells, nEdges, nVertLevels
-      logical, pointer :: config_newpx
 
-      call mpas_pool_get_array(mesh, 'cpr', cpr)
-      call mpas_pool_get_array(mesh, 'cpl', cpl)
       call mpas_pool_get_array(mesh, 'pzp', pzp)
       call mpas_pool_get_array(mesh, 'pzm', pzm)
       call mpas_pool_get_array(mesh, 'zgrid', zgrid)
       call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
 
-      call mpas_pool_get_config(configs, 'config_newpx', config_newpx)
-
       call mpas_pool_get_dimension(mesh, 'nCells', nCells)
       call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
       call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
-!**** coefficient arrays for new pressure gradient calculation
 
-      cpr(:,:) = 0.0
-      cpl(:,:) = 0.0
+!     Coefficients for computing vertical pressure gradient dp/dz
+!     dp/dz (k,iCell) = pzp(k,iCell) * (p(k+1,iCell) - p(k,iCell)) +pzm(k,iCell) * (p(k,iCell) - p(k-1,iCell))
 
-      if (config_newpx) then
-         do iEdge=1,nEdges
+      nz1 = nVertLevels
+      nz = nz1 + 1
 
-            iCell1 = cellsOnEdge(1,iEdge)
-            iCell2 = cellsOnEdge(2,iEdge)
+      do iCell=1, nCells
 
-            d1       = .25*(zgrid(1,iCell2)+zgrid(2,iCell2)-zgrid(1,iCell1)-zgrid(2,iCell1))
-            d2       = d1+.5*(zgrid(3,iCell2)-zgrid(1,iCell2))
-            d3       = d2+.5*(zgrid(4,iCell2)-zgrid(2,iCell2))
-!            cpr(1,iEdge) = d2*d3*(d3-d2)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
-!            cpr(2,iEdge) = d1*d3*(d1-d3)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
-!            cpr(3,iEdge) = d1*d2*(d2-d1)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
+         d1 = zgrid(3,iCell)-zgrid(1,iCell)
+         d2 = zgrid(4,iCell)-zgrid(2,iCell)
+         d3 = d1+d2
+         pzm(1,iCell) =  2.*d3/(d1*d2)
+         pzp(1,iCell) = -2.*d1/(d2*d3)
 
-            cpr(1,iEdge) =  d2/(d2-d1)
-            cpr(2,iEdge) = -d1/(d2-d1)
-            cpr(3,iEdge) =  0.
-
-            d1       = .25*(zgrid(1,iCell1)+zgrid(2,iCell1)-zgrid(1,iCell2)-zgrid(2,iCell2))
-            d2       = d1+.5*(zgrid(3,iCell1)-zgrid(1,iCell1))
-            d3       = d2+.5*(zgrid(4,iCell1)-zgrid(2,iCell1))
-!            cpl(1,iEdge) = d2*d3*(d3-d2)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
-!            cpl(2,iEdge) = d1*d3*(d1-d3)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
-!            cpl(3,iEdge) = d1*d2*(d2-d1)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
-
-            cpl(1,iEdge) =  d2/(d2-d1)
-            cpl(2,iEdge) = -d1/(d2-d1)
-            cpl(3,iEdge) =  0.
-
+         do k=2,nz1-1
+            pzp(k,iCell) = 2.*(zgrid(k+1,iCell)-zgrid(k-1,iCell))/     &
+                         ((zgrid(k+2,iCell)-zgrid(k  ,iCell))*         &
+                          (zgrid(k+2,iCell)-zgrid(k  ,iCell)           &
+                          +zgrid(k+1,iCell)-zgrid(k-1,iCell)))
+            pzm(k,iCell) = 2.*(zgrid(k+2,iCell)-zgrid(k  ,iCell))/     &
+                         ((zgrid(k+1,iCell)-zgrid(k-1,iCell))*         &
+                          (zgrid(k+2,iCell)-zgrid(k  ,iCell)           &
+                          +zgrid(k+1,iCell)-zgrid(k-1,iCell)))
          end do
 
-!         write(6,*) 'cpr1 = ',cpr(1,1),'  cpl1 = ',cpl(1,1)
-!         write(6,*) 'cpr2 = ',cpr(2,1),'  cpl2 = ',cpl(2,1)
-!         write(6,*) 'cpr3 = ',cpr(3,1),'  cpl3 = ',cpl(3,1)
+         pzp(nz1,iCell) = 0.
+         pzm(nz1,iCell) = 2./(zgrid(nz,iCell)-zgrid(nz1-1,iCell))
 
-      else
-
-!        Coefficients for computing vertical pressure gradient dp/dz
-!        dp/dz (k,iCell) = pzp(k,iCell) * (p(k+1,iCell) - p(k,iCell)) +pzm(k,iCell) * (p(k,iCell) - p(k-1,iCell))
-
-         nz1 = nVertLevels
-         nz = nz1 + 1
-
-         do iCell=1, nCells
-
-            d1 = zgrid(3,iCell)-zgrid(1,iCell)
-            d2 = zgrid(4,iCell)-zgrid(2,iCell)
-            d3 = d1+d2
-            pzm(1,iCell) =  2.*d3/(d1*d2)
-            pzp(1,iCell) = -2.*d1/(d2*d3)
-
-            do k=2,nz1-1
-               pzp(k,iCell) = 2.*(zgrid(k+1,iCell)-zgrid(k-1,iCell))/     &
-     &                      ((zgrid(k+2,iCell)-zgrid(k  ,iCell))*     &
-     &                       (zgrid(k+2,iCell)-zgrid(k  ,iCell)       &
-     &                       +zgrid(k+1,iCell)-zgrid(k-1,iCell)))
-               pzm(k,iCell) = 2.*(zgrid(k+2,iCell)-zgrid(k  ,iCell))/     &
-     &                      ((zgrid(k+1,iCell)-zgrid(k-1,iCell))*     &
-     &                       (zgrid(k+2,iCell)-zgrid(k  ,iCell)       &
-     &                       +zgrid(k+1,iCell)-zgrid(k-1,iCell)))
-            end do
-
-            pzp(nz1,iCell) = 0.
-            pzm(nz1,iCell) = 2./(zgrid(nz,iCell)-zgrid(nz1-1,iCell))
-
-         end do
-
-      end if
+      end do
 
    end subroutine atm_compute_pgf_coefs
 
@@ -866,7 +992,7 @@ module atm_core
 
       integer :: cell1, cell2, iEdge, n, i, j, j_in, iCell
       integer, pointer :: nCells, nEdges
-      integer :: cell_list(20), ordered_cell_list(20)
+      integer :: cell_list(20)
       logical :: addcell
 
 
@@ -917,24 +1043,10 @@ module atm_core
                end if
             end do
   
-          ! order the list by increasing cell number (brute force approach)
-  
-            do i=1,n
-               ordered_cell_list(i) = nCells + 2
-               j_in = 1
-               do j=1,n
-                  if (ordered_cell_list(i) > cell_list(j) ) then
-                     j_in = j
-                     ordered_cell_list(i) = cell_list(j)
-                  end if
-               end do
-!               ordered_cell_list(i) = cell_list(j_in)
-               cell_list(j_in) = nCells + 3
-            end do
   
             nAdvCellsForEdge(iEdge) = n
             do iCell = 1, nAdvCellsForEdge(iEdge)
-               advCellsForEdge(iCell,iEdge) = ordered_cell_list(iCell)
+               advCellsForEdge(iCell,iEdge) = cell_list(iCell)
             end do
   
           ! we have the ordered list, now construct coefficients
@@ -947,7 +1059,7 @@ module atm_core
   
             j_in = 0
             do j=1, n
-               if( ordered_cell_list(j) == cell1 ) j_in = j
+               if( cell_list(j) == cell1 ) j_in = j
             end do
             adv_coefs    (j_in,iEdge) = adv_coefs    (j_in,iEdge) + deriv_two(1,1,iEdge)
             adv_coefs_3rd(j_in,iEdge) = adv_coefs_3rd(j_in,iEdge) + deriv_two(1,1,iEdge)
@@ -955,7 +1067,7 @@ module atm_core
             do iCell = 1, nEdgesOnCell(cell1)
                j_in = 0
                do j=1, n
-                 if( ordered_cell_list(j) == cellsOnCell(iCell,cell1) ) j_in = j
+                 if( cell_list(j) == cellsOnCell(iCell,cell1) ) j_in = j
                end do
                adv_coefs    (j_in,iEdge) = adv_coefs    (j_in,iEdge) + deriv_two(iCell+1,1,iEdge)
                adv_coefs_3rd(j_in,iEdge) = adv_coefs_3rd(j_in,iEdge) + deriv_two(iCell+1,1,iEdge)
@@ -966,7 +1078,7 @@ module atm_core
   
             j_in = 0
             do j=1, n
-               if( ordered_cell_list(j) == cell2 ) j_in = j
+               if( cell_list(j) == cell2 ) j_in = j
             end do
             adv_coefs    (j_in,iEdge) = adv_coefs    (j_in,iEdge) + deriv_two(1,2,iEdge)
             adv_coefs_3rd(j_in,iEdge) = adv_coefs_3rd(j_in,iEdge) - deriv_two(1,2,iEdge)
@@ -974,7 +1086,7 @@ module atm_core
             do iCell = 1, nEdgesOnCell(cell2)
                j_in = 0
                do j=1, n
-                  if( ordered_cell_list(j) == cellsOnCell(iCell,cell2) ) j_in = j
+                  if( cell_list(j) == cellsOnCell(iCell,cell2) ) j_in = j
                end do
                adv_coefs    (j_in,iEdge) = adv_coefs    (j_in,iEdge) + deriv_two(iCell+1,2,iEdge)
                adv_coefs_3rd(j_in,iEdge) = adv_coefs_3rd(j_in,iEdge) - deriv_two(iCell+1,2,iEdge)
@@ -989,13 +1101,13 @@ module atm_core
   
             j_in = 0
             do j=1, n
-               if( ordered_cell_list(j) == cell1 ) j_in = j
+               if( cell_list(j) == cell1 ) j_in = j
             end do
             adv_coefs(j_in,iEdge) = adv_coefs(j_in,iEdge) + 0.5
   
             j_in = 0
             do j=1, n
-               if( ordered_cell_list(j) == cell2 ) j_in = j
+               if( cell_list(j) == cell2 ) j_in = j
             end do
             adv_coefs(j_in,iEdge) = adv_coefs(j_in,iEdge) + 0.5
   

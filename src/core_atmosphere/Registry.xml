@@ -64,10 +64,10 @@
                 <nml_option name="config_positive_definite"          type="logical"       default_value="false"/>
                 <nml_option name="config_monotonic"                  type="logical"       default_value="true"/>
                 <nml_option name="config_coef_3rd_order"             type="real"          default_value="0.25"/>
+                <nml_option name="config_smagorinsky_coef"           type="real"          default_value="0.125"       in_defaults="false"/>
                 <nml_option name="config_mix_full"                   type="logical"       default_value="true"        in_defaults="false"/>
                 <nml_option name="config_epssm"                      type="real"          default_value="0.1"/>
-                <nml_option name="config_smdiv"                      type="real"          default_value="0.1"/>
-                <nml_option name="config_newpx"                      type="logical"       default_value="false"/>
+                <nml_option name="config_smdiv"                      type="real"          default_value="0.01"/>
                 <nml_option name="config_apvm_upwinding"             type="real"          default_value="0.5"         in_defaults="false"/>
                 <nml_option name="config_h_ScaleWithMesh"            type="logical"       default_value="true"/>
                 <nml_option name="config_num_halos"                  type="integer"       default_value="2"           in_defaults="false"/>
@@ -162,7 +162,7 @@
 			<var name="rdzu"/>
 			<var name="fzm"/>
 			<var name="fzp"/>
-			<var name="zx"/>
+			<var name="zxu"/>
 			<var name="zz"/>
 			<var name="zb"/>
 			<var name="zb3"/>
@@ -276,15 +276,13 @@
 			<var name="cf1"/>
 			<var name="cf2"/>
 			<var name="cf3"/>
-			<var name="cpr"/>
-			<var name="cpl"/>
 			<var name="zgrid"/>
 			<var name="rdzw"/>
 			<var name="dzu"/>
 			<var name="rdzu"/>
 			<var name="fzm"/>
 			<var name="fzp"/>
-			<var name="zx"/>
+			<var name="zxu"/>
 			<var name="zz"/>
 			<var name="zb"/>
 			<var name="zb3"/>
@@ -687,11 +685,14 @@
                 <var name="edgesOnEdge"               type="integer"  dimensions="maxEdges2 nEdges"/>
                 <var name="weightsOnEdge"             type="real"     dimensions="maxEdges2 nEdges"/>
                 <var name="dvEdge"                    type="real"     dimensions="nEdges"/>
+                <var name="invDvEdge"                 type="real"     dimensions="nEdges"/>
                 <var name="dcEdge"                    type="real"     dimensions="nEdges"/>
+                <var name="invDcEdge"                 type="real"     dimensions="nEdges"/>
                 <var name="angleEdge"                 type="real"     dimensions="nEdges"/>
                 <var name="areaCell"                  type="real"     dimensions="nCells"/>
                 <var name="invAreaCell"               type="real"     dimensions="nCells"/>
                 <var name="areaTriangle"              type="real"     dimensions="nVertices"/>
+                <var name="invAreaTriangle"           type="real"     dimensions="nVertices"/>
                 <var name="edgeNormalVectors"         type="real"     dimensions="R3 nEdges"/>
                 <var name="localVerticalUnitVectors"  type="real"     dimensions="R3 nCells"/>
                 <var name="cellTangentPlane"          type="real"     dimensions="R3 TWO nCells"/>
@@ -707,14 +708,14 @@
                 <var name="meshScalingDel2"           type="real"     dimensions="nEdges"/>
                 <var name="meshScalingDel4"           type="real"     dimensions="nEdges"/>
 
+                <var name="edgesOnVertex_sign"        type="real"     dimensions="vertexDegree nVertices"/>
+                <var name="edgesOnCell_sign"          type="real"     dimensions="maxEdges nCells"/>
+                <var name="kiteForCell"               type="integer"  dimensions="maxEdges nCells"/>
+
                 <!-- coefficients for vertical extrapolation to the surface -->
                 <var name="cf1"                       type="real"     dimensions=""/>
                 <var name="cf2"                       type="real"     dimensions=""/>
                 <var name="cf3"                       type="real"     dimensions=""/>
-
-                <!-- coefficients used by "newpx" horizontal pressure gradient option -->
-                <var name="cpr"                       type="real"     dimensions="THREE nEdges"/>
-                <var name="cpl"                       type="real"     dimensions="THREE nEdges"/>
 
                 <!-- description of the vertical grid structure -->
                 <var name="zgrid"                     type="real"     dimensions="nVertLevelsP1 nCells"/>
@@ -723,10 +724,12 @@
                 <var name="rdzu"                      type="real"     dimensions="nVertLevels"/>
                 <var name="fzm"                       type="real"     dimensions="nVertLevels"/>
                 <var name="fzp"                       type="real"     dimensions="nVertLevels"/>
-                <var name="zx"                        type="real"     dimensions="nVertLevelsP1 nEdges"/>
-                <var name="zz"                        type="real"     dimensions="nVertLevelsP1 nCells"/>
+                <var name="zxu"                       type="real"     dimensions="nVertLevels nEdges"/>
+                <var name="zz"                        type="real"     dimensions="nVertLevels nCells"/>
                 <var name="zb"                        type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
                 <var name="zb3"                       type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
+                <var name="zb_cell"                   type="real"     dimensions="nVertLevelsP1 maxEdges nCells"/>
+                <var name="zb3_cell"                  type="real"     dimensions="nVertLevelsP1 maxEdges nCells"/>
                 <var name="pzm"                       type="real"     dimensions="nVertLevels nCells"/>
                 <var name="pzp"                       type="real"     dimensions="nVertLevels nCells"/>
 
@@ -866,7 +869,7 @@
                 <var name="rtheta_p"                type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="rtheta_pp"               type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="rtheta_p_save"           type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rtheta_pp_old"           type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="zz_rtheta_pp_old"        type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <var name="rho_p"                   type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="rho_pp"                  type="real"     dimensions="nVertLevels nCells Time"/>

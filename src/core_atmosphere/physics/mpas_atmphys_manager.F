@@ -28,8 +28,6 @@
  real(kind=RKIND), public:: curr_julday !Current Julian day (= 0.0 at 0Z on January 1st).
  real(kind=RKIND), public:: gmt         !Greenwich mean time hour of model start (hr)
 
- integer, private:: i,k,j,n
-
 !defines alarms for calling the long- and short-wave radiation codes, for calling the convec-
 !tion scheme:
  character(len=*), parameter:: radtlwAlarmID = 'radtlw'
