@@ -506,11 +506,10 @@ class Case(object):
             os.makedirs(caseroot)
         os.chdir(caseroot)
 
-    # Create relevant directories in $caseroot
+        # Create relevant directories in $caseroot
         newdirs = ("SourceMods", "LockedFiles", "Buildconf", "Tools")
         for newdir in newdirs:
             os.makedirs(newdir)
-
         # Open a new README.case file in $caseroot
         with open(os.path.join(caseroot,"README.case"), "w") as fd:
             for arg in sys.argv:
