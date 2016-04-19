@@ -105,7 +105,7 @@ class EnvModule(object):
         logging.info("Loading soft modules")
         sh_init_cmd = self._machine.get_module_system_init_path("sh")
         sh_mod_cmd = self._machine.get_module_system_cmd_path("sh")
-        
+
         cmd = "source %s && source $SOFTENV_ALIASES && source $SOFTENV_LOAD" % (sh_init_cmd)
 
         for action,argument in modules_to_load:
@@ -121,7 +121,7 @@ class EnvModule(object):
             if m:
                 key = m.groups()[0]
                 val = m.groups()[1]
-                
+
                 newenv[key] = val
 
 

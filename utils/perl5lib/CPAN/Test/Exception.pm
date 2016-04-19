@@ -41,8 +41,8 @@ Test::Exception - Test exception-based code
 
   # Check an exception of the given class (or subclass) is thrown
   throws_ok { $foo->method } 'Error::Simple', 'simple error thrown';
-  
-  # all Test::Exceptions subroutines are guaranteed to preserve the state 
+
+  # all Test::Exceptions subroutines are guaranteed to preserve the state
   # of $@ so you can do things like this after throws_ok and dies_ok
   like $@, 'what the stringified exception should look like';
 
@@ -54,12 +54,12 @@ Test::Exception - Test exception-based code
 
   # Check that a test runs without an exception
   lives_and { is $foo->method, 42 } 'method is 42';
-  
+
   # or if you don't like prototyped functions
-  
+
   throws_ok( sub { $foo->method }, qr/division by zero/,
       'zero caught okay' );
-  throws_ok( sub { $foo->method }, 'Error::Simple', 
+  throws_ok( sub { $foo->method }, 'Error::Simple',
       'simple error thrown' );
   dies_ok( sub { $foo->method }, 'expecting to die' );
   lives_ok( sub { $foo->method }, 'expecting to live' );
@@ -68,7 +68,7 @@ Test::Exception - Test exception-based code
 
 =head1 DESCRIPTION
 
-This module provides a few convenience methods for testing exception based code. It is built with 
+This module provides a few convenience methods for testing exception based code. It is built with
 L<Test::Builder> and plays happily with L<Test::More> and friends.
 
 If you are not already familiar with L<Test::More> now would be the time to go take a look.
@@ -76,7 +76,7 @@ If you are not already familiar with L<Test::More> now would be the time to go t
 You can specify the test plan when you C<use Test::Exception> in the same way as C<use Test::More>.
 See L<Test::More> for details.
 
-NOTE: Test::Exception only checks for exceptions. It will ignore other methods of stopping 
+NOTE: Test::Exception only checks for exceptions. It will ignore other methods of stopping
 program execution - including exit(). If you have an exit() in evalled code Test::Exception
 will not catch this with any of its testing functions.
 
@@ -153,7 +153,7 @@ sub _exception_as_string {
     my ( $prefix, $exception ) = @_;
     return "$prefix normal exit" unless _is_exception( $exception );
     my $class = ref $exception;
-    $exception = "$class ($exception)" 
+    $exception = "$class ($exception)"
             if $class && "$exception" !~ m/^\Q$class/;
     chomp $exception;
     return "$prefix $exception";
@@ -164,7 +164,7 @@ sub _exception_as_string {
 
 =item B<throws_ok>
 
-Tests to see that a specific exception is thrown. throws_ok() has two forms: 
+Tests to see that a specific exception is thrown. throws_ok() has two forms:
 
   throws_ok BLOCK REGEX, TEST_DESCRIPTION
   throws_ok BLOCK CLASS, TEST_DESCRIPTION
@@ -203,7 +203,7 @@ A true value is returned if the test succeeds, false otherwise. On exit $@ is gu
 
 A description of the exception being checked is used if no optional test description is passed.
 
-NOTE: Remember when you C<die $string_without_a_trailing_newline> perl will 
+NOTE: Remember when you C<die $string_without_a_trailing_newline> perl will
 automatically add the current script line number, input line number and a newline. This will
 form part of the string that throws_ok regular expressions match against.
 
@@ -215,16 +215,16 @@ sub throws_ok (&$;$) {
     my ( $coderef, $expecting, $description ) = @_;
     unless (defined $expecting) {
       require Carp;
-      Carp::croak( "throws_ok: must pass exception class/object or regex" ); 
+      Carp::croak( "throws_ok: must pass exception class/object or regex" );
     }
     $description = _exception_as_string( "threw", $expecting )
     	unless defined $description;
     my $exception = _try_as_caller( $coderef );
     my $regex = $Tester->maybe_regex( $expecting );
-    my $ok = $regex 
-        ? ( $exception =~ m/$regex/ ) 
-        : eval { 
-            $exception->isa( ref $expecting ? ref $expecting : $expecting ) 
+    my $ok = $regex
+        ? ( $exception =~ m/$regex/ )
+        : eval {
+            $exception->isa( ref $expecting ? ref $expecting : $expecting )
         };
     $Tester->ok( $ok, $description );
     unless ( $ok ) {
@@ -254,7 +254,7 @@ A true value is returned if the test succeeds, false otherwise. On exit $@ is gu
 
 Remember: This test will pass if the code dies for any reason. If you care about the reason it might be more sensible to write a more specific test using throws_ok().
 
-The test description is optional, but recommended. 
+The test description is optional, but recommended.
 
 =cut
 
@@ -293,7 +293,7 @@ Should a lives_ok() test fail it produces appropriate diagnostic messages. For e
 
 A true value is returned if the test succeeds, false otherwise. On exit $@ is guaranteed to be the cause of death (if any).
 
-The test description is optional, but recommended. 
+The test description is optional, but recommended.
 
 =cut
 
@@ -385,12 +385,12 @@ Sometimes we want to use Test::Exception tests in a test suite, but don't want t
   use strict;
   use warnings;
   use Test::More;
-  
+
   BEGIN {
       eval "use Test::Exception";
       plan skip_all => "Test::Exception needed" if $@;
   }
-  
+
   plan tests => 2;
   # ... tests that need Test::Exception ...
 
@@ -404,7 +404,7 @@ thrown in DESTROY blocks. See the RT bug L<http://rt.cpan.org/Ticket/Display.htm
 details, along with the t/edge-cases.t in the distribution test suite. These will be addressed in
 a future Test::Exception release.
 
-If you find any more bugs please let me know by e-mail, or report the problem with 
+If you find any more bugs please let me know by e-mail, or report the problem with
 L<http://rt.cpan.org/>.
 
 
@@ -442,37 +442,37 @@ You can see my current to do list at L<http://adrianh.tadalist.com/lists/public/
 
 Thanks to chromatic and Michael G Schwern for the excellent Test::Builder, without which this module wouldn't be possible.
 
-Thanks to 
+Thanks to
 Adam Kennedy,
-Andy Lester, 
-Aristotle Pagaltzis, 
-Ben Prew, 
+Andy Lester,
+Aristotle Pagaltzis,
+Ben Prew,
 Cees Hek,
 Chris Dolan,
-chromatic, 
+chromatic,
 Curt Sampson,
 David Cantrell,
-David Golden, 
+David Golden,
 David Tulloh,
-David Wheeler, 
+David Wheeler,
 J. K. O'Brien,
 Janek Schleicher,
-Jim Keenan, 
-Jos I. Boumans, 
+Jim Keenan,
+Jos I. Boumans,
 Joshua ben Jore,
 Jost Krieger,
-Mark Fowler, 
-Michael G Schwern, 
+Mark Fowler,
+Michael G Schwern,
 Nadim Khemir,
 Paul McCann,
-Perrin Harkins, 
+Perrin Harkins,
 Peter Rabbitson,
-Peter Scott, 
+Peter Scott,
 Ricardo Signes,
 Rob Muhlestein,
 Scott R. Godin,
 Steve Purkis,
-Steve, 
+Steve,
 Tim Bunce,
 and various anonymous folk for comments, suggestions, bug reports and patches.
 

@@ -76,7 +76,7 @@ sub new {
 
       # Unless we have autoflush, Catalyst likes to buffer all messages
       # until it calls flush(). This is somewhat unusual for Log4perl,
-      # but we just put an army of buffer appenders in front of all 
+      # but we just put an army of buffer appenders in front of all
       # appenders defined in the system.
 
     if(! $options{autoflush} ) {
@@ -185,10 +185,10 @@ In your main Catalyst application module:
     # Either make Log4perl act like the Catalyst default logger:
   __PACKAGE__->log(Log::Log4perl::Catalyst->new());
 
-    # or use a Log4perl configuration file, utilizing the full 
+    # or use a Log4perl configuration file, utilizing the full
     # functionality of Log4perl
   __PACKAGE__->log(Log::Log4perl::Catalyst->new('l4p.conf'));
-  
+
 ... and then sprinkle logging statements all over any code executed
 by Catalyst:
 
@@ -197,7 +197,7 @@ by Catalyst:
 =head1 DESCRIPTION
 
 This module provides Log4perl functions to Catalyst applications. It was
-inspired by Catalyst::Log::Log4perl on CPAN, but has been completely 
+inspired by Catalyst::Log::Log4perl on CPAN, but has been completely
 rewritten and uses a different approach to unite Catalyst and Log4perl.
 
 Log4perl provides loggers, usually associated with the current
@@ -230,19 +230,19 @@ file that looks like
     log4perl.logger.MyApp = DEBUG, Screen
     # ...
 
-or 
+or
 
       # All loggers block messages below INFO
     log4perl.logger=INFO, Screen
     # ...
 
-respectively. See the Log4perl manpage on how to perform fine-grained 
+respectively. See the Log4perl manpage on how to perform fine-grained
 log-level and location filtering, and how to forward messages not only
 to the screen or to log files, but also to databases, email appenders,
 and much more.
 
 Also, you can change the message layout. For example if you want
-to know where a particular statement was logged, turn on file names and 
+to know where a particular statement was logged, turn on file names and
 line numbers:
 
     # Log4perl configuration file
@@ -254,7 +254,7 @@ Messages will then look like
 
     MyApp.pm-1869: INFO Saving user profile for user "wonko"
 
-Or want to log a request's IP address with every log statement? No problem 
+Or want to log a request's IP address with every log statement? No problem
 with Log4perl, just call
 
     Log::Log4perl::MDC->put( "ip", $c->req->address() );
@@ -279,7 +279,7 @@ options.
 
 =item new($config, [%options])
 
-If called without parameters, new() initializes Log4perl in a way 
+If called without parameters, new() initializes Log4perl in a way
 so that messages are logged similarly to Catalyst's default logging
 mechanism. If you provide a configuration, either the name of a configuration
 file or a reference to a scalar string containing the configuration, it
@@ -324,23 +324,23 @@ cranking:
 
 Note the difference between Log4perl's initialization in Catalyst, which
 uses the Catalyst-specific Log::Log4perl::Catalyst module (top of this
-page), and making use of Log4perl's loggers with the standard 
+page), and making use of Log4perl's loggers with the standard
 Log::Log4perl loggers and macros. While initialization requires Log4perl
 to perform dark magic to conform to Catalyst's different logging strategy,
 obtaining Log4perl's logger objects or calling its macros are unchanged.
 
-Instead of using Catalyst's way of referencing the "context" object $c to 
-obtain logger references via its log() method, you can just as well use 
-Log4perl's get_logger() or macros to access Log4perl's logger singletons. 
+Instead of using Catalyst's way of referencing the "context" object $c to
+obtain logger references via its log() method, you can just as well use
+Log4perl's get_logger() or macros to access Log4perl's logger singletons.
 The result is the same.
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -350,7 +350,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -361,8 +361,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

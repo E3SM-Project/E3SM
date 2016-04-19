@@ -8,7 +8,7 @@
     <CCSM_TCOST>0</CCSM_TCOST>
     <DOUT_S>FALSE</DOUT_S>
   </test>
-  
+
   <test NAME="CME">
     <DESC>compare mct and esmf interfaces (default is 10 days for each)</DESC>
     <COMP_INTERFACE>MCT</COMP_INTERFACE>
@@ -18,18 +18,18 @@
     <REST_OPTION>none</REST_OPTION>
     <INFO_DBUG>1</INFO_DBUG>
     <CCSM_TCOST>4</CCSM_TCOST>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="ERI">
     <DESC>hybrid/branch/exact restart test, default 3+19/10+9/5+4 days</DESC>
     <INFO_DBUG>1</INFO_DBUG>
-    <STOP_OPTION>ndays</STOP_OPTION> 
-    <STOP_N>22</STOP_N> 
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>22</STOP_N>
     <CCSM_TCOST>0</CCSM_TCOST>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
-  
+
   <test NAME="ERP">
     <DESC>pes counts hybrid (open-MP/MPI) restart bfb test from startup, default 6 days + 5 days</DESC>
     <INFO_DBUG>1</INFO_DBUG>
@@ -46,7 +46,7 @@
     <CCSM_TCOST>0</CCSM_TCOST>
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>11</STOP_N>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="ERR">
@@ -55,7 +55,7 @@
     <CCSM_TCOST>0</CCSM_TCOST>
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>7</STOP_N>
-    <DOUT_S>TRUE</DOUT_S> 
+    <DOUT_S>TRUE</DOUT_S>
     <RESUBMIT>1</RESUBMIT>
   </test>
 
@@ -67,7 +67,7 @@
     <STOP_N></STOP_N>
     <AVGHIST_OPTION>nmonths</AVGHIST_OPTION>
     <AVGHIST_N>1</AVGHIST_N>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="TESTBUILDFAIL">
@@ -129,7 +129,7 @@
     <COMP_RUN_BARRIERS>TRUE</COMP_RUN_BARRIERS>
     <TIMER_LEVEL>12</TIMER_LEVEL>
     <CCSM_TCOST>4</CCSM_TCOST>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="LAR">
@@ -138,8 +138,8 @@
     <STOP_OPTION>nmonths</STOP_OPTION>
     <STOP_N></STOP_N>
     <CCSM_TCOST>4</CCSM_TCOST>
-    <DOUT_L_MS>TRUE</DOUT_L_MS> 
-    <DOUT_S>TRUE</DOUT_S> 
+    <DOUT_L_MS>TRUE</DOUT_L_MS>
+    <DOUT_S>TRUE</DOUT_S>
   </test>
 
   <test NAME="LII">
@@ -147,7 +147,7 @@
     <INFO_DBUG>1</INFO_DBUG>
     <CCSM_TCOST>0</CCSM_TCOST>
     <REST_OPTION>none</REST_OPTION>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="PEA">
@@ -155,7 +155,7 @@
     <INFO_DBUG>1</INFO_DBUG>
     <REST_OPTION>never</REST_OPTION>
     <CCSM_TCOST>1</CCSM_TCOST>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="PEM">
@@ -164,7 +164,7 @@
     <BFBFLAG>TRUE</BFBFLAG>
     <REST_OPTION>never</REST_OPTION>
     <CCSM_TCOST>1</CCSM_TCOST>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="PET">
@@ -174,7 +174,7 @@
     <BUILD_THREADED>TRUE</BUILD_THREADED>
     <REST_OPTION>never</REST_OPTION>
     <CCSM_TCOST>1</CCSM_TCOST>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="PFS">
@@ -184,28 +184,28 @@
     <STOP_N>20</STOP_N>
     REST_OPTION="none"
     <CCSM_TCOST>0</CCSM_TCOST>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="NCK">
     <DESC>multi-instance validation vs single instance (default length)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <CCSM_TCOST>-1</CCSM_TCOST>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="NCR">
     <DESC>multi-instance validation sequential vs concurrent (default length)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <CCSM_TCOST>-1</CCSM_TCOST>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="NOC">
     <DESC>multi-instance validation for single instance ocean (default length)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <CCSM_TCOST>-1</CCSM_TCOST>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="OCP">
@@ -217,7 +217,7 @@
     <COMP_RUN_BARRIERS>TRUE</COMP_RUN_BARRIERS>
     <TIMER_LEVEL>12</TIMER_LEVEL>
     <CCSM_TCOST>4</CCSM_TCOST>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="PMT">
@@ -228,14 +228,14 @@
     <REST_OPTION>none</REST_OPTION>
     <TIMER_LEVEL>12</TIMER_LEVEL>
     <CCSM_TCOST>4</CCSM_TCOST>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="SBN">
     <DESC>smoke build-namelist test (just run preview_namelist and check_input_data)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <CCSM_TCOST>-1</CCSM_TCOST>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="SEQ">
@@ -245,14 +245,14 @@
     <STOP_N>10</STOP_N>
     <REST_OPTION>never</REST_OPTION>
     <CCSM_TCOST>0</CCSM_TCOST>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="SMS">
     <DESC>smoke startup test (default length)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <CCSM_TCOST>-1</CCSM_TCOST>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="SSP">
@@ -262,14 +262,14 @@
     <STOP_OPTION>ndays</STOP_OPTION>
     <RUN_TYPE>startup</RUN_TYPE>
     <STOP_N>4</STOP_N>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
   <test NAME="STA">
     <DESC>Short-term archiving restart test</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <CCSM_TCOST>-1</CCSM_TCOST>
-    <DOUT_S>FALSE</DOUT_S> 
+    <DOUT_S>FALSE</DOUT_S>
   </test>
 
 </config_test>

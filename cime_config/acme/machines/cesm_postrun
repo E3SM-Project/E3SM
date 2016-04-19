@@ -1,5 +1,5 @@
 #!/bin/csh
-# cesm_postrun without performance data archiving: 
+# cesm_postrun without performance data archiving:
 #  ./cesm_postrun with the following argument keyword/value pairs, in any order
 #   -machine <system name>
 #   -case <case name>

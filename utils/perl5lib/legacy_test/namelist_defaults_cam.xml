@@ -284,11 +284,11 @@
 <fstrat_file      chem="trop_mozart">atm/cam/chem/trop_mozart/ub/ub_vals_moz3.nc</fstrat_file>
 
 <!-- Fossil fuel carbon aerosol surface emissions-->
-  <!-- standard 4 species carbon --> 
+  <!-- standard 4 species carbon -->
 <caer_emis          res="64x128"  >atm/cam/rad/carbon_penner_cooke_doubled_64x128_c021120.nc</caer_emis>
 <caer_emis          res="32x64"   >atm/cam/rad/carbon_penner_cooke_doubled_32x64_c021120.nc</caer_emis>
 <caer_emis dyn="fv" res="4x5"     >atm/cam/rad/carbon_penner_cooke_doubled_4x5_c021120.nc</caer_emis>
-  <!-- 'alternative' 16 species carbon from Tami Bond. --> 
+  <!-- 'alternative' 16 species carbon from Tami Bond. -->
 <caer_emis          res="64x128" nspecies="16" >atm/cam/rad/ftbc-btbc-oct03-64x128_c050929.nc</caer_emis>
 
 

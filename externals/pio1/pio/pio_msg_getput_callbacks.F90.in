@@ -1,9 +1,9 @@
 ! Not a module - this line is required by genf90.pl
 !>
-!! @file 
+!! @file
 !! $Revision$
 !! $LastChangedDate$
-!! @brief Callback functions for Asyncronous IO 
+!! @brief Callback functions for Asyncronous IO
 !<
 subroutine string_handler_for_var1(file, varid, index, ndims, strlen, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
@@ -16,9 +16,9 @@ subroutine string_handler_for_var1(file, varid, index, ndims, strlen, msg)
   integer :: ierr
 
   if(msg==PIO_MSG_GETVAR1) then
-     ierr = pio_get_var(file, varid, index, str )  
+     ierr = pio_get_var(file, varid, index, str )
   else
-     ierr = pio_put_var(file, varid, index, str )  
+     ierr = pio_put_var(file, varid, index, str )
   end if
 end subroutine string_handler_for_var1
 
@@ -56,7 +56,7 @@ subroutine var1_handler(ios, msg)
 
   if(itype == TYPETEXT) then
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-     
+
      call string_handler_for_var1(file, varid, index, size_index, strlen, msg)
   else
      if(msg==pio_msg_getvar1) then
@@ -117,9 +117,9 @@ subroutine vara_{DIMS}d_handler(ios, msg)
   call mpi_bcast(count, ndims, mpi_integer, ios%compmaster, ios%intercomm, ierr)
 
   call MPI_BCAST(dims,{DIMS},MPI_INTEGER,ios%CompMaster, ios%intercomm , ierr)
-  
+
   file=> lookupfile(fh)
-  
+
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
@@ -192,16 +192,16 @@ subroutine string_handler_for_var_0d(file, varid, strlen, msg)
   integer :: ierr
 
   if(msg==PIO_MSG_GETVAR_0D) then
-     ierr = pio_get_var(file, varid, str )  
+     ierr = pio_get_var(file, varid, str )
   else
-     ierr = pio_put_var(file, varid, str )  
+     ierr = pio_put_var(file, varid, str )
   end if
 end subroutine string_handler_for_var_0d
-  
+
 subroutine var_0d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
-  use pio_msg_mod, only : lookupfile, pio_msg_getvar_0d 
+  use pio_msg_mod, only : lookupfile, pio_msg_getvar_0d
   use pio_support, only : debugAsync, piodie
 #ifndef NO_MPIMOD
   use mpi ! _EXTERNAL
@@ -219,13 +219,13 @@ subroutine var_0d_handler (ios, msg)
   real(r4) :: rvar
   real(r8) :: dvar
   integer(i4) :: ivar
-  
+
   call mpi_bcast(fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
   call mpi_bcast(varid, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
   call mpi_bcast(itype, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
 
   file=> lookupfile(fh)
-  
+
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
@@ -249,7 +249,7 @@ subroutine var_0d_handler (ios, msg)
         ierr = pio_put_var(file, varid, ivar)
      end if
   end select
-  
+
 end subroutine var_0d_handler
 
 ! DIMS 1,2,3,4,5
@@ -261,7 +261,7 @@ subroutine string_handler_for_var_{DIMS}d (file, varid, strlen, dims, msg)
   integer, intent(in) :: varid, strlen, dims({DIMS}), msg
 
   character(len=strlen), allocatable :: str{DIMSTR}
-  integer :: ierr  
+  integer :: ierr
 
 #if({DIMS} == 1)
   allocate(str(dims(1)))
@@ -275,14 +275,14 @@ subroutine string_handler_for_var_{DIMS}d (file, varid, strlen, dims, msg)
   allocate(str(dims(1),dims(2),dims(3),dims(4),dims(5)))
 #endif
   if(msg == PIO_MSG_GETVAR_{DIMS}D) then
-     ierr = pio_get_var(file, varid, str )  
+     ierr = pio_get_var(file, varid, str )
   else
-     ierr = pio_put_var(file, varid, str )  
+     ierr = pio_put_var(file, varid, str )
   end if
   deallocate(str)
 
 end subroutine string_handler_for_var_{DIMS}d
-  
+
 ! DIMS 1,2,3,4,5
 subroutine string_handler_for_vara_{DIMS}d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_{DIMS}d
@@ -306,15 +306,15 @@ subroutine string_handler_for_vara_{DIMS}d (file, varid, start, count, strlen, d
   allocate(str(dims(1),dims(2),dims(3),dims(4),dims(5)))
 #endif
   if(msg==pio_msg_getvara_{DIMS}d) then
-     ierr = pio_get_var(file, varid, start, count, str )  
+     ierr = pio_get_var(file, varid, start, count, str )
   else
      str = ' '
-     ierr = pio_put_var(file, varid, start, count, str )  
+     ierr = pio_put_var(file, varid, start, count, str )
   end if
   deallocate(str)
 
 end subroutine string_handler_for_vara_{DIMS}d
-  
+
 
 ! DIMS 1,2,3,4,5
 subroutine var_{DIMS}d_handler (ios, msg)
@@ -340,7 +340,7 @@ subroutine var_{DIMS}d_handler (ios, msg)
   real(r4), allocatable    :: rvar{DIMSTR}
   real(r8), allocatable    :: dvar{DIMSTR}
   integer(i4), allocatable :: ivar{DIMSTR}
-  
+
   call mpi_bcast(fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
   call mpi_bcast(varid, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
   call mpi_bcast(itype, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
@@ -350,7 +350,7 @@ subroutine var_{DIMS}d_handler (ios, msg)
 
 
   file=> lookupfile(fh)
-  
+
   select case(itype)
   case (TYPETEXT)
      call mpi_bcast(strlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
@@ -386,9 +386,9 @@ subroutine var_{DIMS}d_handler (ios, msg)
   allocate(dvar(dims(1),dims(2),dims(3),dims(4),dims(5)))
 #endif
      if(msg==pio_msg_getvar_{DIMS}d ) then
-        ierr = pio_get_var(file, varid,  dvar)  
+        ierr = pio_get_var(file, varid,  dvar)
      else
-        ierr = pio_put_var(file, varid,  dvar)  
+        ierr = pio_put_var(file, varid,  dvar)
      end if
      deallocate(dvar)
   case (TYPEINT)
@@ -410,6 +410,6 @@ subroutine var_{DIMS}d_handler (ios, msg)
      end if
      deallocate(ivar)
   end select
-  
+
 end subroutine var_{DIMS}d_handler
 

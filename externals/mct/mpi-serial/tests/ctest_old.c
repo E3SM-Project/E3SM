@@ -56,7 +56,7 @@ main(int argc, char *argv[])
       MPI_Irecv(&rbuf[2*i],1,MPI_2INT,
 		0,tag,MPI_COMM_WORLD,&rreq[i]);
 
-      
+
     }
 
 
@@ -134,10 +134,10 @@ main(int argc, char *argv[])
   for (i=0; i<5; i++)
     {
       temp=100+i;
-      MPI_Pack(&temp, 1, MPI_INT, sbuf, 20, &position, MPI_COMM_WORLD); 
+      MPI_Pack(&temp, 1, MPI_INT, sbuf, 20, &position, MPI_COMM_WORLD);
     }
 
-  MPI_Isend( sbuf, position, MPI_PACKED, 0, 0, MPI_COMM_WORLD,&sreq[0]); 
+  MPI_Isend( sbuf, position, MPI_PACKED, 0, 0, MPI_COMM_WORLD,&sreq[0]);
 
   MPI_Irecv( rbuf, position, MPI_PACKED, 0, 0, MPI_COMM_WORLD, &rreq[0] );
   MPI_Waitall(1,rreq,status);

@@ -65,11 +65,11 @@ module shr_pio_mod
 
 
 contains
-!> 
+!>
 !! @public
 !! @brief should be the first routine called after mpi_init. It reads the pio default settings from file drv_in, namelist pio_default_inparm
-!! and, if pio_async_interface is true, splits the IO tasks away from the Compute tasks.  It then returns the new compute comm in  
-!! Global_Comm and sets module variable io_comm.   
+!! and, if pio_async_interface is true, splits the IO tasks away from the Compute tasks.  It then returns the new compute comm in
+!! Global_Comm and sets module variable io_comm.
 !!
 !<
   subroutine shr_pio_init1(ncomps, nlfilename, Global_Comm)
@@ -123,13 +123,13 @@ contains
     end if
     total_comps = ncomps
   end subroutine shr_pio_init1
-!> 
+!>
 !! @public
-!! @brief if pio_async_interface is true, tasks in io_comm do not return from this subroutine.  
-!! 
+!! @brief if pio_async_interface is true, tasks in io_comm do not return from this subroutine.
+!!
 !! if pio_async_interface is false each component namelist pio_inparm is read from compname_modelio.nml
 !! Then a subset of each components compute tasks are Identified as IO tasks using the root, stride and count
-!! variables to select the tasks.   
+!! variables to select the tasks.
 !!
 !<
 
@@ -174,7 +174,7 @@ contains
     io_compid = comp_id
     io_compname = comp_name
     allocate(iosystems(total_comps))
-    
+
     if(pio_async_interface) then
 #ifdef PIO1
        call pio_init(total_comps,mpi_comm_world, comp_comm, io_comm, iosystems, rearr_opts=pio_rearr_opts)
@@ -298,7 +298,7 @@ contains
      implicit none
      integer, intent(in) :: compid
      integer :: i
-     
+
      index = -1
      do i=1,total_comps
         if(io_compid(i)==compid) then
@@ -317,14 +317,14 @@ contains
      use shr_string_mod, only : shr_string_toupper
 
      implicit none
-     
+
      ! 'component' must be equal to some element of io_compname(:)
      ! (but it is case-insensitive)
      character(len=*), intent(in) :: component
 
      character(len=len(component)) :: component_ucase
      integer :: i
-     
+
      ! convert component name to upper case in order to match case in io_compname
      component_ucase = shr_string_toUpper(component)
 
@@ -367,7 +367,7 @@ contains
 
   subroutine shr_pio_read_default_namelist(nlfilename, Comm, pio_stride, pio_root, pio_numiotasks, &
        pio_iotype, pio_async_interface, pio_rearranger)
-    
+
     character(len=*), intent(in) :: nlfilename
     integer, intent(in) :: Comm
     logical, intent(out) :: pio_async_interface
@@ -381,7 +381,7 @@ contains
 
     integer :: iam, ierr, npes, unitn
     logical :: iamroot
-#ifdef PIO1    
+#ifdef PIO1
     namelist /pio_default_inparm/ pio_stride, pio_root, pio_numiotasks, &
           pio_typename, pio_async_interface, pio_debug_level, pio_blocksize, &
           pio_buffer_size_limit, pio_rearranger, &
@@ -407,7 +407,7 @@ contains
     end if
 
     !--------------------------------------------------------------------------
-    ! read io nml parameters 
+    ! read io nml parameters
     !--------------------------------------------------------------------------
     pio_stride   = -99 ! set based on pio_numiotasks value when initialized < 0
     pio_numiotasks = -99 ! set based on pio_stride   value when initialized < 0
@@ -456,13 +456,13 @@ contains
 
      call shr_pio_namelist_set(npes, Comm, pio_stride, pio_root, pio_numiotasks, pio_iotype, &
           iamroot, pio_rearranger)
-     
+
     call shr_mpi_bcast(pio_debug_level, Comm)
     call shr_mpi_bcast(pio_blocksize, Comm)
     call shr_mpi_bcast(pio_buffer_size_limit, Comm)
     call shr_mpi_bcast(pio_async_interface, Comm)
     call shr_mpi_bcast(pio_rearranger, Comm)
-    
+
 #ifdef PIO1
      call shr_pio_rearr_opts_set(Comm, pio_rearr_comm_type, pio_rearr_comm_fcd, &
            pio_rearr_comm_max_pend_req, pio_rearr_comm_enable_hs, &
@@ -478,7 +478,7 @@ contains
     integer, intent(inout) :: pio_stride, pio_root, pio_numiotasks, pio_iotype, pio_rearranger
     character(len=SHR_KIND_CS) ::  pio_typename
     integer :: unitn
-    
+
     integer :: iam, ierr, npes
     logical :: iamroot
     character(*),parameter :: subName =   '(shr_pio_read_component_namelist) '
@@ -509,7 +509,7 @@ contains
 
 
     !--------------------------------------------------------------------------
-    ! read io nml parameters 
+    ! read io nml parameters
     !--------------------------------------------------------------------------
     pio_stride   = -99 ! set based on pio_numiotasks value when initialized < 0
     pio_numiotasks = -99 ! set based on pio_stride   value when initialized < 0
@@ -644,12 +644,12 @@ contains
     endif
     if(pio_rearranger .ne. PIO_REARR_SUBSET .and. pio_rearranger .ne. PIO_REARR_BOX) then
        write(shr_log_unit,*) 'pio_rearranger value, ',pio_rearranger,&
-            ', not supported - using PIO_REARR_BOX' 
+            ', not supported - using PIO_REARR_BOX'
        pio_rearranger = PIO_REARR_BOX
-       
+
     endif
 
-   
+
     if (pio_root + (pio_stride)*(pio_numiotasks-1) >= npes .or. &
          pio_stride<=0 .or. pio_numiotasks<=0 .or. pio_root < 0 .or. &
          pio_root > npes-1) then

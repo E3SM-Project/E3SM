@@ -41,7 +41,7 @@ def getvar(fname, varname):
         var = nffile.variables[varname]
         varvals = var[:].copy()    #works for vector only?
         nffile.close()
-    else:    
+    else:
     	nffile = netcdf.NetCDFFile(fname,"r")
     	var = nffile.variables[varname]
     	varvals = var.getValue()
@@ -125,7 +125,7 @@ for v in var_list:
         myvarst=''
         vartemp=0.0
         for i in range(0,len(myvar)):
-            vartemp = vartemp+myvar[i]/int(options.nav) 
+            vartemp = vartemp+myvar[i]/int(options.nav)
             if ((i+1) % int(options.nav) == 0):
                 myvarst  = myvarst+(str(float(vartemp)))+' '
                 vartemp=0

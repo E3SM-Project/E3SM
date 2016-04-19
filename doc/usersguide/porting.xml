@@ -18,9 +18,9 @@ machine.
 </para>
 
 <para>
-It is usually very helpful to assure that you can run a basic mpi parallel 
-program on your machine prior to attempting a CESM port.   Understanding 
-how to compile and run the program fhello_world_mpi.F90 shown here could potentially 
+It is usually very helpful to assure that you can run a basic mpi parallel
+program on your machine prior to attempting a CESM port.   Understanding
+how to compile and run the program fhello_world_mpi.F90 shown here could potentially
 save many hours of frustration.
 </para>
 <screen>
@@ -72,7 +72,7 @@ a simple parallel CESM configuration that requires minimal input data.
 Once that is working move to an A compset with resolution f45_g37.
 Once that's working, run a B compset at resolution f45_g37. Finally
 when all the previous steps have run correctly, run your target
-compset and resolution.  
+compset and resolution.
 </para>
 </sect1>
 
@@ -108,18 +108,18 @@ now required to set.
 </para>
 
 <screen>
-ERROR: must set xml variable OS to generate Macros file 
-ERROR: must set xml variable MAX_TASKS_PER_NODE to build the model 
-ERROR: must set xml variable MPILIB to build the model 
-ERROR: must set xml variable RUNDIR to build the model 
-ERROR: must set xml variable DIN_LOC_ROOT to build the model 
-ERROR: must set xml variable COMPILER to build the model 
-ERROR: must set xml variable EXEROOT to build the model 
-Correct above and issue cesm_setup again 
+ERROR: must set xml variable OS to generate Macros file
+ERROR: must set xml variable MAX_TASKS_PER_NODE to build the model
+ERROR: must set xml variable MPILIB to build the model
+ERROR: must set xml variable RUNDIR to build the model
+ERROR: must set xml variable DIN_LOC_ROOT to build the model
+ERROR: must set xml variable COMPILER to build the model
+ERROR: must set xml variable EXEROOT to build the model
+Correct above and issue cesm_setup again
 </screen>
 
 <para>
-The definition of every env variable can be found on the <ulink url="../modelnl">CASEROOT xml page</ulink>. 
+The definition of every env variable can be found on the <ulink url="../modelnl">CASEROOT xml page</ulink>.
 Enter appropriate settings for the above xml variables
 in &env_build.xml;, &env_mach_pes.xml; and &env_run.xml;. Calling
 <command>cesm_setup</command> again should now produce a
@@ -131,7 +131,7 @@ for your port.  In addition build and run scripts will be generated.
 <filename>Macros</filename> files to get ready to build the model.
 The string USERDEFINED in these files indicate the locations where modifications
 are likely.  In particular <filename>env_mach_specific</filename> is
-where modules, paths, or machine environment variables need to be 
+where modules, paths, or machine environment variables need to be
 set especially related to compilers, mpi, and netcdf.
 <filename>Macros</filename> is where the Makefile variables
 are set.  You can find the <filename>Makefile</filename> in the Tools directory.  In
@@ -145,7 +145,7 @@ commands like mpif90 automatically.</para>
 
 <para>
 As an example, suppose your machine uses Modules (i.e. the Modules package provides for
-the dynamic modification of a user's environment via modulefiles). 
+the dynamic modification of a user's environment via modulefiles).
 The following setting from env_mach_specific.bluewaters sets the compiler and netcdf
 versions.
 </para>
@@ -153,7 +153,7 @@ versions.
 # invoking modules sets $MPICH_DIR and $NETCDF_DIR
 if ( $COMPILER == "pgi" ) then
     module load PrgEnv-pgi
-    module switch pgi       pgi/11.10.0        
+    module switch pgi       pgi/11.10.0
 endif
 module load torque/2.5.10
 module load netcdf-hdf5parallel/4.1.3
@@ -168,7 +168,7 @@ NETCDF_PATH:= $(NETCDF_DIR)
 </screen>
 
 <para>
-So in this example the system module defines a variable NETCDF_DIR, 
+So in this example the system module defines a variable NETCDF_DIR,
 but CESM expects NETCDF_PATH to be set and that copy is made in the Macros file.
 
 While CESM supports use of pnetcdf in PIO (which requires setting
@@ -186,7 +186,7 @@ Build the case
 <para>
 This step will often fail if paths to compilers, compiler versions, or
 libraries are not set properly, if compiler options are not set
-properly, or if machine environment variables are not set properly.  
+properly, or if machine environment variables are not set properly.
 Review and edit the <filename>env_mach_specific</filename> and
 <filename>Macros</filename> files, clean the build,
 </para>
@@ -201,7 +201,7 @@ and try rebuilding again.
 job submission or run script.  Modifications are needed to specify
 the local batch environment and the job launch command.  Again, the string
 USERDEFINED will indicate where those changes are needed.  Once the batch and
-launch commands are set, run the model using your local job submission command.  
+launch commands are set, run the model using your local job submission command.
 qsub is used here for example.
 </para>
 <screen>
@@ -259,9 +259,9 @@ url="../modelnl/env_run.html">env_run.xml</ulink> and <ulink
 url="../modelnl/env_mach_pes.html">env_mach_pes.xml</ulink> files.  Some
 of the important ones are MACH which should be set to wilycoyote,
 EXEROOT which should be set to a generic working directory like
-/tmp/scratch/$CCSMUSER/$CASE shared by and write accessable to all 
+/tmp/scratch/$CCSMUSER/$CASE shared by and write accessable to all
 compute nodes, DIN_LOC_ROOT which should be set to the
-path to the CESM inputdata directory (read accessable to all compute nodes), 
+path to the CESM inputdata directory (read accessable to all compute nodes),
 BATCHQUERY and BATCHJOBS which
 specify the query and submit command lines for batch jobs and are used
 to chain jobs together in production, and MAX_TASKS_PER_NODE which set
@@ -302,14 +302,14 @@ wilycoyote machine setup
                  -compset X \
                  -mach wilycoyote
 > cd test1_wilycoyote
-> ./cesm_setup   
+> ./cesm_setup
 > ./test1_wilycoyote.build
 > qsub test1_wilycoyote.run
 </screen>
 The point is to confirm that test1_wilycoyote runs fine and is
 consistent with the original test1 case.  Once that works, test other
 configurations then move to port validation, see <xref
-linkend="port_process"/>.  
+linkend="port_process"/>.
 You should expect that getting this to work will be an iterative
 process.  Changes will probably be made in both the
 <filename>config_machines.xml</filename> and in
@@ -368,21 +368,21 @@ ERT.ne30_g16.B1850CN
 </listitem>
 
 <listitem>
-<para> Verify performance and scaling analysis.</para> 
+<para> Verify performance and scaling analysis.</para>
 <orderedlist>
 
-<listitem><para> 
+<listitem><para>
 Create one or two <link
 linkend="running_ccsm_loadbalance">load-balanced</link> configurations
 to check into <filename>Machines/config_pes.xml</filename> for the new
 machine.  </para></listitem>
 
 <listitem><para>
-Verify that performance and scaling are reasonable.</para></listitem> 
+Verify that performance and scaling are reasonable.</para></listitem>
 
-<listitem><para> 
+<listitem><para>
 Review timing summaries in $&CASEROOT; for load balance and throughput.
-</para></listitem> 
+</para></listitem>
 
 <listitem><para> Review coupler "daily" timing output for timing
 inconsistencies.  As has been mentioned in the section on <link

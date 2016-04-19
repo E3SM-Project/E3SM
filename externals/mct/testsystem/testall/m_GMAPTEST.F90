@@ -13,8 +13,8 @@
 
       public :: testall
 
-    interface testall  
-       module procedure testGMap_  
+    interface testall
+       module procedure testGMap_
     end interface
 
 
@@ -29,10 +29,10 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: testGMap_ - Test the functions in the AttrVect module 
+! !IROUTINE: testGMap_ - Test the functions in the AttrVect module
 !
 ! !DESCRIPTION:
-! This routine writes diagnostic information about the input 
+! This routine writes diagnostic information about the input
 ! {\tt AttrVect}. Each line of the output will be preceded by the
 ! character argument {\tt identifier}. The output device is specified
 ! by the integer argument {\tt device}.
@@ -44,15 +44,15 @@
 !
 ! !USES:
 !
-      use m_GlobalMap         ! Use all of MCTWorld 
+      use m_GlobalMap         ! Use all of MCTWorld
       use m_GlobalToLocal,only : GlobalToLocalIndex
-      use m_stdio       
+      use m_stdio
       use m_die
       use m_mpif90
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(GlobalMap),            intent(in)  :: GMap
       character(len=*),           intent(in)  :: identifier
@@ -72,11 +72,11 @@
   write(device,*) identifier, ":: comp_id = ", GMap%comp_id
   write(device,*) identifier, ":: gsize = ", GMap%gsize
   write(device,*) identifier, ":: lsize = ", GMap%lsize
-  
+
   mySize = size(GMap%counts)
 
   if(mySize<=0) call die(myname_,"size(GMap%counts)<=0")
-  
+
   if(size(GMap%counts) /= size(GMap%displs)) then
      call die(myname_,"size(GMap%counts) /= size(GMap%displs)")
   endif
@@ -139,7 +139,7 @@
            k=GlobalToLocalIndex(GMap,i,mycomm)
         endif
      enddo
-     
+
      if( (j==-12345).and.(k==-12345) ) then
         write(device,*) identifier, ":: GlobalMapToIndex :: &
              &THIS PROCESS OWNS ZERO POINTS"

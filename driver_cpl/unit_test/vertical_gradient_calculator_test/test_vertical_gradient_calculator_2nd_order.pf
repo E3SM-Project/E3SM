@@ -1,7 +1,7 @@
 module test_vertical_gradient_calculator_2nd_order
-  
+
   ! Tests of vertical_gradient_calculator_2nd_order
-  
+
   use pfunit_mod
   use vertical_gradient_calculator_base
   use vertical_gradient_calculator_2nd_order
@@ -10,11 +10,11 @@ module test_vertical_gradient_calculator_2nd_order
   use mct_wrapper_mod, only : mct_init, mct_clean
   use avect_wrapper_mod
   use glc_elevclass_mod, only : glc_elevclass_as_string
-  
+
   implicit none
 
   real(r8), parameter :: tol = 1.e-13_r8
-  
+
   @TestCase
   type, extends(TestCase) :: TestVertGradCalc2ndOrder
      type(mct_aVect) :: av
@@ -24,16 +24,16 @@ module test_vertical_gradient_calculator_2nd_order
      procedure :: create_av
      procedure :: create_calculator
   end type TestVertGradCalc2ndOrder
-  
+
 contains
-  
+
   subroutine setUp(this)
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
 
     call mct_init()
-    
+
   end subroutine setUp
-  
+
   subroutine tearDown(this)
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
 
@@ -66,13 +66,13 @@ contains
     do elevclass = 1, n_elev_classes
        attr_tags(n_elev_classes + elevclass) = toponame // glc_elevclass_as_string(elevclass)
     end do
-       
+
     call create_aVect_with_data_rows_are_points(this%av, &
          attr_tags = attr_tags, &
          data = reshape([data, topo], [npts, n_elev_classes * 2]))
 
   end subroutine create_av
-    
+
 
   function create_calculator(this, topo, data) result(calculator)
     type(vertical_gradient_calculator_2nd_order_type) :: calculator
@@ -85,7 +85,7 @@ contains
 
     call this%create_av(topo, data, 'topo', 'data')
     n_elev_classes = size(data,2)
-    
+
     calculator = vertical_gradient_calculator_2nd_order_type( &
          attr_vect = this%av, &
          fieldname = 'data', &
@@ -108,7 +108,7 @@ contains
          [11._r8, 12._r8, 13._r8, &
          14._r8, 15._r8, 16._r8], &
          [3, 2])
-    
+
     call this%create_av(topo, data, 'topo', 'data')
 
     @assertEqual([4._r8, 5._r8, 6._r8], aVect_exportRattr(this%av, 'topo' // glc_elevclass_as_string(2)))
@@ -116,7 +116,7 @@ contains
     @assertEqual([14._r8, 15._r8, 16._r8], aVect_exportRattr(this%av, 'data' // glc_elevclass_as_string(2)))
 
   end subroutine test_create_av
-    
+
   @Test
   subroutine test_calc_vertical_gradient_ECmid(this)
     ! Test calc_vertical_gradient with an elevation class in the middle of the range
@@ -129,12 +129,12 @@ contains
     real(r8) :: expected_vertical_gradient(1)
 
     calculator = this%create_calculator(topo=topo, data=data)
-    
+
     call calculator%calc_vertical_gradient(2, vertical_gradient)
 
     expected_vertical_gradient(1) = (data(1,3) - data(1,1)) / (topo(1,3) - topo(1,1))
     @assertEqual(expected_vertical_gradient, vertical_gradient, tolerance=tol)
-    
+
   end subroutine test_calc_vertical_gradient_ECmid
 
   @Test
@@ -149,14 +149,14 @@ contains
     real(r8) :: expected_vertical_gradient(1)
 
     calculator = this%create_calculator(topo=topo, data=data)
-    
+
     call calculator%calc_vertical_gradient(1, vertical_gradient)
 
     expected_vertical_gradient(1) = (data(1,2) - data(1,1)) / (topo(1,2) - topo(1,1))
     @assertEqual(expected_vertical_gradient, vertical_gradient, tolerance=tol)
-    
+
   end subroutine test_calc_vertical_gradient_ECbottom
-  
+
   @Test
   subroutine test_calc_vertical_gradient_ECtop(this)
     ! Test calc_vertical_gradient with an elevation class at the top edge. This uses a
@@ -169,12 +169,12 @@ contains
     real(r8) :: expected_vertical_gradient(1)
 
     calculator = this%create_calculator(topo=topo, data=data)
-    
+
     call calculator%calc_vertical_gradient(3, vertical_gradient)
 
     expected_vertical_gradient(1) = (data(1,3) - data(1,2)) / (topo(1,3) - topo(1,2))
     @assertEqual(expected_vertical_gradient, vertical_gradient, tolerance=tol)
-    
+
   end subroutine test_calc_vertical_gradient_ECtop
 
   @Test
@@ -189,14 +189,14 @@ contains
     real(r8) :: expected_vertical_gradient(1)
 
     calculator = this%create_calculator(topo=topo, data=data)
-    
+
     call calculator%calc_vertical_gradient(1, vertical_gradient)
 
     expected_vertical_gradient(1) = 0._r8
     @assertEqual(expected_vertical_gradient, vertical_gradient, tolerance=tol)
 
   end subroutine test_calc_vertical_gradient_1EC
-    
+
   @Test
   subroutine test_calc_vertical_gradient_toposEqual(this)
     ! Test calc_vertical_gradient with topo values equal - make sure this edge case is
@@ -209,12 +209,12 @@ contains
     real(r8) :: expected_vertical_gradient(1)
 
     calculator = this%create_calculator(topo=topo, data=data)
-    
+
     call calculator%calc_vertical_gradient(2, vertical_gradient)
 
     expected_vertical_gradient(1) = 0._r8
     @assertEqual(expected_vertical_gradient, vertical_gradient, tolerance=tol)
-    
+
   end subroutine test_calc_vertical_gradient_toposEqual
 
   @Test
@@ -243,15 +243,15 @@ contains
     real(r8) :: expected_vertical_gradient(npts)
 
     calculator = this%create_calculator(topo=topo, data=data)
-    
+
     call calculator%calc_vertical_gradient(2, vertical_gradient)
 
     expected_vertical_gradient(1) = (data(1,3) - data(1,1)) / (topo(1,3) - topo(1,1))
     expected_vertical_gradient(2) = 0._r8
     expected_vertical_gradient(3) = (data(3,3) - data(3,1)) / (topo(3,3) - topo(3,1))
     @assertEqual(expected_vertical_gradient, vertical_gradient, tolerance=tol)
-    
+
   end subroutine test_calc_vertical_gradient_multiplePoints
-  
-  
+
+
 end module test_vertical_gradient_calculator_2nd_order

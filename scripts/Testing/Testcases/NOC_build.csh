@@ -47,6 +47,6 @@ endif
 
 ./case.build --testmode $*
 if ($status != 0) then
-   exit -1    
-endif 
+   exit -1
+endif
 

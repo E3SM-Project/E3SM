@@ -26,8 +26,8 @@ conservative maps, it also checks for conservation.
 USAGE: INTERACTIVE MODE
 =======================
 
-create_ESMF_map.sh 
-  --filesrc|-fsrc  input source grid_filename (required) 
+create_ESMF_map.sh
+  --filesrc|-fsrc  input source grid_filename (required)
   --filedst|-fdst  input destination grid_filename (required)
   --namesrc|-nsrc  output source name in mapping file (required)
   --namedst|-ndst  output destination name in mapping file (required)
@@ -42,13 +42,13 @@ create_ESMF_map.sh
   [ --large_file|-big ]
   [ --help|-h ]
   [ -v ]
- 
-where 
+
+where
  --filesrc (or -fsrc)
    SCRIP grid format source filename (full pathname)
  --filedst (or -fdst)
    SCRIP grid format destination filename (full pathname)
- --namesrc (or -nsrc) and --namesrc (or -nsrc) will result in the 
+ --namesrc (or -nsrc) and --namesrc (or -nsrc) will result in the
    following mapping files
      namesrc_TO_namedst_maptype.cdate.nc
 
@@ -76,12 +76,12 @@ where
    geyser, caldera, pronghorn, and jaguar. Note that this script will
    determine the machine name automatically from the hostfile command.
  -d
-   toggle debug-only 
- --help or -h  
+   toggle debug-only
+ --help or -h
    displays this help message
 
 You can also set the following env variables:
-  ESMFBIN_PATH - Path to ESMF binaries 
+  ESMFBIN_PATH - Path to ESMF binaries
                  (Leave unset on yellowstone and caldera and the tool
                  will be loaded from modules)
   MPIEXEC ------ Name of mpirun executable

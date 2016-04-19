@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 # Make list of files containing source code.  The source list contains all
-# .F90, .f90, .F, .f, .c and .cpp files in a specified list of directories. 
+# .F90, .f90, .F, .f, .c and .cpp files in a specified list of directories.
 # The directories are specified one per line in a file called Filepath which
 # this script tries to open in the current directory.  The current
 # directory is prepended to the specified list of directories.  If Filepath

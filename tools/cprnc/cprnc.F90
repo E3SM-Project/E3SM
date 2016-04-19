@@ -24,7 +24,7 @@ program piocprnc
 !
 ! Parse arg list
 !
-  
+
 
    nargs = command_argument_count ()
    dimoptioncnt=0
@@ -37,7 +37,7 @@ program piocprnc
       select case (arg)
       case ('-v')
          verbose = .true.
-      case ('-d') 
+      case ('-d')
          call getarg(n, arg)
          n=n+1
          dimoptioncnt=dimoptioncnt+1
@@ -62,7 +62,7 @@ program piocprnc
    end do
 !
 ! Must have at least 1 file input
-!      
+!
    if (fname(1) == ' ') then
       call usage_exit ('You must enter at least 1 input file')
    end if
@@ -85,7 +85,7 @@ program piocprnc
    if(numcases==2) then
       call compare_metadata(file(1), file(2))
 
-      call compare_dimensions( file(1)%dim, file(2)%dim) 
+      call compare_dimensions( file(1)%dim, file(2)%dim)
 
       call match_vars( file(1), file(2) )
    end if
@@ -129,7 +129,7 @@ program piocprnc
      implicit none
 
      character(len=*), intent(in) :: arg
-  
+
      if (arg /= ' ') write (6,*) arg
      write(6,*)'Usage: cprnc  [-m] [-v] [-d dimname:start[:count]] file1 [file2]'
      write(6,*)'-v: Verbose output'
@@ -137,7 +137,7 @@ program piocprnc
      write(6,*)'-d dimname:start[:count]: Print variable values for the specified dimension index start and count. If not present,'
      write(6,*)'                          count will default to 1.  If count is < 0 then count will be set to dimsize-start'
      write(6,*)'                           '
- 
+
      stop 999
    end subroutine usage_exit
 
@@ -146,7 +146,7 @@ program piocprnc
      !-------------------------------------------------------------------------------------------
      ! Purpose: Parse cmd line args about printing.
      !
-     ! Method:  Input is expected in the form: dimname:number1[:number2] where dimname is expected to 
+     ! Method:  Input is expected in the form: dimname:number1[:number2] where dimname is expected to
      !           be the name of a dimension in the input file(s), number1 is the starting position in that
      !           dimension to be evaluated and number2 is the number of values to read in the dimension
      !           if number2 is missing all remaining values are read.
@@ -155,14 +155,14 @@ program piocprnc
      implicit none
 
      character(len=*), intent(in) :: arg    ! cmd line arg expected of the form 'num1:num2' or 'num1'
-     
+
      character(len=*), intent(out) :: dimname
      integer, intent(out) :: v1             ! e.g. num1 from above example
      integer, intent(out) :: v2             ! e.g. num2 from above example
 
      integer :: i, j                        ! indices through arg
      integer :: ierr                        ! io error status
-     
+
      !
      ! First get a dimension name
      !
@@ -183,7 +183,7 @@ program piocprnc
      ! Next, if ":" comes after the number, look for the next number
      !
      i=j
-    
+
      if (arg(i:i) == ':') then
         j = i + 1
         do while (j < len(arg) .and. scan(arg(j:j),"-0123456789")>0)

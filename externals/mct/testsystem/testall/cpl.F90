@@ -2,7 +2,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id: cpl.F90,v 1.25 2007-12-18 00:02:05 jacob Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !BOP -------------------------------------------------------------------
 !
 ! !ROUTINE: cpl  -- coupler for unit tester
@@ -83,7 +83,7 @@
       use m_MCTWorld,only: MCTWorld_initialized => initialized
       use m_MCTWorld,only: MCTWorld_init => init
       use m_MCTWorld,only: MCTWorld_clean => clean
-!---Intercomponent communications scheduler 
+!---Intercomponent communications scheduler
       use m_Router,only: Router
       use m_Router,only: MCT_Router_init => init
       use m_Router,only: MCT_Router_print => print    ! rml
@@ -115,7 +115,7 @@
       use m_SparseMatrixPlus, only : XandY ! Arbitrary row/column decomp
 !---Accumulation data type and methods
       use m_Accumulator, only : Accumulator
-      use m_Accumulator, only : accumulate 
+      use m_Accumulator, only : accumulate
       use m_Accumulator, only : MCT_Accumulator_init => init
       use m_Accumulator, only : MCT_Accumulator_clean => clean
       use m_Accumulator, only : Accumulator_lsize => lsize
@@ -129,7 +129,7 @@
 !---mpeu file reading routines
       use m_inpak90
 !---mpeu routines for MPI communications
-      use m_mpif90            
+      use m_mpif90
 !---mpeu timers
       use m_zeit
 !---mpeu stdout/stderr
@@ -215,15 +215,15 @@
       integer :: Nox, Noy                     ! Ocean lons, lats
       integer :: NPROCS_LATA, NPROCS_LONA     ! Processor layout
 
-!  Arrays used to initialize the MCT GlobalSegMap     
+!  Arrays used to initialize the MCT GlobalSegMap
       integer :: asize,asize2,i,j,k
       integer :: osize,osize2
       integer,dimension(1) :: start,length
 !     integer,dimension(:),pointer :: lstart,llength
 
 !  Number of accumulation steps and accumulator dummy variables
-      integer :: steps    
-      integer, parameter :: nsteps = 10       
+      integer :: steps
+      integer, parameter :: nsteps = 10
       character*64 :: ACCA2O_rList
       integer, dimension(:), allocatable :: ACCA2O_rAction
 
@@ -269,7 +269,7 @@
 ! AttrVect for data from the atm on the ocean grid
       type(AttrVect) :: fromatm_ocn
 
-! Coupler AttrVect for data from process 1 to process 0 
+! Coupler AttrVect for data from process 1 to process 0
       type(AttrVect) :: fromP1
 
 ! AttrVect for data from the ocn
@@ -299,23 +299,23 @@
 
 ! Test GlobalSegMap for sMat gather
       type(GlobalSegMap) :: MatGSMap
-      
+
 ! a2o and o2a distributed SparseMatrixPlus variables
       type(SparseMatrixPlus) :: A2OMatPlus, O2AMatPlus
 
 ! The atmosphere's grid recieved from the atmosphere
       type(GeneralGrid) :: AtmGrid
 
-! The atmosphere's distributed grid 
+! The atmosphere's distributed grid
       type(GeneralGrid) :: dAtmGrid
 
 ! The ocean's grid recieved from the ocean
       type(GeneralGrid) :: OcnGrid
 
-! The ocean's distributed grid 
+! The ocean's distributed grid
       type(GeneralGrid) :: dOcnGrid
 
-! Test grid for scatter,gather,bcast 
+! Test grid for scatter,gather,bcast
       type(GeneralGrid) :: scatterGGrid, gatherGGrid
 
 !::DEFINE POP REMAP MATRIX DIMENSIONS::
@@ -332,8 +332,8 @@
   call MPI_COMM_RANK (MPI_COMM_WORLD, myProc_global, ierr)
   call MPI_COMM_RANK (CPL_World, myProc, ierr)
 ! write(*,*) myProc, ' in cpl === ', myProc_global, ' in global'
-! write(*,*) 'MPH_local_proc_id()=', MPH_local_proc_id_ME_SE() 
-! write(*,*) 'MPH_global_proc_id()=', MPH_global_proc_id() 
+! write(*,*) 'MPH_local_proc_id()=', MPH_local_proc_id_ME_SE()
+! write(*,*) 'MPH_global_proc_id()=', MPH_global_proc_id()
 
   call MPI_COMM_SIZE(CPL_World,mySize,ierr)
   if (myProc==0) call MPH_redirect_output ('cpl')
@@ -397,7 +397,7 @@
      NPROCS_LONA = I90_GInt(ierr)
 
      call I90_Release(ierr)
-         
+
   endif
 
   root = MCTComponentRootRank(mycompid,ThisMCTWorld)
@@ -481,7 +481,7 @@
 ! describe this information in a Global Map for the atmosphere.
   if(myProc==0)write(stdout,*) cplname, ":: Inializing AGSMap"
   call zeit_ci('Cagsmapinit')
-! rml test of the copy 
+! rml test of the copy
    call MCT_GSMap_init(testAGSMap,start,length,0,CPL_World,mycompid)
    call MCT_GSMap_copy(testAGSMap,AGSMap)
    call MCT_GSMap_clean(testAGSMap)
@@ -551,7 +551,7 @@
 
      call GlobalSegMap_isend(OGSMap,ocn_id,888,sendrequest,ierr)
      if(ierr/=0) call die(cplname,"call GlobalSegMap_isend")
-     
+
      ! Careful: sendrequest gets allocated with length 6 inside GSMap_isend
      allocate(sendstatus(MP_STATUS_SIZE,6),stat=ierr)
      if(ierr/=0) call die(cplname,"allocate(sendstatus)")
@@ -568,7 +568,7 @@
   call GlobalSegMapToGlobalMap(OCN_OGSMap,OCN_OGMap,ierr)
   if(ierr/=0) call die(cplname,"GlobalSegMapToGlobalMap(OCN_OGSMap,OCN_OGMap)")
   call GMap_test(GMap=OCN_OGMap,Identifier="CPL->OCN_OGMap",device=4000+myProc)
-  
+
   call GlobalMap_init_remote(rOGMap,OCN_OGMap%counts,&
        size(OCN_OGMap%counts),0,CPL_World,OCN_OGMap%comp_id)
   call GMap_test(GMap=rOGMap,Identifier="CPL::rOGMap",device=4100+myProc)
@@ -694,7 +694,7 @@ endif
         mycomm=CPL_World)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Build A2OMatPlus from root-centric sMat.  Specify matrix decomposition 
+! Build A2OMatPlus from root-centric sMat.  Specify matrix decomposition
 ! to be by row, following the ocean's GlobalSegMap (OGSMap)
 
   if(SparseMatrixPlus_initialized(A2OMatPlus)) then
@@ -740,7 +740,7 @@ endif
   if(myProc==0) write(stdout,*) cplname,':: Finished reading in O2A on root.'
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Build O2AMatPlus from root-centric sMat.  Specify matrix decomposition 
+! Build O2AMatPlus from root-centric sMat.  Specify matrix decomposition
 ! to be by column, following the ocean's GlobalSegMap (OGSMap)
 
   call SparseMatrixPlus_init(O2AMatPlus, DummySMat, OGSMap, AGSMap, Yonly, &
@@ -758,7 +758,7 @@ endif
 
 !!!!!!!!!!!!!!!!!----------Attribute Vector for incoming Atmosphere data
 ! Build an Attribute Vector to hold data coming in from Atmosphere's
-! decomposition to AGSMap 
+! decomposition to AGSMap
 !
   if(myProc==0)write(stdout,*) cplname, ":: Initializing Attrvect"
   call zeit_ci('Catvecinit')
@@ -767,17 +767,17 @@ endif
        rList=&
 ! height of first atm level
        "alevh:&
-!  u wind 
+!  u wind
        &uwind:&
 !  v wind
-       &vwind:&                 
+       &vwind:&
 !  potential temp
        &pottem:&
 !  specific humidity
        &s_hum:&
 !  density
        &rho:&
-!  barometric pressure 
+!  barometric pressure
        &barpres:&
 ! surface pressure
        &surfp:&
@@ -810,7 +810,7 @@ if(myProc==0)write(stdout,*) cplname, ":: Done with init of output vector"
 
 !!!!!!!!!!!!!!!!!----------Attribute Vector for incoming Ocean data
 ! Build an Attribute Vector to hold data coming in from Ocean's Decomp
-! decomposition to OGSMap 
+! decomposition to OGSMap
 !
   if(myProc==0)write(stdout,*)cplname,":: Initializing Incoming Ocean Attrvect"
 
@@ -901,7 +901,7 @@ if(myProc==0)write(stdout,*) cplname, ":: Done with init of output vector"
   call Accumulator_test(ACCA2O,"CPL::ACCA2O",1000+myProc)
 
   deallocate(ACCA2O_rAction,stat=ierr)
-  if(ierr/=0) call die(cplname,"deallocate(ACCA20_rAction)",ierr) 
+  if(ierr/=0) call die(cplname,"deallocate(ACCA20_rAction)",ierr)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -916,7 +916,7 @@ do steps = 1,nsteps
 !!!!!!!!!!!!!!!!!----------MCT_Recv
 ! Receive data into AGSMap associated aV fromatm
 !
-if((myProc==0).and.(steps==1)) then 
+if((myProc==0).and.(steps==1)) then
    write(stdout,*) cplname, ":: Doing Distributed Recv"
 endif
   call zeit_ci('Cmctrecv')
@@ -955,7 +955,7 @@ if(mySize>1) then
 
       call AttrVect_Recv(outAV=fromP1,dest=0,TagBase=124,comm=CPL_World,status=ierr)
       if(ierr/=0) call die(cplname,"AttrVect_Recv- p1",ierr)
-      
+
       if(.not.AttrVect_identical(fromatm,fromP1,0.1)) then
          call die(cplname, "point to point comms failed")
       endif
@@ -973,13 +973,13 @@ if(mySize>1) then
       call MCT_AtrVt_clean(fromP1)
 
    endif
-   
+
 endif
 
  ! Send the accumulator registers to the ocean
  call zeit_ci('Cmctsend')
   call MCT_Send(ACCA2O%data,Cpl2Ocn)
- call zeit_co('Cmctsend') 
+ call zeit_co('Cmctsend')
 
  ! Check received globalmap values against expected ones
  j=1
@@ -1131,7 +1131,7 @@ endif
  call MCT_AtrVt_clean(integratedAVect)
  call MCT_AtrVt_clean(integratedOVect)
 
- ! Masked paired average: 
+ ! Masked paired average:
  call MCT_PairedMaskedSpatialAverages(inAv1=fromatm, &
                            outAv1=integratedAVect,    &
                            GGrid1=dAtmGrid, &
@@ -1146,7 +1146,7 @@ endif
 			   comm=CPL_World)
 
 if(myProc==0)then
-   
+
    i=1
    write(stdout,'(3a,i2,a,f12.6)') cplname,':: Paired masked MCT ',  &
 	'average : averagedAVect%rAttr(',i,',1)=', &
@@ -1167,7 +1167,7 @@ endif
   if(myProc==0) write(stdout,*) cplname,':: Before MCT_RECV from ocean'
   call zeit_ci('RecvFromOcn')
   call MCT_Recv(fromocn,Cpl2Ocn)
-  call zeit_co('RecvFromOcn') 
+  call zeit_co('RecvFromOcn')
   if(myProc==0) write(stdout,*) cplname,':: After MCT_RECV from ocean'
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1197,7 +1197,7 @@ endif
 !                      0,CPL_World,ierr)
   call AttrVect_gather(fromocn_atm,gatherAV_atm,AGSMap, &
                       0,CPL_World,ierr,99.0_FP)                ! rml test
-  
+
   if(myProc == 0) then
      unit = luavail() + 9500
      write(unit,*) Nax, Nay
@@ -1210,7 +1210,7 @@ endif
      enddo
      call MCT_AtrVt_clean(gatherAV_atm)
   endif
-  
+
 if(myProc==0)write(stdout,*) cplname, ":: All Done, cleanup"
   call zeit_ci('Ccleanup')
 

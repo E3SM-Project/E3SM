@@ -22,7 +22,7 @@ MODULE mapsort_mod
    integer(IN),parameter :: debug = 1
 
 !===============================================================================
-CONTAINS 
+CONTAINS
 !===============================================================================
 
 SUBROUTINE mapsort_checkSort(map,rowOK,colOK)
@@ -30,7 +30,7 @@ SUBROUTINE mapsort_checkSort(map,rowOK,colOK)
    implicit none
 
    !--- arguments ---
-   type(sMatrix), intent(inout) :: map       
+   type(sMatrix), intent(inout) :: map
    logical,optional,intent(out) :: rowOK,colOK
 
    !--- local ---
@@ -74,7 +74,7 @@ SUBROUTINE mapsort_byrow(map)
    implicit none
 
    !--- arguments ---
-   type(sMatrix), intent(inout) :: map       
+   type(sMatrix), intent(inout) :: map
 
    !--- local ---
    integer(IN)             :: i,j          ! index into 2d matrix S(i,j)
@@ -158,7 +158,7 @@ SUBROUTINE mapsort_byrow(map)
          write(6,F01) "... working, max elements, current element = ",ns,n
          call shr_sys_flush(6)
       endif
- 
+
       i = map%row(n)  ! s(n) belongs in row i
       k = nCols(i)+1  ! s(n) is k-th non-zero element in row i
 
@@ -221,7 +221,7 @@ SUBROUTINE mapsort_byrow(map)
       endif
 
       nMin0 = map%sn2(i) + 1          ! 1st element in row i
-      nMin  = nMin0                   ! 1st  potentially out-of-order element in row i 
+      nMin  = nMin0                   ! 1st  potentially out-of-order element in row i
       nMax  = map%sn2(i) + map%sn1(i) ! last potentially out-of-order element in row i
       done = .false.
       do while ( .not. done )
@@ -237,7 +237,7 @@ SUBROUTINE mapsort_byrow(map)
                rTmp         = map%s(n+1)
                map%s(n+1)   = map%s(n)
                map%s(n)     = rTmp
-   
+
                !--- note subset of out-of-order elements ---
                if (noSwap) then ! 1st swap
                   nMin2 = max(n-1,nMin0)
@@ -306,7 +306,7 @@ SUBROUTINE mapsort_sortMatRC(map)
    implicit none
 
    !--- arguments ---
-   type(sMatrix), intent(inout) :: map       
+   type(sMatrix), intent(inout) :: map
 
    !--- local ---
    integer(IN) :: i,m,n
@@ -391,7 +391,7 @@ recursive SUBROUTINE mapsort_qsortRC(S,row,col)
    character(*),parameter :: F01 = "('(mapsort_qsortRC) ',a,5i6)"
 
 !-------------------------------------------------------------------------------
-! PURPOSE: 
+! PURPOSE:
 !   sort all elements of S so that col(n) is strickly increasing
 !   assumes that row(n) is a constant (ie. row(n) = row(m) for every n,m)
 !-------------------------------------------------------------------------------
@@ -431,7 +431,7 @@ SUBROUTINE mapsort_partitianRC(S,row,col,marker)
    character(*),parameter :: F01 = "('(mapsort_partitianRC) ',a,2i11)"
 
 !-------------------------------------------------------------------------------
-! PURPOSE: 
+! PURPOSE:
 ! o DOES NOT assume rows are sorted, assumes a completely unsorted matrix
 ! o rearrange elements in S & col and compute marker such that
 !   if  n = marker  and  i <= n <= j   we have col(i) <= col(n) <= col(j)
@@ -499,7 +499,7 @@ SUBROUTINE mapsort_sortMatC(map)
    implicit none
 
    !--- arguments ---
-   type(sMatrix), intent(inout) :: map       
+   type(sMatrix), intent(inout) :: map
 
    !--- local ---
    integer(IN) :: i,m,n
@@ -558,13 +558,13 @@ SUBROUTINE mapsort_sortMatC(map)
    call shr_timer_zero (t01)
    call shr_timer_start(t01)
 
-   write(6,F01) "loop: i=1,nRows    where nRows = ",map%n_b    
+   write(6,F01) "loop: i=1,nRows    where nRows = ",map%n_b
    call date_and_time(dstr,tstr) ! F90 intrinsic routine
    write(6,F10) 'i=',0,dstr(1:4),dstr(5:6),dstr(7:8),tstr(1:2),tstr(3:4),tstr(5:6)
    call shr_sys_flush(6)
 
 !$OMP PARALLEL DO PRIVATE(i,n,m)
-   do i=1,map%n_b    
+   do i=1,map%n_b
       !--- sort the columns in row i ------------------------
       if (mod(i,1000)==0) then
          call date_and_time(dstr,tstr) ! F90 intrinsic routine
@@ -612,7 +612,7 @@ recursive SUBROUTINE mapsort_QsortC(S,row,col)
    character(*),parameter :: F01 = "('(mapsort_QsortC) ',a,5i6)"
 
 !-------------------------------------------------------------------------------
-! PURPOSE: 
+! PURPOSE:
 !   sort all elements of S so that col(n) is strickly increasing
 !   assumes that row(n) is a constant (ie. row(n) = row(m) for every n,m)
 !-------------------------------------------------------------------------------
@@ -651,7 +651,7 @@ SUBROUTINE mapsort_partitianC(S,row,col,marker)
    character(*),parameter :: F01 = "('(mapsort_partitianC) ',a,2i11)"
 
 !-------------------------------------------------------------------------------
-! PURPOSE: 
+! PURPOSE:
 ! o assumes rows are already sorted
 ! o rearrange elements in S & col and compute marker such that
 !   if  n = marker  and  i <= n <= j   we have col(i) <= col(n) <= col(j)
@@ -713,7 +713,7 @@ SUBROUTINE mapsort_sortH(map)
    implicit none
 
    !--- arguments ---
-   type(sMatrix), intent(inout) :: map       
+   type(sMatrix), intent(inout) :: map
 
    !--- local ---
    integer n,thisrow,thiscol,n0,n1
@@ -813,7 +813,7 @@ SUBROUTINE mapsort_sortY(map)
    implicit none
 
    !--- arguments ---
-   type(sMatrix), intent(inout) :: map       
+   type(sMatrix), intent(inout) :: map
 
    !--- local ---
    integer i,j,n,thisrow,thiscol,n0,n1,ncnt,nskip,nrow
@@ -853,7 +853,7 @@ SUBROUTINE mapsort_sortY(map)
       endif
    enddo
 
-!  if (.not. rowok .and. .not. colok) then 
+!  if (.not. rowok .and. .not. colok) then
 !    imin=1
 !    imax=map%n_s
 !    cnt=map%n_s
@@ -891,7 +891,7 @@ SUBROUTINE mapsort_sortY(map)
 !        if (map%row(n).eq.j .and. n0.eq.0) n0=n
 !        if (map%row(n).ne.j .and. n0.ne.0 .and. n1.eq.0) n1=n-1
 !      enddo
-!      if (n0.ne.0) then 
+!      if (n0.ne.0) then
 !        if (n1.eq.0) n1=n0
 !        nrow = n1-n0+1
 !        nskip = n0-cnt
@@ -921,7 +921,7 @@ SUBROUTINE mapsort_sortY(map)
      call mapsort_byrow(map)
    endif
 
-   if (.not. colok) then 
+   if (.not. colok) then
      imin=1
      imax=map%n_s
      cnt=map%n_s
@@ -979,7 +979,7 @@ SUBROUTINE mapsort_bubble(map)
    implicit none
 
    !--- arguments ---
-   type(sMatrix), intent(inout) :: map       
+   type(sMatrix), intent(inout) :: map
 
    !--- local ---
    integer(IN) :: k,m,n          !
@@ -987,9 +987,9 @@ SUBROUTINE mapsort_bubble(map)
    integer(IN) :: t01 = 0        ! system-clock-timer number
    real   (R8) :: rTemp          ! temp var for swapping
    integer(IN) :: iTemp          ! temp var for swapping
-   real   (R8),pointer :: S  (:) ! 
-   integer(IN),pointer :: row(:) ! 
-   integer(IN),pointer :: col(:) ! 
+   real   (R8),pointer :: S  (:) !
+   integer(IN),pointer :: row(:) !
+   integer(IN),pointer :: col(:) !
 
    character(8)  :: dstr          ! F90 wall clock date string yyyymmdd
    character(10) :: tstr          ! F90 wall clock time string hhmmss.sss

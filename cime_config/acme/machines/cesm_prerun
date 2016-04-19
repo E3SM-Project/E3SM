@@ -1,8 +1,8 @@
 #!/bin/csh
-# cesm_prerun without performance data archiving: 
+# cesm_prerun without performance data archiving:
 #  ./cesm_prerun with the following argument keyword/value pairs, in any order
 #   -machine <system name>
-#   -compiler <compiler name> 
+#   -compiler <compiler name>
 #   -case <case name>
 #   -jobid <should be same as $PBS_JOBID for PBS and $COBALT_JOBID> for Cobalt>
 #   -cesmid <$LID in cesm-lingo>
@@ -81,7 +81,7 @@ if ($app_jobid == 'unknown') then
 
     set app_jobid = $SLURM_JOB_ID
 
-  endif  
+  endif
 endif
 
 if ($machine == 'titan') then

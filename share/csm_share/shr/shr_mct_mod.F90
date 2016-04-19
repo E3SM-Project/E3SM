@@ -318,7 +318,7 @@ subroutine shr_mct_sMatPInitnc_mapfile(sMatP, gsMapX, gsMapY, &
    integer          :: lsize
    integer          :: iret
    integer          :: pe_loc
-   logical          :: usevector 
+   logical          :: usevector
    character(len=3) :: Smaptype
    character(*),parameter :: areaAV_field = 'aream'
    character(*),parameter :: F00 = "('(shr_mct_sMatPInitnc) ',4a)"
@@ -386,7 +386,7 @@ end subroutine shr_mct_sMatPInitnc_mapfile
 ! !IROUTINE:  shr_mct_sMatReaddnc - Do a distributed read of a NetCDF SCRIP file and
 !                                return weights in a distributed SparseMatrix
 !
-! !DESCRIPTION: 
+! !DESCRIPTION:
 !     Read in mapping matrix data from a SCRIP netCDF data file using
 !     a low memory method and then scatter to all pes.
 !
@@ -409,14 +409,14 @@ end subroutine shr_mct_sMatPInitnc_mapfile
 !   Once all the matrix weights have been read, the sMat is initialized,
 !     the values from the buffers are copied in, and everything is deallocated.
 
-! !SEE ALSO: 
+! !SEE ALSO:
 !    mct/m_SparseMatrix.F90 (MCT source code)
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !    2007-Jan-18 - T. Craig -- first version
 !    2007-Mar-20 - R. Jacob -- rename to shr_mct_sMatReaddnc.  Remove use of cpl_
 !                  variables and move to shr_mct_mod
-! 
+!
 ! !INTERFACE:  -----------------------------------------------------------------
 
 subroutine shr_mct_sMatReaddnc(sMat,SgsMap,DgsMap,newdom,areasrc,areadst, &
@@ -437,10 +437,10 @@ subroutine shr_mct_sMatReaddnc(sMat,SgsMap,DgsMap,newdom,areasrc,areadst, &
    character(*)    ,intent(in)            :: filename! netCDF file to read
    integer(IN)     ,intent(in)            :: mytask   ! processor id
    integer(IN)     ,intent(in)            :: mpicom  ! communicator
-   integer(IN)     ,intent(out), optional :: ni_i    ! number of lons on input grid   
-   integer(IN)     ,intent(out), optional :: nj_i    ! number of lats on input grid   
-   integer(IN)     ,intent(out), optional :: ni_o    ! number of lons on output grid   
-   integer(IN)     ,intent(out), optional :: nj_o    ! number of lats on output grid   
+   integer(IN)     ,intent(out), optional :: ni_i    ! number of lons on input grid
+   integer(IN)     ,intent(out), optional :: nj_i    ! number of lats on input grid
+   integer(IN)     ,intent(out), optional :: ni_o    ! number of lons on output grid
+   integer(IN)     ,intent(out), optional :: nj_o    ! number of lats on output grid
 
 ! !EOP
 
@@ -460,7 +460,7 @@ subroutine shr_mct_sMatReaddnc(sMat,SgsMap,DgsMap,newdom,areasrc,areadst, &
    integer(IN)           :: start(1)! netcdf read
    integer(IN)           :: count(1)! netcdf read
    integer(IN)           :: bsize   ! buffer size
-   integer(IN)           :: nread   ! number of reads 
+   integer(IN)           :: nread   ! number of reads
    logical               :: mywt    ! does this weight belong on my pe
 
    !--- buffers for i/o ---
@@ -516,11 +516,11 @@ subroutine shr_mct_sMatReaddnc(sMat,SgsMap,DgsMap,newdom,areasrc,areadst, &
    !----------------------------------------------------------------------------
    if (s_loglev > 0) write(s_logunit,F00) "* file name                  : ",trim(fileName)
    rcode = nf90_open(filename,NF90_NOWRITE,fid)
-   if (rcode /= NF90_NOERR) then 
+   if (rcode /= NF90_NOERR) then
       print *,'Failed to open file ',trim(filename)
       call shr_sys_abort(trim(subName)//nf90_strerror(rcode))
    end if
-   
+
 
    !--- get matrix dimensions ----------
    rcode = nf90_inq_dimid(fid, 'n_s', did)  ! size of sparse matrix
@@ -529,7 +529,7 @@ subroutine shr_mct_sMatReaddnc(sMat,SgsMap,DgsMap,newdom,areasrc,areadst, &
    rcode = nf90_inquire_dimension(fid, did, len=na)
    rcode = nf90_inq_dimid(fid, 'n_b', did)  ! size of output vector
    rcode = nf90_inquire_dimension(fid, did, len=nb)
-   
+
    if (present(ni_i) .and. present(nj_i) .and. present(ni_o) .and. present(nj_o)) then
       rcode = nf90_inq_dimid(fid, 'ni_a', did)  ! number of lons in input grid
       rcode = nf90_inquire_dimension(fid, did, len=ni_i)
@@ -545,7 +545,7 @@ subroutine shr_mct_sMatReaddnc(sMat,SgsMap,DgsMap,newdom,areasrc,areadst, &
    if (s_loglev > 0) write(s_logunit,F01) "* number of non-zero elements: ",ns
 
  endif
- 
+
    !--- read and load area_a ---
    if (present(areasrc)) then
    if (mytask == 0) then
@@ -773,16 +773,16 @@ end subroutine shr_mct_sMatReaddnc
 ! !IROUTINE:  shr_mct_sMatWritednc - Do a distributed write of a NetCDF SCRIP file
 !                                 based on a distributed SparseMatrix
 !
-! !DESCRIPTION: 
+! !DESCRIPTION:
 !     Write out mapping matrix data from a SCRIP netCDF data file using
 !     a low memory method.
 !
-! !SEE ALSO: 
+! !SEE ALSO:
 !    mct/m_SparseMatrix.F90 (MCT source code)
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !    2009-Dec-15 - T. Craig -- first version
-! 
+!
 ! !INTERFACE:  -----------------------------------------------------------------
 
 subroutine shr_mct_sMatWritednc(sMat,iosystem, io_type, fileName,compid, mpicom)

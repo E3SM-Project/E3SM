@@ -1,6 +1,6 @@
 !-----------------------------------------------------------------------
 ! CVS $Id: mph.F90,v 1.3 2006-10-03 22:43:29 jacob Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 ! =============================================================
 ! Multi Program-Components Handshaking (MPH) Utility
 
@@ -9,12 +9,12 @@
 ! Different components could run either on different set of nodes, or
 ! on set of nodes that overlap.
 
-! There are three seperate implementations: 
-! 1. Multiple Components, Multiple Executables, components non-overlap 
-! 2. Multiple Components, Single Executable, components non-overlap 
-! 3. Multiple Components, Single Executable, components overlap, flexible 
+! There are three seperate implementations:
+! 1. Multiple Components, Multiple Executables, components non-overlap
+! 2. Multiple Components, Single Executable, components non-overlap
+! 3. Multiple Components, Single Executable, components overlap, flexible
 
-! This is a combined module for all the above. 
+! This is a combined module for all the above.
 ! The user only has to "use MPH_all" in their application codes.
 ! You may need to use MPH_help to understand the required information
 ! for setup, input file and inquiry functions.
@@ -23,7 +23,7 @@
 
 
 !==============================================================
-! common data used by all three versions of MPH 
+! common data used by all three versions of MPH
 !==============================================================
 
       module comm_data123
@@ -31,26 +31,26 @@
       use m_mpif
       implicit none
 
-      integer istatus(MPI_STATUS_SIZE), ierr 
+      integer istatus(MPI_STATUS_SIZE), ierr
       integer max_num_comps, maxProcs_comp
       parameter (max_num_comps=20)    ! maximum number of components
       parameter (maxProcs_comp=128)   ! maximum number of procs per comps
 
       type Acomponent
          character*16 name          ! component name
-         integer num_process        ! number of processors 
-         integer process_list(maxProcs_comp) 
+         integer num_process        ! number of processors
+         integer process_list(maxProcs_comp)
                                     ! global processor_id, increasing order
-      end type Acomponent           
-          
+      end type Acomponent
+
       type (Acomponent)  components(max_num_comps) ! allocate components
       integer MPI_Acomponent
 
       integer global_proc_id   ! proc id in the whole world
       integer global_totProcs  ! total # of procs for the whole world
       integer COMM_master    ! communicator for submaster of each component
-    
-      integer total_components 
+
+      integer total_components
       character*16 component_names(max_num_comps)
 
 ! for timer
@@ -74,7 +74,7 @@
       end module comm_data12
 
 !==================================================================
-! common subroutines used by all three versions of MPH 
+! common subroutines used by all three versions of MPH
 !==================================================================
 
       module comm_sub123
@@ -82,7 +82,7 @@
       contains
 
 !--------------- subroutine MPH_init () ------------
-	
+
       subroutine MPH_init ()
       implicit none
 
@@ -149,7 +149,7 @@
 
 100   MPH_find_name = i
       return
-      end function MPH_find_name 
+      end function MPH_find_name
 
 
 !---------- subroutine MPH_redirect_output (name) ---------
@@ -178,13 +178,13 @@
 #if (defined SUPERUX)
       call getenv (trim(output_name_env), temp_value)
       output_name = trim (temp_value)
-      if (len_trim(output_name) == 0) then 
+      if (len_trim(output_name) == 0) then
          write(*,*)'output file names not preset by env varibales'
          write(*,*)'so output not redirected'
-      else    
+      else
          open (unit=6, file=output_name, position='append')
          call flush(6)
-      endif   
+      endif
 #endif
 
 #if (defined IRIX64 || defined CRAY || defined sn6711)
@@ -296,16 +296,16 @@
 !  ---------------------------------------------------------
 !  timer calls to walk-clock dclock(), and do the following:
 !  ---------------------------------------------------------
-!  flag=0  : Sets initial time; init all channels. 
+!  flag=0  : Sets initial time; init all channels.
 !
 !  flag =1 : Calculates the most recent time interval; accure it to the
-!            specified channel; 
-!            Returns it to calling process. 
+!            specified channel;
+!            Returns it to calling process.
 !            Channel 0 is the default channel, which is automatically accrued.
 
 !  flag =2 : Calculates the most recent time interval; accure it to the
-!            specified channel; 
-!            Returns the curent total time in the specified channel; 
+!            specified channel;
+!            Returns the curent total time in the specified channel;
 !            Channel 0 is the default channel, which is automatically accrued.
 !  ---------------------------------------------------------
 
@@ -325,30 +325,30 @@
          MPH_timer = init_time
       endif
 
-! Timer is initialized and flag != 0 
+! Timer is initialized and flag != 0
 
       delta_time = new_time - last_time
       last_time = new_time
 
-! For channel=0 or other undefined channels which is treated as 0 
+! For channel=0 or other undefined channels which is treated as 0
       if ( channel < 0  .or. channel > N_CHANNELS) then
-         write(*,*) 'Timer channel is not properly specified!' 
+         write(*,*) 'Timer channel is not properly specified!'
       endif
 
-! channel != 0 
-    
+! channel != 0
+
       if (flag == 1) then
-         tot_time(channel) = tot_time(channel) + delta_time 
+         tot_time(channel) = tot_time(channel) + delta_time
          MPH_timer = delta_time
       else if (flag == 2) then
-         tot_time(channel) = tot_time(channel) + delta_time 
+         tot_time(channel) = tot_time(channel) + delta_time
          MPH_timer = tot_time(channel)
       else
 !        Error Condition
-         MPH_timer = -1.0  
-      endif 
+         MPH_timer = -1.0
+      endif
 
-      end function MPH_timer 
+      end function MPH_timer
 
 
 !-------- common inquiry functions for MPH1, MPH2 and MPH3 -------
@@ -376,7 +376,7 @@
 
 
 ! ===============================================================
-! common subroutines used by MPH_Multi_Exec and MPH_Single_Exec 
+! common subroutines used by MPH_Multi_Exec and MPH_Single_Exec
 ! ===============================================================
 
       module comm_sub12
@@ -396,7 +396,7 @@
 
 ! create a MPI communicator COMM_master for all submasters
 ! arrange the rank of the submasters in COMM_master by their component_id
-! i.e., their rank of the component model in "components.in" 
+! i.e., their rank of the component model in "components.in"
       if (local_proc_id == 0) then
          color = 1
       else
@@ -423,7 +423,7 @@
 ! everybody lists the complete info
 !     write(*,*)'I am proc ', local_proc_id, ' in ',
 !    &           component_names(component_id), ' , which is proc ',
-!    &           global_proc_id, ' in global_world' 
+!    &           global_proc_id, ' in global_world'
 !     write(*,*)'infos I have for all proc of all components are:'
 !     do i = 1, total_components
 !        write(*,*)'   ', components(i)%name
@@ -446,7 +446,7 @@
       temp1 = MPH_find_name(name1,component_names,total_components)
       temp2 = MPH_find_name(name2,component_names,total_components)
 
-! the order of two components does matter: first one has lower ranks in 
+! the order of two components does matter: first one has lower ranks in
 ! the new joined communicator, and second one has higher ranks.
 
       if (component_id==temp1 .or. component_id==temp2) then
@@ -501,14 +501,14 @@
       use comm_sub123
       use comm_sub12
       character*16 myName
- 
+
       contains
 
 !------------- subroutine MPH_setup_ME (name, comm_world) ---------
 
       subroutine MPH_setup_ME (name, comm_world)
       implicit none
-      
+
       character*(*) name
       integer comm_world
 
@@ -546,11 +546,11 @@
       components(component_id)%num_process = local_totProcs
 
 ! gather processor ids to 0th proc in this component.
-      call MPI_GATHER (global_proc_id, 1, MPI_INTEGER,&  
-                       components(component_id)%process_list,&    
+      call MPI_GATHER (global_proc_id, 1, MPI_INTEGER,&
+                       components(component_id)%process_list,&
                        1, MPI_INTEGER, 0, local_world, ierr)
 
-      end subroutine MPH_local_ME 
+      end subroutine MPH_local_ME
 
 
 !--- function MPH_read_list_ME(filename, filetag, namelist, num) ---
@@ -592,7 +592,7 @@
 
       return
       end function MPH_read_list_ME
-      
+
       end module MPH_Multi_Exec
 
 
@@ -612,7 +612,7 @@
       integer low_proc_limit(max_num_comps)
       integer up_proc_limit(max_num_comps)
 
-      contains 
+      contains
 
 
 !---- subroutine MPH_setup_SE (atmosphere, ocean, coupler, land) ------
@@ -661,7 +661,7 @@
          endif
       endif
 
-! add more component models as follows: 
+! add more component models as follows:
       if (present(land)) then
          id=MPH_find_name("land",component_names,total_components)
          if (low_proc_limit(id) .le. global_proc_id .and.&
@@ -726,14 +726,14 @@
       components(component_id)%num_process = local_totProcs
 
 ! gather processor ids to 0th proc in this component.
-      call MPI_GATHER (global_proc_id, 1, MPI_INTEGER,& 
+      call MPI_GATHER (global_proc_id, 1, MPI_INTEGER,&
                        components(component_id)%process_list, 1,&
                        MPI_INTEGER, 0, local_world, ierr)
 
-      end subroutine MPH_local_SE 
+      end subroutine MPH_local_SE
 
 
-!---- function MPH_read_list_SE (filename, filetag, namelist, 
+!---- function MPH_read_list_SE (filename, filetag, namelist,
 !---- low, up, num) --------
 
       integer function MPH_read_list_SE (filename, filetag,&
@@ -827,7 +827,7 @@
       integer low_proc_limit(max_num_comps)
       integer up_proc_limit(max_num_comps)
 
-      contains 
+      contains
 
 !---- subroutine MPH_setup_SE_overlap (model1, model2, ...) ------
 
@@ -856,7 +856,7 @@
       integer id,  color, key
 
       total_components=MPH_read_list_SE_overlap("processors_map.in",&
-                    "PROCESSORS_MAP", component_names,&   
+                    "PROCESSORS_MAP", component_names,&
                     low_proc_limit, up_proc_limit, max_num_comps,&
                     local_totProcs)
 
@@ -874,7 +874,7 @@
          call MPI_COMM_RANK(local_world(id),local_proc_id(id),ierr)
       enddo
 
-      end subroutine MPH_local_SE_overlap 
+      end subroutine MPH_local_SE_overlap
 
 
 !--------------- subroutine MPH_global_SE_overlap () ------------
@@ -898,7 +898,7 @@
              global_proc_id .le. up_proc_limit(id)) then
             write(*,*)'I am proc ', local_proc_id(id), ' in ',&
                  component_names(id), ' , which is proc ',&
-                 global_proc_id, ' in global_world' 
+                 global_proc_id, ' in global_world'
             write(*,*)'infos I have for all proc of all components are:'
             do i = 1, total_components
                write(*,*)'   ', components(i)%name
@@ -927,7 +927,7 @@
          PE_in_component = .false.
       endif
 
-      end function PE_in_component 
+      end function PE_in_component
 
 
 !------ subroutine MPH_comm_join_SE_overlap (name1, name2, comm_joined) ---
@@ -943,17 +943,17 @@
       id1 = MPH_find_name(name1,component_names,total_components)
       id2 = MPH_find_name(name2,component_names,total_components)
 
-! the order of two components does matter: first one has lower ranks in 
+! the order of two components does matter: first one has lower ranks in
 ! the new joined communicator, and second one has higher ranks.
 
       con1 = (low_proc_limit(id1) .le. global_proc_id) .and.&
              (global_proc_id .le. up_proc_limit(id1))
       con2 = (low_proc_limit(id2) .le. global_proc_id).and.&
              (global_proc_id .le. up_proc_limit(id2))
- 
+
       if (con1 .or. con2) then
          color = 1
-         if (con1) then 
+         if (con1) then
             key = local_proc_id(id1)
          else
             key = global_totProcs + local_proc_id(id2)
@@ -1060,7 +1060,7 @@
 ! ==============================================================
 
       module MPH_all
-      
+
       use MPH_Multi_Exec
       use MPH_Single_Exec
       use MPH_Single_Exec_Overlap

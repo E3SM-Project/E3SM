@@ -2,7 +2,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id: coupler.F90,v 1.8 2004-04-23 20:57:10 jacob Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !BOP -------------------------------------------------------------------
 !
 ! !ROUTINE: coupler -- coupler for unit tester
@@ -71,7 +71,7 @@
 
 ! !INPUT PARAMETERS:
 
-      integer,intent(in) :: comm 
+      integer,intent(in) :: comm
       integer,intent(in) :: ncomps
       integer,intent(in) :: compid
 !
@@ -99,15 +99,15 @@
 ! MCTWorld variables
       integer :: AtmID
 ! Grid variables
-      integer :: localsize 
+      integer :: localsize
 ! GlobalSegMap variables
-      type(GlobalSegMap)   :: AtmGSMap, OcnGSMap       
-      integer,dimension(1) :: start,length  
+      type(GlobalSegMap)   :: AtmGSMap, OcnGSMap
+      integer,dimension(1) :: start,length
       integer, dimension(:), pointer :: points
       integer :: latsize, lonsize
       integer :: rowindex, colindex, boxvertex
 ! AttVect variables
-      type(AttrVect) :: AtmAV, OcnAV           
+      type(AttrVect) :: AtmAV, OcnAV
       integer :: aavsize,oavsize
 ! Router variables
       type(Router) :: Rout
@@ -127,7 +127,7 @@
 !   INITIALIZATION PHASE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      
+
       ! LOCAL RANK AND SIZE
       call MPI_COMM_RANK(comm,rank,ierr)
       call MPI_COMM_SIZE(comm,nprocs,ierr)
@@ -149,10 +149,10 @@
       ! example, we'll assume they're known to the coupler
       nxa = 128
       nya = 64
-  
+
       nxo = 320
       nyo = 384
-      
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Read matrix weights for interpolation from a file.
       if (rank == root) then
@@ -161,19 +161,19 @@
          read(mdev,*) num_elements
          read(mdev,*) src_dims(1), src_dims(2)
          read(mdev,*) dst_dims(1), dst_dims(2)
-         
+
          allocate(rows(num_elements), columns(num_elements), &
               weights(num_elements), stat=ierr)
 
          do n=1, num_elements
             read(mdev,*) rows(n), columns(n), weights(n)
          end do
-         
+
          close(mdev)
 
          ! Initialize a Sparsematrix
          nRows = dst_dims(1) * dst_dims(2)
-         nColumns = src_dims(1) * src_dims(2)     
+         nColumns = src_dims(1) * src_dims(2)
          call SparseMatrix_init(sMat,nRows,nColumns,num_elements)
          call SparseMatrix_importGRowInd(sMat, rows, size(rows))
          call SparseMatrix_importGColInd(sMat, columns, size(columns))
@@ -312,4 +312,4 @@
       if(rank==0) write(6,*) cplname, " done"
 
     end subroutine coupler
-         
+

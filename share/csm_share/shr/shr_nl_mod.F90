@@ -20,12 +20,12 @@ subroutine shr_nl_find_group_name(unit, group, status)
   use shr_string_mod, only: shr_string_toLower
 
 !---------------------------------------------------------------------------------------
-! Purpose: 
+! Purpose:
 ! Search a file that contains namelist input for the specified namelist group name.
 ! Leave the file positioned so that the current record is the first record of the
 ! input for the specified group.
-! 
-! Method: 
+!
+! Method:
 ! Read the file line by line.  Each line is searched for an '&' which may only
 ! be preceded by blanks, immediately followed by the group name which is case
 ! insensitive.  If found then backspace the file so the current record is the

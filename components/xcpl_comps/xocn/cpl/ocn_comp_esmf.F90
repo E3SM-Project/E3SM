@@ -42,13 +42,13 @@ module ocn_comp_esmf
 
   !--- stdin input stuff ---
   character(CS) :: str                  ! cpp  defined model name
-  
+
   !--- other ---
   integer(IN)   :: dbug = 0             ! debug level (higher is more)
-  
+
   character(CS) :: myModelName = 'ocn'   ! user defined model name
   integer(IN)   :: ncomp = 4             ! component index
-  integer(IN)   :: my_task               ! my task in mpi communicator mpicom 
+  integer(IN)   :: my_task               ! my task in mpi communicator mpicom
   integer(IN)   :: master_task=0         ! task number of master task
   integer(IN)   :: logunit               ! logging unit number
 
@@ -117,10 +117,10 @@ subroutine ocn_init_esmf(comp, import_state, export_state, EClock, rc)
     integer(IN)   :: totpe       ! total number of pes
     integer(IN), allocatable :: gindex(:)  ! global index
     integer(IN)   :: shrlogunit, shrloglev ! original log unit and level
-  
+
     real(R8), pointer :: gbuf(:,:)     ! grid info buffer
     real(R8), pointer :: buf(:)        ! tempoary buffer
-    
+
     integer(IN)   :: nproc_x       ! num of i pes (type 3)
     integer(IN)   :: seg_len       ! length of segs (type 4)
     integer(IN)   :: nxg           ! global dim i-direction
@@ -130,7 +130,7 @@ subroutine ocn_init_esmf(comp, import_state, export_state, EClock, rc)
     integer(IN)       :: COMPID
     integer(IN)       :: inst_index            ! number of current instance (ie. 1)
     character(len=16) :: inst_name         ! fullname of current instance (ie. "lnd_0001")
-    character(len=16) :: inst_suffix       ! char string associated with instance 
+    character(len=16) :: inst_suffix       ! char string associated with instance
     integer(IN)                           :: mpicom, mpicom_vm
     integer(IN)                           :: lsize
     integer(IN)                           :: phase
@@ -233,7 +233,7 @@ subroutine ocn_init_esmf(comp, import_state, export_state, EClock, rc)
        write(logunit,F00)
        call shr_sys_flush(logunit)
     end if
-    
+
     !----------------------------
     ! Determine communicator groups and sizes
     !----------------------------
@@ -441,7 +441,7 @@ subroutine ocn_run_esmf(comp, import_state, export_state, EClock, rc)
     ! the bounds are always from /1,1/ to /nflds_d2x, lsize/ locally.
     !----------------------------
 
-    call ESMF_ArrayGet(d2x_a, localDe=0, farrayPtr=fptr, rc=rc)   
+    call ESMF_ArrayGet(d2x_a, localDe=0, farrayPtr=fptr, rc=rc)
     if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
     do n = 1, ubound(fptr,2)-lbound(fptr,2)+1
@@ -510,7 +510,7 @@ subroutine ocn_final_esmf(comp, import_state, export_state, EClock, rc)
     character(*), parameter :: subName = "(ocn_final_esmf) "
     character(*), parameter :: F00   = "('(ocn_final_esmf) ',8a)"
     character(*), parameter :: F91   = "('(ocn_final_esmf) ',73('-'))"
- 
+
 !-------------------------------------------------------------------------------
 !
 !-------------------------------------------------------------------------------

@@ -19,7 +19,7 @@ MODULE fixroff_mod
    logical :: debug = .false. ! trigger debug statements
 
 !===============================================================================
-CONTAINS 
+CONTAINS
 !===============================================================================
 
 SUBROUTINE fixroff_modifyMap(map, map2)
@@ -37,7 +37,7 @@ SUBROUTINE fixroff_modifyMap(map, map2)
    integer(IN)             :: n                   ! 2d vector index
    integer(IN),allocatable :: badpts (:)          ! 0 <=> no relocation necessary
    integer(IN),allocatable :: badptsf(:)          ! 0 <=> relocation necessary but not done
-   integer(IN)             :: newptr(map%n_b)     ! 
+   integer(IN)             :: newptr(map%n_b)     !
    integer(IN)             :: cnt1,cnt2,cnt3,cnt4 ! counts various cases
    real(R8)   ,allocatable :: wcol(:)             ! cnt2 weight corrections
    real(R8)                :: dist,distMin        ! distance, min distance
@@ -55,12 +55,12 @@ SUBROUTINE fixroff_modifyMap(map, map2)
 !
 !   (case 1) cnt1 points: mask_a is non-zero, but frac_a = 0.0
 !      issue:
-!         the source cell is active, but 0% participates in the mapping;  
-!         these represent active source cells which 
+!         the source cell is active, but 0% participates in the mapping;
+!         these represent active source cells which
 !         do not intersect any destination cells.
-!      correction:  
-!         make frac_a = 1.0; add links for these points to 
-!         closest destination grid cell with s weight based 
+!      correction:
+!         make frac_a = 1.0; add links for these points to
+!         closest destination grid cell with s weight based
 !         on simple area ratio. (NOTE:  may result in S>1.0)
 !
 !   (case 2) cnt2 points: mask_a is non-zero  and  0 < frac_a < 1
@@ -68,7 +68,7 @@ SUBROUTINE fixroff_modifyMap(map, map2)
 !         the source cell is active but only partially intersects
 !         the active destination domain.
 !      correction:
-!         make frac_a = 1.0 and apply correction factor to s weight of 1/old_frac_a. 
+!         make frac_a = 1.0 and apply correction factor to s weight of 1/old_frac_a.
 !         NOTE:  may result in S>1.0
 !
 !   (case 3) cnt3 points: mask_a is zero  and  0 < frac_a 1
@@ -80,13 +80,13 @@ SUBROUTINE fixroff_modifyMap(map, map2)
 !
 !   (case 4) cnt4 points: mask_b is zero, any runoff to this cell needs to be relocated
 !      issue:
-!         since scrip creates links on the basis of mask_a values, 
+!         since scrip creates links on the basis of mask_a values,
 !         (ie. assumes mask_b /= 0 everywhere), a link to this cell exists.
 !         Since this is for runoff mapping, we cannot accept
 !         such links to land cells on the destination grid.
 !      correction:
-!         Shift the flux to the nearest mask_b /= 0 point, as determined previously by 
-!         fixroff_findActive.  NOTE: this may result in a "doubling-up" of links 
+!         Shift the flux to the nearest mask_b /= 0 point, as determined previously by
+!         fixroff_findActive.  NOTE: this may result in a "doubling-up" of links
 !         (non-unique links) between a given source and destination cell.
 !-------------------------------------------------------------------------------
 
@@ -94,7 +94,7 @@ SUBROUTINE fixroff_modifyMap(map, map2)
    ! preliminary data: determine where to relocate runoff, if necessary
    !----------------------------------------------------------------------------
    allocate(newpt(map%ni_b,map%nj_b))
-   call fixroff_findActive(map, newpt) 
+   call fixroff_findActive(map, newpt)
 
    !----------------------------------------------------------------------------
    ! determine how many, and what types of, corrections are necessary
@@ -137,10 +137,10 @@ SUBROUTINE fixroff_modifyMap(map, map2)
    !----------------------------------------------------------------------------
 
    !--- duplicate ---
-   call map_dup(map,map2) 
+   call map_dup(map,map2)
 
    !--- resize ---
-   write(6,F01) "Original matrix size = ",map2%n_s 
+   write(6,F01) "Original matrix size = ",map2%n_s
    deallocate( map2%s   )
    deallocate( map2%row )
    deallocate( map2%col )
@@ -148,7 +148,7 @@ SUBROUTINE fixroff_modifyMap(map, map2)
    allocate(map2%s  (map2%n_s) )
    allocate(map2%row(map2%n_s) )
    allocate(map2%col(map2%n_s) )
-   write(6,F01) "Modified matrix size = ",map2%n_s 
+   write(6,F01) "Modified matrix size = ",map2%n_s
 
    !--- copy initial data ---
    map2%s  (1:map%n_s) = map%s
@@ -197,7 +197,7 @@ SUBROUTINE fixroff_modifyMap(map, map2)
    write(6,F01) 'case (1): new links added: ',cnt1
 
    !----------------------------------------------------------------------------
-   ! case (2) adjust matrix weights for non-unity src fractions 
+   ! case (2) adjust matrix weights for non-unity src fractions
    ! case (4) relocate links that map to mask_b=0 points.
    !    Do this by changing the element's row to the row specified by newpt index.
    !    Also must correct the matrix element value wrt src & dest cell areas
@@ -269,7 +269,7 @@ SUBROUTINE fixroff_findActive(map, newpt)
 
    integer(IN) :: nFound      ! # cells whose nearest active neighbor was found
    integer(IN) :: nNotFound   ! # cells whose nearest active neighbor is unknown
-   logical     :: found       ! an active cell has been found 
+   logical     :: found       ! an active cell has been found
    logical     :: done        ! T => active cells have been found for all cells
 
    !--- formats ---
@@ -289,9 +289,9 @@ SUBROUTINE fixroff_findActive(map, newpt)
 !    where the size of grid_b, shaped as a 1d vector, is (n_b)...
 !
 ! o  The "newPt(:,:)" data array is a 2d array dimensioned newPt(ni_b,nj_b)
-!    assign a 1d index n, between 1->n_b, for each point of grid_b.  
+!    assign a 1d index n, between 1->n_b, for each point of grid_b.
 !    If mask_b(n) /= 0, the index is n
-!    If mask_b(n) == 0, the index is that of the nearest neigbor m 
+!    If mask_b(n) == 0, the index is that of the nearest neigbor m
 !                       for which mask_b(m)==1
 ! HISTORY:
 !    2007-01-05 - B. Kauffman, code cleanup

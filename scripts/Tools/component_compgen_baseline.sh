@@ -89,7 +89,7 @@ function print_status {
 	info_str="($info)"
     else
 	info_str=""
-    fi    
+    fi
 
     # Print formatted test result
     printf '%-3s %s %s\n' "$status" "${testcase}" "${action}"
@@ -127,8 +127,8 @@ baseline_dir=''
 test_dir=''
 generate=''
 compare_tag=''
-msg='' 
- 
+msg=''
+
 #----------------------------------------------------------------------
 # Process command-line arguments
 #----------------------------------------------------------------------
@@ -181,7 +181,7 @@ while [ $# -gt 0 ]; do
 done
 
 #----------------------------------------------------------------------
-# Exit if required command-line arguments weren't provided 
+# Exit if required command-line arguments weren't provided
 #----------------------------------------------------------------------
 error=0  # no errors yet
 if [ -z "$baseline_dir" ]; then
@@ -259,8 +259,8 @@ for model in ${models[*]}; do
     # Loop over history file extensions
     #------------------------------------------------------------------
     for extension in ${extensions[*]}; do
-    
-        # Set baseline history name 
+
+        # Set baseline history name
 	# Note that this name drops (1) the timestamp, and (2) the
         # instance number for multi-instance runs
 	baseline_hist=${model}.${extension}.nc
@@ -287,7 +287,7 @@ for model in ${models[*]}; do
 		compare_status=`get_status "$compare_result"`
 		compare_info=`get_info "$compare_result"`
 		if [ "$compare_status" != "BFAIL_NA" ]; then
-		    if [ -z "$msg" ]; then 
+		    if [ -z "$msg" ]; then
 			print_comment "$compare_status" "$compare_info : $model.${extension}.nc : baseline compare ${model}.${extension} base with ${compare_tag}" "${testcase_base}"
 		    else
 			print_comment "$compare_status" "$compare_info : $model.${extension}.nc : baseline compare ${model}.${extension} ($msg)" "${testcase_base}"
@@ -327,7 +327,7 @@ for model in ${models[*]}; do
 done  # loop over models
 
 if [ -n "$compare_tag" ]; then
-    if [ -z "$msg" ]; then 
+    if [ -z "$msg" ]; then
 	print_status "$overall_compare_status" "$compare_info : baseline compare summary" "${testcase_base}" compare
     else
 	print_status "$overall_compare_status" "$compare_info : baseline compare summary ($msg)" "${testcase_base}" compare

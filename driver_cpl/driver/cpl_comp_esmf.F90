@@ -204,14 +204,14 @@ CONTAINS
     !
     ! Arguments
     type(mct_gsmap)  , intent(inout) :: gsmap_cx
-    type(mct_avect)  , intent(inout) :: c2x_cx 
-    type(mct_avect)  , intent(inout) :: x2c_cx 
-    type(mct_ggrid)  , intent(inout) :: dom_cx 
+    type(mct_avect)  , intent(inout) :: c2x_cx
+    type(mct_avect)  , intent(inout) :: x2c_cx
+    type(mct_ggrid)  , intent(inout) :: dom_cx
     character(len=*) , intent(in)    :: seq_flds_x2c_fields
     character(len=*) , intent(in)    :: seq_flds_c2x_fields
-    type(ESMF_Array) , intent(inout) :: c2x_cx_array 
-    type(ESMF_Array) , intent(inout) :: x2c_cx_array 
-    type(ESMF_Array) , intent(inout) :: dom_cx_array 
+    type(ESMF_Array) , intent(inout) :: c2x_cx_array
+    type(ESMF_Array) , intent(inout) :: x2c_cx_array
+    type(ESMF_Array) , intent(inout) :: dom_cx_array
     type(ESMF_State) , intent(inout) :: c2x_cx_state
     type(ESMF_State) , intent(inout) :: x2c_cx_state
     !
@@ -252,18 +252,18 @@ CONTAINS
     x2c_cx_array = ESMF_ArrayCreate(distgrid=distgrid_cx, farrayPtr=x2c_cx%rattr,      &
          distgridToArrayMap=(/2/), rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
- 
+
     dom_cx_array = ESMF_ArrayCreate(distgrid=distgrid_cx, farrayPtr=dom_cx%data%rattr, &
          distgridToArrayMap=(/2/), rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-    call ESMF_AttributeSet(c2x_cx_array, name="mct_names", value=trim(seq_flds_c2x_fields), rc=rc)  
+    call ESMF_AttributeSet(c2x_cx_array, name="mct_names", value=trim(seq_flds_c2x_fields), rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-    call ESMF_AttributeSet(x2c_cx_array, name="mct_names", value=trim(seq_flds_x2c_fields), rc=rc)  
+    call ESMF_AttributeSet(x2c_cx_array, name="mct_names", value=trim(seq_flds_x2c_fields), rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-    call ESMF_AttributeSet(dom_cx_array, name="mct_names", value=trim(seq_flds_dom_fields), rc=rc)  
+    call ESMF_AttributeSet(dom_cx_array, name="mct_names", value=trim(seq_flds_dom_fields), rc=rc)
     if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
     call ESMF_StateAdd(c2x_cx_state, (/c2x_cx_array/), rc=rc)

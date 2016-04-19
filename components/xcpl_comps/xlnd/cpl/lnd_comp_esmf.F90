@@ -44,13 +44,13 @@ module lnd_comp_esmf
 
   !--- stdin input stuff ---
   character(CS) :: str                  ! cpp  defined model name
-  
+
   !--- other ---
   integer(IN)   :: dbug = 0             ! debug level (higher is more)
-  
+
   character(CS) :: myModelName = 'lnd'   ! user defined model name
   integer(IN)   :: ncomp = 2             ! component index
-  integer(IN)   :: my_task               ! my task in mpi communicator mpicom 
+  integer(IN)   :: my_task               ! my task in mpi communicator mpicom
   integer(IN)   :: master_task=0         ! task number of master task
   integer(IN)   :: logunit               ! logging unit number
 
@@ -118,10 +118,10 @@ subroutine lnd_init_esmf(comp, import_state, export_state, EClock, rc)
     integer(IN)   :: totpe       ! total number of pes
 
     integer(IN), allocatable :: gindex(:)     ! global index
- 
+
     real(R8), pointer :: gbuf(:,:)     ! grid info buffer
     real(R8), pointer :: buf(:)        ! temporary buffer
-    
+
     integer(IN)   :: nproc_x       ! num of i pes (type 3)
     integer(IN)   :: seg_len       ! length of segs (type 4)
     integer(IN)   :: nxg           ! global dim i-direction
@@ -133,7 +133,7 @@ subroutine lnd_init_esmf(comp, import_state, export_state, EClock, rc)
     integer(IN)       :: COMPID
     integer(IN)       :: inst_index            ! number of current instance (ie. 1)
     character(len=16) :: inst_name         ! fullname of current instance (ie. "lnd_0001")
-    character(len=16) :: inst_suffix       ! char string associated with instance 
+    character(len=16) :: inst_suffix       ! char string associated with instance
     integer(IN)                           :: mpicom, mpicom_vm
     integer(IN)                           :: lsize
     type(ESMF_Array)                      :: dom_a
@@ -181,7 +181,7 @@ subroutine lnd_init_esmf(comp, import_state, export_state, EClock, rc)
     else
        logUnit = 6
     endif
- 
+
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
     !----------------------------------------------------------------------------
@@ -429,7 +429,7 @@ subroutine lnd_run_esmf(comp, import_state, export_state, EClock, rc)
     call esmfshr_util_ArrayGetField(dom_a, 'lat', blat, rc=rc)
     if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-    call ESMF_ArrayGet(d2x_a, localDe=0, farrayPtr=fptr, rc=rc)   
+    call ESMF_ArrayGet(d2x_a, localDe=0, farrayPtr=fptr, rc=rc)
 
     do n = 1, ubound(fptr,2)-lbound(fptr,2)+1
     do nf = 1, ubound(fptr,1)-lbound(fptr,1)+1
@@ -458,7 +458,7 @@ subroutine lnd_run_esmf(comp, import_state, export_state, EClock, rc)
        write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
        call shr_sys_flush(logunit)
     end if
-       
+
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
@@ -498,7 +498,7 @@ subroutine lnd_final_esmf(comp, import_state, export_state, EClock, rc)
     character(*), parameter :: subName = "(lnd_final_esmf) "
     character(*), parameter :: F00   = "('(lnd_final_esmf) ',8a)"
     character(*), parameter :: F91   = "('(lnd_final_esmf) ',73('-'))"
- 
+
 !-------------------------------------------------------------------------------
 !
 !-------------------------------------------------------------------------------
@@ -515,9 +515,9 @@ subroutine lnd_final_esmf(comp, import_state, export_state, EClock, rc)
     call esmfshr_util_StateArrayDestroy(import_state, array_name="x2d", rc=rc)
 
     if (my_task == master_task) then
-       write(logunit,F91) 
+       write(logunit,F91)
        write(logunit,F00) trim(myModelName),': end of main integration loop'
-       write(logunit,F91) 
+       write(logunit,F91)
     end if
 
 end subroutine lnd_final_esmf

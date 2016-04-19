@@ -1,6 +1,6 @@
 !>
 !! @file pio_kinds.F90
-!! @brief basic data types 
+!! @brief basic data types
 !!
 !! $Revision$
 !! $LastChangedDate$

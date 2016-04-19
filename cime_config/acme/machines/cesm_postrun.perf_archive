@@ -1,5 +1,5 @@
 #!/bin/csh
-# cesm_postrun with performance data archiving: 
+# cesm_postrun with performance data archiving:
 #  ./cesm_postrun.perf_archive with the following argument keyword/value pairs, in any order
 #   -machine <system name>
 #   -case <case name>
@@ -85,7 +85,7 @@ if ($app_jobid != 'unknown') then
   if ($syslog_jobid != 0) then
     if ($machine == 'mira') then
 
-      if { kill -0 $syslog_jobid } then 
+      if { kill -0 $syslog_jobid } then
         kill $syslog_jobid
       endif
 

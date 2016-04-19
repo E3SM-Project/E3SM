@@ -21,7 +21,7 @@ separate 'node' records
 
 =head1 DESCRIPTION
 
-read from standard input the result of applying 
+read from standard input the result of applying
 ''s/\<\/node\>/\<\/node\>\n/g' applied to the output of
 'mdiag -n --xml'
 
@@ -69,16 +69,16 @@ sub main {
     $job_id = -1;
     $nid_id = -1;
     foreach $mdiag_field (@mdiag_line){
-      if (m/JOBLIST=\"(\d+)\"/){ 
+      if (m/JOBLIST=\"(\d+)\"/){
         $job_id = $1;
       }
-      if (m/NODEID=\"(\d+)\"/){ 
+      if (m/NODEID=\"(\d+)\"/){
         $nid_id = $1;
       }
-      if (m/NODESTATE=\"(\S+)\"/){ 
+      if (m/NODESTATE=\"(\S+)\"/){
         $nid_state = $1;
       }
-      if (m/FEATURES=\"(\S+)\"/){ 
+      if (m/FEATURES=\"(\S+)\"/){
         $nid_features = $1;
       }
     }

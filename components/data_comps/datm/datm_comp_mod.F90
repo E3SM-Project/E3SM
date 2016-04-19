@@ -57,7 +57,7 @@ module datm_comp_mod
   integer(IN)   :: logunit               ! logging unit number
   integer       :: inst_index            ! number of current instance (ie. 1)
   character(len=16) :: inst_name         ! fullname of current instance (ie. "lnd_0001")
-  character(len=16) :: inst_suffix       ! char string associated with instance 
+  character(len=16) :: inst_suffix       ! char string associated with instance
                                          ! (ie. "_0001" or "")
   character(CL) :: atm_mode              ! mode
   integer(IN)   :: dbug = 0              ! debug level (higher is more)
@@ -116,7 +116,7 @@ module datm_comp_mod
   real(R8), pointer :: windFactor(:)
   real(R8), pointer :: winddFactor(:)
   real(R8), pointer :: qsatFactor(:)
-  
+
   !
   ! for anomaly forcing
   !
@@ -164,7 +164,7 @@ module datm_comp_mod
          "taux            ","tauy            ","lat             ","sen             ", &
          "lwup            ","evap            ","co2lnd          ","co2ocn          ", &
          ! add precsf
-         "dms             ","precsf          ", &                                       
+         "dms             ","precsf          ", &
          ! add Sa_precsf for precip scale factor
          "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
          "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         "  &
@@ -257,7 +257,7 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    type(iosystem_desc_t)  , pointer :: iosystem 
+    type(iosystem_desc_t)  , pointer :: iosystem
 
     character(CL) :: filePath    ! generic file path
     character(CL) :: fileName    ! generic file name
@@ -423,7 +423,7 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     !----------------------------------------------------------------------------
     ! Initialize PIO
     !----------------------------------------------------------------------------
-    
+
     iosystem => shr_pio_getiosys(trim(inst_name))
     call shr_strdata_pioinit(SDATM, iosystem, &
                                     shr_pio_getiotype(trim(inst_name)))
@@ -499,7 +499,7 @@ subroutine datm_comp_init( EClock, cdata, x2a, a2x, NLFilename )
     call seq_infodata_PutData(infodata, &
       atm_present=atm_present, atm_prognostic=atm_prognostic, &
       atm_nx=SDATM%nxg, atm_ny=SDATM%nyg )
-    call seq_infodata_PutData( infodata, atm_aero=presaero) 
+    call seq_infodata_PutData( infodata, atm_aero=presaero)
 
     !----------------------------------------------------------------------------
     ! Initialize MCT global seg map, 1d decomp
@@ -825,7 +825,7 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
    call seq_timemgr_EClockGetData( EClock, curr_yr=yy, curr_mon=mm, curr_day=dd)
    call seq_timemgr_EClockGetData( EClock, stepno=stepno, dtime=idt)
-   call seq_timemgr_EClockGetData( EClock, calendar=calendar) 
+   call seq_timemgr_EClockGetData( EClock, calendar=calendar)
    dt = idt * 1.0_r8
    write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
 
@@ -869,10 +869,10 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
          enddo
       endif
       if (firstcall) then
-         allocate(ilist_av(SDATM%nstreams)) 
-         allocate(olist_av(SDATM%nstreams))  
-         allocate(ilist_st(SDATM%nstreams))     
-         allocate(olist_st(SDATM%nstreams))     
+         allocate(ilist_av(SDATM%nstreams))
+         allocate(olist_av(SDATM%nstreams))
+         allocate(ilist_st(SDATM%nstreams))
+         allocate(olist_st(SDATM%nstreams))
          allocate(count_av(SDATM%nstreams))
          allocate(count_st(SDATM%nstreams))
       end if
@@ -891,7 +891,7 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
             call shr_dmodel_translate_list(SDATM%avs(n),avstrm,&
                  stifld(1:ktranss),stofld,ilist_st(n),olist_st(n),count_st(n))
          end if
-         if (count_st(n) > 0) then 
+         if (count_st(n) > 0) then
             call shr_dmodel_translateAV_list(SDATM%avs(n),avstrm,&
                  ilist_st(n),olist_st(n),rearr)
          end if
@@ -906,10 +906,10 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
 
    select case (trim(atm_mode))
 
-   case('COPYALL') 
+   case('COPYALL')
       ! do nothing extra
 
-   case('CPLHIST') 
+   case('CPLHIST')
       ! do nothing extra
 
    case ('WRF')
@@ -1018,7 +1018,7 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
          endif
 
          !-------------------------------------------------------------------------
-         ! RADIATION DATA 
+         ! RADIATION DATA
          !-------------------------------------------------------------------------
 
          !--- fabricate required swdn components from net swdn ---
@@ -1077,7 +1077,7 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
          if (sz < 1) a2x%rAttr(kz,n) = 30.0_R8
 
          !--- temperature ---
-         if (tbotmax < 50.0_R8) a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + tkFrz         
+         if (tbotmax < 50.0_R8) a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + tkFrz
          a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n)
 
          !--- pressure ---
@@ -1188,7 +1188,7 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
    !
    lsize = mct_avect_lsize(avstrm)
 
-   ! bias correct precipitation relative to observed 
+   ! bias correct precipitation relative to observed
    ! (via bias_correct nameslist option)
    if (sprecsf > 0) then
       do n = 1,lsize
@@ -1199,7 +1199,7 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
 
       end do
    endif
-   
+
    ! adjust atmospheric input fields if anomaly forcing streams exist
    ! (via anomaly_forcing nameslist option)
 
@@ -1215,36 +1215,36 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
    if (sshum_af > 0) then
       do n = 1,lsize
          a2x%rAttr(kshum,n) = a2x%rAttr(kshum,n) + avstrm%rAttr(sshum_af,n)
-            
+
          ! avoid possible negative q values
-         if(a2x%rAttr(kshum,n) < 0._r8) then 
+         if(a2x%rAttr(kshum,n) < 0._r8) then
             a2x%rAttr(kshum,n) = 1.e-6_r8
          endif
 
       end do
    endif
-      
+
    ! pressure
    if (spbot_af > 0) then
       do n = 1,lsize
          a2x%rAttr(kpbot,n) = a2x%rAttr(kpbot,n) + avstrm%rAttr(spbot_af,n)
       end do
    endif
-      
+
    ! temperature
    if (stbot_af > 0) then
       do n = 1,lsize
          a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + avstrm%rAttr(stbot_af,n)
       end do
    endif
-      
+
    ! longwave
    if (slwdn_af > 0) then
       do n = 1,lsize
          a2x%rAttr(klwdn,n) = a2x%rAttr(klwdn,n)*avstrm%rAttr(slwdn_af,n)
       end do
    endif
-      
+
    ! precipitation
    if (sprec_af > 0) then
       do n = 1,lsize
@@ -1304,9 +1304,9 @@ subroutine datm_comp_run( EClock, cdata,  x2a, a2x)
       write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
       call shr_sys_flush(logunit)
    end if
-   
+
    firstcall = .false.
-      
+
    call shr_file_setLogUnit (shrlogunit)
    call shr_file_setLogLevel(shrloglev)
    call shr_sys_flush(logunit)
@@ -1346,11 +1346,11 @@ subroutine datm_comp_final()
    call t_startf('DATM_FINAL')
 
    if (my_task == master_task) then
-      write(logunit,F91) 
+      write(logunit,F91)
       write(logunit,F00) trim(myModelName),': end of main integration loop'
-      write(logunit,F91) 
+      write(logunit,F91)
    end if
-      
+
    call t_stopf('DATM_FINAL')
 
 end subroutine datm_comp_final

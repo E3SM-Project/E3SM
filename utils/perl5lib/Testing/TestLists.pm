@@ -10,7 +10,7 @@ BEGIN
 	$VERSION = '0.01';
 	@ISA     = qw();
 }
-	
+
 #-----------------------------------------------------------------------------------------------
 #
 #
@@ -33,7 +33,7 @@ sub new
 	}
 	$self->{'testlistxml'} = $self->{scriptsdir} . "/Testing/Testlistxml/testlist.xml";
 	stat($self->{'testlistxml'}) or die "cannot find $self->{'testlistxml'}";
-	
+
 	bless ($self, $class);
 	return ($self);
 }
@@ -46,7 +46,7 @@ sub findTestsForCase
 	my $grid = $$args{'grid'} if defined $$args{'compset'};
 	my $machine = $$args{'machine'} if defined $$args{'machine'};
 	my $compiler = $$args{'compiler'} if defined $$args{'compiler'};
-	my $cesmtest = new CESMTest(compset => $compset, grid => $grid, 
+	my $cesmtest = new CESMTest(compset => $compset, grid => $grid,
 							    machine => $machine, compiler => $compiler);
 
 	my $testxml = $self->_readTestListXML();
@@ -65,7 +65,7 @@ sub findTestsForCase
 		{
 			next unless $cesmtest->{compset} eq $compsetname;
 		}
-	
+
 		my @gridnodes = $compsetnode->findnodes('./grid');
 		foreach my $gridnode($compsetnode->findnodes('./grid'))
 		{
@@ -76,7 +76,7 @@ sub findTestsForCase
 			{
 				next unless $cesmtest->{grid} eq $gridname;
 			}
-			
+
 			foreach my $testnode($gridnode->findnodes('./test'))
 			{
 				my $testname = $testnode->getAttribute('name');
@@ -105,20 +105,20 @@ sub findTestsForCase
 	@machines = sort keys %uniqmachines;
 	map { $uniqtesttypes{$_} = 1 } @testsforcase;
 	@testtypes = sort keys %uniqtesttypes;
-	
+
 	if (! @compilers && ! @machines && ! @testtypes)
 	{
 		my $msg = <<END;
-WARNING:: The following compset/grid combination $cesmtest->{compset}/$cesmtest->{grid} is NOT 
+WARNING:: The following compset/grid combination $cesmtest->{compset}/$cesmtest->{grid} is NOT
 tested during the standard CESM development process. Thus you may likely find that this configuration
 will NOT work, and are on your own to figure out how to get it working.
 END
 		return $msg;
 	}
-		
+
 my $msg = <<END;
 The compset $cesmtest->{compset} and grid $cesmtest->{grid} are tested on the following
-machines, compilers, and/or test categories: 
+machines, compilers, and/or test categories:
 END
 	my $line = '';
 	if(@machines)
@@ -128,14 +128,14 @@ END
 
     	$msg .= "$line\n";
 	}
-	
+
 	if(@compilers)
 	{
 		$msg .= "Compilers: ";
 		$line = commify(@compilers);
     	$msg .= "$line\n";
 	}
-	
+
 	if(@testtypes)
 	{
 		$msg .= "Test Types: ";
@@ -146,9 +146,9 @@ $msg .= <<END;
 The closer the tests are to the machine and compiler you are using and the more tests
 that are done, the more likely your case will work without trouble.
 END
-	
+
 	return $msg;
-	
+
 }
 
 sub _readTestListXML
@@ -163,8 +163,8 @@ sub _readTestListXML
 sub commify
 {
 	(@_ == 0) ? ''                :
-	(@_ == 1) ? $_[0]             : 
-	(@_ == 2) ?  join(" and ", @_) : 
+	(@_ == 1) ? $_[0]             :
+	(@_ == 2) ?  join(" and ", @_) :
 				join(", ", @_[0 .. ($#_-1)], "and $_[-1]");
 }
 

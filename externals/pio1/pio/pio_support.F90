@@ -87,7 +87,7 @@ contains
 
     character(len=*), parameter :: subName=modName//'::pio_die'
     integer :: ierr, myrank=-1
-    
+
     if(present(mpirank)) myrank=mpirank
 
     if (present(ival3)) then
@@ -121,9 +121,9 @@ contains
 
 #endif
 
-    ! passing an argument of 1 to mpi_abort will lead to a STOPALL output 
+    ! passing an argument of 1 to mpi_abort will lead to a STOPALL output
     ! error code of 257
-    call mpi_abort (MPI_COMM_WORLD, 1, ierr)  
+    call mpi_abort (MPI_COMM_WORLD, 1, ierr)
 
 #ifdef CPRNAG
     stop
@@ -282,7 +282,7 @@ contains
     ! Author: T Craig
     !
     ! Change History
-    ! 
+    !
     !-----------------------------------------------------------------------
     ! $Id$
     !-----------------------------------------------------------------------
@@ -398,25 +398,25 @@ contains
                                   recvbuf, recvcnt, recvtype, &
                                   root, comm, flow_cntl )
 
-!----------------------------------------------------------------------- 
-! 
-!> Purpose: 
-!!   Gather collective with additional flow control, so as to 
-!!   be more robust when used with high process counts. 
+!-----------------------------------------------------------------------
+!
+!> Purpose:
+!!   Gather collective with additional flow control, so as to
+!!   be more robust when used with high process counts.
 !!
-!! Method: 
-!!   If flow_cntl optional parameter 
+!! Method:
+!!   If flow_cntl optional parameter
 !!     < 0: use MPI_Gather
-!!     >= 0: use point-to-point with handshaking messages and 
-!!           preposting receive requests up to 
-!!           max(min(1,flow_cntl),max_gather_block_size) 
+!!     >= 0: use point-to-point with handshaking messages and
+!!           preposting receive requests up to
+!!           max(min(1,flow_cntl),max_gather_block_size)
 !!           ahead if optional flow_cntl parameter is present.
 !!           Otherwise, fc_gather_flow_cntl is used in its place.
 !!     Default value is 64.
-!! 
+!!
 !! Author of original version:  P. Worley
 !! Ported from CAM: P. Worley, Jan 2010
-!< 
+!<
 !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
@@ -458,8 +458,8 @@ contains
 
    integer :: rcvid(max_gather_block_size)  ! receive request ids
 
-   integer :: ier                           ! return error status    
-   integer :: status(MPI_STATUS_SIZE)       ! MPI status 
+   integer :: ier                           ! return error status
+   integer :: status(MPI_STATUS_SIZE)       ! MPI status
 
 !
 !-------------------------------------------------------------------------------------
@@ -481,7 +481,7 @@ contains
    endif
 
    if (fc_gather) then
- 
+
       ! Determine task id and size of communicator
       call mpi_comm_rank (comm, mytask, ier)
       call mpi_comm_size (comm, nprocs, ier)
@@ -542,7 +542,7 @@ contains
       call CheckMPIReturn(subName,ier)
 
    else
- 
+
       call mpi_gather (sendbuf, sendcnt, sendtype, &
                        recvbuf, recvcnt, recvtype, &
                        root, comm, ier)

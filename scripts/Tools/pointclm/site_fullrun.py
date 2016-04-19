@@ -143,7 +143,7 @@ for row in AFdatareader:
                   break
         else:
           fsplen = int(options.nyears_final_spinup)
- 
+
         print(fsplen, translen, endyear)
 
         #get align_year for transient run
@@ -240,7 +240,7 @@ for row in AFdatareader:
             else:
                 if (options.cpl_bypass):
                   basecase = basecase+'_I1850CLM45CBCN'
-                else: 
+                else:
                   basecase = basecase+'_I1850CLM45CN'
         else:
             if (options.clm40):
@@ -317,7 +317,7 @@ for row in AFdatareader:
         if (options.cruncep and not options.cpl_bypass):
              print('\nSetting up transient case phase 2\n')
              os.system(cmd_trns2)
-        
+
         output = open('./temp/site_fullrun.pbs','w')
         #make site-specific pbs script
 
@@ -330,7 +330,7 @@ for row in AFdatareader:
                 output.write(s)
         input.close()
         output.write("\n")
-        
+
         if (options.cpl_bypass):
           modelst = 'CLM45CBCN'
         else:

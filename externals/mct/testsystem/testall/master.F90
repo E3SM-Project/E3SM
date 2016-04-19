@@ -1,10 +1,10 @@
 !-----------------------------------------------------------------------
 ! CVS $Id: master.F90,v 1.2 2007-10-30 20:57:16 rloy Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !-----------------------------------------------------------------------
 ! A driver model code for Multi-Process Handshaking utility
 ! to facilitate a plug & play style programming using single executable.
-! each processor only execute one component model once. 
+! each processor only execute one component model once.
 ! Written by Yun (Helen) He and Chris Ding, NERSC/LBNL, October 2000.
 
 
@@ -22,7 +22,7 @@
 ! you could list the components in any order or omit any of them
        call MPH_setup_SE (atmosphere=ccm3, coupler=cpl, ocean=pop2_2)
 
-!     write(*,*)'I am proc ', MPH_global_proc_id(), 
+!     write(*,*)'I am proc ', MPH_global_proc_id(),
 !    &  ' of global proc ', MPH_local_proc_id_ME_SE(), ' of ',
 !    &  MPH_myName_ME_SE()
 !     write(*,*)'=============================================='

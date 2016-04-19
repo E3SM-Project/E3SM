@@ -14,7 +14,7 @@ if ( -e env_mach_pes.xml.1 )  then
   cp -f env_build.xml.1      env_build.xml
   cp -f env_build.xml.1      LockedFiles/env_build.xml
 else
-  echo " ERROR: env_mach_pes.xml.1 does not exist" 
+  echo " ERROR: env_mach_pes.xml.1 does not exist"
   echo "   this would been produced in the build - must run case.test_build"
   exit -1
 endif
@@ -27,7 +27,7 @@ endif
 ./case.setup --clean --test-mode
 ./case.setup
 
-# Set env_run.xml settings 
+# Set env_run.xml settings
 set STOP_N      = `./xmlquery STOP_N      --value`
 set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 
@@ -42,8 +42,8 @@ set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 
 cd $CASEROOT
 
-echo "" >>& $TESTSTATUS_LOG 
-echo "doing an ${STOP_N} ${STOP_OPTION} initial test, no restarts written" >>& $TESTSTATUS_LOG 
+echo "" >>& $TESTSTATUS_LOG
+echo "doing an ${STOP_N} ${STOP_OPTION} initial test, no restarts written" >>& $TESTSTATUS_LOG
 
 ./case.run
 if ($status != 0) then
@@ -56,10 +56,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -83,8 +83,8 @@ $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -su
 
 cd $CASEROOT
 
-echo " " >>& $TESTSTATUS_LOG 
-echo "doing an ${STOP_N} ${STOP_OPTION} initial test with half tasks, same threads, no restarts written" >>& $TESTSTATUS_LOG 
+echo " " >>& $TESTSTATUS_LOG
+echo "doing an ${STOP_N} ${STOP_OPTION} initial test with half tasks, same threads, no restarts written" >>& $TESTSTATUS_LOG
 
 cp -f env_mach_pes.xml.2 env_mach_pes.xml
 cp -f env_mach_pes.xml.2 LockedFiles/env_mach_pes.xml
@@ -107,10 +107,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else

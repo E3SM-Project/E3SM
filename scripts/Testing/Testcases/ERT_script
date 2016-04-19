@@ -3,8 +3,8 @@
 # Test setup:
 #======================================================================
 
-# turn on memory leak check - if comparing with baseline also 
-# compare memory highwater mark from baseline 
+# turn on memory leak check - if comparing with baseline also
+# compare memory highwater mark from baseline
 set DETECT_MEMORY_LEAK
 if ($?COMPARE_BASELINE ) then
   set COMPARE_MEMORY
@@ -32,8 +32,8 @@ endif
 
 cd $CASEROOT
 
-echo "" >>& $TESTSTATUS_LOG 
-echo "initial: doing a ${stopn1} ${STOP_OPTION} initial test writing a restart at ${restn1} ${STOP_OPTION}" >>& $TESTSTATUS_LOG 
+echo "" >>& $TESTSTATUS_LOG
+echo "initial: doing a ${stopn1} ${STOP_OPTION} initial test writing a restart at ${restn1} ${STOP_OPTION}" >>& $TESTSTATUS_LOG
 
 ./xmlchange --file env_run.xml --id CONTINUE_RUN --val FALSE
 ./xmlchange --file env_run.xml --id STOP_N       --val ${stopn1}
@@ -53,10 +53,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -78,7 +78,7 @@ $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -su
 
 cd $CASEROOT
 
-echo "restart: doing a ${stopn2} ${STOP_OPTION} restart test" >>& $TESTSTATUS_LOG 
+echo "restart: doing a ${stopn2} ${STOP_OPTION} restart test" >>& $TESTSTATUS_LOG
 
 ./xmlchange --file env_run.xml --id CONTINUE_RUN --val TRUE
 ./xmlchange --file env_run.xml --id STOP_N       --val ${stopn2}
@@ -97,10 +97,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else

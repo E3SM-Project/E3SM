@@ -40,7 +40,7 @@
         end if
         stop
       end
-      
+
 !!!!!!!!!!!!!!!!!!!
 ! Contiguous type.  Simplest example.  Strings 5
 !  integers together and tests their equality after
@@ -82,12 +82,12 @@
       end
 
 !!!!!!!!!!!!!!!!!!!!!!!!
-! Vector type.  collect a series of indices with 
+! Vector type.  collect a series of indices with
 ! set stride from an array.
 !!!!!!!!!!!!!!!!!!!!!!!!
 
       subroutine test_vector(ec)
-      use mpi 
+      use mpi
       integer ec
       integer ierr
       integer datatype
@@ -123,7 +123,7 @@
 !!!!!!!!!!!!!!!!!!!!!
 ! Byte-addressed vector.
 ! values calculated with mpi_type_extent(),
-! so basically we are doing the work here in the 
+! so basically we are doing the work here in the
 ! test program instead of in the library
 !!!!!!!!!!!!!!!!!!!!!
 
@@ -159,7 +159,7 @@
           if (a(index_test(i)) .ne. (b(index_test(i)))) then
             print *, ">>>FAILED: test_simple_hvector"
             ec = ec+1
-            return 
+            return
           end if
         end do
       end subroutine
@@ -229,7 +229,7 @@
         data index_test/1,2,5,6,8,9/
         print *, "Block indexed type"
 
-        call mpi_type_create_indexed_block(3,2,disps,mpi_integer, & 
+        call mpi_type_create_indexed_block(3,2,disps,mpi_integer, &
                                            indexed_type, ierr)
         call mpi_type_commit(indexed_type, ierr)
 #ifdef TEST_INTERNAL
@@ -334,7 +334,7 @@
         call mpi_type_indexed(3,blens,disps, MPI_DOUBLE_PRECISION, &
              indexed_type, ierr)
         call mpi_type_commit(indexed_type, ierr)
-        
+
         data cblens/1, 2/
         data cdisps/1, 4/
         call mpi_type_indexed(2,cblens,cdisps,indexed_type, &
@@ -346,10 +346,10 @@
         call mpi_isend(a,1,complex_indexed,0,0,mpi_comm_world,req,ierr)
         call mpi_irecv(b,1,complex_indexed,mpi_any_source,mpi_any_tag,&
                        mpi_comm_world, req, ierr)
-#endif   
+#endif
         do i=1,3
           do j=1,8
-            if (a(index_test(j)+12*cindex_test(i)) .ne. & 
+            if (a(index_test(j)+12*cindex_test(i)) .ne. &
                 b(index_test(j)+12*cindex_test(i))) then
               print *, ">>>FAILED: test_complex_indexed"
               print *, "index ",index_test(j)+12*cindex_test(i)
@@ -362,7 +362,7 @@
 
         call mpi_type_free(complex_indexed, ierr)
         call mpi_type_free(indexed_type, ierr)
-      end subroutine 
+      end subroutine
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! test_packed()
 ! Creates a few variable pairs, assigns the first
@@ -382,7 +382,7 @@
         integer(kind=mpi_address_kind) disps(3)
         integer pos
         integer req
-        
+
         x = 10
         f = 14.333
         c = (100, 20)
@@ -390,8 +390,8 @@
 
         pos = 0
         data blens/1,2,1/, disps/0,4,8/
-             
-        print *, "Packed type " 
+
+        print *, "Packed type "
 
         call mpi_pack(x, 1, mpi_integer, buf, 100, pos, 0, ierr)
         call mpi_pack(f, 1, mpi_real, buf, 100, pos, 0, ierr)
@@ -422,7 +422,7 @@
         end if
 
       end subroutine
-       
+
       subroutine test_multiple(ec)
       use mpi
       integer ec
@@ -450,7 +450,7 @@
         do i=1,10
           if (a(i) .ne. b(i)) then
             print *, ">>>FAILED: test_multiple"
-            ec = ec+1 
+            ec = ec+1
             return
           end if
         end do
@@ -502,7 +502,7 @@
               print *, ">>>FAILED: test_multiple_indexed"
               print *, " Found:",a(index_test(j)+13*i)
               print *, " Expected:",b(index_test(j)+13*i)
-              ec = ec+1 
+              ec = ec+1
 !              return
             end if
           end do
@@ -521,7 +521,7 @@
         integer ierr
         integer scount
         integer rcount
-        integer disp 
+        integer disp
         integer index_test(7)
 
         data scount/1/rcount/1/disp/0/
@@ -669,12 +669,12 @@
         print *, "Testing mpi_scan"
         call mpi_scan(a, b, scount, itype, mpi_max, &
                       mpi_comm_world, ierr)
- 
+
          do i=1,7
           if (a(index_test(i)) .ne. b(index_test(i))) then
             print *, "mpi_scan failed"
             ec=ec+1
           end if
         end do
-      end subroutine 
-                         
+      end subroutine
+

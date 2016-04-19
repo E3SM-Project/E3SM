@@ -16,7 +16,7 @@ libfind_package(NETCDF_Fortran NETCDF_C)
 find_library(NETCDF_Fortran_LIBRARY
              NAMES libnetcdff.a netcdff
              PATHS ${NETCDF_Fortran_PKGCONF_LIBRARY_DIRS}
-	     HINTS ${NETCDF_DIR}/lib ${NETCDF_Fortran_DIR}/lib)        
+	     HINTS ${NETCDF_DIR}/lib ${NETCDF_Fortran_DIR}/lib)
 
 set(NETCDF_Fortran_PROCESS_INCLUDES NETCDF_Fortran_INCLUDE_DIR)
 

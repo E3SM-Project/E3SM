@@ -4,8 +4,8 @@
 #
 # TODO - need to get the PE count from the config_pes.xml tag
 # for the specified machine
-# <timeseries_pes>##</timeseries_pes> 
-# 
+# <timeseries_pes>##</timeseries_pes>
+#
 
 {_batchdirectives_}
 mpirun={_mpirun_}

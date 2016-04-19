@@ -20,7 +20,7 @@ if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh
   module rm PrgEnv-intel
   module rm PrgEnv-pgi
-  module rm PrgEnv-cray 
+  module rm PrgEnv-cray
   module rm PrgEnv-gnu
   module rm PrgEnv-pathscale
   module rm intel
@@ -40,23 +40,23 @@ endif
 if ( $COMPILER == "pgi" ) then
     module load PrgEnv-pgi/5.2.40
     module switch pgi pgi/14.7.0
-endif    
+endif
 if ( $COMPILER == "intel" ) then
-    module load PrgEnv-intel 
+    module load PrgEnv-intel
     module switch intel      intel/12.1.5.339
-endif    
+endif
 if ( $COMPILER == "cray" ) then
     module load PrgEnv-cray
     module switch cce      cce/8.0.7
-endif    
+endif
 if ( $COMPILER == "pathscale" ) then
     module load PrgEnv-pathscale
     module switch pathscale       pathscale/4.0.9
-endif    
+endif
 if ( $COMPILER == "gnu" ) then
     module load PrgEnv-gnu
     module switch gcc       gcc/4.7.1
-endif    
+endif
 module load cray-mpich/7.1.1
 if ( $COMPILER != "intel" ) then
   module switch cray-libsci cray-libsci/12.1.3
@@ -94,7 +94,7 @@ setenv MPICH_VERSION_DISPLAY 1
 setenv MPICH_CPUMASK_DISPLAY 1
 
 # The environment variable below increase the stack size, which is necessary for
-# CICE to run threaded on this machine.  
+# CICE to run threaded on this machine.
 setenv OMP_STACKSIZE 64M
 if ( $?PERL ) then
   printenv

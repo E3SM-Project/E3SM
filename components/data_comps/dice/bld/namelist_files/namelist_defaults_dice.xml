@@ -7,11 +7,11 @@
 <!--
 Values to use by default for creation of DICE model namelists.
 The element names are the same as the corresponding namelist
-variables.  
+variables.
 
-strm_year_first is the first year of the stream data that will be used 
-strm_year_last  is the last  year of the stream data that will be used 
-strm_year_align is the model year that will be aligned with stream data for year_first 
+strm_year_first is the first year of the stream data that will be used
+strm_year_last  is the last  year of the stream data that will be used
+strm_year_align is the model year that will be aligned with stream data for year_first
 
 Replace any instance of the following substring indicators with the appropriate values:
     %y    = year from the range yearfirst to yearlast
@@ -27,7 +27,7 @@ In dice_atm_in,  streams namelist input has the form
 Currently the following datamode values are supported
      SSMI
      SSMI_IAF
-     NULL 
+     NULL
 
 -->
 

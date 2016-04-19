@@ -102,8 +102,8 @@ while (${bx} < ${OCN_NX})
       if ($precheck == 0) then
         ./*.build
         if ($status != 0) then
-          exit -1    
-        endif 
+          exit -1
+        endif
 
         @ cnt = $cnt + 1
         set acnt = $cnt
@@ -121,7 +121,7 @@ while (${bx} < ${OCN_NX})
       if ($precheck == 0) then
         echo "  skip..... $OCN_GRID ${ocn_pes} $NTASKS_OCN $NTHRDS_OCN $bx $by $mxt $decomp" >> pop_perf.out
       else
-        echo "  skip..... $OCN_GRID ${ocn_pes} $NTASKS_OCN $NTHRDS_OCN $bx $by $mxt $decomp" 
+        echo "  skip..... $OCN_GRID ${ocn_pes} $NTASKS_OCN $NTHRDS_OCN $bx $by $mxt $decomp"
       endif
     endif
 

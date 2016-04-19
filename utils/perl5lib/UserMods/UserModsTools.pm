@@ -31,7 +31,7 @@ BEGIN{
 # ------------------------------------------------------------------------
 
 sub apply_mods {
-   # Apply mods from a user_mods directory. 
+   # Apply mods from a user_mods directory.
    #
    # Usage: apply_mods($user_mods_dir, $caseroot, $is_test)
 
@@ -80,7 +80,7 @@ sub _apply_mods_recursively {
          $logger->logdie ("ERROR: Cannot find desired user_mods_dir to include: $include_dir");
       }
 
-      _apply_mods_recursively($include_dir, $caseroot, $is_test, 
+      _apply_mods_recursively($include_dir, $caseroot, $is_test,
                              $shell_commands_filename);
    }
 
@@ -94,11 +94,11 @@ sub _apply_mods_recursively {
    # through those includes, if the same namelist item, xml variable, or
    # SourceMod file was set in multiple places.
    # ------------------------------------------------------------------------
-   
+
    _apply_mods_from_current_dir($caseroot, $is_test, $shell_commands_filename);
 
    chdir "$cwd";
-}   
+}
 
 #-------------------------------------------------------------------------------
 
@@ -110,9 +110,9 @@ sub _get_include_dir_list {
    # Returns an empty list if $includes_file doesn't exist.
    #
    # Usage: @include_dirs = _get_include_dir_list($includes_file)
-   
+
    my ($includes_file) = @_;
-   
+
    my @include_dirs;
    if (-e $includes_file) {
       open(my $includes_fh, "<", $includes_file);
@@ -124,7 +124,7 @@ sub _get_include_dir_list {
          # skip blank lines (which will include lines that originally had some
          # whitespace, because we have removed all trailing whitespace above)
          next if ($include_dir =~ m/^$/);
-         
+
          # convert relative to absolute paths; this isn't strictly necessary,
          # but makes diagnostic messages more clear
          my $include_dir_abs = File::Spec->rel2abs($include_dir);
@@ -194,7 +194,7 @@ sub _apply_mods_from_current_dir {
             system($append) == 0 or $logger->logdie ("ERROR: $append failed: $?");
          }
       }
-        
+
 
       # Copy any files in SourceMods over provided the same directory exists in the case
       my $num_sourcemods_found = 0;
@@ -245,6 +245,6 @@ sub _apply_shell_commands {
 
    chdir "$cwd";
 }
-   
+
 
 

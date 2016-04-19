@@ -53,7 +53,7 @@ Setup
   - build cprnc :
 
     homebrew :
-    
+
         cd ${CESMROOT}/tools/cprnc
         mkdir build
         cd build
@@ -63,7 +63,7 @@ Setup
             -DNetcdf_INCLUDE_DIR=/usr/local/include ..
         make
 
-    
+
     macports :
 
         cd ${CESMROOT}/tools/cprnc
@@ -119,7 +119,7 @@ First Use
             -case ../junk-1x1_brazil \
             -compset ICLM45CN \
             -res 1x1_brazil
-    
+
   - run `case_setup`, `$CASE_NAME.build`, `$CASE_NAME.run` as normal.
 
   - Test a global simulation, use:

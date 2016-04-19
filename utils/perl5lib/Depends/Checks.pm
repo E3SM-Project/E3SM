@@ -15,9 +15,9 @@ sub checkLibXML()
 		$libXMLInstalled = 0;
 		print "XML::LibXML not installed!!\n";
 
-	
+
 		my $xmlmach = XML::Lite->new("../../../machines/config_machines.xml");
-		
+
 	}
 
 }

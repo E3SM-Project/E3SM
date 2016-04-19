@@ -19,7 +19,7 @@
           An abbreviation of the fortran declaration for the variable.
 	  Valid declarations are:
 
-          char*n  
+          char*n
 	  integer
 	  logical
 	  real
@@ -223,7 +223,7 @@ Default: 'q_only', but 'none' for WACCM configurations.
 
 <entry id="print_energy_errors" type="logical"  catagory="diagnostics"
        group="cam_inparm" valid_values="" >
-Turn on verbose output identifying columns that fail energy/water 
+Turn on verbose output identifying columns that fail energy/water
 conservation checks.
 Default: FALSE
 </entry>
@@ -451,7 +451,7 @@ Default: 5
 <entry id="phys_fixed_repro_gmean" type="logical"  catagory="gmean"
        group="cam_inparm" valid_values="">
 Calculate global mean for field on physics decomposition using fixed
-point-based (scalable) reproducible algorithm. 
+point-based (scalable) reproducible algorithm.
 Default: TRUE
 </entry>
 
@@ -571,7 +571,7 @@ Default: 0
 <entry id="rampyear_ghg" type="integer"  catagory="ghg_cam"
        group="cam_inparm" valid_values="" >
 If <varname>scenario_ghg</varname> is set to "RAMPED" then the greenhouse
-gas surface values are interpolated between the annual average values 
+gas surface values are interpolated between the annual average values
 read from the file specified by <varname>bndtvghg</varname>.
 In that case,
 the value of this variable (&gt; 0) fixes the year of the
@@ -656,7 +656,7 @@ series. Valid
 values are 'A', 'I', 'X', and 'M' indicating Average (A), Instantaneous
 (I), Maximum (X), and Minimum (M).  Default is to use the averaging
 flags for each variable that are set in the code via calls to subroutine
-addfld. 
+addfld.
 Defaults: set in code via the addfld and add_default calls.
 </entry>
 
@@ -856,7 +856,7 @@ Default: 'YEARLY'
 <entry id="inithist_all" type="logical"  catagory="history"
        group="cam_inparm" valid_values="" >
 If false then include only REQUIRED fields on IC file.  If true then
-include required AND optional fields on IC file.  
+include required AND optional fields on IC file.
 Default: TRUE
 </entry>
 
@@ -869,7 +869,7 @@ Default: 1,30,30,30,30,30
 </entry>
 
 <entry id="ndens" type="integer(6)"  catagory="history"
-       group="cam_inparm" valid_values="1,2" > 
+       group="cam_inparm" valid_values="1,2" >
 Array specifying output format for each history file series. Valid values
 are 1 or 2. '1' implies output real values are 8-byte and '2' implies
 output real values are 4-byte.
@@ -877,7 +877,7 @@ Default: 2,2,2,2,2,2
 </entry>
 
 <entry id="nhstpr" type="integer(6)"  catagory="history"
-       group="cam_inparm" valid_values="4,8" > 
+       group="cam_inparm" valid_values="4,8" >
 Array specifying default history buffer precision for each history file
 series. Valid values are 4 or 8. '4' implies history buffers use 4-byte
 reals and and '8' implies history buffers use 8-byte reals.  These default
@@ -887,7 +887,7 @@ Default: 8,8,8,8,8,8
 </entry>
 
 <entry id="nhtfrq" type="integer(6)"  catagory="history"
-       group="cam_inparm" valid_values="" > 
+       group="cam_inparm" valid_values="" >
 Array of write frequencies for each history files series.
 If <varname>nhtfrq(1)</varname> = 0, the file will be a monthly average.
 Only the first file series may be a monthly average.  If
@@ -1001,7 +1001,7 @@ Default: TRUE
 
 <entry id="print_step_cost" type="logical"  catagory="performance"
        group="cam_inparm" valid_values="">
-If TRUE, print CPU timing per model timestep. 
+If TRUE, print CPU timing per model timestep.
 Default: FALSE
 </entry>
 
@@ -1074,8 +1074,8 @@ Swap communication protocol option:
  2, 3, 4, 5, 8, 9:               nonblocking receive
  4, 5:                           ready send
  6 .and. swap_comm_order .eq. 0: sendrecv
- 6 .and. swap_comm_order .eq. 1: explicitly synchronous  
- 7, 8, 9, .or. 10:               synchronous send          
+ 6 .and. swap_comm_order .eq. 1: explicitly synchronous
+ 7, 8, 9, .or. 10:               synchronous send
 Default: 6
 </entry>
 
@@ -1267,7 +1267,7 @@ CAM's prognostic sulfur calculations on.  May be set to 'off', 'passive',
 or 'direct'.  'off' implies no prognostic sulfur.  'passive' implies
 prognostic sulfur computed with no radiative interaction. 'direct' implies
 prognostic sulfur is used in the radiative calculations that force the
-simulation.  
+simulation.
 <br/>
 If there is no MOZART chemistry active, then setting this
 variable to 'passive' or 'direct' turns on the CAM prognostic sulfur.  If
@@ -1444,7 +1444,7 @@ Default: FALSE
 
 <entry id="bndtvscon" type="char*256" input_pathname="abs" catagory="solar"
        group="cam_inparm" valid_values="" >
-Full pathname of time-variant boundary dataset for solar constant. 
+Full pathname of time-variant boundary dataset for solar constant.
 Default: set by build-namelist.
 </entry>
 
@@ -1496,7 +1496,7 @@ Default: FALSE
 The length (in seconds) of the coupling interval between the dynamics and
 physics.  Changing this variable directly impacts the physical
 parameterizations in the model and may impact the climate.  Changing
-resolution usually requires a change in <varname>dtime</varname>.  
+resolution usually requires a change in <varname>dtime</varname>.
 Default: is resolution and dycore dependent and is set by build-namelist.
 </entry>
 
@@ -1538,13 +1538,13 @@ Default: set by build-namelist.
 
 <entry id="ch2o_emis_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
 <entry id="clim_soilw_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
@@ -1557,13 +1557,13 @@ Default: set by build-namelist.
 
 <entry id="depvel_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
 <entry id="depvel_lnd_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
@@ -1575,25 +1575,25 @@ Default: set by build-namelist.
 
 <entry id="efield_hflux_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
 <entry id="efield_lflux_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
 <entry id="efield_wei96_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
 <entry id="electron_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
@@ -1617,13 +1617,13 @@ Default: 0
 
 <entry id="euvac_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
 <entry id="euvacdat_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
@@ -1683,7 +1683,7 @@ Default: 0
 
 <entry id="fstrat_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
@@ -1701,7 +1701,7 @@ Default: set by build-namelist.
 
 <entry id="lght_landmask_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
@@ -1712,13 +1712,13 @@ Default: 1.0.
 
 <entry id="neckel_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
 <entry id="nox_emis_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
@@ -1729,13 +1729,13 @@ Default: 1.0
 
 <entry id="photon_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
 <entry id="photopath" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
@@ -1790,13 +1790,13 @@ Default: -1
 
 <entry id="rsf_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
 <entry id="sad_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
@@ -1814,19 +1814,19 @@ Default: 'RAMPED'
 
 <entry id="season_wes_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
 <entry id="snoe_ubc_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
 <entry id="solar_parms_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
@@ -1838,13 +1838,13 @@ Default: set by build-namelist.
 
 <entry id="sulf_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
 <entry id="tgcm_ubc_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
@@ -1917,7 +1917,7 @@ Default: set by build-namelist.
 
 <entry id="tracer_srcs_filelist" type="char*256" input_pathname="rel:tracer_srcs_datapath" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Filename of file that contains a sequence of datasets for 
+Filename of file that contains a sequence of datasets for
 .  The filenames in this file are relative to the directory specied
 by <varname>tracer_srcs_datapath</varname>.
 Default: set by build-namelist.
@@ -1930,7 +1930,7 @@ Default: FALSE
 
 <entry id="tracer_srcs_specifier" type="char*64(100)" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-List of 
+List of
 Default: set by build-namelist.
 </entry>
 
@@ -1952,7 +1952,7 @@ Default: -1
 
 <entry id="trop_pause_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
@@ -1964,7 +1964,7 @@ Default: FALSE
 
 <entry id="woods_etf_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
@@ -1980,19 +1980,19 @@ Default: TRUE
 
 <entry id="xs_coef_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
 <entry id="xs_long_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
 <entry id="xs_short_file" type="char*256" input_pathname="abs" catagory="cam_chem"
        group="cam_inparm" valid_values="" >
-Full pathname of dataset for 
+Full pathname of dataset for
 Default: set by build-namelist.
 </entry>
 
@@ -2229,7 +2229,7 @@ Default: set by build-namelist.
 
 <entry id="focndomain" type="char*256" input_pathname="abs" catagory="ocn"
        group="camexp" valid_values="" >
-Full pathname of 
+Full pathname of
 Default: set by build-namelist.
 </entry>
 
@@ -2363,7 +2363,7 @@ Default: none.
 Case identifier.  Normally used as part of the archive path name.  By
 default also used in output filenames (see
 the <varname>hfilename_spec</varname> namelist option).
-Default: set by build-namelist. 
+Default: set by build-namelist.
 </entry>
 
 <entry id="cpl_cdf64" type="logical"  catagory="driver"
@@ -2546,7 +2546,7 @@ Default: set by build-namelist.
 
 <entry id="atm_cpl_offset" type="integer"  catagory="time_mgr"
        group="seq_timemgr_inparm" valid_values="" >
-Default: 
+Default:
 </entry>
 
 <entry id="calendar" type="char*80"  catagory="time_mgr"
@@ -2572,7 +2572,7 @@ Default: set by build-namelist.
 
 <entry id="ice_cpl_offset" type="integer"  catagory="time_mgr"
        group="seq_timemgr_inparm" valid_values="" >
-Default: 
+Default:
 </entry>
 
 <entry id="lnd_cpl_dt" type="integer"  catagory="time_mgr"
@@ -2582,7 +2582,7 @@ Default: set by build-namelist.
 
 <entry id="lnd_cpl_offset" type="integer"  catagory="time_mgr"
        group="seq_timemgr_inparm" valid_values="" >
-Default: 
+Default:
 </entry>
 
 <entry id="ocn_cpl_dt" type="integer"  catagory="time_mgr"
@@ -2592,7 +2592,7 @@ Default: set by build-namelist.
 
 <entry id="ocn_cpl_offset" type="integer"  catagory="time_mgr"
        group="seq_timemgr_inparm" valid_values="" >
-Default: 
+Default:
 </entry>
 
 <entry id="ref_tod" type="integer"  catagory="time_mgr"

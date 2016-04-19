@@ -31,7 +31,7 @@ do n = 1, num_tests
    end if
 
    write(*,*) "Test type: ", trim(alogo)
-   
+
    date_lb = 20010101
    date_ub = 20010102
    sec_lb  = 0
@@ -90,7 +90,7 @@ call shr_tInterp_getFactors( date_lb, sec_lb, date_ub, sec_ub, date_in, &
                              sec_in, f1, f2, calendar_name, algo=alogo, rc=rc )
 call test_is( rc, expected=1, description="Test that recognizes a bad alogo name" )
 
-! Test that abort if input date is outside of interval of lb and ub 
+! Test that abort if input date is outside of interval of lb and ub
 
 alogo = 'linear'
 date_lb = 20010101

@@ -1,8 +1,8 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 
-# Run the build and/or submit for each test. 
-# If nobuild is off, run the build for each test. 
-# If autosubmit is on, run the submit script for each test. 
+# Run the build and/or submit for each test.
+# If nobuild is off, run the build for each test.
+# If autosubmit is on, run the submit script for each test.
 # If nobatch is on, run the test interactively rather than
 # submitting to the batch queue.
 use strict;
@@ -14,20 +14,20 @@ use Getopt::Long;
 
 my %opts=(loglevel=>"INFO");
 my $logger;
-# Take the testspec.$machine.$testid.xml file, parse it, 
+# Take the testspec.$machine.$testid.xml file, parse it,
 # and get the names of the case directories
 # This is a copy of the routine in cs.status  - these tools should be
 # rewritten.
 sub getCaseDirsFromSpec
 {
 	my $testspec = shift;
-	
+
 	my $xml = XML::Lite->new($testspec);
 	my @tests = $xml->elements_by_name("test");
 	my @casedirs;
 	#print "Casedirs: \n";
 	#map {print "$_\n"} @casedirs;
-	
+
 	foreach my $test(@tests)
 	{
 		my %attrs = $test->attributes;
@@ -39,8 +39,8 @@ sub getCaseDirsFromSpec
 	#print Dumper(\@casedirs);
 	return @casedirs;
 }
-# Given an array of case directories, get the test status for 
-# all the testcase directories found.  
+# Given an array of case directories, get the test status for
+# all the testcase directories found.
 # This is a modified copy of the routine in cs.status  - these tools should be
 # rewritten.
 sub getTestStatus
@@ -54,14 +54,14 @@ sub getTestStatus
   foreach my $testcase(@casedirs)
   {
 #	 my %testhash;
-      my $teststatusfile = "$testdir/$testcase/TestStatus";      
+      my $teststatusfile = "$testdir/$testcase/TestStatus";
       if (! -e $teststatusfile){
 	  $tests->{$testcase}{status}="FAIL";
       }else{
 	  open my $STATUS, "<", $teststatusfile or $logger->logdie( $!);
 	  my @lines = <$STATUS>;
 	  close $STATUS;
-	  $tests->{$testcase}{'fullpath'} = "$testdir/$testcase";	 
+	  $tests->{$testcase}{'fullpath'} = "$testdir/$testcase";
 	  $tests->{$testcase}{'rawstatus'} = join('',  @lines);
 	  $tests->{$testcase}{'status'} = (split('\s+', $lines[0]))[0];
 	  my $memleakline = (grep { /memleak/ } @lines)[0];
@@ -95,12 +95,12 @@ sub usage()
 my $usage = <<EOF;
 SYNOPSIS
     ./cs.submit
-	Running cs.submit without arguments will submit the latest test set 
-    found in the current directory. 
+	Running cs.submit without arguments will submit the latest test set
+    found in the current directory.
 
-    ./cs.submit --testspec testspec.xml 
-    Submit tests for ONLY the suite specified by the given testspec.xml file. 
-    
+    ./cs.submit --testspec testspec.xml
+    Submit tests for ONLY the suite specified by the given testspec.xml file.
+
 EOF
 print $usage;
 exit(0);
@@ -110,7 +110,7 @@ exit(0);
 getOpts();
 
 
-# find the testspec.xml. 
+# find the testspec.xml.
 my $testroot =  getcwd;
 my $csstatus;
 my $testspec;
@@ -160,8 +160,8 @@ my $teststatus = getTestStatus($testspec, $testroot);
 
 my $xml = XML::Lite->new($testspec);
 
-# Get nobatch,nobuild, and autosubmit.  
-# Do the build and/or submit for each test.  
+# Get nobatch,nobuild, and autosubmit.
+# Do the build and/or submit for each test.
 my @nbatch = $xml->elements_by_name("nobatch");
 my @nbuild = $xml->elements_by_name("nobuild");
 my @asubmit = $xml->elements_by_name("autosubmit");
@@ -176,7 +176,7 @@ foreach my $test (keys %$teststatus){
     my $status = $teststatus->{$test}{status};
     my $testdir = "$testroot/$test";
 
-    # build the test.  
+    # build the test.
     my $buildstatus;
     if( $status ne "DONE" && $status ne "PEND" && $status ne "RUN"){
 	if($nobuild eq "off" || ! defined $nobuild)
@@ -202,8 +202,8 @@ foreach my $test (keys %$teststatus){
 		    $logger->warn( "$test build status: BUILD");
 		}
 		close $TESTSTATUS;
-		
-		if( ( $autosubmit eq "on" || ! defined $autosubmit) && $buildstatus eq "BUILD") 
+
+		if( ( $autosubmit eq "on" || ! defined $autosubmit) && $buildstatus eq "BUILD")
 		{
 		    $logger->info( "submitting $test");
 		    system("./case.submit");
@@ -211,22 +211,22 @@ foreach my $test (keys %$teststatus){
 		    open $TESTSTATUS, ">", "./TestStatus" or warn $!;
 		    if($retcode != 0)
 		    {
-			print $TESTSTATUS "FAIL $test\n";   
+			print $TESTSTATUS "FAIL $test\n";
 		    }
 		    else
 		    {
 			print $TESTSTATUS "PEND $test\n";
 		    }
 		    close $TESTSTATUS;
-		    
-		
+
+
 		}
 	    }
 	    else
 	    {
 		$logger->warn( "$test.test_build does not exist, skipping build for $test...");
 	    }
-	    
+
 	    chdir $testroot;
 	}
 	if( $nobatch eq "on" )

@@ -8,11 +8,11 @@ cd $CASEROOT
 
 set CIMEROOT	= `./xmlquery  CIMEROOT	 -value `
 set CASETOOLS	= `./xmlquery  CASETOOLS -value `
-set GMAKE	= `./xmlquery  GMAKE	 -value ` 
-set GMAKE_J	= `./xmlquery  GMAKE_J	 -value ` 
-set MACH	= `./xmlquery  MACH	 -value ` 
-set MPILIB	= `./xmlquery  MPILIB	 -value ` 
-set OS		= `./xmlquery  OS	 -value ` 
+set GMAKE	= `./xmlquery  GMAKE	 -value `
+set GMAKE_J	= `./xmlquery  GMAKE_J	 -value `
+set MACH	= `./xmlquery  MACH	 -value `
+set MPILIB	= `./xmlquery  MPILIB	 -value `
+set OS		= `./xmlquery  OS	 -value `
 
 setenv LIBDIR     $1
 setenv MCT_DIR    $CIMEROOT/externals/mct   # mct directory
@@ -74,7 +74,7 @@ echo "MCT_LIBDIR   $MCT_LIBDIR"
     $GMAKE  -f $CASETOOLS/Makefile $MCT_LIBDIR/Makefile.conf MODEL=mct
     #if($? != 0) then
     #  rm mct_conf*
-    #endif 
+    #endif
   #endif
 
   if ($runclean == 1) then

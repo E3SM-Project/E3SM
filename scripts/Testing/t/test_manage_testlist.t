@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 use strict;
 use warnings;
 use Data::Dumper;
@@ -11,8 +11,8 @@ print "$banner\nRUNNING UNIT TESTS\n$banner\n";
 ok (require('../../manage_testlists'), "loaded manage_testlists ok..");
 
 # Can we create CIMETest objects??
-my $cesmTest = new CIMETest(compset => "B", grid => 'f19_g16', testname => 'ERS', 
-			    machine => 'frankfurt', compiler => 'intel', 'testmods' => 'clm/Default', 
+my $cesmTest = new CIMETest(compset => "B", grid => 'f19_g16', testname => 'ERS',
+			    machine => 'frankfurt', compiler => 'intel', 'testmods' => 'clm/Default',
 			    comment => 'always test your code', testtype => 'prebeta');
 
 isa_ok($cesmTest, "CIMETest", "we should be able to create CIMETest objects ok..");
@@ -29,19 +29,19 @@ ok($cesmTest->{testtype}	eq 'prebeta'			, "CIMETest testtype should match.."	);
 
 
 # We should be able to parse the testfiles/frankfurt_nag_prealpha test list...
-my $n1 = new CIMETest(compset => 'A', grid => 'f45_g37_rx1', testname => 'SMS_D_Mmpich', 
+my $n1 = new CIMETest(compset => 'A', grid => 'f45_g37_rx1', testname => 'SMS_D_Mmpich',
 		      machine => 'frankfurt', compiler => 'nag', comment => 'This is a comment');
 
-my $n2 = new CIMETest(compset => 'F', grid => 'f19_f19', testname => 'ERS_D_Mmpich', 
+my $n2 = new CIMETest(compset => 'F', grid => 'f19_f19', testname => 'ERS_D_Mmpich',
 		      machine => 'frankfurt', compiler => 'nag' );
 
-my $n3 = new CIMETest(compset => 'FSCM5A97', grid => 'T42_T42', testname => 'SMS_D_Mmpi-serial', 
+my $n3 = new CIMETest(compset => 'FSCM5A97', grid => 'T42_T42', testname => 'SMS_D_Mmpi-serial',
 		      machine => 'frankfurt', compiler => 'nag' );
 
-my $n4 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS_D_Mmpich', 
+my $n4 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS_D_Mmpich',
 		      machine => 'frankfurt', compiler => 'nag' );
 
-my $n5 = new CIMETest(compset => 'ICLM45BGC', grid => 'ne30_g16', testname => 'ERS_D_Mmpich', 
+my $n5 = new CIMETest(compset => 'ICLM45BGC', grid => 'ne30_g16', testname => 'ERS_D_Mmpich',
 		      machine => 'frankfurt', compiler => 'nag' );
 
 my @expectedffnag;
@@ -62,80 +62,80 @@ is_deeply(\@expectedffnag, $actualffnag, "frankfurt nag prealpha tests should pa
 
 # We should be able to parse the aux_clm_short testlist...
 my @expectedauxclmshort;
-my $cs1 = new CIMETest(compset => 'I1850CLM45BGC', grid => 'f10_f10', testname => 'PET_P15x2_D', 
-                       machine => 'yellowstone', compiler => 'pgi', testmods => 'clm/ciso', 
+my $cs1 = new CIMETest(compset => 'I1850CLM45BGC', grid => 'f10_f10', testname => 'PET_P15x2_D',
+                       machine => 'yellowstone', compiler => 'pgi', testmods => 'clm/ciso',
                        comment => 'This test fails miserably');
 push(@expectedauxclmshort, $cs1);
 
-my $cs2 = new CIMETest(compset => 'I1850CLM45BGC', grid => 'f10_f10', testname => 'PET_P15x2_D', machine => 'yellowstone', 
+my $cs2 = new CIMETest(compset => 'I1850CLM45BGC', grid => 'f10_f10', testname => 'PET_P15x2_D', machine => 'yellowstone',
                        compiler => 'intel', testmods => 'clm/ciso');
 push(@expectedauxclmshort, $cs2);
 
-my $cs3 = new CIMETest(compset => 'I1850CLM45BGC', grid => 'f10_f10', testname => 'PET_P16x2_D', machine => 'frankfurt', 
+my $cs3 = new CIMETest(compset => 'I1850CLM45BGC', grid => 'f10_f10', testname => 'PET_P16x2_D', machine => 'frankfurt',
                        compiler => 'pgi', testmods => 'clm/ciso');
 push(@expectedauxclmshort, $cs3);
 
-my $cs4 = new CIMETest(compset => 'I1850CLM45BGC', grid => 'f10_f10', testname => 'PET_P16x2_D', machine => 'frankfurt', 
+my $cs4 = new CIMETest(compset => 'I1850CLM45BGC', grid => 'f10_f10', testname => 'PET_P16x2_D', machine => 'frankfurt',
                        compiler => 'intel', testmods => 'clm/ciso');
 push(@expectedauxclmshort, $cs4);
 
-my $cs5 = new CIMETest(compset => 'I1850CLM45BGC', grid => 'f10_f10', testname => 'PET_P16x2_D_Mmpich', machine => 'frankfurt', 
+my $cs5 = new CIMETest(compset => 'I1850CLM45BGC', grid => 'f10_f10', testname => 'PET_P16x2_D_Mmpich', machine => 'frankfurt',
                        compiler => 'nag', testmods => 'clm/ciso');
 push(@expectedauxclmshort, $cs5);
 
-my $cs6 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS', machine => 'frankfurt', 
+my $cs6 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS', machine => 'frankfurt',
                        compiler => 'pgi');
 push(@expectedauxclmshort, $cs6);
 
-my $cs7 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS', machine => 'frankfurt', 
+my $cs7 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS', machine => 'frankfurt',
                        compiler => 'intel');
 push(@expectedauxclmshort, $cs7);
 
-my $cs8 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS', machine => 'yellowstone', 
+my $cs8 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS', machine => 'yellowstone',
                        compiler => 'pgi');
 push(@expectedauxclmshort, $cs8);
 
-my $cs9 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS', machine => 'yellowstone', 
+my $cs9 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS', machine => 'yellowstone',
                        compiler => 'intel');
 push(@expectedauxclmshort, $cs9);
 
-my $cs10 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS_D', machine => 'frankfurt', 
+my $cs10 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS_D', machine => 'frankfurt',
                        compiler => 'pgi');
 push(@expectedauxclmshort, $cs10);
 
-my $cs11 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS_D', machine => 'frankfurt', 
+my $cs11 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS_D', machine => 'frankfurt',
                        compiler => 'intel');
 push(@expectedauxclmshort, $cs11);
 
-my $cs12 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS_D', machine => 'yellowstone', 
+my $cs12 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS_D', machine => 'yellowstone',
                        compiler => 'pgi');
 push(@expectedauxclmshort, $cs12);
 
-my $cs13 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS_D', machine => 'yellowstone', 
+my $cs13 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS_D', machine => 'yellowstone',
                        compiler => 'intel');
 push(@expectedauxclmshort, $cs13);
 
-my $cs14 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS_D_Mmpich', machine => 'frankfurt', 
+my $cs14 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS_D_Mmpich', machine => 'frankfurt',
                        compiler => 'nag');
 push(@expectedauxclmshort, $cs14);
 
-my $cs15 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS_Mmpich', machine => 'frankfurt', 
+my $cs15 = new CIMETest(compset => 'I20TRCLM45BGC', grid => 'f10_f10', testname => 'ERS_Mmpich', machine => 'frankfurt',
                        compiler => 'nag');
 push(@expectedauxclmshort, $cs15);
 
-my $cs16 = new CIMETest(compset => 'ICLM45BGCCROP', grid => 'f19_g16', testname => 'SMS_Ly1', machine => 'frankfurt', 
+my $cs16 = new CIMETest(compset => 'ICLM45BGCCROP', grid => 'f19_g16', testname => 'SMS_Ly1', machine => 'frankfurt',
                        compiler => 'pgi', testmods => 'clm/reduceOutput');
 push(@expectedauxclmshort, $cs16);
 
-my $cs17 = new CIMETest(compset => 'ICLM45BGCCROP', grid => 'f19_g16', testname => 'SMS_Ly1', machine => 'frankfurt', 
+my $cs17 = new CIMETest(compset => 'ICLM45BGCCROP', grid => 'f19_g16', testname => 'SMS_Ly1', machine => 'frankfurt',
                        compiler => 'intel', testmods => 'clm/reduceOutput');
 push(@expectedauxclmshort, $cs17);
 
-my $cs18 = new CIMETest(compset => 'ICLM45BGCCROP', grid => 'f19_g16', testname => 'SMS_Ly1', machine => 'yellowstone', 
+my $cs18 = new CIMETest(compset => 'ICLM45BGCCROP', grid => 'f19_g16', testname => 'SMS_Ly1', machine => 'yellowstone',
                        compiler => 'pgi');
 push(@expectedauxclmshort, $cs18);
 
-my $cs19 = new CIMETest(compset => 'ICLM45BGCCROP', grid => 'f19_g16', testname => 'SMS_Ly1', machine => 'yellowstone', 
+my $cs19 = new CIMETest(compset => 'ICLM45BGCCROP', grid => 'f19_g16', testname => 'SMS_Ly1', machine => 'yellowstone',
                        compiler => 'intel');
 push(@expectedauxclmshort, $cs19);
 
@@ -143,23 +143,23 @@ my $cs20 = new CIMETest(compset => 'ICLM45BGCCROP', grid => 'f19_g16', testname 
                         compiler => 'nag', testmods => 'clm/reduceOutput');
 push(@expectedauxclmshort, $cs20);
 
-my $cs21 = new CIMETest(compset => 'ICN', grid => 'f10_f10', testname => 'ERS_D', machine => 'frankfurt', 
+my $cs21 = new CIMETest(compset => 'ICN', grid => 'f10_f10', testname => 'ERS_D', machine => 'frankfurt',
                        compiler => 'pgi');
 push(@expectedauxclmshort, $cs21);
 
-my $cs22 = new CIMETest(compset => 'ICN', grid => 'f10_f10', testname => 'ERS_D', machine => 'frankfurt', 
+my $cs22 = new CIMETest(compset => 'ICN', grid => 'f10_f10', testname => 'ERS_D', machine => 'frankfurt',
                        compiler => 'intel');
 push(@expectedauxclmshort, $cs22);
 
-my $cs23 = new CIMETest(compset => 'ICN', grid => 'f10_f10', testname => 'ERS_D', machine => 'yellowstone', 
+my $cs23 = new CIMETest(compset => 'ICN', grid => 'f10_f10', testname => 'ERS_D', machine => 'yellowstone',
                        compiler => 'pgi');
 push(@expectedauxclmshort, $cs23);
 
-my $cs24 = new CIMETest(compset => 'ICN', grid => 'f10_f10', testname => 'ERS_D', machine => 'yellowstone', 
+my $cs24 = new CIMETest(compset => 'ICN', grid => 'f10_f10', testname => 'ERS_D', machine => 'yellowstone',
                        compiler => 'intel');
 push(@expectedauxclmshort, $cs24);
 
-my $cs25 = new CIMETest(compset => 'ICN', grid => 'f10_f10', testname => 'ERS_D_Mmpich', machine => 'frankfurt', 
+my $cs25 = new CIMETest(compset => 'ICN', grid => 'f10_f10', testname => 'ERS_D_Mmpich', machine => 'frankfurt',
                        compiler => 'nag');
 push(@expectedauxclmshort, $cs25);
 
@@ -199,7 +199,7 @@ my $actualtestmodsdupes = parseTextList("$testfilesdir/testmods_dupes_test");
 
 is_deeply($actualtestmodsdupes, \@expectedtestmodsdupes, "We should be able to add duplicate testmods to the same test combination..");
 
-# Now we need to test the removeXML functionality.  
+# Now we need to test the removeXML functionality.
 
 # First, can we remove the aux_clm_short category??
 my $testparser = XML::LibXML->new(no_blanks => 1);
@@ -264,9 +264,9 @@ $actualstring = $actual_clmdecStart_removed->toString(1);
 is_deeply($expectedstring , $actualstring, "We should be able to remove the clm/decStart testmods successfully...") or diag explain $actualstring;
 
 my @actualadds;
-my $xa1 = new CIMETest(compset => 'XA', grid => 'f10_f10', testname => 'SMS', 
+my $xa1 = new CIMETest(compset => 'XA', grid => 'f10_f10', testname => 'SMS',
                        machine => 'frankfurt', compiler => 'intel');
-my $xa2 = new CIMETest(compset => 'XA', grid => 'f10_f10', testname => 'SMS', 
+my $xa2 = new CIMETest(compset => 'XA', grid => 'f10_f10', testname => 'SMS',
                        machine => 'frankfurt', compiler => 'pgi');
 push(@actualadds, $xa1);
 push(@actualadds, $xa2);
@@ -278,13 +278,13 @@ $actualstring = $actual_XAfake_added->toString(1);
 is_deeply($expectedstring, $actualstring, "adding fake compsets should work..");
 
 my @testmods2add;
-my $tm1 = new CIMETest(compset => 'A', grid => 'T31_g37_rx1', testname => 'NCK', machine => 'eos', 
+my $tm1 = new CIMETest(compset => 'A', grid => 'T31_g37_rx1', testname => 'NCK', machine => 'eos',
                        compiler => 'intel', testmods => 'clm/default', comment => 'A compset clm default');
-my $tm2 = new CIMETest(compset => 'A', grid => 'T31_g37_rx1', testname => 'NCK', machine => 'eos', 
+my $tm2 = new CIMETest(compset => 'A', grid => 'T31_g37_rx1', testname => 'NCK', machine => 'eos',
                        compiler => 'intel', testmods => 'clm/ciso', comment => 'A compset clm ciso');
-my $tm3 = new CIMETest(compset => 'A', grid => 'T31_g37_rx1', testname => 'NCK', machine => 'eos', 
+my $tm3 = new CIMETest(compset => 'A', grid => 'T31_g37_rx1', testname => 'NCK', machine => 'eos',
                        compiler => 'intel', testmods => 'clm/foo1', comment => 'A compset clm foo1');
-my $tm4 = new CIMETest(compset => 'A', grid => 'T31_g37_rx1', testname => 'NCK', machine => 'eos', 
+my $tm4 = new CIMETest(compset => 'A', grid => 'T31_g37_rx1', testname => 'NCK', machine => 'eos',
                        compiler => 'intel', testmods => 'clm/foo2', comment => 'A compset clm foo2');
 push(@testmods2add, $tm1);
 push(@testmods2add, $tm2);
@@ -358,7 +358,7 @@ is_deeply(\@expected_aux_glc_subset, $actual_aux_glc_subset, "convertXMLToCIMETe
 # If we read in a mangled xml file (with things out of order and duplicate
 # nodes), and run it through the cleanTestlistXML routine, the resulting list of
 # CIMETests should be the same as before. i.e., nothing should be added or
-# removed. 
+# removed.
 
 my $aux_glc_subset_mangled_xml = $testparser->parse_file("$testfilesdir/testlist.aux_glc_subset_mangled.xml");
 
@@ -372,8 +372,8 @@ is_deeply($cesm_tests_orig, $cesm_tests_new, "cleanTestlistXML should result in 
 
 # ------------------------------------------------------------------------
 # Now, let's do a bit of end-to-end testing:
-# Add a test category or two, or compset, or grid, or testmods, then remove them, 
-# do we get the original test list?? 
+# Add a test category or two, or compset, or grid, or testmods, then remove them,
+# do we get the original test list??
 # ------------------------------------------------------------------------
 
 print "$banner\nRUNNING INTEGRATION TESTS\n$banner\n";
@@ -389,7 +389,7 @@ $actualstring = $modxml->toString(1);
 #open my $ACT, ">", "./prealpha.xml" or die $!;
 #print $ACT $actualstring;
 #close $ACT;
-is_deeply($expectedstring, $actualstring, 
+is_deeply($expectedstring, $actualstring,
 		  "removing/adding frankfurt nag should result in the modified xml matching the original test xml");
 
 # can we remove and re-add the aux_clm_short list, and will the resulting xml match the original?

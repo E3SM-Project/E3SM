@@ -8,7 +8,7 @@
 # (or really any ASCII text files). There is a mechanism for telling the
 # test object that you should (or should NOT) expect the comparison to be
 # exact or not.
-# 
+#
 ###############################################################################
 
 package NMLTest::CompFiles;

@@ -4,11 +4,11 @@
 # Batch script to submit to create suite of ESMF mapping files
 #
 # Set up for yellowstone
-# 
+#
 # yellowstone-specific batch commands:
 #BSUB -P P00000000        # project number
 #BSUB -n 16               # number of processors
-#BSUB -R "span[ptile=16]" 
+#BSUB -R "span[ptile=16]"
 #BSUB -W 1:00             # wall-clock limit
 #BSUB -q small            # queue
 #BSUB -o regrid.%J.out    # ouput filename

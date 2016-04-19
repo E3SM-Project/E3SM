@@ -29,7 +29,7 @@
 <fsurdat res="2x2.5"     >lnd/clm2/surfdata/surfdata_2x2.5_USGS_070206.nc</fsurdat>
 <fsurdat res="4x5"       >lnd/clm2/surfdata/surfdata_4x5_USGS_070208.nc</fsurdat>
 <fsurdat res="10x15"     >lnd/clm2/surfdata/surfdata_10x15_USGS_070110.nc</fsurdat>
- 
+
 <!-- Grid datasets (relative to {csmdata}) -->
 <fatmgrid res="128x256"   >lnd/clm2/griddata/griddata_128x256_060829.nc</fatmgrid>
 <fatmgrid res="64x128"    >lnd/clm2/griddata/griddata_64x128_060829.nc</fatmgrid>

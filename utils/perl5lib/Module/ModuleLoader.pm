@@ -547,7 +547,7 @@ sub loadNoneModules()
     # Hack until we can get rid of this crappy code
     open(F,">.env_mach_specific.csh");
     print F "#!/usr/bin/env csh\n";
-    
+
     my @envnodes = $xml->findnodes("//machine[\@MACH=\'$machine\']/environment_variables");
     foreach my $envnode(@envnodes)
     {

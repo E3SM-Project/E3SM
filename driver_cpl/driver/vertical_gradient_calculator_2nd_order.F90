@@ -17,12 +17,12 @@ module vertical_gradient_calculator_2nd_order
   use mct_mod
   use shr_log_mod, only : errMsg => shr_log_errMsg
   use shr_sys_mod, only : shr_sys_abort
-  
+
   implicit none
   private
 
   public :: vertical_gradient_calculator_2nd_order_type
-  
+
   type, extends(vertical_gradient_calculator_base_type) :: &
        vertical_gradient_calculator_2nd_order_type
      private
@@ -35,7 +35,7 @@ module vertical_gradient_calculator_2nd_order
 
    contains
      procedure :: calc_vertical_gradient
-     
+
      procedure, private :: set_data_from_attr_vect ! extract data from an attribute vector
 
   end type vertical_gradient_calculator_2nd_order_type
@@ -43,7 +43,7 @@ module vertical_gradient_calculator_2nd_order
   interface vertical_gradient_calculator_2nd_order_type
      module procedure constructor
   end interface vertical_gradient_calculator_2nd_order_type
-  
+
 contains
 
   !-----------------------------------------------------------------------
@@ -66,14 +66,14 @@ contains
     integer          , intent(in) :: max_elevation_class ! last elevation class index
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'constructor'
     !-----------------------------------------------------------------------
 
     this%min_elevation_class = min_elevation_class
     this%max_elevation_class = max_elevation_class
     call this%set_data_from_attr_vect(attr_vect, fieldname, toponame)
-    
+
   end function constructor
 
 
@@ -103,12 +103,12 @@ contains
 
     integer :: ec_low   ! elevation class index to use as the lower bound of the gradient
     integer :: ec_high  ! elevation class index to use as the upper bound of the gradient
-    
+
     character(len=*), parameter :: subname = 'calc_vertical_gradient'
     !-----------------------------------------------------------------------
 
     ! Assert pre-conditions
-    
+
     SHR_ASSERT((size(vertical_gradient) == this%num_points), errMsg(__FILE__, __LINE__))
 
     if (elevation_class < this%min_elevation_class .or. &
@@ -124,7 +124,7 @@ contains
        vertical_gradient(:) = 0._r8
 
     else
-       
+
        if (elevation_class == this%min_elevation_class) then
           ec_low = elevation_class
           ec_high = elevation_class + 1
@@ -145,7 +145,7 @@ contains
        end where
 
     end if
-    
+
   end subroutine calc_vertical_gradient
 
 
@@ -174,7 +174,7 @@ contains
 
     ! The following temporary array is needed because mct wants pointers
     real(r8), pointer :: temp(:)
-    
+
     character(len=*), parameter :: subname = 'set_data_from_attr_vect'
     !-----------------------------------------------------------------------
 
@@ -183,7 +183,7 @@ contains
     allocate(this%field(this%num_points, this%min_elevation_class:this%max_elevation_class))
     allocate(this%topo(this%num_points, this%min_elevation_class:this%max_elevation_class))
     allocate(temp(this%num_points))
-    
+
     do elevclass = this%min_elevation_class, this%max_elevation_class
        elevclass_as_string = glc_elevclass_as_string(elevclass)
        fieldname_ec = trim(fieldname) // elevclass_as_string
@@ -197,7 +197,7 @@ contains
     end do
 
     deallocate(temp)
-    
+
   end subroutine set_data_from_attr_vect
 
 end module vertical_gradient_calculator_2nd_order

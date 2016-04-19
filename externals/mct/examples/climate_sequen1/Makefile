@@ -13,7 +13,7 @@ include ../../Makefile.conf
 
 # ADDITIONAL FLAGS SPECIFIC FOR UTMCT COMPILATION
 
-MCTLIBS    = -L$(MPEUPATH) -L$(MCTPATH) -lmct -lmpeu 
+MCTLIBS    = -L$(MPEUPATH) -L$(MCTPATH) -lmct -lmpeu
 UTLDFLAGS  = $(REAL8)
 UTCMPFLAGS = $(REAL8) $(INCFLAG)$(MPEUPATH) $(INCFLAG)$(MCTPATH)
 
@@ -21,7 +21,7 @@ UTCMPFLAGS = $(REAL8) $(INCFLAG)$(MPEUPATH) $(INCFLAG)$(MCTPATH)
 
 all: climate
 
-climate: $(OBJS_ALL) 
+climate: $(OBJS_ALL)
 	$(FC) -o $@ $(OBJS_ALL) $(FCFLAGS) $(UTLDFLAGS) $(MCTLIBS) $(MPILIBS)
 
 # RULES

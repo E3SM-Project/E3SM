@@ -20,15 +20,15 @@ program fmain
   integer,parameter :: CS = 80                     ! short char
   integer,parameter :: CL = 256                    ! long char
   integer,parameter :: CX = 512                    ! extra-long char
-  integer :: n                      ! index 
-  integer :: nargs                  ! number of arguments  
+  integer :: n                      ! index
+  integer :: nargs                  ! number of arguments
   integer, external  :: iargc       ! number of arguments function
   character(LEN=512) :: arg         ! input argument
   character(LEN=512) :: cmdline     ! input command line
   character(LEN=512) :: fmap        ! file name ( input nc file)
-  character(LEN=512) :: fn_out,fn_in     ! temporary 
+  character(LEN=512) :: fn_out,fn_in     ! temporary
   character(LEN=512) :: var_out,var_in     ! temporary
-  character(LEN=512) :: usercomment ! user comment 
+  character(LEN=512) :: usercomment ! user comment
   character(LEN= 8)  :: cdate       ! wall clock date
   character(LEN=10)  :: ctime       ! wall clock time
   !----------------------------------------------------
@@ -89,14 +89,14 @@ program fmain
        call getarg (n, arg)
        n = n + 1
        usercomment = trim(arg)
-    case ('-h') 
+    case ('-h')
        call usage_exit (' ')
     case default
        write (6,*) 'Argument ', arg,' is not known'
        call usage_exit (' ')
     end select
   end do
-  
+
   if (fmap == 'null' .or. fn_out == 'null' .or. fn_in== 'null') then
     call usage_exit ('Must specify all the following arguments')
   end if
@@ -118,9 +118,9 @@ contains
 
    character(LEN=*), intent(in) :: fmap        ! file name ( input nc file)
    character(LEN=*), intent(in) :: fn_in       ! file name
-   character(LEN=*), intent(in) :: var_in      ! var name 
+   character(LEN=*), intent(in) :: var_in      ! var name
    character(LEN=*), intent(in) :: fn_out      ! file name
-   character(LEN=*), intent(in) :: var_out     ! var name 
+   character(LEN=*), intent(in) :: var_out     ! var name
    character(LEN=*), intent(in) :: usercomment ! user comment from namelist
 
    !--- domain data ---
@@ -131,10 +131,10 @@ contains
    integer         ::   nai       ! size of i-axis of 2d domain
    integer         ::   naj       ! size of j-axis of 2d domain
    integer         ::   nd        ! size of fld1
-   real(r8) ,pointer :: xc(  :)   ! x-coords of center    
-   real(r8) ,pointer :: yc(  :)   ! y-coords of center   
-   real(r8) ,pointer :: xv(:,:)   ! x-coords of verticies 
-   real(r8) ,pointer :: yv(:,:)   ! y-coords of verticies 
+   real(r8) ,pointer :: xc(  :)   ! x-coords of center
+   real(r8) ,pointer :: yc(  :)   ! y-coords of center
+   real(r8) ,pointer :: xv(:,:)   ! x-coords of verticies
+   real(r8) ,pointer :: yv(:,:)   ! y-coords of verticies
    real(r8) ,pointer :: area(:)   ! cell area
    real(r8) ,pointer :: fld1(:)   ! fld1
    real(r8) ,pointer :: fld12(:,:)  ! fld1 2d
@@ -155,7 +155,7 @@ contains
    character(LEN=CL)     :: str_grida   ! global attribute str - grid_file_atm
    integer               :: fid         ! nc file     ID
    integer               :: i,j,k       ! generic indicies
-   integer               :: attnum      ! attribute number  
+   integer               :: attnum      ! attribute number
    character(LEN=CL)     :: units       ! netCDF attribute name string
    integer               :: vid         ! nc variable ID
    integer               :: did         ! nc dimension ID
@@ -194,7 +194,7 @@ contains
 
       str_grido = 'unknown'
       str_grida = 'unknown'
-      
+
       rcode = nf_get_att_text(fid, NF_GLOBAL, 'grid_file_ocn', str_grido)
       if ( rcode == nf_enotatt ) then
          rcode = nf_get_att_text(fid, NF_GLOBAL, 'grid_file_src', str_grido)
@@ -202,7 +202,7 @@ contains
       if ( rcode == nf_enotatt ) then
          rcode = nf_get_att_text(fid, NF_GLOBAL, 'domain_a', str_grido)
       end if
-      
+
       rcode = nf_get_att_text(fid, NF_GLOBAL, 'grid_file_atm', str_grida)
       if ( rcode == nf_enotatt ) then
          rcode = nf_get_att_text(fid, NF_GLOBAL, 'grid_file_dst', str_grida)
@@ -213,9 +213,9 @@ contains
 
       write(6,*) 'grid_file_ocn= ',trim(str_grido)
       write(6,*) 'grid_file_atm= ',trim(str_grida)
-      
+
       !----------------------------------------------
-      ! get domain info 
+      ! get domain info
       !----------------------------------------------
 
       call check_ret(nf_inq_dimid (fid, 'n_b', did))
@@ -236,7 +236,7 @@ contains
          nbi = n
          nbj = 1
       end if
-      
+
       call check_ret(nf_inq_dimid (fid, 'n_s', did))
       call check_ret(nf_inq_dimlen(fid, did   , ns))
       call check_ret(nf_inq_dimid (fid, 'n_a', did))
@@ -244,13 +244,13 @@ contains
       call check_ret(nf_inq_dimid (fid, 'dst_grid_rank', did))
       call check_ret(nf_inq_dimlen(fid, did, dst_grid_rank))
       call check_ret(nf_inq_dimid (fid, 'src_grid_rank', did))
-      call check_ret(nf_inq_dimlen(fid, did, src_grid_rank)) 
+      call check_ret(nf_inq_dimlen(fid, did, src_grid_rank))
 
       allocate(src_grid_dims(src_grid_rank), dst_grid_dims(dst_grid_rank))
       call check_ret(nf_inq_varid(fid,'src_grid_dims', vid))
-      call check_ret(nf_get_var_int(fid,vid,src_grid_dims)) 
+      call check_ret(nf_get_var_int(fid,vid,src_grid_dims))
       call check_ret(nf_inq_varid(fid,'dst_grid_dims', vid))
-      call check_ret(nf_get_var_int(fid,vid,dst_grid_dims)) 
+      call check_ret(nf_get_var_int(fid,vid,dst_grid_dims))
 
       if (dst_grid_rank == 2) then
          nbi = dst_grid_dims(1)
@@ -271,8 +271,8 @@ contains
       na = nai * naj
 
       write(6,*)'na,nai,naj,nb,nbi,nbj,ns= ',na,nai,naj,nb,nbi,nbj,ns
-      
-      allocate(fld1(na)) 
+
+      allocate(fld1(na))
       allocate(fld2(nb))
 
       allocate(col(ns))
@@ -281,12 +281,12 @@ contains
 
       !--- read weights ---
 
-      call check_ret(nf_inq_varid(fid,'col', vid ))   
-      call check_ret(nf_get_var_int(fid,vid, col ))   
-      call check_ret(nf_inq_varid(fid,'row', vid ))   
-      call check_ret(nf_get_var_int(fid,vid, row ))   
-      call check_ret(nf_inq_varid(fid,'S', vid ))     
-      call check_ret(nf_get_var_double(fid,vid,S))    
+      call check_ret(nf_inq_varid(fid,'col', vid ))
+      call check_ret(nf_get_var_int(fid,vid, col ))
+      call check_ret(nf_inq_varid(fid,'row', vid ))
+      call check_ret(nf_get_var_int(fid,vid, row ))
+      call check_ret(nf_inq_varid(fid,'S', vid ))
+      call check_ret(nf_get_var_double(fid,vid,S))
 
       call check_ret(nf_close(fid))
 
@@ -298,14 +298,14 @@ contains
       write(6,*) 'open ',trim(fn_in)
       call check_ret(nf_inq_varid(fid,trim(var_in), vid ))
       call check_ret(nf_inq_varndims(fid,vid,nd))
-      if (nd == 1) then       
+      if (nd == 1) then
         call check_ret(nf_inq_vardimid(fid,vid,dimids))
         call check_ret(nf_inq_dimlen(fid,dimids(1),nai))
         if (nai /= na) then
            write(6,*) 'error nai size ',nai,na
            stop
         endif
-        call check_ret(nf_get_var_double(fid,vid,fld1 ))  
+        call check_ret(nf_get_var_double(fid,vid,fld1 ))
       elseif (nd == 2) then
         call check_ret(nf_inq_vardimid(fid,vid,dimids))
         call check_ret(nf_inq_dimlen(fid,dimids(1),nai))
@@ -315,7 +315,7 @@ contains
            stop
         endif
         allocate(fld12(nai,naj))
-        call check_ret(nf_get_var_double(fid,vid,fld12 ))  
+        call check_ret(nf_get_var_double(fid,vid,fld12 ))
         n = 0
         do j = 1,naj
         do i = 1,nai
@@ -343,7 +343,7 @@ contains
       !-----------------------------------------------------------------
       ! create a new nc files
       !-----------------------------------------------------------------
-      
+
       write(6,*) ' '
       write(6,*) 'output output file...'
 
@@ -365,12 +365,12 @@ contains
     ! Check return status from netcdf call
     implicit none
     integer, intent(in) :: ret
-    
+
     if (ret /= NF_NOERR) then
        write(6,*)'netcdf error with rcode = ', ret,' error = ', nf_strerror(ret)
        call abort()
     end if
-    
+
   end subroutine check_ret
 
   subroutine usage_exit (arg)
@@ -401,19 +401,19 @@ contains
     write(6,*) ' '
     write(6,*) '  NOTE that the output_file is always clobbered when using this tool'
     write(6,*) ' '
-    stop 
+    stop
   end subroutine usage_exit
 
 !===========================================================================
 
   subroutine write_file(fid, fout, units, n, ni, nj, &
               fld2, fld2long, fmap, str_grido, str_grida)
-       
+
     implicit none
-    
+
     !--- includes ---
     include 'netcdf.inc'       ! netCDF defs
-    
+
     integer         , intent(in) :: fid          ! nc file  ID
     character(LEN=*), intent(in) :: fout       ! file name ( output nc file)
     character(LEN=*), intent(in) :: units        ! netCDF attribute name string
@@ -425,7 +425,7 @@ contains
     character(LEN=*), intent(in) :: fmap         ! global attribute str - grid_file_ocn
     character(LEN=*), intent(in) :: str_grido    ! global attribute str - grid_file_ocn
     character(LEN=*), intent(in) :: str_grida    ! global attribute str - grid_file_atm
-    
+
     !--- local ---
     character(LEN=CL)     :: host        ! hostname of machine running on
     character(LEN=CL)     :: str         ! fixed    length char string
@@ -437,30 +437,30 @@ contains
     integer               :: did         ! nc dimension ID
     integer               :: vdid(3)     ! vector of nc dimension ID
     integer               :: rcode       ! routine return error code
-    
+
     character(*),parameter:: version = 'SVN $Id: map_field.F90 39483 2012-08-16 17:35:52Z mlevy@ucar.edu $'
 
     ! global attributes
     str   = 'map_field data: '
     call check_ret(nf_put_att_text(fid,NF_GLOBAL,'title'      ,len_trim(str),str))
-    
+
     str   = 'CF-1.0'
     call check_ret(nf_put_att_text(fid,NF_GLOBAL,'Conventions',len_trim(str),str))
-    
+
     str = trim(version)
     call check_ret(nf_put_att_text(fid,NF_GLOBAL,'source_code',len_trim(str),str))
-    
+
     str = ' $URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/map_field/trunk/src/map_field.F90 $'
     call check_ret(nf_put_att_text(fid,NF_GLOBAL,'SVN_url',len_trim(str),str))
-    
+
 #ifdef OPT
     str = 'TRUE'
 #else
     str = 'FALSE'
 #endif
-    
+
     call check_ret(nf_put_att_text(fid,NF_GLOBAL,'Compiler_Optimized',len_trim(str),str))
-   
+
     call sys_getenv('HOST',host,rcode)
     if (rcode == 0) then
        call check_ret(nf_put_att_text(fid,NF_GLOBAL,'hostname' ,len_trim(host),host))
@@ -481,7 +481,7 @@ contains
     str = 'created by '//trim(user)//', '//cdate(1:4)//'-'//cdate(5:6)//'-'//cdate(7:8) &
          &                //' '//ctime(1:2)//':'//ctime(3:4)//':'//ctime(5:6)
     call check_ret(nf_put_att_text(fid,NF_GLOBAL,'history' ,len_trim(str),str))
-    
+
     str = trim(fout)
     call check_ret(nf_put_att_text(fid,NF_GLOBAL,'source' ,len_trim(str),str))
     str = trim(fmap)
@@ -516,8 +516,8 @@ contains
 
     call check_ret(nf_enddef(fid))
 
-    call check_ret(nf_inq_varid(fid,trim(var_out),vid)) 
-    call check_ret(nf_put_var_double(fid,  vid ,fld2)) 
+    call check_ret(nf_inq_varid(fid,trim(var_out),vid))
+    call check_ret(nf_put_var_double(fid,  vid ,fld2))
 
   end subroutine write_file
 

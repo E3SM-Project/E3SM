@@ -81,11 +81,11 @@ $strms->Write( $outfile, 1 );
 #
 my $rval = `diff -wbs $outfile $cmpfile`;
 my $eval = "Files $outfile and $cmpfile are identical\n";
-like($rval, 
+like($rval,
 qr/$eval|[0-9]+c[0-9]+[ <\n]+$cwd\/02.t -help[ \n->]+\S+\/02.t -help[ \n]*[0-9]+c[0-9]+[ <\n]+$cwd\/02.t[ \n->]+\S+\/02.t/, 'check writing output file');
 
-# Check ability to get domainpath, domainfile, datapath and datafiles 
-# when set 
+# Check ability to get domainpath, domainfile, datapath and datafiles
+# when set
 $inputopts{'filepath'}   = "$xmlvar{'DIN_LOC_ROOT'}/filepath";
 my $case                 = "b40.1850.track1.1deg.006a";
 $xmlvar{'DATM_CPL_CASE'} = $case;
@@ -207,7 +207,7 @@ $strms->Write( $outfile );
 #
 $rval = `diff -wbs $outfile $cmpfile`;
 $eval = "Files $outfile and $cmpfile are identical\n";
-like($rval, 
+like($rval,
 qr/$eval|[0-9]+c[0-9]+[ <\n]+$cwd\/02.t -help[ \n->]+\S+\/02.t -help[ \n]*[0-9]+c[0-9]+[
 <\n]+$cwd\/02.t[ \n->]+\S+\/02.t/, 'check writing CPLHIST ymd output file');
 
@@ -237,7 +237,7 @@ $strms->Write( $outfile );
 #
 $rval = `diff -wbs $outfile $cmpfile`;
 $eval = "Files $outfile and $cmpfile are identical\n";
-like($rval, 
+like($rval,
 qr/$eval|[0-9]+c[0-9]+[ <\n]+$cwd\/02.t -help[ \n->]+\S+\/02.t -help[ \n]*[0-9]+c[0-9]+[
 <\n]+$cwd\/02.t[ \n->]+\S+\/02.t/, 'check %glc substitution');
 

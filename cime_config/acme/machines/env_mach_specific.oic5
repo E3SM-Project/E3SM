@@ -11,13 +11,13 @@
 if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh
 #  module switch PGI PGI/2013-64bit
-#  module switch mpi mpi/openmpi-1.4.3-pgi 
+#  module switch mpi mpi/openmpi-1.4.3-pgi
 # module list
 endif
 #-------------------------------------------------------------------------------
 # Runtime environment variables
 #-------------------------------------------------------------------------------
-#ulimit -d unlimited 
+#ulimit -d unlimited
 setenv MPICH_ENV_DISPLAY 1
 setenv MPICH_VERSION_DISPLAY 1
 setenv MPICH_CPUMASK_DISPLAY 1
@@ -35,7 +35,7 @@ endif
 limit coredumpsize unlimited
 limit stacksize unlimited
 # The environment variable below increase the stack size, which is necessary for
-# CICE to run threaded on this machine. 
+# CICE to run threaded on this machine.
 setenv MPSTKZ 64M
 setenv OMP_STACKSIZE 64M
 #

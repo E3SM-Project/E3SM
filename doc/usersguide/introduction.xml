@@ -67,16 +67,16 @@ past, present, and future climate states.
 </para>
 
 <para>
-The CESM system can be configured a number of different ways from both 
+The CESM system can be configured a number of different ways from both
 a science and technical perspective.  CESM supports numerous
 <ulink url="../modelnl/grid.html">resolutions</ulink>,
-and 
+and
 <ulink url="../modelnl/compsets.html">component configurations</ulink>.
 
 In addition, each model component has input options to configure
 specific model physics and parameterizations.  CESM can be run on a
 number of different
-<ulink url="../modelnl/machines.html">hardware platforms</ulink>, 
+<ulink url="../modelnl/machines.html">hardware platforms</ulink>,
 and has a relatively flexible design with respect
 to <link linkend="case_conf_setting_pes"> processor layout
 </link> of components.
@@ -109,35 +109,35 @@ previous CESM experiments.
 installing and running CESM.
 </para>
 <itemizedlist>
-<listitem> 
+<listitem>
 <para> UNIX style operating system such as CNL, AIX and Linux
 </para>
 </listitem>
-<listitem> 
+<listitem>
 <para> csh, sh, and perl scripting languages
 </para>
 </listitem>
-<listitem> 
+<listitem>
 <para> subversion client version 1.4.2 or greater
 </para>
 </listitem>
-<listitem> 
+<listitem>
 <para> Fortran (2003 recommended, 90 required) and C compilers.  pgi, intel, and xlf are recommended compilers.
 </para>
 </listitem>
-<listitem> 
+<listitem>
 <para> MPI (although CESM does not absolutely require it for running on one processor)
 </para>
 </listitem>
-<listitem> 
+<listitem>
 <para> <ulink url="http://www.unidata.ucar.edu/software/netcdf/">NetCDF 4.2.0 or newer</ulink>.
 </para>
 </listitem>
-<listitem> 
+<listitem>
 <para> <ulink url="http://www.earthsystemmodeling.org/">ESMF 5.2.0 or newer (optional)</ulink>.
 </para>
 </listitem>
-<listitem> 
+<listitem>
 <para> <ulink url="http://trac.mcs.anl.gov/projects/parallel-netcdf/">pnetcdf 1.2.0 is required and 1.3.1 is recommended</ulink>
 </para>
 </listitem>
@@ -202,8 +202,8 @@ found.</para></caution>
 user chooses to use pnetcdf, version 1.2.0 or later should be used
 with CESM.  It is a library that is file-format compatible with
 netCDF, and provides higher performance by using MPI-IO.  Pnetcdf is
-enabled by setting the PNETCDF_PATH variable in the Macros file. 
-You must also specify that you want pnetcdf at runtime via the io_typename 
+enabled by setting the PNETCDF_PATH variable in the Macros file.
+You must also specify that you want pnetcdf at runtime via the io_typename
 argument that can be set to either "netcdf" or "pnetcdf" for each component.  </para>
 
 </sect2>
@@ -259,8 +259,8 @@ The &cesm; components can be summarized as follows:
       <entry>Model Type</entry>
       <entry>Model Name </entry>
       <entry>Component Name</entry>
-      <entry>Type</entry>  
-      <entry>Description</entry>  
+      <entry>Type</entry>
+      <entry>Description</entry>
      </row>
    </thead>
    <tbody>
@@ -476,13 +476,13 @@ it may be added to the system at some future time.</entry>
        <entry>The CESM coupler was built primarily through a
        collaboration of the NCAR CESM Software Engineering Group and
        the Argonne National Laboratory (ANL).  The MCT coupling
-       library provides much of the infrastructure.  
+       library provides much of the infrastructure.
        </entry>
      </row>
 
    </tbody>
    </tgroup>
-</informaltable>   
+</informaltable>
 
 
 </sect2>
@@ -517,7 +517,7 @@ CESM.  </para>
 
 <para>In general, the first letter of a compset name indicates which
 components are used.  An exception to this rule is the use of "G" as a
-second letter to indicate use of the active glc model, CISM. 
+second letter to indicate use of the active glc model, CISM.
 </para>
 
 </sect2>
@@ -564,7 +564,7 @@ Pole grid</ulink> is a latitude/longitude grid, with the North Pole
 displaced over Greenland to avoid singularity problems in the ocn and
 ice models. The low-resolution Greenland pole mesh from CCSM3 is illustrated
 in <ulink url="http://journals.ametsoc.org/doi/pdf/10.1175/JCLI3744.1">
-Yeager et al., "The Low-Resolution CCSM3", AMS (2006), Figure 1b., Web.</ulink> 
+Yeager et al., "The Low-Resolution CCSM3", AMS (2006), Figure 1b., Web.</ulink>
 Similarly, the <ulink
 url="http://climate.lanl.gov/Models/POP/"> Poseidon tripole grid
 </ulink> is a latitude/longitude grid with three poles that are all
@@ -576,7 +576,7 @@ CESM1.2 has a completely new <link linkend="grid_names">naming
 convention for model resolutions </link>. Using this naming
 convention, the complete list of currently supported grid resolutions
 can be viewed at <ulink url="../modelnl/grid.html">supported
-resolutions page</ulink>.  
+resolutions page</ulink>.
 </para>
 
 </sect2>
@@ -596,10 +596,10 @@ compiler information must be configured in the CESM scripts.  The
 machine name "userdefined" machines refer to any machine that the user
 defines and requires that a user edit the resulting xml files to fill
 in information required for the target platform.
-This functionality is handy in accelerating the porting process and 
+This functionality is handy in accelerating the porting process and
 quickly getting a case running on a new platform.
-For more information on porting, see <xref linkend="port"/>.  
-The list of available machines are documented in 
+For more information on porting, see <xref linkend="port"/>.
+The list of available machines are documented in
 <ulink url="../modelnl/machines.html">&cesm; supported
 machines</ulink>.
 Running <link linkend="how_to_create_case">create_newcase</link> with
@@ -636,41 +636,41 @@ or scientific analysis and documentation.
 <sect1 id="download_ccsm">
 <title>Downloading CESM</title>
 
-<sect2 id="download_ccsm_code"> 
+<sect2 id="download_ccsm_code">
 <title> Downloading the code and scripts - starting with CESM1.2.1</title>
 <para>
-<emphasis>** IMPORTANT NOTE ** Starting with CESM1.2.1, the Subversion repository path has changed. 
+<emphasis>** IMPORTANT NOTE ** Starting with CESM1.2.1, the Subversion repository path has changed.
 All documetation for downloading the most current version of the model has been updated to reflect this
 change and older version differences are noted.</emphasis>
 </para>
 
 <para>
-CESM release code will be made available through a Subversion repository.  Access to 
-the code will require Subversion client software in place that is compatible with 
+CESM release code will be made available through a Subversion repository.  Access to
+the code will require Subversion client software in place that is compatible with
 our Subversion server software, such as a recent version of the command line client, svn.
-Currently, our server software is at version 1.7.4.  We recommend using a client at 
-version 1.6 or later, though older versions may suffice.  We cannot guarantee a client 
-older than 1.4.2.  For more information or to download open source tools, visit: 
+Currently, our server software is at version 1.7.4.  We recommend using a client at
+version 1.6 or later, though older versions may suffice.  We cannot guarantee a client
+older than 1.4.2.  For more information or to download open source tools, visit:
 </para>
 <screen>
 <ulink url="http://subversion.tigris.org">http://subversion.tigris.org/</ulink>
 </screen>
 
 <para>
-With a valid svn client installed on the machine where CESM will be built and run, 
-the user may download the latest version of the release code.  First view the available 
+With a valid svn client installed on the machine where CESM will be built and run,
+the user may download the latest version of the release code.  First view the available
 release versions with one of the following commands:
 </para>
 
 <para>
-<emphasis>** IMPORTANT NOTE **</emphasis> Starting with CESM1.2.1, the Subversion repository path has changed. 
+<emphasis>** IMPORTANT NOTE **</emphasis> Starting with CESM1.2.1, the Subversion repository path has changed.
 <screen>
 > svn list https://svn-ccsm-models.cgd.ucar.edu/cesm1/release_tags
 </screen>
 </para>
 
 <para>
-For all versions prior to CESM1.2.1, please use the following command to view 
+For all versions prior to CESM1.2.1, please use the following command to view
 available releases.
 <screen>
 > svn list https://svn-ccsm-release.cgd.ucar.edu/model_versions
@@ -703,10 +703,10 @@ authentication message will likely be generated:
 <screen>
 svn list https://svn-ccsm-models.cgd.ucar.edu/cesm1/release_tags
 Authentication realm: &lt;https://svn-ccsm-models.cgd.ucar.edu:443&gt; ccsm:models
-Password for '[username]': 
+Password for '[username]':
 Authentication realm: &lt;https://svn-ccsm-models.cgd.ucar.edu:443D&gt; ccsm:models
 Username: guestuser
-Password for 'guestuser': 
+Password for 'guestuser':
 
 -----------------------------------------------------------------------
 ATTENTION!  Your password for authentication realm:
@@ -726,19 +726,19 @@ cesm1_2_1/
 </screen>
 
 <para>
-Be aware that the request is set to the current machine login id and 
+Be aware that the request is set to the current machine login id and
 you must enter the CESM registered default username of 'guestuser' by
 pressing the 'Enter' key when prompted for a Username.
 </para>
 
-<para> 
-You may be prompted up to 3 times for the username and password 
-when checking out the code for the first time from this new Subversion path. 
-This is because the code is distributed across a number of different 
+<para>
+You may be prompted up to 3 times for the username and password
+when checking out the code for the first time from this new Subversion path.
+This is because the code is distributed across a number of different
 Subversion repositories and each repository requires authentication.
 </para>
 
-<para> 
+<para>
 Once correctly
 entered, the username and password will be cached in a protected
 subdirectory of the user's home directory so that repeated entry of
@@ -747,7 +747,7 @@ this information will not be required for a given machine.
 
 <para>
 The release tags should follow a recognizable naming pattern, and
-they can be checked out from the central source repository into a local sandbox directory. 
+they can be checked out from the central source repository into a local sandbox directory.
 The following example shows how to checkout model version
 CESM1.2.1:
 </para>
@@ -756,10 +756,10 @@ CESM1.2.1:
 > svn co https://svn-ccsm-models.cgd.ucar.edu/cesm1/release_tags/cesm1_2_1 cesm1_2_1
 </screen>
 
-<caution><para>If a problem was encountered during checkout, which may happen 
+<caution><para>If a problem was encountered during checkout, which may happen
 with an older version of the client software, it may appear to have downloaded
-successfully, but in fact only a partial checkout has occurred.  
-To ensure a successful download, make sure the last line of svn output 
+successfully, but in fact only a partial checkout has occurred.
+To ensure a successful download, make sure the last line of svn output
 has the following statement:
 </para>
 <screen>
@@ -767,7 +767,7 @@ Checked out revision XXXXX.
 </screen>
 
 <para>
-<emphasis>** IMPORTANT NOTE ** Starting with CESM1.2.1, the Subversion repository path has changed. 
+<emphasis>** IMPORTANT NOTE ** Starting with CESM1.2.1, the Subversion repository path has changed.
 Consequently, the information below regarding 'svn update' or 'svn switch' is only valid for
 CESM releases prior to CESM1.2.1.
 </emphasis>
@@ -792,29 +792,29 @@ be executed in the working sandbox directory.
 For various information regarding the release version checked out...
 </para>
 <screen>
-> svn info       
+> svn info
 </screen>
 
 <para>
 For a listing of files that have changed since checkout...
 </para>
 <screen>
-> svn status 
+> svn status
 </screen>
 
 <para>
 For a description of the changes made to the working copy...
 </para>
 <screen>
-> svn diff 
+> svn diff
 </screen>
 </sect2>
 
-<sect2 id="obtaining_new_verions"> 
+<sect2 id="obtaining_new_verions">
 <title>Obtaining new release versions of CESM - prior to CESM1.2.1</title>
 
 <para>
-<emphasis>** IMPORTANT NOTE ** Starting with CESM1.2.1, the Subversion repository path has changed. 
+<emphasis>** IMPORTANT NOTE ** Starting with CESM1.2.1, the Subversion repository path has changed.
 Consequently, the information below regarding 'svn update' or 'svn switch' is only valid for
 CESM releases prior to CESM1.2.1. Follow the steps outlined above to upgrade to CESM1.2.1
 from previous versions of the model.
@@ -822,7 +822,7 @@ from previous versions of the model.
 </para>
 
 <para>
-To update to a newer version of the release code you can download a new version of CESM from the svn central source repository in the following way:  
+To update to a newer version of the release code you can download a new version of CESM from the svn central source repository in the following way:
 </para>
 <para>
 Suppose for example that a new version of CESM is available at https://svn-ccsm-release.cgd.ucar.edu/model_versions/cesm1_&lt;X_newversion&gt;.
@@ -864,7 +864,7 @@ cd to the top level of your cesm1_1 code tree...
 Issue the following svn command...
 </para>
 <screen>
-   > svn switch https://svn-ccsm-release.cgd.ucar.edu/model_versions/cesm1_&lt;X_newversion&gt;  
+   > svn switch https://svn-ccsm-release.cgd.ucar.edu/model_versions/cesm1_&lt;X_newversion&gt;
 </screen>
 </step>
 </procedure>
@@ -873,9 +873,9 @@ The svn switch operation will upgrade all the code to the new cesm1_&lt;X_newver
 </para>
 
 <para>
-Note that an update to a newer version of the release code may result in conflicts with modified 
+Note that an update to a newer version of the release code may result in conflicts with modified
 files in the local working copy.  These conflicts will likely require that differences
-be resolved manually before use of the working copy may continue.  For help in 
+be resolved manually before use of the working copy may continue.  For help in
 resolving svn conflicts, please visit the subversion website,
 </para><para>
 <ulink url="http://svnbook.red-bean.com/en/1.5/svn.tour.cycle.html#svn.tour.cycle.resolve">
@@ -900,7 +900,7 @@ The following examples show common problems and their solutions.
 Problem 1: If the hostname is typed incorrectly:
 </para>
 <screen>
-> svn list https://svn-ccsm-release.cgd.ucar.edu/model_versions/cesm1_1_&lt;version&gt; 
+> svn list https://svn-ccsm-release.cgd.ucar.edu/model_versions/cesm1_1_&lt;version&gt;
 svn: PROPFIND request failed on '/model_versions/cesm1_1_&lt;version&gt;'
 svn: PROPFIND of '/model_versions/cesm1_1_&lt;version&gt;': Could not resolve hostname `svn-ccsm-releese': Host not found (https://svn-ccsm-releese)
 </screen>
@@ -910,7 +910,7 @@ Problem 2: If http is typed instead of https:
 </para>
 
 <screen>
-> svn list http://svn-ccsm-release.cgd.ucar.edu/model_versions/cesm1_1_&lt;version&gt;   
+> svn list http://svn-ccsm-release.cgd.ucar.edu/model_versions/cesm1_1_&lt;version&gt;
 svn: PROPFIND request failed on '/model_versions/cesm1_1_&lt;version&gt;'
 svn: PROPFIND of '/model_versions/cesm1_1_&lt;version&gt;': could not connect to server (http://svn-ccsm-release.cgd.ucar.edu)
 </screen>
@@ -919,27 +919,27 @@ svn: PROPFIND of '/model_versions/cesm1_1_&lt;version&gt;': could not connect to
 
 <!-- ======================================================================= -->
 
-<sect2 id="download_ccsm_inputdata"> 
+<sect2 id="download_ccsm_inputdata">
 <title> Downloading input data </title>
 
-<para> Input datasets are needed to run the model. CESM input data will 
+<para> Input datasets are needed to run the model. CESM input data will
 be made available through a separate Subversion input data repository.
 The username and password for the input data repository will be the same
-as for the code repository.  
+as for the code repository.
 </para>
 
 <note><para>
 The input data repository contains
-datasets for many configurations and resolutions and is well over 1 TByte in 
-total size.  
-DO NOT try to download the entire dataset.  
+datasets for many configurations and resolutions and is well over 1 TByte in
+total size.
+DO NOT try to download the entire dataset.
 </para></note>
 
-<para>Datasets can be downloaded on a 
+<para>Datasets can be downloaded on a
 case by case basis as needed and CESM now provides tools to check and
 download input data automatically.</para>
 
-<para> A local input data directory should exist on the local disk, 
+<para> A local input data directory should exist on the local disk,
 and it also needs to be set in the CESM scripts via the variable
 $&DIN_LOC_ROOT;. For supported machines, this
 variable is preset. For generic machines, this variable
@@ -949,27 +949,27 @@ users can share the same $&DIN_LOC_ROOT; directory.</para>
 <para>The files in the subdirectories of
 $&DIN_LOC_ROOT; should be write-protected. This prevents these
 files from being accidentally modified or deleted.  The directories
-in $&DIN_LOC_ROOT; should generally be group writable, 
+in $&DIN_LOC_ROOT; should generally be group writable,
 so the directory can be shared among multiple users.</para>
 
 <para>As part of the process of generating the &cesm; executable, the
 utility, <link linkend="input_data_server"><command>check_input_data</command></link>
-is called, and it attempts to locate all required input data for the case 
-based upon file lists generated by components.  If the required data is not found 
+is called, and it attempts to locate all required input data for the case
+based upon file lists generated by components.  If the required data is not found
 on local disk in $&DIN_LOC_ROOT;, then the data will be downloaded
 automatically by the scripts or it can be downloaded by the user by invoking
 &check_input_data; with the -export command argument.  If you want to download
-the input data manually you should do it before you build CESM.</para> 
+the input data manually you should do it before you build CESM.</para>
 
 <para>It is possible for users to download the data using
-svn subcommands directly, but use of the &check_input_data; script is highly 
-recommended to ensure that only the required datasets are downloaded. 
+svn subcommands directly, but use of the &check_input_data; script is highly
+recommended to ensure that only the required datasets are downloaded.
 Again, users are STRONGLY DISCOURAGED from downloading the entire input dataset
 from the repository due to the size.</para>
 
-</sect2> 
+</sect2>
 
-</sect1> 
+</sect1>
 
 <!-- ======================================================================= -->
 <sect1 id="quick_start">
@@ -977,7 +977,7 @@ from the repository due to the size.</para>
 
 <para> The following quick start guide is for versions of &cesm; that
 have already been ported to the local target machine.  If &cesm has not
-yet been ported to the target machine, please see 
+yet been ported to the target machine, please see
 <xref linkend="port"/>.  If you are new to CESM, please consider reading
 the <link linkend="ccsm_overview">introduction</link> first</para>
 
@@ -1004,7 +1004,7 @@ where the case ($&CASE;) will be created.</para>
 </listitem>
 <listitem>
 <para>$&EXEROOT; refers to the executable directory.  ($&EXEROOT is
-normally NOT the same as $&CASEROOT;). </para> 
+normally NOT the same as $&CASEROOT;). </para>
 </listitem>
 <listitem>
 <para>$&RUNDIR; refers to the directory where CESM actually runs.  This is normally
@@ -1033,7 +1033,7 @@ displayed after invoking this command: </para>
 
 <para>See the <ulink url="../modelnl/compsets.html">supported
 component sets</ulink>, <ulink url="../modelnl/grid.html">supported
-model resolutions</ulink> and 
+model resolutions</ulink> and
 <ulink url="../modelnl/machines.html">supported machines</ulink>.
 for a complete list of CESM supported component
 sets, grids and computational platforms.</para>
@@ -1051,15 +1051,15 @@ several required arguments and if a generic machine is used, several
 additional options must be set (invoke create_newcase -h for help).
 </para>
 
-<para>If running on a supported machine,  
-($MACH), then invoke &create_newcase; as follows: 
+<para>If running on a supported machine,
+($MACH), then invoke &create_newcase; as follows:
 </para>
 
 <screen>
 > create_newcase -case $CASEROOT \
          -mach $MACH \
          -compset $COMPSET \
-         -res $RES 
+         -res $RES
 </screen>
 
 <para>If running on a new target machine, see porting in
@@ -1068,7 +1068,7 @@ additional options must be set (invoke create_newcase -h for help).
 </step>
 
 <step>
-<para> Setting up the case run script </para> 
+<para> Setting up the case run script </para>
 
 <para>Issuing the &cesm_setup; command creates a $&CASEROOT;/$&CASE;.run
 script along with user_nl_xxx files, where xxx denotes the set of
@@ -1087,21 +1087,21 @@ experiment.</para>
 
 <step>
 <para> Modify settings in &env_mach_pes.xml; (optional).
-(Note: To edit any of the env xml files, use the <link linkend="faq_xmlchange">xmlchange</link> command. 
+(Note: To edit any of the env xml files, use the <link linkend="faq_xmlchange">xmlchange</link> command.
 invoke &xmlchange; -h for help.)</para>
 </step>
 
 <step>
 <para> Invoke the &cesm_setup; command. </para>
 <screen>
-> ./cesm_setup  
+> ./cesm_setup
 </screen>
 </step>
 </substeps>
 </step>
 
 <step>
-<para> Build the executable. </para> 
+<para> Build the executable. </para>
 <substeps>
 
 <step>
@@ -1111,7 +1111,7 @@ invoke &xmlchange; -h for help.)</para>
 <step>
 <para> Run the build script.</para>
 <screen>
-> $CASE.build 
+> $CASE.build
 </screen>
 </step>
 </substeps>
@@ -1121,7 +1121,7 @@ invoke &xmlchange; -h for help.)</para>
 <para> Run the case. </para>
 <substeps>
 <step>
-<para> Modify runtime settings in &env_run.xml; (optional).  In particular, 
+<para> Modify runtime settings in &env_run.xml; (optional).  In particular,
 set the $&DOUT_S; variable to FALSE.</para>
 </step>
 
@@ -1159,7 +1159,7 @@ $&RUNDIR;.
 $&CASEROOT;/timing.  There should be a couple of timing files there that summarize the
 model performance.
 </para></step>
-<step><para> 
+<step><para>
 $&DOUT_S_ROOT;/$&CASE;.  This is the archive directory.  If $&DOUT_S;
 is FALSE, then no archive directory should exist.  If $&DOUT_S; is
 TRUE, then log, history, and restart files should have been copied

@@ -251,7 +251,7 @@ class TimingParser:
         self.write("  grid        : %s\n" % grid)
         self.write("  compset     : %s\n" % ccsm_compset)
         self.write("  run_type    : %s, continue_run = %s "
-                   "(inittype = %s)\n" % 
+                   "(inittype = %s)\n" %
                    (run_type, str(continue_run).upper(), inittype))
         self.write("  stop_option : %s, stop_n = %s\n" %
                    (stop_option, stop_n))

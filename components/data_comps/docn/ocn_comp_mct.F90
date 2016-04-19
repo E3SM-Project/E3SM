@@ -106,7 +106,7 @@ CONTAINS
   !     finalize method for dead ocn model
   !
   ! !REVISION HISTORY:
-  ! 
+  !
   ! !INTERFACE: ------------------------------------------------------------------
   !
   subroutine ocn_final_mct(EClock, cdata, x2d, d2x)
