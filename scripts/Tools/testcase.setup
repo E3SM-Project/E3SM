@@ -152,7 +152,7 @@ my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $caseroot,
                                                      machine  => $mach,
 						     compiler => $compiler,
                                                      threaded => $build_threaded,
-                                                     job => 'test');
+                                                     job => 'case.test');
 
 my $batchdirectives = $batchmaker->getBatchDirectives();
 

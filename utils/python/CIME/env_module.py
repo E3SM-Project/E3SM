@@ -137,4 +137,8 @@ class EnvModule(object):
         expect(False, "Not yet implemented")
 
     def _load_none_modules(self, modules_to_load):
-        expect(False, "Not yet implemented")
+        """
+        No Action required
+        """
+        pass
+

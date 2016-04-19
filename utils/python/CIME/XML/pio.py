@@ -1,0 +1,29 @@
+"""
+Class for config_pio files .  This class inherits from EntryID.py
+"""
+from standard_module_setup import *
+
+from CIME.XML.entry_id import EntryID
+from CIME.XML.files import Files
+logger = logging.getLogger(__name__)
+
+class PIO(EntryID):
+
+    def __init__(self, infile=None, files=None):
+        if infile is None:
+            if files is None:
+                files = Files()
+            infile = files.get_value("PIO_SPEC_FILE")
+
+        EntryID.__init__(self, infile)
+
+    def get_defaults(self, grid=None, compset=None, mach=None, compiler=None):
+        # should we have a env_pio file
+        defaults = {}
+        for node in self.get_nodes("entry"):
+            attributes = {"grid":grid,"compset":compset,"mach":mach,"compiler":compiler}
+            value = self.get_default_value(node, attributes)
+            if value:
+                defaults[node.get("id")] = value
+        return defaults
+

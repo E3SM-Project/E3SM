@@ -57,11 +57,13 @@ sub new
     my $root = $machineconfig->getDocumentElement();
 
     my @batchtypes = $root->findnodes("/config_machines/machine[\@MACH=\'$self->{machine}\']/batch_system");
-    if(! @batchtypes)
+    if(@batchtypes)
     {
-        $logger->logdie ("Could not determine batch system type for machine $self->{machine}");
+	$self->{'batchtype'} = $batchtypes[0]->getAttribute('type');
+    }else{
+	$self->{'batchtype'} = 'none';
+	$logger->warn("Could not find batch system for machine $self->{'machine'}, using none");
     }
-    $self->{'batchtype'} = $batchtypes[0]->getAttribute('type');
 
     $self->{dependencyqueue} = undef;
     return $self;
@@ -195,10 +197,9 @@ sub submitSingleJob()
     my %config = %{$self->{'caseconfig'}};
     my $dependarg = '';
     my $submitargs = '';
-
     $submitargs = $self->getSubmitArguments($scriptname, $dependentJobId);
 
-    if(! defined $submitargs && length($submitargs) <= 0)
+    if(! defined $submitargs or length($submitargs) <= 0)
     {
 	$submitargs = '' ;
     }
@@ -362,8 +363,8 @@ sub getSubmitArguments()
     # We need the script name and the dependent job id.
     my $scriptname = shift;
     my $dependentjobid = shift;
-    $scriptname =~ /\w+\.(\w+)$/;
-    $self->{job} = $1;
+#    $scriptname =~ /\w+\.(\w+)$/;
+    $self->{job} = $scriptname;
     $logger->debug(" scriptname: $scriptname job $self->{job}");
     # Get BatchMaker instance, we need its instance data.
     my $batchmaker = Batch::BatchFactory::getBatchMaker( caseroot => $self->{caseroot},
@@ -375,12 +376,13 @@ sub getSubmitArguments()
 							 compiler => $self->{compiler},
                                                           job => $self->{job} );
 
-
     # Find the submit arguments for this particular batch system.
     my $xml = XML::LibXML->new(no_blanks => 1);
     my $batchconfig = $xml->parse_file($self->{'configbatch'});
     my $root = $batchconfig->getDocumentElement();
-
+    if ($self->{batchtype} eq 'none'){
+	return;
+    }
     my @dependargs = $root->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\']/submit_args/arg");
 
     my $submitargs = '';
@@ -528,11 +530,14 @@ sub getBatchSystemType()
     my $machineconfig = $xml->parse_file($configmachines);
     my $root = $machineconfig->getDocumentElement();
     my @batchsystems = $root->findnodes("/config_machines/machine[\@MACH=\'$machine\']/batch_system");
-    if(! @batchsystems)
+    my $batchtype;
+    if(@batchsystems)
     {
-        $logger->logdie ("Could not determine batch system type for machine $machine");
+	$batchtype = $batchsystems[0]->getAttribute('type');
+    }else{
+	$batchtype = 'none';
+	$logger->warn("Could not find batch system for machine $machine, using none");
     }
-    my $batchtype = $batchsystems[0]->getAttribute('type');
     return $batchtype;
 }
 

@@ -48,6 +48,14 @@
     <desc>file containing specification of pio settings for target model possible machine, compiler, mpilib, compset and/or grid attributes (for documentation only - DO NOT EDIT)</desc>
   </entry>
 
+  <entry id="CONFIG_TESTS_FILE">
+    <type>char</type>
+    <default_value>$CIMEROOT/scripts/Testing/Testcases/config_tests.xml</default_value>
+    <group>test</group>
+    <file>env_test.xml</file>
+    <desc>file containing system test descriptions </desc>
+  </entry>
+
   <!-- ============================================================ -->
   <!-- Filenames for determining compsets and tests file            -->
   <!-- Depends on component attribute value   -->
@@ -74,7 +82,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$CIMEROOT/cime_config/$MODEL//allactive/config_pes.xml</value>
+      <value component="allactive">$CIMEROOT/cime_config/$MODEL/allactive/config_pes.xml</value>
       <value component="drv"      >$CIMEROOT/driver_cpl/cime_config/config_pes.xml</value>
       <value component="cam"      >$SRCROOT/components/cam/cime_config/config_pes.xml</value>
       <value component="cism"     >$SRCROOT/components/cism/cime_config/config_pes.xml</value>

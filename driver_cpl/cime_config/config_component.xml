@@ -566,9 +566,9 @@
 
   <entry id="batch_system">
     <type>char</type>
-    <default_value>UNSET</default_value>
+    <default_value>none</default_value>
     <group>config_batch</group>
-    <file>env_case.xml</file>
+    <file>env_batch.xml</file>
     <desc>The batch system type for this particular machine</desc>
   </entry>
 
@@ -608,8 +608,8 @@
   <entry id="BATCHREDIRECT">
     <type>char</type>
     <default_value></default_value>
-    <group>run_machine</group>
-    <file>env_case.xml</file>
+    <group>config_batch</group>
+    <file>env_batch.xml</file>
     <desc>Batch redirect character</desc>
   </entry>
 
@@ -905,15 +905,6 @@
     <group>build_derived</group>
     <file>env_build.xml</file>
     <desc>Shared library root, (set automatically to $EXEROOT - DO NOT EDIT)</desc>
-  </entry>
-
-  <entry id="SHAREDLIBROOTDIR">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value>$EXEROOT</default_value>
-    <group>build_derived</group>
-    <file>env_build.xml</file>
-    <desc>Shared library root directory, neeed for cleaning shared builds (set automatically to $EXEROOT - DO NOT EDIT)</desc>
   </entry>
 
   <!-- ===================================================================== -->
@@ -1915,16 +1906,16 @@
   <entry id="BATCHQUERY">
     <type>char</type>
     <default_value>UNSET</default_value>
-    <group>run_machine</group>
-    <file>env_run.xml</file>
+    <group>config_batch</group>
+    <file>env_batch.xml</file>
     <desc>command used to query batch system</desc>
   </entry>
 
   <entry id="BATCHSUBMIT">
     <type>char</type>
     <default_value>UNSET</default_value>
-    <group>run_machine</group>
-    <file>env_run.xml</file>
+    <group>config_batch</group>
+    <file>env_batch.xml</file>
     <desc>command used to submit to batch system</desc>
   </entry>
 
@@ -3620,7 +3611,7 @@
 
  <entry id="PROJECT">
    <type>char</type>
-   <default_value>PROJECT_UNSET</default_value>
+   <default_value></default_value>
    <group>job_submission</group>
    <file>env_batch.xml</file>
    <desc>project for project-sensitive build and run paths, and job scripts</desc>

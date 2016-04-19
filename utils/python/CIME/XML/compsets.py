@@ -14,6 +14,15 @@ class Compsets(GenericXML):
         GenericXML.__init__(self, infile)
         self.groups={}
 
+    def get_compset_match(self, name):
+        nodes = self.get_nodes("compset")
+        for node in nodes:
+            alias = self.get_node("alias",root=node)
+            lname = self.get_node("lname",root=node)
+            if alias.text == name or lname.text == name: 
+               logger.debug("Found node match with alias: %s and lname: %s" % (alias.text, lname.text))
+               return lname.text
+
     def get_value(self, name, attribute={}, resolved=False):
         if name == "help":
             rootnode = self.get_node("help")

@@ -27,7 +27,7 @@ def expect(condition, error_msg, exc_type=SystemExit):
     """
     if (not condition):
         # Uncomment these to bring up a debugger when an expect fails
-        # import pdb
+        #import pdb
         #pdb.set_trace()
         raise exc_type("ERROR: %s" % error_msg)
 
@@ -535,13 +535,6 @@ def handle_standard_logging_options(args):
                 'formatter': 'default',
                 'level' : logging.INFO,
                 },
-            'file1' : {
-                'class': 'logging.FileHandler',
-                'mode':'w',
-                'formatter':'debug',
-                'filename' : '%s.log'%sys.argv[0],
-                'level' : logging.DEBUG,
-                },
             },
         'root': {
             'handlers': ['console1'],
@@ -550,6 +543,14 @@ def handle_standard_logging_options(args):
     root_logger=logging.getLogger()
     # DEBUG trumps INFO trumps Silent (WARN)
     if (args.debug == True):
+        file1 = {
+                'class': 'logging.FileHandler',
+                'mode':'w',
+                'formatter':'debug',
+                'filename' : '%s.log'%os.path.basename(sys.argv[0]),
+                'level' : logging.DEBUG,
+                }
+        LOGGING['handlers']['file1'] = file1
         LOGGING['root']['handlers'].append('file1')
         LOGGING['handlers']['console1']['formatter'] = 'debug'
         root_logger.setLevel(logging.DEBUG)
@@ -559,7 +560,6 @@ def handle_standard_logging_options(args):
         logger.warn("Log level set to VERBOSE")
     elif (args.silent == True):
         root_logger.setLevel(logging.WARN)
-
     logging.config.dictConfig(LOGGING)
 
 def get_logging_options():
@@ -590,8 +590,8 @@ def convert_to_type(value, type_str, vid=""):
 
         elif type_str == "integer":
             try:
-                value = int(value)
-            except ValueError:
+                value = int(eval(value))
+            except:
                 expect(False, "Entry %s was listed as type int but value '%s' is not valid int" % (vid, value))
 
         elif type_str == "logical":
@@ -610,12 +610,12 @@ def convert_to_type(value, type_str, vid=""):
 
     return value
 
-def convert_to_string(value, type_str, vid=""):
+def convert_to_string(value, type_str=None, vid=""):
     """
     Convert value back to string.
     vid is only for generating better error messages.
     """
-    if value is not None:
+    if value is not None and type(value) is not str:
         if type_str == "char":
             expect(type(value) is str, "Wrong type for entry id '%s'" % vid)
         elif type_str == "integer":
@@ -629,6 +629,9 @@ def convert_to_string(value, type_str, vid=""):
             value = str(value)
         else:
             expect(False, "Unknown type '%s'" % type_str)
+    if value is None:
+        value = ""
+        logger.debug("Attempt to convert None value for vid %s %s"%(vid,value))
 
     return value
 
@@ -650,3 +653,4 @@ def convert_to_seconds(time_str):
         result += int(component) * pow(60, idx)
 
     return result
+
