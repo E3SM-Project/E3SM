@@ -2177,6 +2177,47 @@
     <desc>Layout of wave instances</desc>
   </entry>
 
+  <entry id="NTASKS_ESP"> 
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>mach_pes_esp</group>
+    <file>env_mach_pes.xml</file>
+    <desc>number of external processing tool mpi tasks</desc>
+  </entry>
+
+  <entry id="NTHRDS_ESP"> 
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>mach_pes_esp</group>
+    <file>env_mach_pes.xml</file>
+    <desc>number of external processing tool mpi threads</desc>
+  </entry>
+
+  <entry id="ROOTPE_ESP"> 
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>mach_pes_esp</group>
+    <file>env_mach_pes.xml</file>
+    <desc>root ocn mpi task</desc>
+  </entry>
+
+  <entry id="NINST_ESP">
+    <type>integer</type>
+    <default_value>1</default_value>
+    <group>mach_pes_esp</group>
+    <file>env_mach_pes.xml</file>
+    <desc>Number of external processing tool instances</desc>
+  </entry>
+
+  <entry id="NINST_ESP_LAYOUT">
+    <type>char</type>
+    <valid_values>sequential</valid_values>
+    <default_value>sequential</default_value>
+    <group>mach_pes_esp</group>
+    <file>env_mach_pes.xml</file>
+    <desc>Layout of external processing tool instances</desc>
+  </entry>
+
   <entry id="PSTRID_ATM">
     <type>integer</type>
     <default_value>1</default_value>
@@ -2243,6 +2284,15 @@
     <group>mach_pes_stride</group>
     <file>env_mach_pes.xml</file>
     <desc>stride of mpi tasks for wav comp - currently should always be set to 1</desc>
+  </entry>
+
+  <entry id="PSTRID_ESP">
+    <type>integer</type>
+    <valid_values>1</valid_values>
+    <default_value>1</default_value>
+    <group>mach_pes_stride</group>
+    <file>env_mach_pes.xml</file>
+    <desc>stride of mpi tasks for esp comp - currently should always be set to 1</desc>
   </entry>
 
   <entry id="TOTALPES">
@@ -2904,7 +2954,7 @@
     </values>
     <desc>Base period associated with NCPL coupling frequency.
     This xml variable is only used to set the driver namelist variables,
-    atm_cpl_dt, lnd_cpl_dt, ocn_cpl_dt, ice_cpl_dt, glc_cpl_dt, rof_cpl_dt and wav_cpl_dt.</desc>
+    atm_cpl_dt, lnd_cpl_dt, ocn_cpl_dt, ice_cpl_dt, glc_cpl_dt, rof_cpl_dt, wav_cpl_dt, and esp_dt.</desc>
   </entry>
 
   <entry id="ATM_NCPL">
@@ -3357,32 +3407,32 @@
     <desc>2**n relative cost of machine (DO NOT EDIT)</desc>
   </entry>
 
-  <!-- Data Assimilation type stuff -->
+ <!-- Data Assimilation type stuff -->
 
-  <entry id="DATA_ASSIMILATION">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>external_tools</group>
-    <file>env_run.xml</file>
-    <desc> Run the external tool pointed to by DATA_ASSIMILATION_SCRIPT after the model run completes </desc>
-  </entry>
-  <entry id="DATA_ASSIMILATION_CYCLES">
-    <type>integer</type>
-    <valid_values></valid_values>
-    <default_value>1</default_value>
-    <group>external_tools</group>
-    <file>env_run.xml</file>
-    <desc> Number of model run - data assimilation steps to complete </desc>
-  </entry>
-  <entry id="DATA_ASSIMILATION_SCRIPT">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value></default_value>
-    <group>external_tools</group>
-    <file>env_run.xml</file>
-    <desc>External script to be run after model completion</desc>
-  </entry>
+ <entry id="DATA_ASSIMILATION">
+   <type>logical</type>
+   <valid_values>TRUE,FALSE</valid_values>
+   <default_value>FALSE</default_value>
+   <group>external_tools</group>
+   <file>env_run.xml</file>
+   <desc> Run the external tool pointed to by DATA_ASSIMILATION_SCRIPT after the model run completes </desc>
+ </entry>
+ <entry id="DATA_ASSIMILATION_CYCLES">
+   <type>integer</type>
+   <valid_values></valid_values>
+   <default_value>1</default_value>
+   <group>external_tools</group>
+   <file>env_run.xml</file>
+   <desc> Number of model run - data assimilation steps to complete </desc>
+ </entry>
+ <entry id="DATA_ASSIMILATION_SCRIPT">
+   <type>char</type>
+   <valid_values></valid_values>
+   <default_value></default_value>
+   <group>external_tools</group>
+   <file>env_run.xml</file>
+   <desc>External script to be run after model completion</desc>
+ </entry>
 
  <!-- Job Submission stuff -->
  <entry id="JOB_QUEUE">

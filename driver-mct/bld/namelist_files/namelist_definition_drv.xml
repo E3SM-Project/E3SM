@@ -1779,6 +1779,51 @@ Layout of multi-instance lnds (if there are more than 1)
 </entry>
 
 <entry 
+id="esp_ntasks"
+type="integer"
+category="ccsm_pes" 
+group="ccsm_pes">
+the number of mpi tasks assigned to the esp components. 
+set by NTASKS_ESP in env_configure.xml.  
+</entry>
+
+<entry 
+id="esp_nthreads"
+type="integer"
+category="ccsm_pes" 
+group="ccsm_pes">
+the number of threads per mpi task for the esp component.  
+set by NTHRDS_ESP in env_configure.xml.  
+</entry>
+
+<entry 
+id="esp_rootpe"
+type="integer"
+category="ccsm_pes" 
+group="ccsm_pes">
+the global mpi task rank of the root processor assigned to the esp component.  
+set by ROOTPE_ESP in env_configure.xml.
+</entry>
+
+<entry 
+id="esp_pestride"
+type="integer"
+category="ccsm_pes" 
+group="ccsm_pes">
+the mpi global processors stride associated with the mpi tasks for the esp component.  
+set by PSTRID_ESP in env_configure.xml.  
+</entry>
+
+<entry 
+id="esp_layout"
+type="char*32"
+category="ccsm_pes" 
+group="ccsm_pes"
+valid_values="concurrent,sequential">  
+Layout of multi-instance external system processor (if there are more than 1)
+</entry>
+
+<entry 
 id="cpl_ntasks"
 type="integer"
 category="ccsm_pes" 
