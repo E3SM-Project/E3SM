@@ -4,7 +4,7 @@ module avect_wrapper_mod
 
   use shr_kind_mod, only : r8 => shr_kind_r8
   use mct_mod
-  
+
   implicit none
   private
   save
@@ -18,7 +18,7 @@ module avect_wrapper_mod
   public :: create_aVect_without_data ! creates an attribute vector with a given set of real-valued fields
   public :: aVect_importRattr         ! wrapper to mct_aVect_importRattr which doesn't require a pointer input
   public :: aVect_exportRattr         ! wrapper to mct_aVect_exportRattr which doesn't require pointer management for the output
-  
+
 contains
 
   !-----------------------------------------------------------------------
@@ -43,13 +43,13 @@ contains
     integer :: nfields
     integer :: npoints
     integer :: field_index
-    
+
     character(len=*), parameter :: subname = 'create_aVect_with_data_rows_are_points'
     !-----------------------------------------------------------------------
 
     npoints = size(data, 1)
     nfields = size(data, 2)
-    
+
     if (size(attr_tags) /= nfields) then
        print *, subname, ' ERROR: dimensionality mismatch between attr_tags and data'
        stop
@@ -60,7 +60,7 @@ contains
     do field_index = 1, nfields
        call aVect_importRattr(av, trim(attr_tags(field_index)), data(:,field_index))
     end do
-    
+
   end subroutine create_aVect_with_data_rows_are_points
 
   !-----------------------------------------------------------------------
@@ -83,9 +83,9 @@ contains
     !-----------------------------------------------------------------------
 
     call create_aVect_with_data_rows_are_points(av, attr_tags, transpose(data))
-    
+
   end subroutine create_aVect_with_data_rows_are_fields
-  
+
   !-----------------------------------------------------------------------
   subroutine create_aVect_without_data(av, attr_tags, lsize)
     !
@@ -105,7 +105,7 @@ contains
     integer :: field_index
     integer :: list_length
     character(len=:), allocatable :: attr_list
-    
+
     character(len=*), parameter :: subname = 'create_aVect_without_data'
     !-----------------------------------------------------------------------
 
@@ -119,7 +119,7 @@ contains
     end do
 
     call mct_aVect_init(av, rList = attr_list, lsize = lsize)
-    
+
   end subroutine create_aVect_without_data
 
   !-----------------------------------------------------------------------
@@ -138,7 +138,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     real(r8), pointer :: data_ptr(:)
-    
+
     character(len=*), parameter :: subname = 'aVect_importRattr'
     !-----------------------------------------------------------------------
 
@@ -146,7 +146,7 @@ contains
     data_ptr(:) = data(:)
     call mct_aVect_importRattr(av, trim(attr_tag), data_ptr)
     deallocate(data_ptr)
-    
+
   end subroutine aVect_importRattr
 
   !-----------------------------------------------------------------------
@@ -166,7 +166,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     real(r8), pointer :: data_ptr(:)
-    
+
     character(len=*), parameter :: subname = 'aVect_exportRattr'
     !-----------------------------------------------------------------------
 
@@ -176,5 +176,5 @@ contains
     deallocate(data_ptr)
   end function aVect_exportRattr
 
-  
+
 end module avect_wrapper_mod

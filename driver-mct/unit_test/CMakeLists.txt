@@ -23,7 +23,7 @@ add_subdirectory(${DRV_ROOT}/driver drv_driver)
 add_subdirectory(utils drv_unit_test_utils)
 add_subdirectory(stubs drv_unit_test_stubs)
 
-# Build libraries containing stuff needed for the unit tests. 
+# Build libraries containing stuff needed for the unit tests.
 # Eventually, these add_library calls should probably be distributed into the
 # correct location, rather than being in this top-level CMakeLists.txt file.
 # Note that we are including the stub pio in the csm_share library for simplicity.

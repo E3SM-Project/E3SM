@@ -3,7 +3,7 @@ module component_mod
   !----------------------------------------------------------------------------
   ! share code & libs
   !----------------------------------------------------------------------------
-  use shr_kind_mod,     only: r8 => SHR_KIND_R8 
+  use shr_kind_mod,     only: r8 => SHR_KIND_R8
   use shr_kind_mod,     only: cs => SHR_KIND_CS
   use shr_kind_mod,     only: cl => SHR_KIND_CL
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
@@ -20,11 +20,11 @@ module component_mod
   use seq_comm_mct,     only: seq_comm_iamin, seq_comm_namelen, num_inst_frc
   use seq_comm_mct,     only: seq_comm_suffix, seq_comm_name, seq_comm_setnthreads
   use seq_comm_mct,     only: seq_comm_getinfo => seq_comm_setptrs
-  use seq_comm_mct,     only: seq_comm_petlist 
+  use seq_comm_mct,     only: seq_comm_petlist
   use seq_infodata_mod, only: seq_infodata_putData, seq_infodata_GetData
   use seq_infodata_mod, only: seq_infodata_exchange, seq_infodata_type
-  use seq_diag_mct,     only: seq_diag_avect_mct 
-  use seq_map_type_mod  
+  use seq_diag_mct,     only: seq_diag_avect_mct
+  use seq_map_type_mod
   use seq_map_mod
   use t_drv_timers_mod
   use component_type_mod
@@ -34,7 +34,7 @@ module component_mod
   use ESMF
 #ifdef ESMF_INTERFACE
   use esmfshr_mod
-#endif 
+#endif
 
   implicit none
 
@@ -56,7 +56,7 @@ module component_mod
   public :: component_init_update_petlist !esmf only
 #endif
   public :: component_run                 ! mct and esmf versions
-  public :: component_final               ! mct and esmf versions 
+  public :: component_final               ! mct and esmf versions
   public :: component_exch
   public :: component_diag
 
@@ -67,7 +67,7 @@ module component_mod
 
    logical  :: iamroot_GLOID, iamroot_CPLID         ! GLOID, CPLID masterproc
    logical  :: iamin_CPLID                          ! true => pe associated with CPLID
-   integer  :: mpicom_GLOID, mpicom_CPLID           ! GLOID, CPLID mpi communicator 
+   integer  :: mpicom_GLOID, mpicom_CPLID           ! GLOID, CPLID mpi communicator
    integer  :: nthreads_GLOID, nthreads_CPLID
    logical  :: drv_threading
 
@@ -107,7 +107,7 @@ contains
     call seq_comm_getinfo(GLOID, mpicom=mpicom_GLOID, iamroot=iamroot_GLOID, nthreads=nthreads_GLOID)
     call seq_comm_getinfo(CPLID, mpicom=mpicom_CPLID, iamroot=iamroot_CPLID, nthreads=nthreads_CPLID)
     iamin_CPLID = seq_comm_iamin(CPLID)
-   
+
     ! Initialize component type variables
     do eci = 1,size(comp)
 
@@ -133,8 +133,8 @@ contains
           allocate(comp(1)%dom_cx)
           allocate(comp(1)%gsmap_cx)
        else
-          comp(eci)%dom_cx   => comp(1)%dom_cx 
-          comp(eci)%gsmap_cx => comp(1)%gsmap_cx 
+          comp(eci)%dom_cx   => comp(1)%dom_cx
+          comp(eci)%gsmap_cx => comp(1)%gsmap_cx
        end if
 
        ! Set cdata_cc - unique for each instance
@@ -144,11 +144,11 @@ contains
        comp(eci)%cdata_cc%name     = 'cdata_'//ntype(1:1)//ntype(1:1)
        comp(eci)%cdata_cc%ID       =  comp(eci)%compid
        comp(eci)%cdata_cc%mpicom   =  comp(eci)%mpicom_compid
-       comp(eci)%cdata_cc%dom      => comp(eci)%dom_cc 
+       comp(eci)%cdata_cc%dom      => comp(eci)%dom_cc
        comp(eci)%cdata_cc%gsmap    => comp(eci)%gsmap_cc
        comp(eci)%cdata_cc%infodata => infodata
 
-       ! Determine initial value of comp_present in infodata - to do - add this to component 
+       ! Determine initial value of comp_present in infodata - to do - add this to component
 
        if (comp(1)%oneletterid == 'a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
@@ -173,7 +173,7 @@ contains
     ! Arguments
     type(ESMF_Clock)         , intent(inout) :: EClock
     type(component_type)     , intent(inout) :: comp(:)
-    interface 
+    interface
        subroutine comp_init( Eclock, cdata, x2c, c2x, nlfilename)
          use ESMF         , only: ESMF_Clock
          use seq_cdata_mod, only: seq_cdata
@@ -182,12 +182,12 @@ contains
          type(ESMF_Clock), intent(inout) :: EClock
          type(seq_cdata) , intent(inout) :: cdata
          type(mct_aVect) , intent(inout) :: x2c
-         type(mct_aVect) , intent(inout) :: c2x   
+         type(mct_aVect) , intent(inout) :: c2x
          character(len=*), optional, intent(IN) :: NLFilename ! Namelist filename
        end subroutine comp_init
-    end interface 
+    end interface
     type (seq_infodata_type) , intent(inout)        :: infodata
-    character(len=*)         , intent(in)           :: NLFilename 
+    character(len=*)         , intent(in)           :: NLFilename
     character(len=*)         , intent(in), optional :: seq_flds_x2c_fluxes
     character(len=*)         , intent(in), optional :: seq_flds_c2x_fluxes
     !
@@ -206,7 +206,7 @@ contains
             'cpl2'//comp(1)%ntype(1:3)//'_init')
     end if
 
-    ! The following initializes the component instance cdata_cc (gsmap and dom), 
+    ! The following initializes the component instance cdata_cc (gsmap and dom),
     ! x2c_cc and c2x_cc
 
     do eci = 1,size(comp)
@@ -221,18 +221,18 @@ contains
        if (comp(eci)%iamin_compid .and. comp(eci)%present) then
           if (drv_threading) call seq_comm_setnthreads(comp(eci)%nthreads_compid)
           call shr_sys_flush(logunit)
-          
+
           if (present(seq_flds_x2c_fluxes)) then
              call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
           end if
 
           call comp_init( EClock, comp(eci)%cdata_cc, comp(eci)%x2c_cc, comp(eci)%c2x_cc, &
                NLFilename=NLFilename )
-          
+
           if (present(seq_flds_c2x_fluxes)) then
              call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
           end if
-          
+
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        end if
     end do
@@ -244,7 +244,7 @@ contains
 
     ! Determine final value of comp_present in infodata (after component initialization)
 
-    do eci = 1,size(comp) 
+    do eci = 1,size(comp)
        if (comp(1)%oneletterid == 'a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
@@ -279,7 +279,7 @@ contains
 #ifdef ESMF_INTERFACE
   subroutine component_init_cc(Eclock, drvcomp, comp, gridcomp_register,  &
        infodata, NlFilename, seq_flds_x2c_fields, seq_flds_c2x_fields, &
-       seq_flds_x2c_fluxes, seq_flds_c2x_fluxes) 
+       seq_flds_x2c_fluxes, seq_flds_c2x_fluxes)
 
     !---------------------------------------------------------------
     ! Uses
@@ -291,16 +291,16 @@ contains
     type(ESMF_Clock)     , intent(inout) :: EClock
     type(ESMF_CplComp)   , intent(inout) :: drvComp
     type(component_type) , intent(inout) :: comp(:)
-    interface 
+    interface
        subroutine gridcomp_register(gridcomp, rc)
          use ESMF
          implicit none
          type(ESMF_GridComp)  :: gridcomp
          integer, intent(out) :: rc
        end subroutine gridcomp_register
-    end interface 
+    end interface
     type (seq_infodata_type) , intent(inout)        :: infodata
-    character(len=*)         , intent(in), optional :: NLFilename 
+    character(len=*)         , intent(in), optional :: NLFilename
     character(len=*)         , intent(in), optional :: seq_flds_x2c_fields
     character(len=*)         , intent(in), optional :: seq_flds_c2x_fields
     character(len=*)         , intent(in), optional :: seq_flds_x2c_fluxes
@@ -341,7 +341,7 @@ contains
 
           ! Create gridcomp for this instance
 
-          call seq_comm_petlist(comp(eci)%compid, petlist) 
+          call seq_comm_petlist(comp(eci)%compid, petlist)
 
           comp(eci)%gridcomp_cc = ESMF_GridCompCreate(name=trim(comp(eci)%name), petList=petlist, rc=rc)
           if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
@@ -381,7 +381,7 @@ contains
        !--------------------------------------------------
 
        ! The following initializes the component instance values of x2c_cc and c2x_cc
-       
+
        if (iamroot_CPLID .and. comp(eci)%present) then
           write(logunit,F00) 'Initialize component '//trim(comp(eci)%ntype)
           call shr_sys_flush(logunit)
@@ -394,7 +394,7 @@ contains
              if (drv_threading) call seq_comm_setnthreads(comp(eci)%nthreads_compid)
              call shr_sys_flush(logunit)
 
-             if (init_phase == 1) then 
+             if (init_phase == 1) then
                 call ESMF_AttributeSet(comp(eci)%c2x_cc_state, name="ID", &
                      value=comp(eci)%compid, rc=rc)
                 if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
@@ -411,7 +411,7 @@ contains
              if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
              ! Rescale the attribute vector before sending for phase 2 of atm initialization
-             ! Note that x2c_cc attribute vector and x2c_cc_array share the same memory 
+             ! Note that x2c_cc attribute vector and x2c_cc_array share the same memory
              ! (set in init_phase=1)
 
              if (init_phase == 2) then ! phase 2 (only for atm for now)
@@ -439,7 +439,7 @@ contains
                 call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
              end if
 
-             ! Convert appropriate export state attributes back to infodata, 
+             ! Convert appropriate export state attributes back to infodata,
              ! the new nextsw_cday is updated in infodata
              call esmfshr_infodata_state2infodata(comp(eci)%c2x_cc_state, infodata, rc=rc)
              if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
@@ -474,7 +474,7 @@ contains
 
                 ! initialize MCT gsmap_cc global seg map from ESMF distgrid_cc
 
-                call ESMF_ArrayGet(c2x_cc_array, distgrid=distgrid_cc, rc=rc) 
+                call ESMF_ArrayGet(c2x_cc_array, distgrid=distgrid_cc, rc=rc)
                 if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
                 call esmf2mct_init(distgrid_cc, comp(eci)%compid, comp(eci)%gsmap_cc, &
@@ -504,7 +504,7 @@ contains
                 call esmf2mct_copy(dom_cc_array, comp(eci)%dom_cc%data, rc=rc)
                 if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-                ! destroy original ESMF arrays, x2c_cc_array, c2x_cc_array and c2x_dom_array 
+                ! destroy original ESMF arrays, x2c_cc_array, c2x_cc_array and c2x_dom_array
                 ! in preparation for creating new ones that share memory with MCT attribute vecs
                 ! *** But this will remove any attributes that were originally in the ESMF array
                 ! so need to extract this info out first ****
@@ -528,9 +528,9 @@ contains
                 if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
                 ! create new ESMF arrays
-                ! - x2c_cc_array  shares memory with comp(eci)%x2c_cc attribute vector 
-                ! - c2x_cc_array  shares memory with comp(eci)%c2x_cc attribute vector 
-                ! - c2x_dom_array shares memory with comp(eci)%dom_cc%data attribute vector 
+                ! - x2c_cc_array  shares memory with comp(eci)%x2c_cc attribute vector
+                ! - c2x_cc_array  shares memory with comp(eci)%c2x_cc attribute vector
+                ! - c2x_dom_array shares memory with comp(eci)%dom_cc%data attribute vector
 
                 x2c_cc_array = ESMF_ArrayCreate(distgrid=distgrid_cc, farrayPtr=comp(eci)%x2c_cc%rattr, &
                      distgridToArrayMap=(/2/), name="x2d", rc=rc)
@@ -559,7 +559,7 @@ contains
 
              end if
 
-             ! Convert appropriate export state attributes back to infodata, 
+             ! Convert appropriate export state attributes back to infodata,
              ! the new nextsw_cday is updated in infodata
              call esmfshr_infodata_state2infodata(comp(eci)%c2x_cc_state, infodata, rc=rc)
              if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
@@ -593,7 +593,7 @@ contains
 
     ! Determine final value of comp_present in infodata (after component initialization)
 
-    do eci = 1,size(comp) 
+    do eci = 1,size(comp)
        if (comp(1)%oneletterid == 'a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
@@ -632,7 +632,7 @@ contains
 
     !---------------------------------------------------------------
     ! Arguments
-    type(component_type), intent(inout) :: comp(:) 
+    type(component_type), intent(inout) :: comp(:)
     type(ESMF_VM) :: vm
     !
     ! Local variables
@@ -656,8 +656,8 @@ contains
 #endif
 
   !===============================================================================
-    
-  subroutine component_init_cx(comp, infodata) 
+
+  subroutine component_init_cx(comp, infodata)
 
     !---------------------------------------------------------------
     ! Uses
@@ -707,17 +707,17 @@ contains
              endif
 
              ! Create mapper_Cc2x and mapper_Cx2c
-             allocate(comp(eci)%mapper_Cc2x, comp(eci)%mapper_Cx2c)  
+             allocate(comp(eci)%mapper_Cc2x, comp(eci)%mapper_Cx2c)
              if (iamroot_CPLID) then
                 write(logunit,F0I) 'Initializing mapper_C'//comp(eci)%ntype(1:1)//'2x',eci
                 call shr_sys_flush(logunit)
              end if
-             call seq_map_init_exchange(comp(eci), flow='c2x', mapper=comp(eci)%mapper_Cc2x)    
+             call seq_map_init_exchange(comp(eci), flow='c2x', mapper=comp(eci)%mapper_Cc2x)
              if (iamroot_CPLID) then
                 write(logunit,F0I) 'Initializing mapper_Cx2'//comp(eci)%ntype(1:1),eci
                 call shr_sys_flush(logunit)
              end if
-             call seq_map_init_exchange(comp(eci), flow='x2c', mapper=comp(eci)%mapper_Cx2c)  
+             call seq_map_init_exchange(comp(eci), flow='x2c', mapper=comp(eci)%mapper_Cx2c)
 
              ! Create x2c_cx and c2x_cx
              allocate(comp(eci)%x2c_cx, comp(eci)%c2x_cx)
@@ -733,7 +733,7 @@ contains
                 end if
                 call seq_mctext_gGridInit(comp(1))
                 call seq_map_map_exchange(comp(1), flow='c2x', dom_flag=.true., msgtag=comp(1)%cplcompid*100+1*10+1)
-             else if (eci > 1) then  
+             else if (eci > 1) then
                 if (iamroot_CPLID) then
                    write(logunit,F0I) 'comparing comp domain ensemble number ',eci
                    call shr_sys_flush(logunit)
@@ -796,7 +796,7 @@ contains
     character(*), parameter :: subname = '(component_init_aream)'
     !---------------------------------------------------------------
 
-    ! Note that the following is assumed to hold - all gsmaps_cx for a given 
+    ! Note that the following is assumed to hold - all gsmaps_cx for a given
     ! instance of a component (e.g. atm(i)) are identical on the coupler processes
 
     mapper_Fa2o  => prep_ocn_get_mapper_Fa2o()
@@ -837,7 +837,7 @@ contains
        dom_s  => component_get_dom_cx(ocn(1))   !dom_ox
        dom_d  => component_get_dom_cx(ice(1))   !dom_ix
 
-       call seq_map_map(mapper_SFo2i, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream') 
+       call seq_map_map(mapper_SFo2i, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
     endif
 
     if (rof_c2_ocn) then
@@ -904,7 +904,7 @@ contains
     character(*), parameter :: subname = '(component_init_areacor)'
     !---------------------------------------------------------------
 
-    num_inst = size(comp) 
+    num_inst = size(comp)
     do eci = 1,num_inst
 
        ! For joint cpl-component pes
@@ -953,7 +953,7 @@ contains
     ! Arguments
     type(ESMF_Clock)     , intent(inout)   :: EClock
     type(component_type) , intent(inout)   :: comp(:)
-    interface 
+    interface
        subroutine comp_run( Eclock, cdata, x2c, c2x)
          use ESMF,          only : ESMF_Clock
          use seq_cdata_mod, only : seq_cdata
@@ -962,19 +962,19 @@ contains
          type(ESMF_Clock), intent(inout) :: EClock
          type(seq_cdata) , intent(inout) :: cdata
          type(mct_aVect) , intent(inout) :: x2c
-         type(mct_aVect) , intent(inout) :: c2x   
+         type(mct_aVect) , intent(inout) :: c2x
        end subroutine comp_run
-    end interface 
+    end interface
     type (seq_infodata_type) , intent(inout)        :: infodata
     character(len=*)         , intent(in)           :: seq_flds_x2c_fluxes
     character(len=*)         , intent(in)           :: seq_flds_c2x_fluxes
     logical                  , intent(in)           :: comp_prognostic
     integer                  , intent(in), optional :: comp_num
-    character(len=*)         , intent(in), optional :: timer_barrier   
+    character(len=*)         , intent(in), optional :: timer_barrier
     character(len=*)         , intent(in), optional :: timer_comp_run
     logical                  , intent(in), optional :: run_barriers
     integer                  , intent(in), optional :: ymd  ! Current date (YYYYMMDD)
-    integer                  , intent(in), optional :: tod  ! Current time of day (seconds) 
+    integer                  , intent(in), optional :: tod  ! Current time of day (seconds)
     character(len=*)         , intent(in), optional :: comp_layout
     !
     ! Local Variables
@@ -986,7 +986,7 @@ contains
     real(r8) :: cktime            ! delta time
     real(r8) :: cktime_acc(10)    ! cktime accumulator array 1 = all, 2 = atm, etc
     integer  :: cktime_cnt(10)    ! cktime counter array
-    logical  :: seq_multi_inst    ! a special case of running multiinstances on the same pes. 
+    logical  :: seq_multi_inst    ! a special case of running multiinstances on the same pes.
     integer  :: phase, phasemin, phasemax  ! phase support
     logical  :: firstloop         ! first time around phase loop
     character(*), parameter :: subname = '(component_run:mct)'
@@ -1025,7 +1025,7 @@ contains
                 if (present(run_barriers)) then
                    if (run_barriers) then
                       call t_drvstartf (trim(timer_barrier))
-                      call mpi_barrier(comp(eci)%mpicom_compid, ierr) 
+                      call mpi_barrier(comp(eci)%mpicom_compid, ierr)
                       call t_drvstopf (trim(timer_barrier))
                       time_brun = mpi_wtime()
                    endif
@@ -1035,7 +1035,7 @@ contains
              if (present(timer_comp_run)) then
                 call t_drvstartf (trim(timer_comp_run), barrier=comp(eci)%mpicom_compid)
              end if
-             if (drv_threading) call seq_comm_setnthreads(comp(1)%nthreads_compid) 
+             if (drv_threading) call seq_comm_setnthreads(comp(1)%nthreads_compid)
 
              if (comp_prognostic .and. firstloop) then
                 call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
@@ -1098,11 +1098,11 @@ contains
     character(len=*)         , intent(in)           :: seq_flds_c2x_fluxes
     logical                  , intent(in)           :: comp_prognostic
     integer                  , intent(in), optional :: comp_num
-    character(len=*)         , intent(in), optional :: timer_barrier   
+    character(len=*)         , intent(in), optional :: timer_barrier
     character(len=*)         , intent(in), optional :: timer_comp_run
     logical                  , intent(in), optional :: run_barriers
     integer                  , intent(in), optional :: ymd  ! Current date (YYYYMMDD)
-    integer                  , intent(in), optional :: tod  ! Current time of day (seconds) 
+    integer                  , intent(in), optional :: tod  ! Current time of day (seconds)
     character(len=*)         , intent(in), optional :: comp_layout
     !
     ! Local Variables
@@ -1128,7 +1128,7 @@ contains
              if (present(run_barriers)) then
                 if (run_barriers) then
                    call t_drvstartf (trim(timer_barrier))
-                   call mpi_barrier(comp(eci)%mpicom_compid, ierr) 
+                   call mpi_barrier(comp(eci)%mpicom_compid, ierr)
                    call t_drvstopf (trim(timer_barrier))
                    time_brun = mpi_wtime()
                 endif
@@ -1138,7 +1138,7 @@ contains
           if (present(timer_comp_run)) then
              call t_drvstartf (trim(timer_comp_run), barrier=comp(eci)%mpicom_compid)
           end if
-          if (drv_threading) call seq_comm_setnthreads(comp(1)%nthreads_compid) 
+          if (drv_threading) call seq_comm_setnthreads(comp(1)%nthreads_compid)
 
           ! Put infodata information into export state (NOTE - not into import state)
           call esmfshr_infodata_infodata2state(infodata, comp(eci)%c2x_cc_state, &
@@ -1176,19 +1176,19 @@ contains
           call esmfshr_infodata_state2infodata(comp(eci)%c2x_cc_state, infodata, rc=rc)
           if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-          ! Determine export state and obtain output esmf array 
+          ! Determine export state and obtain output esmf array
           call ESMF_StateGet(comp(eci)%c2x_cc_state, itemName="d2x", array=d2x_array, rc=rc)
           if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
           ! Convert output esmf array to mct attribute vector
           call esmf2mct_copy(d2x_array, comp(eci)%c2x_cc, rc=rc)
           if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-       
+
           ! Apply area correction for c2x on mct attribute vector
           call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
-          
+
           if (present(timer_comp_run)) then
              call t_drvstopf (trim(timer_comp_run))
           end if
@@ -1219,9 +1219,9 @@ contains
          type(ESMF_Clock), intent(inout) :: EClock
          type(seq_cdata) , intent(inout) :: cdata
          type(mct_aVect) , intent(inout) :: x2c
-         type(mct_aVect) , intent(inout) :: c2x   
+         type(mct_aVect) , intent(inout) :: c2x
        end subroutine comp_final
-    end interface 
+    end interface
     !
     ! Local Variables
     integer :: eci
@@ -1232,12 +1232,12 @@ contains
     num_inst = size(comp)
     do eci = 1,num_inst
        if (comp(eci)%iamin_compid) then
-          if (drv_threading) call seq_comm_setnthreads(comp(1)%nthreads_compid) 
+          if (drv_threading) call seq_comm_setnthreads(comp(1)%nthreads_compid)
           call comp_final(EClock, comp(eci)%cdata_cc, comp(eci)%x2c_cc, comp(eci)%c2x_cc)
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        end if
     end do
-    
+
   end subroutine component_final
 #endif
 
@@ -1278,11 +1278,11 @@ contains
 
   subroutine component_exch(comp, flow, infodata, infodata_string, &
        mpicom_barrier, run_barriers, &
-       timer_barrier, timer_comp_exch, timer_map_exch, timer_infodata_exch) 
+       timer_barrier, timer_comp_exch, timer_map_exch, timer_infodata_exch)
 
     !---------------------------------------------------------------
     ! Description
-    ! Map x2m_mx to x2m_mm (component input av from 
+    ! Map x2m_mx to x2m_mm (component input av from
     ! coupler processes to component model processes)
     !
     ! Arguments
@@ -1356,7 +1356,7 @@ contains
 
     if (present(timer_comp_exch)) then
        if (present(mpicom_barrier)) then
-          call t_drvstopf (trim(timer_comp_exch), cplcom=.true.) 
+          call t_drvstopf (trim(timer_comp_exch), cplcom=.true.)
        end if
     end if
 
@@ -1364,7 +1364,7 @@ contains
 
   !===============================================================================
 
-  subroutine component_diag(infodata, comp, flow, comment, info_debug, timer_diag ) 
+  subroutine component_diag(infodata, comp, flow, comment, info_debug, timer_diag )
 
     !---------------------------------------------------------------
     ! Description
@@ -1373,7 +1373,7 @@ contains
     ! Arguments
     type (seq_infodata_type) , intent(inout)        :: infodata
     type(component_type)     , intent(in)           :: comp(:)
-    character(len=3)         , intent(in)           :: flow 
+    character(len=3)         , intent(in)           :: flow
     character(len=*)         , intent(in)           :: comment
     integer                  , intent(in)           :: info_debug
     character(len=*)         , intent(in), optional :: timer_diag
