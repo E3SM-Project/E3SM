@@ -172,7 +172,12 @@ contains
       real (kind=RKIND), dimension(:), pointer :: rx1MaxCell
       real (kind=RKIND), dimension(:,:), pointer :: zMid
 
+      logical, pointer :: config_AM_debugDiagnostics_check_state
+
       err = 0
+
+      call mpas_pool_get_config(domain % configs, 'config_AM_debugDiagnostics_check_state', &
+                                config_AM_debugDiagnostics_check_state)
 
       localMaxRx1 = 0.0_RKIND
 
@@ -184,6 +189,10 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          !call mpas_pool_get_subpool(block % structs, 'debugDiagnosticsAM', debugDiagnosticsAMPool)
+
+         if ( config_AM_debugDiagnostics_check_state ) then
+            call ocn_test_ocean_state(dminfo, meshPool, diagnosticsPool, statePool)
+         end if
 
          ! Here are some example variables which may be needed for your analysis member
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
@@ -237,7 +246,6 @@ contains
         block => block % next
       end do
       call mpas_dmpar_max_real(dminfo, localMaxRx1, globalRx1Max)
-      write (stdoutUnit,'(a, es10.2)') ' global max of rx1:', globalRx1Max
 
    end subroutine ocn_compute_debug_diagnostics!}}}
 
@@ -334,6 +342,168 @@ contains
       err = 0
 
    end subroutine ocn_finalize_debug_diagnostics!}}}
+
+   subroutine ocn_test_ocean_state(dminfo, meshPool, diagnosticsPool, statePool)!{{{
+
+      type (dm_info) :: dminfo
+      type (mpas_pool_type), pointer :: statePool, meshPool, diagnosticsPool, tracersPool
+      character (len=StrKIND), pointer :: xtime
+      real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
+      real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+      integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: indexToCellID
+      integer, pointer :: indexTemperature
+      integer, pointer :: indexSalinity
+      integer, pointer :: nCellsSolve
+      real (kind=RKIND) :: nanCheck, workValue, workLat, workLon
+      integer :: workGlobalID(2), errorUnit, mpiRank, iCell, k
+      logical :: errorFlag
+      character(len=StrKIND) :: charMPIRank, charFilename
+
+      !get all pointers that might be needed
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+      call mpas_pool_get_array(meshPool, 'latCell', latCell)
+      call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
+      call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 2)
+      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 2)
+
+      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
+      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
+      call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 2)
+
+      !assume that no abnormal values exist
+      errorFlag = .false.
+
+      !now step through tests to see if abnormal values do exist
+      !if so, reset errorFlag to be true
+
+      ! test for abnormal values
+      do iCell=1,nCellsSolve
+         do k=1,maxLevelCell(iCell)
+            if(kineticEnergyCell(k,iCell).gt.4.0_RKIND) errorFlag=.true.
+            if(activeTracers(indexTemperature,k,iCell).lt.-1.9_RKIND) errorFlag=.true.
+            if(activeTracers(indexTemperature,k,iCell).gt.33.0_RKIND) errorFlag=.true.
+            if(activeTracers(indexSalinity,k,iCell).lt.0.0_RKIND) errorFlag=.true.
+            if(layerThickness(k,iCell).lt.1.0e-2_RKIND) errorFlag=.true.
+         enddo
+      enddo
+
+      !if an errorFlag exists, then
+      !  1) open a file
+      !  2) step through tests again and write the file
+      !  3) close file
+
+      if(errorFlag) then
+
+        !find an open unit
+        call mpas_new_unit(errorUnit)
+        mpiRank = dminfo % my_proc_id
+        charFilename = 'mpas_ocean_state_test_'
+        if(                       mpiRank.le.     9) write(charMPIRank,'(I1)') mpiRank
+        if(mpiRank.gt.    9 .and. mpiRank.le.    99) write(charMPIRank,'(I2)') mpiRank
+        if(mpiRank.gt.   99 .and. mpiRank.le.   999) write(charMPIRank,'(I3)') mpiRank
+        if(mpiRank.gt.  999 .and. mpiRank.le.  9999) write(charMPIRank,'(I4)') mpiRank
+        if(mpiRank.gt. 9999 .and. mpiRank.le. 99999) write(charMPIRank,'(I5)') mpiRank
+        if(mpiRank.gt.99999 .and. mpiRank.le.999999) write(charMPIRank,'(I6)') mpiRank
+        charFilename = trim(charFilename) // trim(charMPIRank)
+        open(unit=errorUnit, file=charFilename, form='formatted', status='unknown', position='append')
+
+        !write time
+        write(errorUnit,'(a80)') trim(xtime)
+
+        !test to see if cell kinetic energy is greater than 4.0 m2/s2
+        do iCell=1,nCellsSolve
+           do k=1,maxLevelCell(iCell)
+              if(kineticEnergyCell(k,iCell).gt.4.0_RKIND) then
+                 workValue = kineticEnergyCell(k,iCell)
+                 workGlobalID(1) = k
+                 workGlobalID(2) = indexToCellID(iCell)
+                 workLat = latCell(iCell)
+                 workLon = lonCell(iCell)
+                 write(errorUnit, 10) 'KE= ', workValue, 'cell= ', workGlobalID(2), &
+                    'k= ',workGlobalID(1), 'lat = ', workLat, 'lon= ', workLon
+                 10 format(a4,e10.3, 3x,a6,i8, 3x,a3,i4, 3x,a6,f6.2, 3x,a6,f6.2)
+              endif
+           enddo
+        enddo
+
+        !test to see if cell temperature is less than -1.9C
+        do iCell=1,nCellsSolve
+           do k=1,maxLevelCell(iCell)
+              if(activeTracers(indexTemperature,k,iCell).lt.-1.9_RKIND) then
+                 workValue = activeTracers(indexTemperature,k,iCell)
+                 workGlobalID(1) = k
+                 workGlobalID(2) = indexToCellID(iCell)
+                 workLat = latCell(iCell)
+                 workLon = lonCell(iCell)
+                 write(errorUnit, 10) 'T= ', workValue, 'cell= ', workGlobalID(2), &
+                    'k= ',workGlobalID(1), 'lat = ', workLat, 'lon= ', workLon
+              endif
+           enddo
+        enddo
+
+        !test to see if cell temperature is greater than 33.0
+        do iCell=1,nCellsSolve
+           do k=1,maxLevelCell(iCell)
+              if(activeTracers(indexTemperature,k,iCell).gt.33.0_RKIND) then
+                 workValue = activeTracers(indexTemperature,k,iCell)
+                 workGlobalID(1) = k
+                 workGlobalID(2) = indexToCellID(iCell)
+                 workLat = latCell(iCell)
+                 workLon = lonCell(iCell)
+                 write(errorUnit, 10) 'T= ', workValue, 'cell= ', workGlobalID(2), &
+                    'k= ',workGlobalID(1), 'lat = ', workLat, 'lon= ', workLon
+              endif
+           enddo
+        enddo
+
+        !test to see if cell salinity is less than 0
+        do iCell=1,nCellsSolve
+           do k=1,maxLevelCell(iCell)
+              if(activeTracers(indexSalinity,k,iCell).lt.0.0_RKIND) then
+                 workValue = activeTracers(indexSalinity,k,iCell)
+                 workGlobalID(1) = k
+                 workGlobalID(2) = indexToCellID(iCell)
+                 workLat = latCell(iCell)
+                 workLon = lonCell(iCell)
+                 write(errorUnit, 10) 'S= ', workValue, 'cell= ', workGlobalID(2), &
+                    'k= ',workGlobalID(1), 'lat = ', workLat, 'lon= ', workLon
+              endif
+           enddo
+        enddo
+
+        !test to see if cell thickness is less than 1.0e-2
+        do iCell=1,nCellsSolve
+           do k=1,maxLevelCell(iCell)
+              if(layerThickness(k,iCell).lt.1.0e-2_RKIND) then
+                 workValue = layerThickness(k,iCell)
+                 workGlobalID(1) = k
+                 workGlobalID(2) = indexToCellID(iCell)
+                 workLat = latCell(iCell)
+                 workLon = lonCell(iCell)
+                 write(errorUnit, 10) 'S= ', workValue, 'cell= ', workGlobalID(2), &
+                    'k= ',workGlobalID(1), 'lat = ', workLat, 'lon= ', workLon
+              endif
+           enddo
+        enddo
+
+        write(errorUnit,*) ''
+
+        !close unit
+        close(errorUnit)
+        call mpas_release_unit(errorUnit)
+
+      endif ! if(errorFlag)
+
+   end subroutine ocn_test_ocean_state!}}}
 
 end module ocn_debug_diagnostics
 
