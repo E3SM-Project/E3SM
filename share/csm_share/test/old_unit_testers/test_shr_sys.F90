@@ -41,7 +41,7 @@
 #endif
  print *, 'shr_sys_irtc call: ', sirtcf - sirtc0
  print *, 'Test the getenv call'
- call shr_sys_getenv( "LOGNAME", val, rcode ) 
+ call shr_sys_getenv( "LOGNAME", val, rcode )
  print *, "value of LOGNAME = ", val
  print *, 'Test the chdir call (just do a chdir .)'
  call shr_sys_system( "pwd", rcode )

@@ -41,7 +41,7 @@ function new_TestErfR8(params) result(test)
   test%test_point = params%test_point
   test%erf_val = params%erf_val
   test%tol = params%tol
-  
+
 end function new_TestErfR8
 
 function getParameters() result(params)
