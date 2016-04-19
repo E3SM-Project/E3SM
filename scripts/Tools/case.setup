@@ -40,12 +40,14 @@ OR
 
     parser.add_argument("-t", "--test-mode", action="store_true",
                         help="Keeps the test script when the --clean argument is used")
+    parser.add_argument("-r", "--reset", action="store_true",
+                        help="Does a clean followed by setup")
 
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.caseroot, args.clean, args.test_mode
+    return args.caseroot, args.clean, args.test_mode, args.reset
 
 ###############################################################################
 def _main_func(description):
@@ -54,9 +56,9 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    caseroot, clean, test_mode = parse_command_line(sys.argv, description)
+    caseroot, clean, test_mode, reset = parse_command_line(sys.argv, description)
 
-    case_setup(caseroot, clean, test_mode)
+    case_setup(caseroot, clean, test_mode, reset)
 
 if __name__ == "__main__":
     _main_func(__doc__)

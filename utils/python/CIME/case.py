@@ -402,21 +402,21 @@ class Case(object):
     def _create_caseroot_tools(self):
         cime_model = get_model()
         machines_dir = os.path.abspath(self.get_value("MACHDIR"))
-        cimeroot = self.get_value("CIMEROOT")
+        toolsdir = os.path.join(self.get_value("CIMEROOT"),"scripts","Tools")
         caseroot = self.get_value("CASEROOT")
         # setup executable files in caseroot/
-        exefiles = (cimeroot + "/scripts/Tools/case.setup",
-                    cimeroot + "/scripts/Tools/case.build",
-                    cimeroot + "/scripts/Tools/case.clean_build",
-                    cimeroot + "/scripts/Tools/case.submit",
-                    cimeroot + "/scripts/Tools/preview_namelists",
-                    cimeroot + "/scripts/Tools/testcase.setup",
-                    cimeroot + "/scripts/Tools/check_input_data",
-                    cimeroot + "/scripts/Tools/check_case",
-                    cimeroot + "/scripts/Tools/archive_metadata.sh",
-                    cimeroot + "/scripts/Tools/create_production_test",
-                    cimeroot + "/scripts/Tools/xmlchange",
-                    cimeroot + "/scripts/Tools/xmlquery")
+        exefiles = (os.path.join(toolsdir, "case.setup"),
+                    os.path.join(toolsdir, "case.build"),
+                    os.path.join(toolsdir, "case.clean_build"),
+                    os.path.join(toolsdir, "case.submit"),
+                    os.path.join(toolsdir, "preview_namelists"),
+                    os.path.join(toolsdir, "testcase.setup"),
+                    os.path.join(toolsdir, "check_input_data"),
+                    os.path.join(toolsdir, "check_case"),
+                    os.path.join(toolsdir, "archive_metadata.sh"),
+                    os.path.join(toolsdir, "create_production_test"),
+                    os.path.join(toolsdir, "xmlchange"),
+                    os.path.join(toolsdir, "xmlquery"))
         try:
             for exefile in exefiles:
                 destfile = os.path.join(caseroot,os.path.basename(exefile))
@@ -425,11 +425,11 @@ class Case(object):
             logger.warning("FAILED to set up exefiles: %s" % str(e))
 
         # set up utility files in caseroot/Tools/
-        toolfiles = (os.path.join(cimeroot, "scripts", "Tools", "check_lockedfiles"),
-                     os.path.join(cimeroot, "scripts", "Tools", "lt_archive.sh"),
-                     os.path.join(cimeroot, "scripts", "Tools", "st_archive"),
-                     os.path.join(cimeroot, "scripts", "Tools", "getTiming"),
-                     os.path.join(cimeroot, "scripts", "Tools", "compare_namelists.pl"),
+        toolfiles = (os.path.join(toolsdir, "check_lockedfiles"),
+                     os.path.join(toolsdir, "lt_archive.sh"),
+                     os.path.join(toolsdir, "st_archive"),
+                     os.path.join(toolsdir, "getTiming"),
+                     os.path.join(toolsdir, "compare_namelists.pl"),
                      os.path.join(machines_dir,"taskmaker.pl"),
                      os.path.join(machines_dir,"Makefile"),
                      os.path.join(machines_dir,"mkSrcfiles"),
@@ -454,7 +454,7 @@ class Case(object):
         if os.path.isfile(os.path.join(machines_dir,dfile)):
             copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot, dfile))
             # set up infon files
-            # infofiles = os.path.join(os.path.join(cimeroot, "scripts", "Tools", README.post_process")
+            # infofiles = os.path.join(os.path.join(toolsdir, README.post_process")
     #FIXME - the following does not work
     # print "DEBUG: infofiles are ",infofiles
     #    try:
