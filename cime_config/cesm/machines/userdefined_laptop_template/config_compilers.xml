@@ -13,7 +13,7 @@
       <FIXEDFLAGS>  -ffixed-form </FIXEDFLAGS>
       <FREEFLAGS> -ffree-form </FREEFLAGS>
       <ADD_FFLAGS DEBUG="TRUE"> -g -Wall </ADD_FFLAGS>
-      <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS 
+      <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
            so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
       <FFLAGS> -O -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </FFLAGS>
       <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
@@ -31,7 +31,7 @@
       <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -framework Accelerate</ADD_SLIBS>
       <PFUNIT_PATH>$ENV{HOME}/local/pfunit/pfunit-sf.git.ae92605e8e</PFUNIT_PATH>
    </compiler>
-   
+
    <compiler COMPILER="gnu" MACH="example-osx-macports">
       <!-- macports -->
       <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
@@ -42,7 +42,7 @@
       <FIXEDFLAGS>  -ffixed-form </FIXEDFLAGS>
       <FREEFLAGS> -ffree-form </FREEFLAGS>
       <ADD_FFLAGS DEBUG="TRUE"> -g -Wall </ADD_FFLAGS>
-      <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS 
+      <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
            so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
       <FFLAGS> -O -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </FFLAGS>
       <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>

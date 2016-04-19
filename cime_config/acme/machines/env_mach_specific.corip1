@@ -19,12 +19,12 @@ echo "DEBUG=$DEBUG"
 if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh
   module rm PrgEnv-intel
-  module rm PrgEnv-cray 
+  module rm PrgEnv-cray
   module rm PrgEnv-gnu
   module rm intel
   module rm cce
   module rm cray-parallel-netcdf
-  module rm cray-parallel-hdf5 
+  module rm cray-parallel-hdf5
   module rm pmi
   module rm cray-libsci
   module rm cray-mpich2
@@ -38,7 +38,7 @@ if (-e /opt/modules/default/init/csh) then
 endif
 
 if ( $COMPILER == "intel" ) then
-    module load PrgEnv-intel 
+    module load PrgEnv-intel
     module load intel
     #module load mkl/13.0.3
     module use /global/project/projectdirs/ccsm1/modulefiles/edison
@@ -46,16 +46,16 @@ if ( $COMPILER == "intel" ) then
          module load esmf/6.2.0-defio-mpi-g
     else
          module load esmf/6.2.0-defio-mpi-O
-    endif  
-endif    
+    endif
+endif
 if ( $COMPILER == "cray" ) then
     module load PrgEnv-cray
     module switch cce      cce/8.3.7
-endif    
+endif
 if ( $COMPILER == "gnu" ) then
     module load PrgEnv-gnu
     module switch gcc       gcc/4.8.0
-endif    
+endif
 
 module load papi
 module load craype
@@ -89,7 +89,7 @@ module list >& software_environment.txt
 limit coredumpsize unlimited
 limit stacksize unlimited
 
-# Capture logical to physics PE assignment and active environment variable 
+# Capture logical to physics PE assignment and active environment variable
 # settings
 setenv MPICH_ENV_DISPLAY 1
 setenv MPICH_VERSION_DISPLAY 1
@@ -97,7 +97,7 @@ setenv MPICH_CPUMASK_DISPLAY 1
 #setenv PERL5LIB $PERL_DIR/lib/5.20.0
 
 # The environment variable below increase the stack size, which is necessary for
-# CICE to run threaded on this machine.  
+# CICE to run threaded on this machine.
 setenv OMP_STACKSIZE 64M
 if ( $?PERL ) then
   printenv

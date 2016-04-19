@@ -50,7 +50,7 @@ setenv PNETCDF_PATH $TACC_PNETCDF_DIR
 module list
 
 # -------------------------------------------------------------------------
-# Build and runtime environment variables - edit before the initial build 
+# Build and runtime environment variables - edit before the initial build
 # -------------------------------------------------------------------------
 limit stacksize unlimited
 limit datasize  unlimited

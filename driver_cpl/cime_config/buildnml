@@ -29,7 +29,7 @@ if ($COMP_ATM eq 'cam') {
 my @dirs = ( "${CIMEROOT}/utils/perl5lib" );
 unshift @INC, @dirs;
 require Config::SetupTools;
-my $sysmod; 
+my $sysmod;
 
 if (! -d "$CASEBUILD/cplconf" ) {
     $sysmod = "mkdir $CASEBUILD/cplconf";
@@ -56,9 +56,9 @@ if ($COMP_ATM eq 'cam') {
     }
 }
 
-SetupTools::create_namelist_infile("$CASEROOT", 
- 				   "$CASEROOT/user_nl_cpl", 
-				   "$CASEBUILD/cplconf/namelist", 
+SetupTools::create_namelist_infile("$CASEROOT",
+ 				   "$CASEROOT/user_nl_cpl",
+				   "$CASEBUILD/cplconf/namelist",
 				   "$infile_text");
 
 # -----------------------------------------------------

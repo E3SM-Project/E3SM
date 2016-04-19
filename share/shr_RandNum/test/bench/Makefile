@@ -1,4 +1,4 @@
-# Makefile created by mkmf $Id: mkmf,v 18.0.18.4 2012/12/04 15:24:15 Seth.Underwood Exp $ 
+# Makefile created by mkmf $Id: mkmf,v 18.0.18.4 2012/12/04 15:24:15 Seth.Underwood Exp $
 
 ifeq ($(COMPILER),intel)
  FC := ifort
@@ -98,7 +98,7 @@ shr_RandNum_mod.o: ../../src/shr_RandNum_mod.F90 kissvec_mod.o mersennetwister_m
 	$(FC) $(CPPFLAGS) $(FPPFLAGS) $(FFLAGS) $(OTHERFLAGS) -c ../../src/shr_RandNum_mod.F90
 SRC = ./test_shr_RandNum.F90 ../kissvec/kissvec_mod.F90 ../mt19937/mersennetwister_mod.F90 ../dsfmt_f03/dSFMT.c ../dsfmt_f03/dSFMT_interface.F90 ../dsfmt_f03/dSFMT_utils.c ../shr_RandNum_mod.F90 ../../include/dSFMT.h
 OBJ = test_shr_RandNum.o kissvec_mod.o mersennetwister_mod.o dSFMT.o dSFMT_interface.o dSFMT_utils.o shr_RandNum_mod.o kissvec.o
-clean: 
+clean:
 	-rm -f .shr_RandNum.exe.cppdefs $(OBJ) *.mod ./shr_RandNum.exe *.s
-shr_RandNum.exe: $(OBJ) 
+shr_RandNum.exe: $(OBJ)
 	$(LD) $(OBJ) -o shr_RandNum.exe  $(LDFLAGS)

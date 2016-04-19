@@ -6,7 +6,7 @@
 
 module basic_tests
 
-  use pio 
+  use pio
   use global_vars
 
   Implicit None
@@ -53,7 +53,7 @@ module basic_tests
         err_msg = "Could not create " // trim(filename)
         call mpi_abort(MPI_COMM_WORLD,0,ret_val)
       end if
-      
+
       call mpi_barrier(mpi_comm_world,ret_val)
       ! netcdf files need to end define mode before closing
       if (is_netcdf(iotype)) then
@@ -260,7 +260,7 @@ module basic_tests
         data_buffer = -1
         call PIO_read_darray(pio_file, pio_var, iodesc_nCells,  data_buffer, ret_val)
         call mpi_barrier(MPI_COMM_WORLD,ret_val)
-        
+
 
         if (ret_val.ne.PIO_NOERR) then
           ! Error in PIO_read_darray
@@ -277,12 +277,12 @@ module basic_tests
         end if
 
 
-        
+
 
         ! Close file
         call PIO_closefile(pio_file)
       end if
-        
+
       call mpi_barrier(MPI_COMM_WORLD,ret_val)
 
       ! Try to open standard binary file as netcdf (if iotype = netcdf)

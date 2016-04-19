@@ -1,14 +1,14 @@
 module prep_rof_mod
 
-  use shr_kind_mod,     only: r8 => SHR_KIND_R8 
+  use shr_kind_mod,     only: r8 => SHR_KIND_R8
   use shr_kind_mod,     only: cs => SHR_KIND_CS
   use shr_kind_mod,     only: cl => SHR_KIND_CL
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct,     only: num_inst_lnd, num_inst_rof, num_inst_frc
   use seq_comm_mct,     only: CPLID, ROFID, logunit
-  use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs 
-  use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata  
-  use seq_map_type_mod 
+  use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
+  use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
+  use seq_map_type_mod
   use seq_map_mod
   use seq_flds_mod
   use t_drv_timers_mod
@@ -50,7 +50,7 @@ module prep_rof_mod
   ! mappers
   type(seq_map), pointer :: mapper_Fl2r
 
-  ! attribute vectors 
+  ! attribute vectors
   type(mct_aVect), pointer :: l2r_rx(:)
 
   ! accumulation variables
@@ -58,7 +58,7 @@ module prep_rof_mod
   integer        , target  :: l2racc_lx_cnt  ! l2racc_lx: number of time samples accumulated
 
   ! other module variables
-  integer :: mpicom_CPLID                            ! MPI cpl communicator  
+  integer :: mpicom_CPLID                            ! MPI cpl communicator
   !================================================================================================
 
 contains
@@ -87,8 +87,8 @@ contains
     logical                     :: iamroot_CPLID ! .true. => CPLID masterproc
     character(CL)               :: lnd_gnam      ! lnd grid
     character(CL)               :: rof_gnam      ! rof grid
-    type(mct_aVect) , pointer   :: l2x_lx 
-    type(mct_aVect) , pointer   :: x2r_rx 
+    type(mct_aVect) , pointer   :: l2x_lx
+    type(mct_aVect) , pointer   :: x2r_rx
     character(*)    , parameter :: subname = '(prep_rof_init)'
     character(*)    , parameter :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
@@ -107,10 +107,10 @@ contains
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
-       x2r_rx => component_get_x2c_cx(rof(1)) 
+       x2r_rx => component_get_x2c_cx(rof(1))
        lsize_r = mct_aVect_lsize(x2r_rx)
 
-       l2x_lx => component_get_c2x_cx(lnd(1)) 
+       l2x_lx => component_get_c2x_cx(lnd(1))
        lsize_l = mct_aVect_lsize(l2x_lx)
 
        allocate(l2racc_lx(num_inst_lnd))
@@ -126,7 +126,7 @@ contains
           call mct_avect_zero(l2r_rx(eri))
        end do
 
-       samegrid_lr = .true. 
+       samegrid_lr = .true.
        if (trim(lnd_gnam) /= trim(rof_gnam)) samegrid_lr = .false.
 
        if (lnd_c2_rof) then
@@ -157,13 +157,13 @@ contains
     !
     ! Local Variables
     integer :: eli
-    type(mct_aVect), pointer :: l2x_lx 
+    type(mct_aVect), pointer :: l2x_lx
     character(*), parameter  :: subname = '(prep_rof_accum)'
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eli = 1,num_inst_lnd
-       l2x_lx => component_get_c2x_cx(lnd(eli)) 
+       l2x_lx => component_get_c2x_cx(lnd(eli))
        if (l2racc_lx_cnt == 0) then
           call mct_avect_copy(l2x_lx, l2racc_lx(eli))
        else
@@ -177,7 +177,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_rof_accum_avg(timer) 
+  subroutine prep_rof_accum_avg(timer)
 
     !---------------------------------------------------------------
     ! Description
@@ -196,9 +196,9 @@ contains
        eli = mod((eri-1),num_inst_lnd) + 1
        call mct_avect_avg(l2racc_lx(eli),l2racc_lx_cnt)
     end do
-    l2racc_lx_cnt = 0 
+    l2racc_lx_cnt = 0
     call t_drvstopf (trim(timer))
-       
+
   end subroutine prep_rof_accum_avg
 
   !================================================================================================
@@ -235,7 +235,7 @@ contains
 
   subroutine prep_rof_merge(l2x_r, fractions_r, x2r_r)
 
-    !----------------------------------------------------------------------- 
+    !-----------------------------------------------------------------------
     ! Description
     ! Merge land rof and ice forcing for rof input
     !
@@ -265,7 +265,7 @@ contains
     character(CL),allocatable :: mrgstr(:)   ! temporary string
     character(*), parameter   :: subname = '(prep_rof_merge) '
 
-    !----------------------------------------------------------------------- 
+    !-----------------------------------------------------------------------
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
     lsize = mct_aVect_lsize(x2r_r)
@@ -358,7 +358,7 @@ contains
 
   function prep_rof_get_l2racc_lx()
     type(mct_aVect), pointer :: prep_rof_get_l2racc_lx(:)
-    prep_rof_get_l2racc_lx => l2racc_lx(:)   
+    prep_rof_get_l2racc_lx => l2racc_lx(:)
   end function prep_rof_get_l2racc_lx
 
   function prep_rof_get_l2racc_lx_cnt()
@@ -368,7 +368,7 @@ contains
 
   function prep_rof_get_mapper_Fl2r()
     type(seq_map), pointer :: prep_rof_get_mapper_Fl2r
-    prep_rof_get_mapper_Fl2r => mapper_Fl2r  
+    prep_rof_get_mapper_Fl2r => mapper_Fl2r
   end function prep_rof_get_mapper_Fl2r
 
 end module prep_rof_mod

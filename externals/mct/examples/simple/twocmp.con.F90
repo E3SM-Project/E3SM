@@ -2,14 +2,14 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id: twocmp.con.F90,v 1.4 2006-07-25 22:31:34 jacob Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !BOP -------------------------------------------------------------------
 !
 ! !ROUTINE:  twocomponent.concurrent
 !
 ! !DESCRIPTION:  Provide a simple example of using MCT to connect two
 !  components executing concurrently in a single executable.
-!  
+!
 !
 ! !INTERFACE:
 !
@@ -48,7 +48,7 @@
       integer ier,nprocs
       integer color,myrank,mycomm
 !-----------------------------------------------------------------------
-!  The Main program. 
+!  The Main program.
 ! We are implementing a single-executable, concurrent-execution system.
 ! This small main program carves up MPI_COMM_WORLD and then starts
 ! each component on its own processor set.
@@ -89,7 +89,7 @@
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-! !ROUTINE: 
+! !ROUTINE:
       subroutine model1(comm1)   ! the first model
 
       implicit none
@@ -98,7 +98,7 @@
       integer :: fieldindx,avsize,i
       integer,dimension(1) :: start,length
       real,pointer :: testarray(:)
-      
+
       type(GlobalSegMap) :: GSmap
       type(AttrVect) :: av1
       type(Router) :: Rout
@@ -150,7 +150,7 @@
       do i=1,asize
         write(6,*) "model 1 data", myproc,i,av1%rAttr(1,i),av1%rAttr(2,i)
       enddo
-      
+
 !  send the data
       call MCT_Send(av1,Rout)
 
@@ -160,7 +160,7 @@
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-! !ROUTINE: 
+! !ROUTINE:
       subroutine model2(comm2)
 
       implicit none

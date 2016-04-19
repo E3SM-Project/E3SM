@@ -19,7 +19,7 @@ class Compsets(GenericXML):
         for node in nodes:
             alias = self.get_node("alias",root=node)
             lname = self.get_node("lname",root=node)
-            if alias.text == name or lname.text == name: 
+            if alias.text == name or lname.text == name:
                logger.debug("Found node match with alias: %s and lname: %s" % (alias.text, lname.text))
                return lname.text
 
@@ -34,7 +34,7 @@ class Compsets(GenericXML):
             for node in nodes:
                 for child in node:
                     logger.debug ("Here child is %s with value %s"%(child.tag,child.text))
-                    if child.tag == "alias": 
+                    if child.tag == "alias":
                         alias = child.text
                     if child.tag == "lname":
                         lname = child.text
@@ -46,9 +46,9 @@ class Compsets(GenericXML):
         compsets_text = self.get_value("names")
         logger.info(" %s " %help_text)
 
-        logger.info("       --------------------------------------") 
+        logger.info("       --------------------------------------")
         logger.info("       Compset Short Name: Compset Long Name ")
-        logger.info("       --------------------------------------") 
+        logger.info("       --------------------------------------")
         for v in compsets_text.iteritems():
             label, definition = v
             logger.info("   %20s : %s" %(label, definition))

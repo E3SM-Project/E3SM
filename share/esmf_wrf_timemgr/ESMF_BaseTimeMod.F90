@@ -25,7 +25,7 @@
 !
 !===============================================================================
 !BOPI
-! !MODULE: ESMF_BaseTimeMod - Base ESMF time definition 
+! !MODULE: ESMF_BaseTimeMod - Base ESMF time definition
 !
 ! !DESCRIPTION:
 ! Part of Time Manager F90 API wrapper of C++ implemenation
@@ -253,7 +253,7 @@ END SUBROUTINE normalize_basetime
         ESMF_BaseTimeQuotI8%Sn = 0
         ESMF_BaseTimeQuotI8%Sd = 0
 
-        ! convert to a fraction and divide by multipling the denonminator by 
+        ! convert to a fraction and divide by multipling the denonminator by
         ! the divisor
         IF ( basetime%Sd == 0 ) THEN
           dinit = 1_ESMF_KIND_I8
@@ -373,22 +373,22 @@ SUBROUTINE compute_lcd( e1, e2, lcd )
 
       d1 = e1 ; d2 = e2
       IF ( d1 .EQ. 0 .AND. d2 .EQ. 0 ) THEN ; lcd = 1 ; RETURN ; ENDIF
-      IF ( d1 .EQ. 0 ) d1 = d2 
-      IF ( d2 .EQ. 0 ) d2 = d1 
+      IF ( d1 .EQ. 0 ) d1 = d2
+      IF ( d2 .EQ. 0 ) d2 = d1
       IF ( d1 .EQ. d2 ) THEN ; lcd = d1 ; RETURN ; ENDIF
       lcd = d1 * d2
       DO i = 1, nprimes
         p = primes(i)
         DO WHILE (lcd/p .NE. 0 .AND. &
-          mod(lcd/p,d1) .EQ. 0 .AND. mod(lcd/p,d2) .EQ. 0) 
-          lcd = lcd / p 
+          mod(lcd/p,d1) .EQ. 0 .AND. mod(lcd/p,d2) .EQ. 0)
+          lcd = lcd / p
         END DO
       ENDDO
 END SUBROUTINE compute_lcd
 
 !==============================================================================
 
-SUBROUTINE simplify( ni, di, no, do ) 
+SUBROUTINE simplify( ni, di, no, do )
     IMPLICIT NONE
     INTEGER(ESMF_KIND_I8), INTENT(IN)  :: ni, di
     INTEGER(ESMF_KIND_I8), INTENT(OUT) :: no, do

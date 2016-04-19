@@ -30,10 +30,10 @@ foreach $line (@nlfile){
     next if($line eq $bline);
     $bline=shift(@basenml) if(($bline =~ /^\s*[#!\[\/]/) or ($bline =~ /^\s*$/));
 
-    next if(defined $baseid && $line =~ /$baseid/); 
+    next if(defined $baseid && $line =~ /$baseid/);
     next if($line =~ /^\s*[#!\[\/]/);
     next if($line =~ /^\s*$/);
-    next if($line =~ /runid/);    
+    next if($line =~ /runid/);
     next if($line =~ /model_version/);
     next if($line =~ /logfile/);
     next if($line =~ /username/);
@@ -76,7 +76,7 @@ if($#diffs1>=0){
     }
     exit -1;
 }
-   
+
 print "\nPASS namelist compare: $nml and $basenml are the same\n";
 if($#added>=0){
     print "   The following variables were added to $nml\n";

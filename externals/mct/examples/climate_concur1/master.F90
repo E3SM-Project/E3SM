@@ -3,13 +3,13 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id: master.F90,v 1.7 2004-04-23 05:43:11 jacob Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !BOP -------------------------------------------------------------------
 !
 ! !ROUTINE: master  -- driver for simple concurrent coupled model
 !
-! !DESCRIPTION:  Provide a simple example of using MCT to connect to 
-!  components executing concurrently in a single executable. 
+! !DESCRIPTION:  Provide a simple example of using MCT to connect to
+!  components executing concurrently in a single executable.
 !
 ! !INTERFACE:
 !
@@ -29,7 +29,7 @@
 
       character(len=*), parameter :: mastername='master.F90'
 
-      integer, parameter :: ncomps = 2   ! Must know total number of 
+      integer, parameter :: ncomps = 2   ! Must know total number of
                                          ! components in coupled system
 
       integer, parameter :: AtmID = 1    ! pick an id for the atmosphere
@@ -43,7 +43,7 @@
       integer :: anprocs,cnprocs
 
 !-----------------------------------------------------------------------
-! The Main program. 
+! The Main program.
 ! We are implementing a single-executable, concurrent-execution system.
 !
 ! This small main program carves up MPI_COMM_WORLD and then starts

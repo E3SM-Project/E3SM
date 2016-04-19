@@ -37,18 +37,18 @@ isa_ok($dcmp, "Decomp::Config", "created Decomp config object");
 # Check creating new decomp and reading in a XML file on it
 
 my $file = "configInfo.xml";
-my %expect= ( 
-              "256_gx1v5"   =>{maxblocks=>1, bsize_x=>20, bsize_y=>24, 
+my %expect= (
+              "256_gx1v5"   =>{maxblocks=>1, bsize_x=>20, bsize_y=>24,
                               decomptype=>"cartesian", nlats=>384, nlons=>320},
-              "480_tx0.1v2" =>{maxblocks=>1, bsize_x=>180, bsize_y=>100, 
+              "480_tx0.1v2" =>{maxblocks=>1, bsize_x=>180, bsize_y=>100,
                               decomptype=>"cartesian", nlats=>2400, nlons=>3600},
-              "1024_tx0.1v2"=>{maxblocks=>3, bsize_x=>72, bsize_y=>48, 
+              "1024_tx0.1v2"=>{maxblocks=>3, bsize_x=>72, bsize_y=>48,
                               decomptype=>"spacecurve", nlats=>2400, nlons=>3600},
-              "2000_tx0.1v2"=>{maxblocks=>1, bsize_x=>72, bsize_y=>60, 
+              "2000_tx0.1v2"=>{maxblocks=>1, bsize_x=>72, bsize_y=>60,
                               decomptype=>"cartesian", nlats=>2400, nlons=>3600},
-              "2123_tx0.1v2"=>{maxblocks=>0, bsize_x=>0, bsize_y=>0, 
+              "2123_tx0.1v2"=>{maxblocks=>0, bsize_x=>0, bsize_y=>0,
                               decomptype=>"", nlats=>2400, nlons=>3600},
-              "1234_nomatch"=>{maxblocks=>0, bsize_x=>0, bsize_y=>0, 
+              "1234_nomatch"=>{maxblocks=>0, bsize_x=>0, bsize_y=>0,
                               decomptype=>"", nlats=>0, nlons=>0},
             );
 foreach my $i( keys(%expect) ) {
@@ -67,14 +67,14 @@ foreach my $i( keys(%expect) ) {
    print "Test nproc=$nproc, model=$model, res=$res\n";
    $dcmp= Decomp::Config->new( \%inputopts );
    my $matches =  $dcmp->ReadXML( $file, \%decomp );
-   if ( $nproc == 2123 ) { 
-      is($matches,1,"Check that one matches when expected"); 
-   } elsif ( $nproc == 1234 ) { 
-      is($matches,0,"Check that no matches when expected"); 
-   } elsif ( $nproc == 2000 ) { 
-      is($matches,3,"Check that 3 matches when expected"); 
+   if ( $nproc == 2123 ) {
+      is($matches,1,"Check that one matches when expected");
+   } elsif ( $nproc == 1234 ) {
+      is($matches,0,"Check that no matches when expected");
+   } elsif ( $nproc == 2000 ) {
+      is($matches,3,"Check that 3 matches when expected");
    } else {
-      is($matches,2,"Check that two matches when expected"); 
+      is($matches,2,"Check that two matches when expected");
    }
    is_deeply( \%decomp, $expect{$i}, "Make sure data files are as expected" );
    if ( $res eq "gx1v5" ) { $res = "gx1v3"; }
@@ -84,14 +84,14 @@ foreach my $i( keys(%expect) ) {
    print "Test nproc=$nproc, model=$model, res=$res\n";
    my $dcmp= Decomp::Config->new( \%inputopts );
    $matches = $dcmp->ReadXML( $file, \%decomp );
-   if ( $nproc == 2123 ) { 
-      is($matches,1,"Check that one matches when expected"); 
-   } elsif ( $nproc == 1234 ) { 
-      is($matches,0,"Check that no matches when expected"); 
-   } elsif ( $nproc == 2000 ) { 
-      is($matches,3,"Check that 3 matches when expected"); 
+   if ( $nproc == 2123 ) {
+      is($matches,1,"Check that one matches when expected");
+   } elsif ( $nproc == 1234 ) {
+      is($matches,0,"Check that no matches when expected");
+   } elsif ( $nproc == 2000 ) {
+      is($matches,3,"Check that 3 matches when expected");
    } else {
-      is($matches,2,"Check that two matches when expected"); 
+      is($matches,2,"Check that two matches when expected");
    }
    if ( $nproc != 2000 ) {
       is_deeply( \%decomp, $expect{$i}, "Make sure data files are as expected" );
@@ -102,7 +102,7 @@ foreach my $i( keys(%expect) ) {
 }
 
 # Check for CAM stuff
-my %camexpect= ( 
+my %camexpect= (
               "200_fv0.47x0.63" =>{npr_y=>50, npr_z=>4, modcomm_gatscat=>0,
                                    nlats=>384, nlons=>573, nlevs=>26},
               "100_fv0.47x0.63" =>{npr_y=>50, npr_z=>2, modcomm_gatscat=>0,
@@ -124,7 +124,7 @@ foreach my $i( keys(%camexpect) ) {
    print "Test nproc=$nproc, model=$model, res=$res\n";
    $dcmp= Decomp::Config->new( \%inputopts );
    my $matches =  $dcmp->ReadXML( $file, \%decomp );
-   is($matches,2,"Check that two matches when expected"); 
+   is($matches,2,"Check that two matches when expected");
    is_deeply( \%decomp, $camexpect{$i}, "Make sure data files are as expected" );
 }
 

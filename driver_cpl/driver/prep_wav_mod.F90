@@ -1,15 +1,15 @@
 module prep_wav_mod
 
-  use shr_kind_mod    , only: r8 => SHR_KIND_R8 
+  use shr_kind_mod    , only: r8 => SHR_KIND_R8
   use shr_kind_mod    , only: cs => SHR_KIND_CS
   use shr_kind_mod    , only: cl => SHR_KIND_CL
   use shr_sys_mod     , only: shr_sys_abort, shr_sys_flush
-  use seq_comm_mct    , only: num_inst_atm, num_inst_ice, num_inst_ocn 
+  use seq_comm_mct    , only: num_inst_atm, num_inst_ice, num_inst_ocn
   use seq_comm_mct    , only: num_inst_wav, num_inst_frc
   use seq_comm_mct    , only: CPLID, WAVID, logunit
-  use seq_comm_mct    , only: seq_comm_getdata=>seq_comm_setptrs 
-  use seq_infodata_mod, only: seq_infodata_getdata, seq_infodata_type   
-  use seq_map_type_mod 
+  use seq_comm_mct    , only: seq_comm_getdata=>seq_comm_setptrs
+  use seq_infodata_mod, only: seq_infodata_getdata, seq_infodata_type
+  use seq_map_type_mod
   use seq_map_mod
   use seq_flds_mod
   use t_drv_timers_mod
@@ -48,10 +48,10 @@ module prep_wav_mod
   type(seq_map), pointer :: mapper_so2w
   type(seq_map), pointer :: mapper_si2w
 
-  ! attribute vectors 
-  type(mct_aVect), pointer :: o2x_wx(:) ! Ocn export, wav grid, cpl pes 
-  type(mct_aVect), pointer :: i2x_wx(:) ! Ice export, wav grid, cpl pes 
-  type(mct_aVect), pointer :: a2x_wx(:) ! Atm export, wav grid, cpl pes 
+  ! attribute vectors
+  type(mct_aVect), pointer :: o2x_wx(:) ! Ocn export, wav grid, cpl pes
+  type(mct_aVect), pointer :: i2x_wx(:) ! Ice export, wav grid, cpl pes
+  type(mct_aVect), pointer :: a2x_wx(:) ! Atm export, wav grid, cpl pes
 
   ! accumulation variables
   ! none at this time
@@ -65,7 +65,7 @@ contains
   !================================================================================================
 
   subroutine prep_wav_init(infodata, atm_c2_wav, ocn_c2_wav, ice_c2_wav)
-    
+
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -107,7 +107,7 @@ contains
 
        call seq_comm_getData(CPLID, mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
-       w2x_wx => component_get_c2x_cx(wav(1)) 
+       w2x_wx => component_get_c2x_cx(wav(1))
        lsize_w = mct_aVect_lsize(w2x_wx)
 
        allocate(a2x_wx(num_inst_atm))
@@ -125,7 +125,7 @@ contains
           call mct_aVect_init(i2x_wx(eii), rList=seq_flds_i2x_fields, lsize=lsize_w)
           call mct_aVect_zero(i2x_wx(eii))
        enddo
-     
+
        samegrid_ow = .true.
        samegrid_aw = .true.
        if (trim(ocn_gnam) /= trim(wav_gnam)) samegrid_ow = .false.
@@ -180,7 +180,7 @@ contains
     character(len=*)        , intent(in)    :: timer_mrg
     !
     ! Local Variables
-    integer                  :: eai, eoi, eii, ewi, efi 
+    integer                  :: eai, eoi, eii, ewi, efi
     type(mct_avect), pointer :: x2w_wx
     character(*), parameter  :: subname = '(prep_wav_mrg)'
     !---------------------------------------------------------------
@@ -193,7 +193,7 @@ contains
        eii = mod((ewi-1),num_inst_ice) + 1
        efi = mod((ewi-1),num_inst_frc) + 1
 
-       x2w_wx => component_get_x2c_cx(wav(ewi)) 
+       x2w_wx => component_get_x2c_cx(wav(ewi))
 
        call prep_wav_merge(a2x_wx(eai), o2x_wx(eoi), i2x_wx(eii), fractions_wx(efi), x2w_wx)
     enddo
@@ -223,7 +223,7 @@ contains
     type(mct_aVect_sharedindices),save :: i2x_sharedindices
     character(*), parameter   :: subname = '(prep_wav_merge) '
 
-    !----------------------------------------------------------------------- 
+    !-----------------------------------------------------------------------
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
 

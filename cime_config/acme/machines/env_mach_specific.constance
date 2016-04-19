@@ -15,7 +15,7 @@ if ( $COMPILER == "intel") then
     module load netcdf/4.3.2
 
     setenv MPI_LIB $MPI_ROOT/lib
-    
+
     module load pnetcdf/1.6.1
     setenv PNETCDFROOT $PNETCDF_LIB/../
 

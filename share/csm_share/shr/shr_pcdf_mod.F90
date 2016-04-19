@@ -30,7 +30,7 @@ module shr_pcdf_mod
   use shr_log_mod,       only: shr_log_unit, shr_log_level
   use mct_mod
   use pio
- 
+
   implicit none
 
   private
@@ -52,7 +52,7 @@ module shr_pcdf_mod
   character(len=*),parameter :: version   = 'shr_pcdf_v0_0_01'
   real(r8)        ,parameter :: fillvalue = SHR_CONST_SPVAL
   integer(in)     ,parameter :: ifillvalue = -999999
-  
+
 !===============================================================================
 contains
 !===============================================================================
@@ -161,7 +161,7 @@ subroutine shr_pcdf_readwrite(type,iosystem,pio_iotype,filename,mpicom,gsmap,dof
   integer(IN), pointer  :: ldof(:)
 
   character(len=*),parameter :: subname = '(shr_pcdf_readwrite) '
-  
+
   !-------------
 
   if (trim(type) == 'read') then
@@ -329,7 +329,7 @@ subroutine shr_pcdf_readwrite(type,iosystem,pio_iotype,filename,mpicom,gsmap,dof
         if (loop == 21) call shr_pcdf_defvar0d(fid,trim(fname),PIO_INT)
         if (loop == 22) call shr_pcdf_writei0d(fid,trim(fname),is2)
      endif
- 
+
      if (present(is3)) then
         fname = 'is3'
         if (present(is3n)) fname = trim(is3n)

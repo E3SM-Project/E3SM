@@ -15,7 +15,7 @@ use IO::Handle;
 use XML::LibXML;
 
 #-----------------------------------------------------------------------------------------------
-sub usage 
+sub usage
 {
     die <<EOF;
 SYNOPSIS
@@ -24,7 +24,7 @@ DESCRIPTION
      allows user to view a field in a env*.xml file
 REQUIRED INPUT
      id                   Can have one of three values
-                          (1) Variable name of the field to view - for example 
+                          (1) Variable name of the field to view - for example
 			      > xmlquery CASE [options]
                           (2) A comma-seperated list of ids to query [NO-WHITESPACE] - for example
                               > xmlquery CASE,GRID,MACH [options]
@@ -62,7 +62,7 @@ my $ProgDir = $1;                      # name of directory containing this scrip
                                        # the user's PATH
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
-if ($ProgDir) { 
+if ($ProgDir) {
     $cfgdir = abs_path($ProgDir);
 } else {
     $cfgdir = $cwd;
@@ -70,8 +70,8 @@ if ($ProgDir) {
 
 # First determine CIMEROOT
 
-my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml"); 
-my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
+my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml");
+my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]");
 my $cimeroot = $nodes[0]->getAttribute('value');
 
 unshift @INC, "$cimeroot/utils/perl5lib";
@@ -143,7 +143,7 @@ exit;
 #-----------------------------------------------------------------------------------------------
 sub _listids
 {
-    my ($idlist) = @_; 
+    my ($idlist) = @_;
 
     # First create the hash %xmlvars and %xmlfile in order to call
     # expand_xml_var if needed
@@ -152,10 +152,10 @@ sub _listids
     my @files;
     if($opts{file}){
 	@files = ( $opts{file} );
-	
+
     }else{
-	@files = ('env_build.xml', 'env_case.xml', 'env_mach_pes.xml', 
-		 'env_mach_specific.xml', 'env_run.xml', 'env_test.xml', 'env_batch.xml'); 
+	@files = ('env_build.xml', 'env_case.xml', 'env_mach_pes.xml',
+		 'env_mach_specific.xml', 'env_run.xml', 'env_test.xml', 'env_batch.xml');
     }
     foreach my $file (@files) {
 	if (-f $file) {
@@ -181,11 +181,11 @@ sub _listids
 	$value =~ s/&apos;/'/g;
 	$value =~ s/&lt;/\</g;
 
-	unless (defined($file) ) { 
+	unless (defined($file) ) {
 	    if ( $opts{'value'} ) {
 		exit(1);
 	    } else {
-		$logger->logdie ("ERROR xmlquery: id $id not found in any of the xml files: @files "); 
+		$logger->logdie ("ERROR xmlquery: id $id not found in any of the xml files: @files ");
 	    }
 	}
 	if (! $opts{'noexpandxml'} ) {
@@ -199,7 +199,7 @@ sub _listids
 	    print "$value";
 	} else {
 	    print "$file: $id $value \n";
-	}	      
+	}
     }
 }
 
@@ -212,8 +212,8 @@ sub _listall
     my %xmlfile;
     my @ids;
 
-    my @files = ('env_build.xml', 'env_case.xml', 'env_mach_pes.xml', 
-		 'env_mach_specific.xml', 'env_run.xml', 'env_test.xml'); 
+    my @files = ('env_build.xml', 'env_case.xml', 'env_mach_pes.xml',
+		 'env_mach_specific.xml', 'env_run.xml', 'env_test.xml');
 
     foreach my $file (@files) {
 	if(-f $file){

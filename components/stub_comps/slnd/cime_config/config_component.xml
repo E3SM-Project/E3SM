@@ -2,9 +2,9 @@
 
 <?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
 
-<definitions_variables> 
+<definitions_variables>
 
-  <entry id="COMP_LND"> 
+  <entry id="COMP_LND">
     <type>char</type>
     <valid_values>slnd</valid_values>
     <default_value>slnd</default_value>
@@ -17,4 +17,4 @@
     <desc compset="_SLND">Stub lnd component</desc>
   </description>
 
-</definitions_variables> 
+</definitions_variables>

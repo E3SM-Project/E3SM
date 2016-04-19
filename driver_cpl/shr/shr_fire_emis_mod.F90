@@ -1,8 +1,8 @@
 !================================================================================
-! Coordinates carbon emissions fluxes from CLM fires for use as sources of 
+! Coordinates carbon emissions fluxes from CLM fires for use as sources of
 ! chemical constituents in CAM
 !
-! This module reads fire_emis_nl namelist which specifies the compound fluxes 
+! This module reads fire_emis_nl namelist which specifies the compound fluxes
 ! that are to be passed through the model coupler.
 !================================================================================
 module shr_fire_emis_mod
@@ -21,7 +21,7 @@ module shr_fire_emis_mod
   public :: shr_fire_emis_mechcomps_n      ! number of unique compounds in the CAM chemical mechanism that have fire emissions
   public :: shr_fire_emis_comps_n          ! number of unique emissions components
   public :: shr_fire_emis_linkedlist       ! points to linked list of shr_fire_emis_comp_t objects
-  public :: shr_fire_emis_elevated         ! elevated emissions in ATM 
+  public :: shr_fire_emis_elevated         ! elevated emissions in ATM
   public :: shr_fire_emis_comp_ptr         ! user defined type that points to fire emis data obj (shr_fire_emis_comp_t)
   public :: shr_fire_emis_comp_t           ! emission component data type
   public :: shr_fire_emis_mechcomp_t       ! data type for chemical compound in CAM mechanism than has fire emissions
@@ -29,7 +29,7 @@ module shr_fire_emis_mod
   logical :: shr_fire_emis_elevated = .true.
 
   character(len=CS), public :: shr_fire_emis_fields_token = ''       ! emissions fields token
-  character(len=CL), public :: shr_fire_emis_factors_file = ''       ! a table of basic fire emissions compounds 
+  character(len=CL), public :: shr_fire_emis_factors_file = ''       ! a table of basic fire emissions compounds
   character(len=CS), public :: shr_fire_emis_ztop_token = 'Sl_fztop' ! token for emissions top of vertical distribution
 
   ! fire emissions component data structure (or user defined type)
@@ -49,7 +49,7 @@ module shr_fire_emis_mod
   ! chemical compound in CAM mechanism that has fire emissions
   type shr_fire_emis_mechcomp_t
      character(len=16)             :: name                  ! compound name
-     type(shr_fire_emis_comp_ptr), pointer :: emis_comps(:) ! an array of pointers to fire emis components 
+     type(shr_fire_emis_comp_ptr), pointer :: emis_comps(:) ! an array of pointers to fire emis components
      integer                       :: n_emis_comps          ! number of fire emis compounds that make up the emissions for this mechanis compound
   end type shr_fire_emis_mechcomp_t
 
@@ -62,7 +62,7 @@ module shr_fire_emis_mod
 contains
 
   !-------------------------------------------------------------------------
-  ! 
+  !
   ! This reads the fire_emis_nl namelist group in drv_flds_in and parses the
   ! namelist information for the driver, CLM, and CAM.
   !
@@ -71,9 +71,9 @@ contains
   !
   !   fire_emis_specifier (array of strings) -- Each array element specifies
   !     how CAM-Chem constituents are mapped to basic smoke compounds in
-  !     the fire emissions factors table (fire_emis_factors_file).  Each 
+  !     the fire emissions factors table (fire_emis_factors_file).  Each
   !     chemistry constituent name (left of '=' sign) is mapped to one or more
-  !     smoke compound (separated by + sign if more than one), which can be 
+  !     smoke compound (separated by + sign if more than one), which can be
   !     proceeded by a multiplication factor (separated by '*').
   !     Example:
   !       fire_emis_specifier = 'bc_a1 = BC','pom_a1 = 1.4*OC','SO2 = SO2'
@@ -83,7 +83,7 @@ contains
   !     used in CLM module FireEmisFactorsMod.
   !
   !   fire_emis_elevated (locical) -- If true then CAM-Chem treats the fire
-  !     emission sources as 3-D vertically distributed forcings for the 
+  !     emission sources as 3-D vertically distributed forcings for the
   !     corresponding chemical tracers.
   !
   !-------------------------------------------------------------------------
@@ -108,7 +108,7 @@ contains
     character(len=2*CX) :: fire_emis_specifier(maxspc) = ' '
     character(len=CL) :: fire_emis_factors_file = ' '
 
-    character(*),parameter :: F00   = "('(shr_fire_emis_readnl) ',2a)" 
+    character(*),parameter :: F00   = "('(shr_fire_emis_readnl) ',2a)"
 
     logical :: fire_emis_elevated = .true.
 
@@ -161,7 +161,7 @@ contains
     use shr_expr_parser_mod, only : shr_exp_parse, shr_exp_item_t, shr_exp_list_destroy
 
     character(len=*), intent(in) :: specifier(:)
-    character(len=*), intent(out) :: emis_fields	
+    character(len=*), intent(out) :: emis_fields
 
     integer :: n_entries
     integer :: i, j, k
@@ -171,7 +171,7 @@ contains
 
     nullify(shr_fire_emis_linkedlist)
 
-    items_list => shr_exp_parse( specifier, nitems=n_entries ) 
+    items_list => shr_exp_parse( specifier, nitems=n_entries )
 
     allocate(shr_fire_emis_mechcomps(n_entries))
     shr_fire_emis_mechcomps(:)%n_emis_comps = 0
@@ -204,7 +204,7 @@ contains
           emis_fields = trim(token)
           shr_fire_emis_fields_token = token
        else
-          emis_fields = trim(emis_fields)//':'//trim(token)                 
+          emis_fields = trim(emis_fields)//':'//trim(token)
        endif
 
        item => item%next_item

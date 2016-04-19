@@ -5,8 +5,8 @@
 
 cd $CASEROOT
 
-# turn on memory leak check - if comparing with baseline also 
-# compare memory highwater mark from baseline 
+# turn on memory leak check - if comparing with baseline also
+# compare memory highwater mark from baseline
 set DETECT_MEMORY_LEAK
 if ($?COMPARE_BASELINE ) then
   set COMPARE_MEMORY
@@ -27,7 +27,7 @@ set STOP_OPTION = `./xmlquery STOP_OPTION     --value`
 @ stopn2 = ${stopnf} - $stopn1
 
 cd $CIMEROOT/scripts
-rm -r -f ${CASERR1}; ./create_clone -case ${CASERR1} -clone ${CASER0} 
+rm -r -f ${CASERR1}; ./create_clone -case ${CASERR1} -clone ${CASER0}
 
 cd $CASERR1
 ./xmlchange --file env_build.xml --id EXEROOT        --val ${EXEROOT} || exit -1
@@ -41,8 +41,8 @@ cd $CASERR1
 cd $CASER0
 
 echo ""  >>& $TESTSTATUS_LOG
-echo "doing a ${stopn1} ${STOP_OPTION} initial spinup test, writing restarts at end of run" >>& $TESTSTATUS_LOG 
-echo " short term archiving is on" >>& $TESTSTATUS_LOG 
+echo "doing a ${stopn1} ${STOP_OPTION} initial spinup test, writing restarts at end of run" >>& $TESTSTATUS_LOG
+echo " short term archiving is on" >>& $TESTSTATUS_LOG
 
 # set up run
 set DOUT_S_ROOT          = `./xmlquery DOUT_S_ROOT     --value`
@@ -64,7 +64,7 @@ endif
 if($status != 0) then
     echo " ERROR: case.st_archive failed ">>& $TESTSTATUS_LOG
     exit -1
-endif 
+endif
 
 # must look in short term archiving directory for cpl log files
 set CplLogFile = `ls -1t $DOUT_S_ROOT/cpl/logs/cpl.log* | head -1`
@@ -74,8 +74,8 @@ if ( $?CplLogFile ) then
        if ($pass != 1) then
            echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
 	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -97,8 +97,8 @@ $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -su
 cd ${CASERR1}
 
 echo ""  >>& $TESTSTATUS_LOG
-echo "doing a ${stopn2} ${STOP_OPTION} final spinup test" >>& $TESTSTATUS_LOG 
-echo " short term archiving is off" >>& $TESTSTATUS_LOG 
+echo "doing a ${stopn2} ${STOP_OPTION} final spinup test" >>& $TESTSTATUS_LOG
+echo " short term archiving is off" >>& $TESTSTATUS_LOG
 
 # determine refdate for run
 set RUNDIR  = `./xmlquery RUNDIR   --value`
@@ -111,7 +111,7 @@ ln -s ${DOUTSR0}/rest/${refdate}-00000/*${refdate}*  $RUNDIR/.
 ./xmlchange GET_REFCASE=FALSE
 ./xmlchange RUN_REFCASE=$CASE0
 ./xmlchange RUN_REFDATE=${refdate}
-./xmlchange STOP_N=${stopn2} 
+./xmlchange STOP_N=${stopn2}
 ./xmlchange DOUT_S=FALSE
 ./xmlchange --file env_run.xml --id CLM_BLDNML_OPTS --val "$orig_clm_bldnml_opts -bgc_spinup off" || exit -1
 
@@ -129,10 +129,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -158,9 +158,9 @@ echo "done ${CASEBASEID} : ($msg finished, successful coupler log) " >>& $TESTST
 echo "" >>& $TESTSTATUS_LOG
 
 if ( $?IOP_ON ) then
-    # note that suffix2 is none - since there is no functionality that 
+    # note that suffix2 is none - since there is no functionality that
     # this test performs other than running
-    # by setting the suffix to none - will not be generating any comparisions 
+    # by setting the suffix to none - will not be generating any comparisions
     # other than the iop comparison for the base case
     $SCRIPTSROOT/Tools/component_compare_test.sh -rundir $RUNDIR -testcase $CASE -testcase_base $CASEBASEID -suffix1 base -suffix2 none $add_iop -msg "$msg" >>& $TESTSTATUS_OUT
 endif

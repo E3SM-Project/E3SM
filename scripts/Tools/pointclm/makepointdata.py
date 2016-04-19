@@ -16,7 +16,7 @@ def getvar(fname, varname):
         var = nffile.variables[varname]
         varvals = var[:].copy()    #works for vector only?
         nffile.close()
-    else:    
+    else:
     	nffile = netcdf.NetCDFFile(fname,"r")
     	var = nffile.variables[varname]
     	varvals = var.getValue()
@@ -97,7 +97,7 @@ for row in AFdatareader:
     if row[0] == options.site:
         lon=float(row[3])
         if (lon < 0):
-            lon=360.0+float(row[3]) 
+            lon=360.0+float(row[3])
         lat=float(row[4])
         startyear=int(row[6])
         endyear=int(row[7])
@@ -110,7 +110,7 @@ for row in AFdatareader:
         else:
            numxpts=1
            numypts=1
-           resx=0.1      #longitudinal resolution (degrees) 
+           resx=0.1      #longitudinal resolution (degrees)
            resy=0.1      #latitudinal resolution (degrees)
            #lat=lat-resy/2
            #lon=lon-resx/2
@@ -216,7 +216,7 @@ print('ncks -d lsmlon,'+str(xgrid)+','+str(xgrid+numxpts-1)+' -d lsmlat,'+str(yg
           ','+str(ygrid+numypts-1)+' '+surffile_orig+' '+surffile_new)
 os.system('ncks -d lsmlon,'+str(xgrid)+','+str(xgrid+numxpts-1)+' -d lsmlat,'+str(ygrid)+ \
           ','+str(ygrid+numypts-1)+' '+surffile_orig+' '+surffile_new)
-    
+
 #surffile_new_nc = NetCDF.NetCDFFile(surffile_new, "a")
 #if (options.clm40 == False):
 
@@ -237,7 +237,7 @@ pct_clay     = getvar(surffile_new, 'PCT_CLAY')
 organic      = getvar(surffile_new, 'ORGANIC')
 fmax         = getvar(surffile_new, 'FMAX')
 pct_nat_veg  = getvar(surffile_new, 'PCT_NATVEG')
-pct_pft      = getvar(surffile_new, 'PCT_NAT_PFT') 
+pct_pft      = getvar(surffile_new, 'PCT_NAT_PFT')
 monthly_lai  = getvar(surffile_new, 'MONTHLY_LAI')
 monthly_sai  = getvar(surffile_new, 'MONTHLY_SAI')
 monthly_height_top = getvar(surffile_new, 'MONTHLY_HEIGHT_TOP')
@@ -289,8 +289,8 @@ for i in range(0,numxpts):
         else:
             pct_wetland[j][i] = pct_wetland[0][0]
             pct_lake[j][i]    = pct_lake[0][0]
-            pct_glacier[j][i] = pct_glacier[0][0]      
-            pct_nat_veg[j][i] = pct_nat_veg[0][0]      
+            pct_glacier[j][i] = pct_glacier[0][0]
+            pct_nat_veg[j][i] = pct_nat_veg[0][0]
             if (options.clm40):
                 pct_urban[j][i] = pct_urban[0][0]
             else:
@@ -318,10 +318,10 @@ for i in range(0,numxpts):
                 pct_pft[p][j][i] = mypft_frac[p]
             else:
                 pct_pft[p][j][i] = pct_pft[p][0][0]
-            
+
             maxlai = (monthly_lai).max(axis=0)
             for t in range(0,12):
-                monthly_lai[t][p][j][i] = monthly_lai[t][p][0][0] 
+                monthly_lai[t][p][j][i] = monthly_lai[t][p][0][0]
                 if (options.site == 'US-Ne3'):
                     if (monthly_lai[t][p][j][i] > 0):
                         monthly_lai[t][p][j][i] = monthly_lai[t][p][0][0]/maxlai[p]
@@ -382,7 +382,7 @@ if ('20TR' in options.compset):
     else:
         pftdyn_new = options.csmdir+'/cime/scripts-acme/pointclm/temp/' \
           +'surfdata.pftdyn_'+str(numxpts)+'x'+str(numypts)+'pt_'+options.mycase+'.nc'
-        
+
     print pftdyn_new
     if (os.path.isfile(pftdyn_new)):
         print('Warning:  Removing existing pftdyn file')
@@ -462,7 +462,7 @@ if ('20TR' in options.compset):
             #    pct_glacier[j][j] = pct_glacier_1850[0][0]
             #    pct_urban[j][i] = pct_urban_1850[0][0]
             thisrow = 0
-            for t in range(0,161):     
+            for t in range(0,161):
                 if (options.surfdata_grid == False):
                     if (dynexist):
                         for p in range(0,npft):
@@ -495,7 +495,7 @@ if ('20TR' in options.compset):
                                 print p, pct_pft[0][p][0][0]
                                 #No dyn file - use 1850 values from gridded file
                                 pct_pft[t][p][j][i] = pct_pft_1850[p][0][0]
-                                
+
                             else:
                                 #Use specified 1850 values
                                 pct_pft[t][p][j][i] = mypft_frac[p]

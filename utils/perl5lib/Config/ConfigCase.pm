@@ -3,15 +3,15 @@ my $pkg_nm = __PACKAGE__;
 
 #-----------------------------------------------------------------------------------------------
 # SYNOPSIS
-# 
+#
 #   use ConfigCase;
-# 
+#
 #   # create a new empty config case
 #   my $cfg = ConfigCase->new("");
 #
 #   # set some parameters
 #   $cfg->set($id, $value);
-# 
+#
 #   # get some parameters
 #   my $value = $cfg->get($id);
 #
@@ -19,7 +19,7 @@ my $pkg_nm = __PACKAGE__;
 #   $cfg->write_file("$caseroot/env_run.xml", "xml","$caseroot");
 #
 # DESCRIPTION
-# 
+#
 # ConfigCase objects are used to represent features of a CIME model
 # configuration that must be specified when a new case is created.
 #
@@ -37,7 +37,7 @@ my $pkg_nm = __PACKAGE__;
 #       that is assumed to provide appropriate values for a specific model
 #       configuration.  This setup file is optional.
 #
-# is_valid_name() 
+# is_valid_name()
 #       Returns true if the specified parameter name is contained in
 #       the configuration definition file.
 #
@@ -46,7 +46,7 @@ my $pkg_nm = __PACKAGE__;
 #       ***NOTE*** If you don't want to trap exceptions, then use the query
 #                  functions before calling this routine.
 #
-# set() 
+# set()
 #       Sets values of the configuration parameters.  It takes the
 #       parameter name and its value as arguments.  An invalid parameter
 #       name (i.e., a name not present in the definition file) triggers an
@@ -56,7 +56,7 @@ my $pkg_nm = __PACKAGE__;
 #       ***NOTE*** If you don't want to trap exceptions, then use the query
 #                  functions before calling this routine.
 #
-# write_file() 
+# write_file()
 #       Write an xml file.  The first argument is the
 #       filename.  The second argument, if present, is the commandline of the
 #       setup command that was invoked to produce the output configuration
@@ -105,12 +105,12 @@ sub add_config_variables
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($file);
     my @nodes = $xml->findnodes(".//entry");
     if (! @nodes) {
-	$logger->logdie( "ERROR add_config_variables: no variable elements in file $file \n"); 
+	$logger->logdie( "ERROR add_config_variables: no variable elements in file $file \n");
     }
-    foreach my $node (@nodes) 
+    foreach my $node (@nodes)
     {
 	my $id = $node->getAttribute('id');
-	foreach my $define_node ($node->findnodes(".//*")) 
+	foreach my $define_node ($node->findnodes(".//*"))
 	{
 	    my $node_name  = $define_node->nodeName();
 	    #
@@ -118,17 +118,17 @@ sub add_config_variables
             #
 	    if($node_name eq "values"){
 		foreach my $val_node ($define_node->findnodes(".//value")){
-                    if($val_node->hasAttributes()){		 
+                    if($val_node->hasAttributes()){
 			my @att = $val_node->attributes();
 			foreach my $attstr (@att){
 			    my $att = $attstr->nodeName();
 			    my $att_val = $attstr->getValue();
-			    my $val =  $val_node->textContent();		
+			    my $val =  $val_node->textContent();
 			    $val =~ s/\$MODEL/$model/;
 			    $val =~ s/\$CIMEROOT/$cimeroot/;
 			    if (-d $srcroot) {
 				$val =~ s/\$SRCROOT/$srcroot/;
-			    }			
+			    }
 			    $self->{$id}{$att}{$att_val} = $val;
 			}
 		    }
@@ -173,7 +173,7 @@ sub set
     my ($self, $id, $value) = @_;
 
     # Check that the parameter name is in the configuration definition
-    unless ($self->is_valid_name($id)) { 
+    unless ($self->is_valid_name($id)) {
 	$logger->logdie ("ERROR ConfigCase::set: $id is not a valid name \n");
     }
 
@@ -187,7 +187,7 @@ sub set
     if ( defined $valid_values && $valid_values ne "" ) {
 	my $value = _clean($value);
 	my $is_list_value = $self->{$id}->{'list'};
-	SetupTools::is_valid_value($id, $value, $valid_values, $is_list_value) 
+	SetupTools::is_valid_value($id, $value, $valid_values, $is_list_value)
 	    or $logger->logdie(
 		"ERROR: value of $value is not a valid value for parameter $id: valid values are $valid_values\n");
     }
@@ -225,9 +225,9 @@ sub get
 sub getkeys{
     my ($self, $name,$attribute) = @_;
     my @keys;
-    defined($self->{$name}) 
+    defined($self->{$name})
 	or $logger->logdie( "ERROR ConfigCase.pm::getkeys: unknown parameter name: $name");
-    defined($self->{$name}{$attribute}) 
+    defined($self->{$name}{$attribute})
 	or $logger->logdie( "ERROR ConfigCase.pm::getkeys: unknown attribute $attribute for parameter name: $name");
     return(keys %{$self->{$name}{$attribute}});
 }
@@ -282,7 +282,7 @@ sub write_file
     print $fh "\n";
 
     if ($caseheaders) {
-	_print_file_header($fh, $caseheaders, $output_xml_file); 
+	_print_file_header($fh, $caseheaders, $output_xml_file);
     }
 
     if ($output_xml_file =~ /env_archive.xml/) {
@@ -317,11 +317,11 @@ sub write_file
 
 	# Write all the groups out to the target xml file
 	print $fh "\n\n";
-	print $fh "<groups>\n";   	    
+	print $fh "<groups>\n";
 	foreach my $group (@groups) {
-	    print $fh "   <group>$group</group> \n"; 
+	    print $fh "   <group>$group</group> \n";
 	}
-	print $fh "</groups>\n";   	    
+	print $fh "</groups>\n";
 	print $fh "\n";
 
 	my @subgroups = qw(none);
@@ -384,11 +384,11 @@ sub write_xml_entry
 	$desc = "no description available";
     }
     print $fh "\n";
-    print $fh "$indent<entry id=\"$id\"  value=\"$value\">\n";   	    
-    print $fh "$indent  <type>$type</type> \n"; 
+    print $fh "$indent<entry id=\"$id\"  value=\"$value\">\n";
+    print $fh "$indent  <type>$type</type> \n";
     if (defined $valid_values && $valid_values  ne '') {print $fh "$indent  <valid_values>$valid_values</valid_values> \n";}
     if (defined $is_list_value && $is_list_value ne '') {print $fh "$indent  <list>$is_list_value</list> \n";}
-    print $fh "$indent  <group>$group</group> \n"; 
+    print $fh "$indent  <group>$group</group> \n";
     print $fh "$indent  <desc>$desc</desc> \n";
     print $fh "$indent</entry> \n";
 }
@@ -401,7 +401,7 @@ sub _get_type
 # Return 'type' attribute for requested variable
 
     my ($self, $name) = @_;
-    
+
     return $self->{$name}->{'type'};
 }
 
@@ -480,7 +480,7 @@ sub _print_file_header
 sub _clean
 {
     my ($name) = @_;
-    $name =~ s/^\s+//; # strip any leading whitespace 
+    $name =~ s/^\s+//; # strip any leading whitespace
     $name =~ s/\s+$//; # strip any trailing whitespace
     return ($name);
 }
@@ -501,7 +501,7 @@ sub write_docbook_master
 
     my $gid;
     $logger->info("Writing $filename\n");
-    if ($filename =~ "case") { 
+    if ($filename =~ "case") {
         $gid = "case";
 	print $fh "<table><title>env_case.xml variables</title>\n";
     } elsif($filename =~ "build") {
@@ -524,7 +524,7 @@ sub write_docbook_master
 	print $fh "</row> \n";
 	print $fh "</thead>\n";
 	print $fh "<tbody>\n";
-    
+
     my @ids = keys %$self;
     foreach my $id (sort @ids) {
 
@@ -554,7 +554,7 @@ sub write_docbook_master
 		    print $fh "<entry>$desc</entry>\n";
                 }
 		print $fh "</row>\n";
-	    }	    
+	    }
     }
     print $fh "</tbody>\n";
     print $fh "</tgroup>\n";

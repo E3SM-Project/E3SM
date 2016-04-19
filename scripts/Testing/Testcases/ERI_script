@@ -11,8 +11,8 @@ set CASER0  = ${CASEROOT}
 set CASERR1 = ${CASEROOT}.ref1
 set CASERR2 = ${CASEROOT}.ref2
 
-# turn on memory leak check - if comparing with baseline also 
-# compare memory highwater mark from baseline 
+# turn on memory leak check - if comparing with baseline also
+# compare memory highwater mark from baseline
 set DETECT_MEMORY_LEAK
 if ($?COMPARE_BASELINE ) then
   set COMPARE_MEMORY
@@ -21,8 +21,8 @@ endif
 
 #--- clone the main case to create ref1 and ref2 cases
 cd $CIMEROOT/scripts
-rm -r -f ${CASERR1}; ./create_clone -case ${CASERR1} -clone ${CASER0} 
-rm -r -f ${CASERR2}; ./create_clone -case ${CASERR2} -clone ${CASER0} 
+rm -r -f ${CASERR1}; ./create_clone -case ${CASERR1} -clone ${CASER0}
+rm -r -f ${CASERR2}; ./create_clone -case ${CASERR2} -clone ${CASER0}
 
 cd $CASERR1
 ./xmlchange --file env_build.xml --id EXEROOT        --val ${EXEROOT}
@@ -34,7 +34,7 @@ cd $CASERR2
 ./xmlchange --file env_build.xml --id BUILD_COMPLETE --val TRUE
 ./case.setup
 
-#---- determine run lengths needed below 
+#---- determine run lengths needed below
 cd $CASER0
 
 set STOP_N        = `./xmlquery STOP_N		--value`
@@ -66,18 +66,18 @@ if (${stopn4} < 1 || ${stopn1} < 1) then
 endif
 
 #======================================================================
-# (1) Test run: 
+# (1) Test run:
 # do an initial ref1 case run
-# cloned the case and running there 
+# cloned the case and running there
 # (NOTE: short term archiving is on)
 #======================================================================
 
 cd ${CASERR1}
 
 echo "" >>& $TESTSTATUS_LOG
-echo "ref1 startup: doing a ${stopn1} ${STOP_OPTION} startup run from ${start1} and 00000 seconds " >>& $TESTSTATUS_LOG 
-echo "  writing restarts at ${restn1} ${STOP_OPTION}"  >>& $TESTSTATUS_LOG 
-echo "  short term archiving is on " >>& $TESTSTATUS_LOG 
+echo "ref1 startup: doing a ${stopn1} ${STOP_OPTION} startup run from ${start1} and 00000 seconds " >>& $TESTSTATUS_LOG
+echo "  writing restarts at ${restn1} ${STOP_OPTION}"  >>& $TESTSTATUS_LOG
+echo "  short term archiving is on " >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
 ./xmlchange --file env_run.xml --id CONTINUE_RUN  --val FALSE
@@ -121,10 +121,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -133,9 +133,9 @@ else
 endif
 
 #======================================================================
-# (2) Test run: 
-# do a hybrid ref2 case run 
-# cloned the main case and running with ref1 restarts 
+# (2) Test run:
+# do a hybrid ref2 case run
+# cloned the main case and running with ref1 restarts
 # (NOTE: short term archiving is on)
 #======================================================================
 
@@ -149,13 +149,13 @@ set refdate2 = `ls -1dt ${DOUTSR1}/rest/*-00000* | head -1 | sed "s/-00000.*//" 
 set reftod2  = "00000"
 
 echo "" >>& $TESTSTATUS_LOG
-echo " ref2 hybrid: doing a ${stopn2} ${STOP_OPTION} hybrid run " >>& $TESTSTATUS_LOG 
-echo "  starting from $start2 and using ref1 ${refdate2} and ${reftod2} seconds" >>& $TESTSTATUS_LOG 
-echo "  writing restarts at ${restn2} ${STOP_OPTION}" >>& $TESTSTATUS_LOG 
-echo "  short term archiving is on " >>& $TESTSTATUS_LOG 
+echo " ref2 hybrid: doing a ${stopn2} ${STOP_OPTION} hybrid run " >>& $TESTSTATUS_LOG
+echo "  starting from $start2 and using ref1 ${refdate2} and ${reftod2} seconds" >>& $TESTSTATUS_LOG
+echo "  writing restarts at ${restn2} ${STOP_OPTION}" >>& $TESTSTATUS_LOG
+echo "  short term archiving is on " >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
-# setup ref2 case 
+# setup ref2 case
 ./xmlchange --file env_run.xml --id RUN_TYPE      --val hybrid
 ./xmlchange --file env_run.xml --id RUN_STARTDATE --val ${start2}
 ./xmlchange --file env_run.xml --id RUN_REFCASE   --val $CASE0.ref1
@@ -197,10 +197,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -210,7 +210,7 @@ endif
 
 
 #======================================================================
-# (3a) Test run: 
+# (3a) Test run:
 # do a branch run from ref2 restart (short term archiving is off)
 #======================================================================
 
@@ -223,10 +223,10 @@ set refdate3 = `ls -1dt ${DOUTSR2}/rest/*-00000* | head -1 | sed "s/-00000.*//" 
 set reftod3  = "00000"
 
 echo "" >>& $TESTSTATUS_LOG
-echo "branch: doing a ${stopn3} ${STOP_OPTION} branch " >>& $TESTSTATUS_LOG 
-echo "  starting from ref2 ${refdate3} and ${reftod3} seconds restarts " >>& $TESTSTATUS_LOG 
-echo "  writing restarts at ${restn3} ${STOP_OPTION}" >>& $TESTSTATUS_LOG 
-echo "  short term archiving is off " >>& $TESTSTATUS_LOG 
+echo "branch: doing a ${stopn3} ${STOP_OPTION} branch " >>& $TESTSTATUS_LOG
+echo "  starting from ref2 ${refdate3} and ${reftod3} seconds restarts " >>& $TESTSTATUS_LOG
+echo "  writing restarts at ${restn3} ${STOP_OPTION}" >>& $TESTSTATUS_LOG
+echo "  short term archiving is off " >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
 ./xmlchange --file env_run.xml --id RUN_TYPE      --val branch
@@ -272,10 +272,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -292,7 +292,7 @@ echo "" >>& $TESTSTATUS_LOG
 $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase "$CASE" -suffix "base" $add_iop
 
 #======================================================================
-# (3b) Test run: 
+# (3b) Test run:
 # do a restart continue from (3a) (short term archiving off)
 #======================================================================
 
@@ -301,7 +301,7 @@ cd $CASER0
 set CASE    = `./xmlquery CASE     --value`
 set RUNDIR  = `./xmlquery RUNDIR   --value`
 
-echo "branch restart: doing a ${stopn4} ${STOP_OPTION} continue restart test" >>& $TESTSTATUS_LOG 
+echo "branch restart: doing a ${stopn4} ${STOP_OPTION} continue restart test" >>& $TESTSTATUS_LOG
 
 ./xmlchange --file env_run.xml --id CONTINUE_RUN  --val TRUE
 ./xmlchange --file env_run.xml --id STOP_N        --val ${stopn4}
@@ -320,10 +320,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else

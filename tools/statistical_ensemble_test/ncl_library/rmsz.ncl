@@ -63,7 +63,7 @@ begin
   if (vinterp) then
     interp_type = new(1,"integer")
     plevs = get_interpolation_levels(interp_type) ; interp_type is intent(out)
-  else 
+  else
     plevs = plev
   end if
   nlevs = dimsizes(plevs)
@@ -162,7 +162,7 @@ begin
     ens_avg2d    = fens->ens_avg2d(allvars2d,:,:)
     ens_stddev2d = fens->ens_stddev2d(allvars2d,:,:)
   end if
-  
+
   RMSZscore2d=new(nvars2d,float)
   RMSZscore3d=new(nvars3d,float)
 

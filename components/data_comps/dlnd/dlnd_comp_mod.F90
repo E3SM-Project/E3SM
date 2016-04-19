@@ -51,10 +51,10 @@ module dlnd_comp_mod
   integer(IN)   :: logunit               ! logging unit number
   integer       :: inst_index            ! number of current instance (ie. 1)
   character(len=16) :: inst_name         ! fullname of current instance (ie. "lnd_0001")
-  character(len=16) :: inst_suffix       ! char string associated with instance 
+  character(len=16) :: inst_suffix       ! char string associated with instance
                                          ! (ie. "_0001" or "")
-  character(CL) :: lnd_mode 
-  character(CL) :: sno_mode 
+  character(CL) :: lnd_mode
+  character(CL) :: sno_mode
   integer(IN)   :: dbug = 0              ! debug level (higher is more)
   logical       :: scmMode = .false.     ! single column mode
   real(R8)      :: scmLat  = shr_const_SPVAL  ! single column lat
@@ -63,7 +63,7 @@ module dlnd_comp_mod
 
   character(len=*),parameter :: rpfile = 'rpointer.lnd'
   character(len=*),parameter :: nullstr = 'undefined'
-  
+
   type(shr_strdata_type),save :: SDLND
 
   type(mct_rearr) :: rearr_l
@@ -267,7 +267,7 @@ subroutine dlnd_comp_init( EClock, cdata_l, x2l, l2x, NLFilename )
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfilsl,mpicom,'restfilsl')
     call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
- 
+
     rest_file = trim(restfilm)
     rest_file_strm_l = trim(restfilsl)
     if (force_prognostic_true) then
@@ -469,7 +469,7 @@ subroutine dlnd_comp_init( EClock, cdata_l, x2l, l2x, NLFilename )
 
 
     ! ************ lnd_present ****************
-    end if   
+    end if
     ! ************ lnd_present ****************
 
     !----------------------------------------------------------------------------
@@ -507,8 +507,8 @@ subroutine dlnd_comp_run( EClock, cdata_l,  x2l, l2x)
 
    type(ESMF_Clock)            ,intent(in)    :: EClock
    type(seq_cdata)             ,intent(inout) :: cdata_l
-   type(mct_aVect)             ,intent(inout) :: x2l        
-   type(mct_aVect)             ,intent(inout) :: l2x        
+   type(mct_aVect)             ,intent(inout) :: x2l
+   type(mct_aVect)             ,intent(inout) :: l2x
 
 !EOP
 
@@ -643,7 +643,7 @@ subroutine dlnd_comp_run( EClock, cdata_l,  x2l, l2x)
       write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
       call shr_sys_flush(logunit)
    end if
-      
+
    call shr_file_setLogUnit (shrlogunit)
    call shr_file_setLogLevel(shrloglev)
    call shr_sys_flush(logunit)
@@ -683,11 +683,11 @@ subroutine dlnd_comp_final()
    call t_startf('DLND_FINAL')
 
    if (my_task == master_task) then
-      write(logunit,F91) 
+      write(logunit,F91)
       write(logunit,F00) trim(myModelName),': end of main integration loop'
-      write(logunit,F91) 
+      write(logunit,F91)
    end if
-      
+
    call t_stopf('DLND_FINAL')
 
 end subroutine dlnd_comp_final

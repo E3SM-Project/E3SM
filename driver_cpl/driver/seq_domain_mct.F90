@@ -89,12 +89,12 @@ contains
     type(mct_gGrid) , pointer :: ocndom_o   ! ocn domain
     type(mct_gGrid) , pointer :: glcdom_g   ! glc domain
                                             !
-    type(mct_gsMap) , pointer :: gsMap_a    ! atm global seg map 
-    type(mct_gsMap) , pointer :: gsMap_i    ! ice global seg map 
-    type(mct_gsMap) , pointer :: gsMap_l    ! lnd global seg map 
-    type(mct_gsMap) , pointer :: gsMap_o    ! ocn global seg map 
-    type(mct_gsMap) , pointer :: gsMap_r    ! ocn global seg map 
-    type(mct_gsMap) , pointer :: gsMap_g    ! glc global seg map 
+    type(mct_gsMap) , pointer :: gsMap_a    ! atm global seg map
+    type(mct_gsMap) , pointer :: gsMap_i    ! ice global seg map
+    type(mct_gsMap) , pointer :: gsMap_l    ! lnd global seg map
+    type(mct_gsMap) , pointer :: gsMap_o    ! ocn global seg map
+    type(mct_gsMap) , pointer :: gsMap_r    ! ocn global seg map
+    type(mct_gsMap) , pointer :: gsMap_g    ! glc global seg map
     !
     type(mct_gGrid) :: lnddom_a              ! lnd domain info on atm decomp
     type(mct_gGrid) :: lnddom_g              ! lnd domain info on glc decomp
@@ -102,9 +102,9 @@ contains
     type(mct_gGrid) :: ocndom_a              ! ocn domain info on atm decomp (all grids same)
     type(mct_gGrid) :: icedom_o              ! ocn domain info on ocn decomp (atm/ocn grid different)
     !
-    real(R8), pointer :: fracl(:)            ! land fraction on atm decomp 
-    real(R8), pointer :: fraco(:)            ! ocn  fraction on atm decomp 
-    real(R8), pointer :: fraci(:)            ! ice  fraction on atm decomp 
+    real(R8), pointer :: fracl(:)            ! land fraction on atm decomp
+    real(R8), pointer :: fraco(:)            ! ocn  fraction on atm decomp
+    real(R8), pointer :: fraci(:)            ! ice  fraction on atm decomp
     real(R8), pointer :: maskl(:)            ! land mask on atm decomp (all grids same)
     real(R8), pointer :: maski(:)            ! ice  mask on atm decomp (all grids same)
     real(R8), pointer :: masko(:)            ! ocn  mask on atm decomp (all grids same)
@@ -113,7 +113,7 @@ contains
     integer(IN) :: k1,k2,k3                  ! indicies
     !
     integer(IN) :: mpicom_cplid
-    ! 
+    !
     logical      :: atm_present              ! atm present flag
     logical      :: lnd_present              ! lnd present flag
     logical      :: ocn_present              ! ocn present flag
@@ -194,7 +194,7 @@ contains
        gsmap_l  => component_get_gsmap_cx(lnd) ! gsmap_lx
        lnddom_l => component_get_dom_cx(lnd)   ! dom_lx
        lndsize  = mct_avect_lsize(lnddom_l%data)
-       glndsize = mct_gsMap_gsize(gsMap_l) 
+       glndsize = mct_gsMap_gsize(gsMap_l)
 
        if (samegrid_al .and. gatmsize /= glndsize) then
           write(logunit,*) subname,' error: global atmsize = ',&
@@ -242,12 +242,12 @@ contains
           call mct_aVect_exportRattr(ocndom_a%data, 'mask', fraco, atmsize)
        endif
     endif
-   
+
     if (atm_present .and. ice_present) then
        gsmap_i  => component_get_gsmap_cx(ice) ! gsmap_ix
        icedom_i => component_get_dom_cx(ice)   ! dom_ix
        icesize  = mct_avect_lsize(icedom_i%data)
-       gicesize = mct_gsMap_gsize(gsMap_i) 
+       gicesize = mct_gsMap_gsize(gsMap_i)
 
        if (samegrid_ao .and. gatmsize /= gicesize) then
           write(logunit,*) subname,' error: global atmsize = ',&
@@ -276,12 +276,12 @@ contains
        gsmap_l  => component_get_gsmap_cx(lnd) ! gsmap_lx
        lnddom_l => component_get_dom_cx(lnd)   ! dom_lx
        lndsize  = mct_avect_lsize(lnddom_l%data)
-       glndsize = mct_gsMap_gsize(gsMap_l) 
+       glndsize = mct_gsMap_gsize(gsMap_l)
 
        gsmap_g  => component_get_gsmap_cx(glc) ! gsmap_gx
        glcdom_g => component_get_dom_cx(glc)   ! dom_gx
        glcsize  = mct_avect_lsize(glcdom_g%data)
-       gglcsize = mct_gsMap_gsize(gsMap_g) 
+       gglcsize = mct_gsMap_gsize(gsMap_g)
 
        if (samegrid_lg .and. gglcsize /= glndsize) then
           write(logunit,*) subname,' error: global glcsize = ',gglcsize,' global lndsize= ',glndsize
@@ -293,7 +293,7 @@ contains
        call seq_domain_check_fracmask(glcdom_g%data)
        if (iamroot) write(logunit,F00) ' --- checking lnd maskfrac ---'
        call seq_domain_check_fracmask(lnddom_l%data)
-       
+
        if (samegrid_lg) then
           call mct_gGrid_init(oGGrid=lnddom_g, iGGrid=lnddom_l, lsize=glcsize)
           call mct_aVect_zero(lnddom_g%data)
@@ -318,7 +318,7 @@ contains
        gsmap_i  => component_get_gsmap_cx(ice) ! gsmap_ix
        icedom_i => component_get_dom_cx(ice)   ! dom_ix
        icesize  = mct_avect_lsize(icedom_i%data)
-       gicesize = mct_gsMap_gsize(gsMap_i) 
+       gicesize = mct_gsMap_gsize(gsMap_i)
 
        gsmap_o  => component_get_gsmap_cx(ocn) ! gsmap_ox
        ocndom_o => component_get_dom_cx(ocn)   ! dom_ox
@@ -497,9 +497,9 @@ contains
   end subroutine seq_domain_check
 
 !===============================================================================
-  
+
   subroutine seq_domain_compare(dom1, dom2, mpicom, eps)
-   
+
     !-----------------------------------------------------------
 
     ! Arguments
@@ -530,9 +530,9 @@ contains
   end subroutine seq_domain_compare
 
 !===============================================================================
-  
+
   subroutine seq_domain_check_fracmask(dom1)
-   
+
     !-----------------------------------------------------------
 
     ! Arguments
@@ -584,9 +584,9 @@ contains
  end subroutine seq_domain_check_fracmask
 
 !===============================================================================
-  
+
   subroutine seq_domain_check_grid(dom1, dom2, attr, eps, mpicom, mask)
-   
+
     !-----------------------------------------------------------
 
     ! Arguments
@@ -713,10 +713,10 @@ contains
     ! Arguments
     !
     type(mct_gGrid)  , pointer             :: domain     ! component domain on component pes
-    real(R8)         , pointer             :: mdl2drv(:) ! comp->cpl factor on component pes 
+    real(R8)         , pointer             :: mdl2drv(:) ! comp->cpl factor on component pes
     real(R8)         , pointer             :: drv2mdl(:) ! cpl->comp factor on component pes
     logical          , intent(in)          :: samegrid   ! true => two grids are same
-    integer          , intent(in)          :: mpicom     ! mpi communicator on component pes  
+    integer          , intent(in)          :: mpicom     ! mpi communicator on component pes
     logical          , intent(in)          :: iamroot
     character(len=*) , optional,intent(in) :: comment
     !

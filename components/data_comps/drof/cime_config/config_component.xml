@@ -2,9 +2,9 @@
 
 <?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
 
-<definitions_variables> 
+<definitions_variables>
 
-  <entry id="COMP_ROF"> 
+  <entry id="COMP_ROF">
     <type>char</type>
     <valid_values>drof</valid_values>
     <default_value>drof</default_value>
@@ -13,14 +13,14 @@
     <desc>Name of rof component</desc>
   </entry>
 
-  <entry id="DROF_MODE"> 
+  <entry id="DROF_MODE">
     <type>char</type>
     <valid_values>CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,NULL</valid_values>
     <default_value>DIATREN_ANN_RX1</default_value>
     <values>
       <value compset="_DROF%NULL">NULL</value>
       <value compset="_DROF%NYF" >DIATREN_ANN_RX1</value>
-      <value compset="_DROF%IAF" >DIATREN_IAF_RX1</value>  
+      <value compset="_DROF%IAF" >DIATREN_IAF_RX1</value>
       <value compset=".+" grid="r%null">NULL</value> <!-- overwrites above if runoff grid is null -->
     </values>
     <group>run_component_drof</group>
@@ -35,7 +35,7 @@
     default is DIATREN_ANN_RX1.</desc>
   </entry>
 
-  <entry id="DROF_CPLHIST_DIR"> 
+  <entry id="DROF_CPLHIST_DIR">
     <type>char</type>
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
@@ -44,7 +44,7 @@
     <desc>directory for coupler history data mode (only used for CPLHIST mode)</desc>
   </entry>
 
-  <entry id="DROF_CPLHIST_CASE"> 
+  <entry id="DROF_CPLHIST_CASE">
     <type>char</type>
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
@@ -53,7 +53,7 @@
     <desc>case name for coupler history data mode (only used for CPLHIST mode)</desc>
   </entry>
 
-  <entry id="DROF_CPLHIST_YR_ALIGN"> 
+  <entry id="DROF_CPLHIST_YR_ALIGN">
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>1</default_value>
@@ -62,7 +62,7 @@
     <desc>year align (only used for CPLHIST mode)</desc>
   </entry>
 
-  <entry id="DROF_CPLHIST_YR_START"> 
+  <entry id="DROF_CPLHIST_YR_START">
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>1</default_value>
@@ -71,7 +71,7 @@
     <desc>starting year to loop data over (only used for CPLHIST mode)</desc>
   </entry>
 
-  <entry id="DROF_CPLHIST_YR_END"> 
+  <entry id="DROF_CPLHIST_YR_END">
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>1</default_value>
@@ -92,4 +92,4 @@
     =========================================
   </help>
 
-</definitions_variables> 
+</definitions_variables>

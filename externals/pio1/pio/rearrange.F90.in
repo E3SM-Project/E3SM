@@ -1,6 +1,6 @@
 #define __PIO_FILE__ "rearrange.F90"
 !>
-!! @file 
+!! @file
 !! $Revision$
 !! $LastChangedDate$
 !! @brief Generic interface to the rearrange layer
@@ -22,7 +22,7 @@ module rearrange
   private
   save
 
-!> 
+!>
 !! @private
 !<
   public :: rearrange_init, &
@@ -117,7 +117,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! rearrange_init
-! 
+!
 ! called from initFile_
 !
 
@@ -150,7 +150,7 @@ contains
     integer, intent(in) :: dims(:)
     integer, intent(in) :: ndims
     type (IO_desc_t) :: ioDesc
-    
+
 #ifdef TIMING
      call t_startf("PIO:pio_rearrange_create_box")
 #endif
@@ -192,7 +192,7 @@ contains
     case (PIO_rearr_box)
        call box_rearrange_free(Iosystem,ioDesc)
     case (PIO_rearr_none)
-        ! do nothing 
+        ! do nothing
 
     case default
        call piodie(__PIO_FILE__,__LINE__,'Unrecognized rearranger:',Iosystem%rearr)

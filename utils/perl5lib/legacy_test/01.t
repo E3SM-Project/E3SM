@@ -56,7 +56,7 @@ is( $cfg->get_valid_values("cam_bld" ), @expect, "check that cam_bld valid value
 my @expect = (0,1);
 is( $cfg->get_valid_values("cpl" ), @expect, "check that cpl valid values match" );
 my @expect = ("one_value");
-is( $cfg->get_valid_values("test_one_valid_value" ), @expect, 
+is( $cfg->get_valid_values("test_one_valid_value" ), @expect,
     "check that test_one_value valid values match" );
 
 # test setting list of values
@@ -84,7 +84,7 @@ like( $@, qr/ERROR: eul,sld is not a valid value for parameter dyn: valid values
 # check write_file method -- use new Build::Config object so can compare input
 # definition file with output file
 # *** Note that the config_definition.xml file used for testing is specially formatted to
-#     match the output of the write_file method.  The entry elements are alphabetized, 
+#     match the output of the write_file method.  The entry elements are alphabetized,
 #     there are valid_values attributes even when they contain no values, and all excess
 #     whitespace is eliminated from the start tags.  These restrictions are not necessary
 #     in configure definition xml files.

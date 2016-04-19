@@ -48,7 +48,7 @@ sub find_project
       # Loop over possible files that can contain a project number.
       # (We should eventually remove .ccsm_proj, but it is kept now for
       # backwards compatibility.)
-      my @proj_filenames = ($ENV{'HOME'} . "/.cesm_proj", 
+      my @proj_filenames = ($ENV{'HOME'} . "/.cesm_proj",
                             $ENV{'HOME'} . "/.ccsm_proj");
 
       foreach my $proj_filename (@proj_filenames) {
@@ -88,7 +88,7 @@ EOF
 sub set_project
 {
    # Boolean to determine if the PROJECT xml variable should be set.
-   # However, if $project hasn't been set, then this will be false, 
+   # However, if $project hasn't been set, then this will be false,
    # keeping $project it at its default value.
 
    my ($project) = @_;
@@ -104,14 +104,14 @@ sub set_project
 # Private routines
 # ------------------------------------------------------------------------
 
-sub _read_project_from_file 
+sub _read_project_from_file
 {
    # Try to read a project number from a file with the given file name. Return
    # the project number if found. If we can't find a project number in that
    # file, return _PROJECT_UNSET.
-   
+
    my ($proj_filename) = @_;
-   
+
    my $project = _PROJECT_UNSET;
 
    # read first line
@@ -128,6 +128,6 @@ sub _read_project_from_file
 
    return $project;
 }
-   
+
 1;
 

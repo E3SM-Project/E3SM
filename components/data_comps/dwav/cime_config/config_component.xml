@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 
-<definitions_variables> 
+<definitions_variables>
 
-  <entry id="COMP_WAV"> 
+  <entry id="COMP_WAV">
     <type>char</type>
     <valid_values>dwav</valid_values>
     <default_value>dwav</default_value>
@@ -11,7 +11,7 @@
     <desc>Name of wave component</desc>
   </entry>
 
-  <entry id="DWAV_MODE"> 
+  <entry id="DWAV_MODE">
     <type>char</type>
     <valid_values>null,copyall</valid_values>
     <default_value>copyall</default_value>
@@ -37,4 +37,4 @@
     =========================================
   </help>
 
-</definitions_variables> 
+</definitions_variables>

@@ -460,7 +460,7 @@
       <executable></executable>
     </mpirun>
     <mpirun mpilib="mvapich2">
-      <executable>srun</executable>  
+      <executable>srun</executable>
       <arguments>
         <arg name="mpi">--mpi=none</arg>
         <arg name="num_tasks">--ntasks={{ num_tasks }}</arg>
@@ -469,7 +469,7 @@
       </arguments>
     </mpirun>
     <mpirun mpilib="mvapich">
-      <executable>srun</executable>  
+      <executable>srun</executable>
       <arguments>
         <arg name="num_tasks">--ntasks={{ num_tasks }}</arg>
         <arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>

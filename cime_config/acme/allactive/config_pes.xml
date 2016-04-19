@@ -15,16 +15,16 @@
   CCSM_LCOMPSET: the value of the attribute can match ANYWHERE in the
   long compset name (similar to GEN_COMPSET_MATCH in
   config_compsets.xml). Note, though, that this uses regular
-  expressions, so you can match B compsets using CCSM_LCOMPSET="^B". 
+  expressions, so you can match B compsets using CCSM_LCOMPSET="^B".
 
-  TEST: Matches on testname + test options (PET_PT_D) 
+  TEST: Matches on testname + test options (PET_PT_D)
   The test name can be either specified as a text string, or with
-  a regular expression.  If one wants to allow a specific test, 
-  input the test name as a string. 
-  If one wants to DISALLOW the pe layout for a specific test use 
-  the following regex, which will be passed along to 
+  a regular expression.  If one wants to allow a specific test,
+  input the test name as a string.
+  If one wants to DISALLOW the pe layout for a specific test use
+  the following regex, which will be passed along to
   ConfigCase->set_pes: TEST="^(?:(?!PATTERN).)*$", and replace
-  PATTERN with the desired test name. 
+  PATTERN with the desired test name.
 
   All other attributes: the value of the attribute must match the
   beginning of the variable.
@@ -36,7 +36,7 @@
   Compsets should be matched using their long name (using
   CCSM_LCOMPSET), NOT their short name. This allows for the use of
   compsets that do not have a short name.
-  
+
 -->
 
 <!-- -----------------------------------------------------------------------------
@@ -1070,7 +1070,7 @@
 <!-------------------------------------------------------------------------------
   tasks/thread setup - independent of atmosphere grid, dependent on GLC grid
  ------------------------------------------------------------------------------->
- 
+
 <pes CCSM_LCOMPSET="DLND.+CISM2P" CISM_GRID="gland5">
     <NTASKS_ATM>192</NTASKS_ATM> <NTHRDS_ATM>1</NTHRDS_ATM> <ROOTPE_ATM>0</ROOTPE_ATM>
     <NTASKS_LND>192</NTASKS_LND> <NTHRDS_LND>1</NTHRDS_LND> <ROOTPE_LND>0</ROOTPE_LND>

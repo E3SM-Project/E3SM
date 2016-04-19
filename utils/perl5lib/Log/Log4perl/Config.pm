@@ -72,7 +72,7 @@ sub init_and_watch {
 
     Log::Log4perl::Logger->reset();
 
-    defined ($delay) or $delay = $DEFAULT_WATCH_DELAY;  
+    defined ($delay) or $delay = $DEFAULT_WATCH_DELAY;
 
     if (ref $config) {
         die "Log4perl can only watch a file, not a string of " .
@@ -143,7 +143,7 @@ sub _init {
     # in *arbitrary* order.
 
     $data = config_read($config) unless defined $data;
-    
+
     if(_INTERNAL_DEBUG) {
         require Data::Dumper;
         Data::Dumper->import();
@@ -156,7 +156,7 @@ sub _init {
     my $system_wide_threshold;
 
       # Autocorrect the rootlogger/rootLogger typo
-    if(exists $data->{rootlogger} and 
+    if(exists $data->{rootlogger} and
        ! exists $data->{rootLogger}) {
          $data->{rootLogger} = $data->{rootlogger};
     }
@@ -167,7 +167,7 @@ sub _init {
         $LOGGERS_DEFINED++;
         push @loggers, ["", $data->{rootLogger}->{value}];
     }
-        
+
         # Check if we've got a system-wide threshold setting
     if(exists $data->{threshold}) {
             # yes, we do.
@@ -175,7 +175,7 @@ sub _init {
     }
 
     if (exists $data->{oneMessagePerAppender}){
-                    $Log::Log4perl::one_message_per_appender = 
+                    $Log::Log4perl::one_message_per_appender =
                         $data->{oneMessagePerAppender}->{value};
     }
 
@@ -184,7 +184,7 @@ sub _init {
         $Log::Log4perl::DateFormat::GMTIME = !!$data->{utcDateTimes}->{value};
     }
 
-        # Boolean filters 
+        # Boolean filters
     my %boolean_filters = ();
 
         # Continue with lower level loggers. Both 'logger' and 'category'
@@ -246,7 +246,7 @@ sub _init {
         if(my $code = compile_if_perl($type)) {
             $type = $code;
         }
-        
+
         print "Filter $filter_name is of type $type\n" if _INTERNAL_DEBUG;
 
         my $filter;
@@ -261,11 +261,11 @@ sub _init {
                 eval "require $type" or die "Require of $type failed ($!)";
 
                 # Invoke with all defined parameter
-                # key/values (except the key 'value' which is the entry 
+                # key/values (except the key 'value' which is the entry
                 # for the class)
             $filter = $type->new(name => $filter_name,
-                map { $_ => $data->{filter}->{$filter_name}->{$_}->{value} } 
-                grep { $_ ne "value" } 
+                map { $_ => $data->{filter}->{$filter_name}->{$_}->{value} }
+                grep { $_ ne "value" }
                 keys %{$data->{filter}->{$filter_name}});
         }
             # Register filter with the global filter registry
@@ -278,7 +278,7 @@ sub _init {
         my $logic = $data->{filter}->{$name}->{logic}->{value};
         die "No logic defined for boolean filter $name" unless defined $logic;
         my $filter = Log::Log4perl::Filter::Boolean->new(
-                         name  => $name, 
+                         name  => $name,
                          logic => $logic);
         $filter->register();
     }
@@ -335,7 +335,7 @@ sub config_is_sane {
     if(! $LOGGERS_DEFINED) {
         $CONFIG_INTEGRITY_ERROR = "No loggers defined";
         return 0;
-    }    
+    }
 
     if(scalar keys %Log::Log4perl::Logger::APPENDER_BY_NAME == 0) {
         $CONFIG_INTEGRITY_ERROR = "No appenders defined";
@@ -368,7 +368,7 @@ sub create_appender_instance {
         if (Log::Log4perl::JavaMap::translate($appenderclass)){
             # It's Java. Try to map
             print "Trying to map Java $appname\n" if _INTERNAL_DEBUG;
-            $appender = Log::Log4perl::JavaMap::get($appname, 
+            $appender = Log::Log4perl::JavaMap::get($appname,
                                         $data->{appender}->{$appname});
 
         }else{
@@ -376,13 +376,13 @@ sub create_appender_instance {
             my @params = grep { $_ ne "layout" and
                                 $_ ne "value"
                               } keys %{$data->{appender}->{$appname}};
-    
+
             my %param = ();
             foreach my $pname (@params){
-                #this could be simple value like 
+                #this could be simple value like
                 #{appender}{myAppender}{file}{value} => 'log.txt'
                 #or a structure like
-                #{appender}{myAppender}{login} => 
+                #{appender}{myAppender}{login} =>
                 #                         { name => {value => 'bob'},
                 #                           pwd  => {value => 'xxx'},
                 #                         }
@@ -396,37 +396,37 @@ sub create_appender_instance {
                                                         {$appname}
                                                         {$pname}
                                                         {$_}
-                                                        {value}} 
+                                                        {value}}
                                      keys %{$data->{appender}
                                                    {$appname}
                                                    {$pname}}
                                      };
                 }
-    
+
             }
 
             my $depends_on = [];
-    
+
             $appender = Log::Log4perl::Appender->new(
-                $appenderclass, 
+                $appenderclass,
                 name                 => $appname,
                 l4p_post_config_subs => $post_config_subs,
                 l4p_depends_on       => $depends_on,
                 %param,
-            ); 
-    
+            );
+
             for my $dependency (@$depends_on) {
                 # If this appender indicates that it needs other appenders
                 # to exist (e.g. because it's a composite appender that
-                # relays messages on to its appender-refs) then we're 
-                # creating their instances here. Reason for this is that 
+                # relays messages on to its appender-refs) then we're
+                # creating their instances here. Reason for this is that
                 # these appenders are not attached to any logger and are
                 # therefore missed by the config parser which goes through
                 # the defined loggers and just creates *their* attached
                 # appenders.
                 $appender->composite(1);
                 next if exists $appenders_created->{$appname};
-                my $app = create_appender_instance($data, $dependency, 
+                my $app = create_appender_instance($data, $dependency,
                              $appenders_created,
                              $post_config_subs);
                 # If the appender appended a subroutine to $post_config_subs
@@ -436,7 +436,7 @@ sub create_appender_instance {
                 # to make sure all of its appender-refs are available when
                 # all configuration settings are done.
 
-                # Smuggle this sub-appender into the hash of known appenders 
+                # Smuggle this sub-appender into the hash of known appenders
                 # without attaching it to any logger directly.
                 $
                 Log::Log4perl::Logger::APPENDER_BY_NAME{$dependency} = $app;
@@ -448,7 +448,7 @@ sub create_appender_instance {
         $appender->composite();
 
        # Check for appender thresholds
-    my $threshold = 
+    my $threshold =
        $data->{appender}->{$appname}->{Threshold}->{value};
 
     if(defined $system_wide_threshold and
@@ -463,7 +463,7 @@ sub create_appender_instance {
     }
 
         # Check for custom filters attached to the appender
-    my $filtername = 
+    my $filtername =
        $data->{appender}->{$appname}->{Filter}->{value};
     if(defined $filtername) {
             # Need to split into two lines because of CVS
@@ -475,7 +475,7 @@ sub create_appender_instance {
     if(defined $system_wide_threshold and
        defined $threshold and
        $
-        Log::Log4perl::Level::PRIORITY{$system_wide_threshold} > 
+        Log::Log4perl::Level::PRIORITY{$system_wide_threshold} >
        $
          Log::Log4perl::Level::PRIORITY{$threshold}
       ) {
@@ -514,7 +514,7 @@ sub add_layout_by_name {
         }
     }
 
-    eval "require $layout_class" or 
+    eval "require $layout_class" or
         die "Require to $layout_class failed ($!)";
 
     $appender->layout($layout_class->new(
@@ -586,7 +586,7 @@ sub config_read {
 
     my $data = {};
 
-    if (ref($config) eq 'HASH') {   # convert the hashref into a list 
+    if (ref($config) eq 'HASH') {   # convert the hashref into a list
                                     # of name/value pairs
         print "Reading config from hash\n" if _INTERNAL_DEBUG;
         @text = ();
@@ -600,7 +600,7 @@ sub config_read {
         print "Reading config from scalar\n" if _INTERNAL_DEBUG;
         @text = split(/\n/,$$config);
 
-    } elsif (ref $config eq 'GLOB' or 
+    } elsif (ref $config eq 'GLOB' or
              ref $config eq 'IO::File') {
             # If we have a file handle, just call the reader
         print "Reading config from file handle\n" if _INTERNAL_DEBUG;
@@ -627,14 +627,14 @@ sub config_read {
 
         if ($config =~ /^(https?|ftp|wais|gopher|file):/){
             my ($result, $ua);
-    
+
             die "LWP::UserAgent not available" unless
                 Log::Log4perl::Util::module_available("LWP::UserAgent");
 
             require LWP::UserAgent;
             unless (defined $LWP_USER_AGENT) {
                 $LWP_USER_AGENT = LWP::UserAgent->new;
-    
+
                 # Load proxy settings from environment variables, i.e.:
                 # http_proxy, ftp_proxy, no_proxy etc (see LWP::UserAgent)
                 # You need these to go thru firewalls.
@@ -660,7 +660,7 @@ sub config_read {
             @text = @{ $base_configurator->text() };
         }
     }
-    
+
     print "Reading $config: [@text]\n" if _INTERNAL_DEBUG;
 
     if(! grep /\S/, @text) {
@@ -672,7 +672,7 @@ sub config_read {
         die "XML::DOM not available" unless
                 Log::Log4perl::Util::module_available("XML::DOM");
 
-        require XML::DOM; 
+        require XML::DOM;
         require Log::Log4perl::Config::DOMConfigurator;
 
         XML::DOM->VERSION($Log::Log4perl::DOM_VERSION_REQUIRED);
@@ -706,9 +706,9 @@ sub unlog4j {
 ############################################################
 sub leaf_paths {
 ############################################################
-# Takes a reference to a hash of hashes structure of 
+# Takes a reference to a hash of hashes structure of
 # arbitrary depth, walks the tree and returns a reference
-# to an array of all possible leaf paths (each path is an 
+# to an array of all possible leaf paths (each path is an
 # array again).
 # Example: { a => { b => { c => d }, e => f } } would generate
 #          [ [a, b, c, d], [a, e, f] ]
@@ -718,14 +718,14 @@ sub leaf_paths {
     my @stack  = ();
     my @result = ();
 
-    push @stack, [$root, []];  
-    
+    push @stack, [$root, []];
+
     while(@stack) {
         my $item = pop @stack;
 
         my($node, $path) = @$item;
 
-        if(ref($node) eq "HASH") { 
+        if(ref($node) eq "HASH") {
             for(keys %$node) {
                 push @stack, [$node->{$_}, [@$path, $_]];
             }
@@ -784,7 +784,7 @@ sub compile_if_perl {
         elsif( Log::Log4perl::Config->allow_code() == 1 ) {
 
             # eval without restriction
-            my $cref = eval "package main; $value" or 
+            my $cref = eval "package main; $value" or
                 die "Can't evaluate '$value' ($@)";
             return $cref;
         }
@@ -806,19 +806,19 @@ sub compile_in_safe_cpt {
     require Safe;
     my $safe = Safe->new();
     $safe->permit_only( @{ $allowed_ops } );
- 
+
     # share things with the compartment
     for( keys %{ Log::Log4perl::Config->vars_shared_with_safe_compartment() } ) {
         my $toshare = Log::Log4perl::Config->vars_shared_with_safe_compartment($_);
         $safe->share_from( $_, $toshare )
             or die "Can't share @{ $toshare } with Safe compartment";
     }
-    
+
     # evaluate with restrictions
     my $cref = $safe->reval("package main; $value") or
         die "Can't evaluate '$value' in Safe compartment ($@)";
     return $cref;
-    
+
 }
 
 ###########################################
@@ -842,7 +842,7 @@ sub vars_shared_with_safe_compartment {
     if(defined $class and $class ne __PACKAGE__) {
         unshift @args, $class;
     }
-   
+
     # handle different invocation styles
     if(@args == 1 && ref $args[0] eq 'HASH' ) {
         # replace entire hash of vars
@@ -861,7 +861,7 @@ sub vars_shared_with_safe_compartment {
 
     return wantarray ? %Log::Log4perl::VARS_SHARED_WITH_SAFE_COMPARTMENT
                      : \%Log::Log4perl::VARS_SHARED_WITH_SAFE_COMPARTMENT;
-    
+
 }
 
 ###########################################
@@ -873,7 +873,7 @@ sub allowed_code_ops {
     if(defined $class and $class ne __PACKAGE__) {
         unshift @args, $class;
     }
-   
+
     if(@args) {
         @Log::Log4perl::ALLOWED_CODE_OPS_IN_CONFIG_FILE = @args;
     }
@@ -931,9 +931,9 @@ sub allow_code {
     if(defined $class and $class ne __PACKAGE__) {
         unshift @args, $class;
     }
-   
+
     if(@args) {
-        $Log::Log4perl::ALLOW_CODE_IN_CONFIG_FILE = 
+        $Log::Log4perl::ALLOW_CODE_IN_CONFIG_FILE =
             $args[0];
     }
 
@@ -949,12 +949,12 @@ sub var_subst {
     $varname =~ s/\s+//g;
 
     if(exists $subst_hash->{$varname}) {
-        print "Replacing variable: '$varname' => '$subst_hash->{$varname}'\n" 
+        print "Replacing variable: '$varname' => '$subst_hash->{$varname}'\n"
             if _INTERNAL_DEBUG;
         return $subst_hash->{$varname};
 
     } elsif(exists $ENV{$varname}) {
-        print "Replacing ENV variable: '$varname' => '$ENV{$varname}'\n" 
+        print "Replacing ENV variable: '$varname' => '$ENV{$varname}'\n"
             if _INTERNAL_DEBUG;
         return $ENV{$varname};
 
@@ -976,7 +976,7 @@ Log::Log4perl::Config - Log4perl configuration file syntax
 =head1 DESCRIPTION
 
 In C<Log::Log4perl>, configuration files are used to describe how the
-system's loggers ought to behave. 
+system's loggers ought to behave.
 
 The format is the same as the one as used for C<log4j>, just with
 a few perl-specific extensions, like enabling the C<Bar::Twix>
@@ -1002,12 +1002,12 @@ Comments at the end of a line are not supported. So if you write
 
 you will find your messages in a file called C<error.log #in current dir>.
 
-Also, blanks between syntactical entities are ignored, it doesn't 
+Also, blanks between syntactical entities are ignored, it doesn't
 matter if you write
 
     log4perl.logger.Bar.Twix=WARN,Screen
 
-or 
+or
 
     log4perl.logger.Bar.Twix = WARN, Screen
 
@@ -1039,12 +1039,12 @@ C<WARN> and attaches a later-to-be-defined C<Screen> appender to them.
 Settings for the root appender (which doesn't have a name) can be
 accomplished by simply omitting the name:
 
-    log4perl.logger = FATAL, Database, Mailer 
+    log4perl.logger = FATAL, Database, Mailer
 
-This sets the root appender's level to C<FATAL> and also attaches the 
+This sets the root appender's level to C<FATAL> and also attaches the
 later-to-be-defined appenders C<Database> and C<Mailer> to it.
 
-The additivity flag of a logger is set or cleared via the 
+The additivity flag of a logger is set or cleared via the
 C<additivity> keyword:
 
     log4perl.additivity.Bar.Twix = 0|1
@@ -1133,14 +1133,14 @@ Here's some examples of often-used Log4perl configuration files:
         Log::Log4perl::Layout::PatternLayout
     log4perl.appender.A1.layout.ConversionPattern = %d %m %n
 
-Note that you could even leave out 
+Note that you could even leave out
 
     log4perl.appender.A1.mode=append
 
 and still have the logger append to the logfile by default, although
 the C<Log::Log4perl::Appender::File> module does exactly the opposite.
-This is due to some nasty trickery C<Log::Log4perl> performs behind 
-the scenes to make sure that beginner's CGI applications don't clobber 
+This is due to some nasty trickery C<Log::Log4perl> performs behind
+the scenes to make sure that beginner's CGI applications don't clobber
 the log file every time they're called.
 
 =head2 Write a log file from scratch
@@ -1159,8 +1159,8 @@ explicitly clobber the log file if it exists.
 
 =head2 Configuration files encoded in utf-8
 
-If your configuration file is encoded in utf-8 (which matters if you 
-e.g. specify utf8-encoded appender filenames in it), then you need to 
+If your configuration file is encoded in utf-8 (which matters if you
+e.g. specify utf8-encoded appender filenames in it), then you need to
 tell Log4perl before running init():
 
     use Log::Log4perl::Config;
@@ -1181,11 +1181,11 @@ Log::Log4perl::Config::LDAPConfigurator (coming soon!)
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -1195,7 +1195,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -1206,8 +1206,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

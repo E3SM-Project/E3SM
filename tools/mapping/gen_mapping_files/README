@@ -59,7 +59,7 @@ built prior to running gen_cesm_maps.sh, unless you use the --nogridcheck or
 USAGE: INTERACTIVE MODE
 =======================
 
-gen_cesm_maps.sh 
+gen_cesm_maps.sh
   --fileatm|-fatm  input atm_grid_filename
   --fileocn|-focn  input ocn_grid_filename
   --filelnd|-flnd  input lnd_grid_filename
@@ -74,52 +74,52 @@ gen_cesm_maps.sh
   [ --batch|-b ]
   [ --help|-h ]
   [ -v ]
- 
-where 
- --fileatm (or -fatm) 
+
+where
+ --fileatm (or -fatm)
    SCRIP grid format atmosphere filename (full pathname)
- --fileocn (or -focn) 
+ --fileocn (or -focn)
    SCRIP grid format ocean filename (full pathname)
- --filelnd (or -flnd) 
+ --filelnd (or -flnd)
    SCRIP grid format land filename (full pathname), must be global
- --filertm (or -frtm) 
+ --filertm (or -frtm)
    SCRIP grid format runoff filename (full pathname)
- --nameatm (or -natm) 
+ --nameatm (or -natm)
    Shortname to use for atm in mapping filename
- --nameocn (or -nocn) 
+ --nameocn (or -nocn)
    Shortname to use for ocn in mapping filename
- --namelnd (or -nlnd) 
+ --namelnd (or -nlnd)
    Shortname to use for lnd in mapping filename
- --namertm (or -nrtm) 
+ --namertm (or -nrtm)
    Shortname to use for rtm in mapping filename
- --typeocn (or -tocn) 
+ --typeocn (or -tocn)
    ocean grid type,  valid values are regional or global
    default is global
- --typeatm (or -tatm) 
+ --typeatm (or -tatm)
    atm grid type, valid values are regional or global
    default is global
    value must be global if -frtm and -nrtm are specified
- --nogridcheck 
+ --nogridcheck
    By default, script will run consistency check on new
    maps; this flag disables these checks
- --batch (or -b) 
+ --batch (or -b)
    Toggles batch mode usage. If you want to run in batch mode
    you need to have a separate batch script for a supported machine
    that calls this script interactively - you cannot submit this
    script directly to the batch system
- -rc 
+ -rc
    Pass the "--recompile" flag to the ESMF tool
    (Only necessary if nothing has been built in ../check_maps/)
- -d 
-   toggle debug-only 
- --help or -h  
+ -d
+   toggle debug-only
+ --help or -h
    displays this help message
 
 Note: if rtm is specified and lnd is not, then this tool will
       assume lnd and atm are on the same grid.
 
 You can also set the following env variables:
-  ESMFBIN_PATH - Path to ESMF binaries 
+  ESMFBIN_PATH - Path to ESMF binaries
                  (Leave unset on yellowstone and caldera and the tool
                  will be loaded from modules)
   MPIEXEC ------ Name of mpirun executable

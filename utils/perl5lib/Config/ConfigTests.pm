@@ -36,7 +36,7 @@ sub setTests
 	}
     }
     # Die unless search was successful.
-    unless ($found) { 
+    unless ($found) {
 	my $outstr = "set_test: no match for test $testname - possible testnames are\n";
 	foreach my $test (@tests) {
 	    my $name = $test->getAttribute('NAME');
@@ -54,8 +54,8 @@ sub setTests
 	foreach my $test (@tests) {
 	    foreach my $node ($test->findnodes(".//*")) {
 		my $name = $node->nodeName();
-		if ( ! $cfg_ref->is_valid_name($name) ) { 
-		    $logger->logdie("set_test: invalid element $name in test $testname in file $testfile exiting"); 
+		if ( ! $cfg_ref->is_valid_name($name) ) {
+		    $logger->logdie("set_test: invalid element $name in test $testname in file $testfile exiting");
 		}
 		if ($name eq $id) {
 		    my $value = $node->textContent();
@@ -80,7 +80,7 @@ sub listTests
     foreach my $node ($xml->findnodes(".//test")) {
 	my $name = $node->getAttribute('NAME');
 	my $desc = $node->getAttribute('DESC');
-	if (defined ($desc)) { 
+	if (defined ($desc)) {
 	    print "    $name ($desc) \n";
 	}
     }

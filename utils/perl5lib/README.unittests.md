@@ -10,7 +10,7 @@ Running
 
 To run the unit tests for cime perl5lib:
 
-    $ prove test_p5lib.pl 
+    $ prove test_p5lib.pl
 
 The test output has been optimized to most useful when run through
 prove (a standard part of all modern perl distributions). Developers
@@ -25,7 +25,7 @@ Creating New Tests
 
 To create a new test suite, copy the file:
 
-t/template_test_XXX.pm 
+t/template_test_XXX.pm
 
 to t/test_what_you_want_to_test.pm
 

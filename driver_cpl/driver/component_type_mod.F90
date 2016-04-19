@@ -3,7 +3,7 @@ module component_type_mod
   !----------------------------------------------------------------------------
   ! share code & libs
   !----------------------------------------------------------------------------
-  use shr_kind_mod     , only: r8 => SHR_KIND_R8 
+  use shr_kind_mod     , only: r8 => SHR_KIND_R8
   use shr_kind_mod     , only: cs => SHR_KIND_CS
   use shr_kind_mod     , only: cl => SHR_KIND_CL
   use seq_cdata_mod    , only: seq_cdata
@@ -12,7 +12,7 @@ module component_type_mod
   use seq_comm_mct     , only: num_inst_atm, num_inst_lnd, num_inst_rof
   use seq_comm_mct     , only: num_inst_ocn, num_inst_ice, num_inst_glc
   use seq_comm_mct     , only: num_inst_wav
-  use mct_mod            
+  use mct_mod
   use ESMF
 
   implicit none
@@ -40,7 +40,7 @@ module component_type_mod
   public :: component_get_mdl2drv
   !
   ! on union coupler/component pes
-  public :: component_get_mapper_Cc2x  
+  public :: component_get_mapper_Cc2x
   public :: component_get_mapper_Cx2c
   !
   ! on driver pes (all pes)
@@ -54,12 +54,12 @@ module component_type_mod
 
   type component_type
      !
-     ! Coupler pes 
+     ! Coupler pes
      ! used by prep_xxx and all other coupler based routines
      !
      type(mct_ggrid) , pointer       :: dom_cx      => null() ! component domain (same for all instances)
      type(mct_gsMap) , pointer       :: gsMap_cx    => null() ! decomposition on coupler pes (same for all instances)
-     type(mct_aVect) , pointer       :: x2c_cx      => null() ! 
+     type(mct_aVect) , pointer       :: x2c_cx      => null() !
      type(mct_aVect) , pointer       :: c2x_cx      => null()
 #ifdef ESMF_INTERFACE
      type(ESMF_Array)                :: x2c_cx_array          ! valid values only on component pes
@@ -91,7 +91,7 @@ module component_type_mod
      !
      integer                         :: compid
      integer                         :: cplcompid
-     integer                         :: cplallcompid 
+     integer                         :: cplallcompid
      integer                         :: mpicom_compid
      integer                         :: mpicom_cplcompid
      integer                         :: mpicom_cplallcompid
@@ -205,31 +205,31 @@ contains
   end function component_get_gsmap_cc
 
   function component_get_cdata_cc(comp)
-    type(component_type), intent(in), target :: comp 
+    type(component_type), intent(in), target :: comp
     type(seq_cdata), pointer :: component_get_cdata_cc
     component_get_cdata_cc => comp%cdata_cc
   end function component_get_cdata_cc
 
   function component_get_drv2mdl(comp)
-    type(component_type), intent(in), target :: comp 
+    type(component_type), intent(in), target :: comp
     real(r8), pointer :: component_get_drv2mdl(:)
     component_get_drv2mdl => comp%drv2mdl
   end function component_get_drv2mdl
 
   function component_get_mdl2drv(comp)
-    type(component_type), intent(in), target :: comp 
+    type(component_type), intent(in), target :: comp
     real(r8), pointer :: component_get_mdl2drv(:)
     component_get_mdl2drv => comp%mdl2drv
   end function component_get_mdl2drv
 
   function component_get_mapper_Cc2x(comp)
-    type(component_type), intent(in), target :: comp 
+    type(component_type), intent(in), target :: comp
     type(seq_map), pointer :: component_get_mapper_Cc2x
     component_get_mapper_Cc2x => comp%mapper_Cc2x
   end function component_get_mapper_Cc2x
 
   function component_get_mapper_Cx2c(comp)
-    type(component_type), intent(in), target :: comp 
+    type(component_type), intent(in), target :: comp
     type(seq_map), pointer :: component_get_mapper_Cx2c
     component_get_mapper_Cx2c => comp%mapper_Cx2c
   end function component_get_mapper_Cx2c

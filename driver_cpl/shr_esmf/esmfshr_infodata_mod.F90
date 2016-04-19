@@ -65,7 +65,7 @@ end subroutine esmfshr_infodata_state2infodata
 !--------------------------------------------------------------------
 
 subroutine esmfshr_infodata_convert(infodata,ID,state,direction,rc)
-    
+
     type(seq_infodata_type), intent(inout) :: infodata
     integer, intent(inout)                 :: ID
     type(ESMF_State), intent(inout)        :: state

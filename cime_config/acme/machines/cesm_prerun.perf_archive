@@ -1,8 +1,8 @@
 #!/bin/csh
-# cesm_prerun with performance data archiving: 
+# cesm_prerun with performance data archiving:
 #  ./cesm_prerun.perf_archive with the following argument keyword/value pairs, in any order
 #   -machine <system name>
-#   -compiler <compiler name> 
+#   -compiler <compiler name>
 #   -case <case name>
 #   -jobid <should be same as $PBS_JOBID for PBS and $COBALT_JOBID> for Cobalt>
 #   -cesmid <$LID in cesm-lingo>

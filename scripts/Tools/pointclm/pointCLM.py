@@ -205,7 +205,7 @@ def getvar(fname, varname):
         var = nffile.variables[varname]
         varvals = var[:].copy()    #works for vector only?
         nffile.close()
-    else:    
+    else:
     	nffile = netcdf.NetCDFFile(fname,"r")
     	var = nffile.variables[varname]
     	varvals = var.getValue()
@@ -323,14 +323,14 @@ if (finidat == ''  and options.finidat_case == ''):  #not user-defined
 
         if (options.finidat_year == -1):
             finidat_year = int(options.ny_ad)+1
-    
+
     if (compset == "I20TRCLM45"+mybgc or compset == "I20TRCRUCLM45"+mybgc):
         if (options.mycaseid != ''):
             options.finidat_case = options.mycaseid+'_'+options.site+ \
                 '_I1850CLM45'+mybgc
         else:
             options.finidat_case = options.site + '_I1850CLM45'+mybgc
-            
+
         if (options.finidat_year == -1):
             finidat_year=1850
     if (compset == "I20TR"+mybgc):
@@ -357,7 +357,7 @@ if (options.finidat_case != ''):
         finidat_yst = '00'+str(finidat_year)
     if (finidat_year < 10):
         finidat_yst = '000'+str(finidat_year)
-    if(options.runroot == './'): 
+    if(options.runroot == './'):
         finidat = csmdir+'/run/'+options.finidat_case+'/run/'+ \
                   options.finidat_case+'.clm2.r.'+finidat_yst+ \
                   '-01-01-00000.nc'
@@ -396,7 +396,7 @@ else:
 
 #Check for existing case directory
 if (os.path.exists(casedir)):
-    
+
     print('Warning:  Case directory exists')
     if (options.rmold):
         print('--rmold specified.  Removing old case (this will NOT clean the run directory')
@@ -407,7 +407,7 @@ if (os.path.exists(casedir)):
         if var[0] == 'r':
             os.system('rm -rf '+casedir)
         if var[0] == 'x':
-            sys.exit()    
+            sys.exit()
 print("CASE directory is: "+casedir+"\n")
 
 #Construct case build and run directory
@@ -502,7 +502,7 @@ if (options.parm_file != ''):
     input.close()
     pftfile.close()
 
-#parameter (soil order dependent) modifications if desired    ::X.YANG 
+#parameter (soil order dependent) modifications if desired    ::X.YANG
 os.system('cp '+options.ccsm_input+'/lnd/clm2/paramdata/CNP_parameters_'+CNPstamp+'.nc ' \
               +csmdir+'/cime/scripts-acme/pointclm/temp/CNP_parameters_'+CNPstamp+ \
               casename+'.nc')
@@ -587,7 +587,7 @@ if (options.refcase == 'none'):
     if (options.ccsm_input != ''):
         os.system('./xmlchange -file env_run.xml -id DIN_LOC_ROOT -val ' \
                       +options.ccsm_input)
-    
+
     #define mask and resoultion
     os.system('./xmlchange -file env_run.xml -id CLM_USRDAT_NAME ' \
                   +' -val '+str(numxpts)+'x'+str(numypts)+'pt_'+options.site)
@@ -607,14 +607,14 @@ if (options.refcase == 'none'):
                       +' -val "\${RUNDIR}"')
     #turn off archiving
     os.system('./xmlchange -file env_run.xml -id DOUT_S ' \
-                      +' -val "FALSE"') 
+                      +' -val "FALSE"')
     #datm options
     if (use_cruncep):
         os.system('./xmlchange -file env_run.xml -id ' \
-                      +'DATM_MODE -val CLMCRUNCEP') 
+                      +'DATM_MODE -val CLMCRUNCEP')
     else:
         os.system('./xmlchange -file env_run.xml -id ' \
-                      +'DATM_MODE -val CLM1PT') 
+                      +'DATM_MODE -val CLM1PT')
     os.system('./xmlchange -file env_run.xml -id ' \
                   +'DATM_CLMNCEP_YR_START -val '+str(startyear))
     os.system('./xmlchange -file env_run.xml -id ' \
@@ -655,7 +655,7 @@ if (options.refcase == 'none'):
                       +'CLM_CO2_TYPE -val diagnostic')
 	os.system('./xmlchange -file env_run.xml -id ' \
                       +'RUN_STARTDATE -val 1850-01-01')
-    
+
     #no PIO on oic
     if ('oic' in options.machine):
         os.system('./xmlchange -file env_run.xml -id ' \
@@ -692,7 +692,7 @@ if (options.refcase == 'none'):
         os.system('rm -f Macro')
         os.system('rm -f user-nl-*')
 
-    # Add options for FFLAGS to Macros file here 
+    # Add options for FFLAGS to Macros file here
 
     #clm namelist modifications
     for i in range(1,int(options.ninst)+1):
@@ -885,12 +885,12 @@ if (options.refcase == 'none'):
             if (options.ad_spinup and isclm45 == False):
                 print("Turning on AD_SPINUP (CLM4.0)")
                 stemp = stemp[:-1]+' -DAD_SPINUP\n'
-            if (options.exit_spinup and isclm45 == False): 
+            if (options.exit_spinup and isclm45 == False):
                 print("Turning on EXIT_SPINUP (CLM4.0)")
                 stemp = stemp[:-1]+' -DEXIT_SPINUP\n'
             if (cpl_bypass):
                 stemp = stemp[:-1]+' -DCPL_BYPASS\n'
-            outfile.write(stemp) 
+            outfile.write(stemp)
         elif (s[0:13] == "NETCDF_PATH:=" and options.machine == 'userdefined'):
             try:
                 os.environ['NETCDF_PATH']
@@ -920,7 +920,7 @@ if (options.refcase == 'none'):
     if(options.caseroot == './' ):
         os.chdir(csmdir+"/cime/scripts/"+casename)
     else:
-        os.chdir(casedir)       
+        os.chdir(casedir)
 
     #Datm mods/ transient CO2 patch for transient run (datm buildnml mods)
     if (not cpl_bypass):
@@ -962,7 +962,7 @@ if (options.refcase == 'none'):
         myinput.close()
         myoutput.close()
 
-        if ('20TR' in compset):  
+        if ('20TR' in compset):
             os.system('cp '+csmdir+'/models/lnd/clm/doc/UsersGuide/co2_streams.txt ./')
             myinput  = open('co2_streams.txt','r')
             myoutput = open('co2_streams.txt.tmp','w')
@@ -996,7 +996,7 @@ if (options.refcase == 'none'):
     if (options.caseroot == './'):
         os.chdir(csmdir+"/cime/scripts/"+casename)
     else:
-        os.chdir(casedir) 
+        os.chdir(casedir)
 
 
 #move site data to run directory
@@ -1032,12 +1032,12 @@ if (options.ensemble_file != ''):
             samples=numpy.zeros((n_parameters,100000), dtype=numpy.float)
         else:
             for j in range(0,n_parameters):
-                samples[j][nsamples] = float(s.split()[j]) 
+                samples[j][nsamples] = float(s.split()[j])
         nsamples=nsamples+1
     myinput.close()
     print(str(n_parameters)+' parameters are being modified')
     print(str(nsamples)+' parameter samples provided')
-    
+
     #if directories and parameter files have not yet been created, create them
     #first, get current date/time for log file timestamps
     os.system('date +%y%m%d-%H%M%S > mytime')
@@ -1055,7 +1055,7 @@ if (options.ensemble_file != ''):
             print('Copying directories for ensemble run: '+str(i+1)+' of '+str(nsamples))
             os.system('mkdir -p '+runroot+'/UQ/'+casename+'/g'+gst[1:])
             os.system('cp '+orig_dir+'/* '+ens_dir)
-        
+
             #loop through all filenames, change directories, parameter files
             for f in os.listdir(ens_dir):
                 if (os.path.isfile(ens_dir+'/'+f) and (f[-2:] == 'in' or f[-3:] == 'nml' or 'streams' in f)):
@@ -1088,11 +1088,11 @@ if (options.ensemble_file != ''):
                             myoutput.write(s.replace('`date +%y%m%d-%H%M%S`',timestr))
                         else:
                             myoutput.write(s.replace(orig_dir,ens_dir))
-                            
+
                     myoutput.close()
                     myinput.close()
                     os.system(' mv '+ens_dir+'/'+f+'.tmp '+ens_dir+'/'+f)
-                    
+
 
     #total number of processors required in each pbs script
     np_total = int(options.np)*int(options.ng)
@@ -1157,4 +1157,4 @@ if (options.ensemble_file != ''):
                 os.system('qsub -W depend=afterok:'+lastjob+' '+csmdir+ \
                               '/cime/scripts-acme/pointclm/temp/ensemble_run'+ \
                               numst[1:]+'.pbs > '+csmdir+'/cime/scripts-acme/pointclm/temp/jobinfo')
-                
+

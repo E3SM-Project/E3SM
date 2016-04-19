@@ -1,10 +1,10 @@
 /**
- * @file 
+ * @file
  * @brief A simple C example for the ParallelIO Library.
  *
  * This example creates a netCDF output file with one dimension and
  * one variable. It first writes, then reads the sample file using the
- * ParallelIO library. 
+ * ParallelIO library.
  *
  * This example can be run in parallel for 1, 2, 4, 8, or 16
  * processors.
@@ -21,7 +21,7 @@
 
 /** The number of possible output netCDF output flavors available to
  * the ParallelIO library. */
-#define NUM_NETCDF_FLAVORS 4	
+#define NUM_NETCDF_FLAVORS 4
 
 /** The number of dimensions in the example data. In this simple
     example, we are using one-dimensional data. */
@@ -53,14 +53,14 @@
 	printf("MPI error, line %d, file %s: %s\n", __LINE__, __FILE__, err_buffer); \
 	MPI_Finalize();							\
 	return 2;							\
-    } while (0) 
+    } while (0)
 
 /** Handle non-MPI errors by finalizing the MPI library and exiting
  * with an exit code. */
 #define ERR(e) do {				\
 	MPI_Finalize();				\
 	return e;				\
-    } while (0) 
+    } while (0)
 
 /** Global err buffer for MPI. When there is an MPI error, this buffer
  * is used to store the error message that is associated with the MPI
@@ -73,14 +73,14 @@ int resultlen;
 
 /** @brief Check the output file.
  *
- *  Use netCDF to check that the output is as expected. 
+ *  Use netCDF to check that the output is as expected.
  *
- * @param ntasks The number of processors running the example. 
- * @param filename The name of the example file to check. 
+ * @param ntasks The number of processors running the example.
+ * @param filename The name of the example file to check.
  *
  * @return 0 if example file is correct, non-zero otherwise. */
 int check_file(int ntasks, char *filename) {
-    
+
     int ncid;         /**< File ID from netCDF. */
     int ndims;        /**< Number of dimensions. */
     int nvars;        /**< Number of variables. */
@@ -97,7 +97,7 @@ int check_file(int ntasks, char *filename) {
     size_t count[NDIM];           /**< Number of elements to read. */
     int buffer[DIM_LEN];          /**< Buffer to read in data. */
     int expected[DIM_LEN];        /**< Data values we expect to find. */
-    
+
     /* Open the file. */
     if ((ret = nc_open(filename, 0, &ncid)))
 	return ret;
@@ -121,7 +121,7 @@ int check_file(int ntasks, char *filename) {
     int div = DIM_LEN/ntasks;
     for (int d = 0; d < DIM_LEN; d++)
 	expected[d] = START_DATA_VAL + d/div;
-    
+
     /* Check the data. */
     start[0] = 0;
     count[0] = DIM_LEN;
@@ -172,7 +172,7 @@ int check_file(int ntasks, char *filename) {
     foo = 42, 42, 42, 42, 43, 43, 43, 43, 44, 44, 44, 44, 45, 45, 45, 45 ;
     }
     </pre>
-    
+
     @param [in] argc argument count (should be zero)
     @param [in] argv argument array (should be NULL)
     @retval examplePioClass* Pointer to self.
@@ -194,7 +194,7 @@ int check_file(int ntasks, char *filename) {
 	 * classic format file (but with different libraries). The
 	 * last two produce netCDF4/HDF5 format files, written with
 	 * and without using netCDF-4 parallel I/O. */
-	int format[NUM_NETCDF_FLAVORS] = {PIO_IOTYPE_PNETCDF, 
+	int format[NUM_NETCDF_FLAVORS] = {PIO_IOTYPE_PNETCDF,
 					  PIO_IOTYPE_NETCDF,
 					  PIO_IOTYPE_NETCDF4C,
 					  PIO_IOTYPE_NETCDF4P};
@@ -208,7 +208,7 @@ int check_file(int ntasks, char *filename) {
 							  "example1_classic.nc",
 							  "example1_serial4.nc",
 							  "example1_parallel4.nc"};
-	
+
 	/** Number of processors that will do IO. In this example we
 	 * will do IO from all processors. */
 	int niotasks;
@@ -291,13 +291,13 @@ int check_file(int ntasks, char *filename) {
 		break;
 	    }
 
-#ifdef TIMING    
+#ifdef TIMING
 	/* Initialize the GPTL timing library. */
 	int ret;
 	if ((ret = GPTLinitialize ()))
 	    return ret;
-#endif    
-    
+#endif
+
 	/* Initialize MPI. */
 	if ((ret = MPI_Init(&argc, &argv)))
 	    MPIERR(ret);
@@ -318,8 +318,8 @@ int check_file(int ntasks, char *filename) {
 	    printf("%d: ParallelIO Library example1 running on %d processors.\n",
 		   my_rank, ntasks);
 
-	/* keep things simple - 1 iotask per MPI process */    
-	niotasks = ntasks; 
+	/* keep things simple - 1 iotask per MPI process */
+	niotasks = ntasks;
 
 	/* Initialize the PIO IO system. This specifies how
 	 * many and which processors are involved in I/O. */
@@ -333,7 +333,7 @@ int check_file(int ntasks, char *filename) {
 	    return PIO_ENOMEM;
 	for (int i = 0; i < elements_per_pe; i++)
 	    compdof[i] = my_rank * elements_per_pe + i + 1;
-	
+
 	/* Create the PIO decomposition for this example. */
 	if (verbose)
 	    printf("rank: %d Creating decomposition...\n", my_rank);
@@ -341,10 +341,10 @@ int check_file(int ntasks, char *filename) {
 				   compdof, &ioid, NULL, NULL, NULL)))
 	    ERR(ret);
 	free(compdof);
-	
+
 	/* Use PIO to create the example file in each of the four
 	 * available ways. */
-	for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++) 
+	for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++)
 	{
 	    /* Create the netCDF output file. */
 	    if (verbose)
@@ -353,7 +353,7 @@ int check_file(int ntasks, char *filename) {
 	    if ((ret = PIOc_createfile(iosysid, &ncid, &(format[fmt]), filename[fmt],
 				       PIO_CLOBBER)))
 		ERR(ret);
-	
+
 	    /* Define netCDF dimension and variable. */
 	    if (verbose)
 		printf("rank: %d Defining netCDF metadata...\n", my_rank);
@@ -363,7 +363,7 @@ int check_file(int ntasks, char *filename) {
 		ERR(ret);
 	    if ((ret = PIOc_enddef(ncid)))
 		ERR(ret);
-	
+
 	    /* Prepare sample data. */
 	    if (!(buffer = malloc(elements_per_pe * sizeof(int))))
 	        return PIO_ENOMEM;
@@ -381,20 +381,20 @@ int check_file(int ntasks, char *filename) {
 
 	    /* Free buffer space used in this example. */
 	    free(buffer);
-	
+
 	    /* Close the netCDF file. */
 	    if (verbose)
 		printf("rank: %d Closing the sample data file...\n", my_rank);
 	    if ((ret = PIOc_closefile(ncid)))
 		ERR(ret);
 	}
-	
+
 	/* Free the PIO decomposition. */
 	if (verbose)
 	    printf("rank: %d Freeing PIO decomposition...\n", my_rank);
 	if ((ret = PIOc_freedecomp(iosysid, ioid)))
 	    ERR(ret);
-	
+
 	/* Finalize the IO system. */
 	if (verbose)
 	    printf("rank: %d Freeing PIO resources...\n", my_rank);
@@ -403,18 +403,18 @@ int check_file(int ntasks, char *filename) {
 
 	/* Check the output file. */
 	if (!my_rank)
-	    for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++) 
+	    for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++)
 		if ((ret = check_file(ntasks, filename[fmt])))
 		    ERR(ret);
 
 	/* Finalize the MPI library. */
 	MPI_Finalize();
 
-#ifdef TIMING    
+#ifdef TIMING
 	/* Finalize the GPTL timing library. */
 	if ((ret = GPTLfinalize ()))
 	    return ret;
-#endif    
+#endif
 
 	if (verbose)
 	    printf("rank: %d SUCCESS!\n", my_rank);

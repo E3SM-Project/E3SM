@@ -14,7 +14,7 @@ void pio_add_to_file_list(file_desc_t *file)
   file_desc_t *cfile;
   int cnt=-1;
   // on iotasks the fh returned from netcdf should be unique, on non-iotasks we
-  // need to generate a unique fh, we do this with cnt, its a negative index 
+  // need to generate a unique fh, we do this with cnt, its a negative index
 
   file->next = NULL;
   cfile = pio_file_list;
@@ -31,16 +31,16 @@ void pio_add_to_file_list(file_desc_t *file)
     cfile->next = file;
   }
   if(! file->iosystem->ioproc || ((file->iotype != PIO_IOTYPE_PNETCDF &&
-				   file->iotype != PIO_IOTYPE_NETCDF4P)  && 
-				  file->iosystem->io_rank>0)) 
+				   file->iotype != PIO_IOTYPE_NETCDF4P)  &&
+				  file->iosystem->io_rank>0))
     file->fh = cnt;
-  
+
   cfile = pio_file_list;
 
 }
 
 
-     
+
 file_desc_t *pio_get_file_from_id(int ncid)
 {
   file_desc_t *cfile;
@@ -61,7 +61,7 @@ file_desc_t *pio_get_file_from_id(int ncid)
   }
   return cfile;
 }
-  
+
 int pio_delete_file_from_list(int ncid)
 {
 
@@ -78,7 +78,7 @@ int pio_delete_file_from_list(int ncid)
       }
       if(current_file==cfile)
 	current_file=pfile;
-      free(cfile);      
+      free(cfile);
       return PIO_NOERR;
     }
     pfile = cfile;
@@ -148,7 +148,7 @@ iosystem_desc_t *pio_get_iosystem_from_id(int iosysid)
     ciosystem = ciosystem->next;
   }
   return NULL;
-  
+
 }
 
 int pio_add_to_iodesc_list(io_desc_t *iodesc)
@@ -170,7 +170,7 @@ int pio_add_to_iodesc_list(io_desc_t *iodesc)
   return iodesc->ioid;
 }
 
-     
+
 io_desc_t *pio_get_iodesc_from_id(int ioid)
 {
   io_desc_t *ciodesc;
@@ -195,7 +195,7 @@ io_desc_t *pio_get_iodesc_from_id(int ioid)
 
   return ciodesc;
 }
-  
+
 int pio_delete_iodesc_from_list(int ioid)
 {
 

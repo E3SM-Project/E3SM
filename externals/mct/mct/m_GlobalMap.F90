@@ -2,51 +2,51 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$ 
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_GlobalMap - One-Dimensional Domain Decomposition Descriptor
 !
 ! !DESCRIPTION:
-! The {\tt GlobalMap} is a datatype used to store descriptors of a 
-! one-dimensional domain decomposition for a vector on an MPI communicator.  
+! The {\tt GlobalMap} is a datatype used to store descriptors of a
+! one-dimensional domain decomposition for a vector on an MPI communicator.
 ! It is defined with three assumptions:
 ! \begin{enumerate}
 ! \item Each process ID owns only one segment;
 ! \item No two segments in the decomposition overlap; and
-! \item The segments are laid out in identical order to the MPI rank of 
+! \item The segments are laid out in identical order to the MPI rank of
 ! each process participating in the decomposition.
 ! \end{enumerate}
-! per process ID).  It is the simpler of the two domain decomposition 
-! descriptors offerd by MCT (the other being the {\tt GlobalSegMap}).  
+! per process ID).  It is the simpler of the two domain decomposition
+! descriptors offerd by MCT (the other being the {\tt GlobalSegMap}).
 ! It consists of the following components:
 ! \begin{itemize}
-! \item The MCT component identification number (see the module 
-! {\tt m\_MCTWorld} for more information about MCT's component model 
+! \item The MCT component identification number (see the module
+! {\tt m\_MCTWorld} for more information about MCT's component model
 ! registry);
 ! \item The {\em global} number of elements in the distributed vector;
 ! \item The number of elements {\em stored locally};
-! \item The number of elements {\em stored on each process} on the 
+! \item The number of elements {\em stored on each process} on the
 ! communicator over which the vector is distributed; and
-! \item The index of the elemnent {\em immediately before} the starting 
-! element of each local segment (this choice allows for direct use of 
-! this information with MPI's scatter and gather operations).  We refer 
-! to this quantity as the {\em displacement} of the segment, a term used 
+! \item The index of the elemnent {\em immediately before} the starting
+! element of each local segment (this choice allows for direct use of
+! this information with MPI's scatter and gather operations).  We refer
+! to this quantity as the {\em displacement} of the segment, a term used
 ! both here and in the definition of the MCT {\tt Navigator} datatype.
 ! \end{itemize}
 !
-! Both the segment displacement and length data are stored in arrays 
-! whose indices run from zero to $N-1$, where $N$ is the number of MPI 
+! Both the segment displacement and length data are stored in arrays
+! whose indices run from zero to $N-1$, where $N$ is the number of MPI
 ! processes on the communicator on which the {\tt GlobalMap} is defined.
-! This is done so this information corresponds directly to the MPI process 
+! This is done so this information corresponds directly to the MPI process
 ! ID's on whihc the segments reside.
 !
-! This module contains the definition of the {\tt GlobalMap} datatype, 
-! all-processor and an on-root creation methods (both of which can be 
-! used to create a {\tt GlobalMap} on the local communicator), a creation 
-! method to create/propagate a {\tt GlobalMap} native to a remote 
+! This module contains the definition of the {\tt GlobalMap} datatype,
+! all-processor and an on-root creation methods (both of which can be
+! used to create a {\tt GlobalMap} on the local communicator), a creation
+! method to create/propagate a {\tt GlobalMap} native to a remote
 ! communicator, a destruction method, and a variety of query methods.
-! 
+!
 ! !INTERFACE:
 
  module m_GlobalMap
@@ -94,7 +94,7 @@
     interface comp_id ; module procedure comp_id_ ; end interface
 
 ! !SEE ALSO:
-! The MCT module m_MCTWorld for more information regarding component 
+! The MCT module m_MCTWorld for more information regarding component
 ! ID numbers.
 !
 ! !REVISION HISTORY:
@@ -117,11 +117,11 @@
 ! !IROUTINE: initd_ - Collective Creation on the Local Communicator
 !
 ! !DESCRIPTION:
-! This routine creates the {\tt GlobalMap} {\tt GMap} from distributed 
-! data spread across the MPI communicatior associated with the input 
-! {\tt INTEGER} handle {\tt comm}.  The {\tt INTEGER} input argument 
+! This routine creates the {\tt GlobalMap} {\tt GMap} from distributed
+! data spread across the MPI communicatior associated with the input
+! {\tt INTEGER} handle {\tt comm}.  The {\tt INTEGER} input argument
 ! {\tt comp\_id} is used to define the MCT component ID for {\tt GMap}.
-! The input {\tt INTEGER} argument {\tt ln} is the number of elements 
+! The input {\tt INTEGER} argument {\tt ln} is the number of elements
 ! in the local vector segment.
 !
 ! !INTERFACE:
@@ -139,15 +139,15 @@
 
       integer,         intent(in)  :: comp_id ! Component ID
       integer,         intent(in)  :: ln      ! the local size
-      integer,         intent(in)  :: comm    ! f90 MPI communicator 
-                                              ! handle 
+      integer,         intent(in)  :: comm    ! f90 MPI communicator
+                                              ! handle
 
 ! !OUTPUT PARAMETERS:
 
       type(GlobalMap), intent(out) :: GMap
 
 ! !SEE ALSO:
-! The MCT module m_MCTWorld for more information regarding component 
+! The MCT module m_MCTWorld for more information regarding component
 ! ID numbers.
 !
 ! !REVISION HISTORY:
@@ -193,12 +193,12 @@
 ! !IROUTINE: initr_ Create a GlobalMap from the Root Process
 !
 ! !DESCRIPTION:
-! This routine creates the {\tt GlobalMap} {\tt GMap}, and propagates 
-! it to all processes on the communicator associated with the MPI 
-! {\tt INTEGER} handle {\tt comm}.  The input {\tt INTEGER} arguments 
-! {\tt comp\_id} (the MCT component ID number) and {\tt lns(:)} need 
-! only be valid on the process whose rank is equal to {\tt root} on 
-! {\tt comm}.  The array {\tt lns(:)} should have length equal to the 
+! This routine creates the {\tt GlobalMap} {\tt GMap}, and propagates
+! it to all processes on the communicator associated with the MPI
+! {\tt INTEGER} handle {\tt comm}.  The input {\tt INTEGER} arguments
+! {\tt comp\_id} (the MCT component ID number) and {\tt lns(:)} need
+! only be valid on the process whose rank is equal to {\tt root} on
+! {\tt comm}.  The array {\tt lns(:)} should have length equal to the
 ! number of processes on {\tt comm}, and contains the length of each
 ! local segment.
 !
@@ -226,7 +226,7 @@
       type(GlobalMap),       intent(out) :: GMap
 
 ! !SEE ALSO:
-! The MCT module m_MCTWorld for more information regarding component 
+! The MCT module m_MCTWorld for more information regarding component
 ! ID numbers.
 !
 ! !REVISION HISTORY:
@@ -292,20 +292,20 @@
 ! !IROUTINE: init_remote_ Initialize Remote GlobalMap from the Root
 !
 ! !DESCRIPTION:
-! This routine creates and propagates across the local communicator a 
-! {\tt GlobalMap} associated with a remote component.  The controlling 
-! process in this operation has MPI process ID defined by the input 
-! {\tt INTEGER} argument {\tt my\_root}, and its MPI communinicator 
-! is defined by the input {\tt INTEGER} argument {\tt my\_comm}.  The 
-! input {\tt INTEGER} argument {\tt remote\_npes} is the number of MPI 
-! processes on the remote component's communicator (which need be valid 
-! only on the process {\tt my\_root}).  The input the {\tt INTEGER} 
-! array {\tt remote\_lns(:)}, and the {\tt INTEGER} argument 
-! {\tt remote\_comp\_id} need only be valid on the process 
-! whose rank on the communicator {\tt my\_comm} is {\tt my\_root}.  The 
-! argument {\tt remote\_lns(:)} defines the vector segment length on each 
-! process of the remote component's communicator, and the argument 
-! {\tt remote\_comp\_id} defines the remote component's ID number in 
+! This routine creates and propagates across the local communicator a
+! {\tt GlobalMap} associated with a remote component.  The controlling
+! process in this operation has MPI process ID defined by the input
+! {\tt INTEGER} argument {\tt my\_root}, and its MPI communinicator
+! is defined by the input {\tt INTEGER} argument {\tt my\_comm}.  The
+! input {\tt INTEGER} argument {\tt remote\_npes} is the number of MPI
+! processes on the remote component's communicator (which need be valid
+! only on the process {\tt my\_root}).  The input the {\tt INTEGER}
+! array {\tt remote\_lns(:)}, and the {\tt INTEGER} argument
+! {\tt remote\_comp\_id} need only be valid on the process
+! whose rank on the communicator {\tt my\_comm} is {\tt my\_root}.  The
+! argument {\tt remote\_lns(:)} defines the vector segment length on each
+! process of the remote component's communicator, and the argument
+! {\tt remote\_comp\_id} defines the remote component's ID number in
 ! the MCT component registry {\tt MCTWorld}.
 !
 ! !INTERFACE:
@@ -326,14 +326,14 @@
       integer,               intent(in)  :: remote_npes
       integer,               intent(in)  :: my_root
       integer,               intent(in)  :: my_comm
-      integer,               intent(in)  :: remote_comp_id 
+      integer,               intent(in)  :: remote_comp_id
 
 ! !OUTPUT PARAMETERS:
 
       type(GlobalMap),       intent(out) :: GMap
 
 ! !SEE ALSO:
-! The MCT module m_MCTWorld for more information regarding component 
+! The MCT module m_MCTWorld for more information regarding component
 ! ID numbers.
 !
 ! !REVISION HISTORY:
@@ -389,7 +389,7 @@
   call MPI_bcast(GMap%counts, nPEs, MP_INTEGER, my_root, my_comm, ier)
   if(ier/=0) call MP_perr_die(myname_,'MPI_bcast()',ier)
 
-        ! Now, on each processor of my_comm, compute from 
+        ! Now, on each processor of my_comm, compute from
         ! GMap%counts(:) the entries of GMap%displs(:)
 
   l=0
@@ -417,10 +417,10 @@
 ! !IROUTINE: clean_ - Destroy a GlobalMap
 !
 ! !DESCRIPTION:
-! This routine deallocates all allocated memory associated with the 
-! input/output {\tt GlobalMap} argument {\tt GMap}, and sets to zero 
-! all of its statically defined components.  The success (failure) of 
-! this operation is signified by the zero (non-zero) value of the 
+! This routine deallocates all allocated memory associated with the
+! input/output {\tt GlobalMap} argument {\tt GMap}, and sets to zero
+! all of its statically defined components.  The success (failure) of
+! this operation is signified by the zero (non-zero) value of the
 ! optional output {\tt INTEGER} argument {\tt stat}.
 !
 ! !INTERFACE:
@@ -458,7 +458,7 @@
   else
      if(ier /= 0) call warn(myname_,'deallocate(GMap%...)',ier)
   endif
-  
+
   if(ier == 0) then
 
 #ifdef MALL_ON
@@ -481,7 +481,7 @@
 ! !IROUTINE: lsize_ - Return Local Segment Length
 !
 ! !DESCRIPTION:
-! This {\tt INTEGER} function returns the length of the local vector 
+! This {\tt INTEGER} function returns the length of the local vector
 ! segment as defined by the input {\tt GlobalMap} argument {\tt GMap}.
 
 ! !INTERFACE:
@@ -513,8 +513,8 @@
 ! !IROUTINE: gsize_ - Return Global Vector Length
 !
 ! !DESCRIPTION:
-! This {\tt INTEGER} function returns the global length of a vector 
-! that is decomposed according to the input {\tt GlobalMap} argument 
+! This {\tt INTEGER} function returns the global length of a vector
+! that is decomposed according to the input {\tt GlobalMap} argument
 ! {\tt GMap}.
 !
 ! !INTERFACE:
@@ -547,9 +547,9 @@
 ! !IROUTINE: rank_ - Process ID Location of a Given Vector Element
 !
 ! !DESCRIPTION:
-! This routine uses the input {\tt GlobalMap} argument {\tt GMap} to 
+! This routine uses the input {\tt GlobalMap} argument {\tt GMap} to
 ! determine the process ID (on the communicator on which {\tt GMap} was
-! defined) of the vector element with global index {\tt i\_g}.  This 
+! defined) of the vector element with global index {\tt i\_g}.  This
 ! process ID is returned in the output {\tt INTEGER} argument {\tt rank}.
 !
 ! !INTERFACE:
@@ -598,10 +598,10 @@
 ! !IROUTINE: bounds_ - First/Last Global Indicies for a Process' Segment
 !
 ! !DESCRIPTION:
-! This routine takes as input a process ID (defined by the input 
-! {\tt INTEGER} argument {\tt pe\_no}), examines the input {\tt GlobalMap} 
-! argument {\tt GMap}, and returns the global indices for the first and 
-! last elements of the segment owned by this process in the output 
+! This routine takes as input a process ID (defined by the input
+! {\tt INTEGER} argument {\tt pe\_no}), examines the input {\tt GlobalMap}
+! argument {\tt GMap}, and returns the global indices for the first and
+! last elements of the segment owned by this process in the output
 ! {\tt INTEGER} arguments {\tt lbnd} and {\tt ubnd}, respectively.
 !
 ! !INTERFACE:
@@ -640,7 +640,7 @@
 ! !IROUTINE: comp_id_ - Return the Component ID Number
 !
 ! !DESCRIPTION:
-! This {\tt INTEGER} query function returns the MCT component ID number 
+! This {\tt INTEGER} query function returns the MCT component ID number
 ! stored in the input {\tt GlobalMap} argument {\tt GMap}.
 !
 ! !INTERFACE:
@@ -656,7 +656,7 @@
       type(GlobalMap), intent(in) :: GMap
 
 ! !SEE ALSO:
-! The MCT module m_MCTWorld for more information regarding component 
+! The MCT module m_MCTWorld for more information regarding component
 ! ID numbers.
 !
 ! !REVISION HISTORY:

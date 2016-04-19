@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 import ConfigParser
-import sys, getopt, os 
-import numpy as np 
-import Nio 
+import sys, getopt, os
+import numpy as np
+import Nio
 import time
 import re
 import json
 import random
 
 #
-# Create RMSZ zscores for 
+# Create RMSZ zscores for
 #
 def calc_rmsz(o_files,openfile,var_name3d,var_name2d,tslice,is_SE,verbose):
 
@@ -37,31 +37,31 @@ def calc_rmsz(o_files,openfile,var_name3d,var_name2d,tslice,is_SE,verbose):
       ens_stddev3d=np.zeros((len(var_name3d),nlev,nlat,nlon),dtype=np.float32)
       ens_avg2d=np.zeros((len(var_name2d),nlat,nlon),dtype=np.float32)
       ens_stddev2d=np.zeros((len(var_name2d),nlat,nlon),dtype=np.float32)
-    Zscore3d = np.zeros((len(var_name3d),len(o_files)),dtype=np.float32) 
-    Zscore2d = np.zeros((len(var_name2d),len(o_files)),dtype=np.float32) 
+    Zscore3d = np.zeros((len(var_name3d),len(o_files)),dtype=np.float32)
+    Zscore2d = np.zeros((len(var_name2d),len(o_files)),dtype=np.float32)
     avg3d={}
     stddev3d={}
     avg2d={}
     stddev2d={}
     indices = np.arange(0,len(o_files),1)
-   
-    
+
+
     for vcount,vname in enumerate(var_name3d):
       #Read in vname's data of all files
       for fcount, this_file in enumerate(o_files):
         data=this_file.variables[vname]
         if (is_SE == True):
           output3d[fcount,:,:]=data[tslice,:,:]
-      
+
         else:
           output3d[fcount,:,:,:]=data[tslice,:,:,:]
       #Generate avg, stddev and zscore for 3d variable
       for fcount,this_file in enumerate(o_files):
 
         new_index=np.where(indices!=fcount)
-        ensemble3d = output3d[new_index] 
+        ensemble3d = output3d[new_index]
         avg3d=np.average(ensemble3d,axis=0)
-        stddev3d=np.std(ensemble3d,axis=0,dtype=np.float64) 
+        stddev3d=np.std(ensemble3d,axis=0,dtype=np.float64)
 
         flag3d = False
         count3d = 0
@@ -82,16 +82,16 @@ def calc_rmsz(o_files,openfile,var_name3d,var_name2d,tslice,is_SE,verbose):
         data=this_file.variables[vname]
         if (is_SE == True):
           output2d[fcount,:]=data[tslice,:]
-      
+
         else:
           output2d[fcount,:,:]=data[tslice,:,:]
       #Generate avg, stddev and zscore for 3d variable
       for fcount,this_file in enumerate(o_files):
 
         new_index=np.where(indices!=fcount)
-        ensemble2d = output2d[new_index] 
+        ensemble2d = output2d[new_index]
         avg2d=np.average(ensemble2d,axis=0)
-        stddev2d=np.std(ensemble2d,axis=0,dtype=np.float64) 
+        stddev2d=np.std(ensemble2d,axis=0,dtype=np.float64)
 
         flag2d = False
         count2d = 0
@@ -105,11 +105,11 @@ def calc_rmsz(o_files,openfile,var_name3d,var_name2d,tslice,is_SE,verbose):
       #Generate ens_avg and esn_stddev to store in the ensemble summary file
       ens_avg2d[vcount]=np.average(output2d,axis=0)
       ens_stddev2d[vcount]=np.std(output2d.astype(np.float64),axis=0,dtype=np.float64)
-     
+
     return Zscore3d,Zscore2d,ens_avg3d,ens_stddev3d,ens_avg2d,ens_stddev2d
 
 #
-# Calculate rmsz score by compare the run file with the ensemble summary file 
+# Calculate rmsz score by compare the run file with the ensemble summary file
 #
 def calculate_raw_score(k,v,npts3d,npts2d,ens_avg,ens_stddev,is_SE):
   count=0
@@ -126,16 +126,16 @@ def calculate_raw_score(k,v,npts3d,npts2d,ens_avg,ens_stddev,is_SE):
 	  npts=npts2d
 	else:
 	  npts=npts3d
-        
-    count,return_val=calc_Z(v,ens_avg[k].astype(np.float64),ens_stddev[k].astype(np.float64),count,False) 
+
+    count,return_val=calc_Z(v,ens_avg[k].astype(np.float64),ens_stddev[k].astype(np.float64),count,False)
     Zscore=np.sum(np.square(return_val))
-    if npts == count: 
+    if npts == count:
       Zscore=0
     else:
       Zscore=np.sqrt(Zscore/(npts-count))
   else:
     has_zscore=False
-   
+
   return Zscore,has_zscore
 
 #
@@ -162,15 +162,15 @@ def pre_PCA(gm):
 
 #
 # Performs principal components analysis  (PCA) on the p-by-n data matrix A
-# rows of A correspond to (p) variables AND cols of A correspond to the (n) tests 
+# rows of A correspond to (p) variables AND cols of A correspond to the (n) tests
 # assume already standardized
 #
-# Returns the loadings: p-by-p matrix, each column containing coefficients 
-# for one principal component. 
+# Returns the loadings: p-by-p matrix, each column containing coefficients
+# for one principal component.
 #
 def princomp(standardized_global_mean):
   # find covariance matrix (will be pxp)
-  co_mat= np.cov(standardized_global_mean)    
+  co_mat= np.cov(standardized_global_mean)
   # Calculate evals and evecs of covariance matrix (evecs are also pxp)
   [evals, evecs] = np.linalg.eig(co_mat)
   # Above may not be sorted - sort largest first
@@ -180,19 +180,19 @@ def princomp(standardized_global_mean):
 
   return evecs
 
-#          
+#
 # Calculate (val-avg)/stddev and exclude zero value
-#          
+#
 def calc_Z(val,avg,stddev,count,flag):
   return_val=np.empty(val.shape,dtype=np.float32,order='C')
-  tol =1e-12   
+  tol =1e-12
   if stddev[(stddev > tol)].size ==0:
-    if flag: 
+    if flag:
       print "WARNING: ALL standard dev = 0"
       flag = False
     count =count + stddev[(stddev <= tol)].size
     return_val = 0.
-  else:        
+  else:
     if stddev[(stddev <= tol)].size > 0:
       if flag:
         print "WARNING: some standard dev = 0"
@@ -214,11 +214,11 @@ def read_jsonlist(metajson):
   return varList
 
 
-# 
+#
 # Calculate Normalized RMSE metric
 #
 def calc_nrmse(orig_array,comp_array):
-  
+
   orig_size=orig_array.size
   sumsqr=np.sum(np.square(orig_array.astype(np.float64)-comp_array.astype(np.float64)))
   rng=np.max(orig_array)-np.min(orig_array)
@@ -239,7 +239,7 @@ def area_avg(data, weight, is_SE):
         a = np.average(data, weights=weight)
     else: #FV
         #a = wgt_areaave(data, weight, 1.0, 1)
-        #weights are for lat 
+        #weights are for lat
         a_lat = np.average(data,axis=0, weights=weight)
         a = np.average(a_lat)
     return a
@@ -261,7 +261,7 @@ def generate_global_mean_for_summary(o_files,var_name3d,var_name2d,tslice,is_SE,
     input_dims = o_files[0].dimensions
     nlev = input_dims["lev"]
 
-   
+
     if (is_SE == True):
         ncol = input_dims["ncol"]
         output3d = np.zeros((nlev, ncol))
@@ -279,7 +279,7 @@ def generate_global_mean_for_summary(o_files,var_name3d,var_name2d,tslice,is_SE,
         area_wgt = np.zeros(nlat) #note gaues weights are length nlat
         gw = o_files[0].variables["gw"]
         area_wgt[:] = gw[:]
-    
+
     #loop through the input file list to calculate global means
     #var_name3d=[]
     for fcount,fname in enumerate(o_files):
@@ -287,7 +287,7 @@ def generate_global_mean_for_summary(o_files,var_name3d,var_name2d,tslice,is_SE,
         # Generate global mean for pepsi challenge data timeseries daily files, they all are 2d variables
         #var_name2d=[]
         #for k,v in fname.variables.iteritems():
-        #  if v.typecode() == 'f': 
+        #  if v.typecode() == 'f':
         #    var_name2d.append(k)
         #    fout = open(k+"_32.txt","w")
         #  if k == 'time':
@@ -303,7 +303,7 @@ def generate_global_mean_for_summary(o_files,var_name3d,var_name2d,tslice,is_SE,
 # Calculate global means for one input file
 #
 def calc_global_mean_for_onefile(fname, area_wgt,var_name3d, var_name2d,output3d,output2d, tslice, is_SE, nlev,verbose):
-    
+
     ##openfile - should have already been opened by Nio.open_file()
     n3d = len(var_name3d)
     n2d = len(var_name2d)
@@ -312,38 +312,38 @@ def calc_global_mean_for_onefile(fname, area_wgt,var_name3d, var_name2d,output3d
     gm3d = np.zeros((n3d),dtype=np.float32)
     gm2d = np.zeros((n2d),dtype=np.float32)
 
-    #calculate global mean for each 3D variable 
+    #calculate global mean for each 3D variable
     for count, vname in enumerate(var_name3d):
 	#if (verbose == True):
 	#    print "calculating GM for variable ", vname
 	gm_lev = np.zeros(nlev)
 	data = fname.variables[vname]
 	if (is_SE == True):
-	    output3d[:,:] = data[tslice,:,:] 
+	    output3d[:,:] = data[tslice,:,:]
 	    for k in range(nlev):
 		gm_lev[k] = area_avg(output3d[k,:], area_wgt, is_SE)
 	else:
-	    output3d[:,:,:] = data[tslice,:,:,:] 
+	    output3d[:,:,:] = data[tslice,:,:,:]
 	    for k in range(nlev):
 		gm_lev[k] = area_avg(output3d[k,:,:], area_wgt, is_SE)
-	#note: averaging over levels should probably be pressure-weighted(TO DO)        
-	gm3d[count] = np.mean(gm_lev)         
+	#note: averaging over levels should probably be pressure-weighted(TO DO)
+	gm3d[count] = np.mean(gm_lev)
 
-	
-    #calculate global mean for each 2D variable 
+
+    #calculate global mean for each 2D variable
     for count, vname in enumerate(var_name2d):
 	#if (verbose == True):
 	#    print "calculating GM for variable ", vname
 	data = fname.variables[vname]
 	if (is_SE == True):
-	    output2d[:] = data[tslice,:] 
+	    output2d[:] = data[tslice,:]
 	    gm2d_mean = area_avg(output2d[:], area_wgt, is_SE)
 	else:
-	    output2d[:,:] = data[tslice,:,:] 
+	    output2d[:,:] = data[tslice,:,:]
 	    gm2d_mean = area_avg(output2d[:,:], area_wgt, is_SE)
 	gm2d[count]=gm2d_mean
 
-    return gm3d,gm2d        
+    return gm3d,gm2d
 
 #
 # Read variable values from ensemble summary file
@@ -371,7 +371,7 @@ def read_ensemble_summary(ens_file):
       for i in v[0:len(v)]:
         l=0
         for j in i:
-          if j: 
+          if j:
             l=l+1
         ens_var_name.append(i[0:l].tostring().strip())
     elif k== 'var3d':
@@ -390,7 +390,7 @@ def read_ensemble_summary(ens_file):
           temp_name=ens_var_name[m]
           ens_avg[temp_name] = i
           m=m+1
-    
+
     # Retrieve the ens_stddev3d or ens_stddev2d  array
     elif k == 'ens_stddev3d' or k == 'ens_stddev2d':
       if k== 'ens_stddev2d':
@@ -415,7 +415,7 @@ def read_ensemble_summary(ens_file):
         temp_name=ens_var_name[m]
         ens_gm[temp_name]=i
         m=m+1
-     
+
     elif k == 'mu_gm':
       mu_gm=np.zeros((num_var3d+num_var2d),dtype=np.float32)
       mu_gm[:]=v[:]
@@ -428,7 +428,7 @@ def read_ensemble_summary(ens_file):
     elif k == 'sigma_scores_gm':
       sigma_scores_gm=np.zeros((num_var3d+num_var2d),dtype=np.float32)
       sigma_scores_gm[:]=v[:]
-   
+
   return ens_var_name,ens_avg,ens_stddev,ens_rmsz,ens_gm,num_var3d,mu_gm,sigma_gm,loadings_gm,sigma_scores_gm
 
 
@@ -452,17 +452,17 @@ def get_ncol_nlev(frun):
       ncol = v
     if k == 'lat':
       nlat = v
-      
+
     if k == 'lon':
       nlon = v
-    
+
   if ncol == -1 :
     one_spatial_dim = False
   else:
     one_spatial_dim = True
   #if nlev == -1 or ncol == -1:
   #  print "Error: cannot find ncol or nlev dimension in "+run_file
-  #  sys.exit(2) 
+  #  sys.exit(2)
 
   if one_spatial_dim:
     npts3d=float(nlev*ncol)
@@ -470,7 +470,7 @@ def get_ncol_nlev(frun):
   else:
     npts3d=float(nlev*nlat*nlon)
     npts2d=float(nlat*nlon)
-    
+
   return npts3d,npts2d,one_spatial_dim
 
 
@@ -484,17 +484,17 @@ def calculate_maxnormens(opts_dict,var_list):
   threshold=1e-12
   # input file directory
   inputdir=opts_dict['indir']
-  
+
   # the timeslice that we want to process
   tstart=opts_dict['tslice']
-  
+
   # open all files
   for frun_file in os.listdir(inputdir):
     if (os.path.isfile(inputdir+frun_file)):
       ifiles.append(Nio.open_file(inputdir+frun_file,"r"))
     else:
       print "COULD NOT LOCATE FILE "+inputdir+frun_file+" EXISTING"
-      sys.exit() 
+      sys.exit()
   comparision={}
   # loop through each variable
   for k in var_list:
@@ -508,8 +508,8 @@ def calculate_maxnormens(opts_dict,var_list):
     outmaxnormens=k+"_ens_maxnorm.txt"
     fout=open(outmaxnormens,"w")
     Maxnormens[k]=[]
-   
-    # calculate E(i=0:n)(maxnormens[i][x])=max(comparision[i]-E(x=0:n)(output[x])) 
+
+    # calculate E(i=0:n)(maxnormens[i][x])=max(comparision[i]-E(x=0:n)(output[x]))
     for n in range(len(ifiles)):
       Maxnormens[k].append(0)
       comparision[k]=ifiles[n].variables[k][tstart]
@@ -532,7 +532,7 @@ def calculate_maxnormens(opts_dict,var_list):
 # Parse options from command line or from config file
 #
 def getopt_parseconfig(opts,optkeys,caller,opts_dict):
-  # integer 
+  # integer
   integer   = '-[0-9]+'
   int_p=re.compile(integer)
   # scientific notation
@@ -576,7 +576,7 @@ def getopt_parseconfig(opts,optkeys,caller,opts_dict):
               opts_dict[name]=config.getfloat(sec,name)
           else:
             opts_dict[name]=value
-    #parse command line options which might replace the settings in the config file 
+    #parse command line options which might replace the settings in the config file
     else:
       for k in optkeys:
 	if k.find("=") != -1:
@@ -591,20 +591,20 @@ def getopt_parseconfig(opts,optkeys,caller,opts_dict):
               elif int_p.match(arg) :
                 print arg
                 opts_dict[keyword]=int(arg)
-              else: 
+              else:
 	        opts_dict[keyword]=arg
 	else:
 	  #if opt.find(k) != -1:
 	  if opt == '--'+k:
 	    opts_dict[k]=True
-  return opts_dict 
-   
+  return opts_dict
+
 #
 # Figure out the scores of the 3 new runs, standardized global means, then multiple by the loadings_gm
 #
 def standardized(gm,mu_gm,sigma_gm,loadings_gm):
     nvar=gm.shape[0]
-    nfile=gm.shape[1] 
+    nfile=gm.shape[1]
     standardized_mean=np.zeros(gm.shape,dtype=np.float32)
     for var in range(nvar):
       for file in range(nfile):
@@ -637,8 +637,8 @@ def addresults(results,key,value,var,thefile):
        results[var]={}
        results[var][key]={}
        results[var][key][thefile]=value
-       
-          
+
+
     return results
 
 #
@@ -649,7 +649,7 @@ def printsummary(results,key,name,namerange,thefilecount,variables,label):
   for k,v in results.iteritems():
     if 'status' in v:
       temp0 = v['status']
-      if key in temp0: 
+      if key in temp0:
 	 if thefile in temp0[key]:
 	    temp = temp0[key][thefile]
 	    if temp < 1:
@@ -668,7 +668,7 @@ def addvariables(variables,var,vrange,thearray):
 
   return variables
 
-# 
+#
 # Evaluate if the new run rmsz score/global mean in the range of rmsz scores/global mean of the ensemble summary
 #
 def evaluatestatus(name,rangename,variables,key,results,thefile):
@@ -687,7 +687,7 @@ def evaluatestatus(name,rangename,variables,key,results,thefile):
             temp2 = temp[key]
          else:
             temp[key] = temp2 = {}
-            
+
          if val == 0:
             totalcount = totalcount+1
          temp2[thefile]=val
@@ -701,7 +701,7 @@ def evaluatestatus(name,rangename,variables,key,results,thefile):
             totalcount = totalcount+1
 
   return totalcount
-             
+
 #
 # Evaluate if the new run PCA scores pass or fail by comparing with the PCA scores of the ensemble summary
 #
@@ -715,7 +715,7 @@ def comparePCAscores(ifiles,new_scores,sigma_scores_gm,opts_dict):
    print '*********************************************** '
    print 'PCA Test Results'
    print '*********************************************** '
-  
+
    #Test to check if new_scores out of range of sigMul*sigma_scores_gm
    #for i in range(new_scores.shape[0]):
    for i in range(opts_dict['nPC']):
@@ -724,8 +724,8 @@ def comparePCAscores(ifiles,new_scores,sigma_scores_gm,opts_dict):
             comp_array[i][j] = 1
             eachruncount[j]=eachruncount[j]+1
          #Only check the first nPC number of scores, and sum comp_array together
-         sum[i]=sum[i]+comp_array[i][j]   
-       
+         sum[i]=sum[i]+comp_array[i][j]
+
 
    if len(ifiles) >= opts_dict['minRunFail']:
      num_run_less = False
@@ -738,7 +738,7 @@ def comparePCAscores(ifiles,new_scores,sigma_scores_gm,opts_dict):
         sum_index.append(i+1)
 
    false_positive=check_falsepositive(opts_dict,sum_index)
-   
+
    #If the length of sum_index is larger than min_PC_fail, the three runs failed
    if len(sum_index) >= opts_dict['minPCFail']:
       decision='FAILED'
@@ -746,7 +746,7 @@ def comparePCAscores(ifiles,new_scores,sigma_scores_gm,opts_dict):
       decision='PASSED'
    if num_run_less == False:
      print ' '
-     print "Summary: "+str(totalcount)+" PC scores failed at least "+str(opts_dict['minRunFail'])+" runs: ",sum_index 
+     print "Summary: "+str(totalcount)+" PC scores failed at least "+str(opts_dict['minRunFail'])+" runs: ",sum_index
      print ' '
      print 'These runs '+decision+' according to our testing criterion.'
      if decision == 'FAILED' and false_positive != 1.0:
@@ -756,7 +756,7 @@ def comparePCAscores(ifiles,new_scores,sigma_scores_gm,opts_dict):
    else:
      print ' '
      print 'The number of run files is less than minRunFail (=2), so we cannot determin an overall pass or fail.'
-     print ' ' 
+     print ' '
 
    #Record the histogram of comp_array which value is one by the PCA scores
    for i in range(opts_dict['nPC']):
@@ -803,11 +803,11 @@ def CECT_usage():
 #
 # Command options for pyEnsSum.py
 #
-def EnsSum_usage(): 
+def EnsSum_usage():
     print '\n Creates the summary file for an ensemble of CAM data. \n'
-    print '  ------------------------' 
+    print '  ------------------------'
     print '   Args for pyEnsSum : '
-    print '  ------------------------' 
+    print '  ------------------------'
     print '   pyStats.py'
     print '   -h                   : prints out this usage message'
     print '   --verbose            : prints out in verbose mode (turned off by default)'

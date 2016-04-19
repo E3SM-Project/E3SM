@@ -162,7 +162,7 @@ subroutine wav_final_esmf(comp, import_state, export_state, EClock, rc)
    type(ESMF_State)             :: export_state
    type(ESMF_Clock)             :: EClock
    integer, intent(out)         :: rc
- 
+
 
    rc = ESMF_SUCCESS
 

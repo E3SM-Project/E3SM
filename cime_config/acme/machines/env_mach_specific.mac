@@ -2,8 +2,8 @@
 
 # -------------------------------------------------------------------------
 # MAC
-# This file allows ACME to be built on a Mac that defines the NETCDF 
-# environment variable to put to the directory in which include/, lib/ and 
+# This file allows ACME to be built on a Mac that defines the NETCDF
+# environment variable to put to the directory in which include/, lib/ and
 # bin/ contain the proper NETCDF files.
 # -------------------------------------------------------------------------
 

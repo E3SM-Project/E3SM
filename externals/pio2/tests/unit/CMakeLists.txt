@@ -4,11 +4,11 @@ include (LibMPI)
 #  PREPARE FOR TESTING
 #==============================================================================
 
-file (COPY "./input.nl" 
+file (COPY "./input.nl"
       DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file (COPY "./not_netcdf.ieee" 
+file (COPY "./not_netcdf.ieee"
       DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-      
+
 #==============================================================================
 #  DEFINE THE TARGETS AND TESTS
 #==============================================================================
@@ -18,7 +18,7 @@ set (SRCS basic_tests.F90
           global_vars.F90
           ncdf_tests.F90
           nc_set_log_level2.c)
-	
+
 add_executable (pio_unit_test EXCLUDE_FROM_ALL ${SRCS})
 target_link_libraries (pio_unit_test piof)
 if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
@@ -59,7 +59,7 @@ else ()
         TIMEOUT ${DEFAULT_TEST_TIMEOUT})
 endif ()
 
-if (PIO_HDF5_LOGGING) 
-    target_compile_definitions (pio_unit_test 
+if (PIO_HDF5_LOGGING)
+    target_compile_definitions (pio_unit_test
         PUBLIC LOGGING)
 endif ()

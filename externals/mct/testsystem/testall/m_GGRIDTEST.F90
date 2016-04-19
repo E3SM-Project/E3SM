@@ -17,17 +17,17 @@
       public :: ImportExport
       public :: Identical
 
-    interface testall  
-       module procedure testGGrid_  
+    interface testall
+       module procedure testGGrid_
     end interface
     interface IndexAttr
        module procedure IndexTest_
     end interface
-    interface SortPermute 
-       module procedure SortPermuteTest_  
+    interface SortPermute
+       module procedure SortPermuteTest_
     end interface
-    interface ImportExport 
-       module procedure ImportExportTest_ 
+    interface ImportExport
+       module procedure ImportExportTest_
     end interface
     interface Identical
        module procedure Identical_
@@ -44,10 +44,10 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: testGGRID_ - Test the functions in the GeneralGrid module 
+! !IROUTINE: testGGRID_ - Test the functions in the GeneralGrid module
 !
 ! !DESCRIPTION:
-! This routine writes diagnostic information about the input 
+! This routine writes diagnostic information about the input
 ! {\tt GeneralGrid}. Each line of the output will be preceded by the
 ! character argument {\tt identifier}. The output device is specified
 ! by the integer argument {\tt device}.
@@ -63,12 +63,12 @@
       use m_List, only : ListExportToChar => exportToChar
       use m_List, only : List_allocated => allocated
       use m_AttrVect, only : AttrVect_copy => copy
-      use m_stdio       
+      use m_stdio
       use m_die
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(GeneralGrid),          intent(in)  :: GGrid
       character(len=*),           intent(in)  :: identifier
@@ -88,7 +88,7 @@
 !:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   write(device,*) identifier, ":: TYPE CHECK"
-  
+
   if(List_allocated(GGrid%coordinate_list)) then
      write(device,*) identifier, ":: COORDINATE_LIST = ", &
           ListExportToChar(GGrid%coordinate_list)
@@ -112,7 +112,7 @@
 
   if(List_allocated(GGrid%weight_list)) then
      write(device,*) identifier, ":: WEIGHT_LIST = ", &
-          ListExportToChar(GGrid%weight_list)                            
+          ListExportToChar(GGrid%weight_list)
   else
      write(device,*) identifier, ":: WEIGHT_LIST NOT INITIALIZED"
   endif
@@ -185,10 +185,10 @@
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 
 ! NOTE: THIS IS NOT A CHECK FOR CORRECTNESS, JUST A CHECK FOR CONSISTENCY
-  
+
   call SortPermuteTest_(GGrid,identifier,device)
 
-!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!  
+!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 !:::::TESTING EXPORT AND IMPORT FUNCTIONS::::::::::::::::::::::::::::::::!
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 
@@ -220,7 +220,7 @@ end subroutine testGGrid_
     use m_GeneralGrid, only: GeneralGrid,indexIA,indexRA
     use m_AttrVect, only : getIList, getRList
     use m_AttrVect, only : nIAttr,nRAttr
-    use m_List,   only: List_allocated   => allocated    
+    use m_List,   only: List_allocated   => allocated
     use m_String, only: String
     use m_String, only: StringToChar     => toChar
     use m_String, only: String_clean     => clean
@@ -228,7 +228,7 @@ end subroutine testGGrid_
     use m_die
 
     implicit none
-    
+
     type(GeneralGrid),          intent(in)  :: GGrid
     character(len=*),           intent(in)  :: identifier
     integer,                    intent(in)  :: device
@@ -290,7 +290,7 @@ end subroutine testGGrid_
             "::GGrid Index = ", j,      &
             "::Attribute Name = ", StringToChar(ItemStr)
        call String_clean(ItemStr)
-       
+
     enddo
 
   end subroutine IndexTest_
@@ -345,7 +345,7 @@ end subroutine testGGrid_
        enddo
     endif
     if(nRAttr(GGRIDCOPY1%data)>0) then
-       
+
        r=0.
        do i=1,nRAttr(GGRIDCOPY1%data)
           do j=1,lsize(GGRIDCOPY1)
@@ -365,7 +365,7 @@ end subroutine testGGrid_
     if(ierr /= 0) call die(myname_,"deallocate(perm)")
 
     if(nIAttr(GGRIDCOPY1%data)>0) then
-     
+
        do i=1,nIAttr(GGRIDCOPY1%data)
           do j=1,lsize(GGRIDCOPY1)
              if(GGRIDCOPY1%data%iAttr(i,j) /= GGRIDCOPY2%data%iAttr(i,j)) then
@@ -373,14 +373,14 @@ end subroutine testGGrid_
              endif
           enddo
        enddo
-       
+
        write(device,*) identifier, ":: INTEGER GGRID%DATA IN ", GGrid%descend, &
             " ORDER:: ", GGRIDCOPY1%data%iAttr(1,1:5)
-       
+
     endif
 
     if(nRAttr(GGRIDCOPY1%data)>0) then
-       
+
        do i=1,nRAttr(GGRIDCOPY1%data)
           do j=1,lsize(GGRIDCOPY1)
              if(GGRIDCOPY1%data%rAttr(i,j) /= GGRIDCOPY2%data%rAttr(i,j)) then
@@ -400,10 +400,10 @@ end subroutine testGGrid_
     write(device,*) identifier, ":: NOT TESTING SORTING AND PERMUTING. CONSULT &
          &SOURCE CODE TO ENABLE TESTING."
     endif
-       
+
   end subroutine SortPermuteTest_
 
-!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!  
+!::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 !:::::TEST FOR EXPORT AND IMPORT FUNCTIONS:::::::::::::::::::::::::::::::!
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
 
@@ -443,9 +443,9 @@ end subroutine testGGrid_
     write(device,*) identifier, ":: Testing import and export functions"
 
     if(nIAttr(GGrid%data)>0) then
-  
+
        call exportIList(aV=GGrid%data,outIList=outIList)
-       
+
        if(.NOT. List_identical(GGrid%data%iList,outIList)) then
           call die(myname_, "Function exportIList failed!")
        endif
@@ -470,10 +470,10 @@ end subroutine testGGrid_
 
        call init(oGGrid=importGGrid,iGGrid=GGrid,lsize=exportsize)
        call AttrVect_zero(importGGrid%data)
-       
+
        call importIAttr(GGrid=importGGrid,AttrTag=StringToChar(ItemStr), &
             inVect=outIVect,lsize=exportsize)
-       
+
        j=indexIA(importGGrid,StringToChar(ItemStr))
        if(j<=0) call die(myname_,"indexIA(importGGrid,StringToChar(ItemStr))")
        do i=1,exportsize
@@ -485,16 +485,16 @@ end subroutine testGGrid_
        call clean(importGGrid)
        call List_clean(outIList)
        call String_clean(ItemStr)
-       
+
        deallocate(outIVect,stat=ierr)
        if(ierr/=0) call die(myname_,"deallocate(outIVect)")
 
     endif
 
     if(nRAttr(GGrid%data)>0) then
-  
+
        call exportRList(aV=GGrid%data,outRList=outRList)
-       
+
        if(.NOT. List_identical(GGrid%data%rList,outRList)) then
           call die(myname_, "Function exportRList failed!")
        endif
@@ -516,7 +516,7 @@ end subroutine testGGrid_
              call die(myname_,"Function exportRAttr failed!")
           endif
        enddo
-       
+
        call init(oGGrid=importGGrid,iGGrid=GGrid,lsize=exportsize)
        call AttrVect_zero(importGGrid%data)
 
@@ -534,7 +534,7 @@ end subroutine testGGrid_
        call clean(importGGrid)
        call List_clean(outRList)
        call String_clean(ItemStr)
-       
+
        deallocate(outRVect,stat=ierr)
        if(ierr/=0) call die(myname_,"deallocate(outRVect)")
 
@@ -554,7 +554,7 @@ end subroutine testGGrid_
     use m_realkinds, only : FP
 
     implicit none
-      
+
     type(GeneralGrid), intent(in) :: GGrid1
     type(GeneralGrid), intent(in) :: GGrid2
     real, optional,    intent(in) :: Range
@@ -570,7 +570,7 @@ end subroutine testGGrid_
     else
        if(.NOT. AttrVect_identical(GGrid1%data,GGrid2%data)) then
           Identical_=.false.
-       endif   
+       endif
     endif
 
     if(.NOT. List_identical(GGrid1%coordinate_list, &
@@ -626,11 +626,11 @@ end subroutine testGGrid_
     endif
 
      if((associated(GGrid1%descend).and..NOT.associated(GGrid2%descend)).or.&
-          (.NOT.associated(GGrid1%descend).and.associated(GGrid2%descend)))then   
+          (.NOT.associated(GGrid1%descend).and.associated(GGrid2%descend)))then
         Identical_=.false.
      endif
 
   end function Identical_
-    
+
 
 end module m_GGRIDTEST

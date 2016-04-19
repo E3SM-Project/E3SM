@@ -42,7 +42,7 @@ touch pop_perf.out
       set POP_BLCKX	 = `./xmlquery POP_BLCKX      --value`
       set POP_BLCKY	 = `./xmlquery POP_BLCKY      --value`
       set POP_MXBLCKS	 = `./xmlquery POP_MXBLCKS    --value`
-      set POP_DECOMPTYPE = `./xmlquery POP_DECOMPTYPE --value`  
+      set POP_DECOMPTYPE = `./xmlquery POP_DECOMPTYPE --value`
       set NTASKS_OCN	 = `./xmlquery NTASKS_OCN     --value`
       set NTHRDS_OCN	 = `./xmlquery NTHRDS_OCN     --value`
 
@@ -67,10 +67,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else

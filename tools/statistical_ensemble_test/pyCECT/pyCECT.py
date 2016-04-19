@@ -22,8 +22,8 @@ def main(argv):
     except getopt.GetoptError:
         pyEnsLib.CECT_usage()
         sys.exit(2)
-  
-    
+
+
     # Set the default value for options
     opts_dict = {}
     opts_dict['timeslice'] = 1
@@ -49,7 +49,7 @@ def main(argv):
     print ' '
     print 'Ensemble summary file = '+opts_dict['sumfile']
     print ' '
-    print 'Cam output directory = '+opts_dict['indir']    
+    print 'Cam output directory = '+opts_dict['indir']
     print ' '
     print ' '
 
@@ -65,11 +65,11 @@ def main(argv):
          else:
              print "COULD NOT LOCATE FILE " +opts_dict['indir']+frun_file+" EXISTING"
              sys.exit()
-    
 
- 
+
+
     # Read all variables from the ensemble summary file
-    ens_var_name,ens_avg,ens_stddev,ens_rmsz,ens_gm,num_3d,mu_gm,sigma_gm,loadings_gm,sigma_scores_gm=pyEnsLib.read_ensemble_summary(opts_dict['sumfile']) 
+    ens_var_name,ens_avg,ens_stddev,ens_rmsz,ens_gm,num_3d,mu_gm,sigma_gm,loadings_gm,sigma_scores_gm=pyEnsLib.read_ensemble_summary(opts_dict['sumfile'])
 
     if len(ens_rmsz) == 0:
         gmonly = True
@@ -93,17 +93,17 @@ def main(argv):
 
     # Get ncol and nlev value
     npts3d,npts2d,is_SE=pyEnsLib.get_ncol_nlev(ifiles[0])
- 
+
     # Compare the new run and the ensemble summary file to get rmsz score
     results={}
     countzscore=np.zeros(len(ifiles),dtype=np.int32)
     countgm=np.zeros(len(ifiles),dtype=np.int32)
     if not gmonly:
-	for fcount,fid in enumerate(ifiles): 
-	    otimeSeries = fid.variables 
-	    for var_name in ens_var_name: 
+	for fcount,fid in enumerate(ifiles):
+	    otimeSeries = fid.variables
+	    for var_name in ens_var_name:
 		orig=otimeSeries[var_name]
-		Zscore,has_zscore=pyEnsLib.calculate_raw_score(var_name,orig[opts_dict['timeslice']],npts3d,npts2d,ens_avg,ens_stddev,is_SE) 
+		Zscore,has_zscore=pyEnsLib.calculate_raw_score(var_name,orig[opts_dict['timeslice']],npts3d,npts2d,ens_avg,ens_stddev,is_SE)
 		if has_zscore:
 		    # Add the new run rmsz zscore to the dictionary "results"
 		    pyEnsLib.addresults(results,'zscore',Zscore,var_name,'f'+str(fcount))
@@ -125,12 +125,12 @@ def main(argv):
     # Evaluate the new run global mean if it is in the range of the ensemble summary global mean range
     for fcount,fid in enumerate(ifiles):
         countgm[fcount]=pyEnsLib.evaluatestatus('means','gmRange',variables,'gm',results,'f'+str(fcount))
-  
+
     # Calculate the PCA scores of the new run
     new_scores=pyEnsLib.standardized(means,mu_gm,sigma_gm,loadings_gm)
     pyEnsLib.comparePCAscores(ifiles,new_scores,sigma_scores_gm,opts_dict)
 
-    # Print out 
+    # Print out
     if opts_dict['printVarTest']:
 	print '*********************************************** '
 	print 'Variable-based testing (for reference only - not used to determine pass/fail)'

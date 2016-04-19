@@ -1,4 +1,4 @@
-QSMPFLAGS:= 
+QSMPFLAGS:=
 ifeq ($(compile_threaded), true)
   QSMPFLAGS += -qsmp=noauto:noomp
 endif

@@ -1,9 +1,9 @@
 #! /bin/csh -f
 
 set RUNDIR	= `./xmlquery  RUNDIR     -value`
-set NINST_ATM	= `./xmlquery  NINST_ATM  -value`  
-set ATM_NX	= `./xmlquery  ATM_NX	  -value`  
-set ATM_NY	= `./xmlquery  ATM_NY	  -value`  
+set NINST_ATM	= `./xmlquery  NINST_ATM  -value`
+set ATM_NX	= `./xmlquery  ATM_NX	  -value`
+set ATM_NY	= `./xmlquery  ATM_NY	  -value`
 
 set NX = $ATM_NX
 set NY = $ATM_NY

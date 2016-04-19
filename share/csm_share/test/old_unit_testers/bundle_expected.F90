@@ -139,7 +139,7 @@ logical function bundle_metadata_is_expected( bun, expected_bun )
       call dshr_bundle_getDate (expected_bun,exp_date,exp_sec)
       if ( date /= exp_date .or. sec /= exp_sec ) status = .false.
    end if
-        
+
    bundle_metadata_is_expected = status
 
 end function bundle_metadata_is_expected
@@ -154,7 +154,7 @@ subroutine bundle_fill_cosz( scale, orb_eccen, orb_mvelpp, orb_lambm0, orb_obliq
    implicit none
    real(r8), intent(IN) :: scale
    real(r8), intent(IN) :: orb_eccen, orb_mvelpp, orb_lambm0, orb_obliqr
-   type(shr_date), intent(IN) :: sdate_ub             ! Upper bound of date for 
+   type(shr_date), intent(IN) :: sdate_ub             ! Upper bound of date for
    type(dshr_domain_domainType), pointer :: domain
    type(dshr_bundle_bundleType), intent(INOUT) :: bun ! bundle to fill
    integer, intent(in) :: kfld    ! Which field number to fill

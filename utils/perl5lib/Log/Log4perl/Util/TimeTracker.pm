@@ -32,7 +32,7 @@ sub new {
         @_,
     };
 
-    $self->{time_function} = \&_gettimeofday unless 
+    $self->{time_function} = \&_gettimeofday unless
         defined $self->{time_function};
 
     bless $self, $class;
@@ -110,7 +110,7 @@ sub milliseconds {
         defined $current_time;
 
     my($seconds, $milliseconds) = time_diff(
-            $self->{reset_time}, 
+            $self->{reset_time},
             $current_time);
 
     return $seconds*1000 + $milliseconds;
@@ -125,7 +125,7 @@ sub delta_milliseconds {
         defined $current_time;
 
     my($seconds, $milliseconds) = time_diff(
-            $self->{last_call_time}, 
+            $self->{last_call_time},
             $current_time);
 
     $self->{last_call_time} = $current_time;
@@ -150,7 +150,7 @@ Log::Log4perl::Util::TimeTracker - Track time elapsed
   my $timer = Log::Log4perl::Util::TimeTracker->new();
 
     # equivalent to Time::HiRes::gettimeofday(), regardless
-    # if Time::HiRes is present or not. 
+    # if Time::HiRes is present or not.
   my($seconds, $microseconds) = $timer->gettimeofday();
 
     # reset internal timer
@@ -169,17 +169,17 @@ date and time placeholders. Its accuracy depends on the availability
 of the Time::HiRes module. If it's available, its granularity is
 milliseconds, if not, seconds.
 
-The most common use of this module is calling the gettimeofday() 
+The most common use of this module is calling the gettimeofday()
 method:
 
   my($seconds, $microseconds) = $timer->gettimeofday();
 
-It returns seconds and microseconds of the current epoch time. If 
+It returns seconds and microseconds of the current epoch time. If
 Time::HiRes is installed, it will simply defer to its gettimeofday()
 function, if it's missing, time() will be called instead and $microseconds
 will always be 0.
 
-To measure time elapsed in milliseconds, use the reset() method to 
+To measure time elapsed in milliseconds, use the reset() method to
 reset the timer to the current time, followed by one or more calls to
 the milliseconds() method:
 
@@ -189,7 +189,7 @@ the milliseconds() method:
     # return milliseconds since last reset
   $msecs = $timer->milliseconds();
 
-On top of the time span between the last reset and the current time, 
+On top of the time span between the last reset and the current time,
 the module keeps track of the time between calls to delta_milliseconds():
 
   $msecs = $timer->delta_milliseconds();
@@ -199,8 +199,8 @@ last reset(), on subsequent calls, it will return the time elapsed in
 milliseconds since the last call to delta_milliseconds() instead. Note
 that reset() also resets the time of the last call.
 
-The internal timer of this module gets its time input from the POSIX time() 
-function, or, if the Time::HiRes module is available, from its 
+The internal timer of this module gets its time input from the POSIX time()
+function, or, if the Time::HiRes module is available, from its
 gettimeofday() function. To figure out which one it is, use
 
     if( $timer->hires_available() ) {
@@ -227,11 +227,11 @@ the value returned on the previous call by 1000.
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -241,7 +241,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -252,8 +252,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

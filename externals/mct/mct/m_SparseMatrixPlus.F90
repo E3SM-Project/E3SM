@@ -5,98 +5,98 @@
 ! !MODULE: m_SparseMatrixPlus -- Class Parallel for Matrix-Vector Multiplication
 !
 ! !DESCRIPTION:
-! Matrix-vector multiplication is one of the MCT's core services, and is 
-! used primarily for the interpolation of data fields from one physical 
-! grid to another.  Let ${\bf x} \in \Re^{N_x}$ and 
-! ${\bf y} \in \Re^{N_y}$ represent data fields on physical grids $A$ 
-! and $B$, respectively.  Field data is interpolated from grid $A$ to grid 
+! Matrix-vector multiplication is one of the MCT's core services, and is
+! used primarily for the interpolation of data fields from one physical
+! grid to another.  Let ${\bf x} \in \Re^{N_x}$ and
+! ${\bf y} \in \Re^{N_y}$ represent data fields on physical grids $A$
+! and $B$, respectively.  Field data is interpolated from grid $A$ to grid
 ! $B$ by
 ! $$ {\bf y} = {\bf M} {\bf x} , $$
 ! where {\bf M} is aa  ${N_y} \times {N_x}$ matrix.
-! 
-! Within MCT, the {\tt SparseMatrix} data type is MCT's object for 
-! storing sparse matrices such as {\bf M} , and the {\tt AttrVect} data 
-! type is MCT's field data storage object.  That is, {\bf x} and {\bf y} 
-! are each stored in {\tt AttrVect} form, and {\bf M} is stored as a 
-! {\tt SparseMatrix}.  
 !
-! For global address spaces (uniprocessor or shared-memory parallel), this 
-! picture of matrix-vector multiplication is sufficient.  If one wishes 
-! to perform {\em distributed-memory parallel} matrix-vector multiplication, 
+! Within MCT, the {\tt SparseMatrix} data type is MCT's object for
+! storing sparse matrices such as {\bf M} , and the {\tt AttrVect} data
+! type is MCT's field data storage object.  That is, {\bf x} and {\bf y}
+! are each stored in {\tt AttrVect} form, and {\bf M} is stored as a
+! {\tt SparseMatrix}.
+!
+! For global address spaces (uniprocessor or shared-memory parallel), this
+! picture of matrix-vector multiplication is sufficient.  If one wishes
+! to perform {\em distributed-memory parallel} matrix-vector multiplication,
 ! however, in addition to computation, one must consider {\em communication}.
 !
-! There are three basic message-passing parallel strategies for computing 
+! There are three basic message-passing parallel strategies for computing
 ! ${\bf y} = {\bf M} {\bf x}$:
 !
 !\begin{enumerate}
-! \item Decompose {\bf M} based on its {\em rows}, and corresponding to the 
-! decomposition for the vector {\bf y}.  That is, if a given process owns 
-! the $i^{\rm th}$ element of {\bf y}, then all the elements of row $i$ of 
-! {\bf M} also reside on this process.  Then  ${\bf y} = {\bf M} {\bf x}$ is 
+! \item Decompose {\bf M} based on its {\em rows}, and corresponding to the
+! decomposition for the vector {\bf y}.  That is, if a given process owns
+! the $i^{\rm th}$ element of {\bf y}, then all the elements of row $i$ of
+! {\bf M} also reside on this process.  Then  ${\bf y} = {\bf M} {\bf x}$ is
 ! implemented as follows:
 ! \begin{enumerate}
-! \item Create an {\em intermediate vector} {\bf x'} that is the pre-image of 
+! \item Create an {\em intermediate vector} {\bf x'} that is the pre-image of
 ! the elements of {\bf y} owned locally.
-! \item Comunnicate with the appropriate processes on the local communicator to 
+! \item Comunnicate with the appropriate processes on the local communicator to
 ! gather from {\bf x} the elements of {\bf x'}.
 ! \item Compute ${\bf y} = {\bf M} {\bf x'}$.
 ! \item Destroy the data structure holding {\bf x'}.
 ! \end{enumerate}
-! \item Decompose {\bf M} based on its {\em columns}, and corresponding to the 
-! decomposition for the vector {\bf x}.  That is, if a given process owns 
-! the $j^{\rm th}$ element of {\bf x}, then all the elements of column $j$ of 
-! {\bf M} also reside on this process.  Then  ${\bf y} = {\bf M} {\bf x}$ is 
+! \item Decompose {\bf M} based on its {\em columns}, and corresponding to the
+! decomposition for the vector {\bf x}.  That is, if a given process owns
+! the $j^{\rm th}$ element of {\bf x}, then all the elements of column $j$ of
+! {\bf M} also reside on this process.  Then  ${\bf y} = {\bf M} {\bf x}$ is
 ! implemented as follows:
 ! \begin{enumerate}
 ! \item Create an {\em intermediate vector} {\bf y'} that holds {\em partial sums}
 ! of elements of {\bf y} computed from {\bf x} and {\bf M}.
 ! \item Compute ${\bf y'} = {\bf M} {\bf x}$.
-! \item Perform communications to route elements of {\bf y'} to their eventual 
-! destinations in {\bf y}, where they will be summed, resulting in the distributed 
+! \item Perform communications to route elements of {\bf y'} to their eventual
+! destinations in {\bf y}, where they will be summed, resulting in the distributed
 ! vector {\bf y}.
 ! \item Destroy the data structure holding {\bf y'}.
 ! \end{enumerate}
-! \item Decompose {\bf M} based on some arbitrary, user-supplied scheme.  This will 
-! necessitate two intermediate vectors {\bf x'} and {\bf y'}. Then  
-! ${\bf y} = {\bf M} {\bf x}$ is implemented as follows: 
+! \item Decompose {\bf M} based on some arbitrary, user-supplied scheme.  This will
+! necessitate two intermediate vectors {\bf x'} and {\bf y'}. Then
+! ${\bf y} = {\bf M} {\bf x}$ is implemented as follows:
 ! \begin{enumerate}
-! \item Create {\em intermediate vectors} {\bf x'} and {\bf y'}.  The numbers of 
-! elements in {\bf x'} and {\bf y'} are based {\bf M}, specifically its numbers of 
+! \item Create {\em intermediate vectors} {\bf x'} and {\bf y'}.  The numbers of
+! elements in {\bf x'} and {\bf y'} are based {\bf M}, specifically its numbers of
 ! {\em distinct} row and column index values, respectively.
-! \item Comunnicate with the appropriate processes on the local communicator to 
+! \item Comunnicate with the appropriate processes on the local communicator to
 ! gather from {\bf x} the elements of {\bf x'}.
 ! \item Compute ${\bf y'} = {\bf M} {\bf x'}$.
-! \item Perform communications to route elements of {\bf y'} to their eventual 
-! destinations in {\bf y}, where they will be summed, resulting in the distributed 
+! \item Perform communications to route elements of {\bf y'} to their eventual
+! destinations in {\bf y}, where they will be summed, resulting in the distributed
 ! vector {\bf y}.
 ! \item Destroy the data structures holding {\bf x'} and {\bf y'}.
 ! \end{enumerate}
 ! \end{enumerate}
 !
-! These operations require information about many aspects of the multiplication 
+! These operations require information about many aspects of the multiplication
 ! process.  These data are:
 ! \begin{itemize}
 ! \item The matrix-vector parallelization strategy, which is one of the following:
 ! \begin{enumerate}
-! \item Distributed in {\bf x}, purely data local in {\bf y}, labeled by the 
+! \item Distributed in {\bf x}, purely data local in {\bf y}, labeled by the
 ! public data member {\tt Xonly}
-! \item Purely data local {\bf x}, distributed in {\bf y}, labeled by the 
+! \item Purely data local {\bf x}, distributed in {\bf y}, labeled by the
 ! public data member {\tt Yonly}
-! \item Distributed in both {\bf x} and {\bf y}, labeled by the public data 
+! \item Distributed in both {\bf x} and {\bf y}, labeled by the public data
 ! member {\tt XandY}
 ! \end{enumerate}
 ! \item A communications scheduler to create {\bf x'} from {\bf x};
-! \item A communications scheduler to deliver partial sums contained in {\bf y'} to 
+! \item A communications scheduler to deliver partial sums contained in {\bf y'} to
 ! {\bf y}.
 ! \item Lengths of the intermediate vectors {\bf x'} and {\bf y'}.
 ! \end{itemize}
 !
 ! In MCT, the above data are stored in a {\em master} class for {\tt SparseMatrix}-
-! {\tt AttrVect} multiplication.  This master class is called a 
+! {\tt AttrVect} multiplication.  This master class is called a
 ! {\tt SparseMatrixPlus}.
 !
-! This module contains the definition of the {\tt SparseMatrixPlus}, and a variety 
-! of methods to support it.  These include initialization, destruction, query, and 
+! This module contains the definition of the {\tt SparseMatrixPlus}, and a variety
+! of methods to support it.  These include initialization, destruction, query, and
 ! data import/export.
 !
 ! !INTERFACE:
@@ -142,14 +142,14 @@
       interface clean ; module procedure clean_ ; end interface
       interface initialized ; module procedure initialized_ ; end interface
       interface exportStrategyToChar ; module procedure &
-        exportStrategyToChar_ 
+        exportStrategyToChar_
       end interface
 
 ! !PUBLIC DATA MEMBERS:
 
-      public :: Xonly ! Matrix decomposed only by ROW (i.e., based 
+      public :: Xonly ! Matrix decomposed only by ROW (i.e., based
                       ! on the decomposition of y); comms x->x'
-      public :: Yonly ! Matrix decomposed only by COLUMN (i.e., based 
+      public :: Yonly ! Matrix decomposed only by COLUMN (i.e., based
                       ! on the decomposition of x); comms y'->y
       public :: XandY ! Matrix has complex ROW/COLUMN decomposed
 
@@ -160,10 +160,10 @@
 
 ! !SEE ALSO:
 ! The MCT module m_SparseMatrix for more information about Sparse Matrices.
-! The MCT module m_Rearranger for deatailed information about Communications 
+! The MCT module m_Rearranger for deatailed information about Communications
 ! scheduling.
 ! The MCT module m_AttrVect for details regarding the Attribute Vector.
-! The MCT module m_MatAttrVectMult for documentation of API's that use 
+! The MCT module m_MatAttrVectMult for documentation of API's that use
 ! the SparseMatrixPlus.
 !
 ! !REVISION HISTORY:
@@ -184,27 +184,27 @@
 !
 ! !IROUTINE: initFromRoot_ - Creation and Initializtion from the Root
 !
-! !DESCRIPTION:  
-! This routine creates an {\tt SparseMatrixPlus} {\tt sMatPlus} using 
+! !DESCRIPTION:
+! This routine creates an {\tt SparseMatrixPlus} {\tt sMatPlus} using
 ! the following elements:
 ! \begin{itemize}
-! \item A {\tt SparseMatrix} (the input argument {\tt sMat}), whose 
-! elements all reside only on the {\tt root} process of the MPI 
-! communicator with an integer handle defined by the input {\tt INTEGER} 
+! \item A {\tt SparseMatrix} (the input argument {\tt sMat}), whose
+! elements all reside only on the {\tt root} process of the MPI
+! communicator with an integer handle defined by the input {\tt INTEGER}
 ! argument {\tt comm};
 ! \item A {\tt GlobalSegMap} (the input argument {\tt xGSMap}) describing
-! the domain decomposition of the vector {\bf x} on the communicator 
+! the domain decomposition of the vector {\bf x} on the communicator
 ! {\tt comm};
 ! \item A {\tt GlobalSegMap} (the input argument {\tt yGSMap}) describing
-! the domain decomposition of the vector {\bf y} on the communicator 
+! the domain decomposition of the vector {\bf y} on the communicator
 ! {\tt comm};
 ! \item The matrix-vector multiplication parallelization strategy.  This
-! is set by the input {\tt CHARACTER} argument {\tt strategy}, which must 
-! have value corresponding to one of the following public data members 
-! defined in the declaration section of this module.  Acceptable values 
+! is set by the input {\tt CHARACTER} argument {\tt strategy}, which must
+! have value corresponding to one of the following public data members
+! defined in the declaration section of this module.  Acceptable values
 ! for use in this routine are: {\tt Xonly} and {\tt Yonly}.
 ! \end{itemize}
-! The optional argument {\tt Tag} can be used to set the tag value used in 
+! The optional argument {\tt Tag} can be used to set the tag value used in
 ! the call to {\tt Rearranger}.  DefaultTag will be used otherwise.
 !
 ! !INTERFACE:
@@ -255,7 +255,7 @@
       integer,optional,       intent(in)    :: Tag
 
 ! !INPUT/OUTPUT PARAMETERS:
-      
+
       type(SparseMatrix),     intent(inout) :: sMat
 
 ! !OUTPUT PARAMETERS:
@@ -289,9 +289,9 @@
 
        ! Basic Input Argument Checks:
 
-       ! On the root, where the matrix is stored, do its number of 
-       ! rows and columns match the global lengths ofthe vectors y 
-       ! and x, respectively? 
+       ! On the root, where the matrix is stored, do its number of
+       ! rows and columns match the global lengths ofthe vectors y
+       ! and x, respectively?
 
   if(myID == root) then
 
@@ -313,7 +313,7 @@
 
   endif ! if(myID == root) then...
 
-       ! Check desired parallelization strategy name for validity.  
+       ! Check desired parallelization strategy name for validity.
        ! If either of the strategies supported by this routine are
        ! provided, initialize the appropriate component of sMatPlus.
 
@@ -336,7 +336,7 @@
 
        ! End Argument Sanity Checks.
 
-       ! Based on the parallelization strategy, scatter sMat into 
+       ! Based on the parallelization strategy, scatter sMat into
        ! sMatPlus%Matrix accordingly.
 
   select case(strategy)
@@ -385,23 +385,23 @@
 !
 ! !IROUTINE: initDistributed_ - Distributed Creation and Initializtion
 !
-! !DESCRIPTION:  
-! This routine creates an {\tt SparseMatrixPlus} {\tt sMatPlus} using 
+! !DESCRIPTION:
+! This routine creates an {\tt SparseMatrixPlus} {\tt sMatPlus} using
 ! the following elements:
 ! \begin{itemize}
-! \item A {\tt SparseMatrix} (the input argument {\tt sMat}), whose 
-! elements have previously been destributed across the MPI communicator 
-! with an integer handle defined by the input {\tt INTEGER} argument 
+! \item A {\tt SparseMatrix} (the input argument {\tt sMat}), whose
+! elements have previously been destributed across the MPI communicator
+! with an integer handle defined by the input {\tt INTEGER} argument
 ! {\tt comm};
 ! \item A {\tt GlobalSegMap} (the input argument {\tt xGSMap}) describing
-! the domain decomposition of the vector {\bf x} on the communicator 
+! the domain decomposition of the vector {\bf x} on the communicator
 ! {\tt comm}; and
 ! \item A {\tt GlobalSegMap} (the input argument {\tt yGSMap}) describing
-! the domain decomposition of the vector {\bf y} on the communicator 
+! the domain decomposition of the vector {\bf y} on the communicator
 ! {\tt comm};
 ! \end{itemize}
-! The other input arguments required by this routine are the {\tt INTEGER} 
-! arguments {\tt root} and {\tt ComponentID}, which define the communicator 
+! The other input arguments required by this routine are the {\tt INTEGER}
+! arguments {\tt root} and {\tt ComponentID}, which define the communicator
 ! root ID and MCT component ID, respectively.
 !
 ! !INTERFACE:
@@ -452,7 +452,7 @@
       integer,optional,       intent(in)    :: Tag
 
 ! !INPUT/OUTPUT PARAMETERS:
-      
+
       type(SparseMatrix),     intent(inout) :: sMat
 
 ! !OUTPUT PARAMETERS:
@@ -482,10 +482,10 @@
   endif
        ! Basic Input Argument Checks:
 
-       ! A portion of sMat (even if there are no nonzero elements in 
-       ! this local chunk) on each PE.  We must check to ensure the 
-       ! number rows and columns match the global lengths ofthe 
-       ! vectors y and x, respectively. 
+       ! A portion of sMat (even if there are no nonzero elements in
+       ! this local chunk) on each PE.  We must check to ensure the
+       ! number rows and columns match the global lengths ofthe
+       ! vectors y and x, respectively.
 
   if(GlobalSegMap_gsize(yGSMap) /= SparseMatrix_nRows(sMat)) then
      write(stderr,'(3a,i8,2a,i8)') myname, &
@@ -505,7 +505,7 @@
 
        ! End Argument Sanity Checks.
 
-       ! Set parallelization strategy to XandY, since the work distribution 
+       ! Set parallelization strategy to XandY, since the work distribution
        ! was previously determined and in principle can be *anything*
 
   call String_init(sMatPlus%Strategy, XandY)
@@ -544,7 +544,7 @@
 !
 ! !IROUTINE: vecinit_ - Initialize vector parts of a SparseMatrixPlus
 !
-! !DESCRIPTION:  
+! !DESCRIPTION:
 ! This routine will initialize the parts of the SparseMatrix in
 ! the SparseMatrixPlus object that are used in the vector-friendly
 ! version of the sparse matrix multiply.
@@ -580,15 +580,15 @@
 !
 ! !IROUTINE: clean_ - Destruction of a SparseMatrixPlus Object
 !
-! !DESCRIPTION:  
-! This routine deallocates all allocated memory belonging to the 
-! input/output {\tt SparseMatrixPlus} argument {\tt SMatP}, and sets 
-! to zero its integer components describing intermediate vector length, 
-! and sets its {\tt LOGICAL} flag signifying initialization to 
-! {\tt .FALSE.}  The success (failure) of this operation is signified 
-! by the zero (non-zero) value of the optional {\tt INTEGER} output 
-! argument {\tt status}.  If the user does supply {\tt status} when 
-! invoking this routine, failure of {\tt clean\_()} will lead to 
+! !DESCRIPTION:
+! This routine deallocates all allocated memory belonging to the
+! input/output {\tt SparseMatrixPlus} argument {\tt SMatP}, and sets
+! to zero its integer components describing intermediate vector length,
+! and sets its {\tt LOGICAL} flag signifying initialization to
+! {\tt .FALSE.}  The success (failure) of this operation is signified
+! by the zero (non-zero) value of the optional {\tt INTEGER} output
+! argument {\tt status}.  If the user does supply {\tt status} when
+! invoking this routine, failure of {\tt clean\_()} will lead to
 ! termination of execution with an error message.
 !
 ! !INTERFACE:
@@ -636,9 +636,9 @@
   if(present(status)) status = 0
 
        ! The following string copy is superfluous. It is placed here
-       ! to outwit a compiler bug in the SGI and SunOS compilers. 
+       ! to outwit a compiler bug in the SGI and SunOS compilers.
        ! It occurs when a component of a derived type is used as an
-       ! argument to String_ToChar. This bug crashes the compiler 
+       ! argument to String_ToChar. This bug crashes the compiler
        ! with the error message:
        ! Error: Signal Segmentation fault in phase IR->WHIRL Conversion
 
@@ -646,8 +646,8 @@
   myStrategy = String_ToChar(dummyStrategy)
 
        ! Use SMatP%Strategy to determine which Rearranger(s) need
-       ! to be destroyed.  The CHARACTER parameters Xonly, Yonly, 
-       ! and XandY are inherited from the declaration section of 
+       ! to be destroyed.  The CHARACTER parameters Xonly, Yonly,
+       ! and XandY are inherited from the declaration section of
        ! this module.
 
 
@@ -741,9 +741,9 @@
 ! !IROUTINE: initialized_ - Confirmation of Initialization
 !
 ! !DESCRIPTION:
-! This {\tt LOGICAL} query function tells the user if the input 
+! This {\tt LOGICAL} query function tells the user if the input
 ! {\tt SparseMatrixPlus} argument {\tt sMatPlus} has been initialized.
-! The return value of {\tt initialized\_} is {\tt .TRUE.} if 
+! The return value of {\tt initialized\_} is {\tt .TRUE.} if
 ! {\tt sMatPlus} has been previously initialized, {\tt .FALSE.} if it
 ! has not.
 !
@@ -754,7 +754,7 @@
 ! !USES:
 !
 ! No external modules are used by this function.
-      
+
       use m_String, only : String_len
       use m_List,   only : List
       use m_List,   only : List_init => init
@@ -765,7 +765,7 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(SparseMatrixPlus), intent(in)  :: sMatPlus
 
@@ -779,11 +779,11 @@
  type(List) :: XonlyList, YonlyList, XandYList, stratList
 
   initialized_ = .FALSE.
-  
+
   XonlyLen = len(trim(Xonly))
   YonlyLen = len(trim(Yonly))
   XandYLen = len(trim(XandY))
-  
+
   if( (XonlyLen /= YonlyLen) .or. (XonlyLen /= XandYLen) ) then
      call die(myname_,"The length of the strategies are unequal. &
           &This routine needs to be rewritten.")
@@ -814,7 +814,7 @@
 ! !IROUTINE: exportStrategyToChar - Return Parallelization Strategy
 !
 ! !DESCRIPTION:
-! This query subroutine returns the parallelization  strategy set in 
+! This query subroutine returns the parallelization  strategy set in
 ! the input {\tt SparseMatrixPlus} argument {\tt sMatPlus}.  The result
 ! is returned in the output {\tt CHARACTER} argument {\tt StratChars}.
 !
@@ -834,11 +834,11 @@
 
    implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(SparseMatrixPlus), intent(in)  :: sMatPlus
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       character(len=size(sMatPlus%Strategy%c)) :: exportStrategyToChar_
 
@@ -862,7 +862,7 @@
    ! Return in character form the parallelizaiton strategy
   call String_init(dummyStrategy, SMatPlus%Strategy)
 
-  exportStrategyToChar_ = String_ToChar(dummyStrategy) 
+  exportStrategyToChar_ = String_ToChar(dummyStrategy)
 
   call String_clean(dummyStrategy)
 

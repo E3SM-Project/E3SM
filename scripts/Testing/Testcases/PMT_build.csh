@@ -1,4 +1,4 @@
-#!/bin/csh -f 
+#!/bin/csh -f
 setenv CIMEROOT `./xmlquery CIMEROOT    --value`
 
 ./Tools/check_lockedfiles || exit -1
@@ -13,7 +13,7 @@ if ( -e env_mach_pes.xml.1 )  then
 endif
 
 ./case.setup --clean --test-mode
-./case.setup 
+./case.setup
 
 cp -f env_mach_pes.xml env_mach_pes.xml.1
 cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml
@@ -23,8 +23,8 @@ echo "b4b_flag=.true." >> user_nl_pop
 
 ./case.build --testmode $*
 if ($status != 0) then
-   exit -1    
-endif 
+   exit -1
+endif
 
 mv -f $EXEROOT/${CIME_MODEL}.exe $EXEROOT/${CIME_MODEL}.exe.1
 cp -f env_build.xml    env_build.xml.1
@@ -47,7 +47,7 @@ set NTHRDS_ICE  = `./xmlquery NTHRDS_ICE	--value`
 set NTHRDS_GLC  = `./xmlquery NTHRDS_GLC	--value`
 set NTHRDS_CPL  = `./xmlquery NTHRDS_CPL	--value`
 
-# Halve the number of tasks 
+# Halve the number of tasks
 if ( $NTASKS_ATM > 1) then
   @ ntask = $NTASKS_ATM / 2
   ./xmlchange --file env_mach_pes.xml --id NTASKS_ATM --val $ntask
@@ -102,12 +102,12 @@ endif
 
 ./case.setup --clean
 ./case.setup
-./case.clean_build -all 
+./case.clean_build -all
 
 ./case.build --testmode $*
 if ($status != 0) then
-   exit -1    
-endif 
+   exit -1
+endif
 
 mv -f $EXEROOT/${CIME_MODEL}.exe $EXEROOT/${CIME_MODEL}.exe.2
 cp -f env_build.xml env_build.xml.2

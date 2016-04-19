@@ -17,7 +17,7 @@
 # differs slightly. For example: In testcase_end, it is a FAIL for
 # baselineroot to not exist; here we allow that, and happily generate
 # that directory for you if it doesn't already exist.
-# 
+#
 # Exit status will generally be 0 (even for test failure), but will be
 # non-zero for incorrect usage.
 #
@@ -36,7 +36,7 @@
 # - test_hist=''
 #   - return status should be "GFAIL"
 #   - example: tst=`component_generate.sh -baseline_dir /glade/scratch/sacks/cesm_baselines/test_script/ERI44y.f09_g16.TGRCP85.bluefire_ibm -baseline_hist cism.h.nc -test_dir /ptmp/sacks/ERI44y.f09_g16.TGRCP85.bluefire_ibm.C.114029/run -test_hist ''`
-# 
+#
 # - success
 #   - return status should be "PASS"
 #   - example: tst=`component_generate.sh -baseline_dir /glade/scratch/sacks/cesm_baselines/test_script/ERI44y.f09_g16.TGRCP85.bluefire_ibm -baseline_hist cism.h.nc -test_dir /ptmp/sacks/ERI44y.f09_g16.TGRCP85.bluefire_ibm.C.114029/run -test_hist ERI44y.f09_g16.TGRCP85.bluefire_ibm.C.114029.cism.h.2046-01-01-00000.nc`
@@ -162,7 +162,7 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
-	    
+
 
 #----------------------------------------------------------------------
 # Exit if required command-line arguments weren't provided

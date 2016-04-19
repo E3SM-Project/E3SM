@@ -74,8 +74,8 @@ subroutine glc_run_mct( EClock, cdata, x2d, d2x)
 
    type(ESMF_Clock)            ,intent(inout) :: EClock
    type(seq_cdata)             ,intent(inout) :: cdata
-   type(mct_aVect)             ,intent(inout) :: x2d        
-   type(mct_aVect)             ,intent(inout) :: d2x        
+   type(mct_aVect)             ,intent(inout) :: x2d
+   type(mct_aVect)             ,intent(inout) :: d2x
 
 !EOP
 !-------------------------------------------------------------------------------
@@ -88,7 +88,7 @@ end subroutine glc_run_mct
 ! !IROUTINE: glc_final_mct
 !
 ! !DESCRIPTION:
-!     stub glc model finalize 
+!     stub glc model finalize
 !
 ! !REVISION HISTORY:
 !
@@ -100,8 +100,8 @@ subroutine glc_final_mct( EClock, cdata, x2d, d2x)
 
    type(ESMF_Clock)            ,intent(inout) :: EClock
    type(seq_cdata)             ,intent(inout) :: cdata
-   type(mct_aVect)             ,intent(inout) :: x2d        
-   type(mct_aVect)             ,intent(inout) :: d2x        
+   type(mct_aVect)             ,intent(inout) :: x2d
+   type(mct_aVect)             ,intent(inout) :: d2x
 
 !EOP
 !-------------------------------------------------------------------------------

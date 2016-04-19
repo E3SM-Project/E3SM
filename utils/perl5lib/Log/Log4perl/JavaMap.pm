@@ -6,19 +6,19 @@ use strict;
 use constant _INTERNAL_DEBUG => 0;
 
 our %translate = (
-    'org.apache.log4j.ConsoleAppender' => 
+    'org.apache.log4j.ConsoleAppender' =>
         'Log::Log4perl::JavaMap::ConsoleAppender',
-    'org.apache.log4j.FileAppender'    => 
+    'org.apache.log4j.FileAppender'    =>
         'Log::Log4perl::JavaMap::FileAppender',
-    'org.apache.log4j.RollingFileAppender'    => 
+    'org.apache.log4j.RollingFileAppender'    =>
         'Log::Log4perl::JavaMap::RollingFileAppender',
-    'org.apache.log4j.TestBuffer'    => 
+    'org.apache.log4j.TestBuffer'    =>
         'Log::Log4perl::JavaMap::TestBuffer',
-     'org.apache.log4j.jdbc.JDBCAppender'    => 
+     'org.apache.log4j.jdbc.JDBCAppender'    =>
         'Log::Log4perl::JavaMap::JDBCAppender',
-     'org.apache.log4j.SyslogAppender'    => 
+     'org.apache.log4j.SyslogAppender'    =>
         'Log::Log4perl::JavaMap::SyslogAppender',
-     'org.apache.log4j.NTEventLogAppender'    => 
+     'org.apache.log4j.NTEventLogAppender'    =>
         'Log::Log4perl::JavaMap::NTEventLogAppender',
 );
 
@@ -33,7 +33,7 @@ sub get {
             die "ERROR: you didn't tell me how to implement your appender " .
                 "'$appender_name'";
 
-    my $perl_class = $translate{$appender_data->{value}} || 
+    my $perl_class = $translate{$appender_data->{value}} ||
                      $user_defined{$appender_data->{value}} ||
             die "ERROR:  I don't know how to make a '$appender_data->{value}' " .
                 "to implement your appender '$appender_name', that's not a " .
@@ -53,7 +53,7 @@ sub get {
 sub translate {
     my $java_class = shift;
 
-    return $translate{$java_class} || 
+    return $translate{$java_class} ||
             $user_defined{$java_class};
 }
 
@@ -88,7 +88,7 @@ the log4j options into Log::Dispatch parameters..
 
 (Note that you can always use the Log::Dispatch::* module.  By 'implemented'
 I mean having a translation class that translates log4j options into
-the Log::Dispatch options so you can use log4j rather than log4perl 
+the Log::Dispatch options so you can use log4j rather than log4perl
 syntax in your config file.)
 
 Here's the list of appenders I see on the current (6/2002) log4j site.
@@ -104,10 +104,10 @@ These are implemented
 
 
 These should/will/might be implemented
-    
-    DailyRollingFileAppender - 
+
+    DailyRollingFileAppender -
     SMTPAppender     - Log::Dispatch::Email::MailSender
-    
+
 
 These might be implemented but they don't have corresponding classes
 in Log::Dispatch (yet):
@@ -130,7 +130,7 @@ These will probably not be implemented
 =head1 ROLL YOUR OWN
 
 Let's say you've in a mixed Java/Perl environment and you've
-come up with some custom Java appender with behavior you want to 
+come up with some custom Java appender with behavior you want to
 use in both worlds, C<myorg.customAppender>.  You write a
 Perl appender with the same behavior C<Myorg::CustomAppender>. You
 want to use one config file across both applications, so the
@@ -140,7 +140,7 @@ isn't in this JavaMap class, so what do you do?
 
 In  your Perl code, before you call Log::Log4perl::init(), do this:
 
-    $Log::Log4perl::JavaMap::user_defined{'myorg.customAppender'} = 
+    $Log::Log4perl::JavaMap::user_defined{'myorg.customAppender'} =
         'Myorg::CustomAppender';
 
 and you can use 'myorg.customAppender' in your config file with
@@ -152,11 +152,11 @@ http://jakarta.apache.org/log4j/docs/
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -166,7 +166,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -177,8 +177,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

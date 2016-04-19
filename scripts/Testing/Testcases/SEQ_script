@@ -34,7 +34,7 @@ set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 #======================================================================
 
 cd $CASEROOT
-echo "doing a ${STOP_N} ${STOP_OPTION} initial test with default layout" >>& $TESTSTATUS_LOG 
+echo "doing a ${STOP_N} ${STOP_OPTION} initial test with default layout" >>& $TESTSTATUS_LOG
 
 ./case.run
 if ($status != 0) then
@@ -47,10 +47,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -59,7 +59,7 @@ else
 endif
 
 echo "moving relevant history files to suffix with command " >>& $TESTSTATUS_LOG
-echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base" >>& $TESTSTATUS_LOG 
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix base" >>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
 #======================================================================
@@ -68,7 +68,7 @@ echo "" >>& $TESTSTATUS_LOG
 
 cd $CASEROOT
 
-echo "doing a second a ${STOP_N} ${STOP_OPTION} with all rootpes set to 0" >>& $TESTSTATUS_LOG 
+echo "doing a second a ${STOP_N} ${STOP_OPTION} with all rootpes set to 0" >>& $TESTSTATUS_LOG
 
 ./xmlchange --file env_mach_pes.xml --id ROOTPE_ATM --val 0
 ./xmlchange --file env_mach_pes.xml --id ROOTPE_LND --val 0
@@ -92,10 +92,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -104,7 +104,7 @@ else
 endif
 
 echo "moving relevant history files to suffix with commands " >>& $TESTSTATUS_LOG
-echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix seq"	>>& $TESTSTATUS_LOG 
+echo "$SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix seq"	>>& $TESTSTATUS_LOG
 echo "" >>& $TESTSTATUS_LOG
 
 $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "seq"

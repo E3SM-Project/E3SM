@@ -7,14 +7,14 @@
 ! !MODULE: mct_mod -- provides a standard API naming convention for MCT code
 !
 ! !DESCRIPTION:
-!    This module should be used instead of accessing mct modules directly.  
+!    This module should be used instead of accessing mct modules directly.
 !    This module:
 !    \begin{itemize}
 !    \item Uses Fortran {\sf use} renaming of MCT routines and data types so that they
-!          all have an mct\_ prefix and related data types and routines have related names. 
-!    \item Provides easy and uniform access to 
+!          all have an mct\_ prefix and related data types and routines have related names.
+!    \item Provides easy and uniform access to
 !          all MCT routines and data types that must be accessed.
-!    \item Provides a convienient list of 
+!    \item Provides a convienient list of
 !          all MCT routines and data types that can be accessed.
 !    \item Blocks access to MCT routines that are not used in cpl6.
 !    \end{itemize}
@@ -68,8 +68,8 @@ module mct_mod
    use m_AttrVect           ,only: mct_aVect_SharedIndices=> AVSharedIndices
    use m_AttrVect           ,only: mct_aVect_setSharedIndices=> SharedIndices
    use m_AttrVectComms      ,only: mct_aVect_scatter      => scatter
-   use m_AttrVectComms      ,only: mct_aVect_gather       => gather 
-   use m_AttrVectComms      ,only: mct_aVect_bcast        => bcast  
+   use m_AttrVectComms      ,only: mct_aVect_gather       => gather
+   use m_AttrVectComms      ,only: mct_aVect_bcast        => bcast
 
    use m_GeneralGrid        ,only: mct_gGrid              => GeneralGrid
    use m_GeneralGrid        ,only: mct_gGrid_init         => init
@@ -84,12 +84,12 @@ module mct_mod
    use m_GeneralGrid        ,only: mct_gGrid_importIattr  => importIattr
    use m_GeneralGrid        ,only: mct_gGrid_permute      => permute
    use m_GeneralGridComms   ,only: mct_gGrid_scatter      => scatter
-   use m_GeneralGridComms   ,only: mct_gGrid_gather       => gather 
-   use m_GeneralGridComms   ,only: mct_gGrid_bcast        => bcast  
+   use m_GeneralGridComms   ,only: mct_gGrid_gather       => gather
+   use m_GeneralGridComms   ,only: mct_gGrid_bcast        => bcast
 
    use m_Transfer           ,only: mct_send               => Send
    use m_Transfer           ,only: mct_recv               => Recv
-      
+
    use m_GlobalSegMap       ,only: mct_gsMap              => GlobalSegMap
    use m_GlobalSegMap       ,only: mct_gsMap_init         => init
    use m_GlobalSegMap       ,only: mct_gsMap_clean        => clean
@@ -104,7 +104,7 @@ module mct_mod
    use m_GlobalSegMap       ,only: mct_gsMap_copy         => copy
    use m_GlobalSegMap       ,only: mct_gsMap_increasing   => increasing
    use m_GlobalSegMap       ,only: mct_gsMap_orderedPoints=> OrderedPoints
-   use m_GlobalSegMapComms  ,only: mct_gsMap_bcast        => bcast 
+   use m_GlobalSegMapComms  ,only: mct_gsMap_bcast        => bcast
 
    use m_Rearranger         ,only: mct_rearr              => Rearranger
    use m_Rearranger         ,only: mct_rearr_init         => init
@@ -147,14 +147,14 @@ module mct_mod
    use m_MatAttrVectMul     ,only: mct_sMat_avMult        => sMatAvMult
    use m_GlobalToLocal      ,only: mct_sMat_g2lMat        => GlobalToLocalMatrix
 
-   use m_List               ,only: mct_list               => list     
+   use m_List               ,only: mct_list               => list
    use m_List               ,only: mct_list_init          => init
-   use m_List               ,only: mct_list_get           => get 
-   use m_List               ,only: mct_list_nitem         => nitem 
+   use m_List               ,only: mct_list_get           => get
+   use m_List               ,only: mct_list_nitem         => nitem
    use m_List               ,only: mct_list_clean         => clean
-   use m_string             ,only: mct_string             => string 
+   use m_string             ,only: mct_string             => string
    use m_string             ,only: mct_string_clean       => clean
-   use m_string             ,only: mct_string_toChar      => toChar 
+   use m_string             ,only: mct_string_toChar      => toChar
    use m_die                ,only: mct_perr_die           => mp_perr_die
    use m_die                ,only: mct_die                => die
    use m_inpak90
@@ -225,7 +225,7 @@ contains
 subroutine mct_aVect_info(flag,aVect,comm,pe,fld,istr)
 
 ! !USES:
-  
+
 ! !INPUT/OUTPUT PARAMETERS:
 
    integer(IN)    ,intent(in)           :: flag  ! info level flag
@@ -464,7 +464,7 @@ end subroutine mct_aVect_sharedFields
 !===============================================================================
 !BOP ===========================================================================
 !
-! !IROUTINE: mct_aVect_initSharedFields - init new AVect based on shared fields 
+! !IROUTINE: mct_aVect_initSharedFields - init new AVect based on shared fields
 !     from two input aVects
 !
 ! !DESCRIPTION:
@@ -510,7 +510,7 @@ end subroutine mct_aVect_initSharedFields
 ! !IROUTINE: mct_aVect_getRAttr - get real F90 array data out of an aVect
 !
 ! !DESCRIPTION:
-!     Get the data associated with attribute {\tt str} in 
+!     Get the data associated with attribute {\tt str} in
 !     {\it AttributeVector} {\tt aVect} and return in the
 !     real F90 array data {\tt data}.
 !     {\tt rcode} will be 0 if succesful, 1 if size of {\tt data}
@@ -559,7 +559,7 @@ subroutine mct_aVect_getRAttr(aVect,str,data,rcode)
       rcode = 1
       return
    end if
-   
+
    k = mct_aVect_indexRA(aVect,trim(str) ,perrWith=subName)
    if ( k < 1) then
       if (s_loglev > 0) write(s_logunit,*) subName,"ERROR: attribute not found, var = ",trim(str),", k=",k
@@ -625,7 +625,7 @@ subroutine mct_aVect_putRAttr(aVect,str,data,rcode)
       rcode = 1
       return
    end if
-   
+
    k = mct_aVect_indexRA(aVect,trim(str) ,perrWith=subName)
    if ( k < 1) then
       if (s_loglev > 0) write(s_logunit,*) subName,"ERROR: attribute not found, var = ",trim(str),", k=",k
@@ -633,7 +633,7 @@ subroutine mct_aVect_putRAttr(aVect,str,data,rcode)
       return
    end if
 
-   aVect%rAttr(k,:) = data(:) 
+   aVect%rAttr(k,:) = data(:)
 
 end subroutine mct_aVect_putRAttr
 
@@ -643,10 +643,10 @@ end subroutine mct_aVect_putRAttr
 ! !IROUTINE: mct_aVect_accum - accumulate attributes from one aVect to another
 !
 ! !DESCRIPTION:
-! This routine accumulates from input argment {\tt aVin} into the output 
-! {\it AttrVect} argument {\tt aVout} the real and integer attributes specified in 
+! This routine accumulates from input argment {\tt aVin} into the output
+! {\it AttrVect} argument {\tt aVout} the real and integer attributes specified in
 ! input {\tt CHARACTER} argument {\tt iList} and {\tt rList}. The attributes can
-! be listed in any order.  If neither {\tt iList} nor {\tt rList} are provided, 
+! be listed in any order.  If neither {\tt iList} nor {\tt rList} are provided,
 ! all attributes shared between {\tt aVin} and {\tt aVout} will be copied.
 !
 ! If any attributes in {\tt aVout} have different names but represent the
@@ -670,17 +670,17 @@ end subroutine mct_aVect_putRAttr
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(mct_avect),            intent(in)    :: aVin
       character(len=*), optional, intent(in)    :: iList
       character(len=*), optional, intent(in)    :: rList
       character(len=*), optional, intent(in)    :: TiList
       character(len=*), optional, intent(in)    :: TrList
-      logical, optional,          intent(in)    :: vector 
+      logical, optional,          intent(in)    :: vector
       type(mct_avect_SharedIndices), optional, intent(in) :: sharedIndices
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 
       type(mct_avect),         intent(inout) :: aVout
       integer, optional,       intent(inout) :: counter
@@ -785,7 +785,7 @@ end subroutine mct_aVect_putRAttr
   npts  = mct_aVect_lsize (aVout)
 !DIR$ CONCURRENT
 !DIR$ PREFERVECTOR
-  do i=1,npts 
+  do i=1,npts
   do j=1,nflds
      aVout%rattr(j,i) = aVout%rattr(j,i) + avotmp%rattr(j,i)
   enddo
@@ -803,7 +803,7 @@ end subroutine mct_aVect_putRAttr
 ! !IROUTINE: mct_aVect_avg - averages an accumulated attribute vector
 !
 ! !DESCRIPTION:
-!     Average the data in attribute vector {\tt aVect}.  Divides all fields in 
+!     Average the data in attribute vector {\tt aVect}.  Divides all fields in
 !     the attribute vector {\tt aVect} by the value of the input counter.
 !
 ! !REVISION HISTORY:
@@ -818,7 +818,7 @@ subroutine mct_aVect_avg(aVect, counter)
 ! !INPUT/OUTPUT PARAMETERS:
 
    type(mct_aVect),intent(inout) :: aVect   ! bundle to read
-   integer        ,intent(in)    :: counter ! counter 
+   integer        ,intent(in)    :: counter ! counter
 
 !EOP
 
@@ -843,7 +843,7 @@ subroutine mct_aVect_avg(aVect, counter)
    npts  = mct_aVect_lsize (aVect)
 !DIR$ CONCURRENT
 !DIR$ PREFERVECTOR
-   do i=1,npts 
+   do i=1,npts
    do j=1,nflds
       aVect%rattr(j,i) = aVect%rattr(j,i)*ravg
    enddo
@@ -860,7 +860,7 @@ end subroutine mct_aVect_avg
 !     Replace each field in {\tt av} by the product of that field and the
 !     field {\tt fld1} from input argument {\tt av1}.
 !
-!     If optional argument {\tt bunlist} is present, only those attributes 
+!     If optional argument {\tt bunlist} is present, only those attributes
 !     in {\tt bun} will be replaced.
 !
 !     If optional argument {\tt initav} is present, then the data in {\tt av}
@@ -971,7 +971,7 @@ end subroutine mct_aVect_mult
 !     Replace each field in {\tt av} by the product of that field and the
 !     field {\tt fld1} from input argument {\tt av1}.
 !
-!     If optional argument {\tt bunlist} is present, only those attributes 
+!     If optional argument {\tt bunlist} is present, only those attributes
 !     in {\tt bun} will be replaced.
 !
 !     If optional argument {\tt initav} is present, then the data in {\tt av}
@@ -1124,14 +1124,14 @@ end subroutine mct_aVect_vecmult
 !
 ! !IROUTINE:  subroutine mct_rearr_rearrange_fldlst - rearrange on a fieldlist
 !
-! !DESCRIPTION: 
+! !DESCRIPTION:
 !     Perform regarranger between two attribute vectors only on the fieldlist
 !     that is provided
 !
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !    2007-Jun-22 - M. Vertenstein - first version
-! 
+!
 ! !INTERFACE:  -----------------------------------------------------------------
 
 subroutine mct_rearr_rearrange_fldlist(avi, avo, Rearr, vector, alltoall, fldlist, tag)
@@ -1145,7 +1145,7 @@ subroutine mct_rearr_rearrange_fldlist(avi, avo, Rearr, vector, alltoall, fldlis
    type(mct_rearr) , intent(in)  :: Rearr
    logical         , intent(in)  :: vector
    logical         , intent(in)  :: alltoall
-   character(len=*), intent(in)  :: fldlist   
+   character(len=*), intent(in)  :: fldlist
    integer(IN)     , intent(in),optional :: tag
 ! !EOP
 
@@ -1175,7 +1175,7 @@ subroutine mct_rearr_rearrange_fldlist(avi, avo, Rearr, vector, alltoall, fldlis
    lsize = mct_aVect_lsize(avo)
    call mct_aVect_init (avo_fl, rlist=fldlist, lsize=lsize)
    call mct_aVect_zero (avo_fl)
-   
+
    call mct_aVect_copy (aVin=avi, aVout=avi_fl)
    call mct_rearr_rearrange(avi_fl, avo_fl, Rearr, VECTOR=vector, ALLTOALL=alltoall, tag=ltag)
    call mct_aVect_copy (aVin=avo_fl, aVout=avo, vector=vector)
@@ -1220,22 +1220,22 @@ logical function mct_gsmap_Identical(gsmap1,gsmap2)
   mct_gsmap_Identical = identical
 
 end function mct_gsmap_Identical
-    
+
 !===============================================================================
 ! !BOP ===========================================================================
 !
 ! !IROUTINE:  mct_myindex - binary search for index in list
 !
-! !DESCRIPTION: 
+! !DESCRIPTION:
 !     Do a binary search to see if a value is contained in a list of
 !     values.  return true or false.  starti must be monotonically
 !     increasing, function does NOT check this.
 !
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !    2007-Jan-17 - T. Craig -- first version
 !    2007-Mar-20 - R. Jacob - move to mct_mod
-! 
+!
 ! !INTERFACE:  -----------------------------------------------------------------
 
 logical function mct_myindex(index,starti,counti)
@@ -1251,7 +1251,7 @@ logical function mct_myindex(index,starti,counti)
 ! !EOP
 
    !--- local ---
-   integer(IN)    :: nl,nc,nr,ncprev 
+   integer(IN)    :: nl,nc,nr,ncprev
    integer(IN)    :: lsize
    logical        :: stopnow
 

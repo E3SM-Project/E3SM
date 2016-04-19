@@ -15,7 +15,7 @@ my $RUNDIR	= `./xmlquery  RUNDIR      -value`;
 my @dirs = ("${CIMEROOT}/utils/perl5lib");
 unshift @INC, @dirs;
 require Config::SetupTools;
-my $sysmod; 
+my $sysmod;
 
 if (! -d "$CASEROOT/Buildconf/datmconf" ) {
     $sysmod = "mkdir $CASEROOT/Buildconf/datmconf";
@@ -28,10 +28,10 @@ my $inst_counter = 1;
 while ($inst_counter <= $NINST_ATM) {
 
     # -----------------------------------------------------
-    # determine instance string 
+    # determine instance string
     # -----------------------------------------------------
 
-    $inst_string = "";       
+    $inst_string = "";
     if ($NINST_ATM > 1) {
 	$inst_string = `printf _%04d $inst_counter`;
 
@@ -47,9 +47,9 @@ while ($inst_counter <= $NINST_ATM) {
     # create datmconf/cesm_namelist
     # -----------------------------------------------------
 
-    SetupTools::create_namelist_infile("$CASEROOT", 
-				       "$CASEROOT/user_nl_datm${inst_string}", 
-				       "$CASEROOT/Buildconf/datmconf/cesm_namelist"); 
+    SetupTools::create_namelist_infile("$CASEROOT",
+				       "$CASEROOT/user_nl_datm${inst_string}",
+				       "$CASEROOT/Buildconf/datmconf/cesm_namelist");
 
     # -----------------------------------------------------
     # call build-namelist

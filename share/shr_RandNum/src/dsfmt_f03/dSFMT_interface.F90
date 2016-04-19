@@ -336,7 +336,7 @@ contains
         end if
 
         r = rng%random_store(rng%next_element)
-        rng%next_element = rng%next_element + 1 
+        rng%next_element = rng%next_element + 1
 
     end function get_rand_close_open
 
@@ -360,7 +360,7 @@ contains
         end if
 
         r = rng%random_store(rng%next_element)
-        rng%next_element = rng%next_element + 1 
+        rng%next_element = rng%next_element + 1
 
     end function get_rand_open_close
 
@@ -384,7 +384,7 @@ contains
         end if
 
         r = rng%random_store(rng%next_element)
-        rng%next_element = rng%next_element + 1 
+        rng%next_element = rng%next_element + 1
 
     end function get_rand_open_open
 

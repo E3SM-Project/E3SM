@@ -37,7 +37,7 @@ else
   ESMF_LIB  := .
 endif
 
-# Determine platform 
+# Determine platform
 UNAMES := $(shell uname -s)
 
 .F90.o:

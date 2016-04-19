@@ -233,7 +233,7 @@ my $minthrds = $maxt[0];
 my $maxthrds = $maxt[0];
 my @sumt;
 $sumt[0] = 0;
-for ($c1=1; $c1 < $tottasks; $c1++){ 
+for ($c1=1; $c1 < $tottasks; $c1++){
    if ($maxt[$c1] < $minthrds) {$minthrds = $maxt[$c1] ;}
    if ($maxt[$c1] < 1) {$maxt[$c1] = 1;}
    if ($maxt[$c1] > $maxthrds) {$maxthrds = $maxt[$c1] ;}

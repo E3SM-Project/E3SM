@@ -8,7 +8,7 @@
  ** @param iosysid : A defined pio system descriptor (input)
  ** @param ncidp : A pio file descriptor (output)
  ** @param iotype : A pio output format (input)
- ** @param filename : The filename to open 
+ ** @param filename : The filename to open
  ** @param mode : The netcdf mode for the open operation
  */
 
@@ -58,14 +58,14 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   file->buffer.fillvalue=NULL;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
+    if(ios->comp_rank==0)
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     len = strlen(filename);
     mpierr = MPI_Bcast((void *) filename,len, MPI_CHAR, ios->compmaster, ios->intercomm);
     mpierr = MPI_Bcast(&(file->iotype), 1, MPI_INT,  ios->compmaster, ios->intercomm);
     mpierr = MPI_Bcast(&(file->mode), 1, MPI_INT,  ios->compmaster, ios->intercomm);
   }
-  
+
   if(ios->ioproc){
 
     switch(file->iotype){
@@ -73,7 +73,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 #ifdef _NETCDF4
 
     case PIO_IOTYPE_NETCDF4P:
-#ifdef _MPISERIAL   
+#ifdef _MPISERIAL
       ierr = nc_open(filename, file->mode, &(file->fh));
 #else
       file->mode = file->mode |  NC_MPIIO;
@@ -110,11 +110,11 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
       break;
     }
 
-    // If we failed to open a file due to an incompatible type of NetCDF, try it 
+    // If we failed to open a file due to an incompatible type of NetCDF, try it
     // once with just plain old basic NetCDF
 #ifdef _NETCDF
     if(ierr == NC_ENOTNC && (file->iotype != PIO_IOTYPE_NETCDF)) {
-        if(ios->iomaster) printf("PIO2 pio_file.c retry NETCDF\n"); 
+        if(ios->iomaster) printf("PIO2 pio_file.c retry NETCDF\n");
 	// reset ierr on all tasks
 	ierr = PIO_NOERR;
 	// reset file markers for NETCDF on all tasks
@@ -150,7 +150,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
  ** @param iosysid : A defined pio system descriptor (input)
  ** @param ncidp : A pio file descriptor (output)
  ** @param iotype : A pio output format (input)
- ** @param filename : The filename to open 
+ ** @param filename : The filename to open
  ** @param mode : The netcdf mode for the open operation
  */
 
@@ -160,7 +160,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
   int ierr;
   int msg;
   int mpierr;
-  
+
   size_t len;
   iosystem_desc_t *ios;
   file_desc_t *file;
@@ -198,14 +198,14 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
 
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
+    if(ios->comp_rank==0)
       mpierr = MPI_Send( &msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     len = strlen(filename);
     mpierr = MPI_Bcast((void *) filename,len, MPI_CHAR, ios->compmaster, ios->intercomm);
     mpierr = MPI_Bcast(&(file->iotype), 1, MPI_INT,  ios->compmaster, ios->intercomm);
     mpierr = MPI_Bcast(&file->mode, 1, MPI_INT,  ios->compmaster, ios->intercomm);
   }
-  
+
 
   if(ios->ioproc){
     switch(file->iotype){
@@ -263,7 +263,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
 /**
  ** @ingroup PIO_closefile
  ** @brief close a file previously opened with PIO
- ** @param ncid: the file pointer 
+ ** @param ncid: the file pointer
  */
 int PIOc_closefile(int ncid)
 {
@@ -284,7 +284,7 @@ int PIOc_closefile(int ncid)
     PIOc_sync(ncid);
   }
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
+    if(ios->comp_rank==0)
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -331,9 +331,9 @@ int PIOc_closefile(int ncid)
 
 /**
  ** @ingroup PIO_deletefile
- ** @brief Delete a file 
+ ** @brief Delete a file
  ** @param iosysid : a pio system handle
- ** @param filename : a filename 
+ ** @param filename : a filename
  */
 int PIOc_deletefile(const int iosysid, const char filename[])
 {
@@ -352,7 +352,7 @@ int PIOc_deletefile(const int iosysid, const char filename[])
   msg = 0;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
+    if(ios->comp_rank==0)
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     //    mpierr = MPI_Bcast(iosysid,1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -369,9 +369,9 @@ int PIOc_deletefile(const int iosysid, const char filename[])
 #endif
     MPI_Barrier(ios->io_comm);
   }
-  //   Special case - always broadcast the return from the  
+  //   Special case - always broadcast the return from the
   MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm);
-  
+
 
 
   return ierr;
@@ -380,14 +380,14 @@ int PIOc_deletefile(const int iosysid, const char filename[])
 ///
 /// PIO interface to nc_sync
 ///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
+/// This routine is called collectively by all tasks in the communicator ios.union_comm.
 ///
-/** 
+/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation.
+///
+/**
 * @name    PIOc_sync
 */
-int PIOc_sync (int ncid) 
+int PIOc_sync (int ncid)
 {
   int ierr;
   int msg;
@@ -405,14 +405,14 @@ int PIOc_sync (int ncid)
   msg = PIO_MSG_SYNC;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->compmaster)
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
 
   if((file->mode & PIO_WRITE)){
     //  cn_buffer_report( *ios, true);
-    wmb = &(file->buffer); 
+    wmb = &(file->buffer);
     while(wmb != NULL){
       //    printf("%s %d %d %d\n",__FILE__,__LINE__,wmb->ioid, wmb->validvars);
       if(wmb->validvars>0){

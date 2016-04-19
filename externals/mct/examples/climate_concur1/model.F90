@@ -2,7 +2,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id: model.F90,v 1.8 2004-04-23 20:56:23 jacob Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !BOP -------------------------------------------------------------------
 !
 ! !ROUTINE: model -- generic model for unit tester
@@ -43,7 +43,7 @@
 !---Stored Grid data
 
       implicit none
-      
+
       include "mpif.h"
 
 ! !INPUT PARAMETERS:
@@ -67,10 +67,10 @@
 ! MPI variables
       integer :: rank, nprocs, root, CplID, ierr
 ! Grid variables
-      integer :: localsize 
+      integer :: localsize
 ! GlobalSegMap variables
       type(GlobalSegMap)   :: GSMap             ! MCT defined type
-      integer,dimension(1) :: start,length  
+      integer,dimension(1) :: start,length
       integer, dimension(:), pointer :: points
 ! AttrVect variables
       type(AttrVect) :: AV                      ! MCT defined type
@@ -115,14 +115,14 @@
 
 
       ! Use a GSMap function:
-      ! return the points local to this processor 
+      ! return the points local to this processor
       ! in their assumed order.
       call GlobalSegMap_Ordpnts(GSMap,rank,points)
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Initialize an Attribute vector
-      
+
       ! size is the number of grid point on this processor
       avsize = GlobalSegMap_lsize(GSMap,comm)
       if(rank==0) write(6,*) modelname, ' localsize ', avsize
@@ -147,9 +147,9 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !   RUN PHASE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     
 
-      do j=1,10    ! "timestep" loop 
+
+      do j=1,10    ! "timestep" loop
 
 
         ! model calculations
@@ -170,14 +170,14 @@
 
         ! Send the data
         !  this is a synchronization point between the coupler and
-        !   this model.  
+        !   this model.
         if(rank==0) write(6,*) modelname,' sending data step ',j
         call MCT_Send(AV,Rout)
 
 
         ! more model calculations
 
- 
+
       enddo
 
 !!! END OF RUN  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -195,4 +195,4 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     end subroutine model
-    
+

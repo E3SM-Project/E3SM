@@ -50,9 +50,9 @@ for(my $i=0; $i<= $#decompfiles; $i++){
 	}else{
 	    print F1 $_;
 	}
-	    
+
     }
     close(F1);
 
 }
-    
+

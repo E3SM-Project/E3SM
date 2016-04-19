@@ -34,7 +34,7 @@ sub new {
 }
 
 ##################################################
-sub log {   
+sub log {
 ##################################################
     my $self = shift;
     my %params = @_;
@@ -55,7 +55,7 @@ sub clear {
 }
 
 ##################################################
-sub buffer {   
+sub buffer {
 ##################################################
     my($self, $new) = @_;
 
@@ -67,7 +67,7 @@ sub buffer {
 }
 
 ##################################################
-sub reset {   
+sub reset {
 ##################################################
     my($self) = @_;
 
@@ -76,26 +76,26 @@ sub reset {
 }
 
 ##################################################
-sub DESTROY {   
+sub DESTROY {
 ##################################################
     my($self) = @_;
 
     $DESTROY_MESSAGES .= __PACKAGE__ . " destroyed";
 
     #this delete() along with &reset() above was causing
-    #Attempt to free unreferenced scalar at 
+    #Attempt to free unreferenced scalar at
     #blib/lib/Log/Log4perl/TestBuffer.pm line 69.
     #delete $POPULATION{$self->name};
 }
 
 ##################################################
-sub by_name {   
+sub by_name {
 ##################################################
     my($self, $name) = @_;
 
     # Return a TestBuffer by appender name. This is useful if
     # test buffers are created behind our back (e.g. via the
-    # Log4perl config file) and later on we want to 
+    # Log4perl config file) and later on we want to
     # retrieve an instance to query its content.
 
     die "No name given"  unless defined $name;
@@ -118,14 +118,14 @@ Log::Log4perl::Appender::TestBuffer - Appender class for testing
 
   use Log::Log4perl::Appender::TestBuffer;
 
-  my $appender = Log::Log4perl::Appender::TestBuffer->new( 
+  my $appender = Log::Log4perl::Appender::TestBuffer->new(
       name      => 'mybuffer',
   );
 
       # Append to the buffer
-  $appender->log( 
-      level =  > 'alert', 
-      message => "I'm searching the city for sci-fi wasabi\n" 
+  $appender->log(
+      level =  > 'alert',
+      message => "I'm searching the city for sci-fi wasabi\n"
   );
 
       # Retrieve the result
@@ -137,7 +137,7 @@ Log::Log4perl::Appender::TestBuffer - Appender class for testing
 =head1 DESCRIPTION
 
 This class is used for internal testing of C<Log::Log4perl>. It
-is a C<Log::Dispatch>-style appender, which writes to a buffer 
+is a C<Log::Dispatch>-style appender, which writes to a buffer
 in memory, from where actual results can be easily retrieved later
 to compare with expected results.
 
@@ -147,7 +147,7 @@ later be referenced by name:
     my $app = Log::Log4perl::Appender::TestBuffer->by_name("mybuffer");
 
 retrieves the appender object of a previously created buffer "mybuffer".
-To reset this global array and have it forget all of the previously 
+To reset this global array and have it forget all of the previously
 created testbuffer appenders (external references to those appenders
 nonwithstanding), use
 
@@ -157,11 +157,11 @@ nonwithstanding), use
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -171,7 +171,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -182,8 +182,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 
