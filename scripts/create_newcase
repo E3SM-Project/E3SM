@@ -464,9 +464,10 @@ ConfigCompsetGrid::setComponent($file, $config);
 # This determines driver_cpl/cime_config/config_component.xml settings that are compset specific
 # and also check that compset is supported for target grid
 # Note- this needs to come last since it will overwrite any values set above
-
-ConfigCompsetGrid::setCompsetGeneralVars($config);
-
+# if support_level is not defined this is a user_compset with no alias match
+if (defined $support_level){
+    ConfigCompsetGrid::setCompsetGeneralVars($config);
+}
 # Special case - if land and river grids are different AND there is no mapping file
 # between land and river then set the river mode  to null if the river component is rtm
 my $rof_comp = $config->get('COMP_ROF');
