@@ -1,9 +1,9 @@
 #! /bin/csh -f
 
 set RUNDIR	= `./xmlquery  RUNDIR    -value`
-set NINST_WAV	= `./xmlquery  NINST_WAV -value`  
-set WAV_NX	= `./xmlquery  WAV_NX	 -value`  
-set WAV_NY	= `./xmlquery  WAV_NY	 -value`  
+set NINST_WAV	= `./xmlquery  NINST_WAV -value`
+set WAV_NX	= `./xmlquery  WAV_NX	 -value`
+set WAV_NY	= `./xmlquery  WAV_NY	 -value`
 
 set NX = $WAV_NX
 set NY = $WAV_NY

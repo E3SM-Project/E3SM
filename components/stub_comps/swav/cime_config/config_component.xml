@@ -2,9 +2,9 @@
 
 <?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
 
-<definitions_variables> 
+<definitions_variables>
 
-  <entry id="COMP_WAV"> 
+  <entry id="COMP_WAV">
     <type>char</type>
     <valid_values>swav</valid_values>
     <default_value>swav</default_value>
@@ -17,4 +17,4 @@
     <desc compset="_SWAV">Stub wave component</desc>
   </description>
 
-</definitions_variables> 
+</definitions_variables>

@@ -12,7 +12,7 @@ pop_frc*.ncl
 Step 1:
 
 First, one needs to edit the 'pop_frc.csh' script to select a particular case
-name from which to make a monthly-mean annual climatology. 
+name from which to make a monthly-mean annual climatology.
 
 1. Change CASE to the case name you are interested in.
 2. Set BEGYR and ENDYR to the appropriate years for your climatology.
@@ -32,8 +32,8 @@ on gale, gust, breeze, etc.
 
 Step 2:
 
-Once the two climatogical files have been created, you can run one of 
-the NCL scripts, 'pop_frc*.ncl'. You will need to edit the script and 
+Once the two climatogical files have been created, you can run one of
+the NCL scripts, 'pop_frc*.ncl'. You will need to edit the script and
 point to the POP and coupler (popmac and cplmac) climatological files.
 
 pop_frc_mlt.ncl*   -> uses mixed-layer temperature to derive the Q-flux

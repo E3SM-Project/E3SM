@@ -1,9 +1,9 @@
 #! /bin/csh -f
 
 set RUNDIR    = `./xmlquery  RUNDIR    -value`
-set NINST_ICE = `./xmlquery  NINST_ICE -value`  
-set ICE_NX    = `./xmlquery  ICE_NX    -value`  
-set ICE_NY    = `./xmlquery  ICE_NY    -value`  
+set NINST_ICE = `./xmlquery  NINST_ICE -value`
+set ICE_NX    = `./xmlquery  ICE_NX    -value`
+set ICE_NY    = `./xmlquery  ICE_NY    -value`
 
 cd $RUNDIR
 

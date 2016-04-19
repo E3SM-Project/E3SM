@@ -55,7 +55,7 @@ module docn_comp_mod
   integer(IN)   :: logunit               ! logging unit number
   integer       :: inst_index            ! number of current instance (ie. 1)
   character(len=16) :: inst_name         ! fullname of current instance (ie. "lnd_0001")
-  character(len=16) :: inst_suffix       ! char string associated with instance 
+  character(len=16) :: inst_suffix       ! char string associated with instance
                                          ! (ie. "_0001" or "")
   character(CL) :: ocn_mode              ! mode
   integer(IN)   :: dbug = 0              ! debug level (higher is more)
@@ -273,7 +273,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
     call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
- 
+
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)
     if (force_prognostic_true) then
@@ -320,7 +320,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
        ocn_present = .true.
        call seq_timemgr_EClockGetData( EClock, calendar=calendar )
        iosystem => shr_pio_getiosys(trim(inst_name))
-       
+
        call shr_strdata_pioinit(SDOCN, iosystem, shr_pio_getiotype(trim(inst_name)))
 
        if (scmmode) then
@@ -555,7 +555,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
    type(seq_infodata_type), pointer :: infodata
 
    real(R8), parameter     :: swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) &
-      /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8) 
+      /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
    character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
    character(*), parameter :: F04   = "('(docn_comp_run) ',2a,2i8,'s')"
    character(*), parameter :: subName = "(docn_comp_run) "
@@ -643,7 +643,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
 
    select case (trim(ocn_mode))
 
-   case('COPYALL') 
+   case('COPYALL')
       ! do nothing extra
 
    case('SSTDATA')
@@ -692,7 +692,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
             hn = avstrm%rAttr(kh,n)
             !--- compute new temp ---
             o2x%rAttr(kt,n) = somtp(n) + &
-               (x2o%rAttr(kswnet,n) + &  ! shortwave 
+               (x2o%rAttr(kswnet,n) + &  ! shortwave
                 x2o%rAttr(klwup ,n) + &  ! longwave
                 x2o%rAttr(klwdn ,n) + &  ! longwave
                 x2o%rAttr(ksen  ,n) + &  ! sensible
@@ -754,7 +754,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
       call shr_sys_flush(logunit)
    end if
    firstcall = .false.
-      
+
    call shr_file_setLogUnit (shrlogunit)
    call shr_file_setLogLevel(shrloglev)
    call shr_sys_flush(logunit)
@@ -793,11 +793,11 @@ subroutine docn_comp_final()
 
    call t_startf('DOCN_FINAL')
    if (my_task == master_task) then
-      write(logunit,F91) 
+      write(logunit,F91)
       write(logunit,F00) trim(myModelName),': end of main integration loop'
-      write(logunit,F91) 
+      write(logunit,F91)
    end if
-      
+
    call t_stopf('DOCN_FINAL')
 
 end subroutine docn_comp_final

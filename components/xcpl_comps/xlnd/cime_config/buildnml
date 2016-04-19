@@ -1,9 +1,9 @@
-#! /bin/csh -f 
+#! /bin/csh -f
 
 set RUNDIR	= `./xmlquery  RUNDIR    -value`
-set NINST_LND	= `./xmlquery  NINST_LND -value`  
-set LND_NX	= `./xmlquery  LND_NX    -value`  
-set LND_NY	= `./xmlquery  LND_NY    -value`  
+set NINST_LND	= `./xmlquery  NINST_LND -value`
+set LND_NX	= `./xmlquery  LND_NX    -value`
+set LND_NY	= `./xmlquery  LND_NY    -value`
 
 cd $RUNDIR
 set base_filename = "xlnd_in"
@@ -26,7 +26,7 @@ while ($inst_counter <= $NINST_LND)
 
     set in_filename = ${base_filename}${inst_string}
 
-    cat >! ${in_filename} << EOF 
+    cat >! ${in_filename} << EOF
 $NX                  !  i-direction global dimension
 $NY                  !  j-direction global dimension
 11                   !  decomp_type  1=1d-by-lat, 2=1d-by-lon, 3=2d, 4=2d evensquare, 11=segmented

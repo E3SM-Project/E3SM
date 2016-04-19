@@ -1,9 +1,9 @@
 #! /bin/csh -f
 
 set RUNDIR	= `./xmlquery  RUNDIR    -value`
-set NINST_OCN	= `./xmlquery  NINST_OCN -value`  
-set OCN_NX	= `./xmlquery  OCN_NX    -value`  
-set OCN_NY	= `./xmlquery  OCN_NY    -value`  
+set NINST_OCN	= `./xmlquery  NINST_OCN -value`
+set OCN_NX	= `./xmlquery  OCN_NX    -value`
+set OCN_NY	= `./xmlquery  OCN_NY    -value`
 
 set NX = $OCN_NX
 set NY = $OCN_NY
