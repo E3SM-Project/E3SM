@@ -7,10 +7,10 @@
     compset naming convention 
     =========================================
     The compset longname below has the specified order 
-    atm, lnd, ice, ocn, river, glc wave cesm-options
+    atm, lnd, ice, ocn, river, glc wave esp cesm-options
 
     The notation for the compset longname is
-    TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_BGC%phys]
+    TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_ESP][_BGC%phys]
     Where for the CAM specific compsets below the following is supported
     TIME = Time period (e.g. 2000, HIST, RCP8...)
     ATM  = [CAM4, CAM5]
@@ -20,6 +20,7 @@
     ROF  = [RTM, SROF]
     GLC  = [CISM1, CISM2, SGLC]
     WAV  = [SWAV]
+    ESP  = [SESP]
     BGC  = optional BGC scenario 
 
     The OPTIONAL %phys attributes specify submodes of the given system
@@ -53,7 +54,7 @@
 
   <compset>
     <alias>S</alias>           
-    <lname>2000_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV</lname>
+    <lname>2000_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV_SESP</lname>
   </compset>
 
   <compset>

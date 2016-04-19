@@ -30,6 +30,10 @@
 <entry id="NTHRDS_GLC"   value="1"  />    
 <entry id="ROOTPE_GLC"   value="0"  />    
 
+<entry id="NTASKS_ESP"   value="8"  />    
+<entry id="NTHRDS_ESP"   value="1"  />    
+<entry id="ROOTPE_ESP"   value="0"  />    
+
 <entry id="NTASKS_CPL"   value="8"  />    
 <entry id="NTHRDS_CPL"   value="1"  />    
 <entry id="ROOTPE_CPL"   value="0"  />    
