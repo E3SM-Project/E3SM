@@ -11,7 +11,7 @@ module vertical_gradient_calculator_constant
 #include "shr_assert.h"
   use vertical_gradient_calculator_base, only : vertical_gradient_calculator_base_type
   use shr_kind_mod   , only : r8 => shr_kind_r8
-  
+
   implicit none
   private
 
@@ -52,13 +52,13 @@ contains
     real(r8), intent(in) :: gradient
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'constructor'
     !-----------------------------------------------------------------------
 
     this%num_points = num_points
     this%gradient = gradient
-    
+
   end function constructor
 
   !-----------------------------------------------------------------------
@@ -78,7 +78,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: grid_cell
-    
+
     character(len=*), parameter :: subname = 'calc_vertical_gradient'
     !-----------------------------------------------------------------------
 

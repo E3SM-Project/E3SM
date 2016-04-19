@@ -14,7 +14,7 @@ implicit none
 !
 ! Author: Fei Liu
 !
-! public methods from this module, another layer of utils take these 
+! public methods from this module, another layer of utils take these
 ! array related methods and put them into interface blocks. user using
 ! the higher level utils module see/use names such as esmf2mct_init, etc
 !
@@ -434,7 +434,7 @@ subroutine esmfshr_util_CheckRC(rc,string,abort)
     if (present(abort)) then
        labort = abort
     endif
-    
+
     if (rc /= ESMF_SUCCESS) then
        write(shr_log_unit,*) trim(subname),' ERROR: ',trim(lstring)
        if (labort) then
@@ -489,7 +489,7 @@ subroutine esmfshr_util_ArrayCopy(srcArray, dstArray, rc)
     if (src_nfields < 1 .or. dst_nfields < 1) then
        return
     endif
-    
+
     allocate(src2dst_map(src_nfields), stat=localrc)
     allocate(s1(src_nfields),s2(src_nfields),stat=localrc)
     allocate(d1(dst_nfields),d2(dst_nfields),stat=localrc)
@@ -520,7 +520,7 @@ subroutine esmfshr_util_ArrayCopy(srcArray, dstArray, rc)
             if(trim(src_att) == trim(dst_att)) then
                 if(src2dst_map(i) == -1) then
                     src2dst_map(i) = j
-                    exit    ! early exit 
+                    exit    ! early exit
                 else
                     ! cannot have a single key maps to multiple values, abort
                     call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
@@ -539,7 +539,7 @@ subroutine esmfshr_util_ArrayCopy(srcArray, dstArray, rc)
         ! src and dst Array must have identical shape, otherwise abort
         call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
     endif
-        
+
     ! construct index arrays to speed up copy in linear time
     map_nfields = 0
     do i = srcLB(1), srcUB(1)
@@ -555,7 +555,7 @@ subroutine esmfshr_util_ArrayCopy(srcArray, dstArray, rc)
             j = j + 1
         endif
     enddo
-        
+
     ! do data copy, this is faster than reverse loop order and block copy
     do j = srcLB(2), srcUB(2)
         do i = 1, map_nfields
@@ -600,7 +600,7 @@ subroutine esmfshr_util_ArraySum(srcArray, dstArray, rc)
        srcUB(1) /= dstUB(1) .or. srcUB(2) /= dstUB(2)) then
         call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
     endif
-        
+
     do j = srcLB(2), srcUB(2)
         do i = srcLB(1), srcUB(1)
             dstFptr(i, j) = dstFptr(i, j) + srcFptr(i, j)

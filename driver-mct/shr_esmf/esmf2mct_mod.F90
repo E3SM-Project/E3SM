@@ -11,12 +11,12 @@ use shr_log_mod, only: shr_log_unit, shr_log_level
 
 implicit none
 
-! 
+!
 ! Author: Fei Liu
 !
 ! This module implements methods that work with ESMF_Array and MCT attribute
 ! vectors (attrVect) and global segmentation map (gsMap).
-! Another layer of utils take these 
+! Another layer of utils take these
 ! array related methods and put them into interface blocks. user using
 ! the higher level utils module see/use names such as esmf2mct_init, etc
 ! Array, AttrVect, and gsMap APIs
@@ -66,7 +66,7 @@ subroutine esmf2mct_init_Av_Array(array, attrVect, rc)
     if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
 
     ! construct AttrVect
-    ! compute dsize for mct - PE local 
+    ! compute dsize for mct - PE local
     call esmfshr_util_ArrayGetSize(array, lsize2=dsize)
 
     call mct_aVect_init(aV=attrVect, rList=trim(mct_names), lsize=dsize)
@@ -99,7 +99,7 @@ subroutine esmf2mct_init_GGrid_Array(array, ggrid, rc)
     if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
 
     ! construct ggrid
-    ! compute dsize for mct - PE local 
+    ! compute dsize for mct - PE local
     call esmfshr_util_ArrayGetSize(array, lsize2=dsize)
 
     if (len_trim(mct_names) == 0 .and. dsize == 0) then
@@ -146,7 +146,7 @@ subroutine esmf2mct_init_GSmap_Array(array, COMPID, gsmap, mpicom, gsize, rc)
     integer, intent(in), optional           :: gsize
     integer, intent(out), optional          :: rc
 
-    ! local variables 
+    ! local variables
     type(ESMF_DistGrid)                     :: distgrid
     integer                                 :: localrc
     character(len=*),parameter :: subname = 'esmf2mct_init_GSmap_Array'
@@ -178,7 +178,7 @@ subroutine esmf2mct_init_Gindex_Array(array, gindex, rc)
     integer, intent(inout), pointer         :: gindex(:)
     integer, intent(out), optional          :: rc
 
-    ! local variables 
+    ! local variables
     type(ESMF_DistGrid)                     :: distgrid
     integer                                 :: localrc
     character(len=*),parameter :: subname = 'esmf2mct_init_Gindex_Array'
@@ -209,7 +209,7 @@ subroutine esmf2mct_init_GSmap_Distgrid(distgrid, COMPID, gsmap, mpicom, gsize, 
     integer, intent(in), optional           :: gsize
     integer, intent(out), optional          :: rc
 
-    ! local variables 
+    ! local variables
     type(ESMF_VM)                           :: vm
     integer                                 :: dsize, localrc
     integer, allocatable                    :: gindex(:)
@@ -250,7 +250,7 @@ subroutine esmf2mct_init_Gindex_Distgrid(distgrid, gindex, rc)
     integer, intent(inout), pointer         :: gindex(:)
     integer, intent(out), optional          :: rc
 
-    ! local variables 
+    ! local variables
     integer                                 :: dsize, localrc
     character(len=*),parameter :: subname = 'esmf2mct_init_Gindex_Distgrid'
     !---------------------------------------
@@ -284,7 +284,7 @@ subroutine esmf2mct_init_GSmap_Gindex(gindex, COMPID, gsmap, mpicom, gsize, rc)
     integer, intent(in), optional           :: gsize
     integer, intent(out), optional          :: rc
 
-    ! local variables 
+    ! local variables
     type(ESMF_VM)                           :: vm
     integer                                 :: dsize, localrc
     character(len=*),parameter :: subname = 'esmf2mct_init_GSmap_Gindex'
@@ -332,7 +332,7 @@ subroutine esmf2mct_copy_a(array, attrVect, rc)
     a_dsize = ubound(a_fptr, 2)-lbound(a_fptr, 2)+1
     a_nfields = ubound(a_fptr, 1)-lbound(a_fptr, 1)+1
 
-    av_dsize = mct_aVect_lsize(aV=attrVect) 
+    av_dsize = mct_aVect_lsize(aV=attrVect)
     av_nfields = mct_aVect_nRAttr(aV=attrVect)
 
     if (a_dsize == 0 .or. a_nfields == 0) then
@@ -357,7 +357,7 @@ subroutine esmf2mct_copy_a(array, attrVect, rc)
     enddo
 
 end subroutine esmf2mct_copy_a
- 
+
 !--------------------------------------------------------------------------
 
 ! copy data from ESMF_Array to attrVect
@@ -378,7 +378,7 @@ subroutine esmf2mct_copy_alist(array, attrVect, list, rc)
 
     call ESMF_ArrayGet(array, distgrid=distgrid, rc=localrc)
     if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-   
+
     !--------------------------------------------------------------------------
     ! use the attribute vector Fortran array pointer to create a temporary Array;
     ! this avoids unnecessary memory copy and code is more efficient

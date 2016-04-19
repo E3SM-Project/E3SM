@@ -12,9 +12,9 @@ program cesm_driver
 !               data -------- Send data back interpolated from input files.
 !               active ------ Prognostically simulate the given component.
 !
-! Method: Call appropriate initialization, run (time-stepping), and 
+! Method: Call appropriate initialization, run (time-stepping), and
 !         finalization routines.
-! 
+!
 !-------------------------------------------------------------------------------
 
    !----------------------------------------------------------------------------
@@ -38,7 +38,7 @@ program cesm_driver
 
 
    !--------------------------------------------------------------------------
-   ! Setup and initialize the communications and logging.  
+   ! Setup and initialize the communications and logging.
    !--------------------------------------------------------------------------
    call cesm_pre_init1()
 
@@ -53,8 +53,8 @@ program cesm_driver
    ! Read in the configuration information and initialize the time manager.
    !--------------------------------------------------------------------------
    ! Timer initialization has to be after determination of the maximum number
-   ! of threads used across all components, so called inside of 
-   ! ccsm_pre_init2, as are t_startf and t_stopf for CPL:INIT and 
+   ! of threads used across all components, so called inside of
+   ! ccsm_pre_init2, as are t_startf and t_stopf for CPL:INIT and
    ! cesm_pre_init2.
    !--------------------------------------------------------------------------
    call cesm_pre_init2()
@@ -65,7 +65,7 @@ program cesm_driver
 
    !--------------------------------------------------------------------------
    ! Create the "Cap" component and set the services using the register
-   ! routine.  Setting the services is where the initialize, run and 
+   ! routine.  Setting the services is where the initialize, run and
    ! finalize routines for this component are set.
    !--------------------------------------------------------------------------
    compName = "CESM_Component"

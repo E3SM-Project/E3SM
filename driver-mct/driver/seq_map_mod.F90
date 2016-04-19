@@ -6,7 +6,7 @@ module seq_map_mod
 !
 ! General mapping routines
 ! including self normalizing mapping routine with optional fraction
-!       
+!
 ! Author: T. Craig, Jan-28-2011
 !
 !---------------------------------------------------------------------
@@ -37,14 +37,14 @@ module seq_map_mod
   public :: seq_map_init_rcfile     ! cpl pes
   public :: seq_map_init_rearrolap  ! cpl pes
   public :: seq_map_initvect        ! cpl pes
-  public :: seq_map_map             ! cpl pes 
+  public :: seq_map_map             ! cpl pes
   public :: seq_map_mapvect         ! cpl pes
   public :: seq_map_readdata        ! cpl pes
 #ifdef USE_ESMF_LIB
-  public :: seq_map_register        ! cpl pes 
+  public :: seq_map_register        ! cpl pes
 #endif
 
-  interface seq_map_avNorm 
+  interface seq_map_avNorm
      module procedure seq_map_avNormArr
      module procedure seq_map_avNormAvF
   end interface
@@ -67,15 +67,15 @@ contains
 
 #ifdef USE_ESMF_LIB
   subroutine seq_map_register(petlist, comp, import_state, export_state)
-  
+
     implicit none
-  
+
     integer, pointer                  :: petlist(:)
     type(ESMF_GridComp), intent(out)  :: comp
     type(ESMF_State),    intent(out)  :: import_state, export_state
-  
+
     integer            :: rc
-  
+
     comp = ESMF_GridCompCreate(name="seq map comp", petList=petlist, rc=rc)
     if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to create seq map comp')
 
@@ -87,7 +87,7 @@ contains
 
     export_state = ESMF_StateCreate(name="seq map export", stateintent=ESMF_STATEINTENT_EXPORT, rc=rc)
     if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to create export seq map state')
-  
+
   end subroutine
 #endif
 
@@ -98,12 +98,12 @@ contains
 
     implicit none
     !-----------------------------------------------------
-    ! 
+    !
     ! Arguments
     !
     type(seq_map)        ,intent(inout),pointer :: mapper
-    type(component_type) ,intent(inout)         :: comp_s 
-    type(component_type) ,intent(inout)         :: comp_d 
+    type(component_type) ,intent(inout)         :: comp_s
+    type(component_type) ,intent(inout)         :: comp_d
     character(len=*)     ,intent(in)            :: maprcfile
     character(len=*)     ,intent(in)            :: maprcname
     character(len=*)     ,intent(in)            :: maprctype
@@ -201,7 +201,7 @@ contains
              ! sparsematmul descriptor is reused (although this part can be
              ! done completely without MCT, doing a distributed IO from maprcfile).
              ! The weight matrix and indicies vectors are wrapped into ESMF Arrays
-             ! based on simple block distributed DistGrid. 
+             ! based on simple block distributed DistGrid.
              !   These Arrays are passed into a coupler component set up during
              ! CESM driver initialization and stored in global seq_comm_type array
              ! at the driver level. The coupler component is indexed by CPLID in
@@ -227,49 +227,49 @@ contains
                factorIndexList(1,:) = mapper%sMatp%matrix%data%iattr(col_idx, :)
                factorIndexList(2,:) = mapper%sMatp%matrix%data%iattr(row_idx, :)
                factorList = mapper%sMatp%matrix%data%rattr(wgt_idx,:)
-   
+
                ! Get coupler pet map in global setting
                call seq_comm_petlist(CPLID, petmap)
-   
+
                ! Set up temporary arrays to compute ESMF SMM routes.
                gindex_s = mct2esmf_create(gsMap_s, mpicom=mpicom, petmap=petmap, &
                    name="gindex_s", rc=rc)
                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-   
+
                gindex_d = mct2esmf_create(gsMap_d, mpicom=mpicom, petmap=petmap, &
                    name="gindex_d", rc=rc)
                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-   
+
                factorArray = mct2esmf_create(factorList, mpicom=mpicom, petmap=petmap, &
                    name="factorArray", rc=rc)
                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-   
+
                factorIndexArray = mct2esmf_create(factorIndexList, mpicom=mpicom, &
                    petmap=petmap, name="factorIndexArray", rc=rc)
                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-   
+
                ! Get the coupler component
                ! Create mapper specific import and export States
                call seq_comm_getcompstates(CPLID, comp=comp)
-   
+
                mapper%imp_state = ESMF_StateCreate(name="import", stateintent=ESMF_STATEINTENT_IMPORT, rc=rc)
                if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to create import atm state')
                mapper%exp_state = ESMF_StateCreate(name="export", stateintent=ESMF_STATEINTENT_EXPORT, rc=rc)
                if(rc /= ESMF_SUCCESS) call shr_sys_abort('failed to create export atm state')
-   
+
                ! Attach Arrays to the States
                call ESMF_StateAdd(mapper%imp_state, (/gindex_s/), rc=rc)
                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-   
+
                call ESMF_StateAdd(mapper%exp_state, (/gindex_d/), rc=rc)
                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-   
+
                call ESMF_StateAdd(mapper%exp_state, (/factorArray/), rc=rc)
                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-   
+
                call ESMF_StateAdd(mapper%exp_state, (/factorIndexArray/), rc=rc)
                if(rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
-   
+
                ! Call into ESMF init method
                call ESMF_GridCompInitialize(comp, importState=mapper%imp_state, exportState=mapper%exp_state, &
                  userRc=urc, rc=rc)
@@ -307,12 +307,12 @@ contains
 
     implicit none
     !-----------------------------------------------------
-    ! 
+    !
     ! Arguments
     !
     type(seq_map)        ,intent(inout),pointer :: mapper
-    type(component_type) ,intent(inout)         :: comp_s 
-    type(component_type) ,intent(inout)         :: comp_d 
+    type(component_type) ,intent(inout)         :: comp_s
+    type(component_type) ,intent(inout)         :: comp_d
     character(len=*)     ,intent(in),optional   :: string
     !
     ! Local Variables
@@ -379,7 +379,7 @@ contains
 
     implicit none
     !-----------------------------------------------------
-    ! 
+    !
     ! Arguments
     !
     type(seq_map)   ,intent(inout)       :: mapper
@@ -473,13 +473,13 @@ contains
   subroutine seq_map_initvect(mapper, type, comp_s, comp_d, string)
 
     !-----------------------------------------------------
-    ! 
+    !
     ! Arguments
     !
     type(seq_map)        ,intent(inout)       :: mapper
     character(len=*)     ,intent(in)          :: type
-    type(component_type) ,intent(inout)       :: comp_s 
-    type(component_type) ,intent(inout)       :: comp_d 
+    type(component_type) ,intent(inout)       :: comp_s
+    type(component_type) ,intent(inout)       :: comp_d
     character(len=*)     ,intent(in),optional :: string
     !
     ! Local Variables
@@ -516,7 +516,7 @@ contains
           mapper%slat_s(n) = sin(dom_s%data%rAttr(klat,n)*deg2rad)
           mapper%clat_s(n) = cos(dom_s%data%rAttr(klat,n)*deg2rad)
        enddo
-       
+
        lsize = mct_aVect_lsize(dom_d%data)
        allocate(mapper%slon_d(lsize),mapper%clon_d(lsize), &
                 mapper%slat_d(lsize),mapper%clat_d(lsize))
@@ -539,7 +539,7 @@ contains
 
     implicit none
     !-----------------------------------------------------
-    ! 
+    !
     ! Arguments
     !
     type(seq_map)   ,intent(inout)       :: mapper
@@ -593,7 +593,7 @@ contains
 
     implicit none
     !-----------------------------------------------------
-    ! 
+    !
     ! Arguments
     !
     type(seq_map)   ,intent(inout)       :: mapper
@@ -738,7 +738,7 @@ contains
        var_desc_t, pio_int, pio_get_var, pio_double, pio_initdecomp, pio_freedecomp
     implicit none
     !-----------------------------------------------------
-    ! 
+    !
     ! Arguments
     !
     character(len=*),intent(in)             :: maprcfile
@@ -831,7 +831,7 @@ contains
 
     rcode = pio_openfile(pio_subsystem, File, pio_iotype, filename)
 
-    if (present(ni_s)) then 
+    if (present(ni_s)) then
        rcode = pio_inq_dimid (File, 'ni_a', did)  ! number of lons in input grid
        rcode = pio_inq_dimlen(File, did  , ni_s)
     end if
@@ -895,7 +895,7 @@ contains
     ! Arguments
     !
     type(seq_map)   , intent(inout)       :: mapper  ! mapper
-    type(mct_aVect) , intent(in)          :: av_i    ! input 
+    type(mct_aVect) , intent(in)          :: av_i    ! input
     type(mct_aVect) , intent(inout)       :: av_o    ! output
     type(mct_aVect) , intent(in)          :: avf_i   ! extra src "weight"
     character(len=*), intent(in)          :: avfifld ! field name in avf_i
@@ -948,7 +948,7 @@ contains
     ! Arguments
     !
     type(seq_map)   , intent(inout) :: mapper! mapper
-    type(mct_aVect) , intent(in)    :: av_i  ! input 
+    type(mct_aVect) , intent(in)    :: av_i  ! input
     type(mct_aVect) , intent(inout) :: av_o  ! output
     real(r8)        , intent(in), optional :: norm_i(:)  ! source "weight"
     character(len=*), intent(in), optional :: rList ! fields list
@@ -1007,8 +1007,8 @@ contains
     endif
 
     !--- copy av_i to avp_i and set ffld value to 1.0
-    !--- then multiply all fields by norm_i if norm_i exists 
-    !--- this will do the right thing for the norm_i normalization 
+    !--- then multiply all fields by norm_i if norm_i exists
+    !--- this will do the right thing for the norm_i normalization
 
     call mct_aVect_copy(aVin=av_i, aVout=avp_i, VECTOR=mct_usevector)
     kf = mct_aVect_indexRA(avp_i,ffld)
@@ -1031,9 +1031,9 @@ contains
        ! on the number of input and output physical fields, temporary input and output ESMF Arrays
        ! are created and reference data pointer directly in input/output MCT AttributeVectors. These
        ! Arrays are attached to the import and export State retrieved from the mapper object of
-       ! the regridding model component pair prior to the component run method. 
+       ! the regridding model component pair prior to the component run method.
        ! Inside the component run method, a SMM execution is performed with the input/output Arrays
-       ! and the routehandle. Afterwards, the temporary input/output Array are removed from 
+       ! and the routehandle. Afterwards, the temporary input/output Array are removed from
        ! the States and destroyed.
 
        ! Create the temporary input array and attach to import State
