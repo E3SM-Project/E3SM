@@ -56,6 +56,7 @@ my $COMP_OCN		= `./xmlquery  COMP_OCN		-value`;
 my $COMP_GLC		= `./xmlquery  COMP_GLC		-value`;
 my $COMP_WAV		= `./xmlquery  COMP_WAV		-value`;
 my $COMP_ROF		= `./xmlquery  COMP_ROF		-value`;
+my $COMP_ESP		= `./xmlquery  COMP_ESP		-value`;
 my $CIMEROOT            = `./xmlquery  CIMEROOT		-value`;
 my $COMPILER            = `./xmlquery  COMPILER		-value`;
 my $CIMEROOT            = `./xmlquery  CIMEROOT		-value`;
@@ -69,6 +70,7 @@ my $CONFIG_OCN_FILE	= `./xmlquery  CONFIG_OCN_FILE	-value `;
 my $CONFIG_GLC_FILE	= `./xmlquery  CONFIG_GLC_FILE	-value `;
 my $CONFIG_WAV_FILE	= `./xmlquery  CONFIG_WAV_FILE	-value `;
 my $CONFIG_ROF_FILE	= `./xmlquery  CONFIG_ROF_FILE	-value `;
+my $CONFIG_ESP_FILE	= `./xmlquery  CONFIG_ESP_FILE	-value `;
 my $CONFIG_DRV_FILE	= `./xmlquery  CONFIG_DRV_FILE	-value `;
 my $MODEL               = `./xmlquery  MODEL		-value`;
 my $TESTCASE;
@@ -81,6 +83,7 @@ my $CONFIG_OCN_DIR	= dirname($CONFIG_OCN_FILE);
 my $CONFIG_GLC_DIR	= dirname($CONFIG_GLC_FILE);
 my $CONFIG_WAV_DIR	= dirname($CONFIG_WAV_FILE);
 my $CONFIG_ROF_DIR	= dirname($CONFIG_ROF_FILE);
+my $CONFIG_ESP_DIR	= dirname($CONFIG_ESP_FILE);
 my $CONFIG_DRV_DIR	= dirname($CONFIG_DRV_FILE);
 my $logger;
 my $dryrun = $opts{dryrun};
@@ -139,7 +142,7 @@ if($dryrun){
 	}
     }
     
-    my @models = ("cpl", "atm", "lnd", "ice", "ocn", "glc", "wav", "rof");
+    my @models = ("cpl", "atm", "lnd", "ice", "ocn", "glc", "wav", "rof", "esp");
     foreach my $model ( @models ){
 	my $objdir = "$EXEROOT/$model/obj"; 
 	if (! -d $objdir) {
@@ -161,14 +164,14 @@ if($dryrun){
 # Note - COMP_CPL must be last so that it can use xml vars potentially set 
 # by other component's buildnml scripts
 
-my @modelsorder = qw( atm lnd ice ocn glc wav rof drv );
+my @modelsorder = qw( atm lnd ice ocn glc wav rof esp drv );
 
 my %models = ( atm => $COMP_ATM, lnd => $COMP_LND, ice => $COMP_ICE,
 	       ocn => $COMP_OCN, glc => $COMP_GLC, wav => $COMP_WAV,
-	       rof => $COMP_ROF, drv => $COMP_CPL);
+	       rof => $COMP_ROF, wav => $COMP_ESP, drv => $COMP_CPL);
 my %dirs   = ( atm => $CONFIG_ATM_DIR, lnd => $CONFIG_LND_DIR, ice => $CONFIG_ICE_DIR,
 	       ocn => $CONFIG_OCN_DIR, glc => $CONFIG_GLC_DIR, wav => $CONFIG_WAV_DIR,
-	       rof => $CONFIG_ROF_DIR, drv => $CONFIG_DRV_DIR );
+	       rof => $CONFIG_ROF_DIR, esp => $CONFIG_ESP_DIR, drv => $CONFIG_DRV_DIR );
 
 my $drvfldsnl = "${RUNDIR}/drv_flds_in";
 if ( -f $drvfldsnl ) {

@@ -102,6 +102,10 @@ if ( $NTASKS_GLC > 1 ) then
   @ ntask = $NTASKS_GLC / 2
   ./xmlchange -file env_mach_pes.xml -id NTASKS_GLC  -val $ntask
 endif
+if ( $NTASKS_ESP > 1 ) then
+  @ ntask = $NTASKS_ESP / 2
+  ./xmlchange -file env_mach_pes.xml -id NTASKS_ESP  -val $ntask
+endif
 if ( $NTASKS_CPL > 1 ) then
   @ ntask = $NTASKS_CPL / 2
   ./xmlchange -file env_mach_pes.xml -id NTASKS_CPL  -val $ntask
@@ -122,6 +126,8 @@ endif
   ./xmlchange -file env_mach_pes.xml -id ROOTPE_ICE  -val $rootpe
   @ rootpe = $ROOTPE_GLC / 2
   ./xmlchange -file env_mach_pes.xml -id ROOTPE_GLC  -val $rootpe
+  @ rootpe = $ROOTPE_ESP / 2
+  ./xmlchange -file env_mach_pes.xml -id ROOTPE_ESP  -val $rootpe
   @ rootpe = $ROOTPE_CPL / 2
   ./xmlchange -file env_mach_pes.xml -id ROOTPE_CPL  -val $rootpe
 
@@ -154,6 +160,10 @@ endif
 if ( $NTHRDS_GLC > 1 ) then
   @ nthrd = $NTHRDS_GLC / 2
   ./xmlchange -file env_mach_pes.xml -id NTHRDS_GLC  -val $nthrd
+endif
+if ( $NTHRDS_ESP > 1 ) then
+  @ nthrd = $NTHRDS_ESP / 2
+  ./xmlchange -file env_mach_pes.xml -id NTHRDS_ESP  -val $nthrd
 endif
 if ( $NTHRDS_CPL > 1 ) then
   @ nthrd = $NTHRDS_CPL / 2

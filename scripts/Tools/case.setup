@@ -175,7 +175,7 @@ if (! $clean ) {
 
     my $ninst_fail = 0;
     my $build_threaded = $xmlvars{BUILD_THREADED};
-    foreach my $comp (qw(ATM LND ROF OCN ICE GLC WAV)){
+    foreach my $comp (qw(ATM LND ROF OCN ICE GLC WAV ESP)){
 	my $ninst  = "NINST_".$comp;
 	my $ntasks = "NTASKS_".$comp;
 	my $nthrds = "NTHRDS_".$comp;
@@ -303,7 +303,7 @@ if (! $clean ) {
     if (!-f "./user_nl_cpl") {
 	$logger->info("Creating user_nl_xxx files for components and cpl");
     }
-    my @models = qw( ATM LND ICE OCN GLC ROF WAV );
+    my @models = qw( ATM LND ICE OCN GLC ROF WAV ESP );
     # loop over models
     foreach my $model (@models) {
 	# what is actual component associated with each model

@@ -32,6 +32,7 @@ cp -f env_build.xml    env_build.xml.1
 ./xmlchange -file env_mach_pes.xml -id NINST_OCN  -val 1
 ./xmlchange -file env_mach_pes.xml -id NINST_ICE  -val 1
 ./xmlchange -file env_mach_pes.xml -id NINST_GLC  -val 1
+./xmlchange -file env_mach_pes.xml -id NINST_ESP  -val 1
 
 ./xmlchange -file env_mach_pes.xml -id ROOTPE_ATM  -val 0
 ./xmlchange -file env_mach_pes.xml -id ROOTPE_LND  -val 0
@@ -41,6 +42,7 @@ cp -f env_build.xml    env_build.xml.1
 ./xmlchange -file env_mach_pes.xml -id ROOTPE_ICE  -val 0
 ./xmlchange -file env_mach_pes.xml -id ROOTPE_GLC  -val 0
 ./xmlchange -file env_mach_pes.xml -id ROOTPE_CPL  -val 0
+./xmlchange -file env_mach_pes.xml -id ROOTPE_ESP  -val 0
 
 set NTASKS_ATM  = `./xmlquery NTASKS_ATM  -value`
 set NTASKS_LND  = `./xmlquery NTASKS_LND  -value`
@@ -49,6 +51,7 @@ set NTASKS_WAV  = `./xmlquery NTASKS_WAV  -value`
 set NTASKS_OCN  = `./xmlquery NTASKS_OCN  -value`
 set NTASKS_ICE  = `./xmlquery NTASKS_ICE  -value`
 set NTASKS_GLC  = `./xmlquery NTASKS_GLC  -value`
+set NTASKS_ESP  = `./xmlquery NTASKS_ESP  -value`
 set NTASKS_CPL  = `./xmlquery NTASKS_CPL  -value`
 
  if ( $NTASKS_ATM > 1 ) then
@@ -78,6 +81,10 @@ set NTASKS_CPL  = `./xmlquery NTASKS_CPL  -value`
  if ( $NTASKS_GLC > 1 ) then
    @ ntask = $NTASKS_GLC / 2
    ./xmlchange -file env_mach_pes.xml -id NTASKS_GLC  -val $ntask
+ endif
+ if ( $NTASKS_ESP > 1 ) then
+   @ ntask = $NTASKS_ESP / 2
+   ./xmlchange -file env_mach_pes.xml -id NTASKS_ESP  -val $ntask
  endif
 
 ./xmlchange -file env_build.xml -id NINST_BUILD -val 0
@@ -110,6 +117,7 @@ cp -f env_build.xml       env_build.xml.1
 ./xmlchange -file env_mach_pes.xml -id NINST_OCN  -val 2
 ./xmlchange -file env_mach_pes.xml -id NINST_ICE  -val 2
 ./xmlchange -file env_mach_pes.xml -id NINST_GLC  -val 2
+./xmlchange -file env_mach_pes.xml -id NINST_ESP  -val 2
 
 set NTASKS_ATM  = `./xmlquery NTASKS_ATM	-value`
 set NTASKS_LND  = `./xmlquery NTASKS_LND	-value`
@@ -118,6 +126,7 @@ set NTASKS_WAV  = `./xmlquery NTASKS_WAV	-value`
 set NTASKS_OCN  = `./xmlquery NTASKS_OCN	-value`
 set NTASKS_ICE  = `./xmlquery NTASKS_ICE	-value`
 set NTASKS_GLC  = `./xmlquery NTASKS_GLC	-value`
+set NTASKS_ESP  = `./xmlquery NTASKS_ESP	-value`
 set NTASKS_CPL  = `./xmlquery NTASKS_CPL	-value`
 
 @ rootp = 0
@@ -148,9 +157,12 @@ set NTASKS_CPL  = `./xmlquery NTASKS_CPL	-value`
 ./xmlchange -file env_mach_pes.xml -id ROOTPE_ICE  -val $rootp
 @ ntask = $NTASKS_GLC * 2
 @ rootp = $rootp + $ntask
-
 ./xmlchange -file env_mach_pes.xml -id NTASKS_GLC  -val $ntask
 ./xmlchange -file env_mach_pes.xml -id ROOTPE_GLC  -val $rootp
+@ ntask = $NTASKS_ESP * 2
+@ rootp = $rootp + $ntask
+./xmlchange -file env_mach_pes.xml -id NTASKS_ESP  -val $ntask
+./xmlchange -file env_mach_pes.xml -id ROOTPE_ESP  -val $rootp
 ./xmlchange -file env_build.xml    -id NINST_BUILD -val 0
 
 ./case.setup -clean -testmode

@@ -38,6 +38,7 @@ set NTASKS_WAV  = `./xmlquery NTASKS_WAV	-value`
 set NTASKS_OCN  = `./xmlquery NTASKS_OCN	-value`
 set NTASKS_ICE  = `./xmlquery NTASKS_ICE	-value`
 set NTASKS_GLC  = `./xmlquery NTASKS_GLC	-value`
+set NTASKS_ESP  = `./xmlquery NTASKS_ESP	-value`
 set NTASKS_CPL  = `./xmlquery NTASKS_CPL	-value`
 
 set NTHRDS_ATM  = `./xmlquery NTHRDS_ATM	-value`
@@ -47,6 +48,7 @@ set NTHRDS_WAV  = `./xmlquery NTHRDS_WAV	-value`
 set NTHRDS_OCN  = `./xmlquery NTHRDS_OCN	-value`
 set NTHRDS_ICE  = `./xmlquery NTHRDS_ICE	-value`
 set NTHRDS_GLC  = `./xmlquery NTHRDS_GLC	-value`
+set NTHRDS_ESP  = `./xmlquery NTHRDS_ESP	-value`
 set NTHRDS_CPL  = `./xmlquery NTHRDS_CPL	-value`
 
 # Halve the number of tasks 

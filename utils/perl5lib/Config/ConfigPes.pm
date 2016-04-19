@@ -57,7 +57,7 @@ sub _setPESmatch1
 {
     my ($pesize_opts, $ntasks, $nthrds, $rootpe, $config) = @_;
 
-    foreach my $comp ("ATM", "LND", "ICE", "OCN", "GLC", "WAV", "ROF", "CPL" ) {
+    foreach my $comp ("ATM", "LND", "ICE", "OCN", "GLC", "WAV", "ROF", "ESP", "CPL" ) {
 	$config->set("NTASKS_" . "${comp}", $ntasks);
 	$config->set("NTHRDS_" . "${comp}", $nthrds);
 	$config->set("ROOTPE_" . "${comp}", $rootpe);
@@ -72,7 +72,8 @@ sub _setPESmatch1
 	$root = 4 * $ntasks; $config->set('ROOTPE_GLC') = $root;
 	$root = 5 * $ntasks; $config->set('ROOTPE_WAV') = $root;
 	$root = 6 * $ntasks; $config->set('ROOTPE_ROF') = $root;
-	$root = 7 * $ntasks; $config->set('ROOTPE_CPL') = $root;
+	$root = 7 * $ntasks; $config->set('ROOTPE_ESP') = $root;
+	$root = 8 * $ntasks; $config->set('ROOTPE_CPL') = $root;
     }
 }
 
@@ -81,7 +82,7 @@ sub _setPESmatch2
 {
     my ($pesize_opts, $ntasks, $nthrds, $rootpe, $config) = @_;
 
-    foreach my $comp ("ATM", "LND", "ICE", "OCN", "GLC", "WAV", "ROF", "CPL") {
+    foreach my $comp ("ATM", "LND", "ICE", "OCN", "GLC", "WAV", "ROF", "ESP", "CPL") {
 	$config->set("NTASKS_" . "$comp", $ntasks);
 	$config->set("NTHRDS_" . "$comp", $nthrds);
 	$config->set("ROOTPE_" . "$comp", $rootpe);
@@ -96,7 +97,8 @@ sub _setPESmatch2
 	$root = 4 * $ntasks; $config->set('ROOTPE_GLC',$root);
 	$root = 5 * $ntasks; $config->set('ROOTPE_WAV',$root);
 	$root = 6 * $ntasks; $config->set('ROOTPE_ROF',$root);
-	$root = 7 * $ntasks; $config->set('ROOTPE_CPL',$root);
+	$root = 7 * $ntasks; $config->set('ROOTPE_ESP',$root);
+	$root = 8 * $ntasks; $config->set('ROOTPE_CPL',$root);
     }
 }
 
@@ -308,7 +310,7 @@ sub _setPESsettings
 
 
 
-    foreach my $comp ("ATM", "LND", "ICE", "OCN", "GLC", "WAV", "ROF", "CPL") {
+    foreach my $comp ("ATM", "LND", "ICE", "OCN", "GLC", "WAV", "ROF", "ESP", "CPL") {
 	if($comp ne "ATM"){
 	    if(!defined $decomp{"NTASKS_$comp"}){
 		$decomp{"NTASKS_$comp"} = $decomp{NTASKS_ATM};
@@ -349,6 +351,3 @@ sub _clean
 }
 
 1;
-
-
-

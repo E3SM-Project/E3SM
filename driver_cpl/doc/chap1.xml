@@ -2,34 +2,26 @@
 <title>CPL7 Introduction</title>
 
 <note><para>
-This document discusses the coupler in the CESM1.1 model.
-The coupler in this implementation is nearly identical
-to the version in the CESM1.0 and CCSM4 release.  In fact, many of the
-variables, filenames, comments, and namelists still use the
-CCSM name convention.  Any reference in this document to the
-CESM1.1 or CESM1 version will generally hold for the CCSM4 release as well.
-CESM1.1 differs from CCSM4 and CESM1.0 in one important way, the
-runoff model is treated as a separate comoponent in CESM1.1.
-CESM1 is used to describe the version of the model in this document.
-Where CESM1.0 and CESM1.1 differ, specific versions will be indicated.
+This document discusses the coupler in the CESM2.0 model although most
+of the contents also applies to earlier CESM versions.
 </para></note>
 
 <sect1 id="how_to_use">
 <title>How to Use This Guide</title>
 
 <para> 
-This guide covers the CESM1 top level driver implementation
+This guide covers the CESM2 top level driver implementation
 as well as the coupler component within the system.  The driver
-runs on all hardware processors and basically runs the top
-level instructions and executes the driver time loop.  The
-coupler is a component of the CESM1 system that is run from
+runs on all hardware processors, runs the top
+level instructions, and, executes the driver time loop.  The
+coupler is a component of the CIME infrastructure that is run from
 within the driver.  It can be run on a subset of the total processors,
 and carries out mapping (interpolation), merging, diagnostics,
 and other calculations.   The name cpl7 refers to the source
 code associated with both the driver and the coupler
-parts of the model.  cpl7 code is located in the CESM1 source
-tree under models/drv/ and the main program of CESM1 is 
-models/drv/driver/ccsm_driver.F90.
+parts of the model.  cpl7 code is located in the CIME source
+tree under driver_cpl/ and the main program of CESM2 is 
+driver_cpl/driver/cesm_driver.F90.
 </para>
 <para>
 This document provides a general overview of the cpl7 design.  Then

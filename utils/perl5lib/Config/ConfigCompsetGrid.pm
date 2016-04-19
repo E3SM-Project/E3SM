@@ -7,6 +7,7 @@ use Cwd qw( getcwd abs_path chdir);
 use IO::File;
 use XML::LibXML;
 use Data::Dumper;
+use List::Util qw ( max );
 use ConfigCase;
 use Log::Log4perl qw(get_logger);
 my $logger;
@@ -19,6 +20,67 @@ BEGIN{
 my %compgrid;
 my %newxml;
 my $desc_comp = "";
+
+# Define optional components and optional packages
+# Optional packages, such as BGC, come after components in a longname
+# Note that numbering starts at one since the date occupies location zero
+my %opt_components = ( 'ESP' => 8 );
+my @opt_packages = ( 'BGC ' );
+my @opt_compnames = keys %opt_components;
+my $max_compnum = max(values %opt_components);
+#-----------------------------------------------------------------------------------------------
+sub addCompsetOptComps
+{
+    my ($longname) = @_;
+    my @components = split('_', $longname);
+    my @optcomps = ();
+
+    foreach my $comp (@opt_compnames) {
+        my $index = $opt_components{$comp};
+        if ( exists $components[$index] ) {
+          if ( $components[$index] ~~ @opt_packages) {
+              push(@optcomps, $components[$index]);
+          }
+      }
+    }
+
+    foreach my $comp (@opt_compnames) {
+        my $index = $opt_components{$comp};
+        if (! exists $components[$index] || ( $components[$index] ~~ @opt_packages)) {
+            $components[$index] = "S$comp";
+        }
+    }
+
+    # Add in optional components
+    my $index = $max_compnum;
+    foreach my $ocomp (@optcomps) {
+        $index++;
+        $components[$index] = $ocomp;
+    }
+    # Reassemble longname
+    $longname = join("_", @components);
+    return $longname;
+}
+#-----------------------------------------------------------------------------------------------
+sub rmCompsetOptComps
+{
+    my ($longname) = @_;
+    my @components = split('_', $longname);
+    my $num_components = @components;
+    my @new_component_list;
+    my $comp_index = 0;
+    my @stub_opts = map("S$_", @opt_compnames);
+
+    foreach my $comp (@components) {
+        if (! ($comp ~~ @stub_opts)) {
+            $new_component_list[$comp_index] = $comp;
+            $comp_index++;
+        }
+    }
+    # Reassemble longname
+    $longname = join("_", @new_component_list);
+    return $longname;
+}
 
 #-----------------------------------------------------------------------------------------------
 sub getCompsetLongname
@@ -40,7 +102,6 @@ sub getCompsetLongname
     my $cimeroot = $config->get('CIMEROOT');
     my $srcroot  = $config->get('SRCROOT');
     my $model    = $config->get('MODEL');
-    my $compset_longname;
     my $compset_aliasname;
 
     # First determine primary component (for now this is only CESM specific)
@@ -81,7 +142,7 @@ sub getCompsetLongname
 	    } else {
 		my @name_nodes = $alias_nodes[0]->findnodes(".//lname");
 		foreach my $name_node (@name_nodes) {
-		    $compset_longname = $name_node->textContent();
+		    $compset_longname = addCompsetOptComps($name_node->textContent());
 		}
 	    }
 	    $pes_setby = $comp;
@@ -97,7 +158,7 @@ sub getCompsetLongname
 	    } else {
 		my @name_nodes = $lname_nodes[0]->findnodes(".//lname");
 		foreach my $name_node (@name_nodes) {
-		    $compset_longname = $name_node->textContent();
+		    $compset_longname = addCompsetOptComps($name_node->textContent());
 		}
 	    }
 	    $pes_setby = $comp;
@@ -406,6 +467,11 @@ sub setCompsetGeneralVars
 
     # first check that compset is supported for target grid
     my @nodes = $xml_compset->findnodes(".//compset[lname=\"$compset_longname\"]");
+    if (! @nodes) {
+      # If we did not find a compset, try without optional components
+      $compset_longname = rmCompsetOptComps($compset_longname);
+      @nodes = $xml_compset->findnodes(".//compset[lname=\"$compset_longname\"]");
+    }
     if (! @nodes) {die " ERROR: $compset_longname not supported \n";}
 
     my $compset_grid = $nodes[0]->getAttribute('grid');
@@ -477,7 +543,7 @@ sub setComponent {
 	if ($compset_longname =~ m/$compset_match/) {
 	    $found_match = 1;
 	    last;
-	}
+        }
     }
     if (! defined $found_match) {
 	$logger->fatal( "ERROR ConfigCompsetGrid::setComponent: no match found in desc elements in file
