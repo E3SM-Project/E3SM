@@ -52,7 +52,7 @@
  type(block_type),intent(in),target:: block
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: state
- type(mpas_pool_type),intent(in):: diag
+ type(mpas_pool_type),intent(inout):: diag
  type(mpas_pool_type),intent(inout):: tend_physics
  type(mpas_pool_type),intent(in):: configs
  integer, intent(in):: rk_step
@@ -78,7 +78,7 @@
                                            rucuten,rvcuten
  real(kind=RKIND),dimension(:,:),pointer:: rthratenlw,rthratensw                                    
  
- real(kind=RKIND),dimension(:,:),pointer:: tend_theta,tend_u
+ real(kind=RKIND),dimension(:,:),pointer:: tend_theta,tend_u, tend_u_phys !nick
  real(kind=RKIND),dimension(:,:,:),pointer:: tend_scalars
  real(kind=RKIND),dimension(:,:),pointer:: tend_qv,tend_qc,tend_qr,tend_qi,tend_qs,tend_qg
 
@@ -157,12 +157,17 @@
  tend_qi = 0._RKIND
  tend_qs = 0._RKIND
  tend_qg = 0._RKIND
-
+ 
+ call mpas_pool_get_array(diag , 'tend_u_phys', tend_u_phys) !nick
+ 
 !add coupled tendencies due to PBL processes:
  if(config_pbl_scheme .ne. 'off') then
     allocate(rublten_Edge(nVertLevels,nEdges))
     rublten_Edge(:,:) = 0.
     call tend_toEdges(block,mesh,rublten,rvblten,rublten_Edge)
+    
+    tend_u_phys(1:nVertLevels,1:nEdges) = rublten_Edge(1:nVertLevels,1:nEdges)
+    
     do i = 1, nEdgesSolve
     do k  = 1, nVertLevels
        tend_u(k,i)=tend_u(k,i)+rublten_Edge(k,i)*mass_edge(k,i)
@@ -187,6 +192,9 @@
        allocate(rucuten_Edge(nVertLevels,nEdges))
        rucuten_Edge(:,:) = 0.
        call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)
+       
+       tend_u_phys(1:nVertLevels,1:nEdges) = tend_u_phys(1:nVertLevels,1:nEdges)+rucuten_Edge(1:nVertLevels,1:nEdges)
+       
        do i = 1, nEdgesSolve
        do k  = 1, nVertLevels
           tend_u(k,i)=tend_u(k,i)+rucuten_Edge(k,i)*mass_edge(k,i)
