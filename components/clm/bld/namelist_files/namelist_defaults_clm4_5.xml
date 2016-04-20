@@ -180,6 +180,14 @@ ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne120_g16.ee1ee60.clm2.r.0021-01-01-00000.nc
 </finidat>
 
+<finidat hgrid="ne120np4"   maxpft="17"  mask="oRRS15to5" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
+ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CLM45.ne120_oRRS15.c7cfd71.clm2.r.0021-01-01-00000.nc
+</finidat>
+
+<finidat hgrid="ne120np4"   maxpft="17"  mask="oRRS15to5" use_cn=".false." ic_ymd="2000101" more_vertlayers=".false."
+ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne120_oRRS15.033e19d.clm2.r.0021-01-01-00000.nc
+</finidat>
+
 <!-- Initial condition files with CLM45BGCDV -->
 
 <!-- 1 degree resolution -->
