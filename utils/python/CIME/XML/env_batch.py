@@ -50,7 +50,39 @@ class EnvBatch(EnvBase):
                     type_str = self._get_type_info(node)
                     value = convert_to_type(value, type_str, item)
 
+
         return value
+
+    def get_values(self, item, attribute={}, resolved=True, subgroup=None):
+        """Returns the value as a string of the first xml element with item as attribute value. 
+        <elememt_name attribute='attribute_value>value</element_name>"""
+                
+        nodes   = [] # List of identified xml elements  
+        results = [] # List of identified parameters 
+        logger.debug("Get node with attribute value: %s" , item)
+       
+        # Find all nodes with attribute name and attribute value item
+        # xpath .//*[name='item']
+        for job in self.get_nodes("job") :
+            
+            group = job.attrib['name']
+            
+            if item :
+                nodes = self.get_nodes("*",{"id" : item} , root=job)
+            else :
+               # Return all nodes
+               logger.debug("Retrieving all parameter")
+               nodes = self.get_nodes("*",{"id" : None } , root=job)
+          
+           
+            # Return value for first occurence of node with attribute value = item
+            for node in nodes:
+                t   =  super(EnvBase , self).get_type( node )
+                val = { 'group' : group , 'attribute' : item , 'value' : node.attrib["value"] , 'type' : t , 'description' : self.get_description(node) , 'file' : self.filename }
+                logger.debug("Found node with value for %s = %s" , item , val)   
+                results.append(val)
+        
+        return results
 
     def get_type_info(self, vid):
         nodes = self.get_nodes("entry",{"id":vid})

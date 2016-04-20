@@ -37,6 +37,7 @@ class GenericXML(object):
         else:
             # if file does not exist create a root xml element
             # and set it's id to file
+            logger.warning("File %s does not exists." , infile)
             self.filename = infile
             root = ET.Element("xml")
             root.set("version", "1.0")
@@ -74,7 +75,14 @@ class GenericXML(object):
 
         Error unless exactly one match.
         """
+<<<<<<< HEAD
         nodes = self.get_nodes(nodename, attributes=attributes, root=root)
+=======
+        nodes = self.get_nodes(nodename, attributes, root)
+        
+        logging.debug("Found %s nodes" , len(nodes))
+        
+>>>>>>> cd91d1c2d071e26736d273d987baafdae6fe5fbb
         expect(len(nodes) == 1, "Incorrect number of matches, %d, for nodename '%s' and attrs '%s' in file '%s'" %
                (len(nodes), nodename, attributes, self.filename))
         return nodes[0]
@@ -96,26 +104,29 @@ class GenericXML(object):
             root = self.root
         nodes = []
         xpath = ".//"+nodename
+        logger.debug("Attributes %s" , attributes , extra={})
         if attributes is not None:
             # xml.etree has limited support for xpath and does not allow more than
             # one attribute in an xpath query so we query seperately for each attribute
             # and create a result with the intersection of those lists
+
             for key, value in attributes.iteritems():
                 xpath = ".//%s[@%s=\'%s\']" % (nodename, key, value)
                 logger.debug("xpath is %s"%xpath)
+
                 newnodes = root.findall(xpath)
-                if not nodes:
+                logger.debug("Found %s nodes." , len(newnodes))
+                if len(nodes) == 0 :
                     nodes = newnodes
                 else:
-                    for node in nodes[:]:
-                        if node not in newnodes:
-                            nodes.remove(node)
-                if not nodes:
-                    return []
+                    nodes = nodes + newnodes
         else:
+            logger.debug("xpath: %s" , xpath , extra={attributes : None})
             nodes = root.findall(xpath)
 
-        return nodes
+        l = list(set(nodes))
+        logger.debug("Returning %s nodes (%s)" , len(l), l)
+        return l
 
     def add_child(self, node, root=None):
         """
@@ -129,7 +140,7 @@ class GenericXML(object):
         """
         get_value is expected to be defined by the derived classes, if you get here it is an error.
         """
-        logger.debug("Get Value for "+item)
+        logger.debug("Get Value for %s " , item)
         result = None
         if item in self.lookups:
             result = self.lookups[item]

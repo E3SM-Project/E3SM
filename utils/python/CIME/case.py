@@ -23,13 +23,19 @@ logger = logging.getLogger(__name__)
 class Case(object):
 
     def __init__(self, case_root=os.getcwd()):
+        
+        # Init first, if no valid case_root expect fails and tears down object, __del__ expects self._env_files_that_need_rewrite
+        self._env_files_that_need_rewrite = set()
+        
         expect(os.path.isdir(case_root),
                "Case root directory '%s' does not exist" % case_root)
 
+        logger.debug("Initializing Case.")       
         self._env_entryid_files = []
         self._env_generic_files = []
 
         self._env_files_that_need_rewrite = set()
+      
 
         self._env_entryid_files.append(EnvRun(case_root))
         self._env_entryid_files.append(EnvBuild(case_root))
@@ -42,6 +48,8 @@ class Case(object):
         self._env_generic_files.append(EnvArchive(case_root))
 
         self._case_root = case_root
+  
+       
 
     def __del__(self):
         self.flush()
@@ -56,14 +64,74 @@ class Case(object):
         result = None
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
+           
             result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
-            logging.debug("CASE %s %s"%(item,result))
+          
             if result is not None:
                 if resolved and type(result) is str:
                     return self.get_resolved_value(result)
                 return result
+                
+        for env_file in self._env_generic_files:
+      
+            result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
+    
+            if result is not None:
+                if resolved and type(result) is str:
+                    return self.get_resolved_value(result)
+                return result
+       
+        # Return empty result
+        return result
 
-        logging.info("Not able to retreive value for item '%s'" % item)
+
+    def get_values(self, item=None, attribute={}, resolved=True, subgroup=None):
+        
+        """
+        Return info object for given item, return all info for all item if item is empty.     
+        """
+  
+        results = []
+        for env_file in self._env_entryid_files:
+            # Wait and resolve in self rather than in env_file
+            result = None
+           
+            try:
+                # env_batch has its own implementation of get_values otherwise in entry_id
+                result = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
+                # Method exists, and was used.  
+            except AttributeError:
+                # Method does not exist.  What now?
+                logger.debug("No get_values method for class %s (%s)" , env_file.__class__.__name__ , AttributeError)
+               
+
+            if result is not None and (len(result) >= 1):
+                if resolved and type(result) is str:
+                    # WRONG
+                    logger.info("Fix this line , it is an array not a string")
+                    results.append(self.get_resolved_value(result))
+                else :
+                    results = results + result
+                return results
+            
+        for env_file in self._env_generic_files:
+
+            result = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
+      
+            if result is not None and (len(result) >=1) :
+                if resolved and type(result) is str:
+                    logger.debug("Type string and resolved is true")
+                    results.append(self.get_resolved_value(result))
+                else :
+                    logger.debug("Append result to return list (%s)" ,result)
+                    results = results + result
+                return results
+   
+        logger.warning("Not able to retrieve any value")
+        # Return empty result
+        return results
+        
+
 
     def get_type_info(self, item):
         result = None
@@ -100,6 +168,7 @@ class Case(object):
 
         logging.warning("Not able to set value for item '%s'" % item)
 
+
     def __iter__(self):
         for entryid_file in self._env_entryid_files:
             for key, val in entryid_file:
@@ -107,3 +176,5 @@ class Case(object):
                     yield key, self.get_resolved_value(val)
                 else:
                     yield key, val
+
+
