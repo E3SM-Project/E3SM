@@ -54,11 +54,11 @@ def cimetest(caseroot, testname=None):
 
     logging.warn("Running test for %s"%testname)
 
-    if(testname == 'SMS'):
-        test = SMS(caseroot, case)
+    test = globals()[testname](caseroot, case)
 
     test.run()
 
+    test.report()
 
 
 def _main_func(description):
