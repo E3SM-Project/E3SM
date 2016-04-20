@@ -9,7 +9,6 @@ module test_vertical_gradient_calculator_2nd_order
   use mct_mod, only : mct_aVect, mct_aVect_clean
   use mct_wrapper_mod, only : mct_init, mct_clean
   use avect_wrapper_mod
-  use glc_elevclass_mod, only : glc_elevclass_as_string
   
   implicit none
 
@@ -41,6 +40,14 @@ contains
     call mct_clean()
   end subroutine tearDown
 
+  function two_digit_string(val)
+    ! Converts val to a two-digit string
+    character(len=2) :: two_digit_string
+    integer, intent(in) :: val
+
+    write(two_digit_string, '(i2.2)') val
+  end function two_digit_string
+
   subroutine create_av(this, topo, data, toponame, dataname)
     ! Creates the attribute vector in 'this'
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
@@ -61,10 +68,10 @@ contains
 
     allocate(attr_tags(2*n_elev_classes))
     do elevclass = 1, n_elev_classes
-       attr_tags(elevclass) = dataname // glc_elevclass_as_string(elevclass)
+       attr_tags(elevclass) = dataname // two_digit_string(elevclass)
     end do
     do elevclass = 1, n_elev_classes
-       attr_tags(n_elev_classes + elevclass) = toponame // glc_elevclass_as_string(elevclass)
+       attr_tags(n_elev_classes + elevclass) = toponame // two_digit_string(elevclass)
     end do
        
     call create_aVect_with_data_rows_are_points(this%av, &
@@ -81,17 +88,23 @@ contains
     real(r8), intent(in) :: data(:,:)  ! data(i,j) is point i, elevation class j
 
     integer :: n_elev_classes
-    character(len=16), allocatable :: attr_tags(:)
+    character(len=16), allocatable :: elevclass_names(:)
+    integer :: i
 
     call this%create_av(topo, data, 'topo', 'data')
     n_elev_classes = size(data,2)
+    allocate(elevclass_names(1:n_elev_classes))
+    do i = 1, n_elev_classes
+       elevclass_names(i) = two_digit_string(i)
+    end do
     
     calculator = vertical_gradient_calculator_2nd_order_type( &
          attr_vect = this%av, &
          fieldname = 'data', &
          toponame = 'topo', &
          min_elevation_class = 1, &
-         max_elevation_class = n_elev_classes)
+         max_elevation_class = n_elev_classes, &
+         elevclass_names = elevclass_names)
 
   end function create_calculator
 
@@ -108,12 +121,12 @@ contains
          [11._r8, 12._r8, 13._r8, &
          14._r8, 15._r8, 16._r8], &
          [3, 2])
-    
+
     call this%create_av(topo, data, 'topo', 'data')
 
-    @assertEqual([4._r8, 5._r8, 6._r8], aVect_exportRattr(this%av, 'topo' // glc_elevclass_as_string(2)))
+    @assertEqual([4._r8, 5._r8, 6._r8], aVect_exportRattr(this%av, 'topo' // two_digit_string(2)))
 
-    @assertEqual([14._r8, 15._r8, 16._r8], aVect_exportRattr(this%av, 'data' // glc_elevclass_as_string(2)))
+    @assertEqual([14._r8, 15._r8, 16._r8], aVect_exportRattr(this%av, 'data' // two_digit_string(2)))
 
   end subroutine test_create_av
     
@@ -134,7 +147,7 @@ contains
 
     expected_vertical_gradient(1) = (data(1,3) - data(1,1)) / (topo(1,3) - topo(1,1))
     @assertEqual(expected_vertical_gradient, vertical_gradient, tolerance=tol)
-    
+
   end subroutine test_calc_vertical_gradient_ECmid
 
   @Test
