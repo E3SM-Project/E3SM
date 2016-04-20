@@ -24,6 +24,7 @@ module atm_core
       use mpas_stream_manager
       use mpas_performance, only : mpas_performance_init
       use mpas_atm_dimensions, only : mpas_atm_set_dims
+      use mpas_atm_soundings, only : mpas_atm_soundings_init
 
       implicit none
 
@@ -146,6 +147,11 @@ module atm_core
 
       call mpas_pool_get_field(diag, 'rw', rw_field)
       call mpas_dmpar_exch_halo_field(rw_field)
+
+      !
+      ! Set up sounding locations
+      !
+      call mpas_atm_soundings_init(clock, mesh, '3:00:00')
 
    end function atm_core_init
 
@@ -408,6 +414,7 @@ module atm_core
       use mpas_stream_manager
       use mpas_derived_types, only : MPAS_STREAM_LATEST_BEFORE, MPAS_STREAM_INPUT, MPAS_STREAM_INPUT_OUTPUT
       use mpas_timer
+      use mpas_atm_soundings, only : mpas_atm_soundings_write
    
       implicit none
    
@@ -578,6 +585,15 @@ module atm_core
 
          call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
+         block_ptr => domain % blocklist
+         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+         call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+         call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+         call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
+         call mpas_timer_start('write_soundings')
+         call mpas_atm_soundings_write(mesh, state, diag, diag_physics)
+         call mpas_timer_stop('write_soundings')
+
       end do
    
    end function atm_core_run
@@ -737,6 +753,7 @@ module atm_core
       use mpas_decomp
       use mpas_timekeeping
       use mpas_performance, only : mpas_performance_finalize
+      use mpas_atm_soundings, only : mpas_atm_soundings_finalize
    
       implicit none
    
@@ -744,6 +761,8 @@ module atm_core
       integer :: ierr
 
       ierr = 0
+
+      call mpas_atm_soundings_finalize()
 
       call mpas_destroy_clock(clock, ierr)
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
