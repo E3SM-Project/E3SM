@@ -1378,14 +1378,22 @@ contains
       call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
       call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFluxRunoff', activeTracersSurfaceFluxRunoff)
       ! allocate scratch space displaced density computation
+      call mpas_pool_get_field(scratchPool, 'densitySurfaceDisplaced', densitySurfaceDisplacedField)
       call mpas_pool_get_field(scratchPool, 'thermalExpansionCoeff', thermalExpansionCoeffField)
       call mpas_pool_get_field(scratchPool, 'salineContractionCoeff', salineContractionCoeffField)
+      call mpas_allocate_scratch_field(densitySurfaceDisplacedField, .true.)
       call mpas_allocate_scratch_field(thermalExpansionCoeffField, .true.)
       call mpas_allocate_scratch_field(salineContractionCoeffField, .true.)
       call mpas_threading_barrier()
 
+      densitySurfaceDisplaced => densitySurfaceDisplacedField % array
       thermalExpansionCoeff => thermalExpansionCoeffField % array
       salineContractionCoeff => salineContractionCoeffField % array
+
+      ! compute EOS by displacing SST/SSS to every vertical layer in column
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 0, 'surfaceDisplaced', &
+                                         densitySurfaceDisplaced, err, thermalExpansionCoeff, salineContractionCoeff, &
+                                         timeLevel)
 
       !$omp do schedule(runtime) private(invAreaCell, deltaVelocitySquared, i, iEdge, factor, delU2, k, buoyContribution, &
       !$omp                              shearContribution)
