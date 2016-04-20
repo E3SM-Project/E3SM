@@ -30,6 +30,11 @@ module vertical_gradient_calculator_2nd_order
      real(r8), allocatable :: field(:,:)   ! field(i,j) is point i, elevation class j
      real(r8), allocatable :: topo(:,:)    ! topo(i,j) is point i, elevation class j
 
+     ! Bounds of each elevation class. This array has one more element than the number of
+     ! elevation classes, since it contains lower and upper bounds for each elevation
+     ! class. The indices go (min_elevation_class-1):max_elevation_class
+     real(r8), allocatable :: elevclass_bounds(:)
+
    contains
      procedure :: calc_vertical_gradient
      
@@ -45,7 +50,8 @@ contains
 
   !-----------------------------------------------------------------------
   function constructor(attr_vect, fieldname, toponame, &
-       min_elevation_class, max_elevation_class, elevclass_names) &
+       min_elevation_class, max_elevation_class, elevclass_names, &
+       elevclass_bounds) &
        result(this)
     !
     ! !DESCRIPTION:
@@ -64,7 +70,14 @@ contains
     character(len=*) , intent(in) :: toponame            ! base name of the topographic field
     integer          , intent(in) :: min_elevation_class ! first elevation class index
     integer          , intent(in) :: max_elevation_class ! last elevation class index
-    character(len=*) , intent(in) :: elevclass_names( min_elevation_class: ) ! strings corresponding to each elevation class
+
+    ! strings corresponding to each elevation class
+    character(len=*) , intent(in) :: elevclass_names( min_elevation_class: )
+
+    ! bounds of each elevation class; this array should have one more element than the
+    ! number of elevation classes, since it contains lower and upper bounds for each
+    ! elevation class
+    real(r8)         , intent(in) :: elevclass_bounds( min_elevation_class-1 : )
     !
     ! !LOCAL VARIABLES:
     
@@ -72,9 +85,12 @@ contains
     !-----------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(elevclass_names) == (/max_elevation_class/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(elevclass_bounds) == (/max_elevation_class/)), errMsg(__FILE__, __LINE__))
 
     this%min_elevation_class = min_elevation_class
     this%max_elevation_class = max_elevation_class
+    allocate(this%elevclass_bounds((min_elevation_class-1):max_elevation_class))
+    this%elevclass_bounds(:) = elevclass_bounds(:)
     call this%set_data_from_attr_vect(attr_vect, fieldname, toponame, elevclass_names)
     
   end function constructor
