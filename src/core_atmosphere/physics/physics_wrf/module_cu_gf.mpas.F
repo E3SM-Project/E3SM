@@ -37,7 +37,19 @@ CONTAINS
 !     Laura D. Fowler (laura@ucar.edu) / 2104-06-19.
 !   * renamed the original subroutine gfdrv to cu_grell_freitas, and clean-up the initialization of
 !     local and inout variables before and after the calls to cup_gf and cup_gf_sh.
-!     Laura D. Fowler (laura@ucar.edu) / 2015-03-30.
+!     Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
+!     -> removed variables that are never computed from the argument list (for instance, all the apr_* arrays).
+!     -> removed the variable ktop_deep which is a duplicate of the variable htop (ktop_deep was not properly
+!        initialized in the original sourcecode).
+!     -> corrected the declarations of the local arrays gswi,edti_out,massi_flx, and corrected the initialization
+!        of those variables accordingly.
+!     -> added the initialization of the in-cloud cloud water (gdc) and in-cloud cloud ice (gdc2) mixing ratios.
+!        gdc and gdc2 were not initialized in the original sourcecode which led to non-zero values for gdc when
+!        temperatures are colder than tcrit.
+!     -> corrected the calculation of the moisture convergence. the conversion of w to omeg now uses the air
+!        density rho interpolated to w levels.
+!     Laura D. Fowler (laura@ucar.edu) / 2016-04-20.
+
 
  subroutine cu_grell_freitas( &
                itimestep,dt,dxcell,areacell                     &
@@ -45,9 +57,9 @@ CONTAINS
               ,xland,ht,hfx,qfx,gsw,rqvften,rthften             &
               ,rthblten,rqvblten,rthraten,kpbl,xlv,cp,g,r_v     &
               ,ichoice_deep,ichoice_shallow,ishallow_g3         &
-              ,htop,hbot,ktop_deep,k22_shallow,kbcon_shallow    &
-              ,ktop_shallow,xmb_total,xmb_shallow,raincv,pratec &
-              ,gdc,gdc2,rthcuten,rqvcuten,rqccuten,rqicuten     &
+              ,htop,hbot,k22_shallow,kbcon_shallow,ktop_shallow &
+              ,xmb_total,xmb_shallow,raincv,pratec,gdc,gdc2     &
+              ,rthcuten,rqvcuten,rqccuten,rqicuten              &
               ,ims, ime, jms, jme, kms,kme                      &
               ,ids, ide, jds, jde, kds,kde                      &
               ,its, ite, jts, jte, kts,kte)
@@ -101,7 +113,7 @@ CONTAINS
 
 
 !inout arguments:
- integer,dimension(ims:ime,jms:jme),intent(inout):: k22_shallow,kbcon_shallow,ktop_shallow,ktop_deep
+ integer,dimension(ims:ime,jms:jme),intent(inout):: k22_shallow,kbcon_shallow,ktop_shallow
 
  real,dimension(ims:ime,jms:jme),intent(inout):: hbot,htop,raincv,pratec,xmb_total,xmb_shallow
  real,dimension(ims:ime,kms:kme,jms:jme),intent(inout):: rthcuten,rqvcuten,rqccuten,rqicuten
@@ -121,7 +133,7 @@ CONTAINS
 
  real:: dp,dq,pahfs,pgeoh,pqhfl,zkhvfl,zrho,zws
  real,dimension(its:ite):: area_loc,dx_loc,tscl_kf
- real,dimension(its:ite):: gswi,xlandi,edti_out,massi_flx
+ real,dimension(its:ite):: xlandi
  real,dimension(its:ite):: xmb,xmbs
  real,dimension(its:ite):: ccn
  real,dimension(its:ite):: aaeq,cuten,psur,pret,ter11,zqexec,ztexec,pmean,umean,vmean
@@ -131,6 +143,7 @@ CONTAINS
 
  real,dimension(its:ite,jts:jte):: apri_gr,apri_w,apri_mc,apri_st,apri_as,apri_capma, &
                                    apri_capme,apri_capmi
+ real,dimension(its:ite,jts:jte):: gswi,edti_out,massi_flx
 
  real,dimension(its:ite,jts:jte,1:ensdim):: pri_ens,xfi_ens
  real,dimension (its:ite,1:ens4)         :: mconv
@@ -151,7 +164,6 @@ CONTAINS
 
  do j = jts, jte
     do i = its, ite
-       ktop_deep(i,j) = 0
        hbot(i,j)      = real(kte)
        htop(i,j)      = real(kts)
        xmb_total(i,j) = 0.
@@ -166,6 +178,26 @@ CONTAINS
     enddo
  enddo
 
+!in-cloud cloud water and cloud ice mixing ratios:
+ if(present(gdc)) then
+    do j = jts, jte
+       do k = jts, kte
+          do i = its, ite
+             gdc(i,k,j) = 0.
+          enddo
+       enddo
+   enddo
+ endif
+ if(present(gdc2)) then
+    do j = jts, jte
+       do k = jts, kte
+          do i = its, ite
+             gdc2(i,k,j) = 0.
+          enddo
+       enddo
+   enddo
+ endif
+
  j_loop: do j = jts, jtf
 
 !initialization of local variables:
@@ -178,6 +210,8 @@ CONTAINS
        apri_capma(i,j) = 0.
        apri_capme(i,j) = 0.
        apri_capmi(i,j) = 0.
+       edti_out(i,j)   = 0.
+       gswi(i,j)       = gsw(i,j)
     enddo
  
     do n = 1, ensdim
@@ -225,7 +259,6 @@ CONTAINS
        enddo
        psur(i)     = p8w(i,1,j)*.01
        kpbli(i)    = kpbl(i,j)
-       gswi(i)     = gsw(i,j)
        xlandi(i)   = xland(i,j)
 
        ccn(i)      = 1500.
@@ -292,7 +325,28 @@ CONTAINS
              mconv(i,n) = mconv(i,n) + omeg(i,k,n)*dq/g
           enddo
        enddo
+       do i = its, itf
+          if(mconv(i,n) .lt. 0.) mconv(i,n) = 0.
+       enddo
     enddo
+    !calculation of the moisture convergence as Georg Grell (subroutine gfdrv):
+    !do n = 1, ens4
+    !  do k = kts, ktf
+    !     do i = its,itf
+    !        omeg(i,k,n)= -g*rho(i,k,j)*w(i,k,j)
+    !     enddo
+    !  enddo
+
+    !  do k = kts, ktf-1
+    !     do i = its, itf
+    !        dq = (q2d(i,k+1)-q2d(i,k))
+    !        mconv(i,n) = mconv(i,n) + omeg(i,k,n)*dq/g
+    !     enddo
+    !  enddo
+    !  do i = its, itf
+    !     if(mconv(i,n) .lt. 0.) mconv(i,n) = 0.
+    !  enddo
+    !enddo
 
     if(use_excess.gt.0 .or. use_excess_sh.gt.0)then
        do i = its, itf
@@ -361,7 +415,6 @@ CONTAINS
          k22_shallow(i,j)   = k22s(i)
          kbcon_shallow(i,j) = kbcons(i)
          ktop_shallow(i,j)  = ktops(i)
-          
       enddo
    endif
 
@@ -371,7 +424,6 @@ CONTAINS
           cuten(i) = 1.
           pratec(i,j)    = pret(i)
           raincv(i,j)    = pret(i)*dt
-          ktop_deep(i,j) = ktop(i)
           
           if(ktop(i) > htop(i,j) ) htop(i,j) = ktop(i) + .001
           if(kbcon(i) < hbot(i,j)) hbot(i,j) = kbcon(i) + .001
@@ -385,8 +437,8 @@ CONTAINS
           rqvcuten(i,k,j) = outqs(i,k) + (subq(i,k) + outq(i,k))*cuten(i)
 
           if(t2d(i,k) .lt. tcrit) then
-             rqicuten(i,k,j) = outqcs(i,k) + outqc(i,k)*cuten(i)
              rqccuten(i,k,j) = 0.
+             rqicuten(i,k,j) = outqcs(i,k) + outqc(i,k)*cuten(i)
              if(present(gdc2)) gdc2(i,k,j) = cupclws(i,k) + cupclw(i,k)*cuten(i)
           else
              rqicuten(i,k,j) = 0.
