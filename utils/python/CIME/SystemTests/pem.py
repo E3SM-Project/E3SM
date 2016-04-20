@@ -43,11 +43,12 @@ class PEM(SystemTestsCommon):
             shutil.copy("env_mach_pes.xml", machpes)
 
             if bld == 1:
-                ntasks = self._case.get_value("NTASKS_%s"%comp)
-                rootpe = self._case.get_value("ROOTPE_%s"%comp)
-                if ntasks > 1:
-                    self._case.set_value("NTASKS_%s"%comp, ntasks/2)
-                    self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
+                for comp in ["CPL", "ATM", "LND", "ICE", "OCN", "ROF", "GLC", "WAV"]:
+                    ntasks = self._case.get_value("NTASKS_%s"%comp)
+                    rootpe = self._case.get_value("ROOTPE_%s"%comp)
+                    if ntasks > 1:
+                        self._case.set_value("NTASKS_%s"%comp, ntasks/2)
+                        self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
 
         #
         # Because mira/cetus interprets its run script differently than
