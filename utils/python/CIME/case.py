@@ -34,8 +34,7 @@ logger = logging.getLogger(__name__)
 class Case(object):
 
     def __init__(self, case_root=os.getcwd()):
-<<<<<<< HEAD
-        
+
         # Init first, if no valid case_root expect fails and tears down object, __del__ expects self._env_files_that_need_rewrite
         self._env_files_that_need_rewrite = set()
         
@@ -171,22 +170,7 @@ class Case(object):
         return results
         
 
-<<<<<<< HEAD
-=======
-        result = None
-        if item in self.lookups.keys():
-            result = self.lookups[item]
 
-        if result is None:
-            logger.debug("No value available for item '%s'" % item)
-        elif resolved:
-            result = self.get_resolved_value(result)
-            # Return value as right type
-            type_str = self._get_type_info(node)
-            return convert_to_type(result, type_str, item)
-
-        logging.debug("Not able to retreive value for item '%s'" % item)
->>>>>>> 58879d9d43fecdddc4cba290424cf2de9540bd33
 
     def get_type_info(self, item):
         result = None
@@ -309,8 +293,7 @@ class Case(object):
                 else:
                     yield key, val
 
-<<<<<<< HEAD
-=======
+
     def _get_component_config_data(self):
         # attributes used for multi valued defaults ($attlist is a hash reference)
         attlist = {"compset":self._compsetname, "grid":self._gridname}
@@ -597,5 +580,4 @@ class Case(object):
         self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
 
->>>>>>> 58879d9d43fecdddc4cba290424cf2de9540bd33
 
