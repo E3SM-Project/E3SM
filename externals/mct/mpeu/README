@@ -1,11 +1,11 @@
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !-----------------------------------------------------------------------
 
-This directory contains a version of MPEU distributed as part 
+This directory contains a version of MPEU distributed as part
 of the Model Coupling Toolkit (MCT).  MPEU was written by
-Jing Guo of the NASA Data Assimilation Office. 
+Jing Guo of the NASA Data Assimilation Office.
 
 This copy of MPEU provided by Jing Guo.  Usage is covered
 by terms in the file MCT/COPYRIGHT.
@@ -30,7 +30,7 @@ If "./configure" has already been run, you can also type "make"
 in this directory.
 
 ---------------------------------------------------
-NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS 
+NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS
 
 28Sep99	- Jing Guo
 	- Changed supported libraries to

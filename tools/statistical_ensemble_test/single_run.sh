@@ -482,7 +482,7 @@ if [ $nobuild != 'on' ]; then
 fi
 
 # Submit job to queue
-if [ $nosubmit != 'on' ]; then 
+if [ $nosubmit != 'on' ]; then
     if [ "$MACH" == "mira" ]; then
       ./case.run
     else

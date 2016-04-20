@@ -7,9 +7,9 @@
 cd $CASEROOT # CASEROOT is always assumed to be an environment variable
 
 set CIMEROOT	= `./xmlquery  CIMEROOT	-value `
-set GMAKE	= `./xmlquery  GMAKE	-value ` 
+set GMAKE	= `./xmlquery  GMAKE	-value `
 
-# NOTE- (mv, 2015-01-02) SHAREDPATH is an environment variable set in 
+# NOTE- (mv, 2015-01-02) SHAREDPATH is an environment variable set in
 # the $CASE.build script
 
 setenv GPTL_DIR $CIMEROOT/share/timing   # gptl directory

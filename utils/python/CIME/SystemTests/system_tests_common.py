@@ -6,19 +6,28 @@ from CIME.XML.standard_module_setup import *
 from CIME.case import Case
 from CIME.XML.env_run import EnvRun
 from CIME.utils import run_cmd
+from CIME.case_setup import case_setup
 import CIME.build as build
 
 class SystemTestsCommon(object):
-    def __init__(self, caseroot=os.getcwd(), case=None, expectedrunvars=None):
+    def __init__(self, caseroot=os.getcwd(), case=None):
         """
         initialize a CIME system test object, if the file LockedFiles/env_run.orig.xml
         does not exist copy the current env_run.xml file.  If it does exist restore values
         changed in a previous run of the test.
         """
+        print caseroot
         self._caseroot = caseroot
-        self._case = case
+        # Needed for sh scripts
+        os.environ["CASEROOT"] = caseroot
+        if case is None:
+            self._case = Case()
+        else:
+            self._case = case
+
+
         if os.path.isfile(os.path.join(caseroot, "LockedFiles", "env_run.orig.xml")):
-            self.compare_env_run(expectedrunvars)
+            self.compare_env_run()
         elif os.path.isfile(os.path.join(caseroot, "env_run.xml")):
             lockedfiles = os.path.join(caseroot, "Lockedfiles")
             try:
@@ -27,6 +36,10 @@ class SystemTestsCommon(object):
                 os.mkdir(lockedfiles)
             shutil.copy("env_run.xml",
                         os.path.join(lockedfiles, "env_run.orig.xml"))
+
+        self._case.set_initial_test_values()
+        case_setup(self._caseroot, reset=True)
+
 
     def build(self, sharedlib_only=False, model_only=False):
         build.case_build(self._caseroot, case=self._case,
@@ -49,7 +62,7 @@ class SystemTestsCommon(object):
         f2obj = EnvRun(self._caseroot, os.path.join("LockedFiles", "env_run.orig.xml"))
         diffs = f1obj.compare_xml(f2obj)
         for key in diffs.keys():
-            if key in expected:
+            if expected is not None and key in expected:
                 logging.warn("  Resetting %s for test"%key)
                 f1obj.set_value(key, f2obj.get_value(key, resolved=False))
             else:

@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 use XML::LibXML;
 use IO::File;
 use Data::Dumper;
@@ -26,19 +26,19 @@ my $banner = "==================================================================
 # ==========================================================================
 {
     package CIMEPes;
-    sub new 
+    sub new
     {
 	my ($class, %params) = @_;
 	my $self = {
-	    grid       => undef,  	
-	    machine    => undef, 	
-	    compset    => undef, 	
-	    pesize     => undef, 	
-	    comment    => undef, 	
-	    ntasks_atm => undef, ntasks_lnd => undef, ntasks_ice => undef, ntasks_ocn => undef, 
+	    grid       => undef,
+	    machine    => undef,
+	    compset    => undef,
+	    pesize     => undef,
+	    comment    => undef,
+	    ntasks_atm => undef, ntasks_lnd => undef, ntasks_ice => undef, ntasks_ocn => undef,
 	    ntasks_rof => undef, ntasks_glc => undef, ntasks_wav => undef, ntasks_cpl => undef,
-	    nthrds_atm => undef, nthrds_lnd => undef, nthrds_ice => undef, nthrds_ocn => undef, 	
-	    nthrds_rof => undef, nthrds_glc => undef, nthrds_wav => undef, nthrds_cpl => undef, 	
+	    nthrds_atm => undef, nthrds_lnd => undef, nthrds_ice => undef, nthrds_ocn => undef,
+	    nthrds_rof => undef, nthrds_glc => undef, nthrds_wav => undef, nthrds_cpl => undef,
 	    rootpe_atm => undef, rootpe_lnd => undef, rootpe_ice => undef, rootpe_ocn => undef,
 	    rootpe_rof => undef, rootpe_glc => undef, rootpe_wav => undef, rootpe_cpl => undef,
 	    pstrid_atm => undef, pstrid_lnd => undef, pstrid_ice => undef, pstrid_ocn => undef,
@@ -52,7 +52,7 @@ my $banner = "==================================================================
 }
 
 #==========================================================================
-# Show the usage. 
+# Show the usage.
 #==========================================================================
 sub usage
 {
@@ -61,9 +61,9 @@ sub usage
     $usgstatement = <<EOF;
 SYNOPSIS
 
-    manage_pes -query -model <model_name> -pes_setby <component_name> [ -grid <grid_name> ] [ -machine <machine_name> ] 
+    manage_pes -query -model <model_name> -pes_setby <component_name> [ -grid <grid_name> ] [ -machine <machine_name> ]
 
-          <model_name>     can be one of [cesm, acme] 
+          <model_name>     can be one of [cesm, acme]
 
           <component_name> can be one of  [allactive | cam | cice | cism | clm | drv | pop]
 
@@ -72,16 +72,16 @@ SYNOPSIS
 	  <machine_name>   can be a supported machine name
 
     manage_pes -add -file <pes_filename> -pes_setby <component_name>
-    
+
 DESCRIPTION
 
     Adds and queries pes with the xml pe-layout files for a pes file set by the argument "-pes_setby"
 
 USAGE, OPTIONS, AND EXAMPLES
-   
-    There are two modes of operation: -query and -add 
 
-    Usage for each of the modes are described below.  
+    There are two modes of operation: -query and -add
+
+    Usage for each of the modes are described below.
 
     -query:
 
@@ -92,14 +92,14 @@ USAGE, OPTIONS, AND EXAMPLES
 	compsets/resolution combinations.  second, they depend on compset
 	and resolution.   you can imagine a T31_g37 range being 100 cores
 	to 1000 cores from S to X.  but ne240_t12 would probably be 10000 at S
-	and 100,000 at X, for instance.  
+	and 100,000 at X, for instance.
 
     -add:
- 
-       This mode is intended for adding new pe layouts to the peslist. The script will parse your text 
-       list, and add the new pe-layout to the appropriate grid, machine and optional argument 
-       (i.e. compset, pesize) entry.  If duplicates are found, they will be silently ignored, 
-       even if they contain a different comment.  
+
+       This mode is intended for adding new pe layouts to the peslist. The script will parse your text
+       list, and add the new pe-layout to the appropriate grid, machine and optional argument
+       (i.e. compset, pesize) entry.  If duplicates are found, they will be silently ignored,
+       even if they contain a different comment.
        Example:
 
          manage_pes -add -pes_setby <component_name> -machine -grid -attributes -file <xml file with new pelayout>
@@ -113,34 +113,34 @@ USAGE, OPTIONS, AND EXAMPLES
                <pes pesize="entry" compset="entry">
          	<comment>entry</comment>
          	<ntasks>
-         	  <ntasks_atm>integer</ntasks_atm> 
-         	  <ntasks_lnd>integer</ntasks_lnd>           
-         	  <ntasks_rof>integer</ntasks_rof> 
-         	  <ntasks_ice>integer</ntasks_ice> 
-         	  <ntasks_ocn>integer</ntasks_ocn> 
-         	  <ntasks_glc>integer</ntasks_glc> 
-         	  <ntasks_wav>integer</ntasks_wav> 
-         	  <ntasks_cpl>integer</ntasks_cpl> 
+         	  <ntasks_atm>integer</ntasks_atm>
+         	  <ntasks_lnd>integer</ntasks_lnd>
+         	  <ntasks_rof>integer</ntasks_rof>
+         	  <ntasks_ice>integer</ntasks_ice>
+         	  <ntasks_ocn>integer</ntasks_ocn>
+         	  <ntasks_glc>integer</ntasks_glc>
+         	  <ntasks_wav>integer</ntasks_wav>
+         	  <ntasks_cpl>integer</ntasks_cpl>
          	</ntasks>
          	<nthrds>
-         	  <nthrds_atm>integer</nthrds_atm>                   
-         	  <nthrds_lnd>integer</nthrds_lnd> 
-         	  <nthrds_rof>integer</nthrds_rof> 
-         	  <nthrds_ice>integer</nthrds_ice> 
-         	  <nthrds_ocn>integer</nthrds_ocn> 
-         	  <nthrds_glc>integer</nthrds_glc> 
-         	  <nthrds_wav>integer</nthrds_wav> 
-         	  <nthrds_cpl>integer</nthrds_cpl> 
+         	  <nthrds_atm>integer</nthrds_atm>
+         	  <nthrds_lnd>integer</nthrds_lnd>
+         	  <nthrds_rof>integer</nthrds_rof>
+         	  <nthrds_ice>integer</nthrds_ice>
+         	  <nthrds_ocn>integer</nthrds_ocn>
+         	  <nthrds_glc>integer</nthrds_glc>
+         	  <nthrds_wav>integer</nthrds_wav>
+         	  <nthrds_cpl>integer</nthrds_cpl>
          	</nthrds>
          	<rootpe>
-         	  <rootpe_atm>integer</rootpe_atm> 
-         	  <rootpe_lnd>integer</rootpe_lnd> 
-         	  <rootpe_rof>integer</rootpe_rof> 
-         	  <rootpe_ice>integer</rootpe_ice>    
-         	  <rootpe_ocn>integer</rootpe_ocn>   
-         	  <rootpe_glc>integer</rootpe_glc> 
-         	  <rootpe_wav>integer</rootpe_wav> 
-         	  <rootpe_cpl>integer</rootpe_cpl>                         
+         	  <rootpe_atm>integer</rootpe_atm>
+         	  <rootpe_lnd>integer</rootpe_lnd>
+         	  <rootpe_rof>integer</rootpe_rof>
+         	  <rootpe_ice>integer</rootpe_ice>
+         	  <rootpe_ocn>integer</rootpe_ocn>
+         	  <rootpe_glc>integer</rootpe_glc>
+         	  <rootpe_wav>integer</rootpe_wav>
+         	  <rootpe_cpl>integer</rootpe_cpl>
          	</rootpe>
                </pes>
              </mach>
@@ -170,7 +170,7 @@ EOF
 
 
 #==========================================================================
-# Get the options, check the options. 
+# Get the options, check the options.
 #==========================================================================
 sub obtainOptions
 {
@@ -191,7 +191,7 @@ sub obtainOptions
     }
 
     if ($opts{'help'}) {
-	usage() 	
+	usage()
     }
 
     if (! defined $opts{'model'}) {
@@ -216,7 +216,7 @@ sub obtainOptions
 		$opts{'pes_setby'}= $component;
 		$pes_file = getPesFile();
 		$compsets_file = getCompsetsFile();
-		queryPes(); 
+		queryPes();
 	    }
 	} else {
 	    # $opts{'pes_setby'} is defined
@@ -243,13 +243,13 @@ sub obtainOptions
 }
 
 #==========================================================================
-# Write the new $pes_file.  
+# Write the new $pes_file.
 #==========================================================================
 sub writeXML
 {
     my ($pesxml) = shift;
     my $dtformat = strftime "%d%b%Y-%H%M%S",  localtime;
-    my $newfilename = "$pes_file" . "-$dtformat"; 
+    my $newfilename = "$pes_file" . "-$dtformat";
 
     print "\n now writing the new pes list to $newfilename\n";
     print "Please carefully review and/or diff the new file against the\n";
@@ -258,13 +258,13 @@ sub writeXML
     print "as in with the unix command: \nmv $newfilename $pes_file\n\n";
 
     open my $NEWPesXML, ">", "$newfilename" or die $?;
-    my $tststring = $pesxml->toString(1); 
-    print $NEWPesXML $tststring; 
+    my $tststring = $pesxml->toString(1);
+    print $NEWPesXML $tststring;
     close $NEWPesXML;
 }
 
 #==========================================================================
-# Add a new pe-layout for a target machine and grid.  
+# Add a new pe-layout for a target machine and grid.
 # ==========================================================================
 sub addPes
 {
@@ -290,7 +290,7 @@ sub addPes
     my $compset = $pes_nodes[0]->getAttribute('compset');
     my $pesize  = $pes_nodes[0]->getAttribute('pesize');
 
-    # Is there already an entry with matching grid, machine, compset and pesize 
+    # Is there already an entry with matching grid, machine, compset and pesize
     # If so, query if the new settings should replace the current ones
     # If not - just add the new settings
 
@@ -309,14 +309,14 @@ sub addPes
 	    # remove old grid node
 	    my $parent = $nodes[0]->parentNode();
 	    my $grandparent = $parent->parentNode();
-	    $parent->removeChild($nodes[0]); 			
+	    $parent->removeChild($nodes[0]);
 	    $grandparent->removeChilde($parent);
-	    
+
 	    # add new grid node
 	    my $root = $xml->findnodes('./config_pes')->get_node(0);
 	    $root->addChild($grid_nodes[0]);
 	}
-	
+
     } else {
 
 	# add new grid node
@@ -328,8 +328,8 @@ sub addPes
 }
 
 #==========================================================================
-# Query subroutine called from main. Read the xml file, query the object, 
-# and print the user's choice of output. 
+# Query subroutine called from main. Read the xml file, query the object,
+# and print the user's choice of output.
 #==========================================================================
 sub queryPes
 {
@@ -341,7 +341,7 @@ sub queryPes
 
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($pes_file);
     my $root = $xml->getDocumentElement();
-	
+
     # Does the target grid exist in the config_pes file - if not set it to any
     if (defined $grid) {
 	my @pes = $xml->findnodes(".//grid[contains(\@name,\"$grid\")]");
@@ -368,7 +368,7 @@ sub queryPes
 	    }
 	    foreach my $node_mach ($node_grid->findnodes("./mach")) {
 		my $node_machname= $node_mach->getAttribute('name');
-		if ($opts{'machine'} !~ /$node_machname/) {	
+		if ($opts{'machine'} !~ /$node_machname/) {
 		    $node_grid->removeChild($node_mach);
 		    next;
 		}
@@ -384,7 +384,7 @@ sub queryPes
 	foreach my $node_grid ($xml->findnodes('/config_pes/grid')) {
 	    foreach my $node_mach ($node_grid->findnodes("./mach")) {
 		my $node_machname= $node_mach->getAttribute('name');
-		if ($opts{'machine'} !~ /$node_machname/) {	
+		if ($opts{'machine'} !~ /$node_machname/) {
 		    $node_grid->removeChild($node_mach);
 		    next;
 		}
@@ -409,20 +409,20 @@ sub queryPes
 }
 
 #==========================================================================
-# print out the queried test list in a (hopefully) nicely formatted fashion. 
+# print out the queried test list in a (hopefully) nicely formatted fashion.
 #==========================================================================
 sub formattedOutput {
 
    my $xml = shift;
 
    my @pes_settings;
-   foreach my $grid_node ($xml->findnodes('./config_pes/grid')) 
+   foreach my $grid_node ($xml->findnodes('./config_pes/grid'))
    {
        my $grid = $grid_node->getAttribute('name');
-       foreach my $mach_node ($grid_node->findnodes('./mach')) 
+       foreach my $mach_node ($grid_node->findnodes('./mach'))
        {
 	   my $machine = $mach_node->getAttribute('name');
-	   foreach my $pes_node ($mach_node->findnodes('./pes')) 
+	   foreach my $pes_node ($mach_node->findnodes('./pes'))
 	   {
 	       my $pes_setting = new CIMEPes();
 	       $pes_setting->{grid} = $grid;
@@ -499,7 +499,7 @@ sub formattedOutput {
        my $rootpe_glc  = $pes_setting->{rootpe_glc};
        my $rootpe_wav  = $pes_setting->{rootpe_wav};
        my $rootpe_cpl  = $pes_setting->{rootpe_cpl};
-       
+
        my $line_ntasks =  sprintf("         %-10s %-10s %-10s %-10s %-10s %-10s %-10s %-10s %-10s",
 				  'ntasks: ', $ntasks_atm, $ntasks_lnd, $ntasks_ice, $ntasks_ocn, $ntasks_rof, $ntasks_glc, $ntasks_wav, $ntasks_cpl);
 
@@ -515,7 +515,7 @@ sub formattedOutput {
        push(@output_nthrds, $line_nthrds);
        push(@output_rootpe, $line_rootpe);
    }
-	
+
    my $header2 =  sprintf("                    %-10s %-10s %-10s %-10s %-10s %-10s %-10s %-10s ",
 			  "atm", "lnd", "ice", "ocn", "rof", "glc", "wav", "cpl");
 
@@ -530,7 +530,7 @@ sub formattedOutput {
 }
 
 #==========================================================================
-# Determine pes file 
+# Determine pes file
 #==========================================================================
 sub getPesFile{
 
@@ -553,8 +553,8 @@ sub getPesFile{
     } else {
 	die "*** Cannot find pes specification file $file ***\n";
     }
-    return $file; 
-}    
+    return $file;
+}
 
 #==========================================================================
 # Determine compsets file
@@ -579,8 +579,8 @@ sub getCompsetsFile{
     } else {
 	die "*** Cannot find compsets specification file $file ***\n";
     }
-    return $file; 
-}    
+    return $file;
+}
 
 #==========================================================================
 # Main routine

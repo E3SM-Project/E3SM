@@ -2,15 +2,15 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$ 
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_GeneralGridComms - Communications for the GeneralGrid type.
 !
 ! !DESCRIPTION:
 !
-! In this module, we define communications methods specific to the 
-! {\tt GeneralGrid} class (see the module {\tt m\_GeneralGrid} for more 
+! In this module, we define communications methods specific to the
+! {\tt GeneralGrid} class (see the module {\tt m\_GeneralGrid} for more
 ! information about this class and its methods).
 !
 ! !INTERFACE:
@@ -33,11 +33,11 @@
 
     interface gather ; module procedure &
               GM_gather_, &
-              GSM_gather_ 
+              GSM_gather_
     end interface
     interface scatter ; module procedure &
               GM_scatter_, &
-              GSM_scatter_ 
+              GSM_scatter_
     end interface
     interface bcast ; module procedure bcast_ ; end interface
     interface send  ; module procedure send_  ; end interface
@@ -48,7 +48,7 @@
 !       07Jun01 - J.W. Larson <larson@mcs.anl.gov> - Added point-to-point
 !       27Mar02 - J.W. Larson <larson@mcs.anl.gov> - Overhaul of error
 !                 handling calls throughout this module.
-!       05Aug02 - E. Ong <eong@mcs.anl.gov> - Added buffer association 
+!       05Aug02 - E. Ong <eong@mcs.anl.gov> - Added buffer association
 !                 error checks to avoid making bad MPI calls
 !EOP ___________________________________________________________________
 
@@ -62,22 +62,22 @@
 !
 ! !IROUTINE: send_ - Point-to-point blocking send for the GeneralGrid.
 !
-! !DESCRIPTION:  The point-to-point send routine {\tt send\_()} sends 
-! the input {\tt GeneralGrid} argument {\tt iGGrid} to component 
-! {\tt comp\_id}.  
-! The message is identified by the tag defined by the {\tt INTEGER} 
-! argument {\tt TagBase}.  The value of {\tt TagBase} must match the 
-! value used in the call to {\tt recv\_()} on process {\tt dest}.  The 
-! success (failure) of this operation corresponds to a zero (nonzero) 
-! value for the output {\tt INTEGER} flag {\tt status}. 
+! !DESCRIPTION:  The point-to-point send routine {\tt send\_()} sends
+! the input {\tt GeneralGrid} argument {\tt iGGrid} to component
+! {\tt comp\_id}.
+! The message is identified by the tag defined by the {\tt INTEGER}
+! argument {\tt TagBase}.  The value of {\tt TagBase} must match the
+! value used in the call to {\tt recv\_()} on process {\tt dest}.  The
+! success (failure) of this operation corresponds to a zero (nonzero)
+! value for the output {\tt INTEGER} flag {\tt status}.
 ! The argument will be sent to the local root of the component.
 !
-! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values 
-! between {\tt TagBase} and {\tt TagBase+20}, inclusive.  This is 
+! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values
+! between {\tt TagBase} and {\tt TagBase+20}, inclusive.  This is
 ! because {\tt send\_()} performs one send operation set up the header
-! transfer, up to five {\tt List\_send} operations (two {\tt MPI\_SEND} 
+! transfer, up to five {\tt List\_send} operations (two {\tt MPI\_SEND}
 ! calls in each), two send operations to transfer {\tt iGGrid\%descend(:)},
-! and finally the send of the {\tt AttrVect} component {\tt iGGrid\%data} 
+! and finally the send of the {\tt AttrVect} component {\tt iGGrid\%data}
 ! (which comprises eight {\tt MPI\_SEND} operations).
 !
 ! !INTERFACE:
@@ -105,13 +105,13 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(GeneralGrid), intent(in) :: iGGrid
       integer,           intent(in) :: comp_id
       integer,           intent(in) :: TagBase
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer, optional, intent(out) :: status
 
@@ -142,7 +142,7 @@
 
   dest = ComponentToWorldRank(0, comp_id, ThisMCTWorld)
 
-      ! Step 1. Check elements of the GeneralGrid header to see 
+      ! Step 1. Check elements of the GeneralGrid header to see
       ! which components of it are allocated.  Load the results
       ! into HeaderAssoc(:), and send it to process dest.
 
@@ -202,7 +202,7 @@
 
        ! Step 4.  If iGGrid%descend is allocated, determine its size,
        ! send this size, and then send the elements of iGGrid%descend.
-     
+
   if(HeaderAssoc(3)) then
 
      if(size(iGGrid%descend)<=0) call die(myname_,'size(iGGrid%descend)<=0')
@@ -306,29 +306,29 @@
 !
 ! !IROUTINE: recv_ - Point-to-point blocking recv for the GeneralGrid.
 !
-! !DESCRIPTION:  The point-to-point receive routine {\tt recv\_()} 
+! !DESCRIPTION:  The point-to-point receive routine {\tt recv\_()}
 ! receives the output {\tt GeneralGrid} argument {\tt oGGrid} from component
-! {\tt comp\_id}.  The message is identified by the tag defined by the 
-! {\tt INTEGER} argument {\tt TagBase}.  The value of {\tt TagBase} must 
+! {\tt comp\_id}.  The message is identified by the tag defined by the
+! {\tt INTEGER} argument {\tt TagBase}.  The value of {\tt TagBase} must
 ! match the value used in the call to {\tt send\_()} on the other component.
-! The success (failure) of this operation corresponds to a zero (nonzero) 
-! value for the output {\tt INTEGER} flag {\tt status}. 
+! The success (failure) of this operation corresponds to a zero (nonzero)
+! value for the output {\tt INTEGER} flag {\tt status}.
 !
 ! {\bf N.B.}:  This routine assumes that the {\tt GeneralGrid} argument
-! {\tt oGGrid} is uninitialized on input; that is, all the {\tt List} 
+! {\tt oGGrid} is uninitialized on input; that is, all the {\tt List}
 ! components are blank, the {\tt LOGICAL} array {\tt oGGrid\%descend} is
 ! unallocated, and the {\tt AttrVect} component {\tt oGGrid\%data} is
 ! uninitialized.  The {\tt GeneralGrid} {\tt oGGrid} represents allocated
-! memory.  When the user no longer needs {\tt oGGrid}, it should be 
-! deallocated by invoking {\tt GeneralGrid\_clean()} (see 
+! memory.  When the user no longer needs {\tt oGGrid}, it should be
+! deallocated by invoking {\tt GeneralGrid\_clean()} (see
 ! {\tt m\_GeneralGrid} for further details).
 !
-! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values 
-! between {\tt TagBase} and {\tt TagBase+20}, inclusive.  This is 
+! {\bf N.B.}:  One must avoid assigning elsewhere the MPI tag values
+! between {\tt TagBase} and {\tt TagBase+20}, inclusive.  This is
 ! because {\tt recv\_()} performs one receive operation set up the header
-! transfer, up to five {\tt List\_recv} operations (two {\tt MPI\_RECV} 
+! transfer, up to five {\tt List\_recv} operations (two {\tt MPI\_RECV}
 ! calls in each), two receive operations to transfer {\tt iGGrid\%descend(:)},
-! and finally the receive of the {\tt AttrVect} component {\tt iGGrid\%data} 
+! and finally the receive of the {\tt AttrVect} component {\tt iGGrid\%data}
 ! (which comprises eight {\tt MPI\_RECV} operations).
 !
 ! !INTERFACE:
@@ -356,12 +356,12 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer,           intent(in) :: comp_id
       integer,           intent(in) :: TagBase
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(GeneralGrid), intent(out) :: oGGrid
       integer, optional, intent(out) :: status
@@ -393,7 +393,7 @@
       ! HeaderAssoc.  TRUE entries in this array correspond to
       ! Check elements of the GeneralGrid header that are not
       ! blank, and are being sent by process source.
-      !      
+      !
       ! The significance of the entries of HeaderAssoc has been
       ! defined in send_().  Here are the definitions of these
       ! values:
@@ -409,7 +409,7 @@
 
   if(present(status)) status = 0
 
-      ! Step 1.  Nullify oGGrid components, set HeaderAssoc(:) to .FALSE., 
+      ! Step 1.  Nullify oGGrid components, set HeaderAssoc(:) to .FALSE.,
       ! then receive incoming HeaderAssoc(:) data
 
   call List_nullify(oGGrid%coordinate_list)
@@ -468,9 +468,9 @@
   endif ! if(HeaderAssoc(2))...
 
        ! Step 4.  If oGGrid%descend is allocated, determine its size,
-       ! receive this size, allocate oGGrid%descend, and then receive 
+       ! receive this size, allocate oGGrid%descend, and then receive
        ! the elements of oGGrid%descend.
-     
+
   if(HeaderAssoc(3)) then
 
      call MPI_RECV(DescendSize, 1, MP_type(DescendSize), &
@@ -583,23 +583,23 @@
 !
 ! !IROUTINE: GM_gather_ - gather a GeneralGrid using input GlobalMap.
 !
-! !DESCRIPTION:  {\tt GM\_gather\_()} takes an input {\tt GeneralGrid} 
-! argument {\tt iG} whose decomposition on the communicator associated 
-! with the F90 handle {\tt comm} is described by the {\tt GlobalMap} 
+! !DESCRIPTION:  {\tt GM\_gather\_()} takes an input {\tt GeneralGrid}
+! argument {\tt iG} whose decomposition on the communicator associated
+! with the F90 handle {\tt comm} is described by the {\tt GlobalMap}
 ! argument {\tt GMap}, and gathers it to the {\tt GeneralGrid} output
-! argument {\tt oG} on the {\tt root}.  The success (failure) of this 
-! operation is reported as a zero (nonzero) value in the optional 
+! argument {\tt oG} on the {\tt root}.  The success (failure) of this
+! operation is reported as a zero (nonzero) value in the optional
 ! {\tt INTEGER} output argument {\tt stat}.
 
 ! {\bf N.B.}:  An important assumption made here is that the distributed
-! {\tt GeneralGrid} {\tt iG} has been initialized with the same 
-! coordinate system, sort order, other real attributes, and the same 
+! {\tt GeneralGrid} {\tt iG} has been initialized with the same
+! coordinate system, sort order, other real attributes, and the same
 ! indexing attributes for all processes on {\tt comm}.
 !
-! {\bf N.B.}:  Once the gridpoint data of the {\tt GeneralGrid} are assembled 
-! on the {\tt root}, they are stored in the order determined by the input 
+! {\bf N.B.}:  Once the gridpoint data of the {\tt GeneralGrid} are assembled
+! on the {\tt root}, they are stored in the order determined by the input
 ! {\tt GlobalMap} {\tt GMap}.  The user may need to sorted these gathered
-! data to order them in  accordance with the {\tt coordinate\_sort\_order} 
+! data to order them in  accordance with the {\tt coordinate\_sort\_order}
 ! attribute of {\tt iG}.
 !
 ! {\bf N.B.}:  The output {\tt GeneralGrid} {\tt oG} represents allocated
@@ -627,14 +627,14 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(GeneralGrid), intent(in)  :: iG
       type(GlobalMap),   intent(in)  :: GMap
       integer,           intent(in)  :: root
       integer,           intent(in)  :: comm
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(GeneralGrid), intent(out) :: oG
       integer, optional, intent(out) :: stat
@@ -667,13 +667,13 @@
 
   if(myID == root) then ! prepare oG:
 
-       ! The length of the _gathered_ GeneralGrid oG is determined by 
+       ! The length of the _gathered_ GeneralGrid oG is determined by
        ! the GlobalMap function GlobalMap_gsize()
 
      length = GlobalMap_gsize(GMap)
 
        ! Initialize attributes of oG from iG
-     call copyGeneralGridHeader_(iG,oG) 
+     call copyGeneralGridHeader_(iG,oG)
 
   endif
 
@@ -700,23 +700,23 @@
 !
 ! !IROUTINE: GSM_gather_ - gather a GeneralGrid using input GlobalSegMap.
 !
-! !DESCRIPTION:  {\tt GMS\_gather\_()} takes an input {\tt GeneralGrid} 
-! argument {\tt iG} whose decomposition on the communicator associated 
-! with the F90 handle {\tt comm} is described by the {\tt GlobalSegMap} 
+! !DESCRIPTION:  {\tt GMS\_gather\_()} takes an input {\tt GeneralGrid}
+! argument {\tt iG} whose decomposition on the communicator associated
+! with the F90 handle {\tt comm} is described by the {\tt GlobalSegMap}
 ! argument {\tt GSMap}, and gathers it to the {\tt GeneralGrid} output
-! argument {\tt oG} on the {\tt root}.  The success (failure) of this 
-! operation is reported as a zero (nonzero) value in the optional 
+! argument {\tt oG} on the {\tt root}.  The success (failure) of this
+! operation is reported as a zero (nonzero) value in the optional
 ! {\tt INTEGER} output argument {\tt stat}.
 !
 ! {\bf N.B.}:  An important assumption made here is that the distributed
-! {\tt GeneralGrid} {\tt iG} has been initialized with the same 
-! coordinate system, sort order, other real attributes, and the same 
+! {\tt GeneralGrid} {\tt iG} has been initialized with the same
+! coordinate system, sort order, other real attributes, and the same
 ! indexing attributes for all processes on {\tt comm}.
 !
-! {\bf N.B.}:  Once the gridpoint data of the {\tt GeneralGrid} are assembled 
-! on the {\tt root}, they are stored in the order determined by the input 
+! {\bf N.B.}:  Once the gridpoint data of the {\tt GeneralGrid} are assembled
+! on the {\tt root}, they are stored in the order determined by the input
 ! {\tt GlobalSegMap} {\tt GSMap}.  The user may need to sorted these gathered
-! data to order them in  accordance with the {\tt coordinate\_sort\_order} 
+! data to order them in  accordance with the {\tt coordinate\_sort\_order}
 ! attribute of {\tt iG}.
 !
 ! {\bf N.B.}:  The output {\tt GeneralGrid} {\tt oG} represents allocated
@@ -746,14 +746,14 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(GeneralGrid),  intent(in)  :: iG
       type(GlobalSegMap), intent(in)  :: GSMap
       integer,            intent(in)  :: root
       integer,            intent(in)  :: comm
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(GeneralGrid),  intent(out) :: oG
       integer, optional,  intent(out) :: stat
@@ -787,13 +787,13 @@
 
   if(myID == root) then ! prepare oG:
 
-       ! The length of the _gathered_ GeneralGrid oG is determined by 
+       ! The length of the _gathered_ GeneralGrid oG is determined by
        ! the GlobalMap function GlobalSegMap_gsize()
 
      length = GlobalSegMap_gsize(GSMap)
 
        ! Initialize attributes of oG from iG
-     call copyGeneralGridHeader_(iG,oG) 
+     call copyGeneralGridHeader_(iG,oG)
 
   endif
 
@@ -819,13 +819,13 @@
 !
 ! !IROUTINE: GM_scatter_ - scatter a GeneralGrid using input GlobalMap.
 !
-! !DESCRIPTION:  {\tt GM\_scatter\_()} takes an input {\tt GeneralGrid} 
-! argument {\tt iG} (valid only on the {\tt root} process), and scatters 
-! it to the distributed {\tt GeneralGrid} variable {\tt oG}.  The 
-! {\tt GeneralGrid} {\tt oG} is distributed on the communicator 
-! associated with the F90  handle {\tt comm} using the domain 
+! !DESCRIPTION:  {\tt GM\_scatter\_()} takes an input {\tt GeneralGrid}
+! argument {\tt iG} (valid only on the {\tt root} process), and scatters
+! it to the distributed {\tt GeneralGrid} variable {\tt oG}.  The
+! {\tt GeneralGrid} {\tt oG} is distributed on the communicator
+! associated with the F90  handle {\tt comm} using the domain
 ! decomposition described by the {\tt GlobalMap} argument {\tt GMap}.
-! The success (failure) of this operation is reported as a zero (nonzero) 
+! The success (failure) of this operation is reported as a zero (nonzero)
 ! value in the optional {\tt INTEGER} output argument {\tt stat}.
 !
 ! {\bf N.B.}:  The output {\tt GeneralGrid} {\tt oG} represents allocated
@@ -855,14 +855,14 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(GeneralGrid), intent(in)  :: iG
       type(GlobalMap),   intent(in)  :: GMap
       integer,           intent(in)  :: root
       integer,           intent(in)  :: comm
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(GeneralGrid), intent(out) :: oG
       integer, optional, intent(out) :: stat
@@ -892,14 +892,14 @@
      call MP_perr_die(myname_,'MPI_COMM_RANK(comm...',ierr)
   endif
 
-       ! Step 2.  On the root, initialize the List and LOGICAL 
+       ! Step 2.  On the root, initialize the List and LOGICAL
        ! attributes of the GeneralGrid variable iG to oG.
 
   if(myID == root) then
      call copyGeneralGridHeader_(iG, oG)
   endif
 
-       ! Step 3.  Broadcast from the root the List and LOGICAL 
+       ! Step 3.  Broadcast from the root the List and LOGICAL
        ! attributes of the GeneralGrid variable oG.
 
   call bcastGeneralGridHeader_(oG, root, comm, ierr)
@@ -915,7 +915,7 @@
   endif
 
 
-       ! Step 4.  Using the GeneralMap GMap, scatter the AttrVect 
+       ! Step 4.  Using the GeneralMap GMap, scatter the AttrVect
        ! portion of the input GeneralGrid iG to the GeneralGrid oG.
 
   call AttrVect_scatter(iG%data, oG%data, GMap, root, comm, ierr)
@@ -940,13 +940,13 @@
 !
 ! !IROUTINE: GSM_scatter_ - scatter a GeneralGrid using input GlobalSegMap.
 !
-! !DESCRIPTION:  {\tt GM\_scatter\_()} takes an input {\tt GeneralGrid} 
-! argument {\tt iG} (valid only on the {\tt root} process), and scatters 
-! it to the distributed {\tt GeneralGrid} variable {\tt oG}.  The 
-! {\tt GeneralGrid} {\tt oG} is distributed on the communicator 
-! associated with the F90  handle {\tt comm} using the domain 
+! !DESCRIPTION:  {\tt GM\_scatter\_()} takes an input {\tt GeneralGrid}
+! argument {\tt iG} (valid only on the {\tt root} process), and scatters
+! it to the distributed {\tt GeneralGrid} variable {\tt oG}.  The
+! {\tt GeneralGrid} {\tt oG} is distributed on the communicator
+! associated with the F90  handle {\tt comm} using the domain
 ! decomposition described by the {\tt GlobalSegMap} argument {\tt GSMap}.
-! The success (failure) of this operation is reported as a zero (nonzero) 
+! The success (failure) of this operation is reported as a zero (nonzero)
 ! value in the optional {\tt INTEGER} output argument {\tt stat}.
 !
 ! {\bf N.B.}:  The output {\tt GeneralGrid} {\tt oG} represents allocated
@@ -976,14 +976,14 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(GeneralGrid),  intent(in)  :: iG
       type(GlobalSegMap), intent(in)  :: GSMap
       integer,            intent(in)  :: root
       integer,            intent(in)  :: comm
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(GeneralGrid),  intent(out) :: oG
       integer, optional,  intent(out) :: stat
@@ -1010,14 +1010,14 @@
      call MP_perr_die(myname_,'MPI_COMM_RANK(comm...',ierr)
   endif
 
-       ! Step 2.  On the root, initialize the List and LOGICAL 
+       ! Step 2.  On the root, initialize the List and LOGICAL
        ! attributes of the GeneralGrid variable iG to oG.
 
   if(myID == root) then
      call copyGeneralGridHeader_(iG, oG)
   endif
 
-       ! Step 3.  Broadcast from the root the List and LOGICAL 
+       ! Step 3.  Broadcast from the root the List and LOGICAL
        ! attributes of the GeneralGrid variable oG.
 
   call bcastGeneralGridHeader_(oG, root, comm, ierr)
@@ -1032,7 +1032,7 @@
      endif
   endif
 
-       ! Step 4.  Using the GeneralSegMap GSMap, scatter the AttrVect 
+       ! Step 4.  Using the GeneralSegMap GSMap, scatter the AttrVect
        ! portion of the input GeneralGrid iG to the GeneralGrid oG.
 
   call AttrVect_scatter(iG%data, oG%data, GSMap, root, comm, ierr)
@@ -1057,16 +1057,16 @@
 !
 ! !IROUTINE: bcast_ - Broadcast a GeneralGrid.
 !
-! !DESCRIPTION:  {\tt bcast\_()} takes an input {\tt GeneralGrid} 
-! argument {\tt ioG} (valid only on the {\tt root} process), and 
-! broadcasts it to all processes on the communicator associated with the 
-! F90  handle {\tt comm}.  The success (failure) of this operation is 
-! reported as a zero (nonzero) value in the optional {\tt INTEGER} 
+! !DESCRIPTION:  {\tt bcast\_()} takes an input {\tt GeneralGrid}
+! argument {\tt ioG} (valid only on the {\tt root} process), and
+! broadcasts it to all processes on the communicator associated with the
+! F90  handle {\tt comm}.  The success (failure) of this operation is
+! reported as a zero (nonzero) value in the optional {\tt INTEGER}
 ! output argument {\tt stat}.
 !
-! {\bf N.B.}:  On the non-root processes, the output {\tt GeneralGrid} 
-! {\tt ioG} represents allocated memory.  When the user no longer needs 
-! {\tt ioG} it should be deallocated by invoking {\tt GeneralGrid\_clean()}. 
+! {\bf N.B.}:  On the non-root processes, the output {\tt GeneralGrid}
+! {\tt ioG} represents allocated memory.  When the user no longer needs
+! {\tt ioG} it should be deallocated by invoking {\tt GeneralGrid\_clean()}.
 ! Failure to do so risks a memory leak.
 !
 ! !INTERFACE:
@@ -1091,16 +1091,16 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer,           intent(in)    :: root
       integer,           intent(in)    :: comm
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 !
       type(GeneralGrid), intent(inout) :: ioG
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer, optional, intent(out)   :: stat
 
@@ -1126,7 +1126,7 @@
      call MP_perr_die(myname_,'MPI_COMM_RANK(comm...',ierr)
   endif
 
-       ! Step 2.  Broadcast from the root the List and LOGICAL 
+       ! Step 2.  Broadcast from the root the List and LOGICAL
        ! attributes of the GeneralGrid variable ioG.
 
   call bcastGeneralGridHeader_(ioG, root, comm, ierr)
@@ -1165,17 +1165,17 @@
 !
 ! !IROUTINE: bcastGeneralGridHeader_ - Broadcast the GeneralGrid Header.
 !
-! !DESCRIPTION:  This routine broadcasts the header information from 
-! the input {\tt GeneralGrid} argument {\tt ioGGrid} (on input valid 
-! on the {\tt root} only).  This broadcast is from the {\tt root} to 
-! all processes on the communicator associated with the fortran 90 
-! {\tt INTEGER} handle {\tt comm}.  The success (failure) of this operation 
-! corresponds to a zero (nonzero) value for the output {\tt INTEGER} flag 
-! {\tt stat}. 
+! !DESCRIPTION:  This routine broadcasts the header information from
+! the input {\tt GeneralGrid} argument {\tt ioGGrid} (on input valid
+! on the {\tt root} only).  This broadcast is from the {\tt root} to
+! all processes on the communicator associated with the fortran 90
+! {\tt INTEGER} handle {\tt comm}.  The success (failure) of this operation
+! corresponds to a zero (nonzero) value for the output {\tt INTEGER} flag
+! {\tt stat}.
 !
-! The {\em header information} in a {\tt GeneralGrid} variable comprises 
-! all the non-{\tt AttrVect} components of the {\tt GeneralGrid}; that 
-! is, everything except the gridpoint coordinate, geometry, and index 
+! The {\em header information} in a {\tt GeneralGrid} variable comprises
+! all the non-{\tt AttrVect} components of the {\tt GeneralGrid}; that
+! is, everything except the gridpoint coordinate, geometry, and index
 ! data stored in {\tt iGGrid\%data}.  This information includes:
 ! \begin{enumerate}
 ! \item The coordinates in {\tt iGGrid\%coordinate\_list}
@@ -1183,7 +1183,7 @@
 ! \item The area/volume weights in {\tt iGGrid\%weight\_list}
 ! \item Other {\tt REAL} geometric information in {\tt iGGrid\%other\_list}
 ! \item Indexing information in {\tt iGGrid\%index\_list}
-! \item The {\tt LOGICAL} descending/ascending order sort flags in 
+! \item The {\tt LOGICAL} descending/ascending order sort flags in
 ! {\tt iGGrid\%descend(:)}.
 ! \end{enumerate}
 !
@@ -1212,16 +1212,16 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       integer,           intent(in)    :: root
       integer,           intent(in)    :: comm
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 !
       type(GeneralGrid), intent(inout) :: ioGGrid
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       integer, optional, intent(out)   :: stat
 
@@ -1254,7 +1254,7 @@
      call MP_perr_die(myname_,'MPI_COMM_RANK(comm...',ierr)
   endif
 
-       ! Step 0.5. Check elements of the GeneralGrid header to see 
+       ! Step 0.5. Check elements of the GeneralGrid header to see
        ! which components of it are allocated.  Load the results
        ! into HeaderAssoc(:), and broadcast it.
 
@@ -1274,7 +1274,7 @@
      call List_nullify(ioGGrid%weight_list)
      call List_nullify(ioGGrid%other_list)
      call List_nullify(ioGGrid%index_list)
-     nullify(ioGGrid%descend) 
+     nullify(ioGGrid%descend)
 
   endif
 
@@ -1381,7 +1381,7 @@
            call die(myname_)
         endif
      endif
- 
+
       ! Finally, broadcast ioGGrid%descend(:) from the root
 
      call MPI_BCAST(ioGGrid%descend, DescendSize, MP_LOGICAL, root, &
@@ -1404,12 +1404,12 @@
 !
 ! !IROUTINE: copyGeneralGridHeader_ - Copy the GeneralGrid Header.
 !
-! !DESCRIPTION:  This routine copies the header information from the 
-! input {\tt GeneralGrid} argument {\tt iGGrid} to the output 
-! {\tt GeneralGrid} argument {\tt oGGrid}.  The {\em header information} 
-! in a {\tt GeneralGrid} variable comprises all the non-{\tt AttrVect} 
-! components of the {\tt GeneralGrid}; that is, everything except the 
-! gridpoint coordinate, geometry, and index data stored in 
+! !DESCRIPTION:  This routine copies the header information from the
+! input {\tt GeneralGrid} argument {\tt iGGrid} to the output
+! {\tt GeneralGrid} argument {\tt oGGrid}.  The {\em header information}
+! in a {\tt GeneralGrid} variable comprises all the non-{\tt AttrVect}
+! components of the {\tt GeneralGrid}; that is, everything except the
+! gridpoint coordinate, geometry, and index data stored in
 ! {\tt iGGrid\%data}.  This information includes:
 ! \begin{enumerate}
 ! \item The coordinates in {\tt iGGrid\%coordinate\_list}
@@ -1417,7 +1417,7 @@
 ! \item The area/volume weights in {\tt iGGrid\%weight\_list}
 ! \item Other {\tt REAL} geometric information in {\tt iGGrid\%other\_list}
 ! \item Indexing information in {\tt iGGrid\%index\_list}
-! \item The {\tt LOGICAL} descending/ascending order sort flags in 
+! \item The {\tt LOGICAL} descending/ascending order sort flags in
 ! {\tt iGGrid\%descend(:)}.
 ! \end{enumerate}
 !
@@ -1439,11 +1439,11 @@
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 !
       type(GeneralGrid), intent(in)  :: iGGrid
 
-! !OUTPUT PARAMETERS: 
+! !OUTPUT PARAMETERS:
 !
       type(GeneralGrid), intent(out) :: oGGrid
 
@@ -1459,7 +1459,7 @@
   logical :: DescendAssoc
   integer :: DescendSize, i, ierr
 
-       ! Step 1. Copy GeneralGrid List attributes from iGGrid 
+       ! Step 1. Copy GeneralGrid List attributes from iGGrid
        ! to oGGrid.
 
   call List_nullify(oGGrid%coordinate_list)
@@ -1489,12 +1489,12 @@
      call List_copy(oGGrid%index_list,iGGrid%index_list)
   endif
 
-  DescendAssoc = associated(iGGrid%descend) 
+  DescendAssoc = associated(iGGrid%descend)
   if(DescendAssoc) then
 
      DescendSize = size(iGGrid%descend)
      allocate(oGGrid%descend(DescendSize), stat=ierr)
-     if(ierr /= 0) then 
+     if(ierr /= 0) then
 	write(stderr,*) myname_,':: ERROR--allocate(iGGrid%descend(... failed.',&
 	     ' ierr = ', ierr, 'DescendSize = ', DescendSize
         call die(myname_)

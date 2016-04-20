@@ -20,9 +20,9 @@ sub usage {
 SYNOPSIS
      build-namelist_test.pl [options]
 
-     Test the the datm build-namelist 
+     Test the the datm build-namelist
 OPTIONS
-     -help [or -h]                 Print usage to STDOUT.                               
+     -help [or -h]                 Print usage to STDOUT.
      -compare <directory>          Compare namelists for this version to namelists
                                    created by another version.
      -generate                     Leave the namelists in place to do a later compare.
@@ -74,7 +74,7 @@ my $confdir = "$CASEROOT/Buildconf/datmconf";
 
 # Check that CIMEROOT set so can run
 if ( $ENV{'CIMEROOT'} eq "" ) {
-   my $dir = abs_path("../../../../.."); 
+   my $dir = abs_path("../../../../..");
    if ( ! -d "$dir/scripts" ) {
       die "CIMEROOT NOT set, and scripts directory $dir/scripts does not exist\n";
    }
@@ -86,7 +86,7 @@ if ( $ENV{'CIMEROOT'} eq "" ) {
    }
 }
 #
-# 
+#
 my $bldnml = "../build-namelist -debug -caseroot $CASEROOT -cimeroot $ENV{'CIMEROOT'}";
 
 my $tempfile = "temp_file.txt";
@@ -150,8 +150,8 @@ if ( defined($opts{'compare'}) ) {
 system( "/bin/rm -rf $confdir"         );
 
 my %wc;
-# Run all the different options 
-foreach my $option ( "-print 0", "-print 1", "-print 2", "-test -print 2", 
+# Run all the different options
+foreach my $option ( "-print 0", "-print 1", "-print 2", "-test -print 2",
                      "-namelist \"&datm_exp taxmode='extend'/\"",
                      "-user_xml_dir .",
                      "-user_xml_dir $cwd/user_xml_dir -print 2"  ) {
@@ -210,17 +210,17 @@ foreach my $run_type ( "startup", "branch", "hybrid" ) {
 $xmlenv{'RUN_TYPE'} = "startup";
 print "RUN_TYPE = $xmlenv{'RUN_TYPE'}\n";
 # Run different presaero
-foreach my $presaero ( 
-    "1x1_brazil", 
+foreach my $presaero (
+    "1x1_brazil",
     "1x1_camdenNJ",
-    "1x1_tropicAtl", 
-    "1x1_asphaltjungleNJ", 
+    "1x1_tropicAtl",
+    "1x1_asphaltjungleNJ",
     "1x1_vancouverCAN",
-    "1x1_mexicocityMEX", 
+    "1x1_mexicocityMEX",
     "1x1_urbanc_alpha",
-    "1x1_numaIA",   
+    "1x1_numaIA",
     "1x1_smallvilleIA",
-    "5x5_amazon",   
+    "5x5_amazon",
     "clim_1850.1x1_tropicAtl",
     "clim_2000.1x1_tropicAtl",,
     "trans_1850-2000.1x1_tropicAtl",
@@ -387,7 +387,7 @@ my %bad_env = (
    MISSING_CHYR_START  =>{ DATM_MODE    =>"CPLHIST3HrWx",    DATM_CPLHIST_YR_START=>undef },
    MISSING_CHYR_END    =>{ DATM_MODE    =>"CPLHIST3HrWx",    DATM_CPLHIST_YR_END  =>undef },
    MISSING_CHYR_ALIGN  =>{ DATM_MODE    =>"CPLHIST3HrWx",    DATM_CPLHIST_YR_ALIGN=>undef },
-   BAD_CHYR_RANGE      =>{ DATM_MODE    =>"CPLHIST3HrWx", 
+   BAD_CHYR_RANGE      =>{ DATM_MODE    =>"CPLHIST3HrWx",
                            DATM_CPLHIST_YR_START=>1000, DATM_CPLHIST_YR_END=>500 },
    BAD_DATM_CO2TSERIES =>{ DATM_CO2_TSERIES=>"thing" },
    READONLY_USERSTRM   =>{ DATM_MODE    =>"CLM_QIAN" },
@@ -453,10 +453,10 @@ sub checkfilesexist {
 #
 # Check that files exist
 #
-   my @files = ( 
+   my @files = (
                  "atm_modelio.nml",  "../datm.input_data_list",
                  "config_cache.xml", "datm_atm_in",
-                 "datm_in" 
+                 "datm_in"
                );
    foreach my $file ( glob("$confdir/datm.streams.txt.*") ) {
       $file =~ s|$confdir/||;
@@ -567,10 +567,10 @@ sub shownmldiff {
          return;
       }
       print "Diff in in $file to $type $comp_mode version";
-      system( "diff $file1 $file2" ); 
+      system( "diff $file1 $file2" );
    }
 
-} 
+}
 
 sub dodiffonfile {
 #
@@ -586,7 +586,7 @@ sub dodiffonfile {
   my $mode = $xmlenv{'DATM_MODE'};
   if ( exists($$diffref{$mode}{$type}{$file}) ) {
      $$diffref{$mode}{$type}{$file} = 1;
-  } 
+  }
 }
 
 sub doNOTdodiffonfile {
@@ -596,12 +596,12 @@ sub doNOTdodiffonfile {
   my $diffref = shift;
   my $file    = shift;
   my $type    = shift;
-  
+
   if ( ! defined($type) ) {
      $type = "default";
   }
   my $mode = $xmlenv{'DATM_MODE'};
   if ( exists($$diffref{$mode}{$type}{$file}) ) {
      $$diffref{$mode}{$type}{$file} = 0;
-  } 
+  }
 }

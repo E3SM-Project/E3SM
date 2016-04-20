@@ -11,7 +11,7 @@ use XML::LibXML;
 sub usage {
     die <<'EOF';
 
-SYNOPSIS 
+SYNOPSIS
 
   check_case [options]
 
@@ -22,7 +22,7 @@ OPTIONS
   -help [or -h]  Print usage to STDOUT (optional).
 
 EOF
-} 
+}
 
 my %opts = (loglevel=>"INFO" );
 
@@ -33,8 +33,8 @@ GetOptions(
 
 # Give usage message.
 usage() if $opts{'help'};
-my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml"); 
-my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
+my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml");
+my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]");
 my $cimeroot = $nodes[0]->getAttribute('value');
 
 unshift @INC, "$cimeroot/utils/perl5lib";
@@ -57,7 +57,7 @@ system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
 
 if ($BUILD_COMPLETE ne "TRUE") {
     $logger->logdie("BUILD_COMPLETE is not TRUE \n
-    Please rebuild the model interactively via calling 
+    Please rebuild the model interactively via calling
       ./${CASE}.build" );
 }
 

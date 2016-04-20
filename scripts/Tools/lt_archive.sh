@@ -22,7 +22,7 @@ msmkdir () {
 	    echo "mksmkdir: error"
 	    return $?
 	fi
-    else 
+    else
         echo "msmkdir: ssh -q ${ssh_loc} mkdir -p ${rd} ":
         ssh -q ${ssh_loc} "mkdir -p ${rd}"
         sleep 2
@@ -31,7 +31,7 @@ msmkdir () {
 }
 
 msfsize() {
-    # function to get the size of a file 
+    # function to get the size of a file
     # from its long listing
     if [ $# -lt 5 ]; then
         echo "0"
@@ -54,7 +54,7 @@ msget () {
     #------------------------------------------------------------------
     rdf=$1; rd=`dirname ${rdf}`;  rf=`basename ${rdf}`
     ldf=$2; ld=`dirname ${ldf}`;  lf=`basename ${ldf}`
-    if [ "${lf}" == '' ]; then 
+    if [ "${lf}" == '' ]; then
 	lf=${rf}
     fi
     if [ `which hsi | wc -w` == 1 ];  then
@@ -72,8 +72,8 @@ mscpdir () {
     rdr=$2
     ssh_loc=$3
 
-    # copy dir tree by first ssh to ssh_loc. 
-    # ssh to lou (lfe) and copy from /nobackup disk system to the lou /ur/$USER 
+    # copy dir tree by first ssh to ssh_loc.
+    # ssh to lou (lfe) and copy from /nobackup disk system to the lou /ur/$USER
     #  -- /nobackup/ and /ur/ are both mounted on lou
     myld=`pwd`
 
@@ -112,7 +112,7 @@ msput() {
     fi
     if [ `which hsi | wc -w` == 1 ]; then
 	opts=" "
-	if ! [[ "$DOUT_L_HPSS_ACCNT" =~ "0000*" ]]; then  
+	if ! [[ "$DOUT_L_HPSS_ACCNT" =~ "0000*" ]]; then
 	    opts=" -a ${DOUT_L_HPSS_ACCNT} "
 	fi
 	# note that the -d flag will delete the local copy
@@ -133,13 +133,13 @@ msput() {
 mode="copy_dirs_hsi"
 ssh_loc="unknown"
 arc_root="unknown"
-rm_loc_files="TRUE" # default is to remove files from short-term archive 
+rm_loc_files="TRUE" # default is to remove files from short-term archive
 
 while [ $# -gt 0 ]; do
    case $1 in
        -m|--mode )
 	   mode=$2
-	   echo " mode is $2" 
+	   echo " mode is $2"
 	   shift
 	   ;;
        --ssh_loc )
@@ -156,7 +156,7 @@ while [ $# -gt 0 ]; do
 	   ;;
        * )
    esac
-   shift 
+   shift
 done
 
 found=0
@@ -175,7 +175,7 @@ fi
 
 if [ "$mode" == "copy_dirs_hsi" ]; then
 
-    if_hsi=`which hsi | wc -w` 
+    if_hsi=`which hsi | wc -w`
     if  [ $if_hsi != 1 ] ; then
 	echo "lt_archive: asked for copy_dirs_hsi - but hsi not found"
 	echo "lt_archive: check path"
@@ -189,7 +189,7 @@ if [ "$mode" == "copy_dirs_hsi" ]; then
     cd $DOUT_S_ROOT
     hsiArgs="mkdir -p $DOUT_L_MSROOT ; chmod +t $DOUT_L_MSROOT ; cd $DOUT_L_MSROOT ; put $saveFlag *"
     # echo $hsiArgs
-    if ! [[ "$DOUT_L_HPSS_ACCNT" =~ "0000*" ]]; then  
+    if ! [[ "$DOUT_L_HPSS_ACCNT" =~ "0000*" ]]; then
 	hsi -a $DOUT_L_HPSS_ACCNT "$hsiArgs"
     else
 	hsi "$hsiArgs"
@@ -203,7 +203,7 @@ fi
 if [ "$mode" == "copy_files" ]; then
 
     #------------------------------------------------------------------
-    # Copy files and dir structure from short term archiving 
+    # Copy files and dir structure from short term archiving
     # Assume there are up to two levels of dirs below $DOUT_S_ROOT
     #   $DOUT_S_ROOT/$dirl1/$dirl2
     #   dirl1 =>  normallly [atm,lnd,ocn,ice,cpl,glc,rof,wav,rest]
@@ -211,7 +211,7 @@ if [ "$mode" == "copy_files" ]; then
     #------------------------------------------------------------------
     cd $DOUT_S_ROOT
     msmkdir $DOUT_L_MSROOT
-    for dirl1 in */ ; do 
+    for dirl1 in */ ; do
 	cd ${DOUT_S_ROOT}/${dirl1}
 	msmkdir ${DOUT_L_MSROOT}/${dirl1}
 	for dirl2 in */ ; do
@@ -244,14 +244,14 @@ fi # if copy_files
 
 #----------------------------------------------------------------------
 
-if [ "$mode" == "copy_dirs_ssh" ]; then 
+if [ "$mode" == "copy_dirs_ssh" ]; then
 
     echo "START copy_dirs_ssh :"`date`
     cd $DOUT_S_ROOT
 
     msmkdir ${DOUT_L_MSROOT} $ssh_loc
 
-    for dirl1 in */ ; do 
+    for dirl1 in */ ; do
         cd $DOUT_S_ROOT/${dirl1}
         mscpdir ${DOUT_S_ROOT}/${dirl1} ${DOUT_L_MSROOT} $ssh_loc
         echo "time : "`date`
@@ -283,13 +283,13 @@ fi  # if copy_dirs_ssh
 
 #----------------------------------------------------------------------
 
-if [ "$mode" == "copy_dirs_local" ]; then 
+if [ "$mode" == "copy_dirs_local" ]; then
 
     cd $DOUT_S_ROOT
 
     mkdir -p ${arc_root}/${DOUT_L_MSROOT}
 
-    for dirl1 in */ ; do 
+    for dirl1 in */ ; do
 	cd $DOUT_S_ROOT/${dirl1}
 	cp -r ${DOUT_S_ROOT}/${dirl1} ${arc_root}/${DOUT_L_MSROOT}
 	for dirl2 in */ ; do

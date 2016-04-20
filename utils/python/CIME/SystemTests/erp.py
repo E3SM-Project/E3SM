@@ -4,6 +4,7 @@ Implementation of the CIME ERP test.  This class inherits from SystemTestsCommon
 import shutil
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
+from CIME.case_setup import case_setup
 import CIME.utils
 from system_tests_common import SystemTestsCommon
 
@@ -46,8 +47,7 @@ class ERP(SystemTestsCommon):
                         self._case.set_value("NTHRDS_%s"%comp, nthreads/2)
             self._case.set_value("SMP_BUILD","0")
             self._case.flush()
-            run_cmd("./case.setup --clean --test-mode")
-            run_cmd("./case.setup")
+            case_setup(self._caseroot, test_mode=True, reset=True)
             run_cmd('./case.clean_build')
             SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
             if (not sharedlib_only):

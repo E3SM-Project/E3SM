@@ -30,17 +30,22 @@ def download_if_in_repo(svn_loc, input_data_root, rel_path):
     """
     Return True if successfully downloaded
     """
+    rel_path = rel_path.strip('/')
     full_url = os.path.join(svn_loc, rel_path)
+
     full_path = os.path.join(input_data_root, rel_path)
     logging.info("Trying to download file: '%s' to path '%s'" % (full_url, full_path))
+    # Make sure local path exists, create if it does not
+    if(not os.path.exists(os.path.dirname(full_path))):
+        os.makedirs(os.path.dirname(full_path))
 
-    stat = run_cmd("svn --non-interactive --trust-server-cert ls %s" % full_url, ok_to_fail=True)
+    stat, out, err = run_cmd("svn --non-interactive --trust-server-cert ls %s" % full_url, ok_to_fail=True)
     if (stat != 0):
-        logging.warning("SVN repo '%s' does not have file '%s'" % (svn_loc, rel_path))
+        logging.warning("SVN repo '%s' does not have file '%s'" % (svn_loc, full_url))
         return False
     else:
         stat, output, errput = \
-            run_cmd("svn --non-interactive --trust-server-cert export %s %s" % (full_url, full_path))
+            run_cmd("svn --non-interactive --trust-server-cert export %s %s" % (full_url, full_path), ok_to_fail=True)
         if (stat != 0):
             logging.warning("svn export failed with output: %s and errput %s" % (output, errput))
             return False

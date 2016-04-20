@@ -3,8 +3,9 @@ Common interface to XML files, this is an abstract class and is expected to
 be used by other XML interface modules and not directly.
 """
 from standard_module_setup import *
+from distutils.spawn import find_executable
 from xml.dom import minidom
-from CIME.utils import expect, get_cime_root
+from CIME.utils import expect, get_cime_root, convert_to_string
 
 logger = logging.getLogger(__name__)
 
@@ -15,16 +16,6 @@ class GenericXML(object):
         Initialize an object
         """
         self.tree = None
-
-        # Hold arbitary values. In create_newcase we may set values
-        # for xml files that haven't been created yet. We need a place
-        # to store them until we are ready to create the file. At file
-        # creation we get the values for those fields from this lookup
-        # table and then remove the entry. This was what I came up
-        # with in the perl anyway and I think that we still need it
-        # here.
-        self.lookups = {}
-        self.lookups['CIMEROOT'] = get_cime_root()
 
         if infile == None:
             # if file is not defined just return
@@ -37,7 +28,10 @@ class GenericXML(object):
         else:
             # if file does not exist create a root xml element
             # and set it's id to file
+
             logger.warning("File %s does not exists." , infile)
+            expect("$" not in infile,"File path not fully resolved %s"%infile)
+
             self.filename = infile
             root = ET.Element("xml")
             root.set("version", "1.0")
@@ -50,8 +44,11 @@ class GenericXML(object):
         Read and parse an xml file into the object
         """
         logger.debug("read: " + infile)
-        self.tree = ET.parse(infile)
-        self.root = self.tree.getroot()
+        if self.tree:
+            self.root.append(ET.parse(infile).getroot())
+        else:
+            self.tree = ET.parse(infile)
+            self.root = self.tree.getroot()
         self.version = self.root.get("version")
         self.version = "1.0" if self.version is None else self.version
         logger.debug("File version is "+self.version)
@@ -64,17 +61,30 @@ class GenericXML(object):
             outfile = self.filename
 
         logger.debug("write: " + outfile)
-        xmlstr = ET.tostring(self.root)
-        doc = minidom.parseString(xmlstr)
-        with open(outfile,'w') as xmlout:
-            doc.writexml(xmlout,addindent='  ')
+        try:
+            xmlstr = ET.tostring(self.root)
+        except:
+            ET.dump(self.root)
+            expect(False, "Could not write file %s, xml formatting error"%self.filename)
 
-    def get_node(self, nodename, attributes=None, root=None):
+        # xmllint provides a better format option for the output file
+        xmllint = find_executable("xmllint")
+        if xmllint is not None:
+            run_cmd("%s --format --output %s -"%(xmllint,outfile), input_str=xmlstr)
+        else:
+            doc = minidom.parseString(xmlstr)
+            with open(outfile,'w') as xmlout:
+                doc.writexml(xmlout,addindent='  ')
+
+
+
+    def get_node(self, nodename, attributes=None, root=None, xpath=None):
         """
         Get an xml element matching nodename with optional attributes.
 
         Error unless exactly one match.
         """
+<<<<<<< HEAD
 <<<<<<< HEAD
         nodes = self.get_nodes(nodename, attributes=attributes, root=root)
 =======
@@ -83,34 +93,45 @@ class GenericXML(object):
         logging.debug("Found %s nodes" , len(nodes))
         
 >>>>>>> cd91d1c2d071e26736d273d987baafdae6fe5fbb
+=======
+        nodes = self.get_nodes(nodename, attributes=attributes, root=root, xpath=xpath)
+>>>>>>> 58879d9d43fecdddc4cba290424cf2de9540bd33
         expect(len(nodes) == 1, "Incorrect number of matches, %d, for nodename '%s' and attrs '%s' in file '%s'" %
                (len(nodes), nodename, attributes, self.filename))
         return nodes[0]
 
-    def get_optional_node(self, nodename, attributes=None, root=None):
+    def get_optional_node(self, nodename, attributes=None, root=None, xpath=None):
         """
         Get an xml element matching nodename with optional attributes.
 
         Return None if no match.
         """
-        nodes = self.get_nodes(nodename, attributes=attributes, root=root)
+        nodes = self.get_nodes(nodename, attributes=attributes, root=root, xpath=xpath)
 
         expect(len(nodes) <= 1, "Multiple matches for nodename '%s' and attrs '%s' in file '%s'" %
                (nodename, attributes, self.filename))
         return nodes[0] if nodes else None
 
-    def get_nodes(self, nodename, attributes=None, root=None):
+    def get_nodes(self, nodename, attributes=None, root=None, xpath=None):
         if root is None:
             root = self.root
         nodes = []
+<<<<<<< HEAD
         xpath = ".//"+nodename
         logger.debug("Attributes %s" , attributes , extra={})
+=======
+        expect(attributes is None or xpath is None,
+               " Arguments attributes and xpath are exclusive")
+        if xpath is None:
+            xpath = ".//"+nodename
+>>>>>>> 58879d9d43fecdddc4cba290424cf2de9540bd33
         if attributes is not None:
             # xml.etree has limited support for xpath and does not allow more than
             # one attribute in an xpath query so we query seperately for each attribute
             # and create a result with the intersection of those lists
 
             for key, value in attributes.iteritems():
+<<<<<<< HEAD
                 xpath = ".//%s[@%s=\'%s\']" % (nodename, key, value)
                 logger.debug("xpath is %s"%xpath)
 
@@ -120,6 +141,21 @@ class GenericXML(object):
                     nodes = newnodes
                 else:
                     nodes = nodes + newnodes
+=======
+                if value is not None:
+                    expect(isinstance(value, str), " Bad value passed for key %s"%key)
+                    xpath = ".//%s[@%s=\'%s\']" % (nodename, key, value)
+                    logger.debug("xpath is %s"%xpath)
+                    newnodes = root.findall(xpath)
+                    if not nodes:
+                        nodes = newnodes
+                    else:
+                        for node in nodes[:]:
+                            if node not in newnodes:
+                                nodes.remove(node)
+                    if not nodes:
+                        return []
+>>>>>>> 58879d9d43fecdddc4cba290424cf2de9540bd33
         else:
             logger.debug("xpath: %s" , xpath , extra={attributes : None})
             nodes = root.findall(xpath)
@@ -136,10 +172,12 @@ class GenericXML(object):
             root = self.root
         self.root.append(node)
 
-    def get_value(self, item, resolved=True):
+    def get_value(self, item, resolved=True, settype=True):
         """
-        get_value is expected to be defined by the derived classes, if you get here it is an error.
+        get_value is expected to be defined by the derived classes, if you get here
+        the value was not found in the class.
         """
+<<<<<<< HEAD
         logger.debug("Get Value for %s " , item)
         result = None
         if item in self.lookups:
@@ -151,6 +189,10 @@ class GenericXML(object):
             result = self.get_resolved_value(result)
 
         return result
+=======
+        logger.debug("Get Value for "+item)
+        return None
+>>>>>>> 58879d9d43fecdddc4cba290424cf2de9540bd33
 
     def set_value(self, vid, value, ignore_type=True):
         """
@@ -160,8 +202,6 @@ class GenericXML(object):
         if valnodes:
             for node in valnodes:
                 node.text = value
-        else:
-            self.lookups[vid] = value
 
     def get_resolved_value(self, raw_value):
         """
@@ -176,7 +216,7 @@ class GenericXML(object):
         'one BAR two BARF three'
         """
         logger.debug("raw_value %s" % raw_value)
-        reference_re = re.compile(r'\$(\w+)')
+        reference_re = re.compile(r'\${?(\w+)}?')
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
         item_data = raw_value
 
@@ -197,10 +237,19 @@ class GenericXML(object):
             logger.debug("find: %s" % var)
             ref = self.get_value(var)
             if ref is not None:
-                logger.debug("resolve: %s" % ref)
-                item_data = item_data.replace(m.group(), str(self.get_resolved_value(ref)))
+                logger.debug("resolve: " + str(ref))
+                item_data = item_data.replace(m.group(), self.get_resolved_value(str(ref)))
+            elif var == "CIMEROOT":
+                cimeroot = get_cime_root()
+                item_data = item_data.replace(m.group(), cimeroot)
+            elif var == "SRCROOT":
+                srcroot = os.path.join(get_cime_root(),"..")
+                item_data = item_data.replace(m.group(), srcroot)
             elif var in os.environ:
-                logging.warn("resolve from env: %s" % var)
+                logging.debug("resolve from env: " + var)
                 item_data = item_data.replace(m.group(), os.environ[var])
 
+
         return item_data
+
+

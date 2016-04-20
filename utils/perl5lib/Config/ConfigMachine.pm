@@ -40,18 +40,18 @@ sub setMachineFile
     if (@machnodes) {
 	$logger->info("Found machine \"$machine\" in $machines_file \n");
     } else {
-	$logger->error( "ERROR ConfigMachine::setMachineFile: no match for machine $machine 
+	$logger->error( "ERROR ConfigMachine::setMachineFile: no match for machine $machine
 	                 - possible machine values are: \n");
 	listMachines( "$machines_file" );
 	return 0;
-    }	    
+    }
     return $machines_file;
 }
 
 #-----------------------------------------------------------------------------------------------
 sub setMachineValues
 {
-    # Set the parameters for the specified machine.  
+    # Set the parameters for the specified machine.
     my ( $file_config, $primary_component, $machine, $config) = @_;
 
     my $model = $config->get('MODEL');
@@ -78,7 +78,7 @@ sub setMachineValues
 	$logger->fatal("  - possible machine values are ");
 	listMachines( "$machines_file" );
 	$logger->logdie( "Exiting ");
-    }	    
+    }
     my $compiler = $config->get('COMPILER');
     my $mpilib = $config->get('MPILIB');
 
@@ -88,14 +88,14 @@ sub setMachineValues
 	my @compilers = split(/,/,$compilers);
 	$compiler = $compilers[0];
 	$config->set('COMPILER', "$compiler");
-    }	
+    }
     if (!defined $mpilib) {
 	my @nodes = $xml->findnodes(".//machine[\@MACH=\"$machine\"]/MPILIBS");
 	my $mpilibs = $nodes[0]->textContent();
 	my @mpilibs = split(/,/,$mpilibs);
 	$mpilib = $mpilibs[0];
 	$config->set('MPILIB', "$mpilib");
-    }	
+    }
     $config->set('MACH'         ,  $machine);
     $config->set('MACHINES_FILE', "$machines_file");
     $config->set('MACHDIR'      , "$machines_dir");
@@ -135,7 +135,7 @@ sub listMachines
 	    next if ($child->nodeType() == XML_COMMENT_NODE);
 	    if ($child->nodeName() eq 'DESC') {
 		my $desc = $child->textContent();
-		$logger->warn( "    $name ($desc) \n");		
+		$logger->warn( "    $name ($desc) \n");
 	    }
 	}
     }
@@ -149,19 +149,19 @@ sub _set_machine_values
     # open the specified xml file
     my ($config) = @_;
 
-    my $machine       = $config->get('MACH'); 
+    my $machine       = $config->get('MACH');
     my $machines_file = $config->get('MACHINES_FILE');
 
     my $xml = XML::LibXML->new( no_blanks => 1)->parse_file($machines_file);
     my @machine_nodes = $xml->findnodes(".//machine[\@MACH=\"$machine\"]/*");
-    if (@machine_nodes) 
+    if (@machine_nodes)
     {
 	foreach my $node (@machine_nodes) {
 	    my $name  = $node->nodeName();
 	    next if($name eq "mpirun");
 	    next if($name eq "module_system");
 	    my $value = $node->textContent();
-	    if ( ! $config->is_valid_name($name) ) { 
+	    if ( ! $config->is_valid_name($name) ) {
 		$logger->logdie("set_machine: invalid id $name in machine $machine file $machines_file exiting\n");
 		return;
 	    }
@@ -182,11 +182,11 @@ sub _set_machine_values
 	    }
 	    $logger->debug( "config: $name set to ".$config->get($name)."  $value\n" );
 	}
-    } 
-    else 
+    }
+    else
     {
 	$logger->logdie( "ERROR: ConfigMachine::_set_machine_values: no specifications contained for machine $machine :\n");
-	return; 
+	return;
     }
 }
 
@@ -198,14 +198,14 @@ sub _check_machine_compilers
 
     my ( $config) = @_;
 
-    my $machine   = $config->get('MACH'); 
+    my $machine   = $config->get('MACH');
     my $caseroot  = $config->get('CASEROOT');
     my $compiler  = $config->get('COMPILER');
 
     my $compilers;
     if ($machine =~ /userdefined/){
 	$config->set('COMPILER', "USERDEFINED_required_build");
-    } else { 
+    } else {
 	$compilers = $config->get('COMPILERS');
 	my @compilers = split ",", $compilers, -1;
 	if ($compiler) {
@@ -228,7 +228,7 @@ sub _check_machine_compilers
 	    $config->set('COMPILER', "$compiler");
 	    $logger->info( "Machine compiler specifier: $compiler\n");
 	} else {
-	    $compiler = $compilers[0];   
+	    $compiler = $compilers[0];
 	    $config->set('COMPILER', "$compiler");
 	    $logger->info("Machine compiler specifier: $compiler\n");
 	}
@@ -240,11 +240,11 @@ sub _setPIOsettings
 {
     # Set pio settings from config_machines.xml and config_pio.xml file
 
-    my ($file_config, $primary_component, $config) = @_; 
+    my ($file_config, $primary_component, $config) = @_;
 
     my $model    = $config->get('MODEL');
     my $cimeroot = $config->get('CIMEROOT');
- 
+
     # read the PIO_SPEC_FILE file for grid and/or compset specific pio settings
     my $file = $config->get('PIO_SPEC_FILE');
     $file =~ s/\$MODEL/$model/;
@@ -272,7 +272,7 @@ sub _setPIOsettings
 		$default = $value->textContent();
 	    }
 	    MATCH: foreach my $attr (@attributes) {
-		$attr_value = $attr->value(); 
+		$attr_value = $attr->value();
 		my $attr_name  =uc $attr->name();
 		my $target = $config->get( $attr_name);
 		if (($attr_value =~ /^\!/) && ($target !~ m/$attr_value/)) {
@@ -280,7 +280,7 @@ sub _setPIOsettings
 		} elsif ($target =~ m/$attr_value/) {
 		    $matches++;
 		} else {
-		    # Not all attributes match - reset match counter to 0 
+		    # Not all attributes match - reset match counter to 0
 		    # and go to next value node
 		    $matches = 0;
 		    last MATCH;

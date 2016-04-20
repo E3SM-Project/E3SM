@@ -1,4 +1,4 @@
-/* 
+/*
  * JCY
  * 07/2007
  * Derived Datatype functions for mpi-serial
@@ -14,8 +14,8 @@
 #include <config.h>
 #endif
 
-/* 
- * NOTES: All MPI_ prefixed (public) functions operate 
+/*
+ * NOTES: All MPI_ prefixed (public) functions operate
  * using the integer handle for a datatype.  Most of these
  * functions are wrapper functions for a different function,
  * _not_ prefixed with MPI_.  These functions translate the
@@ -27,7 +27,7 @@
 
 /*
  * Wrapper for mpi_handle_to_ptr in handles.c
- * specific for datatype handles, which may be 
+ * specific for datatype handles, which may be
  * predefined negative handles
  */
 Datatype* mpi_handle_to_datatype(int handle)
@@ -60,7 +60,7 @@ int calc_padding(Datatype datatype)
 }
 
 /* Retrieve size of any simple type
- * C sizes use sizeof the literal type 
+ * C sizes use sizeof the literal type
  * they represent.  Fortran types are those
  * as defined in type.h
  */
@@ -69,19 +69,19 @@ int Simpletype_length(Simpletype t)
 {
   switch(t)
   {
-    case SIMPLE_CHAR: 
+    case SIMPLE_CHAR:
       return sizeof(char); break;
-    case SIMPLE_SHORT: 
+    case SIMPLE_SHORT:
       return sizeof(short); break;
-    case SIMPLE_INT: 
+    case SIMPLE_INT:
       return sizeof(int); break;
-    case SIMPLE_LONG: 
+    case SIMPLE_LONG:
       return sizeof(long); break;
     case SIMPLE_UCHAR:
       return sizeof(unsigned char); break;
-    case SIMPLE_USHORT: 
+    case SIMPLE_USHORT:
       return sizeof(unsigned short); break;
-    case SIMPLE_UINT: 
+    case SIMPLE_UINT:
       return sizeof(unsigned int); break;
     case SIMPLE_ULONG:
       return sizeof(unsigned long); break;
@@ -93,19 +93,19 @@ int Simpletype_length(Simpletype t)
       return sizeof(long double); break;
     case SIMPLE_BYTE:
       return sizeof(char); break;
-    case SIMPLE_FINTEGER: 
+    case SIMPLE_FINTEGER:
       return FSIZE_INTEGER; break;
-    case SIMPLE_FREAL: 
+    case SIMPLE_FREAL:
       return FSIZE_REAL; break;
-    case SIMPLE_FDPRECISION: 
+    case SIMPLE_FDPRECISION:
       return FSIZE_DPRECISION; break;
-    case SIMPLE_FCOMPLEX: 
+    case SIMPLE_FCOMPLEX:
       return FSIZE_COMPLEX; break;
-    case SIMPLE_FDCOMPLEX: 
+    case SIMPLE_FDCOMPLEX:
       return FSIZE_DCOMPLEX; break;
-    case SIMPLE_FLOGICAL: 
+    case SIMPLE_FLOGICAL:
       return FSIZE_LOGICAL; break;
-    case SIMPLE_FCHARACTER: 
+    case SIMPLE_FCHARACTER:
       return FSIZE_CHARACTER; break;
     case SIMPLE_FINTEGER1:
       return 1; break;
@@ -149,11 +149,11 @@ long calc_lb(Datatype type)
   int i;
   int min_disp = INT_MAX;
   typepair * tp;
-  
+
   for(i =0; i < type->count; i++)
   {
     tp =  type->pairs+i;
-    min_disp = tp->disp < min_disp 
+    min_disp = tp->disp < min_disp
                 ? tp->disp
                 : min_disp;
   }
@@ -170,15 +170,15 @@ long calc_ub(Datatype type)
   int i;
   long max_disp = INT_MIN;
   typepair * tp;
-  
+
   for(i = 0; i < type->count; i++)
   {
     tp = type->pairs+i;
-    max_disp = tp->disp + Simpletype_length(tp->type) > max_disp 
-                ? tp->disp + Simpletype_length(tp->type) 
+    max_disp = tp->disp + Simpletype_length(tp->type) > max_disp
+                ? tp->disp + Simpletype_length(tp->type)
                 : max_disp;
   }
-  
+
   return max_disp;
 }
 
@@ -193,14 +193,14 @@ FC_FUNC( mpi_type_struct, MPI_TYPE_STRUCT )
          (int * count,       int * blocklens, long * displacements,
           int *oldtypes_ptr, int *newtype,    int *ierror)
 {
-  *ierror=MPI_Type_struct(*count, blocklens, displacements, 
+  *ierror=MPI_Type_struct(*count, blocklens, displacements,
                                     oldtypes_ptr, newtype);
 }
 
 /* Public function, wrapper for Type_struct that translates handle to
  * pointer (see NOTES at top of file)
  */
-int MPI_Type_struct(int count, int * blocklens, MPI_Aint * displacements, 
+int MPI_Type_struct(int count, int * blocklens, MPI_Aint * displacements,
                     MPI_Datatype *oldtypes,     MPI_Datatype *newtype)
 {
   int i;
@@ -215,10 +215,10 @@ int MPI_Type_struct(int count, int * blocklens, MPI_Aint * displacements,
   mpi_alloc_handle(newtype, (void**) &newtype_ptr);
 
   return Type_struct(count, blocklens, displacements,
-                          oldtypes_ptr, newtype_ptr); 
+                          oldtypes_ptr, newtype_ptr);
 }
 
-int Type_struct(int count, int * blocklens, MPI_Aint * displacements, 
+int Type_struct(int count, int * blocklens, MPI_Aint * displacements,
                 Datatype *oldtypes_ptr,     Datatype *newtype)
 {
   int i, j, k;
@@ -238,7 +238,7 @@ int Type_struct(int count, int * blocklens, MPI_Aint * displacements,
   {
     //check for MPI_UB or MPI_LB.  These types are special
     // cases and will be skipped over
-    
+
     temp2 = oldtypes_ptr[i];
     if (temp2->pairs[0].type == SIMPLE_LOWER)
     {
@@ -254,7 +254,7 @@ int Type_struct(int count, int * blocklens, MPI_Aint * displacements,
 	new_ub = displacements[i];
       override_upper = 1;
     }
-    else  
+    else
     {
       //this is not MPI_LB or MPI_UB
       //However it may still have overriding bounds
@@ -271,11 +271,11 @@ int Type_struct(int count, int * blocklens, MPI_Aint * displacements,
       simpletype_count += blocklens[i] * oldtypes_ptr[i]->count;
     }
   }
-  temp = malloc(sizeof(Typestruct) + 
+  temp = malloc(sizeof(Typestruct) +
                ((simpletype_count-1) * sizeof(typepair)));
-  
+
   temp->count = simpletype_count;
-  
+
   i = 0;         //old type's index
   newcount = 0;  //new type's index
 
@@ -295,9 +295,9 @@ int Type_struct(int count, int * blocklens, MPI_Aint * displacements,
         //Copy the old type's typemap and merge into the new type
         //by a "flattening" process
         Type_extent((Datatype) oldtypes_ptr[i], &extent);
-      
+
         tmp_offset = j * extent;
-  
+
         if (temp2->o_lb && temp2->lb+displacements[i]+tmp_offset < new_lb)
           new_lb = temp2->lb+displacements[i]+tmp_offset;
         if (temp2->o_ub && temp2->ub+displacements[i]+tmp_offset > new_ub)
@@ -311,7 +311,7 @@ int Type_struct(int count, int * blocklens, MPI_Aint * displacements,
                      (typepair*) (temp->pairs+newcount));
 
 
-          ((typepair*) temp->pairs+(newcount))->disp += 
+          ((typepair*) temp->pairs+(newcount))->disp +=
                        displacements[i] + tmp_offset;
           newcount++;
         }
@@ -417,7 +417,7 @@ int MPI_Type_vector(int count, int blocklen, int stride,
 }
 
 
-int Type_vector(int count, int blocklen, int stride, 
+int Type_vector(int count, int blocklen, int stride,
                 Datatype oldtype, Datatype *newtype)
 {
   MPI_Aint extent;
@@ -425,7 +425,7 @@ int Type_vector(int count, int blocklen, int stride,
 
   Type_extent(oldtype, &extent);
   bstride = stride * extent;
-  
+
   return Type_hvector(count, blocklen, bstride, oldtype, newtype);
 }
 
@@ -449,7 +449,7 @@ int MPI_Type_hvector(int count, int blocklen, MPI_Aint stride,
 }
 
 
-int Type_hvector(int count, int blocklen, MPI_Aint stride, 
+int Type_hvector(int count, int blocklen, MPI_Aint stride,
                       Datatype oldtype, Datatype *newtype)
 {
   int i;
@@ -501,7 +501,7 @@ int Type_indexed(int count, int *blocklens, int *displacements,
     Type_extent(oldtype, &extent);
     bdisps[i] = displacements[i] * extent;
   }
-  
+
   return Type_hindexed(count, blocklens, bdisps, oldtype, newtype);
 }
 
@@ -511,11 +511,11 @@ FC_FUNC( mpi_type_create_indexed_block, MPI_TYPE_CREATE_INDEXED_BLOCK )
          (int * count,   int * blocklen, int * displacements,
           int * oldtype, int * newtype,  int * ierr)
 {
-  *ierr = MPI_Type_create_indexed_block(*count, *blocklen, displacements, 
+  *ierr = MPI_Type_create_indexed_block(*count, *blocklen, displacements,
 					*oldtype, newtype);
 }
 
-int MPI_Type_create_indexed_block(int count, int blocklen, int *displacements, 
+int MPI_Type_create_indexed_block(int count, int blocklen, int *displacements,
 				  MPI_Datatype oldtype, MPI_Datatype * newtype)
 {
   int ret;
@@ -531,10 +531,10 @@ int Type_create_indexed_block(int count, int blocklen, int *displacements,
 {
   int i;
   int blocklens[count];
-  
+
   for (i = 0; i < count; i++)
     blocklens[i] = blocklen;
-  
+
   return Type_indexed(count, blocklens, displacements, oldtype, newtype);
 }
 
@@ -558,17 +558,17 @@ int MPI_Type_hindexed(int count, int *blocklens, MPI_Aint * disps,
   return Type_hindexed(count, blocklens, disps, old_ptr, new_ptr);
 }
 
-int Type_hindexed(int count, int *blocklens, MPI_Aint *displacements, 
+int Type_hindexed(int count, int *blocklens, MPI_Aint *displacements,
                   Datatype oldtype, Datatype *newtype)
 {
   int i;
   Datatype oldtypes[count];
-  
+
   for (i = 0; i < count; i++)
   {
     oldtypes[i] = oldtype;
   }
-  
+
   return Type_struct(count, blocklens, displacements, oldtypes, newtype);
 }
 
@@ -687,8 +687,8 @@ int FGet_address(void * loc, long * address, int * ierr)
 }
 
 int MPI_Address(void * loc, MPI_Aint * address)
-{ 
-  return MPI_Get_address(loc, address); 
+{
+  return MPI_Get_address(loc, address);
 }
 
 int MPI_Get_address(void * loc, MPI_Aint * address)
@@ -729,7 +729,7 @@ int Type_extent(Datatype datatype, MPI_Aint * extent)
   {
     *extent = datatype->ub - datatype->lb;
   }
-  
+
   return MPI_SUCCESS;
 }
 
@@ -775,7 +775,7 @@ FC_FUNC( mpi_type_free, MPI_TYPE_FREE )(int * datatype, int * ierr)
 }
 
 int MPI_Type_free(MPI_Datatype * datatype)
-{  
+{
   Datatype type_ptr = *(Datatype*) mpi_handle_to_datatype(*datatype);
   free(type_ptr);
   type_ptr = MPI_DATATYPE_NULL;
@@ -814,7 +814,7 @@ int Pprint_typemap(Datatype type)
 
   for (i = 0; i < type->count; i++)
   {
-    printf("(t%d:%d, o%d)", type->pairs[i].type, 
+    printf("(t%d:%d, o%d)", type->pairs[i].type,
            Simpletype_length(type->pairs[i].type),
            type->pairs[i].disp);
 

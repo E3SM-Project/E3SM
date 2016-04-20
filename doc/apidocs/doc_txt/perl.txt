@@ -18,7 +18,7 @@
 /*! \page perl Perl markup conventions
 
 Perl code documentation uses the Doxygen::Filter::Perl module input filter which is
-specified in the Doxyfile configuration file. The documentation for the 
+specified in the Doxyfile configuration file. The documentation for the
 doxygen perl filter with supported markup is here:
 
  - http://search.cpan.org/dist/Doxygen-Filter-Perl/lib/Doxygen/Filter/Perl.pm

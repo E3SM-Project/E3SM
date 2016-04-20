@@ -45,7 +45,7 @@ sub new {
 
     my $options       = ref $_[0] eq "HASH" ? shift : {};
     my $layout_string = @_ ? shift : '%m%n';
-    
+
     my $self = {
         format                => undef,
         info_needed           => {},
@@ -53,9 +53,9 @@ sub new {
         CSPECS                => $CSPECS,
         dontCollapseArrayRefs => $options->{dontCollapseArrayRefs}{value},
         last_time             => undef,
-        undef_column_value    => 
-            (exists $options->{ undef_column_value } 
-                ? $options->{ undef_column_value } 
+        undef_column_value    =>
+            (exists $options->{ undef_column_value }
+                ? $options->{ undef_column_value }
                 : "[undef]"),
     };
 
@@ -68,7 +68,7 @@ sub new {
     }
 
     if(exists $options->{message_chomp_before_newline}) {
-        $self->{message_chomp_before_newline} = 
+        $self->{message_chomp_before_newline} =
           $options->{message_chomp_before_newline}->{value};
     } else {
         $self->{message_chomp_before_newline} = 1;
@@ -80,7 +80,7 @@ sub new {
     foreach my $f (keys %GLOBAL_USER_DEFINED_CSPECS){
             #add it to the list of letters
         $self->{CSPECS} .= $f;
-             #for globals, the coderef is already evaled, 
+             #for globals, the coderef is already evaled,
         $self->{USER_DEFINED_CSPECS}{$f} = $GLOBAL_USER_DEFINED_CSPECS{$f};
     }
 
@@ -104,7 +104,7 @@ sub define {
     my($self, $format) = @_;
 
         # If the message contains a %m followed by a newline,
-        # make a note of that so that we can cut a superfluous 
+        # make a note of that so that we can cut a superfluous
         # \n off the message later on
     if($self->{message_chomp_before_newline} and $format =~ /%m%n/) {
         $self->{message_chompable} = 1;
@@ -113,7 +113,7 @@ sub define {
     }
 
     # Parse the format
-    $format =~ s/%(-?\d*(?:\.\d+)?) 
+    $format =~ s/%(-?\d*(?:\.\d+)?)
                        ([$self->{CSPECS}])
                        (?:{(.*?)})*/
                        rep($self, $1, $2, $3);
@@ -194,16 +194,16 @@ sub render {
        0
       ) {
 
-        my ($package, $filename, $line, 
+        my ($package, $filename, $line,
             $subroutine, $hasargs,
-            $wantarray, $evaltext, $is_require, 
+            $wantarray, $evaltext, $is_require,
             $hints, $bitmask) = caller($caller_offset);
 
         # If caller() choked because of a whacko caller level,
-        # correct undefined values to '[undef]' in order to prevent 
+        # correct undefined values to '[undef]' in order to prevent
         # warning messages when interpolating later
         unless(defined $bitmask) {
-            for($package, 
+            for($package,
                 $filename, $line,
                 $subroutine, $hasargs,
                 $wantarray, $evaltext, $is_require,
@@ -219,9 +219,9 @@ sub render {
         if($self->{info_needed}->{M} or
            $self->{info_needed}->{l} or
            0) {
-            # To obtain the name of the subroutine which triggered the 
+            # To obtain the name of the subroutine which triggered the
             # logger, we need to go one additional level up.
-            my $levels_up = 1; 
+            my $levels_up = 1;
             {
                 my @callinfo = caller($caller_offset+$levels_up);
 
@@ -257,7 +257,7 @@ sub render {
     my $current_time;
 
     if($self->{info_needed}->{r} or $self->{info_needed}->{R}) {
-        if(!$TIME_HIRES_AVAILABLE_WARNED++ and 
+        if(!$TIME_HIRES_AVAILABLE_WARNED++ and
            !$self->{timer}->hires_available()) {
             warn "Requested %r/%R pattern without installed Time::HiRes\n";
         }
@@ -275,7 +275,7 @@ sub render {
     if($self->{info_needed}->{T}) {
         local $Carp::CarpLevel =
               $Carp::CarpLevel + $caller_offset;
-        my $mess = Carp::longmess(); 
+        my $mess = Carp::longmess();
         chomp($mess);
         # $mess =~ s/(?:\A\s*at.*\n|^\s*Log::Log4perl.*\n|^\s*)//mg;
         $mess =~ s/(?:\A\s*at.*\n|^\s*)//mg;
@@ -295,8 +295,8 @@ sub render {
         if(exists $self->{USER_DEFINED_CSPECS}->{$op}) {
             next unless $self->{info_needed}->{$op};
             $self->{curlies} = $curlies;
-            $result = $self->{USER_DEFINED_CSPECS}->{$op}->($self, 
-                              $message, $category, $priority, 
+            $result = $self->{USER_DEFINED_CSPECS}->{$op}->($self,
+                              $message, $category, $priority,
                               $caller_offset+1);
         } elsif(exists $info{$op}) {
             $result = $info{$op};
@@ -381,7 +381,7 @@ sub shrink_category {
     if(@components > $len) {
         splice @components, 0, @components - $len;
         $category = join '.', @components;
-    } 
+    }
 
     return $category;
 }
@@ -415,8 +415,8 @@ sub add_global_cspec {
         $GLOBAL_USER_DEFINED_CSPECS{$letter} = $perlcode;
 
     }elsif (! ref $perlcode){
-        
-        $GLOBAL_USER_DEFINED_CSPECS{$letter} = 
+
+        $GLOBAL_USER_DEFINED_CSPECS{$letter} =
             Log::Log4perl::Config::compile_if_perl($perlcode);
 
         if ($@) {
@@ -466,7 +466,7 @@ sub add_layout_cspec {
         $self->{USER_DEFINED_CSPECS}{$letter} = $perlcode;
 
     }elsif (! ref $perlcode){
-        
+
         $self->{USER_DEFINED_CSPECS}{$letter} =
             Log::Log4perl::Config::compile_if_perl($perlcode);
 
@@ -515,7 +515,7 @@ sub callinfo_dump {
     $i = 0;
     for my $value (@$info) {
         my $field = $by_idx[ $i ];
-        print "$field=", 
+        print "$field=",
               (defined $info->[$i] ? $info->[$i] : "[undef]"),
               " ";
         $i++;
@@ -560,7 +560,7 @@ replaced by the logging engine when it's time to log the message:
     %F File where the logging event occurred
     %H Hostname (if Sys::Hostname is available)
     %l Fully qualified name of the calling method followed by the
-       callers source the file name and line number between 
+       callers source the file name and line number between
        parentheses.
     %L Line number within the file where the log statement was issued
     %m The message to be logged
@@ -571,10 +571,10 @@ replaced by the logging engine when it's time to log the message:
     %n Newline (OS-independent)
     %p Priority of the logging event (%p{1} shows the first letter)
     %P pid of the current process
-    %r Number of milliseconds elapsed from program start to logging 
+    %r Number of milliseconds elapsed from program start to logging
        event
     %R Number of milliseconds elapsed from last logging event to
-       current logging event 
+       current logging event
     %T A stack trace of functions called
     %x The topmost NDC (see below)
     %X{key} The entry 'key' of the MDC (see below)
@@ -601,7 +601,7 @@ just like in I<printf>:
 
     %20c   Reserve 20 chars for the category, right-justify and fill
            with blanks if it is shorter
-    %-20c  Same as %20c, but left-justify and fill the right side 
+    %-20c  Same as %20c, but left-justify and fill the right side
            with blanks
     %09r   Zero-pad the number of milliseconds to 9 digits
     %.8c   Specify the maximum field with and have the formatter
@@ -609,7 +609,7 @@ just like in I<printf>:
 
 =head2 Fine-tuning with curlies
 
-Some placeholders have special functions defined if you add curlies 
+Some placeholders have special functions defined if you add curlies
 with content after them:
 
     %c{1}  Just show the right-most category compontent, useful in large
@@ -631,7 +631,7 @@ limit file/path components to save space in your logs.
 
 =head2 Fine-tune the date
 
-If you're not happy with the default %d format for the date which 
+If you're not happy with the default %d format for the date which
 looks like
 
     yyyy/MM/DD HH:mm:ss
@@ -642,7 +642,7 @@ of a date, according to the SimpleDateFormat in the Java World
 (http://java.sun.com/j2se/1.3/docs/api/java/text/SimpleDateFormat.html):
 
     %d{HH:mm}     "23:45" -- Just display hours and minutes
-    %d{yy, EEEE}  "02, Monday" -- Just display two-digit year 
+    %d{yy, EEEE}  "02, Monday" -- Just display two-digit year
                                   and spelled-out weekday
 Here's the symbols and their meaning, according to the SimpleDateFormat
 specification:
@@ -650,7 +650,7 @@ specification:
     Symbol   Meaning                 Presentation     Example
     ------   -------                 ------------     -------
     G        era designator          (Text)           AD
-    y        year                    (Number)         1996 
+    y        year                    (Number)         1996
     M        month in year           (Text & Number)  July & 07
     d        day in month            (Number)         10
     h        hour in am/pm (1-12)    (Number)         12
@@ -662,15 +662,15 @@ specification:
     a        am/pm marker            (Text)           PM
     e        epoch seconds           (Number)         1315011604
 
-    (Text): 4 or more pattern letters--use full form, < 4--use short or 
-            abbreviated form if one exists. 
+    (Text): 4 or more pattern letters--use full form, < 4--use short or
+            abbreviated form if one exists.
 
-    (Number): the minimum number of digits. Shorter numbers are 
-              zero-padded to this amount. Year is handled 
-              specially; that is, if the count of 'y' is 2, the 
-              Year will be truncated to 2 digits. 
+    (Number): the minimum number of digits. Shorter numbers are
+              zero-padded to this amount. Year is handled
+              specially; that is, if the count of 'y' is 2, the
+              Year will be truncated to 2 digits.
 
-    (Text & Number): 3 or over, use text, otherwise use number. 
+    (Text & Number): 3 or over, use text, otherwise use number.
 
 There's also a bunch of pre-defined formats:
 
@@ -680,25 +680,25 @@ There's also a bunch of pre-defined formats:
 
 =head2 Custom cspecs
 
-First of all, "cspecs" is short for "conversion specifiers", which is 
+First of all, "cspecs" is short for "conversion specifiers", which is
 the log4j and the printf(3) term for what Mike is calling "placeholders."
-I suggested "cspecs" for this part of the api before I saw that Mike was 
+I suggested "cspecs" for this part of the api before I saw that Mike was
 using "placeholders" consistently in the log4perl documentation.  Ah, the
 joys of collaboration ;=) --kg
 
 If the existing corpus of placeholders/cspecs isn't good enough for you,
 you can easily roll your own:
 
-    #'U' a global user-defined cspec     
+    #'U' a global user-defined cspec
     log4j.PatternLayout.cspec.U = sub { return "UID: $< "}
-    
+
     #'K' cspec local to appndr1                 (pid in hex)
     log4j.appender.appndr1.layout.cspec.K = sub { return sprintf "%1x", $$}
-    
+
     #and now you can use them
     log4j.appender.appndr1.layout.ConversionPattern = %K %U %m%n
 
-The benefit of this approach is that you can define and use the cspecs 
+The benefit of this approach is that you can define and use the cspecs
 right next to each other in the config file.
 
 If you're an API kind of person, there's also this call:
@@ -706,22 +706,22 @@ If you're an API kind of person, there's also this call:
     Log::Log4perl::Layout::PatternLayout::
                     add_global_cspec('Z', sub {'zzzzzzzz'}); #snooze?
 
-When the log message is being put together, your anonymous sub 
+When the log message is being put together, your anonymous sub
 will be called with these arguments:
 
     ($layout, $message, $category, $priority, $caller_level);
-    
+
     layout: the PatternLayout object that called it
     message: the logging message (%m)
     category: e.g. groceries.beverages.adult.beer.schlitz
     priority: e.g. DEBUG|WARN|INFO|ERROR|FATAL
-    caller_level: how many levels back up the call stack you have 
+    caller_level: how many levels back up the call stack you have
         to go to find the caller
 
 Please note that the subroutines you're defining in this way are going
 to be run in the C<main> namespace, so be sure to fully qualify functions
 and variables if they're located in different packages. I<Also make sure
-these subroutines aren't using Log4perl, otherwise Log4perl will enter 
+these subroutines aren't using Log4perl, otherwise Log4perl will enter
 an infinite recursion.>
 
 With Log4perl 1.20 and better, cspecs can be written with parameters in
@@ -730,21 +730,21 @@ curly braces. Writing something like
     log4perl.appender.Screen.layout.ConversionPattern = %U{user} %U{id} %m%n
 
 will cause the cspec function defined for %U to be called twice, once
-with the parameter 'user' and then again with the parameter 'id', 
+with the parameter 'user' and then again with the parameter 'id',
 and the placeholders in the cspec string will be replaced with
 the respective return values.
 
 The parameter value is available in the 'curlies' entry of the first
-parameter passed to the subroutine (the layout object reference). 
-So, if you wanted to map %U{xxx} to entries in the POE session hash, 
+parameter passed to the subroutine (the layout object reference).
+So, if you wanted to map %U{xxx} to entries in the POE session hash,
 you'd write something like:
 
    log4perl.PatternLayout.cspec.U = sub { \
      POE::Kernel->get_active_session->get_heap()->{ $_[0]->{curlies} } }
-                                          
+
 B<SECURITY NOTE>
-  
-This feature means arbitrary perl code can be embedded in the config file. 
+
+This feature means arbitrary perl code can be embedded in the config file.
 In the rare case where the people who have access to your config file are
 different from the people who write your code and shouldn't have execute
 rights, you might want to set
@@ -754,7 +754,7 @@ rights, you might want to set
 before you call init().  Alternatively you can supply a restricted set of
 Perl opcodes that can be embedded in the config file as described in
 L<Log::Log4perl/"Restricting what Opcodes can be in a Perl Hook">.
-  
+
 =head2 Advanced Options
 
 The constructor of the C<Log::Log4perl::Layout::PatternLayout> class
@@ -763,7 +763,7 @@ additional options in order to (ab)use it in creative ways:
 
   my $layout = Log::Log4perl::Layout::PatternLayout->new(
     { time_function       => \&my_time_func,
-    }, 
+    },
     "%d (%F:%L)> %m");
 
 Here's a list of parameters:
@@ -774,20 +774,20 @@ Here's a list of parameters:
 
 Takes a reference to a function returning the time for the time/date
 fields, either in seconds
-since the epoch or as an array, carrying seconds and 
+since the epoch or as an array, carrying seconds and
 microseconds, just like C<Time::HiRes::gettimeofday> does.
 
 =item message_chomp_before_newline
 
 If a layout contains the pattern "%m%n" and the message ends with a newline,
-PatternLayout will chomp the message, to prevent printing two newlines. 
-If this is not desired, and you want two newlines in this case, 
+PatternLayout will chomp the message, to prevent printing two newlines.
+If this is not desired, and you want two newlines in this case,
 the feature can be turned off by setting the
 C<message_chomp_before_newline> option to a false value:
 
   my $layout = Log::Log4perl::Layout::PatternLayout->new(
       { message_chomp_before_newline => 0
-      }, 
+      },
       "%d (%F:%L)> %m%n");
 
 In a Log4perl configuration file, the feature can be turned off like this:
@@ -801,7 +801,7 @@ In a Log4perl configuration file, the feature can be turned off like this:
 
 =head2 Getting rid of newlines
 
-If your code contains logging statements like 
+If your code contains logging statements like
 
       # WRONG, don't do that!
     $logger->debug("Some message\n");
@@ -810,14 +810,14 @@ then it's usually best to strip the newlines from these calls. As explained
 in L<Log::Log4perl/Logging newlines>, logging statements should never contain
 newlines, but rely on appender layouts to add necessary newlines instead.
 
-If changing the code is not an option, use the special PatternLayout 
-placeholder %m{chomp} to refer to the message excluding a trailing 
+If changing the code is not an option, use the special PatternLayout
+placeholder %m{chomp} to refer to the message excluding a trailing
 newline:
 
     log4perl.appender.App.layout.ConversionPattern = %d %m{chomp}%n
 
 This will add a single newline to every message, regardless if it
-complies with the Log4perl newline guidelines or not (thanks to 
+complies with the Log4perl newline guidelines or not (thanks to
 Tim Bunce for this idea).
 
 =head2 Multi Lines
@@ -851,16 +851,16 @@ subsequent lines by two spaces:
       line3
 
 Note that you can still add the C<chomp> option for the C<%m> specifier
-in this case (see above what it does), simply add it after a 
+in this case (see above what it does), simply add it after a
 separating comma, like in C<%m{indent=2,chomp}>.
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -870,7 +870,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -881,8 +881,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

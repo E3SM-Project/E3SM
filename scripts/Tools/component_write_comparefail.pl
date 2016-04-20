@@ -20,7 +20,7 @@ foreach my $file (@cprnc_files) {
 	print "$file had the following fields that are NOT b4b  \n\n";
         $rv = 1;
     }
-    
+
     if ($ndiffs > 0) {
 	open(fhin, "<$file") or die "Could not open file $file to read";
 	while (my $line = <fhin>) {
@@ -30,7 +30,7 @@ foreach my $file (@cprnc_files) {
 	}
 	close(fhin);
     }
-    
+
     if ($nfilldiffs > 0) {
 	open(fhin, "<$file") or die "Could not open file $file to read";
 	while (my $line = <fhin>) {
@@ -45,7 +45,7 @@ foreach my $file (@cprnc_files) {
 	open(fhin, "<$file") or die "Could not open file $file to read";
 	while (my $line = <fhin>) {
 	    if ($line =~ /DIMSIZEDIFF\s+(\S+)/) {
-		print fhout"  $line "; 
+		print fhout"  $line ";
 	    }
 	}
 	close(fhin);
@@ -55,6 +55,6 @@ foreach my $file (@cprnc_files) {
 my $sdate = `date +"%Y-%m-%d %H:%M:%S"`;
 
 print "\n---finished summarizing more details of test failures: ---- \n\n ";
-print "test completed $sdate\n"; 
+print "test completed $sdate\n";
 
 exit($rv);

@@ -193,7 +193,7 @@ module shr_strdata_mod
   logical       :: lscmmode
 
   character(len=*),parameter :: subname = "(shr_strdata_init) "
-  character(*),parameter ::   F00 = "('(shr_strdata_init) ',8a)" 
+  character(*),parameter ::   F00 = "('(shr_strdata_init) ',8a)"
 
 !-------------------------------------------------------------------------------
 !
@@ -313,7 +313,7 @@ module shr_strdata_mod
      SDAT%nzg = nzg
      lsize = mct_gsmap_lsize(gsmap,mpicom)
      call mct_gsmap_Copy(gsmap,SDAT%gsmap)
-     call mct_ggrid_init(SDAT%grid, ggrid, lsize)    
+     call mct_ggrid_init(SDAT%grid, ggrid, lsize)
      call mct_aVect_copy(ggrid%data, SDAT%grid%data)
   else
      if (trim(SDAT%domainfile) == trim(shr_strdata_nullstr)) then
@@ -539,7 +539,7 @@ module shr_strdata_mod
   real(R8) :: eccf               ! earth sun distance factor
   real(R8),pointer :: lonr(:)    ! lon radians
   real(R8),pointer :: latr(:)    ! lat radians
-  real(R8),pointer :: cosz(:)    ! cosz 
+  real(R8),pointer :: cosz(:)    ! cosz
   real(R8),pointer :: tavCosz(:) ! cosz, time avg over [LB,UB]
   real(R8),pointer :: xlon(:),ylon(:)
   real(R8),parameter :: solZenMin    = 0.001_R8 ! minimum solar zenith angle
@@ -594,7 +594,7 @@ module shr_strdata_mod
 
   do n = 1,SDAT%nstreams
      ! ------------------------------------------------------- !
-     ! tcraig, Oct 11 2010.  Mismatching calendars: 4 cases    ! 
+     ! tcraig, Oct 11 2010.  Mismatching calendars: 4 cases    !
      ! ------------------------------------------------------- !
      ! ymdmod and todmod are the ymd and tod to time           !
      ! interpolate to.  Generally, these are just the model    !
@@ -845,7 +845,7 @@ module shr_strdata_mod
            call shr_tInterp_getAvgCosz(tavCosz,lonr,latr, &
                 SDAT%ymdLB(n),SDAT%todLB(n), SDAT%ymdUB(n),SDAT%todUB(n), &
                 SDAT%eccen,SDAT%mvelpp,SDAT%lambm0,SDAT%obliqr,SDAT%modeldt,&
-	        SDAT%stream(n)%calendar) 
+	        SDAT%stream(n)%calendar)
            call mct_avect_importRAttr(SDAT%avCoszen(n),'tavCosz',tavCosz,lsizeF)
            call t_stopf(trim(lstr)//trim(timname)//'_coszenN')
         else
@@ -856,7 +856,7 @@ module shr_strdata_mod
         !--- t-interp is LB data normalized with this factor: cosz/tavCosz ---
         do i = 1,lsizeF
            if (cosz(i) > solZenMin) then
-              SDAT%avs(n)%rAttr(:,i) = SDAT%avFLB(n)%rAttr(:,i)*cosz(i)/tavCosz(i) 
+              SDAT%avs(n)%rAttr(:,i) = SDAT%avFLB(n)%rAttr(:,i)*cosz(i)/tavCosz(i)
            else
               SDAT%avs(n)%rAttr(:,i) =  0._r8
            endif
@@ -892,7 +892,7 @@ module shr_strdata_mod
   deallocate(ymdmod)
 
   endif    ! nstreams > 0
-  
+
   call t_stopf(trim(lstr)//trim(timname)//'_total')
   if (.not.ltimers) call t_adj_detailf(-tadj)
 
@@ -1061,14 +1061,14 @@ subroutine shr_strdata_readnml(SDAT,file,rc,mpicom)
 
    implicit none
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 
    type(shr_strdata_type),intent(inout):: SDAT  ! strdata data data-type
    character(*),optional ,intent(in)   :: file ! file to read strdata from
    integer(IN),optional  ,intent(out)  :: rc   ! return code
    integer(IN),optional  ,intent(in)   :: mpicom ! mpi comm
 
-!EOP 
+!EOP
 
    integer(IN)    :: rCode         ! return code
    integer(IN)    :: nUnit         ! fortran i/o unit number
@@ -1119,15 +1119,15 @@ subroutine shr_strdata_readnml(SDAT,file,rc,mpicom)
       , mapmask         &
       , mapread         &
       , mapwrite        &
-      , tintalgo        
+      , tintalgo
    !----- formats -----
-   character(*),parameter :: subName = "(shr_strdata_readnml) " 
-   character(*),parameter ::   F00 = "('(shr_strdata_readnml) ',8a)" 
-   character(*),parameter ::   F01 = "('(shr_strdata_readnml) ',a,i6,a)" 
-   character(*),parameter ::   F02 = "('(shr_strdata_readnml) ',a,es13.6)" 
-   character(*),parameter ::   F03 = "('(shr_strdata_readnml) ',a,l6)" 
-   character(*),parameter ::   F04 = "('(shr_strdata_readnml) ',a,i2,a,a)" 
-   character(*),parameter ::   F20 = "('(shr_strdata_readnml) ',a,i6,a)" 
+   character(*),parameter :: subName = "(shr_strdata_readnml) "
+   character(*),parameter ::   F00 = "('(shr_strdata_readnml) ',8a)"
+   character(*),parameter ::   F01 = "('(shr_strdata_readnml) ',a,i6,a)"
+   character(*),parameter ::   F02 = "('(shr_strdata_readnml) ',a,es13.6)"
+   character(*),parameter ::   F03 = "('(shr_strdata_readnml) ',a,l6)"
+   character(*),parameter ::   F04 = "('(shr_strdata_readnml) ',a,i2,a,a)"
+   character(*),parameter ::   F20 = "('(shr_strdata_readnml) ',a,i6,a)"
    character(*),parameter ::   F90 = "('(shr_strdata_readnml) ',58('-'))"
 
 !-------------------------------------------------------------------------------
@@ -1150,8 +1150,8 @@ subroutine shr_strdata_readnml(SDAT,file,rc,mpicom)
    !----------------------------------------------------------------------------
    ! set default values for namelist vars
    !----------------------------------------------------------------------------
-   dataMode    = 'NULL'        
-   domainFile  = trim(shr_strdata_nullstr)        
+   dataMode    = 'NULL'
+   domainFile  = trim(shr_strdata_nullstr)
    streams(:)  = trim(shr_strdata_nullstr)
    taxMode(:)  = trim(shr_stream_taxis_cycle)
    dtlimit(:)  = dtlimit_default
@@ -1191,21 +1191,21 @@ subroutine shr_strdata_readnml(SDAT,file,rc,mpicom)
    do n=1,nStrMax
       call shr_stream_default(SDAT%stream(n))
    enddo
-   SDAT%dataMode    = dataMode  
+   SDAT%dataMode    = dataMode
    SDAT%domainFile  = domainFile
-   SDAT%streams(:)  = streams(:)    
+   SDAT%streams(:)  = streams(:)
    SDAT%taxMode(:)  = taxMode(:)
    SDAT%dtlimit(:)  = dtlimit(:)
-   SDAT%vectors(:)  = vectors(:)    
-   SDAT%fillalgo(:) = fillalgo(:)    
-   SDAT%fillmask(:) = fillmask(:)    
-   SDAT%fillread(:) = fillread(:)    
-   SDAT%fillwrit(:) = fillwrite(:)    
-   SDAT%mapalgo(:)  = mapalgo(:)    
-   SDAT%mapmask(:)  = mapmask(:)    
-   SDAT%mapread(:)  = mapread(:)    
-   SDAT%mapwrit(:)  = mapwrite(:)    
-   SDAT%tintalgo(:) = tintalgo(:)    
+   SDAT%vectors(:)  = vectors(:)
+   SDAT%fillalgo(:) = fillalgo(:)
+   SDAT%fillmask(:) = fillmask(:)
+   SDAT%fillread(:) = fillread(:)
+   SDAT%fillwrit(:) = fillwrite(:)
+   SDAT%mapalgo(:)  = mapalgo(:)
+   SDAT%mapmask(:)  = mapmask(:)
+   SDAT%mapread(:)  = mapread(:)
+   SDAT%mapwrit(:)  = mapwrite(:)
+   SDAT%tintalgo(:) = tintalgo(:)
    do n=1,nStrMax
       if (trim(streams(n)) /= trim(shr_strdata_nullstr)) SDAT%nstreams = max(SDAT%nstreams,n)
       if (trim(SDAT%taxMode(n)) == trim(shr_stream_taxis_extend)) SDAT%dtlimit(n) = 1.0e30
@@ -1301,7 +1301,7 @@ subroutine shr_strdata_create(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg
 
    implicit none
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 
    type(shr_strdata_type),intent(inout):: SDAT  ! strdata data data-type
    character(*)          ,intent(in)   :: name  ! name of strdata
@@ -1312,8 +1312,8 @@ subroutine shr_strdata_create(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg
    integer(IN)           ,intent(in)   :: nxg
    integer(IN)           ,intent(in)   :: nyg
 
-   integer(IN)           ,intent(in)   :: yearFirst ! first year to use 
-   integer(IN)           ,intent(in)   :: yearLast  ! last  year to use 
+   integer(IN)           ,intent(in)   :: yearFirst ! first year to use
+   integer(IN)           ,intent(in)   :: yearLast  ! last  year to use
    integer(IN)           ,intent(in)   :: yearAlign ! align yearFirst with this model year
    integer(IN)           ,intent(in)   :: offset    ! offset in seconds of stream data
    character(*)          ,intent(in)   :: domFilePath  ! domain file path
@@ -1345,19 +1345,19 @@ subroutine shr_strdata_create(SDAT, name, mpicom, compid, gsmap, ggrid, nxg, nyg
    character(*),optional ,intent(in)   :: tintalgo  ! time interpolation algorithm
    character(*),optional, intent(in)   :: calendar
 
-!EOP 
+!EOP
 
 !  --- local ---
 !  --- formats ---
-   character(*),parameter :: subName = "(shr_strdata_create) " 
-   character(*),parameter ::   F00 = "('(shr_strdata_create) ',8a)" 
+   character(*),parameter :: subName = "(shr_strdata_create) "
+   character(*),parameter ::   F00 = "('(shr_strdata_create) ',8a)"
 
 !-------------------------------------------------------------------------------
 !
 !-------------------------------------------------------------------------------
 
    call shr_strdata_readnml(SDAT,mpicom=mpicom)
-   
+
    SDAT%nstreams = 1
 
    call shr_strdata_pioinit(sdat, pio_subsystem, pio_iotype)
@@ -1447,27 +1447,27 @@ subroutine shr_strdata_print(SDAT,name)
 
    implicit none
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 
    type(shr_strdata_type)  ,intent(in) :: SDAT  ! strdata data data-type
    character(len=*),optional,intent(in) :: name  ! just a name for tracking
 
-!EOP 
+!EOP
 
    integer(IN)   :: n
    character(CL) :: lname
 
    !----- formats -----
-   character(*),parameter :: subName = "(shr_strdata_print) " 
-   character(*),parameter ::   F00 = "('(shr_strdata_print) ',8a)" 
-   character(*),parameter ::   F01 = "('(shr_strdata_print) ',a,i6,a)" 
-   character(*),parameter ::   F02 = "('(shr_strdata_print) ',a,es13.6)" 
-   character(*),parameter ::   F03 = "('(shr_strdata_print) ',a,l6)" 
-   character(*),parameter ::   F04 = "('(shr_strdata_print) ',a,i2,a,a)" 
-   character(*),parameter ::   F05 = "('(shr_strdata_print) ',a,i2,a,i6)" 
-   character(*),parameter ::   F06 = "('(shr_strdata_print) ',a,i2,a,l2)" 
-   character(*),parameter ::   F07 = "('(shr_strdata_print) ',a,i2,a,es13.6)" 
-   character(*),parameter ::   F20 = "('(shr_strdata_print) ',a,i6,a)" 
+   character(*),parameter :: subName = "(shr_strdata_print) "
+   character(*),parameter ::   F00 = "('(shr_strdata_print) ',8a)"
+   character(*),parameter ::   F01 = "('(shr_strdata_print) ',a,i6,a)"
+   character(*),parameter ::   F02 = "('(shr_strdata_print) ',a,es13.6)"
+   character(*),parameter ::   F03 = "('(shr_strdata_print) ',a,l6)"
+   character(*),parameter ::   F04 = "('(shr_strdata_print) ',a,i2,a,a)"
+   character(*),parameter ::   F05 = "('(shr_strdata_print) ',a,i2,a,i6)"
+   character(*),parameter ::   F06 = "('(shr_strdata_print) ',a,i2,a,l2)"
+   character(*),parameter ::   F07 = "('(shr_strdata_print) ',a,i2,a,es13.6)"
+   character(*),parameter ::   F20 = "('(shr_strdata_print) ',a,i6,a)"
    character(*),parameter ::   F90 = "('(shr_strdata_print) ',58('-'))"
 
 !-------------------------------------------------------------------------------
@@ -1545,19 +1545,19 @@ subroutine shr_strdata_bcastnml(SDAT,mpicom,rc)
 
    implicit none
 
-! !INPUT/OUTPUT PARAMETERS: 
+! !INPUT/OUTPUT PARAMETERS:
 
    type(shr_strdata_type),intent(inout) :: SDAT  ! strdata data data-type
    integer(IN)           ,intent(in)  :: mpicom ! mpi communicator
    integer(IN),optional  ,intent(out) :: rc   ! return code
 
-!EOP 
+!EOP
 
    !----- local -----
    integer(IN) :: lrc
 
    !----- formats -----
-   character(*),parameter :: subName = "(shr_strdata_bcastnml) " 
+   character(*),parameter :: subName = "(shr_strdata_bcastnml) "
 
 !-------------------------------------------------------------------------------
 !
@@ -1591,7 +1591,7 @@ subroutine shr_strdata_bcastnml(SDAT,mpicom,rc)
 end subroutine shr_strdata_bcastnml
 
 !===============================================================================
- 
+
 subroutine shr_strdata_setlogunit(nu)
 
   integer(IN),intent(in) :: nu

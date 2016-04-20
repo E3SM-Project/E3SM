@@ -5,6 +5,8 @@ from CIME.XML.standard_module_setup import *
 from CIME.utils import convert_to_type
 from env_base import EnvBase
 from CIME.utils import convert_to_string
+from copy import deepcopy
+
 logger = logging.getLogger(__name__)
 
 class EnvBatch(EnvBase):
@@ -15,20 +17,20 @@ class EnvBatch(EnvBase):
         """
         EnvBase.__init__(self, case_root, infile)
 
-    def set_value(self, item, value, subgroup="run", ignore_type=False):
+    def set_value(self, item, value, subgroup=None, ignore_type=False):
         val = None
         # allow the user to set all instances of item if subgroup is not provided
         if subgroup is None:
             nodes = self.get_nodes("entry", {"id":item})
             for node in nodes:
-                self._set_value(node, item, value, ignore_type)
+                self._set_value(node, value, vid=item, ignore_type=ignore_type)
                 val = value
         else:
             nodes = self.get_nodes("job", {"name":subgroup})
             for node in nodes:
                 vnode = self.get_optional_node("entry", {"id":item}, root=node)
                 if vnode is not None:
-                    val = self._set_value(vnode, item, value, ignore_type=ignore_type)
+                    val = self._set_value(vnode, value, vid=item, ignore_type=ignore_type)
 
         return val
 
@@ -99,6 +101,34 @@ class EnvBatch(EnvBase):
     def get_jobs(self):
         result = []
         for node in self.get_nodes("job"):
-            result.append(node.get("name"))
-
+            name = node.get("name")
+            template = self.get_value("template", subgroup=name)
+            task_count = self.get_value("task_count", subgroup=name)
+            result.append((name, template, task_count))
         return result
+
+    def create_job_groups(self, bjobs):
+        # only the job_submission group is repeated
+        group = self.get_node("group", {"id":"job_submission"})
+        # look to see if any jobs are already defined
+        cjobs = self.get_jobs()
+        childnodes = list()
+
+        expect(len(cjobs)==0," Looks like job groups have already been created")
+
+        for child in reversed(group):
+            childnodes.append(deepcopy(child))
+            group.remove(child)
+
+        for name,template,task_count in bjobs:
+            newjob = ET.Element("job")
+            newjob.set("name",name)
+            template_node = ET.SubElement(newjob, "entry", {"id":"template","value":template})
+            task_count_node  =  ET.SubElement(newjob, "entry", {"id":"task_count", "value":task_count})
+            for node in (template_node, task_count_node):
+                node = ET.SubElement(node, "type")
+                node.text = "char"
+            for child in childnodes:
+                newjob.append(deepcopy(child))
+            group.append(newjob)
+

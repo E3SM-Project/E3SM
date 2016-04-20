@@ -2,7 +2,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id: twocmp.seqUnvn.F90,v 1.6 2007-12-19 17:13:17 rloy Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !BOP -------------------------------------------------------------------
 !
 ! !ROUTINE:  twocomponentUneven.sequential
@@ -50,7 +50,7 @@
       integer,dimension(1) :: start1,length1,ranks
       integer,dimension(:),allocatable :: start2,length2
 !-----------------------------------------------------------------------
-!  The Main program. 
+!  The Main program.
 ! We are implementing a single-executable, sequential-execution system.
 ! Because its sequential, communication occurs through the main using
 ! arguments.  The second component is only running on 1 processor
@@ -122,7 +122,7 @@
       else
        allocate(start2(0),length2(0))
       endif
-   
+
       call MCT_GSMap_init(GSMap2,start2,length2,0,comm1,2)
       write(6,*)'gsmap2', myproc,GSMap2%ngseg,GSmap2%gsize,GSmap2%start(1), &
                   GSmap2%pe_loc(1),GSmap2%length(1)
@@ -136,7 +136,7 @@
       call MCT_AtrVt_init(av2,rList="field1:field2",lsize=MCT_GSMap_lsize(GSMap2,comm1))
 
 
-! create a rearranger.  Use the communicator which contains all processors 
+! create a rearranger.  Use the communicator which contains all processors
 ! involved in the rearrangement, comm1
       call MCT_Rearranger_init(GSMap1,GSMap2,comm1,Rearr)
 
@@ -150,7 +150,7 @@
       do i=1,MCT_AtrVt_lsize(av1)
         write(6,*) "model 1 data", myproc,i,av1%rAttr(1,i),av1%rAttr(2,i)
       enddo
-      
+
 ! rearrange data from model1 so that model2 can use it.
       call MCT_Rearrange(av1,av2,Rearr)
 
@@ -171,7 +171,7 @@
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-! !ROUTINE: 
+! !ROUTINE:
       subroutine model1(comm1,mod1av)   ! the first model
 
       implicit none
@@ -180,7 +180,7 @@
       integer :: fieldindx,avsize,i
       integer,dimension(1) :: start,length
       real,pointer :: testarray(:)
-      
+
       type(GlobalSegMap) :: GSmap
       type(AttrVect) :: mod1av
 !---------------------------
@@ -213,14 +213,14 @@
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-! !ROUTINE: 
+! !ROUTINE:
       subroutine model2(comm2,mod2av)
 
       implicit none
 
       integer :: comm2,mysize,ier,asize,myproc
       integer :: i
-      type(AttrVect) :: mod2av 
+      type(AttrVect) :: mod2av
 !---------------------------
 
 !  find local rank and size

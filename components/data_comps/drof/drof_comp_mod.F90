@@ -50,15 +50,15 @@ module drof_comp_mod
   integer(IN)   :: logunit               ! logging unit number
   integer       :: inst_index            ! number of current instance (ie. 1)
   character(len=16) :: inst_name         ! fullname of current instance (ie. "rof_0001")
-  character(len=16) :: inst_suffix       ! char string associated with instance 
+  character(len=16) :: inst_suffix       ! char string associated with instance
                                          ! (ie. "_0001" or "")
-  character(CL) :: rof_mode 
+  character(CL) :: rof_mode
   integer(IN)   :: dbug = 0              ! debug level (higher is more)
   logical       :: read_restart          ! start from restart
 
   character(len=*),parameter :: rpfile = 'rpointer.rof'
   character(len=*),parameter :: nullstr = 'undefined'
-  
+
   type(shr_strdata_type),save :: SDROF
 
   type(mct_rearr) :: rearr
@@ -237,7 +237,7 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfilsr,mpicom,'restfilsr')
     call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
- 
+
     rest_file = trim(restfilm)
     rest_file_strm_r = trim(restfilsr)
     if (force_prognostic_true) then
@@ -288,7 +288,7 @@ subroutine drof_comp_init( EClock, cdata, x2r, r2x, NLFilename )
        call shr_strdata_pioinit(SDROF,rof_pio_subsys,rof_pio_iotype)
        call shr_strdata_init(SDROF,mpicom,compid,name='rof',&
             calendar=calendar)
-    endif          
+    endif
 
     if (my_task == master_task) then
        call shr_strdata_print(SDROF,'SDROF data')
@@ -509,7 +509,7 @@ subroutine drof_comp_run( EClock, cdata, x2r, r2x)
 
    if (trim(rof_mode) /= 'NULL') then
       call t_startf('drof_r_strdata_advance')
-      
+
       call shr_strdata_advance(SDROF,currentYMD,currentTOD,mpicom,'drof_r')
       call t_stopf('drof_r_strdata_advance')
       call t_barrierf('drof_r_scatter_BARRIER',mpicom)
@@ -564,7 +564,7 @@ subroutine drof_comp_run( EClock, cdata, x2r, r2x)
       write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
       call shr_sys_flush(logunit)
    end if
-      
+
    call shr_file_setLogUnit (shrlogunit)
    call shr_file_setLogLevel(shrloglev)
    call shr_sys_flush(logunit)
@@ -604,11 +604,11 @@ subroutine drof_comp_final()
    call t_startf('DROF_FINAL')
 
    if (my_task == master_task) then
-      write(logunit,F91) 
+      write(logunit,F91)
       write(logunit,F00) trim(myModelName),': end of main integration loop'
-      write(logunit,F91) 
+      write(logunit,F91)
    end if
-      
+
    call t_stopf('DROF_FINAL')
 
 end subroutine drof_comp_final

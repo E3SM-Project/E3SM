@@ -111,7 +111,7 @@ sub getAllResolved
     my %masterconfig;
 
     # Get all the env*.xml files into an array...
-    my @xmlfiles = qw( env_build.xml env_case.xml env_mach_pes.xml env_run.xml);
+    my @xmlfiles = qw( env_build.xml env_case.xml env_mach_pes.xml env_run.xml env_batch.xml);
     push(@xmlfiles, "env_test.xml") if(-e "./env_test.xml");
     push(@xmlfiles, "env_archive.xml") if(-e "./env_archive.xml");
 

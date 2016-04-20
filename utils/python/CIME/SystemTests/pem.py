@@ -4,6 +4,7 @@ Implementation of the CIME PEM test.  This class inherits from SystemTestsCommon
 import shutil
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
+from CIME.case_setup import case_setup
 import CIME.utils
 from system_tests_common import SystemTestsCommon
 
@@ -29,8 +30,7 @@ class PEM(SystemTestsCommon):
         for bld in range(1,3):
             logging.warn("Starting bld %s"%bld)
             self._case.flush()
-            run_cmd("./case.setup --clean --test-mode")
-            run_cmd("./case.setup")
+            case_setup(self._caseroot,reset=True)
             run_cmd('./case.clean_build')
             SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
             machpes = os.path.join("LockedFiles","env_mach_pes.PEM%s.xml"%bld)

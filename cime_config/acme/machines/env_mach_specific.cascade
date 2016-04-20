@@ -3,7 +3,7 @@
 #--- set modules
 source /etc/profile.d/modules.csh
 if ( $COMPILER == "intel" ) then
-    #MODULES UNLOAD    
+    #MODULES UNLOAD
     module purge
     unsetenv LD_LIBRARY_PATH
     #Module load
@@ -20,7 +20,7 @@ if ( $COMPILER == "intel" ) then
     setenv LD_LIBRARY_PATH {$LD_LIBRARY_PATH}:/home/sing201/bin
 endif
 if ( $COMPILER == "nag" ) then
-    #MODULES UNLOAD    
+    #MODULES UNLOAD
     module purge
     unsetenv LD_LIBRARY_PATH
     #Module load

@@ -14,8 +14,8 @@
       public :: testall
       public :: Identical
 
-    interface testall  
-       module procedure testGSMap_  
+    interface testall
+       module procedure testGSMap_
     end interface
 
     interface Identical
@@ -34,10 +34,10 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !BOP -------------------------------------------------------------------
 !
-! !IROUTINE: aVtest_ - Test the functions in the AttrVect module 
+! !IROUTINE: aVtest_ - Test the functions in the AttrVect module
 !
 ! !DESCRIPTION:
-! This routine writes diagnostic information about the input 
+! This routine writes diagnostic information about the input
 ! {\tt AttrVect}. Each line of the output will be preceded by the
 ! character argument {\tt identifier}. The output device is specified
 ! by the integer argument {\tt device}.
@@ -51,13 +51,13 @@
 !
       use m_GlobalSegMap         ! Use all GlobalSegMap routines
       use m_GlobalToLocal        ! Use all GlobalToLocal routines
-      use m_stdio       
+      use m_stdio
       use m_die
       use m_mpif90
 
       implicit none
 
-! !INPUT PARAMETERS: 
+! !INPUT PARAMETERS:
 
       type(GlobalSegMap),         intent(in)  :: GSMap
       character(len=*),           intent(in)  :: identifier
@@ -76,7 +76,7 @@
        mystart, mylength
   integer, dimension(:), allocatable :: locs, slpArray
   logical :: found
-  
+
   type(GlobalSegMap) :: PGSMap, P1GSMap
 
 !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::!
@@ -115,7 +115,7 @@
 
   write(device,*) identifier, ":: SUBROUTINES CHECK:"
   write(device,*) identifier, ":: ORDERED POINTS = (PE, SIZE, FIRST, LAST)"
-  
+
   do i=1,mySize
 
      first=1
@@ -139,7 +139,7 @@
 	EXIT
 !        call die(myname_,"OrderedPoints may have failed ")
      endif
-        
+
 
      !:::CHECK THE CORRECTNESS OF ROUTINE RANK1_:::! !::NOT YET PUBLIC IN MODULE::!
      if(haloed(GSMap)) then
@@ -156,7 +156,7 @@
            endif
         enddo
         deallocate(owners,stat=ierr)
-        if(ierr/=0) call die(myname_,"deallocate(owners)",ierr)     
+        if(ierr/=0) call die(myname_,"deallocate(owners)",ierr)
      else
         allocate(locs(npoints),stat=ierr)
         if(ierr/=0) call die(myname_,"allocate(locs)")
@@ -167,7 +167,7 @@
            endif
         enddo
         deallocate(locs,stat=ierr)
-        if(ierr/=0) call die(myname_,"deallocate(locs)")        
+        if(ierr/=0) call die(myname_,"deallocate(locs)")
         do k=first,last
            call rank(GSMap,k,owner)
            if(owner /= proc) then
@@ -179,14 +179,14 @@
      !:::::::::::::::::::::::::::::::::::::::::::::!
 
      deallocate(points,stat=ierr)
-     if(ierr/=0) call die(myname_,"deallocate(points)",ierr)     
+     if(ierr/=0) call die(myname_,"deallocate(points)",ierr)
   enddo
 
   call active_pes(GSMap, nactive, pelist)
   write(device,*) identifier, ":: ACTIVE PES (NUM_ACTIVE, PE_LIST) = ", &
        nactive, pelist
   deallocate(pelist,stat=ierr)
-  if(ierr/=0) call die(myname_,"deallocate(pelist)",ierr)         
+  if(ierr/=0) call die(myname_,"deallocate(pelist)",ierr)
 
 
   write(device,*) identifier, ":: TESTING INITP and INITP1"
@@ -212,7 +212,7 @@
        GSMap%comp_id, PGSMap%comp_id, P1GSMap%comp_id
   write(device,*) identifier, ":: NGSEG = ", &
        GSMap%ngseg, GSMap%ngseg, GSMap%ngseg
-  write(device,*) identifier, ":: GSIZE = ", & 
+  write(device,*) identifier, ":: GSIZE = ", &
        GSMap%gsize, GSMap%gsize, GSMap%gsize
   write(device,*) identifier, ":: START:: association status = ", &
        associated(GSMap%start), associated(PGSMap%start), &
@@ -237,7 +237,7 @@
      if( (GSMap%start(i) /= PGSMap%start(i)) .or. &
           (GSMap%start(i) /= P1GSMap%start(i)) ) then
         call die(myname_,"INITP or INITP1 failed -starts-!")
-     endif 
+     endif
      if( (GSMap%length(i) /= PGSMap%length(i)) .or. &
           (GSMap%length(i) /= P1GSMap%length(i)) ) then
         call die(myname_,"INITP or INITP1 failed -lengths-!")
@@ -259,13 +259,13 @@
   call SortPermute(P1GSMap,PGSMap%pe_loc,PGSMap%start)
 
   do i=1,GSMap%ngseg
-     if( (P1GSMap%start(i) /= PGSMap%start(i)) ) then 
+     if( (P1GSMap%start(i) /= PGSMap%start(i)) ) then
         call die(myname_,"Sort or Permute failed -starts-!")
-     endif 
-     if( (P1GSMap%length(i) /= PGSMap%length(i)) ) then 
+     endif
+     if( (P1GSMap%length(i) /= PGSMap%length(i)) ) then
         call die(myname_,"Sort or Permute failed -lengths-!")
      endif
-     if( (P1GSMap%pe_loc(i) /= PGSMap%pe_loc(i)) ) then 
+     if( (P1GSMap%pe_loc(i) /= PGSMap%pe_loc(i)) ) then
         call die(myname_,"Sort or Permute failed -pe_locs-!")
      endif
   enddo
@@ -285,7 +285,7 @@
      call die(myname_, "::GLOBALSEGMAPTOINDICES::size(start) < 0")
   endif
 
-  if(size(mystart) /= size(mylength)) then 
+  if(size(mystart) /= size(mylength)) then
      call die(myname_, "::GLOBALSEGMAPTOINDICES::size(start)/=size(length)")
   endif
 
@@ -301,7 +301,7 @@
      write(device,*) identifier, ":: GLOBALSEGMAPTOINDICES :: &
           &start has zero size"
   endif
-        
+
   if(size(mylength)>0) then
      write(device,*) identifier, ":: GLOBALSEGMAPTOINDICES :: &
           &length = (size, values) ", &
@@ -322,7 +322,7 @@
 
   deallocate(mystart,mylength,stat=ierr)
   if(ierr/=0) call die(myname_,"deallocate(mystart,mylength)")
-  
+
   write(device,*) identifier, ":: TESTING GLOBALSEGMAPTOINDEX"
 
   j=-12345
@@ -340,7 +340,7 @@
         k=GlobalToLocalIndex(GSMap,i,mycomm)
      endif
   enddo
-  
+
   if( (j==-12345).and.(k==-12345) ) then
      write(device,*) identifier, ":: GlobalSegMapToIndex :: &
           &THIS PROCESS OWNS ZERO POINTS"

@@ -2,7 +2,7 @@
 !       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
 !-----------------------------------------------------------------------
 ! CVS $Id$
-! CVS $Name$  
+! CVS $Name$
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: m_MergeSorts - Tools for incremental indexed-sorting
@@ -71,7 +71,7 @@
 !     	...
 !		! Unsorting
 !	obs( (/ (indx(i),i=1,No) /) ) = obs(1:No)
-!     
+!
 ! !REVISION HISTORY:
 ! 23Mar15 - Steve Goldhaber (goldy@ucar.edu)
 !   . Added interface to perform index sort on 8-byte integers

@@ -5,7 +5,7 @@
 #
 # Create needed mapping files for gen_domain and coupler mapping
 # Currently supported on yellowstone, geyser, caldera, and jaguarpf
-# 
+#
 #===============================================================================
 echo $0
 date
@@ -38,7 +38,7 @@ usage() {
   echo '  --filelnd|-flnd  input lnd_grid_filename'
   echo '  --filertm|-frtm  input rtm_grid_filename'
   echo '  --fileglc|-fglc  input glc_grid_filename'
-  echo '  --nameocn|-nocn  output ocn_name in mapping file' 
+  echo '  --nameocn|-nocn  output ocn_name in mapping file'
   echo '  --nameatm|-natm  output atm_name in mapping file'
   echo '  --namelnd|-nlnd  output lnd_name in mapping file'
   echo '  --namertm|-nrtm  output rtm_name in mapping file'
@@ -232,7 +232,7 @@ while [ $# -gt 0 ]; do
 	   exit 1
 	   ;;
    esac
-   shift 
+   shift
 done
 
 # Make file and name are specified for all desired grids

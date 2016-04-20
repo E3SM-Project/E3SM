@@ -4,7 +4,7 @@
 # build-namelist
 #
 # The simplest use of build-namelist is to execute it from the build directory where configure
-# was run.  
+# was run.
 #
 # Date        Contributor      Modification
 # -------------------------------------------------------------------------------------------
@@ -27,22 +27,22 @@ sub usage {
 SYNOPSIS
      build-namelist [options]
 
-     Build the dwav namelist 
+     Build the dwav namelist
 OPTIONS
-     -help [or -h]            	   Print usage to STDOUT.					    
-     -infile "filepath"       	   Specify a file or list of files (comma delimited) 	    
-                              	   containing namelists to read values from.			    
-     -namelist "namelist"     	   Specify namelist settings directly on the commandline by 	    
-                              	   supplying a string containing FORTRAN namelist syntax, e.g.,  
-                              	      -namelist "&dwav_exp taxmode='extend'/"		    
-     -print "level"           	   Print level for debugging:				    
-                              	      0 = silent						    
-                              	      1 = regular						    
-                              	      2 = verbose						    
+     -help [or -h]            	   Print usage to STDOUT.
+     -infile "filepath"       	   Specify a file or list of files (comma delimited)
+                              	   containing namelists to read values from.
+     -namelist "namelist"     	   Specify namelist settings directly on the commandline by
+                              	   supplying a string containing FORTRAN namelist syntax, e.g.,
+                              	      -namelist "&dwav_exp taxmode='extend'/"
+     -print "level"           	   Print level for debugging:
+                              	      0 = silent
+                              	      1 = regular
+                              	      2 = verbose
      -caseroot                     CASEROOT directory variable
      -cimeroot                     CIMEROOT directory variable
      -inst_string                  INST_STRING variable
-     -user_xml_dir "directory"     Directory of where to look for user versions of 
+     -user_xml_dir "directory"     Directory of where to look for user versions of
                                       namelist XML files (usually your SourceMods/src.dwav directory)
                                       (such as namelist_definition_dwav.xml, or namelist_defaults_dwav.xml)
 
@@ -69,7 +69,7 @@ my $cmdline = "@ARGV";                 # Command line arguments to script
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
 my $nm = "ProgName::";                 # name to use if script dies
-if ($ProgDir) { 
+if ($ProgDir) {
     $cfgdir = abs_path($ProgDir);
 } else {
     $cfgdir = $cwd;
@@ -95,7 +95,7 @@ GetOptions(
     "print=i"       => \$opts{'print'},
     "caseroot=s"    => \$opts{'caseroot'},
     "cimeroot=s"    => \$opts{'cimeroot'},
-    "inst_string=s" => \$opts{'inst_string'},	   
+    "inst_string=s" => \$opts{'inst_string'},
     "user_xml_dir=s" => \$opts{'user_xml_dir'},
 )  or usage();
 
@@ -126,9 +126,9 @@ EOF
    }
 }
 
-my $CASEROOT    = $opts{'caseroot'}; 
+my $CASEROOT    = $opts{'caseroot'};
 my $CIMEROOT    = $opts{'cimeroot'};
-my $INST_STRING = $opts{'inst_string'}; 
+my $INST_STRING = $opts{'inst_string'};
 
 if ($print>=2) { print "Setting dwav configuration script directory to $cfgdir$eol"; }
 
@@ -160,20 +160,20 @@ my $perl5lib = "$cimeroot/utils/perl5lib";
 
 # The XML::Lite module is required to parse the XML files.
 (-f "$perl5lib/XML/Lite.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"XML/Lite.pm\" in directory 
+** $ProgName - Cannot find perl module \"XML/Lite.pm\" in directory
     \"$perl5lib\" **
 EOF
 
 # The Build::Config module provides utilities to access the configuration information
 # in the config_cache.xml file
 (-f "$perl5lib/Build/Config.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/Config.pm\" in directory 
+** $ProgName - Cannot find perl module \"Build/Config.pm\" in directory
     \"$perl5lib\" **
 EOF
 
 # The namelist definition file contains entries for all namelist variables that
 # can be output by build-namelist.  The version of the file that is associate with a
-# fixed dwav tag is $cfgdir/namelist_files/namelist_definition_dwav.xml.  
+# fixed dwav tag is $cfgdir/namelist_files/namelist_definition_dwav.xml.
 my $nl_definition_file = "${cfgdir}/namelist_files/namelist_definition_dwav.xml";
 
 # If user has user namelist definition files
@@ -194,10 +194,10 @@ if ($print>=2) { print "Using namelist definition file $nl_definition_file$eol";
 # The Build::NamelistDefinition module provides utilities to validate that the output
 # namelists are consistent with the namelist definition file
 (-f "$perl5lib/Build/NamelistDefinition.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/NamelistDefinition.pm\" in directory 
+** $ProgName - Cannot find perl module \"Build/NamelistDefinition.pm\" in directory
     \"$perl5lib\" **
 EOF
-    
+
 # The namelist defaults file contains default values for most namelist variables
 # can be output by build-namelist.  The version of the file that is associated with a
 # fixed dwav tag is $cfgdir/namelist_files/namelist_defaults_dwav.xml.
@@ -221,14 +221,14 @@ if ($print>=2) { print "Using namelist defaults file $nl_defaults_file$eol"; }
 # The Build::NamelistDefaults module provides a utility to obtain default values of namelist
 # variables based on finding a best fit with the attributes specified in the defaults file.
 (-f "$perl5lib/Build/NamelistDefaults.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/NamelistDefaults.pm\" in directory 
+** $ProgName - Cannot find perl module \"Build/NamelistDefaults.pm\" in directory
     \"$perl5lib\" **
 EOF
 
 # The Build::Namelist module provides utilities to parse input namelists, to query and modify
 # namelists, and to write output namelists.
 (-f "$perl5lib/Build/Namelist.pm")  or  die <<"EOF";
-** $ProgName - Cannot find perl module \"Build/Namelist.pm\" in directory 
+** $ProgName - Cannot find perl module \"Build/Namelist.pm\" in directory
     \"$perl5lib\" **
 EOF
 
@@ -246,7 +246,7 @@ require Streams::TemplateGeneric;
 require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
-# Create a configuration object from the DWAV config_cache.xml file. 
+# Create a configuration object from the DWAV config_cache.xml file.
 my $cfg = Build::Config->new($config_cache);
 
 # Validate some of the commandline option values.
@@ -320,8 +320,8 @@ foreach my $attr (keys %xmlvars) {
 }
 
 my $RUN_TYPE      = $xmlvars{'RUN_TYPE'};
-my $DIN_LOC_ROOT  = $xmlvars{'DIN_LOC_ROOT'};     
-my $WAV_GRID      = $xmlvars{'WAV_GRID'};        
+my $DIN_LOC_ROOT  = $xmlvars{'DIN_LOC_ROOT'};
+my $WAV_GRID      = $xmlvars{'WAV_GRID'};
 my $DWAV_MODE     = $xmlvars{'DWAV_MODE'};
 
 if ($WAV_GRID eq "null") {
@@ -346,7 +346,7 @@ $fh_out->open(">>$CASEROOT/Buildconf/dwav.input_data_list") or
 
 # Create hash needed to parse namelist_defaults_dwav.xml file
 my %default_namelist_opts;
-$default_namelist_opts{'dwav_mode'} = $DWAV_MODE; 
+$default_namelist_opts{'dwav_mode'} = $DWAV_MODE;
 $default_namelist_opts{'wav_grid'}  = $WAV_GRID;
 
 # Create streams template file(s) - loop over streams
@@ -365,7 +365,7 @@ foreach my $stream ( @streams ) {
 
     # Set stream specific part of default_namelist_opts hash
     $default_namelist_opts{'stream'} = $stream;
-	
+
     my $outstream = "dwav.streams.txt" . ".$stream" . "$INST_STRING";
     if ($print>=1) { print "  dwav stream is $stream$INST_STRING \n";}
 
@@ -373,7 +373,7 @@ foreach my $stream ( @streams ) {
 
 	# do nothing
 
-    } elsif (-e "$CASEROOT/user_$outstream") {  
+    } elsif (-e "$CASEROOT/user_$outstream") {
 
 	my $command = "cp -p $CASEROOT/user_$outstream $CASEROOT/Buildconf/dwavconf/$outstream";
 	system($command) == 0  or die "system $command failed: $? \n";
@@ -391,7 +391,7 @@ foreach my $stream ( @streams ) {
 	$stream_template_opts{'ProgName'}   = $ProgName;
 	$stream_template_opts{'ProgDir'}    = "$cfgdir";
 	$stream_template_opts{'cmdline'}    = $cmdline;
-	
+
 	$stream_template_opts{'offset'}     = 0;
 	$stream_template_opts{'filepath'}   = $defaults->get_value( "strm_datdir"    , \%default_namelist_opts );
 	$stream_template_opts{'filenames'}  = $defaults->get_value( "strm_datfil"    , \%default_namelist_opts );
@@ -401,27 +401,27 @@ foreach my $stream ( @streams ) {
 	$stream_template_opts{'domvarnames'}= $defaults->get_value( "strm_domvar"    , \%default_namelist_opts );
 	$stream_template_opts{'yearfirst'}  = $defaults->get_value( "strm_year_start", \%default_namelist_opts );
 	$stream_template_opts{'yearlast'}   = $defaults->get_value( "strm_year_end"  , \%default_namelist_opts );
-	
+
 	$stream_template_opts{'filepath'}   = SetupTools::expand_xml_var($stream_template_opts{'filepath'}  , \%xmlvars);
 	$stream_template_opts{'filenames'}  = SetupTools::expand_xml_var($stream_template_opts{'filenames'} , \%xmlvars);
 	$stream_template_opts{'domainpath'} = SetupTools::expand_xml_var($stream_template_opts{'domainpath'}, \%xmlvars);
 	$stream_template_opts{'domain'}     = SetupTools::expand_xml_var($stream_template_opts{'domain'}    , \%xmlvars);
 	$stream_template_opts{'yearfirst'}  = SetupTools::expand_xml_var($stream_template_opts{'yearfirst'} , \%xmlvars);
 	$stream_template_opts{'yearlast'}   = SetupTools::expand_xml_var($stream_template_opts{'yearlast'}  , \%xmlvars);
-	
+
 	# Create the streams txt file for this stream (from a generic template)
 	my $stream_template = Streams::TemplateGeneric->new( \%stream_template_opts );
 	$stream_template->Read( "${CASEROOT}/Buildconf/dwav.template.streams.xml" );
 	$stream_template->Write( $outstream );
-	
+
 	# Append to dwav.input_data_list
 	my @filenames = $stream_template->GetDataFilenames( 'domain');
 	my $i = 0;
 	foreach my $file ( @filenames ) {
-	    $i++; 
+	    $i++;
 	    print $fh_out "domain${i} = $file\n";
 	}
-	
+
 	my @filenames = $stream_template->GetDataFilenames( 'data');
 	my $i = 0;
 	foreach my $file ( @filenames ) {
@@ -472,13 +472,13 @@ foreach my $stream ( @streams ) {
 }
 
 $fh_out->close;
-    
+
 ####################################
 # namelist group: shr_strdata_nml  #
 ####################################
 
 my $datamode   = $defaults->get_value( "datamode", \%default_namelist_opts );
-add_default($nl, 'datamode',   'val' => "$datamode");  
+add_default($nl, 'datamode',   'val' => "$datamode");
 if ($datamode ne 'null') {
     add_default($nl, 'streams',    'val' => "$ostreams"  );
     add_default($nl, 'mapalgo',    'val' => "$omapalgo"  );
@@ -607,7 +607,7 @@ sub add_default {
 	   $val = $defaults->get_value($var, \%opts);
 
            # Truncate model_version appropriately
-   
+
            if ( $var eq "model_version" ) {
                $val =~ /(URL: https:\/\/[a-zA-Z0-9._-]+\/)([a-zA-Z0-9\/._-]+)(\/bld\/.+)/;
                $val = $2;
@@ -616,7 +616,7 @@ sub add_default {
 
        unless ( defined($val) ) {
 	   unless ($opts{'nofail'}) {
-	       die "$ProgName - No default value found for $var.\n" . 
+	       die "$ProgName - No default value found for $var.\n" .
                    "            Are defaults provided? \n";
 	   }
 	   else {

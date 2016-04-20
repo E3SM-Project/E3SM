@@ -10,8 +10,7 @@ class SMS(SystemTestsCommon):
         """
         initialize an object interface to the SMS system test
         """
-        expectedrunvars = ["CONTINUE_RUN", "REST_OPTION", "HIST_OPTION", "HIST_N"]
-        SystemTestsCommon.__init__(self, caseroot, case, expectedrunvars)
+        SystemTestsCommon.__init__(self, caseroot, case)
 
     def run(self):
         self._case.set_value("CONTINUE_RUN",False)

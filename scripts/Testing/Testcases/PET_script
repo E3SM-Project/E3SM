@@ -10,7 +10,7 @@ if ( -e env_mach_pes.xml.1 )  then
   cp -f env_mach_pes.xml.1  env_mach_pes.xml
   cp -f env_mach_pes.xml.1  LockedFiles/env_mach_pes.xml
 else
-  echo " ERROR: env_mach_pes.xml.1 does not exists" 
+  echo " ERROR: env_mach_pes.xml.1 does not exists"
   echo "   this would been produced in the build - must run case.test_build"
   exit -1
 endif
@@ -39,9 +39,9 @@ set STOP_OPTION = `./xmlquery STOP_OPTION --value`
 
 cd $CASEROOT
 
-echo "" >>& $TESTSTATUS_LOG 
-echo " doing a ${STOP_N} ${STOP_OPTION} multi threaded test" >>& $TESTSTATUS_LOG 
-echo "   no restarts are written" >>& $TESTSTATUS_LOG 
+echo "" >>& $TESTSTATUS_LOG
+echo " doing a ${STOP_N} ${STOP_OPTION} multi threaded test" >>& $TESTSTATUS_LOG
+echo "   no restarts are written" >>& $TESTSTATUS_LOG
 
 ./case.run
 if ($status != 0) then
@@ -54,10 +54,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else
@@ -76,14 +76,14 @@ echo "" >>& $TESTSTATUS_LOG
 $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base" $add_iop
 
 #======================================================================
-# (2) Test run: 
+# (2) Test run:
 # do another initial with nthrds 1
 #======================================================================
 
 cd $CASEROOT
 
-echo " doing a ${STOP_N} ${STOP_OPTION} single threaded test" >>& $TESTSTATUS_LOG 
-echo "   no restarts are written" >>& $TESTSTATUS_LOG 
+echo " doing a ${STOP_N} ${STOP_OPTION} single threaded test" >>& $TESTSTATUS_LOG
+echo "   no restarts are written" >>& $TESTSTATUS_LOG
 
 ./xmlchange --file env_mach_pes.xml --id NTHRDS_ATM --val 1
 ./xmlchange --file env_mach_pes.xml --id NTHRDS_LND --val 1
@@ -107,10 +107,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else

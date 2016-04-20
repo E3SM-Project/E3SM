@@ -2,7 +2,7 @@ program Test_Lib
 	use pio !everything is forwarded from the PIO module, should be the only use necessary
 	use pio_kinds
 	implicit none
-	
+
 	include 'mpif.h'
 	type (Var_desc_t)	:: var_handle_no_comp !type handle for normal, uncompressed PIO variables
 	type (Var_desc_t)	:: var_handle !type handle for compressed, VDC variables
@@ -21,19 +21,19 @@ program Test_Lib
 	integer(i4)		:: dims(3) !the 3D grid size used to write VDC data
 	integer(i4)		:: n !counter
 	integer(kind=PIO_Offset) :: dpp !data per process, the amount of data each MPI task contributes to the overall file
-	integer(kind=PIO_Offset),allocatable :: compdof(:) !computational degrees-of-freedom, this array holds the mapping from the local 
+	integer(kind=PIO_Offset),allocatable :: compdof(:) !computational degrees-of-freedom, this array holds the mapping from the local
 														!slice of computational data to the global grid
 	real (r4),  allocatable :: array(:), read_array(:) !arrays holding the local computational data
 #ifdef 	DEBUG
 	double precision	:: start, end, temp !timing variables
 #endif
-	
+
 	!first set locals for vdc compression and the uncompressed data path
 	dims = (/1024, 1024, 1024/)
 	vdf_path = '/glade/scratch/ypolius/piovdc/libbench.vdf'
 	binary_path = '/glade/scratch/ypolius/piovdc/benchdata.nc'
 	nioprocs = 64
-	
+
 	!init MPI and retrieve MPI-specific info
 	call MPI_init(ierr)
 	call MPI_COMM_RANK(MPI_COMM_WORLD, rank, ierr)
@@ -44,10 +44,10 @@ program Test_Lib
 	    print *, 'Initiating PIO...'
 	endif
 #endif
-	
+
 	!call PIO_init to initiate iosystem
-	call PIO_init(rank, MPI_COMM_WORLD, nioprocs, nioprocs, 1, PIO_rearr_box, iosystem, 0)		
-	
+	call PIO_init(rank, MPI_COMM_WORLD, nioprocs, nioprocs, 1, PIO_rearr_box, iosystem, 0)
+
 #ifdef DEBUG
 	if(rank .eq. 0 ) then
 	    print *, 'PIO Initiated procs: ', nioprocs
@@ -57,8 +57,8 @@ program Test_Lib
 	!set data-per-process to be the # of grid elements / # of computational procs
 	!conversions to PIO_Offset int to allow for extremely large dims, ex 2048 x 2048 x 2048
 	dpp = int(dims(1), kind=PIO_Offset) * int(dims(2), kind=PIO_Offset) * int(dims(3), kind=PIO_Offset) / int(nprocs, kind=PIO_Offset)
-	
-	!allocate local memory arrays	
+
+	!allocate local memory arrays
 	if(allocated(array)) then
 		deallocate(array)
 	endif
@@ -80,7 +80,7 @@ program Test_Lib
 
 	allocate(compdof(dpp))
 
-#ifdef DEBUG	
+#ifdef DEBUG
 	if(rank .eq. 0 ) then
 	    print *, 'Allocated compdof'
 	    print *, 'Filling compdof array...dpp-comp: ', dpp, ' dpp-io: ', product(dims)/nioprocs, ' dims: ' , dims, ' int limit: ' , huge(compdof(1)), ' sample calc: ' , product(dims)
@@ -105,7 +105,7 @@ program Test_Lib
 	    print *, 'Filled data array: '!, array(1), '-' , array(2)
 	endif
 #endif
-	
+
 #ifdef DEBUG
 	if(rank .eq. 0 ) then
 	    print *, 'Initializing decomposition...'
@@ -118,12 +118,12 @@ program Test_Lib
 
 	!call init_decomp in order to setup the IO decomposition with PIO
         ! The optional parameter num_ts is required to indicate the vdc output method
-	call PIO_initdecomp(iosystem, PIO_real, dims, compdof, iodesc, num_ts=10) 
-	
+	call PIO_initdecomp(iosystem, PIO_real, dims, compdof, iodesc, num_ts=10)
+
 	!example using optional bsize and # timesteps specifiers
-	!call PIO_initdecomp(iosystem, PIO_real, dims, compdof, iodesc, bsize=(/128, 128, 128/), num_ts=30)		
+	!call PIO_initdecomp(iosystem, PIO_real, dims, compdof, iodesc, bsize=(/128, 128, 128/), num_ts=30)
 #ifdef DEBUG
-	if(rank .eq. 0) then 
+	if(rank .eq. 0) then
 	    print *, 'Decomposition initialized'
 	    print *, 'Creating vdf file'
 	endif
@@ -134,13 +134,13 @@ program Test_Lib
 	ierr = PIO_CreateFile(iosystem, file_handle, PIO_iotype_vdc2, vdf_path, PIO_clobber)
 
 #ifdef DEBUG
-	if(rank .eq. 0) then 
+	if(rank .eq. 0) then
 	    print *, 'VDF file created'
 	    print *, 'Opening vdf var for writing...(vx0)'
 	endif
 #endif
-	
-	!define the variables that will be written into the VDC 
+
+	!define the variables that will be written into the VDC
 	!VDC WRITING DOES NOT REQUIRE CREATING DIMS, THERE ARE ALWAYS 3, dims = (/x, y, z/)
 	iostat = PIO_def_var(file_handle, 'vx' , PIO_real,var_handle)
 
@@ -161,7 +161,7 @@ program Test_Lib
 #endif
 
 	!to write data call PIO_write_darray, the only difference with compressed vs uncompressed
-	!writing is that compressed writing requires that the the user inputs the current time step 
+	!writing is that compressed writing requires that the the user inputs the current time step
 	!corresponding to the variable about to be written
 	call PIO_write_darray(file_handle, var_handle, iodesc,  array, iostat)
 
@@ -178,7 +178,7 @@ program Test_Lib
 
 
 	!to read data call PIO_read_darray, the only difference with compressed vs uncompressed
-	!reading is that compressed reading requires that the the user inputs the current time step 
+	!reading is that compressed reading requires that the the user inputs the current time step
 	!corresponding to the variable about to be read
 	call PIO_read_darray(file_handle, var_handle, iodesc,  read_array, iostat)
 
@@ -187,18 +187,18 @@ program Test_Lib
 #endif
 
 	!Setup for UNCOMPRESSED files
-	
+
 	!Same call as the VDF file, but we switch the IO type to netcdf
 	ierr = PIO_CreateFile(iosystem, file_handle_no_comp, PIO_iotype_pnetcdf, binary_path, PIO_clobber)
-	
+
 	!define the dimensions to be used with the file PIO writes
 	iostat = PIO_def_dim(file_handle_no_comp, 'z', dims(3), dim_ids(3))
 	iostat = PIO_def_dim(file_handle_no_comp, 'y', dims(2), dim_ids(2))
 	iostat = PIO_def_dim(file_handle_no_comp, 'x', dims(1), dim_ids(1))
-	
+
 	!define variables to be written
 	iostat = PIO_def_var(file_handle_no_comp, 'vx', PIO_real, dim_ids, var_handle_no_comp)
-	
+
 	!end definition to make file valid
 	ierr = PIO_enddef(file_handle_no_comp)
 
@@ -229,7 +229,7 @@ program Test_Lib
 
 #ifdef DEBUG
 	if(rank .eq. 0 ) then
-		print *, 'Finalized PIO'	
+		print *, 'Finalized PIO'
 	endif
 #endif
 

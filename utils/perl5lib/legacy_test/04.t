@@ -57,16 +57,16 @@ $settings{'sim_year_range'} = "1850-2000";
 $settings{'clm_usr_name'}   = "1x1_boulderCO_c090804";
 $settings{'csmdata'}        = "\$PWD";
 my @nonexist_files     = ( "faerdep", "finidat", "fndepdat", "fndepdyn" );
-my @nonexist_filenames = ( 
+my @nonexist_filenames = (
                            "\$PWD/usrfiles/aerosoldep_monthly_1850-2000_1x1_boulderCO_c090804.nc",
-                           "\$PWD/usrfiles/clmi.1x1_boulderCO_c090804_USGS_simyr1850.nc", 
+                           "\$PWD/usrfiles/clmi.1x1_boulderCO_c090804_USGS_simyr1850.nc",
                            undef,
                            "\$PWD/usrfiles/fndep_clm_1850-2000_1x1_boulderCO_c090804.nc"
                          );
 my %usr_files;
 foreach my $var ( $uf_defaults->get_variable_names() ) {
    my $val = $uf_defaults->get_usr_file($var,$definition,\%settings);
-   if ( defined($val) ) { 
+   if ( defined($val) ) {
        $usr_files{$var} = $val;
     } else {
        is( $var, shift(@nonexist_files), "Make sure that expected non-exist user files do NOT return true: $var" );
@@ -77,8 +77,8 @@ foreach my $var ( $uf_defaults->get_variable_names() ) {
     }
 }
 
-my %expected_usr_files = ( 
-                           'fatmgrid'   => "\$PWD/usrfiles/griddata_1x1_boulderCO_c090804.nc", 
+my %expected_usr_files = (
+                           'fatmgrid'   => "\$PWD/usrfiles/griddata_1x1_boulderCO_c090804.nc",
                            'fatmlndfrc' => "\$PWD/usrfiles/fracdata_1x1_boulderCO_c090804_USGS.nc",
                            'fatmtopo'   => "\$PWD/usrfiles/topodata_1x1_boulderCO_c090804.nc",
                            'flndtopo'   => "\$PWD/usrfiles/topodata_1x1_boulderCO_c090804.nc",
@@ -277,7 +277,7 @@ sub add_default {
        # query the definition to find out if the variable takes a string value.
        # The returned string length will be >0 if $var is a string, and 0 if not.
        my $str_len = $definition->get_str_len($var);
-   
+
        # If the variable is a string, then add quotes if they're missing
        if ($str_len > 0) {
            $val = quote_string($val);
@@ -408,8 +408,8 @@ my $val_nl = $definition->validate($nl2);
 $nl->merge_nl($val_nl);
 ok( $definition->validate($nl2), "Test validate of resultant namelist" );
 
-# Test the merge_nl 
-my %cvals = ( "bnd_topo"=>  { "prev"=>undef, set=>"'bnd_topo'"   }, 
+# Test the merge_nl
+my %cvals = ( "bnd_topo"=>  { "prev"=>undef, set=>"'bnd_topo'"   },
               "ncdata"=>    { "prev"=>undef, set=>"'ncdata'"     },
               "co2_type"=>  { "prev"=>undef, set=>"'prognostic'" },
               "start_type"=>{ "prev"=>undef, set=>"'branch'"     },
@@ -440,7 +440,7 @@ foreach my $var ( keys(%cvals) ) {
    is($val,$cvals{$var}{'set'},"Check that all merged namelist item is changed");
 }
 # Make sure reading in a simple namelist works
-my $namelist = 
+my $namelist =
 "&clm_inparm finidat=' ', hist_nhtfrq=1, create_crop_landunit=.false., hist_avgflag_pertape='A', 'I', 'X', hist_fincl1='A1','B2','C3' /";
 my $nl2 = Build::Namelist->new( $namelist );
 ok( $definition->validate($nl2), "Test validate of namelist read in on command line" );

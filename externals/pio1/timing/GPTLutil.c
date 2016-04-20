@@ -25,10 +25,10 @@ static int max_error = 500;         /* max number of error print msgs */
 int GPTLerror (const char *fmt, ...)
 {
   va_list args;
-  
+
   va_start (args, fmt);
   static int num_error = 0;
-  
+
   if (fmt != NULL && num_error < max_error) {
 #ifndef NO_VPRINTF
     (void) vfprintf (stderr, fmt, args);
@@ -39,10 +39,10 @@ int GPTLerror (const char *fmt, ...)
       (void) fprintf (stderr, "Truncating further error print now after %d msgs",
 		      num_error);
     ++num_error;
-  }    
-  
+  }
+
   va_end (args);
-  
+
   if (abort_on_error)
     exit (-1);
 

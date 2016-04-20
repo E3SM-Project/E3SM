@@ -24,14 +24,14 @@
 ! !REVISION HISTORY:
 !    2012-aug-20 - T. Craig    - add rof component
 !    2008-jul-10 - T. Craig    - updated budget implementation
-!    2007-may-07 - B. Kauffman - initial port to cpl7. 
-!    2002-nov-21 - R. Jacob    - initial port to cpl6. 
+!    2007-may-07 - B. Kauffman - initial port to cpl7.
+!    2002-nov-21 - R. Jacob    - initial port to cpl6.
 !    199x-mmm-dd - B. Kauffman - original version in cpl4.
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
 module seq_diag_mct
-  
+
 ! !USES:
 
    use shr_kind_mod, only: r8 => shr_kind_r8, in=>shr_kind_in
@@ -131,7 +131,7 @@ module seq_diag_mct
    integer(in),parameter :: f_hlwdn   = 5 ! heat : longwave down
    integer(in),parameter :: f_hlwup   = 6 ! heat : longwave up
    integer(in),parameter :: f_hlatv   = 7 ! heat : latent, vaporization
-   integer(in),parameter :: f_hlatf   = 8 ! heat : latent, fusion, snow       
+   integer(in),parameter :: f_hlatf   = 8 ! heat : latent, fusion, snow
    integer(in),parameter :: f_hioff   = 9 ! heat : latent, fusion, frozen runoff
    integer(in),parameter :: f_hsen    =10 ! heat : sensible
    integer(in),parameter :: f_wfrz    =11 ! water: freezing
@@ -450,8 +450,8 @@ subroutine seq_diag_atm_mct( atm, frac_a, do_a2x, do_x2a )
 
    type(component_type), intent(in) :: atm    ! component type for instance1
    type(mct_aVect)     , intent(in) :: frac_a ! frac bundle
-   logical, optional   , intent(in) :: do_a2x             
-   logical, optional   , intent(in) :: do_x2a             
+   logical, optional   , intent(in) :: do_a2x
+   logical, optional   , intent(in) :: do_x2a
 
 !EOP
 
@@ -475,8 +475,8 @@ subroutine seq_diag_atm_mct( atm, frac_a, do_a2x, do_x2a )
 !-------------------------------------------------------------------------------
 
    dom_a => component_get_dom_cx(atm)
-   a2x_a => component_get_c2x_cx(atm)  
-   x2a_a => component_get_x2c_cx(atm)  
+   a2x_a => component_get_c2x_cx(atm)
+   x2a_a => component_get_x2c_cx(atm)
 
    kArea = mct_aVect_indexRA(dom_a%data,afldname)
    kLat  = mct_aVect_indexRA(dom_a%data,latname)
@@ -601,8 +601,8 @@ subroutine seq_diag_lnd_mct( lnd, frac_l, do_l2x, do_x2l)
 
    type(component_type), intent(in) :: lnd    ! component type for instance1
    type(mct_aVect)     , intent(in) :: frac_l ! frac bundle
-   logical, optional   , intent(in) :: do_l2x             
-   logical, optional   , intent(in) :: do_x2l             
+   logical, optional   , intent(in) :: do_l2x
+   logical, optional   , intent(in) :: do_x2l
 
 !EOP
 
@@ -630,8 +630,8 @@ subroutine seq_diag_lnd_mct( lnd, frac_l, do_l2x, do_x2l)
    !---------------------------------------------------------------------------
 
    dom_l => component_get_dom_cx(lnd)
-   l2x_l => component_get_c2x_cx(lnd)  
-   x2l_l => component_get_x2c_cx(lnd)  
+   l2x_l => component_get_c2x_cx(lnd)
+   x2l_l => component_get_x2c_cx(lnd)
 
    ip = p_inst
 
@@ -744,8 +744,8 @@ subroutine seq_diag_rof_mct( rof, frac_r)
    !---------------------------------------------------------------------------
 
    dom_r => component_get_dom_cx(rof)
-   r2x_r => component_get_c2x_cx(rof)  
-   x2r_r => component_get_x2c_cx(rof)  
+   r2x_r => component_get_c2x_cx(rof)
+   x2r_r => component_get_x2c_cx(rof)
 
    if (first_time) then
       index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur')
@@ -837,8 +837,8 @@ subroutine seq_diag_glc_mct( glc, frac_g)
    !---------------------------------------------------------------------------
 
    dom_g => component_get_dom_cx(glc)
-   g2x_g => component_get_c2x_cx(glc)  
-   x2g_g => component_get_x2c_cx(glc)  
+   g2x_g => component_get_c2x_cx(glc)
+   x2g_g => component_get_x2c_cx(glc)
 
    if (first_time) then
       index_g2x_Fogg_rofl   = mct_aVect_indexRA(g2x_g,'Fogg_rofl')
@@ -878,7 +878,7 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, do_o2x, do_x2o, do_xao)
 
    type(component_type) , intent(in)          :: ocn    ! component type for instance1
    type(mct_aVect)      , intent(in)          :: frac_o ! frac bundle
-   type(mct_aVect)      , intent(in)          :: xao_o  
+   type(mct_aVect)      , intent(in)          :: xao_o
    logical              , intent(in),optional :: do_o2x
    logical              , intent(in),optional :: do_x2o
    logical              , intent(in),optional :: do_xao
@@ -915,8 +915,8 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, do_o2x, do_x2o, do_xao)
    !---------------------------------------------------------------------------
 
    dom_o => component_get_dom_cx(ocn)
-   o2x_o => component_get_c2x_cx(ocn)  
-   x2o_o => component_get_x2c_cx(ocn)  
+   o2x_o => component_get_c2x_cx(ocn)
+   x2o_o => component_get_x2c_cx(ocn)
 
    ip = p_inst
 
@@ -943,10 +943,10 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, do_o2x, do_x2o, do_xao)
 
    if (present(do_xao)) then
       if (first_time) then
-         index_xao_Faox_lwup   = mct_aVect_indexRA(xao_o,'Faox_lwup') 
-         index_xao_Faox_lat    = mct_aVect_indexRA(xao_o,'Faox_lat')  
-         index_xao_Faox_sen    = mct_aVect_indexRA(xao_o,'Faox_sen') 
-         index_xao_Faox_evap   = mct_aVect_indexRA(xao_o,'Faox_evap')  
+         index_xao_Faox_lwup   = mct_aVect_indexRA(xao_o,'Faox_lwup')
+         index_xao_Faox_lat    = mct_aVect_indexRA(xao_o,'Faox_lat')
+         index_xao_Faox_sen    = mct_aVect_indexRA(xao_o,'Faox_sen')
+         index_xao_Faox_evap   = mct_aVect_indexRA(xao_o,'Faox_evap')
       end if
 
       lSize = mct_avect_lSize(xao_o)
@@ -962,22 +962,22 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, do_o2x, do_x2o, do_xao)
 
    if (present(do_x2o)) then
       if (first_time) then
-         index_x2o_Fioi_melth  = mct_aVect_indexRA(x2o_o,'Fioi_melth')  
-         index_x2o_Fioi_meltw  = mct_aVect_indexRA(x2o_o,'Fioi_meltw') 
+         index_x2o_Fioi_melth  = mct_aVect_indexRA(x2o_o,'Fioi_melth')
+         index_x2o_Fioi_meltw  = mct_aVect_indexRA(x2o_o,'Fioi_meltw')
          index_x2o_Foxx_swnet  = mct_aVect_indexRA(x2o_o,'Foxx_swnet')
          index_x2o_Faxa_lwdn   = mct_aVect_indexRA(x2o_o,'Faxa_lwdn')
-         index_x2o_Faxa_rain   = mct_aVect_indexRA(x2o_o,'Faxa_rain') 
-         index_x2o_Faxa_snow   = mct_aVect_indexRA(x2o_o,'Faxa_snow')  
-         index_x2o_Foxx_lwup   = mct_aVect_indexRA(x2o_o,'Foxx_lwup') 
-         index_x2o_Foxx_lat    = mct_aVect_indexRA(x2o_o,'Foxx_lat')  
-         index_x2o_Foxx_sen    = mct_aVect_indexRA(x2o_o,'Foxx_sen') 
-         index_x2o_Foxx_evap   = mct_aVect_indexRA(x2o_o,'Foxx_evap')  
+         index_x2o_Faxa_rain   = mct_aVect_indexRA(x2o_o,'Faxa_rain')
+         index_x2o_Faxa_snow   = mct_aVect_indexRA(x2o_o,'Faxa_snow')
+         index_x2o_Foxx_lwup   = mct_aVect_indexRA(x2o_o,'Foxx_lwup')
+         index_x2o_Foxx_lat    = mct_aVect_indexRA(x2o_o,'Foxx_lat')
+         index_x2o_Foxx_sen    = mct_aVect_indexRA(x2o_o,'Foxx_sen')
+         index_x2o_Foxx_evap   = mct_aVect_indexRA(x2o_o,'Foxx_evap')
          index_x2o_Foxx_rofl   = mct_aVect_indexRA(x2o_o,'Foxx_rofl')
          index_x2o_Foxx_rofi   = mct_aVect_indexRA(x2o_o,'Foxx_rofi')
       end if
 
       if (.not. present(do_xao)) then
-         ! these are in x2o but they really are the atm/ocean flux 
+         ! these are in x2o but they really are the atm/ocean flux
          ! computed in the coupler and are "like" an o2x
          lSize = mct_avect_lSize(x2o_o)
          ic = c_ocn_or
@@ -1060,8 +1060,8 @@ subroutine seq_diag_ice_mct( ice, frac_i, do_i2x, do_x2i)
    !---------------------------------------------------------------------------
 
    dom_i => component_get_dom_cx(ice)
-   i2x_i => component_get_c2x_cx(ice)  
-   x2i_i => component_get_x2c_cx(ice)  
+   i2x_i => component_get_c2x_cx(ice)
+   x2i_i => component_get_x2c_cx(ice)
 
    ip = p_inst
 
@@ -1103,10 +1103,10 @@ subroutine seq_diag_ice_mct( ice, frac_i, do_i2x, do_x2i)
 
    if (present(do_x2i)) then
       if (first_time) then
-         index_x2i_Faxa_lwdn   = mct_aVect_indexRA(x2i_i,'Faxa_lwdn') 
-         index_x2i_Faxa_rain   = mct_aVect_indexRA(x2i_i,'Faxa_rain')  
-         index_x2i_Faxa_snow   = mct_aVect_indexRA(x2i_i,'Faxa_snow')  
-         index_x2i_Fioo_frazil = mct_aVect_indexRA(x2i_i,'Fioo_frazil')  
+         index_x2i_Faxa_lwdn   = mct_aVect_indexRA(x2i_i,'Faxa_lwdn')
+         index_x2i_Faxa_rain   = mct_aVect_indexRA(x2i_i,'Faxa_rain')
+         index_x2i_Faxa_snow   = mct_aVect_indexRA(x2i_i,'Faxa_snow')
+         index_x2i_Fioo_frazil = mct_aVect_indexRA(x2i_i,'Fioo_frazil')
          index_x2i_Fixx_rofi   = mct_aVect_indexRA(x2i_i,'Fixx_rofi')
       end if
 
@@ -1126,7 +1126,7 @@ subroutine seq_diag_ice_mct( ice, frac_i, do_i2x, do_x2i)
          if = f_wioff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Fixx_rofi,n)
          if = f_hfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
       end do
-      ic = c_inh_is  
+      ic = c_inh_is
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
       budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX &
@@ -1276,7 +1276,7 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
          write(logunit,FA1)    fname(if),dataGpr(if,ica,ip),dataGpr(if,icl,ip), &
                    dataGpr(if,icn,ip),dataGpr(if,ics,ip),dataGpr(if,ico,ip), &
                                          dataGpr(if,ica,ip)+dataGpr(if,icl,ip)+ &
-                   dataGpr(if,icn,ip)+dataGpr(if,ics,ip)+dataGpr(if,ico,ip) 
+                   dataGpr(if,icn,ip)+dataGpr(if,ics,ip)+dataGpr(if,ico,ip)
       enddo
 
       write(logunit,*) ' '
@@ -1286,12 +1286,12 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
          write(logunit,FA1)    fname(if),dataGpr(if,ica,ip),dataGpr(if,icl,ip), &
                    dataGpr(if,icn,ip),dataGpr(if,ics,ip),dataGpr(if,ico,ip), &
                                          dataGpr(if,ica,ip)+dataGpr(if,icl,ip)+ &
-                   dataGpr(if,icn,ip)+dataGpr(if,ics,ip)+dataGpr(if,ico,ip) 
+                   dataGpr(if,icn,ip)+dataGpr(if,ics,ip)+dataGpr(if,ico,ip)
       enddo
       write(logunit,FA1)    '   *SUM*',sum(dataGpr(f_h:f_w-1,ica,ip)),sum(dataGpr(f_h:f_w-1,icl,ip)), &
          sum(dataGpr(f_h:f_w-1,icn,ip)),sum(dataGpr(f_h:f_w-1,ics,ip)),sum(dataGpr(f_h:f_w-1,ico,ip)), &
                                        sum(dataGpr(f_h:f_w-1,ica,ip))+sum(dataGpr(f_h:f_w-1,icl,ip))+ &
-         sum(dataGpr(f_h:f_w-1,icn,ip))+sum(dataGpr(f_h:f_w-1,ics,ip))+sum(dataGpr(f_h:f_w-1,ico,ip)) 
+         sum(dataGpr(f_h:f_w-1,icn,ip))+sum(dataGpr(f_h:f_w-1,ics,ip))+sum(dataGpr(f_h:f_w-1,ico,ip))
 
       write(logunit,*) ' '
       write(logunit,FAH) subname,trim(str)//' WATER BUDGET (kg/m2s*1e6): period = ',trim(pname(ip)),': date = ',cdate,sec
@@ -1300,12 +1300,12 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
          write(logunit,FA1)    fname(if),dataGpr(if,ica,ip),dataGpr(if,icl,ip), &
                    dataGpr(if,icn,ip),dataGpr(if,ics,ip),dataGpr(if,ico,ip), &
                                          dataGpr(if,ica,ip)+dataGpr(if,icl,ip)+ &
-                   dataGpr(if,icn,ip)+dataGpr(if,ics,ip)+dataGpr(if,ico,ip) 
+                   dataGpr(if,icn,ip)+dataGpr(if,ics,ip)+dataGpr(if,ico,ip)
       enddo
       write(logunit,FA1)    '   *SUM*',sum(dataGpr(f_w:f_size,ica,ip)),sum(dataGpr(f_w:f_size,icl,ip)), &
          sum(dataGpr(f_w:f_size,icn,ip)),sum(dataGpr(f_w:f_size,ics,ip)),sum(dataGpr(f_w:f_size,ico,ip)), &
                                        sum(dataGpr(f_w:f_size,ica,ip))+sum(dataGpr(f_w:f_size,icl,ip))+ &
-         sum(dataGpr(f_w:f_size,icn,ip))+sum(dataGpr(f_w:f_size,ics,ip))+sum(dataGpr(f_w:f_size,ico,ip)) 
+         sum(dataGpr(f_w:f_size,icn,ip))+sum(dataGpr(f_w:f_size,ics,ip))+sum(dataGpr(f_w:f_size,ico,ip))
    enddo
    endif   ! plev
 
@@ -1563,7 +1563,7 @@ SUBROUTINE seq_diag_avect_mct(infodata, id, av, dom, gsmap, comment)
 
       npts = mct_aVect_lsize(AV)
       allocate(weight(npts))
-      weight(:) = 1.0_r8 
+      weight(:) = 1.0_r8
       do n = 1,npts
          if (dom%data%rAttr(km,n) <= 1.0e-06_R8) then
             weight(n) = 0.0_r8
@@ -1623,7 +1623,7 @@ SUBROUTINE seq_diag_avect_mct(infodata, id, av, dom, gsmap, comment)
 
       npts = mct_aVect_lsize(AV)
       allocate(weight(npts))
-      weight(:) = 1.0_r8 
+      weight(:) = 1.0_r8
       do n = 1,npts
          if (dom%data%rAttr(km,n) <= 1.0e-06_R8) then
             weight(n) = 0.0_r8
@@ -1823,7 +1823,7 @@ SUBROUTINE seq_diag_avdiff_mct(AV1,AV2,ID,comment)
             iam,mct_string_toChar(mstring),cnt,adiff,rdiff, &
             minval(AV1%rAttr(k,:)),minval(AV1%rAttr(k,:)), &
             maxval(AV1%rAttr(k,:)),maxval(AV2%rAttr(k,:))
-         call mct_string_clean(mstring)       
+         call mct_string_clean(mstring)
       endif
    enddo
 

@@ -357,7 +357,7 @@ def cmake_stage(name, test_spec_dir):
 
         if options.cmake_args is not None:
             cmake_command.extend(options.cmake_args.split(" "))
-            
+
         macros_path = os.path.abspath("CESM_Macros.cmake")
 
         if machines_dir is not None:

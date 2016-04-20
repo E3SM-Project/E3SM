@@ -4,6 +4,7 @@ Implementation of the CIME NCK test.  This class inherits from SystemTestsCommon
 import shutil
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
+from CIME.case_setup import case_setup
 import CIME.utils
 from system_tests_common import SystemTestsCommon
 
@@ -41,8 +42,7 @@ class NCK(SystemTestsCommon):
                         self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
             self._case.flush()
 
-            run_cmd("./case.setup --clean --test-mode")
-            run_cmd("./case.setup")
+            case_setup(self._caseroot, test_mode=True, reset=True)
             run_cmd('./case.clean_build')
             SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
             if (not sharedlib_only):

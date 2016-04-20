@@ -11,7 +11,7 @@
 !
 !===============================================================================
 !                            ESMF_RegridWeightGenCheck.F90
-! 
+!
 ! This is the source file for the RegridWeightGen application in ESMF
 !===============================================================================
 
@@ -64,7 +64,7 @@ program OfflineTester
 
       real(ESMF_KIND_R8), pointer :: src_lat(:), src_lon(:), &
                                      dst_lat(:), dst_lon(:), &
-                                     src_area(:), dst_area(:), & 
+                                     src_area(:), dst_area(:), &
                                      src_mask(:), dst_mask(:), &
                                      src_frac(:), dst_frac(:)
 
@@ -103,7 +103,7 @@ program OfflineTester
       real(ESMF_KIND_R8) :: err, maxneg, maxpos
       real(ESMF_KIND_R8) :: maxerr, minerr, maxerr2, minerr2
       real(ESMF_KIND_R8) :: grid1min, grid1max, grid2min, grid2max
-      real(ESMF_KIND_R8) :: srcfrac_min, srcfrac_max, dstfrac_min, dstfrac_max 
+      real(ESMF_KIND_R8) :: srcfrac_min, srcfrac_max, dstfrac_min, dstfrac_max
       real(ESMF_KIND_R8), pointer :: grid1area(:), grid2area(:)
       real(ESMF_KIND_R8), pointer :: grid1areaXX(:), grid2areaXX(:)
 
@@ -245,7 +245,7 @@ program OfflineTester
                                line=__LINE__, file=__FILE__, rcToReturn=rc)) &
           call ESMF_Finalize(endflag=ESMF_END_ABORT)
         dst_distgrid = ESMF_DistGridCreate(minIndex=(/1/), &
-                                           maxIndex=(/dst_dim/), rc=status)      
+                                           maxIndex=(/dst_dim/), rc=status)
         if (ESMF_LogFoundError(rcToCheck=status, msg=ESMF_LOGERR_PASSTHRU, &
                                line=__LINE__, file=__FILE__, rcToReturn=rc)) &
           call ESMF_Finalize(endflag=ESMF_END_ABORT)
@@ -255,11 +255,11 @@ program OfflineTester
         srcGrid = ESMF_GridCreate(src_distgrid, rc=status)
         if (ESMF_LogFoundError(rcToCheck=status, msg=ESMF_LOGERR_PASSTHRU, &
                                line=__LINE__, file=__FILE__, rcToReturn=rc)) &
-          call ESMF_Finalize(endflag=ESMF_END_ABORT) 
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
         dstGrid = ESMF_GridCreate(dst_distgrid, rc=status)
         if (ESMF_LogFoundError(rcToCheck=status, msg=ESMF_LOGERR_PASSTHRU, &
                                line=__LINE__, file=__FILE__, rcToReturn=rc)) &
-          call ESMF_Finalize(endflag=ESMF_END_ABORT) 
+          call ESMF_Finalize(endflag=ESMF_END_ABORT)
         if (Debug) print*, j, ": ESMF_GridCreate!"
 
         ! create ArraySpecs for the ESMF Arrays
@@ -453,7 +453,7 @@ program OfflineTester
        status = nf90_close(ncid)
        if(status /= nf90_NoErr) write(6,*) 'nf90_close:',trim(nf90_strerror(status))
        deallocate(srcfld,dstfld)
-    endif     
+    endif
 
       ! -----------------------------------------------------------------------
       ! ERROR ANALYSIS - serial
@@ -500,7 +500,7 @@ program OfflineTester
           if(dst_frac(i) > dstfrac_max) dstfrac_max = dst_frac(i)
 
           ! don't look in masked cells
-          ! if frac is below .999, then a significant portion of this cell is 
+          ! if frac is below .999, then a significant portion of this cell is
           ! missing from the weight calculation and error is misleading here
           ! also don't look in unitialized cells, for the regional to global cases
           if (dst_mask(i) /= 0 .and. dst_frac(i) > .999 .and. FdstArray(i) /= UNINITVAL) then
@@ -675,9 +675,9 @@ program OfflineTester
             case default
               print *, "Note: statistics only gathered for 5 tests... ", &
                        "no bounds for test ", j
-              reltotErrorBound = UNINITVAL 
+              reltotErrorBound = UNINITVAL
               reltwoErrorBound = UNINITVAL
-              totAreaBound = UNINITVAL 
+              totAreaBound = UNINITVAL
           end select
 
           totCnt = totCnt + 2
@@ -773,7 +773,7 @@ contains
 ! provided.
 !***********************************************************************************
   subroutine NCFileInquire (wgtfile, title, src_dim, nxs, nys, dst_dim, nxd, nyd, localrc)
- 
+
     character(ESMF_MAXSTR), intent(in)  :: wgtfile
     character(ESMF_MAXSTR), intent(out)  :: title
     integer, intent(out)                :: src_dim
@@ -781,7 +781,7 @@ contains
     integer, intent(out)                :: dst_dim
     integer, intent(out)                :: nxd, nyd
     integer, intent(out), optional      :: localrc
-      
+
     integer :: ncstat,  nc_file_id,  nc_srcdim_id, nc_dstdim_id, srcdim, dstdim
     integer :: gdims(2), dim_ids(1)
     integer :: titleLen
@@ -926,7 +926,7 @@ contains
                              src_mask, src_frac, &
                              dst_lat, dst_lon, dst_area, dst_mask, &
                              dst_frac, localrc)
- 
+
     character(ESMF_MAXSTR), intent(in)  :: wgtfile
     real(ESMF_KIND_R8), pointer         :: src_lat(:)
     real(ESMF_KIND_R8), pointer         :: src_lon(:)
@@ -939,13 +939,13 @@ contains
     real(ESMF_KIND_R8), pointer         :: dst_mask(:)
     real(ESMF_KIND_R8), pointer         :: dst_frac(:)
     integer, intent(out), optional      :: localrc
-      
+
     integer :: ncstat,  nc_file_id
     integer :: nc_srcgridlat_id, nc_srcgridlon_id, &
                nc_dstgridlat_id, nc_dstgridlon_id, &
                nc_srcarea_id, nc_dstarea_id, &
                nc_srcmask_id, nc_dstmask_id, &
-               nc_srcfrac_id, nc_dstfrac_id 
+               nc_srcfrac_id, nc_dstfrac_id
     integer :: unitsLen
 
     character(ESMF_MAXSTR) :: units, buffer

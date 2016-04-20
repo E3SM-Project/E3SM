@@ -1,7 +1,7 @@
 #define __PIO_FILE__ "box_rearrange.F90.in"
 !>
 !!
-!! @file 
+!! @file
 !! $Revision: 819 $
 !! $LastChangedDate: 2013-05-31 13:32:27 -0500 (Fri, 31 May 2013) $
 !! @brief
@@ -18,7 +18,7 @@
 !!            (imported flow-controlled alltoall logic ("swapm") from
 !!            Community Atmosphere Model) - P. Worley
 !!  <item>20100207  added flow-control logic option to box_rearrange_create - P. Worley
-!!  </list>          
+!!  </list>
 !<
 
 !#define MEMCHK
@@ -31,7 +31,7 @@
 
 #include "rearr_options.h"
 
-!> 
+!>
 !! \def TAG
 !! Arbitrary mpi message tags used for the rearrange
 !<
@@ -48,7 +48,7 @@ module box_rearrange
                           Debug, DebugIO, CheckMPIReturn, pio_fc_gather_offset
 #else
   use pio_support, only : piodie, Debug, DebugIO, CheckMPIReturn, pio_fc_gather_offset
-                          
+
 #endif
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
@@ -128,7 +128,7 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
   integer :: myrank
   integer :: nprocs
   integer :: status(MPI_STATUS_SIZE)
-  
+
   integer,pointer :: rfrom(:)     ! rank of ith sender to this ioproc
   integer,pointer :: rtype(:)
 
@@ -353,7 +353,7 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
 
         call MPI_IRECV( dest,1, rtype(i), &             ! buf, count, type
                         rfrom(i), TAG2, &               ! source, tag
-                        IOsystem%union_comm,rreq(i),ierror )        
+                        IOsystem%union_comm,rreq(i),ierror )
         call CheckMPIReturn('box_rearrange',ierror)
       end do
 
@@ -441,7 +441,7 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
   integer,pointer :: a2a_recvtypes(:)
   integer,pointer :: sreq(:)
   integer,pointer :: rreq(:)      ! receive requests for comp procs
- 
+
 #ifdef _MPISERIAL
   integer :: num_tasks, ioproc, ioindex
   ! begin
@@ -652,7 +652,7 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
 
         call MPI_ISEND( iobuf,1, rtype(i), &                ! buf, count, type
                         rfrom(i), TAG2, &                   ! dest, tag
-                        IOsystem%union_comm,sreq(i),ierror )        
+                        IOsystem%union_comm,sreq(i),ierror )
         call CheckMPIReturn(subName,ierror)
 
       end do
@@ -692,7 +692,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! io_comprank
-  ! 
+  !
   !   find the rank in union_comm of the ith io processor
   !
 
@@ -708,7 +708,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! gindex_to_coord
-  ! 
+  !
   !   find global xyz coordinates given a global index
   !
 
@@ -729,7 +729,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
     tempindex=gindex
 
-    do i=ndim,2,-1    
+    do i=ndim,2,-1
        gcoord(i) = tempindex/gstride(i-1)                 ! integer division
        tempindex = tempindex - gcoord(i)*gstride(i-1)   ! remainder
     end do
@@ -837,8 +837,8 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer(kind=pio_offset), intent(in) :: start(:,:)       ! start(ndim,nioproc)
     integer(kind=pio_offset), intent(in) :: kount(:,:)       ! count(ndim,nioproc)
 
-    integer, intent(in) :: gsize(:)         ! global domain size gsize(ndim) 
-    integer, intent(in) :: ndim   
+    integer, intent(in) :: gsize(:)         ! global domain size gsize(ndim)
+    integer, intent(in) :: ndim
     integer, intent(in) :: nioproc
     integer, intent(out) :: dest_ioproc(:)    ! ioproc number to send to
     integer(kind=PIO_OFFSET), intent(out) :: dest_ioindex(:)     ! index in iobuf on that ioproc
@@ -980,7 +980,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
     start = 0
     count = 0
-#ifdef MEMCHK	
+#ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -1027,7 +1027,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
        end do
     endif
 !#endif
-#ifdef MEMCHK	
+#ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -1041,7 +1041,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
          Iosystem%num_aiotasks, ioDesc%dest_ioproc, ioDesc%dest_ioindex )
 
 #ifdef _MPISERIAL
-! Version for use with mpi-serial. 
+! Version for use with mpi-serial.
 ! NOTE: cached values in iodesc other than dest_ioproc() and dest_ioindex()
 !       will NOT be allocated in this build
 
@@ -1052,9 +1052,9 @@ end subroutine box_rearrange_io2comp_{TYPE}
                    'iotasks=', Iosystem%num_iotasks)
     endif
 
-#else 
+#else
 ! else not _MPISERIAL
-#ifdef MEMCHK	
+#ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -1069,7 +1069,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
     call compute_counts(Iosystem, ioDesc, niodof)
 
-#ifdef MEMCHK	
+#ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -1095,7 +1095,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 !<
 #ifndef _MPISERIAL
   subroutine compute_counts(Iosystem, ioDesc, niodof)
-    
+
     use calcdisplace_mod, only : calcdisplace,GCDblocksize,gcd
 
 
@@ -1114,7 +1114,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer :: i                  ! loop index
     integer :: iorank             ! i/o task id in i/o communicator + 1
     integer :: io_comprank        ! i/o task id in comp communicator
-    integer :: nrecvs             ! if i/o task, number of comp tasks sending 
+    integer :: nrecvs             ! if i/o task, number of comp tasks sending
                                   !   to/receiving from this task (cached)
     integer(kind=pio_offset) :: ioindex            ! offset for data to be sent to i/o task
     integer :: pos                ! array offset
@@ -1137,7 +1137,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer,pointer :: sr_types(:)
     integer,pointer :: send_counts(:)
     integer,pointer :: send_displs(:)
-    integer :: rbuf_size          
+    integer :: rbuf_size
     integer,pointer :: recv_buf(:)
     integer,pointer :: recv_counts(:)
     integer,pointer :: recv_displs(:)
@@ -1237,7 +1237,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
        do i=1,num_tasks
           recv_displs(i) = i-1
        end do
-#ifdef MEMCHK	
+#ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -1291,10 +1291,10 @@ end subroutine box_rearrange_io2comp_{TYPE}
           if (recv_buf(i) /= 0) then
              nrecvs = nrecvs + 1
              rcount(nrecvs) = recv_buf(i)
-             rfrom(nrecvs)  = i-1             
+             rfrom(nrecvs)  = i-1
           endif
        enddo
-#ifdef MEMCHK	
+#ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -1320,14 +1320,14 @@ end subroutine box_rearrange_io2comp_{TYPE}
     call alloc_check(s2rindex, ndof, 'sindex temp')
     s2rindex = 0
 
-    ! spos(i) is the position in sindex() where the 
+    ! spos(i) is the position in sindex() where the
     ! block of indices going to the ith ioproc starts
     call alloc_check(spos, num_iotasks, 'spos temp')
     spos(1)=1
     do i=2,num_iotasks
        spos(i)=spos(i-1)+scount(i-1)
 
-       if (scount(i)/=0 .and. spos(i) > ndof) & 
+       if (scount(i)/=0 .and. spos(i) > ndof) &
             call piodie(__PIO_FILE__,__LINE__,'spos=',int(spos(i)),'> ndof=',ndof)
     end do
 
@@ -1386,7 +1386,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
        do i=2,nrecvs
           recv_displs(rfrom(i)+1) = recv_displs(rfrom(i-1)+1) + rcount(i-1)
        enddo
-#ifdef MEMCHK	
+#ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -1429,13 +1429,13 @@ end subroutine box_rearrange_io2comp_{TYPE}
     !
 
     if (Iosystem%IOproc .and. nrecvs>0) then
-#ifdef MEMCHK	
+#ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
     end if
-#endif 
+#endif
       !need to cache
        call alloc_check(ioDesc%rtype, nrecvs, 'mpi recv types')
        rtype=>ioDesc%rtype
@@ -1444,7 +1444,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
           allocate(bsizeT(nrecvs))
           do i=1,nrecvs
              call GCDblocksize(rindex(pos:pos+rcount(i)-1),i8blocksize)
-             if(rcount(i) > 0) then 
+             if(rcount(i) > 0) then
                 bsizeT(ii)=int(i8blocksize)
                 ii = ii + 1
              endif
@@ -1454,24 +1454,24 @@ end subroutine box_rearrange_io2comp_{TYPE}
           !       print *,'gcd: receive block lengths: ', bsizeT(1:ii-1)
           deallocate(bsizeT)
           !       print *,'GCD calculated for receive loop blocksize: ',blocksize
-#ifdef MEMCHK	
+#ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
     end if
-#endif  
+#endif
           call MPI_TYPE_CONTIGUOUS(blocksize,ioDesc%baseTYPE,newTYPEr,ierror)
           call CheckMPIReturn(subName,ierror)
           call MPI_TYPE_COMMIT(newTYPEr,ierror)
           call CheckMPIReturn(subName,ierror)
-#ifdef MEMCHK	
+#ifdef MEMCHK
           call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
           if(rss>lastrss) then
              lastrss=rss
              print *,__PIO_FILE__,__LINE__,'mem=',rss
           end if
-#endif 
+#endif
           pos = 1
           do i=1,nrecvs
 
@@ -1484,38 +1484,38 @@ end subroutine box_rearrange_io2comp_{TYPE}
                   ' count=',rcount(i)
 #endif
 #endif
-	
-             len = rcount(i)/blocksize        
+
+             len = rcount(i)/blocksize
              allocate(displace(len))
-             if(blocksize == 1) then 
+             if(blocksize == 1) then
                 displace(:) = rindex(pos:pos+rcount(i)-1)
              else
                 rindex(pos:pos+rcount(i)-1) = rindex(pos:pos+rcount(i)-1)+1
                 call calcdisplace(blocksize,rindex(pos:pos+rcount(i)-1),displace)
              endif
-#ifdef MEMCHK	
+#ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
     end if
-#endif 
+#endif
              !DBG call alloc_print_usage(iosystem%comp_comm,80,'l2629')
              ! need rindex to contain 0-based displacements here
              call MPI_TYPE_CREATE_INDEXED_BLOCK( &
                   len, 1, int(displace), &               ! count,blen, disp
                   newTYPEr, rtype(i), ierror )       ! oldtype, newtype
              call CheckMPIReturn(subName,ierror)
-#ifdef MEMCHK	
+#ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
        print *,__PIO_FILE__,__LINE__,'mem=',rss
     end if
-#endif              
+#endif
              call MPI_TYPE_COMMIT(rtype(i), ierror)
              call CheckMPIReturn(subName,ierror)
-             
+
              deallocate(displace)
              pos = pos + rcount(i)
           end do
@@ -1524,7 +1524,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     endif
     !
     ! Create the mpi types for the comp proc sends
-#ifdef MEMCHK	
+#ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -1540,7 +1540,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     allocate(bsizeT(num_iotasks))
     ii = 1
     do i=1,num_iotasks
-       if(scount(i) /= 0) then 
+       if(scount(i) /= 0) then
           call GCDblocksize(sindex(pos:pos+scount(i)-1),i8blocksize)
           bsizeT(ii)=int(i8blocksize)
 	  pos = pos + scount(i)
@@ -1555,7 +1555,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     call MPI_TYPE_COMMIT(newTYPEs,ierror)
     call CheckMPIReturn(subName,ierror)
 
-#ifdef MEMCHK	
+#ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -1565,11 +1565,11 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
     pos = 1
     do i=1,num_iotasks
- 
+
        if (scount(i) /= 0) then
-          len = scount(i)/blocksize        
+          len = scount(i)/blocksize
           allocate(displace(len))
-          if(blocksize == 1) then 
+          if(blocksize == 1) then
              displace(:) = sindex(pos:pos+scount(i)-1)
           else
              sindex(pos:pos+scount(i)-1) = sindex(pos:pos+scount(i)-1)+1
@@ -1579,10 +1579,10 @@ end subroutine box_rearrange_io2comp_{TYPE}
                len, 1, int(displace), &        ! count, blen, disp
                newTYPEs, stype(i), ierror )       ! oldtype, newtype
           call CheckMPIReturn(subName,ierror)
-          
+
           call MPI_TYPE_COMMIT(stype(i), ierror)
           call CheckMPIReturn(subName,ierror)
- 
+
           deallocate(displace)
           pos = pos + scount(i)
        endif
@@ -1594,7 +1594,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     !
     ! clean up
     !
-#ifdef MEMCHK	
+#ifdef MEMCHK
     call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
     if(rss>lastrss) then
        lastrss=rss
@@ -1678,7 +1678,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
        call dealloc_check(ioDesc%stype,'iodesc%stype')
        nullify(iodesc%stype)
     end if
-       
+
 ! not _MPISERIAL
 #endif
 

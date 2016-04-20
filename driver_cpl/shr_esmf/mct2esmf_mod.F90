@@ -11,13 +11,13 @@ use shr_sys_mod, only: shr_sys_flush, shr_sys_abort
 
 implicit none
 
-! 
+!
 ! Author: Fei Liu
 !
 ! This module implements methods that work with ESMF_Array and MCT attribute
 ! vectors (attrVect) and global segmentation map (gsMap)
 ! These methods converts attrVect and gsMap to Array and distgrid.
-! Another layer of utils take these 
+! Another layer of utils take these
 ! array related methods and put them into interface blocks. user using
 ! the higher level utils module see/use names such as esmf2mct_init, etc
 
@@ -98,7 +98,7 @@ function mct2esmf_create_Array_farrayPtr2DI4(farrayPtr, mpicom, petmap, name, rc
       call MPI_COMM_RANK(mpicom, lpet, localrc)
       call MPI_COMM_SIZE(mpicom, petCount, localrc)
       if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-    else  
+    else
       call ESMF_VMGetCurrent(vm, rc=localrc)
       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
 
@@ -112,13 +112,13 @@ function mct2esmf_create_Array_farrayPtr2DI4(farrayPtr, mpicom, petmap, name, rc
     ! now use the mpi com
     ! number of local indices
     localSize(1) = size(farrayPtr, 2)
- 
+
     ! gather all sizes locally
     allocate(globalSizes(petCount), stat=localrc)
     if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
     call MPI_AllGATHER(localSize, 1, MPI_INTEGER, globalSizes, 1, MPI_INTEGER, l_mpicom, localrc)
     if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-     
+
     ! set up the deblocks
     allocate(deblock(1,2,petCount), stat=localrc)
     csum = 0
@@ -138,11 +138,11 @@ function mct2esmf_create_Array_farrayPtr2DI4(farrayPtr, mpicom, petmap, name, rc
       call MPI_AllGATHER(pet, 1, MPI_INTEGER, l_petMap, 1, MPI_INTEGER, l_mpicom, localrc)
       if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
     endif
-    
+
     ! create fitting DELayout
     delayout = ESMF_DELayoutCreate(petMap=l_petMap, rc=localrc)
     if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-         
+
     ! create fitting DistGrid
     minC(1) = deblock(1,1,1)
     maxC(1) = deblock(1,2,petCount)
@@ -167,7 +167,7 @@ end function mct2esmf_create_Array_farrayPtr2DI4
 
 !--------------------------------------------------------------------------
 
-! create a ESMF_Array from a 1D R8 Fortray array pointer. 
+! create a ESMF_Array from a 1D R8 Fortray array pointer.
 ! The pointer is stored as a data pointer inside the created ESMF_Array.
 function mct2esmf_create_Array_farrayPtr1DR8(farrayPtr, mpicom, petmap, name, rc)
 
@@ -207,7 +207,7 @@ function mct2esmf_create_Array_farrayPtr1DR8(farrayPtr, mpicom, petmap, name, rc
       call MPI_COMM_RANK(mpicom, lpet, localrc)
       call MPI_COMM_SIZE(mpicom, petCount, localrc)
       if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-    else  
+    else
       call ESMF_VMGetCurrent(vm, rc=localrc)
       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
 
@@ -221,12 +221,12 @@ function mct2esmf_create_Array_farrayPtr1DR8(farrayPtr, mpicom, petmap, name, rc
     ! now use the mpi com
     ! number of local indices
     localSize(1) = size(farrayPtr)
- 
+
     ! gather all sizes locally
     allocate(globalSizes(petCount))
     call MPI_AllGATHER(localSize, 1, MPI_INTEGER, globalSizes, 1, MPI_INTEGER, l_mpicom, localrc)
     if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-     
+
     ! set up the deblocks
     allocate(deblock(1,2,petCount))
     csum = 0
@@ -246,11 +246,11 @@ function mct2esmf_create_Array_farrayPtr1DR8(farrayPtr, mpicom, petmap, name, rc
       call MPI_AllGATHER(pet, 1, MPI_INTEGER, l_petMap, 1, MPI_INTEGER, l_mpicom, localrc)
       if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
     endif
-    
+
     ! create fitting DELayout
     delayout = ESMF_DELayoutCreate(petMap=l_petMap, rc=localrc)
     if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-         
+
     ! create fitting DistGrid
     minC(1) = deblock(1,1,1)
     maxC(1) = deblock(1,2,petCount)
@@ -271,7 +271,7 @@ function mct2esmf_create_Array_farrayPtr1DR8(farrayPtr, mpicom, petmap, name, rc
 end function mct2esmf_create_Array_farrayPtr1DR8
 
 !--------------------------------------------------------------------------
-! create a ESMF_Array from a 1D integer Fortray array pointer. 
+! create a ESMF_Array from a 1D integer Fortray array pointer.
 ! The pointer is stored as a data pointer inside the created ESMF_Array.
 function mct2esmf_create_Array_farrayPtr1DI4(farrayPtr, mpicom, petmap, name, rc)
 
@@ -312,7 +312,7 @@ function mct2esmf_create_Array_farrayPtr1DI4(farrayPtr, mpicom, petmap, name, rc
       call MPI_COMM_RANK(mpicom, lpet, localrc)
       call MPI_COMM_SIZE(mpicom, petCount, localrc)
       if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-    else  
+    else
       call ESMF_VMGetCurrent(vm, rc=localrc)
       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
 
@@ -326,12 +326,12 @@ function mct2esmf_create_Array_farrayPtr1DI4(farrayPtr, mpicom, petmap, name, rc
     ! now use the mpi com
     ! number of local indices
     localSize(1) = size(farrayPtr)
- 
+
     ! gather all sizes locally
     allocate(globalSizes(petCount))
     call MPI_AllGATHER(localSize, 1, MPI_INTEGER, globalSizes, 1, MPI_INTEGER, l_mpicom, localrc)
     if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-     
+
     ! set up the deblocks
     allocate(deblock(1,2,petCount))
     csum = 0
@@ -351,11 +351,11 @@ function mct2esmf_create_Array_farrayPtr1DI4(farrayPtr, mpicom, petmap, name, rc
       call MPI_AllGATHER(pet, 1, MPI_INTEGER, l_petMap, 1, MPI_INTEGER, l_mpicom, localrc)
       if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
     endif
-    
+
     ! create fitting DELayout
     delayout = ESMF_DELayoutCreate(petMap=l_petMap, rc=localrc)
     if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-         
+
     ! create fitting DistGrid
     minC(1) = deblock(1,1,1)
     maxC(1) = deblock(1,2,petCount)
@@ -418,7 +418,7 @@ function mct2esmf_create_Array_GSmap(gsMap, mpicom, petmap, name, rc)
       call MPI_COMM_RANK(mpicom, lpet, localrc)
       call MPI_COMM_SIZE(mpicom, petCount, localrc)
       if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-    else  
+    else
       call ESMF_VMGetCurrent(vm, rc=localrc)
       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
 
@@ -437,12 +437,12 @@ function mct2esmf_create_Array_GSmap(gsMap, mpicom, petmap, name, rc)
     ! now use the mpi com
     ! number of local indices
     localSize(1) = listsize
- 
+
     ! gather all sizes locally
     allocate(globalSizes(petCount))
     call MPI_AllGATHER(localSize, 1, MPI_INTEGER, globalSizes, 1, MPI_INTEGER, l_mpicom, localrc)
     if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-     
+
     ! set up the deblocks
     allocate(deblock(1,2,petCount))
     csum = 0
@@ -462,11 +462,11 @@ function mct2esmf_create_Array_GSmap(gsMap, mpicom, petmap, name, rc)
       call MPI_AllGATHER(pet, 1, MPI_INTEGER, l_petMap, 1, MPI_INTEGER, l_mpicom, localrc)
       if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
     endif
-    
+
     ! create fitting DELayout
     delayout = ESMF_DELayoutCreate(petMap=l_petMap, rc=localrc)
     if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-         
+
     ! create fitting DistGrid
     minC(1) = deblock(1,1,1)
     maxC(1) = deblock(1,2,petCount)
@@ -515,7 +515,7 @@ function mct2esmf_init_Distgrid_GSmap(gsMap, mpicom, rc)
       mct_comm_id = mpicom
       call MPI_COMM_RANK(mpicom, lpet, localrc)
       if(localrc /= 0) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-    else  
+    else
       call ESMF_VMGetCurrent(vm, rc=localrc)
       if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
 
@@ -613,7 +613,7 @@ function mct2esmf_init_Array_ArrayGSmap(array, gsMap, name, rc)
 
     distgrid = mct2esmf_init_Distgrid_GSmap(gsMap, rc=localrc)
     if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
-    
+
     call ESMF_AttributeGet(array, name="mct_names", value=mct_names, rc=localrc)
     if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
 
@@ -652,7 +652,7 @@ subroutine mct2esmf_copy_Array_Av(attrVect, array, rc)
     a_dsize = ubound(a_fptr, 2)-lbound(a_fptr, 2)+1
     a_nfields = ubound(a_fptr, 1)-lbound(a_fptr, 1)+1
 
-    av_dsize = mct_aVect_lsize(aV=attrVect) 
+    av_dsize = mct_aVect_lsize(aV=attrVect)
     av_nfields = mct_aVect_nRAttr(aV=attrVect)
 
     if (av_dsize == 0 .or. av_nfields == 0) then
@@ -665,7 +665,7 @@ subroutine mct2esmf_copy_Array_Av(attrVect, array, rc)
         call shr_sys_flush(shr_log_unit)
         call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
     endif
-        
+
     ! a_fptr = attrVect%rattr
     a_off2 = lbound(a_fptr, 2)-1
     a_off1 = lbound(a_fptr, 1)-1
@@ -813,7 +813,7 @@ function mct2esmf_init_Array_DistgridList(distgrid, attname, name, value, rc)
     if(localrc /= ESMF_SUCCESS) call ESMF_Finalize(rc=localrc, endflag=ESMF_END_ABORT)
 
     ! convert name to attribute and attach to Array
-    
+
     nfields = shr_string_listGetNum(attname)
 
     ! create a 2D array, 1d undistributed index of fields, 2d is packed data

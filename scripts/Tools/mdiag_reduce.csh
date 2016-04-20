@@ -15,13 +15,13 @@ mdiag -n --xml | perl -pe 's/\<\/node\>/\<\/node\>\n/g' | perl mdiag_reduce.pl
 #    $job_id = -1;
 #    $nid_id = -1;
 #    foreach $mdiag_field (@mdiag_line){
-#      if (m/JOBLIST=\"(\d+)\"/){ 
+#      if (m/JOBLIST=\"(\d+)\"/){
 #        $job_id = $1;
 #      }
-#      if (m/NODEID=\"(\d+)\"/){ 
+#      if (m/NODEID=\"(\d+)\"/){
 #        $nid_id = $1;
 #      }
-#      if (m/NODESTATE=\"(\S+)\"/){ 
+#      if (m/NODESTATE=\"(\S+)\"/){
 #        $nid_state = $1;
 #      }
 #    }

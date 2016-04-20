@@ -6,7 +6,7 @@
 <title>Data Model Science Modes</title>
 <!-- ======================================================================= -->
 
-<para> 
+<para>
 When a given data models run, the user must specify which
 <emphasis>science mode</emphasis> it will run in.  Each data model has
 a fixed set of fields that it must send to the coupler, but it is the
@@ -15,9 +15,9 @@ computed.  Each mode activates various assumptions about what input
 fields are available from the input data streams, what input fields
 are available from the the coupler, and how to use this input data to
 compute the output fields sent to the coupler.
-</para> 
+</para>
 
-<para> 
+<para>
 In general, a mode might specify...
 <itemizedlist>
 <listitem><para> that fields be set to a time invariant constant (so that no input data is needed) </para></listitem>
@@ -39,15 +39,15 @@ with the science mode and should verify that the data model is
 providing data to the coupler as expected.
 </para>
 
-<para> 
+<para>
 The data model mode is a character string that is set in the namelist
 variable "datamode" in the namelist group "shr_strdata_nml".
-Although each data model, 
-<ulink url="../../cesm/doc/modelnl/nl_datm.html#stream">datm</ulink>, 
-<ulink url="../../cesm/doc/modelnl/nl_dlnd.html#stream">dlnd</ulink>, 
-<ulink url="../../cesm/doc/modelnl/nl_drof.html#stream">drof</ulink>, 
+Although each data model,
+<ulink url="../../cesm/doc/modelnl/nl_datm.html#stream">datm</ulink>,
+<ulink url="../../cesm/doc/modelnl/nl_dlnd.html#stream">dlnd</ulink>,
+<ulink url="../../cesm/doc/modelnl/nl_drof.html#stream">drof</ulink>,
 <ulink url="../../cesm/doc/modelnl/nl_docn.html#stream">docn</ulink>, and
-<ulink url="../../cesm/doc/modelnl/nl_dice.html#stream">dicn</ulink>, 
+<ulink url="../../cesm/doc/modelnl/nl_dice.html#stream">dicn</ulink>,
 has its own set of valid datamode values, two modes are common to all
 data models: COPYALL and NULL.
 <variablelist>
@@ -55,10 +55,10 @@ data models: COPYALL and NULL.
 <varlistentry>
 <term><option>dataMode = "COPYALL"</option></term>
 <listitem><para>
-The default mode is COPYALL -- the model will assume <emphasis>all</emphasis> 
+The default mode is COPYALL -- the model will assume <emphasis>all</emphasis>
 the data that must be sent to the coupler will be found in the input data streams,
 and that this data can be sent to the coupler, unaltered, except for spatial and
-temporal interpolation. 
+temporal interpolation.
 </para></listitem>
 </varlistentry>
 
@@ -146,7 +146,7 @@ these names for use within the data atmosphere model.
 <sect2 id="dlnd_modes">
 <title>Namelists</title>
 
-<para> 
+<para>
 The land model is unique because it supports land data and snow data
 (<emphasis>lnd</emphasis> and <emphasis>sno</emphasis>) almost as if
 they were two separate components, but they are in fact running in one
@@ -159,14 +159,14 @@ with an active glacier model (TG compsets). Both sets of data are
 assumed to be on the same grid.
 </para>
 
-<para> 
+<para>
 DLND namelists can be separated into two groups, <ulink
 url="../../cesm/doc/modelnl/nl_dlnd.html#nonstream">stream-independent
 namelist variables</ulink> that are specific to the DLND model and
 <ulink
 url="../../cesm/doc/modelnl/nl_dlnd.html#stream">stream-specific
 namelist variables</ulink> that are contained in share code and whose
-names are common to all the data models.  
+names are common to all the data models.
 </para>
 
 <para>
@@ -179,7 +179,7 @@ things (array of ...).
 </para>
 
 <para> For stream-dependent input, the namelist input file is
-<filename>dlnd_lnd_in</filename> and 
+<filename>dlnd_lnd_in</filename> and
 
 <filename>dlnd_sno_in</filename> (or <filename>dlnd_lnd_in_NNNN</filename> and
 <filename>dlnd_sno_in_NNNN</filename> for NNNN multiple instances) and the namelist group
@@ -215,7 +215,7 @@ these names for use within the data land model.
         "avsdf       ","anidf       ","snowh       ","taux        ","tauy        ", &
         "lat         ","sen         ","lwup        ","evap        ","swnet       ", &
         "lfrac       ","fv          ","ram1        ",                               &
-        "flddst1     ","flxdst2     ","flxdst3     ","flxdst4     ",                & 
+        "flddst1     ","flxdst2     ","flxdst3     ","flxdst4     ",                &
         "tsrf01      ","topo01      ","tsrf02      ","topo02      ","tsrf03      ", &
         "topo03      ","tsrf04      ","topo04      ","tsrf05      ","topo05      ", &
         "tsrf06      ","topo06      ","tsrf07      ","topo07      ","tsrf08      ", &
@@ -235,13 +235,13 @@ these names for use within the data land model.
 <sect2 id="drof_modes">
 <title>Namelists</title>
 
-<para> 
+<para>
 
 The data river runoff model is new and is effectively the runoff part of the dlnd model
 in CESM1.0 that has been made its own top level component.
 
 </para>
-<para> 
+<para>
 
 DROF namelists can be separated into two groups, <ulink
 url="../../cesm/doc/modelnl/nl_drof.html#nonstream">stream-independent
@@ -336,7 +336,7 @@ scientifically appropriate data for their particular application or use one
 of the standard SOM forcing files from the CESM control runs. Some of these
 are available in the <ulink url="https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata/ocn/docn7/SOM/">inputdata repository</ulink>. The user
 then edits the DOCN_SOM_FILENAME variable in env_run.xml to point to the
-appropriate SOM forcing dataset. A tool is available to derive valid SOM 
+appropriate SOM forcing dataset. A tool is available to derive valid SOM
 forcing.  More information on creating the <ulink
 url="http://www.cesm.ucar.edu/models/ccsm1.1/data8/SOM.pdf">SOM
 forcing</ulink> is also available.
@@ -376,11 +376,11 @@ url="../../cesm/doc/modelnl/nl_ice.html#nonstream">stream-independent namelist
 variables</ulink> that are specific to the DATM model and <ulink
 url="../../cesm/doc/modelnl/nl_dice.html#stream">stream-specific namelist
 variables</ulink> that are contained in share code and whose names are
-common to all the data models. 
+common to all the data models.
 </para>
 <para> For stream-independent input, the namelist input filename is
 hardwired in the data model code to "dice_in" (or dice_in_NNNN for
-multiple instances) and the namelist group is called "dice_nml". 
+multiple instances) and the namelist group is called "dice_nml".
 </para>
 
 <para> Its important to point out that the only currently supported
@@ -426,7 +426,7 @@ these names for use within the data ocean model.</para>
 <title>Data Land-Ice Model</title>
 <!-- ======================================================================= -->
 
-<para> 
+<para>
 This model does not yet exist.
 </para>
 

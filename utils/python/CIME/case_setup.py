@@ -78,7 +78,7 @@ def _build_usernl_files(case, model, comp):
                     shutil.copy(model_nl, nlfile)
 
 ###############################################################################
-def case_setup(caseroot, clean, test_mode):
+def case_setup(caseroot, clean=False, test_mode=False, reset=False):
 ###############################################################################
     os.chdir(caseroot)
 
@@ -98,6 +98,48 @@ def case_setup(caseroot, clean, test_mode):
                "Parameter '%s' must be defined" % vid)
 
     # Create batch script
+    if reset or clean:
+#        if not os.path.exists("case.run"):
+#            logger.info("clean option has already been invoked ... skipping ")
+#            return
+
+        # Clean batch script
+
+        backup_dir = "PESetupHist/b.%s" % time.strftime("%y%m%d-%H%M%S")
+        if not os.path.isdir(backup_dir):
+            os.makedirs(backup_dir)
+
+        # back up relevant files
+        for fileglob in ["case.run", "env_build.xml", "env_mach_pes.xml", "Macros*"]:
+            for filename in glob.glob(fileglob):
+                shutil.copy(filename, backup_dir)
+
+        os.remove("case.run")
+
+        # only do the following if are NOT in testmode
+        if not test_mode:
+            # rebuild the models (even on restart)
+            case.set_value("BUILD_COMPLETE", False)
+
+            # backup and then clean test script
+            if os.path.exists("case.test"):
+                shutil.copy("case.test", backup_dir)
+                os.remove("case.test")
+                logger.info("Successfully cleaned test script case.test")
+
+            if os.path.exists("case.testdriver"):
+                shutil.copy("case.testdriver", backup_dir)
+                os.remove("case.testdriver")
+                logger.info("Successfully cleaned test script case.testdriver")
+
+        logger.info("Successfully cleaned batch script case.run")
+
+        logger.info("Successfully cleaned batch script case.run")
+        logger.info("Some files have been saved to %s" % backup_dir)
+
+        with open("CaseStatus", "a") as fd:
+            fd.write("case.setup --clean %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
+
     if not clean:
         drv_comp = Component()
         models = drv_comp.get_valid_model_components()
@@ -181,28 +223,27 @@ def case_setup(caseroot, clean, test_mode):
 
             # Use BatchFactory to get the appropriate instance of a BatchMaker,
             # use it to create our batch scripts
-            batchmaker = get_batch_maker("run", case=case)
-
-            input_batch_script  = os.path.join(case.get_value("MACHDIR"), "template.case.run")
-            batchmaker.make_batch_script(input_batch_script, "case.run")
-
-            if testcase:
-                batchmaker.set_job("test")
-                testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
-                if os.path.exists(testscript):
-                    # Short term fix to be removed when csh tests are removed
-                    batchmaker._set_queue()
+            batch_jobs = case.get_batch_jobs()
+            batchmaker = None
+            for (job, template, task_count) in batch_jobs:
+                logger.info("Writing %s script"%job)
+                if batchmaker is None:
+                    batchmaker = get_batch_maker(job, case=case)
                 else:
-                    input_batch_script = os.path.join(case.get_value("MACHDIR"), "python.case.test")
-                    batchmaker.make_batch_script(input_batch_script, "case.test")
+                    if task_count == "default":
+                        batchmaker.override_node_count = None
+                    else:
+                        batchmaker.override_node_count = int(task_count)
+                    batchmaker.set_job(job)
 
-            # Make archive scripts
-            for archive in ["st_archive", "lt_archive"]:
-                logger.info("Creating batch script case.%s" % archive)
-                batchmaker.override_node_count = 1
-                batchmaker.set_job(archive)
-                batchmaker.make_batch_script(os.path.join(case.get_value("MACHDIR"), "template.%s" % archive),
-                                             "case.%s" % archive)
+                input_batch_script  = os.path.join(case.get_value("MACHDIR"), template)
+                if job == "case.test" and testcase is not None:
+                    testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
+                    # Short term fix to be removed when csh tests are removed
+                    if not os.path.exists(testscript):
+                        batchmaker.make_batch_script(input_batch_script, job)
+                else:
+                    batchmaker.make_batch_script(input_batch_script, job)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked
@@ -238,37 +279,3 @@ def case_setup(caseroot, clean, test_mode):
         with open("CaseStatus", "a") as fd:
             fd.write("case.setup %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
 
-    else:
-        if not os.path.exists("case.run"):
-            logger.info("clean option has already been invoked ... skipping ")
-            return
-
-        # Clean batch script
-
-        backup_dir = "PESetupHist/b.%s" % time.strftime("%y%m%d-%H%M%S")
-        if not os.path.isdir(backup_dir):
-            os.makedirs(backup_dir)
-
-        # back up relevant files
-        for fileglob in ["case.run", "env_build.xml", "env_mach_pes.xml", "Macros*"]:
-            for filename in glob.glob(fileglob):
-                shutil.copy(filename, backup_dir)
-
-        os.remove("case.run")
-
-        # only do the following if are NOT in testmode
-        if not test_mode:
-            # rebuild the models (even on restart)
-            case.set_value("BUILD_COMPLETE", False)
-
-            # backup and then clean test script
-            if os.path.exists("case.test"):
-                shutil.copy("case.test", backup_dir)
-                os.remove("case.test")
-                logger.info("Successfully cleaned test script case.test")
-
-        logger.info("Successfully cleaned batch script case.run")
-        logger.info("Some files have been saved to %s" % backup_dir)
-
-        with open("CaseStatus", "a") as fd:
-            fd.write("case.setup --clean %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))

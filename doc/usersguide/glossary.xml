@@ -59,7 +59,7 @@ POP. Component names will always be in all caps.
 <glossdef>
 <para>
 Preset configuration settings for a model run. These are
-defined in 
+defined in
 <ulink url="../cesm1.1/cesm/modelnl/compsets.html">component
 sets</ulink>.
 </para>
@@ -103,7 +103,7 @@ previous CESM case. Please see <link linkend="use_case_branch"><command>setting 
 <glossdef>
 <para>
 The supported machine name, and is defined in &env_case.xml;
-when you run the configure command. Please see 
+when you run the configure command. Please see
 <ulink url="../modelnl/machines.html">hardware platforms</ulink>
 for the list of supported machines.
 </para>

@@ -2,9 +2,9 @@
 
 <?xml-stylesheet type="text/xsl" href="setup_comp.xsl" ?>
 
-<definitions_variables> 
+<definitions_variables>
 
-  <entry id="COMP_OCN"> 
+  <entry id="COMP_OCN">
     <type>char</type>
     <valid_values>docn</valid_values>
     <default_value>docn</default_value>
@@ -13,7 +13,7 @@
     <desc>Name of ocn component</desc>
   </entry>
 
-  <entry id="DOCN_MODE"> 
+  <entry id="DOCN_MODE">
     <type>char</type>
     <valid_values>prescribed,som,copyall,interannual,null</valid_values>
     <default_value>prescribed</default_value>
@@ -60,7 +60,7 @@
     the box, the default SOM forcing file is not scientifically
     appropriate and is provided for testing and development purposes only.
     Users must create scientifically appropriate data for their particular
-    application.  A tool is available to derive valid SOM forcing. 
+    application.  A tool is available to derive valid SOM forcing.
     Default is prescribed.</desc>
   </entry>
 
@@ -76,7 +76,7 @@
     <desc>Sets SOM forcing data filename for pres runs, only used in D and E compset</desc>
   </entry>
 
-  <entry id="SSTICE_STREAM"> 
+  <entry id="SSTICE_STREAM">
     <type>char</type>
     <valid_values></valid_values>
     <default_value>CAMDATA</default_value>
@@ -96,7 +96,7 @@
     <values>
       <value compset="DOCN%DOM" grid="a%T31.*_oi%T31"						>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_48x96_clim_c050526.nc</value>
       <value compset="DOCN%DOM" grid="a%1.9x2.5.*_oi%1.9x2.5"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_clim_c061031.nc</value>
-      <value compset="DOCN%DOM" grid="a%0.9x1.25.*_oi%0.9x1.25"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>   
+      <value compset="DOCN%DOM" grid="a%0.9x1.25.*_oi%0.9x1.25"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>
       <value compset="DOCN%DOM" grid="a%0.47x0.63.*_oi%0.47x0.63"				>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_clim_c061106.nc</value>
       <value compset="DOCN%DOM" grid="a%0.23x0.31.*_oi%0.23x0.31"				>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_c110526.nc</value>
       <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)" grid=".+"				>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_1850_2012_c130411.nc</value>
@@ -111,14 +111,14 @@
       <value compset="1850_" grid="a%0.9x1.25.*_oi%0.9x1.25"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_pi_c101028.nc</value>
       <value compset="1850_" grid="a%0.47x0.63.*_oi%0.47x0.63"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.47x0.63_clim_pi_c101028.nc</value>
       <value compset="1850_" grid="a%0.23x0.31.*_oi%0.23x0.31"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_pi_c101028.nc</value>
-      <value compset="DATM.*_DLND.*_DICE.*_DOCN.*_DROF" 				        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>   
+      <value compset="DATM.*_DLND.*_DICE.*_DOCN.*_DROF" 				        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>
       <value compset=".*WW3" grid="a%ww3a"							>$DIN_LOC_ROOT/wav/ww3/core2_G4_ice_30min_20000601_to_05.nc</value>
     </values>
     <group>run_component_docn</group>
     <file>env_run.xml</file>
     <desc>Prescribed SST and ice coverage data file name.
     Sets SST and ice coverage data file name for DOCN prescribed runs.</desc>
-  </entry> 
+  </entry>
 
   <entry id="SSTICE_GRID_FILENAME">
     <type>char</type>
@@ -149,9 +149,9 @@
     <file>env_run.xml</file>
     <desc>Prescribed SST and ice coverage grid file name.
     Sets SST and ice coverage grid file name for prescribed runs.</desc>
-  </entry> 
+  </entry>
 
-  <entry id="SSTICE_YEAR_ALIGN"> 
+  <entry id="SSTICE_YEAR_ALIGN">
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>1</default_value>
@@ -170,9 +170,9 @@
     default behavior is to assume that the data from SSTICE_YEAR_START to
     SSTICE_YEAR_END cyclically repeats. This behavior is controlled by the
     &quot;taxmode&quot; stream option; see the data model documentation for more details.</desc>
-  </entry> 
+  </entry>
 
-  <entry id="SSTICE_YEAR_START"> 
+  <entry id="SSTICE_YEAR_START">
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>0</default_value>
@@ -185,15 +185,15 @@
     This is the first year of prescribed SST and ice coverage data to use. For
     example, if a data file has data for years 0-99, and SSTICE_YEAR_START is 10,
     years 0-9 in the file will not be used.</desc>
-  </entry> 
+  </entry>
 
-  <entry id="SSTICE_YEAR_END"> 
+  <entry id="SSTICE_YEAR_END">
     <name>value</name>
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>0</default_value>
     <values>
-      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)">2012</value> 
+      <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)">2012</value>
       <value compset=".*WW3" grid="a%ww3a">2000</value>
     </values>
     <group>run_component_cam_sstice</group>
@@ -219,5 +219,5 @@
     =========================================
   </help>
 
-</definitions_variables> 
+</definitions_variables>
 

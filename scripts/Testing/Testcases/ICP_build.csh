@@ -71,7 +71,7 @@ else
   echo "ICE GRID not supported by default testing in ICP test"
   exit -9
 endif
- 
+
 foreach by ($byvals)
 foreach bx ($bxvals)
   @ mxt  = (${ICE_NX} * ${ICE_NY}) / ($bx * $by * ${NTASKS_ICE})
@@ -153,8 +153,8 @@ foreach bx ($bxvals)
       if ($precheck == 0) then
         ./case.build --testmode $*
         if ($status != 0) then
-          exit -1    
-        endif 
+          exit -1
+        endif
 
         @ cnt = $cnt + 1
         set acnt = $cnt
@@ -169,8 +169,8 @@ foreach bx ($bxvals)
 	set CICE_BLCKX		= `./xmlquery CICE_BLCKX		--value`
 	set CICE_BLCKY		= `./xmlquery CICE_BLCKY		--value`
 	set CICE_MXBLCKS	= `./xmlquery CICE_MXBLCKS		--value`
-	set CICE_DECOMPTYPE	= `./xmlquery CICE_DECOMPTYPE		--value `  
-	set CICE_DECOMPSETTING	= `./xmlquery CICE_DECOMPSETTING	--value `  
+	set CICE_DECOMPTYPE	= `./xmlquery CICE_DECOMPTYPE		--value `
+	set CICE_DECOMPSETTING	= `./xmlquery CICE_DECOMPSETTING	--value `
 	set NTASKS_ICE		= `./xmlquery NTASKS_ICE		--value`
 	set NTHRDS_ICE		= `./xmlquery NTHRDS_ICE		--value`
         echo "precheck... $ICE_GRID ${ice_pes} $NTASKS_ICE $NTHRDS_ICE $CICE_BLCKX $CICE_BLCKY $CICE_MXBLCKS $CICE_DECOMPTYPE $CICE_DECOMPSETTING"
@@ -183,7 +183,7 @@ foreach bx ($bxvals)
       if ($precheck == 0) then
         echo "  skip..... $ICE_GRID ${ice_pes} $NTASKS_ICE $NTHRDS_ICE $bx $by $mxt $decomp" >> cice_perf.out
       else
-        echo "  skip..... $ICE_GRID ${ice_pes} $NTASKS_ICE $NTHRDS_ICE $bx $by $mxt $decomp" 
+        echo "  skip..... $ICE_GRID ${ice_pes} $NTASKS_ICE $NTHRDS_ICE $bx $by $mxt $decomp"
       endif
     endif
 

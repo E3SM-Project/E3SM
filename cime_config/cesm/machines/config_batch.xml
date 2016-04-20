@@ -2,16 +2,16 @@
 <config_batch version="1.0.0">
   <!--
      File:    config_batch.xml
-     Purpose: abstract out the parts of run scripts that are different, and use this configuration to 
-     create cesm run scripts from a single template.  
+     Purpose: abstract out the parts of run scripts that are different, and use this configuration to
+     create cesm run scripts from a single template.
 
-     batch_system:     the batch system type and version 
-     batch_query:      the batch query command for each batch system. 
-     batch_redirect:   Whether a redirect character is needed to submit jobs. 
-     batch_directive:  The string that prepends a batch directive for the batch system. 
+     batch_system:     the batch system type and version
+     batch_query:      the batch query command for each batch system.
+     batch_redirect:   Whether a redirect character is needed to submit jobs.
+     batch_directive:  The string that prepends a batch directive for the batch system.
      jobid_pattern:    A perl regular expression used to filter out the returned job id from a
-                       queue submission. 
-     depend_pattern:   
+                       queue submission.
+     depend_pattern:
     -->
   <batch_system type="template" version="x.y">
     <batch_query args=""></batch_query>
@@ -67,7 +67,6 @@
       <directive                       > -R "span[ptile={{ ptile }}]"</directive>
       <directive                       > -N  </directive>
       <directive default="poe"         > -a {{ poe }} </directive>
-      <directive                       > -x {{ queue_exclusive }} </directive>
       <directive default="cesm.stdout" > -o {{ cesm_stdout }}.%J  </directive>
       <directive default="cesm.stderr" > -e {{ cesm_stderr }}.%J  </directive>
       <directive                       > -J {{ job_id }} </directive>
@@ -164,7 +163,7 @@
       <directive>-l  nodes={{ num_nodes }}</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
-   </batch_system> 
+   </batch_system>
 
   <!-- erebus is PBS -->
   <batch_system MACH="erebus" version="x.y">
@@ -286,6 +285,26 @@
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
     </directives>
   </batch_system>
+
+  <batch_jobs>
+    <job name="case.run">
+      <template>template.case.run</template>
+      <task_count>default</task_count>
+    </job>
+   <job name="case.test">
+      <template>python.case.test</template>
+      <task_count>default</task_count>
+    </job>
+    <job name="case.st_archive">
+      <template>template.st_archive</template>
+      <task_count>1</task_count>
+    </job>
+    <job name="case.lt_archive">
+      <template>template.lt_archive</template>
+      <task_count>1</task_count>
+    </job>
+  </batch_jobs>
+
 
 </config_batch>
 

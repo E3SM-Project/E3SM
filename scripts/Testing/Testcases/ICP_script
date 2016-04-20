@@ -60,8 +60,8 @@ while ($cnt < $cntmax && $found == 1)
       set CICE_BLCKX		= `./xmlquery CICE_BLCKX		--value`
       set CICE_BLCKY		= `./xmlquery CICE_BLCKY		--value`
       set CICE_MXBLCKS	        = `./xmlquery CICE_MXBLCKS		--value`
-      set CICE_DECOMPTYPE	= `./xmlquery CICE_DECOMPTYPE		--value `  
-      set CICE_DECOMPSETTING	= `./xmlquery CICE_DECOMPSETTING	--value `  
+      set CICE_DECOMPTYPE	= `./xmlquery CICE_DECOMPTYPE		--value `
+      set CICE_DECOMPSETTING	= `./xmlquery CICE_DECOMPSETTING	--value `
       set NTASKS_ICE		= `./xmlquery NTASKS_ICE		--value`
       set NTHRDS_ICE		= `./xmlquery NTHRDS_ICE		--value`
 
@@ -87,10 +87,10 @@ if ( $?CplLogFile ) then
     if (-e $CplLogFile) then
        set pass = `zgrep "SUCCESSFUL TERMINATION" $CplLogFile | wc -l`
        if ($pass != 1) then
-           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG 
+           echo "ERROR: coupler log $CplLogFile indicates model run failed" >>& $TESTSTATUS_LOG
  	   exit -1
-       else 
-           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG 
+       else
+           echo "Success: test log is $CplLogFile" >>& $TESTSTATUS_LOG
        endif
     endif
 else

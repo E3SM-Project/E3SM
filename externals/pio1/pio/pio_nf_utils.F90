@@ -31,11 +31,11 @@ subroutine copy_pio_var01d(ifh, ofh, ivid, ovid, length, strlength)
   character(len=length), allocatable :: cval(:)
 
   integer :: ierr
-  
+
 !  ierr = pio_inq_vartype(ifh, ivid, itype)
 !  ierr = pio_inq_vartype(ofh, ovid, otype)
 
-  
+
   if( ivid%type.ne.ovid%type) then
      write(6,*) 'WARNING: copy_pio_var coercing type ', ivid%type, ' to ',ovid%type
   end if
@@ -79,11 +79,11 @@ subroutine copy_pio_var2d(ifh, ofh, ivid, ovid, length)
 !  character(len=length), allocatable :: cval(:,:)
 
   integer :: ierr
-  
+
 !  ierr = pio_inq_vartype(ifh, ivid, itype)
 !  ierr = pio_inq_vartype(ofh, ovid, otype)
 
-  
+
   if( ivid%type.ne.ovid%type) then
      write(6,*) 'WARNING: copy_pio_var coercing type ', ivid%type, ' to ',ovid%type
   end if

@@ -24,7 +24,7 @@ my $banner = '=' x 80;
 #-----------------------------------------------------------------------------------------------
 # Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
 # descriptions to be printed to STDOUT before the error messages start.
-*STDOUT->autoflush();                  
+*STDOUT->autoflush();
 
 if ($#ARGV == -1) {
     print "Invoke create_clone -help [or -h] for usage\n";
@@ -99,7 +99,7 @@ $caseroot = abs_path("$case");
 if (-d $caseroot) {
     die "New caseroot directory $caseroot already exists \n";
 }
-my @dirs = split "/", $caseroot, -1; 
+my @dirs = split "/", $caseroot, -1;
 my $num = scalar @dirs;
 $case = @dirs[$num-1];
 
@@ -113,7 +113,7 @@ $cloneroot = abs_path("$clone");
 (-d "$cloneroot")  or  die <<"EOF";
 ** Cannot find cloneroot directory \"$cloneroot\" **
 EOF
-my @dirs = split "/", $cloneroot, -1; 
+my @dirs = split "/", $cloneroot, -1;
 my $num = scalar @dirs;
 $clone = @dirs[$num-1];
 
@@ -152,32 +152,33 @@ require Config::SetupTools;
 require Batch::BatchMaker;
 
 #-----------------------------------------------------------------------------------------------
-# Create the case directory tree utilizing the clone tree 
+# Create the case directory tree utilizing the clone tree
 my $sysmod;
 
-# Create $caseroot directories 
-$sysmod = "mkdir -p $caseroot"; 
+# Create $caseroot directories
+$sysmod = "mkdir -p $caseroot";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-$sysmod = "cp -rp $cloneroot/* $caseroot"; 
+$sysmod = "cp -rp $cloneroot/* $caseroot";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Remove unwanted files from $cloneroot
 # Note - script files used to be named using the first 12-15 chars of $clone, but are now named case.$SCRIPT
-# Need to remove those. 
+# Need to remove those.
 $sysmod = "rm -rf $caseroot/Buildconf/*"  ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "rm -rf $caseroot/CaseDocs/*"   ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "rm -rf $caseroot/LockedFiles/*"; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "rm -rf $caseroot/logs/*"       ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "rm -rf $caseroot/timing/*"     ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "rm -rf $caseroot/TestStatus*"  ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "rm -rf $caseroot/env_test.xml"  ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 # Remove case.* scripts
-$sysmod = "rm -f $caseroot/case.*"; 
+$sysmod = "rm -f $caseroot/case.*";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "rm -f $caseroot/*~";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Need to copy back in the CaseDocs/README
-$sysmod = "cp -rp $cloneroot/README.case $caseroot/CaseDocs/README.case"; 
+$sysmod = "cp -rp $cloneroot/README.case $caseroot/CaseDocs/README.case";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # append create_clone and args to cloned case README.case
@@ -203,7 +204,7 @@ my @casesearch = ($caseroot);
 find(\&substitute, @casesearch);
 
 # Obtain variables needed below
-my $username  = "$ENV{'USER'}"; 
+my $username  = "$ENV{'USER'}";
 $sysmod = "./xmlchange USER=$username"			; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 $sysmod = "./xmlchange CASE=$case"			; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 $sysmod = "./xmlchange CASEROOT=$caseroot"		; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
@@ -223,7 +224,7 @@ if($opts{'keepexe'})
     $sysmod = "cp -Rp $cloneroot/Buildconf/* $caseroot/Buildconf/"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 
-# --- Set project id 
+# --- Set project id
 # Note: we do not just copy this from the clone because it seems likely that
 # users will want to change this sometimes, especially when cloning another
 # user's case. However, note that, if a project is not given, the fallback will
@@ -239,7 +240,7 @@ if ($opts{'project'}) {
 my $set_project = ProjectTools::set_project($project);
 if ($set_project) {
     $sysmod = "./xmlchange -file env_batch.xml -id PROJECT -val $project"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-} 
+}
 
 # Copy env_case.xml in locked files
 $sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml";
@@ -259,24 +260,25 @@ $sysmod = "chmod 755 $caseroot/case.build";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Create case.clean_build
-$sysmod = "cp $cimeroot/scripts/Tools/clean_build $caseroot/case.clean_build"; 
+$sysmod = "cp $cimeroot/scripts/Tools/case.clean_build $caseroot/case.clean_build";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-    
+
 # Create case.submit
-$sysmod = "cp  $cimeroot/scripts/Tools/case.submit $caseroot/case.submit"; 
+$sysmod = "cp  $cimeroot/scripts/Tools/case.submit $caseroot/case.submit";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 
 #-----------------------------------------------------------------------------------------------
 # Create batch script
-$sysmod = "./case.setup"; 
+$ENV{PYTHONPATH} = "$cimeroot/scripts/Tools:$cimeroot/utils/python";
+$sysmod = "./case.setup";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 
 sub substitute()
 {
     my $filetosearch = $File::Find::name;
-    if(-f $filetosearch && ! -d $filetosearch)
+    if(-f $filetosearch && ! -d $filetosearch && -w $filetosearch)
     {
         #print "file to search: $filetosearch\n";
         open(my $F, "<", $filetosearch) or die "could not open $filetosearch for reading, $!, $?";

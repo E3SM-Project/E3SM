@@ -9,7 +9,7 @@
 
 	<!-- definition of batch_system complex elements -->
 	<xs:element name="batch_system" maxOccurs="unbounded">
-	  <xs:complexType>   		  
+	  <xs:complexType>
 	    <xs:sequence>
 
 	      <xs:element name="batch_query" minOccurs="1" maxOccurs="1">
@@ -48,12 +48,12 @@
 	    </xs:sequence>
 	    <xs:attribute name="type" type="xs:string" use="required"/>
 	    <xs:attribute name="version" type="xs:string" use="required"/>
-	  </xs:complexType>   		  
+	  </xs:complexType>
         </xs:element>
-	
+
       </xs:sequence>
       <xs:attribute name="version" type="xs:string" use="required"/>
     </xs:complexType>
   </xs:element>
-  
+
 </xs:schema>

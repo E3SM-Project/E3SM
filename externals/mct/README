@@ -8,7 +8,7 @@
     Jay Larson
     Everest Ong
     Ray Loy
-	
+
     For more information, see http://www.mcs.anl.gov/mct
 
     See MCT/COPYRIGHT for license.
@@ -18,7 +18,7 @@
   This is version 2.9 of the Model Coupling Toolkit (MCT).
 
   Our purpose in creating this toolkit is to support the construction
-  of highly portable and extensible high-performance couplers 
+  of highly portable and extensible high-performance couplers
   for distributed memory parallel coupled models.
 
 ######################################################################
@@ -33,7 +33,7 @@
   mct/     -- Source code for the Model Coupling Toolkit.
 
   mpeu/    -- Source code for the message-passing environment utilities
-              library (MPEU), which provides support for MCT 
+              library (MPEU), which provides support for MCT
 
   mpi-serial/  -- Source code for optional mpi replacement library.
 
@@ -100,7 +100,7 @@ Optional Contents available
   for another.
 
   Example: If configure has trouble finding the correct F90 compiler:
-    > ./configure FC=pgf90. 
+    > ./configure FC=pgf90.
 
   You can also direct configure through environment variables:
     > setenv FC xlf90
@@ -123,7 +123,7 @@ Optional Contents available
   and the *lib.a files to /usr/lib.   To override these choices, use
   "-prefix" when running configure:
        > ./configure --prefix=/home/$USER
-  With the above option, "make install" will place .mod's in /home/$USER/include 
+  With the above option, "make install" will place .mod's in /home/$USER/include
   and *lib.a's in /home/$USER/lib
 
 ######################################################################
@@ -140,8 +140,8 @@ Optional Contents available
 
 ######################################################################
 
-  Both MCT and MPEU source code are self-documenting.  All modules 
-  and routines contain prologues that can be extracted and processed 
+  Both MCT and MPEU source code are self-documenting.  All modules
+  and routines contain prologues that can be extracted and processed
   into LaTeX source code by the public-domain tool ProTeX.  ProTeX is
   included in the MCT source and available from:
   http://gmao.gsfc.nasa.gov/software/protex/
@@ -191,7 +191,7 @@ Optional Contents available
   30 Nov, 2010 -- version 2.7.2 (released only in CESM1.0.3)
   25 Jan, 2011 -- version 2.7.3 (not released)
   07 Mar, 2012 -- version 2.7.4 (not released)
-  30 Apr, 2012 -- version 2.8.0 
+  30 Apr, 2012 -- version 2.8.0
   05 Jul, 2012 -- version 2.8.1 (not released)
   12 Sep, 2012 -- version 2.8.2 (not released)
   16 Dec, 2012 -- version 2.8.3

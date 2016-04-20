@@ -2,7 +2,7 @@
 !    Math and Computer Science Division, Argonne National Laboratory   !
 !-----------------------------------------------------------------------
 ! CVS $Id: srcmodel.F90,v 1.8 2005-11-18 23:15:38 rloy Exp $
-! CVS $Name:  $ 
+! CVS $Name:  $
 !BOP -------------------------------------------------------------------
 !
 ! !MODULE: srcmodel -- generic model for unit tester
@@ -45,7 +45,7 @@ implicit none
 
 private
 ! except
-      
+
 ! !PUBLIC MEMBER FUNCTIONS:
 
 public srcinit
@@ -161,7 +161,7 @@ subroutine srcinit(GSMap,IMPORT,EXPORT,comm,compid)
 
 ! initialize EXPORT Av with two real attributes.
   call AttrVect_init(EXPORT,rList="field3:field4",lsize=avsize)
-  
+
   call AttrVect_zero(EXPORT)
 
   if(rank==0) then
@@ -196,7 +196,7 @@ subroutine srcrun(IMPORT,EXPORT)
 !EOP -------------------------------------------------------------------
 ! local variables
   integer :: avsize,ier,i
-     
+
 ! Nothing to do with IMPORT
 
 

@@ -3,8 +3,8 @@
 <comment> Generic Stream description file</comment>
 <dataSource>GENERIC</dataSource>
 <domainInfo>
-  <variableNames> </variableNames> 
-  <filePath> </filePath> 
+  <variableNames> </variableNames>
+  <filePath> </filePath>
   <fileNames> </fileNames>
 </domainInfo>
 <fieldInfo>

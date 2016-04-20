@@ -17,7 +17,7 @@
 
 	An <emphasis>input data stream</emphasis> is a time-series of input data files
 	where all the fields in the stream are located in the same data file
-	and all share the same spatial and temporal coordinates 
+	and all share the same spatial and temporal coordinates
 	(ie. are all on the same grid and share the same time axis).
 	Normally a time axis has a uniform dt, but this is not a requirement.
 
@@ -36,9 +36,9 @@
 	The data models can <emphasis>loop</emphasis> over stream data --
 	repeatedly cycle over some subset of an input stream's time axis.
 	When looping, the models can only loop over whole years.
-	For example, an input stream might have SST data for years 1950 through 2000, 
+	For example, an input stream might have SST data for years 1950 through 2000,
 	but a model could loop over the data for years 1960 through 1980.
-	A model <emphasis>cannot</emphasis> loop over partial years, for example, 
+	A model <emphasis>cannot</emphasis> loop over partial years, for example,
 	from 1950-Feb-10 through 1980-Mar-15.
 
       </para> <para>
@@ -65,7 +65,7 @@
 	to use them is input via the strdata ("stream data") Fortran namelist,
 	while meta-data that describes the stream data itself is found in an
 	xml-like text file called a "stream description file."
-      </para> 
+      </para>
     </sect2>
 
     <!-- ======================================================================= -->
@@ -86,7 +86,7 @@
       </para>
 
       <para>
-	The following namelist are available with the strdata namelist. 
+	The following namelist are available with the strdata namelist.
 
 	<simplelist type='vert'>
 	  <member>dataMode  - component specific mode</member>
@@ -180,16 +180,16 @@
 	fillmask   = 'nomask','nomask','nomask','nomask'
 	mapalgo    = 'bilinear','bilinear','bilinear','bilinear'
 	mapmask    = 'nomask','nomask','nomask','nomask'
-	streams    = "datm.streams.txt.CLM_QIAN.Solar  1895 1948 1972  ", 
+	streams    = "datm.streams.txt.CLM_QIAN.Solar  1895 1948 1972  ",
         "datm.streams.txt.CLM_QIAN.Precip 1895 1948 1972  ",
-        "datm.streams.txt.CLM_QIAN.TPQW   1895 1948 1972  ", 
+        "datm.streams.txt.CLM_QIAN.TPQW   1895 1948 1972  ",
         "datm.streams.txt.presaero.trans_1850-2000 1849 1849 2006"
 	taxmode    = 'cycle','cycle','cycle','cycle'
 	tintalgo   = 'coszen','nearest','linear','linear'
 	vectors    = 'null'
-      </screen> 
+      </screen>
 
-      <para> 
+      <para>
 	As is discussed in the CESM1.2 User's Guide, to change the contents of
 	<filename>datm_atm_in</filename>, you can edit
 	<filename>$CASEROOT/user_nl_datm</filename> to change any of the above
@@ -207,26 +207,26 @@
       <screen>
 	!------------------------------------------------------------------------
 	! Users should ONLY USE user_nl_datm to change namelists variables
-	! Users should add all user specific namelist changes below in the form of 
-	! namelist_var = new_namelist_value 
-	! Note that any namelist variable from shr_strdata_nml and datm_nml can 
-	! be modified below using the above syntax 
+	! Users should add all user specific namelist changes below in the form of
+	! namelist_var = new_namelist_value
+	! Note that any namelist variable from shr_strdata_nml and datm_nml can
+	! be modified below using the above syntax
 	! User preview_namelists to view (not modify) the output namelist in the
 	! directory $CASEROOT/CaseDocs
 	! To modify the contents of a stream txt file, first use preview_namelists
 	! to obtain the contents of the stream txt files in CaseDocs, and then
-	! place a copy of the  modified stream txt file in $CASEROOT with the string 
-	! user_ prepended. 
+	! place a copy of the  modified stream txt file in $CASEROOT with the string
+	! user_ prepended.
 	!------------------------------------------------------------------------
-	streams    = "datm.streams.txt.CLM_QIAN.Solar  1895 1948 1900  ", 
+	streams    = "datm.streams.txt.CLM_QIAN.Solar  1895 1948 1900  ",
         "datm.streams.txt.CLM_QIAN.Precip 1895 1948 1900  ",
-        "datm.streams.txt.CLM_QIAN.TPQW   1895 1948 1900  ", 
+        "datm.streams.txt.CLM_QIAN.TPQW   1895 1948 1900  ",
         "datm.streams.txt.presaero.trans_1850-2000 1849 1849 2006"
       </screen>
 
       <para>
 	and the contents of shr_strdata_nml (in both $CASEROOT/CaseDocs and $RUNDIR)
-	would be 
+	would be
       </para>
 
       <screen>
@@ -237,14 +237,14 @@
 	fillmask   = 'nomask','nomask','nomask','nomask'
 	mapalgo    = 'bilinear','bilinear','bilinear','bilinear'
 	mapmask    = 'nomask','nomask','nomask','nomask'
-	streams    = "datm.streams.txt.CLM_QIAN.Solar  1895 1948 1900  ", 
+	streams    = "datm.streams.txt.CLM_QIAN.Solar  1895 1948 1900  ",
         "datm.streams.txt.CLM_QIAN.Precip 1895 1948 1900  ",
-        "datm.streams.txt.CLM_QIAN.TPQW   1895 1948 1900  ", 
+        "datm.streams.txt.CLM_QIAN.TPQW   1895 1948 1900  ",
         "datm.streams.txt.presaero.trans_1850-2000 1849 1849 2006"
 	taxmode    = 'cycle','cycle','cycle','cycle'
 	tintalgo   = 'coszen','nearest','linear','linear'
 	vectors    = 'null'
-      </screen> 
+      </screen>
 
       <para> As is discussed in the User's Guide, you should use
 	<command>preview_namelists</command> to view (not modify) the output
@@ -266,8 +266,8 @@
 	specifies the names of the fields in the stream, the names of the
 	input data files, and the file system directory where the data files
 	are located.  In addition, a few other options are available such as
-	the time axis offset parameter. 
-      </para> 
+	the time axis offset parameter.
+      </para>
 
       <para>
 	In CESM1.2, each data model's <command>build-namelist</command>
@@ -313,7 +313,7 @@
 
 	    <itemizedlist>
 	      <listitem>
-		<para>Edit <filename>user_datm.streams.txt.CLM_QIAN.Solar </filename>  
+		<para>Edit <filename>user_datm.streams.txt.CLM_QIAN.Solar </filename>
 		  with your desired changes.
 		</para>
 	      </listitem>
@@ -321,7 +321,7 @@
 		<para><emphasis>Be sure not to put any tab characters in the file: use spaces instead.</emphasis></para>
 	      </listitem>
 	      <listitem>
-		<para>In contrast to other user_nl_xxx files, be sure to set all relevant data model settings in the xml files, issue the <command>preview_namelist </command>  
+		<para>In contrast to other user_nl_xxx files, be sure to set all relevant data model settings in the xml files, issue the <command>preview_namelist </command>
 		  command and THEN edit the <filename>user_datm.streams.txt.CLM_QIAN.Solar </filename>  file.
 		</para>
 	      </listitem>
@@ -329,7 +329,7 @@
 		<para><command>Once you have created a user_xxx.streams.txt.* file, further modifications to the relevant data model settings in the xml files will be ignored.</command></para>
 	      </listitem>
 	      <listitem>
-		<para>If you later realize that you need to change some settings in an xml file, you should remove the user_xxx.streams.txt.* file(s), make the modifications in the xml file, rerun <command>preview_namelists, </command> 
+		<para>If you later realize that you need to change some settings in an xml file, you should remove the user_xxx.streams.txt.* file(s), make the modifications in the xml file, rerun <command>preview_namelists, </command>
 		  and then reintroduce your modifications into a new user_xxx.streams.txt.* stream file(s).
 		</para>
 	      </listitem>
@@ -337,7 +337,7 @@
 
 	  </listitem>
 
-	  <listitem><para> Call <command>preview_namelists</command> 
+	  <listitem><para> Call <command>preview_namelists</command>
 	  </para></listitem>
 
 	  <listitem><para> Verify that your changes do indeed appear in the
@@ -348,9 +348,9 @@
 	  </para></listitem>
 
 	</orderedlist>
-      </para> 
+      </para>
 
-      <para> 
+      <para>
 	The data elements found in the stream description file are:
       </para>
 
@@ -376,8 +376,8 @@
 		      The file system directory where the data files are located.
 		</para></listitem></varlistentry>
 		<varlistentry><term><option>fileNames</option></term><listitem><para>
-		      The list of data files to use.  If there is more than one file, 
-		      the files must be in chronological order, that is, the dates in time axis 
+		      The list of data files to use.  If there is more than one file,
+		      the files must be in chronological order, that is, the dates in time axis
 		      of the first file are before the dates in the time axis of the second file.
 		</para></listitem></varlistentry>
 		<varlistentry><term><option>tInterpAlgo</option></term><listitem><para>
@@ -446,7 +446,7 @@
 	  <para>
 	    Actual example:
 	  </para>
-	  
+
 	  <screen>
 
 	    &lt;stream&gt;

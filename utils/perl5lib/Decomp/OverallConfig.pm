@@ -25,7 +25,7 @@
 #     ReadXML ------------ Read in the XML file and return a hash with data
 #
 # COLLABORATORS
-# 
+#
 # XML::Lite
 #
 # HISTORY

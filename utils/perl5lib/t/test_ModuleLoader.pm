@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 package test_ModuleLoader;
 
 use Data::Dumper;
@@ -12,20 +12,20 @@ sub set_machine
 {
 	my $self = shift;
 	my $machine = shift;
-	
+
 	$self->{machine} = $machine;
 }
 #==============================================================================
-# Common test fixtures for all tests. these get reused across all test instances, 
-# They MUST be read-only  
+# Common test fixtures for all tests. these get reused across all test instances,
+# They MUST be read-only
 #==============================================================================
 sub startup: Test(startup => 0) {
 	my $self = shift;
-	# set up non-machine-specific stuff here. 
+	# set up non-machine-specific stuff here.
 	#$self->{scriptsroot} = Cwd::abs_path("../../../scripts/");
 	$self->{cimeroot} = Cwd::abs_path("../../../");
 	#TODO defined the caseroot?
-	
+
 	#if($self->{machine} eq 'goldbach')
 	#{
 	#	$self->{init_path} = "/usr/share/Modules/init/";
@@ -34,7 +34,7 @@ sub startup: Test(startup => 0) {
 }
 
 #==============================================================================
-# 
+#
 #==============================================================================
 sub shutdown: Test(shutdown) {
 	my $self = shift;
@@ -56,7 +56,7 @@ sub teardown : Test(setup => 0) {
 
 
 #==============================================================================
-# Tests  
+# Tests
 #==============================================================================
 sub test_new() : Test(1)
 {
@@ -68,22 +68,22 @@ sub test_new() : Test(1)
 	#my $scriptsroot = "../../../scripts";
 	#my $cimeroot = "../../../";
 	my $cimeroot = "../../";
-	
-	my $moduleloader = Module::ModuleLoader->new(machine => $machine, compiler => $compiler, mpilib => $mpilib, 
+
+	my $moduleloader = Module::ModuleLoader->new(machine => $machine, compiler => $compiler, mpilib => $mpilib,
 	                                     debug => "FALSE", cimeroot => $cimeroot, caseroot => "$cimeroot/Tools");
-	
+
 	isa_ok($moduleloader, "Module::ModuleLoader");
-                                         
+
 }
 
 #sub test_moduleInit_brutus() : Test(2)
 #{
 #	my $self = shift;
-#	my $moduleloaderbrutus  = Module::ModuleLoader->new(machine => 'brutus', compiler => 'pgi', mpilib => 'openmpi', 
+#	my $moduleloaderbrutus  = Module::ModuleLoader->new(machine => 'brutus', compiler => 'pgi', mpilib => 'openmpi',
 #                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
-#	
+#
 #	$moduleloaderbrutus->moduleInit();
-#	
+#
 #	ok($moduleloaderbrutus->{initpath} eq '/etc/profile.d/modules.perl') || diag($moduleloaderbrutus->{initpath});
 #	ok($moduleloaderbrutus->{cmdpath} eq '/usr/bin/modulecmd perl') || diag($moduleloaderbrutus->{cmdpath});
 #}
@@ -97,20 +97,20 @@ sub test_new() : Test(1)
 #
 #    my $moduleloaderbrutus  = Module::ModuleLoader->new(machine => 'brutus', compiler => 'intel', mpilib => 'mpich',
 #                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
-#	
-#                                 
+#
+#
 #    my @actualmodules = $moduleloaderbrutus->findModulesFromMachinesDir();
-#	is_deeply(\@expectedbrutusmodules, \@actualmodules); 
+#	is_deeply(\@expectedbrutusmodules, \@actualmodules);
 #}
 #
 #sub test_writeXMLFileForCase_brutus() : Test(1)
 #{
 #	my $self = shift;
-#	
+#
 #	my $moduleloader = Module::ModuleLoader->new(machine => 'brutus', compiler => 'intel', mpilib => 'mpich',
 #                                                 debug => 'FALSE', cimeroot => "../../", caseroot => ".");
 #	$moduleloader->writeXMLFileForCase();
-#	
+#
 #	my $expectedfile = "./t/mocks_ModuleLoader/mach_specific.brutus.xml";
 #	open my $EXPECTED, "<", $expectedfile or die "could not open $expectedfile";
 #	binmode $EXPECTED;
@@ -122,7 +122,7 @@ sub test_new() : Test(1)
 #    binmode $ACTUAL;
 #	my $actual = do { local $/; <$ACTUAL> };
 #	close $ACTUAL;
-#	
+#
 #	cmp_ok($actual, 'eq', $expected);
 #	unlink $actualfile;
 #}
@@ -130,19 +130,19 @@ sub test_new() : Test(1)
 #sub test_findModulesForCase_brutus() : Test(1)
 #{
 #	my $self = shift;
-#	
+#
 #	my $moduleloader = Module::ModuleLoader->new(machine => 'brutus', compiler => 'intel', mpilib => 'mpich',
 #                                                 debug => 'FALSE', cimeroot => "../../", caseroot => ".");
-#	
+#
 #	$moduleloader->writeXMLFileForCase();
 #	my @actualmodules = $moduleloader->findModulesForCase();
-#	
+#
 #    my @expectedmodules = ( { action => 'purge', actupon => '', seqnum => 1},
 #                                  { action => 'load',  actupon => 'intel/10.1.018', seqnum => 2},
 #                                  { action => 'load',  actupon => 'mvapich2/1.4rc2', seqnum => 3},
 #                                  { action => 'load',  actupon => 'netcdf/4.0.1',    seqnum => 4} );
 #    is_deeply(\@expectedmodules, \@actualmodules);
-#	
+#
 #}
 #
 #sub test_writeCshModuleFile_brutus() : Test(1):
@@ -154,10 +154,10 @@ sub test_new() : Test(1)
 #    $moduleloader->writeXMLFileForCase();
 #	$moduleloader->findModulesForCase();
 #	$moduleloader->writeCshModuleFile();
-#	
+#
 #	my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.brutus.csh";
 #	open (my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
-#	binmode $EXPECTED; 
+#	binmode $EXPECTED;
 #    my $expected = do { local $/; <$EXPECTED> };
 #	close $EXPECTED;
 #
@@ -173,7 +173,7 @@ sub test_new() : Test(1)
 #sub test_writeShModuleFile_brutus() : Test(1):
 #{
 #	my $self = shift;
-#	
+#
 #	my $moduleloader = Module::ModuleLoader->new(machine => 'brutus', compiler => 'intel', mpilib => 'mpich',
 #                                                 debug => 'FALSE', cimeroot => "../../", caseroot => ".");
 #
@@ -183,7 +183,7 @@ sub test_new() : Test(1)
 #
 #	my $expectedfile = "./t/mocks_ModuleLoader/env_mach_specific.brutus.sh";
 #	open (my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
-#	binmode $EXPECTED; 
+#	binmode $EXPECTED;
 #    my $expected = do { local $/; <$EXPECTED> };
 #	close $EXPECTED;
 #
@@ -199,11 +199,11 @@ sub test_new() : Test(1)
 #sub test_moduleInit_babbage() : Test(2)
 #{
 #	my $self = shift;
-#	my $moduleloader = Module::ModuleLoader->new(machine => 'babbage', compiler => 'intel', mpilib => 'impi', 
+#	my $moduleloader = Module::ModuleLoader->new(machine => 'babbage', compiler => 'intel', mpilib => 'impi',
 #                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
-#	
+#
 #	$moduleloader->moduleInit();
-#	
+#
 #	ok($moduleloader->{initpath} eq '/usr/share/Modules/init/perl.pm') || diag($moduleloader->{initpath});
 #	ok($moduleloader->{cmdpath} eq '/usr/bin/modulecmd perl') || diag($moduleloader->{cmdpath});
 #}
@@ -211,7 +211,7 @@ sub test_new() : Test(1)
 #sub test_findModulesFromMachinesDir_babbage() : Test(1):
 #{
 #	my $self = shift;
-#	my @expectedmodules = ( 
+#	my @expectedmodules = (
 #                            { action => 'unload', actupon => 'intel', seqnum => 1},
 #                            { action => 'unload', actupon => 'impi', seqnum => 2},
 #                            { action => 'unload', actupon => 'hdf5', seqnum => 3},
@@ -219,7 +219,7 @@ sub test_new() : Test(1)
 #                            { action => 'load', actupon => 'intel/13.1.2', seqnum => 5},
 #                            { action => 'load', actupon => 'impi/4.1.1', seqnum => 6},
 #                          );
-#	my $moduleloader = Module::ModuleLoader->new(machine => 'babbage', compiler => 'intel', mpilib => 'impi', 
+#	my $moduleloader = Module::ModuleLoader->new(machine => 'babbage', compiler => 'intel', mpilib => 'impi',
 #                                                 debug => 'FALSE', cimeroot => "../../", caseroot => '.');
 #	$moduleloader->moduleInit();
 #	my @actualmodules = $moduleloader->findModulesFromMachinesDir();
@@ -229,7 +229,7 @@ sub test_new() : Test(1)
 #sub test_findModulesForCase_babbage() : Test(1):
 #{
 #	my $self = shift;
-#	my @expectedmodules = ( 
+#	my @expectedmodules = (
 #                            { action => 'unload', actupon => 'intel', seqnum => 1},
 #                            { action => 'unload', actupon => 'impi', seqnum => 2},
 #                            { action => 'unload', actupon => 'hdf5', seqnum => 3},
@@ -237,7 +237,7 @@ sub test_new() : Test(1)
 #                            { action => 'load', actupon => 'intel/13.1.2', seqnum => 5},
 #                            { action => 'load', actupon => 'impi/4.1.1', seqnum => 6},
 #                          );
-#	my $moduleloader = Module::ModuleLoader->new(machine => 'babbage', compiler => 'intel', mpilib => 'impi', 
+#	my $moduleloader = Module::ModuleLoader->new(machine => 'babbage', compiler => 'intel', mpilib => 'impi',
 #                                                 debug => 'FALSE', cimeroot => "../../", caseroot => '.');
 #
 #    $moduleloader->writeXMLFileForCase();
@@ -321,10 +321,10 @@ sub test_new() : Test(1)
 #sub test_moduleInit_babbageKnc() : Test(2)
 #{
 #	my $self = shift;
-#	my $moduleloader = Module::ModuleLoader->new(machine => 'babbageKnc', compiler => 'intel', mpilib => 'impi', 
+#	my $moduleloader = Module::ModuleLoader->new(machine => 'babbageKnc', compiler => 'intel', mpilib => 'impi',
 #                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
 #	$moduleloader->moduleInit();
-#	
+#
 #	ok($moduleloader->{initpath} eq '/usr/share/Modules/init/perl.pm') || diag($moduleloader->{initpath});
 #	ok($moduleloader->{cmdpath} eq '/usr/bin/modulecmd perl') || diag($moduleloader->{cmdpath});
 #}
@@ -448,11 +448,11 @@ sub test_new() : Test(1)
 #sub test_moduleInit_bluewaters() : Test(2)
 #{
 #	my $self = shift;
-#	my $moduleloader = Module::ModuleLoader->new(machine => 'bluewaters', compiler => 'pgi', mpilib => 'mpich', 
+#	my $moduleloader = Module::ModuleLoader->new(machine => 'bluewaters', compiler => 'pgi', mpilib => 'mpich',
 #                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
-#	
+#
 #	$moduleloader->moduleInit();
-#	
+#
 #	ok($moduleloader->{initpath} eq '/opt/modules/default/init/perl.pm') || diag($moduleloader->{initpath});
 #	ok($moduleloader->{cmdpath} eq '/opt/modules/3.2.10.3/bin/modulecmd perl') || diag($moduleloader->{cmdpath});
 #}
@@ -460,24 +460,24 @@ sub test_new() : Test(1)
 #sub test_findModulesFromMachinesDir_bluewaters() : Test(3):
 #{
 #	my $self = shift;
-#	my $moduleloader = Module::ModuleLoader->new(machine => 'bluewaters', compiler => 'pgi', mpilib => 'mpich', 
+#	my $moduleloader = Module::ModuleLoader->new(machine => 'bluewaters', compiler => 'pgi', mpilib => 'mpich',
 #                                                       debug => "FALSE", cimeroot => "../../", caseroot => '.');
 #	my @expectedmodules = (
-#                             { action => 'rm', actupon => 'PrgEnv-pgi', seqnum => 1}, 
-#                             { action => 'rm', actupon => 'PrgEnv-cray', seqnum => 2}, 
-#                             { action => 'rm', actupon => 'PrgEnv-gnu', seqnum => 3}, 
-#                             { action => 'rm', actupon => 'pgi', seqnum => 4}, 
-#                             { action => 'rm', actupon => 'cray', seqnum => 5}, 
-#                             { action => 'load', actupon => 'PrgEnv-pgi', seqnum => 6}, 
-#                             { action => 'switch', actupon => 'pgi pgi/14.2.0', seqnum => 7}, 
-#                             { action => 'load', actupon => 'papi/5.3.2', seqnum => 8}, 
-#                             { action => 'switch', actupon => 'cray-mpich cray-mpich/7.0.3', seqnum => 9}, 
-#                             { action => 'switch', actupon => 'cray-libsci cray-libsci/12.2.0', seqnum => 10}, 
-#                             { action => 'load', actupon => 'torque/5.0.1', seqnum => 11}, 
-#                             { action => 'load', actupon => 'cray-netcdf-hdf5parallel/4.3.2', seqnum => 12}, 
-#                             { action => 'load', actupon => 'cray-parallel-netcdf/1.5.0', seqnum => 13}, 
-#                             { action => 'load', actupon => 'cmake', seqnum => 14}, 
-#                             { action => 'rm', actupon => 'darshan', seqnum => 15}, 
+#                             { action => 'rm', actupon => 'PrgEnv-pgi', seqnum => 1},
+#                             { action => 'rm', actupon => 'PrgEnv-cray', seqnum => 2},
+#                             { action => 'rm', actupon => 'PrgEnv-gnu', seqnum => 3},
+#                             { action => 'rm', actupon => 'pgi', seqnum => 4},
+#                             { action => 'rm', actupon => 'cray', seqnum => 5},
+#                             { action => 'load', actupon => 'PrgEnv-pgi', seqnum => 6},
+#                             { action => 'switch', actupon => 'pgi pgi/14.2.0', seqnum => 7},
+#                             { action => 'load', actupon => 'papi/5.3.2', seqnum => 8},
+#                             { action => 'switch', actupon => 'cray-mpich cray-mpich/7.0.3', seqnum => 9},
+#                             { action => 'switch', actupon => 'cray-libsci cray-libsci/12.2.0', seqnum => 10},
+#                             { action => 'load', actupon => 'torque/5.0.1', seqnum => 11},
+#                             { action => 'load', actupon => 'cray-netcdf-hdf5parallel/4.3.2', seqnum => 12},
+#                             { action => 'load', actupon => 'cray-parallel-netcdf/1.5.0', seqnum => 13},
+#                             { action => 'load', actupon => 'cmake', seqnum => 14},
+#                             { action => 'rm', actupon => 'darshan', seqnum => 15},
 #                          );
 #     $moduleloader->moduleInit();
 #    my @actualmodules = $moduleloader->findModulesFromMachinesDir();
@@ -489,12 +489,12 @@ sub test_new() : Test(1)
 #sub test_writeXMLFileForCase_bluewaters() : Test(3):
 #{
 #	my $self = shift;
-#	
-#	my $moduleloader = Module::ModuleLoader->new(machine => 'bluewaters', compiler => 'pgi', mpilib => 'mpich', 
+#
+#	my $moduleloader = Module::ModuleLoader->new(machine => 'bluewaters', compiler => 'pgi', mpilib => 'mpich',
 #                                                debug => "FALSE", cimeroot => "../../", caseroot => '.');
-#    
+#
 #    $moduleloader->writeXMLFileForCase();
-#	
+#
 #	my $expectedfile = "./t/mocks_ModuleLoader/mach_specific.bluewaters.xml";
 #	open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
 #	binmode $EXPECTED;
@@ -736,21 +736,21 @@ sub test_new() : Test(1)
 #                             { action => 'rm', actupon => 'craype-sandybridge', seqnum => 15},
 #                             { action => 'rm', actupon => 'craype-ivybridge', seqnum => 16},
 #                             { action => 'rm', actupon => 'craype', seqnum => 17},
-#                             { action => 'load', actupon => 'PrgEnv-intel', seqnum => 18}, 
-#                             { action => 'switch', actupon => 'intel intel/15.0.1.133', seqnum => 19}, 
-#                             { action => 'rm', actupon => 'cray-libsci', seqnum => 20}, 
-#                             { action => 'use', actupon => '/global/project/projectdirs/ccsm1/modulefiles/edison', seqnum => 21}, 
-#                             { action => 'load', actupon => 'esmf/6.2.0-defio-mpi-O', seqnum => 22}, 
-#                             { action => 'load', actupon => 'papi/5.3.2', seqnum => 23}, 
-#                             { action => 'swap', actupon => 'craype craype/2.1.1', seqnum => 24}, 
-#                             { action => 'load', actupon => 'craype-ivybridge', seqnum => 25}, 
-#                             { action => 'load', actupon => 'cray-mpich/7.1.1', seqnum => 26}, 
-#                             { action => 'load', actupon => 'pmi/5.0.6-1.0000.10439.140.2.ari', seqnum => 27}, 
-#                             { action => 'load', actupon => 'cray-netcdf-hdf5parallel/4.3.2', seqnum => 28}, 
-#                             { action => 'load', actupon => 'cray-hdf5-parallel/1.8.13', seqnum => 29}, 
-#                             { action => 'load', actupon => 'cray-parallel-netcdf/1.5.0', seqnum => 30}, 
-#                             { action => 'load', actupon => 'perl/5.20.0', seqnum => 31}, 
-#                             { action => 'load', actupon => 'cmake/2.8.11.2', seqnum => 32}, 
+#                             { action => 'load', actupon => 'PrgEnv-intel', seqnum => 18},
+#                             { action => 'switch', actupon => 'intel intel/15.0.1.133', seqnum => 19},
+#                             { action => 'rm', actupon => 'cray-libsci', seqnum => 20},
+#                             { action => 'use', actupon => '/global/project/projectdirs/ccsm1/modulefiles/edison', seqnum => 21},
+#                             { action => 'load', actupon => 'esmf/6.2.0-defio-mpi-O', seqnum => 22},
+#                             { action => 'load', actupon => 'papi/5.3.2', seqnum => 23},
+#                             { action => 'swap', actupon => 'craype craype/2.1.1', seqnum => 24},
+#                             { action => 'load', actupon => 'craype-ivybridge', seqnum => 25},
+#                             { action => 'load', actupon => 'cray-mpich/7.1.1', seqnum => 26},
+#                             { action => 'load', actupon => 'pmi/5.0.6-1.0000.10439.140.2.ari', seqnum => 27},
+#                             { action => 'load', actupon => 'cray-netcdf-hdf5parallel/4.3.2', seqnum => 28},
+#                             { action => 'load', actupon => 'cray-hdf5-parallel/1.8.13', seqnum => 29},
+#                             { action => 'load', actupon => 'cray-parallel-netcdf/1.5.0', seqnum => 30},
+#                             { action => 'load', actupon => 'perl/5.20.0', seqnum => 31},
+#                             { action => 'load', actupon => 'cmake/2.8.11.2', seqnum => 32},
 #                          );
 #     $moduleloader->moduleInit();
 #    my @actualmodules = $moduleloader->findModulesFromMachinesDir();
@@ -1198,7 +1198,7 @@ sub test_new() : Test(1)
 #{
 #    my $self = shift;
 #    my @expectedintelmodules = ( {action => 'purge', actupon => '' , seqnum => 1},
-#                                 { action => 'load', actupon => 'compiler/intel/15.0.2.164', seqnum => 2}, 
+#                                 { action => 'load', actupon => 'compiler/intel/15.0.2.164', seqnum => 2},
 #                                 { action => 'unload', actupon => 'mpi/intel/openmpi-1.8.1-qlc', seqnum => 3},
 #                                 { action => 'load', actupon => 'mpi/intel/mvapich2-1.8.1-qlc', seqnum => 4},
 #                                 { action => 'load', actupon => 'tool/parallel-netcdf/1.6.1/intel/mvapich2', seqnum => 5}
@@ -1214,27 +1214,27 @@ sub test_new() : Test(1)
 #                               { action => 'load', actupon => 'compiler/pgi/15.1', seqnum => 2},
 #                               { action => 'unload', actupon => 'mpi/pgi/openmpi-1.8.1-qlc', seqnum => 3},
 #                               { action => 'load', actupon => 'mpi/pgi/mvapich2-1.8.1-qlc', seqnum => 4},
-#                               { action => 'load', actupon => 'tool/parallel-netcdf/1.6.1/pgi/mvapich2', seqnum => 5}, 
+#                               { action => 'load', actupon => 'tool/parallel-netcdf/1.6.1/pgi/mvapich2', seqnum => 5},
 #                               );
 #    my $pgimoduleloader = Module::ModuleLoader->new(machine => 'hobart', compiler => 'pgi', mpilib => 'mvapich2',
 #                                                 debug => 'FALSE', cimeroot => "../../", caseroot => '.');
 #    $pgimoduleloader->moduleInit();
 #    my @actualpgimodules = $pgimoduleloader->findModulesFromMachinesDir();
 #    is_deeply(\@expectedpgimodules, \@actualpgimodules);
-#	
+#
 #	my @expectednagmodules = ( { action => 'purge', actupon => '', seqnum => 1},
 #                               { action => 'load', actupon => 'compiler/nag/6.0', seqnum => 2},
-#                               { action => 'load', actupon => 'tool/parallel-netcdf/1.6.1/nag/openmpi', seqnum => 3}, 
+#                               { action => 'load', actupon => 'tool/parallel-netcdf/1.6.1/nag/openmpi', seqnum => 3},
 #                               { action => 'xmlchange', actupon => 'MPILIB=openmpi', seqnum => 4},
 #                               );
-#	
-#	my $nagmoduleloader = Module::ModuleLoader->new(machine => 'hobart', compiler => 'nag', mpilib => 'openmpi', 
+#
+#	my $nagmoduleloader = Module::ModuleLoader->new(machine => 'hobart', compiler => 'nag', mpilib => 'openmpi',
 #                                                    debug => 'FALSE', cimeroot => "../../", caseroot => '.');
 #	$nagmoduleloader->moduleInit();
 #	my @actualnagmodules = $nagmoduleloader->findModulesFromMachinesDir();
 #	#print Dumper \@expectednagmodules;
 #	#print Dumper \@actualnagmodules;
-#	
+#
 #	is_deeply(\@expectednagmodules, \@actualnagmodules);
 #}
 #sub test_writeXMLFileForCase_hobart() : Test(3):
@@ -1272,7 +1272,7 @@ sub test_new() : Test(1)
 #    my @actualmodules = $moduleloader->findModulesForCase();
 #
 #    my @expectedmodules = ( {action => 'purge', actupon => '' , seqnum => 1},
-#                                 { action => 'load', actupon => 'compiler/intel/15.0.2.164', seqnum => 2}, 
+#                                 { action => 'load', actupon => 'compiler/intel/15.0.2.164', seqnum => 2},
 #                                 { action => 'unload', actupon => 'mpi/intel/openmpi-1.8.1-qlc', seqnum => 3},
 #                                 { action => 'load', actupon => 'mpi/intel/mvapich2-1.8.1-qlc', seqnum => 4},
 #                                 { action => 'load', actupon => 'tool/parallel-netcdf/1.6.1/intel/mvapich2', seqnum => 5}
@@ -1364,7 +1364,7 @@ sub test_new() : Test(1)
 #sub test_findModulesFromMachinesDir_gaea() : Test(3):
 #{
 #    my $self = shift;
-#    my @expectedmodules = ( 
+#    my @expectedmodules = (
 #                                 { action => 'rm', actupon => 'PrgEnv-pgi' , seqnum => 1},
 #                                 { action => 'rm', actupon => 'PrgEnv-cray' , seqnum => 2},
 #                                 { action => 'rm', actupon => 'PrgEnv-gnu' , seqnum => 3},
@@ -2194,7 +2194,7 @@ sub test_new() : Test(1)
 #                                                   debug => "FALSE", cimeroot => "../../", caseroot => ".");
 #
 #	$moduleloaderys->moduleInit();
-#	
+#
 #	ok($moduleloaderys->{initpath} eq '/glade/apps/opt/lmod/lmod/init/perl') || diag($moduleloaderys->{initpath});
 #	ok($moduleloaderys->{cmdpath} eq '/glade/apps/opt/lmod/lmod/libexec/lmod perl') || diag($moduleloaderys->{cmdpath});
 #}
@@ -2202,7 +2202,7 @@ sub test_new() : Test(1)
 #sub test_findModulesFromMachinesDir_yellowstone() : Test(3):
 #{
 #	my $self = shift;
-#	my @expectedintelmpichmodules = ( 
+#	my @expectedintelmpichmodules = (
 #                            { action => 'purge', actupon => '', seqnum => 1},
 #                            { action => 'load', actupon => 'ncarenv/1.0', seqnum => 2},
 #                            { action => 'load', actupon => 'ncarbinlibs/1.1', seqnum => 3},
@@ -2221,7 +2221,7 @@ sub test_new() : Test(1)
 #                            { action => 'load', actupon => 'cmake/2.8.10.2', seqnum => 16},
 #						  );
 #	#print Dumper \@expectedintelmpichmodules;
-#	my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2', 
+#	my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
 #                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
 #	$moduleloader->moduleInit();
 #	my @actualintelmpichmodules = $moduleloader->findModulesFromMachinesDir();
@@ -2245,12 +2245,12 @@ sub test_new() : Test(1)
 #                            { action => 'load', actupon => 'ncarcompilers/1.0', seqnum => 11},
 #                            { action => 'load', actupon => 'cmake/2.8.10.2', seqnum => 12},
 #							);
-#	my $moduleloaderpgi = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'pgi', mpilib => 'mpich2', 
+#	my $moduleloaderpgi = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'pgi', mpilib => 'mpich2',
 #                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
 #	$moduleloaderpgi->moduleInit();
 #	my @actualpgimpichmodules = $moduleloaderpgi->findModulesFromMachinesDir();
 #	is_deeply(\@actualpgimpichmodules, \@expectedpgimpichmodules);
-#	
+#
 #	my @expectedintelmpiserialdebugmodules = (
 #                            { action => 'purge', actupon => '', seqnum => 1},
 #                            { action => 'load', actupon => 'ncarenv/1.0', seqnum => 2},
@@ -2268,7 +2268,7 @@ sub test_new() : Test(1)
 #                            { action => 'load', actupon => 'ncarcompilers/1.0', seqnum => 14},
 #                            { action => 'load', actupon => 'cmake/2.8.10.2', seqnum => 15},
 #	);
-#	my $moduleloadermpiserialdebug = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpi-serial', 
+#	my $moduleloadermpiserialdebug = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpi-serial',
 #                                                 debug => 'true', cimeroot => "../../", caseroot => '.');
 #	$moduleloadermpiserialdebug->moduleInit();
 #	my @actualintelmpiserialdebugmodules = $moduleloadermpiserialdebug->findModulesFromMachinesDir();
@@ -2283,7 +2283,7 @@ sub test_new() : Test(1)
 #                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
 #    $moduleloader->moduleInit();
 #	$moduleloader->writeXMLFileForCase();
-#	
+#
 #	my $expectedfile = "./t/mocks_ModuleLoader/mach_specific.yellowstone.xml";
 #	open(my $EXPECTED, "<", $expectedfile) or die "could not open $expectedfile";
 #	binmode $EXPECTED;
@@ -2296,13 +2296,13 @@ sub test_new() : Test(1)
 #	my $actual = do { local $/; <$ACTUAL> } ;
 #	close $actual;
 #	cmp_ok($actual,  'eq',  $expected);
-#	unlink $actualfile; 
+#	unlink $actualfile;
 #}
 #
 #sub test_findModulesForCase_yellowstone() : Test(1):
 #{
 #	my $self = shift;
-#	
+#
 #	my $moduleloader = Module::ModuleLoader->new(machine => 'yellowstone', compiler => 'intel', mpilib => 'mpich2',
 #                                                 debug => 'false', cimeroot => "../../", caseroot => '.');
 #
@@ -2600,7 +2600,7 @@ sub test_findEnvVars_titan() : Test(1):
     my $self = shift;
     my $moduleloader = Module::ModuleLoader->new(machine => 'titan', compiler => 'pgi', mpilib => 'mpich',
                                                        debug => "FALSE", cimeroot => "../../", caseroot => '.');
-    
+
     $moduleloader->moduleInit();
     $moduleloader->writeXMLFileForCase();
     $moduleloader->findModulesForCase();
@@ -2617,4 +2617,4 @@ sub test_findEnvVars_titan() : Test(1):
     is_deeply(\%actualenvs, $expectedenvs);
 }
 1;
-	
+

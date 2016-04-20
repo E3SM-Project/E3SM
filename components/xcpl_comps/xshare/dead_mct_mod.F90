@@ -20,7 +20,7 @@ module dead_mct_mod
   use shr_mpi_mod		, only : shr_mpi_bcast
   implicit none
   private
-  save 
+  save
 
   public		:: dead_domain_mct, dead_init_mct, dead_run_mct, dead_final_mct
   integer, parameter	:: master_task=0
@@ -45,16 +45,16 @@ contains
   subroutine dead_domain_mct_new( mpicom, gbuf, gsMap, domain )
 
     !-------------------------------------------------------------------
-    !---arguments--- 
+    !---arguments---
     integer(IN)		, intent(in)		:: mpicom
     real(R8)		, intent(in)		:: gbuf(:,:)
     type(mct_gsMap)	, intent(in)		:: gsMap
-    type(mct_ggrid)	, intent(out)	        :: domain  
+    type(mct_ggrid)	, intent(out)	        :: domain
 
     !---local variables---
     integer(IN)				:: my_task               ! mpi task within communicator
     integer(IN)				:: lsize                 ! temporary
-    integer(IN)				:: n	,j,i                 ! indices	
+    integer(IN)				:: n	,j,i                 ! indices
     integer(IN)				:: ier                   ! error status
     real(R8), pointer		        :: data(:)     ! temporary
     integer(IN), pointer		:: idata(:)    ! temporary
@@ -75,7 +75,7 @@ contains
     !
     lsize = mct_gGrid_lsize(domain)
     if (size(gbuf,dim=1) /= lsize) then
-       call shr_sys_abort('mct_dead_domain size error')       
+       call shr_sys_abort('mct_dead_domain size error')
     endif
     allocate(data(lsize))
     allocate(idata(lsize))
@@ -87,43 +87,43 @@ contains
     call mct_gGrid_importIAttr(domain,'GlobGridNum',idata,lsize)
     !
     call mct_aVect_zero(domain%data)
-    data(:) = -9999.0_R8  ! generic special value 	
-    call mct_gGrid_importRAttr(domain,"lat" ,data,lsize) 
-    call mct_gGrid_importRAttr(domain,"lon" ,data,lsize) 
-    call mct_gGrid_importRAttr(domain,"area",data,lsize) 
-    call mct_gGrid_importRAttr(domain,"frac",data,lsize) 
+    data(:) = -9999.0_R8  ! generic special value
+    call mct_gGrid_importRAttr(domain,"lat" ,data,lsize)
+    call mct_gGrid_importRAttr(domain,"lon" ,data,lsize)
+    call mct_gGrid_importRAttr(domain,"area",data,lsize)
+    call mct_gGrid_importRAttr(domain,"frac",data,lsize)
 
-    data(:) = 0.0_R8  ! generic special value 	
-    call mct_gGrid_importRAttr(domain,"mask" ,data,lsize) 
-    call mct_gGrid_importRAttr(domain,"aream",data,lsize) 
+    data(:) = 0.0_R8  ! generic special value
+    call mct_gGrid_importRAttr(domain,"mask" ,data,lsize)
+    call mct_gGrid_importRAttr(domain,"aream",data,lsize)
     !
     ! Fill in correct values for domain components
     !
     do n = 1,lsize
-       data(n) = gbuf(n,dead_grid_lat) 
+       data(n) = gbuf(n,dead_grid_lat)
     enddo
-    call mct_gGrid_importRAttr(domain,"lat",data,lsize) 
+    call mct_gGrid_importRAttr(domain,"lat",data,lsize)
 
     do n = 1,lsize
-       data(n) = gbuf(n,dead_grid_lon) 
+       data(n) = gbuf(n,dead_grid_lon)
     enddo
-    call mct_gGrid_importRAttr(domain,"lon",data,lsize) 
+    call mct_gGrid_importRAttr(domain,"lon",data,lsize)
 
     do n = 1,lsize
        data(n) = gbuf(n,dead_grid_area)
     enddo
-    call mct_gGrid_importRAttr(domain,"area",data,lsize) 
-    call mct_gGrid_importRAttr(domain,"aream",data,lsize) 
+    call mct_gGrid_importRAttr(domain,"area",data,lsize)
+    call mct_gGrid_importRAttr(domain,"aream",data,lsize)
 
     do n = 1,lsize
        data(n) = gbuf(n,dead_grid_mask)
     enddo
-    call mct_gGrid_importRAttr(domain,"mask"   ,data,lsize) 
+    call mct_gGrid_importRAttr(domain,"mask"   ,data,lsize)
 
     do n = 1,lsize
        data(n) = gbuf(n,dead_grid_frac)
     enddo
-    call mct_gGrid_importRAttr(domain,"frac"   ,data,lsize) 
+    call mct_gGrid_importRAttr(domain,"frac"   ,data,lsize)
 
     deallocate(data)
     deallocate(idata)
@@ -163,7 +163,7 @@ contains
     integer(IN)				:: nyg           ! global dim j-direction
     integer(IN)				:: decomp_type
     integer(IN)				:: my_task
-    character(len=16)			:: inst_suffix       ! char string associated with instance 
+    character(len=16)			:: inst_suffix       ! char string associated with instance
     integer(IN)				:: phase
     integer(IN)				:: logunit
     logical				:: flood=.false.     ! rof flood flag

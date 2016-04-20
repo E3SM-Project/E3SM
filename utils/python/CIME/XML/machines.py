@@ -6,7 +6,7 @@ from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
 from CIME.utils import expect
 
-import socket, re
+import socket
 
 logger = logging.getLogger(__name__)
 
@@ -19,26 +19,61 @@ class Machines(GenericXML):
         otherwise if a files object is provided it will be used
         otherwise create a files object from default values
         """
+
         self.machine_node = None
-        self.machine      = None
+        self.machine = None
+        self.machines_dir = None
 
         if infile is None:
             if files is None:
                 files = Files()
             infile = files.get_value("MACHINES_SPEC_FILE")
+            self.machines_dir = os.path.dirname(infile)
 
         GenericXML.__init__(self, infile)
+
+        """
+        Append the contents of $HOME/.cime/config_machines.xml if it exists
+        This could cause problems if node matchs are repeated when only one is expected
+        """
+        infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
+        if os.path.exists(infile):
+            GenericXML.read(self, infile)
 
         if machine is None:
             machine = self.probe_machine_name()
 
+        expect(machine is not None, "Could not initialize machine object")
         self.set_machine(machine)
+
+    def get_machines_dir(self):
+        """
+        Return the directory of the machines file
+        """
+        return self.machines_dir
 
     def get_machine_name(self):
         """
         Return the name of the machine
         """
         return self.machine
+
+    def get_node_names(self):
+        """
+        Return the names of all the child nodes for the target machine
+        """
+        nodes = self.machine_node.findall("./")
+        node_names = []
+        for node in nodes:
+            node_names.append(node.tag)
+        return node_names
+
+    def get_first_child_nodes(self, nodename):
+        """
+        Return the names of all the child nodes for the target machine
+        """
+        nodes = self.machine_node.findall("./" + nodename)
+        return nodes
 
     def list_available_machines(self):
         """
@@ -70,14 +105,16 @@ class Machines(GenericXML):
                 logger.debug("machine regex string is " + regex_str)
                 regex = re.compile(regex_str)
                 if regex.match(nametomatch):
-                    logger.info("Found machine: %s matches %s" % (machtocheck, nametomatch))
+                    logger.debug("Found machine: %s matches %s" % (machtocheck, nametomatch))
                     machine = machtocheck
                     break
 
         if machine is None:
+            # Check for a local definition
             logger.warning("Could not probe machine for hostname '%s'" % nametomatch)
 
         return machine
+
 
     def set_machine(self, machine):
         """
@@ -91,12 +128,13 @@ class Machines(GenericXML):
         ...
         SystemExit: ERROR: No machine trump found
         """
-        if self.machine != machine:
+        if self.machine != machine or self.machine_node is None:
             self.machine_node = self.get_optional_node("machine", {"MACH" : machine})
             expect(self.machine_node is not None, "No machine %s found" % machine)
             self.machine = machine
 
         return machine
+
 
     def get_value(self, name, resolved=True):
         """

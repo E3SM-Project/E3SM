@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 package Task::TaskMaker;
 
 use strict;
@@ -9,10 +9,10 @@ use POSIX qw(ceil floor);
 use Exporter qw(import);
 
 #==============================================================================
-# Class constructor.  The only required parameter is the caseroot.  
-# We have an array of layout strings in a specified order.  
-# We then get the configuration for the case, then pull the values from the configuration 
-# object using the layout strings array. 
+# Class constructor.  The only required parameter is the caseroot.
+# We have an array of layout strings in a specified order.
+# We then get the configuration for the case, then pull the values from the configuration
+# object using the layout strings array.
 #==============================================================================
 sub new
 {
@@ -28,8 +28,8 @@ sub new
 	};
 	bless $self, $class;
 
-	# Create a set of strings needed to pull layout information out of the config 
-	# object. 
+	# Create a set of strings needed to pull layout information out of the config
+	# object.
 	my @layoutstrings = qw/ COMP_CPL NTASKS_CPL NTHRDS_CPL ROOTPE_CPL PSTRID_CPL
                      COMP_ATM NTASKS_ATM NTHRDS_ATM ROOTPE_ATM PSTRID_ATM NINST_ATM
                      COMP_LND NTASKS_LND NTHRDS_LND ROOTPE_LND PSTRID_LND NINST_LND
@@ -55,45 +55,45 @@ sub new
 	    %config = SetupTools::getAllResolved();
 	    $self->{'config'} = \%config;
 	}
-	
+
 	# Use the layout strings to pull the layout information out of the config
 	foreach my $layoutstring(@{$self->{'layoutstrings'}})
 	{
 		$self->{$layoutstring} = $config{$layoutstring};
 	}
-	
+
   $self->{'EXEROOT'} = $config{'EXEROOT'};
   $self->{'DEFAULT_RUN_EXE_TEMPLATE_STR'} = '__DEFAULT_RUN_EXE__';
-	
+
 	# set the compiler, and MAX_TASKS_PER_NODE
 	$self->{'COMPILER'} = $config{'COMPILER'};
 	$self->{'MAX_TASKS_PER_NODE'} = 1 if $self->{'MAX_TASKS_PER_NODE'} < 1;
-	
-	# Set up arrays with the comps, tasks, threads, root PE, # instances, and pstrids 
-	my @mcomps= ( $config{'COMP_CPL'}, $config{'COMP_ATM'}, $config{'COMP_LND'}, $config{'COMP_ROF'}, $config{'COMP_ICE'}, $config{'COMP_OCN'}, 
+
+	# Set up arrays with the comps, tasks, threads, root PE, # instances, and pstrids
+	my @mcomps= ( $config{'COMP_CPL'}, $config{'COMP_ATM'}, $config{'COMP_LND'}, $config{'COMP_ROF'}, $config{'COMP_ICE'}, $config{'COMP_OCN'},
 				       $config{'COMP_GLC'}, $config{'COMP_WAV'} );
 	$self->{'mcomps'} = \@mcomps;
-	
-	my @ntasks = ( $config{'NTASKS_CPL'}, $config{'NTASKS_ATM'}, $config{'NTASKS_LND'}, $config{'NTASKS_ROF'}, $config{'NTASKS_ICE'}, $config{'NTASKS_OCN'}, 
+
+	my @ntasks = ( $config{'NTASKS_CPL'}, $config{'NTASKS_ATM'}, $config{'NTASKS_LND'}, $config{'NTASKS_ROF'}, $config{'NTASKS_ICE'}, $config{'NTASKS_OCN'},
 				       $self->{'NTASKS_GLC'}, $self->{'NTASKS_WAV'} );
 	$self->{'ntasks'} = \@ntasks;
 
-	my @nthrds = ( $config{'NTHRDS_CPL'}, $config{'NTHRDS_ATM'}, $config{'NTHRDS_LND'}, $config{'NTHRDS_ROF'}, $config{'NTHRDS_ICE'}, $config{'NTHRDS_OCN'}, 
+	my @nthrds = ( $config{'NTHRDS_CPL'}, $config{'NTHRDS_ATM'}, $config{'NTHRDS_LND'}, $config{'NTHRDS_ROF'}, $config{'NTHRDS_ICE'}, $config{'NTHRDS_OCN'},
 				       $config{'NTHRDS_GLC'}, $config{'NTHRDS_WAV'} );
 	$self->{'nthrds'} = \@nthrds;
 
-	my @rootpe = ( $config{'ROOTPE_CPL'}, $config{'ROOTPE_ATM'}, $config{'ROOTPE_LND'}, $config{'ROOTPE_ROF'}, $config{'ROOTPE_ICE'}, $config{'ROOTPE_OCN'}, 
+	my @rootpe = ( $config{'ROOTPE_CPL'}, $config{'ROOTPE_ATM'}, $config{'ROOTPE_LND'}, $config{'ROOTPE_ROF'}, $config{'ROOTPE_ICE'}, $config{'ROOTPE_OCN'},
 				       $config{'ROOTPE_GLC'}, $config{'ROOTPE_WAV'} );
 	$self->{'rootpe'} = \@rootpe;
 
-	my @ninst = ( 1, $config{'NINST_ATM'}, $config{'NINST_LND'}, $config{'NINST_ROF'}, $config{'NINST_ICE'}, $config{'NINST_OCN'}, 
+	my @ninst = ( 1, $config{'NINST_ATM'}, $config{'NINST_LND'}, $config{'NINST_ROF'}, $config{'NINST_ICE'}, $config{'NINST_OCN'},
 				       $config{'NINST_GLC'}, $config{'NINST_WAV'} );
 	$self->{'ninst'} = \@ninst;
-	my @pstrid = ( $config{'PSTRID_CPL'}, $config{'PSTRID_ATM'}, $config{'PSTRID_LND'}, $config{'PSTRID_ROF'}, $config{'PSTRID_ICE'}, $config{'PSTRID_OCN'}, 
+	my @pstrid = ( $config{'PSTRID_CPL'}, $config{'PSTRID_ATM'}, $config{'PSTRID_LND'}, $config{'PSTRID_ROF'}, $config{'PSTRID_ICE'}, $config{'PSTRID_OCN'},
 				       $config{'PSTRID_GLC'}, $config{'PSTRID_WAV'} );
 	$self->{'pstrid'} = \@pstrid;
 
-	# At this point, we have only one method to compute the necessary values.  
+	# At this point, we have only one method to compute the necessary values.
 	$self->_computeValues();
 	return $self;
 
@@ -129,18 +129,18 @@ sub _computeValues
 	my @rootpe = @{$self->{rootpe}};
 	my @pstrid = @{$self->{pstrid}};
 	my $pes_per_node = $self->{PES_PER_NODE};
-	
+
 	for(my $i = 0; $i <= $#ntasks; $i++)
 	{
-		my $n = $ntasks[$i]; 
-		my $t = $nthrds[$i]; 
-		my $r = $rootpe[$i]; 
-		my $p = $pstrid[$i]; 
+		my $n = $ntasks[$i];
+		my $t = $nthrds[$i];
+		my $r = $rootpe[$i];
+		my $p = $pstrid[$i];
 		my $tt = $r + ($n - 1) * $p + 1;
 		$totaltasks = $tt if $tt > $totaltasks;
 	}
-	
-	# Check if we need to add pio's tasks to the total task count 
+
+	# Check if we need to add pio's tasks to the total task count
 	if($self->{PIO_ASYNC_INTERFACE} eq "TRUE")
 	{
 		if($self->{PIO_NUMTASKS} > 0)
@@ -152,7 +152,7 @@ sub _computeValues
 			$totaltasks += $pes_per_node;
 		}
 	}
-	
+
 	# Compute max threads for each mpi task
 	my @maxt;
 	# first initialize maxt, max threads for each task
@@ -160,7 +160,7 @@ sub _computeValues
 	{
 		$maxt[$i] = 0;
 	}
-	
+
 	# calculate the max threads for each component
 	for(my $i = 0; $i < $#ntasks; $i++)
 	{
@@ -168,7 +168,7 @@ sub _computeValues
 		my $t = $nthrds[$i];
 		my $r = $rootpe[$i];
 		my $p = $pstrid[$i];
-		
+
 		my $c2 = 0;
         # Should be $c2 < $n
 		#while($c2 > $n)
@@ -198,7 +198,7 @@ sub _computeValues
 	}
 
 	# compute min/max threads over all mpi tasks and sum threads
-	# reset maxt values from zero to one after checking for min values 
+	# reset maxt values from zero to one after checking for min values
 	# but before checking for max and summing..
 	my $minthreads = $maxt[0];
 	my $maxthreads = $maxt[0];
@@ -207,14 +207,14 @@ sub _computeValues
 	$sumthreads[0] = 0;
 	for(my $c1 = 1; $c1 < $totaltasks; $c1++)
 	{
-		if($maxt[$c1] < $minthreads) { $minthreads = $maxt[$c1];} 	
-		if($maxt[$c1] < 1)           { $maxt[$c1] = 1;} 	
-		if($maxt[$c1] > $maxthreads) { $maxthreads = $maxt[$c1] ;} 	
+		if($maxt[$c1] < $minthreads) { $minthreads = $maxt[$c1];}
+		if($maxt[$c1] < 1)           { $maxt[$c1] = 1;}
+		if($maxt[$c1] > $maxthreads) { $maxthreads = $maxt[$c1] ;}
 		$sumthreads[$c1] = $sumthreads[($c1-1)] + $maxt[($c1-1)];
 	}
 	$self->{'sumthreads'} = \@sumthreads;
 
-    # Compute task and thread settings for batch commands 
+    # Compute task and thread settings for batch commands
 	my $fullsum = 0;
 	my $sum = $maxt[0];
 	my $taskgeom = "(0";
@@ -232,7 +232,7 @@ sub _computeValues
 	for (my $c1=1; $c1 < $totaltasks; $c1++)
 	{
 	        $sum = $sum + $maxt[$c1];
-	
+
 		if($maxt[$c1] > $self->{'MAX_TASKS_PER_NODE'})
 		{
 			$fullsum += $self->{'MAX_TASKS_PER_NODE'};
@@ -276,7 +276,7 @@ sub _computeValues
   }
   $maxtaskpernode = ($maxtaskpernode > $maxtaskcount) ? $maxtaskcount : $maxtaskpernode;
   $maxtotalnodecount = ceil($maxtaskcount/$maxtaskpernode);
-	
+
 	$fullsum = $fullsum + $sum;
 	$self->{'fullsum'} = $fullsum;
 	$taskgeom = $taskgeom.")";
@@ -297,7 +297,7 @@ sub _computeValues
 	}
 	$aprun  .= " -n $taskcount -N $taskpernode -d $threadcount $self->{'DEFAULT_RUN_EXE_TEMPLATE_STR'} ";
 
-	# add all the calculated numbers as instance data. 
+	# add all the calculated numbers as instance data.
 	$self->{'totaltasks'} = $totaltasks;
 	$self->{'taskpernode'} = $maxtaskpernode;
     $self->{'taskpernuma'}  = ceil($taskpernode / 2);
@@ -313,7 +313,7 @@ sub _computeValues
 
 	$self->{'pbsrs'} = $pbsrs . "$self->{nodecount}:ncpus=$self->{'MAX_TASKS_PER_NODE'}:mpiprocs=${taskpernode}:ompthreads=${threadcount}:model=";
 
-	# calculate ptile..  
+	# calculate ptile..
 	my $ptile = $self->{'MAX_TASKS_PER_NODE'} / 2;
 	if($self->{'maxthreads'} > 1)
 	{
@@ -352,7 +352,7 @@ sub sumPES
 }
 
 #==============================================================================
-# get the sum only 
+# get the sum only
 #==============================================================================
 sub sumOnly
 {
@@ -431,7 +431,7 @@ sub optNodeCount()
 }
 #==============================================================================
 # TODO remove the aprun stuff from this module
-# It is being constructed properly via XML configuration files. 
+# It is being constructed properly via XML configuration files.
 #==============================================================================
 sub APRun()
 {
@@ -450,7 +450,7 @@ sub PBSRS()
 }
 
 #==============================================================================
-# get the ptile.. 
+# get the ptile..
 #==============================================================================
 sub ptile()
 {
@@ -471,7 +471,7 @@ sub taskPerNode()
 # get the tasks per numa
 #==============================================================================
 sub taskPerNuma()
-{	
+{
     my $self = shift;
 	return $self->{'taskpernuma'};
 }
@@ -509,7 +509,7 @@ sub document()
 		$doc .=  "#    \n";
 		$doc .=  "#    total number of hw pes = $self->{'fullsum'} \n";
 	for (my $c1 = 0; $c1 < $#{$self->{'ntasks'}}; $c1++)
-	{	
+	{
 		my $n  = ${$self->{'ntasks'}}[$c1];
 		my $t  = ${$self->{'nthrds'}}[$c1];
 		my $r  = ${$self->{'rootpe'}}[$c1];
@@ -526,9 +526,9 @@ sub document()
     	$doc .=  "#   Please consider reviewing your env_mach_pes.xml file \n";
 	}
 	$doc .=  "# ---------------------------------------- \n";
-	
+
 	return $doc;
 }
-    
+
 
 1;

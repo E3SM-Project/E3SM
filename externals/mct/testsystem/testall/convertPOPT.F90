@@ -6,9 +6,9 @@
 !-----------------------------------------------------------------------
 !
 !     CVS:$Id: convertPOPT.F90,v 1.9 2004-06-02 23:25:50 eong Exp $
-!     CVS $Name:  $ 
+!     CVS $Name:  $
 !
-!     Copyright (c) 1997, 1998 the Regents of the University of 
+!     Copyright (c) 1997, 1998 the Regents of the University of
 !       California.
 !
 !     Unless otherwise indicated, this software has been authored
@@ -55,7 +55,7 @@
 !
 !-----------------------------------------------------------------------
 
-      type(GeneralGrid),       intent(out) :: GGrid 
+      type(GeneralGrid),       intent(out) :: GGrid
       character (len=*),       intent(in)  :: grid_file_in
       character (len=*),       intent(in)  :: grid_topo_in
       integer,                 intent(in)  :: nx
@@ -77,7 +77,7 @@
 !-----------------------------------------------------------------------
 
 !:: NOTE: The following kind specifiers are needed to read the proper
-!:: values for the POP grid files. The subsequent type conversions 
+!:: values for the POP grid files. The subsequent type conversions
 !:: on these variables may pose a risk.
 
       integer(kind(1)), dimension(:), allocatable :: &
@@ -100,8 +100,8 @@
 !     defined constants
 !
 !-----------------------------------------------------------------------
-      
-      real(selected_real_kind(13)), parameter ::  & 
+
+      real(selected_real_kind(13)), parameter ::  &
 	    zero   = 0.0,           &
 	    one    = 1.0,           &
 	    two    = 2.0,           &
@@ -155,7 +155,7 @@
 	       HTE(nx,ny), &
 	       stat=ier)
 
-      if(ier/=0) call die(myname_,"allocate(grid_imask... ", ier) 
+      if(ier/=0) call die(myname_,"allocate(grid_imask... ", ier)
 
 !-----------------------------------------------------------------------
 !
@@ -288,12 +288,12 @@
         if (grid_corner_lon(1,ocn_add) > pi2) &
             grid_corner_lon(1,ocn_add) = &
             grid_corner_lon(1,ocn_add) - pi2
-        if (grid_corner_lon(1,ocn_add) < 0.0) & 
+        if (grid_corner_lon(1,ocn_add) < 0.0) &
             grid_corner_lon(1,ocn_add) = &
             grid_corner_lon(1,ocn_add) + pi2
         do n=2,grid_corners
           tmplon = grid_corner_lon(n  ,ocn_add) -  &
-                   grid_corner_lon(n-1,ocn_add) 
+                   grid_corner_lon(n-1,ocn_add)
           if (tmplon < -three*pih) grid_corner_lon(n,ocn_add) = &
                                    grid_corner_lon(n,ocn_add) + pi2
           if (tmplon >  three*pih) grid_corner_lon(n,ocn_add) = &
@@ -409,14 +409,14 @@
 				     &grid_corner_lon_1:&
 				     &grid_corner_lon_2:&
 				     &grid_corner_lon_3:&
-				     &grid_corner_lon_4", &	 
+				     &grid_corner_lon_4", &
 	                  IndexChars="grid_imask", &
                           lsize=grid_size)
 
       center_lat = MCT_GGrid_indexRA(GGrid,'grid_center_lat')
       center_lon = MCT_GGrid_indexRA(GGrid,'grid_center_lon')
-      corner_lat = MCT_GGrid_indexRA(GGrid,'grid_corner_lat_1') 
-      corner_lon = MCT_GGrid_indexRA(GGrid,'grid_corner_lon_1') 
+      corner_lat = MCT_GGrid_indexRA(GGrid,'grid_corner_lat_1')
+      corner_lon = MCT_GGrid_indexRA(GGrid,'grid_corner_lon_1')
       area       = MCT_GGrid_indexRA(GGrid,'grid_area')
       imask      = MCT_GGrid_indexIA(GGrid,'grid_imask')
 
@@ -435,14 +435,14 @@
 	 GGrid%data%rattr(corner_lon+p-1,1:grid_size) = &
 	   grid_corner_lon(p,1:grid_size)
       enddo
-    
+
       deallocate(grid_imask, grid_area,            &
 	         grid_center_lat, grid_center_lon, &
 		 grid_corner_lat, grid_corner_lon, &
 		 HTN, HTE, stat=ier)
 
-      if(ier/=0) call die(myname_,"deallocate(grid_imask... ", ier) 
-      
+      if(ier/=0) call die(myname_,"deallocate(grid_imask... ", ier)
+
 
 !***********************************************************************
 

@@ -1,9 +1,9 @@
 #! /bin/csh -f
 
 set RUNDIR    = `./xmlquery  RUNDIR    -value`
-set NINST_GLC = `./xmlquery  NINST_GLC -value`  
-set GLC_NX    = `./xmlquery  GLC_NX    -value`  
-set GLC_NY    = `./xmlquery  GLC_NY    -value`  
+set NINST_GLC = `./xmlquery  NINST_GLC -value`
+set GLC_NX    = `./xmlquery  GLC_NX    -value`
+set GLC_NY    = `./xmlquery  GLC_NY    -value`
 
 set NX = $GLC_NX
 set NY = $GLC_NY

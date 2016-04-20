@@ -1,9 +1,9 @@
 #! /bin/csh -f
 
 set RUNDIR		= `./xmlquery  RUNDIR     	-value`
-set NINST_ROF		= `./xmlquery  NINST_ROF	-value`  
-set ROF_NX		= `./xmlquery  ROF_NX		-value`  
-set ROF_NY		= `./xmlquery  ROF_NY		-value`  
+set NINST_ROF		= `./xmlquery  NINST_ROF	-value`
+set ROF_NX		= `./xmlquery  ROF_NX		-value`
+set ROF_NY		= `./xmlquery  ROF_NY		-value`
 set XROF_FLOOD_MODE	= `./xmlquery  XROF_FLOOD_MODE	-value`
 
 cd $RUNDIR

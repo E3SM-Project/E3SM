@@ -40,7 +40,7 @@ module seq_map_type_mod
      integer(IN)             :: mpicom    ! mpicom
      !
 #ifdef USE_ESMF_LIB
-     !---- import and export States for this mapper object, 
+     !---- import and export States for this mapper object,
      !---- routehandle is stored in the exp_state for repeated remapping use
      type(ESMF_State)        :: imp_state
      type(ESMF_State)        :: exp_state
@@ -55,7 +55,7 @@ module seq_map_type_mod
   ! seq_map_maxcnt is the total number of mappings supported
   ! seq_map_cnt is the total number of mappings initialized any any time
   ! seq_maps are the mappers that have been initialized
-  
+
   integer(IN),parameter :: seq_map_maxcnt = 5000
   integer(IN)           :: seq_map_cnt = 0
   type(seq_map),private,target  :: seq_maps(seq_map_maxcnt)
@@ -73,7 +73,7 @@ contains
 
   subroutine seq_map_mapmatch(mapid,gsMap_s,gsMap_d,mapfile,strategy)
 
-    ! This method searches through the current seq_maps to find a 
+    ! This method searches through the current seq_maps to find a
     ! mapping file that matches the values passed in
 
     implicit none
@@ -153,7 +153,7 @@ contains
 
  subroutine seq_map_mappoint(mapid,mapper)
 
-    ! This method searches through the current seq_maps to find a 
+    ! This method searches through the current seq_maps to find a
     ! mapping file that matches the values passed in
 
     implicit none

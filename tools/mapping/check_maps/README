@@ -60,7 +60,7 @@ VERBOSE=TRUE turns on some extra diagnostic output and is optional.
 Back in the mapping/check_maps/ directory, you should now have an executable
 file named ESMF_RegridWeightGenCheck.
 
-Note that at this time, the tool only works in serial mode (building with the 
+Note that at this time, the tool only works in serial mode (building with the
 mpi-enabled version of the ESMF makefile leads to a segmentation fault when
 running with more than one MPI task).
 

@@ -33,7 +33,7 @@ if [ $year -lt 10 ]; then
     year_string="000$year"
 elif [ $year -lt 100 ]; then
     year_string="00$year"
-elif [ $year -lt 1000 ]; then 
+elif [ $year -lt 1000 ]; then
     year_string="0$year"
 else
     year_string="$year"

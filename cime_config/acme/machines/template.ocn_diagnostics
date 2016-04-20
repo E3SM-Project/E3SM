@@ -4,8 +4,8 @@
 #
 # TODO - need to get the PE count from the config_pes.xml tag
 # for the specified machine
-# <ocn_diags_pes>##</ocn_diags_pes> 
-# 
+# <ocn_diags_pes>##</ocn_diags_pes>
+#
 
 {{ batchdirectives }}
 mpirun={{ mpirun }}

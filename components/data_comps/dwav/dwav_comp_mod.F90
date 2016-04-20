@@ -52,7 +52,7 @@ module dwav_comp_mod
   integer(IN)   :: logunit               ! logging unit number
   integer       :: inst_index            ! number of current instance (ie. 1)
   character(len=16) :: inst_name         ! fullname of current instance (ie. "lnd_0001")
-  character(len=16) :: inst_suffix       ! char string associated with instance 
+  character(len=16) :: inst_suffix       ! char string associated with instance
                                          ! (ie. "_0001" or "")
 
   character(CL) :: wav_mode              ! mode
@@ -151,7 +151,7 @@ CONTAINS
     character(*), parameter :: F90   = "('(dwav_comp_init) ',73('='))"
     character(*), parameter :: F91   = "('(dwav_comp_init) ',73('-'))"
     character(*), parameter :: subName = "(dwav_comp_init) "
-    
+
 !-------------------------------------------------------------------------------
 
     call t_startf('DWAV_INIT')
@@ -228,7 +228,7 @@ CONTAINS
     call shr_mpi_bcast(decomp,mpicom,'decomp')
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
- 
+
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)
 
@@ -270,7 +270,7 @@ CONTAINS
        wav_present = .true.
        call seq_timemgr_EClockGetData( EClock, calendar=calendar )
        iosystem => shr_pio_getiosys(trim(inst_name))
-       
+
        call shr_strdata_pioinit(SDWAV, iosystem, shr_pio_getiotype(trim(inst_name)))
 
        call shr_strdata_init(SDWAV,mpicom,compid,name='wav', &
@@ -341,10 +341,10 @@ CONTAINS
 
     call mct_avect_init(w2x, rlist=seq_flds_w2x_fields, lsize=lsize)
     call mct_avect_zero(w2x)
-      
+
     call mct_avect_init(x2w, rlist=seq_flds_x2w_fields, lsize=lsize)
     call mct_avect_zero(x2w)
-  
+
     call t_stopf('dwav_initmctavs')
 
     !----------------------------------------------------------------------------
@@ -404,7 +404,7 @@ CONTAINS
     ! end redirection of share output to wav log
 
     if (my_task == master_task) write(logunit, F00) 'dwav_comp_init done'
-    call shr_sys_flush(logunit) 
+    call shr_sys_flush(logunit)
     call shr_file_setlogunit (shrlogunit)
     call shr_file_setloglevel(shrloglev)
     call shr_sys_flush(logunit)
@@ -433,8 +433,8 @@ subroutine dwav_comp_run( EClock, cdata, x2w, w2x)
 
    type(ESMF_Clock)            ,intent(in)    :: EClock
    type(seq_cdata)             ,intent(inout) :: cdata
-   type(mct_aVect)             ,intent(inout) :: x2w        
-   type(mct_aVect)             ,intent(inout) :: w2x        
+   type(mct_aVect)             ,intent(inout) :: x2w
+   type(mct_aVect)             ,intent(inout) :: w2x
 
 !EOP
 
@@ -569,7 +569,7 @@ subroutine dwav_comp_run( EClock, cdata, x2w, w2x)
       write(logunit,F04) trim(myModelName),': model date ', CurrentYMD,CurrentTOD
       call shr_sys_flush(logunit)
    end if
-      
+
    call shr_file_setLogUnit (shrlogunit)
    call shr_file_setLogLevel(shrloglev)
    call shr_sys_flush(logunit)
@@ -585,7 +585,7 @@ end subroutine dwav_comp_run
 ! !IROUTINE: dwav_comp_final
 !
 ! !DESCRIPTION:
-!     finalize method data wav model 
+!     finalize method data wav model
 !
 ! !REVISION HISTORY:
 !
@@ -608,11 +608,11 @@ subroutine dwav_comp_final()
 
    call t_startf('DWAV_FINAL')
    if (my_task == master_task) then
-      write(logunit,F91) 
+      write(logunit,F91)
       write(logunit,F00) trim(myModelName),': end of main integration loop'
-      write(logunit,F91) 
+      write(logunit,F91)
    end if
-      
+
    call t_stopf('DWAV_FINAL')
 
  end subroutine dwav_comp_final

@@ -2,7 +2,7 @@
 ! SVN $Id: shr_vmath_mod.F90 66411 2014-12-19 22:40:08Z santos@ucar.edu $
 ! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_150116/shr/shr_vmath_mod.F90 $
 !===============================================================================
-! PURPOSE: 
+! PURPOSE:
 !   provides a uniform, platform-independent API for vector math functions
 !===============================================================================
 
@@ -75,7 +75,7 @@ subroutine shr_vmath_rsqrt(X, Y, n)
    return
 #endif
 !#ifdef CPRINTEL
-! Does not pass unit tests 
+! Does not pass unit tests
 !   real   (SHR_KIND_R8)  :: RX(n) !
 !   call vdsqrt(n, X, RX)
 !   call vddiv(n, 1.0_SHR_KIND_R8,RX, Y)
@@ -83,7 +83,7 @@ subroutine shr_vmath_rsqrt(X, Y, n)
 !#endif
 #endif
    Y = 1.0_SHR_KIND_R8/sqrt(X)
-   
+
 
 end subroutine shr_vmath_rsqrt
 

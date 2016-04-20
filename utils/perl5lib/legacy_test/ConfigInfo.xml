@@ -11,7 +11,7 @@
 <configInfo>
 
 <!-- -------------------------------------------------------------------------------- -->
-  
+
   <!-- sizes for different resolutions (number latitude and number of longitudes)  -->
   <size res="gx3v5">
      <nlons>100</nlons>
@@ -41,7 +41,7 @@
      <nlats>384</nlats>
      <nlevs>26</nlevs>
   </size>
-  
+
 
 <!-- -------------------------------------------------------------------------------- -->
   <!-- CICE or POP -->
@@ -76,7 +76,7 @@
     <bsize_y   >60</bsize_y>
     <decomptype>cartesian</decomptype>
   </decomp>
- 
+
   <!-- CICE or POP -->
   <!-- gx1v[345] resolution -->
   <decomp nproc="16" res="gx1v[345]" model="cice|pop" platform="XT">

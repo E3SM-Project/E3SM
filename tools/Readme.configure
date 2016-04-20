@@ -20,7 +20,7 @@ OPTIONS
                           default: make
      -help [or -h]        Print usage to STDOUT (optional).
      -loglevel
-     
+
 EXAMPLES
 
   ./configure -mach bluefire -compiler ibm -cimeroot /path/to/cime
@@ -28,9 +28,9 @@ EXAMPLES
 
 This tool is used to create Macros files to build CESM tools on supported machines.
 It will create a Macros file in make or cmake format along with the module support
-for the specified or default compiler.   It will also create two files 
+for the specified or default compiler.   It will also create two files
 .env_mach_specific.csh
 .env_mach_specific.sh
 
 Before you try to run make you should source the file above appropriate for your shell
-this will set the proper environment for supported systems which use modules. 
+this will set the proper environment for supported systems which use modules.

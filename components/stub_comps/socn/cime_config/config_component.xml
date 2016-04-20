@@ -2,9 +2,9 @@
 
 <?xml-stylesheet type="text/xsl" href="definitions_variables.xsl" ?>
 
-<definitions_variables> 
+<definitions_variables>
 
-  <entry id="COMP_OCN"> 
+  <entry id="COMP_OCN">
     <type>char</type>
     <valid_values>socn</valid_values>
     <default_value>socn</default_value>
@@ -17,4 +17,4 @@
     <desc compset="_SOCN">Stub ocn component</desc>
   </description>
 
-</definitions_variables> 
+</definitions_variables>

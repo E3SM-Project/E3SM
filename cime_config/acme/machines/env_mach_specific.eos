@@ -14,7 +14,7 @@ set MPILIB = `./xmlquery MPILIB -value`
 set DEBUG = `./xmlquery DEBUG -value`
 if (-e /opt/modules/default/init/csh) then
   source /opt/modules/default/init/csh
-#  module rm PrgEnv-cray 
+#  module rm PrgEnv-cray
 #  module rm PrgEnv-gnu
   module rm intel
   module rm cray
@@ -25,23 +25,23 @@ if (-e /opt/modules/default/init/csh) then
 #  module rm cray-mpich
   module rm netcdf
 #  module rm PrgEnv-intel
-	
+
 endif
 
 if ( $COMPILER == "intel" ) then
 #    module load PrgEnv-intel/5.2.40
     module load    intel/14.0.2.144
-endif    
+endif
 if ( $COMPILER == "cray" ) then
     module load PrgEnv-cray
     module switch cce      cce/8.1.9
     module load cray-libsci/12.1.00
-endif    
+endif
 if ( $COMPILER == "gnu" ) then
     module load PrgEnv-gnu
     module switch gcc       gcc/4.8.0
     module load cray-libsci/12.1.00
-endif    
+endif
 
 module load cray-mpich
 if ( $MPILIB == "mpi-serial") then
@@ -66,7 +66,7 @@ limit coredumpsize unlimited
 limit stacksize unlimited
 
 # The environment variable below increase the stack size, which is necessary for
-# CICE to run threaded on this machine.  
+# CICE to run threaded on this machine.
 setenv OMP_STACKSIZE 64M
 if ( $?PERL ) then
   printenv
