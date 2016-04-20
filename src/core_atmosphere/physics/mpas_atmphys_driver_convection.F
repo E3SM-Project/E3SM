@@ -82,6 +82,8 @@
 ! * in the calls to subroutine cu_grell_freitas and cu_grell_freitas_momentum, added the array pratec for the
 !   calculation of rainc.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-14.
+! * in the call to subroutine cu_grell_freitas, removed the argument ktop_deep.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-04-20.
 
 
  contains
@@ -417,13 +419,12 @@
              rqvften         = rqvdynten_p            , rthraten      = rthraten_p      , &
              kpbl            = kpbl_p                 , raincv        = raincv_p        , &
              pratec          = pratec_p               , htop          = cutop_p         , &
-             hbot            = cubot_p                , ktop_deep     = ktop_deep_p     , &
-             k22_shallow     = k22_shallow_p          , kbcon_shallow = kbcon_shallow_p , &
-             ktop_shallow    = ktop_shallow_p         , xmb_total     = xmb_total_p     , &
-             xmb_shallow     = xmb_shallow_p          , gdc           = qccu_p          , &
-             gdc2            = qicu_p                 , rthcuten      = rthcuten_p      , &
-             rqvcuten        = rqvcuten_p             , rqccuten      = rqccuten_p      , &
-             rqicuten        = rqicuten_p                                               , & 
+             hbot            = cubot_p                , k22_shallow   = k22_shallow_p   , & 
+             kbcon_shallow   = kbcon_shallow_p        , ktop_shallow  = ktop_shallow_p  , & 
+             xmb_total       = xmb_total_p            , xmb_shallow   = xmb_shallow_p   , &
+             gdc             = qccu_p                 , gdc2          = qicu_p          , &
+             rthcuten        = rthcuten_p             , rqvcuten      = rqvcuten_p      , & 
+             rqccuten        = rqccuten_p             , rqicuten      = rqicuten_p      , &
              ichoice_deep    = gfconv_closure_deep                                      , &
              ichoice_shallow = gfconv_closure_shallow                                   , &
              ishallow_g3     = ishallow                                                 , &
