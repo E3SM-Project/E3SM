@@ -246,5 +246,23 @@ contains
     str = glc_elevclass_as_string(12)
     @assertEqual('12', trim(str))
   end subroutine test_glc_elevclass_as_string_2digits
+
+  ! ------------------------------------------------------------------------
+  ! Tests of glc_all_elevclass_strings
+  ! ------------------------------------------------------------------------
+
+  @Test
+  subroutine test_glc_all_elevclass_strings(this)
+    class(TestGLCElevclass), intent(inout) :: this
+    character(len=16) :: elevclass_strings(3)
+
+    call glc_elevclass_init(3)
+    elevclass_strings = glc_all_elevclass_strings()
+
+    ! There doesn't seem to be an assertEqual method for an array of strings
+    @assertEqual('01', elevclass_strings(1))
+    @assertEqual('02', elevclass_strings(2))
+    @assertEqual('03', elevclass_strings(3))
+  end subroutine test_glc_all_elevclass_strings
   
 end module test_glc_elevclass

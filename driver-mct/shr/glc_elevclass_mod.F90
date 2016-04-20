@@ -26,6 +26,7 @@ module glc_elevclass_mod
   public :: glc_get_elevation_class       ! get the elevation class index for a given elevation
   public :: glc_mean_elevation_virtual    ! get the mean elevation of a virtual elevation class
   public :: glc_elevclass_as_string       ! returns a string corresponding to a given elevation class
+  public :: glc_all_elevclass_strings     ! returns an array of strings for all elevation classes
   public :: glc_errcode_to_string         ! convert an error code into a string describing the error
   
   interface glc_elevclass_init
@@ -308,6 +309,33 @@ contains
 
     write(ec_string,'(i2.2)') elevation_class
   end function glc_elevclass_as_string
+
+  !-----------------------------------------------------------------------
+  function glc_all_elevclass_strings() result(ec_strings)
+    !
+    ! !DESCRIPTION:
+    ! Returns an array of strings corresponding to all elevation classes from 1 to glc_nec
+    !
+    ! These strings can be used as suffixes for fields in MCT attribute vectors.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    character(len=2), allocatable :: ec_strings(:)  ! function result
+    !
+    ! !LOCAL VARIABLES:
+    integer :: i
+
+    character(len=*), parameter :: subname = 'glc_all_elevclass_strings'
+    !-----------------------------------------------------------------------
+
+    allocate(ec_strings(1:glc_nec))
+    do i = 1, glc_nec
+       ec_strings(i) = glc_elevclass_as_string(i)
+    end do
+
+  end function glc_all_elevclass_strings
+
 
   !-----------------------------------------------------------------------
   function glc_errcode_to_string(err_code) result(err_string)
