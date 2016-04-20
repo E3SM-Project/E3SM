@@ -96,7 +96,7 @@ _TEST_SUITES = {
                            "ERS_IOP_Ld3.f19_f19.FAMIPC5",
                            "ERS_Ld3.ne16_g37.FC5",
                            "ERS_Ld3.ne30_ne30.FC5",
-                          #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct com set
+                          #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
                            ("PET_PT_Ln9.ne30_ne30.FC5", "cam-outfrq9s"),
                            "PET_PT.f19_g16.X",
                            "PET_PT.f45_g37_rx1.A",
