@@ -6,14 +6,11 @@ module vertical_gradient_calculator_2nd_order
   !
   ! This module defines a subclass of vertical_gradient_calculator_base_type for
   ! computing vertical gradients using a second-order centered difference.
-  !
-  ! Currently, this code assumes that it is working with GLC elevation classes.
 
 #include "shr_assert.h"
   use seq_comm_mct, only : logunit
   use vertical_gradient_calculator_base, only : vertical_gradient_calculator_base_type
   use shr_kind_mod, only : r8 => shr_kind_r8
-  use glc_elevclass_mod, only : glc_elevclass_as_string
   use mct_mod
   use shr_log_mod, only : errMsg => shr_log_errMsg
   use shr_sys_mod, only : shr_sys_abort
@@ -48,12 +45,15 @@ contains
 
   !-----------------------------------------------------------------------
   function constructor(attr_vect, fieldname, toponame, &
-       min_elevation_class, max_elevation_class) &
+       min_elevation_class, max_elevation_class, elevclass_names) &
        result(this)
     !
     ! !DESCRIPTION:
     ! Creates a vertical_gradient_calculator_2nd_order_type object by reading the
     ! necessary data from the provided attribute vector
+    !
+    ! The attribute vector is assumed to have fields named fieldname //
+    ! elevclass_names(1), toponame // elevclass_names(1), etc.
     !
     ! !USES:
     !
@@ -64,15 +64,18 @@ contains
     character(len=*) , intent(in) :: toponame            ! base name of the topographic field
     integer          , intent(in) :: min_elevation_class ! first elevation class index
     integer          , intent(in) :: max_elevation_class ! last elevation class index
+    character(len=*) , intent(in) :: elevclass_names( min_elevation_class: ) ! strings corresponding to each elevation class
     !
     ! !LOCAL VARIABLES:
     
     character(len=*), parameter :: subname = 'constructor'
     !-----------------------------------------------------------------------
 
+    SHR_ASSERT_ALL((ubound(elevclass_names) == (/max_elevation_class/)), errMsg(__FILE__, __LINE__))
+
     this%min_elevation_class = min_elevation_class
     this%max_elevation_class = max_elevation_class
-    call this%set_data_from_attr_vect(attr_vect, fieldname, toponame)
+    call this%set_data_from_attr_vect(attr_vect, fieldname, toponame, elevclass_names)
     
   end function constructor
 
@@ -150,7 +153,7 @@ contains
 
 
   !-----------------------------------------------------------------------
-  subroutine set_data_from_attr_vect(this, attr_vect, fieldname, toponame)
+  subroutine set_data_from_attr_vect(this, attr_vect, fieldname, toponame, elevclass_names)
     !
     ! !DESCRIPTION:
     ! Extract data from an attribute vector.
@@ -165,10 +168,10 @@ contains
     type(mct_aVect)  , intent(in) :: attr_vect ! attribute vector in which we can find the data
     character(len=*) , intent(in) :: fieldname ! base name of the field of interest
     character(len=*) , intent(in) :: toponame  ! base name of the topographic field
+    character(len=*) , intent(in) :: elevclass_names( this%min_elevation_class: ) ! strings corresponding to each elevation class
     !
     ! !LOCAL VARIABLES:
     integer :: elevclass
-    character(len=:), allocatable :: elevclass_as_string
     character(len=:), allocatable :: fieldname_ec
     character(len=:), allocatable :: toponame_ec
 
@@ -185,13 +188,11 @@ contains
     allocate(temp(this%num_points))
     
     do elevclass = this%min_elevation_class, this%max_elevation_class
-       elevclass_as_string = glc_elevclass_as_string(elevclass)
-       fieldname_ec = trim(fieldname) // elevclass_as_string
+       fieldname_ec = trim(fieldname) // trim(elevclass_names(elevclass))
        call mct_aVect_exportRattr(attr_vect, fieldname_ec, temp)
        this%field(:,elevclass) = temp(:)
 
-       elevclass_as_string = glc_elevclass_as_string(elevclass)
-       toponame_ec = trim(toponame) // elevclass_as_string
+       toponame_ec = trim(toponame) // trim(elevclass_names(elevclass))
        call mct_aVect_exportRattr(attr_vect, toponame_ec, temp)
        this%topo(:,elevclass) = temp(:)
     end do

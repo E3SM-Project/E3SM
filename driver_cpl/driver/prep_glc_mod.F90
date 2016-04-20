@@ -407,7 +407,7 @@ contains
     ! vertical gradient calculator.
 
     use vertical_gradient_calculator_2nd_order, only : vertical_gradient_calculator_2nd_order_type
-    use glc_elevclass_mod, only : glc_get_num_elevation_classes
+    use glc_elevclass_mod, only : glc_get_num_elevation_classes, glc_all_elevclass_strings
     use map_lnd2glc_mod, only : map_lnd2glc
 
     ! Arguments
@@ -429,7 +429,8 @@ contains
          fieldname = fieldname, &
          toponame = 'Sl_topo', &
          min_elevation_class = 1, &
-         max_elevation_class = glc_get_num_elevation_classes())
+         max_elevation_class = glc_get_num_elevation_classes(), &
+         elevclass_names = glc_all_elevclass_strings())
     call map_lnd2glc(l2x_l = l2gacc_lx(eli), &
          landfrac_l = fractions_lx, &
          g2x_g = g2x_gx, &
