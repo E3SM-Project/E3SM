@@ -73,18 +73,27 @@ class SystemTestsCommon(object):
         return
 
     def report(self):
-        self._checkformemleak()
+        newestcpllogfile = self._getlatestcpllog()
+        if "SUCCESSFUL TERMINATION" in open(newestcpllogfile).read():
+            with open("TestStatus", "a") as fd:
+                fd.write("PASS %s : successful coupler log\n"%(self._case.get_value("CASEBASEID")))
+        else:
+            with open("TestStatus", "a") as fd:
+                fd.write("FAIL %s : coupler log indicates a problem\n"%(self._case.get_value("CASEBASEID")))
+
+        self._checkformemleak(newestcpllogfile)
+        self._compare
         return
 
-    def _checkformemleak(self):
+    def _checkformemleak(self, cpllog):
         """
         Examine memory usage as recorded in the cpl log file and look for unexpected
         increases.
         """
 
-        newestcpllogfile = self._getlatestcpllog()
+
         cmd = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools","check_memory.pl")
-        rc, out, err = run_cmd("%s -file1 %s -m 1.5"%(cmd, newestcpllogfile),ok_to_fail=True)
+        rc, out, err = run_cmd("%s -file1 %s -m 1.5"%(cmd, cpllog),ok_to_fail=True)
         if rc == 0:
             with open("TestStatus", "a") as fd:
                 fd.write("PASS %s memleak\n"%(self._case.get_value("CASEBASEID")))
@@ -114,10 +123,89 @@ class SystemTestsCommon(object):
         """
         find and return the latest cpl log file in the run directory
         """
-        newestcpllogfile = min(glob.iglob(os.path.join(
+        cpllog = min(glob.iglob(os.path.join(
                     self._case.get_value('RUNDIR'),'cpl.log.*')), key=os.path.getctime)
-        return newestcpllogfile
+        return cpllog
 
+
+
+    def _compare(self):
+        """
+        check to see if there are history files to be compared, compare if they are there
+        """
+        cmd = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools",
+                                                "component_compare_test.sh")
+        rc, out, err = run_cmd("%s -rundir %s -testcase %s -testcase_base %s -suffix1 base -suffix2 rest"
+                               %(cmd, self._case.get_value('RUNDIR'), self._case.get_value('CASE'),
+                                 self._case.get_value('CASEBASEID')), ok_to_fail=True)
+        if rc == 0:
+            with open("TestStatus", "a") as fd:
+                fd.write(out+"\n")
+        else:
+            with open("TestStatus.log", "a") as fd:
+                fd.write("Component_compare_test.sh failed out: %s\n\nerr: %s\n"%(out,err))
+
+    def compare_baseline(self):
+        """
+        compare the current test output to a baseline result
+        """
+        baselineroot = self._case.get_value("BASELINE_ROOT")
+        test_dir = self._case.get_value("CASEROOT")
+        basecmp_dir = os.path.join(baselineroot, self._case.get_value("BASECMP_CASE"))
+        for bdir in (baselineroot, basecmp_dir):
+            if not os.path.isdir(bdir):
+                with open(os.path.join(test_dir, "TestStatus"), "a") as fd:
+                    fd.write("GFAIL %s baseline\n",self._case.get_value("CASEBASEID"))
+                with open(os.path.join(test_dir, "TestStatus.log"), "a") as fd:
+                    fd.write("ERROR %s does not exist",bdir)
+                return -1
+        compgen = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools",
+                               "component_compgen_baseline.sh")
+        compgen += " -baseline_dir "+basecmp_dir
+        compgen += " -test_dir "+self._case.get_value("RUNDIR")
+        compgen += " -compare_tag "+self._case.get_value("BASELINE_NAME_CMP")
+        compgen += " -testcase "+self._case.get_value("CASE")
+        compgen += " -testcase_base "+self._case.get_value("CASEBASEID")
+        rc, out, err = run_cmd(compgen, ok_to_fail=True)
+        with open(os.path.join(test_dir, "TestStatus"), "a") as fd:
+            fd.write(out)
+        if rc != 0:
+            with open(os.path.join(test_dir, "TestStatus.log"), "a") as fd:
+                fd.write("Error in Baseline compare: %s"%err)
+
+    def generate_baseline(self):
+        """
+        generate a new baseline case based on the current test
+        """
+        newestcpllogfile = self._getlatestcpllog()
+        baselineroot = self._case.get_value("BASELINE_ROOT")
+        basegen_dir = os.path.join(baselineroot, self._case.get_value("BASEGEN_CASE"))
+        test_dir = self._case.get_value("CASEROOT")
+        for bdir in (baselineroot, basegen_dir):
+            if not os.path.isdir(bdir):
+                with open(os.path.join(test_dir, "TestStatus"), "a") as fd:
+                    fd.write("GFAIL %s baseline\n" % self._case.get_value("CASEBASEID"))
+                with open(os.path.join(test_dir, "TestStatus.log"), "a") as fd:
+                    fd.write("ERROR %s does not exist" % bdir)
+                return -1
+        compgen = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools",
+                               "component_compgen_baseline.sh")
+        compgen += " -baseline_dir "+basegen_dir
+        compgen += " -test_dir "+self._case.get_value("RUNDIR")
+        compgen += " -generate_tag "+self._case.get_value("BASELINE_NAME_GEN")
+        compgen += " -testcase "+self._case.get_value("CASE")
+        compgen += " -testcase_base "+self._case.get_value("CASEBASEID")
+        rc, out, err = run_cmd(compgen, ok_to_fail=True)
+        # copy latest cpl log to baseline
+        shutil.copyfile(newestcpllogfile,
+                        os.path.join(basegen_dir,
+                                     os.path.basename(newestcpllogfile)))
+
+        with open(os.path.join(test_dir, "TestStatus"), "a") as fd:
+            fd.write(out+"\n")
+        if rc != 0:
+            with open(os.path.join(test_dir, "TestStatus.log"), "a") as fd:
+                fd.write("Error in Baseline Generate: %s"%err)
 
 
 

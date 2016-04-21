@@ -518,4 +518,3 @@ class Case(object):
         self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
 
-
