@@ -1168,12 +1168,14 @@
 
   ELSE
 
-    print *
-    print *,'  Unknown value for source'
-    print *
-    print *,'  source = ',source
-    print *
-    stop
+!    print *
+!    print *,'  Unknown value for source'
+!    print *
+!    print *,'  source = ',source
+!    print *
+!    stop
+    write(0,*) 'getcape: unknown value for source'
+    return
 
   ENDIF
 
@@ -1289,12 +1291,14 @@
 
           if(i.gt.90) print *,i,th2,thlast,th2-thlast
           if(i.gt.100)then
-            print *
-            print *,'  Error:  lack of convergence'
-            print *
-            print *,'  ... stopping iteration '
-            print *
-            stop 1001
+!            print *
+!            print *,'  Error:  lack of convergence'
+!            print *
+!            print *,'  ... stopping iteration '
+!            print *
+!            stop 1001
+            write(0,*) 'getcape: lack of convergence'
+            return
           endif
           if( abs(th2-thlast).gt.converge )then
             thlast=thlast+0.3*(th2-thlast)
@@ -1314,10 +1318,12 @@
           ql2 = 0.0
           qi2 = 0.0
         ELSEIF(adiabat.le.0.or.adiabat.ge.5)THEN
-          print *
-          print *,'  Undefined adiabat'
-          print *
-          stop 10000
+!          print *
+!          print *,'  Undefined adiabat'
+!          print *
+!          stop 10000
+          write(0,*) 'getcape: Undefined adiabat'
+          return
         ENDIF
 
       enddo
