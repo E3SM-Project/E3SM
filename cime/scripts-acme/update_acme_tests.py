@@ -55,6 +55,7 @@ _TEST_SUITES = {
                              "ERS.f19_g16.FC5CLBMG2MAM4RESUSBC",
                              "ERS.f19_g16.FC5CLBMG2MAM4RESUSMOMBC",
                              "ERS.f19_g16.FC5ATMMOD",
+                             "ERS_Ld5.ne16_ne16.FC5ATMMODCOSP",
                              "SMS.f19_g16.FC5ATMMOD",
                              "SMS.f19_g16.FC5ATMMODCOSP",
                              "SMS_D.f19_g16.FC5ATMMODCOSP")
@@ -78,6 +79,7 @@ _TEST_SUITES = {
                          "SMS.ne30_f19_g16_rx1.A",
                          "ERS_Ld5.T62_oQU120.C_MPAS_NORMAL_YEAR",
                          "ERS.f09_g16_g.MPASLI_ONLY",
+                         "ERS_Ld5.ne16_ne16.FC5ATMMODCOSP",
                          "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
                          "SMS.f09_g16_a.IGCLM45_MLI",
                          "SMS_D_Ln1.ne30_ne30.FC5AV1C",
