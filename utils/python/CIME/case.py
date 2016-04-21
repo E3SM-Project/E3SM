@@ -7,6 +7,7 @@ through the Case module.
 
 from CIME.XML.standard_module_setup import *
 from shutil import copyfile
+from copy   import deepcopy
 from CIME.utils                     import expect, run_cmd, get_cime_root, convert_to_type, get_model
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -76,6 +77,24 @@ class Case(object):
               if os.path.basename(env_file.filename) == full_name:
                   return env_file
           expect(False, "Could not find object for %s in case"%full_name)
+
+    def copy(self, newcasename, newcaseroot, newcimeroot=None, newsrcroot=None):
+        newcase = deepcopy(self)
+        for env_file in newcase._files:
+            basename = os.path.basename(env_file.filename)
+            env_file.filename = os.path.join(newcaseroot,basename)
+
+        if newcimeroot is not None:
+            newcase.set_value("CIMEROOT", newcimeroot)
+
+        if newsrcroot is not None:
+            newcase.set_value("SRCROOT", newsrcroot)
+
+        newcase.set_value("CASE",newcasename)
+        newcase.set_value("CASEROOT",newcaseroot)
+        newcase.set_value("CONTINUE_RUN","FALSE")
+        newcase.set_value("RESUBMIT",0)
+        return newcase
 
     def flush(self, flushall=False):
         if flushall:
@@ -213,7 +232,13 @@ class Case(object):
                    "Could not find a compset match for either alias or longname in %s" %(compset_name))
 
     def get_compset_components(self):
-        elements = self._compsetname.split('_')
+        # If are doing a create_clone then, self._compsetname is not set yet
+        compset = self.get_value("COMPSET")
+        if compset is None:
+            compset = self._compsetname
+        expect(compset is not None,
+               "ERROR: compset is not set")
+        elements = compset.split('_')
         for element in elements:
             # ignore the initial date in the compset longname
             if re.search(r'^\d+$',element):

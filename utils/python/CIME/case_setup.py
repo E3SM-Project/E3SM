@@ -84,7 +84,7 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
 
     cimeroot = os.environ["CIMEROOT"]
 
-    case = Case()
+    case = Case(caseroot)
 
     # Check that $DIN_LOC_ROOT exists - and abort if not a namelist compare tests
     din_loc_root = case.get_value("DIN_LOC_ROOT")
