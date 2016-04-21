@@ -1,7 +1,7 @@
 """
 Base class for CIME system tests
 """
-import shutil, glob
+import shutil, glob, gzip
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
 from CIME.XML.env_run import EnvRun
@@ -74,7 +74,8 @@ class SystemTestsCommon(object):
 
     def report(self):
         newestcpllogfile = self._getlatestcpllog()
-        if "SUCCESSFUL TERMINATION" in open(newestcpllogfile).read():
+        logger.warn("Latest Coupler log file is %s"%newestcpllogfile)
+        if "SUCCESSFUL TERMINATION" in gzip.open(newestcpllogfile, 'rb').read():
             with open("TestStatus", "a") as fd:
                 fd.write("PASS %s : successful coupler log\n"%(self._case.get_value("CASEBASEID")))
         else:
@@ -90,18 +91,30 @@ class SystemTestsCommon(object):
         Examine memory usage as recorded in the cpl log file and look for unexpected
         increases.
         """
+    meminfo = re.compile(".*model date =\s+(\w+).*memory =\s+(\d+\.?\d+).*highwater")
+    with gzip.open(cpllog, "rb") as f:
+        for line in f:
+            m = meminfo.match(line)
+            if m:
+                memlist.append((m.group(1), m.group(2)))
 
-
-        cmd = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools","check_memory.pl")
-        rc, out, err = run_cmd("%s -file1 %s -m 1.5"%(cmd, cpllog),ok_to_fail=True)
-        if rc == 0:
+        if len(memlist)<3:
             with open("TestStatus", "a") as fd:
-                fd.write("PASS %s memleak\n"%(self._case.get_value("CASEBASEID")))
+                fd.write("COMMENT: insuffiencient data for memleak test\n")
         else:
-            with open(os.path.join(test_dir, "TestStatus.log"), "a") as fd:
-                fd.write("memleak out: %s\n\nerror: %s"%(out,err))
-            with open(os.path.join(test_dir, "TestStatus"), "a") as fd:
-                fd.write("FAIL %s memleak\n"%(self._case.get_value("CASEBASEID")))
+            finaldate = int(memlist[-1][0])
+            originaldate = int(memlist[0][0])
+            finalmem = float(memlist[-1][1])
+            originalmem = float(memlist[0][1])
+            memdiff = (finalmem - originalmem)/originalmem
+            if memdiff < 0.01:
+                with open("TestStatus", "a") as fd:
+                    fd.write("PASS %s memleak\n"%(self._case.get_value("CASEBASEID")))
+            else:
+                with open("TestStatus.log", "a") as fd:
+                    fd.write("memleak detected, memory went from %f to %f in %d days"%(originalmem, finalmem, finaldate-originaldate))
+                with open("TestStatus", "a") as fd:
+                    fd.write("FAIL %s memleak\n"%(self._case.get_value("CASEBASEID")))
 
     def compare_env_run(self, expected=None):
         f1obj = EnvRun(self._caseroot, "env_run.xml")
