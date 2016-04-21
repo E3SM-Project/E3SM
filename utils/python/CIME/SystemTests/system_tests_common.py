@@ -91,12 +91,13 @@ class SystemTestsCommon(object):
         Examine memory usage as recorded in the cpl log file and look for unexpected
         increases.
         """
-    meminfo = re.compile(".*model date =\s+(\w+).*memory =\s+(\d+\.?\d+).*highwater")
-    with gzip.open(cpllog, "rb") as f:
-        for line in f:
-            m = meminfo.match(line)
-            if m:
-                memlist.append((m.group(1), m.group(2)))
+        memlist = list()
+        meminfo = re.compile(".*model date =\s+(\w+).*memory =\s+(\d+\.?\d+).*highwater")
+        with gzip.open(cpllog, "rb") as f:
+            for line in f:
+                m = meminfo.match(line)
+                if m:
+                    memlist.append((m.group(1), m.group(2)))
 
         if len(memlist)<3:
             with open("TestStatus", "a") as fd:
@@ -112,7 +113,8 @@ class SystemTestsCommon(object):
                     fd.write("PASS %s memleak\n"%(self._case.get_value("CASEBASEID")))
             else:
                 with open("TestStatus.log", "a") as fd:
-                    fd.write("memleak detected, memory went from %f to %f in %d days"%(originalmem, finalmem, finaldate-originaldate))
+                    fd.write("\nmemleak detected, memory went from %f to %f in %d days"
+                             %(originalmem, finalmem, finaldate-originaldate))
                 with open("TestStatus", "a") as fd:
                     fd.write("FAIL %s memleak\n"%(self._case.get_value("CASEBASEID")))
 
@@ -297,3 +299,26 @@ echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
         self.fake_build(script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
+class TESTMEMLEAKFAIL(FakeTest):
+    def build(self, sharedlib_only=False, model_only=False):
+        rundir = self._case.get_value("RUNDIR")
+        cimeroot = self._case.get_value("CIMEROOT")
+        testfile = os.path.join(cimeroot,"utils","python","tests","cpl.log.failmemleak.gz")
+        script = \
+"""
+gunzip -c %s > %s/cpl.log.$LID
+""" % (testfile, rundir)
+        self.fake_build(script,
+                        sharedlib_only=sharedlib_only, model_only=model_only)
+
+class TESTMEMLEAKPASS(FakeTest):
+    def build(self, sharedlib_only=False, model_only=False):
+        rundir = self._case.get_value("RUNDIR")
+        cimeroot = self._case.get_value("CIMEROOT")
+        testfile = os.path.join(cimeroot,"utils","python","tests","cpl.log.passmemleak.gz")
+        script = \
+"""
+gunzip -c %s > %s/cpl.log.$LID
+""" % (testfile, rundir)
+        self.fake_build(script,
+                        sharedlib_only=sharedlib_only, model_only=model_only)
