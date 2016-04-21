@@ -2,15 +2,15 @@
 <namelist_defaults>
 
 <!-- Solar constant from Lean (via Caspar Ammann) -->
-<solar_data_file>atm/cam/solar/SOLAR_SPECTRAL_Lean_1610-2008_annual_c090324.nc</solar_data_file>
+<solar_data_file>atm/cam/solar/spectral_irradiance_Lean_1850_cntl_c100407.nc</solar_data_file>
 <solar_data_ymd>18500101</solar_data_ymd>
 <solar_data_type>FIXED</solar_data_type>
 
-<!-- 1850 GHG values from ipcc-ar4-cfcs-1850-2000.xls (Doug Kinnison) -->
-<co2vmr>284.7e-6</co2vmr>
-<ch4vmr>791.6e-9</ch4vmr>
-<n2ovmr>275.68e-9</n2ovmr>
-<f11vmr>12.48e-12</f11vmr>
+<!-- 1850 GHG values from AR5 (from ghg_hist_1765-2012_c130501.nc) -->
+<!-- <co2vmr>284.725e-6</co2vmr> Set by CCSM_CO2_PPMV in config_compset.xml -->
+<ch4vmr>790.9792e-9</ch4vmr>
+<n2ovmr>275.425e-9</n2ovmr>
+<f11vmr>33.432e-12</f11vmr>
 <f12vmr>0.0</f12vmr>
 
 <!-- Ice nucleation mods-->
