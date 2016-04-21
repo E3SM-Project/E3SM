@@ -103,8 +103,6 @@ contains
     this%elevclass_bounds(:) = elevclass_bounds(:)
     call this%set_data_from_attr_vect(attr_vect, fieldname, toponame, elevclass_names)
 
-    call this%check_topo()
-
   end function constructor
 
 
