@@ -233,9 +233,9 @@ contains
     ! handled correctly.
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
     type(vertical_gradient_calculator_2nd_order_type) :: calculator
-    real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
-    real(r8), parameter :: topo(1,3) = reshape([50._r8, 100._r8, 50._r8], [1,3])
-    real(r8), parameter :: data(1,3) = reshape([11._r8, 12._r8,  13._r8], [1,3])
+    real(r8), parameter :: elevclass_bounds(3) = [0._r8, 100._r8, 200._r8]
+    real(r8), parameter :: topo(1,2) = reshape([100._r8, 100._r8], [1,2])
+    real(r8), parameter :: data(1,2) = reshape([11._r8, 12._r8], [1,2])
     real(r8) :: vertical_gradient(1)
     real(r8) :: expected_vertical_gradient(1)
 
@@ -257,19 +257,17 @@ contains
     type(vertical_gradient_calculator_2nd_order_type) :: calculator
 
     integer, parameter :: npts = 3
-    integer, parameter :: nelev = 3
-    real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
+    integer, parameter :: nelev = 2
+    real(r8), parameter :: elevclass_bounds(3) = [0._r8, 100._r8, 200._r8]
     ! In the following, each line is one elevation class (with all points for that
     ! elevation class)
     real(r8), parameter :: topo(npts,nelev) = reshape( &
-         [50._r8, 5000._r8, 100._r8, &
-         125._r8, 5000._r8, 101._r8, &
-         275._r8, 5000._r8, 102._r8],&
+         [50._r8, 100._r8, 99._r8, &
+         125._r8, 100._r8, 101._r8], &
          [npts,nelev])
     real(r8), parameter :: data(npts,nelev) = reshape( &
          [11._r8, 100._r8, 1000._r8, &
-          12._r8, 200._r8, 2000._r8, &
-          13._r8, 300._r8, 3000._r8], &
+          12._r8, 200._r8, 2000._r8], &
           [npts,nelev])
 
     real(r8) :: vertical_gradient(npts)
@@ -280,9 +278,9 @@ contains
     
     call calculator%calc_vertical_gradient(2, vertical_gradient)
 
-    expected_vertical_gradient(1) = (data(1,3) - data(1,1)) / (topo(1,3) - topo(1,1))
+    expected_vertical_gradient(1) = (data(1,2) - data(1,1)) / (topo(1,2) - topo(1,1))
     expected_vertical_gradient(2) = 0._r8
-    expected_vertical_gradient(3) = (data(3,3) - data(3,1)) / (topo(3,3) - topo(3,1))
+    expected_vertical_gradient(3) = (data(3,2) - data(3,1)) / (topo(3,2) - topo(3,1))
     @assertEqual(expected_vertical_gradient, vertical_gradient, tolerance=tol)
     
   end subroutine test_calc_vertical_gradient_multiplePoints
