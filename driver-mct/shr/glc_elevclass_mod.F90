@@ -24,6 +24,7 @@ module glc_elevclass_mod
   public :: glc_elevclass_clean           ! deallocate memory allocated here
   public :: glc_get_num_elevation_classes ! get the number of elevation classes
   public :: glc_get_elevation_class       ! get the elevation class index for a given elevation
+  public :: glc_get_elevclass_bounds      ! get the boundaries of all elevation classes
   public :: glc_mean_elevation_virtual    ! get the mean elevation of a virtual elevation class
   public :: glc_elevclass_as_string       ! returns a string corresponding to a given elevation class
   public :: glc_all_elevclass_strings     ! returns an array of strings for all elevation classes
@@ -222,6 +223,30 @@ contains
     end if
        
   end subroutine glc_get_elevation_class
+
+  !-----------------------------------------------------------------------
+  function glc_get_elevclass_bounds() result(elevclass_bounds)
+    !
+    ! !DESCRIPTION:
+    ! Get the boundaries of all elevation classes.
+    !
+    ! This returns an array of size glc_nec+1, since it contains both the lower and upper
+    ! bounds of each elevation class.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    real(r8) :: elevclass_bounds(0:glc_nec)  ! function result
+    !
+    ! !LOCAL VARIABLES:
+
+    character(len=*), parameter :: subname = 'glc_get_elevclass_bounds'
+    !-----------------------------------------------------------------------
+
+    elevclass_bounds(:) = topomax(:)
+
+  end function glc_get_elevclass_bounds
+
 
   !-----------------------------------------------------------------------
   function glc_mean_elevation_virtual(elevation_class) result(mean_elevation)

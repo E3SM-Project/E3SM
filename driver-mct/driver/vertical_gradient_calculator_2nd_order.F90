@@ -39,6 +39,7 @@ module vertical_gradient_calculator_2nd_order
      procedure :: calc_vertical_gradient
      
      procedure, private :: set_data_from_attr_vect ! extract data from an attribute vector
+     procedure, private :: check_topo ! check topographic heights
 
   end type vertical_gradient_calculator_2nd_order_type
 
@@ -56,7 +57,15 @@ contains
     !
     ! !DESCRIPTION:
     ! Creates a vertical_gradient_calculator_2nd_order_type object by reading the
-    ! necessary data from the provided attribute vector
+    ! necessary data from the provided attribute vector.
+    !
+    ! Pre-condition: Topographic heights in the attribute vector must all lie inside the
+    ! bounds of their respective elevation class (given by elevclass_bounds), with the
+    ! possible exception of the lowest elevation class (topographic heights can lie below
+    ! the arbitrary lower bound of the elevation class) and the highest elevation class
+    ! (topographic heights can lie above the arbitrary upper bound of the elevation
+    ! class). (This pre-condition is mainly important for the sake of calculating the
+    ! limiter.)
     !
     ! The attribute vector is assumed to have fields named fieldname //
     ! elevclass_names(1), toponame // elevclass_names(1), etc.
@@ -92,7 +101,9 @@ contains
     allocate(this%elevclass_bounds((min_elevation_class-1):max_elevation_class))
     this%elevclass_bounds(:) = elevclass_bounds(:)
     call this%set_data_from_attr_vect(attr_vect, fieldname, toponame, elevclass_names)
-    
+
+    call this%check_topo()
+
   end function constructor
 
 
@@ -216,6 +227,61 @@ contains
     deallocate(temp)
     
   end subroutine set_data_from_attr_vect
+
+  !-----------------------------------------------------------------------
+  subroutine check_topo(this)
+    !
+    ! !DESCRIPTION:
+    ! Check topographic heights; abort if there is a problem
+    !
+    ! Topographic heights in the attribute vector must all lie inside the bounds of their
+    ! respective elevation class (given by elevclass_bounds), with the possible exception
+    ! of the lowest elevation class (topographic heights can lie below the arbitrary lower
+    ! bound of the elevation class) and the highest elevation class (topographic heights
+    ! can lie above the arbitrary upper bound of the elevation class)
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(vertical_gradient_calculator_2nd_order_type), intent(in) :: this
+    !
+    ! !LOCAL VARIABLES:
+    integer :: elevclass
+    integer :: i
+
+    ! Absolute tolerance for error checks. This is chosen so that it allows for
+    ! double-precision roundoff-level errors on values of order 10,000.
+    real(r8), parameter :: tol = 1.e-10_r8
+
+    character(len=*), parameter :: subname = 'check_topo'
+    !-----------------------------------------------------------------------
+
+    do elevclass = this%min_elevation_class, this%max_elevation_class
+       if (elevclass > this%min_elevation_class) then
+          do i = 1, this%num_points
+             if (this%topo(i,elevclass) - this%elevclass_bounds(elevclass-1) < -tol) then
+                write(logunit,*) subname, ': ERROR: topo lower than lower bound of elevation class:'
+                write(logunit,*) 'i, elevclass, topo, lower_bound = ', &
+                     i, elevclass, this%topo(i,elevclass), this%elevclass_bounds(elevclass-1)
+                call shr_sys_abort(subname//': ERROR: topo lower than lower bound of elevation class')
+             end if
+          end do
+       end if
+
+       if (elevclass < this%max_elevation_class) then
+          do i = 1, this%num_points
+             if (this%topo(i,elevclass) - this%elevclass_bounds(elevclass) > tol) then
+                write(logunit,*) subname, ': ERROR: topo higher than upper bound of elevation class:'
+                write(logunit,*) 'i, elevclass, topo, upper_bound = ', &
+                     i, elevclass, this%topo(i,elevclass), this%elevclass_bounds(elevclass)
+                call shr_sys_abort(subname//': ERROR: topo higher than upper bound of elevation class')
+             end if
+          end do
+       end if
+    end do
+
+  end subroutine check_topo
+
 
 end module vertical_gradient_calculator_2nd_order
 
