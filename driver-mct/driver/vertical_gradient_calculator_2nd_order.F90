@@ -131,6 +131,7 @@ contains
     ! Tolerance for considering two topo values to be nearly equal
     real(r8), parameter :: topo_equality_tolerance = 1.e-13_r8
 
+    integer :: i
     integer :: ec_low   ! elevation class index to use as the lower bound of the gradient
     integer :: ec_high  ! elevation class index to use as the upper bound of the gradient
     
@@ -166,13 +167,15 @@ contains
           ec_high = elevation_class + 1
        end if
 
-       where(abs(this%topo(:, ec_high) - this%topo(:, ec_low)) < topo_equality_tolerance)
-          vertical_gradient = 0._r8
-       elsewhere
-          vertical_gradient = &
-               (this%field(:, ec_high) - this%field(:, ec_low)) / &
-               (this%topo (:, ec_high) - this%topo (:, ec_low))
-       end where
+       do i = 1, this%num_points
+          if (abs(this%topo(i, ec_high) - this%topo(i, ec_low)) < topo_equality_tolerance) then
+             vertical_gradient(i) = 0._r8
+          else
+             vertical_gradient(i) = &
+                  (this%field(i, ec_high) - this%field(i, ec_low)) / &
+                  (this%topo (i, ec_high) - this%topo (i, ec_low))
+          end if
+       end do
 
     end if
     
