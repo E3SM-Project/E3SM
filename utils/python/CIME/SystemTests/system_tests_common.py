@@ -48,9 +48,6 @@ class SystemTestsCommon(object):
 
 
     def run(self):
-        with open("TestStatus", 'a') as f:
-            f.write("PEND %s RUN\n"%self._case.get_value("CASEBASEID"))
-
         with open("TestStatus", 'r') as f:
             teststatusfile = f.read()
 
@@ -249,7 +246,7 @@ class TESTRUNPASS(FakeTest):
 echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 """ % rundir
-        FakeTest.build(script,
+        FakeTest.build(self, script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNDIFF(FakeTest):
@@ -264,7 +261,7 @@ echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc.base
 """ % (rundir, cimeroot, rundir, case)
-        FakeTest.build(script,
+        FakeTest.build(self, script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNFAIL(FakeTest):
@@ -277,7 +274,7 @@ echo Insta fail
 echo model failed > %s/cpl.log.$LID
 exit -1
 """ % rundir
-        FakeTest.build(script,
+        FakeTest.build(self, script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTBUILDFAIL(FakeTest):
@@ -296,7 +293,7 @@ sleep 300
 echo Slow pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 """ % rundir
-        FakeTest.build(script,
+        FakeTest.build(self, script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTMEMLEAKFAIL(FakeTest):
@@ -308,7 +305,7 @@ class TESTMEMLEAKFAIL(FakeTest):
 """
 gunzip -c %s > %s/cpl.log.$LID
 """ % (testfile, rundir)
-        FakeTest.build(script,
+        FakeTest.build(self, script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTMEMLEAKPASS(FakeTest):
@@ -320,5 +317,5 @@ class TESTMEMLEAKPASS(FakeTest):
 """
 gunzip -c %s > %s/cpl.log.$LID
 """ % (testfile, rundir)
-        FakeTest.build(script,
+        FakeTest.build(self, script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
