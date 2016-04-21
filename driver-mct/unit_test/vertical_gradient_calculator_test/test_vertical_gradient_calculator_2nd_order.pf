@@ -194,6 +194,25 @@ contains
   end subroutine test_calc_vertical_gradient_ECmid
 
   @Test
+  subroutine test_calc_vertical_gradient_ECmid_almostLimitedPositiveLB(this)
+    ! Make sure that a positive gradient that should *almost* (but not quite) be limited
+    ! by the limiter isn't limited.
+    class(TestVertGradCalc2ndOrder), intent(inout) :: this
+    real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
+    real(r8), parameter :: topo(3) = [50._r8, 125._r8, 275._r8]
+    real(r8), parameter :: data(3) = [11._r8, 12._r8,  19.9999_r8]
+    real(r8) :: expected_vertical_gradient
+
+    expected_vertical_gradient = (data(3) - data(1)) / (topo(3) - topo(1))
+    call this%calculateAndVerifyGradient_1point_ECmid( &
+         elevclass_bounds = elevclass_bounds, &
+         topo = topo, &
+         data = data, &
+         expected_vertical_gradient = expected_vertical_gradient, &
+         msg = 'test_calc_vertical_gradient_ECmid_almostLimitedPositiveLB')
+  end subroutine test_calc_vertical_gradient_ECmid_almostLimitedPositiveLB
+
+  @Test
   subroutine test_calc_vertical_gradient_ECbottom(this)
     ! Test calc_vertical_gradient with an elevation class at the bottom edge. This uses a
     ! single grid cell.
