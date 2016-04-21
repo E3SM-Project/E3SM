@@ -48,6 +48,7 @@
 !
       MODULE module_mp_thompson
 
+      use mpas_kind_types
       use mpas_atmphys_functions
       use mpas_atmphys_utilities
       use module_mp_radar
@@ -344,8 +345,10 @@
 !.. and temperature array indices.  Variables beginning with t-p/c/m/n
 !.. represent lookup tables.  Save compile-time memory by making
 !.. allocatable (2009Jun12, J. Michalakes).
-      INTEGER, PARAMETER, PRIVATE:: R8SIZE = 8
-      INTEGER, PARAMETER, PRIVATE:: R4SIZE = 4
+!     INTEGER, PARAMETER, PRIVATE:: R8SIZE = 8
+!     INTEGER, PARAMETER, PRIVATE:: R4SIZE = 4
+      INTEGER, PARAMETER, PRIVATE:: R8SIZE = R8KIND
+      INTEGER, PARAMETER, PRIVATE:: R4SIZE = R4KIND
       REAL (KIND=R8SIZE), ALLOCATABLE, DIMENSION(:,:,:,:)::             &
                 tcg_racg, tmr_racg, tcr_gacr, tmg_gacr,                 &
                 tnr_racg, tnr_gacr
@@ -824,18 +827,18 @@
       read(11) tnr_gacr
       close(unit=11)
       write(0,*) '--- end read MP_THOMPSON_QRacrQG.DBL'
-!     write(0,*) 'max tcg_racg =',maxval(tcg_racg)
-!     write(0,*) 'min tcg_racg =',minval(tcg_racg)
-!     write(0,*) 'max tmr_racg =',maxval(tmr_racg)
-!     write(0,*) 'min tmr_racg =',minval(tmr_racg)
-!     write(0,*) 'max tcr_gacr =',maxval(tcr_gacr)
-!     write(0,*) 'min tcr_gacr =',minval(tcr_gacr)
-!     write(0,*) 'max tmg_gacr =',maxval(tmg_gacr)
-!     write(0,*) 'min tmg_gacr =',minval(tmg_gacr)
-!     write(0,*) 'max tnr_racg =',maxval(tnr_racg)
-!     write(0,*) 'min tnr_racg =',minval(tnr_racg)
-!     write(0,*) 'max tnr_gacr =',maxval(tnr_gacr)
-!     write(0,*) 'min tnr_gacr =',minval(tnr_gacr)
+      write(0,*) 'max tcg_racg =',maxval(tcg_racg)
+      write(0,*) 'min tcg_racg =',minval(tcg_racg)
+      write(0,*) 'max tmr_racg =',maxval(tmr_racg)
+      write(0,*) 'min tmr_racg =',minval(tmr_racg)
+      write(0,*) 'max tcr_gacr =',maxval(tcr_gacr)
+      write(0,*) 'min tcr_gacr =',minval(tcr_gacr)
+      write(0,*) 'max tmg_gacr =',maxval(tmg_gacr)
+      write(0,*) 'min tmg_gacr =',minval(tmg_gacr)
+      write(0,*) 'max tnr_racg =',maxval(tnr_racg)
+      write(0,*) 'min tnr_racg =',minval(tnr_racg)
+      write(0,*) 'max tnr_gacr =',maxval(tnr_gacr)
+      write(0,*) 'min tnr_gacr =',minval(tnr_gacr)
 
 !..Rain collecting snow & snow collecting rain.
       open(unit=11,file='MP_THOMPSON_QRacrQS_DATA.DBL',form='UNFORMATTED',status='OLD',action='READ', &
@@ -857,26 +860,30 @@
       read(11) tnr_sacr2
       close(unit=11)
       write(0,*) '--- end read MP_THOMPSON_QRacrQS.DBL'
-!     write(0,*) 'max tcs_racs1 =',maxval(tcs_racs1)
-!     write(0,*) 'min tcs_racs1 =',minval(tcs_racs1)      
-!     write(0,*) 'max tmr_racs1 =',maxval(tmr_racs1)
-!     write(0,*) 'min tmr_racs1 =',minval(tmr_racs1)
-!     write(0,*) 'max tcr_sacr1 =',maxval(tcr_sacr1)
-!     write(0,*) 'min tcr_sacr1 =',minval(tcr_sacr1)
-!     write(0,*) 'max tms_sacr1 =',maxval(tms_sacr1)      
-!     write(0,*) 'min tms_sacr1 =',minval(tms_sacr1)      
-!     write(0,*) 'max tcr_sacr2 =',maxval(tcr_sacr2)
-!     write(0,*) 'min tcr_sacr2 =',minval(tcr_sacr2)
-!     write(0,*) 'max tcr_sacr2 =',maxval(tcr_sacr2)
-!     write(0,*) 'min tcr_sacr2 =',minval(tcr_sacr2)
-!     write(0,*) 'max tnr_racs1 =',maxval(tnr_racs1)
-!     write(0,*) 'min tnr_racs1 =',minval(tnr_racs1)
-!     write(0,*) 'max tnr_racs2 =',maxval(tnr_racs2)      
-!     write(0,*) 'min tnr_racs2 =',minval(tnr_racs2)      
-!     write(0,*) 'max tnr_sacr1 =',maxval(tnr_sacr1)
-!     write(0,*) 'min tnr_sacr1 =',minval(tnr_sacr1)      
-!     write(0,*) 'max tnr_sacr2 =',maxval(tnr_sacr2)
-!     write(0,*) 'min tnr_sacr2 =',minval(tnr_sacr2)      
+      write(0,*) 'max tcs_racs1 =',maxval(tcs_racs1)
+      write(0,*) 'min tcs_racs1 =',minval(tcs_racs1)
+      write(0,*) 'max tmr_racs1 =',maxval(tmr_racs1)
+      write(0,*) 'min tmr_racs1 =',minval(tmr_racs1)
+      write(0,*) 'max tcs_racs2 =',maxval(tcs_racs2)
+      write(0,*) 'min tcs_racs2 =',minval(tcs_racs2)
+      write(0,*) 'max tmr_racs2 =',maxval(tmr_racs2)
+      write(0,*) 'min tmr_racs2 =',minval(tmr_racs2)
+      write(0,*) 'max tcr_sacr1 =',maxval(tcr_sacr1)
+      write(0,*) 'min tcr_sacr1 =',minval(tcr_sacr1)
+      write(0,*) 'max tms_sacr1 =',maxval(tms_sacr1)
+      write(0,*) 'min tms_sacr1 =',minval(tms_sacr1)
+      write(0,*) 'max tcr_sacr2 =',maxval(tcr_sacr2)
+      write(0,*) 'min tcr_sacr2 =',minval(tcr_sacr2)
+      write(0,*) 'max tms_sacr2 =',maxval(tms_sacr2)
+      write(0,*) 'min tms_sacr2 =',minval(tms_sacr2)
+      write(0,*) 'max tnr_racs1 =',maxval(tnr_racs1)
+      write(0,*) 'min tnr_racs1 =',minval(tnr_racs1)
+      write(0,*) 'max tnr_racs2 =',maxval(tnr_racs2)
+      write(0,*) 'min tnr_racs2 =',minval(tnr_racs2)
+      write(0,*) 'max tnr_sacr1 =',maxval(tnr_sacr1)
+      write(0,*) 'min tnr_sacr1 =',minval(tnr_sacr1)
+      write(0,*) 'max tnr_sacr2 =',maxval(tnr_sacr2)
+      write(0,*) 'min tnr_sacr2 =',minval(tnr_sacr2)
 
 !..Cloud water and rain freezing (Bigg, 1953).
       open(unit=11,file='MP_THOMPSON_freezeH2O_DATA.DBL',form='UNFORMATTED',status='OLD',action='READ', &
@@ -892,18 +899,18 @@
       read(11) tni_qcfz
       close(unit=11)
       write(0,*) '--- end read MP_THOMPSON_freezeH2O.DBL:'
-!     write(0,*) 'max tpi_qrfz =',maxval(tpi_qrfz)
-!     write(0,*) 'min tpi_qrfz =',minval(tpi_qrfz)      
-!     write(0,*) 'max tni_qrfz =',maxval(tni_qrfz)
-!     write(0,*) 'min tni_qrfz =',minval(tni_qrfz)      
-!     write(0,*) 'max tpg_qrfz =',maxval(tpg_qrfz)
-!     write(0,*) 'min tpg_qrfz =',minval(tpg_qrfz)      
-!     write(0,*) 'max tnr_qrfz =',maxval(tnr_qrfz)
-!     write(0,*) 'min tnr_qrfz =',minval(tnr_qrfz)      
-!     write(0,*) 'max tpi_qcfz =',maxval(tpi_qcfz)
-!     write(0,*) 'min tpi_qcfz =',minval(tpi_qcfz)      
-!     write(0,*) 'max tni_qcfz =',maxval(tni_qcfz)
-!     write(0,*) 'min tni_qcfz =',minval(tni_qcfz)      
+      write(0,*) 'max tpi_qrfz =',maxval(tpi_qrfz)
+      write(0,*) 'min tpi_qrfz =',minval(tpi_qrfz)
+      write(0,*) 'max tni_qrfz =',maxval(tni_qrfz)
+      write(0,*) 'min tni_qrfz =',minval(tni_qrfz)
+      write(0,*) 'max tpg_qrfz =',maxval(tpg_qrfz)
+      write(0,*) 'min tpg_qrfz =',minval(tpg_qrfz)
+      write(0,*) 'max tnr_qrfz =',maxval(tnr_qrfz)
+      write(0,*) 'min tnr_qrfz =',minval(tnr_qrfz)
+      write(0,*) 'max tpi_qcfz =',maxval(tpi_qcfz)
+      write(0,*) 'min tpi_qcfz =',minval(tpi_qcfz)
+      write(0,*) 'max tni_qcfz =',maxval(tni_qcfz)
+      write(0,*) 'min tni_qcfz =',minval(tni_qcfz)
 
 !..Conversion of some ice mass into snow category.
       open(unit=11,file='MP_THOMPSON_QIautQS_DATA.DBL',form='UNFORMATTED',status='OLD',action='READ', &
@@ -916,10 +923,10 @@
       read(11) tni_iaus
       close(unit=11)
       write(0,*) '--- end read MP_THOMPSON_QIautQS.DBL '
-!     write(0,*) 'max tps_iaus =',maxval(tps_iaus)
-!     write(0,*) 'min tps_iaus =',minval(tps_iaus)            
-!     write(0,*) 'max tni_iaus =',maxval(tni_iaus)
-!     write(0,*) 'min tni_iaus =',minval(tni_iaus)
+      write(0,*) 'max tps_iaus =',maxval(tps_iaus)
+      write(0,*) 'min tps_iaus =',minval(tps_iaus)
+      write(0,*) 'max tni_iaus =',maxval(tni_iaus)
+      write(0,*) 'min tni_iaus =',minval(tni_iaus)
 
 !..Initialize various constants for computing radar reflectivity.
       xam_r = am_r
