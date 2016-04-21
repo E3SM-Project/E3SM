@@ -31,7 +31,7 @@
     </grid>
     <grid name="f19_g16">
       <test name="SMS_D">
-        <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">edison</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
       </test>
       <test name="CME_Ld5">
         <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
