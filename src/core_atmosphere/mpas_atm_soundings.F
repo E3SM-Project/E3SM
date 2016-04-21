@@ -135,7 +135,7 @@ module mpas_atm_soundings
         integer :: iStn, k
         integer, pointer :: nVertLevels, index_qv
         real (kind=RKIND), dimension(:,:), pointer :: pressure_base, pressure_p, uReconstructZonal, uReconstructMeridional, zgrid, &
-                                                      theta_m, exner, relhum
+                                                      theta_m, exner
         real (kind=RKIND), dimension(:,:,:), pointer :: scalars
         real (kind=RKIND) :: tmpc, tdpc, dir, spd, rh, log_rh, qvs, pres
         real (kind=RKIND) :: pi
@@ -163,7 +163,6 @@ module mpas_atm_soundings
             call MPAS_pool_get_array(diag, 'exner', exner)
             call MPAS_pool_get_array(diag, 'uReconstructZonal', uReconstructZonal)
             call MPAS_pool_get_array(diag, 'uReconstructMeridional', uReconstructMeridional)
-            call MPAS_pool_get_array(diag_physics, 'relhum', relhum)
 
             write(stderrUnit,*) '--- Writing soundings at '//trim(nowString)//'---'
 
