@@ -23,6 +23,7 @@ set NTHRDS_WAV  = `./xmlquery NTHRDS_WAV  -value`
 set NTHRDS_OCN  = `./xmlquery NTHRDS_OCN  -value`
 set NTHRDS_ICE  = `./xmlquery NTHRDS_ICE  -value`
 set NTHRDS_GLC  = `./xmlquery NTHRDS_GLC  -value`
+set NTHRDS_ESP  = `./xmlquery NTHRDS_ESP  -value`
 set NTHRDS_CPL  = `./xmlquery NTHRDS_CPL  -value`
 
 if ( $NTHRDS_ATM <= 1) then
@@ -56,6 +57,10 @@ endif
 if ( $NTHRDS_WAV <= 1) then
   echo "WARNING: component WAV is not threaded, changing NTHRDS_WAV to 2" 
   ./xmlchange -file env_mach_pes.xml -id NTHRDS_WAV -val 2
+endif
+if ( $NTHRDS_ESP <= 1) then
+  echo "WARNING: component ESP is not threaded, changing NTHRDS_ESP to 2" 
+  ./xmlchange -file env_mach_pes.xml -id NTHRDS_ESP -val 2
 endif
 
 cp -f env_mach_pes.xml env_mach_pes.xml.1
