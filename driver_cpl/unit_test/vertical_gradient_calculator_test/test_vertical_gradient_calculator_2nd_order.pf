@@ -472,6 +472,57 @@ contains
   end subroutine ECmid_limitedNegativeUB
 
   ! ------------------------------------------------------------------------
+  ! Test that demonstrates that we can still have non-monotonic behavior
+  !
+  ! Unlike most tests, this test isn't necessarily something we want - it is just a
+  ! demonstration of current behavior. So this test can be removed if this behavior
+  ! changes.
+  ! ------------------------------------------------------------------------
+
+  @Test
+  subroutine evenWithLimiter_canStillBeNonMonotonic(this)
+    ! This test demonstrates that, even though the incoming values are monotonic, the
+    ! interpolated values are not.
+    !
+    ! Unlike most tests, this test isn't necessarily something we want - it is just a
+    ! demonstration of current behavior. So this test can be removed if this behavior
+    ! changes.
+    class(TestVertGradCalc2ndOrder), intent(inout) :: this
+    type(vertical_gradient_calculator_2nd_order_type) :: calculator
+    real(r8), parameter :: elevclass_bounds(5) = [0._r8, 100._r8, 200._r8, 300._r8, 400._r8]
+    real(r8), parameter :: topo(1,4) = reshape([50._r8, 125._r8, 275._r8, 350._r8], [1,4])
+    real(r8), parameter :: data(1,4) = reshape([9._r8,  12._r8,  13._r8 , 14._r8], [1,4])
+    real(r8) :: vertical_gradient_ec2(1)
+    real(r8) :: vertical_gradient_ec3(1)
+    real(r8) :: value_200m_ec2
+    real(r8) :: value_200m_ec3
+    real(r8) :: value_199m
+    real(r8) :: value_201m
+
+    calculator = this%create_calculator(topo=topo, data=data, &
+         elevclass_bounds=elevclass_bounds)
+
+    call calculator%calc_vertical_gradient(2, vertical_gradient_ec2)
+    call calculator%calc_vertical_gradient(3, vertical_gradient_ec3)
+
+    ! Show non-monotonicity in two ways:
+
+    ! (1) value at 200m in EC2 > value at 200m in EC3
+    value_200m_ec2 = data(1,2) + vertical_gradient_ec2(1) * (200._r8 - topo(1,2))
+    value_200m_ec3 = data(1,3) + vertical_gradient_ec3(1) * (200._r8 - topo(1,3))
+    @assertEqual(13._r8, value_200m_ec2, tolerance=tol)
+    ! In the following, use 12.9 rather than 13 to show that value_200m_ec3 is even less
+    ! than 12.9 (i.e., it's not just a roundoff problem)
+    @assertGreaterThan(12.9_r8, value_200m_ec3)
+
+    ! (2) value at 199m (in EC2) > value at 201m (in EC3)
+    value_199m = data(1,2) + vertical_gradient_ec2(1) * (199._r8 - topo(1,2))
+    value_201m = data(1,3) + vertical_gradient_ec3(1) * (201._r8 - topo(1,3))
+    @assertGreaterThan(value_199m, value_201m)
+
+  end subroutine evenWithLimiter_canStillBeNonMonotonic
+
+  ! ------------------------------------------------------------------------
   ! Tests with multiple points
   ! ------------------------------------------------------------------------
 
