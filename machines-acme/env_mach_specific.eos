@@ -30,7 +30,7 @@ endif
 
 if ( $COMPILER == "intel" ) then
 #    module load PrgEnv-intel/5.2.40
-    module load    intel/14.0.2.144
+    module load    intel/16.0.1.150 
 endif    
 if ( $COMPILER == "cray" ) then
     module load PrgEnv-cray
@@ -47,8 +47,8 @@ module load cray-mpich
 if ( $MPILIB == "mpi-serial") then
   module load cray-netcdf/4.3.2
 else
-  module load cray-netcdf-hdf5parallel
-  module load cray-parallel-netcdf
+  module load cray-netcdf-hdf5parallel/4.3.3.1
+  module load cray-parallel-netcdf/1.6.1
 endif
 
 module load cmake/2.8.11.2
