@@ -40,6 +40,7 @@ module vertical_gradient_calculator_2nd_order
      
      procedure, private :: set_data_from_attr_vect ! extract data from an attribute vector
      procedure, private :: check_topo ! check topographic heights
+     procedure, private :: limit_gradient
 
   end type vertical_gradient_calculator_2nd_order_type
 
@@ -134,7 +135,8 @@ contains
     integer :: i
     integer :: ec_low   ! elevation class index to use as the lower bound of the gradient
     integer :: ec_high  ! elevation class index to use as the upper bound of the gradient
-    
+    logical :: two_sided ! true if we're estimating the gradient with a two-sided difference
+
     character(len=*), parameter :: subname = 'calc_vertical_gradient'
     !-----------------------------------------------------------------------
 
@@ -151,17 +153,23 @@ contains
 
     ! Do the calculations
 
+    ! Start by assuming we're doing a two-sided difference; we'll set this to false if we aren't
+    two_sided = .true.
+
     if (this%min_elevation_class == this%max_elevation_class) then
        vertical_gradient(:) = 0._r8
+       two_sided = .false.
 
     else
        
        if (elevation_class == this%min_elevation_class) then
           ec_low = elevation_class
           ec_high = elevation_class + 1
+          two_sided = .false.
        else if (elevation_class == this%max_elevation_class) then
           ec_low = elevation_class - 1
           ec_high = elevation_class
+          two_sided = .false.
        else
           ec_low = elevation_class - 1
           ec_high = elevation_class + 1
@@ -176,6 +184,10 @@ contains
                   (this%topo (i, ec_high) - this%topo (i, ec_low))
           end if
        end do
+
+       if (two_sided) then
+          call this%limit_gradient(elevation_class, ec_low, ec_high, vertical_gradient)
+       end if
 
     end if
     
@@ -284,6 +296,82 @@ contains
     end do
 
   end subroutine check_topo
+
+  !-----------------------------------------------------------------------
+  subroutine limit_gradient(this, k, ec_low, ec_high, vertical_gradient)
+    !
+    ! !DESCRIPTION:
+    ! Limit the gradient: Ensure that the interface values lie inside the range defined
+    ! by the max and min of the mean values in this class and its 2 adjacent neighbors.
+    !
+    ! !ARGUMENTS:
+    class(vertical_gradient_calculator_2nd_order_type), intent(in) :: this
+    integer , intent(in) :: k       ! elevation class index
+    integer , intent(in) :: ec_low  ! elevation class index used as the lower bound of the gradient
+    integer , intent(in) :: ec_high ! elevation class index used as the upper bound of the gradient
+    real(r8), intent(inout) :: vertical_gradient(:)
+    !
+    ! !LOCAL VARIABLES:
+    integer :: i
+    real(r8) :: deviation_high
+    real(r8) :: deviation_low
+    real(r8) :: deviation_max
+    real(r8) :: deviation_min
+    real(r8) :: diff_max
+    real(r8) :: diff_min
+    real(r8) :: factor1
+    real(r8) :: factor2
+    real(r8) :: limiting_factor
+
+    character(len=*), parameter :: subname = 'limit_gradient'
+    !-----------------------------------------------------------------------
+
+    ! Basic idea: In 1D with a linear reconstruction, the extreme values of the data will
+    ! lie at the interfaces between adjacent elevation classes. The interface values
+    ! should not lie outside the range defined by the max and min of the mean values in
+    ! this class and its 2 adjacent neighbors.
+
+    ! This code only works correctly if we're doing a two-sided difference (otherwise,
+    ! one of diff_min or diff_max will be 0, leading to 0 gradient - when in fact we
+    ! don't want to do any limiting for a one-sided difference).
+    SHR_ASSERT(ec_low < k, subname//': Only works for two-sided difference: must have ec_low < k')
+    SHR_ASSERT(ec_high > k, subname//': Only works for two-sided difference: must have ec_high > k')
+
+    do i = 1, this%num_points
+       ! First compute the max and min values of the deviation of the data from its mean
+       ! value. With a linear gradient, the max differences must lie at the adjacent
+       ! interfaces.
+       deviation_high = vertical_gradient(i) * (this%elevclass_bounds(k) - this%topo(i,k))
+       deviation_low = vertical_gradient(i) *  (this%elevclass_bounds(k-1) - this%topo(i,k))
+       deviation_max = max(deviation_high, deviation_low)
+       deviation_min = min(deviation_high, deviation_low)
+
+       ! Now compute the max and min of the data in the cell and its nearest neighbors.
+       ! (Actually, the difference between this max/min value and the mean value in the
+       ! current class.)
+       diff_max = max(this%field(i,ec_high), this%field(i,k), this%field(i,ec_low)) - this%field(i,k)
+       diff_min = min(this%field(i,ec_high), this%field(i,k), this%field(i,ec_low)) - this%field(i,k)
+
+       ! Now limit the gradient using the information computed above.
+
+       if (abs(deviation_min) > 0._r8) then
+          factor1 = max(0._r8, diff_min/deviation_min)
+       else
+          factor1 = 1._r8
+       endif
+       
+       if (abs(deviation_max) > 0._r8) then
+          factor2 = max(0._r8, diff_max/deviation_max)
+       else
+          factor2 = 1._r8
+       endif
+
+       ! limiting factor will lie between 0 and 1
+       limiting_factor = min(1._r8, factor1, factor2)
+       vertical_gradient(i) = vertical_gradient(i) * limiting_factor
+    end do
+
+  end subroutine limit_gradient
 
 
 end module vertical_gradient_calculator_2nd_order
