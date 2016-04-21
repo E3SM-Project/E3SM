@@ -1856,6 +1856,7 @@ DOCN%COPY => docn copy mode
 
 <CCSM_CO2_PPMV compset=".+"              >379.000</CCSM_CO2_PPMV>
 <CCSM_CO2_PPMV compset="^1850"           >284.7</CCSM_CO2_PPMV>
+<CCSM_CO2_PPMV compset="^1850.+AV1C"      >284.725</CCSM_CO2_PPMV>
 <CCSM_CO2_PPMV compset="^20TR.+BGC%BPRP" >284.7</CCSM_CO2_PPMV>
 <CCSM_CO2_PPMV compset="^20TR_CAM4%FCHM" >0.000001</CCSM_CO2_PPMV>
 <CCSM_CO2_PPMV compset="^PDAY_"          >368.9</CCSM_CO2_PPMV>
