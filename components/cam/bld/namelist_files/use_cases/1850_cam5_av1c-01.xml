@@ -112,7 +112,7 @@
 
 <!-- Marine Organics (MOM) -->
 <mam_mom_cycle_yr  >1                                                                                    </mam_mom_cycle_yr  >
-<mam_mom_datapath  >'/lustre/atlas1/cli900/world-shared/cesm/inputdata/atm/cam/chem/trop_mam/marine_BGC/'</mam_mom_datapath  >
+<mam_mom_datapath  >'atm/cam/chem/trop_mam/marine_BGC/'                                                  </mam_mom_datapath  >
 <mam_mom_datatype  >'CYCLICAL'										 </mam_mom_datatype  >
 <mam_mom_filename  >'monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc'                 </mam_mom_filename  > <!-- Using the 2000 file, for now -->
 <mam_mom_fixed_tod >0											 </mam_mom_fixed_tod >
