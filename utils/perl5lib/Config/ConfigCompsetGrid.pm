@@ -472,7 +472,7 @@ sub setCompsetGeneralVars
       $compset_longname = rmCompsetOptComps($compset_longname);
       @nodes = $xml_compset->findnodes(".//compset[lname=\"$compset_longname\"]");
     }
-#    if (! @nodes) {die " ERROR: $compset_longname not supported \n";}
+
     if (@nodes){
 	my $compset_grid = $nodes[0]->getAttribute('grid');
 	if ($compset_grid) {
