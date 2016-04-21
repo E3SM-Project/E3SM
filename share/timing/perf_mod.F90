@@ -583,8 +583,7 @@ contains
 !-----------------------------------------------------------------------
 
    if ((.not. timing_initialized) .or. &
-       (timing_disable_depth > 0) .or. &
-       (cur_timing_detail > timing_detail_limit)) then
+       (timing_disable_depth > 0)) then
       t_profile_onf = .false.
    else
       t_profile_onf = .true.
@@ -973,29 +972,26 @@ contains
 !
 !-----------------------------------------------------------------------
 !
+   if (timing_barrier) then
+
 #if ( defined _OPENMP )
-   if (omp_in_parallel()) return
+      if (omp_in_parallel()) return
 #endif
-   if ((timing_initialized) .and. &
-       (timing_disable_depth .eq. 0) .and. &
-       (cur_timing_detail .le. timing_detail_limit)) then
+      if (.not. timing_initialized) return
+      if (timing_disable_depth > 0) return
 
-      if (timing_barrier) then
+      if ( present (event) ) then
+         call t_startf(event)
+      endif
 
-         if ( present (event) ) then
-            ierr = GPTLstart(event)
-         endif
+      if ( present (mpicom) ) then
+         call shr_mpi_barrier(mpicom, 'T_BARRIERF: bad mpi communicator')
+      else
+         call shr_mpi_barrier(MPI_COMM_WORLD, 'T_BARRIERF: bad mpi communicator')
+      endif
 
-         if ( present (mpicom) ) then
-            call shr_mpi_barrier(mpicom, 'T_BARRIERF: bad mpi communicator')
-         else
-            call shr_mpi_barrier(MPI_COMM_WORLD, 'T_BARRIERF: bad mpi communicator')
-         endif
-
-         if ( present (event) ) then
-            ierr = GPTLstop(event)
-         endif
-
+      if ( present (event) ) then
+         call t_stopf(event)
       endif
 
    endif
