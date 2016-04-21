@@ -100,7 +100,8 @@
       shr_frz_freezetemp = max(s,0.0_R8) &
          / (-18.48_R8 + (0.01848_R8*max(s,0.0_R8)))
    else
-      call shr_sys_abort(subname//' ERROR: not intialized correctly with a valid tfreeze_option - call shr_frz_freezetemp_init first with a valid tfreeze_option')
+      call shr_sys_abort(subname//' ERROR: not intialized correctly with a valid tfreeze_option - &
+                                  call shr_frz_freezetemp_init first with a valid tfreeze_option')
    endif
 
    shr_frz_freezetemp = max(shr_frz_freezetemp,-2.0_R8)
