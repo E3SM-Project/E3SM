@@ -22,6 +22,7 @@ module test_vertical_gradient_calculator_2nd_order
      procedure :: tearDown
      procedure :: create_av
      procedure :: create_calculator
+     procedure :: calculateAndVerifyGradient_1point_ECmid
   end type TestVertGradCalc2ndOrder
   
 contains
@@ -117,6 +118,40 @@ contains
 
   end function create_calculator
 
+  subroutine calculateAndVerifyGradient_1point_ECmid(this, &
+       elevclass_bounds, topo, data, expected_vertical_gradient, &
+       msg)
+    ! Parameterized test: Setup a vertical gradient calculator for a single point with 3
+    ! ECs, calculate the vertical gradient for the middle EC, and verify that the
+    ! vertical gradient matches the expected vertical gradient
+    class(TestVertGradCalc2ndOrder), intent(inout) :: this
+    real(r8), intent(in) :: elevclass_bounds(:)  ! elevation class bounds (should be size 4)
+    real(r8), intent(in) :: topo(:)  ! topographic height for each EC (should be size 3)
+    real(r8), intent(in) :: data(:)  ! data for each EC (should be size 3)
+    real(r8), intent(in) :: expected_vertical_gradient
+    character(len=*), intent(in) :: msg  ! message to print if test fails
+
+    type(vertical_gradient_calculator_2nd_order_type) :: calculator
+    real(r8) :: vertical_gradient(1)
+
+    ! Check arguments
+    @assertEqual(4, size(elevclass_bounds))
+    @assertEqual(3, size(topo))
+    @assertEqual(3, size(data))
+
+    ! Setup
+    calculator = this%create_calculator( &
+         topo = reshape(topo, [1, 3]), &
+         data = reshape(data, [1, 3]), &
+         elevclass_bounds = elevclass_bounds)
+
+    ! Exercise
+    call calculator%calc_vertical_gradient(2, vertical_gradient)
+
+    ! Verify
+    @assertEqual(expected_vertical_gradient, vertical_gradient(1), tolerance=tol, message = msg)
+  end subroutine calculateAndVerifyGradient_1point_ECmid
+
   @Test
   subroutine test_create_av(this)
     ! Tests the create_av helper routine
@@ -144,21 +179,18 @@ contains
     ! Test calc_vertical_gradient with an elevation class in the middle of the range
     ! (standard case, not an edge case). This uses a single grid cell.
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
-    type(vertical_gradient_calculator_2nd_order_type) :: calculator
     real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
-    real(r8), parameter :: topo(1,3) = reshape([50._r8, 125._r8, 275._r8], [1,3])
-    real(r8), parameter :: data(1,3) = reshape([11._r8, 12._r8,  13._r8], [1,3])
-    real(r8) :: vertical_gradient(1)
-    real(r8) :: expected_vertical_gradient(1)
+    real(r8), parameter :: topo(3) = [50._r8, 125._r8, 275._r8]
+    real(r8), parameter :: data(3) = [11._r8, 12._r8,  13._r8]
+    real(r8) :: expected_vertical_gradient
 
-    calculator = this%create_calculator(topo=topo, data=data, &
-         elevclass_bounds=elevclass_bounds)
-    
-    call calculator%calc_vertical_gradient(2, vertical_gradient)
-
-    expected_vertical_gradient(1) = (data(1,3) - data(1,1)) / (topo(1,3) - topo(1,1))
-    @assertEqual(expected_vertical_gradient, vertical_gradient, tolerance=tol)
-
+    expected_vertical_gradient = (data(3) - data(1)) / (topo(3) - topo(1))
+    call this%calculateAndVerifyGradient_1point_ECmid( &
+         elevclass_bounds = elevclass_bounds, &
+         topo = topo, &
+         data = data, &
+         expected_vertical_gradient = expected_vertical_gradient, &
+         msg = 'test_calc_vertical_gradient_ECmid')
   end subroutine test_calc_vertical_gradient_ECmid
 
   @Test
