@@ -196,7 +196,7 @@ contains
   @Test
   subroutine ECmid_almostLimitedPositiveLB(this)
     ! Make sure that a positive gradient that should *almost* (but not quite) be limited
-    ! by the limiter isn't limited.
+    ! by the limiter (due to the lower bound) isn't limited.
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
     real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
     real(r8), parameter :: topo(3) = [50._r8, 125._r8, 275._r8]
@@ -211,6 +211,63 @@ contains
          expected_vertical_gradient = expected_vertical_gradient, &
          msg = 'ECmid_almostLimitedPositiveLB')
   end subroutine ECmid_almostLimitedPositiveLB
+
+  @Test
+  subroutine ECmid_almostLimitedPositiveUB(this)
+    ! Make sure that a positive gradient that should *almost* (but not quite) be limited
+    ! by the limiter (due to the upper bound) isn't limited.
+    class(TestVertGradCalc2ndOrder), intent(inout) :: this
+    real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
+    real(r8), parameter :: topo(3) = [50._r8, 125._r8, 275._r8]
+    real(r8), parameter :: data(3) = [10.0001_r8, 12._r8,  13._r8]
+    real(r8) :: expected_vertical_gradient
+
+    expected_vertical_gradient = (data(3) - data(1)) / (topo(3) - topo(1))
+    call this%calculateAndVerifyGradient_1point_ECmid( &
+         elevclass_bounds = elevclass_bounds, &
+         topo = topo, &
+         data = data, &
+         expected_vertical_gradient = expected_vertical_gradient, &
+         msg = 'ECmid_almostLimitedPositiveUB')
+  end subroutine ECmid_almostLimitedPositiveUB
+
+  @Test
+  subroutine ECmid_almostLimitedNegativeLB(this)
+    ! Make sure that a negative gradient that should *almost* (but not quite) be limited
+    ! by the limiter (due to the lower bound) isn't limited.
+    class(TestVertGradCalc2ndOrder), intent(inout) :: this
+    real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
+    real(r8), parameter :: topo(3) = [50._r8, 125._r8, 275._r8]
+    real(r8), parameter :: data(3) = [13._r8, 12._r8,  4.0001_r8]
+    real(r8) :: expected_vertical_gradient
+
+    expected_vertical_gradient = (data(3) - data(1)) / (topo(3) - topo(1))
+    call this%calculateAndVerifyGradient_1point_ECmid( &
+         elevclass_bounds = elevclass_bounds, &
+         topo = topo, &
+         data = data, &
+         expected_vertical_gradient = expected_vertical_gradient, &
+         msg = 'ECmid_almostLimitedNegativeLB')
+  end subroutine ECmid_almostLimitedNegativeLB
+
+  @Test
+  subroutine ECmid_almostLimitedNegativeUB(this)
+    ! Make sure that a negative gradient that should *almost* (but not quite) be limited
+    ! by the limiter (due to the upper bound) isn't limited.
+    class(TestVertGradCalc2ndOrder), intent(inout) :: this
+    real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
+    real(r8), parameter :: topo(3) = [50._r8, 125._r8, 275._r8]
+    real(r8), parameter :: data(3) = [13.9999_r8, 12._r8,  11._r8]
+    real(r8) :: expected_vertical_gradient
+
+    expected_vertical_gradient = (data(3) - data(1)) / (topo(3) - topo(1))
+    call this%calculateAndVerifyGradient_1point_ECmid( &
+         elevclass_bounds = elevclass_bounds, &
+         topo = topo, &
+         data = data, &
+         expected_vertical_gradient = expected_vertical_gradient, &
+         msg = 'ECmid_almostLimitedNegativeUB')
+  end subroutine ECmid_almostLimitedNegativeUB
 
   @Test
   subroutine ECbottom(this)
