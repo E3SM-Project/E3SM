@@ -175,7 +175,7 @@ contains
   end subroutine test_create_av
     
   @Test
-  subroutine test_calc_vertical_gradient_ECmid(this)
+  subroutine ECmid(this)
     ! Test calc_vertical_gradient with an elevation class in the middle of the range
     ! (standard case, not an edge case). This uses a single grid cell.
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
@@ -190,11 +190,11 @@ contains
          topo = topo, &
          data = data, &
          expected_vertical_gradient = expected_vertical_gradient, &
-         msg = 'test_calc_vertical_gradient_ECmid')
-  end subroutine test_calc_vertical_gradient_ECmid
+         msg = 'ECmid')
+  end subroutine ECmid
 
   @Test
-  subroutine test_calc_vertical_gradient_ECmid_almostLimitedPositiveLB(this)
+  subroutine ECmid_almostLimitedPositiveLB(this)
     ! Make sure that a positive gradient that should *almost* (but not quite) be limited
     ! by the limiter isn't limited.
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
@@ -209,11 +209,11 @@ contains
          topo = topo, &
          data = data, &
          expected_vertical_gradient = expected_vertical_gradient, &
-         msg = 'test_calc_vertical_gradient_ECmid_almostLimitedPositiveLB')
-  end subroutine test_calc_vertical_gradient_ECmid_almostLimitedPositiveLB
+         msg = 'ECmid_almostLimitedPositiveLB')
+  end subroutine ECmid_almostLimitedPositiveLB
 
   @Test
-  subroutine test_calc_vertical_gradient_ECbottom(this)
+  subroutine ECbottom(this)
     ! Test calc_vertical_gradient with an elevation class at the bottom edge. This uses a
     ! single grid cell.
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
@@ -232,10 +232,10 @@ contains
     expected_vertical_gradient(1) = (data(1,2) - data(1,1)) / (topo(1,2) - topo(1,1))
     @assertEqual(expected_vertical_gradient, vertical_gradient, tolerance=tol)
     
-  end subroutine test_calc_vertical_gradient_ECbottom
+  end subroutine ECbottom
   
   @Test
-  subroutine test_calc_vertical_gradient_ECtop(this)
+  subroutine ECtop(this)
     ! Test calc_vertical_gradient with an elevation class at the top edge. This uses a
     ! single grid cell.
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
@@ -254,10 +254,10 @@ contains
     expected_vertical_gradient(1) = (data(1,3) - data(1,2)) / (topo(1,3) - topo(1,2))
     @assertEqual(expected_vertical_gradient, vertical_gradient, tolerance=tol)
     
-  end subroutine test_calc_vertical_gradient_ECtop
+  end subroutine ECtop
 
   @Test
-  subroutine test_calc_vertical_gradient_1EC(this)
+  subroutine OneEC(this)
     ! Test calc_vertical_gradient with a single elevation class. This uses a single grid
     ! cell.
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
@@ -276,10 +276,10 @@ contains
     expected_vertical_gradient(1) = 0._r8
     @assertEqual(expected_vertical_gradient, vertical_gradient, tolerance=tol)
 
-  end subroutine test_calc_vertical_gradient_1EC
+  end subroutine OneEC
     
   @Test
-  subroutine test_calc_vertical_gradient_toposEqual(this)
+  subroutine toposEqual(this)
     ! Test calc_vertical_gradient with topo values equal - make sure this edge case is
     ! handled correctly.
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
@@ -298,10 +298,10 @@ contains
     expected_vertical_gradient(1) = 0._r8
     @assertEqual(expected_vertical_gradient, vertical_gradient, tolerance=tol)
     
-  end subroutine test_calc_vertical_gradient_toposEqual
+  end subroutine toposEqual
 
   @Test
-  subroutine test_calc_vertical_gradient_multiplePoints(this)
+  subroutine multiplePoints(this)
     ! Test calc_vertical_gradient with multiple grid cells. One has topo values equal,
     ! two are normal cases.
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
@@ -334,7 +334,7 @@ contains
     expected_vertical_gradient(3) = (data(3,2) - data(3,1)) / (topo(3,2) - topo(3,1))
     @assertEqual(expected_vertical_gradient, vertical_gradient, tolerance=tol)
     
-  end subroutine test_calc_vertical_gradient_multiplePoints
+  end subroutine multiplePoints
   
   
 end module test_vertical_gradient_calculator_2nd_order
