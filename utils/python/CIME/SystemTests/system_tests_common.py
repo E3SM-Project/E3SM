@@ -226,7 +226,7 @@ class SystemTestsCommon(object):
 
 class FakeTest(SystemTestsCommon):
 
-    def fake_build(self, script, sharedlib_only=False, model_only=False):
+    def build(self, script, sharedlib_only=False, model_only=False):
         if (not sharedlib_only):
             exeroot = self._case.get_value("EXEROOT")
             cime_model = self._case.get_value("MODEL")
@@ -249,7 +249,7 @@ class TESTRUNPASS(FakeTest):
 echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 """ % rundir
-        self.fake_build(script,
+        FakeTest.build(script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNDIFF(FakeTest):
@@ -264,7 +264,7 @@ echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc.base
 """ % (rundir, cimeroot, rundir, case)
-        self.fake_build(script,
+        FakeTest.build(script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNFAIL(FakeTest):
@@ -277,7 +277,7 @@ echo Insta fail
 echo model failed > %s/cpl.log.$LID
 exit -1
 """ % rundir
-        self.fake_build(script,
+        FakeTest.build(script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTBUILDFAIL(FakeTest):
@@ -296,7 +296,7 @@ sleep 300
 echo Slow pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 """ % rundir
-        self.fake_build(script,
+        FakeTest.build(script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTMEMLEAKFAIL(FakeTest):
@@ -308,7 +308,7 @@ class TESTMEMLEAKFAIL(FakeTest):
 """
 gunzip -c %s > %s/cpl.log.$LID
 """ % (testfile, rundir)
-        self.fake_build(script,
+        FakeTest.build(script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTMEMLEAKPASS(FakeTest):
@@ -320,5 +320,5 @@ class TESTMEMLEAKPASS(FakeTest):
 """
 gunzip -c %s > %s/cpl.log.$LID
 """ % (testfile, rundir)
-        self.fake_build(script,
+        FakeTest.build(script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
