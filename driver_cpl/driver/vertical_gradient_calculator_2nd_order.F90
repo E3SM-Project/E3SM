@@ -304,6 +304,8 @@ contains
     ! Limit the gradient: Ensure that the interface values lie inside the range defined
     ! by the max and min of the mean values in this class and its 2 adjacent neighbors.
     !
+    ! Should only be called for two-sided differences (ec_low < k < ec_high)
+    !
     ! !ARGUMENTS:
     class(vertical_gradient_calculator_2nd_order_type), intent(in) :: this
     integer , intent(in) :: k       ! elevation class index
