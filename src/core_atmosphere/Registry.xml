@@ -620,26 +620,72 @@
 			<var name="rainc"/>
 			<var name="rainnc"/>
 			<var name="refl10cm_max"/>
+			<var name="refl10cm_1km"/>
+			<var name="refl10cm_1km_max"/>
 			<var name="precipw"/>
 			<var name="mslp"/>
+			<var name="relhum_200hPa"/>
+			<var name="relhum_250hPa"/>
+			<var name="relhum_500hPa"/>
+			<var name="relhum_850hPa"/>
+			<var name="relhum_925hPa"/>
+			<var name="dewpoint_200hPa"/>
+			<var name="dewpoint_250hPa"/>
+			<var name="dewpoint_500hPa"/>
+			<var name="dewpoint_850hPa"/>
+			<var name="dewpoint_925hPa"/>
 			<var name="temperature_200hPa"/>
+			<var name="temperature_250hPa"/>
 			<var name="temperature_500hPa"/>
 			<var name="temperature_850hPa"/>
+			<var name="temperature_925hPa"/>
 			<var name="height_200hPa"/>
+			<var name="height_250hPa"/>
 			<var name="height_500hPa"/>
 			<var name="height_850hPa"/>
+			<var name="height_925hPa"/>
 			<var name="uzonal_200hPa"/>
+			<var name="uzonal_250hPa"/>
 			<var name="uzonal_500hPa"/>
 			<var name="uzonal_850hPa"/>
+			<var name="uzonal_925hPa"/>
 			<var name="umeridional_200hPa"/>
+			<var name="umeridional_250hPa"/>
 			<var name="umeridional_500hPa"/>
 			<var name="umeridional_850hPa"/>
+			<var name="umeridional_925hPa"/>
 			<var name="w_200hPa"/>
+			<var name="w_250hPa"/>
 			<var name="w_500hPa"/>
 			<var name="w_850hPa"/>
+			<var name="w_925hPa"/>
+			<var name="u10"/>
+			<var name="v10"/>
+			<var name="q2"/>
+			<var name="t2m"/>
+			<var name="th2m"/>
 			<var name="vorticity_200hPa"/>
+			<var name="vorticity_250hPa"/>
 			<var name="vorticity_500hPa"/>
 			<var name="vorticity_850hPa"/>
+			<var name="vorticity_925hPa"/>
+			<var name="updraft_helicity_max"/>
+			<var name="w_velocity_max"/>
+			<var name="wind_speed_level1_max"/>
+			<var name="cape"/>
+			<var name="cin"/>
+			<var name="lcl"/>
+			<var name="lfc"/>
+			<var name="srh_0_1km"/>
+			<var name="srh_0_3km"/>
+			<var name="u_zonal_surface"/>
+			<var name="u_zonal_1km"/>
+			<var name="u_zonal_6km"/>
+			<var name="u_meridional_surface"/>
+			<var name="u_meridional_1km"/>
+			<var name="u_meridional_6km"/>
+			<var name="temperature_surface"/>
+			<var name="dewpoint_surface"/>
 		</stream>
 
 		<stream name="surface" 
@@ -878,33 +924,74 @@
                 <var name="mslp"                    type="real"     dimensions="nCells Time"/>
 
                 <var name="temperature_200hPa"     type="real"     dimensions="nCells Time"/>
+                <var name="temperature_250hPa"     type="real"     dimensions="nCells Time"/>
                 <var name="temperature_500hPa"     type="real"     dimensions="nCells Time"/>
                 <var name="temperature_700hPa"     type="real"     dimensions="nCells Time"/>
                 <var name="temperature_850hPa"     type="real"     dimensions="nCells Time"/>
+                <var name="temperature_925hPa"     type="real"     dimensions="nCells Time"/>
                 <var name="relhum_200hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="relhum_250hPa"          type="real"     dimensions="nCells Time"/>
                 <var name="relhum_500hPa"          type="real"     dimensions="nCells Time"/>
                 <var name="relhum_700hPa"          type="real"     dimensions="nCells Time"/>
                 <var name="relhum_850hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="relhum_925hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="dewpoint_200hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="dewpoint_250hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="dewpoint_500hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="dewpoint_700hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="dewpoint_850hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="dewpoint_925hPa"          type="real"     dimensions="nCells Time"/>
                 <var name="height_200hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="height_250hPa"          type="real"     dimensions="nCells Time"/>
                 <var name="height_500hPa"          type="real"     dimensions="nCells Time"/>
                 <var name="height_700hPa"          type="real"     dimensions="nCells Time"/>
                 <var name="height_850hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="height_925hPa"          type="real"     dimensions="nCells Time"/>
                 <var name="uzonal_200hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="uzonal_250hPa"          type="real"     dimensions="nCells Time"/>
                 <var name="uzonal_500hPa"          type="real"     dimensions="nCells Time"/>
                 <var name="uzonal_700hPa"          type="real"     dimensions="nCells Time"/>
                 <var name="uzonal_850hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="uzonal_925hPa"          type="real"     dimensions="nCells Time"/>
                 <var name="umeridional_200hPa"     type="real"     dimensions="nCells Time"/>
+                <var name="umeridional_250hPa"     type="real"     dimensions="nCells Time"/>
                 <var name="umeridional_500hPa"     type="real"     dimensions="nCells Time"/>
                 <var name="umeridional_700hPa"     type="real"     dimensions="nCells Time"/>
                 <var name="umeridional_850hPa"     type="real"     dimensions="nCells Time"/>
+                <var name="umeridional_925hPa"     type="real"     dimensions="nCells Time"/>
                 <var name="w_200hPa"               type="real"     dimensions="nCells Time"/>
+                <var name="w_250hPa"               type="real"     dimensions="nCells Time"/>
                 <var name="w_500hPa"               type="real"     dimensions="nCells Time"/>
                 <var name="w_700hPa"               type="real"     dimensions="nCells Time"/>
                 <var name="w_850hPa"               type="real"     dimensions="nCells Time"/>
+                <var name="w_925hPa"               type="real"     dimensions="nCells Time"/>
                 <var name="vorticity_200hPa"       type="real"     dimensions="nVertices Time"/>
+                <var name="vorticity_250hPa"       type="real"     dimensions="nVertices Time"/>
                 <var name="vorticity_500hPa"       type="real"     dimensions="nVertices Time"/>
                 <var name="vorticity_700hPa"       type="real"     dimensions="nVertices Time"/>
                 <var name="vorticity_850hPa"       type="real"     dimensions="nVertices Time"/>
+                <var name="vorticity_925hPa"       type="real"     dimensions="nVertices Time"/>
+
+                <!-- convective diagnostics, WCS 201503 -->
+                <var name="updraft_helicity_max"    type="real"     dimensions="nCells Time"/>
+                <var name="w_velocity_max"         type="real"     dimensions="nCells Time"/>
+                <var name="wind_speed_level1_max"  type="real"     dimensions="nCells Time"/>
+                <var name="cape"                   type="real"     dimensions="nCells Time"/>
+                <var name="cin"                    type="real"     dimensions="nCells Time"/>
+                <var name="lcl"                    type="real"     dimensions="nCells Time"/>
+                <var name="lfc"                    type="real"     dimensions="nCells Time"/>
+                <var name="srh_0_1km"              type="real"     dimensions="nCells Time"/>
+                <var name="srh_0_3km"              type="real"     dimensions="nCells Time"/>
+                <var name="u_zonal_surface"        type="real"     dimensions="nCells Time"/>
+                <var name="u_zonal_1km"            type="real"     dimensions="nCells Time"/>
+                <var name="u_zonal_6km"            type="real"     dimensions="nCells Time"/>
+                <var name="u_meridional_surface"   type="real"     dimensions="nCells Time"/>
+                <var name="u_meridional_1km"       type="real"     dimensions="nCells Time"/>
+                <var name="u_meridional_6km"       type="real"     dimensions="nCells Time"/>
+                <var name="temperature_surface"    type="real"     dimensions="nCells Time"/>
+                <var name="dewpoint_surface"       type="real"     dimensions="nCells Time"/>
+
+
         </var_struct>
 
         <var_struct name="tend" time_levs="1">
@@ -1028,7 +1115,10 @@
                 <!-- precipw   : precipitable water                                                            (kg/m2)  -->
                 <!-- refl10cm_max: maximum column reflectivity                                                   (dBz)  -->
 
-                <var name="refl10cm_max"  type="real"     dimensions="nCells Time"/>
+                <var name="refl10cm_max"           type="real"     dimensions="nCells Time"/>
+                <!-- added convective diagnostics, WCS 201503 -->
+                <var name="refl10cm_1km"           type="real"     dimensions="nCells Time"/>
+                <var name="refl10cm_1km_max"       type="real"     dimensions="nCells Time"/>
 
                 <var name="i_rainnc"      type="integer"  dimensions="nCells Time"/>
                 <var name="sr"            type="real"     dimensions="nCells Time"/>
