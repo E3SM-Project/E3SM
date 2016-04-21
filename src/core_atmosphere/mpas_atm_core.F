@@ -573,6 +573,21 @@ module atm_core
             call mpas_dmpar_global_abort('********************************************************************************')
          end if
 
+         ! reset any diagnostics here
+
+         if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='diagnostics', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
+            block_ptr => domain % blocklist
+            do while (associated(block_ptr))
+
+               call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+               call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
+               call atm_reset_diagnostics(diag, diag_physics)
+
+               block_ptr => block_ptr % next
+            end do
+         end if
+
+
          ! Only after we've successfully written the restart file should we we
          !    write the restart_timestamp file
          if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
@@ -698,6 +713,38 @@ module atm_core
       end do
    
    end subroutine atm_compute_restart_diagnostics
+
+   subroutine atm_reset_diagnostics(diag, diag_physics)
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   ! reset some diagnostics after output
+   !
+   ! Input: diag          - contains dynamics diagnostic fields
+   !        daig_physics  - contains physics diagnostic fields
+   !
+   ! Output: whatever diagnostics need resetting after output
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   
+      implicit none
+   
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(inout) :: diag_physics
+   
+      real (kind=RKIND), dimension(:), pointer :: updraft_helicity_max
+      real (kind=RKIND), dimension(:), pointer :: w_velocity_max
+      real (kind=RKIND), dimension(:), pointer :: wind_speed_level1_max
+      real (kind=RKIND), dimension(:), pointer :: refl10cm_1km_max
+
+      call mpas_pool_get_array(diag, 'updraft_helicity_max', updraft_helicity_max)
+      call mpas_pool_get_array(diag, 'w_velocity_max', w_velocity_max)
+      call mpas_pool_get_array(diag, 'wind_speed_level1_max', wind_speed_level1_max)
+      call mpas_pool_get_array(diag_physics, 'refl10cm_1km_max', refl10cm_1km_max)
+
+      updraft_helicity_max(:) = 0.
+      w_velocity_max(:) = 0.
+      wind_speed_level1_max(:) = 0.
+      refl10cm_1km_max(:) = 0.
+   
+   end subroutine atm_reset_diagnostics
 
 
    subroutine atm_do_timestep(domain, dt, itimestep)
