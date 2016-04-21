@@ -510,6 +510,42 @@ contains
     @assertEqual(expected_vertical_gradient, vertical_gradient, tolerance=tol)
     
   end subroutine multiplePoints
-  
+
+  @Test
+  subroutine multiplePoints_someLimited(this)
+    ! Test with multiple grid cells, some (but not all) of which trigger the limiter.
+    class(TestVertGradCalc2ndOrder), intent(inout) :: this
+    type(vertical_gradient_calculator_2nd_order_type) :: calculator
+
+    integer, parameter :: npts = 3
+    integer, parameter :: nelev = 3
+    real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
+    ! In the following, each line is one elevation class (with all points for that
+    ! elevation class)
+    real(r8), parameter :: topo(npts,nelev) = reshape( &
+         [50._r8, 50._r8, 50._r8, &
+         125._r8, 125._r8, 125._r8, &
+         275._r8, 275._r8, 275._r8], &
+         [npts,nelev])
+    ! points are: limited by lower bound, non-limited, limited by upper bound
+    real(r8), parameter :: data(npts,nelev) = reshape( &
+         [11._r8, 11._r8, 9._r8, &
+         12._r8, 12._r8, 12._r8, &
+         21._r8, 13._r8, 13._r8], &
+         [npts,nelev])
+
+    real(r8) :: vertical_gradient(npts)
+    real(r8) :: expected_vertical_gradient(npts)
+
+    calculator = this%create_calculator(topo=topo, data=data, &
+         elevclass_bounds=elevclass_bounds)
+
+    call calculator%calc_vertical_gradient(2, vertical_gradient)
+
+    expected_vertical_gradient(1) = 1._r8/25._r8
+    expected_vertical_gradient(2) = 2._r8/225._r8
+    expected_vertical_gradient(3) = 1._r8/75._r8
+    @assertEqual(expected_vertical_gradient, vertical_gradient, tolerance=tol)
+  end subroutine multiplePoints_someLimited
   
 end module test_vertical_gradient_calculator_2nd_order
