@@ -14,8 +14,8 @@
   </entry>
 
   <description>
+    <desc compset="_"> No ESP component  </desc>
     <desc compset="_SESP">Stub esp component</desc>
-    <desc > No ESP component in compset </desc>
   </description>
 
 </definitions_variables>
