@@ -66,6 +66,8 @@ include 'mpif.h'
    public :: mpas_dmpar_bcast_reals
    public :: mpas_dmpar_bcast_double
    public :: mpas_dmpar_bcast_doubles
+   public :: mpas_dmpar_bcast_single
+   public :: mpas_dmpar_bcast_singles
    public :: mpas_dmpar_bcast_logical
    public :: mpas_dmpar_bcast_char
    public :: mpas_dmpar_bcast_chars
@@ -554,6 +556,83 @@ include 'mpif.h'
 #endif
 
    end subroutine mpas_dmpar_bcast_doubles!}}}
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_bcast_double
+!
+!> \brief MPAS dmpar broadcast double routine.
+!> \author Michael Duda
+!> \date   11/04/13; modified by William Lipscomb 01/21/15
+!> \details
+!>  This routine broadcasts a double to all processors in the communicator.
+!>  An optional argument specifies the source node; else broadcast from IO_NODE.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_bcast_single(dminfo, r, proc)!{{{
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo !< Input: Domain information
+      real(kind=R4KIND), intent(inout) :: r !< Input/Output: Double to be broadcast
+      integer, intent(in), optional :: proc  !< optional argument indicating which processor to broadcast from
+
+#ifdef _MPI
+      integer :: mpi_ierr, source
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         if (present(proc)) then
+            source = proc
+         else
+            source = IO_NODE
+         endif
+
+         call MPI_Bcast(r, 1, MPI_REAL4, source, dminfo % comm, mpi_ierr)
+      end if
+#endif
+
+   end subroutine mpas_dmpar_bcast_single!}}}
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_bcast_doubles
+!
+!> \brief MPAS dmpar broadcast doubles routine.
+!> \author Michael Duda
+!> \date   11/04/13; modified by William Lipscomb 01/21/15
+!> \details
+!>  This routine broadcasts an array of doubles to all processors in the communicator.
+!>  An optional argument specifies the source node; else broadcast from IO_NODE.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_bcast_singles(dminfo, n, rarray, proc)!{{{
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo !< Input: Domain information
+      integer, intent(in) :: n !< Input: Length of array
+      real(kind=R4KIND), dimension(n), intent(inout) :: rarray !< Input/Output: Array of doubles to be broadcast
+      integer, intent(in), optional :: proc  !< optional argument indicating which processor to broadcast from
+
+#ifdef _MPI
+      integer :: mpi_ierr, source
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
+
+      if ( threadNum == 0 ) then
+         if (present(proc)) then
+            source = proc
+         else
+            source = IO_NODE
+         endif
+
+         call MPI_Bcast(rarray, n, MPI_REAL4, source, dminfo % comm, mpi_ierr)
+      end if
+#endif
+
+   end subroutine mpas_dmpar_bcast_singles!}}}
 
 !-----------------------------------------------------------------------
 !  routine mpas_dmpar_bcast_logical

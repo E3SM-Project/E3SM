@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_vars
  use mpas_kind_types
  
@@ -14,35 +14,45 @@
  save
 
 
-!>\brief contains all local variables and arrays used in the physics parameterizations.
-!>\author Laura D. Fowler (send comments to laura@ucar.edu).
-!>\date 2013-05-01.
-!>
-!>\details
-!>
-!> add-ons and modifications:
-!> --------------------------
-!>    * added the variables sf_surface_physics,alswvisdir_p,alswvisdif_p,alswnirdir_p,alswnirdif_p,
-!>      swvisdir_p,swvisdif_p,swnirdir_p,and swnirdif_p to upgrade the RRTMG short wave radiation
-!>      code to WRF version 3.4.1. see definition of each individual variables below.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-03-11.
-!>    * removed call to the updated Kain-Fritsch convection scheme.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
-!>    * added the arrays o3clim_p for implementation of monthly-varying climatological ozone in the
-!>      long wave and short wave RRTMG radiation codes.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-08.
-!>    * corrected definition of local variable dx_p.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-23.
-!>    * renamed local variable conv_deep_scheme to convection_scheme.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
-!>    * added empty subroutine atmphys_vars_init that does not do anything, but needed for 
-!>      compiling MPAS with some compilers.
-!>      Laura D. Fowler (laura@ucar.edu) / 2015-01-12.
+! mpas_atmphys_vars contains all local variables and arrays used in the physics parameterizations.
+! Laura D. Fowler (send comments to laura@ucar.edu).
+! 2013-05-01.
+!
+! add-ons and modifications:
+! --------------------------
+! * added the variables sf_surface_physics,alswvisdir_p,alswvisdif_p,alswnirdir_p,alswnirdif_p,swvisdir_p,
+!   swvisdif_p,swnirdir_p,and swnirdif_p to upgrade the RRTMG short wave radiation code to WRF version 3.4.1. 
+!   see definition of each individual variables below.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-03-11.
+! * removed call to the updated Kain-Fritsch convection scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
+! * added the arrays o3clim_p for implementation of monthly-varying climatological ozone in the
+!   long wave and short wave RRTMG radiation codes.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-07-08.
+! * corrected definition of local variable dx_p.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-08-23.
+! * renamed local variable conv_deep_scheme to convection_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+! * added empty subroutine atmphys_vars_init that does not do anything, but needed for 
+!   compiling MPAS with some compilers.
+!   Laura D. Fowler (laura@ucar.edu) / 2015-01-12.
+! * added local variables needed for the Thompson parameterization of cloud microphysics.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-28.
+! * added local variables needed for the Grell-Freitas parameterization of deep and shallow convection.
+! * Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
+! * added local parameter imomentum to include the calculation of the momentum tendencies due to convection
+!   in the Grell-Freitas parameterization of convection.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
+! * added local arrays needed in the MYNN surface layer scheme and PBL scheme (for versions WRF 3.6.1 and 3.8).
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-31.
+! * changed the value of bl_mynn_cloudpdf from 2 to 0 which is the closure option used when the MYNN surface
+!   layer scheme and PBL scheme were originally implemented.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-04.14.
 
 
-!==================================================================================================
+!=================================================================================================================
 !list of physics parameterizations:
-!==================================================================================================
+!=================================================================================================================
 
  character(len=StrKIND),public:: microp_scheme
  character(len=StrKIND),public:: convection_scheme
@@ -54,10 +64,10 @@
  character(len=StrKIND),public:: radt_sw_scheme
  character(len=StrKIND),public:: sfclayer_scheme
 
-!==================================================================================================
+!=================================================================================================================
 !wrf-variables:these variables are needed to keep calls to different physics parameterizations
 !as in wrf model.
-!==================================================================================================
+!=================================================================================================================
 
  logical:: l_radtlw                   !controls call to longwave radiation parameterization.
  logical:: l_radtsw                   !controls call to shortwave radiation parameterization.
@@ -87,6 +97,7 @@
 
 !... arrays related to surface:
  real(kind=RKIND),dimension(:,:),allocatable:: &
+    ht_p,             &!
     psfc_p,           &!surface pressure                                                       [Pa]
     ptop_p             !model-top pressure                                                     [Pa]
 
@@ -120,7 +131,12 @@
     qi_p,             &!cloud ice mixing ratio                                              [kg/kg]
     qs_p,             &!snow mixing ratio                                                   [kg/kg]
     qg_p               !graupel mixing ratio                                                [kg/kg]
- 
+
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    ni_p,             &!
+    nr_p,             &!
+    nc_p               !
+
 !... arrays located at w (vertical velocity) points, or at interface between layers:
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     w_p,              &!vertical velocity                                                     [m/s]
@@ -138,14 +154,14 @@
     pres2_hydd_p,     &!"dry" pressure located at w-velocity levels                            [Pa]
     znu_hyd_p          !(pres_hyd_p / P0) needed in the Tiedtke convection scheme              [Pa]
 
-!=============================================================================================
+!=================================================================================================================
 !... variables related to ozone climatlogy:
-!=============================================================================================
+!=================================================================================================================
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     o3clim_p           !climatological ozone volume mixing ratio                         [???]
 
-!==================================================================================================
+!=================================================================================================================
 !... variables and arrays related to parameterization of cloud microphysics:
 !    warm_phase: logical that determines if we want to run warm-phase cloud microphysics only.
 !          If set to false, cold-phase cloud microphysics is active. In MPAS, we always assume
@@ -156,7 +172,7 @@
 !          which kind of hydrometeors are present. Here, we assume that all six water species
 !          are present, even if their mixing ratios and number concentrations are zero.
 
-!==================================================================================================
+!=================================================================================================================
 
  logical,parameter:: &
     warm_rain=.false.  !warm-phase cloud microphysics only (used in WRF).
@@ -168,6 +184,10 @@
     f_qi = .true.,    &!
     f_qs = .true.,    &!
     f_qg = .true.      !
+
+ logical,parameter:: &
+    f_qnc = .true.,   &!
+    f_qni = .true.     !
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     f_ice,            &!fraction of cloud ice (used in WRF only).
@@ -182,9 +202,28 @@
     graupelncv_p,     &!
     sr_p
 
-!==================================================================================================
+!... added for the thompson cloud microphysics with or without aerosols:
+ integer,parameter:: has_reqc = 1
+ integer,parameter:: has_reqi = 1
+ integer,parameter:: has_reqs = 1
+
+ real(kind=RKIND),dimension(:,:),allocatable:: &
+    nwfa2d_p,         &!
+    ntc_p,            &!
+    muc_p              !
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    nifa_p,           &!
+    nwfa_p,           &!
+    rainprod_p,       &!
+    evapprod_p,       &!
+    recloud_p,        &!
+    reice_p,          &!
+    resnow_p,         &!
+    refl10cm_p         !
+
+!=================================================================================================================
 !... variables and arrays related to parameterization of convection:
-!==================================================================================================
+!=================================================================================================================
  integer,public:: n_cu
  real(kind=RKIND),public:: dt_cu
 
@@ -215,30 +254,57 @@
 
 !... tiedtke specific arrays:
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    znu_p,            &!
-    rqvdynten_p,      &!
-    rqvdynblten_p      !
+    znu_p              !
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     rucuten_p,        &!
     rvcuten_p          !
 
-!==================================================================================================
-!... variables and arrays related to parameterization of pbl:
-!==================================================================================================
+!... grell-freitas specific parameters and arrays:
+    integer, parameter:: ishallow  = 1 !shallow convection used with grell scheme.
+    integer, parameter:: imomentum = 1 !momentum used with grell scheme.
 
  integer,dimension(:,:),allocatable:: &
-    kpbl_p             !index of PBL top                                                        [-]
+    k22_shallow_p,    &!
+    kbcon_shallow_p,  &!
+    ktop_shallow_p,   &!
+    kbot_shallow_p,   &!
+    ktop_deep_p        !
+
+ real(kind=RKIND),dimension(:,:),allocatable:: &
+    xmb_total_p,      &!
+    xmb_shallow_p      !
+
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    rthdynten_p,      &!
+    qccu_p,           &!
+    qicu_p             !
+
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    rthraten_p         !
+
+!... grell and tiedkte specific arrays:
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    rqvdynten_p,      &!
+    rqvdynblten_p,    &!
+    rthdynblten_p      !
+
+!=================================================================================================================
+!... variables and arrays related to parameterization of pbl:
+!=================================================================================================================
+
+ integer,dimension(:,:),allocatable:: &
+    kpbl_p             !index of PBL top                                                                       [-]
 
  real(kind=RKIND),public:: dt_pbl
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
-    ctopo_p,          &!correction to topography                                                [-]
-    ctopo2_p,         &!correction to topography 2                                              [-]                  
-    hpbl_p             !PBL height                                                              [m]
+    ctopo_p,          &!correction to topography                                                               [-]
+    ctopo2_p,         &!correction to topography 2                                                             [-]
+    hpbl_p             !PBL height                                                                             [m]
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    exch_p             !exchange coefficient                                                    [-]
+    exch_p             !exchange coefficient                                                                   [-]
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     rublten_p,        &!
@@ -253,78 +319,136 @@
     kzm_p,            &!
     kzq_p              !
 
-!==================================================================================================
-!... variables and arrays related to parameterization of gravity wave drag over orography:
-!==================================================================================================
+!... MYNN PBL scheme (module_bl_mynn.F):
+ integer,parameter:: grav_settling = 0
+ integer,parameter:: icloud_bl     = 0          !no coupling of subgrid-scale clouds with radiation. 
+
+ logical,parameter:: bl_mynn_tkeadvect = .false.!
+ integer,parameter:: bl_mynn_tkebudget = 0      !
+ integer,parameter:: bl_mynn_cloudpdf  = 0      !
+ integer,parameter:: bl_mynn_cloudmix  = 1      !
+ integer,parameter:: bl_mynn_mixlength = 1      !
+ integer,parameter:: bl_mynn_mixqt     = 0      !
+ integer,parameter:: bl_mynn_edmf      = 0      !option to activate mass-flux scheme (=0:regular MYNN).
+ integer,parameter:: bl_mynn_edmf_mom  = 0
+ integer,parameter:: bl_mynn_edmf_tke  = 0
+ integer,parameter:: bl_mynn_edmf_part = 0
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
-    var2d_p,          &!orographic variance                                                    [m2]
-    con_p,            &!orographic convexity                                                   [m2]
-    oa1_p,            &!orographic direction asymmetry function                                 [-]
-    oa2_p,            &!orographic direction asymmetry function                                 [-]
-    oa3_p,            &!orographic direction asymmetry function                                 [-]
-    oa4_p,            &!orographic direction asymmetry function                                 [-]
-    ol1_p,            &!orographic direction asymmetry function                                 [-]
-    ol2_p,            &!orographic direction asymmetry function                                 [-]
-    ol3_p,            &!orographic direction asymmetry function                                 [-]
-    ol4_p              !orographic direction asymmetry function                                 [-]
-
- real(kind=RKIND),dimension(:,:),allocatable:: &
-    dx_p               !mean distance between cell centers                                      [m]
-
- real(kind=RKIND),dimension(:,:),allocatable:: &
-    dusfcg_p,         &!vertically-integrated gwdo u-stress                              [Pa m s-1]
-    dvsfcg_p           !vertically-integrated gwdo v -stress                             [Pa m s-1]
+    delta_p,          &
+    uoce_p,           &!
+    voce_p,           &!
+    vdfg_p,           &!
+    wstar_p            !
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    dtaux3d_p,        &!gravity wave drag over orography u-stress                           [m s-1]
-    dtauy3d_p          !gravity wave drag over orography u-stress                           [m s-1]
+    dqke_p,           &!
+    qbuoy_p,          &!
+    qdiss_p,          &!
+    qke_p,            &!
+    qkeadv_p,         &!
+    qshear_p,         &!
+    qwt_p,            &!
+    tkepbl_p           !
 
-!==================================================================================================
-!... variables and arrays related to parameterization of surface layer:
-!==================================================================================================
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    rniblten_p,       &!
+    edmfa_p,          &!
+    edmfw_p,          &!
+    edmfqt_p,         &!
+    edmfthl_p,        &!
+    edmfent_p,        &!
+    edmfqc_p,         &!
+    qcbl_p,           &!
+    cldfrabl_p         !
+
+!=================================================================================================================
+!... variables and arrays related to parameterization of gravity wave drag over orography:
+!=================================================================================================================
+
  real(kind=RKIND),dimension(:,:),allocatable:: &
-    br_p,             &!bulk richardson number                                                  [-]
-    cd_p,             &!momentum exchange coeff at 10 meters                                    [?]
-    cda_p,            &!momentum exchange coeff at the lowest model level                       [?]
+    var2d_p,          &!orographic variance                                                                   [m2]
+    con_p,            &!orographic convexity                                                                  [m2]
+    oa1_p,            &!orographic direction asymmetry function                                                [-]
+    oa2_p,            &!orographic direction asymmetry function                                                [-]
+    oa3_p,            &!orographic direction asymmetry function                                                [-]
+    oa4_p,            &!orographic direction asymmetry function                                                [-]
+    ol1_p,            &!orographic direction asymmetry function                                                [-]
+    ol2_p,            &!orographic direction asymmetry function                                                [-]
+    ol3_p,            &!orographic direction asymmetry function                                                [-]
+    ol4_p              !orographic direction asymmetry function                                                [-]
+
+ real(kind=RKIND),dimension(:,:),allocatable:: &
+    dx_p               !mean distance between cell centers                                                     [m]
+
+ real(kind=RKIND),dimension(:,:),allocatable:: &
+    dusfcg_p,         &!vertically-integrated gwdo u-stress                                             [Pa m s-1]
+    dvsfcg_p           !vertically-integrated gwdo v -stress                                            [Pa m s-1]
+
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    dtaux3d_p,        &!gravity wave drag over orography u-stress                                          [m s-1]
+    dtauy3d_p          !gravity wave drag over orography u-stress                                          [m s-1]
+
+!=================================================================================================================
+!... variables and arrays related to parameterization of surface layer:
+!=================================================================================================================
+
+ real(kind=RKIND),dimension(:,:),allocatable:: &
+    br_p,             &!bulk richardson number                                                                 [-]
+    cd_p,             &!momentum exchange coeff at 10 meters                                                   [?]
+    cda_p,            &!momentum exchange coeff at the lowest model level                                      [?]
     cpm_p,            &!
     chs_p,            &!
     chs2_p,           &!
-    ck_p,             &!enthalpy exchange coeff at 10 meters                                    [?]
-    cka_p,            &!enthalpy exchange coeff at the lowest model level                       [?]
+    ck_p,             &!enthalpy exchange coeff at 10 meters                                                   [?]
+    cka_p,            &!enthalpy exchange coeff at the lowest model level                                      [?]
     cqs2_p,           &!
-    gz1oz0_p,         &!log of z1 over z0                                                       [-]
-    flhc_p,           &!exchange coefficient for heat                                           [-]
-    flqc_p,           &!exchange coefficient for moisture                                       [-]
-    hfx_p,            &!upward heat flux at the surface                                      [W/m2]
-    fh_p,             &!integrated stability function for heat                                  [-]
-    fm_p,             &!integrated stability function for momentum                              [-]             
-    lh_p,             &!latent heat flux at the surface                                      [W/m2]
-    mavail_p,         &!surface moisture availability                                           [-]
-    mol_p,            &!T* in similarity theory                                                 [K]
-    pblh_p,           &!PBL height                                                              [m]
-    psih_p,           &!similarity theory for heat                                              [-]
-    psim_p,           &!similarity theory for momentum                                          [-]
-    q2_p,             &!specific humidity at 2m                                             [kg/kg]
-    qfx_p,            &!upward moisture flux at the surface                               [kg/m2/s]
+    gz1oz0_p,         &!log of z1 over z0                                                                      [-]
+    flhc_p,           &!exchange coefficient for heat                                                          [-]
+    flqc_p,           &!exchange coefficient for moisture                                                      [-]
+    hfx_p,            &!upward heat flux at the surface                                                     [W/m2]
+    lh_p,             &!latent heat flux at the surface                                                     [W/m2]
+    mavail_p,         &!surface moisture availability                                                          [-]
+    mol_p,            &!T* in similarity theory                                                                [K]
+    pblh_p,           &!PBL height                                                                             [m]
+    psih_p,           &!similarity theory for heat                                                             [-]
+    psim_p,           &!similarity theory for momentum                                                         [-]
+    q2_p,             &!specific humidity at 2m                                                            [kg/kg]
+    qfx_p,            &!upward moisture flux at the surface                                              [kg/m2/s]
     qgh_p,            &!
-    qsfc_p,           &!specific humidity at lower boundary                                 [kg/kg]
-    regime_p,         &!flag indicating PBL regime (stable_p,unstable_p,etc...)                 [-]
-    rmol_p,           &!1 / Monin Ob length                                                     [-]
-    t2m_p,            &!temperature at 2m                                                       [K]
-    th2m_p,           &!potential temperature at 2m                                             [K]
-    u10_p,            &!u at 10 m                                                             [m/s]
-    ust_p,            &!u* in similarity theory                                               [m/s]
-    ustm_p,           &!u* in similarity theory       without vconv correction                [m/s]
-    v10_p,            &!v at 10 m                                                             [m/s]
-    wspd_p,           &!wind speed                                                            [m/s]
-    znt_p,            &!time-varying roughness length                                           [m]
+    qsfc_p,           &!specific humidity at lower boundary                                                [kg/kg]
+    regime_p,         &!flag indicating PBL regime (stable_p,unstable_p,etc...)                                [-]
+    rmol_p,           &!1 / Monin Ob length                                                                    [-]
+    t2m_p,            &!temperature at 2m                                                                      [K]
+    th2m_p,           &!potential temperature at 2m                                                            [K]
+    u10_p,            &!u at 10 m                                                                            [m/s]
+    ust_p,            &!u* in similarity theory                                                              [m/s]
+    ustm_p,           &!u* in similarity theory       without vconv correction                               [m/s]
+    v10_p,            &!v at 10 m                                                                            [m/s]
+    wspd_p,           &!wind speed                                                                           [m/s]
+    znt_p,            &!time-varying roughness length                                                          [m]
     zol_p              !
 
+!... arrays only in monin_obukohv (module_sf_sfclay.F):
+ real(kind=RKIND),dimension(:,:),allocatable:: &
+    fh_p,             &!integrated stability function for heat                                                 [-]
+    fm_p               !integrated stability function for momentum                                             [-]
 
-!==================================================================================================
+!... arrays only in mynn surface layer scheme (module_sf_mynn.F):
+ real(kind=RKIND),dimension(:,:),allocatable:: &
+    ch_p,             &!surface exchange coeff for heat                                                      [m/s]
+    qcg_p              !cloud water mixing ratio at the ground surface                                     [kg/kg]
+
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    cov_p,            &!liquid water-liquid water potential temperature covariance                       [K kg/kg]
+    qsq_p,            &!liquid water variance                                                          [(kg/kg)^2]
+    tsq_p,            &!liquid water potential temperature variance                                          [K^2]
+    sh3d_p,           &!stability function for heat                                                            [-]
+    elpbl_p            !length scale from PBL                                                                  [m]
+
+!=================================================================================================================
 !... variables and arrays related to parameterization of short-wave radiation:
-!==================================================================================================
+!=================================================================================================================
 
  real(kind=RKIND):: &
     declin,           &!solar declination                                                       [-]
@@ -358,9 +482,9 @@
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     rthratensw_p       !uncoupled theta tendency due to shortwave radiation                 [K s-1]
 
-!==================================================================================================
+!=================================================================================================================
 !... variables and arrays related to parameterization of long-wave radiation:
-!==================================================================================================
+!=================================================================================================================
 
  integer,dimension(:,:),allocatable:: &
     nlrad_p            !number of layers added above the model top                              [-]
@@ -389,10 +513,10 @@
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     rthratenlw_p       !uncoupled theta tendency due to longwave radiation                  [K s-1]
 
-!==================================================================================================
+!=================================================================================================================
 !... variables and arrays related to parameterization of long- and short-wave radiation needed
 !    only by the "CAM" radiation codes:
-!==================================================================================================
+!=================================================================================================================
 
  logical:: doabsems
 
@@ -426,19 +550,19 @@
     absnxt_p,         &!total nearest layer absorptivity                                        [-]
     ozmixm_p           !ozone mixing ratio.
 
-!==================================================================================================
+!=================================================================================================================
 !.. variables and arrays related to cloudiness:
-!==================================================================================================
+!=================================================================================================================
 
  integer,parameter:: &
     icloud= 1          !used in WRF only.
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    cldfrac_p          !cloud fraction                                                          [-]
+    cldfrac_p          !cloud fraction                                                                         [-]
 
-!==================================================================================================
+!=================================================================================================================
 !.. variables and arrays related to land-surface parameterization:
-!==================================================================================================
+!=================================================================================================================
 
  integer,public:: &
     sf_surface_physics !used to define the land surface scheme by a number instead of name. It
@@ -446,81 +570,81 @@
                        !albedos as functions of the land surface scheme.
 
  integer,public:: &
-    num_soils          !number of soil layers                                                   [-]
+    num_soils          !number of soil layers                                                                  [-]
     
  integer,dimension(:,:),allocatable:: &
-    isltyp_p,         &!dominant soil type category                                             [-]
-    ivgtyp_p           !dominant vegetation category                                            [-]
+    isltyp_p,         &!dominant soil type category                                                            [-]
+    ivgtyp_p           !dominant vegetation category                                                           [-]
 
  real(kind=RKIND),dimension(:),allocatable:: &
-    dzs_p              !thickness of soil layers                                                [m]
+    dzs_p              !thickness of soil layers                                                               [m]
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    smcrel_p,         &!soil moisture threshold below which transpiration starts to stress      [-]
-    sh2o_p,           &!unfrozen soil moisture content                        [volumetric fraction]
-    smois_p,          &!soil moisture                                         [volumetric fraction]
-    tslb_p             !soil temperature                                                        [K]
+    smcrel_p,         &!soil moisture threshold below which transpiration starts to stress                     [-]
+    sh2o_p,           &!unfrozen soil moisture content                                       [volumetric fraction]
+    smois_p,          &!soil moisture                                                        [volumetric fraction]
+    tslb_p             !soil temperature                                                                       [K]
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
-    acsnom_p,         &!accumulated melted snow                                            [kg m-2]
-    acsnow_p,         &!accumulated snow                                                   [kg m-2]
-    canwat_p,         &!canopy water                                                       [kg m-2]
-    chklowq_p,        &!surface saturation flag                                                 [-]
-    grdflx_p,         &!ground heat flux                                                    [W m-2]
-    lai_p,            &!leaf area index                                                         [-]
-    noahres_p,        &!residual of the noah land-surface scheme energy budget              [W m-2]
-    potevp_p,         &!potential evaporation                                               [W m-2]
-    qz0_p,            &!specific humidity at znt                                          [kg kg-1]
+    acsnom_p,         &!accumulated melted snow                                                           [kg m-2]
+    acsnow_p,         &!accumulated snow                                                                  [kg m-2]
+    canwat_p,         &!canopy water                                                                      [kg m-2]
+    chklowq_p,        &!surface saturation flag                                                                [-]
+    grdflx_p,         &!ground heat flux                                                                   [W m-2]
+    lai_p,            &!leaf area index                                                                        [-]
+    noahres_p,        &!residual of the noah land-surface scheme energy budget                             [W m-2]
+    potevp_p,         &!potential evaporation                                                              [W m-2]
+    qz0_p,            &!specific humidity at znt                                                         [kg kg-1]
     rainbl_p,         &!
-    sfcrunoff_p,      &!surface runoff                                                      [m s-1]
-    shdmin_p,         &!minimum areal fractional coverage of annual green vegetation            [-]
-    shdmax_p,         &!maximum areal fractional coverage of annual green vegetation            [-]
-    smstav_p,         &!moisture availability                                                   [-]
-    smstot_p,         &!total moisture                                                     [m3 m-3]
-    snopcx_p,         &!snow phase change heat flux                                         [W m-2]
+    sfcrunoff_p,      &!surface runoff                                                                     [m s-1]
+    shdmin_p,         &!minimum areal fractional coverage of annual green vegetation                           [-]
+    shdmax_p,         &!maximum areal fractional coverage of annual green vegetation                           [-]
+    smstav_p,         &!moisture availability                                                                  [-]
+    smstot_p,         &!total moisture                                                                    [m3 m-3]
+    snopcx_p,         &!snow phase change heat flux                                                        [W m-2]
     snotime_p,        &!
-    snowc_p,          &!snow water equivalent                                              [kg m-2]
-    snowh_p,          &!physical snow depth                                                     [m]
-    swdown_p,         &!downward shortwave flux at the surface                              [W m-2]
-    udrunoff_p,       &!sub-surface runoff                                                  [m s-1]
-    tmn_p,            &!soil temperature at lower boundary                                      [K]
-    vegfra_p,         &!vegetation fraction                                                     [-]
-    z0_p               !background roughness length                                             [m]
+    snowc_p,          &!snow water equivalent                                                             [kg m-2]
+    snowh_p,          &!physical snow depth                                                                    [m]
+    swdown_p,         &!downward shortwave flux at the surface                                             [W m-2]
+    udrunoff_p,       &!sub-surface runoff                                                                 [m s-1]
+    tmn_p,            &!soil temperature at lower boundary                                                     [K]
+    vegfra_p,         &!vegetation fraction                                                                    [-]
+    z0_p               !background roughness length                                                            [m]
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
-    alswvisdir_p,     &!direct-beam surface albedo in visible spectrum                          [-]
-    alswvisdif_p,     &!diffuse-beam surface albedo in visible spectrum                         [-]
-    alswnirdir_p,     &!direct-beam surface albedo in near-IR spectrum                          [-]
-    alswnirdif_p       !diffuse-beam surface albedo in near-IR spectrum                         [-]
+    alswvisdir_p,     &!direct-beam surface albedo in visible spectrum                                         [-]
+    alswvisdif_p,     &!diffuse-beam surface albedo in visible spectrum                                        [-]
+    alswnirdir_p,     &!direct-beam surface albedo in near-IR spectrum                                         [-]
+    alswnirdif_p       !diffuse-beam surface albedo in near-IR spectrum                                        [-]
 
-!==================================================================================================
+!=================================================================================================================
 !.. variables and arrays related to surface characteristics:
-!==================================================================================================
+!=================================================================================================================
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
-    xlat_p,           &!longitude, west is negative                                       [degrees]
-    xlon_p             !latitude, south is negative                                       [degrees]
+    xlat_p,           &!longitude, west is negative                                                      [degrees]
+    xlon_p             !latitude, south is negative                                                      [degrees]
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
-    sfc_albedo_p,     &!surface albedo                                                          [-]
-    sfc_albbck_p,     &!surface background albedo                                               [-]
-    sfc_emibck_p,     &!land surface background emissivity                                      [-]
-    sfc_emiss_p,      &!land surface emissivity                                                 [-]
-    snoalb_p,         &!annual max snow albedo                                                  [-]
-    snow_p,           &!snow water equivalent                                              [kg m-2]
-    tsk_p,            &!surface-skin temperature                                                [K]
-    xice_p,           &!ice mask                                                                [-]
-    xland_p            !land mask    (1 for land; 2 for water)                                  [-]
+    sfc_albedo_p,     &!surface albedo                                                                         [-]
+    sfc_albbck_p,     &!surface background albedo                                                              [-]
+    sfc_emibck_p,     &!land surface background emissivity                                                     [-]
+    sfc_emiss_p,      &!land surface emissivity                                                                [-]
+    snoalb_p,         &!annual max snow albedo                                                                 [-]
+    snow_p,           &!snow water equivalent                                                             [kg m-2]
+    tsk_p,            &!surface-skin temperature                                                               [K]
+    xice_p,           &!ice mask                                                                               [-]
+    xland_p            !land mask    (1 for land; 2 for water)                                                 [-]
 
 
  contains
 
-!==================================================================================================
+!=================================================================================================================
  subroutine atmphys_vars_init()
-!==================================================================================================
+!=================================================================================================================
 !dummy subroutine that does not do anything.
 
  end subroutine atmphys_vars_init
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_vars
-!==================================================================================================
+!=================================================================================================================

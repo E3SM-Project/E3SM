@@ -86,6 +86,15 @@
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 !>    * renamed config_conv_deep_scheme to config_convection_scheme.
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+!>    * in the call to driver_convection, added block%configs needed for the implementation of the
+!>      Grell-Freitas convection scheme.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
+!>    * modified the call to the subroutines driver_sfclayer and driver_pbl for the implementation
+!>      of the MYNN surface layer scheme and PBL schemes. itimestep and block%configs are added to
+!>      the argument list.
+!>      Laura D. Fowler (laura@ucar.edu) / 2015-01-06.
+!>    * now only call subroutine update_convection_step2 when config_convection_scheme is not off.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-04/13. 
 
 
  contains
@@ -112,8 +121,6 @@
                                  atm_input,    &
                                  sfc_input
 
- real(kind=RKIND),pointer:: config_bucket_radt
-
  character(len=StrKIND),pointer:: config_bucket_update,     &
                                   config_convection_scheme, &
                                   config_gwdo_scheme,       &
@@ -122,6 +129,8 @@
                                   config_radt_lw_scheme,    &
                                   config_radt_sw_scheme,    &
                                   config_sfclayer_scheme
+
+ real(kind=RKIND),pointer:: config_bucket_radt
 
 !local variables:
  type(block_type),pointer:: block
@@ -232,7 +241,7 @@
        call allocate_sfclayer
 !$OMP PARALLEL DO
        do thread=1,block % nThreads
-          call driver_sfclayer(mesh,diag_physics,sfc_input, &
+          call driver_sfclayer(itimestep,block%configs,mesh,diag_physics,sfc_input, &
                                block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
        end do
 !$OMP END PARALLEL DO
@@ -256,7 +265,7 @@
        call allocate_pbl
 !$OMP PARALLEL DO
        do thread=1,block % nThreads
-          call driver_pbl(sfc_input,diag_physics,tend_physics, &
+          call driver_pbl(itimestep,block%configs,sfc_input,diag_physics,tend_physics, &
                           block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
        end do
 !$OMP END PARALLEL DO
@@ -286,19 +295,21 @@
        call allocate_convection
 !$OMP PARALLEL DO
        do thread=1,block % nThreads
-          call driver_convection(itimestep,mesh,sfc_input,diag_physics,tend_physics, &
+          call driver_convection(itimestep,block%configs,mesh,sfc_input,diag_physics,tend_physics, &
                                  block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
        end do
 !$OMP END PARALLEL DO
        call deallocate_convection
     endif
     !update diagnostics:
+    if(config_convection_scheme .ne. 'off') then
 !$OMP PARALLEL DO
-    do thread=1,block % nThreads
-       call update_convection_step2(block%configs,mesh,diag_physics, &
-                            block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
-    end do
+       do thread=1,block % nThreads
+          call update_convection_step2(block%configs,mesh,diag_physics, &
+                               block % cellSolveThreadStart(thread), block % cellSolveThreadEnd(thread))
+       end do
 !$OMP END PARALLEL DO
+    end if
 
     !deallocate arrays shared by all physics parameterizations:
     call deallocate_forall_physics

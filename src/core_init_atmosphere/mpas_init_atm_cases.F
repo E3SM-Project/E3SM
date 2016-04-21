@@ -192,13 +192,13 @@ module init_atm_cases
                !     detected when performing the static_interp step.
                !  
                if (domain % dminfo % nprocs > 1) then
-                  write(0,*) ' '
-                  write(0,*) '****************************************************************'
-                  write(0,*) 'Error: Interpolation of static fields does not work in parallel.'
-                  write(0,*) 'Please run the static_interp step using only a single MPI task.'
-                  write(0,*) '****************************************************************'
-                  write(0,*) ' '
-                  call mpas_dmpar_abort(domain % dminfo)
+                 write(0,*) ' '
+                 write(0,*) '****************************************************************'
+                 write(0,*) 'Error: Interpolation of static fields does not work in parallel.'
+                 write(0,*) 'Please run the static_interp step using only a single MPI task.'
+                 write(0,*) '****************************************************************'
+                 write(0,*) ' '
+                 call mpas_dmpar_abort(domain % dminfo)
                end if
 
                call init_atm_static(mesh, block_ptr % dimensions, block_ptr % configs)
@@ -2872,9 +2872,16 @@ module init_atm_cases
          zt = config_ztop
          dz = zt/float(nz1)
 
-         als   =  .075
-         alt   = 1.23
-         zetal =  .31
+!... Laura D. Fowler: change the values als,alt,and zetal valid for nVertLevels=41 to values
+!    needed for nVertLevels=55.
+         als   =  .075  ! 55 levels.
+         alt   = 1.70   ! 55 levels.
+         zetal =  .75   ! 55 levels.
+!        als   =  .075  ! 41 levels.
+!        alt   = 1.23   ! 41 levels.
+!        zetal =  .31   ! 41 levels.
+!... end Laura D. Fowler / 2016-04-12.
+
          do k=1,nz
             zl = 1.-alt*(1.-zetal)
             if ((real(k-1)/real(nz1)).LT.zetal) then
@@ -2970,6 +2977,7 @@ module init_atm_cases
 !      cf1 = d2*d3*(d3-d2)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
 !      cf2 = d1*d3*(d1-d3)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
 !      cf3 = d1*d2*(d2-d1)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
+
 
       write(0,*) ' cf1, cf2, cf3 = ',cf1,cf2,cf3
 

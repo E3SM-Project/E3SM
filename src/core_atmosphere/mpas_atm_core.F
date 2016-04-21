@@ -755,9 +755,14 @@ module atm_core
       use mpas_performance, only : mpas_performance_finalize
       use mpas_atm_soundings, only : mpas_atm_soundings_finalize
    
+#ifdef DO_PHYSICS
+      use mpas_atmphys_finalize
+#endif
+
       implicit none
    
-      type (domain_type), intent(inout) :: domain 
+      type (domain_type), intent(inout) :: domain
+      type (block_type), pointer :: block_ptr 
       integer :: ierr
 
       ierr = 0
@@ -771,6 +776,15 @@ module atm_core
       ! Finalize performance module
       !
       call mpas_performance_finalize()
+
+#ifdef DO_PHYSICS
+         block_ptr => domain % blocklist
+         do while (associated(block_ptr))
+            call atmphys_finalize(block_ptr%configs)
+
+            block_ptr => block_ptr%next
+         end do
+#endif
    
    end function atm_core_finalize
 

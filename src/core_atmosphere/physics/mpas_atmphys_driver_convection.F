@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_driver_convection
  use mpas_kind_types
  use mpas_derived_types
@@ -16,6 +16,8 @@
  use mpas_atmphys_vars
 
 !wrf physics:
+ use module_cu_gf
+ use module_cu_gf_momentum
  use module_cu_kfeta
  use module_cu_tiedtke
 
@@ -29,56 +31,65 @@
           update_convection_step2
 
 
-!>\brief MPAS driver for parameterization of convection.
-!>\author Laura D. Fowler (send comments to laura@ucar.edu).
-!>\date 2013-05-01.
-!>
-!>\details
-!>
-!> subroutines in mpas_atmphys_driver_convection:
-!> ----------------------------------------------
-!> allocate_convection     : allocate local arrays for parameterization of convection.
-!> deallocate_convection   : deallocate local arrays for parameterization of convection.
-!> init_convection         : initialization of individual convection scheme.
-!> driver_convection       : main driver (called from subroutine physics_driver).
-!> convection_from_MPAS    : initialize local arrays.
-!> convection_to_MPAS      : copy local arrays to MPAS arrays.
-!> update_convection_step1 : updates lifetime of deep convective clouds in Kain-Fritsch scheme.
-!> update_convection_step2 : updates accumulated precipitation output from convection schemes.
-!>
-!> WRF physics called from driver_convection:
-!> ------------------------------------------
-!>    * module_cu_kfeta      : Kain-Fritsch convection scheme.
-!>    * module_cu_tiedtke    : Tiedtke convection scheme.
+!MPAS driver for parameterization of convection.
+!Laura D. Fowler (send comments to laura@ucar.edu).
+!2013-05-01.
+!
+! subroutines in mpas_atmphys_driver_convection:
+! ----------------------------------------------
+! allocate_convection     : allocate local arrays for parameterization of convection.
+! deallocate_convection   : deallocate local arrays for parameterization of convection.
+! init_convection         : initialization of individual convection scheme.
+! driver_convection       : main driver (called from subroutine physics_driver).
+! convection_from_MPAS    : initialize local arrays.
+! convection_to_MPAS      : copy local arrays to MPAS arrays.
+! update_convection_step1 : updates lifetime of deep convective clouds in Kain-Fritsch scheme.
+! update_convection_step2 : updates accumulated precipitation output from convection schemes.
+!
+! WRF physics called from driver_convection:
+! ------------------------------------------
+!    * module_cu_kfeta      : Kain-Fritsch convection scheme.
+!    * module_cu_tiedtke    : Tiedtke convection scheme.
 
-!> add-ons and modifications to sourcecode:
-!> ----------------------------------------
-!>    * removed the pre-processor option "do_hydrostatic_pressure" before call to the subroutines 
-!>      kf_eta_cps and tiedtke.
-!>    * removed call to the updated Kain-Fritsch convection scheme.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
-!>    * added the mean distance between cell centers in the call to the Kain-Fritsch convection
-!>      parameterization of convection.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-22. 
-!>    * in call to subroutine kf_eta_cps, replaced the variable g (that originally pointed to
-!>      gravity) with gravity, for simplicity.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
-!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
-!>    * Modified sourcecode to use pools.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
-!>    * in ./physics_wrf, updated the Tiedtke convection scheme to that in WRF version 3.6.1. The
-!>      call to subroutine cu_tiedtke has been updated accordingly to include the sensible heat
-!>      flux.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-11. 
+! add-ons and modifications to sourcecode:
+! ----------------------------------------
+! * removed the pre-processor option "do_hydrostatic_pressure" before call to the subroutines kf_eta_cps
+!   and tiedtke. 
+! * removed call to the updated Kain-Fritsch convection scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-05-29.
+! * added the mean distance between cell centers in the call to the Kain-Fritsch parameterization of convection.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-08-22. 
+! * in call to subroutine kf_eta_cps, replaced the variable g (that originally pointed to gravity) with gravity,
+!   for simplicity.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-03-21.
+! * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+! * Modified sourcecode to use pools.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+! * in ./physics_wrf, updated the Tiedtke convection scheme to that in WRF version 3.6.1. The call to subroutine 
+!   cu_tiedtke has been updated accordingly to include the sensible heat flux.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-09-11.
+! * renamed "kain_fritsch" with "cu_kain_fritsch" and "tiedtke" with "cu_tiedtke".
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-22.
+! * added the implementation of the Grell-Freitas convection scheme (options cu_grell_freitas and
+!   cu_grell_freitas_momentum).
+!   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
+! * reorganized the calls to mpas_pool_.. as functions of the parameterization of convection. this makes the
+!   code cleaner, now that we are using physics packages.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-04-01.
+! * in the calls to subroutine cu_grell_freitas and cu_grell_freitas_momentum, added the array pratec for the
+!   calculation of rainc.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-04-14.
+! * in the call to subroutine cu_grell_freitas, removed the argument ktop_deep.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-04-20.
 
 
  contains
 
 
-!==================================================================================================
+!=================================================================================================================
  subroutine allocate_convection
-!==================================================================================================
+!=================================================================================================================
 
 !local variables:
  integer:: i,k,j
@@ -111,7 +122,39 @@
 
  convection_select: select case(convection_scheme)
 
-    case ("kain_fritsch")
+    case ("cu_grell_freitas","cu_grell_freitas_momentum")
+       if(.not.allocated(ht_p)           ) allocate(ht_p(ims:ime,jms:jme)               )
+       if(.not.allocated(cubot_p)        ) allocate(cubot_p(ims:ime,jms:jme)            )
+       if(.not.allocated(cutop_p)        ) allocate(cutop_p(ims:ime,jms:jme)            )
+       if(.not.allocated(kpbl_p)         ) allocate(kpbl_p(ims:ime,jms:jme)             )
+       if(.not.allocated(k22_shallow_p)  ) allocate(k22_shallow_p(ims:ime,jms:jme)      )
+       if(.not.allocated(kbcon_shallow_p)) allocate(kbcon_shallow_p(ims:ime,jms:jme)    )
+       if(.not.allocated(ktop_shallow_p) ) allocate(ktop_shallow_p(ims:ime,jms:jme)     )
+       if(.not.allocated(kbot_shallow_p) ) allocate(kbot_shallow_p(ims:ime,jms:jme)     )
+       if(.not.allocated(ktop_deep_p)    ) allocate(ktop_deep_p(ims:ime,jms:jme)        )
+
+       if(.not.allocated(dx_p)           ) allocate(dx_p(ims:ime,jms:jme)               )
+       if(.not.allocated(area_p)         ) allocate(area_p(ims:ime,jms:jme)             )
+       if(.not.allocated(gsw_p)          ) allocate(gsw_p(ims:ime,jms:jme)              )
+       if(.not.allocated(hfx_p)          ) allocate(hfx_p(ims:ime,jms:jme)              )
+       if(.not.allocated(qfx_p)          ) allocate(qfx_p(ims:ime,jms:jme)              )
+       if(.not.allocated(xland_p)        ) allocate(xland_p(ims:ime,jms:jme)            )
+
+       if(.not.allocated(rthblten_p)     ) allocate(rthblten_p(ims:ime,kms:kme,jms:jme) )
+       if(.not.allocated(rthdynten_p)    ) allocate(rthdynten_p(ims:ime,kms:kme,jms:jme))
+       if(.not.allocated(rthraten_p)     ) allocate(rthraten_p(ims:ime,kms:kme,jms:jme) )
+       if(.not.allocated(rqvblten_p)     ) allocate(rqvblten_p(ims:ime,kms:kme,jms:jme) )
+       if(.not.allocated(rqvdynten_p)    ) allocate(rqvdynten_p(ims:ime,kms:kme,jms:jme))
+       if(.not.allocated(rucuten_p)      ) allocate(rucuten_p(ims:ime,kms:kme,jms:jme)  )
+       if(.not.allocated(rvcuten_p)      ) allocate(rvcuten_p(ims:ime,kms:kme,jms:jme)  )
+
+       if(.not.allocated(xmb_total_p)    ) allocate(xmb_total_p(ims:ime,jms:jme)        )
+       if(.not.allocated(xmb_shallow_p)  ) allocate(xmb_shallow_p(ims:ime,jms:jme)      )
+
+       if(.not.allocated(qccu_p)         ) allocate(qccu_p(ims:ime,kms:kme,jms:jme)     )
+       if(.not.allocated(qicu_p)         ) allocate(qicu_p(ims:ime,kms:kme,jms:jme)     )
+
+    case ("cu_kain_fritsch")
        if(.not.allocated(dx_p)       ) allocate(dx_p(ims:ime,jms:jme)              )
        if(.not.allocated(area_p)     ) allocate(area_p(ims:ime,jms:jme)            )
        if(.not.allocated(nca_p)      ) allocate(nca_p(ims:ime,jms:jme)             )
@@ -137,7 +180,7 @@
        enddo
        enddo
 
-    case ("tiedtke")
+    case ("cu_tiedtke")
        if(.not.allocated(hfx_p)        ) allocate(hfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(qfx_p)        ) allocate(qfx_p(ims:ime,jms:jme)                )
        if(.not.allocated(xland_p)      ) allocate(xland_p(ims:ime,jms:jme)              )
@@ -171,9 +214,9 @@
 
  end subroutine allocate_convection
 
-!==================================================================================================
+!=================================================================================================================
  subroutine deallocate_convection
-!==================================================================================================
+!=================================================================================================================
 
  if(allocated(cu_act_flag)) deallocate(cu_act_flag)
  if(allocated(rthcuten_p) ) deallocate(rthcuten_p )
@@ -185,7 +228,38 @@
 
  convection_select: select case(convection_scheme)
 
-    case ("kain_fritsch")
+    case ("cu_grell_freitas","cu_grell_freitas_momentum")
+       if(allocated(ht_p)           ) deallocate(ht_p           )
+       if(allocated(cubot_p)        ) deallocate(cubot_p        )
+       if(allocated(cutop_p)        ) deallocate(cutop_p        )
+       if(allocated(kpbl_p)         ) deallocate(kpbl_p         )
+       if(allocated(k22_shallow_p)  ) deallocate(k22_shallow_p  )
+       if(allocated(kbcon_shallow_p)) deallocate(kbcon_shallow_p)
+       if(allocated(ktop_shallow_p) ) deallocate(ktop_shallow_p )
+       if(allocated(kbot_shallow_p) ) deallocate(kbot_shallow_p )
+       if(allocated(ktop_deep_p)    ) deallocate(ktop_deep_p    )
+
+       if(allocated(dx_p)           ) deallocate(dx_p           )
+       if(allocated(area_p)         ) deallocate(area_p         )
+       if(allocated(gsw_p)          ) deallocate(gsw_p          )
+       if(allocated(hfx_p)          ) deallocate(hfx_p          )
+       if(allocated(qfx_p)          ) deallocate(qfx_p          )
+       if(allocated(xland_p)        ) deallocate(xland_p        )
+       if(allocated(rthblten_p)     ) deallocate(rthblten_p     )
+       if(allocated(rthdynten_p)    ) deallocate(rthdynten_p    )
+       if(allocated(rthraten_p)     ) deallocate(rthraten_p     )
+       if(allocated(rqvblten_p)     ) deallocate(rqvblten_p     )
+       if(allocated(rqvdynten_p)    ) deallocate(rqvdynten_p    )
+       if(allocated(rucuten_p)      ) deallocate(rucuten_p      )
+       if(allocated(rvcuten_p)      ) deallocate(rvcuten_p      )
+
+       if(allocated(xmb_total_p)    ) deallocate(xmb_total_p    )
+       if(allocated(xmb_shallow_p)  ) deallocate(xmb_shallow_p  )
+
+       if(allocated(qccu_p)         ) deallocate(qccu_p         )
+       if(allocated(qicu_p)         ) deallocate(qicu_p         )
+
+    case ("cu_kain_fritsch")
        if(allocated(dx_p)         ) deallocate(dx_p         )
        if(allocated(area_p)       ) deallocate(area_p       )
        if(allocated(nca_p)        ) deallocate(nca_p        )
@@ -195,7 +269,7 @@
        if(allocated(rqrcuten_p)   ) deallocate(rqrcuten_p   )
        if(allocated(rqscuten_p)   ) deallocate(rqscuten_p   )
 
-    case ("tiedtke")
+    case ("cu_tiedtke")
        if(allocated(hfx_p)        ) deallocate(hfx_p        )
        if(allocated(qfx_p)        ) deallocate(qfx_p        )
        if(allocated(xland_p)      ) deallocate(xland_p      )
@@ -210,9 +284,9 @@
 
  end subroutine deallocate_convection
 
-!==================================================================================================
+!=================================================================================================================
  subroutine init_convection(mesh,configs,diag_physics)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
@@ -229,28 +303,28 @@
 !local variables:
  integer:: iCell
 
-!--------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter subroutine init_convection:'
+!-----------------------------------------------------------------------------------------------------------------
+!write(0,*)
+!write(0,*) '--- enter subroutine init_convection:'
 
  call mpas_pool_get_dimension(mesh,'nCells',nCells)
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
- call mpas_pool_get_array(diag_physics,'nca',nca)
 
  convection_select: select case(convection_scheme)
 
-    case ("kain_fritsch")
-!       write(0,*) '    enter kain-fritsch initialization:'
+    case ("cu_kain_fritsch")
+!      write(0,*) '    enter kain-fritsch initialization:'
+       call mpas_pool_get_array(diag_physics,'nca',nca)
        if(.not. config_do_restart) then
           do iCell = 1, nCells
              nca(iCell) = -100._RKIND
           enddo
        endif
        call kf_lutab(svp1,svp2,svp3,svpt0)
-!       write(0,*) '    end kain-kritsch initialization'
+!      write(0,*) '    end kain-kritsch initialization'
 
-    case ("tiedtke")
-!       write(0,*) '    enter tiedtke initialization:'
+    case ("cu_tiedtke")
+!      write(0,*) '    enter tiedtke initialization:'
 !      write(mpas_err_message,'(A,A10)') &
 !        'Tiedtke is being tested. Do not use right now. Thanks '
 !      call physics_error_fatal(mpas_err_message)
@@ -259,12 +333,12 @@
 
  end select convection_select
 
-! write(0,*) '--- end subroutine init_convection'
+!write(0,*) '--- end subroutine init_convection'
 
  end subroutine init_convection
 
 !==================================================================================================
- subroutine driver_convection(itimestep,mesh,sfc_input,diag_physics,tend_physics,its,ite)
+ subroutine driver_convection(itimestep,configs,mesh,sfc_input,diag_physics,tend_physics,its,ite)
 !==================================================================================================
 
 !input arguments:
@@ -272,19 +346,22 @@
  integer,intent(in):: its,ite
 
 !input and output arguments:
-!---------------------------
  integer,intent(in):: itimestep
+ type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: sfc_input
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: tend_physics
 
 !local variables and arrays:
-!---------------------------
  logical:: log_convection
  integer:: icount
  real(kind=RKIND):: dx
  integer:: i,j
+
+!local pointers:
+ integer,pointer:: gfconv_closure_deep,gfconv_closure_shallow
+ real(kind=RKIND),pointer:: len_disp
 
 !variables specific to Kain_Fritsch parameterization:
  logical:: warm_rain,adapt_step_flag
@@ -294,16 +371,21 @@
  real(kind=RKIND):: cudtacttime
 
 !temp:
+ real(kind=RKIND):: dx_1d
  real(kind=RKIND):: max_rthcuten
  real(kind=RKIND):: min_rthcuten
 
-!==================================================================================================
-! write(0,*)
-! write(0,*) '--- enter convection_driver: dt_cu=',dt_cu
+!-----------------------------------------------------------------------------------------------------------------
+ write(0,*)
+ write(0,*) '--- enter convection_driver: dt_cu=',dt_cu
+
+ call mpas_pool_get_config(configs,'config_gfconv_closure_deep',gfconv_closure_deep)
+ call mpas_pool_get_config(configs,'config_gfconv_closure_shallow',gfconv_closure_shallow)
+ call mpas_pool_get_config(configs,'config_len_disp',len_disp)
 
 !initialize instantaneous precipitation, and copy convective tendencies from the dynamics to
 !the physics grid:
- call convection_from_MPAS(dt_dyn,mesh,sfc_input,diag_physics,tend_physics,its,ite)
+ call convection_from_MPAS(dt_dyn,configs,mesh,sfc_input,diag_physics,tend_physics,its,ite)
 
 !... convert the convection time-step to minutes:
  cudt = dt_cu/60.
@@ -320,7 +402,82 @@
 
  convection_select: select case(convection_scheme)
 
-    case ("kain_fritsch")
+    case ("cu_grell_freitas")
+       dx_1d = len_disp
+!      write(0,*) '--- enter subroutine cu_grell_freitas:',dx_1d
+!      write(0,*) '--- gfconv_closure_deep    =', gfconv_closure_deep
+!      write(0,*) '--- gfconv_closure_shallow =', gfconv_closure_shallow
+       call cu_grell_freitas( &
+             itimestep       = itimestep              , dt            = dt_dyn          , &
+             dxCell          = dx_p                   , areaCell      = area_p          , &
+             u               = u_p                    , v             = v_p             , &
+             w               = w_p                    , t             = t_p             , &
+             q               = qv_p                   , rho           = rho_p           , &
+             p               = pres_hyd_p             , pi            = pi_p            , &
+             p8w             = pres2_hyd_p            , dz8w          = dz_p            , &
+             ht              = ht_p                   , xland         = xland_p         , &
+             gsw             = gsw_p                  , xlv           = xlv             , &
+             cp              = cp                     , g             = gravity         , &
+             r_v             = R_v                    , hfx           = hfx_p           , &
+             qfx             = qfx_p                  , rthblten      = rthblten_p      , &
+             rqvblten        = rqvblten_p             , rthften       = rthdynten_p     , &
+             rqvften         = rqvdynten_p            , rthraten      = rthraten_p      , &
+             kpbl            = kpbl_p                 , raincv        = raincv_p        , &
+             pratec          = pratec_p               , htop          = cutop_p         , &
+             hbot            = cubot_p                , k22_shallow   = k22_shallow_p   , & 
+             kbcon_shallow   = kbcon_shallow_p        , ktop_shallow  = ktop_shallow_p  , & 
+             xmb_total       = xmb_total_p            , xmb_shallow   = xmb_shallow_p   , &
+             gdc             = qccu_p                 , gdc2          = qicu_p          , &
+             rthcuten        = rthcuten_p             , rqvcuten      = rqvcuten_p      , & 
+             rqccuten        = rqccuten_p             , rqicuten      = rqicuten_p      , &
+             ichoice_deep    = gfconv_closure_deep                                      , &
+             ichoice_shallow = gfconv_closure_shallow                                   , &
+             ishallow_g3     = ishallow                                                 , &
+             ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde      , &
+             ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme      , &
+             its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
+                            )
+
+    case ("cu_grell_freitas_momentum")
+       dx_1d = len_disp
+!      write(0,*) '--- enter subroutine grell_freitas_momentum:',dx_1d
+!      write(0,*) '--- gfconv_closure_deep    =', gfconv_closure_deep
+!      write(0,*) '--- gfconv_closure_shallow =', gfconv_closure_shallow
+       call cu_grell_freitas_momentum( &
+             itimestep       = itimestep              , dt            = dt_dyn          , &
+             dxCell          = dx_p                   , areaCell      = area_p          , &
+             u               = u_p                    , v             = v_p             , &
+             w               = w_p                    , t             = t_p             , &
+             q               = qv_p                   , rho           = rho_p           , &
+             p               = pres_hyd_p             , pi            = pi_p            , &
+             p8w             = pres2_hyd_p            , dz8w          = dz_p            , &
+             ht              = ht_p                   , xland         = xland_p         , &
+             gsw             = gsw_p                  , xlv           = xlv             , &
+             cp              = cp                     , g             = gravity         , &
+             r_v             = R_v                    , hfx           = hfx_p           , &
+             qfx             = qfx_p                  , rthblten      = rthblten_p      , &
+             rqvblten        = rqvblten_p             , rthften       = rthdynten_p     , &
+             rqvften         = rqvdynten_p            , rthraten      = rthraten_p      , &
+             kpbl            = kpbl_p                 , raincv        = raincv_p        , &
+             pratec          = pratec_p               , htop          = cutop_p         , &
+             hbot            = cubot_p                , ktop_deep     = ktop_deep_p     , &
+             k22_shallow     = k22_shallow_p          , kbcon_shallow = kbcon_shallow_p , &
+             ktop_shallow    = ktop_shallow_p         , xmb_total     = xmb_total_p     , &
+             xmb_shallow     = xmb_shallow_p          , gdc           = qccu_p          , &
+             gdc2            = qicu_p                 , rthcuten      = rthcuten_p      , &
+             rqvcuten        = rqvcuten_p             , rqccuten      = rqccuten_p      , &
+             rqicuten        = rqicuten_p             , rucuten       = rucuten_p       , &
+             rvcuten         = rvcuten_p                                                , &
+             ichoice_deep    = gfconv_closure_deep                                      , &
+             ichoice_shallow = gfconv_closure_shallow                                   , &
+             ishallow_g3     = ishallow                                                 , &
+             imomentum       = imomentum                                                , &
+             ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde      , &
+             ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme      , &
+             its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
+                            )
+
+    case ("cu_kain_fritsch")
        if(itimestep == 1) then
           ktau = itimestep
        else
@@ -358,8 +515,7 @@
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                         )
 
-    case("tiedtke")
-!       write(0,*) '--- enter subroutine cu_tiedtke:'
+    case("cu_tiedtke")
        call cu_tiedtke ( &
              pcps        = pres_hyd_p    , p8w             = pres2_hyd_p ,           &
              znu         = znu_hyd_p     , t3d             = t_p         ,           &              
@@ -392,60 +548,51 @@
 !specific to convection parameterization back to the dynamics grid:
  call convection_to_MPAS(diag_physics,tend_physics,its,ite)
 
-! write(0,*) '--- end subroutine convection_driver'
+!write(0,*) '--- end subroutine convection_driver'
 
  end subroutine driver_convection
 
 !==================================================================================================
- subroutine convection_from_MPAS(dt_dyn,mesh,sfc_input,diag_physics,tend_physics,its,ite)
+ subroutine convection_from_MPAS(dt_dyn,configs,mesh,sfc_input,diag_physics,tend_physics,its,ite)
 !==================================================================================================
 !input arguments:
+ type(mpas_pool_type),intent(in):: configs
  type(mpas_pool_type),intent(in):: mesh
- type(mpas_pool_type),intent(in)   :: sfc_input
+ type(mpas_pool_type),intent(in):: sfc_input
  type(mpas_pool_type),intent(in):: diag_physics
  type(mpas_pool_type),intent(in):: tend_physics
  real(kind=RKIND),intent(in):: dt_dyn
  integer,intent(in):: its,ite
 
 !local pointers:
- real(kind=RKIND),dimension(:),pointer  :: areaCell,dcEdge_m
+ integer,dimension(:),pointer:: kpbl,k22_shallow,kbcon_shallow,ktop_shallow,ktop_deep
+ real(kind=RKIND),dimension(:),pointer  :: areaCell,meshDensity,dcEdge_m
  real(kind=RKIND),dimension(:),pointer  :: nca,cubot,cutop,cuprec,raincv
- real(kind=RKIND),dimension(:),pointer  :: hfx,qfx,xland
+ real(kind=RKIND),dimension(:),pointer  :: gsw,hfx,qfx,xland
+ real(kind=RKIND),dimension(:),pointer  :: xmb_total,xmb_shallow
+ real(kind=RKIND),dimension(:,:),pointer:: zgrid
+ real(kind=RKIND),dimension(:,:),pointer:: qc_cu,qi_cu
  real(kind=RKIND),dimension(:,:),pointer:: w0avg
  real(kind=RKIND),dimension(:,:),pointer:: rthcuten,rqvcuten,rqccuten,rqicuten,rqrcuten,rqscuten 
- real(kind=RKIND),dimension(:,:),pointer:: rqvblten,rqvdynten,rucuten,rvcuten 
+ real(kind=RKIND),dimension(:,:),pointer:: rthblten,rthdynten,rthratenlw,rthratensw
+ real(kind=RKIND),dimension(:,:),pointer:: rqvblten,rqvdynten,rucuten,rvcuten
 
 !local variables:
- integer:: i,k,j
+ integer:: i,j,k
+ integer:: iEdge
+ real(kind=RKIND),pointer:: len_disp
 
-!--------------------------------------------------------------------------------------------------
-! write(0,*)
-! write(0,*) '--- enter subroutine convection_from_MPAS:'
+!-----------------------------------------------------------------------------------------------------------------
+ write(0,*)
+ write(0,*) '--- enter subroutine convection_from_MPAS:'
 
- call mpas_pool_get_array(mesh,'areaCell',areaCell)
+ call mpas_pool_get_array(diag_physics,'cuprec',cuprec)
+ call mpas_pool_get_array(diag_physics,'raincv',raincv)
 
- call mpas_pool_get_array(sfc_input,'xland',xland)
-
- call mpas_pool_get_array(diag_physics,'dcEdge_m' ,dcEdge_m )
- call mpas_pool_get_array(diag_physics,'nca'      ,nca      )
- call mpas_pool_get_array(diag_physics,'cubot'    ,cubot    )
- call mpas_pool_get_array(diag_physics,'cutop'    ,cutop    )
- call mpas_pool_get_array(diag_physics,'cuprec'   ,cuprec   )
- call mpas_pool_get_array(diag_physics,'raincv'   ,raincv   )
- call mpas_pool_get_array(diag_physics,'w0avg'    ,w0avg    )
- call mpas_pool_get_array(diag_physics,'hfx'      ,hfx      )
- call mpas_pool_get_array(diag_physics,'qfx'      ,qfx      )
-
- call mpas_pool_get_array(tend_physics,'rthcuten' ,rthcuten )
- call mpas_pool_get_array(tend_physics,'rqvcuten' ,rqvcuten )
- call mpas_pool_get_array(tend_physics,'rqccuten' ,rqccuten )
- call mpas_pool_get_array(tend_physics,'rqicuten' ,rqicuten )
- call mpas_pool_get_array(tend_physics,'rqrcuten' ,rqrcuten )
- call mpas_pool_get_array(tend_physics,'rqscuten' ,rqscuten )
- call mpas_pool_get_array(tend_physics,'rucuten'  ,rucuten  )
- call mpas_pool_get_array(tend_physics,'rvcuten'  ,rvcuten  )
- call mpas_pool_get_array(tend_physics,'rqvblten' ,rqvblten )
- call mpas_pool_get_array(tend_physics,'rqvdynten',rqvdynten)
+ call mpas_pool_get_array(tend_physics,'rthcuten',rthcuten)
+ call mpas_pool_get_array(tend_physics,'rqvcuten',rqvcuten)
+ call mpas_pool_get_array(tend_physics,'rqccuten',rqccuten)
+ call mpas_pool_get_array(tend_physics,'rqicuten',rqicuten)
 
  do j = jts,jte
  do i = its,ite
@@ -462,7 +609,86 @@
 
  convection_select: select case(convection_scheme)
 
-    case ("kain_fritsch")
+    case ("cu_grell_freitas","cu_grell_freitas_momentum")
+       call mpas_pool_get_config(configs,'config_len_disp',len_disp)
+
+       call mpas_pool_get_array(mesh,'areaCell'   ,areaCell   )
+       call mpas_pool_get_array(mesh,'meshDensity',meshDensity)
+       call mpas_pool_get_array(mesh,'zgrid'      ,zgrid      )
+
+       call mpas_pool_get_array(sfc_input,'xland',xland)
+
+       call mpas_pool_get_array(diag_physics,'gsw'          ,gsw          )
+       call mpas_pool_get_array(diag_physics,'hfx'          ,hfx          )
+       call mpas_pool_get_array(diag_physics,'qfx'          ,qfx          )
+       call mpas_pool_get_array(diag_physics,'kpbl'         ,kpbl         )
+       call mpas_pool_get_array(diag_physics,'cubot'        ,cubot        )
+       call mpas_pool_get_array(diag_physics,'cutop'        ,cutop        )
+       call mpas_pool_get_array(diag_physics,'xmb_total'    ,xmb_total    )
+       call mpas_pool_get_array(diag_physics,'xmb_shallow'  ,xmb_shallow  )
+       call mpas_pool_get_array(diag_physics,'k22_shallow'  ,k22_shallow  )
+       call mpas_pool_get_array(diag_physics,'kbcon_shallow',kbcon_shallow)
+       call mpas_pool_get_array(diag_physics,'ktop_shallow' ,ktop_shallow )
+       call mpas_pool_get_array(diag_physics,'ktop_deep'    ,ktop_deep    )
+       call mpas_pool_get_array(diag_physics,'qc_cu'        ,qc_cu        )
+       call mpas_pool_get_array(diag_physics,'qi_cu'        ,qi_cu        )
+
+       call mpas_pool_get_array(tend_physics,'rqvblten'  ,rqvblten  )
+       call mpas_pool_get_array(tend_physics,'rqvdynten' ,rqvdynten )
+       call mpas_pool_get_array(tend_physics,'rthblten'  ,rthblten  )
+       call mpas_pool_get_array(tend_physics,'rthdynten' ,rthdynten )
+       call mpas_pool_get_array(tend_physics,'rthratenlw',rthratenlw)
+       call mpas_pool_get_array(tend_physics,'rthratensw',rthratensw)
+       call mpas_pool_get_array(tend_physics,'rucuten'   ,rucuten   )
+       call mpas_pool_get_array(tend_physics,'rvcuten'   ,rvcuten   )
+
+       do j = jts,jte
+       do i = its,ite
+          dx_p(i,j) = len_disp / meshDensity(i)**0.25
+          area_p(i,j)          = areaCell(i)
+          ht_p(i,j)            = zgrid(1,i)
+          xland_p(i,j)         = xland(i)
+          gsw_p(i,j)           = gsw(i)
+          hfx_p(i,j)           = hfx(i)
+          qfx_p(i,j)           = qfx(i)
+          kpbl_p(i,j)          = kpbl(i)
+          cubot_p(i,j)         = cubot(i)
+          cutop_p(i,j)         = cutop(i)
+
+          xmb_total_p(i,j)     = xmb_total(i)
+          xmb_shallow_p(i,j)   = xmb_shallow(i)
+
+          k22_shallow_p(i,j)   = k22_shallow(i)
+          kbcon_shallow_p(i,j) = kbcon_shallow(i)
+          ktop_shallow_p(i,j)  = ktop_shallow(i)
+          ktop_deep_p(i,j)     = ktop_deep(i)
+
+          do k = kts,kte
+             qccu_p(i,k,j)      = qc_cu(k,i)
+             qicu_p(i,k,j)      = qi_cu(k,i)
+
+             rthblten_p(i,k,j)  = rthblten(k,i)
+             rthdynten_p(i,k,j) = rthdynten(k,i)
+             rthraten_p(i,k,j)  = rthratenlw(k,i) + rthratensw(k,i)
+             rqvblten_p(i,k,j)  = rqvblten(k,i)
+             rqvdynten_p(i,k,j) = rqvdynten(k,i)
+             rucuten_p(i,k,j)   = rucuten(k,i)
+             rvcuten_p(i,k,j)   = rvcuten(k,k)
+          enddo
+       enddo
+       enddo
+
+    case ("cu_kain_fritsch")
+       call mpas_pool_get_array(mesh,'areaCell',areaCell)
+
+       call mpas_pool_get_array(diag_physics,'dcEdge_m',dcEdge_m)
+       call mpas_pool_get_array(diag_physics,'cubot'   ,cubot   )
+       call mpas_pool_get_array(diag_physics,'cutop'   ,cutop   )
+       call mpas_pool_get_array(diag_physics,'nca'     ,nca     )
+       call mpas_pool_get_array(diag_physics,'w0avg'   ,w0avg   )
+
+       call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
+       call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
 
        do j = jts,jte
        do i = its,ite
@@ -488,7 +714,16 @@
        enddo
        enddo
 
-    case ("tiedtke")
+    case ("cu_tiedtke")
+       call mpas_pool_get_array(sfc_input,'xland',xland)
+       call mpas_pool_get_array(diag_physics,'hfx',hfx)
+       call mpas_pool_get_array(diag_physics,'qfx',qfx)
+
+       call mpas_pool_get_array(tend_physics,'rqvblten' ,rqvblten )
+       call mpas_pool_get_array(tend_physics,'rqvdynten',rqvdynten)
+       call mpas_pool_get_array(tend_physics,'rucuten'  ,rucuten  )
+       call mpas_pool_get_array(tend_physics,'rvcuten'  ,rvcuten  )
+
        do j = jts,jte
        do i = its,ite
           xland_p(i,j) = xland(i)
@@ -509,7 +744,7 @@
     case default
 
  end select convection_select
- 
+
  end subroutine convection_from_MPAS
 
 !==================================================================================================
@@ -524,27 +759,23 @@
  integer:: i,k,j
 
 !local pointers:
+ integer,dimension(:),pointer:: k22_shallow,kbcon_shallow,ktop_shallow,ktop_deep
  real(kind=RKIND),dimension(:),pointer  :: nca,cubot,cutop,cuprec,raincv
+ real(kind=RKIND),dimension(:),pointer  :: xmb_total,xmb_shallow
+ real(kind=RKIND),dimension(:,:),pointer:: qc_cu,qi_cu
  real(kind=RKIND),dimension(:,:),pointer:: w0avg
  real(kind=RKIND),dimension(:,:),pointer:: rthcuten,rqvcuten,rqccuten,rqicuten,rqrcuten,rqscuten
  real(kind=RKIND),dimension(:,:),pointer:: rucuten,rvcuten
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
- call mpas_pool_get_array(diag_physics,'nca'     ,nca     )
- call mpas_pool_get_array(diag_physics,'cubot'   ,cubot   )
- call mpas_pool_get_array(diag_physics,'cutop'   ,cutop   )
- call mpas_pool_get_array(diag_physics,'cuprec'  ,cuprec  )
- call mpas_pool_get_array(diag_physics,'raincv'  ,raincv  )
- call mpas_pool_get_array(diag_physics,'w0avg'   ,w0avg   )
+ call mpas_pool_get_array(diag_physics,'cuprec',cuprec)
+ call mpas_pool_get_array(diag_physics,'raincv',raincv)
+
  call mpas_pool_get_array(tend_physics,'rthcuten',rthcuten)
  call mpas_pool_get_array(tend_physics,'rqvcuten',rqvcuten)
  call mpas_pool_get_array(tend_physics,'rqccuten',rqccuten)
  call mpas_pool_get_array(tend_physics,'rqicuten',rqicuten)
- call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
- call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
- call mpas_pool_get_array(tend_physics,'rucuten' ,rucuten )
- call mpas_pool_get_array(tend_physics,'rvcuten' ,rvcuten )
 
  do j = jts,jte
  do i = its,ite
@@ -561,7 +792,50 @@
 
  convection_select: select case(convection_scheme)
 
-    case ("kain_fritsch")
+    case ("cu_grell_freitas","cu_grell_freitas_momentum")
+       call mpas_pool_get_array(diag_physics,'cubot'        ,cubot        )
+       call mpas_pool_get_array(diag_physics,'cutop'        ,cutop        )
+       call mpas_pool_get_array(diag_physics,'xmb_total'    ,xmb_total    )
+       call mpas_pool_get_array(diag_physics,'xmb_shallow'  ,xmb_shallow  )
+       call mpas_pool_get_array(diag_physics,'k22_shallow'  ,k22_shallow  )
+       call mpas_pool_get_array(diag_physics,'kbcon_shallow',kbcon_shallow)
+       call mpas_pool_get_array(diag_physics,'ktop_shallow' ,ktop_shallow )
+       call mpas_pool_get_array(diag_physics,'ktop_deep'    ,ktop_deep    )
+       call mpas_pool_get_array(diag_physics,'qc_cu'        ,qc_cu        )
+       call mpas_pool_get_array(diag_physics,'qi_cu'        ,qi_cu        )
+
+       call mpas_pool_get_array(tend_physics,'rucuten',rucuten)
+       call mpas_pool_get_array(tend_physics,'rvcuten',rvcuten)
+
+       do j = jts,jte
+       do i = its,ite
+          cubot(i)         = cubot_p(i,j)
+          cutop(i)         = cutop_p(i,j)
+          xmb_total(i)     = xmb_total_p(i,j)
+          xmb_shallow(i)   = xmb_shallow_p(i,j)
+          k22_shallow(i)   = k22_shallow_p(i,j)
+          kbcon_shallow(i) = kbcon_shallow_p(i,j)
+          ktop_shallow(i)  = ktop_shallow_p(i,j)
+          ktop_deep(i)     = ktop_deep_p(i,j)
+
+          do k = kts,kte
+             qc_cu(k,i)    = qccu_p(i,k,j)
+             qi_cu(k,i)    = qicu_p(i,k,j)
+             rucuten(k,i)  = rucuten_p(i,k,j)
+             rvcuten(k,k)  = rvcuten_p(i,k,j)
+          enddo
+       enddo
+       enddo
+
+    case ("cu_kain_fritsch")
+       call mpas_pool_get_array(diag_physics,'cubot',cubot)
+       call mpas_pool_get_array(diag_physics,'cutop',cutop)
+       call mpas_pool_get_array(diag_physics,'nca'  ,nca  )
+       call mpas_pool_get_array(diag_physics,'w0avg',w0avg)
+
+       call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
+       call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
+
        do j = jts,jte
        do i = its,ite
           cubot(i) = cubot_p(i,j)
@@ -575,7 +849,10 @@
        enddo
        enddo
 
-    case ("tiedtke")
+    case ("cu_tiedtke")
+       call mpas_pool_get_array(tend_physics,'rucuten',rucuten)
+       call mpas_pool_get_array(tend_physics,'rvcuten',rvcuten)
+
        do j = jts,jte
        do k = kts,kte
        do i = its,ite
@@ -611,27 +888,26 @@
 !local variables and arrays:
  integer:: iCell,k
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
  call mpas_pool_get_dimension(mesh,'nVertLevels',nVertLevels)
 
- call mpas_pool_get_array(diag_physics,'nca'   ,nca   )
- call mpas_pool_get_array(diag_physics,'cubot' ,cubot )
- call mpas_pool_get_array(diag_physics,'cutop' ,cutop )
- call mpas_pool_get_array(diag_physics,'cuprec',cuprec)
- call mpas_pool_get_array(diag_physics,'raincv',raincv)
-
- call mpas_pool_get_array(tend_physics,'rthcuten',rthcuten)
- call mpas_pool_get_array(tend_physics,'rqvcuten',rqvcuten)
- call mpas_pool_get_array(tend_physics,'rqccuten',rqccuten)
- call mpas_pool_get_array(tend_physics,'rqicuten',rqicuten)
- call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
- call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
-
  convection_select: select case(convection_scheme)
 
-    case ("kain_fritsch")
+    case ("cu_kain_fritsch")
+      call mpas_pool_get_array(diag_physics,'nca'   ,nca   )
+      call mpas_pool_get_array(diag_physics,'cubot' ,cubot )
+      call mpas_pool_get_array(diag_physics,'cutop' ,cutop )
+      call mpas_pool_get_array(diag_physics,'cuprec',cuprec)
+      call mpas_pool_get_array(diag_physics,'raincv',raincv)
+
+      call mpas_pool_get_array(tend_physics,'rthcuten',rthcuten)
+      call mpas_pool_get_array(tend_physics,'rqvcuten',rqvcuten)
+      call mpas_pool_get_array(tend_physics,'rqccuten',rqccuten)
+      call mpas_pool_get_array(tend_physics,'rqicuten',rqicuten)
+      call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
+      call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
 
        do iCell = its, ite
           !decreases the characteristic time period that convection remains active. When nca_p
@@ -685,7 +961,7 @@
 !local variables and arrays:
  integer:: iCell
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_config(configs,'config_bucket_rainc',bucket_rainc)
 
@@ -704,11 +980,10 @@
        i_rainc(iCell) = i_rainc(iCell) + 1
        rainc(iCell)   = rainc(iCell) - bucket_rainc
     endif
-
  enddo
 
  end subroutine update_convection_step2
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_driver_convection
-!==================================================================================================
+!=================================================================================================================
