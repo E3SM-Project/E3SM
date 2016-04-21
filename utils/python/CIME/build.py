@@ -133,8 +133,11 @@ def post_build(case, logs):
         if not os.path.exists(bldlogdir):
             os.makedirs(bldlogdir)
 
-        for log in logs:
-            run_cmd("gzip %s" % log, from_dir=bldlogdir)
+    for log in logs:
+        logger.debug("Copying build log %s to %s"%(log,bldlogdir))
+        run_cmd("gzip %s" % log)
+        if "sharedlibroot" not in log:
+            shutil.copy("%s.gz"%log,os.path.join(bldlogdir,"%s.gz"%os.path.basename(log)))
 
     # Set XML to indicate build complete
     case.set_value("BUILD_COMPLETE", True)

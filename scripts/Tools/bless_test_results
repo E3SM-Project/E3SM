@@ -261,7 +261,7 @@ def bless_test_results(baseline_name, test_root, compiler, test_id=None, namelis
                         broken_blesses.append((test_name, reason))
 
     # Make sure user knows that some tests were not blessed
-    for broken_bless in broken_blesses:
+    for broken_bless, reason in broken_blesses:
         logging.warning("FAILED TO BLESS TEST: %s, reason %s" % (broken_bless, reason))
 
 ###############################################################################
