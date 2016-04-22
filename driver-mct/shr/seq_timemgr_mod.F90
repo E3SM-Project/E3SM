@@ -812,6 +812,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     offset(seq_timemgr_nclock_ice) = ice_cpl_offset
     offset(seq_timemgr_nclock_glc) = glc_cpl_offset
     offset(seq_timemgr_nclock_rof) = rof_cpl_offset
+    offset(seq_timemgr_nclock_wav) = wav_cpl_offset
     offset(seq_timemgr_nclock_esp) = esp_cpl_offset
 
     do n = 1,max_clocks
