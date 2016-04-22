@@ -47,6 +47,7 @@ public :: &
 logical, public, protected :: use_preexisting_ice = .false.
 logical                    :: hist_preexisting_ice = .false.
 real(r8)                   :: nucleate_ice_subgrid
+real(r8)                   :: so4_sz_thresh_icenuc = huge(1.0_r8)
 
 ! Vars set via init method.
 real(r8) :: mincld      ! minimum allowed cloud fraction
@@ -127,7 +128,7 @@ subroutine nucleate_ice_cam_readnl(nlfile)
   character(len=*), parameter :: subname = 'nucleate_ice_cam_readnl'
 
   namelist /nucleate_ice_nl/ use_preexisting_ice, hist_preexisting_ice, &
-       nucleate_ice_subgrid
+       nucleate_ice_subgrid,so4_sz_thresh_icenuc
 
   !-----------------------------------------------------------------------------
 
@@ -151,6 +152,7 @@ subroutine nucleate_ice_cam_readnl(nlfile)
   call mpibcast(use_preexisting_ice,  1, mpilog, 0, mpicom)
   call mpibcast(hist_preexisting_ice, 1, mpilog, 0, mpicom)
   call mpibcast(nucleate_ice_subgrid, 1, mpir8, 0, mpicom)
+  call mpibcast(so4_sz_thresh_icenuc, 1, mpir8, 0, mpicom)
 #endif
 
 end subroutine nucleate_ice_cam_readnl
@@ -664,7 +666,7 @@ subroutine nucleate_ice_cam_calc( &
                   if (.not. use_preexisting_ice) then
                      ! only allow so4 with D>0.1 um in ice nucleation
                      so4_num  = num_aitken(i,k)*rho(i,k)*1.0e-6_r8 &
-                        * (0.5_r8 - 0.5_r8*erf(log(0.1e-6_r8/dgnum(i,k,mode_aitken_idx))/  &
+                        * (0.5_r8 - 0.5_r8*erf(log(so4_sz_thresh_icenuc/dgnum(i,k,mode_aitken_idx))/  &
                         (2._r8**0.5_r8*log(sigmag_aitken))))
                   else
                      ! all so4 from aitken
