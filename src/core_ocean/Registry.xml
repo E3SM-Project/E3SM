@@ -62,6 +62,15 @@
 		<dim name="maxPointsInGroup" definition="1" units="unitless"
 			 description="The maximum number of points in any group."
 		/>
+		<dim name="nRegions" units="unitless"
+			description="Number of regions."
+			definition="0"/>
+		<dim name="nRegionGroups" units="unitless"
+			description="Number of groups of regions."
+			definition="0"/>
+		<dim name="maxRegionsInGroup" units="unitless"
+			description="Maximum number of regions in a group."
+			definition="0"/>
 	</dims>
 
 	<!--*************************************-->
@@ -3103,6 +3112,44 @@
 		<var name="lonPoint" type="real" dimensions="nPoints" units="radians"
 			 description="Longitude of point locations."
 		/>
+	</var_struct>
+	<var_struct name="regions" time_levs="1">
+		<var name="regionCellMasks"
+			type="integer"
+			dimensions="nRegions nCells"
+			units="unitless"
+			description="The region masks for each cell."
+			/>
+		<var name="regionVertexMasks"
+			type="integer"
+			dimensions="nRegions nVertices"
+			units="unitless"
+			description="The region masks for each vertex."
+			/>
+		<var name="regionsInGroup"
+			type="integer"
+			dimensions="maxRegionsInGroup nRegionGroups"
+			units="unitless"
+			description="The list of region indices in each group."
+			/>
+		<var name="nRegionsInGroup"
+			type="integer"
+			dimensions="nRegionGroups"
+			units="unitless"
+			description="The number of regions in each group."
+			/>
+		<var name="regionNames"
+			type="text"
+			dimensions="nRegions"
+			units="unitless"
+			description="The name for each region."
+			/>
+		<var name="regionGroupNames"
+			type="text"
+			dimensions="nRegionGroups"
+			units="unitless"
+			description="The name for each region group."
+			/>
 	</var_struct>
 
 <!-- Include init modes registry file -->
