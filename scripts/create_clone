@@ -63,90 +63,19 @@ def _main_func():
 
     case, clone, keepexe, mach_dir, project = parse_command_line(sys.argv)
 
-    caseroot  = os.path.abspath(case)
-    expect(not os.path.isdir(caseroot),
-           "New caseroot directory %s already exists" % caseroot)
-    case = os.path.basename(caseroot)
-           
     cloneroot = os.path.abspath(clone)
     expect(os.path.isdir(cloneroot),
            "Missing cloneroot directory %s " % cloneroot)
-    clone = os.path.basename(cloneroot)
 
-    cloneobj  = Case(cloneroot)
-    
-    case_cimeroot  = os.path.abspath(CIME.utils.get_cime_root())
-    clone_cimeroot = cloneobj.get_value("CIMEROOT")
-    if case_cimeroot != clone_cimeroot:
-        logger.warning(" case  CIMEROOT is %s " %case_cimeroot)
-        logger.warning(" clone CIMEROOT is %s " %clone_cimeroot)
-        logger.warning(" It is NOT recommended to clone cases from different versions of CIMEROOT")
+    clone = Case(cloneroot)
+    clone.create_clone(case, keepexe, mach_dir, project)
 
-    # create case object as deepcopy of clone object
-    srcroot = os.path.join(case_cimeroot,"..")
-    caseobj = cloneobj.copy(case, caseroot, newsrcroot=srcroot)
+    caseroot = os.path.abspath(case)
+    casename = os.path.basename(caseroot)
+    caseroot = os.path.dirname(caseroot)
 
-    # determine if will use clone executable or not
-    if keepexe:
-        orig_exeroot = cloneobj.get_value("EXEROOT")
-        caseobj.set_value("EXEROOT", orig_exeroot)
-        caseobj.set_value("BUILD_COMPLETE","TRUE")
-    else:
-        caseobj.set_value("BUILD_COMPLETE","FALSE")
-
-    # set machdir
-    if mach_dir is not None:
-        caseobj.set_value("MACHDIR", mach_dir)
-
-    # Set project id
-    # Note: we do not just copy this from the clone because it seems likely that
-    # users will want to change this sometimes, especially when cloning another
-    # user's case. However, note that, if a project is not given, the fallback will
-    # be to copy it from the clone, just like other xml variables are copied. 
-
-    if project is None:
-        project = get_project()
-    if project is not None:
-        caseobj.set_value("PROJECT", project)
-
-    # create caseroot        
-    caseobj.create_caseroot()
-    caseobj.flush(flushall=True, )
-
-    # copy user_nl_files
-    cmd = cloneroot + '/user_nl_*'
-    files = glob.glob(cmd)
-    for file in files:
-        cmd = "cp " + file + " " + caseroot + "/."
-        run_cmd(cmd)
-
-    # copy SourceMod files
-    dirs = glob.glob(cloneroot + "/SourceMods/*")
-    for dir in dirs:
-        files = glob.glob(dir + "/*")
-        if files:
-            moddir = os.path.basename(dir)
-            for file in files:
-                cmd = "cp " + file + " " + caseroot + "/SourceMods/" + moddir
-                print " cmd is ",cmd
-                run_cmd(cmd)
-
-    # copy env_case.xml to LockedFiles
-    cmd = "cp " + caseroot + "/env_case.xml " + caseroot + "/LockedFiles/." 
-    run_cmd(cmd)
-
-    # Update README.case
-    fcase  = open(caseroot  + "/README.case", "a")
-    fclone = open(cloneroot + "/README.case", "r")
-    fcase.write("\n    *** original clone README follows ****")
-    fcase.write("\n " +  fclone.read())
-
-    # run case.setup
-    logger.info("****Running %s case.setup ****" %case)
-    case_setup(caseroot, clean=False, test_mode=False)
-
-    logger.info("Successfully created new case %s from clone case %s " %(case, clone))
-
+    logger.info(" Running %s case.setup" %casename)
+    case_setup(caseroot, clean=False, test_mode=False, create_clone=True)
 
 ###############################################################################
 
@@ -154,8 +83,3 @@ if __name__ == "__main__":
     _main_func()
 
 ###############################################################################
-
-
-
-
-
