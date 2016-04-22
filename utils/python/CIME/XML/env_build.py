@@ -9,8 +9,11 @@ logger = logging.getLogger(__name__)
 
 class EnvBuild(EnvBase):
 
-    def __init__(self, case_root=os.getcwd(), infile="env_build.xml"):
+    def __init__(self, case_root=None, infile="env_build.xml"):
         """
         initialize an object interface to file env_build.xml in the case directory
         """
+        if case_root is None:
+            case_root = os.getcwd()
+
         EnvBase.__init__(self, case_root, infile)

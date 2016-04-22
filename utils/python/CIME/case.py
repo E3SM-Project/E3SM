@@ -36,7 +36,10 @@ logger = logging.getLogger(__name__)
 
 class Case(object):
 
-    def __init__(self, case_root=os.getcwd()):
+    def __init__(self, case_root=None):
+
+        if case_root is None:
+            case_root = os.getcwd()
 
         self._env_files_that_need_rewrite = set()
 
