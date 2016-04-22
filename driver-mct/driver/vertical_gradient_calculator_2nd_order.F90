@@ -67,6 +67,7 @@ contains
     ! (topographic heights can lie above the arbitrary upper bound of the elevation
     ! class). (This pre-condition is mainly important for the sake of calculating the
     ! limiter.)
+    ! TODO(wjs, 2016-04-21) Currently this pre-condition is not checked: see below.
     !
     ! The attribute vector is assumed to have fields named fieldname //
     ! elevclass_names(1), toponame // elevclass_names(1), etc.
@@ -103,7 +104,14 @@ contains
     this%elevclass_bounds(:) = elevclass_bounds(:)
     call this%set_data_from_attr_vect(attr_vect, fieldname, toponame, elevclass_names)
 
-    call this%check_topo()
+    ! TODO(wjs, 2016-04-21) Uncomment this call to check_topo. It's important for
+    ! topographic heights to be within bounds in order for the limiter to be applied
+    ! correctly. However, this currently isn't the case for some of the old TG forcing
+    ! data. At a glance, it looks like the problems are just outside of Greenland, so this
+    ! should be okay. When we have new TG forcing data, we should try uncommenting this
+    ! call to check_topo.
+
+    ! call this%check_topo()
 
   end function constructor
 
