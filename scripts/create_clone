@@ -75,7 +75,7 @@ def _main_func():
     caseroot = os.path.dirname(caseroot)
 
     logger.info(" Running %s case.setup" %casename)
-    case_setup(caseroot, clean=False, test_mode=False, create_clone=True)
+    case_setup(caseroot, clean=False, test_mode=False)
 
 ###############################################################################
 
