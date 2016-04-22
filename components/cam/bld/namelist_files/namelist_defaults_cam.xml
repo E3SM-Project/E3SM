@@ -848,6 +848,7 @@
 
 <!-- Ice nucleation -->
 <nucleate_ice_subgrid                  >1.0D0</nucleate_ice_subgrid>
+<so4_sz_thresh_icenuc                  >0.1e-6 </so4_sz_thresh_icenuc>
 <nucleate_ice_subgrid microphys="mg1"  >1.2D0</nucleate_ice_subgrid>
 <nucleate_ice_subgrid microphys="mg1.5">1.2D0</nucleate_ice_subgrid>
 <nucleate_ice_subgrid clubb_sgs="1"     microphys="mg2" >1.2D0</nucleate_ice_subgrid>
@@ -920,6 +921,9 @@
 
 <!-- To turn on amicphys codes in cam-->
 <mam_amicphys_optaa      >0</mam_amicphys_optaa>
+
+<!-- number of so4(+nh4) monolayers needed to "age" a carbon particle-->
+<n_so4_monolayers_pcage > 3.0D0 </n_so4_monolayers_pcage>
 
 <!--  wet deposition option by PNNL -->
 <resus_fix>.false.</resus_fix>

@@ -253,6 +253,7 @@
 	    ip_aitpca = 3
 
 	! use 1 mol (bi-)sulfate = 65 cm^3 --> 1 molecule = (4.76e-10 m)^3
+     write(*,*)'n_so4_monolayers_pcage:',n_so4_monolayers_pcage
 	    dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10_r8
 
 	    ipair = ip_aitpca

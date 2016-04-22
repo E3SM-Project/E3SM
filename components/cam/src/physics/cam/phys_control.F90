@@ -412,7 +412,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, mi
    logical,           intent(out), optional :: convproc_do_gas_out 
    integer,           intent(out), optional :: convproc_method_activate_out 
    integer,           intent(out), optional :: mam_amicphys_optaa_out
-   integer,           intent(out), optional :: n_so4_monolayers_pcage_out
+   real(r8),          intent(out), optional :: n_so4_monolayers_pcage_out
    logical,           intent(out), optional :: liqcf_fix_out       
    logical,           intent(out), optional :: regen_fix_out       
    logical,           intent(out), optional :: demott_ice_nuc_out  
