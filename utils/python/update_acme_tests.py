@@ -30,9 +30,7 @@ _TEST_SUITES = {
     "acme_test_only" : (None,
                    ("TESTBUILDFAIL.f19_g16_rx1.A",
                     "TESTRUNFAIL_P1.f19_g16_rx1.A",
-                    "TESTRUNPASS_P1.f19_g16_rx1.A",
-                    "TESTMEMLEAKPASS_P1.f19_g16.X",
-                    "TESTMEMLEAKFAIL_P1.f19_g16.X")
+                    "TESTRUNPASS_P1.f19_g16_rx1.A")
                    ),
 
     "acme_land_developer" : (None,
