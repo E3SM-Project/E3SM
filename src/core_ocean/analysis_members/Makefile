@@ -20,7 +20,9 @@ MEMBERS = mpas_ocn_global_stats.o \
           mpas_ocn_mixed_layer_depths.o \
           mpas_ocn_pointwise_stats.o \
           mpas_ocn_debug_diagnostics.o \
-          mpas_ocn_time_series_stats.o
+          mpas_ocn_time_series_stats.o \
+          mpas_ocn_regional_stats.o \
+					mpas_ocn_rpn_calculator.o
 
 all: $(OBJS)
 

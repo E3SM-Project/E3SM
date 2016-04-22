@@ -42,6 +42,8 @@ module ocn_analysis_driver
    use ocn_time_series_stats
    use ocn_pointwise_stats
    use ocn_debug_diagnostics
+   use ocn_regional_stats
+   use ocn_rpn_calculator
 !   use ocn_TEM_PLATE
 
    implicit none
@@ -160,6 +162,8 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'lagrPartTrack', 1)
       call mpas_pool_add_config(analysisMemberList, 'eliassenPalm', 1)
       call mpas_pool_add_config(analysisMemberList, 'mixedLayerDepths', 1)
+      call mpas_pool_add_config(analysisMemberList, 'rpnCalculator', 1)
+      call mpas_pool_add_config(analysisMemberList, 'regionalStats', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStats', 1)
       call mpas_pool_add_config(analysisMemberList, 'pointwiseStats', 1)
       call mpas_pool_add_config(analysisMemberList, 'debugDiagnostics', 1)
@@ -267,6 +271,7 @@ contains
       do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
          nameLength = len_trim(poolItr % memberName)
          configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_enable'
+
          call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
          if ( config_AM_enable ) then
@@ -309,6 +314,7 @@ contains
 
             ! Handle reading of streams that exist.
             if ( associated(config_AM_restart_stream) .and. associated(config_AM_input_stream) ) then
+
                if ( config_do_restart ) then
                   call mpas_stream_mgr_read(domain % streamManager, streamID=config_AM_restart_stream, ierr=err)
                else
@@ -455,7 +461,20 @@ contains
                   call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
                else
                   call mpas_pool_get_config(domain % configs, 'config_start_time', config_start_time)
-                  call mpas_set_time(referenceTime, dateTimeString=config_start_time, ierr=err_tmp)
+
+                  ! TODO FIXME I'm not sure what it's supposed to be
+                  !            but 'file' is causing the code to fail
+                  if (trim(config_start_time) == 'file') then
+                    ! FIXME big kludge
+                    call mpas_set_time(referenceTime, &
+                      dateTimeString='0000-01-01_00:00:00', ierr=err_tmp)
+                  else
+                    ! FIXME this is what it was without the if-else
+                    !       I suppose it's supposed to actually read it from
+                    !       the file first
+                    call mpas_set_time(referenceTime, dateTimeString=config_start_time, ierr=err_tmp)
+                  end if
+
                end if
                call mpas_add_clock_alarm(domain % clock, alarmName, referenceTime, alarmTimeStep, ierr=err_tmp)
                call mpas_reset_clock_alarm(domain % clock, alarmName, ierr=err_tmp)
@@ -974,12 +993,19 @@ contains
          call ocn_init_eliassen_palm(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'mixedLayerDepths' ) then
          call ocn_init_mixed_layer_depths(domain, err_tmp)
-      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
-         call ocn_init_time_series_stats(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
          call ocn_init_pointwise_stats(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'debugDiagnostics' ) then
          call ocn_init_debug_diagnostics(domain, err_tmp)
+      ! rpn is third to last
+      else if ( analysisMemberName(1:nameLength) == 'rpnCalculator' ) then
+         call ocn_init_rpn_calculator(domain, err_tmp)
+      ! regional is second to last
+      else if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
+         call ocn_init_regional_stats(domain, err_tmp)
+      ! time is last
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call ocn_init_time_series_stats(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       end if
@@ -1037,12 +1063,19 @@ contains
          call ocn_compute_eliassen_palm(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'mixedLayerDepths' ) then
          call ocn_compute_mixed_layer_depths(domain, timeLevel, err_tmp)
-      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
-         call ocn_compute_time_series_stats(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
          call ocn_compute_pointwise_stats(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'debugDiagnostics' ) then
          call ocn_compute_debug_diagnostics(domain, timeLevel, err_tmp)
+      ! rpn is third to last
+      else if ( analysisMemberName(1:nameLength) == 'rpnCalculator' ) then
+         call ocn_compute_rpn_calculator(domain, timeLevel, err_tmp)
+      ! regional is second to last
+      else if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
+         call ocn_compute_regional_stats(domain, timeLevel, err_tmp)
+      ! time is last
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call ocn_compute_time_series_stats(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_compute_TEM_PLATE(domain, timeLevel, err_tmp)
       end if
@@ -1099,12 +1132,19 @@ contains
          call ocn_restart_eliassen_palm(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'mixedLayerDepths' ) then
          call ocn_restart_mixed_layer_depths(domain, err_tmp)
-      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
-         call ocn_restart_time_series_stats(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
          call ocn_restart_pointwise_stats(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'debugDiagnostics' ) then
          call ocn_restart_debug_diagnostics(domain, err_tmp)
+      ! rpn is third to last
+      else if ( analysisMemberName(1:nameLength) == 'rpnCalculator' ) then
+         call ocn_restart_rpn_calculator(domain, err_tmp)
+      ! regional is second to last
+      else if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
+         call ocn_restart_regional_stats(domain, err_tmp)
+      ! time is last
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call ocn_restart_time_series_stats(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_restart_TEM_PLATE(domain, err_tmp)
       end if
@@ -1161,12 +1201,19 @@ contains
          call ocn_finalize_eliassen_palm(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'mixedLayerDepths' ) then
          call ocn_finalize_mixed_layer_depths(domain, err_tmp)
-      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
-         call ocn_finalize_time_series_stats(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
          call ocn_finalize_pointwise_stats(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'debugDiagnostics' ) then
          call ocn_finalize_debug_diagnostics(domain, err_tmp)
+      ! rpn is third to last
+      else if ( analysisMemberName(1:nameLength) == 'rpnCalculator' ) then
+         call ocn_finalize_rpn_calculator(domain, err_tmp)
+      ! regional is second to last
+      else if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
+         call ocn_finalize_regional_stats(domain, err_tmp)
+      ! time is last
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStats' ) then
+         call ocn_finalize_time_series_stats(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_finalize_TEM_PLATE(domain, err_tmp)
       end if
