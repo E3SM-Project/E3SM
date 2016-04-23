@@ -60,7 +60,7 @@
 
 
 <!-- Marine organic aerosol namelist settings -->
-<mam_mom_mixing_state>2</mam_mom_mixing_state>
+<mam_mom_mixing_state>3</mam_mom_mixing_state>
 
 <!-- Stratospheric ozone (Linoz) -->
 <chlorine_loading_file      chem="linoz_mam3">atm/cam/chem/trop_mozart/ub/EESC_1850-2100_c090603.nc</chlorine_loading_file>

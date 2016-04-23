@@ -5150,7 +5150,7 @@ implicit none
  
 !namelist variables
 n_so4_monolayers_pcage  = n_so4_monolayers_pcage_in
-dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10_r8
+dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
 
 
 #if ( defined( CAMBOX_ACTIVATE_THIS ) )

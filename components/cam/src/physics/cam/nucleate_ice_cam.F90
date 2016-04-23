@@ -664,7 +664,6 @@ subroutine nucleate_ice_cam_calc( &
 
                if (dgnum(i,k,mode_aitken_idx) > 0._r8) then
                   if (.not. use_preexisting_ice) then
-                     if(masterproc)write(*,*)'so4_sz_thresh_icenuc',so4_sz_thresh_icenuc
                      ! only allow so4 with D>0.1 um in ice nucleation
                      so4_num  = num_aitken(i,k)*rho(i,k)*1.0e-6_r8 &
                         * (0.5_r8 - 0.5_r8*erf(log(so4_sz_thresh_icenuc/dgnum(i,k,mode_aitken_idx))/  &
