@@ -119,8 +119,9 @@ contains
 
       integer :: j, k
       integer :: cell1, cell2, iEdge, eoe
-      integer, pointer :: nEdgesSolve
-      real (kind=RKIND) :: workVorticity, q, invLength
+      integer, pointer :: nEdgesSolve, nVertLevels
+      real (kind=RKIND) :: workVorticity, invLength, edgeWeight, r_tmp
+      real (kind=RKIND), dimension(:), allocatable :: qArr
 
       err = 0
 
@@ -135,8 +136,11 @@ contains
       call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      !$omp do schedule(runtime) private(cell1, cell2, invLength, k, q, j, eoe, workVorticity)
+      allocate( qArr(nVertLevels) )
+
+      !$omp do schedule(runtime) private(cell1, cell2, invLength, k, j, eoe, workVorticity)
       do iEdge = 1, nEdgesSolve
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -144,22 +148,31 @@ contains
          invLength = 1.0_RKIND / dcEdge(iEdge)
 
          do k = 1, maxLevelEdgeTop(iEdge)
+            qArr(k) = 0.0_RKIND
+         end do
 
-            q = 0.0_RKIND
-            do j = 1,nEdgesOnEdge(iEdge)
-               eoe = edgesOnEdge(j,iEdge)
+         do j = 1, nEdgesOnEdge(iEdge)
+            eoe = edgesOnEdge(j, iEdge)
+            edgeWeight = weightsOnEdge(j, iEdge)
+
+            do k = 1, maxLevelEdgeTop(iEdge)
                workVorticity = 0.5_RKIND &
-                  * (  normalizedRelativeVorticityEdge(k,iEdge) + RK4On * normalizedPlanetaryVorticityEdge(k,iEdge) &
-                     + normalizedRelativeVorticityEdge(k,eoe)   + RK4On * normalizedPlanetaryVorticityEdge(k,eoe))
-               q = q + weightsOnEdge(j,iEdge) * normalVelocity(k,eoe) * workVorticity * layerThicknessEdge(k,eoe)
+                  * (  normalizedRelativeVorticityEdge(k, iEdge) + RK4On * normalizedPlanetaryVorticityEdge(k, iEdge) &
+                     + normalizedRelativeVorticityEdge(k, eoe)   + RK4On * normalizedPlanetaryVorticityEdge(k, eoe))
+               qArr(k) = qArr(k) + edgeWeight * normalVelocity(k, eoe) * workVorticity * layerThicknessEdge(k, eoe)
             end do
 
-           tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * (q - (   kineticEnergyCell(k,cell2) &
-                         - kineticEnergyCell(k,cell1) ) * invLength )
-
          end do
+
+         do k = 1, maxLevelEdgeTop(iEdge)
+            tend(k, iEdge) = tend(k, iEdge) + edgeMask(k, iEdge) * ( qArr(k) - ( kineticEnergyCell(k, cell2) &
+                          - kineticEnergyCell(k, cell1) ) * invLength )
+         end do
+
       end do
       !$omp end do
+
+      deallocate( qArr )
 
    !--------------------------------------------------------------------
 
