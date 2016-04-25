@@ -381,6 +381,11 @@ sub merge_nl {
     my $nl   = shift;    # namelist object to merge from
     my %opts = @_;       # options
 
+    my $nm = "$pkg_nm\:\:_merge_nl";
+    if ( (defined($opts{'overwrite'}) && defined($opts{'die_on_conflict'})) ) {
+       die "$nm:ERROR: You can not specify both the overwrite and die_on_conflict options to this subroutine \n";
+    }
+
     # loop over groups in namelist argument
     my @groups = $nl->get_group_names();
     foreach my $group (@groups) {
@@ -397,7 +402,10 @@ sub merge_nl {
 
 		my $val = $nl->get_variable_value($group, $var);
 		$self->set_variable_value($group, $var, $val);
-	    }
+	    } elsif ( (defined($opts{'die_on_conflict'}) && $opts{'die_on_conflict'}) &&
+	         (defined $self->get_variable_value($group, $var)) ) {
+                die "$nm:ERROR: A variable was already set, so we are terminating on the conflict var=$var \n";
+            }
 	}
     }
 }
@@ -810,10 +818,10 @@ sub _AppendNote {
   my $class = ref($self);
   my $nm    = "$class::AppendNote";
 
-  $note =~ s/\n/\n\#\! /g;
-  print $fh "#!--------------------------------------------------------------------------------------------------------------------------\n";
-  print $fh  "#! ${file}:: $note\n";
-  print $fh "#!--------------------------------------------------------------------------------------------------------------------------\n";
+  $note =~ s/\n/\n\!\# /g;
+  print $fh "!#--------------------------------------------------------------------------------------------------------------------------\n";
+  print $fh  "!# ${file}:: $note\n";
+  print $fh "!#--------------------------------------------------------------------------------------------------------------------------\n";
 }
 
 #-----------------------------------------------------------------------------------------------

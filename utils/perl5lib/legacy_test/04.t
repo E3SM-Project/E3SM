@@ -4,7 +4,7 @@
 
 #########
 
-use Test::More tests=>76;  # use "no_plan" until number of tests is determined
+use Test::More tests=>78;  # use "no_plan" until number of tests is determined
 
 ########
 
@@ -439,6 +439,14 @@ foreach my $var ( keys(%cvals) ) {
    $val = $val_nl->get_variable_value($group, $var );
    is($val,$cvals{$var}{'set'},"Check that all merged namelist item is changed");
 }
+# Show that using overwrite and die_on_conflict properly dies
+eval{ $val_nl->merge_nl($nl2, overwrite=>1, die_on_conflict=>1 ); };
+like( $@, qr/ERROR: You can not specify both the overwrite and die_on_conflict options/, 'Test contradiction of overwrite and die_on_conflict' );
+
+# Test that die_on_conflict will die with a conflict
+eval{ $val_nl->merge_nl($nl2, die_on_conflict=>1 ); };
+like( $@, qr/ERROR: A variable was already set, so we are terminating on the conflict/, 'Test die_on_conflict' );
+
 # Make sure reading in a simple namelist works
 my $namelist = 
 "&clm_inparm finidat=' ', hist_nhtfrq=1, create_crop_landunit=.false., hist_avgflag_pertape='A', 'I', 'X', hist_fincl1='A1','B2','C3' /";
