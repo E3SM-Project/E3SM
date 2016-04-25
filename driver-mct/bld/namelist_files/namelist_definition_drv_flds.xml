@@ -4,6 +4,11 @@
 
 <namelist_definition>
 
+<entry id="drv_flds_in_files" type="char*256(10)" input_pathname="abs" category="drv_physics"
+       group="drv_flds_in" valid_values="" >
+List of files to merge together that contains drv_flds_in namelists
+</entry>
+
 <!-- ========================================================================================  -->
 <!-- MEGAN VOC emissions namelist options                                                      -->
 <!-- ========================================================================================  -->
