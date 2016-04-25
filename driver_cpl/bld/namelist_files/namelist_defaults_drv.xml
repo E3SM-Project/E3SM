@@ -238,6 +238,6 @@
 <!-- =========================================  -->
 <!--- drv_flds_in fields                        -->
 <!-- =========================================  -->
-<drv_flds_in_files>camconf/drv_fldsin,clmconf/drv_flds_in</drv_flds_in_files>
+<drv_flds_in_files>Buildconf/camconf/drv_flds_in,Buildconf/clmconf/drv_flds_in</drv_flds_in_files>
 
 </namelist_defaults>

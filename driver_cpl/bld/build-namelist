@@ -322,21 +322,24 @@ foreach my $attr (keys %xmlvars) {
 }
 
 #-----------------------------------------------------------------------------------------------
-# Determine drv_flds_in namelist file
+# Read in versions fo the drv_flds_in file from different components and merge them together
+# Abort if there is a conflict
 #-----------------------------------------------------------------------------------------------
 add_default($nl, 'drv_flds_in_files' );
-my @fldsinfiles = split( ",", nl->get_value('drv_flds_in_files');
+my $drvfldsinlist = $nl->get_value('drv_flds_in_files');
+   $drvfldsinlist =~ s/[\'\"]//g;
+my @fldsinfiles   = split( ",", $drvfldsinlist );
 foreach my $fldsin ( @fldsinfiles ) {
-    if ( -f $fldsin ) {
+    if ( -f "$CASEROOT/$fldsin" ) {
        # Parse namelist input from one of the drv_flds_in files from the components that create them
-       my $nl_infile = Build::Namelist->new($fldsin);
-       print " Read fldsin file: $nl_infile\n";
+       my $nl_infile = Build::Namelist->new("$CASEROOT/$fldsin");
+       print " Read fldsin file: $CASEROOT/$fldsin\n";
 
        # Validate input namelist -- trap exceptions
        my $nl_infile_valid;
        eval { $nl_infile_valid = $definition->validate($nl_infile); };
        if ($@) {
-	   die "$ProgName - ERROR: Invalid namelist variable in '-infile' $opts{'infile'}.\n $@";
+          die "$ProgName - ERROR: Invalid namelist variable in '-infile' $opts{'infile'}.\n $@";
        }
    
        # Merge input values into namelist.  Die if a conflict is found.

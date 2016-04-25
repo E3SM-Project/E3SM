@@ -47,10 +47,9 @@ echo " short term archiving is on" >>& $TESTSTATUS_LOG
 # set up run
 set DOUT_S_ROOT          = `./xmlquery DOUT_S_ROOT     -value`
 set DOUTSR0              =  $DOUT_S_ROOT
-set orig_clm_bldnml_opts = `./xmlquery CLM_BLDNML_OPTS -value`
 set CASE                 = `./xmlquery CASE -value`
-./xmlchange -file env_run.xml -id STOP_N          -val ${stopn1}                || exit -1
-./xmlchange -file env_run.xml -id CLM_BLDNML_OPTS -val "-bgc_spinup on" -append || exit -1
+./xmlchange -file env_run.xml -id STOP_N          -val ${stopn1}  || exit -1
+./xmlchange -file env_run.xml CLM_ACCELERATED_SPINUP=on           || exit -1
 
 ./case.run
 if ($status != 0) then
@@ -113,7 +112,7 @@ ln -s ${DOUTSR0}/rest/${refdate}-00000/*${refdate}*  $RUNDIR/.
 ./xmlchange RUN_REFDATE=${refdate}
 ./xmlchange STOP_N=${stopn2} 
 ./xmlchange DOUT_S=FALSE
-./xmlchange -file env_run.xml -id CLM_BLDNML_OPTS -val "$orig_clm_bldnml_opts -bgc_spinup off" || exit -1
+./xmlchange -file env_run.xml CLM_ACCELERATED_SPINUP=off          || exit -1
 
 set CASE = `./xmlquery CASE -value`
 

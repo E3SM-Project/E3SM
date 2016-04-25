@@ -404,7 +404,7 @@ sub merge_nl {
 		$self->set_variable_value($group, $var, $val);
 	    } elsif ( (defined($opts{'die_on_conflict'}) && $opts{'die_on_conflict'}) &&
 	         (defined $self->get_variable_value($group, $var)) ) {
-                die "$nm:ERROR: A variable was already set, so we are terminating on the conflict var=$var \n";
+                die "$nm:ERROR: A variable was already set, so we are terminating on the conflict variable name is =$var \n";
             }
 	}
     }

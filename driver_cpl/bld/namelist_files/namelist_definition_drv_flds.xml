@@ -4,9 +4,12 @@
 
 <namelist_definition>
 
-<entry id="drv_flds_in_files" type="char*256(10)" input_pathname="abs" category="drv_physics"
-       group="drv_flds_in" valid_values="" >
+<entry id="drv_flds_in_files" type="char*256(10)" category="drv_physics"
+       group="default_settings" valid_values="" >
 List of files to merge together that contains drv_flds_in namelists
+The paths are relative to the case directory. drv_flds_in include the namelists that
+the driver reads and gives information on additional fields to be passed to different
+components that need to look at the same data.
 </entry>
 
 <!-- ========================================================================================  -->
