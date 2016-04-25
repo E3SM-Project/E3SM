@@ -7,7 +7,9 @@ through the Case module.
 
 from CIME.XML.standard_module_setup import *
 from shutil import copyfile
-from CIME.utils                     import expect, run_cmd, get_cime_root, convert_to_type, get_model
+from copy   import deepcopy
+from CIME.utils                     import expect, run_cmd, get_cime_root
+from CIME.utils                     import convert_to_type, get_model, get_project
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
@@ -28,12 +30,16 @@ from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
 
 from CIME.XML.generic_xml           import GenericXML
+import glob, shutil
 
 logger = logging.getLogger(__name__)
 
 class Case(object):
 
-    def __init__(self, case_root=os.getcwd()):
+    def __init__(self, case_root=None):
+
+        if case_root is None:
+            case_root = os.getcwd()
 
         self._env_files_that_need_rewrite = set()
 
@@ -76,6 +82,24 @@ class Case(object):
               if os.path.basename(env_file.filename) == full_name:
                   return env_file
           expect(False, "Could not find object for %s in case"%full_name)
+
+    def copy(self, newcasename, newcaseroot, newcimeroot=None, newsrcroot=None):
+        newcase = deepcopy(self)
+        for env_file in newcase._files:
+            basename = os.path.basename(env_file.filename)
+            env_file.filename = os.path.join(newcaseroot,basename)
+
+        if newcimeroot is not None:
+            newcase.set_value("CIMEROOT", newcimeroot)
+
+        if newsrcroot is not None:
+            newcase.set_value("SRCROOT", newsrcroot)
+
+        newcase.set_value("CASE",newcasename)
+        newcase.set_value("CASEROOT",newcaseroot)
+        newcase.set_value("CONTINUE_RUN","FALSE")
+        newcase.set_value("RESUBMIT",0)
+        return newcase
 
     def flush(self, flushall=False):
         if flushall:
@@ -213,7 +237,13 @@ class Case(object):
                    "Could not find a compset match for either alias or longname in %s" %(compset_name))
 
     def get_compset_components(self):
-        elements = self._compsetname.split('_')
+        # If are doing a create_clone then, self._compsetname is not set yet
+        compset = self.get_value("COMPSET")
+        if compset is None:
+            compset = self._compsetname
+        expect(compset is not None,
+               "ERROR: compset is not set")
+        elements = compset.split('_')
         for element in elements:
             # ignore the initial date in the compset longname
             if re.search(r'^\d+$',element):
@@ -455,16 +485,16 @@ class Case(object):
             copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot, dfile))
             # set up infon files
             # infofiles = os.path.join(os.path.join(toolsdir, README.post_process")
-    #FIXME - the following does not work
-    # print "DEBUG: infofiles are ",infofiles
-    #    try:
-    #        for infofile in infofiles:
-    #            print "DEBUG: infofile is %s, %s"  %(infofile, os.path.basename(infofile))
-    #            dst_file = caseroot + "/" + os.path.basename(infofile)
-    #            copyfile(infofile, dst_file)
-    #            os.chmod(dst_file, os.stat(dst_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
-    #    except Exception as e:
-    #        logger.warning("FAILED to set up infofiles: %s" % str(e))
+            #FIXME - the following does not work
+            # print "DEBUG: infofiles are ",infofiles
+            #    try:
+            #        for infofile in infofiles:
+            #            print "DEBUG: infofile is %s, %s"  %(infofile, os.path.basename(infofile))
+            #            dst_file = caseroot + "/" + os.path.basename(infofile)
+            #            copyfile(infofile, dst_file)
+            #            os.chmod(dst_file, os.stat(dst_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
+            #    except Exception as e:
+            #        logger.warning("FAILED to set up infofiles: %s" % str(e))
 
     def _create_caseroot_sourcemods(self):
         components = self.get_compset_components()
@@ -518,3 +548,74 @@ class Case(object):
         self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
 
+    def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None):
+
+        newcaseroot = os.path.abspath(newcase)
+        expect(not os.path.isdir(newcaseroot),
+               "New caseroot directory %s already exists" % newcaseroot)
+        newcasename = os.path.basename(newcaseroot)
+        newcase_cimeroot = os.path.abspath(get_cime_root())
+
+        # create clone from self to case
+        clone_cimeroot = self.get_value("CIMEROOT")
+        if newcase_cimeroot != clone_cimeroot:
+            logger.warning(" case  CIMEROOT is %s " %newcase_cimeroot)
+            logger.warning(" clone CIMEROOT is %s " %clone_cimeroot)
+            logger.warning(" It is NOT recommended to clone cases from different versions of CIMEROOT")
+
+        # *** create case object as deepcopy of clone object ***
+        srcroot = os.path.join(newcase_cimeroot,"..")
+        newcase = self.copy(newcasename, newcaseroot, newsrcroot=srcroot)
+
+        # determine if will use clone executable or not
+        if keepexe:
+            orig_exeroot = self.get_value("EXEROOT")
+            newcase.set_value("EXEROOT", orig_exeroot)
+            newcase.set_value("BUILD_COMPLETE","TRUE")
+        else:
+            newcase.set_value("BUILD_COMPLETE","FALSE")
+
+        # set machdir
+        if mach_dir is not None:
+            newcase.set_value("MACHDIR", mach_dir)
+
+        # Set project id
+        # Note: we do not just copy this from the clone because it seems likely that
+        # users will want to change this sometimes, especially when cloning another
+        # user's case. However, note that, if a project is not given, the fallback will
+        # be to copy it from the clone, just like other xml variables are copied.
+        if project is None:
+            project = get_project()
+            if project is not None:
+                newcase.set_value("PROJECT", project)
+
+        # create caseroot
+        newcase.create_caseroot()
+        newcase.flush(flushall=True, )
+
+        # copy user_nl_files
+        cloneroot = self.get_value("CASEROOT")
+        files = glob.glob(cloneroot + '/user_nl_*')
+        for item in files:
+            shutil.copy(item, newcaseroot)
+
+        # copy SourceMod files
+        directories = glob.glob(cloneroot + "/SourceMods/*")
+        for directory in directories:
+            files = glob.glob(directory + "/*")
+            if files:
+                moddir = os.path.basename(directory)
+                for item in files:
+                    shutil.copy(item, os.path.join(caseroot, "SourceMods", moddir))
+
+        # copy env_case.xml to LockedFiles
+        shutil.copy(os.path.join(newcaseroot,"env_case.xml"), os.path.join(newcaseroot,"LockedFiles"))
+
+        # Update README.case
+        fclone   = open(cloneroot + "/README.case", "r")
+        fnewcase = open(newcaseroot  + "/README.case", "a")
+        fnewcase.write("\n    *** original clone README follows ****")
+        fnewcase.write("\n " +  fclone.read())
+
+        clonename = self.get_value("CASE")
+        logger.info(" Successfully created new case %s from clone case %s " %(newcasename, clonename))

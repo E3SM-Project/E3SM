@@ -80,6 +80,7 @@ def _build_usernl_files(case, model, comp):
 ###############################################################################
 def case_setup(caseroot, clean=False, test_mode=False, reset=False):
 ###############################################################################
+
     os.chdir(caseroot)
 
     cimeroot = os.environ["CIMEROOT"]
