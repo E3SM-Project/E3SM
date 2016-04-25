@@ -49,7 +49,7 @@ def check_lockedfiles(caseroot=os.getcwd()):
                         f1obj.set_value("BUILD_STATUS", 2)
                         f1obj.write()
                         logging.critical("Changing PIO_VERSION requires running "
-                                         "case.clean_build all and rebuilding")
+                                         "case.build --cleanall and rebuilding")
                     else:
                         f1obj.set_value("BUILD_STATUS", 1)
                         f1obj.write()
