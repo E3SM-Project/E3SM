@@ -91,7 +91,7 @@ real(r8) :: specdens_so4
 real(r8) :: specdens_bc
 real(r8) :: specdens_soa
 real(r8) :: specdens_pom
-real(r8) :: specdens_mom
+real(r8) :: specdens_moa
 
 ! List all species
 integer :: ncnst = 0     ! Total number of constituents (mass and number) needed
@@ -103,7 +103,7 @@ integer :: pom_accum     ! p-organic in accumulation mode
 integer :: soa_accum     ! s-organic in accumulation mode
 integer :: dst_accum     ! dust in accumulation mode
 integer :: ncl_accum     ! seasalt in accumulation mode
-integer :: mom_accum     ! marine-organic in accumulation mode
+integer :: moa_accum     ! marine-organic in accumulation mode
 integer :: num_accum     ! number in accumulation mode
 
 integer :: dst_coarse    ! dust in coarse mode
@@ -112,7 +112,7 @@ integer :: so4_coarse    ! sulfate in coarse mode
 integer :: bc_coarse     ! bc in coarse mode
 integer :: pom_coarse    ! pom in coarse mode
 integer :: soa_coarse    ! soa in coarse mode
-integer :: mom_coarse    ! mom in coarse mode
+integer :: moa_coarse    ! moa in coarse mode
 integer :: num_coarse    ! number in coarse mode
 
 integer :: dst_finedust  ! dust in finedust mode
@@ -125,7 +125,7 @@ integer :: num_coardust  ! number in coardust mode
 
 integer :: bc_pcarbon    ! black-c in primary carbon mode
 integer :: pom_pcarbon   ! p-organic in primary carbon mode
-integer :: mom_pcarbon   ! marine-organic in primary carbon mode
+integer :: moa_pcarbon   ! marine-organic in primary carbon mode
 integer :: num_pcarbon   ! number in primary carbon mode
 
 ! Index arrays for looping over all constituents
@@ -469,7 +469,7 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       bc_pcarbon   = 12
       pom_pcarbon  = 13
       num_pcarbon  = 14
-#if (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
+#if (defined MODAL_AERO_4MODE_MOA && defined RAIN_EVAP_TO_COARSE_AERO )
       ncnst = 20
       so4_accum  =  1
       bc_accum   =  2
@@ -477,7 +477,7 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       soa_accum  =  4
       dst_accum  =  5
       ncl_accum  =  6
-      mom_accum  =  7
+      moa_accum  =  7
       num_accum  =  8
       dst_coarse =  9 
       ncl_coarse =  10
@@ -485,13 +485,13 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       bc_coarse  =  12
       pom_coarse =  13
       soa_coarse =  14
-      mom_coarse =  15
+      moa_coarse =  15
       num_coarse =  16
       bc_pcarbon   = 17
       pom_pcarbon  = 18
-      mom_pcarbon  = 19
+      moa_pcarbon  = 19
       num_pcarbon  = 20
-#elif (defined MODAL_AERO_4MODE_MOM) 
+#elif (defined MODAL_AERO_4MODE_MOA) 
       ncnst = 17
       so4_accum  =  1
       bc_accum   =  2
@@ -499,16 +499,16 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       soa_accum  =  4
       dst_accum  =  5
       ncl_accum  =  6
-      mom_accum  =  7
+      moa_accum  =  7
       num_accum  =  8
       dst_coarse =  9
       ncl_coarse =  10
       so4_coarse =  11
-      mom_coarse =  12
+      moa_coarse =  12
       num_coarse =  13
       bc_pcarbon   = 14
       pom_pcarbon  = 15
-      mom_pcarbon  = 16
+      moa_pcarbon  = 16
       num_pcarbon  = 17
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 
       ncnst = 17
@@ -573,9 +573,9 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       mode_idx(dst_accum) = mode_accum_idx
    end if
 
-#if (defined MODAL_AERO_4MODE_MOM)
-   spec_idx(mom_accum) = rad_cnst_get_spec_idx(0, mode_accum_idx, 'm-organic')
-   mode_idx(mom_accum) = mode_accum_idx
+#if (defined MODAL_AERO_4MODE_MOA)
+   spec_idx(moa_accum) = rad_cnst_get_spec_idx(0, mode_accum_idx, 'm-organic')
+   mode_idx(moa_accum) = mode_accum_idx
 #endif
 
    ! Indices for species in coarse mode (dust, nacl, so4)
@@ -589,9 +589,9 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       spec_idx(so4_coarse) = rad_cnst_get_spec_idx(0, mode_coarse_idx, 'sulfate')
       mode_idx(so4_coarse) = mode_coarse_idx
 
-#if (defined MODAL_AERO_4MODE_MOM)
-      spec_idx(mom_coarse) = rad_cnst_get_spec_idx(0, mode_coarse_idx, 'm-organic')
-      mode_idx(mom_coarse) = mode_coarse_idx
+#if (defined MODAL_AERO_4MODE_MOA)
+      spec_idx(moa_coarse) = rad_cnst_get_spec_idx(0, mode_coarse_idx, 'm-organic')
+      mode_idx(moa_coarse) = mode_coarse_idx
 #endif
 
 #if (defined RAIN_EVAP_TO_COARSE_AERO) 
@@ -634,9 +634,9 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       spec_idx(pom_pcarbon) = rad_cnst_get_spec_idx(0, mode_pcarbon_idx, 'p-organic')
       mode_idx(pom_pcarbon) = mode_pcarbon_idx
 
-#if (defined MODAL_AERO_4MODE_MOM)
-      spec_idx(mom_pcarbon) = rad_cnst_get_spec_idx(0, mode_pcarbon_idx, 'm-organic')
-      mode_idx(mom_pcarbon) = mode_pcarbon_idx
+#if (defined MODAL_AERO_4MODE_MOA)
+      spec_idx(moa_pcarbon) = rad_cnst_get_spec_idx(0, mode_pcarbon_idx, 'm-organic')
+      mode_idx(moa_pcarbon) = mode_pcarbon_idx
 #endif
 
    end if
@@ -658,8 +658,8 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
    call rad_cnst_get_aer_props(0, mode_idx(soa_accum), spec_idx(soa_accum), density_aer=specdens_soa)
    call rad_cnst_get_aer_props(0, mode_idx(pom_accum), spec_idx(pom_accum), density_aer=specdens_pom)
 
-#if (defined MODAL_AERO_4MODE_MOM)
-   call rad_cnst_get_aer_props(0, mode_idx(mom_accum), spec_idx(mom_accum), density_aer=specdens_mom)
+#if (defined MODAL_AERO_4MODE_MOA)
+   call rad_cnst_get_aer_props(0, mode_idx(moa_accum), spec_idx(moa_accum), density_aer=specdens_moa)
 #endif
 
    call hetfrz_classnuc_init( &
@@ -1062,10 +1062,10 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
    real(r8), parameter :: spechygro_so4 = 0.507_r8          ! Sulfate hygroscopicity
    real(r8), parameter :: spechygro_soa = 0.14_r8           ! SOA hygroscopicity
    real(r8), parameter :: spechygro_pom = 0.1_r8            ! POM hygroscopicity
-   real(r8), parameter :: spechygro_mom = 0.1_r8            ! POM hygroscopicity
+   real(r8), parameter :: spechygro_moa = 0.1_r8            ! POM hygroscopicity
    real(r8), parameter :: soa_equivso4_factor = spechygro_soa/spechygro_so4
    real(r8), parameter :: pom_equivso4_factor = spechygro_pom/spechygro_so4
-   real(r8), parameter :: mom_equivso4_factor = spechygro_mom/spechygro_so4
+   real(r8), parameter :: moa_equivso4_factor = spechygro_moa/spechygro_so4
    real(r8) :: vol_shell(3)
    real(r8) :: vol_core(3) 
    real(r8) :: fac_volsfc_dust_a1, fac_volsfc_dust_a3, fac_volsfc_bc
@@ -1079,14 +1079,14 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
    real(r8), parameter :: dst1_num_to_mass = 3.484e+15_r8       ! #/kg for dust in accumulation mode
 
    real(r8) :: dmc, ssmc
-   real(r8) :: bcmc, pommc, soamc, mommc
+   real(r8) :: bcmc, pommc, soamc, moamc
 
    real(r8) :: as_so4, as_du, as_soa
-   real(r8) :: as_mom
+   real(r8) :: as_moa
    real(r8) :: dst1_num_imm, dst3_num_imm, bc_num_imm
 
    real(r8) :: dmc_imm, ssmc_imm
-   real(r8) :: bcmc_imm, pommc_imm, soamc_imm, mommc_imm 
+   real(r8) :: bcmc_imm, pommc_imm, soamc_imm, moamc_imm 
    real(r8) :: as_bc, as_pom, as_ss
 
    real(r8) :: r_bc                         ! model radii of BC modes [m]   
@@ -1124,14 +1124,14 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
          as_ss  = aer(ii,kk,ncl_accum)
          as_du  = aer(ii,kk,dst_accum)
 
-#if (defined MODAL_AERO_4MODE_MOM)
-         as_mom  = aer(ii,kk,mom_accum)
+#if (defined MODAL_AERO_4MODE_MOA)
+         as_moa  = aer(ii,kk,moa_accum)
 #endif
 
          if (as_du > 0._r8) then
 
-#if (defined MODAL_AERO_4MODE_MOM)
-            dst1_num = as_du/(as_so4+as_bc+as_pom+as_soa+as_ss+as_du+as_mom)  &
+#if (defined MODAL_AERO_4MODE_MOA)
+            dst1_num = as_du/(as_so4+as_bc+as_pom+as_soa+as_ss+as_du+as_moa)  &
                        * aer(ii,kk,num_accum)*1.0e-6_r8 ! #/cm^3
 #else
             dst1_num = as_du/(as_so4+as_bc+as_pom+as_soa+as_ss+as_du)  &
@@ -1144,8 +1144,8 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
 
          if (as_bc > 0._r8) then
 
-#if (defined MODAL_AERO_4MODE_MOM)
-            bc_num = as_bc/(as_so4+as_bc+as_pom+as_soa+as_ss+as_du+as_mom)  &
+#if (defined MODAL_AERO_4MODE_MOA)
+            bc_num = as_bc/(as_so4+as_bc+as_pom+as_soa+as_ss+as_du+as_moa)  &
                      * aer(ii,kk,num_accum)*1.0e-6_r8 ! #/cm^3
 #else
             bc_num = as_bc/(as_so4+as_bc+as_pom+as_soa+as_ss+as_du)  &
@@ -1164,8 +1164,8 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       dmc = aer(ii,kk,dst_coarse)
       ssmc = aer(ii,kk,ncl_coarse)
      
-#if (defined MODAL_AERO_4MODE_MOM)
-      mommc = aer(ii,kk,mom_coarse)
+#if (defined MODAL_AERO_4MODE_MOA)
+      moamc = aer(ii,kk,moa_coarse)
 #endif
 
 #if (defined RAIN_EVAP_TO_COARSE_AERO) 
@@ -1176,10 +1176,10 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
  
       if (dmc > 0._r8 ) then
 
-#if (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
-         dst3_num = dmc/(ssmc+dmc+bcmc+pommc+soamc+mommc) * aer(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3
-#elif (defined MODAL_AERO_4MODE_MOM)
-         dst3_num = dmc/(ssmc+dmc+mommc)                  * aer(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3
+#if (defined MODAL_AERO_4MODE_MOA && defined RAIN_EVAP_TO_COARSE_AERO )
+         dst3_num = dmc/(ssmc+dmc+bcmc+pommc+soamc+moamc) * aer(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3
+#elif (defined MODAL_AERO_4MODE_MOA)
+         dst3_num = dmc/(ssmc+dmc+moamc)                  * aer(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 
          dst3_num = dmc/(ssmc+dmc+bcmc+pommc+soamc)       * aer(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3
 #else
@@ -1212,13 +1212,13 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       as_ss  = aer_cb(ii,kk,ncl_accum)
       as_du  = aer_cb(ii,kk,dst_accum)
 
-#if (defined MODAL_AERO_4MODE_MOM)
-      as_mom = aer_cb(ii,kk,mom_accum)
+#if (defined MODAL_AERO_4MODE_MOA)
+      as_moa = aer_cb(ii,kk,moa_accum)
 #endif
 
       if (as_du > 0._r8) then
-#if (defined MODAL_AERO_4MODE_MOM)
-         dst1_num_imm = as_du/(as_so4+as_bc+as_pom+as_soa+as_ss+as_du+as_mom)  &
+#if (defined MODAL_AERO_4MODE_MOA)
+         dst1_num_imm = as_du/(as_so4+as_bc+as_pom+as_soa+as_ss+as_du+as_moa)  &
                        * aer_cb(ii,kk,num_accum)*1.0e-6_r8 ! #/cm^3
 #else
          dst1_num_imm = as_du/(as_so4+as_bc+as_pom+as_soa+as_ss+as_du)  &
@@ -1229,8 +1229,8 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       end if
 
       if (as_bc > 0._r8) then
-#if (defined MODAL_AERO_4MODE_MOM)
-         bc_num_imm = as_bc/(as_so4+as_bc+as_pom+as_soa+as_ss+as_du+as_mom)  &
+#if (defined MODAL_AERO_4MODE_MOA)
+         bc_num_imm = as_bc/(as_so4+as_bc+as_pom+as_soa+as_ss+as_du+as_moa)  &
                     * aer_cb(ii,kk,num_accum)*1.0e-6_r8 ! #/cm^3
 #else
          bc_num_imm = as_bc/(as_so4+as_bc+as_pom+as_soa+as_ss+as_du)  &
@@ -1243,8 +1243,8 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       dmc_imm = aer_cb(ii,kk,dst_coarse)
       ssmc_imm = aer_cb(ii,kk,ncl_coarse)
 
-#if (defined MODAL_AERO_4MODE_MOM)
-      mommc_imm = aer_cb(ii,kk,mom_coarse)
+#if (defined MODAL_AERO_4MODE_MOA)
+      moamc_imm = aer_cb(ii,kk,moa_coarse)
 #endif
 
 #if (defined RAIN_EVAP_TO_COARSE_AERO) 
@@ -1255,11 +1255,11 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
 
       if (dmc_imm > 0._r8) then
 
-#if (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
-         dst3_num_imm = dmc_imm/(ssmc_imm+dmc_imm+bcmc_imm+pommc_imm+soamc_imm+mommc_imm) &
+#if (defined MODAL_AERO_4MODE_MOA && defined RAIN_EVAP_TO_COARSE_AERO )
+         dst3_num_imm = dmc_imm/(ssmc_imm+dmc_imm+bcmc_imm+pommc_imm+soamc_imm+moamc_imm) &
                       * aer_cb(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3
-#elif (defined MODAL_AERO_4MODE_MOM)
-         dst3_num_imm = dmc_imm/(ssmc_imm+dmc_imm+mommc_imm) * aer_cb(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3
+#elif (defined MODAL_AERO_4MODE_MOA)
+         dst3_num_imm = dmc_imm/(ssmc_imm+dmc_imm+moamc_imm) * aer_cb(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 
          dst3_num_imm = dmc_imm/(ssmc_imm+dmc_imm+bcmc_imm+pommc_imm+soamc_imm) &
                       * aer_cb(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3
@@ -1370,10 +1370,10 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       fac_volsfc_dust_a1 = exp(2.5_r8*alnsg_mode_accum**2)
       fac_volsfc_dust_a3 = exp(2.5_r8*alnsg_mode_coarse**2)
 
-#if (defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_4MODE_MOA)
       vol_shell(2) = ( aer(ii,kk,so4_accum)/specdens_so4 + &
                        aer(ii,kk,pom_accum)*pom_equivso4_factor/specdens_pom + &
-                       aer(ii,kk,mom_accum)*mom_equivso4_factor/specdens_mom + &
+                       aer(ii,kk,moa_accum)*moa_equivso4_factor/specdens_moa + &
                        aer(ii,kk,soa_accum)*soa_equivso4_factor/specdens_soa )/rhoair
 
 #else
@@ -1406,9 +1406,9 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       else
         fac_volsfc_bc      = exp(2.5_r8*alnsg_mode_pcarbon**2)
 
-#if (defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_4MODE_MOA)
         vol_shell(1) = ( aer(ii,kk,pom_pcarbon)*pom_equivso4_factor/specdens_pom + &
-                         aer(ii,kk,mom_pcarbon)*mom_equivso4_factor/specdens_mom & 
+                         aer(ii,kk,moa_pcarbon)*moa_equivso4_factor/specdens_moa & 
                         )/rhoair
 #else
         vol_shell(1) = ( aer(ii,kk,pom_pcarbon)*pom_equivso4_factor/specdens_pom )/rhoair
@@ -1427,14 +1427,14 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
 
       ! dust_a3
 
-#if (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
+#if (defined MODAL_AERO_4MODE_MOA && defined RAIN_EVAP_TO_COARSE_AERO )
       vol_shell(3) = aer(ii,kk,so4_coarse)/(specdens_so4*rhoair) + & 
                      aer(ii,kk,pom_coarse)/(specdens_pom*rhoair) + & 
                      aer(ii,kk,soa_coarse)/(specdens_soa*rhoair) + & 
-                     aer(ii,kk,mom_coarse)/(specdens_mom*rhoair) 
-#elif (defined MODAL_AERO_4MODE_MOM)
+                     aer(ii,kk,moa_coarse)/(specdens_moa*rhoair) 
+#elif (defined MODAL_AERO_4MODE_MOA)
       vol_shell(3) = aer(ii,kk,so4_coarse)/(specdens_so4*rhoair) + & 
-                     aer(ii,kk,mom_coarse)/(specdens_mom*rhoair) 
+                     aer(ii,kk,moa_coarse)/(specdens_moa*rhoair) 
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 
       vol_shell(3) = aer(ii,kk,so4_coarse)/(specdens_so4*rhoair) + & 
                      aer(ii,kk,pom_coarse)/(specdens_pom*rhoair) + & 
@@ -1518,10 +1518,10 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
 
       ! accumulation mode for dust_a1 
       if (aer(ii,kk,num_accum) > 0._r8) then 
-#if (defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_4MODE_MOA)
          awcam(2) = (dst1_num*1.0e6_r8)/aer(ii,kk,num_accum)* &
             ( aer(ii,kk,so4_accum) + aer(ii,kk,soa_accum) + &
-              aer(ii,kk,pom_accum) + aer(ii,kk,bc_accum) + aer(ii,kk,mom_accum) )*1.0e9_r8 ! [mug m-3]
+              aer(ii,kk,pom_accum) + aer(ii,kk,bc_accum) + aer(ii,kk,moa_accum) )*1.0e9_r8 ! [mug m-3]
 #else
          awcam(2) = (dst1_num*1.0e6_r8)/aer(ii,kk,num_accum)* &
             ( aer(ii,kk,so4_accum) + aer(ii,kk,soa_accum) + &
@@ -1532,9 +1532,9 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       end if
 
       if (awcam(2) > 0._r8) then   
-#if (defined MODAL_AERO_4MODE_MOM)
-         awfacm(2) = ( aer(ii,kk,bc_accum) + aer(ii,kk,soa_accum) + aer(ii,kk,pom_accum) + aer(ii,kk,mom_accum) )/ &
-            ( aer(ii,kk,soa_accum) + aer(ii,kk,pom_accum) + aer(ii,kk,so4_accum) + aer(ii,kk,bc_accum) + aer(ii,kk,mom_accum) )
+#if (defined MODAL_AERO_4MODE_MOA)
+         awfacm(2) = ( aer(ii,kk,bc_accum) + aer(ii,kk,soa_accum) + aer(ii,kk,pom_accum) + aer(ii,kk,moa_accum) )/ &
+            ( aer(ii,kk,soa_accum) + aer(ii,kk,pom_accum) + aer(ii,kk,so4_accum) + aer(ii,kk,bc_accum) + aer(ii,kk,moa_accum) )
 #else
          awfacm(2) = ( aer(ii,kk,bc_accum) + aer(ii,kk,soa_accum) + aer(ii,kk,pom_accum) )/ &
             ( aer(ii,kk,soa_accum) + aer(ii,kk,pom_accum) + aer(ii,kk,so4_accum) + aer(ii,kk,bc_accum) )
@@ -1545,10 +1545,10 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
 
       ! accumulation mode for bc (if MAM4, primary carbon mode is insoluble)
       if (aer(ii,kk,num_accum) > 0._r8) then
-#if (defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_4MODE_MOA)
          awcam(1) = (bc_num*1.0e6_r8)/aer(ii,kk,num_accum)* &
             ( aer(ii,kk,so4_accum) + aer(ii,kk,soa_accum) + aer(ii,kk,pom_accum) + aer(ii,kk,bc_accum) + &
-              aer(ii,kk,mom_accum) )*1.0e9_r8 ! [mug m-3]
+              aer(ii,kk,moa_accum) )*1.0e9_r8 ! [mug m-3]
 #else
          awcam(1) = (bc_num*1.0e6_r8)/aer(ii,kk,num_accum)* &
             ( aer(ii,kk,so4_accum) + aer(ii,kk,soa_accum) + aer(ii,kk,pom_accum) + aer(ii,kk,bc_accum) )*1.0e9_r8 ! [mug m-3]
@@ -1560,12 +1560,12 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
 
       ! coarse mode for dust_a3
       if (aer(ii,kk,num_coarse) > 0._r8) then
-#if (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
+#if (defined MODAL_AERO_4MODE_MOA && defined RAIN_EVAP_TO_COARSE_AERO )
          awcam(3) = (dst3_num*1.0e6_r8)/aer(ii,kk,num_coarse)* ( aer(ii,kk,so4_coarse) + & 
-                     aer(ii,kk,mom_coarse) + aer(ii,kk,bc_coarse) + aer(ii,kk,pom_coarse) + aer(ii,kk,soa_coarse) ) *1.0e9_r8
-#elif (defined MODAL_AERO_4MODE_MOM)
+                     aer(ii,kk,moa_coarse) + aer(ii,kk,bc_coarse) + aer(ii,kk,pom_coarse) + aer(ii,kk,soa_coarse) ) *1.0e9_r8
+#elif (defined MODAL_AERO_4MODE_MOA)
          awcam(3) = (dst3_num*1.0e6_r8)/aer(ii,kk,num_coarse)* ( aer(ii,kk,so4_coarse) + & 
-                     aer(ii,kk,mom_coarse) ) *1.0e9_r8
+                     aer(ii,kk,moa_coarse) ) *1.0e9_r8
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 
          awcam(3) = (dst3_num*1.0e6_r8)/aer(ii,kk,num_coarse)* ( aer(ii,kk,so4_coarse) + & 
                      aer(ii,kk,bc_coarse) + aer(ii,kk,pom_coarse) + aer(ii,kk,soa_coarse) ) *1.0e9_r8
@@ -1577,14 +1577,14 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       end if
 
       if (awcam(3) > 0._r8) then
-#if (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
+#if (defined MODAL_AERO_4MODE_MOA && defined RAIN_EVAP_TO_COARSE_AERO )
          awfacm(3) = ( aer(ii,kk,bc_coarse) + aer(ii,kk,soa_coarse) + &
-                       aer(ii,kk,pom_coarse) + aer(ii,kk,mom_coarse) )/ &
+                       aer(ii,kk,pom_coarse) + aer(ii,kk,moa_coarse) )/ &
                      ( aer(ii,kk,soa_coarse) + aer(ii,kk,pom_coarse) + &
-                       aer(ii,kk,so4_coarse) + aer(ii,kk,bc_coarse) + aer(ii,kk,mom_coarse) )
-#elif (defined MODAL_AERO_4MODE_MOM)
-         awfacm(3) = ( aer(ii,kk,mom_coarse) ) / & 
-                     ( aer(ii,kk,so4_coarse) + aer(ii,kk,mom_coarse) )
+                       aer(ii,kk,so4_coarse) + aer(ii,kk,bc_coarse) + aer(ii,kk,moa_coarse) )
+#elif (defined MODAL_AERO_4MODE_MOA)
+         awfacm(3) = ( aer(ii,kk,moa_coarse) ) / & 
+                     ( aer(ii,kk,so4_coarse) + aer(ii,kk,moa_coarse) )
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 
          awfacm(3) = ( aer(ii,kk,bc_coarse) + aer(ii,kk,soa_coarse) + &
                        aer(ii,kk,pom_coarse) )/ &

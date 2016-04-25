@@ -18,12 +18,12 @@ module seasalt_model
 
   public :: seasalt_depvel
 
-  public :: has_mam_mom
+  public :: has_mam_moa
   public :: advance_ocean_data
   public :: init_ocean_data
 
   logical :: seasalt_active = .false.
-  logical :: has_mam_mom = .false.
+  logical :: has_mam_moa = .false.
 
   integer, parameter :: seasalt_nbin = 4
   integer, parameter :: seasalt_nnum = 0

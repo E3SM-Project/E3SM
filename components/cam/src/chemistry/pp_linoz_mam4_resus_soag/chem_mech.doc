@@ -3,7 +3,7 @@
            |--------------------------------------------------------------------------------------------------|
            |                                                                                                  |
            |                                                                                                  |
-           |                        Linozaddedtopp_trop_mam4_resus_mom(ACMEpre-alpha)                         |
+           |                        Linozaddedtopp_trop_mam4_resus_moa(ACMEpre-alpha)                         |
            |                                                                                                  |
            |                                                                                                  |
            |--------------------------------------------------------------------------------------------------|
@@ -22,12 +22,12 @@
       ( 10)  bc_a1              (C)
       ( 11)  dst_a1             (AlSiO5)
       ( 12)  ncl_a1             (NaCl)
-      ( 13)  mom_a1             (C8520H11360O8520)
+      ( 13)  moa_a1             (C8520H11360O8520)
       ( 14)  num_a1             (H)
       ( 15)  so4_a2             (NH4HSO4)
       ( 16)  soa_a2             (C)
       ( 17)  ncl_a2             (NaCl)
-      ( 18)  mom_a2             (C8520H11360O8520)
+      ( 18)  moa_a2             (C8520H11360O8520)
       ( 19)  num_a2             (H)
       ( 20)  dst_a3             (AlSiO5)
       ( 21)  ncl_a3             (NaCl)
@@ -35,11 +35,11 @@
       ( 23)  bc_a3              (C)
       ( 24)  pom_a3             (C)
       ( 25)  soa_a3             (C)
-      ( 26)  mom_a3             (C8520H11360O8520)
+      ( 26)  moa_a3             (C8520H11360O8520)
       ( 27)  num_a3             (H)
       ( 28)  pom_a4             (C)
       ( 29)  bc_a4              (C)
-      ( 30)  mom_a4             (C8520H11360O8520)
+      ( 30)  moa_a4             (C8520H11360O8520)
       ( 31)  num_a4             (H)
   
   
@@ -77,12 +77,12 @@ Class List
       (  9)  bc_a1           
       ( 10)  dst_a1          
       ( 11)  ncl_a1          
-      ( 12)  mom_a1          
+      ( 12)  moa_a1          
       ( 13)  num_a1          
       ( 14)  so4_a2          
       ( 15)  soa_a2          
       ( 16)  ncl_a2          
-      ( 17)  mom_a2          
+      ( 17)  moa_a2          
       ( 18)  num_a2          
       ( 19)  dst_a3          
       ( 20)  ncl_a3          
@@ -90,11 +90,11 @@ Class List
       ( 22)  bc_a3           
       ( 23)  pom_a3          
       ( 24)  soa_a3          
-      ( 25)  mom_a3          
+      ( 25)  moa_a3          
       ( 26)  num_a3          
       ( 27)  pom_a4          
       ( 28)  bc_a4           
-      ( 29)  mom_a4          
+      ( 29)  moa_a4          
       ( 30)  num_a4          
   
      Photolysis
@@ -135,12 +135,12 @@ Extraneous prod/loss species
     d(bc_a1)/dt = 0                                                                                                     
     d(dst_a1)/dt = 0                                                                                                    
     d(ncl_a1)/dt = 0                                                                                                    
-    d(mom_a1)/dt = 0                                                                                                    
+    d(moa_a1)/dt = 0                                                                                                    
     d(num_a1)/dt = 0                                                                                                    
     d(so4_a2)/dt = 0                                                                                                    
     d(soa_a2)/dt = 0                                                                                                    
     d(ncl_a2)/dt = 0                                                                                                    
-    d(mom_a2)/dt = 0                                                                                                    
+    d(moa_a2)/dt = 0                                                                                                    
     d(num_a2)/dt = 0                                                                                                    
     d(dst_a3)/dt = 0                                                                                                    
     d(ncl_a3)/dt = 0                                                                                                    
@@ -148,9 +148,9 @@ Extraneous prod/loss species
     d(bc_a3)/dt = 0                                                                                                     
     d(pom_a3)/dt = 0                                                                                                    
     d(soa_a3)/dt = 0                                                                                                    
-    d(mom_a3)/dt = 0                                                                                                    
+    d(moa_a3)/dt = 0                                                                                                    
     d(num_a3)/dt = 0                                                                                                    
     d(pom_a4)/dt = 0                                                                                                    
     d(bc_a4)/dt = 0                                                                                                     
-    d(mom_a4)/dt = 0                                                                                                    
+    d(moa_a4)/dt = 0                                                                                                    
     d(num_a4)/dt = 0                                                                                                    

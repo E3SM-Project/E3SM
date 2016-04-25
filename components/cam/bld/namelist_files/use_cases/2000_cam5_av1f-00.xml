@@ -35,7 +35,7 @@
 <use_rad_dt_cosz> .true. </use_rad_dt_cosz>
 
 <!-- Marine organic aerosol configuration -->
-<mam_mom_mixing_state>2</mam_mom_mixing_state>
+<mam_moa_mixing_state>2</mam_moa_mixing_state>
 
 <!-- Tunable parameters for 72 layer model -->
 

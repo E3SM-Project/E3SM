@@ -1,5 +1,14 @@
   
   
+           |--------------------------------------------------------------------------------------------------|
+           |                                                                                                  |
+           |                                                                                                  |
+           |                      Merged marine organic aerosol with resuspension mods                        |
+           |                                                                                                  |
+           |                                                                                                  |
+           |--------------------------------------------------------------------------------------------------|
+  
+  
      Solution species
       (  1)  H2O2            
       (  2)  H2SO4           
@@ -12,21 +21,25 @@
       (  9)  bc_a1              (C)
       ( 10)  dst_a1             (AlSiO5)
       ( 11)  ncl_a1             (NaCl)
-      ( 12)  mom_a1             (C8520H11360O8520)
+      ( 12)  moa_a1             (C8520H11360O8520)
       ( 13)  num_a1             (H)
       ( 14)  so4_a2             (NH4HSO4)
       ( 15)  soa_a2             (C)
       ( 16)  ncl_a2             (NaCl)
-      ( 17)  mom_a2             (C8520H11360O8520)
+      ( 17)  moa_a2             (C8520H11360O8520)
       ( 18)  num_a2             (H)
       ( 19)  dst_a3             (AlSiO5)
       ( 20)  ncl_a3             (NaCl)
       ( 21)  so4_a3             (NH4HSO4)
-      ( 22)  num_a3             (H)
-      ( 23)  pom_a4             (C)
-      ( 24)  bc_a4              (C)
-      ( 25)  mom_a4             (C8520H11360O8520)
-      ( 26)  num_a4             (H)
+      ( 22)  bc_a3              (C)
+      ( 23)  pom_a3             (C)
+      ( 24)  soa_a3             (C)
+      ( 25)  moa_a3             (C8520H11360O8520)
+      ( 26)  num_a3             (H)
+      ( 27)  pom_a4             (C)
+      ( 28)  bc_a4              (C)
+      ( 29)  moa_a4             (C8520H11360O8520)
+      ( 30)  num_a4             (H)
   
   
      Invariant species
@@ -60,21 +73,25 @@ Class List
       (  9)  bc_a1           
       ( 10)  dst_a1          
       ( 11)  ncl_a1          
-      ( 12)  mom_a1          
+      ( 12)  moa_a1          
       ( 13)  num_a1          
       ( 14)  so4_a2          
       ( 15)  soa_a2          
       ( 16)  ncl_a2          
-      ( 17)  mom_a2          
+      ( 17)  moa_a2          
       ( 18)  num_a2          
       ( 19)  dst_a3          
       ( 20)  ncl_a3          
       ( 21)  so4_a3          
-      ( 22)  num_a3          
-      ( 23)  pom_a4          
-      ( 24)  bc_a4           
-      ( 25)  mom_a4          
-      ( 26)  num_a4          
+      ( 22)  bc_a3           
+      ( 23)  pom_a3          
+      ( 24)  soa_a3          
+      ( 25)  moa_a3          
+      ( 26)  num_a3          
+      ( 27)  pom_a4          
+      ( 28)  bc_a4           
+      ( 29)  moa_a4          
+      ( 30)  num_a4          
   
      Photolysis
   jh2o2            (  1)   H2O2 + hv -> (No products)                                           rate = ** User defined **         (  1)
@@ -102,8 +119,8 @@ Extraneous prod/loss species
   
     d(H2O2)/dt = r1                                                                                                     
                   - j1*H2O2  - r2*OH*H2O2                                                                               
-    d(H2SO4)/dt = r3*OH*SO2                                                                                             
-    d(SO2)/dt = r4*OH*DMS  + .5*r5*OH*DMS  + r6*NO3*DMS                                                                 
+    d(H2SO4)/dt = 3*OH*SO2                                                                                              
+    d(SO2)/dt = 4*OH*DMS  + .5*r5*OH*DMS  + 6*NO3*DMS                                                                   
                  - r3*OH*SO2                                                                                            
     d(DMS)/dt =  - r4*OH*DMS  - r5*OH*DMS  - r6*NO3*DMS                                                                 
     d(SOAG)/dt = 0                                                                                                      
@@ -113,18 +130,22 @@ Extraneous prod/loss species
     d(bc_a1)/dt = 0                                                                                                     
     d(dst_a1)/dt = 0                                                                                                    
     d(ncl_a1)/dt = 0                                                                                                    
-    d(mom_a1)/dt = 0                                                                                                    
+    d(moa_a1)/dt = 0                                                                                                    
     d(num_a1)/dt = 0                                                                                                    
     d(so4_a2)/dt = 0                                                                                                    
     d(soa_a2)/dt = 0                                                                                                    
     d(ncl_a2)/dt = 0                                                                                                    
-    d(mom_a2)/dt = 0                                                                                                    
+    d(moa_a2)/dt = 0                                                                                                    
     d(num_a2)/dt = 0                                                                                                    
     d(dst_a3)/dt = 0                                                                                                    
     d(ncl_a3)/dt = 0                                                                                                    
     d(so4_a3)/dt = 0                                                                                                    
+    d(bc_a3)/dt = 0                                                                                                     
+    d(pom_a3)/dt = 0                                                                                                    
+    d(soa_a3)/dt = 0                                                                                                    
+    d(moa_a3)/dt = 0                                                                                                    
     d(num_a3)/dt = 0                                                                                                    
     d(pom_a4)/dt = 0                                                                                                    
     d(bc_a4)/dt = 0                                                                                                     
-    d(mom_a4)/dt = 0                                                                                                    
+    d(moa_a4)/dt = 0                                                                                                    
     d(num_a4)/dt = 0                                                                                                    

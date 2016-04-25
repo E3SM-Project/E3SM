@@ -299,7 +299,7 @@
 <mam_mprot  rad="rrtmg">atm/cam/physprops/prot_rrtmg_c130816.nc</mam_mprot>
 <mam_mlip   rad="rrtmg">atm/cam/physprops/lipid_rrtmg_c130816.nc</mam_mlip>
 <!-- For generic MOM, use poly optical properties -->
-<mam_mom    rad="rrtmg">atm/cam/physprops/poly_rrtmg_c130816.nc</mam_mom>
+<mam_moa    rad="rrtmg">atm/cam/physprops/poly_rrtmg_c130816.nc</mam_moa>
 
 <!-- Eruptive volcanic aerosols  -->
 <VOLC_MMR rad="camrt">atm/cam/physprops/sulfuricacid_cam3_c080918.nc</VOLC_MMR>
@@ -310,13 +310,13 @@
 <seasalt_emis_scale chem="trop_mam4">         1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam4_resus">   1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam4_resus_soag">   1.35 </seasalt_emis_scale>
-<seasalt_emis_scale chem="trop_mam4_resus_mom">1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="trop_mam4_resus_moa">1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_strat_mam4">   1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="linoz_mam3">        1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="linoz_mam4_resus">  1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="linoz_mam4_resus_soag"> 1.35 </seasalt_emis_scale>
-<seasalt_emis_scale chem="linoz_mam4_resus_mom"> 1.35 </seasalt_emis_scale>
-<seasalt_emis_scale chem="linoz_mam4_resus_mom_soag"> 1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="linoz_mam4_resus_moa"> 1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="linoz_mam4_resus_moa_soag"> 1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam7">         1.62 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_strat_mam7">   1.62 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam9">         1.62 </seasalt_emis_scale>
@@ -452,16 +452,16 @@
 <bndtvdms dyn="fv" hgrid="4x5"      >atm/cam/scyc/DMS_emissions_4x5_noncon_c050306.nc</bndtvdms>
 
 <!-- Ocean macromolecule concentrations for marine organic matter emissions -->
-<mam_mom_specifier>'chla:CHL1','mpoly:TRUEPOLYC','mprot:TRUEPROTC','mlip:TRUELIPC'</mam_mom_specifier>
-<mam_mom_filename>monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc</mam_mom_filename>
-<mam_mom_datapath>atm/cam/chem/trop_mam/marine_BGC/</mam_mom_datapath>
-<mam_mom_datatype>CYCLICAL</mam_mom_datatype>
-<mam_mom_cycle_yr>1</mam_mom_cycle_yr>
-<mam_mom_fixed_ymd>0</mam_mom_fixed_ymd>
-<mam_mom_fixed_tod>0</mam_mom_fixed_tod>
-<mam_mom_bubble_thickness>0.1e-6</mam_mom_bubble_thickness>
-<mam_mom_mixing_state>0</mam_mom_mixing_state>
-<mam_mom_parameterization>1</mam_mom_parameterization>
+<mam_moa_specifier>'chla:CHL1','mpoly:TRUEPOLYC','mprot:TRUEPROTC','mlip:TRUELIPC'</mam_moa_specifier>
+<mam_moa_filename>monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc</mam_moa_filename>
+<mam_moa_datapath>atm/cam/chem/trop_mam/marine_BGC/</mam_moa_datapath>
+<mam_moa_datatype>CYCLICAL</mam_moa_datatype>
+<mam_moa_cycle_yr>1</mam_moa_cycle_yr>
+<mam_moa_fixed_ymd>0</mam_moa_fixed_ymd>
+<mam_moa_fixed_tod>0</mam_moa_fixed_tod>
+<mam_moa_bubble_thickness>0.1e-6</mam_moa_bubble_thickness>
+<mam_moa_mixing_state>0</mam_moa_mixing_state>
+<mam_moa_parameterization>1</mam_moa_parameterization>
 
 <!-- oxidant data for prognostic sulfur cycle -->
 <bndtvoxid          hgrid="128x256" >atm/cam/scyc/oxid_128x256_L26_clim_c040112.nc</bndtvoxid>
@@ -677,15 +677,15 @@
 <drydep_method chem="trop_mam4">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam4_resus">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam4_resus_soag">xactive_atm</drydep_method>
-<drydep_method chem="trop_mam4_resus_mom">xactive_atm</drydep_method>
-<drydep_method chem="trop_mam4_mom">xactive_atm</drydep_method>
+<drydep_method chem="trop_mam4_resus_moa">xactive_atm</drydep_method>
+<drydep_method chem="trop_mam4_moa">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam7">xactive_atm</drydep_method>
 <drydep_method chem="trop_mam9">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam3">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam4_resus">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam4_resus_soag">xactive_atm</drydep_method>
-<drydep_method chem="linoz_mam4_resus_mom">xactive_atm</drydep_method>
-<drydep_method chem="linoz_mam4_resus_mom_soag">xactive_atm</drydep_method>
+<drydep_method chem="linoz_mam4_resus_moa">xactive_atm</drydep_method>
+<drydep_method chem="linoz_mam4_resus_moa_soag">xactive_atm</drydep_method>
 <drydep_method chem="waccm_mozart_mam3">xactive_atm</drydep_method>
 
 <!-- Dry Dep surface data file needed by prognostic MAM on unstructured grid only. -->
