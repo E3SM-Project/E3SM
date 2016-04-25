@@ -895,7 +895,7 @@
 	  <ntasks_lnd>-5</ntasks_lnd>
 	  <ntasks_rof>-5</ntasks_rof>
 	  <ntasks_ice>-7</ntasks_ice>
-	  <ntasks_ocn>-2</ntasks_ocn>
+	  <ntasks_ocn>-8</ntasks_ocn>
 	  <ntasks_glc>-1</ntasks_glc>
 	  <ntasks_wav>-12</ntasks_wav>
 	  <ntasks_cpl>-12</ntasks_cpl>
