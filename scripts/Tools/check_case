@@ -1,65 +1,30 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python2
 
-use strict;
-use Cwd;
-use English;
-use Getopt::Long;
-use File::Basename;
-use IO::File;
-use IO::Handle;
-use XML::LibXML;
-sub usage {
-    die <<'EOF';
+"""
+Checks that case is set up correctly
+"""
 
-SYNOPSIS
+from standard_script_setup import *
 
-  check_case [options]
+from CIME.utils import expect, get_model, run_cmd
+from CIME.case  import Case
 
-  checks that case is set up correctly
+logger = logging.getLogger(__name__)
 
-OPTIONS
+parser = argparse.ArgumentParser()
+CIME.utils.setup_standard_logging_options(parser)
 
-  -help [or -h]  Print usage to STDOUT (optional).
+caseroot = os.getcwd()
+cmd = os.path.join(caseroot,"Tools/check_lockedfiles")
+run_cmd(cmd)
+cmd = os.path.join(caseroot,"preview_namelists")
+run_cmd(cmd)
 
-EOF
-}
-
-my %opts = (loglevel=>"INFO" );
-
-GetOptions(
-    "loglevel=s" => \$opts{loglevel},
-    "h|help"  => \$opts{'help'},
-    )  or usage();
-
-# Give usage message.
-usage() if $opts{'help'};
-my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml");
-my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]");
-my $cimeroot = $nodes[0]->getAttribute('value');
-
-unshift @INC, "$cimeroot/utils/perl5lib";
-require Log::Log4perl;
-
-my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
-Log::Log4perl->easy_init({level=>$level,
-			  layout=>'%m%n'});
-my $logger = Log::Log4perl::get_logger();
-
-
-my $sysmod = "./Tools/check_lockedfiles";
-system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
-
-my $CASE           = `./xmlquery CASE           -value`;
-my $BUILD_COMPLETE = `./xmlquery BUILD_COMPLETE -value`;
-
-my $sysmod = "./preview_namelists";
-system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
-
-if ($BUILD_COMPLETE ne "TRUE") {
-    $logger->logdie("BUILD_COMPLETE is not TRUE \n
-    Please rebuild the model interactively via calling
-      ./${CASE}.build" );
-}
+case  = Case(caseroot)
+build_complete = case.get_value("BUILD_COMPLETE")
+if not build_complete:
+    expect(False,
+           "Please rebuild the model interactively by calling case.build")
 
 $logger->info( "check_case OK ");
 

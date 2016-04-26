@@ -11,10 +11,12 @@ logger = logging.getLogger(__name__)
 
 class EnvArchive(GenericXML):
 
-    def __init__(self, case_root=os.getcwd(), infile="env_archive.xml"):
+    def __init__(self, case_root=None, infile="env_archive.xml"):
         """
         initialize an object interface to file env_archive.xml in the case directory
         """
+        if case_root is None:
+            case_root = os.getcwd()
         if os.path.abspath(infile):
             fullpath = infile
         else:
