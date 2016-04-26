@@ -732,7 +732,7 @@ write(0,*) '--- enter subroutine COMPUTE_RADAR_REFLECTIVITY:'
        if(allocated(qs1d) ) deallocate(qs1d )
        if(allocated(qg1d) ) deallocate(qg1d )
        if(allocated(dBz1d)) deallocate(dBZ1d)
-       if(allocated(dBz1d)) deallocate(zp)
+       if(allocated(zp))    deallocate(zp)
 
     case ("mp_thompson","mp_thompson_aerosols")
 
@@ -745,6 +745,7 @@ write(0,*) '--- enter subroutine COMPUTE_RADAR_REFLECTIVITY:'
        if(.not.allocated(qg1d) ) allocate(qg1d(kts:kte) )
        if(.not.allocated(nr1d) ) allocate(nr1d(kts:kte) )
        if(.not.allocated(dBz1d)) allocate(dBZ1d(kts:kte))
+       if(.not.allocated(zp))    allocate(zp(kts:kte))
 
        do j = jts,jte
        do i = its,ite
@@ -758,16 +759,21 @@ write(0,*) '--- enter subroutine COMPUTE_RADAR_REFLECTIVITY:'
              qg1d(k)  = qg_p(i,k,j)
              nr1d(k)  = nr_p(i,k,j)
              dBZ1d(k) = -35._RKIND
+             zp(k) = z_p(i,k,j) - z_p(i,1,j)+0.5*dz_p(i,1,j) ! height AGL
           enddo
 
           call calc_refl10cm(qv1d,qc1d,qr1d,nr1d,qs1d,qg1d,t1d,p1d,dBZ1d,kts,kte,i,j)
 
+          kp = 1
           do k = kts,kte
              dBZ1d(k) = max(-35._RKIND,dBZ1d(k))
-!            write(0,201) i,k,dBZ1d(k)
+             if(zp(k) .lt. 1000.) kp = k
           enddo
           refl10cm_max(i) = maxval(dBZ1d(:))
-!         if(refl10cm_max(i) .gt. 0.) write(0,201) j,i,refl10cm_max(i)
+          w1 = (zp(kp+1)-1000.)/(zp(kp+1)-zp(kp))
+          w2 = 1.0 - w1
+          refl10cm_1km(i) = w1*dBZ1d(kp) + w2*dBZ1d(kp+1)
+          refl10cm_1km_max(i) = max(refl10cm_1km_max(i),refl10cm_1km(i))
        enddo
        enddo
 
@@ -780,6 +786,7 @@ write(0,*) '--- enter subroutine COMPUTE_RADAR_REFLECTIVITY:'
        if(allocated(qg1d) ) deallocate(qg1d )
        if(allocated(nr1d) ) deallocate(nr1d )
        if(allocated(dBz1d)) deallocate(dBZ1d)
+       if(allocated(zp))    deallocate(zp)
 
     case default
 
