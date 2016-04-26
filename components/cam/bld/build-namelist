@@ -3376,6 +3376,7 @@ add_default($nl, 'demott_ice_nuc');
 #BSINGH - ENDS
 
 add_default($nl, 'mam_amicphys_optaa'); #for enabling amicphys code in cam
+add_default($nl, 'n_so4_monolayers_pcage'); #number of so4(+nh4) monolayers needed to "age" a carbon particle
 
 # Microphysics scheme
 add_default($nl, 'use_subcol_microp');
@@ -3387,6 +3388,7 @@ if ($cfg->get('microphys') =~ /^mg/) {
     add_default($nl, 'micro_mg_sub_version');
     add_default($nl, 'micro_mg_num_steps');
     add_default($nl, 'nucleate_ice_subgrid');
+    add_default($nl, 'so4_sz_thresh_icenuc');
     add_default($nl, 'cld_macmic_num_steps');
     add_default($nl, 'micro_mg_precip_frac_method');
     add_default($nl, 'micro_mg_berg_eff_factor');
