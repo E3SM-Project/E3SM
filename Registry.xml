@@ -42,6 +42,15 @@
 		<dim name="maxTracersAdvect" definition="1" units="unitless"
 		     description="The maximum number of tracers to be advected."
 		/>
+		<dim name="nRegions" definition="1" units="unitless"
+		     description="The number of regions used for AM_regionalStats"
+		/>
+		<dim name="nRegionGroups" definition="1" units="unitless"
+		     description="The number of region groups used for AM_regionalStats"
+		/>
+		<dim name="maxRegionsInGroup" definition="1" units="unitless"
+		     description="The maximum number of regions in a region group used for AM_regionalStats"
+		/>
 	</dims>
 
 
@@ -494,6 +503,22 @@
 			<var name="uReconstructY"/>
 		</stream>
 
+                <stream name="regionMasksInput" type="input"
+                                mode="forward;analysis"
+                                filename_template="regionMasks.nc"
+                                input_interval="initial_only"
+                                runtime_format="single_file">
+
+                        <var name="regionCellMasks"/>
+                        <var name="nCellsInRegion"/>
+                        <var name="regionVertexMasks"/>
+                        <var name="nVerticesInRegion"/>
+                        <var name="nRegionsInGroup"/>
+                        <var name="regionsInGroup"/>
+                        <var name="regionMaskNames"/>
+                        <var name="regionGroupNames"/>
+		</stream>
+
 	</streams>
 
 
@@ -935,6 +960,36 @@ is the value of that variable from the *previous* time level!
 	  <var name="vertexIndices" type="integer" dimensions="nVertices" units="none"
 	       description="local indices of each vertex"
 	       persistence="scratch"
+	       />
+	</var_struct>
+
+<!-- ================ -->
+
+	<!-- Region Masks -->
+        <var_struct name="Regions" time_levs="1">
+	  <var name="regionCellMasks" type="integer" dimensions="nRegions nCells" units="unitless"
+	       description="masks set to 1 in cells that fall within a given region and 0 otherwise"
+	       />
+	  <var name="nCellsInRegion" type="integer" dimensions="nRegions" units="unitless"
+	       description="number of cells that fall within a given region"
+	       />
+	  <var name="regionVertexMasks" type="integer" dimensions="nRegions nVertices" units="unitless"
+	       description="masks set to 1 for vertices that fall within a given region and 0 otherwise"
+	       />
+	  <var name="nVerticesInRegion" type="integer" dimensions="nRegions" units="unitless"
+	       description="number of vertices that fall within a given region"
+	       />
+	  <var name="nRegionsInGroup" type="integer" dimensions="nRegionGroups" units="unitless"
+	       description="number of regions within a given group"
+	       />
+	  <var name="regionsInGroup" type="integer" dimensions="maxRegionsInGroup nRegionGroups" units="unitless"
+	       description="list of region indices in each group"
+	       />
+	  <var name="regionMaskNames" type="text" dimensions="nRegions" units="unitless"
+	       description="name of region masks"
+	       />
+	  <var name="regionGroupNames" type="text" dimensions="nRegionGroups" units="unitless"
+	       description="name of region groups"
 	       />
 	</var_struct>
 
