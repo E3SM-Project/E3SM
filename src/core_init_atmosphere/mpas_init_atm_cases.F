@@ -4091,7 +4091,7 @@ write(0,*) 'PROCESSING SEAICE'
             scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
                                                        sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
             if (target_z < z_fg(1,iCell)) scalars(index_qv,k,iCell) = scalars(index_qv,k+1,iCell) 
-            relhum(k,iCell) = scalars(index_qv,k,iCell)
+            relhum(k,iCell) = scalars(index_qv,k,iCell) * 0.01
          end do
 
 
