@@ -1301,13 +1301,13 @@ contains
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceThicknessFlux, &
            surfaceBuoyancyForcing, surfaceFrictionVelocity, penetrativeTemperatureFluxOBL, &
            normalVelocitySurfaceLayer, surfaceThicknessFluxRunoff
-      real (kind=RKIND), dimension(:,:), pointer :: fractionAbsorbed, fractionAbsorbedRunoff
+      real (kind=RKIND), pointer :: config_flux_attenuation_coefficient, config_flux_attenuation_coefficient_runoff
 
       real (kind=RKIND), dimension(:), pointer :: surfaceStress, surfaceStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer ::  &
            layerThickness, zMid, zTop, densitySurfaceDisplaced, density, &
            normalVelocity, activeTracersSurfaceFlux, thermalExpansionCoeff, salineContractionCoeff, &
-           activeTracersSurfaceFluxRunoff
+           activeTracersSurfaceFluxRunoff, nonLocalSurfaceTracerFlux
 
       real (kind=RKIND), dimension(:), pointer :: &
            indexSurfaceLayerDepth
@@ -1321,7 +1321,7 @@ contains
       ! local
       integer :: iCell, iEdge, i, k, err, timeLevel
       integer, pointer :: indexTempFlux, indexSaltFlux
-      real (kind=RKIND) :: numerator, denominator, turbulentVelocitySquared, totalThicknessFlux
+      real (kind=RKIND) :: numerator, denominator, turbulentVelocitySquared, fracAbsorbed, fracAbsorbedRunoff
       real (kind=RKIND) :: buoyContribution, shearContribution, factor, deltaVelocitySquared, delU2, invAreaCell
 
       type (field2DReal), pointer :: densitySurfaceDisplacedField, thermalExpansionCoeffField, salineContractionCoeffField
@@ -1334,7 +1334,9 @@ contains
 
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-
+      call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient', config_flux_attenuation_coefficient)
+      call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient_runoff',   &
+              config_flux_attenuation_coefficient_runoff)
       ! set the parameter turbulentVelocitySquared
       turbulentVelocitySquared = 0.001_RKIND
 
@@ -1365,9 +1367,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'indexSurfaceLayerDepth', indexSurfaceLayerDepth)
       call mpas_pool_get_array(diagnosticsPool, 'surfaceBuoyancyForcing', surfaceBuoyancyForcing)
       call mpas_pool_get_array(diagnosticsPool, 'normalVelocitySurfaceLayer', normalVelocitySurfaceLayer)
+      call mpas_pool_get_array(tracersSurfaceFluxPool, 'nonLocalSurfaceTracerFlux', nonLocalSurfaceTracerFlux)
 
-      call mpas_pool_get_array(forcingPool, 'fractionAbsorbed', fractionAbsorbed)
-      call mpas_pool_get_array(forcingPool, 'fractionAbsorbedRunoff', fractionAbsorbedRunoff)
       call mpas_pool_get_array(forcingPool, 'surfaceThicknessFlux', surfaceThicknessFlux)
       call mpas_pool_get_array(forcingPool, 'surfaceThicknessFluxRunoff', surfaceThicknessFluxRunoff)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
@@ -1378,14 +1379,22 @@ contains
       call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
       call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFluxRunoff', activeTracersSurfaceFluxRunoff)
       ! allocate scratch space displaced density computation
+      call mpas_pool_get_field(scratchPool, 'densitySurfaceDisplaced', densitySurfaceDisplacedField)
       call mpas_pool_get_field(scratchPool, 'thermalExpansionCoeff', thermalExpansionCoeffField)
       call mpas_pool_get_field(scratchPool, 'salineContractionCoeff', salineContractionCoeffField)
+      call mpas_allocate_scratch_field(densitySurfaceDisplacedField, .true.)
       call mpas_allocate_scratch_field(thermalExpansionCoeffField, .true.)
       call mpas_allocate_scratch_field(salineContractionCoeffField, .true.)
       call mpas_threading_barrier()
 
+      densitySurfaceDisplaced => densitySurfaceDisplacedField % array
       thermalExpansionCoeff => thermalExpansionCoeffField % array
       salineContractionCoeff => salineContractionCoeffField % array
+
+      ! compute EOS by displacing SST/SSS to every vertical layer in column
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, 0, 'surfaceDisplaced', &
+                                         densitySurfaceDisplaced, err, thermalExpansionCoeff, salineContractionCoeff, &
+                                         timeLevel)
 
       !$omp do schedule(runtime) private(invAreaCell, deltaVelocitySquared, i, iEdge, factor, delU2, k, buoyContribution, &
       !$omp                              shearContribution)
@@ -1411,15 +1420,23 @@ contains
        !           salinity flux in activeTracersSurfaceFlux array)
        !
 
-       totalThicknessFlux = fractionAbsorbed(1,iCell)*surfaceThicknessFlux(iCell) +    &
-                       fractionAbsorbedRunoff(1,iCell)*surfaceThicknessFluxRunoff(iCell)
+       ! Compute fraction of thickness flux that is in the top model layer
+       fracAbsorbed = 1.0_RKIND - exp(zTop(2,iCell) / config_flux_attenuation_coefficient)
+       fracAbsorbedRunoff = 1.0_RKIND - exp(zTop(2,iCell) / config_flux_attenuation_coefficient_runoff)
+       ! Store the total tracer flux below in nonLocalSurfaceTemperatureFlux for use in the CVMix nonlocal
+       ! transport code.  This includes tracer forcing due to thickness
+
+       nonLocalSurfaceTracerFlux(indexTempFlux, iCell) = activeTracersSurfaceFlux(indexTempFlux,iCell) &
+               + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell) - fracAbsorbed * &
+               surfaceThicknessFlux(iCell) * activeTracers(indexTempFlux,1,iCell) + &
+               activeTracersSurfaceFluxRunoff(indexTempFlux,iCell) * fracAbsorbedRunoff
+
+       nonLocalSurfaceTracerFlux(indexSaltFlux,iCell) = activeTracersSurfaceFlux(indexSaltFlux,iCell) &
+               - fracAbsorbed * surfaceThicknessFlux(iCell) * activeTracers(indexSaltFlux,1,iCell)
 
        surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (1,iCell) &
-              * ( activeTracersSurfaceFlux(indexTempFlux,iCell) + penetrativeTemperatureFlux(iCell) &
-              - penetrativeTemperatureFluxOBL(iCell) - totalThicknessFlux * activeTracers(indexTempFlux, 1, iCell) &
-              +activeTracersSurfaceFluxRunoff(indexTempFlux,iCell)) - salineContractionCoeff(1,iCell) &
-             * ( activeTracersSurfaceFlux(indexSaltFlux,iCell) - totalThicknessFlux * &
-             activeTracers(indexSaltFlux, 1, iCell) )
+              * nonLocalSurfaceTracerFlux(indexTempFlux,iCell) &
+              - salineContractionCoeff(1,iCell) * nonLocalSurfaceTracerFlux(indexSaltFlux,iCell)
 
        ! at this point, surfaceBuoyancyForcing has units of m/s
        ! change into units of m^2/s^3 (which can be thought of as the flux of buoyancy, units of buoyancy * velocity )
