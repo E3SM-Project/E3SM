@@ -92,6 +92,7 @@ echo "   no restarts are written" >>& $TESTSTATUS_LOG
 ./xmlchange -file env_mach_pes.xml -id NTHRDS_GLC -val 1
 ./xmlchange -file env_mach_pes.xml -id NTHRDS_OCN -val 1
 ./xmlchange -file env_mach_pes.xml -id NTHRDS_ICE -val 1
+./xmlchange -file env_mach_pes.xml -id NTHRDS_ESP -val 1
 ./xmlchange -file env_mach_pes.xml -id NTHRDS_CPL -val 1
 
 cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml
