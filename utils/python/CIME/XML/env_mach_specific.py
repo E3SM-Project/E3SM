@@ -26,29 +26,7 @@ class EnvMachSpecific(EnvBase):
 
         
         
-    def get_value(self, item, attribute={}, resolved=True, subgroup=None):
-        """Returns the value as a string of the first xml element with item as attribute value. 
-        <elememt_name attribute='attribute_value>value</element_name>"""
-                
-        value = {}
-        nodes = []
-        logger.debug("Get node with attribute value: %s" , item)
-        # Find all nodes with attribute name and attribute value item
-        # xpath .//*[name='item']
-        if item :
-            nodes = self.get_nodes("*",{"name" : item})
-        else :
-           # Return error or all nodes
-           pass
-           
-        # Return value for first occurence of node with attribute value = item
-        for node in nodes:
-            val = node.text 
-            logger.debug("Found node with value for %s = %s" , item , val)   
-            if val:
-                return val
-        
-        return None
+   
         
     def get_values(self, item, attribute={}, resolved=True, subgroup=None):
         """Returns the value as a string of the first xml element with item as attribute value. 
