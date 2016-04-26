@@ -2211,8 +2211,8 @@
 
   <entry id="NINST_ESP_LAYOUT">
     <type>char</type>
-    <valid_values>sequential</valid_values>
-    <default_value>sequential</default_value>
+    <valid_values>sequential,concurrent</valid_values>
+    <default_value>concurrent</default_value>
     <group>mach_pes_esp</group>
     <file>env_mach_pes.xml</file>
     <desc>Layout of external processing tool instances</desc>
