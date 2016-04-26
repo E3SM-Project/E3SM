@@ -714,8 +714,8 @@
 <!-- AM_globalStats -->
 <config_AM_globalStats_enable>.true.</config_AM_globalStats_enable>
 <config_AM_globalStats_compute_interval>'output_interval'</config_AM_globalStats_compute_interval>
-<config_AM_globalStats_compute_on_startup>.false.</config_AM_globalStats_compute_on_startup>
-<config_AM_globalStats_write_on_startup>.false.</config_AM_globalStats_write_on_startup>
+<config_AM_globalStats_compute_on_startup>.true.</config_AM_globalStats_compute_on_startup>
+<config_AM_globalStats_write_on_startup>.true.</config_AM_globalStats_write_on_startup>
 <config_AM_globalStats_text_file>.false.</config_AM_globalStats_text_file>
 <config_AM_globalStats_directory>'analysis_members'</config_AM_globalStats_directory>
 <config_AM_globalStats_output_stream>'globalStatsOutput'</config_AM_globalStats_output_stream>
@@ -724,15 +724,15 @@
 <config_AM_surfaceAreaWeightedAverages_enable>.true.</config_AM_surfaceAreaWeightedAverages_enable>
 <config_AM_surfaceAreaWeightedAverages_compute_on_startup>.true.</config_AM_surfaceAreaWeightedAverages_compute_on_startup>
 <config_AM_surfaceAreaWeightedAverages_write_on_startup>.true.</config_AM_surfaceAreaWeightedAverages_write_on_startup>
-<config_AM_surfaceAreaWeightedAverages_compute_interval>'output_interval'</config_AM_surfaceAreaWeightedAverages_compute_interval>
+<config_AM_surfaceAreaWeightedAverages_compute_interval>'0000-00-00_01:00:00'</config_AM_surfaceAreaWeightedAverages_compute_interval>
 <config_AM_surfaceAreaWeightedAverages_output_stream>'surfaceAreaWeightedAveragesOutput'</config_AM_surfaceAreaWeightedAverages_output_stream>
 
 <!-- AM_waterMassCensus -->
 <config_AM_waterMassCensus_enable>.false.</config_AM_waterMassCensus_enable>
-<config_AM_waterMassCensus_compute_interval>'output_interval'</config_AM_waterMassCensus_compute_interval>
+<config_AM_waterMassCensus_compute_interval>'0000-00-00_01:00:00'</config_AM_waterMassCensus_compute_interval>
 <config_AM_waterMassCensus_output_stream>'waterMassCensusOutput'</config_AM_waterMassCensus_output_stream>
-<config_AM_waterMassCensus_compute_on_startup>.false.</config_AM_waterMassCensus_compute_on_startup>
-<config_AM_waterMassCensus_write_on_startup>.false.</config_AM_waterMassCensus_write_on_startup>
+<config_AM_waterMassCensus_compute_on_startup>.true.</config_AM_waterMassCensus_compute_on_startup>
+<config_AM_waterMassCensus_write_on_startup>.true.</config_AM_waterMassCensus_write_on_startup>
 <config_AM_waterMassCensus_minTemperature>-2.0</config_AM_waterMassCensus_minTemperature>
 <config_AM_waterMassCensus_maxTemperature>30.0</config_AM_waterMassCensus_maxTemperature>
 <config_AM_waterMassCensus_minSalinity>32.0</config_AM_waterMassCensus_minSalinity>
@@ -740,16 +740,16 @@
 
 <!-- AM_layerVolumeWeightedAverage -->
 <config_AM_layerVolumeWeightedAverage_enable>.true.</config_AM_layerVolumeWeightedAverage_enable>
-<config_AM_layerVolumeWeightedAverage_compute_interval>'output_interval'</config_AM_layerVolumeWeightedAverage_compute_interval>
+<config_AM_layerVolumeWeightedAverage_compute_interval>'0000-00-00_01:00:00'</config_AM_layerVolumeWeightedAverage_compute_interval>
 <config_AM_layerVolumeWeightedAverage_compute_on_startup>.true.</config_AM_layerVolumeWeightedAverage_compute_on_startup>
-<config_AM_layerVolumeWeightedAverage_write_on_startup>.false.</config_AM_layerVolumeWeightedAverage_write_on_startup>
+<config_AM_layerVolumeWeightedAverage_write_on_startup>.true.</config_AM_layerVolumeWeightedAverage_write_on_startup>
 <config_AM_layerVolumeWeightedAverage_output_stream>'layerVolumeWeightedAverageOutput'</config_AM_layerVolumeWeightedAverage_output_stream>
 
 <!-- AM_zonalMean -->
 <config_AM_zonalMean_enable>.false.</config_AM_zonalMean_enable>
 <config_AM_zonalMean_compute_on_startup>.true.</config_AM_zonalMean_compute_on_startup>
 <config_AM_zonalMean_write_on_startup>.true.</config_AM_zonalMean_write_on_startup>
-<config_AM_zonalMean_compute_interval>'output_interval'</config_AM_zonalMean_compute_interval>
+<config_AM_zonalMean_compute_interval>'0000-00-00_01:00:00'</config_AM_zonalMean_compute_interval>
 <config_AM_zonalMean_output_stream>'zonalMeanOutput'</config_AM_zonalMean_output_stream>
 <config_AM_zonalMean_num_bins>180</config_AM_zonalMean_num_bins>
 <config_AM_zonalMean_min_bin>-1.0e34</config_AM_zonalMean_min_bin>
@@ -759,7 +759,7 @@
 <config_AM_okuboWeiss_enable>.false.</config_AM_okuboWeiss_enable>
 <config_AM_okuboWeiss_compute_on_startup>.true.</config_AM_okuboWeiss_compute_on_startup>
 <config_AM_okuboWeiss_write_on_startup>.true.</config_AM_okuboWeiss_write_on_startup>
-<config_AM_okuboWeiss_compute_interval>'output_interval'</config_AM_okuboWeiss_compute_interval>
+<config_AM_okuboWeiss_compute_interval>'0000-00-00_01:00:00'</config_AM_okuboWeiss_compute_interval>
 <config_AM_okuboWeiss_output_stream>'okuboWeissOutput'</config_AM_okuboWeiss_output_stream>
 <config_AM_okuboWeiss_directory>'analysis_members'</config_AM_okuboWeiss_directory>
 <config_AM_okuboWeiss_threshold_value>-0.2</config_AM_okuboWeiss_threshold_value>
@@ -771,7 +771,7 @@
 
 <!-- AM_meridionalHeatTransport -->
 <config_AM_meridionalHeatTransport_enable>.true.</config_AM_meridionalHeatTransport_enable>
-<config_AM_meridionalHeatTransport_compute_interval>'output_interval'</config_AM_meridionalHeatTransport_compute_interval>
+<config_AM_meridionalHeatTransport_compute_interval>'0000-00-00_01:00:00'</config_AM_meridionalHeatTransport_compute_interval>
 <config_AM_meridionalHeatTransport_compute_on_startup>.true.</config_AM_meridionalHeatTransport_compute_on_startup>
 <config_AM_meridionalHeatTransport_write_on_startup>.true.</config_AM_meridionalHeatTransport_write_on_startup>
 <config_AM_meridionalHeatTransport_output_stream>'meridionalHeatTransportOutput'</config_AM_meridionalHeatTransport_output_stream>
@@ -833,7 +833,7 @@
 
 <!-- AM_mixedLayerDepths -->
 <config_AM_mixedLayerDepths_enable>.true.</config_AM_mixedLayerDepths_enable>
-<config_AM_mixedLayerDepths_compute_interval>'output_interval'</config_AM_mixedLayerDepths_compute_interval>
+<config_AM_mixedLayerDepths_compute_interval>'0000-00-00_01:00:00'</config_AM_mixedLayerDepths_compute_interval>
 <config_AM_mixedLayerDepths_output_stream>'mixedLayerDepthsOutput'</config_AM_mixedLayerDepths_output_stream>
 <config_AM_mixedLayerDepths_write_on_startup>.true.</config_AM_mixedLayerDepths_write_on_startup>
 <config_AM_mixedLayerDepths_compute_on_startup>.true.</config_AM_mixedLayerDepths_compute_on_startup>
@@ -851,8 +851,8 @@
 <!-- AM_timeSeriesStats -->
 <config_AM_timeSeriesStats_enable>.true.</config_AM_timeSeriesStats_enable>
 <config_AM_timeSeriesStats_compute_on_startup>.false.</config_AM_timeSeriesStats_compute_on_startup>
-<config_AM_timeSeriesStats_write_on_startup>.false.</config_AM_timeSeriesStats_write_on_startup>
-<config_AM_timeSeriesStats_compute_interval>'dt'</config_AM_timeSeriesStats_compute_interval>
+<config_AM_timeSeriesStats_write_on_startup>.true.</config_AM_timeSeriesStats_write_on_startup>
+<config_AM_timeSeriesStats_compute_interval>'0000-00-00_01:00:00'</config_AM_timeSeriesStats_compute_interval>
 <config_AM_timeSeriesStats_output_stream>'timeSeriesStatsOutput'</config_AM_timeSeriesStats_output_stream>
 <config_AM_timeSeriesStats_restart_stream>'timeSeriesStatsRestart'</config_AM_timeSeriesStats_restart_stream>
 <config_AM_timeSeriesStats_add_mesh>.true.</config_AM_timeSeriesStats_add_mesh>
