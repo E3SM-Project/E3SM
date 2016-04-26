@@ -11,6 +11,7 @@ module test_core
    use mpas_timekeeping
 
    use test_core_halo_exch
+   use test_core_field_tests
    use mpas_stream_manager
 
    type (MPAS_Clock_type), pointer :: clock
@@ -121,6 +122,14 @@ module test_core
       else
          write(stderrUnit, *) ' * Halo Exchange Test: FAILURE'
       end if
+
+      !$omp parallel default(firstprivate) shared(domain, threadErrs)
+      call test_core_test_fields(domain, threadErrs, ierr)
+       if ( iErr == 0 ) then
+         write(stderrUnit, *) ' * Field Tests: SUCCESS'
+      else
+         write(stderrUnit, *) ' * Field Tests: FAILURE'
+      end if     !$omp end parallel
 
       call test_core_streams_test(domain, threadErrs, iErr)
       if ( iErr == 0 ) then
