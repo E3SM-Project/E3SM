@@ -1558,9 +1558,6 @@ subroutine cesm_init()
       call shr_sys_abort(subname//' ERROR: rof_prognostic but num_inst_rof not num_inst_max')
    if (wav_prognostic .and. num_inst_wav /= num_inst_max) &
       call shr_sys_abort(subname//' ERROR: wav_prognostic but num_inst_wav not num_inst_max')
-   if (num_inst_esp /= 1) then
-      call shr_sys_abort(subname//' ERROR: num_inst_esp must be 1')
-    end if
 
    !----------------------------------------------------------
    !| Initialize attribute vectors for prep_c2C_init_avs routines and fractions
