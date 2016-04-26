@@ -15,12 +15,14 @@ class EnvArchive(GenericXML):
         """
         initialize an object interface to file env_archive.xml in the case directory
         """
+        logger.debug("Case_root = %s" , case_root)
         if case_root is None:
             case_root = os.getcwd()
         if os.path.abspath(infile):
             fullpath = infile
         else:
             fullpath = os.path.join(case_root, infile)
+            logger.debug("Fullpath = %s" , fullpath)
         GenericXML.__init__(self, fullpath)
         if not os.path.isfile(infile):
             headerobj = Headers()

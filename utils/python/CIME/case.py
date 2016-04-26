@@ -153,6 +153,7 @@ class Case(object):
         results = []
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
+            logger.debug("Searching in %s" , env_file.__class__.__name__)
             result = None
            
             try:
