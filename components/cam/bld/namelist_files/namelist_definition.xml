@@ -2212,6 +2212,12 @@ Subgrid scaling factor for relative humidity in ice nucleation code.
 Default: set by build-namelist
 </entry>
 
+<entry id="so4_sz_thresh_icenuc" type="real" category="microphys"
+       group="nucleate_ice_nl" valid_values="" >
+ice nucleation SO2 size threshold for aitken mode
+Default: set by build-namelist
+</entry>
+
 <!-- hkconv Moist Convection -->
 <entry id="hkconv_cmftau" type="real" category="conv"
        group="hkconv_nl" valid_values="" >
@@ -3643,6 +3649,14 @@ Default: .false.
        group="phys_ctl_nl" valid_values="" >
 invokes new microphysics code (single call to amicphys routine) if > 0
 Default: 0
+</entry>
+
+
+<!-- number of so4(+nh4) monolayers needed to "age" a carbon particle -->
+<entry id="n_so4_monolayers_pcage" type="real"  category="scavenging"
+       group="phys_ctl_nl" valid_values="" >
+number of so4(+nh4) monolayers needed to "age" a carbon particle
+Default: Set by namelist
 </entry>
 
 
