@@ -23,7 +23,9 @@ from CIME.SystemTests.pet import PET
 from CIME.SystemTests.pfs import PFS
 from CIME.SystemTests.seq import SEQ
 from CIME.SystemTests.sms import SMS
-from CIME.utils import expect
+from CIME.utils           import expect
+from CIME.XML.files       import Files
+from CIME.XML.component   import Component
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -54,27 +56,26 @@ OR
     parser.add_argument("-m", "--model-only", action="store_true",
                         help="Assume shared libs already built")
 
-    comps = ("atm", "ice", "glc", "lnd", "ocn", "rof", "wav", "cpl")
-    libs  = ("shr", "mct", "pio", "tim")
+    files = Files()
+    config_file = files.get_value("CONFIG_DRV_FILE")
+    component = Component(config_file)
+    comps = [x.lower() for x in component.get_valid_model_components()]
+    comps = [x.replace('drv', 'cpl') for x in comps]
+    libs  = ["shr", "mct", "pio", "tim"]
     allobjs = comps + libs
 
     parser.add_argument("--clean", nargs="*", choices=allobjs,
                         help="objects to clean"
-                        "if no arguments then clean only atm, ice, glc, lnd, ocn, rof, wav objects")
+                        "if no arguments then clean all objects other than shr, mct, pio, and tim")
 
-    parser.add_argument("--cleanall", action="store_true",
+    parser.add_argument("--clean-all", action="store_true",
                         help="clean all objects ")
 
     args = parser.parse_args(args[1:])
 
-    cleanlist = []
-    if args.cleanall:
-        cleanlist = allobjs
+    cleanlist = allobjs if args.clean_all else []
     if args.clean is not None:
-        if args.clean:
-            cleanlist = args.clean
-        else:
-            cleanlist = comps
+        cleanlist = args.clean if args.clean else comps
 
     CIME.utils.handle_standard_logging_options(args)
 

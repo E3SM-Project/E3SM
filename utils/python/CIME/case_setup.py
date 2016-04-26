@@ -271,7 +271,7 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
         preview_namelists(case=case)
 
         logger.info("See ./CaseDoc for component namelists")
-        logger.info("If an old case build already exists, might want to run \'case.build --cleanall\' before building")
+        logger.info("If an old case build already exists, might want to run \'case.build --clean-all\' before building")
 
         # Create test script if appropriate
         if os.path.exists("env_test.xml"):

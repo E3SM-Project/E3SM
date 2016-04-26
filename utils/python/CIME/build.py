@@ -3,7 +3,7 @@ functions for building CIME models
 """
 from XML.standard_module_setup import *
 from CIME.case import Case
-from CIME.utils import expect, run_cmd, get_model
+from CIME.utils import expect, run_cmd, get_model, get_utc_timestamp
 from CIME.env_module import EnvModule
 from CIME.preview_namelists import preview_namelists
 from CIME.check_input_data import check_input_data
@@ -475,7 +475,7 @@ ERROR, SMP VALUES HAVE CHANGED
 ERROR env_build HAS CHANGED
   A manual clean of your obj directories is required
   You should execute the following:
-    ./case.build --cleanall
+    ./case.build --clean-all
 """)
 
     expect(comp_interface != "ESMF" or use_esmf_lib,
@@ -612,10 +612,9 @@ def clean(case, cleanlist):
     case.flush()
 
     # append call of to CaseStatus 
-    cmd = "date +\"%Y-%m-%d %H:%M:%S\""
-    sdate = run_cmd(cmd)
+    date = get_utc_timestamp()
     with open(os.path.join(caseroot,"CaseStatus"), "a") as fd:
-        fd.write("clean build complete %s\n\n" %sdate)
+        fd.write("clean build complete %s\n\n" %date)
 
 
 ###############################################################################

@@ -476,10 +476,10 @@ def get_project():
     """
     Hierarchy for choosing PROJECT:
     1. Environment variable PROJECT
-    2 environment variable ACCOUNT   (this is for backward compatibility)
-    3. File $HOME/.cime/config   (this is new)
-    4 File $HOME/.cesm_proj  (again - backward compatibility)
-    5 config_machines.xml
+    2  Environment variable ACCOUNT  (this is for backward compatibility)
+    3. File $HOME/.cime/config       (this is new)
+    4  File $HOME/.cesm_proj         (this is for backward compatibility)
+    5  config_machines.xml
     """
     project = os.environ.get("PROJECT")
     if (project is not None):

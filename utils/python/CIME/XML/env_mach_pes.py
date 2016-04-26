@@ -13,9 +13,6 @@ class EnvMachPes(EnvBase):
         """
         initialize an object interface to file env_mach_pes.xml in the case directory
         """
-        if case_root is None:
-            case_root = os.getcwd()
-
         EnvBase.__init__(self, case_root, infile)
 
     def get_value(self, vid, attribute={}, resolved=True, subgroup=None):
@@ -27,9 +24,9 @@ class EnvMachPes(EnvBase):
         if "ROOTPE" in vid and value < 0:
             value = -1*value*self.get_value("PES_PER_NODE")
         return value
-#
-# We need a set value until we full transition from perl
-#
+    #
+    # We need a set value until we full transition from perl
+    #
 
     def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False):
         if vid is None:
