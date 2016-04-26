@@ -898,6 +898,24 @@ contains
     ! CLM initialization - third phase
     !
     ! !USES:
+
+    call t_startf('clm_init3')
+
+    call initialize_vsfm()
+    call initialize_petsc_thermal_model()
+
+    call t_stopf('clm_init3')
+
+
+  end subroutine initialize3
+
+  !-----------------------------------------------------------------------
+  subroutine initialize_vsfm( )
+    !
+    ! !DESCRIPTION:
+    ! Initialization VSFM
+    !
+    ! !USES:
     use spmdMod                , only : mpicom, npes
     use clm_varctl             , only : use_vsfm
     use filterMod              , only : filter
@@ -992,8 +1010,6 @@ contains
     soilp_col            =>    waterstate_vars%soilp_col          ! Input:  [real(r8) (:)   ]  col soil liquid pressure
 
     if (.not.use_vsfm) return
-
-    call t_startf('clm_init3')
 
 #ifdef USE_PETSC_LIB
 
@@ -1094,6 +1110,7 @@ contains
       zc_col(:)     = 0._r8
       grid_owner(:) = 0
       area_col(:)   = 1._r8
+      ncols_ghost   = 0
 
     endif
 
@@ -1251,9 +1268,106 @@ contains
                 'using -DUSE_PETSC_LIB')
 #endif
 
-    call t_stopf('clm_init3')
+  end subroutine initialize_vsfm
 
-  end subroutine initialize3
+  !-----------------------------------------------------------------------
+  subroutine initialize_petsc_thermal_model( )
+    !
+    ! !DESCRIPTION:
+    ! Initialization PETSc-based thermal model
+    !
+    ! !USES:
+    use spmdMod                , only : mpicom, npes
+    use clm_varctl             , only : use_petsc_thermal_model
+    use filterMod              , only : filter
+    use decompMod              , only : get_proc_clumps
+    use clm_varpar             , only : nlevgrnd
+    use clm_varctl             , only : finidat
+    use shr_infnan_mod         , only : shr_infnan_isnan
+    use abortutils             , only : endrun
+    use shr_infnan_mod         , only : isnan => shr_infnan_isnan
+#ifdef USE_PETSC_LIB
+    use MultiPhysicsProbThermal  , only : thermal_mpp
+#endif
+    use spmdMod, only : iam
+    !
+    ! !ARGUMENTS
+    implicit none
+    !
+#ifdef USE_PETSC_LIB
+#include "finclude/petscsys.h"
+#endif
+    !
+    ! !LOCAL VARIABLES:
+    integer               :: nclumps               ! number of clumps on this processor
+    integer               :: nc                    ! clump index
+    integer               :: c,g,fc,j              ! do loop indices
+    type(bounds_type)     :: bounds_proc
+    integer               :: ncols_ghost           ! total number of ghost columns on the processor
+    real(r8), pointer     :: xc_col(:)             ! x-position of grid cell [m]
+    real(r8), pointer     :: yc_col(:)             ! y-position of grid cell [m]
+    real(r8), pointer     :: zc_col(:)             ! z-position of grid cell [m]
+    real(r8), pointer     :: area_col(:)           ! area of grid cell [m^2]
+    integer, pointer      :: grid_owner(:)         ! MPI rank owner of grid cell
+
+    !----------------------------------------------------------------------
+
+    if (.not.use_petsc_thermal_model) return
+
+#ifdef USE_PETSC_LIB
+
+    call get_proc_bounds(bounds_proc)
+    nclumps = get_proc_clumps()
+
+    if (nclumps /= 1) then
+       call endrun(msg='ERROR clm_initializeMod: '//&
+           'PETSc-based thermal model only supported for clumps = 1')
+    endif
+
+    nc = 1
+
+
+    allocate(xc_col(bounds_proc%begc_all:bounds_proc%endc_all))
+    allocate(yc_col(bounds_proc%begc_all:bounds_proc%endc_all))
+    allocate(zc_col(bounds_proc%begc_all:bounds_proc%endc_all))
+    allocate(area_col(bounds_proc%begc_all:bounds_proc%endc_all))
+    allocate(grid_owner(bounds_proc%begg_all:bounds_proc%endg_all))
+
+    xc_col(:)     = 0._r8
+    yc_col(:)     = 0._r8
+    zc_col(:)     = 0._r8
+    grid_owner(:) = 0
+    area_col(:)   = 1._r8
+    ncols_ghost   = 0
+
+    ! Allocate memory and setup data structure for VSFM-MPP
+    call thermal_mpp%Setup(bounds_proc%begg,    &
+                        bounds_proc%endg,       &
+                        bounds_proc%begc,       &
+                        bounds_proc%endc,       &
+                        ncols_ghost,            &
+                        filter(nc)%hydrologyc,  &
+                        xc_col, yc_col, zc_col, &
+                        area_col, grid_owner,   &
+                        soilstate_vars,         &
+                        waterstate_vars,        &
+                        soilhydrology_vars)
+
+    ! Free up memory
+    deallocate(xc_col    )
+    deallocate(yc_col    )
+    deallocate(zc_col    )
+    deallocate(area_col  )
+    deallocate(grid_owner)
+
+#else
+
+    call endrun(msg='ERROR clm_initializeMod: '//&
+                'use_petsc_thermal_model = true but code was not compiled ' // &
+                'using -DUSE_PETSC_LIB')
+#endif
+
+  end subroutine initialize_petsc_thermal_model
 
   !-----------------------------------------------------------------------
   subroutine clm_petsc_init()
@@ -1265,6 +1379,7 @@ contains
     use spmdMod    , only : mpicom
     use clm_varctl , only : use_vsfm
     use clm_varctl , only : lateral_connectivity
+    use clm_varctl , only : use_petsc_thermal_model
     !
     implicit none
 #ifdef USE_PETSC_LIB
@@ -1274,8 +1389,9 @@ contains
     PetscErrorCode        :: ierr                  ! get error code from PETSc
 #endif
 
-    if ( (.not. use_vsfm) .and. &
-         (.not. lateral_connectivity)) return
+    if ( (.not. use_vsfm)               .and. &
+         (.not. lateral_connectivity)   .and. &
+         (.not. use_petsc_thermal_model) ) return
 
 #ifdef USE_PETSC_LIB
     ! Initialize PETSc

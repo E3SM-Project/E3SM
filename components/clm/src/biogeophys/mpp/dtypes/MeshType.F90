@@ -57,6 +57,9 @@ module MeshType
      procedure, public :: Clean
      procedure, public :: Create
      procedure, public :: CreateFromCLMCols
+     procedure :: CreateCLMThermalSoilMesh
+     procedure :: CreateCLMThermalSnowMesh
+     procedure :: CreateCLMThermalSSWMesh
   end type mesh_type
 
   public :: MeshCreateConnectionSet
@@ -108,16 +111,19 @@ contains
 
   !------------------------------------------------------------------------
   subroutine Create(this, mesh_itype, begg, endg, begc, endc, &
-       discretization_type, ncols_ghost, &
-       xc_col, yc_col, zc_col, &
-       area_col, grid_owner, &
-     waterstate_vars, soilhydrology_vars)
+       discretization_type, ncols_ghost,                      &
+       xc_col, yc_col, zc_col,                                &
+       area_col, grid_owner,                                  &
+       waterstate_vars, soilhydrology_vars)
     !
     ! !DESCRIPTION:
     ! Creates a mesh from CLM column level data structure
     !
     ! !USES:
     use MultiPhysicsProbConstants, only : MESH_CLM_SOIL_COL
+    use MultiPhysicsProbConstants, only : MESH_CLM_THERMAL_SOIL_COL
+    use MultiPhysicsProbConstants, only : MESH_CLM_SNOW_COL
+    use MultiPhysicsProbConstants, only : MESH_CLM_SSW_COL
     !
     implicit none
     !
@@ -137,10 +143,21 @@ contains
     type(soilhydrology_type) , intent(in) :: soilhydrology_vars
 
     select case(mesh_itype)
+
     case (MESH_CLM_SOIL_COL)
        call this%CreateFromCLMCols(begg, endg, begc, endc, &
               discretization_type, ncols_ghost, &
               xc_col, yc_col, zc_col, area_col, grid_owner)
+
+    case (MESH_CLM_THERMAL_SOIL_COL)
+       call this%CreateCLMThermalSoilMesh(begc, endc)
+
+    case (MESH_CLM_SNOW_COL)
+       call this%CreateCLMThermalSnowMesh(begc, endc)
+
+    case (MESH_CLM_SSW_COL)
+       call this%CreateCLMThermalSSWMesh(begc, endc)
+
     case default
        write(iulog,*)'MeshType: Create() Unknown mesh_type = ',mesh_itype
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -512,8 +529,408 @@ contains
   end subroutine CreateFromCLMCols
 
   !------------------------------------------------------------------------
+  subroutine CreateCLMThermalSoilMesh(this, begc, endc)
+    !
+    ! !DESCRIPTION:
+    ! - Creates a mesh from CLM column level data structure for the
+    !   thermal soil model.
+    ! - The thermal model is NOT active on the lake and urban columns.
+    !
+    ! !USES:
+    use clm_varpar                , only : nlevgrnd, nlevsno
+    use ColumnType                , only : col
+    use LandunitType              , only : lun
+    use ConnectionSetType         , only : ConnectionSetNew
+    use MultiPhysicsProbConstants , only : MESH_ALONG_GRAVITY
+    use MultiPhysicsProbConstants , only : MESH_CLM_THERMAL_SOIL_COL
+    use ConnectionSetType         , only : connection_set_type
+    use ConnectionSetType         , only : ConnectionSetListAddSet
+    use landunit_varcon           , only : istcrop, istsoil
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(mesh_type) :: this
+    integer, intent(in) :: begc,endc
+    !
+    ! !LOCAL VARIABLES:
+    PetscInt  :: l,c,j                             !indices
+    PetscInt  :: icell
+    PetscInt  :: iconn
+    PetscInt  :: nconn
+    PetscInt  :: id_up, id_dn
+    PetscReal :: dx, dy
+    PetscInt :: first_active_col_id
+    PetscInt :: col_id
+    type(connection_set_type),pointer :: conn_set
+
+    call this%Init()
+
+    this%name         = "CLM Thermal Mesh"
+    this%itype        = MESH_CLM_THERMAL_SOIL_COL
+    this%ncells_local = (endc - begc + 1)*nlevgrnd
+    this%ncells_ghost = 0
+    this%ncells_all   = this%ncells_local + this%ncells_ghost
+    this%nlev         = nlevgrnd
+    this%orientation  = MESH_ALONG_GRAVITY
+
+    allocate(this%x(this%ncells_all         ))
+    allocate(this%y(this%ncells_all         ))
+    allocate(this%z(this%ncells_all         ))
+
+    allocate(this%z_m(this%ncells_all       ))
+    allocate(this%z_p(this%ncells_all       ))
+
+    allocate(this%dx(this%ncells_all        ))
+    allocate(this%dy(this%ncells_all        ))
+    allocate(this%dz(this%ncells_all        ))
+    allocate(this%area_xy(this%ncells_all   ))
+    allocate(this%vol(this%ncells_all       ))
+    allocate(this%is_active(this%ncells_all ))
+
+    dx = 1._r8   ! [m]
+    dy = 1._r8   ! [m]
+
+    first_active_col_id = -1
+    do c = begc, endc
+       l = col%landunit(c)
+
+       if (col%active(c) .and. .not.lun%lakpoi(l) .and. .not.lun%urbpoi(l)) then
+          if (first_active_col_id == -1) then
+             first_active_col_id = c
+             exit
+          endif
+       endif
+    enddo
+
+    if (first_active_col_id == -1) then
+       write(iulog,*)'No active soil column found'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    ! Populate location of cell centroids
+    !
+    icell = 0
+    do c = begc, endc
+       l = col%landunit(c)
+
+       ! Soil layers
+       do j = 1, nlevgrnd
+
+          icell = icell + 1
+
+          if (col%active(c) .and. .not.lun%lakpoi(l) .and. .not.lun%urbpoi(l)) then
+             col_id = c
+             this%is_active(icell) = PETSC_TRUE
+          else
+             col_id = first_active_col_id
+             this%is_active(icell) = PETSC_FALSE
+          endif
+
+          this%x(icell) = 0.0_r8
+          this%y(icell) = 0.0_r8
+          this%z(icell) = -0.5_r8*(col%zi(col_id,j-1) + col%zi(col_id,j))
+
+          this%dx(icell) = dx
+          this%dy(icell) = dy
+          this%dz(icell) = col%dz(col_id,j)
+
+          this%area_xy(icell) = 1.0_r8
+          this%vol(icell)     = this%area_xy(icell)*this%dz(icell)
+       enddo
+
+    enddo
+
+    ! Setup connections
+    nconn = (this%nlev - 1)*(endc - begc + 1)
+    conn_set => ConnectionSetNew(nconn)
+
+    iconn = 0
+    do c = begc, endc
+
+       ! Connections between soil layers
+       do j = 1, nlevgrnd-1
+
+          iconn = iconn + 1
+          id_up = (c-begc)*this%nlev + j
+          id_dn = id_up + 1
+
+          conn_set%id_up(iconn) = id_up
+          conn_set%id_dn(iconn) = id_dn
+          conn_set%area(iconn)  = this%dx(id_up)*this%dy(id_dn)
+
+          conn_set%dist_up(iconn) = col%zi(c,j)   - col%z(c,j)
+          conn_set%dist_dn(iconn) = col%z( c,j+1) - col%zi(c,j)
+
+          conn_set%dist_unitvec(iconn)%arr(1) = 0._r8
+          conn_set%dist_unitvec(iconn)%arr(2) = 0._r8
+          conn_set%dist_unitvec(iconn)%arr(3) = -1._r8
+
+       end do
+    end do
+
+    call ConnectionSetListAddSet(this%intrn_conn_set_list, conn_set)
+
+  end subroutine CreateCLMThermalSoilMesh
+
+  !------------------------------------------------------------------------
+  subroutine CreateCLMThermalSnowMesh(this, begc, endc)
+    !
+    ! !DESCRIPTION:
+    ! - Creates a mesh from CLM column level data structure for the
+    !   thermal snow model.
+    ! - The thermal model is NOT active on the lake and urban columns.
+    !
+    ! !USES:
+    use clm_varpar                , only : nlevsno
+    use ColumnType                , only : col
+    use LandunitType              , only : lun
+    use ConnectionSetType         , only : ConnectionSetNew
+    use MultiPhysicsProbConstants , only : MESH_ALONG_GRAVITY
+    use MultiPhysicsProbConstants , only : MESH_CLM_SNOW_COL
+    use ConnectionSetType         , only : connection_set_type
+    use ConnectionSetType         , only : ConnectionSetListAddSet
+    use landunit_varcon           , only : istcrop, istsoil
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(mesh_type) :: this
+    integer, intent(in) :: begc,endc
+    !
+    ! !LOCAL VARIABLES:
+    PetscInt  :: l,c,j                             !indices
+    PetscInt  :: icell
+    PetscInt  :: iconn
+    PetscInt  :: nconn
+    PetscInt  :: id_up, id_dn
+    PetscReal :: dx, dy
+    PetscInt :: first_active_col_id
+    PetscInt :: col_id
+    type(connection_set_type),pointer :: conn_set
+
+    call this%Init()
+
+    this%name         = "CLM Thermal Mesh"
+    this%itype        = MESH_CLM_SNOW_COL
+    this%ncells_local = (endc - begc + 1)*nlevsno
+    this%ncells_ghost = 0
+    this%ncells_all   = this%ncells_local + this%ncells_ghost
+    this%nlev         = nlevsno
+    this%orientation  = MESH_ALONG_GRAVITY
+
+    allocate(this%x(this%ncells_all         ))
+    allocate(this%y(this%ncells_all         ))
+    allocate(this%z(this%ncells_all         ))
+
+    allocate(this%z_m(this%ncells_all       ))
+    allocate(this%z_p(this%ncells_all       ))
+
+    allocate(this%dx(this%ncells_all        ))
+    allocate(this%dy(this%ncells_all        ))
+    allocate(this%dz(this%ncells_all        ))
+    allocate(this%area_xy(this%ncells_all   ))
+    allocate(this%vol(this%ncells_all       ))
+    allocate(this%is_active(this%ncells_all ))
+
+    dx = 1._r8   ! [m]
+    dy = 1._r8   ! [m]
+
+    first_active_col_id = -1
+    do c = begc, endc
+       l = col%landunit(c)
+
+       !if (col%active(c) .and. &
+       !     (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop)) then
+       if (col%active(c) .and. .not.lun%lakpoi(l) .and. .not.lun%urbpoi(l)) then
+          if (first_active_col_id == -1) then
+             first_active_col_id = c
+             exit
+          endif
+       endif
+    enddo
+
+    if (first_active_col_id == -1) then
+       write(iulog,*)'No active soil column found'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    ! Populate location of cell centroids
+    !
+    icell = 0
+    do c = begc, endc
+       l = col%landunit(c)
+
+       ! Soil layers
+       do j = -nlevsno+1, 0
+
+          icell = icell + 1
+
+          if (col%active(c) .and. .not.lun%lakpoi(l) .and. .not.lun%urbpoi(l)) then
+             col_id = c
+             this%is_active(icell) = PETSC_TRUE
+          else
+             col_id = first_active_col_id
+             this%is_active(icell) = PETSC_FALSE
+          endif
+
+          this%x(icell)   = 0.0_r8
+          this%y(icell)   = 0.0_r8
+          this%z(icell)   = -0.5_r8*(col%zi(col_id,j-1) + col%zi(col_id,j))
+          this%z_m(icell) = -col%zi(c,j-1)
+          this%z_p(icell) = -col%zi(c,j  )
+
+          this%dx(icell)  = dx
+          this%dy(icell)  = dy
+          this%dz(icell)  = col%dz(col_id,j)
+
+          this%area_xy(icell) = 1.0_r8
+          this%vol(icell)     = this%area_xy(icell)*this%dz(icell)
+       enddo
+
+    enddo
+
+    ! Setup connections
+    nconn = (this%nlev - 1)*(endc - begc + 1)
+    conn_set => ConnectionSetNew(nconn)
+
+    iconn = 0
+    do c = begc, endc
+
+       ! Connections between soil layers
+       do j = -nlevsno+1, -1
+
+          iconn = iconn + 1
+          id_up = (c-begc)*this%nlev + j + nlevsno
+          id_dn = id_up + 1
+
+          conn_set%id_up(iconn) = id_up
+          conn_set%id_dn(iconn) = id_dn
+          conn_set%area(iconn)  = this%dx(id_up)*this%dy(id_dn)
+
+          conn_set%dist_up(iconn) = col%zi(c,j)   - col%z(c,j)
+          conn_set%dist_dn(iconn) = col%z( c,j+1) - col%zi(c,j)
+
+          conn_set%dist_unitvec(iconn)%arr(1) = 0._r8
+          conn_set%dist_unitvec(iconn)%arr(2) = 0._r8
+          conn_set%dist_unitvec(iconn)%arr(3) = -1._r8
+
+       end do
+    end do
+
+    call ConnectionSetListAddSet(this%intrn_conn_set_list, conn_set)
+
+  end subroutine CreateCLMThermalSnowMesh
+
+  !------------------------------------------------------------------------
+  subroutine CreateCLMThermalSSWMesh(this, begc, endc)
+    !
+    ! !DESCRIPTION:
+    ! - Creates a mesh from CLM column level data structure for the
+    !   thermal standing surface water (SSW)  model.
+    ! - The thermal model is NOT active on the lake and urban columns.
+    !
+    ! !USES:
+    use ColumnType                , only : col
+    use LandunitType              , only : lun
+    use ConnectionSetType         , only : ConnectionSetNew
+    use MultiPhysicsProbConstants , only : MESH_ALONG_GRAVITY
+    use MultiPhysicsProbConstants , only : MESH_CLM_SSW_COL
+    use ConnectionSetType         , only : connection_set_type
+    use ConnectionSetType         , only : ConnectionSetListAddSet
+    use landunit_varcon           , only : istcrop, istsoil
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(mesh_type)    :: this
+    integer, intent(in) :: begc,endc
+    !
+    ! !LOCAL VARIABLES:
+    PetscInt            :: l,c,j                             !indices
+    PetscInt            :: icell
+    PetscReal           :: dx, dy, dz
+    PetscInt            :: first_active_col_id
+    PetscInt            :: col_id
+
+    call this%Init()
+
+    this%name         = "CLM Thermal Mesh"
+    this%itype        = MESH_CLM_SSW_COL
+    this%ncells_local = (endc - begc + 1)
+    this%ncells_ghost = 0
+    this%ncells_all   = this%ncells_local + this%ncells_ghost
+    this%nlev         = 1
+    this%orientation  = MESH_ALONG_GRAVITY
+
+    allocate(this%x(this%ncells_all         ))
+    allocate(this%y(this%ncells_all         ))
+    allocate(this%z(this%ncells_all         ))
+
+    allocate(this%z_m(this%ncells_all       ))
+    allocate(this%z_p(this%ncells_all       ))
+
+    allocate(this%dx(this%ncells_all        ))
+    allocate(this%dy(this%ncells_all        ))
+    allocate(this%dz(this%ncells_all        ))
+    allocate(this%area_xy(this%ncells_all   ))
+    allocate(this%vol(this%ncells_all       ))
+    allocate(this%is_active(this%ncells_all ))
+
+    dx = 1._r8     ! [m]
+    dy = 1._r8     ! [m]
+    dz = 1.0e-6_r8 ! [m]
+
+    first_active_col_id = -1
+    do c = begc, endc
+       l = col%landunit(c)
+
+       if (col%active(c) .and. .not.lun%lakpoi(l) .and. .not.lun%urbpoi(l)) then
+          if (first_active_col_id == -1) then
+             first_active_col_id = c
+             exit
+          endif
+       endif
+    enddo
+
+    if (first_active_col_id == -1) then
+       write(iulog,*)'No active soil column found'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    ! Populate location of cell centroids
+    !
+    icell = 0
+    j     = 1
+    do c = begc, endc
+       l = col%landunit(c)
+       icell = icell + 1
+
+       if (col%active(c) .and. .not.lun%lakpoi(l) .and. .not.lun%urbpoi(l)) then
+          col_id = c
+          this%is_active(icell) = PETSC_TRUE
+       else
+          col_id = first_active_col_id
+          this%is_active(icell) = PETSC_FALSE
+       endif
+
+       this%x(icell) = 0.0_r8
+       this%y(icell) = 0.0_r8
+       this%z(icell) = -0.5_r8*(dz + col%zi(c,j))
+
+       this%dx(icell) = dx
+       this%dy(icell) = dy
+       this%dz(icell) = dz
+
+       this%area_xy(icell) = 1.0_r8
+       this%vol(icell)     = this%area_xy(icell)*this%dz(icell)
+    enddo
+
+  end subroutine CreateCLMThermalSSWMesh
+
+!------------------------------------------------------------------------
   subroutine MeshCreateConnectionSet(mesh, region_itype, conn_set, ncells_local, &
-       soil_top_cell_offset)
+       soil_top_cell_offset, use_clm_dist_to_interface)
     !
     ! !DESCRIPTION:
     ! Creates a connection set for a mesh that stores:
@@ -525,9 +942,11 @@ contains
     ! !USES:
     use ConnectionSetType           , only : ConnectionSetNew
     use MultiPhysicsProbConstants   , only : SOIL_TOP_CELLS, SOIL_BOTTOM_CELLS, SOIL_CELLS
-    use MultiPhysicsProbConstants   , only : SNOW_TOP_CELLS, SSW_TOP_CELLS, ALL_CELLS
+    use MultiPhysicsProbConstants   , only : SNOW_TOP_CELLS, SNOW_BOTTOM_CELLS, SSW_TOP_CELLS, ALL_CELLS
     use MultiPhysicsProbConstants   , only : MESH_ALONG_GRAVITY, MESH_AGAINST_GRAVITY
     use ConnectionSetType           , only : connection_set_type
+    use ColumnType                  , only : col
+    use decompMod, only                  : bounds_type, get_proc_bounds
     !
     implicit none
     !
@@ -537,23 +956,30 @@ contains
     type(connection_set_type),pointer :: conn_set
     PetscInt, intent(out)             :: ncells_local
     PetscInt,optional                 :: soil_top_cell_offset
+    PetscBool, optional               :: use_clm_dist_to_interface
     !
     ! !LOCAL VARIABLES:
     PetscInt                          :: c,j
-    PetscInt                          :: icell
     PetscInt                          :: iconn
     PetscInt                          :: nconn
     PetscInt                          :: id_up, id_dn
     PetscInt                          :: ncols
     PetscInt                          :: offset
+    PetscBool                         :: use_centroid_in_dist_computation
+    type(bounds_type)                 :: bounds_proc
+
+    call get_proc_bounds(bounds_proc)
 
     ncols = mesh%ncells_local/mesh%nlev
 
     offset = 0
     if (present(soil_top_cell_offset)) offset = soil_top_cell_offset
 
+    use_centroid_in_dist_computation = PETSC_FALSE
+    if (present(use_clm_dist_to_interface)) use_centroid_in_dist_computation = use_clm_dist_to_interface
+
     select case (region_itype)
-    case (SOIL_BOTTOM_CELLS, SOIL_TOP_CELLS, SNOW_TOP_CELLS, SSW_TOP_CELLS)
+    case (SOIL_BOTTOM_CELLS, SOIL_TOP_CELLS, SNOW_TOP_CELLS, SNOW_BOTTOM_CELLS, SSW_TOP_CELLS)
 
        nconn = ncols
        conn_set => ConnectionSetNew(nconn)
@@ -574,7 +1000,7 @@ contains
                 conn_set%dist_unitvec(iconn)%arr(2) =  0._r8
                 conn_set%dist_unitvec(iconn)%arr(3) =  -1._r8
 
-             case (SOIL_BOTTOM_CELLS)
+             case (SOIL_BOTTOM_CELLS, SNOW_BOTTOM_CELLS)
 
                 id_up = -1
                 id_dn = mesh%nlev*(c-1) + 1 + offset
@@ -586,7 +1012,7 @@ contains
 
           case (MESH_ALONG_GRAVITY)
              select case(region_itype)
-             case (SOIL_BOTTOM_CELLS)
+             case (SOIL_BOTTOM_CELLS, SNOW_BOTTOM_CELLS)
                 id_up = -1
                 id_dn = mesh%nlev*c + offset
 
@@ -612,7 +1038,12 @@ contains
           conn_set%id_dn(iconn) = id_dn
           conn_set%area(iconn)  = mesh%area_xy(id_dn)
           conn_set%dist_up(iconn) = 0.0_r8
-          conn_set%dist_dn(iconn) = 0.5_r8*mesh%dz(id_dn)
+          if (use_centroid_in_dist_computation) then
+             j = 0
+             conn_set%dist_dn(iconn) = col%z( bounds_proc%begc,j+1) - col%zi(bounds_proc%endc,j)
+          else
+             conn_set%dist_dn(iconn) = 0.5_r8*mesh%dz(id_dn)
+          endif
        enddo
 
     case (SOIL_CELLS, ALL_CELLS)

@@ -125,8 +125,7 @@ contains
     if (.not.use_petsc_thermal_model) then
        thermal_model = default_thermal_model
     else
-       write(iulog,*)'use_petsc_thermal_model=.true. not yet supported'
-       call endrun(msg=errMsg(__FILE__, __LINE__))
+       thermal_model = petsc_thermal_model
     endif
 
   end subroutine init_soil_temperature
@@ -156,14 +155,17 @@ contains
     !   results in a tridiagonal system equation.
     !
     ! !USES:
-    use clm_time_manager , only : get_step_size
-    use clm_varpar       , only : nlevsno, nlevgrnd, nlevurb
-    use clm_varctl       , only : iulog
-    use clm_varcon       , only : cnfac, cpice, cpliq, denh2o
-    use landunit_varcon  , only : istice, istice_mec, istsoil, istcrop
-    use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
-    use landunit_varcon  , only : istwet, istice, istice_mec, istsoil, istcrop
-    use BandDiagonalMod  , only : BandDiagonal
+    use clm_time_manager        , only : get_step_size
+    use clm_varpar              , only : nlevsno, nlevgrnd, nlevurb
+    use clm_varctl              , only : iulog
+    use clm_varcon              , only : cnfac, cpice, cpliq, denh2o
+    use landunit_varcon         , only : istice, istice_mec, istsoil, istcrop
+    use column_varcon           , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
+    use landunit_varcon         , only : istwet, istice, istice_mec, istsoil, istcrop
+    use BandDiagonalMod         , only : BandDiagonal
+#ifdef USE_PETSC_LIB
+    use SoilTemperaturePETScMod , only : SoilTemperaturePETSc
+#endif
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds                     
@@ -422,7 +424,7 @@ contains
 
          ! soil layers; top layer will have one offset and one extra coefficient
          tvector_nourbanc(c,1:nlevgrnd) = t_soisno(c,1:nlevgrnd)
-         tvector_urbanc(c,1:nlevgrnd) = t_soisno(c,1:nlevgrnd)
+         tvector_urbanc(c,1:nlevgrnd)   = t_soisno(c,1:nlevgrnd)
       enddo
 
 
@@ -430,29 +432,49 @@ contains
       ! Solve temperature for non-lake + non-urban columns
       !
 
-      urban_column = .false.
-      call SolveTemperature(bounds,                &
-           num_nolakec_and_nourbanc,               &
-           filter_nolakec_and_nourbanc,            &
-           dtime,                                  &
-           hs_h2osfc( begc:endc ),                 &
-           hs_top_snow( begc:endc ),               &
-           hs_soil( begc:endc ),                   &
-           hs_top( begc:endc ),                    &
-           dhsdT( begc:endc ),                     &
-           sabg_lyr_col (begc:endc, -nlevsno+1: ), &
-           tk( begc:endc, -nlevsno+1: ),           &
-           tk_h2osfc( begc:endc ),                 &
-           fact( begc:endc, -nlevsno+1: ),         &
-           fn( begc:endc, -nlevsno+1: ),           &
-           c_h2osfc( begc:endc ),                  &
-           dz_h2osfc( begc:endc ),                 &
-           jtop( begc:endc ),                      &
-           jbot( begc:endc ),                      &
-           temperature_vars,                       &
-           waterstate_vars,                        &
-           urban_column,                           &
-           tvector_nourbanc( begc:endc, -nlevsno: ))
+      select case(thermal_model)
+      case (default_thermal_model)
+
+         urban_column = .false.
+         call SolveTemperature(bounds,                &
+              num_nolakec_and_nourbanc,               &
+              filter_nolakec_and_nourbanc,            &
+              dtime,                                  &
+              hs_h2osfc( begc:endc ),                 &
+              hs_top_snow( begc:endc ),               &
+              hs_soil( begc:endc ),                   &
+              hs_top( begc:endc ),                    &
+              dhsdT( begc:endc ),                     &
+              sabg_lyr_col (begc:endc, -nlevsno+1: ), &
+              tk( begc:endc, -nlevsno+1: ),           &
+              tk_h2osfc( begc:endc ),                 &
+              fact( begc:endc, -nlevsno+1: ),         &
+              fn( begc:endc, -nlevsno+1: ),           &
+              c_h2osfc( begc:endc ),                  &
+              dz_h2osfc( begc:endc ),                 &
+              jtop( begc:endc ),                      &
+              jbot( begc:endc ),                      &
+              temperature_vars,                       &
+              waterstate_vars,                        &
+              urban_column,                           &
+              tvector_nourbanc( begc:endc, -nlevsno: ))
+
+      case (petsc_thermal_model)
+#ifdef USE_PETSC_LIB
+         call SoilTemperaturePETSc(bounds,            &
+              num_nolakec_and_nourbanc,               &
+              filter_nolakec_and_nourbanc,            &
+              dtime,                                  &
+              sabg_lyr_col (begc:endc, -nlevsno+1: ), &
+              dhsdT( begc:endc ),                     &
+              hs_soil( begc:endc ),                   &
+              hs_top_snow( begc:endc ),               &
+              hs_h2osfc( begc:endc ),                 &
+              waterstate_vars,                        &
+              temperature_vars,                       &
+              tvector_nourbanc( begc:endc, -nlevsno: ))
+#endif         
+      end select
 
       !
       ! Solve temperature for non-lake + urban column

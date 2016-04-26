@@ -232,7 +232,7 @@ contains
     ! !ARGUMENTS
     class(sysofeqns_base_type) :: this
     KSP                        :: ksp
-    Mat                        :: B
+    Vec                        :: B
     PetscErrorCode             :: ierr
 
     call endrun(msg='ERROR SOEComputeRHS: '//&
@@ -324,6 +324,7 @@ contains
     ! !USES
     use MultiPhysicsProbConstants, only : PETSC_TS
     use MultiPhysicsProbConstants, only : PETSC_SNES
+    use MultiPhysicsProbConstants, only : PETSC_KSP
     !
     implicit none
     !
@@ -339,6 +340,8 @@ contains
        call SOEBaseStepDT_TS(this, dt, ierr)
     case (PETSC_SNES)
        call SOEBaseStepDT_SNES(this, dt, converged, converged_reason, ierr)
+    case (PETSC_KSP)
+       call SOEBaseStepDT_KSP(this, dt, converged, ierr)
     case default
        write(iulog,*) 'VSFMMPPSetup: Unknown this%solver_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -379,7 +382,7 @@ contains
     ! Solves SoE via PETSc SNES
     !
     ! !USES
-    use spmdMod          , only : masterproc, iam
+    use spmdMod          , only : iam
     use clm_time_manager , only : get_nstep
     use clm_varctl       , only : vsfm_use_dynamic_linesearch
     !
@@ -559,6 +562,76 @@ contains
 
 
   end subroutine SOEBaseStepDT_SNES
+
+  !------------------------------------------------------------------------
+  subroutine SOEBaseStepDT_KSP(soe, dt, converged, ierr)
+    !
+    ! !DESCRIPTION:
+    ! Solves SoE via PETSc KSP
+    !
+    ! !USES
+    use clm_time_manager , only : get_nstep
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(sysofeqns_base_type) :: soe
+    PetscErrorCode             :: ierr
+    PetscBool,intent(out)      :: converged
+    PetscReal                  :: dt
+    !
+    ! !LOCAL VARIABLES:
+    KSPConvergedReason         :: converged_reason
+    PetscInt                   :: num_linear_iterations
+    PetscReal                  :: target_time
+    PetscReal                  :: dt_iter
+
+    ! initialize
+    soe%time       = 0.d0
+    target_time    = dt
+    dt_iter        = dt
+
+    ! Set timestep
+    call soe%SetDtime(dt_iter)
+
+    ! Do any pre-solve operations
+    call soe%PreSolve()
+
+    ! Compute the 'b' vector
+    call soe%ComputeRHS(soe%ksp, soe%rhs, ierr)
+
+    ! Compute the 'A' matrix
+    call soe%ComputeOperators(soe%ksp, soe%Amat, soe%Amat, ierr);
+
+    ! Set the A matrix
+    call KSPSetOperators(soe%ksp, soe%Amat, soe%Amat, ierr)
+
+    ! Solve Ax = b
+    call KSPSolve(soe%ksp, soe%rhs, soe%soln, ierr)
+
+    ! Did KSP converge?
+    call KSPGetConvergedReason(soe%ksp, converged_reason, ierr); CHKERRQ(ierr)
+
+    ! Did KSP converge?
+    if (converged_reason < 0) then
+       write(iulog,*) 'KSP Diverged. Add new code'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+       converged = PETSC_FALSE
+    else
+       converged = PETSC_TRUE
+    endif
+
+    ! Keep track of cummulative number of iterations
+    call KSPGetIterationNumber(soe%ksp, &
+            num_linear_iterations, ierr); CHKERRQ(ierr)
+
+    soe%cumulative_linear_iterations = soe%cumulative_linear_iterations + &
+         num_linear_iterations
+
+    ! Do post-solve operations
+    call soe%PostSolve()
+
+  end subroutine SOEBaseStepDT_KSP
 
   !------------------------------------------------------------------------
   subroutine SOEBasePostSolve(this)
@@ -768,7 +841,6 @@ contains
     PetscInt                   :: soe_auxvar_type
     PetscInt                   :: soe_auxvar_id
     PetscReal                  :: data_1d(:)
-    PetscInt                   :: nsize
     !
     ! !LOCAL VARIABLES:
 

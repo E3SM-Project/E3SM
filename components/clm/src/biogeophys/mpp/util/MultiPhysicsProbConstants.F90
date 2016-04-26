@@ -21,15 +21,23 @@ module MultiPhysicsProbConstants
 
   ! mpp_itype
   PetscInt, parameter, public :: MPP_VSFM_SNES_CLM                 = 11
+  PetscInt, parameter, public :: MPP_THERMAL_TBASED_KSP_CLM        = 12
 
   ! soe_itype
   PetscInt, parameter, public :: SOE_RE_ODE                        = 101
+  PetscInt, parameter, public :: SOE_THERMAL_TBASED                = 102
 
   ! ge_itype
   PetscInt, parameter, public :: GE_RE                             = 201
+  PetscInt, parameter, public :: GE_THERM_SOIL_TBASED              = 202
+  PetscInt, parameter, public :: GE_THERM_SNOW_TBASED              = 203
+  PetscInt, parameter, public :: GE_THERM_SSW_TBASED               = 204
 
   ! mesh_itype
   PetscInt, parameter, public :: MESH_CLM_SOIL_COL                 = 301
+  PetscInt, parameter, public :: MESH_CLM_THERMAL_SOIL_COL         = 302
+  PetscInt, parameter, public :: MESH_CLM_SNOW_COL                 = 303
+  PetscInt, parameter, public :: MESH_CLM_SSW_COL                  = 304
   PetscInt, parameter, public :: MESH_ALONG_GRAVITY                = 311
   PetscInt, parameter, public :: MESH_AGAINST_GRAVITY              = 312
 
@@ -39,11 +47,12 @@ module MultiPhysicsProbConstants
   PetscInt, parameter, public :: SOIL_CELLS                        = 403
   PetscInt, parameter, public :: SOIL_CELLS_OF_NEIGH_MESH          = 404
   PetscInt, parameter, public :: SNOW_TOP_CELLS                    = 405
-  PetscInt, parameter, public :: SSW_TOP_CELLS                     = 406
-  PetscInt, parameter, public :: ALL_CELLS                         = 407
-  PetscInt, parameter, public :: DEFINED_BY_CELL_ID                = 408
-  PetscInt, parameter, public :: FACE_TOP                          = 409
-  PetscInt, parameter, public :: FACE_BOTTOM                       = 410
+  PetscInt, parameter, public :: SNOW_BOTTOM_CELLS                 = 406
+  PetscInt, parameter, public :: SSW_TOP_CELLS                     = 407
+  PetscInt, parameter, public :: ALL_CELLS                         = 408
+  PetscInt, parameter, public :: DEFINED_BY_CELL_ID                = 409
+  PetscInt, parameter, public :: FACE_TOP                          = 410
+  PetscInt, parameter, public :: FACE_BOTTOM                       = 411
 
   ! condition%itype
   PetscInt, parameter, public :: COND_NULL                         = 500
@@ -56,6 +65,7 @@ module MultiPhysicsProbConstants
   PetscInt, parameter, public :: COND_HEAT_FLUX                    = 507
   PetscInt, parameter, public :: COND_DARCY_RATE                   = 508
   PetscInt, parameter, public :: COND_SEEPAGE_BC                   = 509
+  PetscInt, parameter, public :: COND_HEAT_RATE                    = 511
 
   !
   PetscInt, parameter, public :: VAR_XI                            = 601
@@ -74,6 +84,19 @@ module MultiPhysicsProbConstants
   PetscInt, parameter, public :: VAR_FRAC_LIQ_SAT                  = 612
   PetscInt, parameter, public :: VAR_LATERAL_MASS_EXCHANGED        = 613
   PetscInt, parameter, public :: VAR_BC_MASS_EXCHANGED             = 614
+  PetscInt, parameter, public :: VAR_LIQ_AREAL_DEN                 = 615
+  PetscInt, parameter, public :: VAR_ICE_AREAL_DEN                 = 617
+  PetscInt, parameter, public :: VAR_FRAC                          = 618
+  PetscInt, parameter, public :: VAR_SNOW_WATER                    = 619
+  PetscInt, parameter, public :: VAR_NUM_SNOW_LYR                  = 620
+  PetscInt, parameter, public :: VAR_DHS_DT                        = 621
+  PetscInt, parameter, public :: VAR_THERMAL_COND                  = 622
+  PetscInt, parameter, public :: VAR_HEAT_CAP                      = 623
+  PetscInt, parameter, public :: VAR_ACTIVE                        = 624
+  PetscInt, parameter, public :: VAR_DZ                            = 625
+  PetscInt, parameter, public :: VAR_DIST_UP                       = 626
+  PetscInt, parameter, public :: VAR_DIST_DN                       = 627
+  PetscInt, parameter, public :: VAR_TUNING_FACTOR                 = 628
 
   !
   PetscInt, parameter, public :: AUXVAR_INTERNAL                   = 701

@@ -36,11 +36,11 @@ module GoverningEquationBaseType
 
      PetscReal                       :: dtime                                ! time step [sec]
 
-     ! Track variables supplied by other governing equations.
+                                                                             ! Track variables supplied by other governing equations.
      PetscInt                        :: nvars_needed_from_other_goveqns      !
      PetscInt, pointer               :: var_ids_needed_from_other_goveqns(:) !
 
-     PetscInt, pointer               :: ids_of_other_goveqns(:)              !
+     PetscInt, pointer               :: ids_of_other_goveqns(:)              ! index of the other governing equation in the list
      PetscBool, pointer              :: is_bc_auxvar_type(:)                 !
      PetscInt, pointer               :: bc_auxvar_offset(:)                  !
      PetscInt, pointer               :: bc_auxvar_idx(:)                     !
@@ -66,8 +66,10 @@ module GoverningEquationBaseType
      procedure, public :: Jacobian                => GoveqnBaseJacobian
      procedure, public :: Residual                => GoveqnBaseResidual
      procedure, public :: ComputeRHS              => GoveqnBaseComputeRHS
-     procedure, public :: ComputeOperators        => GoveqnBaseComputeOperators
+     procedure, public :: ComputeOperatorsDiag    => GoveqnBaseComputeOperatorsDiag
+     procedure, public :: ComputeOperatorsOffDiag => GoveqnBaseComputeOperatorsOffDiag
      procedure, public :: SetDtime                => GoveqnBaseSetDtime
+     procedure, public :: GetNumConditions        => GoveqnBaseGetNumConditions
   end type goveqn_base_type
   !------------------------------------------------------------------------
 
@@ -314,7 +316,7 @@ contains
   end subroutine GoveqnBaseResidual
 
   !------------------------------------------------------------------------
-  subroutine GoveqnBaseComputeRHS(this, R, ierr)
+  subroutine GoveqnBaseComputeRHS(this, B, ierr)
     !
     ! !DESCRIPTION:
     ! Dummy subroutine for PETSc TS RSHFunction
@@ -323,7 +325,7 @@ contains
     !
     ! !ARGUMENTS
     class(goveqn_base_type) :: this
-    Vec                     :: R
+    Vec                     :: B
     PetscErrorCode          :: ierr
 
     write(iulog,*)'GoveqnBaseComputeRHS must be extended by child class.'
@@ -332,7 +334,7 @@ contains
   end subroutine GoveqnBaseComputeRHS
 
   !------------------------------------------------------------------------
-  subroutine GoveqnBaseComputeOperators(this, A, B, ierr)
+  subroutine GoveqnBaseComputeOperatorsDiag(this, A, B, ierr)
     !
     ! !DESCRIPTION:
     ! Dummy subroutine for PETSc KSP Operator matrix
@@ -345,10 +347,32 @@ contains
     Mat                     :: B
     PetscErrorCode          :: ierr
 
-    write(iulog,*)'GoveqnBaseComputeOperators must be extended by child class.'
+    write(iulog,*)'GoveqnBaseComputeOperatorsDiag must be extended by child class.'
     call endrun(msg=errMsg(__FILE__, __LINE__))
 
-  end subroutine GoveqnBaseComputeOperators
+  end subroutine GoveqnBaseComputeOperatorsDiag
+
+  !------------------------------------------------------------------------
+  subroutine GoveqnBaseComputeOperatorsOffDiag(this, A, B, &
+       itype_of_other_goveq, list_id_of_other_goveq, ierr)
+    !
+    ! !DESCRIPTION:
+    ! Dummy subroutine for PETSc KSP Operator matrix
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(goveqn_base_type) :: this
+    Mat                     :: A
+    Mat                     :: B
+    PetscInt                :: itype_of_other_goveq
+    PetscInt                :: list_id_of_other_goveq
+    PetscErrorCode          :: ierr
+
+    write(iulog,*)'GoveqnBaseComputeOperatorsOffDiag must be extended by child class.'
+    call endrun(msg=errMsg(__FILE__, __LINE__))
+
+  end subroutine GoveqnBaseComputeOperatorsOffDiag
 
   !------------------------------------------------------------------------
   subroutine GoveqnBaseSetDtime(this, dtime)
@@ -500,6 +524,51 @@ contains
     call endrun(msg=errMsg(__FILE__, __LINE__))
 
   end subroutine GoveqnBasePreSolve
+
+  !------------------------------------------------------------------------
+  subroutine GoveqnBaseGetNumConditions(this, cond_type, &
+              cond_type_to_exclude, num_conds)
+    !
+    ! !DESCRIPTION:
+    ! Returns the total number of conditions
+    !
+    ! !USES:
+    use ConditionType             , only : condition_type
+    use MultiPhysicsProbConstants , only : COND_BC
+    use MultiPhysicsProbConstants , only : COND_SS
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(goveqn_base_type) :: this
+    PetscInt                                 :: cond_type
+    PetscInt                                 :: cond_type_to_exclude
+    PetscInt, intent(out)                    :: num_conds
+    type(condition_type),pointer             :: cur_cond
+    character(len=256)                       :: string
+
+    ! Choose the condition type
+    select case (cond_type)
+    case (COND_BC)
+       cur_cond => this%boundary_conditions%first
+    case (COND_SS)
+      cur_cond => this%source_sinks%first
+    case default
+       write(string,*) cond_type
+       write(iulog,*) 'Unknown cond_type = ' // trim(string)
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end select
+
+    num_conds = 0
+    do
+       if (.not.associated(cur_cond)) exit
+       if (cur_cond%itype /= cond_type_to_exclude) then
+          num_conds = num_conds + 1
+       endif
+       cur_cond => cur_cond%next
+    enddo
+
+  end subroutine GoveqnBaseGetNumConditions
 
 #endif
 

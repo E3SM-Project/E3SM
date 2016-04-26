@@ -1,0 +1,73 @@
+module ThermalKSPTemperatureSSWAuxType
+
+#ifdef USE_PETSC_LIB
+
+  !
+  ! !USES:
+  use clm_varctl         , only : iulog
+  use abortutils         , only : endrun
+  use shr_log_mod        , only : errMsg => shr_log_errMsg
+  use shr_kind_mod       , only : r8 => shr_kind_r8
+  use ThermalKSPTemperatureBaseAuxType
+  !
+  ! !PUBLIC TYPES:
+  implicit none
+
+  private
+
+#include "finclude/petscsys.h"
+
+  type, public, extends(therm_ksp_temp_base_auxvar_type)  :: therm_ksp_temp_ssw_auxvar_type
+     PetscReal :: dz ! [m]
+   contains
+     procedure, public :: Init                  => ThermKSPTempSSWAuxVarInit
+     procedure, public :: AuxVarCompute         => ThermKSPTempSSWAuxVarCompute
+  end type therm_ksp_temp_ssw_auxvar_type
+
+contains
+
+  !------------------------------------------------------------------------
+  subroutine ThermKSPTempSSWAuxVarInit(this)
+    !
+    ! !DESCRIPTION:
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(therm_ksp_temp_ssw_auxvar_type)   :: this
+
+    call this%BaseInit()
+
+    this%dz = 0.d0
+    
+  end subroutine ThermKSPTempSSWAuxVarInit
+
+  !------------------------------------------------------------------------
+  subroutine ThermKSPTempSSWAuxVarCompute(this, dz, vol)
+    !
+    ! !DESCRIPTION:
+    !
+    use clm_varcon      , only : cpliq, denh2o, tkwat
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(therm_ksp_temp_ssw_auxvar_type)   :: this
+    PetscReal                                :: dz
+    PetscReal                                :: vol
+    !
+    ! LOCAL VARIABLES
+
+    if (.not.this%is_active) then
+       return
+    else
+
+       this%therm_cond    = tkwat
+       this%heat_cap_pva  = cpliq*denh2o
+    endif
+
+  end subroutine ThermKSPTempSSWAuxVarCompute
+
+#endif
+
+end module ThermalKSPTemperatureSSWAuxType
