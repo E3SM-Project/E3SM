@@ -1004,8 +1004,8 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 </griddom>
 
 <griddom grid="ne30np4" mask="oQU120">
-  <ATM_DOMAIN_FILE>domain.lnd.ne30np4_oQU120.160322.nc</ATM_DOMAIN_FILE>
-  <LND_DOMAIN_FILE>domain.lnd.ne30np4_oQU120.160322.nc</LND_DOMAIN_FILE>
+  <ATM_DOMAIN_FILE>domain.lnd.ne30np4_oQU120.160401.nc</ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE>domain.lnd.ne30np4_oQU120.160401.nc</LND_DOMAIN_FILE>
   <ICE_DOMAIN_FILE>domain.ocn.ne30np4_oQU120.160322.nc</ICE_DOMAIN_FILE>
   <OCN_DOMAIN_FILE>domain.ocn.ne30np4_oQU120.160322.nc</OCN_DOMAIN_FILE>
 </griddom>
