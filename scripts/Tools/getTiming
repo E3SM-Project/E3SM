@@ -221,7 +221,7 @@ class TimingParser:
         if inittype == "TRUE":
             odays = adays - (tlen/ocn_ncpl)
         peminmax = max([m.rootpe for m in self.models.values()])+1
-        if ncpl_base_period in ["decade","year","day"]:
+        if ncpl_base_period in ["decade","year","day"] and int(adays) > 0:
             adays = int(adays)
             if tlen % ocn_ncpl == 0:
                 odays = int(odays)

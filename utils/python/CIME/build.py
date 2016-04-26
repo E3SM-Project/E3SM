@@ -8,7 +8,7 @@ from CIME.env_module import EnvModule
 from CIME.preview_namelists import preview_namelists
 from CIME.check_input_data import check_input_data
 
-import glob, shutil, time, threading
+import glob, shutil, time, threading, gzip
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +135,8 @@ def post_build(case, logs):
 
     for log in logs:
         logger.debug("Copying build log %s to %s"%(log,bldlogdir))
-        run_cmd("gzip %s" % log)
+        with open(log, 'rb') as f_in, gzip.open("%s.gz"%log, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
         if "sharedlibroot" not in log:
             shutil.copy("%s.gz"%log,os.path.join(bldlogdir,"%s.gz"%os.path.basename(log)))
 

@@ -229,7 +229,6 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
 
             batchmaker = None
             for (job, template, task_count) in batch_jobs:
-                logger.info("Writing %s script"%job)
                 if batchmaker is None:
                     batchmaker = get_batch_maker(job, case=case)
                 else:
@@ -241,11 +240,15 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
 
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), template)
                 if job == "case.test" and testcase is not None:
+                    import pdb
+                    pdb.set_trace()
+                    logger.info("Writing %s script"%job)
                     testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
                     # Short term fix to be removed when csh tests are removed
                     if not os.path.exists(testscript):
                         batchmaker.make_batch_script(input_batch_script, job)
-                else:
+                elif job != "case.test":
+                    logger.info("Writing %s script"%job)
                     batchmaker.make_batch_script(input_batch_script, job)
 
             # Make a copy of env_mach_pes.xml in order to be able

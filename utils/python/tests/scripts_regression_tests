@@ -426,12 +426,14 @@ class TestSystemTest(TestCreateTestCommon):
     ###########################################################################
     def test_phases(self):
     ###########################################################################
-        tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
+        tests = update_acme_tests.get_full_test_names(["acme_test_only", "^TESTMEMLEAKFAIL.f19_g16_rx1.A", "^TESTMEMLEAKPASS.f19_g16_rx1.A"],
+                                                      self._machine, self._compiler)
+        self.assertEqual(len(tests), 3)
         ct = SystemTest(tests)
 
-        build_fail_test = tests[0]
-        run_fail_test   = tests[1]
-        pass_test       = tests[2]
+        build_fail_test = [item for item in tests if "TESTBUILDFAIL" in item][0]
+        run_fail_test   = [item for item in tests if "TESTRUNFAIL" in item][0]
+        pass_test       = [item for item in tests if "TESTRUNPASS" in item][0]
 
         self.assertTrue("BUILDFAIL" in build_fail_test, msg="Wrong test '%s'" % build_fail_test)
         self.assertTrue("RUNFAIL" in run_fail_test, msg="Wrong test '%s'" % run_fail_test)
@@ -499,9 +501,11 @@ class TestSystemTest(TestCreateTestCommon):
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
         ct = SystemTest(tests, test_id=test_id)
 
-        build_fail_test = tests[0]
-        run_fail_test   = tests[1]
-        pass_test       = tests[2]
+        build_fail_test = [item for item in tests if "TESTBUILDFAIL" in item][0]
+        run_fail_test   = [item for item in tests if "TESTRUNFAIL" in item][0]
+        pass_test       = [item for item in tests if "TESTRUNPASS" in item][0]
+        mem_fail_test   = [item for item in tests if "TESTMEMLEAKFAIL" in item][0]
+        mem_pass_test   = [item for item in tests if "TESTMEMLEAKPASS" in item][0]
 
         try:
             sys.stdout = open("/dev/null", "w")
@@ -521,9 +525,15 @@ class TestSystemTest(TestCreateTestCommon):
                 self.assertEqual(status[CIME.system_test.MODEL_BUILD_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             elif (test_name == run_fail_test):
                 self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
-            else:
-                self.assertEqual(test_name, pass_test)
+            elif (test_name == mem_fail_test):
+                print mem_fail_test
+                self.assertEqual(status["memleak"], wait_for_tests.TEST_FAIL_STATUS)
                 self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
+            else:
+                self.assertTrue(test_name in [pass_test, mem_pass_test])
+                self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
+                if (test_name == mem_pass_test):
+                    self.assertEqual(status["memleak"], wait_for_tests.TEST_PASS_STATUS)
 
 ###############################################################################
 @unittest.skipIf(CIME.utils.get_model() == 'cesm', "skip Jenkins tests in cesm")

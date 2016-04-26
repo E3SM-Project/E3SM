@@ -1,7 +1,7 @@
 """
 Base class for CIME system tests
 """
-import shutil, glob
+import shutil, glob, gzip
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
 from CIME.XML.env_run import EnvRun
@@ -48,14 +48,11 @@ class SystemTestsCommon(object):
 
 
     def run(self):
-        with open("TestStatus", 'a') as f:
-            f.write("PEND %s RUN\n"%self._case.get_value("CASEBASEID"))
-
         with open("TestStatus", 'r') as f:
             teststatusfile = f.read()
 
         rc, out, err = run_cmd("./case.run", ok_to_fail=True)
-        if rc == 0:
+        if rc == 0 and self.coupler_log_indicates_run_complete():
             result = "PASS"
         else:
             result = "FAIL"
@@ -68,40 +65,61 @@ class SystemTestsCommon(object):
         teststatusfile = result.join(li)
         with open("TestStatus", 'w') as f:
             f.write(teststatusfile)
-
-
         return
+
+    def coupler_log_indicates_run_complete(self):
+        newestcpllogfile = self._getlatestcpllog()
+        logger.warn("Latest Coupler log file is %s"%newestcpllogfile)
+        if "SUCCESSFUL TERMINATION" in gzip.open(newestcpllogfile, 'rb').read():
+            return True
+        else:
+            return False
 
     def report(self):
         newestcpllogfile = self._getlatestcpllog()
-        if "SUCCESSFUL TERMINATION" in open(newestcpllogfile).read():
-            with open("TestStatus", "a") as fd:
-                fd.write("PASS %s : successful coupler log\n"%(self._case.get_value("CASEBASEID")))
-        else:
-            with open("TestStatus", "a") as fd:
-                fd.write("FAIL %s : coupler log indicates a problem\n"%(self._case.get_value("CASEBASEID")))
-
         self._checkformemleak(newestcpllogfile)
         self._compare
         return
+
+    def _getmemusage(self, cpllog):
+        """
+        Examine memory usage as recorded in the cpl log file and look for unexpected
+        increases.
+        """
+        memlist = list()
+        meminfo = re.compile(".*model date =\s+(\w+).*memory =\s+(\d+\.?\d+).*highwater")
+        with gzip.open(cpllog, "rb") as f:
+            for line in f:
+                m = meminfo.match(line)
+                if m:
+                    memlist.append((m.group(1), m.group(2)))
+        return memlist
 
     def _checkformemleak(self, cpllog):
         """
         Examine memory usage as recorded in the cpl log file and look for unexpected
         increases.
         """
+        memlist = self._getmemusage(cpllog)
 
-
-        cmd = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools","check_memory.pl")
-        rc, out, err = run_cmd("%s -file1 %s -m 1.5"%(cmd, cpllog),ok_to_fail=True)
-        if rc == 0:
+        if len(memlist)<3:
             with open("TestStatus", "a") as fd:
-                fd.write("PASS %s memleak\n"%(self._case.get_value("CASEBASEID")))
+                fd.write("COMMENT: insuffiencient data for memleak test\n")
         else:
-            with open(os.path.join(test_dir, "TestStatus.log"), "a") as fd:
-                fd.write("memleak out: %s\n\nerror: %s"%(out,err))
-            with open(os.path.join(test_dir, "TestStatus"), "a") as fd:
-                fd.write("FAIL %s memleak\n"%(self._case.get_value("CASEBASEID")))
+            finaldate = int(memlist[-1][0])
+            originaldate = int(memlist[0][0])
+            finalmem = float(memlist[-1][1])
+            originalmem = float(memlist[0][1])
+            memdiff = (finalmem - originalmem)/originalmem
+            if memdiff < 0.01:
+                with open("TestStatus", "a") as fd:
+                    fd.write("PASS %s memleak\n"%(self._case.get_value("CASEBASEID")))
+            else:
+                with open("TestStatus.log", "a") as fd:
+                    fd.write("\nmemleak detected, memory went from %f to %f in %d days"
+                             %(originalmem, finalmem, finaldate-originaldate))
+                with open("TestStatus", "a") as fd:
+                    fd.write("FAIL %s memleak\n"%(self._case.get_value("CASEBASEID")))
 
     def compare_env_run(self, expected=None):
         f1obj = EnvRun(self._caseroot, "env_run.xml")
@@ -123,8 +141,11 @@ class SystemTestsCommon(object):
         """
         find and return the latest cpl log file in the run directory
         """
-        cpllog = min(glob.iglob(os.path.join(
-                    self._case.get_value('RUNDIR'),'cpl.log.*')), key=os.path.getctime)
+        cpllog = None
+        cpllogs = glob.iglob(os.path.join(
+                    self._case.get_value('RUNDIR'),'cpl.log.*'))
+        if cpllogs:
+            cpllog = min(cpllogs, key=os.path.getctime)
         return cpllog
 
 
@@ -172,6 +193,15 @@ class SystemTestsCommon(object):
         if rc != 0:
             with open(os.path.join(test_dir, "TestStatus.log"), "a") as fd:
                 fd.write("Error in Baseline compare: %s"%err)
+        # compare memory usage to baseline
+        newestcpllogfile = self._getlatestcpllog()
+        memlist = self._getmemusage(cpllog)
+        if len(memlist) > 3:
+            baselog = os.path.join(basecmp_dir, "cpl.log")
+            blmemlist = self._getmemusage(baselog)
+            if(memlist[-1][1] > 1.10*blmemlist[-1][1]):
+                with open(os.path.join(test_dir, "TestStatus"), "a") as fd:
+                    fd.write("FAIL: Memory usage increase > 10% from baseline")
 
     def generate_baseline(self):
         """
@@ -207,11 +237,9 @@ class SystemTestsCommon(object):
             with open(os.path.join(test_dir, "TestStatus.log"), "a") as fd:
                 fd.write("Error in Baseline Generate: %s"%err)
 
-
-
 class FakeTest(SystemTestsCommon):
 
-    def fake_build(self, script, sharedlib_only=False, model_only=False):
+    def build(self, script, sharedlib_only=False, model_only=False):
         if (not sharedlib_only):
             exeroot = self._case.get_value("EXEROOT")
             cime_model = self._case.get_value("MODEL")
@@ -234,7 +262,7 @@ class TESTRUNPASS(FakeTest):
 echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 """ % rundir
-        self.fake_build(script,
+        FakeTest.build(self, script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNDIFF(FakeTest):
@@ -249,7 +277,7 @@ echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc.base
 """ % (rundir, cimeroot, rundir, case)
-        self.fake_build(script,
+        FakeTest.build(self, script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNFAIL(FakeTest):
@@ -262,7 +290,7 @@ echo Insta fail
 echo model failed > %s/cpl.log.$LID
 exit -1
 """ % rundir
-        self.fake_build(script,
+        FakeTest.build(self, script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTBUILDFAIL(FakeTest):
@@ -281,6 +309,29 @@ sleep 300
 echo Slow pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 """ % rundir
-        self.fake_build(script,
+        FakeTest.build(self, script,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
+class TESTMEMLEAKFAIL(FakeTest):
+    def build(self, sharedlib_only=False, model_only=False):
+        rundir = self._case.get_value("RUNDIR")
+        cimeroot = self._case.get_value("CIMEROOT")
+        testfile = os.path.join(cimeroot,"utils","python","tests","cpl.log.failmemleak.gz")
+        script = \
+"""
+gunzip -c %s > %s/cpl.log.$LID
+""" % (testfile, rundir)
+        FakeTest.build(self, script,
+                        sharedlib_only=sharedlib_only, model_only=model_only)
+
+class TESTMEMLEAKPASS(FakeTest):
+    def build(self, sharedlib_only=False, model_only=False):
+        rundir = self._case.get_value("RUNDIR")
+        cimeroot = self._case.get_value("CIMEROOT")
+        testfile = os.path.join(cimeroot,"utils","python","tests","cpl.log.passmemleak.gz")
+        script = \
+"""
+gunzip -c %s > %s/cpl.log.$LID
+""" % (testfile, rundir)
+        FakeTest.build(self, script,
+                        sharedlib_only=sharedlib_only, model_only=model_only)

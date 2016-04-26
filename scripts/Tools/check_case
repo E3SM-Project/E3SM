@@ -26,5 +26,5 @@ if not build_complete:
     expect(False,
            "Please rebuild the model interactively by calling case.build")
 
-$logger->info( "check_case OK ");
+logger.info( "check_case OK ");
 
