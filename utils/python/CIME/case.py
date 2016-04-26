@@ -44,9 +44,6 @@ class Case(object):
         # Init first, if no valid case_root expect fails and tears down object, __del__ expects self._env_files_that_need_rewrite
         self._env_files_that_need_rewrite = set()
         
-        expect(os.path.isdir(case_root),
-               "Case root directory '%s' does not exist" % case_root)
-
         logger.debug("Initializing Case.")       
 
         self._env_entryid_files = []
