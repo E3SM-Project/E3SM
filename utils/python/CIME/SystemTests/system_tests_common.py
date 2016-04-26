@@ -76,6 +76,7 @@ class SystemTestsCommon(object):
             return False
 
     def report(self):
+        newestcpllogfile = self._getlatestcpllog()
         self._checkformemleak(newestcpllogfile)
         self._compare
         return
