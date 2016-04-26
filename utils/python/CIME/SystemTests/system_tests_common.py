@@ -203,8 +203,6 @@ class SystemTestsCommon(object):
                 with open(os.path.join(test_dir, "TestStatus"), "a") as fd:
                     fd.write("FAIL: Memory usage increase > 10% from baseline")
 
-
-
     def generate_baseline(self):
         """
         generate a new baseline case based on the current test
@@ -238,8 +236,6 @@ class SystemTestsCommon(object):
         if rc != 0:
             with open(os.path.join(test_dir, "TestStatus.log"), "a") as fd:
                 fd.write("Error in Baseline Generate: %s"%err)
-
-
 
 class FakeTest(SystemTestsCommon):
 
