@@ -524,6 +524,8 @@ class Case(object):
             project = get_project()
         if project is not None:
             self.set_value("PROJECT", project)
+        if machobj.get_value("PROJECT_REQUIRED"):
+            expect(project is not None, " PROJECT_REQUIRED is true but no project found")
 
     def get_compset_var_settings(self):
         compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))
