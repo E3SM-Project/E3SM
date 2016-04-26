@@ -43,12 +43,10 @@
 
   integer, parameter :: pcnstxx = gas_pcnst
 
-! real(r8), parameter, public :: n_so4_monolayers_pcage = 1.0_r8
-  real(r8), parameter, public :: n_so4_monolayers_pcage = 3.0_r8
+  real(r8), public, protected :: n_so4_monolayers_pcage = huge(1.0_r8)
 ! number of so4(+nh4) monolayers needed to "age" a carbon particle
 
-  real(r8), parameter, public :: &
-              dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
+  real(r8), public, protected :: dr_so4_monolayers_pcage = huge(1.0_r8)
 ! thickness of the so4 monolayers (m)
 ! for so4(+nh4), use bi-sulfate mw and 1.77 g/cm3,
 !    --> 1 mol so4(+nh4)  = 65 cm^3 --> 1 molecule = (4.76e-10 m)^3
@@ -5090,7 +5088,7 @@ agepair_loop1: &
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
-      subroutine modal_aero_amicphys_init( imozart, species_class )
+      subroutine modal_aero_amicphys_init( imozart, species_class,n_so4_monolayers_pcage_in)
 
 !-----------------------------------------------------------------------
 !
@@ -5128,6 +5126,7 @@ implicit none
 ! arguments
    integer, intent(in)  :: imozart
    integer, intent(in)  :: species_class(:)
+   real(r8), intent(in) :: n_so4_monolayers_pcage_in
 
 !-----------------------------------------------------------------------
 ! local
@@ -5149,6 +5148,10 @@ implicit none
    character(2)                   :: tmpch2
    !-----------------------------------------------------------------------
  
+!namelist variables
+n_so4_monolayers_pcage  = n_so4_monolayers_pcage_in
+dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
+
 
 #if ( defined( CAMBOX_ACTIVATE_THIS ) )
       ldiag82  = .true.  ; lun82  = 82
