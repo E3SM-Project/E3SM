@@ -205,7 +205,7 @@ within model's Machines directory, and add a batch system type for this machine
 
         mpi_arg_string = " ".join(args.values())
 
-        self.mpirun = "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, default_run_suffix)
+        self.mpirun = "cmd =\"%s %s %s \" " % (executable if executable is not None else "", mpi_arg_string, default_run_suffix)
 
     def _set_batch_directives(self):
         """

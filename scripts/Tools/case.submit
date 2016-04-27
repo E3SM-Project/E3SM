@@ -78,6 +78,7 @@ sub main
     }else{
 	$job = "case.run";
     }
+    print "DEBUG: i am here \n";
     $logger->debug( "Job = $job");
     my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case	   => $case,
 							      caseconfig   => \%config,
