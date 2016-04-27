@@ -129,6 +129,7 @@ contains
     real(r8), parameter :: topo(5) = [10._r8, 30._r8, 50._r8, 70._r8, 90._r8]
     real(r8), parameter :: data(5) = [2._r8, 5.5_r8, 8._r8, 9.5_r8, 10._r8]
     real(r8) :: gradients(5)
+    real(r8) :: expected_gradients(5)
 
     calculator = this%create_calculator_one_point(topo=topo, data=data, &
          elevclass_bounds=elevclass_bounds)
@@ -137,6 +138,9 @@ contains
          n_elev_classes = 5, &
          npts = 1, &
          pt = 1)
+
+    expected_gradients(:) = [0.2_r8, 0.15_r8, 0.10_r8, 0.05_r8, 0.0_r8]
+    @assertEqual(expected_gradients, gradients, tolerance=tol)
 
     call this%write_output( &
          elevclass_bounds = elevclass_bounds, &
