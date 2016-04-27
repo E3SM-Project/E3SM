@@ -150,4 +150,50 @@ contains
 
   end subroutine basic
 
+  @Test
+  subroutine topo_outOfBoundsHigh(this)
+    class(TestVertGradCalcCont), intent(inout) :: this
+    type(vertical_gradient_calculator_continuous_type) :: calculator
+    real(r8), parameter :: elevclass_bounds(4) = &
+         [0._r8, 20._r8, 40._r8, 60._r8]
+    real(r8), parameter :: topo(3) = [10._r8, 40._r8 + 1.e-5_r8, 50._r8]
+    real(r8), parameter :: data(3) = [2._r8, 5.5_r8, 8._r8]
+    real(r8) :: gradients(3)
+
+    calculator = this%create_calculator_one_point(topo=topo, data=data, &
+         elevclass_bounds=elevclass_bounds)
+
+    gradients = all_gradients_one_point(calculator, &
+         n_elev_classes = 3, &
+         npts = 1, &
+         pt = 1)
+
+    @assertIsNan(gradients(1))
+    @assertIsNan(gradients(2))
+    @assertIsNan(gradients(3))
+  end subroutine topo_outOfBoundsHigh
+
+  @Test
+  subroutine topo_outOfBoundsLow(this)
+    class(TestVertGradCalcCont), intent(inout) :: this
+    type(vertical_gradient_calculator_continuous_type) :: calculator
+    real(r8), parameter :: elevclass_bounds(4) = &
+         [0._r8, 20._r8, 40._r8, 60._r8]
+    real(r8), parameter :: topo(3) = [10._r8, 20._r8 - 1.e-5_r8, 50._r8]
+    real(r8), parameter :: data(3) = [2._r8, 5.5_r8, 8._r8]
+    real(r8) :: gradients(3)
+
+    calculator = this%create_calculator_one_point(topo=topo, data=data, &
+         elevclass_bounds=elevclass_bounds)
+
+    gradients = all_gradients_one_point(calculator, &
+         n_elev_classes = 3, &
+         npts = 1, &
+         pt = 1)
+
+    @assertIsNan(gradients(1))
+    @assertIsNan(gradients(2))
+    @assertIsNan(gradients(3))
+  end subroutine topo_outOfBoundsLow
+
 end module test_vertical_gradient_calculator_continuous

@@ -28,10 +28,12 @@ module vertical_gradient_calculator_continuous
 
      integer :: nelev ! number of elevation classes
      integer :: num_points
-     real(r8), allocatable :: field(:,:)   ! field(i,j) is elevation class i, field j
-     real(r8), allocatable :: topo(:,:)    ! topo(i,j) is elevation class i, field j
+     real(r8), allocatable :: field(:,:)   ! field(i,j) is elevation class i, point j
+     real(r8), allocatable :: topo(:,:)    ! topo(i,j) is elevation class i, point j
 
      real(r8), allocatable :: vertical_gradient(:,:)  ! precomputed vertical gradients; vertical_gradient(i,j) is elevation class i, field j
+
+     logical, allocatable :: topo_valid(:)  ! whether topo is valid in each point
 
      ! Bounds of each elevation class. This array has one more element than the number of
      ! elevation classes, since it contains lower and upper bounds for each elevation
@@ -42,8 +44,10 @@ module vertical_gradient_calculator_continuous
    contains
      procedure :: calc_vertical_gradient
 
+     procedure, private :: check_topo  ! check topographic heights
      procedure, private :: set_data_from_attr_vect ! extract data from an attribute vector
      procedure, private :: precompute_vertical_gradients ! compute vertical gradients for all ECs
+     procedure, private :: solve_for_vertical_gradients ! compute vertical gradients for all ECs, for points where we do a matrix solve
 
   end type vertical_gradient_calculator_continuous_type
 
@@ -109,13 +113,11 @@ contains
 
     call this%set_data_from_attr_vect(attr_vect, fieldname, toponame, elevclass_names)
 
+    allocate(this%topo_valid(this%num_points))
+    call this%check_topo()
+
     allocate(this%vertical_gradient(this%nelev, this%num_points))
     this%vertical_gradient(:,:) = nan
-
-    ! FIXME(wjs, 2016-04-26) Uncomment this call to check_topo - but change it so that it
-    ! sets a flag, and then we'll set vertical gradients to 0 wherever topos are bad.
-    !
-    ! call this%check_topo()
 
     ! For this implementation of the vertical gradient calculator, we compute all vertical
     ! gradients in object construction. This is because we compute them all simultaneously
@@ -219,10 +221,88 @@ contains
   end subroutine set_data_from_attr_vect
 
   !-----------------------------------------------------------------------
+  subroutine check_topo(this)
+    !
+    ! !DESCRIPTION:
+    ! Check topographic heights; set this%topo_valid(i) to false if there is a problem in
+    ! point i.
+    !
+    ! Topographic heights in the attribute vector must all lie inside the bounds of their
+    ! respective elevation class (given by elevclass_bounds), with the possible exception
+    ! of the lowest elevation class (topographic heights can lie below the arbitrary lower
+    ! bound of the elevation class) and the highest elevation class (topographic heights
+    ! can lie above the arbitrary upper bound of the elevation class)
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(vertical_gradient_calculator_continuous_type), intent(inout) :: this
+    !
+    ! !LOCAL VARIABLES:
+    integer :: elevclass
+    integer :: i
+
+    ! Absolute tolerance for error checks. This is chosen so that it allows for
+    ! double-precision roundoff-level errors on values of order 10,000.
+    real(r8), parameter :: tol = 1.e-10_r8
+
+    character(len=*), parameter :: subname = 'check_topo'
+    !-----------------------------------------------------------------------
+
+    this%topo_valid(:) = .true.
+
+    do i = 1, this%num_points
+       do elevclass = 1, this%nelev
+          if (elevclass > 1) then
+             if (this%topo(elevclass,i) - this%elevclass_bounds(elevclass-1) < -tol) then
+                this%topo_valid(i) = .false.
+             end if
+          end if
+
+          if (elevclass < this%nelev) then
+             if (this%topo(elevclass,i) - this%elevclass_bounds(elevclass) > tol) then
+                this%topo_valid(i) = .false.
+             end if
+          end if
+       end do
+    end do
+
+  end subroutine check_topo
+
+  !-----------------------------------------------------------------------
   subroutine precompute_vertical_gradients(this, pt)
     !
     ! !DESCRIPTION:
-    ! Compute and save vertical gradients for all elevation classes.
+    ! Compute and save vertical gradients for all elevation classes in this point.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(vertical_gradient_calculator_continuous_type), intent(inout) :: this
+    integer, intent(in) :: pt  ! point to compute gradients for (1..this%num_points)
+    !
+    ! !LOCAL VARIABLES:
+
+    character(len=*), parameter :: subname = 'precompute_vertical_gradients'
+    !-----------------------------------------------------------------------
+
+    if (.not. this%topo_valid(pt)) then
+       this%vertical_gradient(:,pt) = nan
+    else
+       call this%solve_for_vertical_gradients(pt)
+    end if
+
+  end subroutine precompute_vertical_gradients
+
+
+  !-----------------------------------------------------------------------
+  subroutine solve_for_vertical_gradients(this, pt)
+    !
+    ! !DESCRIPTION:
+    ! Compute and save vertical gradients for all elevation classes in this point.
+    !
+    ! This should only be called for points where we have done some initial checks to
+    ! show that we should attempt a matrix solve there.
     !
     ! Computes a gradient in each elevation class such that the field is continuous at
     ! interfaces and the sum over squared differences from the mean is minimized.
@@ -264,7 +344,7 @@ contains
     integer :: i
 
 
-    character(len=*), parameter :: subname = 'precompute_vertical_gradients'
+    character(len=*), parameter :: subname = 'solve_for_vertical_gradients'
     !-----------------------------------------------------------------------
 
     field(:) = this%field(:,pt)
@@ -433,7 +513,7 @@ contains
 
     this%vertical_gradient(:,pt) = grad(:)
 
-  end subroutine precompute_vertical_gradients
+  end subroutine solve_for_vertical_gradients
 
 
 end module vertical_gradient_calculator_continuous
