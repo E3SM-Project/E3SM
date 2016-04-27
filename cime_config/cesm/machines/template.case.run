@@ -4,7 +4,7 @@
 script to create a case run script
 """
 
-import sys, os, calendar, shutil
+import sys, os, calendar, shutil, time
 
 workdir = os.environ.get("PBS_O_WORKDIR")
 if workdir is not None:
@@ -100,10 +100,9 @@ def doPreRunChecks(case):
     os.makedirs(rundir + '/timing/checkpoints')
 
     # Now set up the LID and sdate 
-    os.environ["LID"] = get_utc_timestamp(timestamp_format="%y%m%d-%H%M%S") 
+    os.environ["LID"] = time.strftime("%Y-%m-%d %H:%M:%S")
 
-    localtime = get_utc_timestamp(timestamp_format="%Y-%m-%d %H:%M:%S")
-    appendCaseStatus(caseroot, "Run started date %s \n" %localtime)
+    appendCaseStatus(caseroot, "%s Run started \n" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     preview_namelists()
 
@@ -128,17 +127,14 @@ def runModel(case):
     os.environ["OMP_NUM_THREADS"] = str(num_threads)
 
     # Run the model
-
-    localtime = get_utc_timestamp(timestamp_format="%Y-%m-%d %H:%M:%S")
-    logger.info("%s MODEL EXECUTION BEGINS HERE" %localtime)
+    logger.info("%s MODEL EXECUTION BEGINS HERE" %(time.strftime("%Y-%m-%d %H:M:S")))
 
     {{ mpirun }}
     cmd = case.get_resolved_value(cmd)
     logger.debug("run command is %s " %cmd)
     #run_cmd(cmd) #DEBUG
 
-    localtime = get_utc_timestamp(timestamp_format="%Y-%m-%d %H:%M:%S")
-    logger.info( "%s MODEL EXECUTION HAS FINISHED" %localtime)
+    logger.info( "%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:M:S")))
 
 ###############################################################################
 def postRun(case):
@@ -155,31 +151,31 @@ def postRun(case):
 
     lid = os.environ["LID"]
 
-    localtime = get_utc_timestamp(timestamp_format="%Y-%m-%d %H:%M:%S")
-
     # find the last model.log and cpl.log
     model_logfile = os.path.join(rundir,model + ".log." + lid)
     cpl_logfile   = os.path.join(rundir,"cpl" + ".log." + lid)
 
-    if os.path.isfile(model_logfile):
-        msg = "Model did not complete, no model log file %s " %(model_logfile)
+    if not os.path.isfile(model_logfile):
+        msg = "%s Model did not complete, no model log file %s \n" %(time.strftime("%Y-%m-%d %H:%M:%S"), model_logfile)
         appendCaseStatus(caseroot,msg)
-        expect(False, msg)
-
-    if not os.path.isfile(cpl_logfile):
-        msg = "Model did not complete, no cpl log file %s" %(cpl_logfile) 
+        #expect(False, msg) DEBUG
+        print "DEBUG: ",msg
+    elif not os.path.isfile(cpl_logfile):
+        msg = "%s Model did not complete, no cpl log file %s \n" %(time.strftime("%Y-%m-%d %H:%M:%S"), cpl_logfile) 
         appendCaseStatus(caseroot, msg)
-        expect(False, msg)
-
-    if os.stat(model_logfile).st_size == 0:
-        msg = " Run FAILED localtime " %(localtime)
+        #expect(False, msg) DEBUG
+        print "DEBUG: ",msg
+    elif os.stat(model_logfile).st_size == 0:
+        msg = " %s Run FAILED " %time.strftime("%y-%m-%d %H:%M:%S")
         appendCaseStatus(caseroot, msg)
+        #expect (False, msg)
+        print "DEBUG: ",msg
     else:
         if 'SUCCESSFUL TERMINATION' in open(cpl_logfile).read():
-            msg = "run SUCCESSFUL %s" %(localtime)
+            msg = "%s run SUCCESSFUL" %time.strftime("%y-%m-%d %H:%M:%S")
             appendCaseStatus(caseroot, msg )
         else:
-            msg = "Model did not complete - see %s " %(cpl_logfile)
+            msg = "%s Model did not complete - see %s \n " %(time.strftime("%y-%m-%d %H:%M:%S"), cpl_logfile)
             appendCaseStatus(caseroot, msg)
             expect (False, msg)
 
@@ -194,18 +190,18 @@ def postRun(case):
 
     # Run the getTiming script if desired
     if check_timing:
-        timingDir = os.path.join(caseroot,"/timing")
+        timingDir = os.path.join(caseroot,"timing")
         if not os.path.isdir(timingDir):
             os.makedirs(timingDir)
-        logger.info("running timing script..")
 
+        logger.info("Running timing script %s " %(os.path.join(caseroot, "Tools/getTiming")))
         cmd = "%s -lid %s " %(os.path.join(caseroot,"Tools/getTiming"), lid)
-        run_cmd(cmd)
+        #run_cmd(cmd) #DEBUG
 
         logger.info( "gzipping timing stats.." )
         timingfile = model + "_timing_stats." + lid
         cmd = "gzip %s " %(os.path,join(caseroot,timingfile))
-        run_cmd(cmd)
+        #run_cmd(cmd) #DEBUG
 
     # Save the timing files if desired
     if save_timing:
@@ -219,7 +215,6 @@ def appendCaseStatus(caseroot, msg):
 
     with open(os.path.join(caseroot,"CaseStatus"), "a") as fd:
         fd.write(msg)
-
 
 ###############################################################################
 def disposeLog(case, component, lid, logdir):
