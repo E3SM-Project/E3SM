@@ -1,0 +1,30 @@
+module test_vertical_gradient_calculator_continuous
+
+  ! Tests of vertical_gradient_calculator_continuous
+
+  use pfunit_mod
+  use vertical_gradient_calculator_continuous
+  use shr_kind_mod , only : r8 => shr_kind_r8
+
+  implicit none
+
+  @TestCase
+  type, extends(TestCase) :: TestVertGradCalcCont
+   contains
+     procedure :: setUp
+     procedure :: tearDown
+  end type TestVertGradCalcCont
+
+  real(r8), parameter :: tol = 1.e-13_r8
+
+contains
+
+  subroutine setUp(this)
+    class(TestVertGradCalcCont), intent(inout) :: this
+  end subroutine setUp
+
+  subroutine tearDown(this)
+    class(TestVertGradCalcCont), intent(inout) :: this
+  end subroutine tearDown
+
+end module test_vertical_gradient_calculator_continuous
