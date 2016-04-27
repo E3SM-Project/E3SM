@@ -49,13 +49,13 @@ class EnvMachSpecific(EnvBase):
         # Return value for first occurence of node with attribute value = item
         for node in nodes:
             
-            group   = super(EnvBase , self).get_group(node)
+            group   = super(EnvBase , self)._get_group(node)
             val     = node.text
             attr    = node.attrib['name']
-            t       = self.get_type(node)
-            desc    = self.get_description(node)
+            t       = self._get_type(node)
+            desc    = self._get_description(node)
             #default = super(EnvBase , self).get_default(node)
-            default = self.get_default(node)
+            default = self._get_default(node)
             file    = self.filename
             
             #t   =  super(EnvBase , self).get_type( node )
