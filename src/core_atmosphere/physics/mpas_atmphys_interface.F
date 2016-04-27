@@ -65,6 +65,8 @@
 ! * added the initialization of local variables needed in the parameterization of the MYNN surface layer scheme
 !   and planetary boundary layer scheme from WRF 3.6.1 and WRF 3.8..
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
+! * corrected the calculation of the surface pressure, mainly extrapolation of the air density to the surface.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-04-25.
 
 
  contains
@@ -321,8 +323,10 @@
     tem2 = zgrid(3,i)-zgrid(2,i)
     rho1 = rho_zz(1,i) * zz(1,i) * (1. + qv_p(i,1,j))
     rho2 = rho_zz(2,i) * zz(2,i) * (1. + qv_p(i,2,j))
+!   surface_pressure(i) = 0.5*gravity*(zgrid(2,i)-zgrid(1,i)) &
+!                   * (rho1 + 0.5*(rho2-rho1)*tem1/(tem1+tem2))
     surface_pressure(i) = 0.5*gravity*(zgrid(2,i)-zgrid(1,i)) &
-                    * (rho1 + 0.5*(rho2-rho1)*tem1/(tem1+tem2))
+                    * (rho1 - 0.5*(rho2-rho1)*tem1/(tem1+tem2))
     surface_pressure(i) = surface_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
  enddo
  
@@ -404,8 +408,15 @@
     w2 = 1.-w1
     t2_p(i,k,j)    = w1*t_p(i,k,j)+w2*t_p(i,k+1,j)
     pres2_p(i,k,j) = w1*pres_p(i,k,j)+w2*pres_p(i,k+1,j)
-    psfc_p(i,j) = pres2_p(i,k,j)
+!   psfc_p(i,j) = pres2_p(i,k,j)
+    psfc_p(i,j) = surface_pressure(i)
  enddo
+ enddo
+ write(0,*)
+ write(0,*) '--- surface pressure:'
+ j=1
+ do i = 1,100
+    write(0,202) j,i,psfc_p(i,j),pres2_p(i,1,j),psfc_p(i,j)-pres2_p(i,1,j)
  enddo
 
 !calculation of the hydrostatic pressure:
@@ -752,8 +763,10 @@
     rho2 = rho_zz(2,i) * zz(2,i) * (1. + qv_p(i,2,j))
 
     tend_sfc_pressure(i) = surface_pressure(i)
+!   surface_pressure(i)  = 0.5*gravity*(zgrid(2,i)-zgrid(1,i)) &
+!                        * (rho1 + 0.5*(rho2-rho1)*tem1/(tem1+tem2))
     surface_pressure(i)  = 0.5*gravity*(zgrid(2,i)-zgrid(1,i)) &
-                         * (rho1 + 0.5*(rho2-rho1)*tem1/(tem1+tem2))
+                         * (rho1 - 0.5*(rho2-rho1)*tem1/(tem1+tem2))
     surface_pressure(i)  = surface_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
     tend_sfc_pressure(i)   = (surface_pressure(i)-tend_sfc_pressure(i)) / dt_dyn
  enddo
