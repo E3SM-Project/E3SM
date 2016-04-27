@@ -1278,8 +1278,6 @@ contains
                        config_use_DMSTracers,    &
                        config_use_MacroMoleculesTracers
 
-   real (kind=RKIND), pointer :: config_density0
-
    type (block_type), pointer :: block_ptr
 
    type (mpas_pool_type), pointer :: meshPool,             &
@@ -1360,7 +1358,6 @@ contains
    call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
    call mpas_pool_get_config(domain % configs, 'config_use_DMSTracers', config_use_DMSTracers)
    call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers', config_use_MacroMoleculesTracers)
-   call mpas_pool_get_config(domain % configs, 'config_density0', config_density0)
 
    n = 0
    block_ptr => domain % blocklist
@@ -1508,10 +1505,8 @@ contains
            rainFlux(i) = x2o_o % rAttr(index_x2o_Faxa_rain, n)
         end if
         if ( seaSurfacePressureField % isActive ) then
-           ! Set seaSurfacePressure to be the sum of atmospheric bottom pressure 
-           ! and a limited version of sea ice pressure where it limits it to 5m of pressure
            seaSurfacePressure(i) = x2o_o % rAttr(index_x2o_Sa_pbot,   n) &
-                                 + min( x2o_o % rAttr(index_x2o_Si_bpress, n), config_density0 * gravity * 5.0_RKIND )
+                                 + x2o_o % rAttr(index_x2o_Si_bpress, n)
         end if
         if ( iceFractionField % isActive ) then
            iceFraction(i) = x2o_o % rAttr(index_x2o_Si_ifrac, n)
