@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import unittest, sys, os, tempfile, shutil, re, threading, time, signal, glob, traceback, logging
 
@@ -23,7 +23,7 @@ NO_BATCH    = False
 logging.basicConfig()
 
 ###############################################################################
-class RunUnitTests(unittest.TestCase):
+class A_RunUnitTests(unittest.TestCase):
 ###############################################################################
 
     def do_unit_tests(self, script,from_dir=SCRIPT_DIR):
@@ -130,7 +130,33 @@ def setup_proxy():
     return False
 
 ###############################################################################
-class TestWaitForTests(unittest.TestCase):
+class B_TestCreateNewcase(unittest.TestCase):
+    def setUp(self):
+        self._testroot = MACHINE.get_value("CESMSCRATCHROOT")
+        self._testdir =  tempfile.mktemp(prefix=self._testroot)
+        self._do_teardown = False
+
+    def test_createnewcase(self):
+        cmd = "%s/create_newcase --case %s --compset X --res f19_g16" % (SCRIPT_DIR, self._testdir)
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=SCRIPT_DIR)
+        self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
+        cmd = "./case.setup "
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=self._testdir)
+        self.assertEqual(stat, 0, msg="COMMAND '%s' from case directory '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, self._testdir, output, errput))
+        cmd = "./case.build"
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=self._testdir)
+        self.assertEqual(stat, 0, msg="COMMAND '%s' from case directory '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, self._testdir,output, errput))
+        self._do_teardown = True
+
+    def tearDown(self):
+        do_teardown = self._do_teardown and sys.exc_info() == (None, None, None)
+        if (not do_teardown):
+            print "Detected failed test or user request no teardown"
+            print "Leaving case directory : %s"%self._testdir
+        else:
+            shutil.rmtree(self._testdir)
+###############################################################################
+class D_TestWaitForTests(unittest.TestCase):
 ###############################################################################
 
     ###########################################################################
@@ -365,7 +391,7 @@ class TestCreateTestCommon(unittest.TestCase):
             shutil.move(DART_BACKUP, DART_CONFIG)
 
 ###############################################################################
-class TestCreateTest(TestCreateTestCommon):
+class C_TestCreateTest(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
@@ -420,11 +446,11 @@ class TestCreateTest(TestCreateTestCommon):
         self.simple_test(True, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
 ###############################################################################
-class TestSystemTest(TestCreateTestCommon):
+class E_TestSystemTest(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
-    def test_phases(self):
+    def test_a_phases(self):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["acme_test_only", "^TESTMEMLEAKFAIL.f19_g16_rx1.A", "^TESTMEMLEAKPASS.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
@@ -495,7 +521,7 @@ class TestSystemTest(TestCreateTestCommon):
                     self.assertTrue(ct._work_remains(test))
 
     ###########################################################################
-    def test_full(self):
+    def test_b_full(self):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
@@ -739,7 +765,7 @@ class TestUpdateACMETests(unittest.TestCase):
                          msg="COMMAND SHOULD HAVE WORKED\ncs.status output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 ###############################################################################
-class FullSystemTest(TestCreateTestCommon):
+class Z_FullSystemTest(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################

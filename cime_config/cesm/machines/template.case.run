@@ -228,8 +228,6 @@ sub doPreRunChecks()
 # -------------------------------------------------------------------------
 sub runModel()
 {
-    chdir $config{'RUNDIR'};
-
     system("sleep 10");
     my $localtime = localtime;
     # Set OMP_NUM_THREADS
@@ -237,7 +235,13 @@ sub runModel()
 
     $logger->info("$localtime MODEL EXECUTION BEGINS HERE");
     # Run the model
-    {{ mpirun }}
+    my $cmd = "{{ mpirun }}";
+    $cmd = SetupTools::expand_xml_var($cmd, \%config);
+
+    chdir $config{'RUNDIR'};
+    $logger->info("Running '$cmd'\n");
+    system($cmd);
+    
     $localtime = localtime;
     $logger->info( "$localtime MODEL EXECUTION HAS FINISHED");
 }
