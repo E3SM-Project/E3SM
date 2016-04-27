@@ -287,7 +287,7 @@ contains
     !-----------------------------------------------------------------------
 
     if (.not. this%topo_valid(pt)) then
-       this%vertical_gradient(:,pt) = nan
+       this%vertical_gradient(:,pt) = 0._r8
     else
        call this%solve_for_vertical_gradients(pt)
     end if

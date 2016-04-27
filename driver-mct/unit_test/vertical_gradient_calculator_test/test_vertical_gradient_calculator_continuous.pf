@@ -168,9 +168,7 @@ contains
          npts = 1, &
          pt = 1)
 
-    @assertIsNan(gradients(1))
-    @assertIsNan(gradients(2))
-    @assertIsNan(gradients(3))
+    @assertEqual([0._r8, 0._r8, 0._r8], gradients)
   end subroutine topo_outOfBoundsHigh
 
   @Test
@@ -191,9 +189,7 @@ contains
          npts = 1, &
          pt = 1)
 
-    @assertIsNan(gradients(1))
-    @assertIsNan(gradients(2))
-    @assertIsNan(gradients(3))
+    @assertEqual([0._r8, 0._r8, 0._r8], gradients)
   end subroutine topo_outOfBoundsLow
 
 end module test_vertical_gradient_calculator_continuous
