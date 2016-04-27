@@ -431,8 +431,10 @@ contains
             tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
                       + (rainFlux(iCell) + evaporationFlux(iCell)) * tracerGroup(index_temperature_flux,1,iCell) / rho_sw
 
-            tracersSurfaceFluxRunoff(index_temperature_flux,iCell) = riverRunoffFlux(iCell) * &
-                    tracerGroup(index_temperature_flux,1,iCell)/rho_sw
+            ! Runoff can only have a minimum temperature of 0.0C, since it is fresh water.
+            tracersSurfaceFluxRunoff(index_temperature_flux,iCell) = riverRunoffFlux(iCell) &
+                      * max(tracerGroup(index_temperature_flux,1,iCell), 0.0_RKIND) / rho_sw
+
            ! Accumulate fluxes that use the freezing point
            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
                + seaIceFreshWaterFlux(iCell) * ocn_freezing_temperature( tracerGroup(index_salinity_flux, 1, iCell) ) / rho_sw
