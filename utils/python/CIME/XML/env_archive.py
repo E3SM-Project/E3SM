@@ -40,19 +40,22 @@ class EnvArchive(GenericXML):
         results = [] # List of identified parameters 
         logger.debug("Get node with attribute value: %s" , item)
        
+        logger.warning("GET VALUES FOR ARCHIVE")
         # Find all nodes with attribute name and attribute value item
         # xpath .//*[name='item']
         if item :
+            logger.warning("Searching for %s" , item )   
             nodes = self.get_nodes("*",{"name" : item})
         else :
            # Return all nodes
            logger.debug("Retrieving all parameter")
            nodes = self.get_nodes("comp_archive_spec")
           
-           
+        
+        logger.warning("Number found %s" , nodes.__len__())   
         # Return value for first occurence of node with attribute value = item
         for node in nodes:
-            
+            logger.warning("Checking node %s" , node.tag )
             group   = node.attrib['name']
             rootdir = node.find('./rootdir').text
             
@@ -87,7 +90,7 @@ class EnvArchive(GenericXML):
     def get_description(self, node=None):
         
         description = None
-        logger.warning("Node %s" , node.tag )
+        logger.warning("Get description for %s" , node.tag )
         if node.tag == "keep_last_in_rundir" :
             if node.get('description') :
                 description = node.get('description')
