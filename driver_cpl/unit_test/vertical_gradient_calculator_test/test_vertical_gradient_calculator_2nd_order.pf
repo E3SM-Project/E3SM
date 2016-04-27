@@ -8,7 +8,6 @@ module test_vertical_gradient_calculator_2nd_order
   use shr_kind_mod, only : r8 => shr_kind_r8
   use mct_mod, only : mct_aVect, mct_aVect_clean
   use mct_wrapper_mod, only : mct_init, mct_clean
-  use avect_wrapper_mod
   use vertical_gradient_test_utils
   
   implicit none
@@ -54,15 +53,9 @@ contains
     real(r8), intent(in) :: elevclass_bounds(:)
 
     integer :: n_elev_classes
-    character(len=16), allocatable :: elevclass_names(:)
-    integer :: i
 
     n_elev_classes = size(data,2)
     @assertEqual(n_elev_classes + 1, size(elevclass_bounds))
-    allocate(elevclass_names(1:n_elev_classes))
-    do i = 1, n_elev_classes
-       elevclass_names(i) = two_digit_string(i)
-    end do
 
     call create_av(topo, data, 'topo', 'data', this%av)
     
@@ -72,7 +65,7 @@ contains
          toponame = 'topo', &
          min_elevation_class = 1, &
          max_elevation_class = n_elev_classes, &
-         elevclass_names = elevclass_names, &
+         elevclass_names = elevclass_names(n_elev_classes), &
          elevclass_bounds = elevclass_bounds)
 
   end function create_calculator

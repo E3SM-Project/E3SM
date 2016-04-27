@@ -15,7 +15,8 @@ module vertical_gradient_calculator_continuous
   use mct_mod
   use shr_log_mod, only : errMsg => shr_log_errMsg
   use shr_sys_mod, only : shr_sys_abort
-  
+  use shr_matrix_mod, only : tridiagonal_inverse
+
   implicit none
   private
 

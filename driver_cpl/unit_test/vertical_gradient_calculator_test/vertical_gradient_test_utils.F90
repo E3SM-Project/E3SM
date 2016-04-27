@@ -7,12 +7,15 @@ module vertical_gradient_test_utils
   use shr_kind_mod , only : r8 => shr_kind_r8
   use avect_wrapper_mod
   use mct_mod, only : mct_aVect
+  use vertical_gradient_calculator_base, only : vertical_gradient_calculator_base_type
 
   implicit none
   private
 
   public :: two_digit_string
+  public :: elevclass_names
   public :: create_av
+  public :: all_gradients_one_point  ! Return gradients for all ECs for one point
 
 contains
 
@@ -23,6 +26,18 @@ contains
 
     write(two_digit_string, '(i2.2)') val
   end function two_digit_string
+
+  function elevclass_names(n_elev_classes)
+    ! Returns array of elevation class names
+    integer, intent(in) :: n_elev_classes
+    character(len=16) :: elevclass_names(n_elev_classes)
+
+    integer :: i
+
+    do i = 1, n_elev_classes
+       elevclass_names(i) = two_digit_string(i)
+    end do
+  end function elevclass_names
 
   subroutine create_av(topo, data, toponame, dataname, av)
     ! Creates the attribute vector 'av'
@@ -55,6 +70,23 @@ contains
          data = reshape([data, topo], [npts, n_elev_classes * 2]))
 
   end subroutine create_av
+
+  function all_gradients_one_point(calculator, n_elev_classes, npts, pt) result(gradients)
+    ! Return gradients for all ECs for one point
+    class(vertical_gradient_calculator_base_type), intent(in) :: calculator
+    integer, intent(in) :: n_elev_classes  ! number of elevation classes in this calculator
+    integer, intent(in) :: npts  ! number of points in this calculator
+    integer, intent(in) :: pt  ! point of interest
+    real(r8) :: gradients(n_elev_classes)  ! function result
+
+    integer :: ec
+    real(r8) :: gradients_one_ec(npts)
+
+    do ec = 1, n_elev_classes
+       call calculator%calc_vertical_gradient(ec, gradients_one_ec)
+       gradients(ec) = gradients_one_ec(pt)
+    end do
+  end function all_gradients_one_point
 
 end module vertical_gradient_test_utils
 

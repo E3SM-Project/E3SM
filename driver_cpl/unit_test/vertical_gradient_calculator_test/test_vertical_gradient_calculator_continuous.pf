@@ -5,14 +5,20 @@ module test_vertical_gradient_calculator_continuous
   use pfunit_mod
   use vertical_gradient_calculator_continuous
   use shr_kind_mod , only : r8 => shr_kind_r8
+  use mct_mod, only : mct_aVect, mct_aVect_clean
+  use mct_wrapper_mod, only : mct_init, mct_clean
+  use vertical_gradient_test_utils
 
   implicit none
 
   @TestCase
   type, extends(TestCase) :: TestVertGradCalcCont
+     type(mct_aVect) :: av
    contains
      procedure :: setUp
      procedure :: tearDown
+     procedure :: create_calculator
+     procedure :: create_calculator_one_point
   end type TestVertGradCalcCont
 
   real(r8), parameter :: tol = 1.e-13_r8
@@ -21,10 +27,81 @@ contains
 
   subroutine setUp(this)
     class(TestVertGradCalcCont), intent(inout) :: this
+    call mct_init()
   end subroutine setUp
 
   subroutine tearDown(this)
     class(TestVertGradCalcCont), intent(inout) :: this
+    call mct_aVect_clean(this%av)
+    call mct_clean()
   end subroutine tearDown
+
+  function create_calculator(this, topo, data, elevclass_bounds) &
+       result(calculator)
+    type(vertical_gradient_calculator_continuous_type) :: calculator
+    class(TestVertGradCalcCont), intent(inout) :: this
+    real(r8), intent(in) :: topo(:,:)  ! topo(i,j) is point i, elevation class j
+    real(r8), intent(in) :: data(:,:)  ! data(i,j) is point i, elevation class j
+
+    ! bounds of each elevation class; this array should have one more element than the
+    ! number of elevation classes, since it contains lower and upper bounds for each
+    ! elevation class
+    real(r8), intent(in) :: elevclass_bounds(:)
+
+    integer :: n_elev_classes
+
+    n_elev_classes = size(data,2)
+    @assertEqual(n_elev_classes + 1, size(elevclass_bounds))
+
+    call create_av(topo, data, 'topo', 'data', this%av)
+
+    calculator = vertical_gradient_calculator_continuous_type( &
+         attr_vect = this%av, &
+         fieldname = 'data', &
+         toponame = 'topo', &
+         nelev = n_elev_classes, &
+         elevclass_names = elevclass_names(n_elev_classes), &
+         elevclass_bounds = elevclass_bounds)
+
+  end function create_calculator
+
+  function create_calculator_one_point(this, topo, data, elevclass_bounds) &
+       result(calculator)
+    ! Convenience wrapper to create_calculator, when just dealing with one point
+    type(vertical_gradient_calculator_continuous_type) :: calculator
+    class(TestVertGradCalcCont), intent(inout) :: this
+    real(r8), intent(in) :: topo(:)
+    real(r8), intent(in) :: data(:)
+
+    ! bounds of each elevation class; this array should have one more element than the
+    ! number of elevation classes, since it contains lower and upper bounds for each
+    ! elevation class
+    real(r8), intent(in) :: elevclass_bounds(:)
+
+
+    calculator = this%create_calculator( &
+         topo = reshape(topo, [1, size(topo)]), &
+         data = reshape(data, [1, size(data)]), &
+         elevclass_bounds = elevclass_bounds)
+  end function create_calculator_one_point
+
+  @Test
+  subroutine basic(this)
+    class(TestVertGradCalcCont), intent(inout) :: this
+    type(vertical_gradient_calculator_continuous_type) :: calculator
+    real(r8), parameter :: elevclass_bounds(6) = &
+         [0._r8, 20._r8, 40._r8, 60._r8, 80._r8, 100._r8]
+    real(r8), parameter :: topo(5) = [10._r8, 30._r8, 50._r8, 70._r8, 90._r8]
+    real(r8), parameter :: data(5) = [2._r8, 5.5_r8, 8._r8, 9.5_r8, 10._r8]
+    real(r8) :: gradients(5)
+
+    calculator = this%create_calculator_one_point(topo=topo, data=data, &
+         elevclass_bounds=elevclass_bounds)
+
+    gradients = all_gradients_one_point(calculator, &
+         n_elev_classes = 5, &
+         npts = 1, &
+         pt = 1)
+  end subroutine basic
 
 end module test_vertical_gradient_calculator_continuous
