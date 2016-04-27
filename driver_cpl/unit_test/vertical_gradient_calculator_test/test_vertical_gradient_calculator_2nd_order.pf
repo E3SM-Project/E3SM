@@ -9,6 +9,7 @@ module test_vertical_gradient_calculator_2nd_order
   use mct_mod, only : mct_aVect, mct_aVect_clean
   use mct_wrapper_mod, only : mct_init, mct_clean
   use avect_wrapper_mod
+  use vertical_gradient_test_utils
   
   implicit none
 
@@ -20,7 +21,6 @@ module test_vertical_gradient_calculator_2nd_order
    contains
      procedure :: setUp
      procedure :: tearDown
-     procedure :: create_av
      procedure :: create_calculator
      procedure :: calculateAndVerifyGradient_1point_ECmid
   end type TestVertGradCalc2ndOrder
@@ -40,47 +40,6 @@ contains
     call mct_aVect_clean(this%av)
     call mct_clean()
   end subroutine tearDown
-
-  function two_digit_string(val)
-    ! Converts val to a two-digit string
-    character(len=2) :: two_digit_string
-    integer, intent(in) :: val
-
-    write(two_digit_string, '(i2.2)') val
-  end function two_digit_string
-
-  subroutine create_av(this, topo, data, toponame, dataname)
-    ! Creates the attribute vector in 'this'
-    class(TestVertGradCalc2ndOrder), intent(inout) :: this
-    real(r8), intent(in) :: topo(:,:)  ! topo(i,j) is point i, elevation class j
-    real(r8), intent(in) :: data(:,:)  ! data(i,j) is point i, elevation class j
-    character(len=*), intent(in) :: toponame
-    character(len=*), intent(in) :: dataname
-
-    integer :: npts
-    integer :: n_elev_classes
-    integer :: elevclass
-    character(len=64), allocatable :: attr_tags(:)
-
-    npts = size(topo, 1)
-    @assertEqual(npts, size(data, 1))
-    n_elev_classes = size(topo, 2)
-    @assertEqual(n_elev_classes, size(data, 2))
-
-    allocate(attr_tags(2*n_elev_classes))
-    do elevclass = 1, n_elev_classes
-       attr_tags(elevclass) = dataname // two_digit_string(elevclass)
-    end do
-    do elevclass = 1, n_elev_classes
-       attr_tags(n_elev_classes + elevclass) = toponame // two_digit_string(elevclass)
-    end do
-       
-    call create_aVect_with_data_rows_are_points(this%av, &
-         attr_tags = attr_tags, &
-         data = reshape([data, topo], [npts, n_elev_classes * 2]))
-
-  end subroutine create_av
-    
 
   function create_calculator(this, topo, data, elevclass_bounds) &
        result(calculator)
@@ -105,7 +64,7 @@ contains
        elevclass_names(i) = two_digit_string(i)
     end do
 
-    call this%create_av(topo, data, 'topo', 'data')
+    call create_av(topo, data, 'topo', 'data', this%av)
     
     calculator = vertical_gradient_calculator_2nd_order_type( &
          attr_vect = this%av, &
@@ -152,28 +111,6 @@ contains
     @assertEqual(expected_vertical_gradient, vertical_gradient(1), tolerance=tol, message = msg)
   end subroutine calculateAndVerifyGradient_1point_ECmid
 
-  @Test
-  subroutine test_create_av(this)
-    ! Tests the create_av helper routine
-    class(TestVertGradCalc2ndOrder), intent(inout) :: this
-    ! 3 points, 2 elevation classes
-    real(r8), parameter :: topo(3,2) = reshape( &
-         [1._r8, 2._r8, 3._r8, &
-         4._r8, 5._r8, 6._r8], &
-         [3, 2])
-    real(r8), parameter :: data(3,2) = reshape( &
-         [11._r8, 12._r8, 13._r8, &
-         14._r8, 15._r8, 16._r8], &
-         [3, 2])
-
-    call this%create_av(topo, data, 'topo', 'data')
-
-    @assertEqual([4._r8, 5._r8, 6._r8], aVect_exportRattr(this%av, 'topo' // two_digit_string(2)))
-
-    @assertEqual([14._r8, 15._r8, 16._r8], aVect_exportRattr(this%av, 'data' // two_digit_string(2)))
-
-  end subroutine test_create_av
-    
   @Test
   subroutine ECmid(this)
     ! Test calc_vertical_gradient with an elevation class in the middle of the range
