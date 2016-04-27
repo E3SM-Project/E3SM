@@ -32,7 +32,7 @@ def parse_command_line(args, cimeroot):
                         help="(required) Specify a model grid resolution. "
                         "To see list of current compsets, use the utility manage_case in this directory")
 
-    parser.add_argument("--mach", "-mach", required=True,
+    parser.add_argument("--mach", "-mach", 
                         help="(required) Specify a machine. "
                         "To see list of current compsets, use the utility manage_case in this directory")
 
@@ -148,12 +148,9 @@ def _main_func():
     caseobj.set_value("CASE", os.path.basename(case))
     caseobj.set_value("CASEROOT", caseroot)
     caseobj.set_value("SRCROOT", srcroot)
-    caseobj.set_value("MACH", machine)
-    if project:
-        caseobj.set_value("PROJECT",project)
 
     # Configure the Case
-    caseobj.configure(compset, grid, machine,
+    caseobj.configure(compset, grid, machine_name=machine, project=project,
                       pecount=pecount, compiler=compiler, mpilib=mpilib,
                       user_compset=user_compset, pesfile=pesfile,
                       user_grid=user_grid, gridfile=gridfile)

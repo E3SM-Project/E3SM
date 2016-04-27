@@ -354,9 +354,7 @@ class Machines(GenericXML):
         if arg_node is not None:
             arg_nodes = self.get_nodes("arg", root=arg_node)
             for arg_node in arg_nodes:
-                arg_value = self.get_resolved_value(arg_node.text)
-                arg_value = batch_maker.transform_vars(arg_value, arg_node.get("default"))
-
+                arg_value = batch_maker.transform_vars(arg_node.text, arg_node.get("default"))
                 args[arg_node.get("name")] = arg_value
 
         executable = self.get_node("executable", root=the_match)

@@ -297,8 +297,8 @@ class Case(object):
             if result is not None:
                 del self.lookups[key]
 
-    def configure(self, compset_name, grid_name, machine_name,
-                  pecount=None, compiler=None, mpilib=None,
+    def configure(self, compset_name, grid_name, machine_name=None,
+                  project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
                   user_grid=False, gridfile=None):
 
@@ -338,6 +338,7 @@ class Case(object):
         # set machine values in env_xxx files
         machobj = Machines(machine=machine_name)
         machine_name = machobj.get_machine_name()
+        self.set_value("MACH",machine_name)
         nodenames = machobj.get_node_names()
 
         if "COMPILER" in nodenames: nodenames.remove("COMPILER")
@@ -410,6 +411,13 @@ class Case(object):
         logger.info(" Compset is: %s " %self._compsetname)
         logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)
+
+        # Set project id
+        if project is None:
+            project = get_project()
+        if project is not None:
+            self.set_value("PROJECT", project)
+
 
     def set_initial_test_values(self):
         testobj = self._get_env("test")
@@ -586,8 +594,8 @@ class Case(object):
         # be to copy it from the clone, just like other xml variables are copied.
         if project is None:
             project = get_project()
-            if project is not None:
-                newcase.set_value("PROJECT", project)
+        if project is not None:
+            newcase.set_value("PROJECT", project)
 
         # create caseroot
         newcase.create_caseroot()
