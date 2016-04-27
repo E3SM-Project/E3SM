@@ -26,8 +26,6 @@ module vertical_gradient_calculator_continuous
        vertical_gradient_calculator_continuous_type
      private
 
-     integer :: min_elevation_class
-     integer :: max_elevation_class
      integer :: nelev ! number of elevation classes
      integer :: num_points
      real(r8), allocatable :: field(:,:)   ! field(i,j) is elevation class i, field j
@@ -37,8 +35,8 @@ module vertical_gradient_calculator_continuous
 
      ! Bounds of each elevation class. This array has one more element than the number of
      ! elevation classes, since it contains lower and upper bounds for each elevation
-     ! class. The indices go (min_elevation_class-1):max_elevation_class. These bounds
-     ! are guaranteed to be monotonically increasing.
+     ! class. The indices go 0:nelev. These bounds are guaranteed to be monotonically
+     ! increasing.
      real(r8), allocatable :: elevclass_bounds(:)
 
    contains
