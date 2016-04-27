@@ -75,7 +75,6 @@ _TEST_SUITES = {
                          ("ERP_Ln9.ne30_ne30.FC5", "cam-outfrq9s"),
                          "HOMME_P24.f19_g16_rx1.A",
                          "NCK.f19_g16_rx1.A",
-                         "PEA_P1_M.f45_g37_rx1.A",
                          "SMS.ne30_f19_g16_rx1.A",
                          "ERS_Ld5.T62_oQU120.C_MPAS_NORMAL_YEAR",
                          "ERS.f09_g16_g.MPASLI_ONLY",
