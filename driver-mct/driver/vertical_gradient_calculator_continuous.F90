@@ -281,8 +281,8 @@ contains
        du(i) = topo_interface(i) - topo(i)    ! du(n) is never used
     end do
 
-    ! FIXME(wjs, 2016-04-26) Extract method for this loop: returns weight_grad in each
-    ! elevation class
+    ! FIXME(wjs, 2016-04-26) Extract method for the following two loops: returns
+    ! weight_grad in each elevation class
     do i = 1, n
 
        if (i == 1) then
@@ -301,6 +301,9 @@ contains
           h_hi(i) = topo_interface(i)
        end if
 
+    end do
+
+    do i = 1, n
        ! set gradient weights based on h_hi - h_lo in each class
        weight_grad(i) = (h_hi(i) - h_lo(i)) / (h_hi(n) - h_lo(1))
 
@@ -376,7 +379,7 @@ contains
     end do
 
     ! Compute A * A^T, a tridiagonal matrix of size (n-1)
-    
+
     A_AT = matmul(A, transpose(A))
 
     ! Compute tridiagonal entries of (A * A^T)

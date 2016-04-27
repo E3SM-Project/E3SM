@@ -10,6 +10,7 @@ module test_vertical_gradient_calculator_continuous
   use vertical_gradient_test_utils
 
   implicit none
+  save
 
   @TestCase
   type, extends(TestCase) :: TestVertGradCalcCont
@@ -19,21 +20,29 @@ module test_vertical_gradient_calculator_continuous
      procedure :: tearDown
      procedure :: create_calculator
      procedure :: create_calculator_one_point
+     procedure :: write_output
   end type TestVertGradCalcCont
 
   real(r8), parameter :: tol = 1.e-13_r8
+  integer, parameter :: out_unit = 11
+  integer :: test_num = 0
 
 contains
 
   subroutine setUp(this)
     class(TestVertGradCalcCont), intent(inout) :: this
+    character(len=32) :: filename
     call mct_init()
+    test_num = test_num + 1
+    write(filename, '(a, i0, a)') 'gradients_continuous_', test_num, '.txt'
+    open(out_unit, file=filename, action='write')
   end subroutine setUp
 
   subroutine tearDown(this)
     class(TestVertGradCalcCont), intent(inout) :: this
     call mct_aVect_clean(this%av)
     call mct_clean()
+    close(out_unit)
   end subroutine tearDown
 
   function create_calculator(this, topo, data, elevclass_bounds) &
@@ -85,6 +94,32 @@ contains
          elevclass_bounds = elevclass_bounds)
   end function create_calculator_one_point
 
+  subroutine write_output(this, elevclass_bounds, topo, data, gradients)
+    class(TestVertGradCalcCont), intent(inout) :: this
+    real(r8), intent(in) :: elevclass_bounds(:)
+    real(r8), intent(in) :: topo(:)
+    real(r8), intent(in) :: data(:)
+    real(r8), intent(in) :: gradients(:)
+
+    integer :: n_elev_classes
+    character(len=32) :: bounds_format
+    character(len=32) :: data_format
+
+    n_elev_classes = size(gradients)
+    @assertEqual(n_elev_classes + 1, size(elevclass_bounds))
+    @assertEqual(n_elev_classes, size(topo))
+    @assertEqual(n_elev_classes, size(data))
+
+    write(bounds_format, '(a, i0, a, a)') '(', n_elev_classes + 1, 'f16.10', ')'
+    write(data_format, '(a, i0, a, a)') '(', n_elev_classes, 'f16.10', ')'
+
+    write(out_unit, '(i0)') n_elev_classes
+    write(out_unit, bounds_format) elevclass_bounds
+    write(out_unit, data_format) topo
+    write(out_unit, data_format) data
+    write(out_unit, data_format) gradients
+  end subroutine write_output
+
   @Test
   subroutine basic(this)
     class(TestVertGradCalcCont), intent(inout) :: this
@@ -102,6 +137,13 @@ contains
          n_elev_classes = 5, &
          npts = 1, &
          pt = 1)
+
+    call this%write_output( &
+         elevclass_bounds = elevclass_bounds, &
+         topo = topo, &
+         data = data, &
+         gradients = gradients)
+
   end subroutine basic
 
 end module test_vertical_gradient_calculator_continuous
