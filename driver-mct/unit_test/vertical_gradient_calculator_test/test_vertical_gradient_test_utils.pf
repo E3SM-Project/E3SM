@@ -1,0 +1,61 @@
+module test_vertical_gradient_test_utils
+
+  ! Tests of vertical_gradient_test_utils
+
+  use pfunit_mod
+  use vertical_gradient_test_utils
+  use shr_kind_mod , only : r8 => shr_kind_r8
+  use mct_mod, only : mct_aVect, mct_aVect_clean
+  use mct_wrapper_mod, only : mct_init, mct_clean
+  use avect_wrapper_mod
+
+  implicit none
+
+  @TestCase
+  type, extends(TestCase) :: TestVertGradTestUtils
+     type(mct_aVect) :: av
+   contains
+     procedure :: setUp
+     procedure :: tearDown
+  end type TestVertGradTestUtils
+
+  real(r8), parameter :: tol = 1.e-13_r8
+
+contains
+
+  subroutine setUp(this)
+    class(TestVertGradTestUtils), intent(inout) :: this
+
+    call mct_init()
+
+  end subroutine setUp
+
+  subroutine tearDown(this)
+    class(TestVertGradTestUtils), intent(inout) :: this
+    call mct_aVect_clean(this%av)
+    call mct_clean()
+  end subroutine tearDown
+
+  @Test
+  subroutine test_create_av(this)
+    ! Tests the create_av helper routine
+    class(TestVertGradTestUtils), intent(inout) :: this
+    ! 3 points, 2 elevation classes
+    real(r8), parameter :: topo(3,2) = reshape( &
+         [1._r8, 2._r8, 3._r8, &
+         4._r8, 5._r8, 6._r8], &
+         [3, 2])
+    real(r8), parameter :: data(3,2) = reshape( &
+         [11._r8, 12._r8, 13._r8, &
+         14._r8, 15._r8, 16._r8], &
+         [3, 2])
+
+    call create_av(topo, data, 'topo', 'data', this%av)
+
+    @assertEqual([4._r8, 5._r8, 6._r8], aVect_exportRattr(this%av, 'topo' // two_digit_string(2)))
+
+    @assertEqual([14._r8, 15._r8, 16._r8], aVect_exportRattr(this%av, 'data' // two_digit_string(2)))
+
+  end subroutine test_create_av
+    
+end module test_vertical_gradient_test_utils
