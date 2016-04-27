@@ -156,7 +156,7 @@ class B_TestCreateNewcase(unittest.TestCase):
         else:
             shutil.rmtree(self._testdir)
 ###############################################################################
-class C_TestWaitForTests(unittest.TestCase):
+class D_TestWaitForTests(unittest.TestCase):
 ###############################################################################
 
     ###########################################################################
@@ -391,7 +391,7 @@ class TestCreateTestCommon(unittest.TestCase):
             shutil.move(DART_BACKUP, DART_CONFIG)
 
 ###############################################################################
-class TestCreateTest(TestCreateTestCommon):
+class C_TestCreateTest(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
@@ -446,7 +446,7 @@ class TestCreateTest(TestCreateTestCommon):
         self.simple_test(True, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
 ###############################################################################
-class D_TestSystemTest(TestCreateTestCommon):
+class E_TestSystemTest(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
