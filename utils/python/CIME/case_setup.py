@@ -240,8 +240,6 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
 
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), template)
                 if job == "case.test" and testcase is not None:
-                    import pdb
-                    pdb.set_trace()
                     logger.info("Writing %s script"%job)
                     testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
                     # Short term fix to be removed when csh tests are removed
