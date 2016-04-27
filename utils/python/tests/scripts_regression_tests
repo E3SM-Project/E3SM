@@ -133,8 +133,7 @@ def setup_proxy():
 class B_TestCreateNewcase(unittest.TestCase):
     def setUp(self):
         self._testroot = MACHINE.get_value("CESMSCRATCHROOT")
-        self._testroot = tempfile.mkdtemp(prefix=self._testroot)
-        self._testdir = os.path.join(self._testroot,"foo")
+        self._testdir =  tempfile.mktemp(prefix=self._testroot)
         self._do_teardown = False
 
     def test_createnewcase(self):
@@ -147,9 +146,6 @@ class B_TestCreateNewcase(unittest.TestCase):
         cmd = "./case.build"
         stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=self._testdir)
         self.assertEqual(stat, 0, msg="COMMAND '%s' from case directory '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, self._testdir,output, errput))
-        cmd = "./case.submit"
-        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=self._testdir)
-        self.assertEqual(stat, 0, msg="COMMAND '%s' from case directory '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, self._testdir, output, errput))
         self._do_teardown = True
 
     def tearDown(self):
@@ -158,10 +154,9 @@ class B_TestCreateNewcase(unittest.TestCase):
             print "Detected failed test or user request no teardown"
             print "Leaving case directory : %s"%self._testdir
         else:
-            shutils.rmtree(os.path.join(MACHINE.get_value("CESMSCRATCHROOT"),"foo"))
             shutil.rmtree(self._testdir)
 ###############################################################################
-class TestWaitForTests(unittest.TestCase):
+class C_TestWaitForTests(unittest.TestCase):
 ###############################################################################
 
     ###########################################################################
@@ -451,11 +446,11 @@ class TestCreateTest(TestCreateTestCommon):
         self.simple_test(True, "-c -n -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
 ###############################################################################
-class C_TestSystemTest(TestCreateTestCommon):
+class D_TestSystemTest(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
-    def test_phases(self):
+    def test_a_phases(self):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["acme_test_only", "^TESTMEMLEAKFAIL.f19_g16_rx1.A", "^TESTMEMLEAKPASS.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
@@ -526,7 +521,7 @@ class C_TestSystemTest(TestCreateTestCommon):
                     self.assertTrue(ct._work_remains(test))
 
     ###########################################################################
-    def test_full(self):
+    def test_b_full(self):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())

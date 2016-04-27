@@ -22,7 +22,7 @@ class EnvArchive(GenericXML):
         else:
             fullpath = os.path.join(case_root, infile)
         GenericXML.__init__(self, fullpath)
-        if not os.path.isfile(infile):
+        if not os.path.isfile(fullpath):
             headerobj = Headers()
             headernode = headerobj.get_header_node(os.path.basename(fullpath))
             self.root.append(headernode)

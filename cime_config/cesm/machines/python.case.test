@@ -4,6 +4,10 @@
  This is the system test submit script for CIME
 
 """
+import os
+workdir = os.environ.get("PBS_O_WORKDIR")
+if workdir is not None:
+    os.chdir(workdir)
 
 from standard_script_setup import *
 
