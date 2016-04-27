@@ -172,10 +172,12 @@ class Case(object):
                     results.append(self.get_resolved_value(result))
                 else :
                     results = results + result
-                return results
+                # return results
             
         for env_file in self._env_generic_files:
-
+            
+            logger.debug("Searching in %s" , env_file.__class__.__name__)
+             
             result = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
       
             if result is not None and (len(result) >=1) :
@@ -185,7 +187,7 @@ class Case(object):
                 else :
                     logger.debug("Append result to return list (%s)" ,result)
                     results = results + result
-                return results
+                # return results
    
         logger.warning("Not able to retrieve any value")
         # Return empty result
