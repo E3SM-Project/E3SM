@@ -114,14 +114,5 @@ class EnvArchive(GenericXML):
     def _get_archive():
         pass
         
-    # class Archive:
-    #     """Class for a single archive component"""
-    #
-    #     def __init__ (self):
-    #         self.name = None # <comp_archive_spec name=" $NAME ">
-    #         pass
-    #
-    #     def name(self , name=None):
-    #         return self.name
-    #
+   
             
