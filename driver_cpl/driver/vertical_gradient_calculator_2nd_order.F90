@@ -39,7 +39,6 @@ module vertical_gradient_calculator_2nd_order
    contains
      procedure :: calc_vertical_gradient
 
-     procedure, private :: check_elevclass_bounds  ! check for monotonicity of elevclass_bounds
      procedure, private :: set_data_from_attr_vect ! extract data from an attribute vector
      procedure, private :: check_topo ! check topographic heights
      procedure, private :: limit_gradient
@@ -106,7 +105,10 @@ contains
     this%max_elevation_class = max_elevation_class
     allocate(this%elevclass_bounds((min_elevation_class-1):max_elevation_class))
     this%elevclass_bounds(:) = elevclass_bounds(:)
-    call this%check_elevclass_bounds()
+
+    ! (In principle, we could also handle monotonically decreasing elevclass_bounds, but
+    ! that would require generalizing some code, such as in check_topo.)
+    call this%check_elevclass_bounds_monotonic_increasing(this%elevclass_bounds)
 
     call this%set_data_from_attr_vect(attr_vect, fieldname, toponame, elevclass_names)
 
@@ -208,41 +210,18 @@ contains
   end subroutine calc_vertical_gradient
 
   !-----------------------------------------------------------------------
-  subroutine check_elevclass_bounds(this)
-    !
-    ! !DESCRIPTION:
-    ! Ensure that elevclass_bounds are monotonically increasing; abort if there is a
-    ! problem
-    !
-    ! (In principle, we could also handle monotonically decreasing elevclass_bounds, but
-    ! that would require generalizing some code, such as in check_topo.)
-    !
-    ! !ARGUMENTS:
-    class(vertical_gradient_calculator_2nd_order_type), intent(in) :: this
-    !
-    ! !LOCAL VARIABLES:
-    integer :: i
-
-    character(len=*), parameter :: subname = 'check_elevclass_bounds'
-    !-----------------------------------------------------------------------
-
-    do i = this%min_elevation_class, this%max_elevation_class
-       if (this%elevclass_bounds(i-1) >= this%elevclass_bounds(i)) then
-          write(logunit,*) subname, ': ERROR: elevclass_bounds must be monotonically increasing'
-          write(logunit,*) 'elevclass_bounds = ', this%elevclass_bounds
-          call shr_sys_abort(subname//': ERROR: elevclass_bounds must be monotonically increasing')
-       end if
-    end do
-
-  end subroutine check_elevclass_bounds
-
-  !-----------------------------------------------------------------------
   subroutine set_data_from_attr_vect(this, attr_vect, fieldname, toponame, elevclass_names)
     !
     ! !DESCRIPTION:
     ! Extract data from an attribute vector.
     !
     ! Sets this%num_points, and allocates and sets this%field and this%topo.
+    !
+    ! TODO(wjs, 2016-04-26) The current flow is that the constructor calls this
+    ! routine. It could be better to move this routine into a factory class that creates
+    ! objects by (1) calling this routine to extract fields from the attribute vector, and
+    ! then (2) calling the constructor of this class using these extracted data (so the
+    ! constructor would never need to be passed an attribute vector).
     !
     ! !USES:
     use mct_mod
