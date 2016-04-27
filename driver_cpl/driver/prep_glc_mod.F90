@@ -406,7 +406,7 @@ contains
     ! Note that we remap each field separately because each field needs its own
     ! vertical gradient calculator.
 
-    use vertical_gradient_calculator_2nd_order, only : vertical_gradient_calculator_2nd_order_type
+    use vertical_gradient_calculator_continuous, only : vertical_gradient_calculator_continuous_type
     use glc_elevclass_mod, only : glc_get_num_elevation_classes, &
          glc_get_elevclass_bounds, glc_all_elevclass_strings
     use map_lnd2glc_mod, only : map_lnd2glc
@@ -420,17 +420,16 @@ contains
     !
     ! Local Variables
     type(mct_avect), pointer :: g2x_gx
-    type(vertical_gradient_calculator_2nd_order_type) :: gradient_calculator
+    type(vertical_gradient_calculator_continuous_type) :: gradient_calculator
     !---------------------------------------------------------------
 
     g2x_gx => component_get_c2x_cx(glc(egi))
 
-    gradient_calculator = vertical_gradient_calculator_2nd_order_type( &
+    gradient_calculator = vertical_gradient_calculator_continuous_type( &
          attr_vect = l2gacc_lx(eli), &
          fieldname = fieldname, &
          toponame = 'Sl_topo', &
-         min_elevation_class = 1, &
-         max_elevation_class = glc_get_num_elevation_classes(), &
+         nelev = glc_get_num_elevation_classes(), &
          elevclass_names = glc_all_elevclass_strings(), &
          elevclass_bounds = glc_get_elevclass_bounds())
     call map_lnd2glc(l2x_l = l2gacc_lx(eli), &
