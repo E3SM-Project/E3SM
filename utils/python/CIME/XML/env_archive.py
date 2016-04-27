@@ -16,15 +16,22 @@ class EnvArchive(GenericXML):
         initialize an object interface to file env_archive.xml in the case directory
         """
         logger.debug("Case_root = %s" , case_root)
+        
+        # Check/Build path to env_archive.xml 
         if case_root is None:
             case_root = os.getcwd()
         if os.path.isabs(infile):
             fullpath = infile
         else:
             fullpath = os.path.join(case_root, infile)
-            logger.debug("Fullpath = %s" , fullpath)
-        GenericXML.__init__(self, fullpath)
-        if not os.path.isfile(infile):
+            
+        logger.debug("Fullpath = %s" , fullpath)
+        
+        # Initialize self     
+        GenericXML.__init__(self, fullpath) 
+        
+        # If env_archive.xml file does not exists in case directory read default from config
+        if not os.path.isfile(fullpath):
             headerobj = Headers()
             headernode = headerobj.get_header_node(os.path.basename(fullpath))
             self.root.append(headernode)
@@ -66,10 +73,10 @@ class EnvArchive(GenericXML):
             
                 val     = keep.text
                 attr    = rootdir + "/" + file.find('./subdir').text + "/" + file.get('regex_suffix')
-                t       = self.get_type(node)
-                desc    = self.get_description(keep)
+                t       = self._get_type(node)
+                desc    = self._get_description(keep)
                 #default = super(EnvBase , self).get_default(node)
-                default = self.get_default(keep)
+                default = self._get_default(keep)
                 file    = self.filename
             
                 #t   =  super(EnvBase , self).get_type( node )
@@ -84,10 +91,10 @@ class EnvArchive(GenericXML):
         
         return results 
         
-    def get_type(self, node=None) :
+    def _get_type(self, node=None) :
         return None    
         
-    def get_description(self, node=None):
+    def _get_description(self, node=None):
         
         description = None
         logger.warning("Get description for %s" , node.tag )
@@ -101,20 +108,20 @@ class EnvArchive(GenericXML):
         
         return description
         
-    def get_default(self, node=None):
+    def _get_default(self, node=None):
         return None
         
-    def get_archive():
+    def _get_archive():
         pass
         
-    class Archive:
-        """Class for a single archive component"""
-        
-        def __init__ (self):
-            self.name = None # <comp_archive_spec name=" $NAME ">
-            pass
-            
-        def name(self , name=None):
-            return self.name
-        
+    # class Archive:
+    #     """Class for a single archive component"""
+    #
+    #     def __init__ (self):
+    #         self.name = None # <comp_archive_spec name=" $NAME ">
+    #         pass
+    #
+    #     def name(self , name=None):
+    #         return self.name
+    #
             
