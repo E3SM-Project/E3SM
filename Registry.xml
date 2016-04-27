@@ -966,7 +966,7 @@ is the value of that variable from the *previous* time level!
 <!-- ================ -->
 
 	<!-- Region Masks -->
-        <var_struct name="Regions" time_levs="1">
+        <var_struct name="regions" time_levs="1">
 	  <var name="regionCellMasks" type="integer" dimensions="nRegions nCells" units="unitless"
 	       description="masks set to 1 in cells that fall within a given region and 0 otherwise"
 	       />

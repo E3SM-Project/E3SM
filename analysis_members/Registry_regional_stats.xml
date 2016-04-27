@@ -24,59 +24,23 @@
 		<package name="regionalStatsAMPKG" description="This package includes variables required for the regionalStats analysis member."/>
 	</packages>
 	<var_struct name="regionalStatsAM" time_levs="1" packages="regionalStatsAMPKG">
-		<var name="WAISIceVolume" type="real" dimensions="Time" units="m^3"
+                <var name="RegionalIceVolume" type="real" dimensions="nRegions Time" units="m^3"
 			description="total ice sheet volume"
 		/>
-		<var name="WAISIceArea" type="real" dimensions="Time" units="m^2"
+		<var name="RegionalIceArea" type="real" dimensions="nRegions Time" units="m^2"
 			description="total ice sheet area"
 		/>
-		<var name="WAISfloatingIceVolume" type="real" dimensions="Time" units="m^3"
+		<var name="RegionalFloatingIceVolume" type="real" dimensions="nRegions Time" units="m^3"
 			description="total floating ice sheet volume"
 		/>
-		<var name="WAISfloatingIceArea" type="real" dimensions="Time" units="m^2"
+		<var name="RegionalFloatingIceArea" type="real" dimensions="nRegions Time" units="m^2"
 			description="total floating ice sheet area"
 		/>
-		<var name="WAISgroundedIceVolume" type="real" dimensions="Time" units="m^3"
+		<var name="RegionalGroundedIceVolume" type="real" dimensions="nRegions Time" units="m^3"
 			description="total grounded ice sheet volume"
 		/>
-		<var name="WAISgroundedIceArea" type="real" dimensions="Time" units="m^2"
+		<var name="RegionalGroundedIceArea" type="real" dimensions="nRegions Time" units="m^2"
 			description="total grounded ice sheet area"
-		/>
-		<var name="EAISIceVolume" type="real" dimensions="Time" units="m^3"
-			description="total ice sheet volume"
-		/>
-		<var name="EAISIceArea" type="real" dimensions="Time" units="m^2"
-			description="total ice sheet area"
-		/>
-		<var name="EAISfloatingIceVolume" type="real" dimensions="Time" units="m^3"
-			description="total floating ice sheet volume"
-		/>
-		<var name="EAISfloatingIceArea" type="real" dimensions="Time" units="m^2"
-			description="total floating ice sheet area"
-		/>
-		<var name="EAISgroundedIceVolume" type="real" dimensions="Time" units="m^3"
-			description="total grounded ice sheet volume"
-		/>
-		<var name="EAISgroundedIceArea" type="real" dimensions="Time" units="m^2"
-			description="total grounded ice sheet area"
-		/>
-		<var name="WAIStotalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
-			description="total, area integrated basal mass balance for the West Antarctic Ice Sheet"
-		/>
-		<var name="EAIStotalBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
-			description="total, area integrated basal mass balance for the East Antarctic Ice Sheet"
-		/>
-		<var name="FRISBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
-			description="total, area integrated basal mass balance for the Filchner-Ronne Ice Shelf"
-		/>
-		<var name="RossISBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
-			description="total, area integrated basal mass balance for the Ross Ice Shelf"
-		/>
-		<var name="AmeryISBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
-			description="total, area integrated basal mass balance for the Amery Ice Shelf"
-		/>
-		<var name="PineIslandThwaitesISBasalMassBal" type="real" dimensions="Time" units="kg yr^{-1}^"
-			description="total, area integrated basal mass balance for the Pine Island & Thwaites Ice Shelves"
 		/>
  	</var_struct>
 	<streams>
@@ -90,23 +54,11 @@
 				clobber_mode="truncate"
 				runtime_format="single_file">
 			<var name="xtime"/> 
-			<var name="WAISIceVolume"/> 
-			<var name="WAISIceArea"/> 
-            <var name="WAISfloatingIceVolume"/>
-            <var name="WAISgroundedIceVolume"/>
-            <var name="WAISfloatingIceArea"/>
-            <var name="WAISgroundedIceArea"/>
-			<var name="EAISIceVolume"/> 
-			<var name="EAISIceArea"/> 
-            <var name="EAISfloatingIceVolume"/>
-            <var name="EAISgroundedIceVolume"/>
-            <var name="EAISfloatingIceArea"/>
-            <var name="EAISgroundedIceArea"/>
-			<var name="WAIStotalBasalMassBal"/>
-			<var name="EAIStotalBasalMassBal"/>
-			<var name="FRISBasalMassBal"/>
-			<var name="RossISBasalMassBal"/>
-			<var name="AmeryISBasalMassBal"/>
-			<var name="PineIslandThwaitesISBasalMassBal"/>
+			<var name="RegionalIceVolume"/> 
+			<var name="RegionalIceArea"/> 
+                        <var name="RegionalFloatingIceVolume"/>
+                        <var name="RegionalGroundedIceVolume"/>
+                        <var name="RegionalFloatingIceArea"/>
+                        <var name="RegionalGroundedIceArea"/>
 		</stream>
 	</streams>

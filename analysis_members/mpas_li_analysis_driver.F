@@ -27,6 +27,7 @@ module li_analysis_driver
 
    use li_constants
    use li_global_stats
+   use li_regional_stats
 
    implicit none
    private
@@ -128,6 +129,7 @@ contains
 
       call mpas_pool_create_pool(analysisMemberList)
       call mpas_pool_add_config(analysisMemberList, 'globalStats', 1)
+      call mpas_pool_add_config(analysisMemberList, 'regionalStats', 1)
 
       ! DON'T EDIT BELOW HERE
 
@@ -705,6 +707,9 @@ contains
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
         call li_init_global_stats(domain, analysisMemberName, err_tmp)
       end if
+      if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
+        call li_init_regional_stats(domain, analysisMemberName, err_tmp)
+      end if
 
       iErr = ior(iErr, err_tmp)
 
@@ -736,6 +741,9 @@ contains
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
         call li_compute_global_stats(domain, analysisMemberName, timeLevel, err_tmp)
       end if
+      if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
+        call li_compute_regional_stats(domain, analysisMemberName, timeLevel, err_tmp)
+      end if
 
       iErr = ior(iErr, err_tmp)
 
@@ -766,6 +774,9 @@ contains
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
         call li_restart_global_stats(domain, analysisMemberName, err_tmp)
       end if
+      if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
+        call li_restart_regional_stats(domain, analysisMemberName, err_tmp)
+      end if
 
       iErr = ior(iErr, err_tmp)
 
@@ -795,6 +806,9 @@ contains
 
       if ( analysisMemberName(1:nameLength) == 'globalStats' ) then
         call li_finalize_global_stats(domain, analysisMemberName, err_tmp)
+      end if
+      if ( analysisMemberName(1:nameLength) == 'regionalStats' ) then
+        call li_finalize_regional_stats(domain, analysisMemberName, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
