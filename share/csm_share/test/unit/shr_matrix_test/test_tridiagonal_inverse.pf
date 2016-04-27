@@ -70,8 +70,8 @@ contains
   subroutine basic(this)
     ! Do a basic test of tridiagonal_inverse
     class(TestTridiagInverse), intent(inout) :: this
-    real(r8), parameter :: a(5) = [5._r8, 4._r8, 3._r8, 2._r8, 1._r8]
-    real(r8) :: b(5) = [17._r8, 2._r8, 4._r8, 3._r8, 0._r8]
+    real(r8), parameter :: a(5) = [10._r8, 9._r8, 8._r8, 7._r8, 6._r8]
+    real(r8) :: b(5) = [11._r8, 12._r8, 14._r8, 13._r8, 0._r8]
     real(r8) :: c(5) = [1._r8, 2._r8, 4._r8, 3._r8, 0._r8]
     real(r8) :: arr(5,5)
     real(r8) :: Tinv(5,5)
