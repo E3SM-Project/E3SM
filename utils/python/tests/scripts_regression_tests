@@ -130,30 +130,6 @@ def setup_proxy():
             return True
 
     return False
-###############################################################################
-class TestCreateNewcase(unittest.TestCase):
-    def setUp(self):
-        self._testroot = tempfile.mkdtemp()
-        self._testdir = os.path.join(self._testroot,"foo")
-
-    def createnewcase_test(self):
-        cmd = "%s/create_newcase --case %s --compset X --res f19_g16" % (SCRIPT_DIR, self._testdir)
-        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=SCRIPT_DIR)
-        self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
-        cmd = "case.setup "
-        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=self._testdir)
-        self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
-        cmd = "case.build"
-        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=self._testdir)
-        self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
-        cmd = "case.submit"
-        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=self._testdir)
-        self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
-
-
-    def tearDown(self):
-        shutil.rmtree(self._testdir)
-
 
 ###############################################################################
 class B_TestCreateNewcase(unittest.TestCase):
