@@ -17,7 +17,7 @@ class EnvArchive(GenericXML):
         """
         if case_root is None:
             case_root = os.getcwd()
-        if os.path.abspath(infile):
+        if os.path.isabs(infile):
             fullpath = infile
         else:
             fullpath = os.path.join(case_root, infile)
