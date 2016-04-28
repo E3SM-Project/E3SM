@@ -22,6 +22,7 @@ module mpas_field_routines
    use mpas_kind_types
    use mpas_derived_types
    use mpas_threading
+   use mpas_attlist
 
    interface mpas_allocate_mold
       module procedure mpas_allocate_mold_1dreal
@@ -1033,6 +1034,7 @@ module mpas_field_routines
        type (field0dLogical), pointer :: f !< Input: Field to deallocate
        type (field0dLogical), pointer :: f_cursor
        integer :: threadNum
+       integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
    
@@ -1046,6 +1048,13 @@ module mpas_field_routines
               nullify(f)
             end if
    
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
+
             deallocate(f_cursor)
             f_cursor => f
           end do
@@ -1069,6 +1078,7 @@ module mpas_field_routines
        type (field0dInteger), pointer :: f !< Input: Field to deallocate
        type (field0dInteger), pointer :: f_cursor
        integer :: threadNum
+       integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
    
@@ -1082,6 +1092,13 @@ module mpas_field_routines
               nullify(f)
             end if
    
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
+
             deallocate(f_cursor)
             f_cursor => f
           end do
@@ -1105,6 +1122,7 @@ module mpas_field_routines
        type (field1dInteger), pointer :: f !< Input: Field to deallocate
        type (field1dInteger), pointer :: f_cursor
        integer :: threadNum
+       integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
 
@@ -1121,6 +1139,13 @@ module mpas_field_routines
               deallocate(f_cursor % array)
             end if
    
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
+
             deallocate(f_cursor)
    
             f_cursor => f
@@ -1145,6 +1170,7 @@ module mpas_field_routines
        type (field2dInteger), pointer :: f !< Input: Field to deallocate
        type (field2dInteger), pointer :: f_cursor
        integer :: threadNum
+       integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
 
@@ -1161,6 +1187,13 @@ module mpas_field_routines
               deallocate(f_cursor % array)
             end if
    
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
+
             deallocate(f_cursor)
    
             f_cursor => f
@@ -1185,6 +1218,7 @@ module mpas_field_routines
        type (field3dInteger), pointer :: f !< Input: Field to deallocate
        type (field3dInteger), pointer :: f_cursor
        integer :: threadNum
+       integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
 
@@ -1201,6 +1235,13 @@ module mpas_field_routines
               deallocate(f_cursor % array)
             end if
    
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
+
             deallocate(f_cursor)
    
             f_cursor => f
@@ -1225,6 +1266,7 @@ module mpas_field_routines
        type (field0dReal), pointer :: f !< Input: Field to deallocate
        type (field0dReal), pointer :: f_cursor
        integer :: threadNum
+       integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
 
@@ -1238,6 +1280,13 @@ module mpas_field_routines
               nullify(f)
             end if
    
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
+
             deallocate(f_cursor)
    
             f_cursor => f
@@ -1262,6 +1311,7 @@ module mpas_field_routines
        type (field1dReal), pointer :: f !< Input: Field to deallocate
        type (field1dReal), pointer :: f_cursor
        integer :: threadNum
+       integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
 
@@ -1276,6 +1326,13 @@ module mpas_field_routines
 
             if(associated(f_cursor % array)) then
               deallocate(f_cursor % array)
+            end if
+
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
             end if
 
             deallocate(f_cursor)
@@ -1302,6 +1359,7 @@ module mpas_field_routines
        type (field2dReal), pointer :: f !< Input: Field to deallocate
        type (field2dReal), pointer :: f_cursor
        integer :: threadNum
+       integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
 
@@ -1316,6 +1374,13 @@ module mpas_field_routines
 
             if(associated(f_cursor % array)) then
               deallocate(f_cursor % array)
+            end if
+
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
             end if
 
             deallocate(f_cursor)
@@ -1342,6 +1407,7 @@ module mpas_field_routines
        type (field3dReal), pointer :: f !< Input: Field to deallocate
        type (field3dReal), pointer :: f_cursor
        integer :: threadNum
+       integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
 
@@ -1356,6 +1422,13 @@ module mpas_field_routines
 
             if(associated(f_cursor % array)) then
               deallocate(f_cursor % array)
+            end if
+
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
             end if
 
             deallocate(f_cursor)
@@ -1382,6 +1455,7 @@ module mpas_field_routines
        type (field4dReal), pointer :: f !< Input: Field to deallocate
        type (field4dReal), pointer :: f_cursor
        integer :: threadNum
+       integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
 
@@ -1396,6 +1470,13 @@ module mpas_field_routines
 
             if(associated(f_cursor % array)) then
               deallocate(f_cursor % array)
+            end if
+
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
             end if
 
             deallocate(f_cursor)
@@ -1422,6 +1503,7 @@ module mpas_field_routines
        type (field5dReal), pointer :: f !< Input: Field to deallocate
        type (field5dReal), pointer :: f_cursor
        integer :: threadNum
+       integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
 
@@ -1436,6 +1518,13 @@ module mpas_field_routines
 
             if(associated(f_cursor % array)) then
               deallocate(f_cursor % array)
+            end if
+
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
             end if
 
             deallocate(f_cursor)
@@ -1462,6 +1551,7 @@ module mpas_field_routines
        type (field0dChar), pointer :: f !< Input: Field to deallocate
        type (field0dChar), pointer :: f_cursor
        integer :: threadNum
+       integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
 
@@ -1473,6 +1563,13 @@ module mpas_field_routines
               f => f % next
             else
               nullify(f)
+            end if
+
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
             end if
 
             deallocate(f_cursor)
@@ -1498,6 +1595,7 @@ module mpas_field_routines
        type (field1dChar), pointer :: f !< Input: Field to deallocate
        type (field1dChar), pointer :: f_cursor
        integer :: threadNum
+       integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
 
@@ -1512,6 +1610,13 @@ module mpas_field_routines
 
             if(associated(f_cursor % array)) then
               deallocate(f_cursor % array)
+            end if
+
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
             end if
 
             deallocate(f_cursor)
@@ -1846,7 +1951,7 @@ module mpas_field_routines
 
       type (field0DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_scalar.inc"
 
@@ -1874,7 +1979,7 @@ module mpas_field_routines
 
       type (field1DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -1902,7 +2007,7 @@ module mpas_field_routines
 
       type (field2DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -1930,7 +2035,7 @@ module mpas_field_routines
 
       type (field3DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -1958,7 +2063,7 @@ module mpas_field_routines
 
       type (field4DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -1986,7 +2091,7 @@ module mpas_field_routines
 
       type (field5DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -2014,7 +2119,7 @@ module mpas_field_routines
 
       type (field0DInteger), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_scalar.inc"
 
@@ -2042,7 +2147,7 @@ module mpas_field_routines
 
       type (field1DInteger), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -2070,7 +2175,7 @@ module mpas_field_routines
 
       type (field2DInteger), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -2098,7 +2203,7 @@ module mpas_field_routines
 
       type (field3DInteger), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -2126,7 +2231,7 @@ module mpas_field_routines
 
       type (field0DChar), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_scalar.inc"
 
@@ -2154,7 +2259,7 @@ module mpas_field_routines
 
       type (field1DChar), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -2182,7 +2287,7 @@ module mpas_field_routines
 
       type (field0DLogical), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_scalar.inc"
 

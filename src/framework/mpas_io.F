@@ -22,6 +22,14 @@ module mpas_io
 #else
    integer, parameter :: PIO_REALKIND = PIO_DOUBLE
 #endif
+
+   integer, parameter :: MPAS_INT_FILLVAL = NF_FILL_INT
+   character, parameter :: MPAS_CHAR_FILLVAL = achar(NF_FILL_CHAR)
+#ifdef SINGLE_PRECISION
+   real (kind=RKIND), parameter :: MPAS_REAL_FILLVAL = NF_FILL_FLOAT
+#else
+   real (kind=RKIND), parameter :: MPAS_REAL_FILLVAL = NF_FILL_DOUBLE
+#endif
    
    interface MPAS_io_get_var
       module procedure MPAS_io_get_var_int0d

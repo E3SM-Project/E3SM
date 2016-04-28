@@ -1,6 +1,6 @@
 .SUFFIXES: .F .o
 
-OBJS = mpas_test_core.o mpas_test_core_interface.o mpas_test_core_halo_exch.o mpas_test_core_streams.o
+OBJS = mpas_test_core.o mpas_test_core_interface.o mpas_test_core_halo_exch.o mpas_test_core_streams.o mpas_test_core_field_tests.o
 
 all: core_test
 
@@ -27,9 +27,11 @@ post_build:
 
 mpas_test_core_interface: mpas_test_core.o
 
-mpas_test_core.o: mpas_test_core_halo_exch.o mpas_test_core_streams.o
+mpas_test_core.o: mpas_test_core_halo_exch.o mpas_test_core_streams.o mpas_test_core_field_tests.o
 
 mpas_test_core_halo_exch.o:
+
+mpas_test_core_field_tests.o:
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a

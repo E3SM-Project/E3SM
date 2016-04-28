@@ -177,17 +177,6 @@ module ocn_time_integration_split
       ! Forcing Array Pointer
       real (kind=RKIND), dimension(:), pointer :: seaIceEnergy
 
-      ! Diagnostics Field Pointers
-      type (field2DReal), pointer :: normalizedRelativeVorticityEdgeField, divergenceField, relativeVorticityField
-      type (field1DReal), pointer :: barotropicThicknessFluxField, boundaryLayerDepthField
-
-      ! State/Tend Field Pointers
-      type (field1DReal), pointer :: normalBarotropicVelocitySubcycleField, sshSubcycleField
-      type (field2DReal), pointer :: highFreqThicknessField, lowFreqDivergenceField
-      type (field2DReal), pointer :: normalBaroclinicVelocityField, layerThicknessField
-      type (field2DReal), pointer :: normalVelocityField
-      type (field3DReal), pointer :: tracersField
-
       call mpas_timer_start("se timestep")
 
       call mpas_pool_get_config(domain % configs, 'config_n_bcl_iter_beg', config_n_bcl_iter_beg)
@@ -318,21 +307,17 @@ module ocn_time_integration_split
          ! ---  update halos for diagnostic ocean boundayr layer depth
          call mpas_timer_start("se halo diag obd")
          if (config_use_cvmix_kpp) then
-            call mpas_pool_get_field(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepthField)
-            call mpas_dmpar_exch_halo_field(boundaryLayerDepthField)
+            call mpas_dmpar_field_halo_exch(domain, 'boundaryLayerDepth')
          end if
          call mpas_timer_stop("se halo diag obd")
 
          ! ---  update halos for diagnostic variables
          call mpas_timer_start("se halo diag")
 
-         call mpas_pool_get_field(diagnosticsPool, 'normalizedRelativeVorticityEdge', normalizedRelativeVorticityEdgeField)
-         call mpas_pool_get_field(diagnosticsPool, 'divergence', divergenceField)
-         call mpas_pool_get_field(diagnosticsPool, 'relativeVorticity', relativeVorticityField)
-         call mpas_dmpar_exch_halo_field(normalizedRelativeVorticityEdgeField)
+         call mpas_dmpar_field_halo_exch(domain, 'normalizedRelativeVorticityEdge')
          if (config_mom_del4 > 0.0) then
-           call mpas_dmpar_exch_halo_field(divergenceField)
-           call mpas_dmpar_exch_halo_field(relativeVorticityField)
+           call mpas_dmpar_field_halo_exch(domain, 'divergence')
+           call mpas_dmpar_field_halo_exch(domain, 'relativeVorticity')
          end if
          call mpas_timer_stop("se halo diag")
 
@@ -357,13 +342,8 @@ module ocn_time_integration_split
             call mpas_timer_stop("se freq-filtered-thick computations")
 
             call mpas_timer_start("se freq-filtered-thick halo update")
-            call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
-
-            call mpas_pool_get_field(tendPool, 'highFreqThickness', highFreqThicknessField)
-            call mpas_pool_get_field(tendPool, 'lowFreqDivergence', lowFreqDivergenceField)
-
-            call mpas_dmpar_exch_halo_field(highFreqThicknessField)
-            call mpas_dmpar_exch_halo_field(lowFreqDivergenceField)
+            call mpas_dmpar_field_halo_exch(domain, 'tendHighFreqThickness')
+            call mpas_dmpar_field_halo_exch(domain, 'tendLowFreqDivergence')
             call mpas_timer_stop("se freq-filtered-thick halo update")
 
             block => domain % blocklist
@@ -520,10 +500,7 @@ module ocn_time_integration_split
             end do
 
             call mpas_timer_start("se halo normalBaroclinicVelocity")
-            call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-            call mpas_pool_get_field(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocityField, 2)
-
-            call mpas_dmpar_exch_halo_field(normalBaroclinicVelocityField)
+            call mpas_dmpar_field_halo_exch(domain, 'normalBaroclinicVelocity', timeLevel=2)
             call mpas_timer_stop("se halo normalBaroclinicVelocity")
 
          end do  ! do j=1,config_n_bcl_iter
@@ -690,10 +667,7 @@ module ocn_time_integration_split
 
                 !   boundary update on normalBarotropicVelocityNew
                 call mpas_timer_start("se halo normalBarotropicVelocity")
-                call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-
-                call mpas_pool_get_field(statePool, 'normalBarotropicVelocitySubcycle', normalBarotropicVelocitySubcycleField, newBtrSubcycleTime)
-                call mpas_dmpar_exch_halo_field(normalBarotropicVelocitySubcycleField)
+                call mpas_dmpar_field_halo_exch(domain, 'normalBarotropicVelocitySubcycle', timeLevel=newBtrSubcycleTime)
                 call mpas_timer_stop("se halo normalBarotropicVelocity")
               endif ! config_btr_gam1_velWt1>1.0e-12
 
@@ -810,10 +784,7 @@ module ocn_time_integration_split
       
               !   boundary update on SSHnew
               call mpas_timer_start("se halo ssh")
-              call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-
-              call mpas_pool_get_field(statePool, 'sshSubcycle', sshSubcycleField, newBtrSubcycleTime)
-              call mpas_dmpar_exch_halo_field(sshSubcycleField)
+              call mpas_dmpar_field_halo_exch(domain, 'sshSubcycle', timeLevel=newBtrSubcycleTime)
               call mpas_timer_stop("se halo ssh")
       
               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -878,11 +849,7 @@ module ocn_time_integration_split
       
                 !   boundary update on normalBarotropicVelocityNew
                 call mpas_timer_start("se halo normalBarotropicVelocity")
-                call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-
-                call mpas_pool_get_field(statePool, 'normalBarotropicVelocitySubcycle', normalBarotropicVelocitySubcycleField, newBtrSubcycleTime)
-
-                call mpas_dmpar_exch_halo_field(normalBarotropicVelocitySubcycleField)
+                call mpas_dmpar_field_halo_exch(domain, 'normalBarotropicVelocitySubcycle', timeLevel=newBtrSubcycleTime)
                 call mpas_timer_stop("se halo normalBarotropicVelocity")
               end do !do BtrCorIter=1,config_n_btr_cor_iter
       
@@ -998,11 +965,7 @@ module ocn_time_integration_split
       
                 !   boundary update on SSHnew
                 call mpas_timer_start("se halo ssh")
-                call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-
-                call mpas_pool_get_field(statePool, 'sshSubcycle', sshSubcycleField)
-
-                call mpas_dmpar_exch_halo_field(sshSubcycleField)
+                call mpas_dmpar_field_halo_exch(domain, 'sshSubcycle')
                 call mpas_timer_stop("se halo ssh")
                endif ! config_btr_solve_SSH2
       
@@ -1064,11 +1027,7 @@ module ocn_time_integration_split
       
             ! boundary update on F
             call mpas_timer_start("se halo F")
-            call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
-
-            call mpas_pool_get_field(diagnosticsPool, 'barotropicThicknessFlux', barotropicThicknessFluxField)
-
-            call mpas_dmpar_exch_halo_field(barotropicThicknessFluxField)
+            call mpas_dmpar_field_halo_exch(domain, 'barotropicThicknessFlux')
             call mpas_timer_stop("se halo F")
 
 
@@ -1199,11 +1158,7 @@ module ocn_time_integration_split
 
          ! update halo for thickness tendencies
          call mpas_timer_start("se halo thickness")
-         call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
-
-         call mpas_pool_get_field(tendPool, 'layerThickness', layerThicknessField)
-
-         call mpas_dmpar_exch_halo_field(layerThicknessField)
+         call mpas_dmpar_field_halo_exch(domain, 'tendLayerThickness')
          call mpas_timer_stop("se halo thickness")
 
          block => domain % blocklist
@@ -1220,11 +1175,7 @@ module ocn_time_integration_split
 
          ! update halo for tracer tendencies
          call mpas_timer_start("se halo tracers")
-         call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
-
-         call mpas_pool_get_field(tendPool, 'tracers', tracersField)
-
-         call mpas_dmpar_exch_halo_field(tracersField)
+         call mpas_dmpar_field_halo_exch(domain, 'tendTracers')
          call mpas_timer_stop("se halo tracers")
 
          block => domain % blocklist
@@ -1451,13 +1402,8 @@ module ocn_time_integration_split
       ! conducted on tendencies, not on the velocity and tracer fields.  So this update is required to 
       ! communicate the change due to implicit vertical mixing across the boundary.
       call mpas_timer_start("se implicit vert mix halos")
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
-
-      call mpas_pool_get_field(statePool, 'normalVelocity', normalVelocityField, 2)
-      call mpas_pool_get_field(statePool, 'tracers', tracersField, 2)
-
-      call mpas_dmpar_exch_halo_field(normalVelocityField)
-      call mpas_dmpar_exch_halo_field(tracersField)
+      call mpas_dmpar_field_halo_exch(domain, 'normalVelocity', timeLevel=2)
+      call mpas_dmpar_field_halo_exch(domain, 'tracers', timeLevel=2)
       call mpas_timer_stop("se implicit vert mix halos")
 
       call mpas_timer_stop("se implicit vert mix")

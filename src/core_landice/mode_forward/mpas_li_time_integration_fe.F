@@ -226,8 +226,6 @@ module li_time_integration_fe
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: scratchPool
 
-      type (field2DReal), pointer :: layerNormalVelocityField
-
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
       real (kind=RKIND), dimension(:,:), pointer :: layerNormalVelocity
 
@@ -460,8 +458,7 @@ module li_time_integration_fe
 
       ! Halo updates
       call mpas_timer_start("halo updates")
-      call mpas_pool_get_field(velocityPool, 'layerNormalVelocity', layerNormalVelocityField)
-      call mpas_dmpar_exch_halo_field(layerNormalVelocityField)
+      call mpas_dmpar_field_halo_exch(domain, 'layerNormalVelocity')
       call mpas_timer_stop("halo updates")
 
       ! === error check
@@ -518,12 +515,6 @@ module li_time_integration_fe
       type (mpas_pool_type), pointer :: thermalPool
       type (mpas_pool_type), pointer :: scratchPool
 
-      type (field1DReal), pointer :: thicknessField
-      type (field2DReal), pointer :: layerThicknessEdgeField
-      type (field2DReal), pointer :: temperatureField
-      type (field2DReal), pointer :: waterfracField
-      type (field2DReal), pointer :: enthalpyField
-
       real (kind=RKIND), dimension(:), pointer :: thicknessOld
       real (kind=RKIND), dimension(:), pointer :: thicknessNew
       real (kind=RKIND), dimension(:), pointer :: thickness
@@ -560,9 +551,7 @@ module li_time_integration_fe
       !        We use timeLevel=2 to get the value from the previous timestep.
 
       call mpas_timer_start("halo updates")
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
-      call mpas_pool_get_field(geometryPool, 'thickness', thicknessField)
-      call mpas_dmpar_exch_halo_field(thicknessField)
+      call mpas_dmpar_field_halo_exch(domain, 'thickness')
       call mpas_timer_stop("halo updates")
 
       ! ===
@@ -664,19 +653,10 @@ module li_time_integration_fe
       ! Halo updates
       call mpas_timer_start("halo updates")
 
-      ! thickness
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
-      call mpas_pool_get_field(geometryPool, 'thickness', thicknessField)
-      call mpas_dmpar_exch_halo_field(thicknessField)
-
-      ! temperature, waterfrac, enthalpy
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'thermal', thermalPool)
-      call mpas_pool_get_field(thermalPool, 'temperature', temperatureField)
-      call mpas_dmpar_exch_halo_field(temperatureField)
-      call mpas_pool_get_field(thermalPool, 'waterfrac', waterfracField)
-      call mpas_dmpar_exch_halo_field(waterfracField)
-      call mpas_pool_get_field(thermalPool, 'enthalpy', enthalpyField)
-      call mpas_dmpar_exch_halo_field(enthalpyField)
+      call mpas_dmpar_field_halo_exch(domain, 'thickness')
+      call mpas_dmpar_field_halo_exch(domain, 'temperature')
+      call mpas_dmpar_field_halo_exch(domain, 'waterfrac')
+      call mpas_dmpar_field_halo_exch(domain, 'enthalpy')
 
       call mpas_timer_stop("halo updates")
 
