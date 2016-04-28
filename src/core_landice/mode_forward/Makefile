@@ -40,8 +40,7 @@ mpas_li_time_integration.o: mpas_li_time_integration_fe.o \
 	                    mpas_li_setup.o \
 			    mpas_li_constants.o
 
-mpas_li_time_integration_fe.o: mpas_li_velocity.o \
-                               mpas_li_advection.o \
+mpas_li_time_integration_fe.o: mpas_li_advection.o \
 	                       mpas_li_calving.o \
                                mpas_li_thermal.o \
                                mpas_li_diagnostic_vars.o \
@@ -49,7 +48,9 @@ mpas_li_time_integration_fe.o: mpas_li_velocity.o \
 
 mpas_li_advection.o: mpas_li_thermal.o \
 	             mpas_li_diagnostic_vars.o \
-                     mpas_li_setup.o
+                     mpas_li_setup.o \
+		     mpas_li_mask.o \
+		     mpas_li_constants.o
 
 mpas_li_calving.o: mpas_li_mask.o \
 	           mpas_li_thermal.o \
@@ -62,18 +63,21 @@ mpas_li_thermal.o: mpas_li_mask.o \
 
 mpas_li_diagnostic_vars.o: mpas_li_mask.o \
                            mpas_li_velocity.o \
-                           mpas_li_constants.o
+                           mpas_li_constants.o \
+			   mpas_li_thermal.o
 
 mpas_li_velocity.o: mpas_li_sia.o \
                     mpas_li_setup.o \
                     mpas_li_velocity_simple.o \
-                    mpas_li_velocity_external.o
+                    mpas_li_velocity_external.o \
+		    mpas_li_mask.o
 
 mpas_li_sia.o: mpas_li_mask.o \
                mpas_li_setup.o
 
 mpas_li_velocity_simple.o: mpas_li_mask.o \
-                           mpas_li_setup.o
+                           mpas_li_setup.o \
+			   mpas_li_constants.o
 
 mpas_li_statistics.o: mpas_li_mask.o \
 	              mpas_li_diagnostic_vars.o \
@@ -84,7 +88,9 @@ mpas_li_mask.o: mpas_li_setup.o
 
 mpas_li_constants.o:
 
-mpas_li_velocity_external.o:
+mpas_li_velocity_external.o: mpas_li_setup.o \
+	                     mpas_li_mask.o \
+	                     Interface_velocity_solver.o
 
 Interface_velocity_solver.o:
 
