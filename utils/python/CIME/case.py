@@ -282,7 +282,7 @@ class Case(object):
             comp_name  = self._components[i-1]
 	    node_name = 'CONFIG_' + comp_class + '_FILE';
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=True)
-            logger.debug( "DEBUG: comp_config_file is %s"%comp_config_file)
+            logger.debug( "comp_config_file is %s"%comp_config_file)
             compobj = Component(comp_config_file)
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist);
@@ -445,7 +445,6 @@ class Case(object):
         # setup executable files in caseroot/
         exefiles = (os.path.join(toolsdir, "case.setup"),
                     os.path.join(toolsdir, "case.build"),
-                    os.path.join(toolsdir, "case.clean_build"),
                     os.path.join(toolsdir, "case.submit"),
                     os.path.join(toolsdir, "preview_namelists"),
                     os.path.join(toolsdir, "testcase.setup"),

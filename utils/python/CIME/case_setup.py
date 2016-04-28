@@ -43,7 +43,7 @@ def _check_pelayouts_require_rebuild(case, models):
                 if old_tasks != new_tasks or old_threads != new_threads or old_inst != new_inst:
                     logger.warn("%s pe change requires clean build" % comp)
                     cleanflag = comp[0].lower()
-                    run_cmd("./case.clean_build -%s" % cleanflag)
+                    run_cmd("./case.build --clean %s" % cleanflag)
 
         os.remove(locked_pes)
 
@@ -271,7 +271,7 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
         preview_namelists(case=case)
 
         logger.info("See ./CaseDoc for component namelists")
-        logger.info("If an old case build already exists, might want to run case.clean_build before building")
+        logger.info("If an old case build already exists, might want to run \'case.build --clean-all\' before building")
 
         # Create test script if appropriate
         if os.path.exists("env_test.xml"):
