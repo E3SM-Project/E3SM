@@ -5,7 +5,9 @@ case.submit - Submit a cesm workflow to the queueing system or run it if there i
 """
 
 from standard_script_setup import *
-from CIME.case import Case
+from CIME.submit import submit
+
+logger = logging.getLogger(__name__)
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -48,8 +50,8 @@ def _main_func(description):
         sys.exit(1 if test_results.failed > 0 else 0)
 
     caseroot, job = parse_command_line(sys.argv, description)
-    caseobj = Case(caseroot)
-    caseobj.submit(caseroot, job=job)
+
+    submit(caseroot, job=job)
 
 if __name__ == "__main__":
     _main_func(__doc__)

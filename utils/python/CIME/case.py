@@ -10,7 +10,6 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, run_cmd, get_cime_root
 from CIME.utils                     import convert_to_type, get_model, get_project
-from CIME.env_module        import EnvModule
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
@@ -628,20 +627,3 @@ class Case(object):
         clonename = self.get_value("CASE")
         logger.info(" Successfully created new case %s from clone case %s " %(newcasename, clonename))
 
-    def submit(self, job="case.run", resubmit=None):
-        caseroot = self.get_value("CASEROOT")
-        if resubmit is None:
-            case.check_case(caseroot)
-        #Load Modules
-        env_module = EnvModule(case.get_value("MACH"), case.get_value("COMPILER"),
-                               case.get_value("CIMEROOT"),caseroot, case.get_value("MPILIB"),
-                               case.get_value("DEBUG"))
-        env_module.load_env_for_case()
-
-
-    def check_case(self,caseroot):
-        check_lockedfiles(caseroot)
-        preview_namelists(dryrun=False, casedir=caseroot)
-        expect(self.get_value("BUILD_COMPLETE"), "Build complete is "
-               "not True please rebuild the model by calling case.build")
-        logger.info("Check case OK")

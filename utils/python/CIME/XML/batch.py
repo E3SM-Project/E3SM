@@ -125,3 +125,19 @@ class Batch(GenericXML):
                 task_count_node = self.get_node("task_count",root=child)
                 jobs.append((name,template_node.text,task_count_node.text))
         return jobs
+
+    def get_submit_args(self, machine=None):
+        '''
+        return a list of touples (flag, name)
+        '''
+        values = list()
+        bs_nodes = self.get_nodes("batch_system",{"type":self.batch_system})
+        if machine is not None:
+            bs_nodes += self.get_nodes("batch_system",{"MACH":machine})
+        submit_arg_nodes = list()
+        for node in bs_nodes:
+            submit_arg_nodes += self.get_nodes("arg",root=node)
+        for arg in submit_arg_nodes:
+            print arg.attrib
+            values.append((arg.get("flag"),arg.get("name")))
+        return values

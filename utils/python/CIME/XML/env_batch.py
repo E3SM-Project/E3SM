@@ -34,23 +34,25 @@ class EnvBatch(EnvBase):
 
         return val
 
-    def get_value(self, item, attribute={}, resolved=True, subgroup="run"):
+    def get_value(self, item, attribute={}, resolved=True, subgroup="case.run"):
         """
         Must default subgroup to something in order to provide single return value
         """
         value = None
+        if subgroup is None:
+            value = EnvBase.get_value(self,item,attribute,resolved)
+        else:
+            job_node = self.get_optional_node("job", {"name":subgroup})
+            if job_node is not None:
+                node = self.get_optional_node("entry", {"id":item}, root=job_node)
+                if node is not None:
+                    value = self.get_resolved_value(node.get("value"))
 
-        job_node = self.get_optional_node("job", {"name":subgroup})
-        if job_node is not None:
-            node = self.get_optional_node("entry", {"id":item}, root=job_node)
-            if node is not None:
-                value = self.get_resolved_value(node.get("value"))
-
-                # Return value as right type if we were able to fully resolve
-                # otherwise, we have to leave as string.
-                if "$" not in value:
-                    type_str = self._get_type_info(node)
-                    value = convert_to_type(value, type_str, item)
+                    # Return value as right type if we were able to fully resolve
+                    # otherwise, we have to leave as string.
+                    if "$" not in value:
+                        type_str = self._get_type_info(node)
+                        value = convert_to_type(value, type_str, item)
 
         return value
 
