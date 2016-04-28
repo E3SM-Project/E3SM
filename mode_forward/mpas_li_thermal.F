@@ -162,16 +162,6 @@ module li_thermal
       real (kind=RKIND), dimension(:), pointer :: &
            basalHeatFlux               ! basal heat flux into the ice (W m^{-2}, positive upward)
 
-      ! The following fields are needed for halo updates
-
-      type (field1DReal), pointer :: &
-           surfaceTemperatureField,  &
-           basalTemperatureField
-
-      type (field2DReal), pointer :: &
-           temperatureField,  &
-           waterfracField
-
       integer :: k, iLayer
 
       integer :: iCell
@@ -480,19 +470,13 @@ module li_thermal
       ! halo updates
       call mpas_timer_start("halo updates")
 
-      call mpas_pool_get_field(thermalPool, 'surfaceTemperature', surfaceTemperatureField)
-      call mpas_dmpar_exch_halo_field(surfaceTemperatureField)
-
-      call mpas_pool_get_field(thermalPool, 'basalTemperature', basalTemperatureField)
-      call mpas_dmpar_exch_halo_field(basalTemperatureField)
-
-      call mpas_pool_get_field(thermalPool, 'temperature', temperatureField)
-      call mpas_dmpar_exch_halo_field(temperatureField)
+      call mpas_dmpar_field_halo_exch(domain, 'surfaceTemperature')
+      call mpas_dmpar_field_halo_exch(domain, 'basalTemperature')
+      call mpas_dmpar_field_halo_exch(domain, 'temperature')
 
       if (trim(config_thermal_solver) == 'enthalpy') then
          ! prognostic variables are temperature and waterfrac, so need to update waterfrac too
-         call mpas_pool_get_field(thermalPool, 'waterfrac', waterfracField)
-         call mpas_dmpar_exch_halo_field(waterfracField)
+         call mpas_dmpar_field_halo_exch(domain, 'waterfrac')
       endif
 
       call mpas_timer_stop("halo updates")
@@ -709,16 +693,6 @@ module li_thermal
            waterfrac,                & ! interior water fraction (unitless)
            enthalpy,                 & ! interior ice enthalpy (J m^{-3})
            heatDissipation             ! interior heat dissipation (deg/s)
-
-      ! The following fields are needed for halo updates
-
-      type (field1DReal), pointer :: &
-           surfaceTemperatureField,  &
-           basalTemperatureField
-
-      type (field2DReal), pointer :: &
-           temperatureField,  &
-           waterfracField
 
       real(kind=RKIND), dimension(:), allocatable :: &
            subdiagonal, diagonal, superdiagonal,   &  ! tridiagonal matrix elements
@@ -1315,19 +1289,13 @@ module li_thermal
 
       call mpas_timer_start("halo updates")
 
-      call mpas_pool_get_field(thermalPool, 'surfaceTemperature', surfaceTemperatureField)
-      call mpas_dmpar_exch_halo_field(surfaceTemperatureField)
-
-      call mpas_pool_get_field(thermalPool, 'basalTemperature', basalTemperatureField)
-      call mpas_dmpar_exch_halo_field(basalTemperatureField)
-
-      call mpas_pool_get_field(thermalPool, 'temperature', temperatureField)
-      call mpas_dmpar_exch_halo_field(temperatureField)
+      call mpas_dmpar_field_halo_exch(domain, 'surfaceTemperature')
+      call mpas_dmpar_field_halo_exch(domain, 'basalTemperature')
+      call mpas_dmpar_field_halo_exch(domain, 'temperature')
 
       if (trim(config_thermal_solver) == 'enthalpy') then
          ! prognostic variables are temperature and waterfrac, so need to update waterfrac too
-         call mpas_pool_get_field(thermalPool, 'waterfrac', waterfracField)
-         call mpas_dmpar_exch_halo_field(waterfracField)
+         call mpas_dmpar_field_halo_exch(domain, 'waterfrac')
       endif
 
       call mpas_timer_stop("halo updates")

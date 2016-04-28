@@ -106,8 +106,6 @@ module li_core
       integer, dimension(:), pointer :: cellProcID
       type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
 
-      type(field3DReal), pointer :: &
-           coeffsReconstructField   ! field for reconstruction coefficients
 
       err = 0
       err_tmp = 0
@@ -219,8 +217,7 @@ module li_core
       ! Note: Results on multiple processors may be incorrect without this update
 
       call mpas_timer_start("halo updates")
-      call mpas_pool_get_field(meshPool, 'coeffs_reconstruct', coeffsReconstructField)
-      call mpas_dmpar_exch_halo_field(coeffsReconstructField)
+      call mpas_dmpar_field_halo_exch(domain, 'coeffs_reconstruct')
       call mpas_timer_stop("halo updates")
 
       ! check for errors and exit

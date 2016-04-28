@@ -268,7 +268,6 @@ contains
       integer, dimension(:,:), pointer :: cellsOnVertex
       integer, dimension(:,:), pointer :: verticesOnEdge
       real (kind=RKIND), dimension(:), pointer :: upperSurface
-      type (field2DReal), pointer :: normalVelocityField
       integer, dimension(:), pointer :: indexToEdgeID
       ! truly local variables
       integer :: cell1, cell2
@@ -431,9 +430,7 @@ contains
       ! --- update halos on velocity
       ! ---
       call mpas_timer_start("halo updates")
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
-      call mpas_pool_get_field(velocityPool, 'normalVelocity', normalVelocityField)
-      call mpas_dmpar_exch_halo_field(normalVelocityField)
+      call mpas_dmpar_field_halo_exch(domain, 'normalVelocity')
       call mpas_timer_stop("halo updates")
 
       endif  ! if solveVelo

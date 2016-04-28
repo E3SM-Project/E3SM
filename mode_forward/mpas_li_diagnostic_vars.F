@@ -113,7 +113,6 @@ contains
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: thermalPool
       type (mpas_pool_type), pointer :: velocityPool
-      type (field2DReal), pointer :: layerThicknessEdgeField
 
       character (len=StrKIND), pointer :: config_thermal_solver
       character (len=StrKIND), pointer :: config_velocity_solver
@@ -183,9 +182,7 @@ contains
 
       ! Halo updates
       call mpas_timer_start("halo updates")
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
-      call mpas_pool_get_field(geometryPool, 'layerThicknessEdge', layerThicknessEdgeField)
-      call mpas_dmpar_exch_halo_field(layerThicknessEdgeField)
+      call mpas_dmpar_field_halo_exch(domain, 'layerThicknessEdge')
       call mpas_timer_stop("halo updates")
 
       call mpas_timer_stop("calc. diagnostic vars except vel")
@@ -440,7 +437,6 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: baryWeightsOnVertex
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA
       real (kind=RKIND), dimension(:,:), pointer :: temperature
-      type (field1DInteger), pointer :: cellMaskField, edgeMaskField, vertexMaskField, floatingEdgesField
       integer, pointer :: nCells, nVertices, nEdges
       integer, pointer :: anyDynamicVertexMaskChanged
       integer, pointer :: dirichletMaskChanged
@@ -478,13 +474,9 @@ contains
 
       ! Update halos on masks - the outermost cells/edges/vertices may be wrong for mask components that need neighbor information
       call mpas_timer_start("halo updates")
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
-      call mpas_pool_get_field(geometryPool, 'cellMask', cellMaskField)
-      call mpas_pool_get_field(geometryPool, 'edgeMask', edgeMaskField)
-      call mpas_pool_get_field(geometryPool, 'vertexMask', vertexMaskField, timeLevel=1)
-      call mpas_dmpar_exch_halo_field(cellMaskField)
-      call mpas_dmpar_exch_halo_field(edgeMaskField)
-      call mpas_dmpar_exch_halo_field(vertexMaskField)
+      call mpas_dmpar_field_halo_exch(domain, 'cellMask')
+      call mpas_dmpar_field_halo_exch(domain, 'edgeMask')
+      call mpas_dmpar_field_halo_exch(domain, 'vertexMask')
       call mpas_timer_stop("halo updates")
 
 !!!      ! Update beta before the velocity solve occurs, now that we have the new state and its mask.
@@ -654,9 +646,7 @@ contains
       if (config_velocity_solver /= 'sia') then
          ! Update halos on masks - the outermost cells/edges/vertices may be wrong for mask components that need neighbor information
          call mpas_timer_start("halo updates")
-         call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
-         call mpas_pool_get_field(velocityPool, 'floatingEdges', floatingEdgesField)
-         call mpas_dmpar_exch_halo_field(floatingEdgesField)
+         call mpas_dmpar_field_halo_exch(domain, 'floatingEdges')
          call mpas_timer_stop("halo updates")
       endif
 
