@@ -189,7 +189,7 @@ class Case(object):
                     results = results + result
                 # return results
    
-        logger.warning("Not able to retrieve any value")
+ 
         # Return empty result
         return results
         
