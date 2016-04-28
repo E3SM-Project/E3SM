@@ -54,9 +54,8 @@
 -->
 </ParameterList>
 <ParameterList name="Discretization">
-<Parameter name="Exodus Output File Name" type="string" value="albany_output.exo"/>
+<!--Parameter name="Exodus Output File Name" type="string" value="albany_output.exo"/-->
 <Parameter name="Cubature Degree" type="int" value="1"/>
-<Parameter name="Interleaved Ordering" type="bool" value="false"/>
 <!--Parameter name="Restart Index" type="int" value="15"/-->
 </ParameterList>
 <!--
@@ -129,7 +128,7 @@
     <ParameterList name="NOX Stratimikos Options">
     </ParameterList>
     <ParameterList name="Stratimikos">
-      <Parameter name="Linear Solver Type" type="string" value="AztecOO"/>
+      <Parameter name="Linear Solver Type" type="string" value="Belos"/>
       <ParameterList name="Linear Solver Types">
 	<ParameterList name="AztecOO">
 	  <ParameterList name="Forward Solve">
@@ -139,35 +138,64 @@
 	      <Parameter name="Size of Krylov Subspace" type="int" value="200"/>
 	      <Parameter name="Output Frequency" type="int" value="20"/>
 	    </ParameterList>
-	    <Parameter name="Max Iterations" type="int" value="1000"/>
+	    <Parameter name="Max Iterations" type="int" value="2000"/>
 	    <Parameter name="Tolerance" type="double" value="1e-4"/>
 	  </ParameterList>
 	</ParameterList>
+        <ParameterList name="Belos">
+          <Parameter name="Solver Type" type="string" value="Block GMRES"/>
+          <ParameterList name="Solver Types">
+            <ParameterList name="Block GMRES">
+              <Parameter name="Convergence Tolerance" type="double" value="1e-6"/>
+              <Parameter name="Output Frequency" type="int" value="1"/>
+              <Parameter name="Output Style" type="int" value="1"/>
+              <Parameter name="Maximum Iterations" type="int" value="200"/>
+              <Parameter name="Block Size" type="int" value="1"/>
+              <Parameter name="Num Blocks" type="int" value="200"/>
+              <Parameter name="Flexible Gmres" type="bool" value="0"/>
+              <Parameter name="Verbosity" type="int" value="33"/>
+            </ParameterList>
+          </ParameterList>
+        </ParameterList>
       </ParameterList>
-      <Parameter name="Preconditioner Type" type="string" value="Ifpack"/>  <!-- this could be changed to ML once that is fully functional -->
+      <Parameter name="Preconditioner Type" type="string" value="ML"/>  <!-- this could be changed to ML once that is fully functional -->
       <ParameterList name="Preconditioner Types">
 	<ParameterList name="Ifpack">
 	  <Parameter name="Overlap" type="int" value="1"/>
 	  <Parameter name="Prec Type" type="string" value="ILU"/><!-- switch to Amesos for hard problems, but is a direct solver so memory-intensive  -->
 	  <ParameterList name="Ifpack Settings">
-                  <Parameter name="fact: level-of-fill" type="int" value="2"/><!-- increasing to 1 or 2 may help with nonconvergenge, but more is too slow to be worth it  -->
+                  <Parameter name="fact: level-of-fill" type="int" value="0"/><!-- increasing to 1 or 2 may help with nonconvergenge, but more is too slow to be worth it  -->
 	  </ParameterList>
-	</ParameterList>
-	<ParameterList name="ML">
-	  <Parameter name="Base Method Defaults" type="string" 
-		     value="none"/>
-	  <ParameterList name="ML Settings">
-	    <Parameter name="default values" type="string" value="SA"/>
-	    <Parameter name="smoother: type" type="string" 
-		       value="ML symmetric Gauss-Seidel"/>
-	    <Parameter name="smoother: pre or post" type="string" 
-		       value="both"/>
-	    <Parameter name="coarse: type" type="string" 
-		       value="Amesos-KLU"/>
-	    <Parameter name="PDE equations" type="int" 
-		       value="4"/>
-	  </ParameterList>
-                </ParameterList>
+  </ParameterList>
+<ParameterList name="ML">
+   <Parameter name="Base Method Defaults" type="string" value="none"/>
+   <ParameterList name="ML Settings">
+     <Parameter name="default values" type="string" value="SA"/>
+     <Parameter name="ML output" type="int" value="10"/>
+     <Parameter name="repartition: enable" type="int" value="1"/>
+     <Parameter name="repartition: max min ratio" type="double"
+value="1.327"/>
+     <Parameter name="repartition: min per proc" type="int" value="600"/>
+     <Parameter name="repartition: Zoltan dimensions" type="int" value="2"/>
+     <Parameter name="repartition: start level" type="int" value="4"/>
+     <Parameter name="semicoarsen: number of levels" type="int" value="2"/>
+     <Parameter name="semicoarsen: coarsen rate" type="int" value="14"/>
+     <Parameter name="smoother: sweeps" type="int" value="2"/>
+     <Parameter name="smoother: type" type="string" value="Gauss-Seidel"/>
+     <Parameter name="smoother: Chebyshev eig boost" type="double"
+value="1.2"/>
+     <Parameter name="smoother: sweeps (level 0)" type="int" value="1"/>
+     <Parameter name="smoother: type (level 0)" type="string"
+value="line Gauss-Seidel"/>
+     <Parameter name="smoother: damping factor" type="double" value="1.0"/>
+     <Parameter name="smoother: pre or post" type="string" value="both"/>
+     <Parameter name="coarse: type" type="string" value="Gauss-Seidel"/>
+     <Parameter name="coarse: sweeps" type="int" value="4"/>
+     <Parameter name="coarse: pre or post" type="string" value="pre"/>
+     <Parameter name="max levels" type="int" value="5"/>
+   </ParameterList>
+</ParameterList>
+
               </ParameterList>
             </ParameterList>
           </ParameterList>
