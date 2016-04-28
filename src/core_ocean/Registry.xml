@@ -1303,6 +1303,7 @@
 
 			<stream name="mesh"/>
 			<var_struct name="tracers"/>
+			<var_struct name="tracersSurfaceFlux"/>
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>
 			<var name="highFreqThickness"/>
