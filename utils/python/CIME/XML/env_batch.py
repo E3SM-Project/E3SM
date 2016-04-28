@@ -60,32 +60,63 @@ class EnvBatch(EnvBase):
     def get_values(self, item, attribute={}, resolved=True, subgroup=None):
         """Returns the value as a string of the first xml element with item as attribute value. 
         <elememt_name attribute='attribute_value>value</element_name>"""
+        
+        logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" , self, item, attribute, resolved, subgroup)
+        
+        logger.warning("In get_values (%s)" , self.__class__.__name__)
                 
         nodes   = [] # List of identified xml elements  
         results = [] # List of identified parameters 
-        logger.debug("Get node with attribute value: %s" , item)
        
         # Find all nodes with attribute name and attribute value item
         # xpath .//*[name='item']
-        for job in self.get_nodes("job") :
-            
-            group = job.attrib['name']
-            
-            if item :
-                nodes = self.get_nodes("*",{"id" : item} , root=job)
-            else :
-               # Return all nodes
-               logger.debug("Retrieving all parameter")
-               nodes = self.get_nodes("*",{"id" : None } , root=job)
-          
-           
-            # Return value for first occurence of node with attribute value = item
-            for node in nodes:
-                t   =  super(EnvBase , self).get_type( node )
-                val = { 'group' : group , 'attribute' : item , 'value' : node.attrib["value"] , 'type' : t , 'description' : self.get_description(node) , 'file' : self.filename }
-                logger.debug("Found node with value for %s = %s" , item , val)   
-                results.append(val)
+        # for job in self.get_nodes("job") :    
+        groups = self.get_nodes("group")
         
+        for group in groups :
+            
+            roots = []
+            jobs  = []
+            jobs  = self.get_nodes("job" , root=group)
+            
+            if (len(jobs)) :
+                roots = jobs
+            else : 
+                roots = [group]
+            
+            for r in roots :    
+            
+                if item :
+                    nodes = self.get_nodes("entry",{"id" : item} , root=r )
+                else :
+                   # Return all nodes
+                   nodes = self.get_nodes("entry" , root=r)
+      
+                # seach in all entry nodes
+                for node in nodes:
+                   
+                    # Init and construct attribute path
+                    attr      = None 
+                    if (r.tag == "job") :
+                        # make job part of attribute path
+                        attr = r.get('name') + "/" + node.get('id')
+                    else:
+                         attr = node.get('id')
+                         
+                    # Build return structure     
+                    g       = group.get('id')   
+                    val     = node.get('value')
+                    t       = self._get_type(node)
+                    desc    = self._get_description(node)
+                    default = super(EnvBase , self)._get_default(node)
+                    file    = self.filename
+    
+                    v = { 'group' : g , 'attribute' : attr , 'value' : val , 'type' : t , 'description' : desc , 'default' : default , 'file' : file}
+                    logger.debug("Found node with value for %s = %s" , item , v )   
+                    results.append(v)
+         
+        logger.debug("(get_values) Return value:  %s" , results )
+               
         return results
 
     def get_type_info(self, vid):
