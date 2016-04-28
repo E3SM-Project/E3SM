@@ -28,6 +28,7 @@ from CIME.case import Case
 import argparse, doctest, shutil, glob
 import textwrap
 
+logger = logging.getLogger("xmlquery")
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -50,6 +51,9 @@ def parse_command_line(args, description):
     parser.add_argument("-caseroot" , "--caseroot", default=os.getcwd(),
                         help="Case directory to build")
                         
+    parser.add_argument("-listall", "--listall" , default=False , action="store_true" ,
+                        help="List all attributes and their values")
+                                            
     parser.add_argument("--listofsettings", nargs="*", default=[] ,
                         help="Comma seperated list of option names (attribute values)")
                         
@@ -66,6 +70,10 @@ def parse_command_line(args, description):
 
     CIME.utils.handle_standard_logging_options(args)
     
+    if (len(sys.argv) == 1) :
+        parser.print_help()
+        exit()
+        
     # merge list from to command line options and remove duplicate names
     if( len(args.listofsettings) == 1 ):
         args.attribute = args.attribute + args.listofsettings[0].split(',') 
@@ -111,15 +119,15 @@ def xmlquery(caseroot, args, listofattributes=[] ,  subgroup=None, noecho=False,
         
         for xmlattr in listofattributes:
             # type_str = case.get_type_info(xmlattr)
-            logging.debug("Searching for %s", xmlattr)
+            logger.debug("Searching for %s", xmlattr)
             attribute_hits = case.get_values(xmlattr, resolved=False, subgroup=subgroup)
             results        = results + attribute_hits
 
-    else:
-        logging.debug("No attribute (%s) . Searching values for all attributes." , listofattributes)
+    elif (args.listall):
+        logger.warning("Retrieving all values.")
         results = case.get_values(None, resolved=False, subgroup=subgroup)
-        
-    
+    else:
+        logger.warning("No attributes (%s) or listall option" , listofattributes)
     
     # Formatting of return strings
     if ( len(results) > 0) :
@@ -166,9 +174,10 @@ def _main_func(description):
     # Initialize command line parser and get command line options
     args = parse_command_line(sys.argv, description)
     
+        
 	# Debug statement - obvious 
-    logging.debug("CLI arguments: %s" , args)  
-    logging.debug("Searching for attributes '%s'" , args.attribute)
+    logger.debug("CLI arguments: %s" , args)  
+    logger.debug("Searching for attributes '%s'" , args.attribute)
         
     # querry for attributes and print results
     for res in xmlquery(args.caseroot , args, args.attribute ) :
