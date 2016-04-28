@@ -4,12 +4,13 @@ Wrapper around all env XML for a case.
 All interaction with and between the module files in XML/ takes place
 through the Case module.
 """
-
-from CIME.XML.standard_module_setup import *
-from shutil import copyfile
 from copy   import deepcopy
+import glob, shutil
+from CIME.XML.standard_module_setup import *
+
 from CIME.utils                     import expect, run_cmd, get_cime_root
 from CIME.utils                     import convert_to_type, get_model, get_project
+from CIME.env_module        import EnvModule
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
@@ -30,7 +31,7 @@ from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
 
 from CIME.XML.generic_xml           import GenericXML
-import glob, shutil
+
 
 logger = logging.getLogger(__name__)
 
@@ -486,10 +487,10 @@ class Case(object):
         for dep in (machine, compiler):
             dfile = "Depends.%s"%dep
             if os.path.isfile(os.path.join(machines_dir,dfile)):
-                copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot,dfile))
+                shutil.copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot,dfile))
         dfile = "Depends.%s.%s"%(machine,compiler)
         if os.path.isfile(os.path.join(machines_dir,dfile)):
-            copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot, dfile))
+            shutil.copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot, dfile))
             # set up infon files
             # infofiles = os.path.join(os.path.join(toolsdir, README.post_process")
             #FIXME - the following does not work
@@ -498,7 +499,7 @@ class Case(object):
             #        for infofile in infofiles:
             #            print "DEBUG: infofile is %s, %s"  %(infofile, os.path.basename(infofile))
             #            dst_file = caseroot + "/" + os.path.basename(infofile)
-            #            copyfile(infofile, dst_file)
+            #            shutil.copyfile(infofile, dst_file)
             #            os.chmod(dst_file, os.stat(dst_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
             #    except Exception as e:
             #        logger.warning("FAILED to set up infofiles: %s" % str(e))
@@ -626,3 +627,21 @@ class Case(object):
 
         clonename = self.get_value("CASE")
         logger.info(" Successfully created new case %s from clone case %s " %(newcasename, clonename))
+
+    def submit(self, job="case.run", resubmit=None):
+        caseroot = self.get_value("CASEROOT")
+        if resubmit is None:
+            case.check_case(caseroot)
+        #Load Modules
+        env_module = EnvModule(case.get_value("MACH"), case.get_value("COMPILER"),
+                               case.get_value("CIMEROOT"),caseroot, case.get_value("MPILIB"),
+                               case.get_value("DEBUG"))
+        env_module.load_env_for_case()
+
+
+    def check_case(self,caseroot):
+        check_lockedfiles(caseroot)
+        preview_namelists(dryrun=False, casedir=caseroot)
+        expect(self.get_value("BUILD_COMPLETE"), "Build complete is "
+               "not True please rebuild the model by calling case.build")
+        logger.info("Check case OK")

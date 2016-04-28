@@ -134,7 +134,7 @@ class B_TestCreateNewcase(unittest.TestCase):
 ###############################################################################
     def setUp(self):
         self._testroot = MACHINE.get_value("CESMSCRATCHROOT")
-        self._testdir =  os.path.join(self._testroot,tempfile.mktemp())
+        self._testdir = os.path.join(self._testroot, tempfile.mktemp())
         self._do_teardown = False
 
     def test_createnewcase(self):
