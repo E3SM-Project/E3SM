@@ -1,11 +1,16 @@
-module vertical_gradient_calculator_constant
+module vertical_gradient_calculator_specified
 
   !---------------------------------------------------------------------
   !
   ! Purpose:
   !
   ! This module defines a subclass of vertical_gradient_calculator_base_type that is
-  ! useful for unit testing. It computes the gradient as a constant times the elevation
+  ! useful for unit testing. It returns a specified vertical gradient.
+  !
+  ! This module also provides convenience functions for creating a
+  ! vertical_gradient_calculator_specified_type object with various functional forms.
+
+  ! It computes the gradient as a constant times the elevation
   ! class index times (the grid cell index squared).
 
 #include "shr_assert.h"
@@ -17,34 +22,34 @@ module vertical_gradient_calculator_constant
   implicit none
   private
 
-  public :: vertical_gradient_calculator_constant_type
+  public :: vertical_gradient_calculator_specified_type
 
   type, extends(vertical_gradient_calculator_base_type) :: &
-       vertical_gradient_calculator_constant_type
+       vertical_gradient_calculator_specified_type
      private
      integer :: num_points
      integer :: nelev
-     real(r8) :: gradient
      real(r8), allocatable :: vertical_gradient(:,:)  ! [point, elev classs]
      logical :: calculated
    contains
      procedure :: calc_gradients
      procedure :: get_gradients_one_class
-  end type vertical_gradient_calculator_constant_type
+  end type vertical_gradient_calculator_specified_type
 
-  interface vertical_gradient_calculator_constant_type
+  interface vertical_gradient_calculator_specified_type
      module procedure constructor
-  end interface vertical_gradient_calculator_constant_type
+  end interface vertical_gradient_calculator_specified_type
 
+  ! Creates a calculator where the gradient in ec i, pt j is gradient * i * j^2
+  public :: vgc_specified_ec_times_ptSquared
 contains
 
   !-----------------------------------------------------------------------
-  function constructor(num_points, nelev, gradient) result(this)
+  function vgc_specified_ec_times_ptSquared(num_points, nelev, gradient) &
+       result(calculator)
     !
     ! !DESCRIPTION:
-    ! Create a new vertical_gradient_calculator_constant_type object.
-    !
-    ! The returned gradient will be (gradient) * (elevation_class) * (grid_cell_index)^2
+    ! Creates a calculator where the gradient in ec i, pt j is gradient * i * j^2
     !
     ! num_points gives the number of points for which a gradient is needed (e.g., if
     ! computing the vertical gradient on the land domain, then num_points is the number
@@ -53,10 +58,42 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-    type(vertical_gradient_calculator_constant_type) :: this  ! function result
+    type(vertical_gradient_calculator_specified_type) :: calculator  ! function result
     integer, intent(in) :: num_points
     integer, intent(in) :: nelev
     real(r8), intent(in) :: gradient
+    !
+    ! !LOCAL VARIABLES:
+    real(r8), allocatable :: gradients(:,:)
+    integer :: pt, ec
+
+    character(len=*), parameter :: subname = 'vgc_specified_ec_times_ptSquared'
+    !-----------------------------------------------------------------------
+
+    allocate(gradients(num_points, nelev))
+
+    do ec = 1, nelev
+       do pt = 1, num_points
+          gradients(pt, ec) = gradient * ec * pt**2
+       end do
+    end do
+
+    calculator = vertical_gradient_calculator_specified_type(gradients)
+
+  end function vgc_specified_ec_times_ptSquared
+
+
+  !-----------------------------------------------------------------------
+  function constructor(gradients) result(this)
+    !
+    ! !DESCRIPTION:
+    ! Create a new vertical_gradient_calculator_specified_type object.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(vertical_gradient_calculator_specified_type) :: this  ! function result
+    real(r8), intent(in) :: gradients(:,:)  ! [pt, ec]
     !
     ! !LOCAL VARIABLES:
     
@@ -64,12 +101,11 @@ contains
     !-----------------------------------------------------------------------
 
     this%calculated = .false.
-    this%num_points = num_points
-    this%nelev = nelev
-    this%gradient = gradient
+    this%num_points = size(gradients, 1)
+    this%nelev = size(gradients, 2)
 
-    allocate(this%vertical_gradient(num_points, nelev))
-    this%vertical_gradient(:,:) = nan
+    allocate(this%vertical_gradient(this%num_points, this%nelev))
+    this%vertical_gradient(:,:) = gradients(:,:)
 
   end function constructor
 
@@ -82,21 +118,16 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-    class(vertical_gradient_calculator_constant_type), intent(inout) :: this
+    class(vertical_gradient_calculator_specified_type), intent(inout) :: this
     !
     ! !LOCAL VARIABLES:
-    integer :: pt, ec
 
     character(len=*), parameter :: subname = 'calc_gradients'
     !-----------------------------------------------------------------------
 
     SHR_ASSERT(.not. this%calculated, 'gradients already calculated')
 
-    do ec = 1, this%nelev
-       do pt = 1, this%num_points
-          this%vertical_gradient(pt, ec) = this%gradient * ec * pt**2
-       end do
-    end do
+    ! Nothing to do in this stub
 
     this%calculated = .true.
 
@@ -112,7 +143,7 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-    class(vertical_gradient_calculator_constant_type), intent(in) :: this
+    class(vertical_gradient_calculator_specified_type), intent(in) :: this
     integer, intent(in) :: elevation_class
 
     ! gradients should already be allocated to the appropriate size
@@ -131,4 +162,4 @@ contains
     gradients(:) = this%vertical_gradient(:, elevation_class)
   end subroutine get_gradients_one_class
 
-end module vertical_gradient_calculator_constant
+end module vertical_gradient_calculator_specified
