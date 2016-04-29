@@ -11,7 +11,6 @@ module vertical_gradient_calculator_2nd_order
   use seq_comm_mct, only : logunit
   use vertical_gradient_calculator_base, only : vertical_gradient_calculator_base_type
   use shr_kind_mod, only : r8 => shr_kind_r8
-  use mct_mod
   use shr_log_mod, only : errMsg => shr_log_errMsg
   use shr_sys_mod, only : shr_sys_abort
   
@@ -38,7 +37,6 @@ module vertical_gradient_calculator_2nd_order
    contains
      procedure :: calc_vertical_gradient
 
-     procedure, private :: set_data_from_attr_vect ! extract data from an attribute vector
      procedure, private :: check_topo ! check topographic heights
      procedure, private :: limit_gradient
 
@@ -51,13 +49,10 @@ module vertical_gradient_calculator_2nd_order
 contains
 
   !-----------------------------------------------------------------------
-  function constructor(attr_vect, fieldname, toponame, &
-       elevclass_names, elevclass_bounds) &
-       result(this)
+  function constructor(field, topo, elevclass_bounds) result(this)
     !
     ! !DESCRIPTION:
-    ! Creates a vertical_gradient_calculator_2nd_order_type object by reading the
-    ! necessary data from the provided attribute vector.
+    ! Creates a vertical_gradient_calculator_2nd_order_type object.
     !
     ! Pre-condition: elevclass_bounds must be monotonically increasing.
     !
@@ -70,43 +65,39 @@ contains
     ! limiter.)
     ! TODO(wjs, 2016-04-21) Currently this pre-condition is not checked: see below.
     !
-    ! The attribute vector is assumed to have fields named fieldname //
-    ! elevclass_names(1), toponame // elevclass_names(1), etc.
-    !
     ! !USES:
     !
     ! !ARGUMENTS:
     type(vertical_gradient_calculator_2nd_order_type) :: this  ! function result
-    type(mct_aVect)  , intent(in) :: attr_vect           ! attribute vector in which we can find the data
-    character(len=*) , intent(in) :: fieldname           ! base name of the field of interest
-    character(len=*) , intent(in) :: toponame            ! base name of the topographic field
-
-    ! strings corresponding to each elevation class
-    character(len=*) , intent(in) :: elevclass_names(:)
+    real(r8), intent(in) :: field(:,:)  ! field(i,j) is point i, elevation class j
+    real(r8), intent(in) :: topo(:,:)   ! topo(i,j) is point i, elevation class j
 
     ! bounds of each elevation class; this array should have one more element than the
     ! number of elevation classes, since it contains lower and upper bounds for each
     ! elevation class
-    real(r8)         , intent(in) :: elevclass_bounds(0:)
+    real(r8), intent(in) :: elevclass_bounds(0:)
     !
     ! !LOCAL VARIABLES:
-    integer :: nelev
 
     character(len=*), parameter :: subname = 'constructor'
     !-----------------------------------------------------------------------
 
-    nelev = size(elevclass_names)
-    SHR_ASSERT_ALL((ubound(elevclass_bounds) == (/nelev/)), errMsg(__FILE__, __LINE__))
+    this%num_points = size(field, 1)
+    this%nelev = size(field, 2)
+    SHR_ASSERT_ALL((ubound(topo) == (/this%num_points, this%nelev/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(elevclass_bounds) == (/this%nelev/)), errMsg(__FILE__, __LINE__))
 
-    this%nelev = nelev
-    allocate(this%elevclass_bounds(0:nelev))
+    allocate(this%elevclass_bounds(0:this%nelev))
     this%elevclass_bounds(:) = elevclass_bounds(:)
 
     ! (In principle, we could also handle monotonically decreasing elevclass_bounds, but
     ! that would require generalizing some code, such as in check_topo.)
     call this%check_elevclass_bounds_monotonic_increasing(this%elevclass_bounds)
 
-    call this%set_data_from_attr_vect(attr_vect, fieldname, toponame, elevclass_names)
+    allocate(this%field(this%num_points, this%nelev))
+    this%field(:,:) = field(:,:)
+    allocate(this%topo(this%num_points, this%nelev))
+    this%topo(:,:) = topo(:,:)
 
     ! TODO(wjs, 2016-04-21) Uncomment this call to check_topo. It's important for
     ! topographic heights to be within bounds in order for the limiter to be applied
@@ -203,61 +194,6 @@ contains
     end if
     
   end subroutine calc_vertical_gradient
-
-  !-----------------------------------------------------------------------
-  subroutine set_data_from_attr_vect(this, attr_vect, fieldname, toponame, elevclass_names)
-    !
-    ! !DESCRIPTION:
-    ! Extract data from an attribute vector.
-    !
-    ! Sets this%num_points, and allocates and sets this%field and this%topo.
-    !
-    ! TODO(wjs, 2016-04-26) The current flow is that the constructor calls this
-    ! routine. It could be better to move this routine into a factory class that creates
-    ! objects by (1) calling this routine to extract fields from the attribute vector, and
-    ! then (2) calling the constructor of this class using these extracted data (so the
-    ! constructor would never need to be passed an attribute vector).
-    !
-    ! !USES:
-    use mct_mod
-    !
-    ! !ARGUMENTS:
-    class(vertical_gradient_calculator_2nd_order_type), intent(inout) :: this
-    type(mct_aVect)  , intent(in) :: attr_vect ! attribute vector in which we can find the data
-    character(len=*) , intent(in) :: fieldname ! base name of the field of interest
-    character(len=*) , intent(in) :: toponame  ! base name of the topographic field
-    character(len=*) , intent(in) :: elevclass_names(:) ! strings corresponding to each elevation class
-    !
-    ! !LOCAL VARIABLES:
-    integer :: elevclass
-    character(len=:), allocatable :: fieldname_ec
-    character(len=:), allocatable :: toponame_ec
-
-    ! The following temporary array is needed because mct wants pointers
-    real(r8), pointer :: temp(:)
-    
-    character(len=*), parameter :: subname = 'set_data_from_attr_vect'
-    !-----------------------------------------------------------------------
-
-    this%num_points = mct_aVect_lsize(attr_vect)
-
-    allocate(this%field(this%num_points, this%nelev))
-    allocate(this%topo(this%num_points, this%nelev))
-    allocate(temp(this%num_points))
-    
-    do elevclass = 1, this%nelev
-       fieldname_ec = trim(fieldname) // trim(elevclass_names(elevclass))
-       call mct_aVect_exportRattr(attr_vect, fieldname_ec, temp)
-       this%field(:,elevclass) = temp(:)
-
-       toponame_ec = trim(toponame) // trim(elevclass_names(elevclass))
-       call mct_aVect_exportRattr(attr_vect, toponame_ec, temp)
-       this%topo(:,elevclass) = temp(:)
-    end do
-
-    deallocate(temp)
-    
-  end subroutine set_data_from_attr_vect
 
   !-----------------------------------------------------------------------
   subroutine check_topo(this)

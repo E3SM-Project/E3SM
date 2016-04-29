@@ -6,8 +6,6 @@ module test_vertical_gradient_calculator_2nd_order
   use vertical_gradient_calculator_base
   use vertical_gradient_calculator_2nd_order
   use shr_kind_mod, only : r8 => shr_kind_r8
-  use mct_mod, only : mct_aVect, mct_aVect_clean
-  use mct_wrapper_mod, only : mct_init, mct_clean
   use vertical_gradient_test_utils
   
   implicit none
@@ -16,7 +14,6 @@ module test_vertical_gradient_calculator_2nd_order
   
   @TestCase
   type, extends(TestCase) :: TestVertGradCalc2ndOrder
-     type(mct_aVect) :: av
    contains
      procedure :: setUp
      procedure :: tearDown
@@ -29,15 +26,11 @@ contains
   subroutine setUp(this)
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
 
-    call mct_init()
-    
   end subroutine setUp
   
   subroutine tearDown(this)
     class(TestVertGradCalc2ndOrder), intent(inout) :: this
 
-    call mct_aVect_clean(this%av)
-    call mct_clean()
   end subroutine tearDown
 
   function create_calculator(this, topo, data, elevclass_bounds) &
@@ -55,15 +48,12 @@ contains
     integer :: n_elev_classes
 
     n_elev_classes = size(data,2)
+    @assertEqual(size(data), size(topo))
     @assertEqual(n_elev_classes + 1, size(elevclass_bounds))
 
-    call create_av(topo, data, 'topo', 'data', this%av)
-    
     calculator = vertical_gradient_calculator_2nd_order_type( &
-         attr_vect = this%av, &
-         fieldname = 'data', &
-         toponame = 'topo', &
-         elevclass_names = elevclass_names(n_elev_classes), &
+         field = data, &
+         topo = topo, &
          elevclass_bounds = elevclass_bounds)
 
   end function create_calculator

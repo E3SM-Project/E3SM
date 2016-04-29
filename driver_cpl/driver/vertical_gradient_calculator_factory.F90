@@ -30,6 +30,9 @@ contains
     ! !DESCRIPTION:
     ! Creates and returns a vertical_gradient_calculator_2nd_order_type object
     !
+    ! The attribute vector is assumed to have fields named fieldname //
+    ! elevclass_names(1), toponame // elevclass_names(1), etc.
+    !
     ! !USES:
     !
     ! !ARGUMENTS:
@@ -57,6 +60,9 @@ contains
     call extract_data_from_attr_vect(attr_vect, fieldname, toponame, elevclass_names, &
          field, topo)
 
+    calculator = vertical_gradient_calculator_2nd_order_type( &
+         field = field, topo = topo, elevclass_bounds = elevclass_bounds)
+
   end function create_vertical_gradient_calculator_2nd_order
 
   !-----------------------------------------------------------------------
@@ -67,6 +73,9 @@ contains
     ! Extract topo and data from attribute vector.
     !
     ! Allocates and sets topo_extracted and data_extracted
+    !
+    ! The attribute vector is assumed to have fields named fieldname //
+    ! elevclass_names(1), toponame // elevclass_names(1), etc.
     !
     ! !USES:
     !
