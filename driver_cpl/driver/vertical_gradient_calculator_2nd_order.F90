@@ -56,14 +56,15 @@ contains
     !
     ! Pre-condition: elevclass_bounds must be monotonically increasing.
     !
-    ! Pre-condition: Topographic heights in the attribute vector must all lie inside the
-    ! bounds of their respective elevation class (given by elevclass_bounds), with the
-    ! possible exception of the lowest elevation class (topographic heights can lie below
-    ! the arbitrary lower bound of the elevation class) and the highest elevation class
-    ! (topographic heights can lie above the arbitrary upper bound of the elevation
-    ! class). (This pre-condition is mainly important for the sake of calculating the
-    ! limiter.)
-    ! TODO(wjs, 2016-04-21) Currently this pre-condition is not checked: see below.
+    ! Pre-condition: Topographic heights must all lie inside the bounds of their
+    ! respective elevation class (given by elevclass_bounds), with the possible exception
+    ! of the lowest elevation class (topographic heights can lie below the arbitrary lower
+    ! bound of the elevation class) and the highest elevation class (topographic heights
+    ! can lie above the arbitrary upper bound of the elevation class). (This pre-condition
+    ! is mainly important for the sake of calculating the limiter.)
+    !
+    ! TODO(wjs, 2016-04-21) Currently the topographic heights pre-condition is not
+    ! checked: see below.
     !
     ! !USES:
     !

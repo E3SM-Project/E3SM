@@ -5,8 +5,6 @@ module test_vertical_gradient_calculator_continuous
   use pfunit_mod
   use vertical_gradient_calculator_continuous
   use shr_kind_mod , only : r8 => shr_kind_r8
-  use mct_mod, only : mct_aVect, mct_aVect_clean
-  use mct_wrapper_mod, only : mct_init, mct_clean
   use vertical_gradient_test_utils
 
   implicit none
@@ -14,7 +12,6 @@ module test_vertical_gradient_calculator_continuous
 
   @TestCase
   type, extends(TestCase) :: TestVertGradCalcCont
-     type(mct_aVect) :: av
    contains
      procedure :: setUp
      procedure :: tearDown
@@ -32,7 +29,6 @@ contains
   subroutine setUp(this)
     class(TestVertGradCalcCont), intent(inout) :: this
     character(len=32) :: filename
-    call mct_init()
     test_num = test_num + 1
     write(filename, '(a, i0, a)') 'gradients_continuous_', test_num, '.txt'
     open(out_unit, file=filename, action='write')
@@ -40,8 +36,6 @@ contains
 
   subroutine tearDown(this)
     class(TestVertGradCalcCont), intent(inout) :: this
-    call mct_aVect_clean(this%av)
-    call mct_clean()
     close(out_unit)
   end subroutine tearDown
 
@@ -60,15 +54,12 @@ contains
     integer :: n_elev_classes
 
     n_elev_classes = size(data,2)
+    @assertEqual(size(data), size(topo))
     @assertEqual(n_elev_classes + 1, size(elevclass_bounds))
 
-    call create_av(topo, data, 'topo', 'data', this%av)
-
     calculator = vertical_gradient_calculator_continuous_type( &
-         attr_vect = this%av, &
-         fieldname = 'data', &
-         toponame = 'topo', &
-         elevclass_names = elevclass_names(n_elev_classes), &
+         field = data, &
+         topo = topo, &
          elevclass_bounds = elevclass_bounds)
 
   end function create_calculator
