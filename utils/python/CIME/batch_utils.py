@@ -29,15 +29,18 @@ class BatchUtils(object):
         self.batchmaker = None
         self.dependancies = list()
 
-    def submit_jobs(self):
+    def submit_jobs(self, no_batch=False):
         for job in self.dependancies:
-            self.submit_single_job()
+            self.submit_single_job(job, no_batch=no_batch)
 
-    def submit_single_job(self, job):
-        batchtype = self.case.get_value("batch_system",subgroup=None)
-        if batchtype is None:
+    def submit_single_job(self, job, no_batch=False):
+        if no_batch:
+            batchtype = "none"
+        else:
+            batchtype = self.case.get_value("batch_system",subgroup=None)
+        if batchtype == "none":
             logger.info("Starting job script %s"%job)
-            run_cmd(job)
+            run_cmd(os.path.join(".", job))
             return
         if self.batchobj is None:
             self.batchobj = Batch(batch_system=batchtype,
@@ -50,7 +53,7 @@ class BatchUtils(object):
         logger.info("Submitting job script %s"%submitcmd)
         output = run_cmd(submitcmd)
         jobid = self.get_job_id(batchtype, output)
-        logger.warn("Submitted job id is %s"%jobid)
+        logger.debug("Submitted job id is %s"%jobid)
         return jobid
 
     def get_job_id(self, batchtype, output):
@@ -79,9 +82,9 @@ class BatchUtils(object):
                 submitargs+=" %s"%flag
             else:
                 val = self.case.get_value(name,subgroup=job)
-            if flag.rfind("=", len(flag)-1, len(flag)) >= 0:
-                submitargs+=" %s%s"%(flag,val)
-            else:
-                submitargs+=" %s %s"%(flag,val)
-
+                if val is not None and len(val) > 0:
+                    if flag.rfind("=", len(flag)-1, len(flag)) >= 0:
+                        submitargs+=" %s%s"%(flag,val)
+                    else:
+                        submitargs+=" %s %s"%(flag,val)
         return submitargs
