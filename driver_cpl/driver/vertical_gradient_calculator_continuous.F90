@@ -59,8 +59,7 @@ contains
 
   !-----------------------------------------------------------------------
   function constructor(attr_vect, fieldname, toponame, &
-       nelev, elevclass_names, &
-       elevclass_bounds) &
+       elevclass_names, elevclass_bounds) &
        result(this)
     !
     ! !DESCRIPTION:
@@ -87,7 +86,6 @@ contains
     type(mct_aVect)  , intent(in) :: attr_vect           ! attribute vector in which we can find the data
     character(len=*) , intent(in) :: fieldname           ! base name of the field of interest
     character(len=*) , intent(in) :: toponame            ! base name of the topographic field
-    integer          , intent(in) :: nelev               ! number of elevation classes (indexing assumed to start at 1)
 
     ! strings corresponding to each elevation class
     character(len=*) , intent(in) :: elevclass_names(:)
@@ -98,12 +96,13 @@ contains
     real(r8)         , intent(in) :: elevclass_bounds(0:)
     !
     ! !LOCAL VARIABLES:
+    integer :: nelev
     integer :: pt
 
     character(len=*), parameter :: subname = 'constructor'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL((ubound(elevclass_names) == (/nelev/)), errMsg(__FILE__, __LINE__))
+    nelev = size(elevclass_names)
     SHR_ASSERT_ALL((ubound(elevclass_bounds) == (/nelev/)), errMsg(__FILE__, __LINE__))
 
     this%nelev = nelev
