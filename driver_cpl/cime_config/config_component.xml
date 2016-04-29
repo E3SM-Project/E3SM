@@ -1849,13 +1849,13 @@
     </desc>
   </entry>
 
-  <entry id="TESTS">
-    <type>char</type>
-    <default_value>UNSET</default_value>
+  <entry id="TEST">
+    <type>logical</type>
+    <default_value>FALSE</default_value>
     <group>run_din</group>
     <file>env_run.xml</file>
     <desc>
-      The default test suite for this machine.
+      Indicates to case.submit that this is a test case.
     </desc>
   </entry>
 

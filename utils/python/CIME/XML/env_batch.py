@@ -69,12 +69,15 @@ class EnvBatch(EnvBase):
         return type_info
 
     def get_jobs(self):
-        result = []
+        result = list()
         for node in self.get_nodes("job"):
             name = node.get("name")
-            template = self.get_value("template", subgroup=name)
-            task_count = self.get_value("task_count", subgroup=name)
-            result.append((name, template, task_count))
+            pdict = {}
+            pdict['template'] = self.get_value("template", subgroup=name)
+            pdict['task_count'] = self.get_value("task_count", subgroup=name)
+            pdict['dependancy'] = self.get_value("dependancy",subgroup=name)
+            pdict['prereq'] = self.get_value("prereq", subgroup=name)
+            result.append((name,pdict))
         return result
 
     def create_job_groups(self, bjobs):
@@ -90,14 +93,14 @@ class EnvBatch(EnvBase):
             childnodes.append(deepcopy(child))
             group.remove(child)
 
-        for name,template,task_count in bjobs:
+        for name,jdict in bjobs:
             newjob = ET.Element("job")
             newjob.set("name",name)
-            template_node = ET.SubElement(newjob, "entry", {"id":"template","value":template})
-            task_count_node  =  ET.SubElement(newjob, "entry", {"id":"task_count", "value":task_count})
-            for node in (template_node, task_count_node):
-                node = ET.SubElement(node, "type")
-                node.text = "char"
+            for field in jdict.keys():
+                val = jdict[field]
+                node = ET.SubElement(newjob, "entry", {"id":field,"value":val})
+                tnode = ET.SubElement(node, "type")
+                tnode.text = "char"
             for child in childnodes:
                 newjob.append(deepcopy(child))
             group.append(newjob)

@@ -228,17 +228,18 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
             batch_jobs = case.get_batch_jobs()
 
             batchmaker = None
-            for (job, template, task_count) in batch_jobs:
+            for job,jparms in batch_jobs:
                 if batchmaker is None:
                     batchmaker = get_batch_maker(job, case=case)
                 else:
+                    task_count = jparms['task_count']
                     if task_count == "default":
                         batchmaker.override_node_count = None
                     else:
                         batchmaker.override_node_count = int(task_count)
                     batchmaker.set_job(job)
 
-                input_batch_script  = os.path.join(case.get_value("MACHDIR"), template)
+                input_batch_script  = os.path.join(case.get_value("MACHDIR"), jparms['template'])
                 if job == "case.test" and testcase is not None:
                     logger.info("Writing %s script"%job)
                     testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
