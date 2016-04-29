@@ -12,7 +12,8 @@ module test_map_lnd2glc
   use simple_map_mod
   use create_mapper_mod
   use vertical_gradient_calculator_base, only : vertical_gradient_calculator_base_type
-  use vertical_gradient_calculator_constant, only : vertical_gradient_calculator_constant_type
+  use vertical_gradient_calculator_specified, only : &
+       vertical_gradient_calculator_specified_type, vgc_specified_ec_times_ptSquared
   use shr_kind_mod, only : r8 => shr_kind_r8
 
   implicit none
@@ -189,7 +190,7 @@ contains
     ! complex.
 
     type(simple_map_type), intent(out) :: my_map
-    type(vertical_gradient_calculator_constant_type), intent(out) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type), intent(out) :: gradient_calculator
     type(lnd_data_type), intent(out) :: lnd_data
     real(r8), intent(out) :: frac_glc(1)
     real(r8), intent(out) :: topo_glc(1)
@@ -198,7 +199,7 @@ contains
     my_map = create_simple_map_with_one_source(ndest = 1)
 
     gradient_calculator = &
-         vertical_gradient_calculator_constant_type(num_points = 1, &
+         vgc_specified_ec_times_ptSquared(num_points = 1, &
          nelev = n_elev_classes, gradient = 2._r8)
 
     ! data in elev class:   0       1       2        3
@@ -232,7 +233,7 @@ contains
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     ! ------------------------------------------------------------------------
     ! Setup
@@ -241,7 +242,7 @@ contains
     my_map = create_simple_map_with_one_source(ndest = npts_glc)
     
     gradient_calculator = &
-         vertical_gradient_calculator_constant_type(num_points = 1, &
+         vgc_specified_ec_times_ptSquared(num_points = 1, &
          nelev = n_elev_classes, gradient = 0._r8)
 
     ! data in elev class:   0       1       2        3
@@ -280,7 +281,7 @@ contains
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     ! ------------------------------------------------------------------------
     ! Setup
@@ -289,7 +290,7 @@ contains
     my_map = create_simple_map_with_one_source(ndest = npts_glc)
 
     gradient_calculator = &
-         vertical_gradient_calculator_constant_type(num_points = 1, &
+         vgc_specified_ec_times_ptSquared(num_points = 1, &
          nelev = n_elev_classes, gradient = 0._r8)
 
     ! data in elev class:   0       1       2        3
@@ -331,7 +332,7 @@ contains
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     ! ------------------------------------------------------------------------
     ! Setup
@@ -340,7 +341,7 @@ contains
     my_map = create_simple_map_with_one_source(ndest = npts_glc)
 
     gradient_calculator = &
-         vertical_gradient_calculator_constant_type(num_points = 1, &
+         vgc_specified_ec_times_ptSquared(num_points = 1, &
          nelev = n_elev_classes, gradient = 0._r8)
     
     ! data in elev class:   0       1       2        3
@@ -379,7 +380,7 @@ contains
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     ! ------------------------------------------------------------------------
     ! Setup
@@ -416,7 +417,7 @@ contains
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     ! ------------------------------------------------------------------------
     ! Setup
@@ -458,7 +459,7 @@ contains
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     
     ! ------------------------------------------------------------------------
@@ -471,7 +472,7 @@ contains
          overlap_weights = [1._r8, 1._r8, 0.4_r8, 0.6_r8])
 
     gradient_calculator = &
-         vertical_gradient_calculator_constant_type(num_points = 2, &
+         vgc_specified_ec_times_ptSquared(num_points = 2, &
          nelev = n_elev_classes, gradient = 2._r8)
 
     ! data in elev class:  0       1       2        3
@@ -527,7 +528,7 @@ contains
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     ! ------------------------------------------------------------------------
     ! Setup
@@ -539,7 +540,7 @@ contains
          overlap_weights = lnd_overlaps)
 
     gradient_calculator = &
-         vertical_gradient_calculator_constant_type(num_points = 2, &
+         vgc_specified_ec_times_ptSquared(num_points = 2, &
          nelev = n_elev_classes, gradient = 0._r8)
 
     ! data in elev class:  0       1       2        3
@@ -587,7 +588,7 @@ contains
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     ! ------------------------------------------------------------------------
     ! Setup
@@ -599,7 +600,7 @@ contains
          overlap_weights = lnd_overlaps)
 
     gradient_calculator = &
-         vertical_gradient_calculator_constant_type(num_points = 2, &
+         vgc_specified_ec_times_ptSquared(num_points = 2, &
          nelev = n_elev_classes, gradient = 0._r8)
 
     ! data in elev class:  0       1       2        3
@@ -649,7 +650,7 @@ contains
     real(r8) :: expected_data_glc(npts_glc)
 
     type(simple_map_type) :: my_map
-    type(vertical_gradient_calculator_constant_type) :: gradient_calculator
+    type(vertical_gradient_calculator_specified_type) :: gradient_calculator
 
     ! These parameters give the fraction of each glc cell that is in lnd1 and the
     ! fraction in lnd2 (note that this sums to 1 for each glc point)
@@ -674,7 +675,7 @@ contains
          overlap_weights = [overlaps_with_lnd1, overlaps_with_lnd2])
 
     gradient_calculator = &
-         vertical_gradient_calculator_constant_type(num_points = 2, &
+         vgc_specified_ec_times_ptSquared(num_points = 2, &
          nelev = n_elev_classes, gradient = 2._r8)
 
     areas_lnd1(:) = overlaps_with_lnd1(:) * area_glc(:)
