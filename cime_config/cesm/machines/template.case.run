@@ -19,6 +19,8 @@ sys.path.append(_LIBDIR)
 
 from standard_script_setup          import *
 from CIME.XML.standard_module_setup import *
+from CIME.XML.files                 import Files
+from CIME.XML.component             import Component
 from CIME.case                      import Case
 from CIME.utils                     import expect, get_model, run_cmd
 from CIME.env_module                import EnvModule
@@ -42,13 +44,18 @@ logger = logging.getLogger(__name__)
 def parse_command_line(args):
 ###############################################################################
 
+    CIME.utils.get_model()
+
     parser = argparse.ArgumentParser()
+
     CIME.utils.setup_standard_logging_options(parser)
+
     args = parser.parse_args()
+
     CIME.utils.handle_standard_logging_options(args)
 
 ###############################################################################
-def doPreRunChecks(case):
+def preRunCheck(case):
 ###############################################################################
 
     # Pre run initialization code..
@@ -69,10 +76,16 @@ def doPreRunChecks(case):
     check_lockedfiles()
     logger.debug("check_lockedfiles OK")
 
+    # check that build is done
+    expect (build_complete,
+            "BUILD_COMPLETE is not true\nPlease rebuild the model interactively")
+    logger.debug("build complete is %s " %build_complete)
+
     # load the module environment...
     env_module = EnvModule(mach, compiler, cimeroot, caseroot, mpilib, debug)
     env_module.load_env_for_case()
 
+    # set environment variables
     # currently need to set mpilib as an environment variable- otherwise
     # the model dies at runtime 
     # FIXME: is there a way to remove this requirement?
@@ -80,11 +93,6 @@ def doPreRunChecks(case):
         del os.environ["MP_MPILIB"]
     else:
         os.environ["MPILIB"] = mpilib
-
-    expect (build_complete,
-            "BUILD_COMPLETE is not true\nPlease rebuild the model interactively")
-    logger.debug("build complete is %s " %build_complete)
-
     if batchsubmit is None or len(batchsubmit) == 0:
         os.environ["LBQUERY"] = "FALSE"
         os.environ["BATCHQUERY"] = "undefined"
@@ -94,19 +102,20 @@ def doPreRunChecks(case):
     else:
         os.environ["LBQUERY"] = "TRUE"
     
-    # Create the timing directories, optionally cleaning them if needed.
+    # create the timing directories, optionally cleaning them if needed.
     try:
         os.stat(rundir)
     except:
         os.mkdir(rundir)       
-
     if os.path.isdir(rundir + '/timing'):
         shutil.rmtree(rundir + '/timing')
     os.makedirs(rundir + '/timing/checkpoints')
 
-    appendCaseStatus(caseroot, "%s Run started \n" %(time.strftime("%Y-%m-%d %H:%M:%S")))
-
+    # run preview namelists
     preview_namelists()
+
+    # document process
+    appendCaseStatus(caseroot, "%s Run started \n" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     logger.info( "-------------------------------------------------------------------------")
     logger.info( " - To prestage required restarts, untar a restart.tar file into %s" %(rundir))
@@ -128,6 +137,7 @@ def runModel(case):
 
     logger.info("%s MODEL EXECUTION BEGINS HERE" %(time.strftime("%Y-%m-%d %H:M:S")))
 
+    # {{mpirun}} set the unresolved cmd string
     {{ mpirun }}
     cmd = case.get_resolved_value(cmd)
 
@@ -137,7 +147,7 @@ def runModel(case):
     logger.info( "%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:M:S")))
 
 ###############################################################################
-def checkRunStatus(case, lid):
+def postRunCheck(case, lid):
 ###############################################################################
 
     caseroot = case.get_value("CASEROOT")
@@ -149,7 +159,7 @@ def checkRunStatus(case, lid):
     cpl_logfile   = os.path.join(rundir,"cpl" + ".log." + lid)
 
     if not os.path.isfile(model_logfile):
-        msg = "%s Model did not complete, no model log file %s \n" %(time.strftime("%Y-%m-%d %H:%M:%S"), model_logfile)
+        msg = "%s Model did not complete, no %s log file %s \n" %(time.strftime("%Y-%m-%d %H:%M:%S"), model, model_logfile)
         appendCaseStatus(caseroot,msg)
         expect(False, msg) 
     elif not os.path.isfile(cpl_logfile):
@@ -180,7 +190,7 @@ def getTimings(case, lid):
         caseroot     = case.get_value("CASEROOT")
         model        = case.get_value("MODEL")
         
-        timingDir = os.path.join(caseroot,"timing")
+        timingDir = os.path.join(caseroot, "timing")
         if not os.path.isdir(timingDir):
             os.makedirs(timingDir)
 
@@ -188,19 +198,20 @@ def getTimings(case, lid):
         cmd = "%s -lid %s " %(os.path.join(caseroot,"Tools/getTiming"), lid)
         run_cmd(cmd) 
 
-        logger.info( "gzipping timing stats.." )
-        timingfile = model + "_timing_stats." + lid
-        cmd = "gzip"  + (os.path.join(rundir,timingfile))
-        run_cmd(cmd) 
-
-        # Save the timing files if desired
+        # ave the timing files if desired
         if save_timing:
             shutil.move(os.path.join(rundir,"timing"), 
                         os.path.join(rundir,"timing."+lid))
 
+        # compress relevant timing files
+        logger.info( "gzipping timing stats.." )
+        timingfile = model + "_timing_stats." + lid
+        cmd = "gzip " + (os.path.join(caseroot, "timing", timingfile))
+        print "DEBUG: command is ",cmd
+        run_cmd(cmd) 
 
 ###############################################################################
-def disposeLog(case, lid):
+def saveLogs(case, lid):
 ###############################################################################
 
     logdir   = case.get_value("LOGDIR")
@@ -211,8 +222,14 @@ def disposeLog(case, lid):
         if not os.path.isdir(logdir):
             os.makedirs(logdir)
 
-	#FIXME - get rid of this list
-        comps = ("atm", "glc", "ice", "lnd", "ocn", "rof", "wav", "cpl", "cesm", "esp") 
+        # get components
+        files = Files()
+        config_file = files.get_value("CONFIG_DRV_FILE")
+        component = Component(config_file)
+        comps = [x.lower() for x in component.get_valid_model_components()]
+        comps = [x.replace('drv', 'cpl') for x in comps]
+        model = [case.get_value("MODEL")]
+        comps = comps + model
 
         for comp in comps:
             logfile = os.path.join(comp + '.log.' + lid)
@@ -253,7 +270,7 @@ def resubmitCheck(case):
         logger.debug( "running resubmit check %s " %cmd)
         rc, output, error = run_cmd(cmd, ok_to_fail=True, from_dir=caseroot)
         if rc != 0:
-            logger.warn("could not run case submit script, rc=%s, output=%s, error=%s" %(rc,output,error))
+            logger.warn("could not run %s submit script, rc=%s, output=%s, error=%s" %(model,rc,output,error))
 
 ###############################################################################
 def DoDataAssimilation(case, da_script, lid):
@@ -286,7 +303,8 @@ def _main_func():
     expect (run_with_submit,
              "You are not calling the run script via the submit script. "
              "As a result, short-term archiving will not be called automatically."
-             "Please submit your run by calling ./case.submit")
+             "Please submit your run by runnint the submit script like so:"
+            " ./case.submit")
 
     data_assimilation        = case.get_value("DATA_ASSIMILATION")
     data_assimilation_cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
@@ -297,10 +315,10 @@ def _main_func():
     os.environ["LID"] = lid
 
     for cycle in range(0,data_assimilation_cycles):
-        doPreRunChecks(case)
+        preRunCheck(case)
         runModel(case)
-        checkRunStatus(case, lid) # Check run status
-        disposeLog(case, lid)     # Copy log files back to caseroot
+        postRunCheck(case, lid)
+        saveLogs(case, lid)       # Copy log files back to caseroot
         getTimings(case, lid)     # Run the getTiming script
         if data_assimilation:
             DoDataAssimilation(case, data_assimilation_script, lid)
