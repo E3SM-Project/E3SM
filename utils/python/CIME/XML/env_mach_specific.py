@@ -32,9 +32,11 @@ class EnvMachSpecific(EnvBase):
         """Returns the value as a string of the first xml element with item as attribute value. 
         <elememt_name attribute='attribute_value>value</element_name>"""
                 
+        logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , item, attribute, resolved, subgroup)        
+        
         nodes   = [] # List of identified xml elements  
         results = [] # List of identified parameters 
-        logger.debug("Get node with attribute value: %s" , item)
+       
        
         # Find all nodes with attribute name and attribute value item
         # xpath .//*[name='item']
