@@ -736,7 +736,7 @@ contains
             tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + activeTracers(:,k,iCell) &
                                               * layerThickness(k,iCell)
           enddo
-          k=int(rSurfaceLayer)+1
+          k=min( int(rSurfaceLayer)+1, maxLevelCell(iCell) )
           tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + fraction(rSurfaceLayer) &
                                             * activeTracers(:,k,iCell) * layerThickness(k,iCell)
           tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) / surfaceLayerDepth
