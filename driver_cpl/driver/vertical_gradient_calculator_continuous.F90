@@ -40,11 +40,13 @@ module vertical_gradient_calculator_continuous
      ! increasing.
      real(r8), allocatable :: elevclass_bounds(:)
 
+     logical :: calculated  ! whether gradients have been calculated yet
+
    contains
-     procedure :: calc_vertical_gradient
+     procedure :: calc_gradients
+     procedure :: get_gradients_one_class
 
      procedure, private :: check_topo  ! check topographic heights
-     procedure, private :: precompute_vertical_gradients ! compute vertical gradients for all ECs
      procedure, private :: solve_for_vertical_gradients ! compute vertical gradients for all ECs, for points where we do a matrix solve
 
   end type vertical_gradient_calculator_continuous_type
@@ -83,10 +85,11 @@ contains
     real(r8)         , intent(in) :: elevclass_bounds(0:)
     !
     ! !LOCAL VARIABLES:
-    integer :: pt
 
     character(len=*), parameter :: subname = 'constructor'
     !-----------------------------------------------------------------------
+
+    this%calculated = .false.
 
     this%num_points = size(field, 1)
     this%nelev = size(field, 2)
@@ -108,23 +111,49 @@ contains
     allocate(this%vertical_gradient(this%nelev, this%num_points))
     this%vertical_gradient(:,:) = nan
 
-    ! For this implementation of the vertical gradient calculator, we compute all vertical
-    ! gradients in object construction. This is because we compute them all simultaneously
-    ! rather than independently. (So then, the call to the routine that would normally
-    ! compute vertical gradients for one elevation class simply returns the pre-computed
-    ! vertical gradients for that elevation class.)
-
-    do pt = 1, this%num_points
-       call this%precompute_vertical_gradients(pt)
-    end do
-
   end function constructor
 
   !-----------------------------------------------------------------------
-  subroutine calc_vertical_gradient(this, elevation_class, vertical_gradient)
+  subroutine calc_gradients(this)
+    !
+    ! !DESCRIPTION:
+    !
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(vertical_gradient_calculator_continuous_type), intent(inout) :: this
+    !
+    ! !LOCAL VARIABLES:
+    integer :: pt
+
+    character(len=*), parameter :: subname = 'calc_gradients'
+    !-----------------------------------------------------------------------
+
+    if (this%calculated) then
+       return
+    end if
+
+    do pt = 1, this%num_points
+       if (.not. this%topo_valid(pt)) then
+          this%vertical_gradient(:,pt) = 0._r8
+       else
+          call this%solve_for_vertical_gradients(pt)
+       end if
+    end do
+
+    this%calculated = .true.
+
+  end subroutine calc_gradients
+
+
+  !-----------------------------------------------------------------------
+  subroutine get_gradients_one_class(this, elevation_class, gradients)
     !
     ! !DESCRIPTION:
     ! Returns the vertical gradient for all points, at a given elevation class.
+    !
+    ! this%calc_gradients should already have been called
     !
     ! !USES:
     !
@@ -132,15 +161,16 @@ contains
     class(vertical_gradient_calculator_continuous_type), intent(in) :: this
     integer, intent(in) :: elevation_class
 
-    ! vertical_gradient should already be allocated to the appropriate size
-    real(r8), intent(out) :: vertical_gradient(:)
+    ! gradients should already be allocated to the appropriate size
+    real(r8), intent(out) :: gradients(:)
     !
     ! !LOCAL VARIABLES:
 
-    character(len=*), parameter :: subname = 'calc_vertical_gradient'
+    character(len=*), parameter :: subname = 'get_gradients_one_class'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT((size(vertical_gradient) == this%num_points), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT(this%calculated, errMsg(__FILE__, __LINE__))
+    SHR_ASSERT((size(gradients) == this%num_points), errMsg(__FILE__, __LINE__))
 
     if (elevation_class < 1 .or. &
          elevation_class > this%nelev) then
@@ -149,9 +179,9 @@ contains
        call shr_sys_abort(subname//': ERROR: elevation class out of bounds')
     end if
 
-    vertical_gradient(:) = this%vertical_gradient(elevation_class, :)
+    gradients(:) = this%vertical_gradient(elevation_class, :)
 
-  end subroutine calc_vertical_gradient
+  end subroutine get_gradients_one_class
 
 
   !-----------------------------------------------------------------------
@@ -257,32 +287,6 @@ contains
     end do
 
   end subroutine check_topo
-
-  !-----------------------------------------------------------------------
-  subroutine precompute_vertical_gradients(this, pt)
-    !
-    ! !DESCRIPTION:
-    ! Compute and save vertical gradients for all elevation classes in this point.
-    !
-    ! !USES:
-    !
-    ! !ARGUMENTS:
-    class(vertical_gradient_calculator_continuous_type), intent(inout) :: this
-    integer, intent(in) :: pt  ! point to compute gradients for (1..this%num_points)
-    !
-    ! !LOCAL VARIABLES:
-
-    character(len=*), parameter :: subname = 'precompute_vertical_gradients'
-    !-----------------------------------------------------------------------
-
-    if (.not. this%topo_valid(pt)) then
-       this%vertical_gradient(:,pt) = 0._r8
-    else
-       call this%solve_for_vertical_gradients(pt)
-    end if
-
-  end subroutine precompute_vertical_gradients
-
 
   !-----------------------------------------------------------------------
   subroutine solve_for_vertical_gradients(this, pt)

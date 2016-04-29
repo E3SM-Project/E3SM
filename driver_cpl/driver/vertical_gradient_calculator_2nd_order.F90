@@ -6,6 +6,11 @@ module vertical_gradient_calculator_2nd_order
   !
   ! This module defines a subclass of vertical_gradient_calculator_base_type for
   ! computing vertical gradients using a second-order centered difference.
+  !
+  ! If the topo values are nearly equal across the gradient (i.e., denominator is near 0),
+  ! returns a gradient of 0.
+  !
+  ! If there is only one elevation class, returns a gradient of 0.
 
 #include "shr_assert.h"
   use seq_comm_mct, only : logunit
@@ -13,6 +18,7 @@ module vertical_gradient_calculator_2nd_order
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_log_mod, only : errMsg => shr_log_errMsg
   use shr_sys_mod, only : shr_sys_abort
+  use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   
   implicit none
   private
@@ -34,8 +40,15 @@ module vertical_gradient_calculator_2nd_order
      ! are guaranteed to be monotonically increasing.
      real(r8), allocatable :: elevclass_bounds(:)
 
+     ! precomputed vertical gradients; vertical_gradient(i,j) is point i, elevation class
+     ! j
+     real(r8), allocatable :: vertical_gradient(:,:)
+
+     logical :: calculated  ! whether gradients have been calculated yet
+
    contains
-     procedure :: calc_vertical_gradient
+     procedure :: calc_gradients
+     procedure :: get_gradients_one_class
 
      procedure, private :: check_topo ! check topographic heights
      procedure, private :: limit_gradient
@@ -83,6 +96,8 @@ contains
     character(len=*), parameter :: subname = 'constructor'
     !-----------------------------------------------------------------------
 
+    this%calculated = .false.
+
     this%num_points = size(field, 1)
     this%nelev = size(field, 2)
     SHR_ASSERT_ALL((ubound(topo) == (/this%num_points, this%nelev/)), errMsg(__FILE__, __LINE__))
@@ -109,19 +124,90 @@ contains
 
     ! call this%check_topo()
 
+    allocate(this%vertical_gradient(this%num_points, this%nelev))
+    this%vertical_gradient(:,:) = nan
+
   end function constructor
 
-
   !-----------------------------------------------------------------------
-  subroutine calc_vertical_gradient(this, elevation_class, vertical_gradient)
+  subroutine calc_gradients(this)
     !
     ! !DESCRIPTION:
-    ! Calculates the vertical gradient for all points, at a given elevation class.
+    ! Calculates all vertical gradients
     !
-    ! If the topo values are nearly equal across the gradient (i.e., denominator is near
-    ! 0), returns a gradient of 0.
+    ! !USES:
     !
-    ! If there is only one elevation class, returns a gradient of 0.
+    ! !ARGUMENTS:
+    class(vertical_gradient_calculator_2nd_order_type), intent(inout) :: this
+    !
+    ! !LOCAL VARIABLES:
+    ! Tolerance for considering two topo values to be nearly equal
+    real(r8), parameter :: topo_equality_tolerance = 1.e-13_r8
+
+    integer :: i
+    integer :: elevation_class
+    integer :: ec_low   ! elevation class index to use as the lower bound of the gradient
+    integer :: ec_high  ! elevation class index to use as the upper bound of the gradient
+    logical :: two_sided ! true if we're estimating the gradient with a two-sided difference
+
+    character(len=*), parameter :: subname = 'calc_gradients'
+    !-----------------------------------------------------------------------
+
+    if (this%calculated) then
+       ! nothing to do
+       return
+    end if
+
+    if (this%nelev == 1) then
+       this%vertical_gradient(:,:) = 0._r8
+       two_sided = .false.
+
+    else
+
+       do elevation_class = 1, this%nelev
+          if (elevation_class == 1) then
+             ec_low = elevation_class
+             ec_high = elevation_class + 1
+             two_sided = .false.
+          else if (elevation_class == this%nelev) then
+             ec_low = elevation_class - 1
+             ec_high = elevation_class
+             two_sided = .false.
+          else
+             ec_low = elevation_class - 1
+             ec_high = elevation_class + 1
+             two_sided = .true.
+          end if
+
+          do i = 1, this%num_points
+             if (abs(this%topo(i, ec_high) - this%topo(i, ec_low)) < topo_equality_tolerance) then
+                this%vertical_gradient(i, elevation_class) = 0._r8
+             else
+                this%vertical_gradient(i, elevation_class) = &
+                     (this%field(i, ec_high) - this%field(i, ec_low)) / &
+                     (this%topo (i, ec_high) - this%topo (i, ec_low))
+             end if
+          end do
+
+          if (two_sided) then
+             call this%limit_gradient(elevation_class, ec_low, ec_high, &
+                  this%vertical_gradient(:,elevation_class))
+          end if
+       end do
+
+    end if
+    
+    this%calculated = .true.
+
+  end subroutine calc_gradients
+
+  !-----------------------------------------------------------------------
+  subroutine get_gradients_one_class(this, elevation_class, gradients)
+    !
+    ! !DESCRIPTION:
+    ! Returns the vertical gradient for all points, at a given elevation class.
+    !
+    ! this%calc_gradients should already have been called
     !
     ! !USES:
     !
@@ -129,24 +215,18 @@ contains
     class(vertical_gradient_calculator_2nd_order_type), intent(in) :: this
     integer, intent(in) :: elevation_class
 
-    ! vertical_gradient should already be allocated to the appropriate size
-    real(r8), intent(out) :: vertical_gradient(:)
+    ! gradients should already be allocated to the appropriate size
+    real(r8), intent(out) :: gradients(:)
     !
     ! !LOCAL VARIABLES:
-    ! Tolerance for considering two topo values to be nearly equal
-    real(r8), parameter :: topo_equality_tolerance = 1.e-13_r8
 
-    integer :: i
-    integer :: ec_low   ! elevation class index to use as the lower bound of the gradient
-    integer :: ec_high  ! elevation class index to use as the upper bound of the gradient
-    logical :: two_sided ! true if we're estimating the gradient with a two-sided difference
-
-    character(len=*), parameter :: subname = 'calc_vertical_gradient'
+    character(len=*), parameter :: subname = 'get_gradients_one_class'
     !-----------------------------------------------------------------------
 
     ! Assert pre-conditions
-    
-    SHR_ASSERT((size(vertical_gradient) == this%num_points), errMsg(__FILE__, __LINE__))
+
+    SHR_ASSERT(this%calculated, errMsg(__FILE__, __LINE__))
+    SHR_ASSERT((size(gradients) == this%num_points), errMsg(__FILE__, __LINE__))
 
     if (elevation_class < 1 .or. elevation_class > this%nelev) then
        write(logunit,*) subname, ': ERROR: elevation class out of bounds: ', &
@@ -154,47 +234,9 @@ contains
        call shr_sys_abort(subname//': ERROR: elevation class out of bounds')
     end if
 
-    ! Do the calculations
+    gradients(:) = this%vertical_gradient(:, elevation_class)
 
-    ! Start by assuming we're doing a two-sided difference; we'll set this to false if we aren't
-    two_sided = .true.
-
-    if (this%nelev == 1) then
-       vertical_gradient(:) = 0._r8
-       two_sided = .false.
-
-    else
-       
-       if (elevation_class == 1) then
-          ec_low = elevation_class
-          ec_high = elevation_class + 1
-          two_sided = .false.
-       else if (elevation_class == this%nelev) then
-          ec_low = elevation_class - 1
-          ec_high = elevation_class
-          two_sided = .false.
-       else
-          ec_low = elevation_class - 1
-          ec_high = elevation_class + 1
-       end if
-
-       do i = 1, this%num_points
-          if (abs(this%topo(i, ec_high) - this%topo(i, ec_low)) < topo_equality_tolerance) then
-             vertical_gradient(i) = 0._r8
-          else
-             vertical_gradient(i) = &
-                  (this%field(i, ec_high) - this%field(i, ec_low)) / &
-                  (this%topo (i, ec_high) - this%topo (i, ec_low))
-          end if
-       end do
-
-       if (two_sided) then
-          call this%limit_gradient(elevation_class, ec_low, ec_high, vertical_gradient)
-       end if
-
-    end if
-    
-  end subroutine calc_vertical_gradient
+  end subroutine get_gradients_one_class
 
   !-----------------------------------------------------------------------
   subroutine check_topo(this)

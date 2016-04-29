@@ -6,6 +6,12 @@ module vertical_gradient_calculator_base
   !
   ! This module defines an abstract base class for computing the vertical gradient of a
   ! field.
+  !
+  ! Usage:
+  !
+  ! - First call calc_gradients
+  !
+  ! - Then can query the computed vertical gradients using the other methods
 
   use seq_comm_mct, only : logunit
   use shr_kind_mod, only : r8 => shr_kind_r8
@@ -18,8 +24,11 @@ module vertical_gradient_calculator_base
   
   type, abstract :: vertical_gradient_calculator_base_type
    contains
-     ! Calculate the vertical gradient for all points, for a given elevation class
-     procedure(calc_vertical_gradient_interface), deferred :: calc_vertical_gradient
+     ! Calculate the vertical gradients for all points and all elevation classes
+     procedure(calc_gradients_interface), deferred :: calc_gradients
+
+     ! Get the vertical gradients for all points for a single elevation class
+     procedure(get_gradients_one_class_interface), deferred :: get_gradients_one_class
 
      ! These routines are utility methods for derived classes; they should not be called
      ! by clients of this class.
@@ -29,15 +38,20 @@ module vertical_gradient_calculator_base
   end type vertical_gradient_calculator_base_type
   
   abstract interface
-     subroutine calc_vertical_gradient_interface(this, elevation_class, vertical_gradient)
+     subroutine calc_gradients_interface(this)
+       import :: vertical_gradient_calculator_base_type
+       class(vertical_gradient_calculator_base_type), intent(inout) :: this
+     end subroutine calc_gradients_interface
+
+     subroutine get_gradients_one_class_interface(this, elevation_class, gradients)
        import :: vertical_gradient_calculator_base_type
        import :: r8
        class(vertical_gradient_calculator_base_type), intent(in) :: this
        integer, intent(in) :: elevation_class
 
        ! vertical_gradient should already be allocated to the appropriate size
-       real(r8), intent(out) :: vertical_gradient(:)
-     end subroutine calc_vertical_gradient_interface
+       real(r8), intent(out) :: gradients(:)
+     end subroutine get_gradients_one_class_interface
   end interface
 
 contains

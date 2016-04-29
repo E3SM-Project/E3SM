@@ -61,6 +61,7 @@ contains
          field = data, &
          topo = topo, &
          elevclass_bounds = elevclass_bounds)
+    call calculator%calc_gradients()
 
   end function create_calculator
 
