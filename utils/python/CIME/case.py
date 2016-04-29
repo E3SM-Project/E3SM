@@ -150,8 +150,13 @@ class Case(object):
         """
         Return info object for given item, return all info for all item if item is empty.     
         """
-  
+        
+        # Empty result list
         results = []
+        
+        if item in self.lookups.keys():
+            results = [self.lookups[item]]
+        
         for env_file in self._files:
             # Wait and resolve in self rather than in env_file
             logger.debug("Searching in %s" , env_file.__class__.__name__)
@@ -168,31 +173,16 @@ class Case(object):
                
 
             if result is not None and (len(result) >= 1):
-                if resolved and type(result) is str:
-                    # WRONG
-                    logger.info("Fix this line , it is an array not a string")
-                    results.append(self.get_resolved_value(result))
-                else :
-                    results = results + result
-                # return results
-            
-        # for env_file in self._env_generic_files:
-#
-#             logger.debug("Searching in %s" , env_file.__class__.__name__)
-#
-#             result = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
-#
-#             if result is not None and (len(result) >=1) :
-#                 if resolved and type(result) is str:
-#                     logger.debug("Type string and resolved is true")
-#                     results.append(self.get_resolved_value(result))
-#                 else :
-#                     logger.debug("Append result to return list (%s)" ,result)
-#                     results = results + result
-#                 # return results
-   
- 
-        # Return empty result
+                
+                if resolved :
+                    for r in result :
+                        if type(r['value']) is str:
+                            logger.debug("Resolving %s" , r['value'])
+                            
+                            r['value'] = self.get_resolved_value(r['value'])
+             
+                results = results + result
+               
         return results
         
 
