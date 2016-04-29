@@ -1,5 +1,4 @@
 set (pfunit_sources
-  test_vertical_gradient_test_utils.pf
   test_vertical_gradient_calculator_2nd_order.pf
   test_vertical_gradient_calculator_continuous.pf
   test_vertical_gradient_calculator_factory.pf
