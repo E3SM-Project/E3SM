@@ -29,7 +29,7 @@ contains
        result(calculator)
     !
     ! !DESCRIPTION:
-    ! Creates and returns a vertical_gradient_calculator_2nd_order_type object
+    ! Creates and returns a vertical_gradient_calculator_2nd_order_type object.
     !
     ! The attribute vector is assumed to have fields named fieldname //
     ! elevclass_names(1), toponame // elevclass_names(1), etc.

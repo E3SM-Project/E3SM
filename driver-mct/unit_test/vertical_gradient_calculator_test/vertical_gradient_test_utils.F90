@@ -26,7 +26,7 @@ contains
     real(r8) :: gradients_one_ec(npts)
 
     do ec = 1, n_elev_classes
-       call calculator%calc_vertical_gradient(ec, gradients_one_ec)
+       call calculator%get_gradients_one_class(ec, gradients_one_ec)
        gradients(ec) = gradients_one_ec(pt)
     end do
   end function all_gradients_one_point
