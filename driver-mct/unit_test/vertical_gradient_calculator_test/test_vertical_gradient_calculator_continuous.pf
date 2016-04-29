@@ -68,7 +68,6 @@ contains
          attr_vect = this%av, &
          fieldname = 'data', &
          toponame = 'topo', &
-         nelev = n_elev_classes, &
          elevclass_names = elevclass_names(n_elev_classes), &
          elevclass_bounds = elevclass_bounds)
 
