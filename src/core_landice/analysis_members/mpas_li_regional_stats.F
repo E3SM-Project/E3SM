@@ -11,7 +11,7 @@
 !
 !> \brief MPAS land ice analysis mode member: mpas_li_regional_stats
 !> \author Stephen Price 
-!> \date   8-30-2015
+!> \date   4-29-2016
 !> \details
 !> 
 !> 
@@ -112,7 +112,7 @@ contains
 !
 !> \brief   Compute MPAS-Land Ice analysis member
 !> \author  S. Price
-!> \date    9/9/2015    
+!> \date   4-29-2016
 !> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-Land Ice analysis member.
@@ -152,16 +152,16 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: regionalStatsAMPool
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: regionalStatsAMPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: regionalStatsAM
       type (mpas_pool_type), pointer :: geometryPool
-      type (mpas_pool_type), pointer :: regionsPool                !!SFP: added
+      type (mpas_pool_type), pointer :: regionsPool       
 
       ! arrays, vars needed from other pools for calculations here
       real (kind=RKIND), pointer ::  config_ice_density
@@ -194,19 +194,15 @@ contains
       block => domain % blocklist
       do while (associated(block))
 
-      !! SFP: get dimensions assocated with region masks
-      call mpas_pool_get_dimension(block % dimensions, 'nRegions', nRegions)
-      call mpas_pool_get_dimension(block % dimensions, 'nRegionGroups', nRegionGroups)
+         !! get dimensions assocated with region masks
+         call mpas_pool_get_dimension(block % dimensions, 'nRegions', nRegions)
+         call mpas_pool_get_dimension(block % dimensions, 'nRegionGroups', nRegionGroups)
+   
+         ! allocate & initialize sums over blocks to 0
+         allocate(blockSumRegionIceArea(nRegions)) 
+         allocate(blockSumRegionIceVolume(nRegions))
 
-      ! allocate & initialize sums over blocks to 0
-      allocate(blockSumRegionIceArea(nRegions)) 
-      allocate(blockSumRegionIceVolume(nRegions))
-
-      blockSumRegionIceArea = 0.0_RKIND; blockSumRegionIceVolume = 0.0_RKIND
-
-!      ! loop over blocks
-!      block => domain % blocklist
-!      do while (associated(block))
+         blockSumRegionIceArea = 0.0_RKIND; blockSumRegionIceVolume = 0.0_RKIND
 
          ! get structs from pools
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -225,74 +221,41 @@ contains
 !         call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
          call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
 
-         !!SFP: get region cell masks from regionMasks.nc file
+         ! get region cell masks from regionMasks.nc input file
          call mpas_pool_get_array(regionsPool, 'regionCellMasks', regionCellMasks)      
-         print *, 'sum( regionCellMasks(1,:) ) = ', sum( regionCellMasks(1,:) )
-         print *, 'sum( regionCellMasks(2,:) ) = ', sum( regionCellMasks(2,:) )
-         print *, 'size of region cell mask = ', size( regionCellMasks, 1), size( regionCellMasks, 2)
 
          ! get values from regional stats pool
          call mpas_pool_get_array(regionalStatsAMPool, 'regionalIceArea', regionalIceArea)
          call mpas_pool_get_array(regionalStatsAMPool, 'regionalIceVolume', regionalIceVolume)
 
-         ! loop over cells
-         do iCell = 1,nCellsSolve
-!         do iGroup = 1,nRegionGroups
-           do iRegion = 1,nRegions
+         do iCell = 1,nCellsSolve      ! loop over cells
+ !         do iGroup = 1,nRegionGroups  ! loop over groups
+           do iRegion = 1,nRegions     ! loop over regions
 
-            ! sums of ice area and volume over cells (m^2 and m^3)
 
-            ! Regional areas and volumes
+            ! regional sums of ice area over cells with ice (m^2)
             blockSumRegionIceArea(iRegion) = blockSumRegionIceArea(iRegion) + ( real(regionCellMasks(iRegion,iCell),RKIND) & 
-               * areaCell(iCell) ) 
+               * areaCell(iCell) * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) ) 
 
-!!! SFP: Note that this calc. needs to only occur where there is ice ... needs to include cellMask also? Check globalStatsAM for this too !!!
+            ! regional sums of ice volume over cells with ice (m^3)
             blockSumRegionIceVolume(iRegion) = blockSumRegionIceVolume(iRegion) + ( real(regionCellMasks(iRegion,iCell),RKIND) & 
-               * areaCell(iCell) * thickness(iCell) )
+               * areaCell(iCell) * thickness(iCell) * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) )
 
-            print *, 'nRegions = ', nRegions
-            print *, 'iRegion = ', iRegion
-            print *, 'iCell=', iCell
-            print *, 'thickness(iCell) = ', thickness(iCell)
-            print *, 'area(iCell) = ', areaCell(iCell)
-            print *, 'regionCellMasks(iRegion,iCell) = ', regionCellMasks(iRegion,iCell)
-            print *, 'blockSumRegionIceArea = ', blockSumRegionIceArea(iRegion)
-            print *, 'blockSumRegionIceVolume = ', blockSumRegionIceVolume(iRegion)
-            print *, ' '
 
            end do ! end loop over regions
-!         end do ! end loop over groups 
+ !         end do ! end loop over groups 
          end do ! end loop over cells
-
 
          block => block % next
 
       end do    ! end loop over blocks
 
-      !!SFP: debug
-!            print *, 'regionCellMasks(1,:) = ', regionCellMasks(1,:)
-!            print *, 'regionCellMasks(2,:) = ', regionCellMasks(2,:)
-
-
       ! compute sums over all procs
-!      do iRegion = 1,nRegions
-
-! SFP: debug
-!       regionalIceArea(iRegion) = blockSumRegionIceArea(iRegion)
-!       regionalIceVolume(iRegion) = blockSumRegionIceVolume(iRegion)
-
-! SFP: sample calls from ocean analysis member - 2nd arg. is array size? !!!
-      !call mpas_dmpar_sum_real_array(dminfo, nRegions, blockSumRegionIceArea(iRegion), regionalIceArea(iRegion) )
-      !call mpas_dmpar_sum_real_array(dminfo, nRegions, blockSumRegionIceVolume(iRegion), regionalIceVolume(iRegion) )
       call mpas_dmpar_sum_real_array(dminfo, nRegions, blockSumRegionIceArea, regionalIceArea )
       call mpas_dmpar_sum_real_array(dminfo, nRegions, blockSumRegionIceVolume, regionalIceVolume )
 
-!      end do ! end loop over regions
-
-
       ! deallocate storage for sums over blocks  
       deallocate(blockSumRegionIceArea); deallocate(blockSumRegionIceVolume)
-
 
       ! Even though some variables do not include an index that is decomposed amongst
       ! domain partitions, we assign them within a block loop so that all blocks have the
