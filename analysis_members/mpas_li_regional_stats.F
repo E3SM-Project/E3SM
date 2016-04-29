@@ -161,13 +161,16 @@ contains
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: regionalStatsAM
       type (mpas_pool_type), pointer :: geometryPool
-      type (mpas_pool_type), pointer :: regionsPool           !!SFP: added
+      type (mpas_pool_type), pointer :: regionsPool                !!SFP: added
 
       ! arrays, vars needed from other pools for calculations here
+      real (kind=RKIND), pointer ::  config_ice_density
+      real (kind=RKIND), pointer ::  deltat
       real (kind=RKIND), dimension(:), pointer ::  areaCell
       real (kind=RKIND), dimension(:), pointer ::  thickness 
       real (kind=RKIND), dimension(:), pointer ::  sfcMassBal  
       real (kind=RKIND), dimension(:), pointer ::  basalMassBal
+      real (kind=RKIND), dimension(:), pointer ::  calvingThickness
 
       integer, dimension(:,:), pointer :: regionCellMasks 
       integer, dimension(:), pointer :: cellMask 
@@ -175,21 +178,10 @@ contains
       integer :: k, iCell, iRegion, iGroup
 
       ! scalars to be calculated here from regional sums
-      real (kind=RKIND), pointer ::  RegionalIceArea, RegionalIceVolume
-      real (kind=RKIND), pointer ::  RegionalGroundedIceArea, RegionalGroundedIceVolume  
-      real (kind=RKIND), pointer ::  RegionalFloatingIceArea, RegionalFloatingIceVolume    
-!      real (kind=RKIND), pointer ::  WAIStotalBasalMassBal!, WAIStotalSfcMassBal 
-!      real (kind=RKIND), pointer ::  EAIStotalBasalMassBal!, EAIStotalSfcMassBal 
-!      real (kind=RKIND), pointer ::  FRISBasalMassBal, RossISBasalMassBal, AmeryISBasalMassBal, PineIslandThwaitesISBasalMassBal
+      real (kind=RKIND), dimension(:), pointer ::  regionalIceArea, regionalIceVolume
 
       ! storage for sums over blocks
       real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionIceArea, blockSumRegionIceVolume
-!      real (kind=RKIND) ::  blockSumRegionGroundedIceArea, blockSumRegionGroundedIceVolume
-!      real (kind=RKIND) ::  blockSumRegionFloatingIceArea, blockSumRegionFloatingIceVolume
-!      real (kind=RKIND) ::  blockSumWAISBasalMassBal!, blockSumWAISSfcMassBal
-!      real (kind=RKIND) ::  blockSumEAISBasalMassBal!, blockSumEASISfcMassBal
-!      real (kind=RKIND) ::  blockSumFRISBasalMassBal, blockSumRossISBasalMassBal 
-!      real (kind=RKIND) ::  blockSumAmeryISBasalMassBal, blockSumPineIslandThwaitesISBasalMassBal
 
       ! local parameters
       real (kind=RKIND), parameter :: scyr = 31536000.0_RKIND  ! seconds per 365-day year
@@ -207,16 +199,10 @@ contains
       call mpas_pool_get_dimension(block % dimensions, 'nRegionGroups', nRegionGroups)
 
       ! allocate & initialize sums over blocks to 0
-      allocate(blockSumRegionIceArea(nRegions)); allocate(blockSumRegionIceVolume(nRegions))
+      allocate(blockSumRegionIceArea(nRegions)) 
+      allocate(blockSumRegionIceVolume(nRegions))
 
       blockSumRegionIceArea = 0.0_RKIND; blockSumRegionIceVolume = 0.0_RKIND
-!      blockSumRegionGroundedIceArea = 0.0_RKIND; blockSumRegionGroundedIceVolume = 0.0_RKIND
-!      blockSumRegionFloatingIceArea = 0.0_RKIND; blockSumRegionFloatingIceVolume = 0.0_RKIND
-
-!      blockSumWAISBasalMassBal = 0.0_RKIND!; blockSumWAISSfcMassBal = 0.0_RKIND
-!      blockSumEAISBasalMassBal = 0.0_RKIND!; blockSumEAISSfcMassBal = 0.0_RKIND
-!      blockSumFRISBasalMassBal = 0.0_RKIND; blockSumRossISBasalMassBal = 0.0_RKIND
-!      blockSumAmeryISBasalMassBal = 0.0_RKIND; blockSumPineIslandThwaitesISBasalMassBal = 0.0_RKIND
 
 !      ! loop over blocks
 !      block => domain % blocklist
@@ -224,11 +210,15 @@ contains
 
          ! get structs from pools
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'regionalStatsAM', regionalStatsAMPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'regions', regionsPool)
+         call mpas_pool_get_subpool(block % structs, 'regionalStatsAM', regionalStatsAMPool)
 
          ! get values and arrays from standard pools
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+
+         print *, 'nCellsSolve = ', nCellsSolve
+
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
@@ -237,22 +227,13 @@ contains
 
          !!SFP: get region cell masks from regionMasks.nc file
          call mpas_pool_get_array(regionsPool, 'regionCellMasks', regionCellMasks)      
+         print *, 'sum( regionCellMasks(1,:) ) = ', sum( regionCellMasks(1,:) )
+         print *, 'sum( regionCellMasks(2,:) ) = ', sum( regionCellMasks(2,:) )
+         print *, 'size of region cell mask = ', size( regionCellMasks, 1), size( regionCellMasks, 2)
 
          ! get values from regional stats pool
-         call mpas_pool_get_array(regionalStatsAMPool, 'RegionalIceArea', RegionalIceArea)
-         call mpas_pool_get_array(regionalStatsAMPool, 'RegionalIceVolume', RegionalIceVolume)
-         call mpas_pool_get_array(regionalStatsAMPool, 'RegionalFloatingIceArea', RegionalFloatingIceArea)
-         call mpas_pool_get_array(regionalStatsAMPool, 'RegionalFloatingIceVolume', RegionalFloatingIceVolume)
-         call mpas_pool_get_array(regionalStatsAMPool, 'RegionalGroundedIceArea', RegionalGroundedIceArea)
-         call mpas_pool_get_array(regionalStatsAMPool, 'RegionalGroundedIceVolume', RegionalGroundedIceVolume)
-!         call mpas_pool_get_array(regionalStatsAMPool, 'WAIStotalBasalMassBal', WAIStotalBasalMassBal)
-!         call mpas_pool_get_array(regionalStatsAMPool, 'WAIStotalSfcMassBal', WAIStotalSfcMassBal)
-!         call mpas_pool_get_array(regionalStatsAMPool, 'EAIStotalBasalMassBal', EAIStotalBasalMassBal)
-!         call mpas_pool_get_array(regionalStatsAMPool, 'EAIStotalSfcMassBal', EAIStotalSfcMassBal)
-!         call mpas_pool_get_array(regionalStatsAMPool, 'FRISBasalMassBal', FRISBasalMassBal)
-!         call mpas_pool_get_array(regionalStatsAMPool, 'RossISBasalMassBal', RossISBasalMassBal)
-!         call mpas_pool_get_array(regionalStatsAMPool, 'AmeryISBasalMassBal', AmeryISBasalMassBal)
-!         call mpas_pool_get_array(regionalStatsAMPool, 'PineIslandThwaitesISBasalMassBal', PineIslandThwaitesISBasalMassBal)
+         call mpas_pool_get_array(regionalStatsAMPool, 'regionalIceArea', regionalIceArea)
+         call mpas_pool_get_array(regionalStatsAMPool, 'regionalIceVolume', regionalIceVolume)
 
          ! loop over cells
          do iCell = 1,nCellsSolve
@@ -262,67 +243,55 @@ contains
             ! sums of ice area and volume over cells (m^2 and m^3)
 
             ! Regional areas and volumes
-            blockSumRegionIceArea(iRegion) = blockSumRegionIceArea(iRegion) + ( real(regionCellMasks(iRegion,iCell),RKIND) &
-                * areaCell(iCell) ) 
+            blockSumRegionIceArea(iRegion) = blockSumRegionIceArea(iRegion) + ( real(regionCellMasks(iRegion,iCell),RKIND) & 
+               * areaCell(iCell) ) 
 
-            blockSumRegionIceVolume(iRegion) = blockSumRegionIceVolume(iRegion) + ( real(regionCellMasks(iRegion,iCell),RKIND) &
-                * areaCell(iCell) * thickness(iCell) )
+!!! SFP: Note that this calc. needs to only occur where there is ice ... needs to include cellMask also? Check globalStatsAM for this too !!!
+            blockSumRegionIceVolume(iRegion) = blockSumRegionIceVolume(iRegion) + ( real(regionCellMasks(iRegion,iCell),RKIND) & 
+               * areaCell(iCell) * thickness(iCell) )
 
-!            blockSumWAISGroundedIceArea = blockSumWAISGroundedIceArea + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
-!                 * areaCell(iCell) !* real(mask_is_wais(iCell),RKIND) 
-!            blockSumWAISGroundedIceVolume = blockSumWAISGroundedIceVolume + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
-!                * areaCell(iCell) * thickness(iCell) !* real(mask_is_wais(iCell),RKIND) 
-!            blockSumWAISFloatingIceArea = blockSumWAISFloatingIceArea + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
-!                * areaCell(iCell) !* real(mask_is_wais(iCell),RKIND) 
-!            blockSumWAISFloatingIceVolume = blockSumWAISFloatingIceVolume + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
-!                * areaCell(iCell) * thickness(iCell) !* real(mask_is_wais(iCell),RKIND) 
-
-!            ! sfc and basal mass balance for WAIS, EAIS, and specific shelves (kg yr^{-1})
-!            !SFP: These calculations need to be tested still; placeholder masks should return int not logical
-!            blockSumWAISBasalMassBal = blockSumWAISBasalMassBal + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
-!                * areaCell(iCell) * basalMassBal(iCell) * scyr !* real(mask_is_wais(iCell),RKIND)
-!            blockSumEAISBasalMassBal = blockSumEAISBasalMassBal + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
-!                * areaCell(iCell) * basalMassBal(iCell) * scyr !* real(mask_is_eais(iCell),RKIND)
-!            blockSumFRISBasalMassBal = blockSumFRISBasalMassBal + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
-!                * areaCell(iCell) * basalMassBal(iCell) * scyr !* real(mask_is_fris(iCell),RKIND)
-!            blockSumRossISBasalMassBal = blockSumRossISBasalMassBal + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
-!                * areaCell(iCell) * basalMassBal(iCell) * scyr !* real(mask_is_ross(iCell),RKIND)
-!            blockSumAmeryISBasalMassBal = blockSumAmeryISBasalMassBal + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
-!                * areaCell(iCell) * basalMassBal(iCell) * scyr !* real(mask_is_amery(iCell),RKIND)
-!            blockSumPineIslandThwaitesISBasalMassBal = blockSumPineIslandThwaitesISBasalMassBal + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
-!                * areaCell(iCell) * basalMassBal(iCell) * scyr !* real(mask_is_pigthwaites(iCell),RKIND)
-
-!            blockSumSfcMassBal = blockSumSfcMassBal + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
-!                * areaCell(iCell) * sfcMassBal(iCell) * scyr
-
+            print *, 'nRegions = ', nRegions
+            print *, 'iRegion = ', iRegion
+            print *, 'iCell=', iCell
+            print *, 'thickness(iCell) = ', thickness(iCell)
+            print *, 'area(iCell) = ', areaCell(iCell)
+            print *, 'regionCellMasks(iRegion,iCell) = ', regionCellMasks(iRegion,iCell)
+            print *, 'blockSumRegionIceArea = ', blockSumRegionIceArea(iRegion)
+            print *, 'blockSumRegionIceVolume = ', blockSumRegionIceVolume(iRegion)
+            print *, ' '
 
            end do ! end loop over regions
 !         end do ! end loop over groups 
          end do ! end loop over cells
 
-         ! deallocate storage for sums over blocks  
-         deallocate(blockSumRegionIceArea); deallocate(blockSumRegionIceVolume)
 
          block => block % next
 
       end do    ! end loop over blocks
 
+      !!SFP: debug
+!            print *, 'regionCellMasks(1,:) = ', regionCellMasks(1,:)
+!            print *, 'regionCellMasks(2,:) = ', regionCellMasks(2,:)
+
+
       ! compute sums over all procs
-!      call mpas_dmpar_sum_real(dminfo, blockSumRegionIceArea, RegionalIceArea)
+!      do iRegion = 1,nRegions
 
-!      call mpas_dmpar_sum_real(dminfo, blockSumWAISIceVolume, WAISIceVolume)
-!      call mpas_dmpar_sum_real(dminfo, blockSumWAISGroundedIceArea, WAISgroundedIceArea)
-!      call mpas_dmpar_sum_real(dminfo, blockSumWAISGroundedIceVolume, WAISgroundedIceVolume)
-!      call mpas_dmpar_sum_real(dminfo, blockSumWAISFloatingIceArea, WAISfloatingIceArea)
-!      call mpas_dmpar_sum_real(dminfo, blockSumWAISFloatingIceVolume, WAISfloatingIceVolume)
+! SFP: debug
+!       regionalIceArea(iRegion) = blockSumRegionIceArea(iRegion)
+!       regionalIceVolume(iRegion) = blockSumRegionIceVolume(iRegion)
 
-!      call mpas_dmpar_sum_real(dminfo, blockSumSfcMassBal, totalSfcMassBal) 
-!      call mpas_dmpar_sum_real(dminfo, blockSumWAISBasalMassBal, WAIStotalBasalMassBal) 
-!      call mpas_dmpar_sum_real(dminfo, blockSumEAISBasalMassBal, EAIStotalBasalMassBal) 
-!      call mpas_dmpar_sum_real(dminfo, blockSumFRISBasalMassBal, FRISBasalMassBal) 
-!      call mpas_dmpar_sum_real(dminfo, blockSumRossISBasalMassBal, RossISBasalMassBal) 
-!      call mpas_dmpar_sum_real(dminfo, blockSumAmeryISBasalMassBal, AmeryISBasalMassBal) 
-!      call mpas_dmpar_sum_real(dminfo, blockSumPineIslandThwaitesISBasalMassBal, PineIslandThwaitesISBasalMassBal) 
+! SFP: sample calls from ocean analysis member - 2nd arg. is array size? !!!
+      !call mpas_dmpar_sum_real_array(dminfo, nRegions, blockSumRegionIceArea(iRegion), regionalIceArea(iRegion) )
+      !call mpas_dmpar_sum_real_array(dminfo, nRegions, blockSumRegionIceVolume(iRegion), regionalIceVolume(iRegion) )
+      call mpas_dmpar_sum_real_array(dminfo, nRegions, blockSumRegionIceArea, regionalIceArea )
+      call mpas_dmpar_sum_real_array(dminfo, nRegions, blockSumRegionIceVolume, regionalIceVolume )
+
+!      end do ! end loop over regions
+
+
+      ! deallocate storage for sums over blocks  
+      deallocate(blockSumRegionIceArea); deallocate(blockSumRegionIceVolume)
 
 
       ! Even though some variables do not include an index that is decomposed amongst

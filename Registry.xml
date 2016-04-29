@@ -483,7 +483,7 @@
 				clobber_mode="replace_files">
 				<!-- Note: I had set the default precision to 'single', but MpasDraw currently only supports double precision files -->
 
-			<stream name="basicmesh"/>
+	        <stream name="basicmesh"/>
 			<var name="layerCenterSigma"/>
 			<var name="layerInterfaceSigma"/>
                         <var name="xtime"/>
@@ -502,21 +502,12 @@
 			<var name="uReconstructX"/>
 			<var name="uReconstructY"/>
 		</stream>
-
-                <stream name="regionMasksInput" type="input"
+                <stream name="regionsInput" type="input"
                                 mode="forward;analysis"
                                 filename_template="regionMasks.nc"
                                 input_interval="initial_only"
                                 runtime_format="single_file">
-
-                        <var name="regionCellMasks"/>
-                        <var name="nCellsInRegion"/>
-                        <var name="regionVertexMasks"/>
-                        <var name="nVerticesInRegion"/>
-                        <var name="nRegionsInGroup"/>
-                        <var name="regionsInGroup"/>
-                        <var name="regionMaskNames"/>
-                        <var name="regionGroupNames"/>
+                        <var_struct name="regions"/>
 		</stream>
 
 	</streams>
