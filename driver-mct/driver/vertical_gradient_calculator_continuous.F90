@@ -12,7 +12,6 @@ module vertical_gradient_calculator_continuous
   use vertical_gradient_calculator_base, only : vertical_gradient_calculator_base_type
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use mct_mod
   use shr_log_mod, only : errMsg => shr_log_errMsg
   use shr_sys_mod, only : shr_sys_abort
   use shr_matrix_mod, only : tridiagonal_inverse
@@ -45,7 +44,6 @@ module vertical_gradient_calculator_continuous
      procedure :: calc_vertical_gradient
 
      procedure, private :: check_topo  ! check topographic heights
-     procedure, private :: set_data_from_attr_vect ! extract data from an attribute vector
      procedure, private :: precompute_vertical_gradients ! compute vertical gradients for all ECs
      procedure, private :: solve_for_vertical_gradients ! compute vertical gradients for all ECs, for points where we do a matrix solve
 
@@ -58,37 +56,26 @@ module vertical_gradient_calculator_continuous
 contains
 
   !-----------------------------------------------------------------------
-  function constructor(attr_vect, fieldname, toponame, &
-       elevclass_names, elevclass_bounds) &
-       result(this)
+  function constructor(field, topo, elevclass_bounds) result(this)
     !
     ! !DESCRIPTION:
-    ! Creates a vertical_gradient_calculator_continuous_type object by reading the
-    ! necessary data from the provided attribute vector.
+    ! Creates a vertical_gradient_calculator_continuous_type object.
     !
     ! Pre-condition: elevclass_bounds must be monotonically increasing.
     !
-    ! Pre-condition: Topographic heights in the attribute vector should all lie inside the
-    ! bounds of their respective elevation class (given by elevclass_bounds), with the
-    ! possible exception of the lowest elevation class (topographic heights can lie below
-    ! the arbitrary lower bound of the elevation class) and the highest elevation class
-    ! (topographic heights can lie above the arbitrary upper bound of the elevation
-    ! class). For grid cells where this is not true, sets vertical gradient to 0 for all
-    ! elevation classes.
-    !
-    ! The attribute vector is assumed to have fields named fieldname //
-    ! elevclass_names(1), toponame // elevclass_names(1), etc.
+    ! Pre-condition: Topographic heights should all lie inside the bounds of their
+    ! respective elevation class (given by elevclass_bounds), with the possible exception
+    ! of the lowest elevation class (topographic heights can lie below the arbitrary lower
+    ! bound of the elevation class) and the highest elevation class (topographic heights
+    ! can lie above the arbitrary upper bound of the elevation class). For grid cells
+    ! where this is not true, sets vertical gradient to 0 for all elevation classes.
     !
     ! !USES:
     !
     ! !ARGUMENTS:
     type(vertical_gradient_calculator_continuous_type) :: this  ! function result
-    type(mct_aVect)  , intent(in) :: attr_vect           ! attribute vector in which we can find the data
-    character(len=*) , intent(in) :: fieldname           ! base name of the field of interest
-    character(len=*) , intent(in) :: toponame            ! base name of the topographic field
-
-    ! strings corresponding to each elevation class
-    character(len=*) , intent(in) :: elevclass_names(:)
+    real(r8), intent(in) :: field(:,:)  ! field(i,j) is point i, elevation class j
+    real(r8), intent(in) :: topo(:,:)   ! topo(i,j) is point i, elevation class j
 
     ! bounds of each elevation class; this array should have one more element than the
     ! number of elevation classes, since it contains lower and upper bounds for each
@@ -96,21 +83,24 @@ contains
     real(r8)         , intent(in) :: elevclass_bounds(0:)
     !
     ! !LOCAL VARIABLES:
-    integer :: nelev
     integer :: pt
 
     character(len=*), parameter :: subname = 'constructor'
     !-----------------------------------------------------------------------
 
-    nelev = size(elevclass_names)
-    SHR_ASSERT_ALL((ubound(elevclass_bounds) == (/nelev/)), errMsg(__FILE__, __LINE__))
+    this%num_points = size(field, 1)
+    this%nelev = size(field, 2)
+    SHR_ASSERT_ALL((ubound(topo) == (/this%num_points, this%nelev/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(elevclass_bounds) == (/this%nelev/)), errMsg(__FILE__, __LINE__))
 
-    this%nelev = nelev
-    allocate(this%elevclass_bounds(0:nelev))
+    allocate(this%elevclass_bounds(0:this%nelev))
     this%elevclass_bounds(:) = elevclass_bounds(:)
     call this%check_elevclass_bounds_monotonic_increasing(this%elevclass_bounds)
 
-    call this%set_data_from_attr_vect(attr_vect, fieldname, toponame, elevclass_names)
+    allocate(this%field(this%nelev, this%num_points))
+    this%field(:,:) = transpose(field(:,:))
+    allocate(this%topo(this%nelev, this%num_points))
+    this%topo(:,:) = transpose(topo(:,:))
 
     allocate(this%topo_valid(this%num_points))
     call this%check_topo()
