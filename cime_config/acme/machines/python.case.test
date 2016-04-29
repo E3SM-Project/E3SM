@@ -4,12 +4,17 @@
  This is the system test submit script for CIME
 
 """
+import os
+workdir = os.environ.get("PBS_O_WORKDIR")
+if workdir is not None:
+    os.chdir(workdir)
 
 from standard_script_setup import *
 
 from CIME.utils import expect, run_cmd
 from CIME.case import Case
 from CIME.SystemTests.sms import SMS
+from CIME.SystemTests.system_tests_common import *
 import argparse, doctest, shutil, glob
 
 ###############################################################################

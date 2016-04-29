@@ -14,8 +14,6 @@ class EnvTest(EnvBase):
         """
         initialize an object interface to file env_test.xml in the case directory
         """
-        if case_root is None:
-            case_root = os.getcwd()
         EnvBase.__init__(self, case_root, infile)
 
     def add_test(self,testnode):

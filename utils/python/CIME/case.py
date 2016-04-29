@@ -346,7 +346,7 @@ class Case(object):
             comp_name  = self._components[i-1]
 	    node_name = 'CONFIG_' + comp_class + '_FILE';
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=True)
-            logger.debug( "DEBUG: comp_config_file is %s"%comp_config_file)
+            logger.debug( "comp_config_file is %s"%comp_config_file)
             compobj = Component(comp_config_file)
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist);
@@ -361,8 +361,8 @@ class Case(object):
             if result is not None:
                 del self.lookups[key]
 
-    def configure(self, compset_name, grid_name, machine_name,
-                  pecount=None, compiler=None, mpilib=None,
+    def configure(self, compset_name, grid_name, machine_name=None,
+                  project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
                   user_grid=False, gridfile=None):
 
@@ -402,6 +402,7 @@ class Case(object):
         # set machine values in env_xxx files
         machobj = Machines(machine=machine_name)
         machine_name = machobj.get_machine_name()
+        self.set_value("MACH",machine_name)
         nodenames = machobj.get_node_names()
 
         if "COMPILER" in nodenames: nodenames.remove("COMPILER")
@@ -475,6 +476,13 @@ class Case(object):
         logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)
 
+        # Set project id
+        if project is None:
+            project = get_project()
+        if project is not None:
+            self.set_value("PROJECT", project)
+
+
     def set_initial_test_values(self):
         testobj = self._get_env("test")
         testobj.set_initial_values(self)
@@ -501,7 +509,6 @@ class Case(object):
         # setup executable files in caseroot/
         exefiles = (os.path.join(toolsdir, "case.setup"),
                     os.path.join(toolsdir, "case.build"),
-                    os.path.join(toolsdir, "case.clean_build"),
                     os.path.join(toolsdir, "case.submit"),
                     os.path.join(toolsdir, "preview_namelists"),
                     os.path.join(toolsdir, "testcase.setup"),
@@ -650,8 +657,8 @@ class Case(object):
         # be to copy it from the clone, just like other xml variables are copied.
         if project is None:
             project = get_project()
-            if project is not None:
-                newcase.set_value("PROJECT", project)
+        if project is not None:
+            newcase.set_value("PROJECT", project)
 
         # create caseroot
         newcase.create_caseroot()

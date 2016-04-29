@@ -13,6 +13,4 @@ class EnvCase(EnvBase):
         """
         initialize an object interface to file env_case.xml in the case directory
         """
-        if case_root is None:
-            case_root = os.getcwd()
         EnvBase.__init__(self, case_root, infile)

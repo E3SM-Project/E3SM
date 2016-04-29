@@ -3,12 +3,12 @@ functions for building CIME models
 """
 from XML.standard_module_setup import *
 from CIME.case import Case
-from CIME.utils import expect, run_cmd, get_model
+from CIME.utils import expect, run_cmd, get_model, get_utc_timestamp
 from CIME.env_module import EnvModule
 from CIME.preview_namelists import preview_namelists
 from CIME.check_input_data import check_input_data
 
-import glob, shutil, time, threading
+import glob, shutil, time, threading, gzip
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +135,8 @@ def post_build(case, logs):
 
     for log in logs:
         logger.debug("Copying build log %s to %s"%(log,bldlogdir))
-        run_cmd("gzip %s" % log)
+        with open(log, 'rb') as f_in, gzip.open("%s.gz"%log, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
         if "sharedlibroot" not in log:
             shutil.copy("%s.gz"%log,os.path.join(bldlogdir,"%s.gz"%os.path.basename(log)))
 
@@ -445,7 +446,7 @@ ERROR, NINST VALUES HAVE CHANGED
   NINST_VALUE = %s
   A manual clean of your obj directories is strongly recommended
   You should execute the following:
-    ./case.clean_build
+    ./case.build --clean
   Then rerun the build script interactively
   ---- OR ----
   You can override this error message at your own risk by executing:
@@ -461,7 +462,7 @@ ERROR, SMP VALUES HAVE CHANGED
   smpstr = %s
   A manual clean of your obj directories is strongly recommended
   You should execute the following:
-    ./case.clean_build
+    ./case.build --clean
   Then rerun the build script interactively
   ---- OR ----
   You can override this error message at your own risk by executing:
@@ -474,7 +475,7 @@ ERROR, SMP VALUES HAVE CHANGED
 ERROR env_build HAS CHANGED
   A manual clean of your obj directories is required
   You should execute the following:
-    ./case.clean_build all
+    ./case.build --clean-all
 """)
 
     expect(comp_interface != "ESMF" or use_esmf_lib,
@@ -566,3 +567,54 @@ def _build_model_thread(config_dir, caseroot, bldroot, compspec, file_build,
 
     for mod_file in glob.glob(os.path.join(objdir, "*_[Cc][Oo][Mm][Pp]_*.mod")):
         shutil.copy(mod_file, incroot)
+
+###############################################################################
+def clean(case, cleanlist):
+###############################################################################
+    debug           = case.get_value("DEBUG")
+    use_esmf_lib    = case.get_value("USE_ESMF_LIB")
+    build_threaded  = case.get_value("BUILD_THREADED")
+    clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
+    testcase        = case.get_value("TESTCASE")
+    gmake           = case.get_value("GMAKE")
+    caseroot        = case.get_value("CASEROOT")
+    casetools       = case.get_value("CASETOOLS")
+
+    os.environ["DEBUG"]           = stringify_bool(debug)
+    os.environ["USE_ESMF_LIB"]    = stringify_bool(use_esmf_lib)
+    os.environ["BUILD_THREADED"]  = stringify_bool(build_threaded)
+    os.environ["CASEROOT"]        = case.get_value("CASEROOT")
+    os.environ["COMP_INTERFACE"]  = case.get_value("COMP_INTERFACE")
+    os.environ["PIO_VERSION"]     = str(case.get_value("PIO_VERSION"))
+    os.environ["CLM_CONFIG_OPTS"] = clm_config_opts  if clm_config_opts is not None else ""
+
+    if testcase is not None:
+        if clm_config_opts is not None:
+            if "clm4_0" in clm_config_opts:
+                cleanlist.remove('cleanlnd')
+
+    cmd = gmake + " -f " + casetools + "/Makefile"
+    for item in cleanlist:
+        cmd = cmd + " clean" + item
+    logger.info("calling %s "%(cmd))
+    run_cmd(cmd)
+
+    # unlink Locked files directory
+    file = os.path.join(caseroot,"LockedFiles/env_build.xml")
+    if os.path.isfile(file):
+        os.unlink(file)
+
+    # reset following values in xml files
+    case.set_value("SMP_BUILD",str(0))
+    case.set_value("NINST_BUILD",str(0))
+    case.set_value("BUILD_STATUS",str(0))
+    case.set_value("BUILD_COMPLETE","FALSE")
+    case.flush()
+
+    # append call of to CaseStatus 
+    date = get_utc_timestamp()
+    with open(os.path.join(caseroot,"CaseStatus"), "a") as fd:
+        fd.write("clean build complete %s\n\n" %date)
+
+
+###############################################################################

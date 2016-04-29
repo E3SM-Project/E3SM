@@ -24,8 +24,6 @@ class EnvArchive(GenericXML):
             fullpath = infile
         else:
             fullpath = os.path.join(case_root, infile)
-            
-        logger.debug("Fullpath = %s" , fullpath)
         
         # Initialize self     
         GenericXML.__init__(self, fullpath) 

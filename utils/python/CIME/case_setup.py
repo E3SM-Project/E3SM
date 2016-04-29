@@ -43,7 +43,7 @@ def _check_pelayouts_require_rebuild(case, models):
                 if old_tasks != new_tasks or old_threads != new_threads or old_inst != new_inst:
                     logger.warn("%s pe change requires clean build" % comp)
                     cleanflag = comp[0].lower()
-                    run_cmd("./case.clean_build -%s" % cleanflag)
+                    run_cmd("./case.build --clean %s" % cleanflag)
 
         os.remove(locked_pes)
 
@@ -229,7 +229,6 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
 
             batchmaker = None
             for (job, template, task_count) in batch_jobs:
-                logger.info("Writing %s script"%job)
                 if batchmaker is None:
                     batchmaker = get_batch_maker(job, case=case)
                 else:
@@ -241,11 +240,13 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
 
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), template)
                 if job == "case.test" and testcase is not None:
+                    logger.info("Writing %s script"%job)
                     testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
                     # Short term fix to be removed when csh tests are removed
                     if not os.path.exists(testscript):
                         batchmaker.make_batch_script(input_batch_script, job)
-                else:
+                elif job != "case.test":
+                    logger.info("Writing %s script"%job)
                     batchmaker.make_batch_script(input_batch_script, job)
 
             # Make a copy of env_mach_pes.xml in order to be able
@@ -270,7 +271,7 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
         preview_namelists(case=case)
 
         logger.info("See ./CaseDoc for component namelists")
-        logger.info("If an old case build already exists, might want to run case.clean_build before building")
+        logger.info("If an old case build already exists, might want to run \'case.build --clean-all\' before building")
 
         # Create test script if appropriate
         if os.path.exists("env_test.xml"):

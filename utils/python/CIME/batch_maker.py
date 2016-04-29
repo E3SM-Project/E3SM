@@ -150,7 +150,7 @@ class BatchMaker(object):
         # if we didn't find a walltime previously, use the default.
         if not self.wall_time:
             self.wall_time = self.config_machines_parser.get_default_walltime()
-            if self.wall_time:
+            if self.wall_time is not None:
                 self.wall_time = self.wall_time.text
             else:
                 self.wall_time = "0"
@@ -205,7 +205,7 @@ within model's Machines directory, and add a batch system type for this machine
 
         mpi_arg_string = " ".join(args.values())
 
-        self.mpirun = "qx(%s %s %s);" % (executable if executable is not None else "", mpi_arg_string, default_run_suffix)
+        self.mpirun = "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, default_run_suffix)
 
     def _set_batch_directives(self):
         """
@@ -231,7 +231,6 @@ within model's Machines directory, and add a batch system type for this machine
             m = directive_re.search(text)
             variable = m.groups()[0]
             whole_match = m.group()
-
             if hasattr(self, variable.lower()) and getattr(self, variable.lower()) is not None:
                 repl = getattr(self, variable.lower())
                 text = text.replace(whole_match, str(repl))
@@ -241,8 +240,12 @@ within model's Machines directory, and add a batch system type for this machine
             elif default is not None:
                 text = text.replace(whole_match, default)
             else:
-                logger.warn("Could not replace variable '%s'" % variable)
-                text = text.replace(whole_match, "")
+                # If no queue exists, then the directive '-q' by itself will cause an error
+                if text.find('-q {{ queue }}')>0:
+                    text = ""
+                else:
+                    logger.warn("Could not replace variable '%s'" % variable)
+                    text = text.replace(whole_match, "")
 
         return text
 

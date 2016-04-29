@@ -11,6 +11,9 @@ logger = logging.getLogger(__name__)
 class EnvBase(EntryID):
 
     def __init__(self, case_root, infile):
+        if case_root is None:
+            case_root = os.getcwd()
+
         if os.path.isabs(infile):
             fullpath = infile
         else:

@@ -107,7 +107,6 @@ class Batch(GenericXML):
         for node in nodes:
             directive = self.get_resolved_value("" if node.text is None else node.text)
             directive = batch_maker.transform_vars(directive, default=node.get("default"))
-
             result.append("%s %s" % (directive_prefix, directive))
 
         return result
