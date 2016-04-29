@@ -7,6 +7,7 @@ list(APPEND drv_sources
   vertical_gradient_calculator_base.F90
   vertical_gradient_calculator_2nd_order.F90
   vertical_gradient_calculator_continuous.F90
+  vertical_gradient_calculator_factory.F90
   )
 
 sourcelist_to_parent(drv_sources)
