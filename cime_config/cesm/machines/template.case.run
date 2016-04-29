@@ -170,14 +170,16 @@ def checkRunStatus(case, lid):
             expect (False, msg)
 
 ###############################################################################
-def getTimings(case, lid)
+def getTimings(case, lid):
 ###############################################################################
 
     check_timing = case.get_value("CHECK_TIMING")
-    save_timing  = case.get_value("SAVE_TIMING")
-    rundir       = case.get_value("RUNDIR")
-
     if check_timing:
+        save_timing  = case.get_value("SAVE_TIMING")
+        rundir       = case.get_value("RUNDIR")
+        caseroot     = case.get_value("CASEROOT")
+        model        = case.get_value("MODEL")
+        
         timingDir = os.path.join(caseroot,"timing")
         if not os.path.isdir(timingDir):
             os.makedirs(timingDir)
@@ -188,28 +190,24 @@ def getTimings(case, lid)
 
         logger.info( "gzipping timing stats.." )
         timingfile = model + "_timing_stats." + lid
-        print "DEBUG: timing file is ",timingfile
-        cmd = gzip  + (os.path.join(caseroot,timingfile))
+        cmd = "gzip"  + (os.path.join(rundir,timingfile))
         run_cmd(cmd) 
 
-    # Save the timing files if desired
-    if save_timing:
-        shutil.move(os.path.join(rundir,"timing"), 
-                    os.path.join(rundir,"timing."+lid))
-
+        # Save the timing files if desired
+        if save_timing:
+            shutil.move(os.path.join(rundir,"timing"), 
+                        os.path.join(rundir,"timing."+lid))
 
 
 ###############################################################################
 def disposeLog(case, lid):
 ###############################################################################
 
-    caseroot = case.get_value("CASEROOT")
-    rundir   = case.get_value("RUNDIR")
     logdir   = case.get_value("LOGDIR")
-    lid      = os.environ["LID"]
-    logger.debug("lid %s" %(lid))
-
     if logdir is not None and len(logdir) > 0:
+        caseroot = case.get_value("CASEROOT")
+        rundir   = case.get_value("RUNDIR")
+
         if not os.path.isdir(logdir):
             os.makedirs(logdir)
 
@@ -294,8 +292,9 @@ def _main_func():
     data_assimilation_cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
     data_assimilation_script = case.get_value("DATA_ASSIMILATION_SCRIPT")
 
-    # Now set up the LID 
-    os.environ["LID"] = time.strftime("%y%m%d-%H%M%S")
+    # set up the LID 
+    lid = time.strftime("%y%m%d-%H%M%S")
+    os.environ["LID"] = lid
 
     for cycle in range(0,data_assimilation_cycles):
         doPreRunChecks(case)
