@@ -139,7 +139,7 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
         logger.info("Some files have been saved to %s" % backup_dir)
 
         with open("CaseStatus", "a") as fd:
-            fd.write("case.setup --clean %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
+            fd.write("%s case.setup --clean \n" % time.strftime("%Y-%m-%d %H:%M:%S"))
 
     if not clean:
         drv_comp = Component()
@@ -281,5 +281,5 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
                 logger.info("Finished testcase.setup")
 
         with open("CaseStatus", "a") as fd:
-            fd.write("case.setup %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
+            fd.write("%s case.setup \n" % time.strftime("%Y-%m-%d %H:%M:%S"))
 
