@@ -80,9 +80,13 @@ macro(createTestExec execName execType macroNP macroNC
   SET_TARGET_PROPERTIES(${execName} 
                         PROPERTIES Fortran_MODULE_DIRECTORY ${EXEC_MODULE_DIR})
 
-  IF (NOT HOMME_FIND_BLASLAPACK)
-    TARGET_LINK_LIBRARIES(${execName} lapack blas)
-    ADD_DEPENDENCIES(${execName} blas lapack)
+  IF (HOMME_USE_MKL)
+    TARGET_LINK_LIBRARIES(${execName})
+  ELSE()
+    IF (NOT HOMME_FIND_BLASLAPACK)
+      TARGET_LINK_LIBRARIES(${execName} lapack blas)
+      ADD_DEPENDENCIES(${execName} blas lapack)
+    ENDIF()
   ENDIF()
 
   IF (HAVE_EXTRAE)
