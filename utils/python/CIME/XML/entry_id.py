@@ -117,8 +117,6 @@ class EntryID(GenericXML):
     def _get_group (self, node):
         
         if node is not None:
-            logger.warning("Getting group for (%s)" , node )
-            logger.warning("Getting group value for attribute id (%s)" , node.attrib)
             return node.get('id')
         else:
             # Default to None
@@ -193,8 +191,8 @@ class EntryID(GenericXML):
         attribute to its associated value and group
         """
         
-        logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" , self, item, attribute, resolved, subgroup)
-        logger.warning("In get_values (%s)" , self.__class__.__name__)
+        logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" ,  self.__class__.__name__ , item, attribute, resolved, subgroup)
+
         
         nodes   = [] # List of identified xml elements  
         results = [] # List of identified parameters 
