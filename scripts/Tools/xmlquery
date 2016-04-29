@@ -65,6 +65,8 @@ def parse_command_line(args, description):
     
     parser.add_argument("-value", "--value", default=False, action="store_true", 
                         help="Only print the value.")
+    parser.add_argument("-resolve", "--resolve", default=False, action="store_true", 
+                        help="Resolve variable names")                    
 
     args = parser.parse_args(args[1:])
 
@@ -120,12 +122,12 @@ def xmlquery(caseroot, args, listofattributes=[] ,  subgroup=None, noecho=False,
         for xmlattr in listofattributes:
             # type_str = case.get_type_info(xmlattr)
             logger.debug("Searching for %s", xmlattr)
-            attribute_hits = case.get_values(xmlattr, resolved=False, subgroup=subgroup)
+            attribute_hits = case.get_values(xmlattr, resolved=args.resolve, subgroup=subgroup)
             results        = results + attribute_hits
 
     elif (args.listall):
         logger.warning("Retrieving all values.")
-        results = case.get_values(None, resolved=False, subgroup=subgroup)
+        results = case.get_values(None, resolved=args.resolve, subgroup=subgroup)
     else:
         logger.warning("No attributes (%s) or listall option" , listofattributes)
     
