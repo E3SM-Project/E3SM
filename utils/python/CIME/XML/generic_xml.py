@@ -106,6 +106,9 @@ class GenericXML(object):
         return nodes[0] if nodes else None
 
     def get_nodes(self, nodename, attributes=None, root=None, xpath=None):
+        
+        logger.debug("(get_nodes) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , nodename , attributes , root , xpath)
+        
         if root is None:
             root = self.root
         nodes = []
