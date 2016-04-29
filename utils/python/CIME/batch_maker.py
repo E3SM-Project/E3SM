@@ -228,7 +228,6 @@ within model's Machines directory, and add a batch system type for this machine
             m = directive_re.search(text)
             variable = m.groups()[0]
             whole_match = m.group()
-
             if hasattr(self, variable.lower()) and getattr(self, variable.lower()) is not None:
                 repl = getattr(self, variable.lower())
                 text = text.replace(whole_match, str(repl))
@@ -238,8 +237,12 @@ within model's Machines directory, and add a batch system type for this machine
             elif default is not None:
                 text = text.replace(whole_match, default)
             else:
-                logger.warn("Could not replace variable '%s'" % variable)
-                text = text.replace(whole_match, "")
+                # If no queue exists, then the directive '-q' by itself will cause an error
+                if text.find('-q {{ queue }}')>0:
+                    text = ""
+                else:
+                    logger.warn("Could not replace variable '%s'" % variable)
+                    text = text.replace(whole_match, "")
 
         return text
 
