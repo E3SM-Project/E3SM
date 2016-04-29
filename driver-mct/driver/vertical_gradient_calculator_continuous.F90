@@ -511,6 +511,12 @@ contains
     ! Add dgrad to the mean to get the total gradient
     grad(:) = grad_mean + dgrad(:)
 
+    ! Limit gradients
+
+    ! FIXME(wjs, 2016-04-28) Extract this into a subroutine, or into a separate class
+
+
+    ! Finally, set class-level values
     this%vertical_gradient(:,pt) = grad(:)
 
   end subroutine solve_for_vertical_gradients
