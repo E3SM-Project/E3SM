@@ -24,15 +24,14 @@ module vertical_gradient_calculator_2nd_order
        vertical_gradient_calculator_2nd_order_type
      private
 
-     integer :: min_elevation_class
-     integer :: max_elevation_class
+     integer :: nelev  ! number of elevation classes
      integer :: num_points
      real(r8), allocatable :: field(:,:)   ! field(i,j) is point i, elevation class j
      real(r8), allocatable :: topo(:,:)    ! topo(i,j) is point i, elevation class j
 
      ! Bounds of each elevation class. This array has one more element than the number of
      ! elevation classes, since it contains lower and upper bounds for each elevation
-     ! class. The indices go (min_elevation_class-1):max_elevation_class. These bounds
+     ! class. The indices go 0:nelev. These bounds
      ! are guaranteed to be monotonically increasing.
      real(r8), allocatable :: elevclass_bounds(:)
 
@@ -53,8 +52,7 @@ contains
 
   !-----------------------------------------------------------------------
   function constructor(attr_vect, fieldname, toponame, &
-       min_elevation_class, max_elevation_class, elevclass_names, &
-       elevclass_bounds) &
+       elevclass_names, elevclass_bounds) &
        result(this)
     !
     ! !DESCRIPTION:
@@ -82,28 +80,26 @@ contains
     type(mct_aVect)  , intent(in) :: attr_vect           ! attribute vector in which we can find the data
     character(len=*) , intent(in) :: fieldname           ! base name of the field of interest
     character(len=*) , intent(in) :: toponame            ! base name of the topographic field
-    integer          , intent(in) :: min_elevation_class ! first elevation class index
-    integer          , intent(in) :: max_elevation_class ! last elevation class index
 
     ! strings corresponding to each elevation class
-    character(len=*) , intent(in) :: elevclass_names( min_elevation_class: )
+    character(len=*) , intent(in) :: elevclass_names(:)
 
     ! bounds of each elevation class; this array should have one more element than the
     ! number of elevation classes, since it contains lower and upper bounds for each
     ! elevation class
-    real(r8)         , intent(in) :: elevclass_bounds( min_elevation_class-1 : )
+    real(r8)         , intent(in) :: elevclass_bounds(0:)
     !
     ! !LOCAL VARIABLES:
-    
+    integer :: nelev
+
     character(len=*), parameter :: subname = 'constructor'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL((ubound(elevclass_names) == (/max_elevation_class/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(elevclass_bounds) == (/max_elevation_class/)), errMsg(__FILE__, __LINE__))
+    nelev = size(elevclass_names)
+    SHR_ASSERT_ALL((ubound(elevclass_bounds) == (/nelev/)), errMsg(__FILE__, __LINE__))
 
-    this%min_elevation_class = min_elevation_class
-    this%max_elevation_class = max_elevation_class
-    allocate(this%elevclass_bounds((min_elevation_class-1):max_elevation_class))
+    this%nelev = nelev
+    allocate(this%elevclass_bounds(0:nelev))
     this%elevclass_bounds(:) = elevclass_bounds(:)
 
     ! (In principle, we could also handle monotonically decreasing elevclass_bounds, but
@@ -160,10 +156,9 @@ contains
     
     SHR_ASSERT((size(vertical_gradient) == this%num_points), errMsg(__FILE__, __LINE__))
 
-    if (elevation_class < this%min_elevation_class .or. &
-         elevation_class > this%max_elevation_class) then
+    if (elevation_class < 1 .or. elevation_class > this%nelev) then
        write(logunit,*) subname, ': ERROR: elevation class out of bounds: ', &
-            elevation_class, this%min_elevation_class, this%max_elevation_class
+            elevation_class, this%nelev
        call shr_sys_abort(subname//': ERROR: elevation class out of bounds')
     end if
 
@@ -172,17 +167,17 @@ contains
     ! Start by assuming we're doing a two-sided difference; we'll set this to false if we aren't
     two_sided = .true.
 
-    if (this%min_elevation_class == this%max_elevation_class) then
+    if (this%nelev == 1) then
        vertical_gradient(:) = 0._r8
        two_sided = .false.
 
     else
        
-       if (elevation_class == this%min_elevation_class) then
+       if (elevation_class == 1) then
           ec_low = elevation_class
           ec_high = elevation_class + 1
           two_sided = .false.
-       else if (elevation_class == this%max_elevation_class) then
+       else if (elevation_class == this%nelev) then
           ec_low = elevation_class - 1
           ec_high = elevation_class
           two_sided = .false.
@@ -231,7 +226,7 @@ contains
     type(mct_aVect)  , intent(in) :: attr_vect ! attribute vector in which we can find the data
     character(len=*) , intent(in) :: fieldname ! base name of the field of interest
     character(len=*) , intent(in) :: toponame  ! base name of the topographic field
-    character(len=*) , intent(in) :: elevclass_names( this%min_elevation_class: ) ! strings corresponding to each elevation class
+    character(len=*) , intent(in) :: elevclass_names(:) ! strings corresponding to each elevation class
     !
     ! !LOCAL VARIABLES:
     integer :: elevclass
@@ -246,11 +241,11 @@ contains
 
     this%num_points = mct_aVect_lsize(attr_vect)
 
-    allocate(this%field(this%num_points, this%min_elevation_class:this%max_elevation_class))
-    allocate(this%topo(this%num_points, this%min_elevation_class:this%max_elevation_class))
+    allocate(this%field(this%num_points, this%nelev))
+    allocate(this%topo(this%num_points, this%nelev))
     allocate(temp(this%num_points))
     
-    do elevclass = this%min_elevation_class, this%max_elevation_class
+    do elevclass = 1, this%nelev
        fieldname_ec = trim(fieldname) // trim(elevclass_names(elevclass))
        call mct_aVect_exportRattr(attr_vect, fieldname_ec, temp)
        this%field(:,elevclass) = temp(:)
@@ -292,8 +287,8 @@ contains
     character(len=*), parameter :: subname = 'check_topo'
     !-----------------------------------------------------------------------
 
-    do elevclass = this%min_elevation_class, this%max_elevation_class
-       if (elevclass > this%min_elevation_class) then
+    do elevclass = 1, this%nelev
+       if (elevclass > 1) then
           do i = 1, this%num_points
              if (this%topo(i,elevclass) - this%elevclass_bounds(elevclass-1) < -tol) then
                 write(logunit,*) subname, ': ERROR: topo lower than lower bound of elevation class:'
@@ -304,7 +299,7 @@ contains
           end do
        end if
 
-       if (elevclass < this%max_elevation_class) then
+       if (elevclass < this%nelev) then
           do i = 1, this%num_points
              if (this%topo(i,elevclass) - this%elevclass_bounds(elevclass) > tol) then
                 write(logunit,*) subname, ': ERROR: topo higher than upper bound of elevation class:'

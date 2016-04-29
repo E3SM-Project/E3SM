@@ -63,8 +63,6 @@ contains
          attr_vect = this%av, &
          fieldname = 'data', &
          toponame = 'topo', &
-         min_elevation_class = 1, &
-         max_elevation_class = n_elev_classes, &
          elevclass_names = elevclass_names(n_elev_classes), &
          elevclass_bounds = elevclass_bounds)
 
