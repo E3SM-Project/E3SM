@@ -42,6 +42,8 @@ class EnvArchive(GenericXML):
     def get_values(self, item, attribute={}, resolved=True, subgroup=None):
         """Returns the value as a string of the first xml element with item as attribute value. 
         <elememt_name attribute='attribute_value>value</element_name>"""
+        
+        logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" , self, item, attribute, resolved, subgroup)
                 
         nodes   = [] # List of identified xml elements  
         results = [] # List of identified parameters 
@@ -77,15 +79,9 @@ class EnvArchive(GenericXML):
                 default = self._get_default(keep)
                 file    = self.filename
             
-                #t   =  super(EnvBase , self).get_type( node )
+
                 v = { 'group' : group , 'attribute' : attr , 'value' : val , 'type' : t , 'description' : desc , 'default' : default , 'file' : file}
-                logger.debug("Found node with value for %s = %s" , item , v )   
                 results.append(v)
-            
-            
-            # val = { 'group' : None , 'attribute' : item , 'value' : node.text , 'type' : None , 'description' : None }
-#             logger.debug("Found node with value for %s = %s" , item , val)
-#             results.append(val)
         
         return results 
         
