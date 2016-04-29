@@ -31,6 +31,7 @@ from CIME.XML.env_batch             import EnvBatch
 
 from CIME.XML.generic_xml           import GenericXML
 import glob, shutil
+import traceback 
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +152,7 @@ class Case(object):
         """
   
         results = []
-        for env_file in self._env_entryid_files:
+        for env_file in self._files:
             # Wait and resolve in self rather than in env_file
             logger.debug("Searching in %s" , env_file.__class__.__name__)
             result = None
@@ -162,6 +163,7 @@ class Case(object):
                 # Method exists, and was used.  
             except AttributeError:
                 # Method does not exist.  What now?
+                traceback.print_exc()
                 logger.debug("No get_values method for class %s (%s)" , env_file.__class__.__name__ , AttributeError)
                
 
@@ -174,20 +176,20 @@ class Case(object):
                     results = results + result
                 # return results
             
-        for env_file in self._env_generic_files:
-            
-            logger.debug("Searching in %s" , env_file.__class__.__name__)
-             
-            result = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
-      
-            if result is not None and (len(result) >=1) :
-                if resolved and type(result) is str:
-                    logger.debug("Type string and resolved is true")
-                    results.append(self.get_resolved_value(result))
-                else :
-                    logger.debug("Append result to return list (%s)" ,result)
-                    results = results + result
-                # return results
+        # for env_file in self._env_generic_files:
+#
+#             logger.debug("Searching in %s" , env_file.__class__.__name__)
+#
+#             result = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
+#
+#             if result is not None and (len(result) >=1) :
+#                 if resolved and type(result) is str:
+#                     logger.debug("Type string and resolved is true")
+#                     results.append(self.get_resolved_value(result))
+#                 else :
+#                     logger.debug("Append result to return list (%s)" ,result)
+#                     results = results + result
+#                 # return results
    
  
         # Return empty result
