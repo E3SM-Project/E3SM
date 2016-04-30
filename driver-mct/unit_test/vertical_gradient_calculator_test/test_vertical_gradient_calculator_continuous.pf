@@ -619,5 +619,4 @@ contains
     @assertEqual(grad_initial_guess(2), grad(2))
   end subroutine limitGradients_limitedNegativeUB
 
-
 end module test_vertical_gradient_calculator_continuous
