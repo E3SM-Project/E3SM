@@ -44,68 +44,68 @@ contains
     class(OutputVGCCont), intent(inout) :: this
   end subroutine tearDown
 
-  subroutine run_test(this, name, elevclass_bounds, topo, data, &
-       unlimited)
+  subroutine run_test(this, name, elevclass_bounds, topo, data)
     ! Set up and run a test with the given inputs, for a single point
     !
-    ! Also outputs results to a file
+    ! Also outputs results to files
+    !
+    ! Does separate outputs for:
+    ! - initialguess
+    ! - unlimited
+    ! - limited
     class(OutputVGCCont), intent(inout) :: this
     character(len=*), intent(in) :: name
     real(r8), intent(in) :: elevclass_bounds(:)
     real(r8), intent(in) :: topo(:)
     real(r8), intent(in) :: data(:)
 
-    ! Whether to use the 'unlimited' variant of the calculator class; if not specified,
-    ! assumed false (i.e., assumed we are using the true version).
-    logical, intent(in), optional :: unlimited
-
-    class(vertical_gradient_calculator_continuous_type), allocatable :: calculator
     type(vertical_gradient_calculator_2nd_order_type) :: calculator_initial_guess
+    type(vgc_continuousNoLimit_type) :: calculator_unlimited
+    type(vertical_gradient_calculator_continuous_type) :: calculator_limited
     integer :: nelev
-    logical :: l_unlimited
-    real(r8), allocatable :: gradients(:)
+    real(r8) :: gradients(size(topo))
     ! ------------------------------------------------------------------------
-
-    if (present(unlimited)) then
-       l_unlimited = unlimited
-    else
-       l_unlimited = .false.
-    end if
 
     nelev = size(topo)
     @assertEqual(nelev, size(data))
     @assertEqual(nelev+1, size(elevclass_bounds))
 
-    ! We could use the factory here (from the production code:
-    ! create_vertical_gradient_calculator_continuous), but (1) it would require packing
-    ! things into an attribute vector, and (2) it would be hard to put in the noLimit
-    ! version.
-
     calculator_initial_guess = vertical_gradient_calculator_2nd_order_type( &
          field = reshape(data, [1, nelev]), &
          topo = reshape(topo, [1, nelev]), &
          elevclass_bounds = elevclass_bounds)
-
-    if (l_unlimited) then
-       allocate(calculator, source = vgc_continuousNoLimit_type( &
-            field = reshape(data, [1, nelev]), &
-            topo = reshape(topo, [1, nelev]), &
-            elevclass_bounds = elevclass_bounds, &
-            calculator_initial_guess = calculator_initial_guess))
-    else
-       allocate(calculator, source = vertical_gradient_calculator_continuous_type( &
-            field = reshape(data, [1, nelev]), &
-            topo = reshape(topo, [1, nelev]), &
-            elevclass_bounds = elevclass_bounds, &
-            calculator_initial_guess = calculator_initial_guess))
-    end if
-
-    call calculator%calc_gradients()
-    allocate(gradients(nelev))
-    call calculator%get_gradients_one_point(point = 1, gradients = gradients)
-
+    call calculator_initial_guess%calc_gradients()
+    call calculator_initial_guess%get_gradients_one_point(point = 1, gradients = gradients)
     call this%write_output( &
-         name = name, &
+         name = trim(name) // '_initialguess', &
+         elevclass_bounds = elevclass_bounds, &
+         topo = topo, &
+         data = data, &
+         gradients = gradients)
+
+    calculator_unlimited = vgc_continuousNoLimit_type( &
+         field = reshape(data, [1, nelev]), &
+         topo = reshape(topo, [1, nelev]), &
+         elevclass_bounds = elevclass_bounds, &
+         calculator_initial_guess = calculator_initial_guess)
+    call calculator_unlimited%calc_gradients()
+    call calculator_unlimited%get_gradients_one_point(point = 1, gradients = gradients)
+    call this%write_output( &
+         name = trim(name) // '_unlimited', &
+         elevclass_bounds = elevclass_bounds, &
+         topo = topo, &
+         data = data, &
+         gradients = gradients)
+
+    calculator_limited = vertical_gradient_calculator_continuous_type( &
+         field = reshape(data, [1, nelev]), &
+         topo = reshape(topo, [1, nelev]), &
+         elevclass_bounds = elevclass_bounds, &
+         calculator_initial_guess = calculator_initial_guess)
+    call calculator_limited%calc_gradients()
+    call calculator_limited%get_gradients_one_point(point = 1, gradients = gradients)
+    call this%write_output( &
+         name = trim(name) // '_limited', &
          elevclass_bounds = elevclass_bounds, &
          topo = topo, &
          data = data, &
@@ -166,89 +166,5 @@ contains
          topo = [10._r8, 30._r8, 50._r8, 70._r8, 90._r8], &
          data = [2._r8, 5.5_r8, 8._r8, 9.5_r8, 10._r8])
   end subroutine basic
-
-  @Test
-  subroutine basic_noLimit(this)
-    class(OutputVGCCont), intent(inout) :: this
-
-    call this%run_test( &
-         name = 'basic_noLimit', &
-         elevclass_bounds = [0._r8, 20._r8, 40._r8, 60._r8, 80._r8, 100._r8], &
-         topo = [10._r8, 30._r8, 50._r8, 70._r8, 90._r8], &
-         data = [2._r8, 5.5_r8, 8._r8, 9.5_r8, 10._r8], &
-         unlimited = .true.)
-  end subroutine basic_noLimit
-
-  ! FIXME(wjs, 2016-04-27) delete this
-  @Test
-  subroutine real_temp(this)
-    class(OutputVGCCont), intent(inout) :: this
-    real(r8) :: topo(10)
-    real(r8) :: data(10)
-
-    topo(1) = 150.d0
-    topo(2) = 370.d0
-    topo(3) = 618.d0
-    topo(4) = 777.d0
-    topo(5) = 1205.d0
-    topo(6) = 1372.d0
-    topo(7) = 1800.d0
-    topo(8) = 2250.d0
-    topo(9) = 2750.d0
-    topo(10)= 3500.d0
-
-    data(1) = -3.89d0
-    data(2) = -2.42d0
-    data(3) = -0.71d0
-    data(4) =  0.00d0
-    data(5) =  2.19d0
-    data(6) =  2.19d0
-    data(7) =  2.19d0
-    data(8) =  2.19d0
-    data(9) =  2.20d0
-    data(10)=  2.74d0
-
-    call this%run_test( &
-         name = 'real_temp', &
-         elevclass_bounds = bounds_10ec, &
-         topo = topo, &
-         data = data)
-  end subroutine real_temp
-
-  @Test
-  subroutine real_data1(this)
-    class(OutputVGCCont), intent(inout) :: this
-
-    call this%run_test( &
-         name = 'real_data1', &
-         elevclass_bounds = bounds_10ec, &
-
-         topo = [150.45797729492188_r8, 369.68896484375_r8, 618.4522705078125_r8, &
-         776.9857177734375_r8,  1205.492919921875_r8, 1372.2435302734375_r8, &
-         1800.0_r8, 2250.0_r8, 2750.0_r8, 3500.0_r8], &
-
-         data = [-3.8940095691941679e-05_r8, -2.4159431632142514e-05_r8, -7.1326958277495578e-06_r8, &
-         3.2833636254281373e-08_r8, 2.1934458345640451e-05_r8, 2.1910125724389218e-05_r8, &
-         2.191431303799618e-05_r8, 2.1943444153293967e-05_r8, 2.1968355213175528e-05_r8, &
-         2.7414380383561365e-05_r8])
-
-  end subroutine real_data1
-
-  @Test
-  subroutine real_data2(this)
-    class(OutputVGCCont), intent(inout) :: this
-
-    call this%run_test( &
-         name = 'real_data2', &
-         elevclass_bounds = bounds_10ec, &
-
-         topo = [100.0_r8, 300.0_r8, 553.73822021484375_r8, 843.978759765625_r8, 1152.2908935546875_r8, &
-         1450.9669189453125_r8, 1628.5628662109375_r8, 2250.0_r8, 2750.0_r8, 3500.0_r8], &
-
-         data = [-3.2589337934041396e-05_r8, -6.7787163970933761e-06_r8, 0.0_r8, &
-         8.7906073531485163e-06_r8, 8.6524905782425776e-06_r8, 8.2202923294971697e-06_r8, &
-         7.9119627116597258e-06_r8, 7.5692469181376509e-06_r8, 7.3112623795168474e-06_r8, &
-         7.0084388426039368e-06_r8])
-  end subroutine real_data2
 
 end module output_vertical_gradient_calculator_continuous
