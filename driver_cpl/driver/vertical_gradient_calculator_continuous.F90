@@ -109,6 +109,8 @@ contains
     ! Initial guesses for gradients. We determine how good the solution is based on how
     ! well we match these initial guesses. We also fall back on these initial guesses if
     ! the gradient in a given elevation class is determined to be 'bad'.
+    !
+    ! The calc_gradients method should not yet have been called on this object
     class(vertical_gradient_calculator_base_type), intent(in) :: calculator_initial_guess
     !
     ! !LOCAL VARIABLES:
