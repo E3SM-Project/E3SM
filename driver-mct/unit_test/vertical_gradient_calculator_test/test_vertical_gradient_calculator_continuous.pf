@@ -20,26 +20,18 @@ module test_vertical_gradient_calculator_continuous
      procedure :: create_calculator_one_point
      procedure :: create_calculatorNoLimit
      procedure :: create_calculatorNoLimit_one_point
-     procedure :: write_output
   end type TestVertGradCalcCont
 
   real(r8), parameter :: tol = 1.e-13_r8
-  integer, parameter :: out_unit = 11
-  integer :: test_num = 0
 
 contains
 
   subroutine setUp(this)
     class(TestVertGradCalcCont), intent(inout) :: this
-    character(len=32) :: filename
-    test_num = test_num + 1
-    write(filename, '(a, i0, a)') 'gradients_continuous_', test_num, '.txt'
-    open(out_unit, file=filename, action='write')
   end subroutine setUp
 
   subroutine tearDown(this)
     class(TestVertGradCalcCont), intent(inout) :: this
-    close(out_unit)
   end subroutine tearDown
 
   function create_calculator(this, topo, data, elevclass_bounds) &
@@ -136,32 +128,6 @@ contains
          elevclass_bounds = elevclass_bounds)
   end function create_calculatorNoLimit_one_point
 
-  subroutine write_output(this, elevclass_bounds, topo, data, gradients)
-    class(TestVertGradCalcCont), intent(inout) :: this
-    real(r8), intent(in) :: elevclass_bounds(:)
-    real(r8), intent(in) :: topo(:)
-    real(r8), intent(in) :: data(:)
-    real(r8), intent(in) :: gradients(:)
-
-    integer :: n_elev_classes
-    character(len=32) :: bounds_format
-    character(len=32) :: data_format
-
-    n_elev_classes = size(gradients)
-    @assertEqual(n_elev_classes + 1, size(elevclass_bounds))
-    @assertEqual(n_elev_classes, size(topo))
-    @assertEqual(n_elev_classes, size(data))
-
-    write(bounds_format, '(a, i0, a, a)') '(', n_elev_classes + 1, 'f20.10', ')'
-    write(data_format, '(a, i0, a, a)') '(', n_elev_classes, 'f20.10', ')'
-
-    write(out_unit, '(i0)') n_elev_classes
-    write(out_unit, bounds_format) elevclass_bounds
-    write(out_unit, data_format) topo
-    write(out_unit, data_format) data
-    write(out_unit, data_format) gradients
-  end subroutine write_output
-
   @Test
   subroutine basic(this)
     class(TestVertGradCalcCont), intent(inout) :: this
@@ -181,13 +147,6 @@ contains
     ! Note that gradient is set to 0 in lowest EC
     expected_gradients(:) = [0._r8, 0.15_r8, 0.10_r8, 0.05_r8, 0.0_r8]
     @assertEqual(expected_gradients, gradients, tolerance=tol)
-
-    ! FIXME(wjs, 2016-04-27) Move this to somewhere else
-    call this%write_output( &
-         elevclass_bounds = elevclass_bounds, &
-         topo = topo, &
-         data = data, &
-         gradients = gradients)
 
   end subroutine basic
 
@@ -211,154 +170,7 @@ contains
     expected_gradients(:) = [0.2_r8, 0.15_r8, 0.10_r8, 0.05_r8, 0.0_r8]
     @assertEqual(expected_gradients, gradients, tolerance=tol)
 
-    ! FIXME(wjs, 2016-04-27) Move this to somewhere else
-    call this%write_output( &
-         elevclass_bounds = elevclass_bounds, &
-         topo = topo, &
-         data = data, &
-         gradients = gradients)
-
   end subroutine basic_noLimit
-
-  ! FIXME(wjs, 2016-04-27) delete this
-  @Test
-  subroutine real_temp(this)
-    class(TestVertGradCalcCont), intent(inout) :: this
-    type(vertical_gradient_calculator_continuous_type) :: calculator
-    real(r8), parameter :: elevclass_bounds(11) = &
-         [0._r8,   200._r8,   400._r8,   700._r8,  1000._r8,  1300._r8,  &
-         1600._r8,  2000._r8,  2500._r8,  3000._r8, 10000._r8]
-    real(r8) :: topo(10)
-    real(r8) :: data(10)
-    real(r8) :: gradients(10)
-
-       topo(1) = 150.d0
-       topo(2) = 370.d0
-       topo(3) = 618.d0
-       topo(4) = 777.d0
-       topo(5) = 1205.d0
-       topo(6) = 1372.d0
-       topo(7) = 1800.d0
-       topo(8) = 2250.d0
-       topo(9) = 2750.d0
-       topo(10)= 3500.d0
-
-       data(1) = -3.89d0
-       data(2) = -2.42d0
-       data(3) = -0.71d0
-       data(4) =  0.00d0
-       data(5) =  2.19d0
-       data(6) =  2.19d0
-       data(7) =  2.19d0
-       data(8) =  2.19d0
-       data(9) =  2.20d0
-       data(10)=  2.74d0
-
-    
-
-    calculator = this%create_calculator_one_point(topo=topo, data=data, &
-         elevclass_bounds=elevclass_bounds)
-
-    call calculator%get_gradients_one_point(point = 1, gradients = gradients)
-
-    call this%write_output( &
-         elevclass_bounds = elevclass_bounds, &
-         topo = topo, &
-         data = data, &
-         gradients = gradients)
-  end subroutine real_temp
-
-  ! FIXME(wjs, 2016-04-27) move this elsewhere
-  @Test
-  subroutine real_data1(this)
-    class(TestVertGradCalcCont), intent(inout) :: this
-    type(vertical_gradient_calculator_continuous_type) :: calculator
-    real(r8), parameter :: elevclass_bounds(11) = &
-         [0._r8,   200._r8,   400._r8,   700._r8,  1000._r8,  1300._r8,  &
-         1600._r8,  2000._r8,  2500._r8,  3000._r8, 10000._r8]
-    real(r8), parameter :: topo(10) = &
-         [150.45797729492188_r8, 369.68896484375_r8, 618.4522705078125_r8, 776.9857177734375_r8,  &
-         1205.492919921875_r8, 1372.2435302734375_r8, 1800.0_r8, 2250.0_r8, 2750.0_r8, 3500.0_r8]
-    real(r8), parameter :: data(10) = &
-         [-3.8940095691941679e-05_r8, -2.4159431632142514e-05_r8, -7.1326958277495578e-06_r8, &
-         3.2833636254281373e-08_r8, 2.1934458345640451e-05_r8, 2.1910125724389218e-05_r8, &
-         2.191431303799618e-05_r8, 2.1943444153293967e-05_r8, 2.1968355213175528e-05_r8, &
-         2.7414380383561365e-05_r8]
-    real(r8) :: gradients(10)
-
-    calculator = this%create_calculator_one_point(topo=topo, data=data, &
-         elevclass_bounds=elevclass_bounds)
-
-    call calculator%get_gradients_one_point(point = 1, gradients = gradients)
-
-    call this%write_output( &
-         elevclass_bounds = elevclass_bounds, &
-         topo = topo, &
-         data = data, &
-         gradients = gradients)
-  end subroutine real_data1
-
-  ! FIXME(wjs, 2016-04-27) move this elsewhere
-  @Test
-  subroutine real_data1_combinedA(this)
-    ! See what happens when we combine the data from real_data1 that all have
-    ! approximately equal SMB
-    class(TestVertGradCalcCont), intent(inout) :: this
-    type(vertical_gradient_calculator_continuous_type) :: calculator
-    real(r8), parameter :: elevclass_bounds(7) = &
-         [0._r8,   200._r8,   400._r8,   700._r8,  1000._r8,  3000._r8,  10000._r8]
-    real(r8), parameter :: topo(6) = &
-         [150.45797729492188_r8, 369.68896484375_r8, 618.4522705078125_r8, 776.9857177734375_r8,  &
-         2146.2894083658853_r8, &  ! mean of elevation classes 5-9
-         3500.0_r8]
-    real(r8), parameter :: data(6) = &
-         [-3.8940095691941679e-05_r8, -2.4159431632142514e-05_r8, -7.1326958277495578e-06_r8, &
-         3.2833636254281373e-08_r8, &
-         2.1934139294899068e-05_r8, &  ! mean of elevation classes 5-9
-         2.7414380383561365e-05_r8]
-    real(r8) :: gradients(6)
-
-    calculator = this%create_calculator_one_point(topo=topo, data=data, &
-         elevclass_bounds=elevclass_bounds)
-
-    call calculator%get_gradients_one_point(point = 1, gradients = gradients)
-
-    call this%write_output( &
-         elevclass_bounds = elevclass_bounds, &
-         topo = topo, &
-         data = data, &
-         gradients = gradients)
-  end subroutine real_data1_combinedA
-
-  ! FIXME(wjs, 2016-04-27) move this elsewhere
-  @Test
-  subroutine real_data2(this)
-    class(TestVertGradCalcCont), intent(inout) :: this
-    type(vertical_gradient_calculator_continuous_type) :: calculator
-    real(r8), parameter :: elevclass_bounds(11) = &
-         [0._r8,   200._r8,   400._r8,   700._r8,  1000._r8,  1300._r8,  &
-         1600._r8,  2000._r8,  2500._r8,  3000._r8, 10000._r8]
-    real(r8), parameter :: topo(10) = &
-         [100.0_r8, 300.0_r8, 553.73822021484375_r8, 843.978759765625_r8, 1152.2908935546875_r8, &
-         1450.9669189453125_r8, 1628.5628662109375_r8, 2250.0_r8, 2750.0_r8, 3500.0_r8]
-    real(r8), parameter :: data(10) = &
-         [-3.2589337934041396e-05_r8, -6.7787163970933761e-06_r8, 0.0_r8, &
-         8.7906073531485163e-06_r8, 8.6524905782425776e-06_r8, 8.2202923294971697e-06_r8, &
-         7.9119627116597258e-06_r8, 7.5692469181376509e-06_r8, 7.3112623795168474e-06_r8, &
-         7.0084388426039368e-06_r8]
-    real(r8) :: gradients(10)
-
-    calculator = this%create_calculator_one_point(topo=topo, data=data, &
-         elevclass_bounds=elevclass_bounds)
-
-    call calculator%get_gradients_one_point(point = 1, gradients = gradients)
-
-    call this%write_output( &
-         elevclass_bounds = elevclass_bounds, &
-         topo = topo, &
-         data = data, &
-         gradients = gradients)
-  end subroutine real_data2
 
   @Test
   subroutine topo_outOfBoundsHigh(this)
