@@ -115,7 +115,7 @@
           STOP_N="10"
           REST_OPTION="none"
           COMP_RUN_BARRIERS="TRUE"
-          TIMER_LEVEL="12"
+          TIMER_LEVEL="20"
           CCSM_TCOST="4"
           DOUT_S="FALSE" />
 
@@ -186,7 +186,7 @@
           STOP_N="10"
           REST_OPTION="none"
           COMP_RUN_BARRIERS="TRUE"
-          TIMER_LEVEL="12"
+          TIMER_LEVEL="20"
           CCSM_TCOST="4"
           DOUT_S="FALSE" />
           
@@ -196,7 +196,7 @@
           STOP_OPTION="ndays"
           STOP_N="10"
           REST_OPTION="none"
-          TIMER_LEVEL="12"
+          TIMER_LEVEL="20"
           CCSM_TCOST="4"
           DOUT_S="FALSE" />
 
