@@ -103,16 +103,17 @@ class GradientInfo:
         # limit x axes
         plt.xlim([self.elevclass_bounds[0], upper_bound])
 
-        # extend y axes a bit
-        ylim = plt.axes().get_ylim()
-        yrange = ylim[1] - ylim[0]
-        ylim = (ylim[0] - 0.02*yrange, ylim[1] + 0.02*yrange)
-        plt.ylim(ylim)
+        # set y axes ourselves, rather than letting them be dynamic, for easier
+        # comparison between figures
+        y_range = field_max - field_min
+        y_max = field_max + 0.2 * y_range
+        y_min = field_min - 0.2 * y_range
+        plt.ylim([y_min, y_max])
 
         # plot elevation class bounds - vertical lines
-        # (don't draw last one)
+        # (don't draw upper bound of last EC)
         for ec_bound in self.elevclass_bounds[:len(self.elevclass_bounds)-1]:
-            plt.plot([ec_bound, ec_bound], ylim, 'k')
+            plt.plot([ec_bound, ec_bound], [y_min, y_max], 'k')
 
         pylab.savefig(output_filename)
         plt.close()
