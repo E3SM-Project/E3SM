@@ -407,6 +407,7 @@ contains
     ! vertical gradient calculator.
 
     use vertical_gradient_calculator_continuous, only : vertical_gradient_calculator_continuous_type
+    use vertical_gradient_calculator_factory
     use glc_elevclass_mod, only : glc_get_num_elevation_classes, &
          glc_get_elevclass_bounds, glc_all_elevclass_strings
     use map_lnd2glc_mod, only : map_lnd2glc
@@ -425,11 +426,10 @@ contains
 
     g2x_gx => component_get_c2x_cx(glc(egi))
 
-    gradient_calculator = vertical_gradient_calculator_continuous_type( &
+    gradient_calculator = create_vertical_gradient_calculator_continuous( &
          attr_vect = l2gacc_lx(eli), &
          fieldname = fieldname, &
          toponame = 'Sl_topo', &
-         nelev = glc_get_num_elevation_classes(), &
          elevclass_names = glc_all_elevclass_strings(), &
          elevclass_bounds = glc_get_elevclass_bounds())
     call map_lnd2glc(l2x_l = l2gacc_lx(eli), &
@@ -439,6 +439,8 @@ contains
          gradient_calculator = gradient_calculator, &
          mapper = mapper, &
          l2x_g = l2x_gx(eli))
+    ! FIXME(wjs, 2016-04-30) Remove this
+    call gradient_calculator%print_statistics()
 
   end subroutine prep_glc_map_one_field_lnd2glc
 
