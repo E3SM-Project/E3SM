@@ -16,6 +16,7 @@ module vertical_gradient_calculator_factory
   private
 
   public :: create_vertical_gradient_calculator_2nd_order
+  public :: create_vertical_gradient_calculator_continuous
 
   ! The following routines are public just to support unit testing, and shouldn't be
   ! called from production code
