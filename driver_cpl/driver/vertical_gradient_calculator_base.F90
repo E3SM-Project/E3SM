@@ -30,6 +30,9 @@ module vertical_gradient_calculator_base
      ! Get the vertical gradients for all points for a single elevation class
      procedure(get_gradients_one_class_interface), deferred :: get_gradients_one_class
 
+     ! Get the vertical gradients for all elevation classes for a single point
+     procedure(get_gradients_one_point_interface), deferred :: get_gradients_one_point
+
      ! These routines are utility methods for derived classes; they should not be called
      ! by clients of this class.
      procedure, nopass :: check_elevclass_bounds_monotonic_increasing
@@ -52,6 +55,16 @@ module vertical_gradient_calculator_base
        ! vertical_gradient should already be allocated to the appropriate size
        real(r8), intent(out) :: gradients(:)
      end subroutine get_gradients_one_class_interface
+
+     subroutine get_gradients_one_point_interface(this, point, gradients)
+       import :: vertical_gradient_calculator_base_type
+       import :: r8
+       class(vertical_gradient_calculator_base_type), intent(in) :: this
+       integer, intent(in) :: point
+
+       ! vertical_gradient should already be allocated to the appropriate size
+       real(r8), intent(out) :: gradients(:)
+     end subroutine get_gradients_one_point_interface
   end interface
 
 contains

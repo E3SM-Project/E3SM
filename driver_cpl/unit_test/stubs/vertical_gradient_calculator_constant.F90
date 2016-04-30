@@ -34,6 +34,7 @@ module vertical_gradient_calculator_specified
    contains
      procedure :: calc_gradients
      procedure :: get_gradients_one_class
+     procedure :: get_gradients_one_point
   end type vertical_gradient_calculator_specified_type
 
   interface vertical_gradient_calculator_specified_type
@@ -42,6 +43,10 @@ module vertical_gradient_calculator_specified
 
   ! Creates a calculator where the gradient in ec i, pt j is gradient * i * j^2
   public :: vgc_specified_ec_times_ptSquared
+
+  ! Creates a calculator where the gradient is constant for each point, set as the mean
+  ! slope from the lowest to highest elev class
+  public :: vgc_specified_mean_slope
 contains
 
   !-----------------------------------------------------------------------
@@ -82,6 +87,44 @@ contains
 
   end function vgc_specified_ec_times_ptSquared
 
+  !-----------------------------------------------------------------------
+  function vgc_specified_mean_slope(data, topo) result(calculator)
+    !
+    ! !DESCRIPTION:
+    ! Creates a calculator where the gradient is constant for all elevation classes -
+    ! though can differ for each point. Specifically, it is set to the mean slope from
+    ! the lowest to highest elev class
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(vertical_gradient_calculator_specified_type) :: calculator  ! function result
+    real(r8), intent(in) :: data(:,:)  ! [pt, ec]
+    real(r8), intent(in) :: topo(:,:)  ! [pt, ec]
+    !
+    ! !LOCAL VARIABLES:
+    integer :: num_points
+    integer :: nelev
+    real(r8), allocatable :: gradients(:,:)
+    integer pt
+
+    character(len=*), parameter :: subname = 'vgc_specified_mean_slope'
+    !-----------------------------------------------------------------------
+
+    num_points = size(data,1)
+    nelev = size(data,2)
+    SHR_ASSERT_ALL((ubound(topo) == (/num_points, nelev/)), 'bad size for topo')
+
+    allocate(gradients(num_points, nelev))
+
+    do pt = 1, num_points
+       gradients(pt, :) = (data(pt,nelev) - data(pt,1)) / &
+            (topo(pt,nelev) - topo(pt,1))
+    end do
+
+    calculator = vertical_gradient_calculator_specified_type(gradients)
+
+  end function vgc_specified_mean_slope
 
   !-----------------------------------------------------------------------
   function constructor(gradients) result(this)
@@ -138,7 +181,7 @@ contains
   subroutine get_gradients_one_class(this, elevation_class, gradients)
     !
     ! !DESCRIPTION:
-    ! Calculate the vertical gradient for all points
+    ! Return the vertical gradients for one elevation class, for all points
     !
     ! !USES:
     !
@@ -150,7 +193,6 @@ contains
     real(r8), intent(out) :: gradients(:)
     !
     ! !LOCAL VARIABLES:
-    integer :: grid_cell
     
     character(len=*), parameter :: subname = 'get_gradients_one_class'
     !-----------------------------------------------------------------------
@@ -161,5 +203,32 @@ contains
 
     gradients(:) = this%vertical_gradient(:, elevation_class)
   end subroutine get_gradients_one_class
+
+  !-----------------------------------------------------------------------
+  subroutine get_gradients_one_point(this, point, gradients)
+    !
+    ! !DESCRIPTION:
+    ! Return the vertical gradient for all elevation classes, for one point
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(vertical_gradient_calculator_specified_type), intent(in) :: this
+    integer, intent(in) :: point
+
+    ! gradients should already be allocated to the appropriate size
+    real(r8), intent(out) :: gradients(:)
+    !
+    ! !LOCAL VARIABLES:
+    
+    character(len=*), parameter :: subname = 'get_gradients_one_class'
+    !-----------------------------------------------------------------------
+
+    SHR_ASSERT(this%calculated, 'gradients not yet calculated')
+    SHR_ASSERT(point <= this%num_points, subname//': elevation class exceeds bounds')
+    SHR_ASSERT((size(gradients) == this%nelev), subname//': wrong size for vertical gradient')
+
+    gradients(:) = this%vertical_gradient(point, :)
+  end subroutine get_gradients_one_point
 
 end module vertical_gradient_calculator_specified

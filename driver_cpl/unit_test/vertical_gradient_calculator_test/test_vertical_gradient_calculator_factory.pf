@@ -5,7 +5,6 @@ module test_vertical_gradient_calculator_factory
   use pfunit_mod
   use vertical_gradient_calculator_factory
   use shr_kind_mod , only : r8 => shr_kind_r8
-  use vertical_gradient_test_utils
   use mct_mod, only : mct_aVect, mct_aVect_clean
   use mct_wrapper_mod, only : mct_init, mct_clean
   use avect_wrapper_mod

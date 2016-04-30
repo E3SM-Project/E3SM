@@ -6,7 +6,6 @@ module test_vertical_gradient_calculator_2nd_order
   use vertical_gradient_calculator_base
   use vertical_gradient_calculator_2nd_order
   use shr_kind_mod, only : r8 => shr_kind_r8
-  use vertical_gradient_test_utils
   
   implicit none
 

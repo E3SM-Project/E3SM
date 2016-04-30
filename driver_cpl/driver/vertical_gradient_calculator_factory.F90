@@ -94,6 +94,7 @@ contains
     integer :: nelev
     real(r8), allocatable :: field(:,:)
     real(r8), allocatable :: topo(:,:)
+    type(vertical_gradient_calculator_2nd_order_type) :: calculator_initial_guess
 
     character(len=*), parameter :: subname = 'create_vertical_gradient_calculator_continuous'
     !-----------------------------------------------------------------------
@@ -104,8 +105,12 @@ contains
     call extract_data_from_attr_vect(attr_vect, fieldname, toponame, elevclass_names, &
          field, topo)
 
-    calculator = vertical_gradient_calculator_continuous_type( &
+    calculator_initial_guess = vertical_gradient_calculator_2nd_order_type( &
          field = field, topo = topo, elevclass_bounds = elevclass_bounds)
+
+    calculator = vertical_gradient_calculator_continuous_type( &
+         field = field, topo = topo, elevclass_bounds = elevclass_bounds, &
+         calculator_initial_guess = calculator_initial_guess)
 
   end function create_vertical_gradient_calculator_continuous
 

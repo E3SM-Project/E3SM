@@ -4,8 +4,9 @@ module test_vertical_gradient_calculator_continuous
 
   use pfunit_mod
   use vertical_gradient_calculator_continuous
+  use vertical_gradient_calculator_continuousNoLimit
+  use vertical_gradient_calculator_specified
   use shr_kind_mod , only : r8 => shr_kind_r8
-  use vertical_gradient_test_utils
 
   implicit none
   save
@@ -17,6 +18,8 @@ module test_vertical_gradient_calculator_continuous
      procedure :: tearDown
      procedure :: create_calculator
      procedure :: create_calculator_one_point
+     procedure :: create_calculatorNoLimit
+     procedure :: create_calculatorNoLimit_one_point
      procedure :: write_output
   end type TestVertGradCalcCont
 
@@ -60,7 +63,8 @@ contains
     calculator = vertical_gradient_calculator_continuous_type( &
          field = data, &
          topo = topo, &
-         elevclass_bounds = elevclass_bounds)
+         elevclass_bounds = elevclass_bounds, &
+         calculator_initial_guess = vgc_specified_mean_slope(data, topo))
     call calculator%calc_gradients()
 
   end function create_calculator
@@ -84,6 +88,53 @@ contains
          data = reshape(data, [1, size(data)]), &
          elevclass_bounds = elevclass_bounds)
   end function create_calculator_one_point
+
+  function create_calculatorNoLimit(this, topo, data, elevclass_bounds) &
+       result(calculator)
+    type(vgc_continuousNoLimit_type) :: calculator
+    class(TestVertGradCalcCont), intent(inout) :: this
+    real(r8), intent(in) :: topo(:,:)  ! topo(i,j) is point i, elevation class j
+    real(r8), intent(in) :: data(:,:)  ! data(i,j) is point i, elevation class j
+
+    ! bounds of each elevation class; this array should have one more element than the
+    ! number of elevation classes, since it contains lower and upper bounds for each
+    ! elevation class
+    real(r8), intent(in) :: elevclass_bounds(:)
+
+    integer :: n_elev_classes
+
+    n_elev_classes = size(data,2)
+    @assertEqual(size(data), size(topo))
+    @assertEqual(n_elev_classes + 1, size(elevclass_bounds))
+
+    calculator = vgc_continuousNoLimit_type( &
+         field = data, &
+         topo = topo, &
+         elevclass_bounds = elevclass_bounds, &
+         calculator_initial_guess = vgc_specified_mean_slope(data, topo))
+    call calculator%calc_gradients()
+
+  end function create_calculatorNoLimit
+
+  function create_calculatorNoLimit_one_point(this, topo, data, elevclass_bounds) &
+       result(calculator)
+    ! Convenience wrapper to create_calculator, when just dealing with one point
+    type(vgc_continuousNoLimit_type) :: calculator
+    class(TestVertGradCalcCont), intent(inout) :: this
+    real(r8), intent(in) :: topo(:)
+    real(r8), intent(in) :: data(:)
+
+    ! bounds of each elevation class; this array should have one more element than the
+    ! number of elevation classes, since it contains lower and upper bounds for each
+    ! elevation class
+    real(r8), intent(in) :: elevclass_bounds(:)
+
+
+    calculator = this%create_calculatorNoLimit( &
+         topo = reshape(topo, [1, size(topo)]), &
+         data = reshape(data, [1, size(data)]), &
+         elevclass_bounds = elevclass_bounds)
+  end function create_calculatorNoLimit_one_point
 
   subroutine write_output(this, elevclass_bounds, topo, data, gradients)
     class(TestVertGradCalcCont), intent(inout) :: this
@@ -125,10 +176,37 @@ contains
     calculator = this%create_calculator_one_point(topo=topo, data=data, &
          elevclass_bounds=elevclass_bounds)
 
-    gradients = all_gradients_one_point(calculator, &
-         n_elev_classes = 5, &
-         npts = 1, &
-         pt = 1)
+    call calculator%get_gradients_one_point(point = 1, gradients = gradients)
+
+    ! Note that gradient is set to 0 in lowest EC
+    expected_gradients(:) = [0._r8, 0.15_r8, 0.10_r8, 0.05_r8, 0.0_r8]
+    @assertEqual(expected_gradients, gradients, tolerance=tol)
+
+    ! FIXME(wjs, 2016-04-27) Move this to somewhere else
+    call this%write_output( &
+         elevclass_bounds = elevclass_bounds, &
+         topo = topo, &
+         data = data, &
+         gradients = gradients)
+
+  end subroutine basic
+
+  @Test
+  subroutine basic_noLimit(this)
+    ! Ensure that gradients are computed as expected before applying the limiter
+    class(TestVertGradCalcCont), intent(inout) :: this
+    type(vgc_continuousNoLimit_type) :: calculator
+    real(r8), parameter :: elevclass_bounds(6) = &
+         [0._r8, 20._r8, 40._r8, 60._r8, 80._r8, 100._r8]
+    real(r8), parameter :: topo(5) = [10._r8, 30._r8, 50._r8, 70._r8, 90._r8]
+    real(r8), parameter :: data(5) = [2._r8, 5.5_r8, 8._r8, 9.5_r8, 10._r8]
+    real(r8) :: gradients(5)
+    real(r8) :: expected_gradients(5)
+
+    calculator = this%create_calculatorNoLimit_one_point(topo=topo, data=data, &
+         elevclass_bounds=elevclass_bounds)
+
+    call calculator%get_gradients_one_point(point = 1, gradients = gradients)
 
     expected_gradients(:) = [0.2_r8, 0.15_r8, 0.10_r8, 0.05_r8, 0.0_r8]
     @assertEqual(expected_gradients, gradients, tolerance=tol)
@@ -140,7 +218,7 @@ contains
          data = data, &
          gradients = gradients)
 
-  end subroutine basic
+  end subroutine basic_noLimit
 
   ! FIXME(wjs, 2016-04-27) delete this
   @Test
@@ -183,10 +261,7 @@ contains
     calculator = this%create_calculator_one_point(topo=topo, data=data, &
          elevclass_bounds=elevclass_bounds)
 
-    gradients = all_gradients_one_point(calculator, &
-         n_elev_classes = 10, &
-         npts = 1, &
-         pt = 1)
+    call calculator%get_gradients_one_point(point = 1, gradients = gradients)
 
     call this%write_output( &
          elevclass_bounds = elevclass_bounds, &
@@ -218,10 +293,7 @@ contains
     calculator = this%create_calculator_one_point(topo=topo, data=data, &
          elevclass_bounds=elevclass_bounds)
 
-    gradients = all_gradients_one_point(calculator, &
-         n_elev_classes = 10, &
-         npts = 1, &
-         pt = 1)
+    call calculator%get_gradients_one_point(point = 1, gradients = gradients)
 
     call this%write_output( &
          elevclass_bounds = elevclass_bounds, &
@@ -255,10 +327,7 @@ contains
     calculator = this%create_calculator_one_point(topo=topo, data=data, &
          elevclass_bounds=elevclass_bounds)
 
-    gradients = all_gradients_one_point(calculator, &
-         n_elev_classes = 6, &
-         npts = 1, &
-         pt = 1)
+    call calculator%get_gradients_one_point(point = 1, gradients = gradients)
 
     call this%write_output( &
          elevclass_bounds = elevclass_bounds, &
@@ -290,10 +359,7 @@ contains
     calculator = this%create_calculator_one_point(topo=topo, data=data, &
          elevclass_bounds=elevclass_bounds)
 
-    gradients = all_gradients_one_point(calculator, &
-         n_elev_classes = 10, &
-         npts = 1, &
-         pt = 1)
+    call calculator%get_gradients_one_point(point = 1, gradients = gradients)
 
     call this%write_output( &
          elevclass_bounds = elevclass_bounds, &
@@ -306,42 +372,252 @@ contains
   subroutine topo_outOfBoundsHigh(this)
     class(TestVertGradCalcCont), intent(inout) :: this
     type(vertical_gradient_calculator_continuous_type) :: calculator
-    real(r8), parameter :: elevclass_bounds(4) = &
-         [0._r8, 20._r8, 40._r8, 60._r8]
-    real(r8), parameter :: topo(3) = [10._r8, 40._r8 + 1.e-5_r8, 50._r8]
-    real(r8), parameter :: data(3) = [2._r8, 5.5_r8, 8._r8]
-    real(r8) :: gradients(3)
+    real(r8), parameter :: elevclass_bounds(6) = &
+         [0._r8, 20._r8, 40._r8, 60._r8, 80._r8, 100._r8]
+    real(r8), parameter :: topo(5) = [10._r8, 40._r8 + 1.e-5_r8, 50._r8, 70._r8, 90._r8]
+    real(r8), parameter :: data(5) = [2._r8, 5.5_r8, 8._r8, 9.5_r8, 10._r8]
+    real(r8) :: gradients(5)
 
     calculator = this%create_calculator_one_point(topo=topo, data=data, &
          elevclass_bounds=elevclass_bounds)
 
-    gradients = all_gradients_one_point(calculator, &
-         n_elev_classes = 3, &
-         npts = 1, &
-         pt = 1)
+    call calculator%get_gradients_one_point(point = 1, gradients = gradients)
 
-    @assertEqual([0._r8, 0._r8, 0._r8], gradients)
+    @assertEqual([0._r8, 0._r8, 0._r8, 0._r8, 0._r8], gradients)
   end subroutine topo_outOfBoundsHigh
 
   @Test
   subroutine topo_outOfBoundsLow(this)
     class(TestVertGradCalcCont), intent(inout) :: this
     type(vertical_gradient_calculator_continuous_type) :: calculator
-    real(r8), parameter :: elevclass_bounds(4) = &
-         [0._r8, 20._r8, 40._r8, 60._r8]
-    real(r8), parameter :: topo(3) = [10._r8, 20._r8 - 1.e-5_r8, 50._r8]
-    real(r8), parameter :: data(3) = [2._r8, 5.5_r8, 8._r8]
-    real(r8) :: gradients(3)
+    real(r8), parameter :: elevclass_bounds(6) = &
+         [0._r8, 20._r8, 40._r8, 60._r8, 80._r8, 100._r8]
+    real(r8), parameter :: topo(5) = [10._r8, 20._r8 - 1.e-5_r8, 50._r8, 70._r8, 90._r8]
+    real(r8), parameter :: data(5) = [2._r8, 5.5_r8, 8._r8, 9.5_r8, 10._r8]
+    real(r8) :: gradients(5)
 
     calculator = this%create_calculator_one_point(topo=topo, data=data, &
          elevclass_bounds=elevclass_bounds)
 
-    gradients = all_gradients_one_point(calculator, &
-         n_elev_classes = 3, &
-         npts = 1, &
-         pt = 1)
+    call calculator%get_gradients_one_point(point = 1, gradients = gradients)
 
-    @assertEqual([0._r8, 0._r8, 0._r8], gradients)
+    @assertEqual([0._r8, 0._r8, 0._r8, 0._r8, 0._r8], gradients)
   end subroutine topo_outOfBoundsLow
+
+  ! ------------------------------------------------------------------------
+  ! Tests of limit_gradients
+  !
+  ! For many of the tests above, we stubbed out limit_gradients, so we test that routine
+  ! separately here.
+  ! ------------------------------------------------------------------------
+
+  @Test
+  subroutine limitGradients_0InFirstEC(this)
+    class(TestVertGradCalcCont), intent(inout) :: this
+    type(vertical_gradient_calculator_continuous_type) :: calculator
+    real(r8), parameter :: elevclass_bounds(6) = &
+         [0._r8, 20._r8, 40._r8, 60._r8, 80._r8, 100._r8]
+    real(r8), parameter :: topo(5) = [10._r8, 30._r8, 50._r8, 70._r8, 90._r8]
+    real(r8), parameter :: data(5) = [2._r8, 5.5_r8, 8._r8, 9.5_r8, 10._r8]
+    real(r8) :: grad(5) = [1._r8, 2._r8, 3._r8, 4._r8, 5._r8]
+    real(r8) :: grad_initial_guess(5)
+
+    calculator = this%create_calculator_one_point(topo=topo, data=data, &
+         elevclass_bounds=elevclass_bounds)
+
+    grad_initial_guess = grad
+    call calculator%limit_gradients(1, grad_initial_guess, grad)
+
+    @assertEqual(0._r8, grad(1))
+  end subroutine limitGradients_0InFirstEC
+
+  @Test
+  subroutine limitGradients_0InLastEC(this)
+    class(TestVertGradCalcCont), intent(inout) :: this
+    type(vertical_gradient_calculator_continuous_type) :: calculator
+    real(r8), parameter :: elevclass_bounds(6) = &
+         [0._r8, 20._r8, 40._r8, 60._r8, 80._r8, 100._r8]
+    real(r8), parameter :: topo(5) = [10._r8, 30._r8, 50._r8, 70._r8, 90._r8]
+    real(r8), parameter :: data(5) = [2._r8, 5.5_r8, 8._r8, 9.5_r8, 10._r8]
+    real(r8) :: grad(5) = [1._r8, 2._r8, 3._r8, 4._r8, 5._r8]
+    real(r8) :: grad_initial_guess(5)
+
+    calculator = this%create_calculator_one_point(topo=topo, data=data, &
+         elevclass_bounds=elevclass_bounds)
+
+    grad_initial_guess = grad
+    call calculator%limit_gradients(1, grad_initial_guess, grad)
+
+    @assertEqual(0._r8, grad(5))
+  end subroutine limitGradients_0InLastEC
+
+  @Test
+  subroutine limitGradients_almostLimitedPositiveLB(this)
+    ! Make sure that a positive gradient that should *almost* (but not quite) be limited
+    ! by the limiter (due to the lower bound) isn't limited.
+    class(TestVertGradCalcCont), intent(inout) :: this
+    type(vertical_gradient_calculator_continuous_type) :: calculator
+    real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
+    real(r8), parameter :: topo(3) = [50._r8, 125._r8, 275._r8]
+    real(r8), parameter :: data(3) = [11._r8, 12._r8,  100._r8]
+    real(r8), parameter :: grad_ec2 = 0.039999_r8
+    real(r8) :: grad(3) = [0._r8, grad_ec2, 0._r8]
+    real(r8) :: grad_initial_guess(3) = [0._r8, 17._r8, 0._r8]
+
+    calculator = this%create_calculator_one_point(topo=topo, data=data, &
+         elevclass_bounds=elevclass_bounds)
+
+    call calculator%limit_gradients(1, grad_initial_guess, grad)
+
+    @assertEqual(grad_ec2, grad(2))
+  end subroutine limitGradients_almostLimitedPositiveLB
+
+  @Test
+  subroutine limitGradients_almostLimitedPositiveUB(this)
+    ! Make sure that a positive gradient that should *almost* (but not quite) be limited
+    ! by the limiter (due to the upper bound) isn't limited.
+    class(TestVertGradCalcCont), intent(inout) :: this
+    type(vertical_gradient_calculator_continuous_type) :: calculator
+    real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
+    real(r8), parameter :: topo(3) = [50._r8, 125._r8, 275._r8]
+    real(r8), parameter :: data(3) = [0._r8, 12._r8,  13._r8]
+    real(r8), parameter :: grad_ec2 = 0.013332_r8
+    real(r8) :: grad(3) = [0._r8, grad_ec2, 0._r8]
+    real(r8) :: grad_initial_guess(3) = [0._r8, 17._r8, 0._r8]
+
+    calculator = this%create_calculator_one_point(topo=topo, data=data, &
+         elevclass_bounds=elevclass_bounds)
+
+    call calculator%limit_gradients(1, grad_initial_guess, grad)
+
+    @assertEqual(grad_ec2, grad(2))
+  end subroutine limitGradients_almostLimitedPositiveUB
+
+  @Test
+  subroutine limitGradients_almostLimitedNegativeLB(this)
+    ! Make sure that a negative gradient that should *almost* (but not quite) be limited
+    ! by the limiter (due to the lower bound) isn't limited.
+    class(TestVertGradCalcCont), intent(inout) :: this
+    type(vertical_gradient_calculator_continuous_type) :: calculator
+    real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
+    real(r8), parameter :: topo(3) = [50._r8, 125._r8, 275._r8]
+    real(r8), parameter :: data(3) = [13._r8, 12._r8,  0._r8]
+    real(r8), parameter :: grad_ec2 = -0.039999_r8
+    real(r8) :: grad(3) = [0._r8, grad_ec2, 0._r8]
+    real(r8) :: grad_initial_guess(3) = [0._r8, 17._r8, 0._r8]
+
+    calculator = this%create_calculator_one_point(topo=topo, data=data, &
+         elevclass_bounds=elevclass_bounds)
+
+    call calculator%limit_gradients(1, grad_initial_guess, grad)
+
+    @assertEqual(grad_ec2, grad(2))
+  end subroutine limitGradients_almostLimitedNegativeLB
+
+  @Test
+  subroutine limitGradients_almostLimitedNegativeUB(this)
+    ! Make sure that a negative gradient that should *almost* (but not quite) be limited
+    ! by the limiter (due to the upper bound) isn't limited.
+    class(TestVertGradCalcCont), intent(inout) :: this
+    type(vertical_gradient_calculator_continuous_type) :: calculator
+    real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
+    real(r8), parameter :: topo(3) = [50._r8, 125._r8, 275._r8]
+    real(r8), parameter :: data(3) = [100._r8, 12._r8,  11._r8]
+    real(r8), parameter :: grad_ec2 = -0.013332_r8
+    real(r8) :: grad(3) = [0._r8, grad_ec2, 0._r8]
+    real(r8) :: grad_initial_guess(3) = [0._r8, 17._r8, 0._r8]
+
+    calculator = this%create_calculator_one_point(topo=topo, data=data, &
+         elevclass_bounds=elevclass_bounds)
+
+    call calculator%limit_gradients(1, grad_initial_guess, grad)
+
+    @assertEqual(grad_ec2, grad(2))
+  end subroutine limitGradients_almostLimitedNegativeUB
+
+  @Test
+  subroutine limitGradients_limitedPositiveLB(this)
+    ! Make sure that a positive gradient that should be limited by the limiter (due to the
+    ! lower bound) is in fact limited.
+    class(TestVertGradCalcCont), intent(inout) :: this
+    type(vertical_gradient_calculator_continuous_type) :: calculator
+    real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
+    real(r8), parameter :: topo(3) = [50._r8, 125._r8, 275._r8]
+    real(r8), parameter :: data(3) = [11._r8, 12._r8,  100._r8]
+    real(r8), parameter :: grad_ec2 = 0.04001_r8
+    real(r8) :: grad(3) = [0._r8, grad_ec2, 0._r8]
+    real(r8) :: grad_initial_guess(3) = [0._r8, 17._r8, 0._r8]
+
+    calculator = this%create_calculator_one_point(topo=topo, data=data, &
+         elevclass_bounds=elevclass_bounds)
+
+    call calculator%limit_gradients(1, grad_initial_guess, grad)
+
+    @assertEqual(grad_initial_guess(2), grad(2))
+  end subroutine limitGradients_limitedPositiveLB
+
+  @Test
+  subroutine limitGradients_limitedPositiveUB(this)
+    ! Make sure that a positive gradient that should be limited by the limiter (due to the
+    ! upper bound) is in fact limited.
+    class(TestVertGradCalcCont), intent(inout) :: this
+    type(vertical_gradient_calculator_continuous_type) :: calculator
+    real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
+    real(r8), parameter :: topo(3) = [50._r8, 125._r8, 275._r8]
+    real(r8), parameter :: data(3) = [0._r8, 12._r8,  13._r8]
+    real(r8), parameter :: grad_ec2 = 0.013334_r8
+    real(r8) :: grad(3) = [0._r8, grad_ec2, 0._r8]
+    real(r8) :: grad_initial_guess(3) = [0._r8, 17._r8, 0._r8]
+
+    calculator = this%create_calculator_one_point(topo=topo, data=data, &
+         elevclass_bounds=elevclass_bounds)
+
+    call calculator%limit_gradients(1, grad_initial_guess, grad)
+
+    @assertEqual(grad_initial_guess(2), grad(2))
+  end subroutine limitGradients_limitedPositiveUB
+
+  @Test
+  subroutine limitGradients_limitedNegativeLB(this)
+    ! Make sure that a negative gradient that should be limited by the limiter (due to the
+    ! lower bound) is in fact limited.
+    class(TestVertGradCalcCont), intent(inout) :: this
+    type(vertical_gradient_calculator_continuous_type) :: calculator
+    real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
+    real(r8), parameter :: topo(3) = [50._r8, 125._r8, 275._r8]
+    real(r8), parameter :: data(3) = [13._r8, 12._r8,  0._r8]
+    real(r8), parameter :: grad_ec2 = -0.04001_r8
+    real(r8) :: grad(3) = [0._r8, grad_ec2, 0._r8]
+    real(r8) :: grad_initial_guess(3) = [0._r8, 17._r8, 0._r8]
+
+    calculator = this%create_calculator_one_point(topo=topo, data=data, &
+         elevclass_bounds=elevclass_bounds)
+
+    call calculator%limit_gradients(1, grad_initial_guess, grad)
+
+    @assertEqual(grad_initial_guess(2), grad(2))
+  end subroutine limitGradients_limitedNegativeLB
+
+  @Test
+  subroutine limitGradients_limitedNegativeUB(this)
+    ! Make sure that a negative gradient that should be limited by the limiter (due to the
+    ! upper bound) is in fact limited.
+    class(TestVertGradCalcCont), intent(inout) :: this
+    type(vertical_gradient_calculator_continuous_type) :: calculator
+    real(r8), parameter :: elevclass_bounds(4) = [0._r8, 100._r8, 200._r8, 300._r8]
+    real(r8), parameter :: topo(3) = [50._r8, 125._r8, 275._r8]
+    real(r8), parameter :: data(3) = [100._r8, 12._r8,  11._r8]
+    real(r8), parameter :: grad_ec2 = -0.013334_r8
+    real(r8) :: grad(3) = [0._r8, grad_ec2, 0._r8]
+    real(r8) :: grad_initial_guess(3) = [0._r8, 17._r8, 0._r8]
+
+    calculator = this%create_calculator_one_point(topo=topo, data=data, &
+         elevclass_bounds=elevclass_bounds)
+
+    call calculator%limit_gradients(1, grad_initial_guess, grad)
+
+    @assertEqual(grad_initial_guess(2), grad(2))
+  end subroutine limitGradients_limitedNegativeUB
+
 
 end module test_vertical_gradient_calculator_continuous
