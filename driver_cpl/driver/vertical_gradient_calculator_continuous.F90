@@ -530,12 +530,10 @@ contains
     ! !LOCAL VARIABLES:
     real(r8) :: field(this%nelev) ! mean field value of each elevation class
     integer :: ec
-    real(r8) :: diff_max
-    real(r8) :: diff_min
-    real(r8) :: deviation_low
-    real(r8) :: deviation_high
-    real(r8) :: deviation_max
-    real(r8) :: deviation_min
+    real(r8) :: val_at_lb  ! value at the lower bound interface of an elevation class
+    real(r8) :: val_at_ub  ! value at the upper bound interface of an elevation class
+    logical :: val_at_lb_outside_bounds
+    logical :: val_at_ub_outside_bounds
 
     character(len=*), parameter :: subname = 'limit_gradients'
     !-----------------------------------------------------------------------
@@ -550,20 +548,30 @@ contains
     grad(this%nelev) = 0._r8
 
     do ec = 2, this%nelev - 1
-       diff_max = max(field(ec+1), field(ec), field(ec-1)) - field(ec)
-       diff_min = min(field(ec+1), field(ec), field(ec-1)) - field(ec)
+       val_at_lb = field(ec) - (this%dl(pt,ec) * grad(ec))
+       val_at_lb_outside_bounds = is_outside_bounds(val_at_lb, field(ec), field(ec-1))
 
-       ! Compute the max and min values of the deviation of the field from its mean value.
-       deviation_low = -this%dl(pt,ec) * grad(ec)
-       deviation_high = this%du(pt,ec) * grad(ec)
-       deviation_max = max(deviation_high, deviation_low)
-       deviation_min = min(deviation_high, deviation_low)
+       val_at_ub = field(ec) + (this%du(pt,ec) * grad(ec))
+       val_at_ub_outside_bounds = is_outside_bounds(val_at_ub, field(ec), field(ec+1))
 
-       if (deviation_max > diff_max .or. deviation_min < diff_min) then
+       if (val_at_lb_outside_bounds .or. val_at_ub_outside_bounds) then
           grad(ec) = grad_initial_guess(ec)
        end if
     end do
 
+  contains
+    pure logical function is_outside_bounds(val, bound1, bound2)
+      ! Returns true if val is outside the interval given by bound1 and bound2
+      real(r8), intent(in) :: val, bound1, bound2
+
+      if (val < bound1 .and. val < bound2) then
+         is_outside_bounds = .true.
+      else if (val > bound1 .and. val > bound2) then
+         is_outside_bounds = .true.
+      else
+         is_outside_bounds = .false.
+      end if
+    end function is_outside_bounds
   end subroutine limit_gradients
 
   !-----------------------------------------------------------------------
