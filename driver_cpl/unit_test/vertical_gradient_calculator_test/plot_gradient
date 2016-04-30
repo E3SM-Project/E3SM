@@ -86,14 +86,32 @@ class GradientInfo:
 
         plt.plot(self.topo, self.field, 'ro')
 
+        # Limit upper bound of top elevation class
+        upper_bound = min(self.elevclass_bounds[self.nelev],
+                          self.topo[self.nelev-1] +
+                          (self.topo[self.nelev-1] - self.elevclass_bounds[self.nelev-1]))
+
         for ec in range(self.nelev):
+            if (ec < self.nelev - 1):
+                my_upper_bound = self.elevclass_bounds[ec+1]
+            else:
+                my_upper_bound = upper_bound
             (xs, ys) = gradient_line(self.topo[ec], self.field[ec], self.gradient[ec],
-                                     self.elevclass_bounds[ec], self.elevclass_bounds[ec+1])
+                                     self.elevclass_bounds[ec], my_upper_bound)
             plt.plot(xs, ys, 'b')
 
-        # plot elevation class bounds - vertical lines
+        # limit x axes
+        plt.xlim([self.elevclass_bounds[0], upper_bound])
+
+        # extend y axes a bit
         ylim = plt.axes().get_ylim()
-        for ec_bound in self.elevclass_bounds:
+        yrange = ylim[1] - ylim[0]
+        ylim = (ylim[0] - 0.02*yrange, ylim[1] + 0.02*yrange)
+        plt.ylim(ylim)
+
+        # plot elevation class bounds - vertical lines
+        # (don't draw last one)
+        for ec_bound in self.elevclass_bounds[:len(self.elevclass_bounds)-1]:
             plt.plot([ec_bound, ec_bound], ylim, 'k')
 
         pylab.savefig(output_filename)

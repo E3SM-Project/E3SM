@@ -225,11 +225,9 @@ contains
   subroutine real_temp(this)
     class(TestVertGradCalcCont), intent(inout) :: this
     type(vertical_gradient_calculator_continuous_type) :: calculator
-    ! Using a max of 4000 in the top elevclass should give the same results as 10000, and
-    ! will make for a prettier figure
     real(r8), parameter :: elevclass_bounds(11) = &
          [0._r8,   200._r8,   400._r8,   700._r8,  1000._r8,  1300._r8,  &
-         1600._r8,  2000._r8,  2500._r8,  3000._r8, 4000._r8]
+         1600._r8,  2000._r8,  2500._r8,  3000._r8, 10000._r8]
     real(r8) :: topo(10)
     real(r8) :: data(10)
     real(r8) :: gradients(10)
@@ -275,11 +273,9 @@ contains
   subroutine real_data1(this)
     class(TestVertGradCalcCont), intent(inout) :: this
     type(vertical_gradient_calculator_continuous_type) :: calculator
-    ! Using a max of 4000 in the top elevclass should give the same results as 10000, and
-    ! will make for a prettier figure
     real(r8), parameter :: elevclass_bounds(11) = &
          [0._r8,   200._r8,   400._r8,   700._r8,  1000._r8,  1300._r8,  &
-         1600._r8,  2000._r8,  2500._r8,  3000._r8, 4000._r8]
+         1600._r8,  2000._r8,  2500._r8,  3000._r8, 10000._r8]
     real(r8), parameter :: topo(10) = &
          [150.45797729492188_r8, 369.68896484375_r8, 618.4522705078125_r8, 776.9857177734375_r8,  &
          1205.492919921875_r8, 1372.2435302734375_r8, 1800.0_r8, 2250.0_r8, 2750.0_r8, 3500.0_r8]
@@ -309,10 +305,8 @@ contains
     ! approximately equal SMB
     class(TestVertGradCalcCont), intent(inout) :: this
     type(vertical_gradient_calculator_continuous_type) :: calculator
-    ! Using a max of 4000 in the top elevclass should give the same results as 10000, and
-    ! will make for a prettier figure
     real(r8), parameter :: elevclass_bounds(7) = &
-         [0._r8,   200._r8,   400._r8,   700._r8,  1000._r8,  3000._r8,  4000._r8]
+         [0._r8,   200._r8,   400._r8,   700._r8,  1000._r8,  3000._r8,  10000._r8]
     real(r8), parameter :: topo(6) = &
          [150.45797729492188_r8, 369.68896484375_r8, 618.4522705078125_r8, 776.9857177734375_r8,  &
          2146.2894083658853_r8, &  ! mean of elevation classes 5-9
@@ -341,11 +335,9 @@ contains
   subroutine real_data2(this)
     class(TestVertGradCalcCont), intent(inout) :: this
     type(vertical_gradient_calculator_continuous_type) :: calculator
-    ! Using a max of 4000 in the top elevclass should give the same results as 10000, and
-    ! will make for a prettier figure
     real(r8), parameter :: elevclass_bounds(11) = &
          [0._r8,   200._r8,   400._r8,   700._r8,  1000._r8,  1300._r8,  &
-         1600._r8,  2000._r8,  2500._r8,  3000._r8, 4000._r8]
+         1600._r8,  2000._r8,  2500._r8,  3000._r8, 10000._r8]
     real(r8), parameter :: topo(10) = &
          [100.0_r8, 300.0_r8, 553.73822021484375_r8, 843.978759765625_r8, 1152.2908935546875_r8, &
          1450.9669189453125_r8, 1628.5628662109375_r8, 2250.0_r8, 2750.0_r8, 3500.0_r8]
