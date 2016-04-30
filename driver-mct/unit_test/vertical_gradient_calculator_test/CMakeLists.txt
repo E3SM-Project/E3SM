@@ -5,7 +5,7 @@ set (pfunit_sources
   )
 
 set (extra_sources
-  vertical_gradient_test_utils.F90
+  vertical_gradient_calculator_continuousNoLimit.F90
   )
 
 create_pFUnit_test(vertical_gradient_calculator vertical_gradient_calculator_exe

@@ -49,6 +49,7 @@ module vertical_gradient_calculator_2nd_order
    contains
      procedure :: calc_gradients
      procedure :: get_gradients_one_class
+     procedure :: get_gradients_one_point
 
      procedure, private :: check_topo ! check topographic heights
      procedure, private :: limit_gradient
@@ -237,6 +238,36 @@ contains
     gradients(:) = this%vertical_gradient(:, elevation_class)
 
   end subroutine get_gradients_one_class
+
+  !-----------------------------------------------------------------------
+  subroutine get_gradients_one_point(this, point, gradients)
+    !
+    ! !DESCRIPTION:
+    ! Returns the vertical gradient for all elevation classes, for one point
+    !
+    ! this%calc_gradients should already have been called
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(vertical_gradient_calculator_2nd_order_type), intent(in) :: this
+    integer, intent(in) :: point
+
+    ! gradients should already be allocated to the appropriate size
+    real(r8), intent(out) :: gradients(:)
+    !
+    ! !LOCAL VARIABLES:
+
+    character(len=*), parameter :: subname = 'get_gradients_one_point'
+    !-----------------------------------------------------------------------
+
+    SHR_ASSERT(this%calculated, errMsg(__FILE__, __LINE__))
+    SHR_ASSERT(point <= this%num_points, errMsg(__FILE__, __LINE__))
+    SHR_ASSERT((size(gradients) == this%nelev), errMsg(__FILE__, __LINE__))
+
+    gradients(:) = this%vertical_gradient(point, :)
+
+  end subroutine get_gradients_one_point
 
   !-----------------------------------------------------------------------
   subroutine check_topo(this)

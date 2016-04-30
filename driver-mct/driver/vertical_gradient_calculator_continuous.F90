@@ -30,7 +30,9 @@ module vertical_gradient_calculator_continuous
      real(r8), allocatable :: field(:,:)   ! field(i,j) is elevation class i, point j
      real(r8), allocatable :: topo(:,:)    ! topo(i,j) is elevation class i, point j
 
-     real(r8), allocatable :: vertical_gradient(:,:)  ! precomputed vertical gradients; vertical_gradient(i,j) is elevation class i, field j
+     ! precomputed vertical gradients; vertical_gradient(i,j) is elevation class i, field
+     ! j
+     real(r8), allocatable :: vertical_gradient(:,:)
 
      logical, allocatable :: topo_valid(:)  ! whether topo is valid in each point
 
@@ -40,15 +42,28 @@ module vertical_gradient_calculator_continuous
      ! increasing.
      real(r8), allocatable :: elevclass_bounds(:)
 
+     ! Calculator to determine initial guesses for gradients. We determine how good the
+     ! solution is based on how well we match these initial guesses. We also fall back on
+     ! these initial guesses if the gradient in a given elevation class is determined to
+     ! be 'bad'.
+     class(vertical_gradient_calculator_base_type), allocatable :: calculator_initial_guess
+
      logical :: calculated  ! whether gradients have been calculated yet
 
    contains
      procedure :: calc_gradients
      procedure :: get_gradients_one_class
+     procedure :: get_gradients_one_point
+
+     ! This is public so that it can be overridden and/or tested independently by unit
+     ! tests
+     procedure :: limit_gradients
 
      procedure, private :: check_topo  ! check topographic heights
      procedure, private :: solve_for_vertical_gradients ! compute vertical gradients for all ECs, for points where we do a matrix solve
 
+     procedure, private :: dl  ! lower half-width of ec
+     procedure, private :: du  ! upper half-width of ec
   end type vertical_gradient_calculator_continuous_type
 
   interface vertical_gradient_calculator_continuous_type
@@ -58,7 +73,8 @@ module vertical_gradient_calculator_continuous
 contains
 
   !-----------------------------------------------------------------------
-  function constructor(field, topo, elevclass_bounds) result(this)
+  function constructor(field, topo, elevclass_bounds, calculator_initial_guess) &
+       result(this)
     !
     ! !DESCRIPTION:
     ! Creates a vertical_gradient_calculator_continuous_type object.
@@ -83,6 +99,11 @@ contains
     ! number of elevation classes, since it contains lower and upper bounds for each
     ! elevation class
     real(r8)         , intent(in) :: elevclass_bounds(0:)
+
+    ! Initial guesses for gradients. We determine how good the solution is based on how
+    ! well we match these initial guesses. We also fall back on these initial guesses if
+    ! the gradient in a given elevation class is determined to be 'bad'.
+    class(vertical_gradient_calculator_base_type), intent(in) :: calculator_initial_guess
     !
     ! !LOCAL VARIABLES:
 
@@ -111,6 +132,8 @@ contains
     allocate(this%vertical_gradient(this%nelev, this%num_points))
     this%vertical_gradient(:,:) = nan
 
+    allocate(this%calculator_initial_guess, source = calculator_initial_guess)
+
   end function constructor
 
   !-----------------------------------------------------------------------
@@ -134,6 +157,7 @@ contains
        return
     end if
 
+    call this%calculator_initial_guess%calc_gradients()
     do pt = 1, this%num_points
        if (.not. this%topo_valid(pt)) then
           this%vertical_gradient(:,pt) = 0._r8
@@ -183,61 +207,36 @@ contains
 
   end subroutine get_gradients_one_class
 
-
   !-----------------------------------------------------------------------
-  subroutine set_data_from_attr_vect(this, attr_vect, fieldname, toponame, elevclass_names)
+  subroutine get_gradients_one_point(this, point, gradients)
     !
     ! !DESCRIPTION:
-    ! Extract data from an attribute vector.
+    ! Returns the vertical gradient for all elevation classes, for one point
     !
-    ! Sets this%num_points, and allocates and sets this%field and this%topo.
-    !
-    ! TODO(wjs, 2016-04-26) The current flow is that the constructor calls this
-    ! routine. It could be better to move this routine into a factory class that creates
-    ! objects by (1) calling this routine to extract fields from the attribute vector, and
-    ! then (2) calling the constructor of this class using these extracted data (so the
-    ! constructor would never need to be passed an attribute vector).
+    ! this%calc_gradients should already have been called
     !
     ! !USES:
-    use mct_mod
     !
     ! !ARGUMENTS:
-    class(vertical_gradient_calculator_continuous_type), intent(inout) :: this
-    type(mct_aVect)  , intent(in) :: attr_vect ! attribute vector in which we can find the data
-    character(len=*) , intent(in) :: fieldname ! base name of the field of interest
-    character(len=*) , intent(in) :: toponame  ! base name of the topographic field
-    character(len=*) , intent(in) :: elevclass_names(:) ! strings corresponding to each elevation class
+    class(vertical_gradient_calculator_continuous_type), intent(in) :: this
+    integer, intent(in) :: point
+
+    ! gradients should already be allocated to the appropriate size
+    real(r8), intent(out) :: gradients(:)
     !
     ! !LOCAL VARIABLES:
-    integer :: elevclass
-    character(len=:), allocatable :: fieldname_ec
-    character(len=:), allocatable :: toponame_ec
 
-    ! The following temporary array is needed because mct wants pointers
-    real(r8), pointer :: temp(:)
-    
-    character(len=*), parameter :: subname = 'set_data_from_attr_vect'
+    character(len=*), parameter :: subname = 'get_gradients_one_point'
     !-----------------------------------------------------------------------
 
-    this%num_points = mct_aVect_lsize(attr_vect)
+    SHR_ASSERT(this%calculated, errMsg(__FILE__, __LINE__))
+    SHR_ASSERT(point <= this%num_points, errMsg(__FILE__, __LINE__))
+    SHR_ASSERT((size(gradients) == this%nelev), errMsg(__FILE__, __LINE__))
 
-    allocate(this%field(this%nelev, this%num_points))
-    allocate(this%topo(this%nelev, this%num_points))
-    allocate(temp(this%num_points))
-    
-    do elevclass = 1, this%nelev
-       fieldname_ec = trim(fieldname) // trim(elevclass_names(elevclass))
-       call mct_aVect_exportRattr(attr_vect, fieldname_ec, temp)
-       this%field(elevclass,:) = temp(:)
+    gradients(:) = this%vertical_gradient(:, point)
 
-       toponame_ec = trim(toponame) // trim(elevclass_names(elevclass))
-       call mct_aVect_exportRattr(attr_vect, toponame_ec, temp)
-       this%topo(elevclass,:) = temp(:)
-    end do
+  end subroutine get_gradients_one_point
 
-    deallocate(temp)
-    
-  end subroutine set_data_from_attr_vect
 
   !-----------------------------------------------------------------------
   subroutine check_topo(this)
@@ -310,14 +309,12 @@ contains
     real(r8) :: field(this%nelev) ! mean field value of each elevation class
     real(r8) :: topo(this%nelev)  ! mean topo of each elevation class
     real(r8) :: grad(this%nelev)  ! computed gradient
+    real(r8) :: grad_initial_guess(this%nelev)  ! initial guess for gradient
     real(r8) :: topo_interface(0:this%nelev)  ! elevations at interfaces between classes
-    real(r8) :: dl(this%nelev)  ! lower 1/2 widths of elevation classes
-    real(r8) :: du(this%nelev)  ! upper 1/2 widths of elevation classes
     real(r8) :: h_lo(this%nelev) ! lower bounds for computing norms
     real(r8) :: h_hi(this%nelev) ! upper bounds for computing norms
-    real(r8) :: dgrad(this%nelev) ! grad - grad_mean
+    real(r8) :: dgrad(this%nelev) ! grad - grad_initial_guess
     real(r8) :: weight_grad(this%nelev) ! weight for dgrad in solution
-    real(r8) :: grad_mean               ! mean value of gradient
 
     real(r8) :: diag(this%nelev-1) ! diagonal of tridiagonal matrix
     real(r8) :: subd(this%nelev-1) ! subdiagonal of tridiagonal matrix
@@ -348,11 +345,6 @@ contains
     topo_interface(:) = this%elevclass_bounds(:)
 
     n = this%nelev
-
-    do i = 1, n
-       dl(i) = topo(i) - topo_interface(i-1)  ! dl(1) is never used
-       du(i) = topo_interface(i) - topo(i)    ! du(n) is never used
-    end do
 
     ! FIXME(wjs, 2016-04-26) Extract method for the following two loops: returns
     ! weight_grad in each elevation class
@@ -385,6 +377,8 @@ contains
 
     end do
 
+    call this%calculator_initial_guess%get_gradients_one_point(pt, grad_initial_guess)
+
     !--------------------------------------------------------------------
     ! Set up matrix problem for gradient solution.
     ! The idea is to match field values at interfaces.
@@ -407,7 +401,7 @@ contains
     ! So we add an additional constraint: 
     ! Minimize the norm of the difference between the gradient in each class and the
     !  mean gradient, weighted by the range of the elevation class.
-    ! That is, minimize the sum over i of (wt(i) * (grad(i) - grad_mean))^2.
+    ! That is, minimize the sum over i of (wt(i) * (grad(i) - grad_initial_guess(i)))^2.
     !
     ! The mean gradient is given by 
     !
@@ -447,8 +441,8 @@ contains
 
     A(:,:) = 0._r8
     do i = 1, n-1
-       A(i,i) = du(i) / weight_grad(i)
-       A(i,i+1) = dl(i+1) / weight_grad(i+1)
+       A(i,i) = this%du(pt,i) / weight_grad(i)
+       A(i,i+1) = this%dl(pt,i+1) / weight_grad(i+1)
     end do
 
     ! Compute A * A^T, a tridiagonal matrix of size (n-1)
@@ -485,13 +479,9 @@ contains
        b(i) = field(i+1) - field(i)
     enddo
 
-    ! Compute mean gradient
+    ! Subtract (A * weight_grad*grad_initial_guess), a vector of size(n-1)
 
-    grad_mean = (field(n) - field(1)) / (topo(n) - topo(1)) 
-
-    ! Subtract (A * weight_grad*grad_mean), a vector of size(n-1)
-
-    b(:) = b(:) - matmul(A, weight_grad(:)*grad_mean)
+    b(:) = b(:) - matmul(A, weight_grad(:)*grad_initial_guess(:))
 
     ! Multiply AT_Tinv by b to get the least-norm solution
     ! b has size (n-1), x_least_norm has size n
@@ -501,18 +491,115 @@ contains
     ! Divide by the weighting factor to get dgrad
     dgrad(:) = x_least_norm(:) / weight_grad(:)
 
-    ! Add dgrad to the mean to get the total gradient
-    grad(:) = grad_mean + dgrad(:)
+    ! Add dgrad to the target gradient to get the total gradient
+    grad(:) = grad_initial_guess(:) + dgrad(:)
 
     ! Limit gradients
-
-    ! FIXME(wjs, 2016-04-28) Extract this into a subroutine, or into a separate class
-
+    call this%limit_gradients( &
+         pt = pt, &
+         grad_initial_guess = grad_initial_guess, &
+         grad = grad)
 
     ! Finally, set class-level values
     this%vertical_gradient(:,pt) = grad(:)
 
   end subroutine solve_for_vertical_gradients
+
+  !-----------------------------------------------------------------------
+  subroutine limit_gradients(this, pt, grad_initial_guess, grad)
+    !
+    ! !DESCRIPTION:
+    ! Limit the computed gradients for the given point
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(vertical_gradient_calculator_continuous_type), intent(in) :: this
+    integer, intent(in) :: pt
+    
+    ! All of these arguments should have size this%nelev
+
+    ! we'll back off to these initial guesses if there is a problem with grad in a given
+    ! elevation class
+    real(r8), intent(in) :: grad_initial_guess(:)
+
+    ! upon input, grad contains the current gradient estimates; upon output, it is
+    ! modified to be limited
+    real(r8), intent(inout) :: grad(:)
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: field(this%nelev) ! mean field value of each elevation class
+    integer :: ec
+    real(r8) :: diff_max
+    real(r8) :: diff_min
+    real(r8) :: deviation_low
+    real(r8) :: deviation_high
+    real(r8) :: deviation_max
+    real(r8) :: deviation_min
+
+    character(len=*), parameter :: subname = 'limit_gradients'
+    !-----------------------------------------------------------------------
+
+    SHR_ASSERT_ALL((ubound(grad_initial_guess) == (/this%nelev/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(grad) == (/this%nelev/)), errMsg(__FILE__, __LINE__))
+
+    field(:) = this%field(:,pt)
+
+    ! Set gradient to 0 in lowest and highest elevation class
+    grad(1) = 0._r8
+    grad(this%nelev) = 0._r8
+
+    do ec = 2, this%nelev - 1
+       diff_max = max(field(ec+1), field(ec), field(ec-1)) - field(ec)
+       diff_min = min(field(ec+1), field(ec), field(ec-1)) - field(ec)
+
+       ! Compute the max and min values of the deviation of the field from its mean value.
+       deviation_low = -this%dl(pt,ec) * grad(ec)
+       deviation_high = this%du(pt,ec) * grad(ec)
+       deviation_max = max(deviation_high, deviation_low)
+       deviation_min = min(deviation_high, deviation_low)
+
+       if (deviation_max > diff_max .or. deviation_min < diff_min) then
+          grad(ec) = grad_initial_guess(ec)
+       end if
+    end do
+
+  end subroutine limit_gradients
+
+  !-----------------------------------------------------------------------
+  function dl(this, pt, ec)
+    !
+    ! !DESCRIPTION:
+    ! Return lower half-width of elevation class ec in point pt
+    !
+    ! !ARGUMENTS:
+    real(r8) :: dl  ! function result
+    class(vertical_gradient_calculator_continuous_type), intent(in) :: this
+    integer, intent(in) :: pt
+    integer, intent(in) :: ec
+    !-----------------------------------------------------------------------
+
+    dl = this%topo(ec, pt) - this%elevclass_bounds(ec - 1)
+
+  end function dl
+
+
+  !-----------------------------------------------------------------------
+  function du(this, pt, ec)
+    !
+    ! !DESCRIPTION:
+    ! Return upper half-width of elevation class ec in point pt
+    !
+    ! !ARGUMENTS:
+    real(r8) :: du  ! function result
+    class(vertical_gradient_calculator_continuous_type), intent(in) :: this
+    integer, intent(in) :: pt
+    integer, intent(in) :: ec
+    !-----------------------------------------------------------------------
+
+    du = this%elevclass_bounds(ec) - this%topo(ec, pt)
+
+  end function du
 
 
 end module vertical_gradient_calculator_continuous
