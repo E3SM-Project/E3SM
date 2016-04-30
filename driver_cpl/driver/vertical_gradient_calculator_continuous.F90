@@ -50,10 +50,16 @@ module vertical_gradient_calculator_continuous
 
      logical :: calculated  ! whether gradients have been calculated yet
 
+     ! Various statistics for printing diagnostics.
+     logical, allocatable :: zeroed_from_topo_out_of_bounds(:) ! [num_points]
+     logical, allocatable :: limited_to_zero(:,:) ! [nelev, num_points]
+     logical, allocatable :: limited_to_initial_guess(:,:) ! [nelev, num_points]
+
    contains
      procedure :: calc_gradients
      procedure :: get_gradients_one_class
      procedure :: get_gradients_one_point
+     procedure :: print_statistics
 
      ! This is public so that it can be overridden and/or tested independently by unit
      ! tests
@@ -134,6 +140,13 @@ contains
 
     allocate(this%calculator_initial_guess, source = calculator_initial_guess)
 
+    allocate(this%zeroed_from_topo_out_of_bounds(this%num_points))
+    this%zeroed_from_topo_out_of_bounds(:) = .false.
+    allocate(this%limited_to_zero(this%nelev, this%num_points))
+    this%limited_to_zero(:,:) = .false.
+    allocate(this%limited_to_initial_guess(this%nelev, this%num_points))
+    this%limited_to_initial_guess(:,:) = .false.
+
   end function constructor
 
   !-----------------------------------------------------------------------
@@ -161,6 +174,7 @@ contains
     do pt = 1, this%num_points
        if (.not. this%topo_valid(pt)) then
           this%vertical_gradient(:,pt) = 0._r8
+          this%zeroed_from_topo_out_of_bounds(pt) = .true.
        else
           call this%solve_for_vertical_gradients(pt)
        end if
@@ -236,6 +250,39 @@ contains
     gradients(:) = this%vertical_gradient(:, point)
 
   end subroutine get_gradients_one_point
+
+  !-----------------------------------------------------------------------
+  subroutine print_statistics(this)
+    !
+    ! !DESCRIPTION:
+    ! Print various statistics on the solve to the logunit
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    class(vertical_gradient_calculator_continuous_type), intent(in) :: this
+    !
+    ! !LOCAL VARIABLES:
+    integer :: ec
+    integer :: num_not_out_of_bounds
+
+    character(len=*), parameter :: subname = 'print_statistics'
+    !-----------------------------------------------------------------------
+
+    SHR_ASSERT(this%calculated, errMsg(__FILE__, __LINE__))
+
+    write(logunit, '(a)') "Vertical gradient calculator statistics: "
+    write(logunit, '(a, f10.6)') "Fraction with topo out of bounds: ", &
+         real(count(this%zeroed_from_topo_out_of_bounds), r8) / real(this%num_points, r8)
+    num_not_out_of_bounds = this%num_points - count(this%zeroed_from_topo_out_of_bounds)
+    do ec = 1, this%nelev
+       write(logunit, '(a, i4, f10.6)') "Remaining fraction limited to 0: ", ec, &
+            real(count(this%limited_to_zero(ec,:)), r8) / real(num_not_out_of_bounds, r8)
+       write(logunit, '(a, i4, f10.6)') "Remaining fraction limited to initial guess: ", ec, &
+            real(count(this%limited_to_initial_guess(ec,:)), r8) / real(num_not_out_of_bounds, r8)
+    end do
+
+  end subroutine print_statistics
 
 
   !-----------------------------------------------------------------------
@@ -514,7 +561,7 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-    class(vertical_gradient_calculator_continuous_type), intent(in) :: this
+    class(vertical_gradient_calculator_continuous_type), intent(inout) :: this
     integer, intent(in) :: pt
     
     ! All of these arguments should have size this%nelev
@@ -545,7 +592,9 @@ contains
 
     ! Set gradient to 0 in lowest and highest elevation class
     grad(1) = 0._r8
+    this%limited_to_zero(1, pt) = .true.
     grad(this%nelev) = 0._r8
+    this%limited_to_zero(this%nelev, pt) = .true.
 
     do ec = 2, this%nelev - 1
        val_at_lb = field(ec) - (this%dl(pt,ec) * grad(ec))
@@ -556,6 +605,7 @@ contains
 
        if (val_at_lb_outside_bounds .or. val_at_ub_outside_bounds) then
           grad(ec) = grad_initial_guess(ec)
+          this%limited_to_initial_guess(ec, pt) = .true.
        end if
     end do
 

@@ -44,7 +44,7 @@ contains
   end function constructor
 
   subroutine limit_gradients(this, pt, grad_initial_guess, grad)
-    class(vgc_continuousNoLimit_type), intent(in) :: this
+    class(vgc_continuousNoLimit_type), intent(inout) :: this
     integer, intent(in) :: pt
     real(r8), intent(in) :: grad_initial_guess(:)
     real(r8), intent(inout) :: grad(:)
