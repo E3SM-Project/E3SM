@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 
 def submit(caseroot, job="case.run", resubmit=None, no_batch=False):
     case = Case(caseroot)
-#    if resubmit is None:
-#        check_case(case, caseroot)
-
+    if resubmit is None:
+        check_case(case, caseroot)
+        check_DA_settings(case)
     #Load Modules
     env_module = EnvModule(case.get_value("MACH"), case.get_value("COMPILER"),
                            case.get_value("CIMEROOT"),caseroot, case.get_value("MPILIB"),
@@ -36,6 +36,13 @@ def check_case(case,caseroot):
     expect(case.get_value("BUILD_COMPLETE"), "Build complete is "
            "not True please rebuild the model by calling case.build")
     logger.info("Check case OK")
+
+def check_DA_settings(case):
+    if case.get_value("DATA_ASSIMILATION"):
+        script = case.get_value("DATA_ASSIMILATION_SCRIPT")
+        cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
+        logger.info("Data Assimilation enabled using script %s with %d cycles"%(script,cycles))
+
 
 ###############################################################################
 def parse_command_line(args, description):
