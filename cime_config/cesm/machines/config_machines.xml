@@ -1727,7 +1727,7 @@
 	<command name="load">all-python-libs</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/16.0.2</command>
+	<command name="load">intel/15.0.3</command>
 	<command name="load">mkl/11.1.2</command>
 	<command name="load">trilinos/11.10.2</command>
 	<command name="load">esmf</command>
