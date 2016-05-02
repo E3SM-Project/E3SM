@@ -25,7 +25,7 @@ module ocn_tendency
    use mpas_constants
    use mpas_timer
    use mpas_threading
-
+   use ocn_diagnostics
    use ocn_constants
 
    use ocn_surface_bulk_forcing
@@ -396,7 +396,7 @@ contains
       type (mpas_pool_type), intent(inout) :: tendPool        !< Input/Output: Tendency structure
       type (mpas_pool_type), intent(in)    :: statePool       !< Input: State information
       type (mpas_pool_type), intent(inout) :: forcingPool     !< Input: Forcing information
-      type (mpas_pool_type), intent(in)    :: diagnosticsPool !< Input: Diagnostic information
+      type (mpas_pool_type), intent(inout)    :: diagnosticsPool !< Input: Diagnostic information
       type (mpas_pool_type), intent(inout)    :: meshPool     !< Input: Mesh information
       type (mpas_pool_type), intent(in)    :: swForcingPool   !< Input: sw data input info
       type (mpas_pool_type), intent(in)    :: scratchPool     !< Input: Scratch information
@@ -808,6 +808,7 @@ contains
                !
                if (config_use_cvmix_kpp) then
                  call mpas_timer_start("non-local flux from KPP")
+                 call ocn_compute_KPP_input_fields(statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevel)
                  if( trim(groupItr % memberName) == 'activeTracers' ) then
                      call ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, nonLocalSurfaceTracerFlux, tracerGroupTend, err)
                  else

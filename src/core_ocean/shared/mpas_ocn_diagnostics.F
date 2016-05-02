@@ -55,7 +55,8 @@ module ocn_diagnostics
              ocn_filter_btr_mode_vel, &
              ocn_filter_btr_mode_tend_vel, &
              ocn_reconstruct_gm_vectors, &
-             ocn_diagnostics_init
+             ocn_diagnostics_init, &
+             ocn_compute_kpp_input_fields
 
    !--------------------------------------------------------------------
    !
@@ -782,9 +783,6 @@ contains
         enddo
         !$omp end do
 
-        !
-        !  compute fields used as intent(in) to CVMix/KPP
-        call ocn_compute_KPP_input_fields(statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevel)
       endif
 
       ! compute the attenuation coefficient for surface fluxes
@@ -1362,8 +1360,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
       call mpas_pool_get_array(diagnosticsPool, 'surfaceFrictionVelocity', surfaceFrictionVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
-      call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumberBuoy', bulkRichardsonNumberBuoy)
-      call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumberShear', bulkRichardsonNumberShear)
       call mpas_pool_get_array(diagnosticsPool, 'indexSurfaceLayerDepth', indexSurfaceLayerDepth)
       call mpas_pool_get_array(diagnosticsPool, 'surfaceBuoyancyForcing', surfaceBuoyancyForcing)
       call mpas_pool_get_array(diagnosticsPool, 'normalVelocitySurfaceLayer', normalVelocitySurfaceLayer)
@@ -1421,8 +1417,8 @@ contains
        !
 
        ! Compute fraction of thickness flux that is in the top model layer
-       fracAbsorbed = 1.0_RKIND - exp(zTop(2,iCell) / config_flux_attenuation_coefficient)
-       fracAbsorbedRunoff = 1.0_RKIND - exp(zTop(2,iCell) / config_flux_attenuation_coefficient_runoff)
+       fracAbsorbed = 1.0_RKIND - exp(-layerThickness(1,iCell) / config_flux_attenuation_coefficient)
+       fracAbsorbedRunoff = 1.0_RKIND - exp(-layerThickness(1,iCell) / config_flux_attenuation_coefficient_runoff)
        ! Store the total tracer flux below in nonLocalSurfaceTemperatureFlux for use in the CVMix nonlocal
        ! transport code.  This includes tracer forcing due to thickness
 
@@ -1464,6 +1460,7 @@ contains
       ! deallocate scratch space
       call mpas_deallocate_scratch_field(thermalExpansionCoeffField, .true.)
       call mpas_deallocate_scratch_field(salineContractionCoeffField, .true.)
+      call mpas_deallocate_scratch_field(densitySurfaceDisplacedField, .true.)
 
     end subroutine ocn_compute_KPP_input_fields!}}}
 
