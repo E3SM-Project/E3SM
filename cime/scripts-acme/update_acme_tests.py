@@ -114,6 +114,8 @@ _TEST_SUITES = {
                            "ERS.ne16_ne16.FC5ATMMOD",
                            "SMS_Ld1.ne30_ne30.FC5AV1F",
                            "SMS_Ld1.ne30_ne30.FC5AV1C",
+                           "SMS_Ld1.ne30_ne30.F1850C5AV1C-02",
+                           "SMS_Ld1.ne30_ne30.FC5AV1C-02",
                            "SMS_D_Ld1.ne16_ne16.FC5ATMMODCOSP")
                           ),
 }
