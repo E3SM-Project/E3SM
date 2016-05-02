@@ -137,18 +137,12 @@ contains
         refBottomDepth, pRefEOS
       real (kind=RKIND), dimension(:), allocatable :: &
          p, p2 ! temporary pressure scalars
-      real (kind=RKIND), dimension(:,:), pointer :: &
+      real (kind=RKIND), dimension(:), pointer :: &
          TQ,SQ,             &! adjusted T,S
          BULK_MOD,          &! Bulk modulus
          SQR,DENOMK,        &! work arrays
          RHO_S,             &! density at the surface
          WORK1, WORK2, WORK3, WORK4, T2
-      type (field2DReal), pointer :: &
-         TQField,SQField,             &! adjusted T,S
-         BULK_MODField,          &! Bulk modulus
-         SQRField,DENOMKField,        &! work arrays
-         RHO_SField,             &! density at the surface
-         WORK1Field, WORK2Field, WORK3Field, WORK4Field, T2Field
       real (kind=RKIND), dimension(:), allocatable :: &
          tracerTemp, tracerSalt
 
@@ -247,43 +241,10 @@ contains
 !  integrating using hydrostatic balance.
 
       allocate(pRefEOS(nVertLevels),p(nVertLevels),p2(nVertLevels))
-      call mpas_pool_get_field(scratchPool, 'TQ', TQField)
-      call mpas_pool_get_field(scratchPool, 'SQ', SQField)
-      call mpas_pool_get_field(scratchPool, 'BULK_MOD', BULK_MODField)
-      call mpas_pool_get_field(scratchPool, 'SQR', SQRField)
-      call mpas_pool_get_field(scratchPool, 'DENOMK', DENOMKField)
-      call mpas_pool_get_field(scratchPool, 'RHO_S', RHO_SField)
-      call mpas_pool_get_field(scratchPool, 'WORK1', WORK1Field)
-      call mpas_pool_get_field(scratchPool, 'WORK2', WORK2Field)
-      call mpas_pool_get_field(scratchPool, 'WORK3', WORK3Field)
-      call mpas_pool_get_field(scratchPool, 'WORK4', WORK4Field)
-      call mpas_pool_get_field(scratchPool, 'T2', T2Field)
 
-      call mpas_allocate_scratch_field(TQField, .true.)
-      call mpas_allocate_scratch_field(SQField, .true.)
-      call mpas_allocate_scratch_field(BULK_MODField, .true.)
-      call mpas_allocate_scratch_field(SQRField, .true.)
-      call mpas_allocate_scratch_field(DENOMKField, .true.)
-      call mpas_allocate_scratch_field(RHO_SField, .true.)
-      call mpas_allocate_scratch_field(WORK1Field, .true.)
-      call mpas_allocate_scratch_field(WORK2Field, .true.)
-      call mpas_allocate_scratch_field(WORK3Field, .true.)
-      call mpas_allocate_scratch_field(WORK4Field, .true.)
-      call mpas_allocate_scratch_field(T2Field, .true.)
-
-      call mpas_threading_barrier()
-
-      TQ => TQField % array
-      SQ => SQField % array
-      BULK_MOD => BULK_MODField % array
-      SQR => SQRField % array
-      DENOMK => DENOMKField % array
-      RHO_S => RHO_SField % array
-      WORK1 => WORK1Field % array
-      WORK2 => WORK2Field % array
-      WORK3 => WORK3Field % array
-      WORK4 => WORK4Field % array
-      T2 => T2Field % array
+      allocate(SQ(nVertLevels), TQ(nVertLevels), SQR(nVertLevels), T2(nVertLevels), WORK1(nVertLevels), &
+               WORK2(nVertLevels), RHO_S(nVertLevels), WORK3(nVertLevels), WORK4(nVertLevels), &
+               BULK_MOD(nVertLevels), DENOMK(nVertLevels))
 
       ! This could be put in the init routine.
       ! Note I am using refBottomDepth, so pressure on top level does
@@ -348,7 +309,7 @@ contains
          enddo
       endif
 
-      !$omp do schedule(runtime) private(k)
+      !$omp do schedule(runtime) private(k, DRDT0, DKDT, DRHODT, DRDS0, DKDS, DRHODS)
       do iCell=1,nCells
          if (displacement_type == 'surfaceDisplaced') then
            if(present(tracersSurfaceLayerValue)) then
@@ -361,118 +322,112 @@ contains
              call mpas_dmpar_global_abort('MPAS-ocean: ERROR: tracersSurfaceLayerValue must be present in JM EOS call')
            endif
          else
-           tracerTemp(:) = tracers(indexT,:,iCell)
-           tracerSalt(:) = tracers(indexS,:,iCell)
+           do k = 1, nVertLevels
+              tracerTemp(k) = tracers(indexT, k, iCell)
+              tracerSalt(k) = tracers(indexS, k, iCell)
+           end do
          endif
-         do k=1,maxLevelCell(iCell)
-            SQ(k,iCell)  = max(min(tracerSalt(k),smax),smin)
-            TQ(k,iCell)  = max(min(tracerTemp(k),tmax),tmin)
 
-            SQR(k,iCell) = sqrt(SQ(k,iCell))
-            T2(k,iCell)  = TQ(k,iCell)*TQ(k,iCell)
+         do k=1,maxLevelCell(iCell)
+            SQ(k)  = max(min(tracerSalt(k),smax),smin)
+            TQ(k)  = max(min(tracerTemp(k),tmax),tmin)
+
+            SQR(k) = sqrt(SQ(k))
+            T2(k)  = TQ(k)*TQ(k)
 
             !***
             !*** first calculate surface (p=0) values from UNESCO eqns.
             !***
 
-            WORK1(k,iCell) = uns1t0 + uns1t1*TQ(k,iCell) + &
-                   (uns1t2 + uns1t3*TQ(k,iCell) + uns1t4*T2(k,iCell))*T2(k,iCell)
-            WORK2(k,iCell) = SQR(k,iCell)*(unsqt0 + unsqt1*TQ(k,iCell) + unsqt2*T2(k,iCell))
+            WORK1(k) = uns1t0 + uns1t1*TQ(k) + &
+                   (uns1t2 + uns1t3*TQ(k) + uns1t4*T2(k))*T2(k)
+            WORK2(k) = SQR(k)*(unsqt0 + unsqt1*TQ(k) + unsqt2*T2(k))
 
-            RHO_S(k,iCell) = unt1*TQ(k,iCell) + (unt2 + unt3*TQ(k,iCell) + (unt4 + unt5*TQ(k,iCell))*T2(k,iCell))*T2(k,iCell) &
-                            + (uns2t0*SQ(k,iCell) + WORK1(k,iCell) + WORK2(k,iCell))*SQ(k,iCell)
+            RHO_S(k) = unt1*TQ(k) + (unt2 + unt3*TQ(k) + (unt4 + unt5*TQ(k))*T2(k))*T2(k) &
+                            + (uns2t0*SQ(k) + WORK1(k) + WORK2(k))*SQ(k)
 
             !***
             !*** now calculate bulk modulus at pressure p from
             !*** Jackett and McDougall formula
             !***
 
-            WORK3(k,iCell) = bup0s1t0 + bup0s1t1*TQ(k,iCell) +                    &
-                    (bup0s1t2 + bup0s1t3*TQ(k,iCell))*T2(k,iCell) +                &
-                    p(k) *(bup1s1t0 + bup1s1t1*TQ(k,iCell) + bup1s1t2*T2(k,iCell)) + &
-                    p2(k)*(bup2s1t0 + bup2s1t1*TQ(k,iCell) + bup2s1t2*T2(k,iCell))
-            WORK4(k,iCell) = SQR(k,iCell)*(bup0sqt0 + bup0sqt1*TQ(k,iCell) + bup0sqt2*T2(k,iCell) + &
+            WORK3(k) = bup0s1t0 + bup0s1t1*TQ(k) +                    &
+                    (bup0s1t2 + bup0s1t3*TQ(k))*T2(k) +                &
+                    p(k) *(bup1s1t0 + bup1s1t1*TQ(k) + bup1s1t2*T2(k)) + &
+                    p2(k)*(bup2s1t0 + bup2s1t1*TQ(k) + bup2s1t2*T2(k))
+            WORK4(k) = SQR(k)*(bup0sqt0 + bup0sqt1*TQ(k) + bup0sqt2*T2(k) + &
                          bup1sqt0*p(k))
 
-            BULK_MOD(k,iCell)  = bup0s0t0 + bup0s0t1*TQ(k,iCell) +                    &
-                        (bup0s0t2 + bup0s0t3*TQ(k,iCell) + bup0s0t4*T2(k,iCell))*T2(k,iCell) + &
-                        p(k) *(bup1s0t0 + bup1s0t1*TQ(k,iCell) +                &
-                        (bup1s0t2 + bup1s0t3*TQ(k,iCell))*T2(k,iCell)) +           &
-                        p2(k)*(bup2s0t0 + bup2s0t1*TQ(k,iCell) + bup2s0t2*T2(k,iCell)) + &
-                        SQ(k,iCell)*(WORK3(k,iCell) + WORK4(k,iCell))
+            BULK_MOD(k)  = bup0s0t0 + bup0s0t1*TQ(k) +                    &
+                        (bup0s0t2 + bup0s0t3*TQ(k) + bup0s0t4*T2(k))*T2(k) + &
+                        p(k) *(bup1s0t0 + bup1s0t1*TQ(k) +                &
+                        (bup1s0t2 + bup1s0t3*TQ(k))*T2(k)) +           &
+                        p2(k)*(bup2s0t0 + bup2s0t1*TQ(k) + bup2s0t2*T2(k)) + &
+                        SQ(k)*(WORK3(k) + WORK4(k))
 
-            DENOMK(k,iCell) = 1.0/(BULK_MOD(k,iCell) - p(k))
+            DENOMK(k) = 1.0/(BULK_MOD(k) - p(k))
 
-            density(k,iCell) = (unt0 + RHO_S(k,iCell))*BULK_MOD(k,iCell)*DENOMK(k,iCell)
+            density(k, iCell) = (unt0 + RHO_S(k))*BULK_MOD(k)*DENOMK(k)
 
          end do
-      end do
-      !$omp end do
 
-      if (present(thermalExpansionCoeff)) then
-         !$omp do schedule(runtime) private(k, DRDT0, DKDT, DRHODT)
-         do iCell=1,nCells
+         if (present(thermalExpansionCoeff)) then
             do k=1,maxLevelCell(iCell)
-               DRDT0 =  unt1 + 2.0_RKIND*unt2*TQ(k,iCell) +                      &
-                  (3.0_RKIND*unt3 + 4.0_RKIND*unt4*TQ(k,iCell) + 5.0_RKIND*unt5*T2(k,iCell))*T2(k,iCell) + &
-                  (uns1t1 + 2.0_RKIND*uns1t2*TQ(k,iCell) +                 &
-                   (3.0_RKIND*uns1t3 + 4.0_RKIND*uns1t4*TQ(k,iCell))*T2(k,iCell) +         &
-                   (unsqt1 + 2.0_RKIND*unsqt2*TQ(k,iCell))*SQR(k,iCell) )*SQ(k,iCell)
+               DRDT0 =  unt1 + 2.0_RKIND*unt2*TQ(k) +                      &
+                  (3.0_RKIND*unt3 + 4.0_RKIND*unt4*TQ(k) + 5.0_RKIND*unt5*T2(k))*T2(k) + &
+                  (uns1t1 + 2.0_RKIND*uns1t2*TQ(k) +                 &
+                   (3.0_RKIND*uns1t3 + 4.0_RKIND*uns1t4*TQ(k))*T2(k) +         &
+                   (unsqt1 + 2.0_RKIND*unsqt2*TQ(k))*SQR(k) )*SQ(k)
 
-               DKDT  = bup0s0t1 + 2.0_RKIND*bup0s0t2*TQ(k,iCell) +                       &
-                 (3.0_RKIND*bup0s0t3 + 4.0_RKIND*bup0s0t4*TQ(k,iCell))*T2(k,iCell) +               &
-                  p(k) *(bup1s0t1 + 2.0_RKIND*bup1s0t2*TQ(k,iCell) + 3.0_RKIND*bup1s0t3*T2(k,iCell)) + &
-                  p2(k)*(bup2s0t1 + 2.0_RKIND*bup2s0t2*TQ(k,iCell)) +                  &
-                  SQ(k,iCell)*(bup0s1t1 + 2.0_RKIND*bup0s1t2*TQ(k,iCell) + 3.0_RKIND*bup0s1t3*T2(k,iCell) +  &
-                  p(k)  *(bup1s1t1 + 2.0_RKIND*bup1s1t2*TQ(k,iCell)) +             &
-                  p2(k) *(bup2s1t1 + 2.0_RKIND*bup2s1t2*TQ(k,iCell)) +             &
-                  SQR(k,iCell)*(bup0sqt1 + 2.0_RKIND*bup0sqt2*TQ(k,iCell)))
+               DKDT  = bup0s0t1 + 2.0_RKIND*bup0s0t2*TQ(k) +                       &
+                 (3.0_RKIND*bup0s0t3 + 4.0_RKIND*bup0s0t4*TQ(k))*T2(k) +               &
+                  p(k) *(bup1s0t1 + 2.0_RKIND*bup1s0t2*TQ(k) + 3.0_RKIND*bup1s0t3*T2(k)) + &
+                  p2(k)*(bup2s0t1 + 2.0_RKIND*bup2s0t2*TQ(k)) +                  &
+                  SQ(k)*(bup0s1t1 + 2.0_RKIND*bup0s1t2*TQ(k) + 3.0_RKIND*bup0s1t3*T2(k) +  &
+                  p(k)  *(bup1s1t1 + 2.0_RKIND*bup1s1t2*TQ(k)) +             &
+                  p2(k) *(bup2s1t1 + 2.0_RKIND*bup2s1t2*TQ(k)) +             &
+                  SQR(k)*(bup0sqt1 + 2.0_RKIND*bup0sqt2*TQ(k)))
 
-               DRHODT = (DENOMK(k,iCell)*(DRDT0*BULK_MOD(k,iCell) -                    &
-                  p(k)*(unt0+RHO_S(k,iCell))*DKDT*DENOMK(k,iCell)))
-
+               DRHODT = (DENOMK(k)*(DRDT0*BULK_MOD(k) -                    &
+                  p(k)*(unt0+RHO_S(k))*DKDT*DENOMK(k)))
 
                thermalExpansionCoeff(k,iCell) = -DRHODT/density(k,iCell)
-
             end do
-         end do
-         !$omp end do
-      endif
+         end if
 
-      if (present(salineContractionCoeff)) then
-         !$omp do schedule(runtime) private(k, DRDS0, DKDS, DRHODS)
-         do iCell=1,nCells
+         if (present(salineContractionCoeff)) then
             do k=1,maxLevelCell(iCell)
-               DRDS0  = 2.0_RKIND*uns2t0*SQ(k,iCell) + WORK1(k,iCell) + 1.5_RKIND*WORK2(k,iCell)
-               DKDS = WORK3(k,iCell) + 1.5_RKIND*WORK4(k,iCell)
+               DRDS0  = 2.0_RKIND*uns2t0*SQ(k) + WORK1(k) + 1.5_RKIND*WORK2(k)
+               DKDS = WORK3(k) + 1.5_RKIND*WORK4(k)
 
-               DRHODS = DENOMK(k,iCell)*(DRDS0*BULK_MOD(k,iCell) -                    &
-                   p(k)*(unt0+RHO_S(k,iCell))*DKDS*DENOMK(k,iCell))
+               DRHODS = DENOMK(k)*(DRDS0*BULK_MOD(k) -                    &
+                   p(k)*(unt0+RHO_S(k))*DKDS*DENOMK(k))
 
                salineContractionCoeff(k,iCell) = DRHODS/density(k,iCell)
 
             end do
-         end do
-         !$omp end do
-      endif
+
+         end if
+      end do
+      !$omp end do
+
+      call mpas_threading_barrier()
 
       deallocate(pRefEOS,p,p2)
       deallocate(tracerTemp)
       deallocate(tracerSalt)
 
-      call mpas_threading_barrier()
-
-      call mpas_deallocate_scratch_field(TQField, .true.)
-      call mpas_deallocate_scratch_field(SQField, .true.)
-      call mpas_deallocate_scratch_field(BULK_MODField, .true.)
-      call mpas_deallocate_scratch_field(SQRField, .true.)
-      call mpas_deallocate_scratch_field(DENOMKField, .true.)
-      call mpas_deallocate_scratch_field(RHO_SField, .true.)
-      call mpas_deallocate_scratch_field(WORK1Field, .true.)
-      call mpas_deallocate_scratch_field(WORK2Field, .true.)
-      call mpas_deallocate_scratch_field(WORK3Field, .true.)
-      call mpas_deallocate_scratch_field(WORK4Field, .true.)
-      call mpas_deallocate_scratch_field(T2Field, .true.)
+      deallocate(SQ)
+      deallocate(TQ)
+      deallocate(SQR)
+      deallocate(T2)
+      deallocate(WORK1)
+      deallocate(WORK2)
+      deallocate(RHO_S)
+      deallocate(WORK3)
+      deallocate(WORK4)
+      deallocate(BULK_MOD)
+      deallocate(DENOMK)
 
    end subroutine ocn_equation_of_state_jm_density!}}}
 
