@@ -155,7 +155,8 @@ contains
       !$omp do schedule(runtime) private(depth, k, cloudRatio)
       do iCell = 1, nCells
         depth = 0.0_RKIND
-        cloudRatio = min(1.0_RKIND, 1.0_RKIND - penetrativeTemperatureFlux(iCell)/hflux_factor/clearSkyRadiation(iCell))
+        cloudRatio = min(1.0_RKIND, 1.0_RKIND - penetrativeTemperatureFlux(iCell)/(hflux_factor*(1.0E-10_RKIND + &
+                                                     clearSkyRadiation(iCell))))
         cloudRatio = max(0.0_RKIND, cloudRatio)
 
         call ocn_get_os00_coeffs(chlorophyllA(iCell),zenithAngle(iCell),cloudRatio,Avals, Kvals)
