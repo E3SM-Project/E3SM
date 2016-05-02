@@ -2897,39 +2897,6 @@
 		<var name="ALE_Thickness" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="ALE_Thickness"
 		/>
-		<var name="TQ" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="TQ"
-		/>
-		<var name="SQ" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="SQ"
-		/>
-		<var name="BULK_MOD" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="BULK_MOD"
-		/>
-		<var name="SQR" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="SQR"
-		/>
-		<var name="DENOMK" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="DENOMK"
-		/>
-		<var name="RHO_S" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="RHO_S"
-		/>
-		<var name="WORK1" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="WORK1"
-		/>
-		<var name="WORK2" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="WORK2"
-		/>
-		<var name="WORK3" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="WORK3"
-		/>
-		<var name="WORK4" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="WORK4"
-		/>
-		<var name="T2" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
-			 description="T2"
-		/>
 		<var name="delsq_u" persistence="scratch" type="real" dimensions="nVertLevels nEdgesP1" units=""
 			 description="delsq_u"
 		/>
