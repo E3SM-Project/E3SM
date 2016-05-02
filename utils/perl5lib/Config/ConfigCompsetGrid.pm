@@ -132,7 +132,6 @@ sub getCompsetLongname
 	    last;
 	}
 
-
 	# First determine if there is a match for the alias - if so stop
 	my @alias_nodes = $xml2->findnodes(".//compset[alias=\"$input_compset\"]");
 	if (@alias_nodes) {
@@ -143,6 +142,7 @@ sub getCompsetLongname
 		my @name_nodes = $alias_nodes[0]->findnodes(".//lname");
 		foreach my $name_node (@name_nodes) {
 		    $compset_longname = addCompsetOptComps($name_node->textContent());
+
 		}
 	    }
 	    $pes_setby = $comp;
@@ -472,19 +472,18 @@ sub setCompsetGeneralVars
       $compset_longname = rmCompsetOptComps($compset_longname);
       @nodes = $xml_compset->findnodes(".//compset[lname=\"$compset_longname\"]");
     }
-    if (! @nodes) {die " ERROR: $compset_longname not supported \n";}
-
-    my $compset_grid = $nodes[0]->getAttribute('grid');
-    if ($compset_grid) {
-	$compset_grid = _clean($compset_grid);
-	if ($grid_longname !~ /$compset_grid/) {
-	    # TODO - this is CESM specific and should be removed
-	    if ($grid_longname !~ /CLM_USRDAT/) {
-		die "ERROR: $compset_longname \n is not supported for \n $grid_longname \n";
+    if (@nodes){
+	my $compset_grid = $nodes[0]->getAttribute('grid');
+	if ($compset_grid) {
+	    $compset_grid = _clean($compset_grid);
+	    if ($grid_longname !~ /$compset_grid/) {
+		# TODO - this is CESM specific and should be removed
+		if ($grid_longname !~ /CLM_USRDAT/) {
+		    die "ERROR: $compset_longname \n is not supported for \n $grid_longname \n";
+		}
 	    }
 	}
     }
-
     foreach my $node ($xml_compset->findnodes(".//entry")) {
 	my $id = $node->getAttribute('id');
 	if ($config->is_valid_name($id)) {
