@@ -29,6 +29,10 @@ if not options.perturb:
 # Open the Stnd output and get the needed info
 fstnd = Dataset(options.stndfilename, 'r')
 thicknessStnd = fstnd.variables['thickness'][-1,:]
+if 'uReconstructX' in fstnd.variables:
+  haveVelo = True
+  uXStnd = fstnd.variables['uReconstructX'][-1,:,:]
+  nVertLevelsStnd = len(fstnd.dimensions['nVertLevels'])
 edgeMaskStnd = fstnd.variables['edgeMask'][-1,:]
 nCellsStnd = len(fstnd.dimensions['nCells'])
 dcEdgeStnd = fstnd.variables['dcEdge'][:]
@@ -43,6 +47,7 @@ unique_ysEdgeStnd = np.array(sorted(list(set(yEdgeStnd[:]))))
 # Open the file to be set up, get needed dimensions
 gridfile = Dataset(options.filename,'r+')
 nCells = len(gridfile.dimensions['nCells'])
+nVertLevels = len(gridfile.dimensions['nVertLevels'])
 dcEdge = gridfile.variables['dcEdge'][:]
 xCell = gridfile.variables['xCell'][:]
 yCell = gridfile.variables['yCell'][:]
@@ -89,6 +94,33 @@ else:
 # write it out      
 gridfile.variables['thickness'][0,:] = thickness[:]      
 gridfile.sync()
+
+if haveVelo:
+   print "Defining uReconstructX."
+   if nVertLevelsStnd != nVertLevels:
+      sys.exit("ERROR: nVertLevels in the Stnd file does not match that in the full width domain.")
+   uX = np.zeros((nCells, nVertLevels+1))
+   if eqSize:
+      uX = uXStnd
+   else:
+      for z in range(nVertLevels+1):  # Note: there probably is a more efficient way to do this since the mapping should be the same for every level
+         print "Mapping uReconstructX for level:", z
+         # Need to map the minimal domain to the full domain
+         uXStndProfile = np.zeros((len(unique_xsStnd),))
+         for i in range(len(unique_xsStnd)):
+            ind = np.where(xCellStnd == unique_xsStnd[i])[0]  # this should return either 1 or2 values
+            uXStndProfile[i] = uXStnd[ind, z].mean()  # mean takes care of the places where there are two values - though they should be nearly identical
+   
+         # Now assign the correct uX to each cell of the new file
+         for i in range(nCells):
+            ind = np.where(unique_xsStnd == xCell[i])[0]
+            uX[i, z] = uXStndProfile[ind]
+   # write it out      
+   gridfile.variables['uReconstructX'][0,:] = uX[:]      
+   gridfile.sync()
+else:
+   print "Skipping uReconstructX because it is not in the input file.  You can use ncks to append it to your Stnd file from a restart file."
+
 
 print "Determining grounding line position."
 # Calculate GL position in Stnd output file
