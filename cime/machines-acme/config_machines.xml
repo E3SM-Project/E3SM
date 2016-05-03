@@ -523,7 +523,7 @@
                <arg name="num_tasks"> -n {{ num_tasks }}</arg>
                <arg name="locargs">  $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
-               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=32M</arg>
+               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
                <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
                <arg name="colon">:</arg>
              </arguments>
@@ -640,7 +640,7 @@
                <arg name="num_tasks"> -n {{ num_tasks }}</arg>
                <arg name="locargs">  $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
-               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=32M</arg>
+               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
                <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
                <arg name="colon">:</arg>
              </arguments>
