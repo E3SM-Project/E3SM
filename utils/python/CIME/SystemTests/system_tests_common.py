@@ -40,7 +40,7 @@ class SystemTestsCommon(object):
 
         self._case.set_initial_test_values()
         case_setup(self._caseroot, reset=True, test_mode=True)
-
+        self._case.set_value("TEST",True)
 
     def build(self, sharedlib_only=False, model_only=False):
         build.case_build(self._caseroot, case=self._case,
@@ -69,11 +69,14 @@ class SystemTestsCommon(object):
 
     def coupler_log_indicates_run_complete(self):
         newestcpllogfile = self._getlatestcpllog()
-        logger.warn("Latest Coupler log file is %s"%newestcpllogfile)
-        if "SUCCESSFUL TERMINATION" in gzip.open(newestcpllogfile, 'rb').read():
-            return True
-        else:
-            return False
+        logger.debug("Latest Coupler log file is %s"%newestcpllogfile)
+        # Exception is raised if the file is not compressed
+        try:
+            if "SUCCESSFUL TERMINATION" in gzip.open(newestcpllogfile, 'rb').read():
+                return True
+        except:
+            logger.info("%s is not compressed, assuming run failed"%newestcpllogfile)
+        return False
 
     def report(self):
         newestcpllogfile = self._getlatestcpllog()
@@ -195,7 +198,7 @@ class SystemTestsCommon(object):
                 fd.write("Error in Baseline compare: %s"%err)
         # compare memory usage to baseline
         newestcpllogfile = self._getlatestcpllog()
-        memlist = self._getmemusage(cpllog)
+        memlist = self._getmemusage(newestcpllogfile)
         if len(memlist) > 3:
             baselog = os.path.join(basecmp_dir, "cpl.log")
             blmemlist = self._getmemusage(baselog)

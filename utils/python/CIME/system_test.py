@@ -596,8 +596,12 @@ class SystemTest(object):
         if test in self._test_xml and "wallclock" in self._test_xml[test]:
             run_cmd("./xmlchange JOB_WALLCLOCK_TIME=%s" %
                     self._test_xml[test]["wallclock"], from_dir=test_dir)
+        if self._no_batch:
+            cmd = "./case.submit --no-batch"
+        else:
+            cmd = "./case.submit "
 
-        return self._shell_cmd_for_phase(test, "./case.submit", RUN_PHASE, from_dir=test_dir)
+        return self._shell_cmd_for_phase(test, cmd, RUN_PHASE, from_dir=test_dir)
 
     ###########################################################################
     def _update_test_status_file(self, test):

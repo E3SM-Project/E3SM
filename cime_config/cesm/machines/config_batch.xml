@@ -294,7 +294,7 @@
       <prereq>$BUILD_COMPLETE and not $TEST</prereq>
     </job>
    <job name="case.test">
-      <template>python.case.test</template>
+      <template>template.case.test</template>
       <task_count>default</task_count>
       <prereq>$BUILD_COMPLETE and $TEST</prereq>
     </job>

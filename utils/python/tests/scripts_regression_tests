@@ -453,7 +453,9 @@ class E_TestSystemTest(TestCreateTestCommon):
     ###########################################################################
     def test_a_phases(self):
     ###########################################################################
-        tests = update_acme_tests.get_full_test_names(["acme_test_only", "^TESTMEMLEAKFAIL.f19_g16_rx1.A", "^TESTMEMLEAKPASS.f19_g16_rx1.A"],
+        # exclude the MEMLEAK tests here.
+        tests = update_acme_tests.get_full_test_names(["acme_test_only",
+                                                       "^TESTMEMLEAKFAIL_P1.f19_g16.X", "^TESTMEMLEAKPASS_P1.f19_g16.X"],
                                                       self._machine, self._compiler)
         self.assertEqual(len(tests), 3)
         ct = SystemTest(tests)
