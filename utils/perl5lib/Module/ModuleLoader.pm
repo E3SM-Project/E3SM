@@ -655,15 +655,26 @@ sub loadSoftModules()
 
     my %newbuildenv;
 
+	# ndk: add a loop to see if our above module adjusting _removed_
+        # any environment variables which may need to be accounted for
+	foreach my $k(keys %oldenv) {
+           if($k =~ /BASH_FUNC/i) {
+              # leave this particular one alone
+           } elsif (defined $oldenv{$k} && !defined $newenv{$k}) {
+	      # if key in old but NOT in new, consider removing
+	      delete $ENV{$k};
+           }
+        }
+
     foreach my $k(keys %newenv)
     {
-        if(! defined $oldenv{$k})
+           if(! defined $oldenv{$k})   # if this key is _not_ in the old set, add it as new
         {
             $newbuildenv{$k} = $newenv{$k};
             $ENV{$k} = $newenv{$k};
 	    $logger->info("setting environment variable $k=$newenv{$k}");
         }
-        if(defined $oldenv{$k} && $newenv{$k} ne $oldenv{$k})
+           elsif(defined $oldenv{$k} && $newenv{$k} ne $oldenv{$k})
         {
             $newbuildenv{$k} = $newenv{$k};
             $ENV{$k} = $newenv{$k};

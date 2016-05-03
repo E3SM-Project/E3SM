@@ -1,5 +1,5 @@
-#!/bin/csh
-# cesm_postrun2 with performance data archiving:
+#!/bin/csh -f
+# cesm_postrun2 with performance data archiving: 
 #  ./cesm_postrun2.perf_archive with the following argument keyword/value pairs, in any order
 #   -machine <system name>
 #   -case <case name>

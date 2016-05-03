@@ -1,5 +1,5 @@
-#!/bin/csh
-# cesm_postbuild without support for performance data archving:
+#!/bin/csh -f
+# cesm_postbuild without support for performance data archving: 
 #  ./cesm_postbuild with the following required argument keyword/value pairs, in any order
 #   -cesmid <$LID in cesm-lingo>
 #   -cesmroot <top level of CESM/ACME checkout>

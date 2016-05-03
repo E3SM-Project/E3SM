@@ -300,7 +300,7 @@ class Case(object):
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
-                  user_grid=False, gridfile=None):
+                  user_grid=False, gridfile=None, cam_se_target=None):
 
         #--------------------------------------------
         # compset, pesfile, and compset components
@@ -341,6 +341,11 @@ class Case(object):
         self.set_value("MACH",machine_name)
         nodenames = machobj.get_node_names()
 
+        # Handle the camse_target option
+        # Do this before handling the compiler so that default compiler can be overwritten
+        if get_model() == "acme" and cam_se_target is not None:
+            self.set_value("CAM_TARGET", cam_se_target)
+
         if "COMPILER" in nodenames: nodenames.remove("COMPILER")
         if "MPILIB" in nodenames: nodenames.remove("MPILIB")
         nodenames =  [x for x in nodenames if
@@ -357,6 +362,10 @@ class Case(object):
         else:
             expect(machobj.is_valid_compiler(compiler),
                    "compiler %s is not supported on machine %s" %(compiler, machine_name))
+
+        if get_model() == "acme" and cam_se_target == "preqx_acc" and machine_name == "titan":
+            compiler = "pgi_acc"
+
         self.set_value("COMPILER",compiler)
 
         if mpilib is None:

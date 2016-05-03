@@ -32,7 +32,7 @@ def parse_command_line(args, cimeroot):
                         help="(required) Specify a model grid resolution. "
                         "To see list of current compsets, use the utility manage_case in this directory")
 
-    parser.add_argument("--mach", "-mach", 
+    parser.add_argument("--mach", "-mach",
                         help="(required) Specify a machine. "
                         "To see list of current compsets, use the utility manage_case in this directory")
 
@@ -82,9 +82,13 @@ def parse_command_line(args, cimeroot):
                         "with the new user grid changes added to it"
 			"This argument is required if --user-grid is True")
 
-    parser.add_argument("--srcroot",default=os.path.dirname(cimeroot),
+    parser.add_argument("--srcroot", default=os.path.dirname(cimeroot),
                         help="Alternative path for source root directory. By default this is set to"
                         "cimeroot/../")
+
+    if cime_model == "acme":
+        parser.add_argument("--cam-se-target", default="preqx", choices=("preqx", "preqx-acc"),
+                            help="Specify a target for the cam-se dycore (ignored for other atmospheric dycores)")
 
     # hidden argument indicating called from create_test
     parser.add_argument("--test", "-test", action="store_true",
@@ -119,8 +123,7 @@ def parse_command_line(args, cimeroot):
     return args.case, args.compset, args.res, args.mach, args.compiler,\
         args.mpilib, args.project, args.pecount, \
         args.mach_dir, args.user_mods_dir, args.user_compset, args.pesfile, \
-        args.user_grid, args.gridfile, args.srcroot, args.test
-
+        args.user_grid, args.gridfile, args.srcroot, args.cam_se_target, args.test
 
 ###############################################################################
 def _main_func():
@@ -130,7 +133,7 @@ def _main_func():
     case, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
         machine_dir, usermods_dir, user_compset, pesfile, \
-        user_grid, gridfile, srcroot, test \
+        user_grid, gridfile, srcroot, cam_se_target, test \
         = parse_command_line(sys.argv, cimeroot)
 
     caseroot = os.path.abspath(case)
@@ -153,7 +156,8 @@ def _main_func():
     caseobj.configure(compset, grid, machine_name=machine, project=project,
                       pecount=pecount, compiler=compiler, mpilib=mpilib,
                       user_compset=user_compset, pesfile=pesfile,
-                      user_grid=user_grid, gridfile=gridfile)
+                      user_grid=user_grid, gridfile=gridfile,
+                      cam_se_target=cam_se_target)
 
     caseobj.create_caseroot()
 
