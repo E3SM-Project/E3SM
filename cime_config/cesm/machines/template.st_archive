@@ -5,6 +5,10 @@ template to create a case short term archiving script
 """
 
 import sys, os, time
+from standard_script_setup          import *
+from CIME.XML.standard_module_setup import *
+from CIME.case                      import Case
+from CIME.utils                     import get_model, run_cmd
 
 workdir = os.environ.get("PBS_O_WORKDIR")
 if workdir is not None:
@@ -17,17 +21,6 @@ if _CIMEROOT is None:
 _LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
 sys.path.append(_LIBDIR)
 
-from standard_script_setup          import *
-from CIME.XML.standard_module_setup import *
-from CIME.XML.files                 import Files
-from CIME.XML.component             import Component
-from CIME.case                      import Case
-from CIME.utils                     import expect, get_model, run_cmd
-from CIME.env_module                import EnvModule
-from CIME.utils                     import expect, get_utc_timestamp
-from CIME.check_lockedfiles         import check_lockedfiles
-from CIME.preview_namelists         import preview_namelists
-
 logger = logging.getLogger(__name__)
 
 # Batch system directives
@@ -37,7 +30,7 @@ logger = logging.getLogger(__name__)
 def parse_command_line(args):
 ###############################################################################
 
-    CIME.utils.get_model()
+    get_model()
 
     parser = argparse.ArgumentParser()
 
@@ -56,14 +49,14 @@ def _main_func():
     case = Case()
 
     caseroot = case.get_value("CASEROOT")
-    testlog  = os.path.join(caseroot,"TestStatus.log")
+    testlog = os.path.join(caseroot, "TestStatus.log")
 
     # do short-term archiving
     if os.path.isfile(testlog):
         with open(testlog, "a") as fd:
             fd.write("st_archiving starting %s" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
-    cmd = os.path.join(caseroot,"Tools/st_archive") + " >> stArchiveStatus 2>&1"  
+    cmd = os.path.join(caseroot, "Tools/st_archive") + " >> stArchiveStatus 2>&1"  
     run_cmd(cmd)
 
     if os.path.isfile(testlog):

@@ -654,3 +654,15 @@ def convert_to_seconds(time_str):
 
     return result
 
+def appendCaseStatus(caseroot, msg):
+    """
+    Append msg to CaseStatus file in caseroot
+    """
+    with open(os.path.join(caseroot,"CaseStatus"), "a") as fd:
+        fd.write(msg)
+
+def does_file_have_string(filepath, text):
+    """
+    Does the text string appear in the filepath file
+    """
+    return os.path.isfile(filepath) and text in open(filepath).read()

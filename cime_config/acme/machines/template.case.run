@@ -5,6 +5,17 @@ template to create a case run script
 """
 
 import sys, os, calendar, shutil, time
+from standard_script_setup          import *
+from CIME.XML.standard_module_setup import *
+from CIME.XML.files                 import Files
+from CIME.XML.component             import Component
+from CIME.case                      import Case
+from CIME.utils                     import expect, get_model, run_cmd, appendCaseStatus
+from CIME.env_module                import EnvModule
+from CIME.utils                     import expect
+from CIME.check_lockedfiles         import check_lockedfiles
+from CIME.preview_namelists         import preview_namelists
+import gzip
 
 workdir = os.environ.get("PBS_O_WORKDIR")
 if workdir is not None:
@@ -16,17 +27,6 @@ if _CIMEROOT is None:
 
 _LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
 sys.path.append(_LIBDIR)
-
-from standard_script_setup          import *
-from CIME.XML.standard_module_setup import *
-from CIME.XML.files                 import Files
-from CIME.XML.component             import Component
-from CIME.case                      import Case
-from CIME.utils                     import expect, get_model, run_cmd
-from CIME.env_module                import EnvModule
-from CIME.utils                     import expect, get_utc_timestamp
-from CIME.check_lockedfiles         import check_lockedfiles
-from CIME.preview_namelists         import preview_namelists
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +89,7 @@ def preRunCheck(case):
         del os.environ["MP_MPILIB"]
     else:
         os.environ["MPILIB"] = mpilib
+
     if batchsubmit is None or len(batchsubmit) == 0:
         os.environ["LBQUERY"] = "FALSE"
         os.environ["BATCHQUERY"] = "undefined"
@@ -103,9 +104,9 @@ def preRunCheck(case):
         os.stat(rundir)
     except:
         os.mkdir(rundir)       
-    if os.path.isdir(rundir + '/timing'):
-        shutil.rmtree(rundir + '/timing')
-    os.makedirs(rundir + '/timing/checkpoints')
+    if os.path.isdir(os.path.join(rundir,"timing")):
+        shutil.rmtree(os.path.join(rundir,"timing"))
+    os.makedirs(os.path.join(rundir,"timing","checkpoints"))
 
     # run preview namelists
     preview_namelists()
@@ -128,9 +129,6 @@ def runModel(case):
     os.environ["OMP_NUM_THREADS"] = str(num_threads)
 
     # Run the model
-    cmd = ("sleep 10")
-    run_cmd(cmd)
-
     logger.info("%s MODEL EXECUTION BEGINS HERE" %(time.strftime("%Y-%m-%d %H:M:S")))
 
     # {{mpirun}} set the unresolved cmd string
@@ -190,11 +188,11 @@ def getTimings(case, lid):
         if not os.path.isdir(timingDir):
             os.makedirs(timingDir)
 
-        logger.info("Running timing script %s " %(os.path.join(caseroot, "Tools/getTiming")))
-        cmd = "%s -lid %s " %(os.path.join(caseroot,"Tools/getTiming"), lid)
+        logger.info("Running timing script %s " %(os.path.join(caseroot, "Tools", "getTiming")))
+        cmd = "%s -lid %s " %(os.path.join(caseroot,"Tools","getTiming"), lid)
         run_cmd(cmd) 
 
-        # ave the timing files if desired
+        # save the timing files if desired
         if save_timing:
             shutil.move(os.path.join(rundir,"timing"), 
                         os.path.join(rundir,"timing."+lid))
@@ -202,9 +200,11 @@ def getTimings(case, lid):
         # compress relevant timing files
         logger.info( "gzipping timing stats.." )
         timingfile = model + "_timing_stats." + lid
-        cmd = "gzip " + (os.path.join(caseroot, "timing", timingfile))
-        print "DEBUG: command is ",cmd
-        run_cmd(cmd) 
+        f_in = open(timingfile)
+        f_out = gzip.open(timingfile + 'gz', 'wb')
+        f_out.writelines(f_in)
+        f_out.close()
+        f_in.close()
 
 ###############################################################################
 def saveLogs(case, lid):
@@ -228,13 +228,16 @@ def saveLogs(case, lid):
         comps = comps + model
 
         for comp in comps:
-            logfile = os.path.join(comp + '.log.' + lid)
-            if os.path.isfile(os.path.join(rundir,logfile)):
-                cmd = "gzip " + logfile
-                run_cmd(cmd, from_dir=rundir)
-                logfile = logfile + ".gz"
-                shutil.copy(os.path.join(rundir,logfile), 
-                            os.path.join(caseroot,logdir,logfile))
+            logfile = os.path.join(rundir, comp + '.log.' + lid)
+            if os.path.isfile(logfile):
+                f_in = open(logfile)
+                f_out = gzip.open(logfile + 'gz', 'wb')
+                f_out.writelines(f_in)
+                f_out.close()
+                f_in.close()
+
+                shutil.copy(logfile), 
+                            os.path.join(caseroot,logdir,logfile.basename()))
 
 ###############################################################################
 def resubmitCheck(case):
@@ -272,18 +275,10 @@ def resubmitCheck(case):
 def DoDataAssimilation(case, da_script, lid):
 ###############################################################################
 
-    cmd = "da_script 1> da.log.%s 2>&1" %(lid)
-    run_cmd(cmd)
-    cmd = "sleep(1)"
+    cmd = da_script + "1> da.log.%s 2>&1" %(lid)
+    logger.debug("running %s" %da_script)
     run_cmd(cmd)
     disposeLog(case, 'da', lid)
-
-###############################################################################
-def appendCaseStatus(caseroot, msg):
-###############################################################################
-
-    with open(os.path.join(caseroot,"CaseStatus"), "a") as fd:
-        fd.write(msg)
 
 ###############################################################################
 def _main_func():
