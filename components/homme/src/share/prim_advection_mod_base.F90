@@ -1944,7 +1944,7 @@ OMP_SIMD
 
       if (nu_p>0) then
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k)
+!$omp parallel do private(q,k) collapse(2)
 #endif
         do q = 1 , qsize
           do k = 1 , nlev
@@ -1956,7 +1956,7 @@ OMP_SIMD
 
       else
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k,dp0)
+!$omp parallel do private(q,k,dp0) collapse(2)
 #endif
         do q = 1 , qsize
           do k = 1 , nlev
@@ -2004,7 +2004,7 @@ OMP_SIMD
     do ie = nets , nete
       call edgeVunpack( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , ie )
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k)
+!$omp parallel do private(q,k) collapse(2)
 #endif
       do q = 1 , qsize
         ! apply inverse mass matrix
@@ -2145,18 +2145,16 @@ OMP_SIMD
         call t_startf('vertical_remap1_2')
         call remap1(ttmp,np,2,dp_star,dp)
         call t_stopf('vertical_remap1_2')
-!        call remap1_nofilter(ttmp,np,2,dp_star,dp)
 
-        if ( .not. se_prescribed_wind_2d ) &
+        if ( .not. se_prescribed_wind_2d ) then
              elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
-        if ( .not. se_prescribed_wind_2d ) &
              elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
+        endif
 #ifdef REMAP_TE
         ! back out T from TE
         elem(ie)%state%t(:,:,:,np1) = &
              ( elem(ie)%state%t(:,:,:,np1) - ( (elem(ie)%state%v(:,:,1,:,np1)**2 + &
              elem(ie)%state%v(:,:,2,:,np1)**2)/2))/cp
-
 #endif
      endif
 
@@ -2166,10 +2164,13 @@ OMP_SIMD
            ! Peter Lauritzen et al, "The terminator 'toy'-chemistry test: A simple tool to assess errors in transport schemes",
            !   submitted to Geosci Model Dev, Oct 2014
            ! -- code to let dp evolve without vertical transport of tracers (consistent mass tracer coupling)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(q,k,i,j,ttmp) collapse(4)
+#endif
            do q=1,qsize
-              do i=1,np
-                 do j=1,np
-                    do k=1,nlev
+              do k=1,nlev
+                 do i=1,np
+                    do j=1,np
                        !elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp) * dp(i,j,k)/dp_star(i,j,k)
                        ttmp(i,j,k,1)= elem(ie)%state%Qdp(i,j,k,q,np1_qdp) / dp_star(i,j,k) ! This is the actual q
                        elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = ttmp(i,j,k,1) * dp(i,j,k)
@@ -2177,7 +2178,6 @@ OMP_SIMD
                  enddo
               enddo
            enddo
-
         else
            call t_startf('vertical_remap1_3')
            call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
