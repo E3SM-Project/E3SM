@@ -4,11 +4,13 @@
 template to create a case short term archiving script
 """
 
-import sys, os, time
+import sys
+import os
+import time
 from standard_script_setup          import *
 from CIME.XML.standard_module_setup import *
 from CIME.case                      import Case
-from CIME.utils                     import expect, get_model, run_cmd
+from CIME.utils                     import expect, get_model, run_cmd, does_file_have_string
 
 workdir = os.environ.get("PBS_O_WORKDIR")
 if workdir is not None:
@@ -45,11 +47,11 @@ def _main_func():
 ###############################################################################
 
     parse_command_line(sys.argv)
-    
+
     case = Case()
 
     caseroot = case.get_value("CASEROOT")
-    testlog  = os.path.join(caseroot,"TestStatus.log")
+    testlog = os.path.join(caseroot, "TestStatus.log")
 
     # max number of threads needed by scripts
     os.environ["maxthrds"] = 1
@@ -61,30 +63,24 @@ def _main_func():
     logger.info("lt_archive starting %s" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     # determine status of run and short term archiving
-    runComplete = False
-    statusfile = os.path.join(caseroot,"CaseStatus") 
-    if os.path.isfile(statusFile):
-        if 'run SUCCESSFUL' in open(statusFile).read():
-            runComplete = True
-
-    statusComplete = False
-    statusfile = os.path.join(caseroot,"stArchiveStatus")
-    if os.path.isfile(statusFile):
-        if 'st_archive process complete' in open(statusFile).read():
-            runComplete = True
+    runComplete = does_file_have_string(os.path.join(caseroot, "CaseStatus"), 
+                                        "run SUCCESSFUL")
+    staComplete = does_file_have_string(os.path.join(caseroot, "stArchiveStatus"), 
+                                        "st_archive_complete")
 
     # set up envrionment vars and call the lt_archive.sh script
     if runComplete and staComplete:
-        os.environ["DOUT_S_ROOT"]       = case.get_value("DOUT_S_ROOT")
-        os.environ["DOUT_L_MSROOT"]     = case.get_value("DOUT_L_MSROOT")
+        os.environ["DOUT_S_ROOT"] = case.get_value("DOUT_S_ROOT")
+        os.environ["DOUT_L_MSROOT"] = case.get_value("DOUT_L_MSROOT")
 	os.environ["DOUT_L_HPSS_ACCNT"] = case.get_value("DOUT_L_HPSS_ACCNT")
 
 	lid = time.strftime("%y%m%d-%H%M%S")
         lt_archive_args = {{ lt_archive_args }}
-        cmd = os.path.join(caseroot, "Tools/lt_archive.sh") + lt_archive_args + "ltArchiveStatus." + lid + " 2>&1"
+        cmd = os.path.join(caseroot, "Tools/lt_archive.sh") \
+            + lt_archive_args + "ltArchiveStatus." + lid + " 2>&1"
         run_cmd(cmd, from_dir=caseroot)
     else:
-        expect(False, 
+        expect(False,
                "lt_archive: run or st_archive is not yet complete or was not successful."
                "Unable to perform long term archive...")
 

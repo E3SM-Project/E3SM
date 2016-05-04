@@ -179,11 +179,7 @@ def getTimings(case, lid):
 
     check_timing = case.get_value("CHECK_TIMING")
     if check_timing:
-        save_timing = case.get_value("SAVE_TIMING")
-        rundir = case.get_value("RUNDIR")
         caseroot = case.get_value("CASEROOT")
-        model = case.get_value("MODEL")
-        
         timingDir = os.path.join(caseroot, "timing")
         if not os.path.isdir(timingDir):
             os.makedirs(timingDir)
@@ -193,30 +189,34 @@ def getTimings(case, lid):
         run_cmd(cmd) 
 
         # save the timing files if desired
+        save_timing = case.get_value("SAVE_TIMING")
         if save_timing:
+            rundir = case.get_value("RUNDIR")
             shutil.move(os.path.join(rundir,"timing"), 
                         os.path.join(rundir,"timing."+lid))
 
         # compress relevant timing files
         logger.info( "gzipping timing stats.." )
-        timingfile = model + "_timing_stats." + lid
+        model = case.get_value("MODEL")
+        timingfile = os.path.join(timingDir, model + "_timing_stats." + lid)
         f_in = open(timingfile)
-        f_out = gzip.open(timingfile + 'gz', 'wb')
+        f_out = gzip.open(timingfile + '.gz', 'wb')
         f_out.writelines(f_in)
         f_out.close()
         f_in.close()
+        os.remove(timingfile)
 
 ###############################################################################
 def saveLogs(case, lid):
 ###############################################################################
 
-    logdir   = case.get_value("LOGDIR")
+    logdir = case.get_value("LOGDIR")
     if logdir is not None and len(logdir) > 0:
-        caseroot = case.get_value("CASEROOT")
-        rundir = case.get_value("RUNDIR")
-
         if not os.path.isdir(logdir):
             os.makedirs(logdir)
+
+        caseroot = case.get_value("CASEROOT")
+        rundir = case.get_value("RUNDIR")
 
         # get components
         files = Files()
@@ -227,18 +227,19 @@ def saveLogs(case, lid):
         model = [case.get_value("MODEL")]
         comps = comps + model
 
-
+        # for each component, compress log files and copy to logdir
         for comp in comps:
             logfile = os.path.join(rundir, comp + '.log.' + lid)
             if os.path.isfile(logfile):
                 f_in = open(logfile)
-                f_out = gzip.open(logfile + 'gz', 'wb')
+                f_out = gzip.open(logfile + '.gz', 'wb')
                 f_out.writelines(f_in)
                 f_out.close()
                 f_in.close()
-
-                shutil.copy(logfile, 
-                            os.path.join(caseroot,logdir,logfile.basename()))
+                os.remove(logfile)
+                logfile_copy = logfile + '.gz'
+                shutil.copy(logfile_copy, 
+                            os.path.join(caseroot, logdir, os.path.basename(logfile_copy)))
 
 ###############################################################################
 def resubmitCheck(case):

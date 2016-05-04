@@ -55,17 +55,17 @@ def preRunCheck(case):
 ###############################################################################
 
     # Pre run initialization code..
-    model          = CIME.utils.get_model()
-    caseroot       = case.get_value("CASEROOT")
-    cimeroot       = case.get_value("CIMEROOT")
-    din_loc_root   = case.get_value("DIN_LOC_ROOT")
-    compiler       = case.get_value("COMPILER")
-    debug          = case.get_value("DEBUG")
-    mach           = case.get_value("MACH")
-    lbquery        = case.get_value("LBUQERY")
-    batchsubmit    = case.get_value("BATCHSUBMIT")
-    mpilib         = case.get_value("MPILIB")
-    rundir         = case.get_value("RUNDIR")
+    model = CIME.utils.get_model()
+    caseroot = case.get_value("CASEROOT")
+    cimeroot = case.get_value("CIMEROOT")
+    din_loc_root = case.get_value("DIN_LOC_ROOT")
+    compiler = case.get_value("COMPILER")
+    debug = case.get_value("DEBUG")
+    mach = case.get_value("MACH")
+    lbquery = case.get_value("LBUQERY")
+    batchsubmit = case.get_value("BATCHSUBMIT")
+    mpilib = case.get_value("MPILIB")
+    rundir = case.get_value("RUNDIR")
     build_complete = case.get_value("BUILD_COMPLETE")
 
     # check for locked files.
@@ -100,12 +100,12 @@ def preRunCheck(case):
         os.environ["LBQUERY"] = "TRUE"
     
     # create the timing directories, optionally cleaning them if needed.
-    try:
-        os.stat(rundir)
-    except:
-        os.mkdir(rundir)       
+    if not os.path.isdir(rundir):
+        os.mkdir(rundir)
+
     if os.path.isdir(os.path.join(rundir,"timing")):
         shutil.rmtree(os.path.join(rundir,"timing"))
+
     os.makedirs(os.path.join(rundir,"timing","checkpoints"))
 
     # run preview namelists
@@ -145,8 +145,8 @@ def postRunCheck(case, lid):
 ###############################################################################
 
     caseroot = case.get_value("CASEROOT")
-    rundir   = case.get_value("RUNDIR")
-    model    = case.get_value("MODEL")
+    rundir = case.get_value("RUNDIR")
+    model = case.get_value("MODEL")
 
     # find the last model.log and cpl.log
     model_logfile = os.path.join(rundir,model + ".log." + lid)
@@ -179,11 +179,7 @@ def getTimings(case, lid):
 
     check_timing = case.get_value("CHECK_TIMING")
     if check_timing:
-        save_timing  = case.get_value("SAVE_TIMING")
-        rundir       = case.get_value("RUNDIR")
-        caseroot     = case.get_value("CASEROOT")
-        model        = case.get_value("MODEL")
-        
+        caseroot = case.get_value("CASEROOT")
         timingDir = os.path.join(caseroot, "timing")
         if not os.path.isdir(timingDir):
             os.makedirs(timingDir)
@@ -193,30 +189,34 @@ def getTimings(case, lid):
         run_cmd(cmd) 
 
         # save the timing files if desired
+        save_timing = case.get_value("SAVE_TIMING")
         if save_timing:
+            rundir = case.get_value("RUNDIR")
             shutil.move(os.path.join(rundir,"timing"), 
                         os.path.join(rundir,"timing."+lid))
 
         # compress relevant timing files
         logger.info( "gzipping timing stats.." )
-        timingfile = model + "_timing_stats." + lid
+        model = case.get_value("MODEL")
+        timingfile = os.path.join(timingDir, model + "_timing_stats." + lid)
         f_in = open(timingfile)
-        f_out = gzip.open(timingfile + 'gz', 'wb')
+        f_out = gzip.open(timingfile + '.gz', 'wb')
         f_out.writelines(f_in)
         f_out.close()
         f_in.close()
+        os.remove(timingfile)
 
 ###############################################################################
 def saveLogs(case, lid):
 ###############################################################################
 
-    logdir   = case.get_value("LOGDIR")
+    logdir = case.get_value("LOGDIR")
     if logdir is not None and len(logdir) > 0:
-        caseroot = case.get_value("CASEROOT")
-        rundir   = case.get_value("RUNDIR")
-
         if not os.path.isdir(logdir):
             os.makedirs(logdir)
+
+        caseroot = case.get_value("CASEROOT")
+        rundir = case.get_value("RUNDIR")
 
         # get components
         files = Files()
@@ -227,17 +227,19 @@ def saveLogs(case, lid):
         model = [case.get_value("MODEL")]
         comps = comps + model
 
+        # for each component, compress log files and copy to logdir
         for comp in comps:
             logfile = os.path.join(rundir, comp + '.log.' + lid)
             if os.path.isfile(logfile):
                 f_in = open(logfile)
-                f_out = gzip.open(logfile + 'gz', 'wb')
+                f_out = gzip.open(logfile + '.gz', 'wb')
                 f_out.writelines(f_in)
                 f_out.close()
                 f_in.close()
-
-                shutil.copy(logfile), 
-                            os.path.join(caseroot,logdir,logfile.basename()))
+                os.remove(logfile)
+                logfile_copy = logfile + '.gz'
+                shutil.copy(logfile_copy, 
+                            os.path.join(caseroot, logdir, os.path.basename(logfile_copy)))
 
 ###############################################################################
 def resubmitCheck(case):
@@ -246,10 +248,10 @@ def resubmitCheck(case):
     # check to see if we need to do resubmission from this particular job,
     # Note that Mira requires special logic
 
-    caseroot     = case.get_value("CASEROOT")
-    dout_s       = case.get_value("DOUT_S")
-    mach         = case.get_value("MACH")
-    testcase     = case.get_value("TESTCASE")
+    caseroot = case.get_value("CASEROOT")
+    dout_s = case.get_value("DOUT_S")
+    mach = case.get_value("MACH")
+    testcase = case.get_value("TESTCASE")
     resubmit_num = int(case.get_value("RESUBMIT"))
     
     # If dout_s is True than short-term archiving handles the resubmit
@@ -297,7 +299,7 @@ def _main_func():
              "Please submit your run by runnint the submit script like so:"
             " ./case.submit")
 
-    data_assimilation        = case.get_value("DATA_ASSIMILATION")
+    data_assimilation = case.get_value("DATA_ASSIMILATION")
     data_assimilation_cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
     data_assimilation_script = case.get_value("DATA_ASSIMILATION_SCRIPT")
 
@@ -305,7 +307,7 @@ def _main_func():
     lid = time.strftime("%y%m%d-%H%M%S")
     os.environ["LID"] = lid
 
-    for cycle in range(0,data_assimilation_cycles):
+    for cycle in range(data_assimilation_cycles):
         preRunCheck(case)
         runModel(case)
         postRunCheck(case, lid)
