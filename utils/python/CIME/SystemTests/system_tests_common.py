@@ -163,7 +163,7 @@ class SystemTestsCommon(object):
                                %(cmd, self._case.get_value('RUNDIR'), self._case.get_value('CASE'),
                                  self._case.get_value('CASEBASEID')), ok_to_fail=True)
         if rc == 0:
-            appendStatus(out+"\n",sfile="TestStatus")
+            appendStatus(out, sfile="TestStatus")
         else:
             appendStatus("Component_compare_test.sh failed out: %s\n\nerr: %s\n"%(out,err)
                          ,sfile="TestStatus.log")
