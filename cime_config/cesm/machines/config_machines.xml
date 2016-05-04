@@ -1659,10 +1659,10 @@
     <mpirun mpilib="default">
     </mpirun>
     <mpirun mpilib="default" threaded="false">
-      <executable>TARGET_PROCESSOR_LIST=AUTO_SELECT mpirun.lsf -procs {{ num_tasks }} $ENV{CESMDATAROOT}/tools/bin/launch </executable>
+      <executable>TARGET_PROCESSOR_LIST=AUTO_SELECT mpirun.lsf  $ENV{CESMDATAROOT}/tools/bin/launch </executable>
     </mpirun>
     <mpirun mpilib="default" threaded="true">
-      <executable>unset MP_PE_AFFINITY; unset MP_TASK_AFFINITY; unset MP_CPU_BIND_LIST; mpirun.lsf -procs {{ num_tasks }} $ENV{CESMDATAROOT}/tools/bin/hybrid_launch </executable>
+      <executable>unset MP_PE_AFFINITY; unset MP_TASK_AFFINITY; unset MP_CPU_BIND_LIST; mpirun.lsf $ENV{CESMDATAROOT}/tools/bin/hybrid_launch </executable>
     </mpirun>
     <mpirun compiler="gnu">
       <executable>mpirun.lsf </executable>
