@@ -586,6 +586,7 @@
 			  <var name="depv_dt_fric"/>
 			  <var name="depv_dt_diab_pv"/>
 			  <var name="depv_dt_fric_pv"/>
+			  <var name="iLev_DT"/>
 			<var name="i_rainnc"/>
 			<var name="rainnc"/>
 			<var name="precipw"/>
@@ -858,6 +859,7 @@
 			            <var name="tend_u_phys" type="real" dimensions="nVertLevels nEdges Time"/>
                   <var name="depv_dt_diab_pv" type="real" dimensions="nCells Time"/>
 			            <var name="depv_dt_fric_pv" type="real" dimensions="nCells Time"/>
+			            <var name="iLev_DT"                 type="integer"     dimensions="nCells Time"/>
 
                 <!-- reconstructed horizontal velocity vectors at cell centers -->
                 <var name="uReconstructX"           type="real"     dimensions="nVertLevels nCells Time"/>
