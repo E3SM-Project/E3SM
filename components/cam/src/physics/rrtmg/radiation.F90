@@ -13,7 +13,7 @@ module radiation
 ! May  2008, Mike Iacono     Initial version for RRTMG
 ! Nov  2010, J. Kay          Add COSP simulator calls
 !---------------------------------------------------------------------------------
-use module_perturb
+
 use shr_kind_mod,    only: r8=>shr_kind_r8
 use spmd_utils,      only: masterproc
 use ppgrid,          only: pcols, pver, pverp, begchunk, endchunk

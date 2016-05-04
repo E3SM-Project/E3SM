@@ -678,8 +678,8 @@ subroutine radsw_init()
     ! get the reference fractional solar irradiance in each band
     call get_solar_band_fraction_irrad(fractional_solar_irradiance)
     call get_ref_solar_band_irrad( solar_band_irrad )
-    
-    
+
+
    ! Initialize rrtmg_sw
    call rrtmg_sw_ini
  

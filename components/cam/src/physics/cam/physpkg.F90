@@ -1578,15 +1578,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     ncol  = state%ncol
 
     nstep = get_nstep()
-if(pergro) then
-    !BALLI- Temporary fix - bypass changes by surface model
-    cam_in%wsx(:)    = 0.0_r8 
-    cam_in%wsy(:)    = 0.0_r8 
-    cam_in%shf(:)    = 0.0_r8
-    cam_in%cflx(:,:) = 0.0_r8 
-    !BALLI ENDS
-endif
-
+    
     call phys_getopts( do_clubb_sgs_out       = do_clubb_sgs, &
                        state_debug_checks_out = state_debug_checks &
                       ,l_tracer_aero_out      = l_tracer_aero      &

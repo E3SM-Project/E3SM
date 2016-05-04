@@ -220,6 +220,7 @@
 ! The Mersenne Twister random number engine
       use MersenneTwister, only: randomNumberSequence, &   
                                  new_RandomNumberSequence, getRandomReal
+
       type(randomNumberSequence) :: randomNumbers
 
 ! -- Arguments
@@ -227,7 +228,7 @@
       integer, intent(in) :: ncol            ! number of columns
       integer, intent(in) :: nlay            ! number of layers
       integer, intent(in) :: icld            ! clear/cloud, cloud overlap flag
-      integer, intent(in) :: nsubcol         ! number of sub-columns (g-point intervals)      
+      integer, intent(in) :: nsubcol         ! number of sub-columns (g-point intervals)
       integer, optional, intent(in) :: changeSeed     ! allows permuting seed
       logical, intent(in) :: pergro
 
