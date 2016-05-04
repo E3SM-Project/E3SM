@@ -372,37 +372,38 @@ contains
 
       ! use relativeSlopeTaperingCell as a temporary space for smoothing of relativeSlopeTopOfCell
       relativeSlopeTaperingCell = relativeSlopeTopOfCell
-      relativeSlopeTaperingCell(1,:) = 0.0_RKIND
-      relativeSlopeTaperingCell(maxLevelCell(iCell):nVertLevels,:) = 0.0_RKIND
       do iter = 1, 5
+         !$omp barrier
+
+         !$omp do schedule(runtime) private(k, rtmp)
          do iCell=1,nCells
+           relativeSlopeTaperingCell(1, iCell) = 0.0_RKIND
+           relativeSlopeTaperingCell(maxLevelCell(iCell):nVertLevels, iCell) = 0.0_RKIND
            do k = 2, maxLevelCell(iCell)-1
              rtmp = relativeSlopeTopOfCell(k-1,iCell) + relativeSlopeTopOfCell(k+1,iCell)
              stmp = 2.0_RKIND*relativeSlopeTopOfCell(k,iCell)
              relativeSlopeTaperingCell(k,iCell) = (rtmp+stmp)/4.0_RKIND
            end do
+           relativeSlopeTopOfCell(:, iCell) = relativeSlopeTaperingCell(:, iCell)
          end do
-         relativeSlopeTopOfCell = relativeSlopeTaperingCell
+         !$omp end do
       end do  ! iter
       relativeSlopeTaperingCell = 0.0_RKIND
 
       ! first, compute tapering across full domain based on a maximum allowable slope
-      !
-      ! DOUG: add OpenMP directives
-      !
+      !$omp do schedule(runtime) private(k)
       do iCell=1,nCells
         do k = 1, maxLevelCell(iCell)
           relativeSlopeTaperingCell(k,iCell) = min(1.0_RKIND, config_max_relative_slope / (relativeSlopeTopOfCell(k,iCell)+epsGM))
         end do
       end do
+      !$omp end do
 
       ! now further taper in the boundary layer
       ! vertical (k33) tapering starts at 2*OBL, increases linearly to OBL and is held uniform across OBL
       ! rtmp = 1 @ zMid = -2.0*OBL, rtmp = 0 @ zMid = -OBL
-      !
-      ! DOUG: add OpenMP directives
-      !
       if(config_use_Redi_surface_layer_tapering) then
+         !$omp do schedule(runtime) private(k, rtmp)
          do iCell=1,nCells
            do k = 1, maxLevelCell(iCell)
              rtmp = -zMid(k,iCell)/max(1.0_RKIND,boundaryLayerDepth(iCell)) - config_Redi_surface_layer_tapering_extent
@@ -411,15 +412,14 @@ contains
              relativeSlopeTaperingCell(k,iCell) = rtmp*relativeSlopeTaperingCell(k,iCell)
            end do
          end do
+         !$omp end do
       endif ! config_use_Redi_surface_layer_tapering
 
       ! now further taper in the boundary layer
       ! vertical (k33) tapering starts at 2*OBL, increases linearly to OBL and is held uniform across OBL
       ! rtmp = 1 @ zMid = zMid(maxLevelCell) + config_Redi_bottom_layer_tapering_depth, rtmp = 0 @ zMid = zMid(maxLevelCell)
-      !
-      ! DOUG: add OpenMP directives
-      !
       if(config_use_Redi_bottom_layer_tapering) then
+         !$omp do schedule(runtime) private(k, rtmp)
          do iCell=1,nCells
            do k = 1, maxLevelCell(iCell)
              rtmp = (zMid(k,iCell)-zMid(maxLevelCell(iCell),iCell))/(config_Redi_bottom_layer_tapering_depth++epsGM)
@@ -428,6 +428,7 @@ contains
              relativeSlopeTaperingCell(k,iCell) = rtmp*relativeSlopeTaperingCell(k,iCell)
            end do
          end do
+         !$omp end do
       endif ! config_use_Redi_bottom_layer_tapering
 
       !$omp do schedule(runtime) private(k)
