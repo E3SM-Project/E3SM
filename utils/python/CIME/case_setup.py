@@ -10,7 +10,7 @@ from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.component     import Component
 from CIME.XML.compilers     import Compilers
 from CIME.case              import Case
-from CIME.utils             import expect, run_cmd, appendCaseStatus
+from CIME.utils             import expect, run_cmd, appendStatus
 from CIME.batch_maker       import get_batch_maker
 
 import shutil, time, glob
@@ -139,7 +139,7 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
         logger.info("Some files have been saved to %s" % backup_dir)
 
         msg =  "%s case.setup --clean \n" % time.strftime("%Y-%m-%d %H:%M:%S")
-        appendCaseStatus(caseroot, msg)
+        appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
 
     if not clean:
         drv_comp = Component()
@@ -282,5 +282,5 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
                 logger.info("Finished testcase.setup")
 
         msg = "%s case.setup \n" % time.strftime("%Y-%m-%d %H:%M:%S")
-        appendCaseStatus(caseroot, msg)
+        appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
 

@@ -5,7 +5,7 @@ import shutil, glob, gzip
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
 from CIME.XML.env_run import EnvRun
-from CIME.utils import run_cmd
+from CIME.utils import run_cmd, appendStatus
 from CIME.case_setup import case_setup
 import CIME.build as build
 
@@ -58,8 +58,8 @@ class SystemTestsCommon(object):
             result = "FAIL"
 
         with open("TestStatus.log", 'a') as f:
-            f.write("case.run output is %s"%out)
-            f.write("case.run error is %s"%err)
+            f.write("case.run output is %s\n"%out)
+            f.write("case.run error is %s\n"%err)
 
         li = teststatusfile.rsplit('PEND', 1)
         teststatusfile = result.join(li)
@@ -81,7 +81,7 @@ class SystemTestsCommon(object):
     def report(self):
         newestcpllogfile = self._getlatestcpllog()
         self._checkformemleak(newestcpllogfile)
-        self._compare
+        self._compare()
         return
 
     def _getmemusage(self, cpllog):
@@ -106,8 +106,7 @@ class SystemTestsCommon(object):
         memlist = self._getmemusage(cpllog)
 
         if len(memlist)<3:
-            with open("TestStatus", "a") as fd:
-                fd.write("COMMENT: insuffiencient data for memleak test\n")
+            appendStatus("COMMENT: insuffiencient data for memleak test\n",sfile="TestStatus")
         else:
             finaldate = int(memlist[-1][0])
             originaldate = int(memlist[0][0])
@@ -115,14 +114,13 @@ class SystemTestsCommon(object):
             originalmem = float(memlist[0][1])
             memdiff = (finalmem - originalmem)/originalmem
             if memdiff < 0.01:
-                with open("TestStatus", "a") as fd:
-                    fd.write("PASS %s memleak\n"%(self._case.get_value("CASEBASEID")))
+                appendStatus("PASS %s memleak\n"%(self._case.get_value("CASEBASEID")),
+                             sfile="TestStatus")
             else:
-                with open("TestStatus.log", "a") as fd:
-                    fd.write("\nmemleak detected, memory went from %f to %f in %d days"
-                             %(originalmem, finalmem, finaldate-originaldate))
-                with open("TestStatus", "a") as fd:
-                    fd.write("FAIL %s memleak\n"%(self._case.get_value("CASEBASEID")))
+                appendStatus("\nmemleak detected, memory went from %f to %f in %d days"
+                             %(originalmem, finalmem, finaldate-originaldate),sfile="TestStatus.log")
+                appendStatus("FAIL %s memleak\n"%(self._case.get_value("CASEBASEID")),
+                             sfile="TestStatus")
 
     def compare_env_run(self, expected=None):
         f1obj = EnvRun(self._caseroot, "env_run.xml")
@@ -163,11 +161,10 @@ class SystemTestsCommon(object):
                                %(cmd, self._case.get_value('RUNDIR'), self._case.get_value('CASE'),
                                  self._case.get_value('CASEBASEID')), ok_to_fail=True)
         if rc == 0:
-            with open("TestStatus", "a") as fd:
-                fd.write(out+"\n")
+            appendStatus(out+"\n",sfile="TestStatus")
         else:
-            with open("TestStatus.log", "a") as fd:
-                fd.write("Component_compare_test.sh failed out: %s\n\nerr: %s\n"%(out,err))
+            appendStatus("Component_compare_test.sh failed out: %s\n\nerr: %s\n"%(out,err)
+                         ,sfile="TestStatus.log")
 
     def compare_baseline(self):
         """
@@ -178,10 +175,9 @@ class SystemTestsCommon(object):
         basecmp_dir = os.path.join(baselineroot, self._case.get_value("BASECMP_CASE"))
         for bdir in (baselineroot, basecmp_dir):
             if not os.path.isdir(bdir):
-                with open(os.path.join(test_dir, "TestStatus"), "a") as fd:
-                    fd.write("GFAIL %s baseline\n",self._case.get_value("CASEBASEID"))
-                with open(os.path.join(test_dir, "TestStatus.log"), "a") as fd:
-                    fd.write("ERROR %s does not exist",bdir)
+                appendStatus("GFAIL %s baseline\n",self._case.get_value("CASEBASEID"),
+                             sfile="TestStatus")
+                appendStatus("ERROR %s does not exist"%bdir, sfile="TestStatus.log")
                 return -1
         compgen = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools",
                                "component_compgen_baseline.sh")
@@ -191,11 +187,9 @@ class SystemTestsCommon(object):
         compgen += " -testcase "+self._case.get_value("CASE")
         compgen += " -testcase_base "+self._case.get_value("CASEBASEID")
         rc, out, err = run_cmd(compgen, ok_to_fail=True)
-        with open(os.path.join(test_dir, "TestStatus"), "a") as fd:
-            fd.write(out)
+        appendStatus(out+"\n",sfile="TestStatus")
         if rc != 0:
-            with open(os.path.join(test_dir, "TestStatus.log"), "a") as fd:
-                fd.write("Error in Baseline compare: %s"%err)
+            appendStatus("Error in Baseline compare: %s"%err, sfile="TestStatus.log")
         # compare memory usage to baseline
         newestcpllogfile = self._getlatestcpllog()
         memlist = self._getmemusage(newestcpllogfile)
@@ -203,8 +197,7 @@ class SystemTestsCommon(object):
             baselog = os.path.join(basecmp_dir, "cpl.log")
             blmemlist = self._getmemusage(baselog)
             if(memlist[-1][1] > 1.10*blmemlist[-1][1]):
-                with open(os.path.join(test_dir, "TestStatus"), "a") as fd:
-                    fd.write("FAIL: Memory usage increase > 10% from baseline")
+                appendStatus("FAIL: Memory usage increase > 10% from baseline",sfile="TestStatus")
 
     def generate_baseline(self):
         """
@@ -216,10 +209,9 @@ class SystemTestsCommon(object):
         test_dir = self._case.get_value("CASEROOT")
         for bdir in (baselineroot, basegen_dir):
             if not os.path.isdir(bdir):
-                with open(os.path.join(test_dir, "TestStatus"), "a") as fd:
-                    fd.write("GFAIL %s baseline\n" % self._case.get_value("CASEBASEID"))
-                with open(os.path.join(test_dir, "TestStatus.log"), "a") as fd:
-                    fd.write("ERROR %s does not exist" % bdir)
+                appendStatus("GFAIL %s baseline\n" % self._case.get_value("CASEBASEID"),
+                             sfile="TestStatus")
+                appendStatus("ERROR %s does not exist" % bdir, sfile="TestStatus.log")
                 return -1
         compgen = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools",
                                "component_compgen_baseline.sh")
@@ -233,12 +225,9 @@ class SystemTestsCommon(object):
         shutil.copyfile(newestcpllogfile,
                         os.path.join(basegen_dir,
                                      os.path.basename(newestcpllogfile)))
-
-        with open(os.path.join(test_dir, "TestStatus"), "a") as fd:
-            fd.write(out+"\n")
+        appendStatus(out+"\n",sfile="TestStatus")
         if rc != 0:
-            with open(os.path.join(test_dir, "TestStatus.log"), "a") as fd:
-                fd.write("Error in Baseline Generate: %s"%err)
+            appendStatus("Error in Baseline Generate: %s"%err,sfile="TestStatus.log")
 
 class FakeTest(SystemTestsCommon):
 
