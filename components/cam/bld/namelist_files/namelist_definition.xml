@@ -3777,6 +3777,13 @@ ice nucleation scheme by Demott
 Default: .false.
 </entry>
 
+<entry id="pergro" type="logical"  category="perturbation"
+       group="phys_ctl_nl" valid_values="" >
+switch to turn on pergro code changes
+Default: .false.
+</entry>
+
+
 
 <!-- Flag to turn on/off amicphys codes -->
 <entry id="mam_amicphys_optaa" type="integer"  category="scavenging"

@@ -110,7 +110,7 @@ real(r8), parameter, public :: omsm   = 1._r8 - 1.e-5_r8
 
 ! Smallest mixing ratio considered in microphysics.
 !real(r8), parameter, public :: qsmall = 1.e-18_r8
-real(r8), parameter, public :: qsmall = 1.e-8_r8 !BSINGH: Changed the threshold for pergrow [this mod is climate changing ]
+real(r8), public :: qsmall = huge(1.0_r8)!1.e-8_r8 !BSINGH: Changed the threshold for pergro [this mod is climate changing ]
 
 ! minimum allowed cloud fraction
 real(r8), parameter, public :: mincld = 0.0001_r8
@@ -140,6 +140,8 @@ real(r8), parameter, public :: mi0 = 4._r8/3._r8*pi*rhoi*(10.e-6_r8)**3
 !=================================================
 ! Private module parameters
 !=================================================
+
+logical :: pergro = .false.
 
 ! Signaling NaN bit pattern that represents a limiter that's turned off.
 integer(i8), parameter :: limiter_off = int(Z'7FF1111111111111', i8)
@@ -231,6 +233,8 @@ contains
 subroutine micro_mg_utils_init( kind, rh2o, cpair, tmelt_in, latvap, &
      latice, dcs, ice_sed_ai, errstring)
 
+  use phys_control, only:phys_getopts
+
   integer,  intent(in)  :: kind
   real(r8), intent(in)  :: rh2o
   real(r8), intent(in)  :: cpair
@@ -247,6 +251,11 @@ subroutine micro_mg_utils_init( kind, rh2o, cpair, tmelt_in, latvap, &
   real(r8) :: ice_lambda_bounds(2)
 
   !-----------------------------------------------------------------------
+
+call phys_getopts(pergro_out=pergro)
+
+qsmall = 1.e-18_r8
+if(pergro) qsmall = 1.e-8_r8 !BSINGH: Changed the threshold for pergro [this mod is climate changing ]
 
   errstring = ' '
 

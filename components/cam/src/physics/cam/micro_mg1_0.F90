@@ -66,6 +66,7 @@ public :: &
      micro_mg_tend
 
 integer, parameter :: r8 = selected_real_kind(12)      ! 8 byte real
+logical            :: pergro = .false.
 
 logical  :: dcs_tdep
 
@@ -165,6 +166,8 @@ subroutine micro_mg_init( &
 ! 
 !-----------------------------------------------------------------------
 
+use phys_control, only: phys_getopts
+
 integer,          intent(in)  :: kind            ! Kind used for reals
 real(r8),         intent(in)  :: gravit
 real(r8),         intent(in)  :: rair
@@ -190,6 +193,7 @@ real(r8) surften       ! surface tension of water w/respect to air (N/m)
 real(r8) arg
 !-----------------------------------------------------------------------
 
+call phys_getopts(pergro_out=pergro)
 errstring = ' '
 
 if( kind .ne. r8 ) then
@@ -297,8 +301,11 @@ Dcs = micro_mg_dcs
 dcs_tdep = micro_mg_dcs_tdep
 
 ! smallest mixing ratio considered in microphysics
-
-qsmall = 1.e-8_r8   !1.e-18_r8  !BSINGH: Changed the threshold for pergrow [this mod is climate changing ]
+if(pergro) then
+   qsmall = 1.e-8_r8   !1.e-18_r8  !BSINGH: Changed the threshold for pergro [this mod is climate changing ]
+else
+   qsmall = 1.e-18_r8
+endif
 ! immersion freezing parameters, bigg 1953
 
 bimm = 100._r8
@@ -1094,8 +1101,10 @@ do k=top_lev,pver
 
       icldm(i,k)=max(icecldf(i,k),mincld)
       lcldm(i,k)=max(liqcldf(i,k),mincld)
-!pjr - BSINGH - Added by phil as a temporary solution to avoid temprature jump
-      if (cldm(i,k).gt.0.9999999_r8) cldm(i,k) = 0.9999999_r8 !BSINGH
+      if(pergro) then
+         !pjr - BSINGH - Added by phil as a temporary solution to avoid temprature jump         
+         if (cldm(i,k).gt.0.9999999_r8) cldm(i,k) = 0.9999999_r8 !BSINGH
+      endif
 
       ! subcolumns, set cloud fraction variables to one
       ! if cloud water or ice is present, if not present

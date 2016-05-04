@@ -38,6 +38,7 @@ integer :: dgnumwet_idx   = 0
 integer :: wetdens_ap_idx = 0
 integer :: qaerwat_idx    = 0
 
+logical :: pergro         = .false.
 !===============================================================================
 contains
 !===============================================================================
@@ -90,7 +91,7 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
          'aerosol water, interstitial, mode '//trnum(2:3))
       
       ! determine default variables
-      call phys_getopts(history_aerosol_out = history_aerosol)
+      call phys_getopts(history_aerosol_out = history_aerosol, pergro_out = pergro)
 
       if (history_aerosol) then  
          call add_default('dgnd_a'//trnum(2:3), 1, ' ')
@@ -182,6 +183,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
    real(r8) :: es(pcols)             ! saturation vapor pressure
    real(r8) :: qs(pcols)             ! saturation specific humidity
+   real(r8) :: cldn_thresh = huge(1.0_r8)
 
    character(len=3) :: trnum       ! used to hold mode number (as characters)
    !-----------------------------------------------------------------------
@@ -330,8 +332,12 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
          endif
          rh(i,k) = max(rh(i,k), 0.0_r8)
          rh(i,k) = min(rh(i,k), 0.98_r8)
-         !if (cldn(i,k) .lt. 1.0_r8) then
-         if (cldn(i,k) .lt. 0.9998_r8) then !BSINGH - new code
+         if(pergro) then
+            cldn_thresh = 0.9998_r8
+         else			
+            cldn_thresh = 1.0_r8
+         endif
+         if (cldn(i,k) .lt. cldn_thresh) then !BSINGH - new code
             rh(i,k) = (rh(i,k) - cldn(i,k)) / (1.0_r8 - cldn(i,k))  ! clear portion
          end if
          rh(i,k) = max(rh(i,k), 0.0_r8)

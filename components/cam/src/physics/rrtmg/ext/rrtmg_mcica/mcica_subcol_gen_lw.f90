@@ -51,7 +51,7 @@
 
       subroutine mcica_subcol_lw(lchnk, ncol, nlay, icld, permuteseed, play, &
                        cldfrac, ciwp, clwp, rei, rel, tauc, cldfmcl, &
-                       ciwpmcl, clwpmcl, reicmcl, relqmcl, taucmcl, rnglw)
+                       ciwpmcl, clwpmcl, reicmcl, relqmcl, taucmcl, rnglw, pergro)
 
 ! ----- Input -----
 ! Control
@@ -63,6 +63,7 @@
                                                         ! permute the seed between each call.
                                                         ! between calls for LW and SW, recommended
                                                         ! permuteseed differes by 'ngpt'
+      logical, intent(in) :: pergro
 
 ! Atmosphere
       real(kind=r8), intent(in) :: play(:,:)          ! layer pressures (mb) 
@@ -151,14 +152,14 @@
 
 !  Generate the stochastic subcolumns of cloud optical properties for the longwave;
       call generate_stochastic_clouds (ncol, nlay, nsubclw, icld, pmid, cldfrac, clwp, ciwp, tauc, &
-                               cldfmcl, clwpmcl, ciwpmcl, taucmcl, permuteseed, rnglw)!BSINGH
+                               cldfmcl, clwpmcl, ciwpmcl, taucmcl, permuteseed, rnglw, pergro)!BSINGH
 
       end subroutine mcica_subcol_lw
 
 
 !-------------------------------------------------------------------------------------------------
       subroutine generate_stochastic_clouds(ncol, nlay, nsubcol, icld, pmid, cld, clwp, ciwp, tauc, &
-                                   cld_stoch, clwp_stoch, ciwp_stoch, tauc_stoch, changeSeed,rnglw)!BSINGH  
+                                   cld_stoch, clwp_stoch, ciwp_stoch, tauc_stoch, changeSeed,rnglw, pergro)!BSINGH  
 !-------------------------------------------------------------------------------------------------
 
   !----------------------------------------------------------------------------------------------------------------
@@ -219,7 +220,6 @@
 ! The Mersenne Twister random number engine
       use MersenneTwister, only: randomNumberSequence, &   
                                  new_RandomNumberSequence, getRandomReal
-
       type(randomNumberSequence) :: randomNumbers
 
 ! -- Arguments
@@ -227,8 +227,9 @@
       integer, intent(in) :: ncol            ! number of columns
       integer, intent(in) :: nlay            ! number of layers
       integer, intent(in) :: icld            ! clear/cloud, cloud overlap flag
-      integer, intent(in) :: nsubcol         ! number of sub-columns (g-point intervals)
+      integer, intent(in) :: nsubcol         ! number of sub-columns (g-point intervals)      
       integer, optional, intent(in) :: changeSeed     ! allows permuting seed
+      logical, intent(in) :: pergro
 
 ! Column state (cloud fraction, cloud water, cloud ice) + variables needed to read physics state 
       real(kind=r8), intent(in) :: pmid(:,:)          ! layer pressure (Pa)
@@ -380,8 +381,8 @@
             do isubcol = 1,nsubcol
                do ilev = 1,nlay
                   call kissvec(seed1, seed2, seed3, seed4, rand_num) 
-                  !CDF(isubcol,:,ilev) = rand_num !BSINGH -commented this line                  
-                  CDF(isubcol,:,ilev) = rnglw(isubcol,1:ncol,ilev) !BSINGH - added this line
+                  CDF(isubcol,:,ilev) = rand_num !BSINGH -commented this line
+                  if(pergro)CDF(isubcol,:,ilev) = rnglw(isubcol,1:ncol,ilev) !BSINGH - added this line
                enddo
             enddo
          elseif (irnd.eq.1) then

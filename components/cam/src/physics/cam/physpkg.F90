@@ -129,6 +129,7 @@ module physpkg
   logical :: clim_modal_aero  ! climate controled by prognostic or prescribed modal aerosols
   logical :: prog_modal_aero  ! Prognostic modal aerosols present
   logical :: convproc_do_aer, convproc_do_gas  !BSINGH(09/16/2014): Added for unified convective transport
+  logical :: pergro = .false.
 
   !======================================================================= 
 contains
@@ -202,7 +203,8 @@ subroutine phys_register
     integer :: nmodes
 
     call phys_getopts( microp_scheme_out = microp_scheme )
-    call phys_getopts( do_clubb_sgs_out  = do_clubb_sgs )
+    call phys_getopts( do_clubb_sgs_out  = do_clubb_sgs, pergro_out = pergro )
+    
 
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
@@ -1576,13 +1578,14 @@ subroutine tphysac (ztodt,   cam_in,  &
     ncol  = state%ncol
 
     nstep = get_nstep()
-
+if(pergro) then
     !BALLI- Temporary fix - bypass changes by surface model
     cam_in%wsx(:)    = 0.0_r8 
     cam_in%wsy(:)    = 0.0_r8 
     cam_in%shf(:)    = 0.0_r8
     cam_in%cflx(:,:) = 0.0_r8 
     !BALLI ENDS
+endif
 
     call phys_getopts( do_clubb_sgs_out       = do_clubb_sgs, &
                        state_debug_checks_out = state_debug_checks &
