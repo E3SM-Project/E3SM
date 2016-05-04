@@ -612,7 +612,7 @@ def clean(case, cleanlist):
     case.flush()
 
     # append call of to CaseStatus
-    msg = "%s case.setup \n" % time.strftime("%Y-%m-%d %H:%M:%S")
+    msg = "cleanbuild %s "%" ".join(cleanlist)
     appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
 
 ###############################################################################

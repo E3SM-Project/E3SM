@@ -1,27 +1,25 @@
 #!/usr/bin/env python2
-
 """
 template to create a case short term archiving script
 """
-
 import sys
 import os
-import time
-from standard_script_setup          import *
-from CIME.XML.standard_module_setup import *
-from CIME.case                      import Case
-from CIME.utils                     import expect, get_model, run_cmd, does_file_have_string
-
-workdir = os.environ.get("PBS_O_WORKDIR")
-if workdir is not None:
-    os.chdir(workdir)
-
 _CIMEROOT = os.environ.get("CIMEROOT")
 if _CIMEROOT is None:
     raise exc_type("ERROR: must set CIMEROOT environment variable")
 
 _LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
 sys.path.append(_LIBDIR)
+
+import time
+from standard_script_setup          import *
+from CIME.XML.standard_module_setup import *
+from CIME.case                      import Case
+from CIME.utils                     import expect, get_model, run_cmd, does_file_have_string, appendStatus
+
+workdir = os.environ.get("PBS_O_WORKDIR")
+if workdir is not None:
+    os.chdir(workdir)
 
 logger = logging.getLogger(__name__)
 
@@ -51,21 +49,17 @@ def _main_func():
     case = Case()
 
     caseroot = case.get_value("CASEROOT")
-    testlog = os.path.join(caseroot, "TestStatus.log")
 
     # max number of threads needed by scripts
     os.environ["maxthrds"] = 1
 
     # document start
-    if os.path.isfile(testlog):
-        with open(testlog, "a") as fd:
-            fd.write("lt_archive starting %s" %(time.strftime("%Y-%m-%d %H:%M:%S")))
-    logger.info("lt_archive starting %s" %(time.strftime("%Y-%m-%d %H:%M:%S")))
+    appendStatus("lt_archive starting",caseroot=caseroot,sfile="CaseStatus")
 
     # determine status of run and short term archiving
-    runComplete = does_file_have_string(os.path.join(caseroot, "CaseStatus"), 
+    runComplete = does_file_have_string(os.path.join(caseroot, "CaseStatus"),
                                         "run SUCCESSFUL")
-    staComplete = does_file_have_string(os.path.join(caseroot, "stArchiveStatus"), 
+    staComplete = does_file_have_string(os.path.join(caseroot, "stArchiveStatus"),
                                         "st_archive_complete")
 
     # set up envrionment vars and call the lt_archive.sh script
@@ -85,19 +79,7 @@ def _main_func():
                "Unable to perform long term archive...")
 
     # document completion
-    if os.path.isfile(testlog):
-        with open(testlog, "a") as fd:
-            fd.write("lg_archive completed %s" %(time.strftime("%Y-%m-%d %H:%M:%S")))
-
-    # resubmit case if appropriate
-    resubmit = int(case.get_value("RESUBMIT"))
-    if resubmit > 0:                   
-	cmd = os.path.join(caseroot, "case.submit") + " -resubmit -scriptname case.st_archive"
-        run_cmd(cmd, from_dir=caseroot)
-
-        if os.path.isfile(testlog):
-            with open(testlog, "a") as fd:
-                fd.write("resubmitting %s" %(time.strftime("%Y-%m-%d %H:%M:%S")))
+    appendStatus("lt_archive completed" ,caseroot=caseroot, sfile="CaseStatus")
 
 ###############################################################################
 

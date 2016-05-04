@@ -12,7 +12,7 @@
 
 from standard_script_setup import *
 
-from CIME.utils import expect, run_cmd, convert_to_type, appendCaseStatus
+from CIME.utils import expect, run_cmd, convert_to_type, appendStatus
 from CIME.case import Case
 
 import argparse, doctest, shutil, glob, time
@@ -109,8 +109,8 @@ def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=No
         argstr = ""
         for arg in sys.argv:
             argstr += "%s "%arg
-        msg = " %s <command> %s </command>\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), argstr)
-        appendCaseStatus(caseroot, msg)
+        msg = "<command> %s </command>" % (argstr)
+        appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
 
 def _main_func(description):
     if ("--test" in sys.argv):

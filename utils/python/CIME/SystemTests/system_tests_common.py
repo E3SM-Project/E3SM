@@ -20,6 +20,7 @@ class SystemTestsCommon(object):
         """
         print caseroot
         self._caseroot = caseroot
+        self._runstatus = None
         # Needed for sh scripts
         os.environ["CASEROOT"] = caseroot
         if case is None:
@@ -48,21 +49,21 @@ class SystemTestsCommon(object):
 
 
     def run(self):
-        with open("TestStatus", 'r') as f:
-            teststatusfile = f.read()
-
         rc, out, err = run_cmd("./case.run", ok_to_fail=True)
         if rc == 0 and self.coupler_log_indicates_run_complete():
-            result = "PASS"
+            self._runstatus = "PASS"
         else:
-            result = "FAIL"
+            self._runstatus = "FAIL"
+        if out:
+            appendStatus("case.run output is:\n %s\n"%out, sfile="TestStatus.log")
+        if err:
+            appendStatus("case.run error is:\n %s\n"%err, sfile="TestStatus.log")
 
-        with open("TestStatus.log", 'a') as f:
-            f.write("case.run output is %s\n"%out)
-            f.write("case.run error is %s\n"%err)
-
+    def finish(self):
+        with open("TestStatus", 'r') as f:
+            teststatusfile = f.read()
         li = teststatusfile.rsplit('PEND', 1)
-        teststatusfile = result.join(li)
+        teststatusfile = self._runstatus.join(li)
         with open("TestStatus", 'w') as f:
             f.write(teststatusfile)
         return
@@ -106,7 +107,7 @@ class SystemTestsCommon(object):
         memlist = self._getmemusage(cpllog)
 
         if len(memlist)<3:
-            appendStatus("COMMENT: insuffiencient data for memleak test\n",sfile="TestStatus")
+            appendStatus("COMMENT: insuffiencient data for memleak test",sfile="TestStatus")
         else:
             finaldate = int(memlist[-1][0])
             originaldate = int(memlist[0][0])
@@ -114,12 +115,12 @@ class SystemTestsCommon(object):
             originalmem = float(memlist[0][1])
             memdiff = (finalmem - originalmem)/originalmem
             if memdiff < 0.01:
-                appendStatus("PASS %s memleak\n"%(self._case.get_value("CASEBASEID")),
+                appendStatus("PASS %s memleak"%(self._case.get_value("CASEBASEID")),
                              sfile="TestStatus")
             else:
-                appendStatus("\nmemleak detected, memory went from %f to %f in %d days"
+                appendStatus("memleak detected, memory went from %f to %f in %d days"
                              %(originalmem, finalmem, finaldate-originaldate),sfile="TestStatus.log")
-                appendStatus("FAIL %s memleak\n"%(self._case.get_value("CASEBASEID")),
+                appendStatus("FAIL %s memleak"%(self._case.get_value("CASEBASEID")),
                              sfile="TestStatus")
 
     def compare_env_run(self, expected=None):
@@ -225,7 +226,7 @@ class SystemTestsCommon(object):
         shutil.copyfile(newestcpllogfile,
                         os.path.join(basegen_dir,
                                      os.path.basename(newestcpllogfile)))
-        appendStatus(out+"\n",sfile="TestStatus")
+        appendStatus(out,sfile="TestStatus")
         if rc != 0:
             appendStatus("Error in Baseline Generate: %s"%err,sfile="TestStatus.log")
 

@@ -82,6 +82,8 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
 ###############################################################################
 
     os.chdir(caseroot)
+    msg = "case.setup starting"
+    appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
 
     cimeroot = os.environ["CIMEROOT"]
 
@@ -138,7 +140,7 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
         logger.info("Successfully cleaned batch script case.run")
         logger.info("Some files have been saved to %s" % backup_dir)
 
-        msg =  "%s case.setup --clean \n" % time.strftime("%Y-%m-%d %H:%M:%S")
+        msg = "case.setup clean complete"
         appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
 
     if not clean:
@@ -281,6 +283,6 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
                 run_cmd("./testcase.setup -caseroot %s" % caseroot)
                 logger.info("Finished testcase.setup")
 
-        msg = "%s case.setup \n" % time.strftime("%Y-%m-%d %H:%M:%S")
+        msg = "case.setup complete"
         appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
 

@@ -3,23 +3,23 @@
 """
 template to create a case short term archiving script
 """
-
 import sys, os, time
-from standard_script_setup          import *
-from CIME.XML.standard_module_setup import *
-from CIME.case                      import Case
-from CIME.utils                     import get_model, run_cmd
-
-workdir = os.environ.get("PBS_O_WORKDIR")
-if workdir is not None:
-    os.chdir(workdir)
-
 _CIMEROOT = os.environ.get("CIMEROOT")
 if _CIMEROOT is None:
     raise exc_type("ERROR: must set CIMEROOT environment variable")
 
 _LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
 sys.path.append(_LIBDIR)
+
+from standard_script_setup          import *
+from CIME.case_submit               import submit
+from CIME.XML.standard_module_setup import *
+from CIME.case                      import Case
+from CIME.utils                     import get_model, run_cmd, appendStatus
+
+workdir = os.environ.get("PBS_O_WORKDIR")
+if workdir is not None:
+    os.chdir(workdir)
 
 logger = logging.getLogger(__name__)
 
@@ -49,29 +49,23 @@ def _main_func():
     case = Case()
 
     caseroot = case.get_value("CASEROOT")
-    testlog = os.path.join(caseroot, "TestStatus.log")
 
     # do short-term archiving
-    if os.path.isfile(testlog):
-        with open(testlog, "a") as fd:
-            fd.write("st_archiving starting %s" %(time.strftime("%Y-%m-%d %H:%M:%S")))
+    appendStatus("st_archiving starting",
+                 caseroot=caseroot, sfile="CaseStatus")
 
-    cmd = os.path.join(caseroot, "Tools/st_archive") + " >> stArchiveStatus 2>&1"  
+    cmd = os.path.join(caseroot, "Tools/st_archive") + " >> stArchiveStatus 2>&1"
     run_cmd(cmd)
 
-    if os.path.isfile(testlog):
-        with open(testlog, "a") as fd:
-            fd.write("st_archiving completed %s" %(time.strftime("%Y-%m-%d %H:%M:%S")))
+    appendStatus("st_archiving completed",
+                 caseroot=caseroot, sfile="CaseStatus")
 
     # resubmit case if appropriate
     resubmit = int(case.get_value("RESUBMIT"))
-    if resubmit > 0:                   
-	cmd = os.path.join(caseroot, "case.submit") + " -resubmit -scriptname case.st_archive"
-        run_cmd(cmd, from_dir=caseroot)
-
-        if os.path.isfile(testlog):
-            with open(testlog, "a") as fd:
-                fd.write("resubmitting %s" %(time.strftime("%Y-%m-%d %H:%M:%S")))
+    if resubmit > 0:
+        appendStatus("resubmitting from st_archive",
+                     caseroot=caseroot, sfile="CaseStatus")
+        submit(caseroot, resubmit="case.st_archive")
 
 
 ###############################################################################
