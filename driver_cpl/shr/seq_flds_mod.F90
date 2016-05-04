@@ -1335,7 +1335,7 @@ module seq_flds_mod
      attname  = 'Si_ifrac'
      call metadata_set(attname, longname, stdname, units)
 
-     ! Sea ice basal pressure
+     ! Sea ice basal pressure (ACME only)
      call seq_flds_add(i2x_states,"Si_bpress")
      call seq_flds_add(x2o_states,"Si_bpress")
      longname = 'Sea ice basal pressure'

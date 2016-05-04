@@ -86,10 +86,6 @@ def parse_command_line(args, cimeroot):
                         help="Alternative path for source root directory. By default this is set to"
                         "cimeroot/../")
 
-    if cime_model == "acme":
-        parser.add_argument("--cam-se-target", default="preqx", choices=("preqx", "preqx-acc"),
-                            help="Specify a target for the cam-se dycore (ignored for other atmospheric dycores)")
-
     # hidden argument indicating called from create_test
     parser.add_argument("--test", "-test", action="store_true",
                         help="Used to indicate that create_newcase was called from create_test"
@@ -123,7 +119,7 @@ def parse_command_line(args, cimeroot):
     return args.case, args.compset, args.res, args.mach, args.compiler,\
         args.mpilib, args.project, args.pecount, \
         args.mach_dir, args.user_mods_dir, args.user_compset, args.pesfile, \
-        args.user_grid, args.gridfile, args.srcroot, args.cam_se_target, args.test
+        args.user_grid, args.gridfile, args.srcroot, args.test
 
 ###############################################################################
 def _main_func():
@@ -133,7 +129,7 @@ def _main_func():
     case, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
         machine_dir, usermods_dir, user_compset, pesfile, \
-        user_grid, gridfile, srcroot, cam_se_target, test \
+        user_grid, gridfile, srcroot, test \
         = parse_command_line(sys.argv, cimeroot)
 
     caseroot = os.path.abspath(case)
@@ -156,8 +152,7 @@ def _main_func():
     caseobj.configure(compset, grid, machine_name=machine, project=project,
                       pecount=pecount, compiler=compiler, mpilib=mpilib,
                       user_compset=user_compset, pesfile=pesfile,
-                      user_grid=user_grid, gridfile=gridfile,
-                      cam_se_target=cam_se_target)
+                      user_grid=user_grid, gridfile=gridfile)
 
     caseobj.create_caseroot()
 
