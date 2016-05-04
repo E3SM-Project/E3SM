@@ -190,7 +190,7 @@ contains
    real (kind=RKIND) function ocn_forcing_transmission(z, attenuationCoefficient)!{{{
       real (kind=RKIND), intent(in) :: z, attenuationCoefficient
 
-      ocn_forcing_transmission = exp( z / attenuationCoefficient )
+      ocn_forcing_transmission = exp( max(z / attenuationCoefficient, -100.0_RKIND) )
 
    end function ocn_forcing_transmission!}}}
 
