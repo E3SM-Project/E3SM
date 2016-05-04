@@ -210,23 +210,32 @@
      </directives>
    </batch_system>
 
-   <batch_jobs>
-     <job name="case.run">
-       <template>template.case.run</template>
-       <task_count>default</task_count>
-     </job>
-     <job name="case.test">
-       <template>python.case.test</template>
-       <task_count>default</task_count>
-     </job>
-     <job name="case.st_archive">
-       <template>template.st_archive</template>
-       <task_count>1</task_count>
-     </job>
-     <job name="case.lt_archive">
-       <template>template.lt_archive</template>
-       <task_count>1</task_count>
-     </job>
-   </batch_jobs>
+  <batch_jobs>
+    <!-- order matters, with no-batch jobs will be run in the order listed here -->
+    <job name="case.run">
+      <template>template.case.run</template>
+      <task_count>default</task_count>
+      <prereq>$BUILD_COMPLETE and not $TEST</prereq>
+    </job>
+   <job name="case.test">
+      <template>template.case.test</template>
+      <task_count>default</task_count>
+      <prereq>$BUILD_COMPLETE and $TEST</prereq>
+    </job>
+    <job name="case.st_archive">
+      <template>template.st_archive</template>
+      <task_count>1</task_count>
+      <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
+      <dependancy>case.run or case.test</dependancy>
+      <prereq>$DOUT_S</prereq>
+    </job>
+    <job name="case.lt_archive">
+      <template>template.lt_archive</template>
+      <task_count>1</task_count>
+      <dependancy>case.st_archive</dependancy>
+      <prereq>$DOUT_L_MS</prereq>
+    </job>
+  </batch_jobs>
+
 </config_batch>
 
