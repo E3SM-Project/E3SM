@@ -25,7 +25,7 @@ else { $scrdir = $cwd; }
 
 #-----------------------------------------------------------------------------------------------
 # Add $scrdir to the list of paths that Perl searches for modules
-my @dirs = ( $scrdir, "$scrdir/../../../../../../scripts/ccsm_utils/Tools/perl5lib",
+my @dirs = ( $scrdir, "$scrdir/../../../../../cime/utils/perl5lib",
            );
 unshift @INC, @dirs;
 my $result = eval "require XML::Lite";
