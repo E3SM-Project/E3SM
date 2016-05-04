@@ -59,13 +59,14 @@ class SystemTestsCommon(object):
         if err:
             appendStatus("case.run error is:\n %s\n"%err, sfile="TestStatus.log")
 
-    def finish(self):
-        with open("TestStatus", 'r') as f:
-            teststatusfile = f.read()
-        li = teststatusfile.rsplit('PEND', 1)
-        teststatusfile = self._runstatus.join(li)
-        with open("TestStatus", 'w') as f:
-            f.write(teststatusfile)
+    def __del__(self):
+        if self._runstatus is not None:
+            with open("TestStatus", 'r') as f:
+                teststatusfile = f.read()
+            li = teststatusfile.rsplit('PEND', 1)
+            teststatusfile = self._runstatus.join(li)
+            with open("TestStatus", 'w') as f:
+                f.write(teststatusfile)
         return
 
     def coupler_log_indicates_run_complete(self):
