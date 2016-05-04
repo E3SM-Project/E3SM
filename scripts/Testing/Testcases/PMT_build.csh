@@ -12,16 +12,16 @@ if ( -e env_mach_pes.xml.1 )  then
   cp -f env_mach_pes.xml.1 env_mach_pes.xml
 endif
 
-./case_setup -clean -testmode
-./case_setup 
+./case.setup -clean -testmode
+./case.setup 
 
 cp -f env_mach_pes.xml env_mach_pes.xml.1
-cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml.locked
+cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml
 
 ./xmlchange -file env_run.xml -id BFBFLAG -val TRUE
 echo "b4b_flag=.true." >> user_nl_pop
 
-./$CASE.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build for default PE layout failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus
@@ -38,6 +38,7 @@ set NTASKS_WAV  = `./xmlquery NTASKS_WAV	-value`
 set NTASKS_OCN  = `./xmlquery NTASKS_OCN	-value`
 set NTASKS_ICE  = `./xmlquery NTASKS_ICE	-value`
 set NTASKS_GLC  = `./xmlquery NTASKS_GLC	-value`
+set NTASKS_ESP  = `./xmlquery NTASKS_ESP	-value`
 set NTASKS_CPL  = `./xmlquery NTASKS_CPL	-value`
 
 set NTHRDS_ATM  = `./xmlquery NTHRDS_ATM	-value`
@@ -47,6 +48,7 @@ set NTHRDS_WAV  = `./xmlquery NTHRDS_WAV	-value`
 set NTHRDS_OCN  = `./xmlquery NTHRDS_OCN	-value`
 set NTHRDS_ICE  = `./xmlquery NTHRDS_ICE	-value`
 set NTHRDS_GLC  = `./xmlquery NTHRDS_GLC	-value`
+set NTHRDS_ESP  = `./xmlquery NTHRDS_ESP	-value`
 set NTHRDS_CPL  = `./xmlquery NTHRDS_CPL	-value`
 
 # Halve the number of tasks 
@@ -98,15 +100,15 @@ if ($NTHRDS_ICE == 1) then
 endif
 
 # Build with half the tasks and double the threads
-./case_setup -clean -testmode
-./case_setup
+./case.setup -clean -testmode
+./case.setup
 ./xmlchange -file env_build.xml -id SMP_BUILD -val 0
 
-./case_setup -clean
-./case_setup
-./$CASE.clean_build -all 
+./case.setup -clean
+./case.setup
+./case.clean_build -all 
 
-./$CASE.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build for default half tasks twice threads failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus

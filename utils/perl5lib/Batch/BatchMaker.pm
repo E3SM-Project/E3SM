@@ -70,6 +70,9 @@ sub new
     }
     # set up paths to the template files, this could and should be extracted out somehow??
     $self->{'job_id'} = $self->{'case'};
+    if ($self->{'machine'} =~ /pleiades/) { # pleiades jobname needs to be limited to 15 chars
+	$self->{'job_id'} = substr( $self->{'job_id'}, 0, 15 );
+    }
     $self->{'output_error_path'} = $self->{'case'};
     $self->{'configbatch'} = "$self->{'machroot'}/config_batch.xml";
     $self->{'configmachines'} = "$self->{'machroot'}/config_machines.xml";
@@ -179,20 +182,28 @@ sub makeBatchScript()
     my $inputfilename = shift;
     my $outputfilename = shift;
 
-    $logger->debug("In makeBatchScript");
+    $logger->debug("In makeBatchScript 1");
     if(! -f $inputfilename)
     {
 	die "$inputfilename does not exist!";
     }
     
     $self->getBatchSystemTypeForMachine();
+    $logger->debug("In makeBatchScript 2");
     $self->setTaskInfo();
-
+    $logger->debug("In makeBatchScript 3");
     $self->setQueue();
+    $logger->debug("In makeBatchScript 4");
     $self->setWallTime();
+    $logger->debug("In makeBatchScript 5");
     $self->setProject();
+    $logger->debug("In makeBatchScript 6");
     $self->setBatchDirectives();
+    $logger->debug("In makeBatchScript 7");
+    $self->getLtArchiveOptions();
+    $logger->debug("In makeBatchScript 8");
     $self->setCESMRun();
+    $logger->debug("In makeBatchScript 9");
     $self->writeBatchScript($inputfilename, $outputfilename);
 }
 
@@ -502,28 +513,40 @@ sub setQueue()
     # Get the queue from env_batch.xml if its defined there
     # otherwise get the default from config_machines.xml
     # and set it in env_batch.xml
+    if(! defined $self->{envBatch}){
+	$logger->logdie("envBatch not defined");
+    }elsif(! defined $self->{job}){
+	$logger->logdie("job not defined");
+    }
 
     my $queue = $self->{envBatch}{$self->{job}}{JOB_QUEUE};
+    
+    
 
     if(defined $queue && ! ($queue =~ /^\s*$/ )){
 	$self->{queue} = $queue;
-	$logger->debug("Using queue $self->{queue} from env_batch.xml");
+	$logger->debug("Using queue $self->{queue} from env_batch.xml for $self->{job}");
 	return;
     }
 
 
-
+    $logger->debug("setQueue 1");
     #get the batch config parser, and the estimated cost of the run. 
     $self->getBatchConfigParser();	
+    $logger->debug("setQueue 2");
+
     $self->getConfigMachinesParser();
+    $logger->debug("setQueue 3");
     $self->getEstCost();
     my $batchparser = $self->{'batchparser'};
     my $configmachinesparser = $self->{'configmachinesparser'};
-    
+
+    $logger->debug("calling parser");
 
     # First, set the queue based on the default queue defined in config_batch.xml. 
     my @defaultqueue = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system/queues/queue[\@default=\'true\']");
 
+    $logger->debug("setting queue");
     
     # set the default queue IF we have a default queue defined, some machines (blues) do not allow one to 
     # specifiy the queue directly. 
@@ -550,9 +573,10 @@ sub setQueue()
 	    $self->{'queue'} = $qelem->textContent();
 	}
     }
-    $self->{envBatch}->set("JOB_QUEUE",$self->{job},$self->{queue});
-    $logger->debug("Using queue $self->{queue} ");
-
+    if(defined $self->{queue}){  
+      $self->{envBatch}->set("JOB_QUEUE",$self->{job},$self->{queue});
+      $logger->debug("Using queue $self->{queue} ");
+    }
 
 }
 
@@ -755,6 +779,42 @@ sub writeBatchScript()
     print $RUNSCRIPT $templatetext;
     close $RUNSCRIPT;
     chmod 0755, $outputfilename;
+}
+
+#==============================================================================
+# Get the long-term archiver options from $CIMEROOT/cime_config/cesm/machines 
+# These options will be used when creating the lt_archive run scrip
+#==============================================================================
+sub getLtArchiveOptions()
+{
+    my $self = shift;
+    
+    my $lt_archive_file = $self->{machroot} . "/config_lt_archive.xml";
+    my $ltarchxml = XML::LibXML->new(no_blanks => 1);
+    my $ltarchparser = $ltarchxml->parse_file($lt_archive_file) or die "could not parse $lt_archive_file, $! $?";
+    my $ltarchroot = $ltarchparser->getDocumentElement();
+    
+    my $lt_archive_args;
+    my @argnodes;
+    
+    @argnodes = $ltarchroot->findnodes("//machine[\@name=\'$self->{machine}\']/lt_archive_args");
+    
+    # First, search for the machine-specific lt_archive_args
+    if(! @argnodes)
+    {
+        @argnodes = $ltarchroot->findnodes("//machine[\@name=\'default\']/lt_archive_args");
+    }
+    
+    # if no default is found, then set lt_archive_args to empty
+    if(! @argnodes)
+    {
+        $lt_archive_args = '';
+    }
+    else
+    {
+        my $argnode = $argnodes[0];
+        $self->{lt_archive_args} = $argnode->textContent();
+    }
 }
 
 #==============================================================================

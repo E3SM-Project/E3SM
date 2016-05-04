@@ -2,7 +2,7 @@
 setenv CIMEROOT `./xmlquery CIMEROOT    -value`
 if( -e env_mach_pes.xml.orig) then
     cp env_mach_pes.xml.orig env_mach_pes.xml
-    ./case_setup -clean
+    ./case.setup -clean
 else
     cp env_mach_pes.xml env_mach_pes.xml.orig
 endif
@@ -15,7 +15,7 @@ set EXEROOT     = `./xmlquery EXEROOT		-value`
 ./xmlchange -file env_mach_pes.xml -id NINST_OCN  -val 1
 set maxtasks = 0
 
-foreach comp (ATM LND ROF WAV ICE GLC)
+foreach comp (ATM LND ROF WAV ICE GLC ESP)
   ./xmlchange NINST_$comp=2
 
   set tasks = `./xmlquery NTASKS_$comp -value`
@@ -42,10 +42,10 @@ if( ( $ocnroot > 0 ) && ( $ocnroot < $maxtasks ) ) then
   ./xmlchange ROOTPE_OCN=$maxtasks
 endif
 
-./case_setup -clean
-./case_setup
+./case.setup -clean
+./case.setup
 
-./$CASE.build
+./case.build -testmode
 if ($status != 0) then
    echo "Error: build failed" >! ./TestStatus
    echo "CFAIL $CASE" > ./TestStatus

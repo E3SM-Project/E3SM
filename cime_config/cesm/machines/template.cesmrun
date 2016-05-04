@@ -15,8 +15,14 @@ use Data::Dumper;
 use Cwd;
 use Getopt::Long;
 my $scriptname = $0;
-my $caseroot = "{{ caseroot }}";
-my $cimeroot = "{{ cimeroot }}";
+
+if(! -e "./xmlquery" and defined $ENV{'PBS_O_WORKDIR'})
+{
+	chdir $ENV{'PBS_O_WORKDIR'};
+}
+
+my $caseroot = `./xmlquery -value CASEROOT`;
+my $cimeroot = `./xmlquery -value CIMEROOT`;
 my %opts=(loglevel=>"INFO");
 chdir $caseroot;
 my $toolsdir = "$caseroot/Tools";
@@ -30,12 +36,7 @@ require Depends::Checks;
 require Module::ModuleLoader;
 require Batch::BatchUtils;
 require Log::Log4perl;
-
-my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
-Log::Log4perl->easy_init({level=>$level,
-			  layout=>'%m%n'});
-
-my $logger = Log::Log4perl::get_logger();
+my $logger;
 
 
 #------------------------------------------------------------------------------
@@ -80,15 +81,17 @@ main(@ARGV) unless caller();
 # -------------------------------------------------------------------------
 sub getOptions()
 {
-    %opts = (
-	debug => undef,
-	#sta_ok => undef,
-	);
-    
     GetOptions(
-	"debug" => \$opts{'debug'},
-	#"sta_ok" => \$opts{'sta_ok'},
+	"loglevel" => \$opts{'loglevel'},
 	);
+
+
+    my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
+    Log::Log4perl->easy_init({level=>$level,
+			  layout=>'%m%n'});
+    
+    $logger = Log::Log4perl::get_logger();
+
 
     # First, get the configuration from xml . 
     %config = SetupTools::getAllResolved();
@@ -103,12 +106,12 @@ sub getOptions()
             my $out = "You are not calling the run script via the submit script. ";
 	    $out.= "As a result, short-term archiving will not be called automatically.";
 	    $out.= "Please submit your run by running the submit script like so: ";
-	    $out.= "./$case.submit";
+	    $out.= "./case.submit";
 	    $logger->logdie($out);
     }
     else
     {
-        `./xmlchange RUN_WITH_SUBMIT=TRUE`;
+        `./xmlchange -noecho -loglevel $opts{loglevel} RUN_WITH_SUBMIT=TRUE`;
 	$config{RUN_WITH_SUBMIT}='TRUE';
     }
     
@@ -158,68 +161,66 @@ sub doPreRunChecks()
     {
         $ENV{'MP_MPILIB'} = $mpilib;
     }
-        $config{'MPILIB'} = $mpilib;
+    $config{'MPILIB'} = $mpilib;
 	
-	$logger->debug( "build complete? $config{'BUILD_COMPLETE'}");
-	if($config{'BUILD_COMPLETE'} ne 'TRUE')
-	{
-		$logger->logdie("BUILD_COMPLETE is not true\nPlease rebuild the model interactively");
-	}
+    $logger->debug( "build complete? $config{'BUILD_COMPLETE'}");
+    if($config{'BUILD_COMPLETE'} ne 'TRUE')
+    {
+	$logger->logdie("BUILD_COMPLETE is not true\nPlease rebuild the model interactively");
+    }
 	
-	$ENV{'LBQUERY'} = "TRUE";
-	if( ! defined $config{'BATCHSUBMIT'} || length $config{'BATCHSUBMIT'} == 0)
-	{
-		$ENV{'LBQUERY'} = "FALSE";
-		$ENV{'BATCHQUERY'} = "undefined";
-	}
+    $ENV{'LBQUERY'} = "TRUE";
+    if( ! defined $config{'BATCHSUBMIT'} || length $config{'BATCHSUBMIT'} == 0)
+    {
+	$ENV{'LBQUERY'} = "FALSE";
+	$ENV{'BATCHQUERY'} = "undefined";
+    }
+    
+    elsif ( $config{'BATCHSUBMIT'} eq 'UNSET')
+    {
+	$ENV{'LBSUBMIT'} = "FALSE";
+	$ENV{'BATCHSUBMIT'} = "undefined";
+    }
+    
+    ## Create the timing directories, optionally cleaning them if needed. 
+    if(! -d $config{'RUNDIR'})
+    {
+	mkpath($config{'RUNDIR'}) or die "could not crate $config{'RUNDIR'}, exiting\n";
+    }
+    if(-d "$config{'RUNDIR'}/timing")
+    {
+	rmtree("$config{'RUNDIR'}/timing");
+    }
+    # Now make the timing and timing/checkpoints directories..
+    mkpath("$config{'RUNDIR'}/timing/checkpoints");
+    
+    # Now set up the LID and sdate? strings
+    $LID = strftime("%y%m%d-%H%M%S", localtime);
+    my $sdate = strftime("%Y-%m-%d %H:%M:%S", localtime);
+    $ENV{'LID'} = $LID;
+    $ENV{'sdate'} = $sdate;
 	
-	elsif ( $config{'BATCHSUBMIT'} eq 'UNSET')
-	{
-		$ENV{'LBSUBMIT'} = "FALSE";
-		$ENV{'BATCHSUBMIT'} = "undefined";
-	}
+    open my $CS, ">>", "./CaseStatus" or die "Could not open CaseStatus file for writing!";
+    print $CS "run started $sdate\n";
+    close $CS;
 	
-	## Create the timing directories, optionally cleaning them if needed. 
-	if(! -d $config{'RUNDIR'})
-	{
-		mkpath($config{'RUNDIR'}) or die "could not crate $config{'RUNDIR'}, exiting\n";
-	}
-	if(-d "$config{'RUNDIR'}/timing")
-	{
-		rmtree("$config{'RUNDIR'}/timing");
-	}
-	# Now make the timing and timing/checkpoints directories..
-	mkpath("$config{'RUNDIR'}/timing/checkpoints");
+    $logger->info( "-------------------------------------------------------------------------");
+    $logger->info(" BUILDNML SCRIPT STARTING");
+    $logger->info(" - To prestage restarts, untar a restart.tar file into $config{'RUNDIR'}");
 	
-	# Now set up the LID and sdate? strings
-	$LID = strftime("%y%m%d-%H%M%S", localtime);
-	my $sdate = strftime("%Y-%m-%d %H:%M:%S", localtime);
-	$ENV{'LID'} = $LID;
-	$ENV{'sdate'} = $sdate;
+    # Run preview namelists.. should turn this into a module at some point..
+    system("./preview_namelists -loglevel $opts{loglevel} ");
 	
-	open my $CS, ">>", "./CaseStatus" or die "Could not open CaseStatus file for writing!";
-	print $CS "run started $sdate\n";
-	close $CS;
+    if($?)
+    {
+	$logger->logdie("ERROR from preview namelist - EXITING");
+    }
 	
-	$logger->info( "-------------------------------------------------------------------------");
-        $logger->info(" BUILDNML SCRIPT STARTING");
-	$logger->info(" - To prestage restarts, untar a restart.tar file into $config{'RUNDIR'}");
-	
-	# Run preview namelists.. should turn this into a module at some point..
-	my @previewoutput = qx("./preview_namelists");
-	map { print $_ } @previewoutput;
-	
-	if($?)
-	{
-	    $logger->logdie("ERROR from preview namelist - EXITING");
-	       
-	}
-	
-	$logger->info( " BUILDNML SCRIPT HAS FINISHED SUCCESSFULLY");
-	$logger->info( "-------------------------------------------------------------------------");
-	$logger->info( " PRESTAGE SCRIPT STARTING");
-	$logger->info(" - Case input data directory, DIN_LOC_ROOT, is $config{'DIN_LOC_ROOT'}");
-	$logger->info( " - Checking the existence of input datasets in DIN_LOC_ROOT");
+    $logger->info( " BUILDNML SCRIPT HAS FINISHED SUCCESSFULLY");
+    $logger->info( "-------------------------------------------------------------------------");
+    $logger->info( " PRESTAGE SCRIPT STARTING");
+    $logger->info(" - Case input data directory, DIN_LOC_ROOT, is $config{'DIN_LOC_ROOT'}");
+    $logger->info( " - Checking the existence of input datasets in DIN_LOC_ROOT");
 
 }
 
@@ -234,7 +235,9 @@ sub checkInputData()
 	$logger->logdie( "ERROR, the input data directory $config{'DIN_LOC_ROOT'} cannot be found!");
     }
     
-    my @inputdatacheck = qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check );
+    open(F,"./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check -loglevel $opts{loglevel} |" );
+    my @inputdatacheck = <F>;
+    close(F);
     my @unknown = grep { /unknown/ } @inputdatacheck;
     my @missing = grep { /missing/ } @inputdatacheck;
     
@@ -245,23 +248,23 @@ sub checkInputData()
         $out.="expected location, and are not from the input data repository.\n";
         $out.="This is informational only.\n";
 	$logger->warn($out);
-	qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check);
+	system("./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check -loglevel $opts{loglevel} ");
     }
     
     if(@missing)
     {
 	$logger->info( "Attempting to download missing data:");
-	qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -export);
+	system("./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -export -loglevel $opts{loglevel}");
     }
     
-    my @potmissing  = qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check );
+    open(F,"./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check -loglevel $opts{loglevel} |" );
+    my @potmissing  = <F>;
+    close(F);
     @missing = grep { /missing/ } @potmissing;
     if(@missing)
     {
-	my @notfound = qx(./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -check);
-	
 	my $out = "The following files were not found, they are required\n";
-	$out .= map { print $_ } @notfound;
+	$out .= map { print $_ } @potmissing;
 	$out .= "Invoke the following command to obtain them:\n";
 	$out .= " ./check_input_data -inputdata $config{'DIN_LOC_ROOT'} -export ";
         $logger->logdie($out);
@@ -443,7 +446,7 @@ sub postRun()
         }
 
         $logger->debug("lid: $LID");
-	foreach my $comp (qw(atm cpl ocn wav glc ice rof lnd)){
+	foreach my $comp (qw(atm cpl ocn wav glc ice rof lnd esp cesm)){
 	    disposeLog($config{RUNDIR},$config{CASEROOT}, $comp ,$LID,$config{LOGDIR});
 	}
     }
@@ -456,7 +459,7 @@ sub postRun()
         my $timingDir = $config{'CASEROOT'} . "/timing";
         mkpath $timingDir if(! -e $timingDir);
         $logger->info( "running timing script..");
-        qx( $config{'CASETOOLS'}/getTiming -lid $LID );
+        system(" $config{'CASETOOLS'}/getTiming -lid $LID ");
         $logger->info( "gzipping timing stats..");
         qx( gzip timing/cesm_timing_stats.$LID );
     }
@@ -484,10 +487,10 @@ sub resubmitCheck()
 # Mira requires special logic
 #
     if(($config{DOUT_S} eq 'FALSE' && $config{RESUBMIT} > 0) || ($config{MACH} eq "mira" && $config{DOUT_S} eq "TRUE")) {
-	my $submitscript = "$config{'CASEROOT'}/$config{'CASE'}.submit";
+	my $submitscript = "$config{'CASEROOT'}/case.submit";
 	my $cwd = getcwd;
 	chdir $config{'CASEROOT'};
-	my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.";
+	my $resubmitcommand = "$submitscript -resubmit -scriptname case.";
 
 	if(defined $config{TESTCASE} && $config{TESTCASE} eq "ERR"){
 	    $resubmitcommand .= "test"; 
@@ -495,7 +498,7 @@ sub resubmitCheck()
 	    $resubmitcommand .= "run"; 
 	}
 	$logger->debug( "running resubmit check $resubmitcommand");    
-	qx($resubmitcommand);
+	system($resubmitcommand);
         if($?){ $logger->warn ("could not run CESM submit script, $! $?");}
 	chdir $cwd;
     }
@@ -507,7 +510,7 @@ sub DoDataAssimilation
 
     return unless($da eq "TRUE");
 
-    qx( $da_script 1> da.log.$lid 2>&1);
+    system(" $da_script 1> da.log.$lid 2>&1");
     sleep(1);
     $logger->logdie ("$da_script failed") unless ($? == 0);
     chdir $rundir;

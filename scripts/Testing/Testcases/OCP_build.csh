@@ -97,7 +97,7 @@ while (${bx} < ${OCN_NX})
 
     if ($runit == 1) then
       ./xmlchange -file env_build.xml -id POP_DECOMPTYPE -val $decomp
-      cp env_build.xml LockedFiles/env_build.xml.locked
+      cp env_build.xml LockedFiles/env_build.xml
 
       if ($precheck == 0) then
         ./*.build

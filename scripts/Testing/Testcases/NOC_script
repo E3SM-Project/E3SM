@@ -52,9 +52,9 @@ rm user_nl_cice_0002
 cp -f user_nl_cice_0001.mod  user_nl_cice_0001
 cp -f user_nl_cice_0002.base user_nl_cice_0002
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -94,9 +94,9 @@ rm user_nl_cice_0002
 cp -f user_nl_cice_0001.base user_nl_cice_0001
 cp -f user_nl_cice_0002.mod  user_nl_cice_0002
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 

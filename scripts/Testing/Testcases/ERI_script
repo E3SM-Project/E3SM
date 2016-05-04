@@ -27,12 +27,12 @@ rm -r -f ${CASERR2}; ./create_clone -case ${CASERR2} -clone ${CASER0}
 cd $CASERR1
 ./xmlchange -file env_build.xml -id EXEROOT        -val ${EXEROOT}
 ./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
-./case_setup
+./case.setup
 
 cd $CASERR2
 ./xmlchange -file env_build.xml -id EXEROOT        -val ${EXEROOT}
 ./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE
-./case_setup
+./case.setup
 
 #---- determine run lengths needed below 
 cd $CASER0
@@ -101,17 +101,17 @@ if (-e user_nl_cam) then
   endif
 endif
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
 # Run the short-term archiver.. this is a short-term hack until
 # a better solution can be found.
-./$CASE.st_archive
+./case.st_archive
 if($status != 0) then
-    echo " ERROR: $CASE.st_archive failed ">>& $TESTSTATUS_LOG
+    echo " ERROR: case.st_archive failed ">>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -175,17 +175,17 @@ cp    ${DOUTSR1}/rest/${refdate2}-${reftod2}/*rpointer*    $RUNDIR/.
 
 # run ref2 case (all component history files will go to short term archiving)
 
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
 # Run the short-term archiver.. this is a short-term hack until
 # a better solution can be found.
-./$CASE.st_archive
+./case.st_archive
 if($status != 0) then
-    echo " ERROR: $CASE.st_archive failed ">>& $TESTSTATUS_LOG
+    echo " ERROR: case.st_archive failed ">>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -261,9 +261,9 @@ echo "" >>& $TESTSTATUS_LOG
 $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "hybrid" $add_iop
 
 # run branch case (short term archiving is off)
-./$CASE.run
+./case.run
 if ($status != 0) then
-    echo " ERROR: $CASE.run failed" >>& $TESTSTATUS_LOG
+    echo " ERROR: case.run failed" >>& $TESTSTATUS_LOG
     exit -1
 endif
 
@@ -312,7 +312,7 @@ echo "branch restart: doing a ${stopn4} ${STOP_OPTION} continue restart test" >>
 
 # do the restart run (short term archiving is off)
 
-./$CASE.run
+./case.run
 if ($status != 0) exit -1
 
 set CplLogFile = `ls -1t $RUNDIR/cpl.log* | head -1`

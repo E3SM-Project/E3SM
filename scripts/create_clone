@@ -15,11 +15,16 @@ use Getopt::Long;
 use IO::File;
 use IO::Handle;
 use Data::Dumper;
+use File::Find;
+use File::Basename;
+use File::Spec::Functions qw(rel2abs);
 
+my @argstash = @ARGV;
+my $banner = '=' x 80;
 #-----------------------------------------------------------------------------------------------
 # Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
 # descriptions to be printed to STDOUT before the error messages start.
-*STDOUT->autoflush();                  
+*STDOUT->autoflush();
 
 if ($#ARGV == -1) {
     print "Invoke create_clone -help [or -h] for usage\n";
@@ -40,6 +45,7 @@ OPTIONS
      -help [or -h]        Print usage to STDOUT.
      -case <caseroot>     Specify the new case directory.
      -clone <cloneroot>   Specify the case to be cloned.
+     -keepexe              Sets EXEROOT to point to original build
      -mach_dir            Optional location of machines directory
      -project <name>      Specify a project id for the case (optional)
                           default: user-specified environment variable PROJECT or ACCOUNT
@@ -59,6 +65,7 @@ GetOptions(
     "clone=s"                   => \$opts{'clone'},
     "mach_dir=s"                => \$opts{'mach_dir'},
     "project=s"                 => \$opts{'project'},
+    "keepexe"                   => \$opts{'keepexe'},
     "s|silent"                  => \$opts{'silent'},
     "v|verbose"                 => \$opts{'verbose'},
 )  or usage();
@@ -71,6 +78,10 @@ if (@ARGV) {
     print "ERROR: unrecognized arguments: @ARGV\n";
     usage();
 }
+my $scriptdir = dirname(rel2abs($0));
+my $newcimeroot = abs_path("$scriptdir/..");
+my $newsrcroot = abs_path("$scriptdir/../..");
+
 
 # Check for manditory case input if not just listing valid values
 my $case;
@@ -89,7 +100,7 @@ $caseroot = abs_path("$case");
 if (-d $caseroot) {
     die "New caseroot directory $caseroot already exists \n";
 }
-my @dirs = split "/", $caseroot, -1; 
+my @dirs = split "/", $caseroot, -1;
 my $num = scalar @dirs;
 $case = @dirs[$num-1];
 
@@ -103,7 +114,7 @@ $cloneroot = abs_path("$clone");
 (-d "$cloneroot")  or  die <<"EOF";
 ** Cannot find cloneroot directory \"$cloneroot\" **
 EOF
-my @dirs = split "/", $cloneroot, -1; 
+my @dirs = split "/", $cloneroot, -1;
 my $num = scalar @dirs;
 $clone = @dirs[$num-1];
 
@@ -120,8 +131,19 @@ my $eol = "\n";
 # Obtain necessary variables from $cloneroot
 chdir ("$cloneroot");
 my $cimeroot  = `./xmlquery CIMEROOT -value`;
+my $srcroot  = `./xmlquery SRCROOT -value`;
 my $machdir   = `./xmlquery MACHDIR  -value`;
 my $mach      = `./xmlquery MACH     -value`;
+my $origexeroot = `./xmlquery EXEROOT -value`;
+if($cimeroot ne $newcimeroot)
+{
+    my $warning = <<EOF;
+$banner
+Please be advised, it is NOT recommended to clone cases from different versions of CESM.
+$banner
+EOF
+    print $warning;
+}
 
 # Update paths that Perl searches for modules
 my @dirs = ("$cimeroot/utils/perl5lib");
@@ -131,38 +153,58 @@ require Config::SetupTools;
 require Batch::BatchMaker;
 
 #-----------------------------------------------------------------------------------------------
-# Create the case directory tree utilizing the clone tree 
+# Create the case directory tree utilizing the clone tree
 my $sysmod;
 
-# Create $caseroot directories 
-$sysmod = "mkdir -p $caseroot"; 
+# Create $caseroot directories
+$sysmod = "mkdir -p $caseroot";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-$sysmod = "cp -rp $cloneroot/* $caseroot"; 
+$sysmod = "cp -rp $cloneroot/* $caseroot";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Remove unwanted files from $cloneroot
-# Note - script files are named using the first 12-15 chars of $clone and we want to remove those as well
+# Note - script files used to be named using the first 12-15 chars of $clone, but are now named case.$SCRIPT
+# Need to remove those.
 $sysmod = "rm -rf $caseroot/Buildconf/*"  ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "rm -rf $caseroot/CaseDocs/*"   ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "rm -rf $caseroot/LockedFiles/*"; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "rm -rf $caseroot/logs/*"       ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "rm -rf $caseroot/timing/*"     ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "rm -rf $caseroot/TestStatus*"  ; system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-my $clonesubname = substr($clone,0,12);
-$sysmod = "rm -f $caseroot/$clonesubname*"; 
+# Remove case.* scripts
+$sysmod = "rm -f $caseroot/case.*";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 $sysmod = "rm -f $caseroot/*~";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
 # Need to copy back in the CaseDocs/README
-$sysmod = "cp -rp $cloneroot/CaseDocs/README $caseroot/CaseDocs/."; 
+$sysmod = "cp -rp $cloneroot/README.case $caseroot/CaseDocs/README.case";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+
+# append create_clone and args to cloned case README.case
+open (my $RCASE, ">>", "$caseroot/README.case") or die "could not open $caseroot/README.case: $!";
+print $RCASE "$0 ";
+map {print $RCASE "$_ "} @argstash;
+print $RCASE "\n";
+close $RCASE;
+
+#append create_clone and args to cloned case CaseStatus
+open (my $CSTATUS, ">>", "$caseroot/CaseStatus") or die "could not open $caseroot/CaseStatus: $!";
+print $CSTATUS "$0 ";
+map {print $CSTATUS "$_ "} @argstash;
+print $CSTATUS "\n";
+close $CSTATUS;
 
 # Change directory to be $caseroot
 chdir $caseroot;
+#-----------------------------------------------------------------------------------------------
+## Now run a find and replace on all the files found in the new case, substitute the fo
+##-----------------------------------------------------------------------------------------------
+my @casesearch = ($caseroot);
+find(\&substitute, @casesearch);
 
 # Obtain variables needed below
-my $username  = "$ENV{'USER'}"; 
+my $username  = "$ENV{'USER'}";
 $sysmod = "./xmlchange USER=$username"			; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 $sysmod = "./xmlchange CASE=$case"			; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 $sysmod = "./xmlchange CASEROOT=$caseroot"		; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
@@ -174,8 +216,15 @@ $sysmod = "./xmlchange RESUBMIT=0"			; system($sysmod) == 0 or die "ERROR: $sysm
 if ($opts{'mach_dir'}) {
     $sysmod = "./xmlchange MACHIDR=$opts{'mach_dir'}"   ; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
+if($opts{'keepexe'})
+{
+    $sysmod = "./xmlchange EXEROOT=$origexeroot"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    $sysmod = "./xmlchange BUILD_COMPLETE=TRUE"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    #$sysmod = "mkdir $caseroot/Buildconf"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+    $sysmod = "cp -Rp $cloneroot/Buildconf/* $caseroot/Buildconf/"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}
 
-# --- Set project id 
+# --- Set project id
 # Note: we do not just copy this from the clone because it seems likely that
 # users will want to change this sometimes, especially when cloning another
 # user's case. However, note that, if a project is not given, the fallback will
@@ -190,35 +239,75 @@ if ($opts{'project'}) {
 }
 my $set_project = ProjectTools::set_project($project);
 if ($set_project) {
-    $sysmod = "./xmlchange PROJECT=$project"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-} 
+    $sysmod = "./xmlchange -file env_batch.xml -id PROJECT -val $project"; system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}
 
 # Copy env_case.xml in locked files
-$sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml.locked";
+$sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 print "Locking file $caseroot/env_case.xml \n";
 
-# Create $caseroot/$case.build
-$sysmod = "cp $cimeroot/scripts/Tools/build.pl  $caseroot/$case.build";
+# Create $caseroot/case.setup
+$sysmod = "cp $cimeroot/scripts/Tools/case.setup  $caseroot/case.setup";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-$sysmod = "chmod 755 $caseroot/$case.build";
+$sysmod = "chmod 755 $caseroot/case.setup";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
-# Create $case.clean_build
-$sysmod = "cp $cimeroot/scripts/Tools/clean_build $caseroot/$case.clean_build"; 
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-    
-# Create $case.submit
-$sysmod = "cp  $cimeroot/scripts/Tools/submit $caseroot/$case.submit"; 
+# Create $caseroot/case.build
+$sysmod = "cp $cimeroot/scripts/Tools/case.build  $caseroot/case.build";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+$sysmod = "chmod 755 $caseroot/case.build";
+system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
+
+# Create case.clean_build
+$sysmod = "cp $cimeroot/scripts/Tools/clean_build $caseroot/case.clean_build";
 system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
+# Create case.submit
+$sysmod = "cp  $cimeroot/scripts/Tools/case.submit $caseroot/case.submit";
+system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 
 
 #-----------------------------------------------------------------------------------------------
 # Create batch script
-$sysmod = "./case_setup"; 
+$sysmod = "./case.setup";
 system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
 
+
+sub substitute()
+{
+    my $filetosearch = $File::Find::name;
+    if(-f $filetosearch && ! -d $filetosearch)
+    {
+        #print "file to search: $filetosearch\n";
+        open(my $F, "<", $filetosearch) or die "could not open $filetosearch for reading, $!, $?";
+        my @lines =  <$F>;
+        chomp @lines;
+        close $F;
+        my @matches = grep { m/($cimeroot|$srcroot)/ } @lines;
+        if(@matches)
+        {
+            #print Dumper \@matches;
+            for my $i(0 .. $#lines)
+            {
+                #print "line before replace\n";
+                #print $lines[$i] . "\n";
+                if($lines[$i] =~ /$cimeroot/)
+                {
+                    $lines[$i] =~ s/$cimeroot/$newcimeroot/g;
+                }
+                if($lines[$i] =~ /$srcroot/)
+                {
+                    $lines[$i] =~ s/$srcroot/$newsrcroot/g;
+                }
+            }
+            open (my $NEWF, ">", $filetosearch) or die "could not open $filetosearch for writing, $! $?";
+            map { print $NEWF "$_\n"} @lines;
+            close $NEWF;
+        }
+    }
+
+}
 # --- Print output ---
 my $compset = `./xmlquery COMPSET -value`;
 print "Successfully created new case\n   $caseroot\nfrom clone case\n   $cloneroot\n";

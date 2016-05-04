@@ -38,7 +38,7 @@ sub new
                      COMP_OCN NTASKS_OCN NTHRDS_OCN ROOTPE_OCN PSTRID_OCN NINST_OCN
                      COMP_GLC NTASKS_GLC NTHRDS_GLC ROOTPE_GLC PSTRID_GLC NINST_GLC
                      COMP_WAV NTASKS_WAV NTHRDS_WAV ROOTPE_WAV PSTRID_WAV NINST_WAV
-					 MAX_TASKS_PER_NODE PES_PER_NODE PIO_NUMTASKS PIO_ASYNC_INTERFACE /;
+                     COMP_ESP NTASKS_ESP NTHRDS_ESP ROOTPE_ESP PSTRID_ESP NINST_ESP					 MAX_TASKS_PER_NODE PES_PER_NODE PIO_NUMTASKS PIO_ASYNC_INTERFACE /;
 	$self->{'layoutstrings'} = \@layoutstrings;
 	# Either the config was passed in, otherwise pull it from within the cimeroot
 	my %config;
@@ -69,26 +69,26 @@ sub new
 	
 	# Set up arrays with the comps, tasks, threads, root PE, # instances, and pstrids 
 	my @mcomps= ( $config{'COMP_CPL'}, $config{'COMP_ATM'}, $config{'COMP_LND'}, $config{'COMP_ROF'}, $config{'COMP_ICE'}, $config{'COMP_OCN'}, 
-				       $config{'COMP_GLC'}, $config{'COMP_WAV'} );
+                      $config{'COMP_GLC'}, $config{'COMP_WAV'}, $config{'COMP_ESP'} );
 	$self->{'mcomps'} = \@mcomps;
 	
 	my @ntasks = ( $config{'NTASKS_CPL'}, $config{'NTASKS_ATM'}, $config{'NTASKS_LND'}, $config{'NTASKS_ROF'}, $config{'NTASKS_ICE'}, $config{'NTASKS_OCN'}, 
-				       $self->{'NTASKS_GLC'}, $self->{'NTASKS_WAV'} );
+                       $self->{'NTASKS_GLC'}, $self->{'NTASKS_WAV'}, $self->{'NTASKS_ESP'} );
 	$self->{'ntasks'} = \@ntasks;
 
 	my @nthrds = ( $config{'NTHRDS_CPL'}, $config{'NTHRDS_ATM'}, $config{'NTHRDS_LND'}, $config{'NTHRDS_ROF'}, $config{'NTHRDS_ICE'}, $config{'NTHRDS_OCN'}, 
-				       $config{'NTHRDS_GLC'}, $config{'NTHRDS_WAV'} );
+				       $config{'NTHRDS_GLC'}, $config{'NTHRDS_WAV'}, $config{'NTHRDS_ESP'} );
 	$self->{'nthrds'} = \@nthrds;
 
 	my @rootpe = ( $config{'ROOTPE_CPL'}, $config{'ROOTPE_ATM'}, $config{'ROOTPE_LND'}, $config{'ROOTPE_ROF'}, $config{'ROOTPE_ICE'}, $config{'ROOTPE_OCN'}, 
-				       $config{'ROOTPE_GLC'}, $config{'ROOTPE_WAV'} );
+				       $config{'ROOTPE_GLC'}, $config{'ROOTPE_WAV'}, $config{'ROOTPE_ESP'} );
 	$self->{'rootpe'} = \@rootpe;
 
 	my @ninst = ( 1, $config{'NINST_ATM'}, $config{'NINST_LND'}, $config{'NINST_ROF'}, $config{'NINST_ICE'}, $config{'NINST_OCN'}, 
-				       $config{'NINST_GLC'}, $config{'NINST_WAV'} );
+				       $config{'NINST_GLC'}, $config{'NINST_WAV'}, $config{'NINST_ESP'} );
 	$self->{'ninst'} = \@ninst;
 	my @pstrid = ( $config{'PSTRID_CPL'}, $config{'PSTRID_ATM'}, $config{'PSTRID_LND'}, $config{'PSTRID_ROF'}, $config{'PSTRID_ICE'}, $config{'PSTRID_OCN'}, 
-				       $config{'PSTRID_GLC'}, $config{'PSTRID_WAV'} );
+				       $config{'PSTRID_GLC'}, $config{'PSTRID_WAV'}, $config{'PSTRID_ESP'} );
 	$self->{'pstrid'} = \@pstrid;
 
 	# At this point, we have only one method to compute the necessary values.  
@@ -275,7 +275,7 @@ sub _computeValues
 	if($self->{'COMPILER'} eq "intel" && $taskpernode > 1)
 	{
 		my $taskpernuma = ceil($taskpernode / 2);
-		$aprun .= " -S $taskpernuma -cc numa_mode ";
+		$aprun .= " -S $taskpernuma -cc numa_node ";
 	}
 
 	# add all the calculated numbers as instance data. 
@@ -471,7 +471,7 @@ sub document()
 		my $r  = ${$self->{'rootpe'}}[$c1];
 		my $p  = ${$self->{'pstrid'}}[$c1];
 		my $tt = $r + ($n -1) * $p;
-		my $tm = ${$self->{'sumthreads'}}[$tt] + $t + 1;
+		my $tm = ${$self->{'sumthreads'}}[$tt] + $t - 1;
 		$doc .=  "#     " . ${$self->{'mcomps'}}[$c1] . " hw pe range ~ from " . ${$self->{'sumthreads'}}[$r] . " to $tm\n";
 	}
 

@@ -151,6 +151,7 @@ print $fh  <<"EOF";
 <entry id="atm_grid" value="$ATM_GRID">
 <entry id="lnd_grid" value="$LND_GRID">
 <entry id="ocn_grid" value="$OCN_GRID">
+<entry id="esp_grid" value="NULL">
 </config_definition>
 EOF
 $fh->close;
@@ -344,11 +345,18 @@ if ($CCSM_BGC eq 'CO2A') {
 my $glc_nec = "$xmlvars{'GLC_NEC'}";
 if ( ! defined $glc_nec ) {$glc_nec = 0;}
 
+my $ice_ncat = $xmlvars{'ICE_NCAT'};
+
+my $seq_flds_i2o_per_cat = ".false.";
+if ($xmlvars{'CPL_I2O_PER_CAT'} eq 'TRUE') { $seq_flds_i2o_per_cat = ".true." }
+
 add_default($nl, 'flds_co2a',    'val'=>"$flds_co2a");
 add_default($nl, 'flds_co2b',    'val'=>"$flds_co2b");
 add_default($nl, 'flds_co2c',    'val'=>"$flds_co2c");
 add_default($nl, 'flds_co2_dmsa','val'=>"$flds_co2_dmsa");
 add_default($nl, 'glc_nec',      'val'=>"$glc_nec");
+add_default($nl, 'ice_ncat',     'val'=>"$ice_ncat", 'xml'=>'ICE_NCAT');
+add_default($nl, 'seq_flds_i2o_per_cat', 'val'=>"$seq_flds_i2o_per_cat", 'xml'=>'CPL_I2O_PER_CAT');
     
 #############################################
 # namelist group: seq_cplflds_userspec      #
@@ -422,6 +430,8 @@ add_default($nl, 'wv_sat_scheme');
 add_default($nl, 'wv_sat_transition_start');
 add_default($nl, 'wv_sat_use_tables');
 add_default($nl, 'wv_sat_table_spacing');
+
+add_default($nl, 'tfreeze_option');
 
 add_default($nl, 'budget_inst');
 add_default($nl, 'budget_daily');
@@ -569,6 +579,10 @@ add_default($nl, 'histavg_option');
 add_default($nl, 'histavg_n');
 add_default($nl, 'histavg_ymd');
 
+add_default($nl, 'barrier_option');
+add_default($nl, 'barrier_n');
+add_default($nl, 'barrier_ymd');
+
 add_default($nl, 'tprof_option');
 add_default($nl, 'tprof_n');  
 add_default($nl, 'tprof_ymd');
@@ -621,6 +635,12 @@ add_default($nl, 'wav_rootpe',   'val'=>"$xmlvars{'ROOTPE_WAV'}", 'xml'=>'ROOTPE
 add_default($nl, 'wav_pestride', 'val'=>"$xmlvars{'PSTRID_WAV'}", 'xml'=>'PSTRID_WAV');
 add_default($nl, 'wav_layout',   'val'=>"$xmlvars{'NINST_WAV_LAYOUT'}", 'xml'=>'NINST_WAV_LAYOUT');
 
+add_default($nl, 'esp_ntasks',   'val'=>"$xmlvars{'NTASKS_ESP'}", 'xml'=>'NTASKS_ESP');
+add_default($nl, 'esp_nthreads', 'val'=>"$xmlvars{'NTHRDS_ESP'}", 'xml'=>'NTHRDS_ESP');
+add_default($nl, 'esp_rootpe',   'val'=>"$xmlvars{'ROOTPE_ESP'}", 'xml'=>'ROOTPE_ESP');
+add_default($nl, 'esp_pestride', 'val'=>"$xmlvars{'PSTRID_ESP'}", 'xml'=>'PSTRID_ESP');
+add_default($nl, 'esp_layout',   'val'=>"$xmlvars{'NINST_ESP_LAYOUT'}", 'xml'=>'NINST_ESP_LAYOUT');
+
 add_default($nl, 'cpl_ntasks',   'val'=>"$xmlvars{'NTASKS_CPL'}", 'xml'=>'NTASKS_CPL');
 add_default($nl, 'cpl_nthreads', 'val'=>"$xmlvars{'NTHRDS_CPL'}", 'xml'=>'NTHRDS_CPL');
 add_default($nl, 'cpl_rootpe',   'val'=>"$xmlvars{'ROOTPE_CPL'}", 'xml'=>'ROOTPE_CPL');
@@ -657,6 +677,7 @@ add_default($nl, 'profile_barrier');
 add_default($nl, 'pio_async_interface', 'PIO_ASYNC_INTERFACE'=>"$xmlvars{'PIO_ASYNC_INTERFACE'}");
 add_default($nl, 'pio_stride');
 add_default($nl, 'pio_root');
+add_default($nl, 'pio_rearranger');
 add_default($nl, 'pio_numiotasks');
 add_default($nl, 'pio_typename');
 add_default($nl, 'pio_debug_level');
@@ -799,7 +820,7 @@ check_input_files($nl, $DIN_LOC_ROOT, "../cpl.input_data_list");
 
 $definition = Build::NamelistDefinition->new($nl_modio_definition_file);
 
-foreach my $model (qw(cpl atm lnd ice ocn glc rof wav)) {
+foreach my $model (qw(cpl atm lnd ice ocn glc rof wav esp)) {
 
     my $LID     = "$ENV{'LID'}";
     my $moddiri = "$xmlvars{'EXEROOT'}/${model}";
@@ -815,7 +836,8 @@ foreach my $model (qw(cpl atm lnd ice ocn glc rof wav)) {
     if ($model eq 'ice') {$inst_count = "$xmlvars{'NINST_ICE'}";}
     if ($model eq 'ocn') {$inst_count = "$xmlvars{'NINST_OCN'}";}
     if ($model eq 'glc') {$inst_count = "$xmlvars{'NINST_GLC'}";}
-    
+    if ($model eq 'esp') {$inst_count = "$xmlvars{'NINST_ESP'}";}
+
     my $inst_index = 1;
     my $inst_string;
     my $modeliofile;
@@ -849,48 +871,56 @@ foreach my $model (qw(cpl atm lnd ice ocn glc rof wav)) {
 	    add_default($nlio, 'pio_root',      'val'=>"$xmlvars{'CPL_PIO_ROOT'}");
 	    add_default($nlio, 'pio_numiotasks','val'=>"$xmlvars{'CPL_PIO_NUMTASKS'}");
 	    add_default($nlio, 'pio_typename',  'val'=>"$xmlvars{'CPL_PIO_TYPENAME'}");
+	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'CPL_PIO_REARRANGER'}");
 	}
 	if ($model eq 'atm') {
 	    add_default($nlio, 'pio_stride',     'val'=>"$xmlvars{'ATM_PIO_STRIDE'}");
 	    add_default($nlio, 'pio_root',       'val'=>"$xmlvars{'ATM_PIO_ROOT'}");
 	    add_default($nlio, 'pio_numiotasks', 'val'=>"$xmlvars{'ATM_PIO_NUMTASKS'}");
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'ATM_PIO_TYPENAME'}");
+	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'ATM_PIO_REARRANGER'}");
 	}
 	if ($model eq 'lnd') {
 	    add_default($nlio, 'pio_stride',     'val'=>"$xmlvars{'LND_PIO_STRIDE'}");
 	    add_default($nlio, 'pio_root',       'val'=>"$xmlvars{'LND_PIO_ROOT'}");
 	    add_default($nlio, 'pio_numiotasks', 'val'=>"$xmlvars{'LND_PIO_NUMTASKS'}");
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'LND_PIO_TYPENAME'}");
+	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'LND_PIO_REARRANGER'}");
 	}
 	if ($model eq 'rof') {
 	    add_default($nlio, 'pio_stride',     'val'=>"$xmlvars{'ROF_PIO_STRIDE'}");
 	    add_default($nlio, 'pio_root',       'val'=>"$xmlvars{'ROF_PIO_ROOT'}");
 	    add_default($nlio, 'pio_numiotasks', 'val'=>"$xmlvars{'ROF_PIO_NUMTASKS'}");
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'ROF_PIO_TYPENAME'}");
+	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'ROF_PIO_REARRANGER'}");
 	}
 	if ($model eq 'wav') {
 	    add_default($nlio, 'pio_stride',     'val'=>"$xmlvars{'WAV_PIO_STRIDE'}");
 	    add_default($nlio, 'pio_root',       'val'=>"$xmlvars{'WAV_PIO_ROOT'}");
 	    add_default($nlio, 'pio_numiotasks', 'val'=>"$xmlvars{'WAV_PIO_NUMTASKS'}");
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'WAV_PIO_TYPENAME'}");
+	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'WAV_PIO_REARRANGER'}");
 	}
 	if ($model eq 'ice') {
 	    add_default($nlio, 'pio_stride',     'val'=>"$xmlvars{'ICE_PIO_STRIDE'}");
 	    add_default($nlio, 'pio_root',       'val'=>"$xmlvars{'ICE_PIO_ROOT'}");
 	    add_default($nlio, 'pio_numiotasks', 'val'=>"$xmlvars{'ICE_PIO_NUMTASKS'}");
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'ICE_PIO_TYPENAME'}");
+	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'ICE_PIO_REARRANGER'}");
 	}
 	if ($model eq 'ocn') {
 	    add_default($nlio, 'pio_stride',     'val'=>"$xmlvars{'OCN_PIO_STRIDE'}");
 	    add_default($nlio, 'pio_root',       'val'=>"$xmlvars{'OCN_PIO_ROOT'}");
 	    add_default($nlio, 'pio_numiotasks', 'val'=>"$xmlvars{'OCN_PIO_NUMTASKS'}");
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'OCN_PIO_TYPENAME'}");
+	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'OCN_PIO_REARRANGER'}");
 	}
 	if ($model eq 'glc') {
 	    add_default($nlio, 'pio_stride',     'val'=>"$xmlvars{'GLC_PIO_STRIDE'}");
 	    add_default($nlio, 'pio_root',       'val'=>"$xmlvars{'GLC_PIO_ROOT'}");
 	    add_default($nlio, 'pio_numiotasks', 'val'=>"$xmlvars{'GLC_PIO_NUMTASKS'}");
 	    add_default($nlio, 'pio_typename',   'val'=>"$xmlvars{'GLC_PIO_TYPENAME'}");
+	    add_default($nlio, 'pio_rearranger',  'val'=>"$xmlvars{'GLC_PIO_REARRANGER'}");
 	}
 	$nlio->write($modeliofile, 'groups'=>\@iogroup);
 	if ($print>=2) { print "Writing io namelist to $modeliofile $eol"; }	

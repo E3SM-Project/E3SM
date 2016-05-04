@@ -150,6 +150,7 @@ contains
 
        ! Determine initial value of comp_present in infodata - to do - add this to component 
 
+#ifdef CPRPGI
        if (comp(1)%oneletterid == 'a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
@@ -157,7 +158,10 @@ contains
        if (comp(1)%oneletterid == 'r') call seq_infodata_getData(infodata, rof_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
-
+       if (comp(1)%oneletterid == 'e') call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+#else
+       call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
+#endif
     end do
 
   end subroutine component_init_pre
@@ -245,6 +249,7 @@ contains
     ! Determine final value of comp_present in infodata (after component initialization)
 
     do eci = 1,size(comp) 
+#ifdef CPRPGI
        if (comp(1)%oneletterid == 'a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
@@ -252,6 +257,10 @@ contains
        if (comp(1)%oneletterid == 'r') call seq_infodata_getData(infodata, rof_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'e') call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+#else
+       call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
+#endif
     end do
 
 
@@ -381,13 +390,14 @@ contains
        !--------------------------------------------------
 
        ! The following initializes the component instance values of x2c_cc and c2x_cc
+       ! Only apply to components which communicate with the coupler
        
-       if (iamroot_CPLID .and. comp(eci)%present) then
+       if (iamroot_CPLID .and. comp(eci)%present .and. comp(eci)%iamin_cplcompid) then
           write(logunit,F00) 'Initialize component '//trim(comp(eci)%ntype)
           call shr_sys_flush(logunit)
        end if
 
-       if (comp(eci)%iamin_compid) then
+       if (comp(eci)%iamin_compid .and. comp(eci)%iamin_cplcompid) then
 
           if (comp(eci)%present) then
 
@@ -447,6 +457,7 @@ contains
              ! The following is only from infodata updates on the component pes
 
              cid = comp(1)%oneletterid
+#ifdef CPRPGI
              if (cid=='a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present, atm_nx=nx, atm_ny=ny)
              if (cid=='l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present, lnd_nx=nx, lnd_ny=ny)
              if (cid=='i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present, ice_nx=nx, ice_ny=ny)
@@ -454,6 +465,15 @@ contains
              if (cid=='r') call seq_infodata_getData(infodata, rof_present=comp(eci)%present, rof_nx=nx, rof_ny=ny)
              if (cid=='g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present, glc_nx=nx, glc_ny=ny)
              if (cid=='w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present, wav_nx=nx, wav_ny=ny)
+             if (cid=='e') then
+                ! We really shouldn't get here but let's do something in case
+                call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+                nx = 0
+                ny = 0
+             end if
+#else
+             call seq_infodata_getData(cid, infodata, comp_present=comp(eci)%present, comp_nx=nx, comp_ny=ny)
+#endif
 
              if (init_phase == 1 .and. comp(eci)%present) then
 
@@ -570,7 +590,7 @@ contains
        end if   ! end of comp(eci)%iamin_compid
 
        ! allocate memory for attribute vectors that are in cpl id - if compid and cplid
-       ! are not the smae
+       ! are not the same
        if (comp(eci)%iamin_cplcompid) then
           if (init_phase == 1 .and. comp(eci)%present) then
              if (.not. associated(comp(eci)%x2c_cc)) allocate(comp(eci)%x2c_cc)
@@ -594,6 +614,7 @@ contains
     ! Determine final value of comp_present in infodata (after component initialization)
 
     do eci = 1,size(comp) 
+#ifdef CPRPGI
        if (comp(1)%oneletterid == 'a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
@@ -601,6 +622,10 @@ contains
        if (comp(1)%oneletterid == 'r') call seq_infodata_getData(infodata, rof_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'e') call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+#else
+      call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
+#endif
     end do
 
     !--------------------------------------------------
@@ -949,6 +974,11 @@ contains
     !---------------------------------------------------------------
     ! Description
     ! Run component model
+    ! Note that the optional arguments, seq_flds_x2c_fluxes and
+    !   seq_flds_c2x_fluxes, are not passed for external models (ESP)
+    !   since these type of models do not interact through the coupler.
+    !   The absence of these inputs should be used to avoid coupler-
+    !   based actions in component_run
     !
     ! Arguments
     type(ESMF_Clock)     , intent(inout)   :: EClock
@@ -966,8 +996,8 @@ contains
        end subroutine comp_run
     end interface 
     type (seq_infodata_type) , intent(inout)        :: infodata
-    character(len=*)         , intent(in)           :: seq_flds_x2c_fluxes
-    character(len=*)         , intent(in)           :: seq_flds_c2x_fluxes
+    character(len=*)         , intent(in), optional :: seq_flds_x2c_fluxes
+    character(len=*)         , intent(in), optional :: seq_flds_c2x_fluxes
     logical                  , intent(in)           :: comp_prognostic
     integer                  , intent(in), optional :: comp_num
     character(len=*)         , intent(in), optional :: timer_barrier   
@@ -1010,6 +1040,7 @@ contains
        else
           firstloop = .false.
        endif
+#ifdef CPRPGI
        if (comp(1)%oneletterid == 'a') call seq_infodata_putData(infodata, atm_phase=phase)
        if (comp(1)%oneletterid == 'l') call seq_infodata_putData(infodata, lnd_phase=phase)
        if (comp(1)%oneletterid == 'i') call seq_infodata_putData(infodata, ice_phase=phase)
@@ -1017,6 +1048,10 @@ contains
        if (comp(1)%oneletterid == 'r') call seq_infodata_putData(infodata, rof_phase=phase)
        if (comp(1)%oneletterid == 'g') call seq_infodata_putData(infodata, glc_phase=phase)
        if (comp(1)%oneletterid == 'w') call seq_infodata_putData(infodata, wav_phase=phase)
+       if (comp(1)%oneletterid == 'e') call seq_infodata_putData(infodata, esp_phase=phase)
+#else
+       call seq_infodata_putData(comp(1)%oneletterid, infodata, comp_phase=phase)
+#endif
 
        do eci = 1,num_inst
           if (comp(eci)%iamin_compid) then
@@ -1037,13 +1072,13 @@ contains
              end if
              if (drv_threading) call seq_comm_setnthreads(comp(1)%nthreads_compid) 
 
-             if (comp_prognostic .and. firstloop) then
+             if (comp_prognostic .and. firstloop .and. present(seq_flds_x2c_fluxes)) then
                 call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
              end if
 
              call comp_run(EClock, comp(eci)%cdata_cc, comp(eci)%x2c_cc, comp(eci)%c2x_cc)
 
-             if (phase == 1) then
+             if ((phase == 1) .and. present(seq_flds_c2x_fluxes)) then
                 call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
              endif
 
@@ -1089,13 +1124,20 @@ contains
        run_barriers, ymd, tod, comp_layout)
 
     !---------------------------------------------------------------
+    ! Description
+    ! Run component model
+    ! Note that the optional arguments, seq_flds_x2c_fluxes and
+    !   seq_flds_c2x_fluxes, are not passed for external models (ESP)
+    !   since these type of models do not interact through the coupler.
+    !   The absence of these inputs should be used to avoid coupler-
+    !   based actions in component_run
     !
     ! Arguments
     type(ESMF_Clock)         , intent(inout)        :: EClock
     type(component_type)     , intent(inout)        :: comp(:)
     type (seq_infodata_type) , intent(inout)        :: infodata
-    character(len=*)         , intent(in)           :: seq_flds_x2c_fluxes
-    character(len=*)         , intent(in)           :: seq_flds_c2x_fluxes
+    character(len=*)         , intent(in), optional :: seq_flds_x2c_fluxes
+    character(len=*)         , intent(in), optional :: seq_flds_c2x_fluxes
     logical                  , intent(in)           :: comp_prognostic
     integer                  , intent(in), optional :: comp_num
     character(len=*)         , intent(in), optional :: timer_barrier   
@@ -1145,19 +1187,21 @@ contains
                id=comp(eci)%compid, rc=rc)
           if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-          ! Determine import state into component
-          ! Remember that import state array and import attribute vector share memory now
-          call ESMF_StateGet(comp(eci)%x2c_cc_state, itemName="x2d", array=x2d_array, rc=rc)
-          if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+          if (comp(eci)%iamin_compid .and. comp(eci)%iamin_cplcompid) then
+             ! Determine import state into component
+             ! Remember that import state array and import attribute vector share memory now
+             call ESMF_StateGet(comp(eci)%x2c_cc_state, itemName="x2d", array=x2d_array, rc=rc)
+             if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-          ! Apply area correction factor from x2c on mct attribute vector
-          if (comp_prognostic) then
-             call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
+             ! Apply area correction factor from x2c on mct attribute vector
+             if (comp_prognostic .and. present(seq_flds_x2c_fluxes)) then
+                call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
+             end if
+
+             ! Convert mct attribute vector to esmf array
+             call mct2esmf_copy(comp(eci)%x2c_cc, x2d_array, rc=rc)
+             if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
           end if
-
-          ! Convert mct attribute vector to esmf array
-          call mct2esmf_copy(comp(eci)%x2c_cc, x2d_array, rc=rc)
-          if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
           !----------------------------------------------
           ! *** Run the component on component pes***
@@ -1176,16 +1220,18 @@ contains
           call esmfshr_infodata_state2infodata(comp(eci)%c2x_cc_state, infodata, rc=rc)
           if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-          ! Determine export state and obtain output esmf array 
-          call ESMF_StateGet(comp(eci)%c2x_cc_state, itemName="d2x", array=d2x_array, rc=rc)
-          if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+          if (present(seq_flds_c2x_fluxes)) then
+            ! Determine export state and obtain output esmf array 
+            call ESMF_StateGet(comp(eci)%c2x_cc_state, itemName="d2x", array=d2x_array, rc=rc)
+            if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-          ! Convert output esmf array to mct attribute vector
-          call esmf2mct_copy(d2x_array, comp(eci)%c2x_cc, rc=rc)
-          if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
+            ! Convert output esmf array to mct attribute vector
+            call esmf2mct_copy(d2x_array, comp(eci)%c2x_cc, rc=rc)
+            if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
        
-          ! Apply area correction for c2x on mct attribute vector
-          call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
+            ! Apply area correction for c2x on mct attribute vector
+            call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
+          end if
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
           

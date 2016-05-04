@@ -12,18 +12,22 @@ $ENV{CASEROOT}       = `./xmlquery CASEROOT       -value `;
 $ENV{DEBUG}          = `./xmlquery DEBUG          -value `;
 $ENV{USE_ESMF_LIB}   = `./xmlquery USE_ESMF_LIB   -value `;
 $ENV{COMP_INTERFACE} = `./xmlquery COMP_INTERFACE -value `;
+$ENV{BUILD_THREADED} = `./xmlquery BUILD_THREADED -value`;
+$ENV{PIO_VERSION} = `./xmlquery PIO_VERSION -value`;
+$ENV{CLM_CONFIG_OPTS} = `./xmlquery CLM_CONFIG_OPTS -value`;
+my $testcase = `./xmlquery TESTCASE -value`;
 
 sub usage {
     die <<EOF;
-    
+
 SYNOPSIS
     $CASE.clean_build [options]
-    Removes existing coupled model object files and libraries  
+    Removes existing coupled model object files and libraries
 
 OPTIONS
   all Cleans all objects
    no arguments implies -a -c -o -w -g -i -r -l
-   -a Cleans the atm objects 
+   -a Cleans the atm objects
    -c Cleans the cpl objects
    -o Cleans the ocn objects
    -w Cleans the wav objects
@@ -31,6 +35,7 @@ OPTIONS
    -i Cleans the ice objects
    -r Cleans the rof objects
    -l Cleans the lnd objects
+   -e Cleans the wav objects
    -m Cleans the mct library
    -s Cleans the shr library
    -p Cleans the pio library
@@ -51,11 +56,12 @@ GetOptions(
     "i" => \$opts{ice},
     "r" => \$opts{rof},
     "l" => \$opts{lnd},
+    "e" => \$opts{esp},
     "m" => \$opts{mct},
     "s" => \$opts{csmshare},
     "t" => \$opts{gptl},
     "p" => \$opts{pio},
-) or usage();    
+) or usage();
 
 usage() if($opts{help});
 
@@ -82,7 +88,17 @@ if( $cnt==0){
     $opts{glc} = 1;
     $opts{ice} = 1;
     $opts{rof} = 1;
-    $opts{lnd} = 1;
+    $opts{esp} = 1;
+
+    # Do not clean shared land library in a test case unless explicitly
+    # requested. This is for the sake of test suites: We don't want tests that
+    # do a clean_build to clean the shared land libraries, because that would
+    # result in unnecessary rebuilds. (Another way to think about this is: the
+    # shared library, which is in a path specific to the build options, removes
+    # the need for the clean_build that is done as part of some tests' builds.)
+    if(not defined $testcase or ($ENV{CLM_CONFIG_OPTS} =~ /clm4_0/)){
+	$opts{lnd} = 1;
+    }
 }
 
 if($opts{mct}+$opts{pio}+$opts{gptl}+$opts{csmshare} >= 1){

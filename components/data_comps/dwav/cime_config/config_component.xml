@@ -17,7 +17,7 @@
     <default_value>copyall</default_value>
     <values>
       <value compset="_DWAV%NULL">null</value>
-      <value compset="_DWAV%COPY">copyall</value>
+      <value compset="_DWAV">copyall</value>
     </values>
     <group>run_component_dwav</group>
     <file>env_run.xml</file>
@@ -28,7 +28,7 @@
 
   <description>
     <desc compset="_DWAV%NULL">dwav null mode:</desc>
-    <desc compset="_DWAV%COPY">dwav copy mode:</desc>
+    <desc compset="_DWAV">dwav copy mode:</desc>
   </description>
 
   <help>

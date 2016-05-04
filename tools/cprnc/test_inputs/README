@@ -25,6 +25,8 @@ The files here are:
 - diffs_in_vals_and_fill.nc: a single variable has differences in both
   values and fill pattern
 
+- lon_differs.nc: number of longitude points differs
+
 - vals_differ_by_1.1.nc: testvar has values equal to 1.1 times those
   in the control file. This is useful for testing the relative
   difference calculation.

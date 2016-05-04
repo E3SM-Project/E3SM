@@ -98,6 +98,8 @@
       <value component="clm"      >$SRCROOT/components/clm/cime_config/testdefs/testlist_clm.xml</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/testdefs/testlist_cice.xml</value>
       <value component="pop"      >$SRCROOT/components/pop/cime_config/testdefs/testlist_pop.xml</value>
+      <value component="rtm"      >$SRCROOT/components/rtm/cime_config/testdefs/testlist_rtm.xml</value>
+      <value component="mosart"   >$SRCROOT/components/mosart/cime_config/testdefs/testlist_mosart.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -121,6 +123,25 @@
     <group>case_last</group>
     <file>env_case.xml</file>
     <desc>directory containing test modifications for primary component tests (for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="USER_MODS_DIR">
+    <type>char</type>
+    <default_value>unset</default_value>
+    <values>
+      <value component="allactive">$CIMEROOT/cime_config/$MODEL/allactive/usermods_dirs</value>
+      <value component="drv"      >$CIMEROOT/driver_cpl/cime_config/usermods_dirs</value>
+      <value component="cam"      >$SRCROOT/components/cam/cime_config/usermods_dirs</value>
+      <value component="cism"     >$SRCROOT/components/cism/cime_config/usermods_dirs</value>
+      <value component="clm"      >$SRCROOT/components/clm/cime_config/usermods_dirs</value>
+      <value component="cice"     >$SRCROOT/components/cice/cime_config/usermods_dirs</value>
+      <value component="rtm"      >$SRCROOT/components/rtm/cime_config/usermods_dirs</value>
+      <value component="mosart"   >$SRCROOT/components/mosart/cime_config/usermods_dirs</value>
+      <value component="pop"      >$SRCROOT/components/pop/cime_config/usermods_dirs</value>
+    </values>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>directory containing user modifications for primary components (for documentation only - DO NOT EDIT)</desc>
   </entry>
 
   <!-- =============================================================== -->
@@ -230,6 +251,17 @@
       <value component="dwav">$CIMEROOT/components/data_comps/dwav/cime_config/config_component.xml</value>
       <value component="swav">$CIMEROOT/components/stub_comps/swav/cime_config/config_component.xml</value>
       <value component="xwav">$CIMEROOT/components/xcpl_comps/xwav/cime_config/config_component.xml</value>
+    </values>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+  </entry>
+
+  <entry id="CONFIG_ESP_FILE">
+    <type>char</type>
+    <default_value>$CIMEROOT/components/stub_comps/sesp/cime_config/config_component.xml</default_value>
+    <values>
+      <value component="sesp">$CIMEROOT/components/stub_comps/sesp/cime_config/config_component.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>

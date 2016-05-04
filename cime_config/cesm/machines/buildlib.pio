@@ -8,7 +8,12 @@ set GMAKE     = `./xmlquery  GMAKE	-value `
 set GMAKE_J   = `./xmlquery  GMAKE_J	-value ` 
 set BLDROOT = $1
 # directory in which pio is built
-set pio_dir=$BLDROOT/pio
+setenv PIO_VERSION  `./xmlquery PIO_VERSION -value`
+set PIOVERSION="pio$PIO_VERSION"
+set pio_dir="$BLDROOT/$PIOVERSION"
+if (! -e $pio_dir) then
+  mkdir -p $pio_dir
+endif
 cd $pio_dir
 
 # ----------------------------------------------------------------------
@@ -23,7 +28,7 @@ set cmake_opts=" -D GENF90_PATH=$CIMEROOT/externals/genf90"
 # create the pio makefile by running cmake (done via a rule
 # in the system-level makefile)
 # ----------------------------------------------------------------------
-$GMAKE  $pio_dir/Makefile MODEL=pio USER_CMAKE_OPTS="$cmake_opts" \
+$GMAKE  $pio_dir/Makefile MODEL=$PIOVERSION USER_CMAKE_OPTS="$cmake_opts" \
        PIO_LIBDIR=$pio_dir -f $CASETOOLS/Makefile || exit 1
 
 # ----------------------------------------------------------------------
