@@ -83,9 +83,7 @@ def preRunCheck(case):
     env_module.load_env_for_case()
 
     # set environment variables
-    # currently need to set mpilib as an environment variable- otherwise
-    # the model dies at runtime
-    # FIXME: is there a way to remove this requirement?
+    # This is a requirement for yellowstone only
     if mpilib == "mpi-serial":
         del os.environ["MP_MPILIB"]
     else:
