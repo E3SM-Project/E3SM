@@ -1,418 +1,324 @@
-#! /usr/bin/env perl
-#------------------------------------------------------------------------------
-# Batch system directives
-#------------------------------------------------------------------------------
+#!/usr/bin/env python2
+
+"""
+template to create a case run script
+"""
+
+import sys, os, calendar, shutil, time
+from standard_script_setup          import *
+from CIME.XML.standard_module_setup import *
+from CIME.XML.files                 import Files
+from CIME.XML.component             import Component
+from CIME.case                      import Case
+from CIME.utils                     import expect, get_model, run_cmd, appendCaseStatus
+from CIME.env_module                import EnvModule
+from CIME.utils                     import expect
+from CIME.check_lockedfiles         import check_lockedfiles
+from CIME.preview_namelists         import preview_namelists
+import gzip
+
+workdir = os.environ.get("PBS_O_WORKDIR")
+if workdir is not None:
+    os.chdir(workdir)
+
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise exc_type("ERROR: must set CIMEROOT environment variable")
+
+_LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
+sys.path.append(_LIBDIR)
+
+logger = logging.getLogger(__name__)
+
+# Batch system directives 
 {{ batchdirectives }}
-use strict;
-use warnings;
-use POSIX qw(strftime);
-use File::Path;
-use File::Copy;
-use File::Spec;
-use File::Basename;
-use XML::LibXML;
-use Data::Dumper;
-use Cwd;
-use Getopt::Long;
-my $scriptname = $0;
 
-if(! -e "./xmlquery" and defined $ENV{'PBS_O_WORKDIR'})
-{
-	chdir $ENV{'PBS_O_WORKDIR'};
-}
-
-my $caseroot = `./xmlquery -value CASEROOT`;
-my $cimeroot = `./xmlquery -value CIMEROOT`;
-my %opts=(loglevel=>"INFO");
-chdir $caseroot;
-my $toolsdir = "$caseroot/Tools";
-push(@INC, $toolsdir);
-my $perl5lib = "$cimeroot/utils/perl5lib";
-push(@INC, $perl5lib, "$perl5lib/Config");
-
-require SetupTools;
-require Run::RunChecks;
-require Depends::Checks;
-require Module::ModuleLoader;
-require Batch::BatchUtils;
-require Log::Log4perl;
-my $logger;
-
-
-#------------------------------------------------------------------------------
 # PE Layout Documentation:
-#------------------------------------------------------------------------------
 {{ pedocumentation }}
-# -------------------------------------------------------------------------
-# global data needed by the script, stuff like the max number of threads,
-# -------------------------------------------------------------------------
-my $banner = "*" x 65;
-my %config;
-my $case;
-my $compiler;
-my $machine;
-my $machroot;
-my $mpilib;
-my $scriptsroot;
-my $maxthreads = 2;
-my $LID;
-# -------------------------------------------------------------------------
-# Set up the run, run the model, do the postrun steps
-# -------------------------------------------------------------------------
-sub main
-{
-    getOptions();
-    for(my $cycle=0;$cycle<$config{DATA_ASSIMILATION_CYCLES};$cycle++){
-	doPreRunChecks();
-	runModel();
-	postRun();
-	DoDataAssimilation($config{RUNDIR},$config{CASEROOT},$config{DATA_ASSIMILATION},
-	    $config{DATA_ASSIMILATION_SCRIPT},$LID,$config{LOGDIR});
-    }
 
-    resubmitCheck();
-    exit(0);
-}
-main(@ARGV) unless caller();
+###############################################################################
+def parse_command_line(args):
+###############################################################################
 
-# -------------------------------------------------------------------------
-# Get options
-# -------------------------------------------------------------------------
-sub getOptions()
-{
-    GetOptions(
-	"loglevel" => \$opts{'loglevel'},
-	);
+    CIME.utils.get_model()
 
+    parser = argparse.ArgumentParser()
 
-    my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
-    Log::Log4perl->easy_init({level=>$level,
-			  layout=>'%m%n'});
+    CIME.utils.setup_standard_logging_options(parser)
 
-    $logger = Log::Log4perl::get_logger();
+    args = parser.parse_args()
 
+    CIME.utils.handle_standard_logging_options(args)
 
-    # First, get the configuration from xml .
-    %config = SetupTools::getAllResolved();
-    $case        = $config{'CASE'};
-    $caseroot    = $config{'CASEROOT'};
-    $compiler    = $config{'COMPILER'};
-    $machine     = $config{'MACH'};
-    $machroot    = $config{'MACHDIR'};
-    $mpilib      = $config{'MPILIB'};
-    if($config{'RUN_WITH_SUBMIT'} eq 'FALSE' )
-    {
-            my $out = "You are not calling the run script via the submit script. ";
-	    $out.= "As a result, short-term archiving will not be called automatically.";
-	    $out.= "Please submit your run by running the submit script like so: ";
-	    $out.= "./case.submit";
-	    $logger->logdie($out);
-    }
-    else
-    {
-        `./xmlchange --noecho RUN_WITH_SUBMIT=TRUE`;
-	$config{RUN_WITH_SUBMIT}='TRUE';
-    }
+###############################################################################
+def preRunCheck(case):
+###############################################################################
 
-}
+    # Pre run initialization code..
+    model = CIME.utils.get_model()
+    caseroot = case.get_value("CASEROOT")
+    cimeroot = case.get_value("CIMEROOT")
+    din_loc_root = case.get_value("DIN_LOC_ROOT")
+    compiler = case.get_value("COMPILER")
+    debug = case.get_value("DEBUG")
+    mach = case.get_value("MACH")
+    lbquery = case.get_value("LBUQERY")
+    batchsubmit = case.get_value("BATCHSUBMIT")
+    mpilib = case.get_value("MPILIB")
+    rundir = case.get_value("RUNDIR")
+    build_complete = case.get_value("BUILD_COMPLETE")
 
-# -------------------------------------------------------------------------
-# Pre run initialization code..
-# -------------------------------------------------------------------------
-sub doPreRunChecks()
-{
-    # Change to the case root
-    chdir($config{'CASEROOT'});
+    # check for locked files.
+    check_lockedfiles()
+    logger.debug("check_lockedfiles OK")
 
-    # Update the configuration from xml .
-    %config = SetupTools::getAllResolved();
-    $case        = $config{'CASE'};
-    $caseroot    = $config{'CASEROOT'};
-    $compiler    = $config{'COMPILER'};
-    $machine     = $config{'MACH'};
-    $machroot    = $config{'MACHDIR'};
-    $mpilib      = $config{'MPILIB'};
+    # check that build is done
+    expect (build_complete,
+            "BUILD_COMPLETE is not true\nPlease rebuild the model interactively")
+    logger.debug("build complete is %s " %build_complete)
 
-    # Now, check for locked files.
-    Run::RunChecks->checkLockedFiles();
+    # load the module environment...
+    env_module = EnvModule(mach, compiler, cimeroot, caseroot, mpilib, debug)
+    env_module.load_env_for_case()
 
-    # Now, load the module environment...
-    # ModuleLoader for module-based systems.
+    # set environment variables
+    # currently need to set mpilib as an environment variable- otherwise
+    # the model dies at runtime 
+    # FIXME: is there a way to remove this requirement?
+    if mpilib == "mpi-serial":
+        del os.environ["MP_MPILIB"]
+    else:
+        os.environ["MPILIB"] = mpilib
 
-    my $moduleloader = new Module::ModuleLoader(machine  => $config{'MACH'},
-						compiler => $config{'COMPILER'},
-						mpilib   => $config{'MPILIB'},
-						debug    => $config{'DEBUG'},
-						caseroot => $config{'CASEROOT'},
-						cimeroot => $config{'CIMEROOT'},
-	                                        model    => $config{'MODEL'});
-
-    $moduleloader->moduleInit();
-    $moduleloader->findModulesForCase();
-    $moduleloader->loadModules();
-
-    my $mpilib = `./xmlquery -value MPILIB`;
-    if($mpilib =~ /mpi-serial/)
-    {
-        delete $ENV{'MP_MPILIB'};
-    }
-    else
-    {
-        $ENV{'MP_MPILIB'} = $mpilib;
-    }
-    $config{'MPILIB'} = $mpilib;
-
-    $logger->debug( "build complete? $config{'BUILD_COMPLETE'}");
-    if($config{'BUILD_COMPLETE'} ne 'TRUE')
-    {
-	$logger->logdie("BUILD_COMPLETE is not true\nPlease rebuild the model interactively");
-    }
-
-    $ENV{'LBQUERY'} = "TRUE";
-    if( ! defined $config{'BATCHSUBMIT'} || length $config{'BATCHSUBMIT'} == 0)
-    {
-	$ENV{'LBQUERY'} = "FALSE";
-	$ENV{'BATCHQUERY'} = "undefined";
-    }
-
-    elsif ( $config{'BATCHSUBMIT'} eq 'UNSET')
-    {
-	$ENV{'LBSUBMIT'} = "FALSE";
-	$ENV{'BATCHSUBMIT'} = "undefined";
-    }
-
-    ## Create the timing directories, optionally cleaning them if needed.
-    if(! -d $config{'RUNDIR'})
-    {
-	mkpath($config{'RUNDIR'}) or die "could not crate $config{'RUNDIR'}, exiting\n";
-    }
-    if(-d "$config{'RUNDIR'}/timing")
-    {
-	rmtree("$config{'RUNDIR'}/timing");
-    }
-    # Now make the timing and timing/checkpoints directories..
-    mkpath("$config{'RUNDIR'}/timing/checkpoints");
-
-    # Now set up the LID and sdate? strings
-    $LID = strftime("%y%m%d-%H%M%S", localtime);
-    my $sdate = strftime("%Y-%m-%d %H:%M:%S", localtime);
-    $ENV{'LID'} = $LID;
-    $ENV{'sdate'} = $sdate;
-
-    open my $CS, ">>", "./CaseStatus" or die "Could not open CaseStatus file for writing!";
-    print $CS "run started $sdate\n";
-    close $CS;
-
-    $logger->info( "-------------------------------------------------------------------------");
-    $logger->info(" BUILDNML SCRIPT STARTING");
-    $logger->info(" - To prestage restarts, untar a restart.tar file into $config{'RUNDIR'}");
-
-    # Run preview namelists.. should turn this into a module at some point..
-    system("./preview_namelists");
-
-    if($?)
-    {
-	$logger->logdie("ERROR from preview namelist - EXITING");
-    }
-
-    $logger->info( " BUILDNML SCRIPT HAS FINISHED SUCCESSFULLY");
-    $logger->info( "-------------------------------------------------------------------------");
-    $logger->info( " PRESTAGE SCRIPT STARTING");
-    $logger->info(" - Case input data directory, DIN_LOC_ROOT, is $config{'DIN_LOC_ROOT'}");
-    $logger->info( " - Checking the existence of input datasets in DIN_LOC_ROOT");
-
-}
-
-# -------------------------------------------------------------------------
-# Run the model system
-# -------------------------------------------------------------------------
-sub runModel()
-{
-    system("sleep 10");
-    my $localtime = localtime;
-    # Set OMP_NUM_THREADS
-    $ENV{'OMP_NUM_THREADS'} = {{ thread_count }};
-
-    $logger->info("$localtime MODEL EXECUTION BEGINS HERE");
-    # Run the model
-    my $cmd = "{{ mpirun }}";
-    $cmd = SetupTools::expand_xml_var($cmd, \%config);
-
-    chdir $config{'RUNDIR'};
-    $logger->info("Running '$cmd'\n");
-    system($cmd);
+    if batchsubmit is None or len(batchsubmit) == 0:
+        os.environ["LBQUERY"] = "FALSE"
+        os.environ["BATCHQUERY"] = "undefined"
+    elif batchsubmit == 'UNSET':
+        os.environ["LBQUERY"] = "FALSE"
+        os.environ["BATCHQUERY"] = "undefined"
+    else:
+        os.environ["LBQUERY"] = "TRUE"
     
-    $localtime = localtime;
-    $logger->info( "$localtime MODEL EXECUTION HAS FINISHED");
-}
+    # create the timing directories, optionally cleaning them if needed.
+    if not os.path.isdir(rundir):
+        os.mkdir(rundir)
 
-sub disposeLog
-{
-    my($rundir,$caseroot,$component,$lid,$logdir) = @_;
+    if os.path.isdir(os.path.join(rundir,"timing")):
+        shutil.rmtree(os.path.join(rundir,"timing"))
 
-    my $logfile = "$component.log.$lid";
+    os.makedirs(os.path.join(rundir,"timing","checkpoints"))
 
-    my $dir = getcwd;
-    chdir $rundir unless($dir eq $rundir);
+    # run preview namelists
+    preview_namelists()
 
-    if(-e $logfile){
-	qx(gzip $logfile);
-	$logfile .= ".gz";
-	if(-e $logfile){
-            copy($logfile, $logdir );
-	}
-    }
+    # document process
+    appendCaseStatus(caseroot, "%s Run started \n" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
-}
+    logger.info( "-------------------------------------------------------------------------")
+    logger.info( " - To prestage required restarts, untar a restart.tar file into %s" %(rundir))
+    logger.info( " - Case input data directory (DIN_LOC_ROOT) is %s " %(din_loc_root))
+    logger.info( " - Checking for required input datasets in DIN_LOC_ROOT")
+    logger.info( "-------------------------------------------------------------------------")
 
+###############################################################################
+def runModel(case):
+###############################################################################
 
+    # Set OMP_NUM_THREADS
+    num_threads = {{ thread_count }}
+    os.environ["OMP_NUM_THREADS"] = str(num_threads)
 
+    # Run the model
+    logger.info("%s MODEL EXECUTION BEGINS HERE" %(time.strftime("%Y-%m-%d %H:M:S")))
 
+    # {{mpirun}} set the unresolved cmd string
+    {{ mpirun }}
+    cmd = case.get_resolved_value(cmd)
 
-# -------------------------------------------------------------------------
-# Post-processing
-# -------------------------------------------------------------------------
-sub postRun()
-{
-    # Go back to the caseroot, pull in the configuration in case a user changed
-    # of the variables
-    chdir $config{'CASEROOT'};
-    %config = SetupTools::getAllResolved();
-    my $rundir = $config{RUNDIR};
-    my $sdate = strftime("%Y-%m-%d %H:%M:%S", localtime);
+    logger.debug("run command is %s " %cmd)
+    rundir = case.get_value("RUNDIR")
+    run_cmd(cmd, from_dir=rundir) 
+    logger.info( "%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:M:S")))
 
-    my $workingdir = getcwd;
+###############################################################################
+def postRunCheck(case, lid):
+###############################################################################
 
-    # find the last $model.log and cpl.log
-    my $logfile = "$rundir/cesm.log.$LID";
-    my $cpllogfile = "$rundir/cpl.log.$LID";
+    caseroot = case.get_value("CASEROOT")
+    rundir = case.get_value("RUNDIR")
+    model = case.get_value("MODEL")
 
-    if( -z $logfile)
-    {
-        $logger->error( "Model did not complete, no cesm.log file present");
-    }
+    # find the last model.log and cpl.log
+    model_logfile = os.path.join(rundir,model + ".log." + lid)
+    cpl_logfile   = os.path.join(rundir,"cpl" + ".log." + lid)
 
-    if(! -e $cpllogfile)
-    {
-        my $msg = "Model did not complete - no cpl.log file corresponding to most recent model log: $logfile";
+    if not os.path.isfile(model_logfile):
+        msg = "%s Model did not complete, no %s log file %s \n" %(time.strftime("%Y-%m-%d %H:%M:%S"), model, model_logfile)
+        appendCaseStatus(caseroot,msg)
+        expect(False, msg) 
+    elif not os.path.isfile(cpl_logfile):
+        msg = "%s Model did not complete, no cpl log file %s \n" %(time.strftime("%Y-%m-%d %H:%M:%S"), cpl_logfile) 
+        appendCaseStatus(caseroot, msg)
+        expect(False, msg) 
+    elif os.stat(model_logfile).st_size == 0:
+        msg = " %s Run FAILED " %time.strftime("%Y-%m-%d %H:%M:%S")
+        appendCaseStatus(caseroot, msg)
+        expect (False, msg)
+    else:
+        if 'SUCCESSFUL TERMINATION' in open(cpl_logfile).read():
+            msg = "%s run SUCCESSFUL" %time.strftime("%Y-%m-%d %H:%M:%S")
+            appendCaseStatus(caseroot, msg )
+        else:
+            msg = "%s Model did not complete - see %s \n " %(time.strftime("%Y-%m-%d %H:%M:%S"), cpl_logfile)
+            appendCaseStatus(caseroot, msg)
+            expect (False, msg)
 
-        appendCaseStatus($msg);
-        $logger->logdie($msg);
-    }
+###############################################################################
+def getTimings(case, lid):
+###############################################################################
 
-    if(-z $cpllogfile)
-    {
-        open (my $CS, ">>", "$config{'CASEROOT'}/CaseStatus") or warn "cannot open $config{'CASEROOT'}/CaseStatus, error was $!";
-        print $CS "Run FAILED $sdate\n";
-        $logger->logdie( "Model did not complete, see $logfile");
+    check_timing = case.get_value("CHECK_TIMING")
+    if check_timing:
+        caseroot = case.get_value("CASEROOT")
+        timingDir = os.path.join(caseroot, "timing")
+        if not os.path.isdir(timingDir):
+            os.makedirs(timingDir)
 
-    }
-    elsif( -e  $cpllogfile)
-    {
-        open my $CPLLOG, "<", "$cpllogfile" or warn "could not open $cpllogfile, $!";
-        my @cpllines = <$CPLLOG>;
-        close $CPLLOG;
-        if(@cpllines)
-        {
-            my @success = grep(/SUCCESSFUL TERMINATION/, @cpllines);
-            if(@success)
-            {
-                appendCaseStatus("run SUCCESSFUL $sdate");
-            }
-            else
-            {
-                appendCaseStatus("Model did not complete - see $logfile");
-                exit(-1);
-            }
+        logger.info("Running timing script %s " %(os.path.join(caseroot, "Tools", "getTiming")))
+        cmd = "%s -lid %s " %(os.path.join(caseroot,"Tools","getTiming"), lid)
+        run_cmd(cmd) 
 
-        }
-        else
-        {
-            appendCaseStatus("Model did not complete - no cpl.log file corresponding to most recent model log: $logfile");
-            exit(-1);
-        }
-    }
+        # save the timing files if desired
+        save_timing = case.get_value("SAVE_TIMING")
+        if save_timing:
+            rundir = case.get_value("RUNDIR")
+            shutil.move(os.path.join(rundir,"timing"), 
+                        os.path.join(rundir,"timing."+lid))
 
-    chdir($rundir) or $logger->logdie ("could not cd to $rundir");
+        # compress relevant timing files
+        logger.info( "gzipping timing stats.." )
+        model = case.get_value("MODEL")
+        timingfile = os.path.join(timingDir, model + "_timing_stats." + lid)
+        f_in = open(timingfile)
+        f_out = gzip.open(timingfile + '.gz', 'wb')
+        f_out.writelines(f_in)
+        f_out.close()
+        f_in.close()
+        os.remove(timingfile)
 
-    if(defined $config{'LOGDIR'} && (length($config{'LOGDIR'}) > 0))
-    {
-        if(! -e $config{'LOGDIR'})
-        {
-            mkpath($config{'LOGDIR'}) or $logger->warn ("Cannot make log directory $config{'LOGDIR'}, $!");
-        }
+###############################################################################
+def saveLogs(case, lid):
+###############################################################################
 
-        $logger->debug("lid: $LID");
-	foreach my $comp (qw(atm cpl ocn wav glc ice rof lnd cesm)){
-	    disposeLog($config{RUNDIR},$config{CASEROOT}, $comp ,$LID,$config{LOGDIR});
-	}
-    }
+    logdir = case.get_value("LOGDIR")
+    if logdir is not None and len(logdir) > 0:
+        if not os.path.isdir(logdir):
+            os.makedirs(logdir)
 
-    # Run the getTiming script if desired
-    my $owd = getcwd();
-    chdir $config{'CASEROOT'};
-    if($config{'CHECK_TIMING'} eq 'TRUE')
-    {
-        my $timingDir = $config{'CASEROOT'} . "/timing";
-        mkpath $timingDir if(! -e $timingDir);
-        $logger->info( "running timing script..");
-        system(" $config{'CASETOOLS'}/getTiming -lid $LID ");
-        $logger->info( "gzipping timing stats..");
-        qx( gzip timing/cesm_timing_stats.$LID );
-    }
-    chdir $owd;
+        caseroot = case.get_value("CASEROOT")
+        rundir = case.get_value("RUNDIR")
 
-    # Save the timing files if desired
-    if($config{'SAVE_TIMING'} eq 'TRUE')
-    {
-        move( "$config{'RUNDIR'}/timing",  "$config{'RUNDIR'}/timing.$LID");
-    }
-}
+        # get components
+        files = Files()
+        config_file = files.get_value("CONFIG_DRV_FILE")
+        component = Component(config_file)
+        comps = [x.lower() for x in component.get_valid_model_components()]
+        comps = [x.replace('drv', 'cpl') for x in comps]
+        model = [case.get_value("MODEL")]
+        comps = comps + model
 
-sub appendCaseStatus
-{
-    my $msg = shift;
-    open (my $CS, ">>", "$config{'CASEROOT'}/CaseStatus") or warn "cannot open $config{'CASEROOT'}/CaseStatus, $!";
-    print $CS "$msg\n";
-    close $CS;
-}
+        # for each component, compress log files and copy to logdir
+        for comp in comps:
+            logfile = os.path.join(rundir, comp + '.log.' + lid)
+            if os.path.isfile(logfile):
+                f_in = open(logfile)
+                f_out = gzip.open(logfile + '.gz', 'wb')
+                f_out.writelines(f_in)
+                f_out.close()
+                f_in.close()
+                os.remove(logfile)
+                logfile_copy = logfile + '.gz'
+                shutil.copy(logfile_copy, 
+                            os.path.join(caseroot, logdir, os.path.basename(logfile_copy)))
 
-# check to see if we need to do resubmission from this particular job,
-sub resubmitCheck()
-{
-#
-# Mira requires special logic
-#
-    if(($config{DOUT_S} eq 'FALSE' && $config{RESUBMIT} > 0) || ($config{MACH} eq "mira" && $config{DOUT_S} eq "TRUE")) {
-	my $submitscript = "$config{'CASEROOT'}/case.submit";
-	my $cwd = getcwd;
-	chdir $config{'CASEROOT'};
-	my $resubmitcommand = "$submitscript -resubmit -scriptname case.";
+###############################################################################
+def resubmitCheck(case):
+###############################################################################
 
-	if(defined $config{TESTCASE} && $config{TESTCASE} eq "ERR"){
-	    $resubmitcommand .= "test";
-	}else{
-	    $resubmitcommand .= "run";
-	}
-	$logger->debug( "running resubmit check $resubmitcommand");
-	system($resubmitcommand);
-        if($?){ $logger->warn ("could not run CESM submit script, $! $?");}
-	chdir $cwd;
-    }
-}
+    # check to see if we need to do resubmission from this particular job,
+    # Note that Mira requires special logic
 
-sub DoDataAssimilation
-{
-    my ($rundir, $caseroot, $da, $da_script, $lid, $logdir) = @_;
+    caseroot = case.get_value("CASEROOT")
+    dout_s = case.get_value("DOUT_S")
+    mach = case.get_value("MACH")
+    testcase = case.get_value("TESTCASE")
+    resubmit_num = int(case.get_value("RESUBMIT"))
+    
+    # If dout_s is True than short-term archiving handles the resubmit
+    # that is not the case on Mira
+    resubmit = False
+    if not dout_s and resubmit_num > 0: 
+        resubmit = True
+    elif dout_s and mach == 'mira':
+        resubmit = True
 
-    return unless($da eq "TRUE");
+    if resubmit:
+	cmd = os.path.join(caseroot,"case.submit") + "-resubmit -scriptname case."
+        if testcase is not None and testcase == 'ERR':
+	   cmd = cmd + "test"
+        else:
+	   cmd = cmd + "run"
+        logger.debug( "running resubmit check %s " %cmd)
+        rc, output, error = run_cmd(cmd, ok_to_fail=True, from_dir=caseroot)
+        if rc != 0:
+            logger.warn("could not run %s submit script, rc=%s, output=%s, error=%s" %(model,rc,output,error))
 
-    system(" $da_script 1> da.log.$lid 2>&1");
-    sleep(1);
-    $logger->logdie ("$da_script failed") unless ($? == 0);
-    chdir $rundir;
-    disposeLog($rundir,$caseroot, 'da' ,$lid,$logdir);
-    chdir $caseroot;
-}
+###############################################################################
+def DoDataAssimilation(case, da_script, lid):
+###############################################################################
 
+    cmd = da_script + "1> da.log.%s 2>&1" %(lid)
+    logger.debug("running %s" %da_script)
+    run_cmd(cmd)
+    disposeLog(case, 'da', lid)
 
+###############################################################################
+def _main_func():
+###############################################################################
+
+    # Set up the run, run the model, do the postrun steps
+
+    parse_command_line(sys.argv)
+
+    case = Case()
+
+    run_with_submit = case.get_value("RUN_WITH_SUBMIT")
+    expect (run_with_submit,
+             "You are not calling the run script via the submit script. "
+             "As a result, short-term archiving will not be called automatically."
+             "Please submit your run by runnint the submit script like so:"
+            " ./case.submit")
+
+    data_assimilation = case.get_value("DATA_ASSIMILATION")
+    data_assimilation_cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
+    data_assimilation_script = case.get_value("DATA_ASSIMILATION_SCRIPT")
+
+    # set up the LID 
+    lid = time.strftime("%y%m%d-%H%M%S")
+    os.environ["LID"] = lid
+
+    for cycle in range(data_assimilation_cycles):
+        preRunCheck(case)
+        runModel(case)
+        postRunCheck(case, lid)
+        saveLogs(case, lid)       # Copy log files back to caseroot
+        getTimings(case, lid)     # Run the getTiming script
+        if data_assimilation:
+            DoDataAssimilation(case, data_assimilation_script, lid)
+
+    resubmitCheck(case)
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func()

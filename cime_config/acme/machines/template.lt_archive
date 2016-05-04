@@ -1,177 +1,105 @@
-#! /usr/bin/env perl
-#------------------------------------------------------------------------------
+#!/usr/bin/env python2
+
+"""
+template to create a case short term archiving script
+"""
+
+import sys
+import os
+import time
+from standard_script_setup          import *
+from CIME.XML.standard_module_setup import *
+from CIME.case                      import Case
+from CIME.utils                     import expect, get_model, run_cmd, does_file_have_string
+
+workdir = os.environ.get("PBS_O_WORKDIR")
+if workdir is not None:
+    os.chdir(workdir)
+
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise exc_type("ERROR: must set CIMEROOT environment variable")
+
+_LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
+sys.path.append(_LIBDIR)
+
+logger = logging.getLogger(__name__)
+
 # Batch system directives
-#------------------------------------------------------------------------------
 {{ batchdirectives }}
 
-use POSIX qw(strftime);
-use File::Path;
-use File::Copy;
-use File::Spec;
-use File::Basename;
-use XML::LibXML;
+###############################################################################
+def parse_command_line(args):
+###############################################################################
 
-if(! -e "./xmlquery" and defined $ENV{'PBS_O_WORKDIR'})
-{
-	chdir $ENV{'PBS_O_WORKDIR'};
-}
+    CIME.utils.get_model()
 
-my $scriptname = $0;
-my %config;
-my $caseroot = `./xmlquery -value CASEROOT`;
-my $cimeroot = `./xmlquery -value CIMEROOT`;
-chdir $caseroot;
-my $perl5lib = "$cimeroot/utils/perl5lib";
-push(@INC, $perl5lib);
-require Config::SetupTools;
-require Batch::BatchUtils;
-use Cwd;
-require Log::Log4perl;
+    parser = argparse.ArgumentParser()
 
-my $level = Log::Log4perl::Level::to_priority("DEBUG");
-Log::Log4perl->easy_init({level=>$level,
-                          layout=>'%m%n'});
+    CIME.utils.setup_standard_logging_options(parser)
 
-my $logger = Log::Log4perl::get_logger();
+    args = parser.parse_args()
 
-#------------------------------------------------------------------------------
-# PE Layout Documentation:
-#------------------------------------------------------------------------------
-{{ pedocumentation }}
+    CIME.utils.handle_standard_logging_options(args)
 
-# -------------------------------------------------------------------------
-# global data needed by the script, stuff like the max number of threads,
-# -------------------------------------------------------------------------
+###############################################################################
+def _main_func():
+###############################################################################
 
-#-----------------------------------------------------------------------------------------------
-# checkRun - check if run is complete
-#-----------------------------------------------------------------------------------------------
-sub checkRun
-{
-    my $statusFile = shift;
-    my $runComplete = 0;
+    parse_command_line(sys.argv)
 
-    $logger->debug("In checkRun...");
-#
-# check if the run completed successfully
-#
-    if( -f $statusFile )
-    {
-	open my $CASESTATUS, "<", "$statusFile"  or die qq(lt_archive: unable to open $statusFile. Exiting...\n);
-	while( <$CASESTATUS> )
-	{
-	    chomp $_;
-	        if( /^run SUCCESSFUL/ )
-		{
-		    $runComplete = 1;
-		}
-	}
-	close( $CASESTATUS );
-    }
-}
+    case = Case()
 
-#-----------------------------------------------------------------------------------------------
-# checkSta - check if short term archive is complete
-#-----------------------------------------------------------------------------------------------
-sub checkSta
-{
-    my $statusFile = shift;
-    my $staComplete = 0;
+    caseroot = case.get_value("CASEROOT")
+    testlog = os.path.join(caseroot, "TestStatus.log")
 
-    $logger->debug("In checkSta...");
-#
-# check if the short term archive completed successfully
-#
-    if( -f $statusFile )
-    {
-	open my $STASTATUS, "<", "$statusFile"  or die qq(lt_archive: unable to open $statusFile. Exiting...\n);
-	while( <$STASTATUS> )
-	{
-	    chomp $_;
-	        if( /^st_archive process complete/ )
-		{
-		    $staComplete = 1;
-		}
-	}
-	close( $STASTATUS );
-    }
-}
+    # max number of threads needed by scripts
+    os.environ["maxthrds"] = 1
 
+    # document start
+    if os.path.isfile(testlog):
+        with open(testlog, "a") as fd:
+            fd.write("lt_archive starting %s" %(time.strftime("%Y-%m-%d %H:%M:%S")))
+    logger.info("lt_archive starting %s" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
-#-----------------------------------------------------------------------------------------------
-# main
-#-----------------------------------------------------------------------------------------------
-sub main
-{
-    $ENV{'maxthrds'} = 1;
-
-    # First, get the configuration from every xml file.
-    %config = SetupTools::getAllResolved();
-
-
-    # Change to the case root
-    chdir($config{'CASEROOT'});
-    my $testlog = "$config{CASEROOT}/TestStatus.log";
-    if(-e $testlog)
-    {
-        open(TL, ">>$testlog");
-        print TL "lt_archive starting\n";
-        close(TL);
-    }
-    $logger->info("lt_archive starting");
+    # determine status of run and short term archiving
+    runComplete = does_file_have_string(os.path.join(caseroot, "CaseStatus"), 
+                                        "run SUCCESSFUL")
+    staComplete = does_file_have_string(os.path.join(caseroot, "stArchiveStatus"), 
+                                        "st_archive_complete")
 
     # set up envrionment vars and call the lt_archive.sh script
-    my $runComplete = checkRun( "$config{'CASEROOT'}/CaseStatus" );
-    my $staComplete = checkSta( "$config{'CASEROOT'}/stArchiveStatus" );
+    if runComplete and staComplete:
+        os.environ["DOUT_S_ROOT"] = case.get_value("DOUT_S_ROOT")
+        os.environ["DOUT_L_MSROOT"] = case.get_value("DOUT_L_MSROOT")
+	os.environ["DOUT_L_HPSS_ACCNT"] = case.get_value("DOUT_L_HPSS_ACCNT")
 
-    if( $runComplete && $staComplete )
-    {
-	$ENV{DOUT_S_ROOT} = $config{'DOUT_S_ROOT'};
-	$ENV{DOUT_L_MSROOT} = $config{'DOUT_L_MSROOT'};
-	$ENV{DOUT_L_HPSS_ACCNT} = $config{'DOUT_L_HPSS_ACCNT'};
+	lid = time.strftime("%y%m%d-%H%M%S")
+        lt_archive_args = {{ lt_archive_args }}
+        cmd = os.path.join(caseroot, "Tools/lt_archive.sh") \
+            + lt_archive_args + "ltArchiveStatus." + lid + " 2>&1"
+        run_cmd(cmd, from_dir=caseroot)
+    else:
+        expect(False,
+               "lt_archive: run or st_archive is not yet complete or was not successful."
+               "Unable to perform long term archive...")
 
-	my $LID = strftime("%y%m%d-%H%M%S", localtime);
+    # document completion
+    if os.path.isfile(testlog):
+        with open(testlog, "a") as fd:
+            fd.write("lg_archive completed %s" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
-	qx($config{'CASEROOT'}/Tools/lt_archive.sh {{ lt_archive_args }} >> ltArchiveStatus.$LID 2>&1);
-    }
-    else
-    {
-	$logger->info("lt_archive: run or st_archive is not yet complete or was not successful. Unable to perform long term archive...");
-	exit 1;
-    }
+    # resubmit case if appropriate
+    resubmit = int(case.get_value("RESUBMIT"))
+    if resubmit > 0:                   
+	cmd = os.path.join(caseroot, "case.submit") + " -resubmit -scriptname case.st_archive"
+        run_cmd(cmd, from_dir=caseroot)
 
-    if(-e $testlog)
-    {
-        open(TL, ">>$testlog");
-        print TL "lt_archive complete\n";
-        close(TL);
-    }
-    $logger->info("lt_archive complete\n");
-    resubmitCheck();
-}
+        if os.path.isfile(testlog):
+            with open(testlog, "a") as fd:
+                fd.write("resubmitting %s" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
-#-----------------------------------------------------------------------------------------------
-# resubmitCheck - check if the case needs to be resubmitted
-#-----------------------------------------------------------------------------------------------
+###############################################################################
 
-sub resubmitCheck()
-{
-    if($config{RESUBMIT} > 0)
-    {
-        my $submitscript = "$config{CASEROOT}/$config{CASE}.submit";
-        my $cwd = getcwd;
-        chdir $config{CASEROOT};
-        my $resubmitcommand = "$submitscript -resubmit -scriptname $config{'CASE'}.lt_archive";
-        $logger->debug(" running resubmit check $resubmitcommand");
-        if(-e $testlog)
-        {
-            open(TL, ">>$testlog");
-            print TL "lt_archive complete\n";
-            close(TL);
-        }
-        qx($resubmitcommand);
-        if($?) { $logger->warn("could not run CESM submit script, $! $?") ; }
-        chdir $cwd;
-    }
-}
-main(@ARGV) unless caller;
+if __name__ == "__main__":
+    _main_func()

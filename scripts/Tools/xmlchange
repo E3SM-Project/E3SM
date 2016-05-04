@@ -12,10 +12,10 @@
 
 from standard_script_setup import *
 
-from CIME.utils import expect, run_cmd, convert_to_type
+from CIME.utils import expect, run_cmd, convert_to_type, appendCaseStatus
 from CIME.case import Case
 
-import argparse, doctest, shutil, glob
+import argparse, doctest, shutil, glob, time
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -105,12 +105,12 @@ def xmlchange(caseroot, listofsettings=None, xmlfile=None, xmlid=None, xmlval=No
         case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
     case.flush()
 
-    if(noecho is False):
-        with open("CaseStatus","a") as f:
-            argstr = ""
-            for arg in sys.argv:
-                argstr += "%s "%arg
-            f.write("<command> %s </command>\n" % argstr)
+    if (noecho is False):
+        argstr = ""
+        for arg in sys.argv:
+            argstr += "%s "%arg
+        msg = " %s <command> %s </command>\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), argstr)
+        appendCaseStatus(caseroot, msg)
 
 def _main_func(description):
     if ("--test" in sys.argv):

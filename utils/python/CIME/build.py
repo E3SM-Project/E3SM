@@ -2,11 +2,11 @@
 functions for building CIME models
 """
 from XML.standard_module_setup import *
-from CIME.case import Case
-from CIME.utils import expect, run_cmd, get_model, get_utc_timestamp
-from CIME.env_module import EnvModule
-from CIME.preview_namelists import preview_namelists
-from CIME.check_input_data import check_input_data
+from CIME.case                 import Case
+from CIME.utils                import expect, run_cmd, get_model, appendCaseStatus
+from CIME.env_module           import EnvModule
+from CIME.preview_namelists    import preview_namelists
+from CIME.check_input_data     import check_input_data
 
 import glob, shutil, time, threading, gzip
 
@@ -612,9 +612,7 @@ def clean(case, cleanlist):
     case.flush()
 
     # append call of to CaseStatus 
-    date = get_utc_timestamp()
-    with open(os.path.join(caseroot,"CaseStatus"), "a") as fd:
-        fd.write("clean build complete %s\n\n" %date)
-
+    msg = "%s case.setup \n" % time.strftime("%Y-%m-%d %H:%M:%S")
+    appendCaseStatus(caseroot, msg)
 
 ###############################################################################

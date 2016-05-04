@@ -1,78 +1,80 @@
-#! /usr/bin/env perl
-#------------------------------------------------------------------------------
+#!/usr/bin/env python2
+
+"""
+template to create a case short term archiving script
+"""
+
+import sys, os, time
+from standard_script_setup          import *
+from CIME.XML.standard_module_setup import *
+from CIME.case                      import Case
+from CIME.utils                     import get_model, run_cmd
+
+workdir = os.environ.get("PBS_O_WORKDIR")
+if workdir is not None:
+    os.chdir(workdir)
+
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise exc_type("ERROR: must set CIMEROOT environment variable")
+
+_LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
+sys.path.append(_LIBDIR)
+
+logger = logging.getLogger(__name__)
+
 # Batch system directives
-#------------------------------------------------------------------------------
 {{ batchdirectives }}
-use strict;
-if(! -e "./xmlquery" and defined $ENV{'PBS_O_WORKDIR'})
-{
-	chdir $ENV{'PBS_O_WORKDIR'};
-}
 
-my $scriptname = $0;
-my $caseroot = `./xmlquery -value CASEROOT`;
-my $cimeroot = `./xmlquery -value CIMEROOT`;
+###############################################################################
+def parse_command_line(args):
+###############################################################################
 
-chdir $caseroot;
-my $perl5lib = "$cimeroot/utils/perl5lib";
-push(@INC, $perl5lib);
-require Config::SetupTools;
-require Batch::BatchUtils;
-use Cwd;
-require Log::Log4perl;
+    get_model()
 
-my $level = Log::Log4perl::Level::to_priority("INFO");
-Log::Log4perl->easy_init({level=>$level,
-			  layout=>'%m%n'});
+    parser = argparse.ArgumentParser()
 
-my $logger = Log::Log4perl::get_logger();
+    CIME.utils.setup_standard_logging_options(parser)
 
-#------------------------------------------------------------------------------
-# PE Layout Documentation:
-#------------------------------------------------------------------------------
-{{ pedocumentation }}
+    args = parser.parse_args()
 
-# -------------------------------------------------------------------------
-# global data needed by the script, stuff like the max number of threads,
-# -------------------------------------------------------------------------
+    CIME.utils.handle_standard_logging_options(args)
 
-# First, get the configuration from every xml file.
-my %config = SetupTools::getAllResolved();
+###############################################################################
+def _main_func():
+###############################################################################
+
+    parse_command_line(sys.argv)
+
+    case = Case()
+
+    caseroot = case.get_value("CASEROOT")
+    testlog = os.path.join(caseroot, "TestStatus.log")
+
+    # do short-term archiving
+    if os.path.isfile(testlog):
+        with open(testlog, "a") as fd:
+            fd.write("st_archiving starting %s" %(time.strftime("%Y-%m-%d %H:%M:%S")))
+
+    cmd = os.path.join(caseroot, "Tools/st_archive") + " >> stArchiveStatus 2>&1"  
+    run_cmd(cmd)
+
+    if os.path.isfile(testlog):
+        with open(testlog, "a") as fd:
+            fd.write("st_archiving completed %s" %(time.strftime("%Y-%m-%d %H:%M:%S")))
+
+    # resubmit case if appropriate
+    resubmit = int(case.get_value("RESUBMIT"))
+    if resubmit > 0:                   
+	cmd = os.path.join(caseroot, "case.submit") + " -resubmit -scriptname case.st_archive"
+        run_cmd(cmd, from_dir=caseroot)
+
+        if os.path.isfile(testlog):
+            with open(testlog, "a") as fd:
+                fd.write("resubmitting %s" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
 
-my $testlog = "$config{CASEROOT}/TestStatus.log";
-if(-e $testlog){
-    open(TL,">>$testlog");
-    print TL "st_archive starting\n";
-    close(TL);
-}
-$logger->info("st_archive starting");
-system("$config{CASEROOT}/Tools/st_archive >> stArchiveStatus 2>&1");
-if(-e $testlog){
-    open(TL,">>$testlog");
-    print TL "st_archive complete\n";
-    close(TL);
-}
-$logger->info("st_archive complete");
-print TL "st_archive complete\n";
-resubmitCheck();
+###############################################################################
 
-sub resubmitCheck()
-{
-    if($config{RESUBMIT} > 0){
-	my $submitscript = "$config{'CASEROOT'}/case.submit";
-	my $cwd = getcwd;
-	chdir $config{CASEROOT};
-	my $resubmitcommand = "$submitscript  -resubmit -scriptname case.st_archive";
-	$logger->debug( "running resubmit check $resubmitcommand");
-	if(-e $testlog){
-	    open(TL,">>$testlog");
-	    print TL "running resubmit check $resubmitcommand\n";
-	    close(TL);
-	}
-       system($resubmitcommand);
-        if($?){ $logger->warn ("could not run CESM submit script, $! $?");}
-	chdir $cwd;
-    }
-}
-
+if __name__ == "__main__":
+    _main_func()

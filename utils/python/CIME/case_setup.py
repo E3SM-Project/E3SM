@@ -6,12 +6,12 @@ from CIME.XML.standard_module_setup import *
 
 from CIME.check_lockedfiles import check_lockedfiles
 from CIME.preview_namelists import preview_namelists
-from CIME.XML.env_mach_pes import EnvMachPes
-from CIME.XML.component import Component
-from CIME.XML.compilers import Compilers
-from CIME.case import Case
-from CIME.utils import expect, run_cmd
-from CIME.batch_maker import get_batch_maker
+from CIME.XML.env_mach_pes  import EnvMachPes
+from CIME.XML.component     import Component
+from CIME.XML.compilers     import Compilers
+from CIME.case              import Case
+from CIME.utils             import expect, run_cmd, appendCaseStatus
+from CIME.batch_maker       import get_batch_maker
 
 import shutil, time, glob
 
@@ -138,8 +138,8 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
         logger.info("Successfully cleaned batch script case.run")
         logger.info("Some files have been saved to %s" % backup_dir)
 
-        with open("CaseStatus", "a") as fd:
-            fd.write("case.setup --clean %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
+        msg =  "%s case.setup --clean \n" % time.strftime("%Y-%m-%d %H:%M:%S")
+        appendCaseStatus(caseroot, msg)
 
     if not clean:
         drv_comp = Component()
@@ -280,6 +280,6 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
                 run_cmd("./testcase.setup -caseroot %s" % caseroot)
                 logger.info("Finished testcase.setup")
 
-        with open("CaseStatus", "a") as fd:
-            fd.write("case.setup %s\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
+        msg = "%s case.setup \n" % time.strftime("%Y-%m-%d %H:%M:%S")
+        appendCaseStatus(caseroot, msg)
 
