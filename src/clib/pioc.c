@@ -386,8 +386,8 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
       iosys->intercomm = MPI_COMM_NULL;
       iosys->error_handler = PIO_INTERNAL_ERROR;
       iosys->async_interface= false;
-      iosys->compmaster = false;
-      iosys->iomaster = false;
+      iosys->compmaster = 0;
+      iosys->iomaster = 0;
       iosys->ioproc = false;
       iosys->default_rearranger = rearr;
       iosys->num_iotasks = num_iotasks;
@@ -398,7 +398,7 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
       CheckMPIReturn(MPI_Comm_rank(iosys->comp_comm, &(iosys->comp_rank)),__FILE__,__LINE__);
       CheckMPIReturn(MPI_Comm_size(iosys->comp_comm, &(iosys->num_comptasks)),__FILE__,__LINE__);
       if(iosys->comp_rank==0)
-	  iosys->compmaster = true;  
+	  iosys->compmaster = MPI_ROOT;  
 
       /* Ensure that settings for number of computation tasks, number
        * of IO tasks, and the stride are reasonable. */
@@ -428,7 +428,7 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
       iosys->info = MPI_INFO_NULL;
 
       if(iosys->comp_rank == iosys->ioranks[0])
-	  iosys->iomaster = true;
+	  iosys->iomaster = MPI_ROOT;
 
       /* Create a group for the computation tasks. */
       CheckMPIReturn(MPI_Comm_group(iosys->comp_comm, &(iosys->compgroup)),__FILE__,__LINE__);
@@ -489,8 +489,9 @@ int PIOc_set_hint(const int iosysid, char hint[], const char hintval[])
 
 }
 
-/** @ingroup PIO_finalize
- * @brief Clean up data structures and exit the pio library.
+/** @ingroup PIO_finalize 
+ * Clean up internal data structures, free MPI resources, and exit the
+ * pio library.
  *
  * @param iosysid: the io system ID provided by PIOc_Init_Intracomm().
  *
@@ -500,27 +501,38 @@ int PIOc_set_hint(const int iosysid, char hint[], const char hintval[])
 int PIOc_finalize(const int iosysid)
 {
   iosystem_desc_t *ios, *nios;
+  int msg;
+  int mpierr;
 
   ios = pio_get_iosystem_from_id(iosysid);
   if(ios == NULL)
-    return PIO_EBADID; 
-  /* FIXME: The memory for ioranks is allocated in C only for intracomms
-   * Remove this check once mem allocs for ioranks completely moves to the
-   * C code
-   */ 
-  if(ios->intercomm == MPI_COMM_NULL){
-    if(ios->ioranks != NULL){
-      free(ios->ioranks);
-    }
+    return PIO_EBADID;
+  
+  /* If asynch IO is in use, send the PIO_MSG_EXIT message from the
+   * comp master to the IO processes. */
+  if (ios->async_interface && !ios->comp_rank)
+  {
+    msg = PIO_MSG_EXIT;
+    mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
+    CheckMPIReturn(mpierr, __FILE__, __LINE__);		      
   }
 
+  /* Free this memory that was allocated in init_intracomm. */
+  if (ios->ioranks)
+      free(ios->ioranks);
+
+  /* Free the buffer pool. */
   free_cn_buffer_pool(*ios);
 
   /* Free the MPI groups. */
-  MPI_Group_free(&(ios->compgroup));
-  MPI_Group_free(&(ios->iogroup));
+  if (ios->compgroup != MPI_GROUP_NULL)
+    MPI_Group_free(&ios->compgroup);
 
-  /* Free the MPI communicators. */
+  if (ios->iogroup != MPI_GROUP_NULL)
+    MPI_Group_free(&(ios->iogroup));
+
+  /* Free the MPI communicators. my_comm is just a copy (but not an
+   * MPI copy), so does not have to have an MPI_Comm_free() call. */
   if(ios->intercomm != MPI_COMM_NULL){
     MPI_Comm_free(&(ios->intercomm));
   }
@@ -534,9 +546,8 @@ int PIOc_finalize(const int iosysid)
     MPI_Comm_free(&(ios->union_comm));
   }
 
+  /* Delete the iosystem_desc_t data associated with this id. */
   return pio_delete_iosystem_from_list(iosysid);
-
-  
 }
 
 /**
