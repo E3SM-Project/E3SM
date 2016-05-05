@@ -654,12 +654,16 @@ def convert_to_seconds(time_str):
 
     return result
 
-def appendCaseStatus(caseroot, msg):
+def appendStatus(msg, caseroot='.', sfile="CaseStatus"):
     """
-    Append msg to CaseStatus file in caseroot
+    Append msg to sfile in caseroot
     """
-    with open(os.path.join(caseroot,"CaseStatus"), "a") as fd:
-        fd.write(msg)
+    ctime = ""
+    # Don't put the time stamp in TestStatus
+    if sfile != "TestStatus":
+        ctime = time.strftime("%Y-%m-%d %H:%M:%S: ")
+    with open(os.path.join(caseroot,sfile), "a") as fd:
+        fd.write(ctime + msg + "\n")
 
 def does_file_have_string(filepath, text):
     """

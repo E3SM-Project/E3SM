@@ -3703,7 +3703,7 @@ end subroutine cesm_init
          call mpi_barrier(mpicom_GLOID,ierr)
          call t_stopf("sync1_tprof")
 
-         write(timing_file,'(a,i8.8,a1,i5.5)') trim(tchkpt_dir)//"/cesm_timing_",ymd,"_",tod
+         write(timing_file,'(a,i8.8,a1,i5.5)') trim(tchkpt_dir)//"/model_timing_",ymd,"_",tod
          if (output_perf) then
             call t_prf(filename=trim(timing_file), mpicom=mpicom_GLOID, &
                        num_outpe=0, output_thispe=output_perf)
@@ -3811,10 +3811,10 @@ end subroutine cesm_init
 
    call t_stopf  ('CPL:FINAL')
    if (output_perf) then
-      call t_prf(trim(timing_dir)//'/cesm_timing', mpicom=mpicom_GLOID, &
+      call t_prf(trim(timing_dir)//'/model_timing', mpicom=mpicom_GLOID, &
                  output_thispe=output_perf)
    else
-      call t_prf(trim(timing_dir)//'/cesm_timing', mpicom=mpicom_GLOID)
+      call t_prf(trim(timing_dir)//'/model_timing', mpicom=mpicom_GLOID)
    endif
    call t_finalizef()
 

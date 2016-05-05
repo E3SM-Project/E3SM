@@ -5,7 +5,7 @@ import shutil, traceback, stat, glob, threading, time, thread
 from CIME.XML.standard_module_setup import *
 import compare_namelists
 import CIME.utils
-from CIME.utils import expect, run_cmd
+from CIME.utils import expect, run_cmd, appendStatus
 import wait_for_tests, update_acme_tests
 from wait_for_tests import TEST_PASS_STATUS, TEST_FAIL_STATUS, TEST_PENDING_STATUS, \
     TEST_STATUS_FILENAME, NAMELIST_FAIL_STATUS, RUN_PHASE, NAMELIST_PHASE
@@ -225,9 +225,7 @@ class SystemTest(object):
             # Note: making this directory could cause create_newcase to fail
             # if this is run before.
             os.makedirs(test_dir)
-
-        with open(os.path.join(test_dir, "TestStatus.log"), "a") as fd:
-            fd.write(output)
+        appendStatus(output,caseroot=test_dir,sfile="TestStatus.log")
 
     ###########################################################################
     def _get_case_id(self, test):
@@ -605,8 +603,12 @@ class SystemTest(object):
         if test in self._test_xml and "wallclock" in self._test_xml[test]:
             run_cmd("./xmlchange JOB_WALLCLOCK_TIME=%s" %
                     self._test_xml[test]["wallclock"], from_dir=test_dir)
+        if self._no_batch:
+            cmd = "./case.submit --no-batch"
+        else:
+            cmd = "./case.submit "
 
-        return self._shell_cmd_for_phase(test, "./case.submit", RUN_PHASE, from_dir=test_dir)
+        return self._shell_cmd_for_phase(test, cmd, RUN_PHASE, from_dir=test_dir)
 
     ###########################################################################
     def _update_test_status_file(self, test):

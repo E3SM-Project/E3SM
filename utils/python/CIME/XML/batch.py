@@ -4,7 +4,6 @@ Interface to the config_batch.xml file.  This class inherits from GenericXML.py
 The batch_system type="foo" blocks define most things. Machine-specific overrides
 can be defined by providing a batch_system MACH="mach" block.
 """
-
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.utils import expect, get_cime_root, get_model
@@ -113,15 +112,33 @@ class Batch(GenericXML):
 
     def get_batch_jobs(self):
         """
-        Return a dict of jobs with the first element the name of the case script
-        and the second the template to start from, third the task count
+        Return a list of jobs with the first element the name of the case script
+        and the second a dict of qualifiers for the job
         """
         jobs = list()
-        jnode = self.get_node("batch_jobs")
-        for child in jnode:
-            if child.tag == "job":
-                name = child.get("name")
-                template_node = self.get_node("template",root=child)
-                task_count_node = self.get_node("task_count",root=child)
-                jobs.append((name,template_node.text,task_count_node.text))
+        bnode = self.get_node("batch_jobs")
+        for jnode in bnode:
+            if jnode.tag == "job":
+                name = jnode.get("name")
+                jdict = {}
+                for child in jnode:
+                    jdict[child.tag] = child.text
+
+            jobs.append((name, jdict))
+
         return jobs
+
+    def get_submit_args(self, machine=None):
+        '''
+        return a list of touples (flag, name)
+        '''
+        values = list()
+        bs_nodes = self.get_nodes("batch_system",{"type":self.batch_system})
+        if machine is not None:
+            bs_nodes += self.get_nodes("batch_system",{"MACH":machine})
+        submit_arg_nodes = list()
+        for node in bs_nodes:
+            submit_arg_nodes += self.get_nodes("arg",root=node)
+        for arg in submit_arg_nodes:
+            values.append((arg.get("flag"),arg.get("name")))
+        return values

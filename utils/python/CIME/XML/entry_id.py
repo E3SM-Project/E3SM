@@ -137,6 +137,8 @@ class EntryID(GenericXML):
         if resolved:
             val = self.get_resolved_value(val)
 
+        if val is None:
+            return val
         # Return value as right type if we were able to fully resolve
         # otherwise, we have to leave as string.
         if "$" in val:

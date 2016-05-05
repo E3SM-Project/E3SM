@@ -41,10 +41,10 @@
      <depend_string> --dependencies</depend_string>
      <submit_args>
        <arg flag="--cwd" name="cwd"/>
-       <arg flag="-A" name="project"/>
-       <arg flag="-t" name="wall_time"/>
+       <arg flag="-A" name="PROJECT"/>
+       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
        <arg flag="-n" name="num_nodes"/>
-       <arg flag="-q" name="queue"/>
+       <arg flag="-q" name="JOB_QUEUE"/>
        <arg flag="--mode script"/>
      </submit_args>
    </batch_system>
@@ -56,11 +56,11 @@
     <batch_directive>#BSUB</batch_directive>
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
     <depend_pattern>^\#BSUB\s+-w.+\((\d+)\)</depend_pattern>
-    <depend_string> -w "done(jobid)"</depend_string>
+    <depend_string> -w 'done(jobid)'</depend_string>
     <submit_args>
-      <arg flag="-q" name="queue"/>
-      <arg flag="-W" name="wall_time"/>
-      <arg flag="-P" name="project"/>
+      <arg flag="-q" name="JOB_QUEUE"/>
+      <arg flag="-W" name="JOB_WALLCLOCK_TIME"/>
+      <arg flag="-P" name="PROJECT"/>
     </submit_args>
     <directives>
       <directive                       > -n {{ totaltasks }} </directive>
@@ -80,9 +80,9 @@
     <jobid_pattern>^(\d+)\.</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
     <submit_args>
-      <arg flag="-q" name="queue"/>
-      <arg flag="-l walltime=" name="wall_time"/>
-      <arg flag="-A" name="project"/>
+      <arg flag="-q" name="JOB_QUEUE"/>
+      <arg flag="-l walltime=" name="JOB_WALLCLOCK_TIME"/>
+      <arg flag="-A" name="PROJECT"/>
     </submit_args>
     <directives>
       <directive> -N {{ job_id }}</directive>
@@ -101,9 +101,9 @@
      <jobid_pattern>(\d+)$</jobid_pattern>
      <depend_string> --dependency=afterok:jobid</depend_string>
      <submit_args>
-       <arg flag="--time" name="wall_time"/>
-       <arg flag="-p" name="queue"/>
-       <arg flag="--account" name="project"/>
+       <arg flag="--time" name="JOB_WALLCLOCK_TIME"/>
+       <arg flag="-p" name="JOB_QUEUE"/>
+       <arg flag="--account" name="PROJECT"/>
      </submit_args>
      <directives>
        <directive> --job-name={{ job_id }}</directive>
@@ -158,7 +158,7 @@
     <batch_system MACH="eos" version="x.y">
     <jobid_pattern>^(\d+)</jobid_pattern>
     <directives>
-      <directive>-A {{ project }}</directive>
+      <directive>-A {{ PROJECT }}</directive>
       <directive>-l mppwidth={{ mppwidth }}</directive>
       <directive>-l  nodes={{ num_nodes }}</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
@@ -228,7 +228,7 @@
   <batch_system MACH="pleiades-has" version="x.y">
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
-      <directive>-W group_list={{ project }} </directive>
+      <directive>-W group_list={{ PROJECT }} </directive>
       <directive>-l select={{ num_nodes }}:ncpus={{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=has</directive>
       <directive>-l place=scatter:excl</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
@@ -239,7 +239,7 @@
   <batch_system MACH="pleiades-ivy" version="x.y">
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
-      <directive>-W group_list={{ project }} </directive>
+      <directive>-W group_list={{ PROJECT }} </directive>
       <directive>-l select={{ num_nodes }}:ncpus={{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=ivy</directive>
       <directive>-l place=scatter:excl</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
@@ -250,7 +250,7 @@
   <batch_system MACH="pleiades-san" version="x.y">
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
-      <directive>-W group_list={{ project }} </directive>
+      <directive>-W group_list={{ PROJECT }} </directive>
       <directive>-l select={{ num_nodes }}:ncpus={{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=san</directive>
       <directive>-l place=scatter:excl</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
@@ -261,7 +261,7 @@
   <batch_system MACH="pleiades-wes" version="x.y">
     <jobid_pattern>^(\S+)</jobid_pattern>
     <directives>
-      <directive>-W group_list={{ project }} </directive>
+      <directive>-W group_list={{ PROJECT }} </directive>
       <directive>-l select={{ num_nodes }}:ncpus={{ MAX_TASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}:ompthreads={{ thread_count }}:model=wes</directive>
       <directive>-l place=scatter:excl</directive>
       <directive default="/bin/bash" > -S {{ shell }}  </directive>
@@ -287,21 +287,29 @@
   </batch_system>
 
   <batch_jobs>
+    <!-- order matters, with no-batch jobs will be run in the order listed here -->
     <job name="case.run">
       <template>template.case.run</template>
       <task_count>default</task_count>
+      <prereq>$BUILD_COMPLETE and not $TEST</prereq>
     </job>
    <job name="case.test">
-      <template>python.case.test</template>
+      <template>template.case.test</template>
       <task_count>default</task_count>
+      <prereq>$BUILD_COMPLETE and $TEST</prereq>
     </job>
     <job name="case.st_archive">
       <template>template.st_archive</template>
       <task_count>1</task_count>
+      <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
+      <dependancy>case.run or case.test</dependancy>
+      <prereq>$DOUT_S</prereq>
     </job>
     <job name="case.lt_archive">
       <template>template.lt_archive</template>
       <task_count>1</task_count>
+      <dependancy>case.st_archive</dependancy>
+      <prereq>$DOUT_L_MS</prereq>
     </job>
   </batch_jobs>
 

@@ -3,7 +3,7 @@ functions for building CIME models
 """
 from XML.standard_module_setup import *
 from CIME.case                 import Case
-from CIME.utils                import expect, run_cmd, get_model, appendCaseStatus
+from CIME.utils                import expect, run_cmd, get_model, appendStatus
 from CIME.env_module           import EnvModule
 from CIME.preview_namelists    import preview_namelists
 from CIME.check_input_data     import check_input_data
@@ -611,8 +611,8 @@ def clean(case, cleanlist):
     case.set_value("BUILD_COMPLETE","FALSE")
     case.flush()
 
-    # append call of to CaseStatus 
-    msg = "%s case.setup \n" % time.strftime("%Y-%m-%d %H:%M:%S")
-    appendCaseStatus(caseroot, msg)
+    # append call of to CaseStatus
+    msg = "cleanbuild %s "%" ".join(cleanlist)
+    appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
 
 ###############################################################################

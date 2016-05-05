@@ -34,23 +34,25 @@ class EnvBatch(EnvBase):
 
         return val
 
-    def get_value(self, item, attribute={}, resolved=True, subgroup="run"):
+    def get_value(self, item, attribute={}, resolved=True, subgroup="case.run"):
         """
         Must default subgroup to something in order to provide single return value
         """
         value = None
+        if subgroup is None:
+            value = EnvBase.get_value(self,item,attribute,resolved)
+        else:
+            job_node = self.get_optional_node("job", {"name":subgroup})
+            if job_node is not None:
+                node = self.get_optional_node("entry", {"id":item}, root=job_node)
+                if node is not None:
+                    value = self.get_resolved_value(node.get("value"))
 
-        job_node = self.get_optional_node("job", {"name":subgroup})
-        if job_node is not None:
-            node = self.get_optional_node("entry", {"id":item}, root=job_node)
-            if node is not None:
-                value = self.get_resolved_value(node.get("value"))
-
-                # Return value as right type if we were able to fully resolve
-                # otherwise, we have to leave as string.
-                if "$" not in value:
-                    type_str = self._get_type_info(node)
-                    value = convert_to_type(value, type_str, item)
+                    # Return value as right type if we were able to fully resolve
+                    # otherwise, we have to leave as string.
+                    if "$" not in value:
+                        type_str = self._get_type_info(node)
+                        value = convert_to_type(value, type_str, item)
 
         return value
 
@@ -67,12 +69,15 @@ class EnvBatch(EnvBase):
         return type_info
 
     def get_jobs(self):
-        result = []
+        result = list()
         for node in self.get_nodes("job"):
             name = node.get("name")
-            template = self.get_value("template", subgroup=name)
-            task_count = self.get_value("task_count", subgroup=name)
-            result.append((name, template, task_count))
+            pdict = {}
+            pdict['template'] = self.get_value("template", subgroup=name)
+            pdict['task_count'] = self.get_value("task_count", subgroup=name)
+            pdict['dependancy'] = self.get_value("dependancy",subgroup=name)
+            pdict['prereq'] = self.get_value("prereq", subgroup=name)
+            result.append((name,pdict))
         return result
 
     def create_job_groups(self, bjobs):
@@ -88,14 +93,14 @@ class EnvBatch(EnvBase):
             childnodes.append(deepcopy(child))
             group.remove(child)
 
-        for name,template,task_count in bjobs:
+        for name,jdict in bjobs:
             newjob = ET.Element("job")
             newjob.set("name",name)
-            template_node = ET.SubElement(newjob, "entry", {"id":"template","value":template})
-            task_count_node  =  ET.SubElement(newjob, "entry", {"id":"task_count", "value":task_count})
-            for node in (template_node, task_count_node):
-                node = ET.SubElement(node, "type")
-                node.text = "char"
+            for field in jdict.keys():
+                val = jdict[field]
+                node = ET.SubElement(newjob, "entry", {"id":field,"value":val})
+                tnode = ET.SubElement(node, "type")
+                tnode.text = "char"
             for child in childnodes:
                 newjob.append(deepcopy(child))
             group.append(newjob)

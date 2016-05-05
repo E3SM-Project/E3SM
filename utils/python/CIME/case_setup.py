@@ -10,7 +10,7 @@ from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.component     import Component
 from CIME.XML.compilers     import Compilers
 from CIME.case              import Case
-from CIME.utils             import expect, run_cmd, appendCaseStatus
+from CIME.utils             import expect, run_cmd, appendStatus
 from CIME.batch_maker       import get_batch_maker
 
 import shutil, time, glob
@@ -82,6 +82,8 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
 ###############################################################################
 
     os.chdir(caseroot)
+    msg = "case.setup starting"
+    appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
 
     cimeroot = os.environ["CIMEROOT"]
 
@@ -138,8 +140,8 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
         logger.info("Successfully cleaned batch script case.run")
         logger.info("Some files have been saved to %s" % backup_dir)
 
-        msg =  "%s case.setup --clean \n" % time.strftime("%Y-%m-%d %H:%M:%S")
-        appendCaseStatus(caseroot, msg)
+        msg = "case.setup clean complete"
+        appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
 
     if not clean:
         drv_comp = Component()
@@ -228,17 +230,18 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
             batch_jobs = case.get_batch_jobs()
 
             batchmaker = None
-            for (job, template, task_count) in batch_jobs:
+            for job,jparms in batch_jobs:
                 if batchmaker is None:
                     batchmaker = get_batch_maker(job, case=case)
                 else:
+                    task_count = jparms['task_count']
                     if task_count == "default":
                         batchmaker.override_node_count = None
                     else:
                         batchmaker.override_node_count = int(task_count)
                     batchmaker.set_job(job)
 
-                input_batch_script  = os.path.join(case.get_value("MACHDIR"), template)
+                input_batch_script  = os.path.join(case.get_value("MACHDIR"), jparms['template'])
                 if job == "case.test" and testcase is not None:
                     logger.info("Writing %s script"%job)
                     testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
@@ -280,6 +283,6 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
                 run_cmd("./testcase.setup -caseroot %s" % caseroot)
                 logger.info("Finished testcase.setup")
 
-        msg = "%s case.setup \n" % time.strftime("%Y-%m-%d %H:%M:%S")
-        appendCaseStatus(caseroot, msg)
+        msg = "case.setup complete"
+        appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
 

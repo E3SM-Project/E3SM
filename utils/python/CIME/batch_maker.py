@@ -15,7 +15,7 @@ of those based on the machine.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, run_cmd, get_model, convert_to_seconds
+from CIME.utils import expect, run_cmd, get_model, convert_to_seconds, get_project
 from CIME.case import Case
 from CIME.XML.env_batch import EnvBatch
 from CIME.XML.batch import Batch
@@ -165,7 +165,7 @@ class BatchMaker(object):
         if self.env_batch.get_value("PROJECT_REQUIRED", subgroup=self.job):
             self.project = self.env_batch.get_value("PROJECT", subgroup=self.job)
             if not self.project:
-                project = find_project()
+                project = get_project()
                 self.env_batch.set_value("PROJECT", project, subgroup=self.job)
         else:
             self.project = None
@@ -290,11 +290,4 @@ def get_batch_maker(job, case=None):
     else:
         return batch_maker
 
-
-def find_project():
-    project = None
-    for envvar in ("PROJECT", "ACCOUNT"):
-        project = os.environ.get(envvar)
-        if project is not None:
-            return project
 
