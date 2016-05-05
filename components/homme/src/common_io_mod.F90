@@ -5,7 +5,7 @@
 module common_io_mod
   use control_mod, only : MAX_STRING_LEN         !HOMME Specific: MAX_STRING_LEN
 #if defined( PIO ) || defined ( PIO_INTERP )
-  use pio, only : var_desc_t, file_desc_t, io_desc_t, nfsizekind=>PIO_OffSet, iosystem_desc_t, & ! _EXTERNAL
+  use pio, only : var_desc_t, file_desc_t, io_desc_t, nfsizekind=>PIO_OFFSET_KIND, iosystem_desc_t, & ! _EXTERNAL
        nf_double=>pio_double, nf_int=>pio_int, unlim_dim=>pio_unlimited, nf_noerr=>pio_noerr
 #endif
 

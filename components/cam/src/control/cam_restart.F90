@@ -21,7 +21,7 @@ module cam_restart
    use units,            only: getunit
    use shr_kind_mod,     only: shr_kind_cl
    use cam_logfile,      only: iulog
-   use pio,              only: file_desc_t, pio_global, pio_noerr, &
+   use pio,              only: file_desc_t, pio_global, pio_noerr, pio_offset_kind,&
                                pio_seterrorhandling, pio_bcast_error, pio_internal_error, &
                                pio_inq_att, pio_def_dim, pio_enddef, &
                                pio_get_att, pio_put_att, pio_closefile
@@ -320,7 +320,8 @@ end subroutine restart_printopts
    character(len=nlen) :: locfn          ! Local filename
    character(len=nlen+40) :: errstr
    real(r8) :: tmp_rgrid(plat)
-   integer :: ierr, aeres_int, slen, xtype
+   integer :: ierr, aeres_int, xtype
+   integer(PIO_OFFSET_KIND) :: slen
    type(file_desc_t) :: File
    logical :: filefound
 
