@@ -111,7 +111,7 @@ contains
 
       call MPAS_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
 
-      if (trim(config_sw_absorption_type)=='none') return
+      if (trim(config_sw_absorption_type)=='none')  return
 
       err = 0
       if(useJerlov) then
@@ -155,7 +155,15 @@ contains
                                 config_use_activeTracers_surface_bulk_forcing)
 
       useJerlov=.false.
-      if (.not.config_use_activeTracers_surface_bulk_forcing.or.trim( config_sw_absorption_type ) == 'none') return
+
+      if(.not. config_use_activeTracers_surface_bulk_forcing) then
+         if(trim(config_sw_absorption_type) .ne. 'none') then
+              write(stderrUnit,*) 'ERROR: you have specified bulk_forcing off with shortwave absorption on'
+              write(stderrUnit,*) 'either set config_sw_absorption_type to none or enable activeTracers_surface_bulk_forcing'
+              err = 1
+         endif 
+         return
+      endif
 
       if ( trim( config_sw_absorption_type ) == 'jerlov') then
          useJerlov=.true.
