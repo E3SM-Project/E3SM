@@ -481,6 +481,8 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
 int PIOc_Init_Intracomm(const MPI_Comm comp_comm, 
 			  const int num_iotasks, const int stride, 
 			  const int base, const int rearr, int *iosysidp);
+int PIOc_Init_Intercomm(int component_count, MPI_Comm peer_comm, MPI_Comm *comp_comms,
+			MPI_Comm io_comm, int *iosysidp);
 int PIOc_closefile(int ncid);
 int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
 		    const char *fname, const int mode);
