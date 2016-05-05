@@ -152,10 +152,15 @@ contains
 
       call mpas_pool_get_array(swForcingPool,'zenithAngle',zenithAngle)
       call mpas_pool_get_array(swForcingPool,'clearSkyRadiation',clearSkyRadiation)
+      if(.not. associated(chlorophyllA) .or. .not. associated(zenithAngle) .or. .not. associated(clearSkyRadiation)) then
+              write(stderrUnit,*) 'WARNING: A necessary data array is missing for ohlmann scheme.'
+              write(stderrUnit,*) 'check data path or set config_sw_absorption_type = none in namelist.ocean'
+              return
+      endif
       !$omp do schedule(runtime) private(depth, k, cloudRatio)
       do iCell = 1, nCells
         depth = 0.0_RKIND
-        cloudRatio = min(1.0_RKIND, 1.0_RKIND - penetrativeTemperatureFlux(iCell)/(hflux_factor*(1.0E-10_RKIND + &
+        cloudRatio = min(1.0_RKIND, 1.0_RKIND - penetrativeTemperatureFlux(iCell)/(hflux_factor*(1.0E-15_RKIND + &
                                                      clearSkyRadiation(iCell))))
         cloudRatio = max(0.0_RKIND, cloudRatio)
 
