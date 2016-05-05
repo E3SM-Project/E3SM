@@ -290,24 +290,30 @@ sub getTestStatus
 	&Debug("Testcase:   $testcase\n");
 	&Debug("Teststatus: $teststatus\n"); 
 
-	# Now go through the TestStats getting the memleak, compare, baseline tag, throughput, and comments if any. 
-	my @statuslines = <$teststatusfile>;
-	chomp @statuslines;
+        my $testsummary = $teststatus;
 
-	# If the 'test functionality summary' is not PASS, then report the
-	# test functionality summary as the teststatus field.
-	my @testsummarylines = grep { /test functionality summary/ } @statuslines;
-	my $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
-	if(defined $testsummary && $testsummary !~ /PASS/)
-	{
-	    ##$teststatus = $testsummary;
-	    $teststatushash{$testcase}{'comment'} = "Overall Test status failed! Check the history files!!";
-	}
-	##$teststatushash{$testcase}{'status'} = $teststatus;
-	if(length($testsummary) == 0) 
-	{
-	    $testsummary = 'FAIL';
-	}
+  	# Now go through the TestStats getting the memleak, compare, baseline tag, throughput, and comments if any. 
+        my @statuslines = <$teststatusfile>;
+	chomp @statuslines;
+          
+        if($testsummary ~~ /DONE/)
+        {
+
+	  # If the 'test functionality summary' is not PASS, then report the
+	  # test functionality summary as the teststatus field.
+	  my @testsummarylines = grep { /test functionality summary/ } @statuslines;
+	  $testsummary = (split(/\s+/, $testsummarylines[0]))[0];
+	  if(defined $testsummary && $testsummary !~ /PASS/)
+	  {
+	      ##$teststatus = $testsummary;
+	      $teststatushash{$testcase}{'comment'} = "Overall Test status failed! Check the history files!!";
+	  }
+	  ##$teststatushash{$testcase}{'status'} = $teststatus;
+	  if(length($testsummary) == 0) 
+	  {
+	      $testsummary = 'FAIL';
+	  }
+        }
 	$teststatushash{$testcase}{'status'} = $testsummary;
 
 	# Get the baseline compare summary

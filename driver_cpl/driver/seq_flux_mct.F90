@@ -844,8 +844,11 @@ contains
     integer(in) :: atm_nx,atm_ny,ocn_nx,ocn_ny
     real(r8)    :: wt
     integer(in) :: tod, dt
+    logical,save:: first_call = .true. 
+    logical     :: read_restart    ! .true. => model starting from restart
     logical     :: ocn_prognostic  ! .true. => ocn is prognostic 
     logical     :: flux_diurnal    ! .true. => turn on diurnal cycle in atm/ocn fluxes
+    logical     :: cold_start      ! .true. to initialize internal fields in shr_flux diurnal
     character(len=256) :: fldlist  ! subset of xao fields
     !
     character(*),parameter :: subName =   '(seq_flux_atmocnexch_mct) '
@@ -865,11 +868,19 @@ contains
     ! Must fabricate "reasonable" data (using dead components)
 
     call seq_infodata_GetData(infodata, &
+         read_restart=read_restart, &
          dead_comps=dead_comps,         &
          atm_nx=atm_nx, atm_ny=atm_ny,  &
          ocn_nx=ocn_nx, ocn_ny=ocn_ny,  &
          ocn_prognostic=ocn_prognostic,  &
          flux_diurnal=flux_diurnal)
+
+    cold_start = .false.   ! use restart data or data from last timestep
+
+    if (first_call) then
+       if (.not.read_restart) cold_start = .true.
+       first_call = .false. 
+    endif
 
     if (dead_comps) then
        do n = 1,nloc_a2o
@@ -932,7 +943,8 @@ contains
                           warmMaxInc, windMaxInc, qSolInc, windInc, nInc, &
                           tbulk, tskin, tskin_day, tskin_night, &
                           cskin, cskin_night, tod, dt,          &
-                          duu10n,ustar, re  , ssq , missval = 0.0_r8 )
+                          duu10n,ustar, re  , ssq , missval = 0.0_r8, &
+                          cold_start=cold_start)
     else
        call shr_flux_atmocn (nloc_a2o , zbot , ubot, vbot, thbot, &
                           shum , dens , tbot, uocn, vocn , &
@@ -1105,7 +1117,9 @@ contains
     real(r8)    :: avsdf        ! albedo: visible      , diffuse
     integer(in) :: nloc, nloca, nloco    ! number of gridcells
     integer(in) :: ID           ! comm ID
-    logical     :: first_call = .true.
+    logical,save:: first_call = .true.
+    logical     :: cold_start      ! .true. to initialize internal fields in shr_flux diurnal
+    logical     :: read_restart    ! .true. => continue run
     logical     :: ocn_prognostic  ! .true. => ocn is prognostic 
     logical     :: flux_diurnal    ! .true. => turn on diurnal cycle in atm/ocn fluxes
     !
@@ -1116,12 +1130,16 @@ contains
     !-----------------------------------------------------------------------
 
     call seq_infodata_getData(infodata , &
+         read_restart=read_restart, &
          flux_albav=flux_albav, &
          dead_comps=dead_comps, & 
          ocn_prognostic=ocn_prognostic, &
          flux_diurnal=flux_diurnal)
 
+    cold_start = .false.   ! use restart data or data from last timestep
+
     if (first_call) then
+       if (.not.read_restart) cold_start = .true.
        index_xao_So_tref   = mct_aVect_indexRA(xao,'So_tref')
        index_xao_So_qref   = mct_aVect_indexRA(xao,'So_qref')
        index_xao_So_ustar  = mct_aVect_indexRA(xao,'So_ustar')  
@@ -1303,10 +1321,11 @@ contains
                           warmMaxInc, windMaxInc, qSolInc, windInc, nInc, &
                           tbulk, tskin, tskin_day, tskin_night, &
                           cskin, cskin_night, tod, dt,          &
-                          duu10n,ustar, re  , ssq)
+                          duu10n,ustar, re  , ssq, &
                           !missval should not be needed if flux calc 
                           !consistent with mrgx2a fraction
                           !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
+                          cold_start=cold_start)
     else
        call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, &
                           shum , dens , tbot, uocn, vocn , &

@@ -118,15 +118,17 @@ sub gettiming2 {
     my $ice = $xml{NTASKS_ICE} * $xml{NTHRDS_ICE} ;
     my $ocn = $xml{NTASKS_OCN} * $xml{NTHRDS_OCN} ;
     my $glc = $xml{NTASKS_GLC} * $xml{NTHRDS_GLC} ;
+    my $esp = $xml{NTASKS_ESP} * $xml{NTHRDS_ESP} ;
     my $cpl = $xml{NTASKS_CPL} * $xml{NTHRDS_CPL} ;
     
     my $apemin = $xml{ROOTPE_ATM};
     my $lpemin = $xml{ROOTPE_LND};
-    my $wpemin = $xml{ROOTPE_ROF};
-    my $rpemin = $xml{ROOTPE_WAV};
+    my $rpemin = $xml{ROOTPE_ROF};
+    my $wpemin = $xml{ROOTPE_WAV};
     my $ipemin = $xml{ROOTPE_ICE};
     my $opemin = $xml{ROOTPE_OCN};
     my $gpemin = $xml{ROOTPE_GLC};
+    my $epemin = $xml{ROOTPE_ESP};
     my $cpemin = $xml{ROOTPE_CPL};
     
     my $apemax = $xml{ROOTPE_ATM} + $xml{NTASKS_ATM} * $xml{PSTRID_ATM} - 1 ;
@@ -136,6 +138,7 @@ sub gettiming2 {
     my $ipemax = $xml{ROOTPE_ICE} + $xml{NTASKS_ICE} * $xml{PSTRID_ICE} - 1 ;
     my $opemax = $xml{ROOTPE_OCN} + $xml{NTASKS_OCN} * $xml{PSTRID_OCN} - 1 ;
     my $gpemax = $xml{ROOTPE_GLC} + $xml{NTASKS_GLC} * $xml{PSTRID_GLC} - 1 ;
+    my $epemax = $xml{ROOTPE_ESP} + $xml{NTASKS_ESP} * $xml{PSTRID_ESP} - 1 ;
     my $cpemax = $xml{ROOTPE_CPL} + $xml{NTASKS_CPL} * $xml{PSTRID_CPL} - 1 ;
     
     my $peminmax = $apemin;
@@ -145,6 +148,7 @@ sub gettiming2 {
     if( $ipemin > $peminmax ) { $peminmax = $ipemin; }
     if( $opemin > $peminmax ) { $peminmax = $opemin; }
     if( $gpemin > $peminmax ) { $peminmax = $gpemin; }
+    if( $epemin > $peminmax ) { $peminmax = $epemin; }
     ##if( $cpemin > $peminmax ) { $peminmax = $cpemin; }
     $peminmax = $peminmax + 1;   
     
@@ -157,6 +161,7 @@ sub gettiming2 {
     my $ioffset = int(($maxoffset * $ipemin) / $peminmax) + $extraoff;
     my $goffset = int(($maxoffset * $gpemin) / $peminmax) + $extraoff;
     my $ooffset = int(($maxoffset * $opemin) / $peminmax) + $extraoff;
+    my $eoffset = int(($maxoffset * $epemin) / $peminmax) + $extraoff;
     ##$coffset = int(($maxoffset * $cpemin) / $peminmax);
     my $coffset = 0;
     my $date = localtime();
@@ -189,6 +194,7 @@ sub gettiming2 {
     printf $fh "  ice = %-8s   %-6u      %-6u   %-6u x %-6u  %-6u (%-6u) \n",$xml{COMP_ICE},$ice,$xml{ROOTPE_ICE},$xml{NTASKS_ICE},$xml{NTHRDS_ICE},$xml{NINST_ICE},$xml{PSTRID_ICE};
     printf $fh "  atm = %-8s   %-6u      %-6u   %-6u x %-6u  %-6u (%-6u) \n",$xml{COMP_ATM},$atm,$xml{ROOTPE_ATM},$xml{NTASKS_ATM},$xml{NTHRDS_ATM},$xml{NINST_ATM},$xml{PSTRID_ATM};
     printf $fh "  ocn = %-8s   %-6u      %-6u   %-6u x %-6u  %-6u (%-6u) \n",$xml{COMP_OCN},$ocn,$xml{ROOTPE_OCN},$xml{NTASKS_OCN},$xml{NTHRDS_OCN},$xml{NINST_OCN},$xml{PSTRID_OCN};
+    printf $fh "  esp = %-8s   %-6u      %-6u   %-6u x %-6u  %-6u (%-6u) \n",$xml{COMP_ESP},$esp,$xml{ROOTPE_ESP},$xml{NTASKS_ESP},$xml{NTHRDS_ESP},$xml{NINST_ESP},$xml{PSTRID_ESP};
 
     my($nmin,$nmax,$tmin,$tmax,$wmin,$wmax,$nullf);
     my($fmin,$fmax,$lmin,$lmax,$rmin,$rmax,$imin,$imax,$gmin,$gmax);
@@ -206,6 +212,7 @@ sub gettiming2 {
     gettime(' CPL:ATM_RUN '    ,$amin ,$amax,$nullf	,$fh);
     gettime(' CPL:OCN_RUN '    ,$omin ,$omax,$nullf	,$fh);
     gettime(' CPL:OCNT_RUN '   ,$otmin,$otmax,$nullf	,$fh);
+    gettime(' CPL:ESP_RUN '    ,$wmin ,$wmax,$nullf	,$fh);
 
     # pick OCNT_RUN for tight coupling
     if ($otmax > $omax) {
@@ -291,6 +298,7 @@ sub gettiming2 {
     printf $fh "    OCN Run Time:  %10.3f seconds   %10.3f seconds/mday   %10.2f myears/wday \n",$omax,$omax/$adays,$omaxr;
     printf $fh "    GLC Run Time:  %10.3f seconds   %10.3f seconds/mday   %10.2f myears/wday \n",$gmax,$gmax/$adays,$gmaxr;
     printf $fh "    WAV Run Time:  %10.3f seconds   %10.3f seconds/mday   %10.2f myears/wday \n",$wmax,$wmax/$adays,$wmaxr;
+    printf $fh "    ESP Run Time:  %10.3f seconds   %10.3f seconds/mday   %10.2f myears/wday \n",$wmax,$wmax/$adays,$wmaxr;
     printf $fh "    CPL Run Time:  %10.3f seconds   %10.3f seconds/mday   %10.2f myears/wday \n",$cmax,$cmax/$adays,$cmaxr;
     printf $fh "    CPL COMM Time: %10.3f seconds   %10.3f seconds/mday   %10.2f myears/wday \n",$xmax,$xmax/$adays,$xmaxr;
 
@@ -325,6 +333,9 @@ sub gettiming2 {
     $xoff = $pstrlen+$hoffset+$woffset;
 
     printf $fh " %${xoff}s WAV (pes %u to %u) \n",' ',$wpemin,$wpemax;
+    $xoff = $pstrlen+$hoffset+$eoffset;
+
+    printf $fh " %${xoff}s ESP (pes %u to %u) \n",' ',$epemin,$epemax;
     print  $fh "\n";
 
     prttime(' CPL:CLOCK_ADVANCE '   ,$coffset,$adays,$m999	,$fh);

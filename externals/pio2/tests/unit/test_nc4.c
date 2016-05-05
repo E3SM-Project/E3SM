@@ -9,6 +9,7 @@
  *
  */
 #include <pio.h>
+
 #ifdef TIMING
 #include <gptl.h>
 #endif
@@ -157,26 +158,14 @@ main(int argc, char **argv)
     /** The deflate level set for the variable in the netCDF-4 test file. */
     int deflate_level;
 
-    /** Non-zero if fletcher32 filter is used for variable. */
-    int fletcher32;
-
     /** Endianness of variable. */
     int endianness;
 
-    /* Size of the file chunk cache. */
-    size_t chunk_cache_size;
-
-    /* Number of elements in file cache. */
-    size_t nelems;
-
-    /* File cache preemption. */
-    float preemption;
-
     /* Size of the var chunk cache. */
-    size_t var_cache_size;
+    PIO_Offset var_cache_size;
 
     /* Number of elements in var cache. */
-    size_t var_cache_nelems;
+    PIO_Offset var_cache_nelems;
 
     /* Var cache preemption. */    
     float var_cache_preemption;
@@ -198,6 +187,18 @@ main(int argc, char **argv)
 
     /** Index for loops. */
     int fmt, d, d1, i;
+
+    /** For setting the chunk cache. */
+    size_t chunk_cache_size = 1024*1024;
+    size_t chunk_cache_nelems = 1024;
+    float chunk_cache_preemption = 0.5;
+
+    /* For reading the chunk cache. */
+    size_t chunk_cache_size_in;
+    size_t chunk_cache_nelems_in;
+    float chunk_cache_preemption_in;
+    
+    char varname[15];
     
 #ifdef TIMING    
     /* Initialize the GPTL timing library. */
@@ -220,7 +221,7 @@ main(int argc, char **argv)
 	  ntasks == 8 || ntasks == 16))
 	fprintf(stderr, "Number of processors must be 1, 2, 4, 8, or 16!\n");
     if (verbose)
-	printf("%d: ParallelIO Library example1 running on %d processors.\n",
+	printf("%d: ParallelIO Library test_nc4 running on %d processors.\n",
 	       my_rank, ntasks);
 
     /* keep things simple - 1 iotask per MPI process */    
@@ -281,6 +282,64 @@ main(int argc, char **argv)
 	    MPIERR(ret);
 #endif /* HAVE_MPE */
 
+	if (verbose)
+	    printf("rank: %d Setting chunk cache for file %s with format %d...\n",
+		   my_rank, filename[fmt], format[fmt]);
+
+	/* Try to set the chunk cache with invalid preemption to check error handling. */
+	chunk_cache_preemption = 50.0;
+	ret = PIOc_set_chunk_cache(iosysid, format[fmt], chunk_cache_size,
+				   chunk_cache_nelems, chunk_cache_preemption);
+	if (format[fmt] == PIO_IOTYPE_NETCDF4C || format[fmt] == PIO_IOTYPE_NETCDF4P)
+	{
+	    if (ret != NC_EINVAL)
+		ERR(ERR_AWFUL);
+	}
+	else
+	{
+	    if (ret != NC_ENOTNC4)
+		ERR(ERR_AWFUL);
+	}
+
+	/* Try to set the chunk cache. */
+	chunk_cache_preemption = 0.5;
+	ret = PIOc_set_chunk_cache(iosysid, format[fmt], chunk_cache_size,
+				   chunk_cache_nelems, chunk_cache_preemption);
+
+	/* Should only have worked for netCDF-4 iotypes. */
+	if (format[fmt] == PIO_IOTYPE_NETCDF4C || format[fmt] == PIO_IOTYPE_NETCDF4P)
+	{
+	    if (ret != PIO_NOERR)
+		ERR(ret);
+	}
+	else
+	{
+	    if (ret != PIO_ENOTNC4)
+		ERR(ERR_AWFUL);
+	}
+
+	/* Now check the chunk cache. */
+	ret = PIOc_get_chunk_cache(iosysid, format[fmt], &chunk_cache_size_in,
+				   &chunk_cache_nelems_in, &chunk_cache_preemption_in);
+
+	/* Should only have worked for netCDF-4 iotypes. */
+	if (format[fmt] == PIO_IOTYPE_NETCDF4C || format[fmt] == PIO_IOTYPE_NETCDF4P)
+	{
+	    /* Check that there was no error. */
+	    if (ret != PIO_NOERR)
+		ERR(ret);
+
+	    /* Check that we got the correct values. */
+	    if (chunk_cache_size_in != chunk_cache_size || chunk_cache_nelems_in != chunk_cache_nelems ||
+		chunk_cache_preemption_in != chunk_cache_preemption)
+		ERR(ERR_AWFUL);
+	}
+	else
+	{
+	    if (ret != PIO_ENOTNC4)
+		ERR(ERR_AWFUL);
+	}
+
 	/* Create the netCDF output file. */
 	if (verbose)
 	    printf("rank: %d Creating sample file %s with format %d...\n",
@@ -288,6 +347,9 @@ main(int argc, char **argv)
 	if ((ret = PIOc_createfile(iosysid, &ncid, &(format[fmt]), filename[fmt],
 				   PIO_CLOBBER)))
 	    ERR(ret);
+
+	/* Set error handling. */
+	PIOc_Set_File_Error_Handling(ncid, PIO_BCAST_ERROR);
 	
 	/* Define netCDF dimensions and variable. */
 	if (verbose)
@@ -299,21 +361,41 @@ main(int argc, char **argv)
 	    if ((ret = PIOc_def_dim(ncid, dim_name[d], (PIO_Offset)dim_len[d], &dimids[d])))
 		ERR(ret);
 	}
+	if (verbose)
+	    printf("rank: %d Defining netCDF variable %s, ndims %d\n", my_rank, VAR_NAME, NDIM);
 	if ((ret = PIOc_def_var(ncid, VAR_NAME, PIO_FLOAT, NDIM, dimids, &varid)))
 	    ERR(ret);
 
 	/* For netCDF-4 files, set the chunksize to improve performance. */
 	if (format[fmt] == PIO_IOTYPE_NETCDF4C || format[fmt] == PIO_IOTYPE_NETCDF4P)
 	{
+	    if (verbose)
+		printf("rank: %d Defining chunksizes\n", my_rank);
 	    if ((ret = PIOc_def_var_chunking(ncid, 0, NC_CHUNKED, chunksize)))
 		ERR(ret);
 
+	    /** Check that the inq_varname function works. */
+	    if (verbose)
+	    	printf("rank: %d Checking varname\n", my_rank);
+	    ret = PIOc_inq_varname(ncid, 0, varname);
+	    printf("rank: %d ret: %d varname: %s\n", my_rank, ret, varname);
+	    
 	    /** Check that the inq_var_chunking function works. */
+	    if (verbose)
+		printf("rank: %d Checking chunksizes\n");
 	    if ((ret = PIOc_inq_var_chunking(ncid, 0, &storage, my_chunksize)))
 	    	ERR(ret);
+	    if (verbose)
+	    {
+		printf("rank: %d ret: %d storage: %d\n", my_rank, ret, storage);
+		for (d1 = 0; d1 < NDIM; d1++)
+		{
+		    printf("chunksize[%d]=%d\n", d1, my_chunksize[d1]);
+		}
+	    }
 	    
-	    /** For serial netCDF-4, only processor rank 0 gets the answers. */
-	    if (format[fmt] == PIO_IOTYPE_NETCDF4C && !my_rank ||
+	    /** Check the answers. */
+	    if (format[fmt] == PIO_IOTYPE_NETCDF4C ||
 		format[fmt] == PIO_IOTYPE_NETCDF4P)
 	    {
 		if (storage != NC_CHUNKED)
@@ -327,9 +409,8 @@ main(int argc, char **argv)
 	    if ((ret = PIOc_inq_var_deflate(ncid, 0, &shuffle, &deflate, &deflate_level)))
 	    	ERR(ret);
 
-	    /** For serial netCDF-4, only processor rank 0 gets the
-	     * answers. Also deflate is turned on by default */
-	    if (format[fmt] == PIO_IOTYPE_NETCDF4C && !my_rank)
+	    /** For serial netCDF-4 deflate is turned on by default */
+	    if (format[fmt] == PIO_IOTYPE_NETCDF4C)
 		if (shuffle || !deflate || deflate_level != 1)
 		    ERR(ERR_AWFUL);
 
@@ -338,34 +419,29 @@ main(int argc, char **argv)
 		if (shuffle || deflate)
 		    ERR(ERR_AWFUL);
 
-	    /* Check that the def/inq_var_fletcher32 functions
-	     * work. Starts as off. */
-	    if ((ret = PIOc_inq_var_fletcher32(ncid, 0, &fletcher32)))
+	    /* Check setting the chunk cache for the variable. */
+	    printf("rank: %d PIOc_set_var_chunk_cache...\n", my_rank);
+	    if ((ret = PIOc_set_var_chunk_cache(ncid, 0, VAR_CACHE_SIZE, VAR_CACHE_NELEMS,
+						VAR_CACHE_PREEMPTION)))
 	    	ERR(ret);
-	    if (format[fmt] == PIO_IOTYPE_NETCDF4C && !my_rank)
-		if (fletcher32)
-		    ERR(ERR_AWFUL);
-	    if (format[fmt] == PIO_IOTYPE_NETCDF4P)
-		if (fletcher32)
-		    ERR(ERR_AWFUL);
 
-	    /* Turn on (the off) fletcher32 filter for netCDF-4 serial. */
-	    if (format[fmt] == PIO_IOTYPE_NETCDF4C)
-	    {
-		if ((ret = PIOc_def_var_fletcher32(ncid, 0, 1)))
-		    ERR(ret);
-		if ((ret = PIOc_inq_var_fletcher32(ncid, 0, &fletcher32)))
-		    ERR(ret);
-		if (!fletcher32 && !my_rank)
-		    ERR(ERR_AWFUL);
-		if ((ret = PIOc_def_var_fletcher32(ncid, 0, 0)))
-		    ERR(ret);
-		if ((ret = PIOc_inq_var_fletcher32(ncid, 0, &fletcher32)))
-		    ERR(ret);
-		if (fletcher32 && !my_rank)
-		    ERR(ERR_AWFUL);
-	    }		
-	    
+	    /* Check getting the chunk cache values for the variable. */
+	    printf("rank: %d PIOc_get_var_chunk_cache...\n", my_rank);	    
+	    if ((ret = PIOc_get_var_chunk_cache(ncid, 0, &var_cache_size, &var_cache_nelems,
+						&var_cache_preemption)))
+	    	ERR(ret);
+	    PIO_Offset len;
+	    if ((ret = PIOc_inq_dimlen(ncid, 0, &len)))
+	    	ERR(ret);
+
+	    /* Check that we got expected values. */
+	    printf("rank: %d var_cache_size = %d\n", my_rank, var_cache_size);	    
+	    if (var_cache_size != VAR_CACHE_SIZE)
+		ERR(ERR_AWFUL);
+	    if (var_cache_nelems != VAR_CACHE_NELEMS)
+		ERR(ERR_AWFUL);
+	    if (var_cache_preemption != VAR_CACHE_PREEMPTION)
+		ERR(ERR_AWFUL);
 	} else {
 	    /* Trying to set or inq netCDF-4 settings for non-netCDF-4
 	     * files results in the PIO_ENOTNC4 error. */
@@ -375,10 +451,6 @@ main(int argc, char **argv)
 		ERR(ERR_AWFUL);
 	    if ((ret = PIOc_inq_var_deflate(ncid, 0, &shuffle, &deflate, &deflate_level))
 		!= PIO_ENOTNC4)
-	    	ERR(ret);
-	    if ((ret = PIOc_def_var_fletcher32(ncid, 0, 1)) != PIO_ENOTNC4)
-		ERR(ret);
-	    if ((ret = PIOc_inq_var_fletcher32(ncid, 0, &fletcher32)) != PIO_ENOTNC4)
 	    	ERR(ret);
 	    if ((ret = PIOc_def_var_endian(ncid, 0, 1)) != PIO_ENOTNC4)
 		ERR(ret);
@@ -390,11 +462,11 @@ main(int argc, char **argv)
 	    if ((ret = PIOc_get_var_chunk_cache(ncid, 0, &var_cache_size, &var_cache_nelems,
 						&var_cache_preemption)) != PIO_ENOTNC4)
 		ERR(ret);
-	    if ((ret = PIOc_set_chunk_cache(format[fmt], my_rank, chunk_cache_size, nelems,
-	    				    preemption)) != PIO_ENOTNC4)
+	    if ((ret = PIOc_set_chunk_cache(iosysid, format[fmt], chunk_cache_size, chunk_cache_nelems,
+	    				    chunk_cache_preemption)) != PIO_ENOTNC4)
 	    	ERR(ret);
-	    if ((ret = PIOc_get_chunk_cache(format[fmt], my_rank, &chunk_cache_size,
-	    				    &nelems, &preemption)) != PIO_ENOTNC4)
+	    if ((ret = PIOc_get_chunk_cache(iosysid, format[fmt], &chunk_cache_size,
+	    				    &chunk_cache_nelems, &chunk_cache_preemption)) != PIO_ENOTNC4)
 	    	ERR(ret);
 	}	    
 	

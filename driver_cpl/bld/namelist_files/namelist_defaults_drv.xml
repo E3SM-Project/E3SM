@@ -80,6 +80,8 @@
 <wv_sat_use_tables>.false.</wv_sat_use_tables>
 <wv_sat_table_spacing>1.0D0</wv_sat_table_spacing>
 
+<tfreeze_option>minus1p8</tfreeze_option>
+
 <timing_dir>./timing</timing_dir>
 
 <tchkpt_dir>./timing/checkpoints</tchkpt_dir>
@@ -105,7 +107,7 @@
 <cpl_decomp>$CPL_DECOMP</cpl_decomp>
 <wall_time_limit>-1.0</wall_time_limit> 
 <force_stop_at>month</force_stop_at> 
-<flux_diurnal>.false.</flux_diurnal> 
+<flux_diurnal>.true.</flux_diurnal> 
 
 <run_barriers COMP_RUN_BARRIERS="TRUE">.true.</run_barriers> 
 <run_barriers COMP_RUN_BARRIERS="FALSE">.false.</run_barriers> 
