@@ -1,4 +1,9 @@
 .SUFFIXES: .F .o
+
+#Missing In Objs?
+#mpas_ocn_tracer_surface_flux.o
+
+
 OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_gm.o \
 	   mpas_ocn_diagnostics.o \
@@ -162,6 +167,26 @@ mpas_ocn_effective_density_in_land_ice.o: mpas_ocn_constants.o
 mpas_ocn_forcing_restoring.o: mpas_ocn_constants.o
 
 mpas_ocn_sea_ice.o: mpas_ocn_constants.o
+
+mpas_ocn_tracer_surface_restoring.o: mpas_ocn_constants.o
+
+mpas_ocn_tracer_interior_restoring.o: mpas_ocn_constants.o
+
+mpas_ocn_tracer_exponential_decay.o: mpas_ocn_constants.o
+
+mpas_ocn_tracer_ideal_age.o: mpas_ocn_constants.o
+
+mpas_ocn_tracer_TTD.o: mpas_ocn_constants.o
+
+mpas_ocn_tracer_ecosys.o: mpas_ocn_constants.o
+
+mpas_ocn_tracer_DMS.o: mpas_ocn_constants.o
+
+mpas_ocn_tracer_MacroMolecules.o: mpas_ocn_constants.o
+
+mpas_ocn_tracer_surface_flux_to_tend.o: mpas_ocn_constants.o
+
+mpas_ocn_time_average_coupled.o: mpas_ocn_constants.o
 
 clean:
 	$(RM) *.o *.i *.mod *.f90
