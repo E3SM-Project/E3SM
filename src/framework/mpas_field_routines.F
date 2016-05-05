@@ -1951,7 +1951,7 @@ module mpas_field_routines
 
       type (field0DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_scalar.inc"
 
@@ -1979,7 +1979,7 @@ module mpas_field_routines
 
       type (field1DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -2007,7 +2007,7 @@ module mpas_field_routines
 
       type (field2DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -2035,7 +2035,7 @@ module mpas_field_routines
 
       type (field3DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -2063,7 +2063,7 @@ module mpas_field_routines
 
       type (field4DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -2091,7 +2091,7 @@ module mpas_field_routines
 
       type (field5DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -2119,7 +2119,7 @@ module mpas_field_routines
 
       type (field0DInteger), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_scalar.inc"
 
@@ -2147,7 +2147,7 @@ module mpas_field_routines
 
       type (field1DInteger), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -2175,7 +2175,7 @@ module mpas_field_routines
 
       type (field2DInteger), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -2203,7 +2203,7 @@ module mpas_field_routines
 
       type (field3DInteger), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -2231,7 +2231,7 @@ module mpas_field_routines
 
       type (field0DChar), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_scalar.inc"
 
@@ -2259,7 +2259,7 @@ module mpas_field_routines
 
       type (field1DChar), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_array.inc"
 
@@ -2287,7 +2287,7 @@ module mpas_field_routines
 
       type (field0DLogical), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
-      integer :: threadNum
+      integer :: threadNum, iConstituent
 
 #include "duplicate_field_scalar.inc"
 
