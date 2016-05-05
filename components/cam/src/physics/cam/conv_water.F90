@@ -293,6 +293,18 @@ module conv_water
             end select
 
       end if
+      
+      !BSINGH - Logic by Phil to account for insignificant condensate in large scale clouds
+      if (ls_icwmr < 100._r8*ic_limit .and. pergro) then ! if there is virtually  no stratiform condensate
+         if (state%t(i,k) < 243._r8) then           ! if very cold assume convective condensate is ice
+            wrk1 = 1._r8  
+         else if (state%t(i,k) < 263._r8) then      ! intermediate, do a linear interpolation
+            wrk1 = 1._r8-(state%t(i,k)-243._r8)/20._r8
+         else                            ! if pretty warm assume convective condensate is liquie
+            wrk1 = 0._r8
+         endif
+      endif	
+      !BSINGH - Ends
 
     ! Repartition convective cloud water into liquid and ice phase.
     ! Currently, this partition is made using the ice fraction of stratus condensate.

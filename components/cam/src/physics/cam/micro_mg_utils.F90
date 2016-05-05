@@ -109,7 +109,8 @@ real(r8), parameter, public :: pi = 3.14159265358979323846_r8
 real(r8), parameter, public :: omsm   = 1._r8 - 1.e-5_r8
 
 ! Smallest mixing ratio considered in microphysics.
-real(r8), parameter, public :: qsmall = 1.e-18_r8
+!real(r8), parameter, public :: qsmall = 1.e-18_r8
+real(r8), public :: qsmall = huge(1.0_r8)!1.e-8_r8 !BSINGH: Changed the threshold for pergro [this mod is climate changing ]
 
 ! minimum allowed cloud fraction
 real(r8), parameter, public :: mincld = 0.0001_r8
@@ -253,6 +254,8 @@ subroutine micro_mg_utils_init( kind, rh2o, cpair, tmelt_in, latvap, &
 
 call phys_getopts(pergro_out=pergro)
 
+qsmall = 1.e-18_r8
+if(pergro) qsmall = 1.e-8_r8 !BSINGH: Changed the threshold for pergro [this mod is climate changing ]
 
   errstring = ' '
 
