@@ -280,7 +280,7 @@ MODULE MOSART_physics_mod
        if (ctlSubwWRM%RegulationFlag>0) then
           call t_startf('mosartr_wrm_Reg')
           do iunit=rtmCTL%begr,rtmCTL%endr
-             if (TUnit%mask(iunit) > 0  .and. WRMUnit%INVicell(iunit) > 0 .and. WRMUnit%MeanMthFlow(iunit,13) > 0.01_r8 ) then
+             if (TUnit%mask(iunit) > 0) then
                 call Regulation(iunit, localDeltaT)
              endif
           enddo

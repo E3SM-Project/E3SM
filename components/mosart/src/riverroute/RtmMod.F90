@@ -1430,6 +1430,7 @@ contains
                 budget_euler, budget_eroutlag
     real(r8),save :: budget_accum(nt_rtm)   ! BUDGET accumulator over run
     integer ,save :: budget_accum_cnt       ! counter for budget_accum
+    logical  :: output_all_budget_terms = .true.   ! output flag
     real(r8) :: budget_global(50,nt_rtm)    ! global budget sum
     logical  :: budget_check                ! do global budget check
     real(r8) :: volr_init                   ! temporary storage to compute dvolrdt
@@ -1862,7 +1863,7 @@ contains
           nt = 1
           do nr = rtmCTL%begr,rtmCTL%endr
              budget_terms(42,nt) = budget_terms(42,nt) + StorWater%supply(nr)
-             budget_terms(22,nt) = budget_terms(22,nt) + StorWater%supply(nr)
+             budget_terms(22,nt) = budget_terms(22,nt) + StorWater%supply(nr) / delt_coupling
           enddo
           do idam = 1,ctlSubwWRM%LocalNumDam
              budget_terms(44,nt) = budget_terms(44,nt) + StorWater%storage(idam)
@@ -1914,48 +1915,62 @@ contains
             write(iulog,'(2a,i4)')        trim(subname),'  tracer = ',nt
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   volume   init = ',nt,budget_global(1,nt)
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   volume  final = ',nt,budget_global(2,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   volumeh  init = ',nt,budget_global(7,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   volumeh final = ',nt,budget_global(8,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   volumet  init = ',nt,budget_global(3,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   volumet final = ',nt,budget_global(4,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   volumer  init = ',nt,budget_global(5,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   volumer final = ',nt,budget_global(6,nt)
+          if (output_all_budget_terms) then
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x volumeh  init = ',nt,budget_global(7,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x volumeh final = ',nt,budget_global(8,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x volumet  init = ',nt,budget_global(3,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x volumet final = ',nt,budget_global(4,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x volumer  init = ',nt,budget_global(5,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x volumer final = ',nt,budget_global(6,nt)
+          endif
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   storage  init = ',nt,budget_global(43,nt)
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   storage final = ',nt,budget_global(44,nt)
-           !write(iulog,'(2a)') trim(subname),'----------------'
+          if (output_all_budget_terms) then
+            write(iulog,'(2a)') trim(subname),'----------------'
+          endif
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   input surface = ',nt,budget_global(13,nt)
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   input subsurf = ',nt,budget_global(14,nt)
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   input gwl     = ',nt,budget_global(15,nt)
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   input dto     = ',nt,budget_global(16,nt)
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   input total   = ',nt,budget_global(17,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   input check   = ',nt,budget_input - budget_global(17,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   input euler   = ',nt,budget_global(20,nt)
-           !write(iulog,'(2a)') trim(subname),'----------------'
+          if (output_all_budget_terms) then
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x input check   = ',nt,budget_input - budget_global(17,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x input euler   = ',nt,budget_global(20,nt)
+            write(iulog,'(2a)') trim(subname),'----------------'
+          endif
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   output flow   = ',nt,budget_global(18,nt)
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   output direct = ',nt,budget_global(21,nt)
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   output flood  = ',nt,budget_global(19,nt)
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   output supply = ',nt,budget_global(42,nt)
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   output total  = ',nt,budget_global(22,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   output check  = ',nt,budget_output - budget_global(22,nt)
-           !write(iulog,'(2a)') trim(subname),'----------------'
+          if (output_all_budget_terms) then
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x output check  = ',nt,budget_output - budget_global(22,nt)
+            write(iulog,'(2a)') trim(subname),'----------------'
+          endif
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   sum input     = ',nt,budget_input
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   sum dvolume   = ',nt,budget_volume
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   sum output    = ',nt,budget_output
-           !write(iulog,'(2a)') trim(subname),'----------------'
+          if (output_all_budget_terms) then
+            write(iulog,'(2a)') trim(subname),'----------------'
+          endif
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   net (dv-i+o)  = ',nt,budget_total
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   net euler     = ',nt,budget_euler
+          if (output_all_budget_terms) then
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x net euler     = ',nt,budget_euler
+          endif
             write(iulog,'(2a,i4,f22.6)') trim(subname),'   eul erout lag = ',nt,budget_eroutlag
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   accum (dv-i+o)= ',nt,budget_global(30,nt)
-           !write(iulog,'(2a)') trim(subname),'----------------'
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   erout_prev  no= ',nt,budget_global(23,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   erout       no= ',nt,budget_global(24,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   eroutup_avg   = ',nt,budget_global(25,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   erout_prev out= ',nt,budget_global(26,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   erout      out= ',nt,budget_global(27,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   erlateral     = ',nt,budget_global(28,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   euler gwl     = ',nt,budget_global(29,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   net main chan = ',nt,budget_global(6,nt)-budget_global(5,nt)+budget_global(24,nt)-budget_global(23,nt)+budget_global(27,nt)+budget_global(28,nt)+budget_global(29,nt)
-           !write(iulog,'(2a)') trim(subname),'----------------'
+          if (output_all_budget_terms) then
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x accum (dv-i+o)= ',nt,budget_global(30,nt)
+            write(iulog,'(2a)') trim(subname),'----------------'
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x erout_prev  no= ',nt,budget_global(23,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x erout       no= ',nt,budget_global(24,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x eroutup_avg   = ',nt,budget_global(25,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x erout_prev out= ',nt,budget_global(26,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x erout      out= ',nt,budget_global(27,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x erlateral     = ',nt,budget_global(28,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x euler gwl     = ',nt,budget_global(29,nt)
+            write(iulog,'(2a,i4,f22.6)') trim(subname),' x net main chan = ',nt,budget_global(6,nt)-budget_global(5,nt)+budget_global(24,nt)-budget_global(23,nt)+budget_global(27,nt)+budget_global(28,nt)+budget_global(29,nt)
+            write(iulog,'(2a)') trim(subname),'----------------'
+          endif
 
             if ((budget_total-budget_eroutlag) > 1.0e-6) then
                write(iulog,'(2a,i4)') trim(subname),' ***** BUDGET WARNING error gt 1. m3 for nt = ',nt

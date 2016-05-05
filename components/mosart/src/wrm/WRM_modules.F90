@@ -51,7 +51,9 @@ MODULE WRM_modules
 
 #if (1 == 0)
   subroutine Euler_WRM
+
      ! !DESCRIPTION: solve the ODEs with Euler algorithm
+
      implicit none
 
      integer :: iunit, m, k   !local index
@@ -194,7 +196,9 @@ MODULE WRM_modules
 !-----------------------------------------------------------------------
 
   subroutine irrigationExtraction
+
      ! !DESCRIPTION: subnetwork channel routing irrigation extraction
+
      implicit none    
      integer :: iunit      ! local index
      real(r8) :: flow_vol, temp         ! flow in cubic meter rather than cms
@@ -226,7 +230,9 @@ MODULE WRM_modules
 !-----------------------------------------------------------------------
 
   subroutine irrigationExtractionSubNetwork
+
      ! !DESCRIPTION: subnetwork channel routing irrigation extraction
+
      implicit none
      integer :: iunit      ! local index
      real(r8) :: flow_vol, temp, temp_vol         ! flow in cubic meter rather than cms
@@ -253,7 +259,9 @@ MODULE WRM_modules
 !-----------------------------------------------------------------------
 
   subroutine irrigationExtractionMainChannel(iunit, TheDeltaT )
+
      ! !DESCRIPTION: main channel routing irrigation extraction - restrict to 50% of the flow, something needs to flow else instability
+
      implicit none
      integer :: match
      integer, intent(in) :: iunit
@@ -296,7 +304,9 @@ MODULE WRM_modules
 !-----------------------------------------------------------------------
   
   subroutine RegulationRelease
+
      !! DESCRIPTION: computes the expected monthly release based on Biemans (2011)
+
      implicit none
      integer :: idam, yr, month, day, tod
      real(r8) :: factor, k
@@ -354,8 +364,10 @@ MODULE WRM_modules
 !-----------------------------------------------------------------------
 
   subroutine WRM_storage_targets
+
      ! !DESCRIPTION: definr the necessary drop in storage based in sotrage at srta of the month
      ! NOT TO BE RUN IN EULER
+
      implicit none
      integer :: idam, yr, month, day, tod
      integer nio,ierror                 ! unit number of a file, flag number of IO status
@@ -516,29 +528,42 @@ MODULE WRM_modules
 !-----------------------------------------------------------------------
 
   subroutine Regulation(iunit, TheDeltaT)
+
      !! DESCRIPTION: regulation of the flow from the reservoirs. The Regulation is applied to the flow entering the grid cell, i.e. the subw downstream of the reservoir. 
      ! !DESCRIPTION: CHANGE IN PLANS seems like erin get overwritten now play with erout
+
      implicit none
      integer , intent(in) :: iunit
      real(r8), intent(in) :: TheDeltaT
      !--- local ---
      integer  :: match
      integer  :: yr, month, day, tod
-     integer  :: damID,k
-     real(r8) :: flow_vol, flow_res, min_flow, min_stor, evap, max_stor
+     integer  :: damID,k,isDam
+     real(r8) :: flow_vol, flow_res, min_flow, min_stor, evap, max_stor, stor_init, budget
+     logical  :: check_local_budget = .true.
      character(len=*),parameter :: subname='(Regulation)'
 
      match = 0
      call get_curr_date(yr, month, day, tod)
 
      damID = WRMUnit%INVicell(iunit) 
-     if ( damID > ctlSubwWRM%LocalNumDam .OR. damID <= 0 ) then
-        print*, "Error in Regulation with DamID ",damID
-        stop
+     isDam = WRMUnit%isDam(iunit)
+!d     write(iulog,*) subname,' tcx1 ',isDam,iam,damID
+
+     !---------------------------------------------
+     !--- return and do nothing under certain conditions
+     !---------------------------------------------
+
+     if (damID > ctlSubwWRM%LocalNumDam .OR. damID <= 0 .or. WRMUnit%MeanMthFlow(damID,13) <= 0.01_r8) then
+        return
+        !write(iulog,*) "Error in Regulation with DamID ",damID
+        !call shr_sys_abort(subname//' error in damID')
      end if
+
+     stor_init = StorWater%storage(damID)
      flow_vol = -Trunoff%erout(iunit,nt_nliq) * theDeltaT
      flow_res = StorWater%release(damID) * theDeltaT
-     evap = StorWater%pot_evap(iunit) * theDeltaT * WRMUnit%SurfArea(damID) * 1000000._r8 ! potential evaporation in the grid cell the reservoir is
+     evap = StorWater%pot_evap(iunit) * theDeltaT * WRMUnit%SurfArea(damID) * 1000000._r8 ! potential evaporation in the grid cell of the reservoir
      min_flow = 0.1_r8 * WRMUnit%MeanMthFlow(damID, month) * theDeltaT
      min_stor = 0.1_r8 * WRMUnit%StorCap(damID)
      max_stor = WRMUnit%StorCap(damID)
@@ -579,6 +604,18 @@ MODULE WRM_modules
      end if
 
      Trunoff%erout(iunit,nt_nliq) = -flow_res / (theDeltaT)
+
+     if (check_local_budget) then
+        budget = StorWater%storage(damID)-stor_init + (Trunoff%erout(iunit,nt_nliq)*theDeltaT - flow_vol)
+        if (budget > 0.001_r8) then   ! in m3 
+           write(iulog,'(2a,i8,g20.12)') subname,' budget ',damID,budget
+           write(iulog,'(2a,i8,2g20.12)') subname,' check stor',damID,stor_init,StorWater%storage(damID)
+           write(iulog,'(2a,i8,2g20.12)') subname,' check flow',damID,flow_vol,Trunoff%erout(iunit,nt_nliq)*theDeltaT
+           write(iulog,'(2a,i8,3g20.12)') subname,' check term',damID,flow_vol,flow_res,evap
+           call shr_sys_abort(subname//' ERROR in budget')
+         endif
+     endif
+
      !print*, "regulation", damID, StorWater%storage(damID), flow_vol, flow_res, min_flow
 
      !! evaporation from the reservoir
@@ -594,9 +631,11 @@ MODULE WRM_modules
 !-----------------------------------------------------------------------
 
   subroutine ExtractionRegulatedFlow(TheDeltaT)
+
      !! DESCRIPTION: extract water from the reservoir release
      ! !DESCRIPTION: the extraction needs to be distributed accross the dependent unit demand
      !! DESCRIPTION: do not extract more than 10% of the mean monthly flow
+
      implicit none
      real(r8), intent(in) :: TheDeltaT
      !--- local ---
@@ -604,12 +643,13 @@ MODULE WRM_modules
      integer :: iter, iflag, iflagm
      integer :: yr, month, day, tod
      logical :: done
-     type(mct_aVect) :: aVect_wdG
+     type(mct_aVect) :: aVect_wdG, aVect_wgG
      real(r8),allocatable :: flow_vol(:)    ! dam storage amount
      real(r8),allocatable :: dam_uptake(:)  ! dam uptake from gridcells locally
      real(r8),allocatable :: dam_uptake_sum(:)  ! dam uptake from gridcells sum over all pes
      real(r8),allocatable :: fracsum(:)     ! sum of dam fraction on gridcells
-     real(r8) :: demand, demand_orig, supply
+     real(r8) :: demand, demand_orig, supply, budget_term(4),budget_sum(4),budget
+     logical  :: check_local_budget = .true.
      character(len=*),parameter :: subname='(ExtractionRegulatedFlow)'
 
      call t_startf('moswrm_ERFlow')
@@ -617,6 +657,14 @@ MODULE WRM_modules
      call get_curr_date(yr, month, day, tod)
      begr = rtmCTL%begr
      endr = rtmCTL%endr
+
+     if (check_local_budget) then
+        budget_term = 0._r8
+        do iunit = begr,endr
+           budget_term(1) = budget_term(1) + Trunoff%erout(iunit,nt_nliq)*theDeltaT
+           budget_term(3) = budget_term(3) + StorWater%supply(iunit)
+        enddo
+     endif
 
      allocate(dam_uptake(ctlSubwWRM%NDam))
      allocate(dam_uptake_sum(ctlSubwWRM%NDam))
@@ -650,6 +698,13 @@ MODULE WRM_modules
            aVect_wg%rAttr(1,cnt) = StorWater%demand(iunit)
         enddo
 
+!tcx debug
+!        call mct_aVect_gather(aVect_wg,aVect_wgG,gsMap_wg,mastertask,mpicom_rof)
+!        if (masterproc) then
+!           write(iulog,'(2a,2i8,3g20.10)') subname,' sw demand = ',iter,iam,minval(aVect_wgG%rAttr(1,:)),maxval(aVect_wgG%rAttr(1,:)),sum(aVect_wgG%rAttr(1,:))
+!        endif
+!        call mct_aVect_clean(aVect_wgG)
+
         !--- sum gridcell demand to dams
 
         if (barrier_timers) then
@@ -663,13 +718,20 @@ MODULE WRM_modules
         call mct_sMat_avMult(aVect_wg, sMatP_g2d, aVect_wd)
         call t_stopf('moswrm_ERFlow_avmult')
 
+!tcx debug
+!        call mct_aVect_gather(aVect_wd,aVect_wdG,gsMap_wd,mastertask,mpicom_rof)
+!        if (masterproc) then
+!           write(iulog,'(2a,2i8,3g20.10)') subname,' smm demand = ',iter,iam,minval(aVect_wdG%rAttr(1,:)),maxval(aVect_wdG%rAttr(1,:)),sum(aVect_wdG%rAttr(1,:))
+!        endif
+!        call mct_aVect_clean(aVect_wdG)
+
         !--- compute new dam fraction from total gridcell demand
 
 !debug        write(iulog,*) subname,' dam demand = ',iam,minval(aVect_wd%rAttr(1,:)),maxval(aVect_wd%rAttr(1,:))
         do idam = 1,ctlSubwWRM%LocalNumDam
            demand = aVect_wd%rAttr(1,idam)
            if (demand > 0._r8) then
-!debug              write(iulog,'(2a,2i6,2g20.10)') subname,' volumes ',iam,idam,flow_vol(idam),demand
+!debug              write(iulog,'(2a,3i6,2g20.10)') subname,' volumes ',WRMUnit%damID(idam),iam,idam,flow_vol(idam),demand
               aVect_wd%rAttr(1,idam) = flow_vol(idam)/demand
            else
               aVect_wd%rAttr(1,idam) = 0._r8
@@ -700,8 +762,9 @@ MODULE WRM_modules
         call mct_aVect_bcast(aVect_wdG,mastertask,mpicom_rof)
         call t_stopf('moswrm_ERFlow_bcast')
 
+!tcx debug
+!        write(iulog,'(2a,2i8,3g20.10)') subname,' dam frac =',iter,iam,minval(aVect_wdG%rAttr(1,:)),maxval(aVect_wdG%rAttr(1,:)),sum(aVect_wdG%rAttr(1,:))
         if (masterproc) then
-!debug           write(iulog,'(2a,i8,2g20.10)') subname,' dam frac =',iam,minval(aVect_wdG%rAttr(1,:)),maxval(aVect_wdG%rAttr(1,:))
            !do idam = 1,ctlSubwWRM%NDam
            !   write(iulog,'(2a,2i8,g20.10)') subname,' dam frac =',iam,idam,aVect_wdG%rAttr(1,idam)
            !enddo
@@ -795,6 +858,25 @@ MODULE WRM_modules
      deallocate(dam_uptake_sum)
      deallocate(fracsum)
 
+     if (check_local_budget) then
+        do iunit = begr,endr
+           budget_term(2) = budget_term(2) + Trunoff%erout(iunit,nt_nliq)*theDeltaT
+           budget_term(4) = budget_term(4) + StorWater%supply(iunit)
+        enddo
+
+        call shr_mpi_sum(budget_term,budget_sum,mpicom_rof,subname,all=.false.)
+
+        if (masterproc) then
+           budget = budget_sum(2) - budget_sum(1) - budget_sum(4) + budget_sum(3)
+           if (budget > 0.001_r8) then  ! in m3
+              write(iulog,'(2a, g20.10)') subname,' budget total  ',budget
+              write(iulog,'(2a,2g20.10)') subname,' budget erout  ',budget_sum(1),budget_sum(2)
+              write(iulog,'(2a,2g20.10)') subname,' budget supply ',budget_sum(3),budget_sum(4)
+              call shr_sys_abort(subname//' ERROR in budget')
+           endif
+        endif
+     endif
+
      call t_stopf('moswrm_ERFlow')
 
 !------------
@@ -813,9 +895,9 @@ MODULE WRM_modules
 
      call t_startf('moswrm_ERFlow_writ1')
      !--- g2d sum ---
-     do idam = 1,ctlSubwWRM%LocalNumDam
+!     do idam = 1,ctlSubwWRM%LocalNumDam
 !        write(iulog,'(2a,2i8,2g20.10)') subname,' idam demand =',idam,WRMUnit%damID(idam),aVect_wd%rAttr(1,idam),StorWater%storage(idam)
-     enddo
+!     enddo
      call t_stopf('moswrm_ERFlow_writ1')
 
      !--- copy dam supply into aVect_wd ---

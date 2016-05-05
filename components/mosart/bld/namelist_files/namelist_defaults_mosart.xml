@@ -34,7 +34,7 @@ for the CLM data in the CESM distribution
 
 <!-- WRM -->
 
-<paraFile rof_grid="NLDAS" >rof/mosart/US_reservoir_8th_NLDAS2.nc</paraFile>
+<paraFile rof_grid="NLDAS" >rof/mosart/US_reservoir_8th_NLDAS3.nc</paraFile>
 <demandPath rof_grid="NLDAS" >/pic/scratch/tcraig/wm_data/NLDAS2_GCAM_water_demand_</demandPath>
 <ExtractionFlag>1</ExtractionFlag>
 <ExtractionMainChannelFlag>1</ExtractionMainChannelFlag>
