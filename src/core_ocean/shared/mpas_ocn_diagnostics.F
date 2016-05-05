@@ -1421,8 +1421,9 @@ contains
        !
 
        ! Compute fraction of thickness flux that is in the top model layer
-       fracAbsorbed = 1.0_RKIND - exp(zTop(2,iCell) / config_flux_attenuation_coefficient)
-       fracAbsorbedRunoff = 1.0_RKIND - exp(zTop(2,iCell) / config_flux_attenuation_coefficient_runoff)
+       fracAbsorbed = 1.0_RKIND - exp( max(-layerThickness(1, iCell) / config_flux_attenuation_coefficient, -100.0_RKIND) )
+       fracAbsorbedRunoff = 1.0_RKIND - exp( max(-layerThickness(1, iCell) / config_flux_attenuation_coefficient_runoff, &
+                            -100.0_RKIND) )
        ! Store the total tracer flux below in nonLocalSurfaceTemperatureFlux for use in the CVMix nonlocal
        ! transport code.  This includes tracer forcing due to thickness
 
