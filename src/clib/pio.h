@@ -139,43 +139,89 @@ typedef struct io_desc_t
 */
 typedef struct iosystem_desc_t 
 {
+  /** The ID of this iosystem_desc_t. */
   int iosysid;
+
+  /** This is an MPI intra communicator that includes all the tasks in
+   * both the IO and the computation communicators. */
   MPI_Comm union_comm;
+
+  /** This is an MPI intra communicator that includes all the tasks
+   * involved in IO. */
   MPI_Comm io_comm;
+
+  /** This is an MPI intra communicator that includes all the tasks
+   * involved in computation. */
   MPI_Comm comp_comm;
+
+  /** This is an MPI inter communicator between IO communicator and
+   * computation communicator. */
   MPI_Comm intercomm;
+
+  /** This is a copy (but not an MPI copy) of either the comp (for
+   * non-async) or the union (for async) communicator. */
   MPI_Comm my_comm;
 
   /** This MPI group contains the processors involved in
-   * computation. It is created in PIOc_Init_Intracomm(), and freed my
-   * PIO_finalize(). */
+   * computation. */
   MPI_Group compgroup;
     
-  /** This MPI group contains the processors involved in I/O. It is
-   * created in PIOc_Init_Intracomm(), and freed my PIOc_finalize(). */
+  /** This MPI group contains the processors involved in I/O. */
   MPI_Group iogroup;
-  
+
+  /** The number of tasks in the IO communicator. */
   int num_iotasks;
+
+  /** The number of tasks in the computation communicator. */
   int num_comptasks;
 
+  /** Rank of this task in the union communicator. */
   int union_rank;
+
+  /** The rank of this process in the computation communicator, or -1
+   * if this process is not part of the computation communicator. */
   int comp_rank;
+
+  /** The rank of this process in the IO communicator, or -1 if this
+   * process is not part of the IO communicator. */
   int io_rank;
 
-  bool iomaster;
-  bool compmaster;
+  /** Set to MPI_ROOT if this task is the master of IO communicator, 0
+   * otherwise. */
+  int iomaster;
 
+  /** Set to MPI_ROOT if this task is the master of comp communicator, 0
+   * otherwise. */
+  int compmaster;
+
+  /** Rank of IO root task (which is rank 0 in io_comm) in the union
+   * communicator. */
   int ioroot;
+
+  /** Rank of computation root task (which is rank 0 in
+   * comm_comms[cmp]) in the union communicator. */
   int comproot;
+
+  /** An array of the ranks of all IO tasks within the union
+   * communicator. */
   int *ioranks;
 
+  /** Controls handling errors. */
   int error_handler;
+
+  /** ??? */
   int default_rearranger;
 
+  /** True if asynchronous interface is in use. */
   bool async_interface;
+
+  /** True if this task is a member of the IO communicator. */
   bool ioproc;
-  
+
+  /** MPI Info object. */
   MPI_Info info;
+
+  /** Pointer to the next iosystem_desc_t in the list. */
   struct iosystem_desc_t *next;
 } iosystem_desc_t;
 
@@ -490,7 +536,6 @@ int PIOc_set_blocksize(const int newblocksize);
   int PIOc_put_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const long *op) ;
   int PIOc_put_var_short (int ncid, int varid, const short *op) ;
   int PIOc_get_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], char *buf) ;
-  int PIOc_put_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const int *op)  ;
   int PIOc_put_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const int *op)  ;
 
   int PIOc_put_var1_ushort (int ncid, int varid, const PIO_Offset index[], const unsigned short *op); 
