@@ -180,6 +180,37 @@
     <desc>root ice mpi task</desc> 
   </entry> 
 
+  <entry id="NINST_ESP"  value="1">
+    <type>integer</type> 
+    <group>mach_pes_esp</group> 
+    <desc>Number of ESP instances</desc> 
+  </entry> 
+
+  <entry id="NINST_ESP_LAYOUT"  value="concurrent">
+    <type>char</type> 
+    <valid_values>sequential,concurrent</valid_values> 
+    <group>mach_pes_esp</group> 
+    <desc>Layout of ESP instances</desc> 
+  </entry> 
+
+  <entry id="NTASKS_ESP"  value="30">
+    <type>integer</type> 
+    <group>mach_pes_esp</group> 
+    <desc>number of ESP  tasks</desc> 
+  </entry> 
+
+  <entry id="NTHRDS_ESP"  value="1">
+    <type>integer</type> 
+    <group>mach_pes_esp</group> 
+    <desc>number of ESP  threads</desc> 
+  </entry> 
+
+  <entry id="ROOTPE_ESP"  value="540">
+    <type>integer</type> 
+    <group>mach_pes_esp</group> 
+    <desc>root esp mpi task</desc> 
+  </entry> 
+
   <entry id="CCSM_ESTCOST"  value="5">
     <type>integer</type> 
     <group>mach_pes_last</group> 
