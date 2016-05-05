@@ -475,22 +475,18 @@ contains
       !$omp end do
 
       ! Interpolate gmStreamFuncTopOfEdge to cell centers for visualization
-      !$omp do schedule(runtime)
+      !$omp do schedule(runtime) private(i, iEdge, areaEdge, k, rtmp)
       do iCell = 1, nCells
          gmStreamFuncTopOfCell(:, iCell) = 0.0_RKIND
-      end do
-      !$omp end do
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
 
-      !$omp do schedule(runtime) private(cell1, cell2, areaEdge, k, rtmp)
-      do iEdge = 1, nEdges
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-         areaEdge = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
+            areaEdge = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
 
-         do k = 1, maxLevelEdgeTop(iEdge)
-            rtmp = 0.5_RKIND * ( gmStreamFuncTopOfEdge(k,iEdge) + gmStreamFuncTopOfEdge(k+1,iEdge) ) * areaEdge
-            gmStreamFuncTopOfCell(k,cell1) = gmStreamFuncTopOfCell(k,cell1) + rtmp
-            gmStreamFuncTopOfCell(k,cell2) = gmStreamFuncTopOfCell(k,cell2) + rtmp
+            do k = 1, maxLevelEdgeTop(iEdge)
+               rtmp = 0.5_RKIND * ( gmStreamFuncTopOfEdge(k, iEdge) + gmStreamFuncTopOfEdge(k+1, iEdge) ) * areaEdge
+               gmStreamFuncTopOfCell(k, iCell) = gmStreamFuncTopOfCell(k, iCell) + rtmp
+            end do
          end do
       end do
       !$omp end do
