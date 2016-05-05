@@ -357,6 +357,7 @@ class Case(object):
         else:
             expect(machobj.is_valid_compiler(compiler),
                    "compiler %s is not supported on machine %s" %(compiler, machine_name))
+
         self.set_value("COMPILER",compiler)
 
         if mpilib is None:
