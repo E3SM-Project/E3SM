@@ -350,7 +350,7 @@ class TestCreateTestCommon(unittest.TestCase):
         self._testroot          = MACHINE.get_value("CESMSCRATCHROOT")
         self._jenkins_root      = os.path.join(self._testroot, "jenkins")
         self._compiler          = MACHINE.get_default_compiler()
-        self._hasbatch          = MACHINE.has_batch_system()
+        self._hasbatch          = MACHINE.has_batch_system() and not NO_BATCH
         self._do_teardown       = True # Will never do teardown if test failed
         # wait_for_tests could blow away our dart config, need to back it up
         if (os.path.exists(DART_CONFIG)):
@@ -785,7 +785,7 @@ class Z_FullSystemTest(TestCreateTestCommon):
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
-        if (MACHINE.has_batch_system()):
+        if (self._hasbatch):
             stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, self._baseline_name),
                                            ok_to_fail=True, from_dir=self._testroot)
             self.assertEqual(stat, 0,
