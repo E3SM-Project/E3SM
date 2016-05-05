@@ -233,6 +233,8 @@ def parse_test_name(test_name):
     ['ERS', ['D'], 'fe12_123', 'JGF', None, None, None]
     >>> parse_test_name('ERS_D_P1.fe12_123.JGF')
     ['ERS', ['D', 'P1'], 'fe12_123', 'JGF', None, None, None]
+    >>> parse_test_name('SMS_D_Ln9_Mmpi-serial.f19_g16_rx1.A')
+    ['SMS', ['D', 'Ln9', 'Mmpi-serial'], 'f19_g16_rx1', 'A', None, None, None]
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler')
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', None]
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test-mods')

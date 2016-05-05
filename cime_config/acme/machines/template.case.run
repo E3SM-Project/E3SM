@@ -7,7 +7,7 @@ template to create a case run script
 import sys, os, calendar, shutil, time
 _CIMEROOT = os.environ.get("CIMEROOT")
 if _CIMEROOT is None:
-    raise exc_type("ERROR: must set CIMEROOT environment variable")
+    raise SystemExit("ERROR: must set CIMEROOT environment variable")
 
 _LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
 sys.path.append(_LIBDIR)
@@ -84,7 +84,7 @@ def preRunCheck(case):
 
     # set environment variables
     # This is a requirement for yellowstone only
-    if mpilib == "mpi-serial":
+    if mpilib == "mpi-serial" and "MP_MPILIB" in os.environ:
         del os.environ["MP_MPILIB"]
     else:
         os.environ["MPILIB"] = mpilib
