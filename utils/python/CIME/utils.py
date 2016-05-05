@@ -11,7 +11,7 @@ import re
 from ConfigParser import SafeConfigParser as config_parser
 
 # Return this error code if the scripts worked but tests failed
-TESTS_FAILED_ERR_CODE = 165
+TESTS_FAILED_ERR_CODE = 100
 logger = logging.getLogger(__name__)
 
 def expect(condition, error_msg, exc_type=SystemExit):
@@ -654,3 +654,15 @@ def convert_to_seconds(time_str):
 
     return result
 
+def appendCaseStatus(caseroot, msg):
+    """
+    Append msg to CaseStatus file in caseroot
+    """
+    with open(os.path.join(caseroot,"CaseStatus"), "a") as fd:
+        fd.write(msg)
+
+def does_file_have_string(filepath, text):
+    """
+    Does the text string appear in the filepath file
+    """
+    return os.path.isfile(filepath) and text in open(filepath).read()

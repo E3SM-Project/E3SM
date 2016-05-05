@@ -70,6 +70,16 @@
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
+  <test NAME="HOMME">
+    <DESC>Run homme tests.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>0</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
   <test NAME="TESTBUILDFAIL">
     <DESC>For testing infra only. Insta-fail build step.</DESC>
     <INFO_DBUG>1</INFO_DBUG>

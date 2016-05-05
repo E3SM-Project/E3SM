@@ -32,7 +32,7 @@ def parse_command_line(args, cimeroot):
                         help="(required) Specify a model grid resolution. "
                         "To see list of current compsets, use the utility manage_case in this directory")
 
-    parser.add_argument("--mach", "-mach", 
+    parser.add_argument("--mach", "-mach",
                         help="(required) Specify a machine. "
                         "To see list of current compsets, use the utility manage_case in this directory")
 
@@ -82,7 +82,7 @@ def parse_command_line(args, cimeroot):
                         "with the new user grid changes added to it"
 			"This argument is required if --user-grid is True")
 
-    parser.add_argument("--srcroot",default=os.path.dirname(cimeroot),
+    parser.add_argument("--srcroot", default=os.path.dirname(cimeroot),
                         help="Alternative path for source root directory. By default this is set to"
                         "cimeroot/../")
 
@@ -120,7 +120,6 @@ def parse_command_line(args, cimeroot):
         args.mpilib, args.project, args.pecount, \
         args.mach_dir, args.user_mods_dir, args.user_compset, args.pesfile, \
         args.user_grid, args.gridfile, args.srcroot, args.test
-
 
 ###############################################################################
 def _main_func():

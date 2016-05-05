@@ -164,7 +164,7 @@ sub submitJobs()
 {
     my $self = shift;
     my $scriptname = shift;
-    my $depjobid = undef;
+    my $depjobid = shift;
 
     my %depqueue = %{$self->{dependencyqueue}};
     my $lastjobseqnum = (sort {$b <=> $a } keys %depqueue)[0];
@@ -197,6 +197,7 @@ sub submitSingleJob()
     my %config = %{$self->{'caseconfig'}};
     my $dependarg = '';
     my $submitargs = '';
+
     $submitargs = $self->getSubmitArguments($scriptname, $dependentJobId);
 
     if(! defined $submitargs or length($submitargs) <= 0)
@@ -291,27 +292,26 @@ sub dependencyCheck()
     # we always want to run the test or run again..
     if(-e "case.test")
     {
-	my $jobname = "case.test";
-	$self->addDependentJob($jobname);
+        my $jobname = "case.test";
+        $self->addDependentJob($jobname);
     }
     else
     {
-	my $jobname = "case.run";
-	$self->addDependentJob($jobname);
+        my $jobname = "case.run";
+        $self->addDependentJob($jobname);
     }
 
     # do we add the short-term archiver to the dependency queue?
     if($config{'DOUT_S'} eq 'TRUE')
     {
-	my $jobname = "case.st_archive";
-	$self->addDependentJob($jobname);
+        my $jobname = "case.st_archive";
+        $self->addDependentJob($jobname);
     }
-	if($config{'DOUT_L_MS'} eq 'TRUE')
-	{
-		my $jobname = "case.lt_archive";
-		$self->addDependentJob($jobname);
-	}
-
+    if($config{'DOUT_L_MS'} eq 'TRUE')
+    {
+        my $jobname = "case.lt_archive";
+        $self->addDependentJob($jobname);
+    }
 }
 
 #==============================================================================

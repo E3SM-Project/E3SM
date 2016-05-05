@@ -24,6 +24,7 @@ sub opts()
 {
     GetOptions( "resubmit"	=> \$opts{'resubmit'},
                 "scriptname=s"  => \$opts{'scriptname'},
+                "j|jobid=i"     => \$opts{'jobid'},
 	        "loglevel=s"    => \$opts{loglevel});
 }
 
@@ -115,7 +116,12 @@ sub main
 	    check_DA_settings();
 	    `./xmlchange --noecho  RUN_WITH_SUBMIT=TRUE`;
 	    $config{RUN_WITH_SUBMIT}='TRUE';
-	    $batchutils->submitJobs();
+            if (defined $opts{'jobid'}) {
+                $batchutils->submitJobs(undef, $opts{'jobid'});
+            }
+            else {
+                $batchutils->submitJobs();
+            }
 	    if($batchutils->{batchtype} eq 'none'){
 		$batchutils->_decrementResubmitCounter(\%config);
 	    }

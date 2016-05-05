@@ -106,16 +106,14 @@ for mct, etc.
   <FIXEDFLAGS>  -qsuffix=f=f -qfixed=132 </FIXEDFLAGS>
   <FREEFLAGS> -qsuffix=f=f90:cpp=F90  </FREEFLAGS>
   <FFLAGS> -g -qfullpath -qmaxmem=-1 </FFLAGS>
+  <FC_AUTO_R8> -qrealsize=8 </FC_AUTO_R8>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -qstrict -Q </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O3  </ADD_CFLAGS>
-  <ADD_FFLAGS compile_threaded="true"> -qsmp=omp </ADD_FFLAGS>
-  <ADD_CFLAGS compile_threaded="true"> -qsmp=omp </ADD_CFLAGS>
-  <!--ADD_LDFLAGS compile_threaded="true"> -qsmp=omp </ADD_LDFLAGS-->
-  <FC_AUTO_R8> -qrealsize=8 </FC_AUTO_R8>
+  <ADD_FFLAGS DEBUG="FALSE" compile_threaded="true"> -qsmp=omp:nested_par </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE" compile_threaded="true"> -qsmp=omp:nested_par </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"  compile_threaded="true"> -qsmp=omp:nested_par:noopt </ADD_FFLAGS>
+  <ADD_CFLAGS DEBUG="TRUE"  compile_threaded="true"> -qsmp=omp:nested_par:noopt </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -qinitauto=7FF7FFFF -qflttrap=ov:zero:inv:en </ADD_FFLAGS>
-  <ADD_FFLAGS DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </ADD_FFLAGS>
-  <ADD_CFLAGS DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </ADD_CFLAGS>
-  <ADD_LDFLAGS DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </ADD_LDFLAGS>
   <ADD_FFLAGS DEBUG="TRUE" MODEL="pop"> -C </ADD_FFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
 
@@ -196,7 +194,7 @@ for mct, etc.
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
-<compiler COMPILER="pgicuda">
+<compiler COMPILER="pgi_acc">
   <!-- http://www.pgroup.com/resources/docs.htm                                              -->
   <!-- Notes:  (see pgi man page & user's guide for the details) -->
   <!--  -Mextend        => Allow 132-column source lines -->
@@ -229,9 +227,9 @@ for mct, etc.
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DUSE_CUDA_FORTRAN -DCPRPGI </ADD_CPPDEFS>
   <CFLAGS> -Mlist -time </CFLAGS>
 
-  <ADD_CFLAGS compile_threaded="false"> -nomp </ADD_CFLAGS>
-  <ADD_FFLAGS compile_threaded="false"> -nomp </ADD_FFLAGS>
-  <ADD_LDFLAGS compile_threaded="false"> -nomp </ADD_LDFLAGS>
+  <ADD_CFLAGS compile_threaded="false"> </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="false"> </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="false"> </ADD_LDFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -mp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -mp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="true"> -mp </ADD_LDFLAGS>
@@ -241,9 +239,9 @@ for mct, etc.
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
 
   <FFLAGS>  -i4 -Mlist  -time -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
-  <ADD_FFLAGS MODEL="cam"> -ta=nvidia -Mcuda=5.5,cc35  </ADD_FFLAGS>
+  <ADD_FFLAGS MODEL="cam"> -acc -ta=tesla,pin,cuda7.0,cc35,ptxinfo -Minfo=accel -DUSE_OPENACC=1 </ADD_FFLAGS>
   <FFLAGS_NOOPT> -O0 -g -Ktrap=fp -Mbounds -Kieee  </FFLAGS_NOOPT>
-  <ADD_FFLAGS_NOOPT compile_threaded="false"> -nomp </ADD_FFLAGS_NOOPT>
+  <ADD_FFLAGS_NOOPT compile_threaded="false"> </ADD_FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -mp </ADD_FFLAGS_NOOPT>
 
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </ADD_FFLAGS>
@@ -253,7 +251,7 @@ for mct, etc.
   <ADD_FFLAGS MODEL="dwav"> -Mnovect </ADD_FFLAGS>
   <ADD_FFLAGS MODEL="dice"> -Mnovect </ADD_FFLAGS>
   <ADD_FFLAGS MODEL="docn"> -Mnovect </ADD_FFLAGS>
-  <LDFLAGS> -time -Wl,--allow-multiple-definition -ta=nvidia -Mcuda=5.0,cc35 </LDFLAGS>
+  <LDFLAGS> -time -Wl,--allow-multiple-definition -acc -ta=tesla,pin,cuda7.0,cc35,ptxinfo </LDFLAGS>
   <SCC> pgcc </SCC>
   <SFC> pgf95 </SFC>
   <SCXX> pgc++ </SCXX>
@@ -715,7 +713,7 @@ for mct, etc.
   <ALBANY_PATH>/ccs/proj/cli106/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
-<compiler COMPILER="pgicuda" MACH="titan">
+<compiler COMPILER="pgi_acc" MACH="titan">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
@@ -773,8 +771,6 @@ for mct, etc.
 <compiler COMPILER="ibm" OS="BGQ">
   <FFLAGS> -g -qfullpath -qmaxmem=-1 -qspillsize=2500 -qextname=flush </FFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O3 -qstrict -Q </ADD_FFLAGS>
-  <ADD_FFLAGS DEBUG="FALSE" compile_threaded="true"> -qsmp=omp </ADD_FFLAGS>
-  <ADD_FFLAGS DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </ADD_FFLAGS>
   <ADD_CPPDEFS> -DLINUX  </ADD_CPPDEFS>
   <CONFIG_ARGS> --build=powerpc-bgp-linux --host=powerpc64-suse-linux </CONFIG_ARGS>
   <LDFLAGS>  -Wl,--relax -Wl,--allow-multiple-definition </LDFLAGS>
@@ -799,9 +795,10 @@ for mct, etc.
   <PETSC_PATH>/soft/libraries/petsc/3.5.3.1</PETSC_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CXX_LINKER>CXX</CXX_LINKER>
+  <CXX_LIBS> -llapack -lblas -L$(IBM_MAIN_DIR)/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$(IBM_MAIN_DIR)/xlsmp/bg/3.1/bglib64 -lxlsmp </CXX_LIBS>
   <ADD_CPPDEFS> -DMPASLI_EXTERNAL_INTERFACE_DISABLE_MANGLING </ADD_CPPDEFS>
   <MPICXX> /soft/compilers/bgclang/mpi/bgclang/bin/mpic++11 </MPICXX>
-  <ALBANY_PATH>/home/agsalin/Albany/build/install</ALBANY_PATH>
+  <ALBANY_PATH>/projects/ccsm/libs/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 
@@ -820,9 +817,10 @@ for mct, etc.
   <PETSC_PATH>/soft/libraries/petsc/3.5.3.1</PETSC_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CXX_LINKER>CXX</CXX_LINKER>
+  <CXX_LIBS> -llapack -lblas -L$(IBM_MAIN_DIR)/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$(IBM_MAIN_DIR)/xlsmp/bg/3.1/bglib64 -lxlsmp </CXX_LIBS>
   <ADD_CPPDEFS> -DMPASLI_EXTERNAL_INTERFACE_DISABLE_MANGLING </ADD_CPPDEFS>
   <MPICXX> /soft/compilers/bgclang/mpi/bgclang/bin/mpic++11 </MPICXX>
-  <ALBANY_PATH>/home/agsalin/Albany/build/install</ALBANY_PATH>
+  <ALBANY_PATH>/projects/ccsm/libs/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="blues">
@@ -990,8 +988,8 @@ for mct, etc.
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
-  <ADD_FFLAGS DEBUG="TRUE">-C -Mbounds -traceback -Mchkfpstk -Mchkstk -Mdalign  -Mdepchk  -Mextend -Miomutex -Mrecursive -Msave -Ktrap=fp -O0 -g -byteswapio -Meh_frame</ADD_FFLAGS>
-  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt -L$(MPI_LIB) -lmpich</SLIBS>
+  <ADD_FFLAGS DEBUG="TRUE">-C -Mbounds -traceback -Mchkfpstk -Mchkstk -Mdalign  -Mdepchk  -Mextend -Miomutex -Mrecursive  -Ktrap=fp -O0 -g -byteswapio -Meh_frame</ADD_FFLAGS>
+  <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MPI_LIB) -lmpich</SLIBS>
 </compiler>
 
 <compiler COMPILER="intel" MACH="constance">
@@ -1122,6 +1120,16 @@ for mct, etc.
   <PNETCDF_PATH>$(PNETCDF)</PNETCDF_PATH>
   <!-- these flags enable nano timers -->
  <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="lawrencium-lr2">
+	<ADD_SLIBS> -lnetcdff -lnetcdf -mkl</ADD_SLIBS>
+	<GPTL_CPPDEFS> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="lawrencium-lr3">
+	<ADD_SLIBS> -lnetcdff -lnetcdf -mkl</ADD_SLIBS>
+	<GPTL_CPPDEFS> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </GPTL_CPPDEFS>
 </compiler>
 
 </config_compilers>
