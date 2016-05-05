@@ -23,7 +23,7 @@ class BatchUtils(object):
         self.batchobj = None
         self.override_node_count = None
         self.batchmaker = None
-        self.jobs = list()
+        self.jobs = []
         self.prereq_jobid = prereq_jobid
 
     def submit_jobs(self, no_batch=False):
@@ -53,7 +53,7 @@ class BatchUtils(object):
             if dependancy is not None:
                 deps = dependancy.split()
             else:
-                deps = list()
+                deps = []
             jobid = ""
             if job == self.job and self.prereq_jobid is not None:
                 jobid = self.prereq_jobid

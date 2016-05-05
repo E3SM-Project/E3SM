@@ -69,7 +69,7 @@ class EnvBatch(EnvBase):
         return type_info
 
     def get_jobs(self):
-        result = list()
+        result = []
         for node in self.get_nodes("job"):
             name = node.get("name")
             pdict = {}
@@ -85,7 +85,7 @@ class EnvBatch(EnvBase):
         group = self.get_node("group", {"id":"job_submission"})
         # look to see if any jobs are already defined
         cjobs = self.get_jobs()
-        childnodes = list()
+        childnodes = []
 
         expect(len(cjobs)==0," Looks like job groups have already been created")
 

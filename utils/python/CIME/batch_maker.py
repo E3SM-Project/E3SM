@@ -114,7 +114,7 @@ class BatchMaker(object):
             return
 
         # Make sure to check default queue first.
-        all_queues = list()
+        all_queues = []
         all_queues.append( self.config_machines_parser.get_default_queue())
         all_queues = all_queues + self.config_machines_parser.get_all_queues()
         for queue in all_queues:

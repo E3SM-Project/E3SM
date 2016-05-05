@@ -91,7 +91,7 @@ class SystemTestsCommon(object):
         Examine memory usage as recorded in the cpl log file and look for unexpected
         increases.
         """
-        memlist = list()
+        memlist = []
         meminfo = re.compile(".*model date =\s+(\w+).*memory =\s+(\d+\.?\d+).*highwater")
         if cpllog is not None:
             with gzip.open(cpllog, "rb") as f:
