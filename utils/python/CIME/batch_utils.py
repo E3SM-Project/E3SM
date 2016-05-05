@@ -59,7 +59,7 @@ class BatchUtils(object):
                 jobid = self.prereq_jobid
             for dep in deps:
                 if dep in depid.keys():
-                    jobid += " "+depid[dep]
+                    jobid += " "+str(depid[dep])
 #TODO: doubt these will be used
 #               elif dep == "and":
 #                   jobid += " && "
