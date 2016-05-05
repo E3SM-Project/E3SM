@@ -47,9 +47,16 @@ def parse_command_line(args):
 
     CIME.utils.setup_standard_logging_options(parser)
 
+    parser.add_argument("--caseroot", default=os.getcwd(),
+                        help="Case directory to build")
+
     args = parser.parse_args()
 
     CIME.utils.handle_standard_logging_options(args)
+
+    if args.caseroot is not None:
+        os.chdir(args.caseroot)
+    return args.caseroot
 
 ###############################################################################
 def preRunCheck(case):
@@ -284,10 +291,10 @@ def _main_func():
 
     # Set up the run, run the model, do the postrun steps
 
-    parse_command_line(sys.argv)
+    caseroot = parse_command_line(sys.argv)
 
-    case = Case()
-
+    case = Case(caseroot)
+    print "Caseroot is %s"%caseroot
     run_with_submit = case.get_value("RUN_WITH_SUBMIT")
     expect (run_with_submit,
              "You are not calling the run script via the submit script. "

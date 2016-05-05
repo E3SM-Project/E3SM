@@ -234,8 +234,8 @@ within model's Machines directory, and add a batch system type for this machine
             if hasattr(self, variable.lower()) and getattr(self, variable.lower()) is not None:
                 repl = getattr(self, variable.lower())
                 text = text.replace(whole_match, str(repl))
-            elif self.case.get_value(variable.upper()) is not None:
-                repl = self.case.get_value(variable.upper())
+            elif self.case.get_value(variable.upper(),subgroup=self.job) is not None:
+                repl = self.case.get_value(variable.upper(),subgroup=self.job)
                 text = text.replace(whole_match, str(repl))
             elif default is not None:
                 text = text.replace(whole_match, default)

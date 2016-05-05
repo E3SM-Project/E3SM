@@ -57,6 +57,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     CIME.utils.handle_standard_logging_options(args)
 
+    if args.caseroot is not None:
+        os.chdir(args.caseroot)
+
     return args.caseroot, args.testname
 
 def cimetest(caseroot, testname=None):
@@ -65,6 +68,7 @@ def cimetest(caseroot, testname=None):
     if(testname is None):
         testname = case.get_value('TESTCASE')
 
+    expect(testname is not None,"testname argument not resolved %s"%caseroot)
     logging.warn("Running test for %s"%testname)
 
     test = globals()[testname](caseroot, case)
