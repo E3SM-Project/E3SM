@@ -151,6 +151,7 @@ print $fh  <<"EOF";
 <entry id="atm_grid" value="$ATM_GRID">
 <entry id="lnd_grid" value="$LND_GRID">
 <entry id="ocn_grid" value="$OCN_GRID">
+<entry id="esp_grid" value="NULL">
 </config_definition>
 EOF
 $fh->close;
@@ -460,6 +461,8 @@ add_default($nl, 'wv_sat_transition_start');
 add_default($nl, 'wv_sat_use_tables');
 add_default($nl, 'wv_sat_table_spacing');
 
+add_default($nl, 'tfreeze_option');
+
 add_default($nl, 'budget_inst');
 add_default($nl, 'budget_daily');
 add_default($nl, 'budget_month');
@@ -662,6 +665,12 @@ add_default($nl, 'wav_rootpe',   'val'=>"$xmlvars{'ROOTPE_WAV'}", 'xml'=>'ROOTPE
 add_default($nl, 'wav_pestride', 'val'=>"$xmlvars{'PSTRID_WAV'}", 'xml'=>'PSTRID_WAV');
 add_default($nl, 'wav_layout',   'val'=>"$xmlvars{'NINST_WAV_LAYOUT'}", 'xml'=>'NINST_WAV_LAYOUT');
 
+add_default($nl, 'esp_ntasks',   'val'=>"$xmlvars{'NTASKS_ESP'}", 'xml'=>'NTASKS_ESP');
+add_default($nl, 'esp_nthreads', 'val'=>"$xmlvars{'NTHRDS_ESP'}", 'xml'=>'NTHRDS_ESP');
+add_default($nl, 'esp_rootpe',   'val'=>"$xmlvars{'ROOTPE_ESP'}", 'xml'=>'ROOTPE_ESP');
+add_default($nl, 'esp_pestride', 'val'=>"$xmlvars{'PSTRID_ESP'}", 'xml'=>'PSTRID_ESP');
+add_default($nl, 'esp_layout',   'val'=>"$xmlvars{'NINST_ESP_LAYOUT'}", 'xml'=>'NINST_ESP_LAYOUT');
+
 add_default($nl, 'cpl_ntasks',   'val'=>"$xmlvars{'NTASKS_CPL'}", 'xml'=>'NTASKS_CPL');
 add_default($nl, 'cpl_nthreads', 'val'=>"$xmlvars{'NTHRDS_CPL'}", 'xml'=>'NTHRDS_CPL');
 add_default($nl, 'cpl_rootpe',   'val'=>"$xmlvars{'ROOTPE_CPL'}", 'xml'=>'ROOTPE_CPL');
@@ -851,7 +860,7 @@ check_input_files($nl, $DIN_LOC_ROOT, "../cpl.input_data_list");
 # (4) Write out model_modelio.nml files
 #-----------------------------------------------------------------------------------------------
 
-foreach my $model (qw(cpl atm lnd ice ocn glc rof wav)) {
+foreach my $model (qw(cpl atm lnd ice ocn glc rof wav esp)) {
 
     my $LID     = "$ENV{'LID'}";
     my $moddiri = "$xmlvars{'EXEROOT'}/${model}";
@@ -867,7 +876,8 @@ foreach my $model (qw(cpl atm lnd ice ocn glc rof wav)) {
     if ($model eq 'ice') {$inst_count = "$xmlvars{'NINST_ICE'}";}
     if ($model eq 'ocn') {$inst_count = "$xmlvars{'NINST_OCN'}";}
     if ($model eq 'glc') {$inst_count = "$xmlvars{'NINST_GLC'}";}
-    
+    if ($model eq 'esp') {$inst_count = "$xmlvars{'NINST_ESP'}";}
+
     my $inst_index = 1;
     my $inst_string;
     my $modeliofile;
