@@ -2874,6 +2874,11 @@ int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_
     iosystem_desc_t *ios;
     file_desc_t *file;
     char *errstr;
+    size_t namelen;
+
+    int my_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);    
+    printf("%d PIOc_inq_varid ncid = %d name = %s\n", my_rank, ncid, name);
 
     errstr = NULL;
     ierr = PIO_NOERR;
@@ -2887,8 +2892,17 @@ int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_
     if(ios->async_interface && ! ios->ioproc){
 	if(ios->compmaster) 
 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	printf("%d PIOc_put_att_int BCast msg = %d\n", my_rank, msg);
+	mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	mpierr = MPI_Bcast(&varid, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	namelen = strlen(name);
+	mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	mpierr = MPI_Bcast((void *)name, len + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	mpierr = MPI_Bcast(&xtype, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	mpierr = MPI_Bcast(&len, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	mpierr = MPI_Bcast((void *)op, len, MPI_INT,  ios->compmaster, ios->intercomm);
+	printf("%d PIOc_put_att_int ncid = %d, varid = %d namelen = %d name = %s xtype = %d len = %d\n",
+	       my_rank, file->fh, varid, namelen, name, xtype, len);
     }
 
 
@@ -3965,8 +3979,6 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
 	namelen = strlen(name);
 	printf("bcasting namelen = %d name = %s len = %d\n", namelen, name, len);
-	if (!ios->compmaster)
-	    ios->compmaster = MPI_PROC_NULL;
 	mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
 	mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	mpierr = MPI_Bcast(&len, 1, MPI_INT,  ios->compmaster, ios->intercomm);

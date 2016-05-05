@@ -227,7 +227,9 @@ main(int argc, char **argv)
 	    	ERR(ret);
 
 	    /* Add a global attribute. */
-	    /* int att_data = 42; */
+	    if (verbose)
+	    	printf("%d test_intercomm writing attribute %s\n", my_rank, ATT_NAME);
+	    int att_data = 42;
 	    /* if ((ret = PIOc_put_att_int(ncid, NC_GLOBAL, ATT_NAME, NC_INT, 1, &att_data))) */
 	    /* 	ERR(ret); */
 

@@ -241,6 +241,11 @@ int att_handler(iosystem_desc_t *ios, int msg)
     int varid;
     int mpierr;
     int ret;
+    char *name;
+    size_t namelen;
+    int len;
+    nc_type xtype;
+    int *op;
     
     int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
@@ -251,45 +256,25 @@ int att_handler(iosystem_desc_t *ios, int msg)
 	return PIO_EIO;
     if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
-    printf("%d inv_var_handler ncid = %d varid = %d\n", my_rank, ncid, varid);
+    mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+    if (!(name = malloc(namelen * sizeof(char))))
+	return PIO_ENOMEM;
+    mpierr = MPI_Bcast((void *)name, len + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+    mpierr = MPI_Bcast(&xtype, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+    mpierr = MPI_Bcast(&len, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+    if (!(op = malloc(len * sizeof(int))))
+	return PIO_ENOMEM;
+    mpierr = MPI_Bcast(op, len, MPI_INT,  ios->compmaster, ios->intercomm);
+    printf("%d att_handler ncid = %d varid = %d\n", my_rank, ncid, varid);
 
-    /* Call the inq_var function. */
-    char name[NC_MAX_NAME + 1], *namep;
-    nc_type xtype, *xtypep = NULL;
-    int *ndimsp = NULL, *dimidsp = NULL, *nattsp = NULL;    
-    int ndims, dimids[NC_MAX_DIMS], natts;    
-    switch (msg)
-    {
-    case PIO_MSG_INQ_VAR:
-	namep = name;
-	xtypep = &xtype;
-	ndimsp = &ndims;
-	dimidsp = dimids;
-	nattsp = &natts;
-	break;
-    case PIO_MSG_INQ_VARNATTS:
-	nattsp = &natts;
-	break;
-    case PIO_MSG_INQ_VARNAME:
-	namep = name;
-	break;
-    case PIO_MSG_INQ_VARNDIMS:
-	ndimsp = &ndims;
-	break;
-    case PIO_MSG_INQ_VARDIMID:
-	dimidsp = dimids;
-	break;
-    case PIO_MSG_INQ_VARTYPE:
-	xtypep = &xtype;
-	break;
-    default:
-	return PIO_EINVAL;
-    }
-
-    /* Call the inq function to get the values. */
-    if ((ret = PIOc_inq_var(ncid, varid, namep, xtypep, ndimsp, dimidsp, nattsp)))
+    /* Call the function to write the attribute. */
+    if ((ret = PIOc_put_att_int(ncid, varid, name, xtype, len, op)))
 	return ret;
-    
+
+    /* Free resources. */
+    free(name);
+    free(op);
+
     return PIO_NOERR;
 }
 
@@ -528,6 +513,7 @@ int def_dim_handler(iosystem_desc_t *ios)
      * task is broadcasting. */
     if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
+    printf("%d def_dim_handler ncid = %d\n", my_rank, ncid);    
     if ((mpierr = MPI_Bcast(&namelen, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
     printf("%d def_dim_handler ncid = %d namelen %d\n", my_rank, ncid, namelen);    
