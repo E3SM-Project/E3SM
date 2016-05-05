@@ -313,6 +313,7 @@ class TESTMEMLEAKFAIL(FakeTest):
         testfile = os.path.join(cimeroot,"utils","python","tests","cpl.log.failmemleak.gz")
         script = \
 """
+echo Insta pass
 gunzip -c %s > %s/cpl.log.$LID
 """ % (testfile, rundir)
         FakeTest.build(self, script,
@@ -325,6 +326,7 @@ class TESTMEMLEAKPASS(FakeTest):
         testfile = os.path.join(cimeroot,"utils","python","tests","cpl.log.passmemleak.gz")
         script = \
 """
+echo Insta pass
 gunzip -c %s > %s/cpl.log.$LID
 """ % (testfile, rundir)
         FakeTest.build(self, script,

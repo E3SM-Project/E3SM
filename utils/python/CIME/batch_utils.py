@@ -12,10 +12,11 @@ logger = logging.getLogger(__name__)
 
 class BatchUtils(object):
 
-    def __init__(self, job, case=None):
+    def __init__(self, job, case=None, prereq_jobid=None):
         """
         Class constructor.  We need to know where in the filesystem we are,
         so caseroot, case, machroot, machine, cimeroot
+        prereq_jobid allows the user to set a prereq to the first job in this workflow
         """
         self.case = case if case is not None else Case()
         self.job = job
@@ -23,6 +24,7 @@ class BatchUtils(object):
         self.override_node_count = None
         self.batchmaker = None
         self.jobs = list()
+        self.prereq_jobid = prereq_jobid
 
     def submit_jobs(self, no_batch=False):
         if no_batch:
@@ -53,6 +55,8 @@ class BatchUtils(object):
             else:
                 deps = list()
             jobid = ""
+            if job == self.job and self.prereq_jobid is not None:
+                jobid = self.prereq_jobid
             for dep in deps:
                 if dep in depid.keys():
                     jobid += " "+depid[dep]

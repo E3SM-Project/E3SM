@@ -36,11 +36,15 @@ OR
     parser.add_argument("--no-batch", action="store_true",
                         help="Do not submit jobs to batch system, run locally.")
 
+    parser.add_argument("--prereq",
+                        help="Specify a prerequiset job id, this job will not start until the "
+                        "job with this id is completed (batch mode only)")
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
 
-    return args.caseroot, args.job, args.no_batch
+    return args.caseroot, args.job, args.no_batch, args.prereq
 
 ###############################################################################
 def _main_func(description):
@@ -49,9 +53,9 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    caseroot, job, no_batch = parse_command_line(sys.argv, description)
+    caseroot, job, no_batch, prereq = parse_command_line(sys.argv, description)
 
-    submit(caseroot, job=job, no_batch=no_batch)
+    submit(caseroot, job=job, no_batch=no_batch, prereq_jobid=prereq)
 
 if __name__ == "__main__":
     _main_func(__doc__)

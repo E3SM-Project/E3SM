@@ -15,7 +15,7 @@ from CIME.batch_utils import BatchUtils
 
 logger = logging.getLogger(__name__)
 
-def submit(caseroot, job=None, resubmit=None, no_batch=False):
+def submit(caseroot, job=None, resubmit=None, no_batch=False, prereq_jobid=None):
     case = Case(caseroot)
     if job is None:
         if case.get_value("TEST"):
@@ -38,7 +38,7 @@ def submit(caseroot, job=None, resubmit=None, no_batch=False):
                            case.get_value("CIMEROOT"),caseroot, case.get_value("MPILIB"),
                            case.get_value("DEBUG"))
     env_module.load_env_for_case()
-    batchobj = BatchUtils(job, case)
+    batchobj = BatchUtils(job, case, prereq_jobid=prereq_jobid)
     case.set_value("RUN_WITH_SUBMIT",True)
     case.flush()
     batchobj.submit_jobs(no_batch=no_batch)

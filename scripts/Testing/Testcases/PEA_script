@@ -53,7 +53,7 @@ endif
 
 $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "base"
 
-set cplprof = `ls -1t $CASEROOT/timing/cesm_timing.$CASE* | head -1`
+set cplprof = `ls -1t $CASEROOT/timing/${CIME_MODEL}_timing.$CASE* | head -1`
 set CPLPROF_GENCMP = $cplprof
 
 #======================================================================

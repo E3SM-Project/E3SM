@@ -129,7 +129,7 @@ def runModel(case):
     os.environ["OMP_NUM_THREADS"] = str(num_threads)
 
     # Run the model
-    logger.info("%s MODEL EXECUTION BEGINS HERE" %(time.strftime("%Y-%m-%d %H:M:S")))
+    logger.info("%s MODEL EXECUTION BEGINS HERE" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
     # {{mpirun}} set the unresolved cmd string
     {{ mpirun }}
@@ -138,7 +138,7 @@ def runModel(case):
     logger.debug("run command is %s " %cmd)
     rundir = case.get_value("RUNDIR")
     run_cmd(cmd, from_dir=rundir)
-    logger.info( "%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:M:S")))
+    logger.info( "%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
 ###############################################################################
 def postRunCheck(case, lid):

@@ -555,7 +555,6 @@ class E_TestSystemTest(TestCreateTestCommon):
             elif (test_name == run_fail_test):
                 self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             elif (test_name == mem_fail_test):
-                print mem_fail_test
                 self.assertEqual(status["memleak"], wait_for_tests.TEST_FAIL_STATUS)
                 self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
             else:
