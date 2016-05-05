@@ -142,7 +142,7 @@ contains
       weights = 0.0_RKIND
       weights(1) = 1.0_RKIND
 
-      !$omp do schedule(runtime) private(depth, k)
+      !$omp do schedule(runtime) private(depth, k, depLev)
       do iCell = 1, nCells
          depth = 0.0_RKIND
          do k = 1, maxLevelCell(iCell)
