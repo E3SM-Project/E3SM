@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 
+# local 
 
 """
 This utility allows the CIME user to view a field in a env_*xml file via a commandline interface.
