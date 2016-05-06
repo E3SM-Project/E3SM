@@ -40,7 +40,8 @@ def submit(caseroot, job=None, resubmit=None, no_batch=False, prereq_jobid=None)
         if no_batch:
             batch_system = "none"
         else:
-            batch_system = env_batch.get_default_value("batch_system")
+            bs_node = env_batch.get_node("entry", {"id":"batch_system"})
+            batch_system = env_batch.get_default_value(bs_node)
         env_batch.set_value("batch_system", batch_system)
     else:
         if case.get_value("batch_system") == "none":
