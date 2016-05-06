@@ -147,7 +147,7 @@ subroutine zmconv_readnl(nlfile)
    call mpibcast(tau,               1, mpir8,  0, mpicom)
    call mpibcast(dmpdz,             1, mpir8,  0, mpicom)
    call mpibcast(alfa_scalar,       1, mpir8,  0, mpicom)
-   call mpibcast(trigmem,           1, mpir8,  0, mpicom)
+   call mpibcast(trigmem,           1, mpilog,  0, mpicom)
 #endif
 
 end subroutine zmconv_readnl
