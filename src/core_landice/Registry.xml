@@ -507,7 +507,14 @@
                                 filename_template="regionMasks.nc"
                                 input_interval="initial_only"
                                 runtime_format="single_file">
-                        <var_struct name="regions"/>
+                        <var name="regionCellMasks"/> 
+                        <!--var name="nCellsInRegion"/> 
+                        <var name="regionVertexMasks"/>  
+                        <var name="nVerticesInRegion"/> 
+                        <var name="nRegionsInGroup"/> 
+                        <var name="regionsInGroup"/>
+                        <var name="regionMaskNames"/>
+                        <var name="regionGroupNames"/-->
 		</stream>
 
 	</streams>
@@ -961,7 +968,7 @@ is the value of that variable from the *previous* time level!
 	  <var name="regionCellMasks" type="integer" dimensions="nRegions nCells" units="unitless"
 	       description="masks set to 1 in cells that fall within a given region and 0 otherwise"
 	       />
-	  <var name="nCellsInRegion" type="integer" dimensions="nRegions" units="unitless"
+	  <!--var name="nCellsInRegion" type="integer" dimensions="nRegions" units="unitless"
 	       description="number of cells that fall within a given region"
 	       />
 	  <var name="regionVertexMasks" type="integer" dimensions="nRegions nVertices" units="unitless"
@@ -981,7 +988,7 @@ is the value of that variable from the *previous* time level!
 	       />
 	  <var name="regionGroupNames" type="text" dimensions="nRegionGroups" units="unitless"
 	       description="name of region groups"
-	       />
+	       /-->
 	</var_struct>
 
 <!-- ======================================================================= -->
