@@ -151,8 +151,6 @@ class SystemTestsCommon(object):
             cpllog = min(cpllogs, key=os.path.getctime)
         return cpllog
 
-
-
     def _compare(self):
         """
         check to see if there are history files to be compared, compare if they are there
