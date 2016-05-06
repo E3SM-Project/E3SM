@@ -20,9 +20,11 @@
 			possible_values=".true. or .false."
 		/>
 	</nml_record>
+
 	<packages>
 		<package name="regionalStatsAMPKG" description="This package includes variables required for the regionalStats analysis member."/>
 	</packages>
+
 	<var_struct name="regionalStatsAM" time_levs="1" packages="regionalStatsAMPKG">
                 <var name="regionalIceVolume" type="real" dimensions="nRegions Time" units="m^3"
 			description="total ice sheet volume"
@@ -31,6 +33,7 @@
 			description="total ice sheet area"
 		/>
  	</var_struct>
+
 	<streams>
 		<stream name="regionalStatsOutput" type="output"
 			mode="forward;analysis"

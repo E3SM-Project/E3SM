@@ -198,12 +198,6 @@ contains
          call mpas_pool_get_dimension(block % dimensions, 'nRegions', nRegions)
          call mpas_pool_get_dimension(block % dimensions, 'nRegionGroups', nRegionGroups)
    
-         ! allocate & initialize sums over blocks to 0
-         allocate(blockSumRegionIceArea(nRegions)) 
-         allocate(blockSumRegionIceVolume(nRegions))
-
-         blockSumRegionIceArea = 0.0_RKIND; blockSumRegionIceVolume = 0.0_RKIND
-
          ! get structs from pools
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
@@ -213,8 +207,6 @@ contains
          ! get values and arrays from standard pools
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
 
-         print *, 'nCellsSolve = ', nCellsSolve
-
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
@@ -223,10 +215,21 @@ contains
 
          ! get region cell masks from regionMasks.nc input file
          call mpas_pool_get_array(regionsPool, 'regionCellMasks', regionCellMasks)      
+!         call mpas_pool_get_array(regionalStatsAMPool, 'regionCellMasks', regionCellMasks)      
 
          ! get values from regional stats pool
          call mpas_pool_get_array(regionalStatsAMPool, 'regionalIceArea', regionalIceArea)
          call mpas_pool_get_array(regionalStatsAMPool, 'regionalIceVolume', regionalIceVolume)
+
+         print *, ' '
+         print *, 'sum( regionCellMasks(:,1) ) = ', sum( regionCellMasks(1,:) )
+         print *, ' '
+
+         ! allocate & initialize sums over blocks to 0
+         allocate(blockSumRegionIceArea(nRegions)) 
+         allocate(blockSumRegionIceVolume(nRegions))
+
+         blockSumRegionIceArea = 0.0_RKIND; blockSumRegionIceVolume = 0.0_RKIND
 
          do iCell = 1,nCellsSolve      ! loop over cells
  !         do iGroup = 1,nRegionGroups  ! loop over groups
@@ -236,6 +239,18 @@ contains
             ! regional sums of ice area over cells with ice (m^2)
             blockSumRegionIceArea(iRegion) = blockSumRegionIceArea(iRegion) + ( real(regionCellMasks(iRegion,iCell),RKIND) & 
                * areaCell(iCell) * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) ) 
+
+            !if( real(li_mask_is_ice_int(cellMask(iCell)),RKIND) /= 0.0 .and. blockSumRegionIceArea(iRegion) /= 0.0 )then
+            if( real(li_mask_is_ice_int(cellMask(iCell)),RKIND) /= 0.0 )then
+              print *, ' '
+!              print *, 'iCell, iRegion = ', iCell, iRegion                 
+!              print *, 'real(regionCellMasks(iRegion,iCell),RKIND) = ', real(regionCellMasks(iRegion,iCell),RKIND)                 
+!              print *, 'real(li_mask_is_ice_int(cellMask(iCell)),RKIND) = ', real(li_mask_is_ice_int(cellMask(iCell)),RKIND)
+!              print *, 'areaCell(iCell) = ', areaCell(iCell)                 
+!              print *, 'thickness(iCell) = ', thickness(iCell)                 
+!              print *, 'blockSumRegionIceArea(iRegion) = ', blockSumRegionIceArea(iRegion)
+              print *, ' '
+            endif
 
             ! regional sums of ice volume over cells with ice (m^3)
             blockSumRegionIceVolume(iRegion) = blockSumRegionIceVolume(iRegion) + ( real(regionCellMasks(iRegion,iCell),RKIND) & 
