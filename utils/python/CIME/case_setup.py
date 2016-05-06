@@ -102,10 +102,6 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
 
     # Create batch script
     if reset or clean:
-#        if not os.path.exists("case.run"):
-#            logger.info("clean option has already been invoked ... skipping ")
-#            return
-
         # Clean batch script
 
         backup_dir = "PESetupHist/b.%s" % time.strftime("%y%m%d-%H%M%S")
@@ -230,7 +226,7 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
             batch_jobs = case.get_batch_jobs()
 
             batchmaker = None
-            for job,jparms in batch_jobs:
+            for job, jparms in batch_jobs:
                 if batchmaker is None:
                     batchmaker = get_batch_maker(job, case=case)
                 else:
@@ -242,14 +238,14 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
                     batchmaker.set_job(job)
 
                 input_batch_script  = os.path.join(case.get_value("MACHDIR"), jparms['template'])
-                if job == "case.test" and testcase is not None:
-                    logger.info("Writing %s script"%job)
+                if job == "case.test" and testcase is not None and not test_mode:
+                    logger.info("Writing %s script" % job)
                     testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
                     # Short term fix to be removed when csh tests are removed
                     if not os.path.exists(testscript):
                         batchmaker.make_batch_script(input_batch_script, job)
                 elif job != "case.test":
-                    logger.info("Writing %s script"%job)
+                    logger.info("Writing %s script" % job)
                     batchmaker.make_batch_script(input_batch_script, job)
 
             # Make a copy of env_mach_pes.xml in order to be able

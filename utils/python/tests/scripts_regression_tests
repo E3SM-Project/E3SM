@@ -528,7 +528,7 @@ class E_TestSystemTest(TestCreateTestCommon):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
-        ct = SystemTest(tests, test_id=test_id)
+        ct = SystemTest(tests, test_id=test_id, no_batch=NO_BATCH)
 
         build_fail_test = [item for item in tests if "TESTBUILDFAIL" in item][0]
         run_fail_test   = [item for item in tests if "TESTRUNFAIL" in item][0]
@@ -555,6 +555,7 @@ class E_TestSystemTest(TestCreateTestCommon):
             elif (test_name == run_fail_test):
                 self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             elif (test_name == mem_fail_test):
+                self.assertTrue("memleak" in status, "memleak missing in %s for test %s" % (status, test_name))
                 self.assertEqual(status["memleak"], wait_for_tests.TEST_FAIL_STATUS)
                 self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
             else:
@@ -571,6 +572,8 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
+        if NO_BATCH:
+            extra_args += " --no-batch"
         cmd = "%s/jenkins_generic_job %s" % (TOOLS_DIR, extra_args)
         stat, output, errput = run_cmd(cmd, ok_to_fail=True)
         if (expect_works):
