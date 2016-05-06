@@ -26,6 +26,7 @@ module interp_movie_mod
        nfsizekind,             &
        nf_get_frame,           &
        PIO_double,              &
+       pio_iotask_rank,        &
        nf_init_decomp, &
        get_varindex
 
@@ -291,7 +292,7 @@ contains
 #endif
     call nf_output_register_dims(ncdf, maxdims, dimnames, dimsize)
 
-    iorank=piofs%io_rank
+    iorank=pio_iotask_rank(piofs)
 
     ! Create the DOF arrays
     allocate(ldof2d(lcount))
@@ -506,7 +507,7 @@ contains
     n0 = tl%n0
     call TimeLevel_Qdp(tl, qsplit, n0_fvm, np1_fvm)    
 
-!    if (0==piofs%io_rank) write(*,'(a,i4,a,i1)') &
+!    if (0==pio_iotask_rank(piofs)) write(*,'(a,i4,a,i1)') &
 !         "lat/lon interp movie output: ios=",ios," interpolation type=",&
 !         get_interp_parameter("itype")
      
@@ -1193,7 +1194,7 @@ contains
 
 
 
-             if(piofs%io_rank==0) then
+             if(pio_iotask_rank(piofs)==0) then
                 count2d(3:3)=1
              else
                 count2d(3:3)=0
