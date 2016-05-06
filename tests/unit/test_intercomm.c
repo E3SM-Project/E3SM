@@ -4,6 +4,7 @@
  *
  */
 #include <pio.h>
+#include <unistd.h>
 #ifdef TIMING
 #include <gptl.h>
 #endif
@@ -76,9 +77,6 @@ main(int argc, char **argv)
     /** Number of processors involved in current execution. */
     int ntasks;
 
-    /** Specifies the flavor of netCDF output format. */
-    int iotype;
-
     /** Different output flavors. */
     int format[NUM_NETCDF_FLAVORS] = {PIO_IOTYPE_PNETCDF, 
 				      PIO_IOTYPE_NETCDF,
@@ -91,10 +89,6 @@ main(int argc, char **argv)
 							  "test_nc4_serial4.nc",
 							  "test_nc4_parallel4.nc"};
 	
-    /** Number of processors that will do IO. In this test we
-     * will do IO from all processors. */
-    int niotasks;
-
     /** The ID for the parallel I/O system. */
     int iosysid;
 
@@ -133,9 +127,6 @@ main(int argc, char **argv)
     if (verbose)
 	printf("%d: test_intercomm ParallelIO Library test_intercomm running on %d processors.\n",
 	       my_rank, ntasks);
-
-    /* keep things simple - 1 iotask per MPI process */    
-    niotasks = ntasks;
 
     /* For example, if I have 4 processors, and I want to have 2 of them be computational, */
     /* and 2 of them be IO: component count is 1  */
@@ -216,11 +207,14 @@ main(int argc, char **argv)
 	    	ERR(ret);
 	    if (verbose)
 	    	printf("%d test_intercomm file created ncid = %d\n", my_rank, ncid);
-	    
+
+	    /* Define a dimension. */
 	    if (verbose)
 	    	printf("%d test_intercomm defining dimension %s\n", my_rank, DIM_NAME);
 	    if ((ret = PIOc_def_dim(ncid, DIM_NAME, DIM_LEN, &dimid)))
 	    	ERR(ret);
+
+	    /* Define a 1-D variable. */
 	    if (verbose)
 	    	printf("%d test_intercomm defining variable %s\n", my_rank, VAR_NAME);
 	    if ((ret = PIOc_def_var(ncid, VAR_NAME, NC_INT, NDIM, &dimid, &varid)))
@@ -230,21 +224,21 @@ main(int argc, char **argv)
 	    if (verbose)
 	    	printf("%d test_intercomm writing attribute %s\n", my_rank, ATT_NAME);
 	    int att_data = 42;
-	    /* if ((ret = PIOc_put_att_int(ncid, NC_GLOBAL, ATT_NAME, NC_INT, 1, &att_data))) */
-	    /* 	ERR(ret); */
+	    if ((ret = PIOc_put_att_int(ncid, NC_GLOBAL, ATT_NAME, NC_INT, 1, &att_data)))
+	    	ERR(ret);
 
-	    /* Close the file. */
+	    /* End define mode. */
 	    if (verbose)
 	    	printf("%d test_intercomm ending define mode ncid = %d\n", my_rank, ncid);
 	    if ((ret = PIOc_enddef(ncid)))
 	    	ERR(ret);
 
 	    /* Write some data. */
-	    for (int i = 0; i < LOCAL_DIM_LEN; i++)
-	    	data[i] = my_rank;
-	    if (verbose)
-	    	printf("%d test_intercomm writing data\n", my_rank);
-	    start[0] = !my_rank ? 0 : 2;
+	    /* for (int i = 0; i < LOCAL_DIM_LEN; i++) */
+	    /* 	data[i] = my_rank; */
+	    /* if (verbose) */
+	    /* 	printf("%d test_intercomm writing data\n", my_rank); */
+	    /* start[0] = !my_rank ? 0 : 2; */
 	    /* if ((ret = PIOc_put_vara_int(ncid, varid, start, count, data))) */
 	    /* 	ERR(ret); */
 
@@ -258,14 +252,14 @@ main(int argc, char **argv)
 	    if (verbose)
 	    	printf("%d test_intercomm opening file %s\n", my_rank, filename[fmt]);
 	    if ((ret = PIOc_openfile(iosysid, &ncid, &format[fmt], filename[fmt],
-				     NC_NOWRITE)))
+	    			     NC_NOWRITE)))
 	    	ERR(ret);
 
 	    /* Find the number of dimensions, variables, and global attributes.*/
 	    int ndims, nvars, ngatts, unlimdimid;
 	    if ((ret = PIOc_inq(ncid, &ndims, &nvars, &ngatts, &unlimdimid)))
 	    	ERR(ret);
-	    if (ndims != 1 || nvars != 1 || ngatts != 0 || unlimdimid != -1)
+	    if (ndims != 1 || nvars != 1 || ngatts != 1 || unlimdimid != -1)
 	    	ERR(ERR_WRONG);
 	    int ndims2, nvars2, ngatts2, unlimdimid2;
 	    if ((ret = PIOc_inq_ndims(ncid, &ndims2)))
@@ -278,7 +272,7 @@ main(int argc, char **argv)
 	    	ERR(ERR_WRONG);
 	    if ((ret = PIOc_inq_natts(ncid, &ngatts2)))
 	    	ERR(ret);
-	    if (ngatts2 != 0)
+	    if (ngatts2 != 1)
 	    	ERR(ERR_WRONG);
 	    if ((ret = PIOc_inq_unlimdim(ncid, &unlimdimid2)))
 	    	ERR(ret);
@@ -292,13 +286,13 @@ main(int argc, char **argv)
 	    	ERR(ret);
 	    printf("%d test_intercomm dim name is %s VAR_NAME is %s\n", my_rank, dimname, VAR_NAME);
 	    if (strcmp(dimname, DIM_NAME) || dimlen != DIM_LEN)
-		ERR(ERR_WRONG);
+	    	ERR(ERR_WRONG);
 	    char dimname2[NC_MAX_NAME + 1];
 	    PIO_Offset dimlen2;
 	    if ((ret = PIOc_inq_dimname(ncid, 0, dimname2)))
 	    	ERR(ret);
 	    if (strcmp(dimname2, DIM_NAME))
-		ERR(ERR_WRONG);
+	    	ERR(ERR_WRONG);
 	    if ((ret = PIOc_inq_dimlen(ncid, 0, &dimlen2)))
 	    	ERR(ret);
 	    if (dimlen2 != DIM_LEN)
@@ -316,7 +310,7 @@ main(int argc, char **argv)
 	    if ((ret = PIOc_inq_var(ncid, 0, varname, &vartype, &varndims, &vardimids, &varnatts)))
 	    	ERR(ret);
 	    if (strcmp(varname, VAR_NAME) || vartype != NC_INT || varndims != NDIM ||
-		vardimids != 0 || varnatts != 0)
+	    	vardimids != 0 || varnatts != 0)
 	    	ERR(ERR_WRONG);
 	    char varname2[NC_MAX_NAME + 1];
 	    nc_type vartype2;
@@ -354,8 +348,8 @@ main(int argc, char **argv)
 	    	ERR(ret);
 
 	    /* Now delete the file. */
-	    if ((ret = PIOc_deletefile(iosysid, filename[fmt])))
-	    	ERR(ret);
+	    /* if ((ret = PIOc_deletefile(iosysid, filename[fmt]))) */
+	    /* 	ERR(ret); */
 	    /* if ((ret = PIOc_openfile(iosysid, &ncid, &format[fmt], filename[fmt], */
 	    /* 			     NC_NOWRITE)) != PIO_ENFILE) */
 	    /* 	ERR(ERR_AWFUL); */

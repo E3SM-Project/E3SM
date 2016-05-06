@@ -241,14 +241,15 @@ int att_handler(iosystem_desc_t *ios, int msg)
     int varid;
     int mpierr;
     int ret;
-    char *name;
-    size_t namelen;
+    char *name5;
+    int namelen;
     int len;
     nc_type xtype;
     int *op;
     
     int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    printf("%d att_handler\n", my_rank);
 
     /* Get the parameters for this function that the the comp master
      * task is broadcasting. */
@@ -257,22 +258,28 @@ int att_handler(iosystem_desc_t *ios, int msg)
     if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
     mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-    if (!(name = malloc(namelen * sizeof(char))))
+    if (!(name5 = malloc((namelen + 1) * sizeof(char))))
 	return PIO_ENOMEM;
-    mpierr = MPI_Bcast((void *)name, len + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+    mpierr = MPI_Bcast((void *)name5, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
     mpierr = MPI_Bcast(&xtype, 1, MPI_INT,  ios->compmaster, ios->intercomm);
     mpierr = MPI_Bcast(&len, 1, MPI_INT,  ios->compmaster, ios->intercomm);
     if (!(op = malloc(len * sizeof(int))))
 	return PIO_ENOMEM;
     mpierr = MPI_Bcast(op, len, MPI_INT,  ios->compmaster, ios->intercomm);
-    printf("%d att_handler ncid = %d varid = %d\n", my_rank, ncid, varid);
 
     /* Call the function to write the attribute. */
-    if ((ret = PIOc_put_att_int(ncid, varid, name, xtype, len, op)))
+    if ((ret = PIOc_put_att_int(ncid, varid, name5, xtype, len, op)))
 	return ret;
 
+    free(op);
+    if (!(op = malloc(20)))
+    {
+    	printf("%d att_handler4 ncid = %d varid = %d namelen = %d name = %d\n",
+    	       my_rank, ncid, varid, namelen, name5);
+    }
+
     /* Free resources. */
-    free(name);
+    free(name5);
     free(op);
 
     return PIO_NOERR;
@@ -301,7 +308,7 @@ int inq_var_handler(iosystem_desc_t *ios, int msg)
 	return PIO_EIO;
     if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
-    printf("%d inv_var_handler ncid = %d varid = %d\n", my_rank, ncid, varid);
+    printf("%d inq_var_handler ncid = %d varid = %d\n", my_rank, ncid, varid);
 
     /* Call the inq_var function. */
     char name[NC_MAX_NAME + 1], *namep;
@@ -758,6 +765,7 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
     MPI_Status status;
     int index;
     int mpierr;
+    int ret;
 
     int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
@@ -856,7 +864,8 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	    inq_var_handler(my_iosys, msg);
 	    break;
 	case PIO_MSG_GET_ATT_INT:
-	    att_handler(my_iosys, msg);
+	    ret = att_handler(my_iosys, msg);
+	    printf("att_handler returned %d\n", ret);
 	    break;
 	case PIO_MSG_PUT_ATT_INT:
 	    att_handler(my_iosys, msg);
@@ -894,6 +903,13 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	    break;
 	default:
 	    pio_callback_handler(my_iosys, msg);
+	}
+
+	/* If an error was returned by the handler, do something! */
+	if (ret)
+	{
+	    printf("hander returned error code %d\n", ret);
+	    MPI_Finalize();
 	}
 
 	/* Unless finalize was called, listen for another msg from the

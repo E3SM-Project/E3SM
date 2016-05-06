@@ -562,8 +562,8 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims,
      * the IO root task. */
     if(ios->async_interface && ! ios->ioproc){
 	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
+	    mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
+	mpierr = MPI_Bcast(&(file->fh), 1, MPI_INT, ios->compmaster, ios->intercomm);
 	namelen = strlen(name);
 	printf("bcasting namelen = %d name = %s\n", namelen, name);
 	if (!ios->compmaster)
@@ -2891,13 +2891,15 @@ int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_
 
     if(ios->async_interface && ! ios->ioproc){
 	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+	    mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
 	printf("%d PIOc_put_att_int BCast msg = %d\n", my_rank, msg);
 	mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	mpierr = MPI_Bcast(&varid, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	namelen = strlen(name);
 	mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast((void *)name, len + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	printf("%d PIOc_put_att_int about to send name = %s\n", my_rank, name);
+	mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	printf("%d PIOc_put_att_int sent name = %s\n", my_rank, name);
 	mpierr = MPI_Bcast(&xtype, 1, MPI_INT,  ios->compmaster, ios->intercomm);
 	mpierr = MPI_Bcast(&len, 1, MPI_INT,  ios->compmaster, ios->intercomm);
 	mpierr = MPI_Bcast((void *)op, len, MPI_INT,  ios->compmaster, ios->intercomm);
