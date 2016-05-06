@@ -25,9 +25,9 @@ from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.preview_namelists         import preview_namelists
 import gzip
 
-workdir = os.environ.get("PBS_O_WORKDIR")
-if workdir is not None:
-    os.chdir(workdir)
+#workdir = os.environ.get("PBS_O_WORKDIR")
+#if workdir is not None:
+#    os.chdir(workdir)
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ def parse_command_line(args):
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("--caseroot", default=os.getcwd(),
+    parser.add_argument("--caseroot", 
                         help="Case directory to build")
 
     args = parser.parse_args()
@@ -292,14 +292,14 @@ def _main_func():
     # Set up the run, run the model, do the postrun steps
 
     caseroot = parse_command_line(sys.argv)
-
     case = Case(caseroot)
-    print "Caseroot is %s"%caseroot
     run_with_submit = case.get_value("RUN_WITH_SUBMIT")
+    logger.warn("run_with_submit is %s"%str(run_with_submit))
+    logger.warn("caseroot is %s"%caseroot)
     expect (run_with_submit,
              "You are not calling the run script via the submit script. "
              "As a result, short-term archiving will not be called automatically."
-             "Please submit your run by runnint the submit script like so:"
+             "Please submit your run using the submit script like so:"
             " ./case.submit")
 
     data_assimilation = case.get_value("DATA_ASSIMILATION")

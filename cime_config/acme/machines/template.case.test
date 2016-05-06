@@ -6,9 +6,9 @@
 """
 import os, sys
 
-workdir = os.environ.get("PBS_O_WORKDIR")
-if workdir is not None:
-    os.chdir(workdir)
+#workdir = os.environ.get("PBS_O_WORKDIR")
+#if workdir is not None:
+#    os.chdir(workdir)
 
 _CIMEROOT = os.environ.get("CIMEROOT")
 if _CIMEROOT is None:
@@ -50,7 +50,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("testname", nargs="?",default=None,
                         help="Name of the test to run, default is set in TESTCASE in env_test.xml")
 
-    parser.add_argument("--caseroot", default=os.getcwd(),
+    parser.add_argument("--caseroot", 
                         help="Case directory to build")
 
     args = parser.parse_args(args[1:])

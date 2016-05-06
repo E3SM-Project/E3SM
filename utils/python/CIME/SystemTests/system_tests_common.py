@@ -48,7 +48,7 @@ class SystemTestsCommon(object):
 
 
     def run(self):
-        
+        logger.warn( "here caseroot is %s"%self._caseroot)
         rc, out, err = run_cmd("./case.run --caseroot %s"%self._caseroot, ok_to_fail=True)
         if rc == 0 and self.coupler_log_indicates_run_complete():
             self._runstatus = "PASS"

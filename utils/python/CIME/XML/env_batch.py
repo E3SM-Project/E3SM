@@ -105,3 +105,16 @@ class EnvBatch(EnvBase):
                 newjob.append(deepcopy(child))
             group.append(newjob)
 
+    def cleanupnode(self, node):
+        if node.get("id") == "batch_system":
+            fnode = node.find(".//file")
+            node.remove(fnode)
+            gnode = node.find(".//group")
+            node.remove(gnode)
+            vnode = node.find(".//values")
+            if vnode is not None:
+                node.remove(vnode)
+        else:
+            node = EnvBase.cleanupnode(self, node)
+        return node
+
