@@ -6,10 +6,10 @@ Manage pes layouts
 from Tools.standard_script_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
+from CIME.XML.pes import Pes
 import argparse, sys, os, logging
-import datetime, shutil
+import datetime, shutil, re
 
-import pdb
 usagetext = """manage_pes
 
 DESCRIPTION
@@ -146,108 +146,6 @@ def parse_command_line(args, description):
     return (args.file, args.add, args.query, args.pes_setby,
             args.grid, args.machine)
 
-class PesXML(GenericXML):
-    def __init__(self, infile=None, component="allactive"):
-        """
-        initialize an object interface to config_pes.xml files,
-        """
-        self.pes = None
-        self.pes_node = None
-        filesxml = Files()
-        if infile is None:
-            infile = filesxml.get_value("PES_SPEC_FILE",
-                                        attribute={"component":component})
-
-        GenericXML.__init__(self, infile)
-
-    def checkFile(self):
-        gridnodes = self.get_nodes(nodename="grid")
-        if len(gridnodes) == 0:
-            logger.critical(' xml file %s has no <grid> entry\n' %
-                            self.filename)
-            sys.exit(1)
-        if len(gridnodes) > 1:
-            logger.critical(' xml file %s has multiple <grid> entries.'
-                            ' Not supported yet\n' % self.filename)
-            sys.exit(1)
-
-        for gridnode in gridnodes:
-            gridname = gridnode.get("name")
-            if gridname is None:
-                logger.critical(' xml file %s has no <grid name="">'
-                                ' attribute \n' % self.filename)
-                sys.exit(1)
-
-            machnode = gridnode.find("mach")
-            if machnode is None:
-                logger.critical(' xml file %s has no <grid><mach> entry\n' %
-                                self.filename)
-                sys.exit(1)
-
-            machname = machnode.get("name")
-            if machname is None:
-                logger.critical(' xml file %s has no <mach name=""> '
-                                'attribute\n' % self.filename)
-                sys.exit(1)
-
-            pesnode = machnode.find("pes")
-            if pesnode is None:
-                logger.critical(' xml file %s has no <grid><mach><pes> '
-                                'entry\n' % self.filename)
-                sys.exit(1)
-
-            pesizename = pesnode.get("pesize")
-            if pesizename is None:
-                logger.critical(' xml file %s has no <pes pesize=""> '
-                                'attribute\n' % self.filename)
-                sys.exit(1)
-
-            compsetname = pesnode.get("compset")
-            if compsetname is None:
-                logger.critical(' xml file %s has no <pes compsetname=""> '
-                                'attribute\n' % self.filename)
-                sys.exit(1)
-
-            logger.debug("grid: %s\n\tmach: %s\n\tpesize: %s\n\tcompset: %s\n"
-                         % (gridname, machname, pesizename, compsetname))
-            return (gridname, machname, pesizename, compsetname)
-
-
-    def getMatches(self, grid=None, mach=None, pesize=None, compset=None):
-        gridnodes = self.get_nodes(nodename="grid")
-        matchnodes = []
-        for gridnode in gridnodes:
-            gridname = gridnode.get("name")
-            machnode = gridnode.find("mach")
-            machname = machnode.get("name")
-            pesnode = machnode.find("pes")
-            pesizename = pesnode.get("pesize")
-            compsetname = pesnode.get("compset")
-            logger.debug("grid: %s\n\tmach: %s\n\tpesize: %s\n\tcompset: %s\n"
-                         % (gridname, machname, pesizename, compsetname))
-            # check if node matches given values
-            if (grid is not None and grid != "any" and
-                grid not in gridname.split('|')):
-                continue
-            if (mach is not None and mach != "any" and
-                mach not in machname.split('|')):
-                continue
-            if (compset is not None and compset != "any" and
-                compset not in compsetname.split('|')):
-                continue
-            if (pesize is not None and pesize != "any" and
-                pesize not in pesizename.split('|')):
-                continue
-
-            matchnodes.append(gridnode)
-        return matchnodes
-
-    def print_values(self):
-        grids = self.get_nodes(nodename="grid")
-        print "Grids:"
-        for grid in grids:
-            name = grid.get("mach")
-
 class Manage_Pes:
     ADD_MODE = 1
     QUERY_MODE = 2
@@ -262,13 +160,13 @@ class Manage_Pes:
         self.machine = machine
 
     def checkargs(self):
-        logger.debug("filename=%s"%self.filename)
-        logger.debug("add=%s"%self.add)
-        logger.debug("query=%s"%self.query)
-        logger.debug("model=%s"%self.model)
-        logger.debug("setby=%s"%self.setby)
-        logger.debug("grid=%s"%self.grid)
-        logger.debug("machine=%s"%self.machine)
+        logger.debug("filename=%s", self.filename)
+        logger.debug("add=%s", self.add)
+        logger.debug("query=%s", self.query)
+        logger.debug("model=%s", self.model)
+        logger.debug("setby=%s", self.setby)
+        logger.debug("grid=%s", self.grid)
+        logger.debug("machine=%s", self.machine)
 
         if self.add and self.query:
             return False
@@ -291,38 +189,131 @@ class Manage_Pes:
     def usage(self):
         sys.stdout.write(usagetext)
 
+    def getMatches(self, pesxml, grid=None, mach=None, pesize=None,
+                   compset=None):
+        gridnodes = pesxml.get_nodes(nodename="grid")
+        matchnodes = []
+        for gridnode in gridnodes:
+            gridname = gridnode.get("name")
+            machnode = gridnode.find("mach")
+            machname = machnode.get("name")
+            pesnode = machnode.find("pes")
+            pesizename = pesnode.get("pesize")
+            compsetname = pesnode.get("compset")
+            logger.debug("grid: %s\n\tmach: %s\n\tpesize: %s\n\tcompset: %s\n",
+                         gridname, machname, pesizename, compsetname)
+            # check if node matches given values
+            if (grid is not None and grid != "any" and
+                re.search(grid, gridname) is None):
+                continue
+            if (mach is not None and mach != "any" and
+                re.search(mach, machname) is None):
+                continue
+            if (compset is not None and compset != "any" and
+                re.search(compset, compsetname) is None):
+                continue
+            if (pesize is not None and pesize != "any" and
+                re.search(pesize, pesizename) is None):
+                continue
+
+            matchnodes.append(gridnode)
+        return matchnodes
+
+    def checkFile(self, pesxml):
+        gridnodes = pesxml.get_nodes(nodename="grid")
+        if len(gridnodes) == 0:
+            logger.critical(' xml file %s has no <grid> entry\n', self.filename)
+            sys.exit(1)
+        if len(gridnodes) > 1:
+            logger.critical(' xml file %s has multiple <grid> entries.'
+                            ' Not supported yet\n', self.filename)
+            sys.exit(1)
+
+        for gridnode in gridnodes:
+            gridname = gridnode.get("name")
+            if gridname is None:
+                logger.critical(' xml file %s has no <grid name="">'
+                                ' attribute \n', self.filename)
+                sys.exit(1)
+
+            machnode = gridnode.find("mach")
+            if machnode is None:
+                logger.critical(' xml file %s has no <grid><mach> entry\n',
+                                self.filename)
+                sys.exit(1)
+
+            machname = machnode.get("name")
+            if machname is None:
+                logger.critical(' xml file %s has no <mach name=""> '
+                                'attribute\n', self.filename)
+                sys.exit(1)
+
+            pesnode = machnode.find("pes")
+            if pesnode is None:
+                logger.critical(' xml file %s has no <grid><mach><pes> '
+                                'entry\n', self.filename)
+                sys.exit(1)
+
+            pesizename = pesnode.get("pesize")
+            if pesizename is None:
+                logger.critical(' xml file %s has no <pes pesize=""> '
+                                'attribute\n', self.filename)
+                sys.exit(1)
+
+            compsetname = pesnode.get("compset")
+            if compsetname is None:
+                logger.critical(' xml file %s has no <pes compsetname=""> '
+                                'attribute\n', self.filename)
+                sys.exit(1)
+
+            logger.debug("grid: %s\n\tmach: %s\n\tpesize: %s\n\tcompset: %s\n",
+                         gridname, machname, pesizename, compsetname)
+            return (gridname, machname, pesizename, compsetname)
+
     def addPes(self):
         """
         Add a new pe-layout for a target machine and grid.
         """
         filesxml = Files()
-        self.compsetfile = None
-        self.compsetfile = filesxml.get_value("COMPSETS_SPEC_FILE",
-                        attribute = {"component":self.setby})
+        compsetfile = None
+        compsetfile = filesxml.get_value("COMPSETS_SPEC_FILE",
+                                    attribute={"component":self.setby})
+        pesxmlfile = filesxml.get_value("PES_SPEC_FILE",
+                                    attribute={"component":self.setby})
+        # Try to collapse any '../' in filenames
+        # cosmetic only, don't worry if it breaks
+        try:
+            import posixpath
+            p1 = posixpath.normpath(compsetfile)
+            p2 = posixpath.normpath(pesxmlfile)
+            compsetfile = p1
+            pesxmlfile = p2
+        except Exception, e:
+            pass
 
         # Read in given xml file
         if not os.path.isfile(self.filename):
-            logger.critical(" File %s not found" % self.filename)
+            logger.critical(" File %s not found", self.filename)
             sys.exit(1)
 
-        self.newxml = PesXML(infile=self.filename, component=self.setby)
+        newxml = Pes(infile=self.filename)
 
-        gridname, machname, pesizename, compsetname = self.newxml.checkFile()
+        gridname, machname, pesizename, compsetname = self.checkFile(newxml)
 
         # Is there already an entry with matching grid, machine, compset and
         # pesize?
         # If so, query if the new settings should replace the current ones
         # If not - just add the new settings
-        self.pesxml = PesXML(component=self.setby)
+        pesxml = Pes(infile=pesxmlfile)
         sys.stdout.write("------------------------------------------- \n")
         sys.stdout.write(" Pes set by     : %s \n"
-                         % self.pesxml.filename)
-        sys.stdout.write(" Compsets set by: %s \n" % self.compsetfile)
+                         % pesxmlfile)
+        sys.stdout.write(" Compsets set by: %s \n" % compsetfile)
         sys.stdout.write("------------------------------------------- \n\n")
-        matches = self.pesxml.getMatches(grid=gridname, mach=machname,
-                                         compset=compsetname)
-        newmatch = self.newxml.getMatches(grid=gridname, mach=machname,
-                                          compset=compsetname)[0]
+        matches = self.getMatches(pesxml, grid=gridname, mach=machname,
+                                  compset=compsetname)
+        newmatch = self.getMatches(newxml, grid=gridname,
+                                   mach=machname, compset=compsetname)[0]
 
         if len(matches) > 0:
             match = matches[0]
@@ -332,18 +323,18 @@ class Manage_Pes:
             sys.stdout.write(" The new values would be\n")
             self.printMatches([newmatch])
             override = raw_input(" Do you want to override the match with"
-                              " your pe-layout [yes/no] (default is no)\n")
+                                 " your pe-layout [yes/no] (default is no)\n")
             if override.lower() != "y" and override.lower() != "yes":
                 return
 
             # remove old node
-            self.pesxml.root.remove(match)
+            pesxml.root.remove(match)
 
         # add new node
-        self.pesxml.add_child(newmatch)
+        pesxml.add_child(newmatch)
 
 
-        newfilename = "%s-%s" % (self.pesxml.filename,
+        newfilename = "%s-%s" % (pesxml.filename,
                         datetime.datetime.now().strftime("%d%b%Y-%H%M%S"))
 
         sys.stdout.write("\n now writing the new pes list to %s\n" %
@@ -354,9 +345,10 @@ class Manage_Pes:
                          "changes, move \n")
         sys.stdout.write("%s to \n" % newfilename)
         sys.stdout.write("as in with the unix command: \n")
-        sys.stdout.write("mv %s %s\n\n" % (newfilename, self.pesxml.filename))
+        sys.stdout.write("mv %s %s\n\n" % (newfilename, pesxml.filename))
 
-        self.pesxml.write(newfilename)
+        pesxml.write(newfilename)
+
 
     def queryPes(self):
         """
@@ -371,23 +363,26 @@ class Manage_Pes:
         else:
             comps = [self.setby]
         for comp in comps:
-            self.compsetfile = None
-            self.compsetfile = filesxml.get_value("COMPSETS_SPEC_FILE",
-                                                  attribute={"component":comp})
-            self.pesxml = PesXML(component=comp)
-            if not os.path.isfile(self.pesxml.filename):
-                logger.warning("File %s not found" % self.pesxml.filename)
+            compsetfile = None
+            compsetfile = filesxml.get_value("COMPSETS_SPEC_FILE",
+                                             attribute={"component":comp})
+            pesxmlfile = filesxml.get_value("PES_SPEC_FILE",
+                                            attribute={"component":comp})
+            pesxml = Pes(infile=pesxmlfile)
+            if not os.path.isfile(pesxmlfile):
+                logger.warning("File %s not found", pesxmlfile)
                 continue
-            if not os.path.isfile(self.compsetfile):
-                logger.warning("File %s not found" % self.compsetfile)
+            if not os.path.isfile(compsetfile):
+                logger.warning("File %s not found", compsetfile)
                 continue
 
             sys.stdout.write("------------------------------------------- \n")
             sys.stdout.write(" Pes set by     : %s \n"
-                             % self.pesxml.filename)
-            sys.stdout.write(" Compsets set by: %s \n" % self.compsetfile)
+                             % pesxmlfile)
+            sys.stdout.write(" Compsets set by: %s \n" % compsetfile)
             sys.stdout.write("------------------------------------------- \n\n")
-            matches = self.pesxml.getMatches(grid=self.grid, mach=self.machine)
+            matches = self.getMatches(pesxml, grid=self.grid,
+                                      mach=self.machine)
             self.printMatches(matches)
 
         logger.debug("exiting queryPes")
@@ -443,12 +438,6 @@ def __main_func(description):
         manager.queryPes()
 
     return 0
-
-
-
-
-logger = logging.getLogger(__name__)
-
 
 if __name__ == "__main__":
     __main_func(__doc__)
