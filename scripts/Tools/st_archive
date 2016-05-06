@@ -1,70 +1,13 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python2
 
-#-----------------------------------------------------------------------------------------------
-# st_archive - script to handle short term archiving
-#-----------------------------------------------------------------------------------------------
+"""
 
-use strict;
-use Cwd;
-use English;
-use Getopt::Long;
-use IO::File;
-use IO::Handle;
-use XML::LibXML;
-use Data::Dumper;
-use POSIX qw(strftime);
-use File::Path;
-use File::Basename;
-use File::Copy;
-use File::Find;
-use File::stat;
-use File::Glob;
+Script to controls short term archiving tasks after the model run is
+successfully completed.  It is called after the case.run script
+successfully completes and the DOUT_S variable is set to TRUE. It
+can also be run as a stand-alone script.
 
-# the st_archive is run in the CASEROOT
-my $cimeroot  = `./xmlquery CIMEROOT  -value`;
-my @dirs = ("$cimeroot/utils/perl5lib" );
-
-unshift @INC, @dirs;
-require Config::SetupTools;
-require Log::Log4perl;
-require Text::Glob;
-require Number::Compare;
-require File::Find::Rule;
-
-# Globals
-my %opts = (loglevel=>"INFO");
-my $compmap;
-my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
-Log::Log4perl->easy_init({level=>$level,
-			  layout=>'%m%n'});
-
-my $logger = Log::Log4perl::get_logger();
-
-#-----------------------------------------------------------------------------------------------
-# Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
-# descriptions to be printed to STDOUT before the error messages start.
-#-----------------------------------------------------------------------------------------------
-
-*STDOUT->autoflush();
-
-# the global config hash holds all valid XML variables necessary for the short term st_archive to function
-my %config = SetupTools::getAllResolved();
-
-#-----------------------------------------------------------------------------------------------
-# print out the command line usage
-#-----------------------------------------------------------------------------------------------
-sub usage {
-    my $usgstatement;
-    $usgstatement = <<EOF;
-
-SYNOPSIS
-
-    Controls short term archiving tasks after the model run is
-    successfully completed.  It is called after the case.run script
-    successfully completes and the DOUT_S variable is set to TRUE. It
-    can also be run as a stand-alone script.
-
-CESM OUTPUT FILE NAMING CONVENTIONS
+CESM OUTPUT FILE NAMING CONVENTIONS:
 
     The st_archive script adheres to the CESM model file naming
     conventions defined in
@@ -73,17 +16,17 @@ CESM OUTPUT FILE NAMING CONVENTIONS
 ENV_ARCHIVE.XML SCHEMA AND DOCUMENT TYPE DEFINITION (DTD)
 
     The st_archive script depends on the env_archive.xml file in the
-    \$CASEROOT directory created by create_newcase. The
-    env_archive.xml file can be edited by hand in a standard text
-    editor to provide directives for controlling the behavior of the
-    short term archiver.
+    $CASEROOT directory created by create_newcase. The env_archive.xml
+    file can be edited by hand in a standard text editor to provide
+    directives for controlling the behavior of the short term
+    archiver.
 
     You can view the env_archive.xml file and check the XML validity
-    after editing by running "\$CASEROOT/st_archive -input".
+    after editing by running "$CASEROOT/st_archive -input".
 
     The attributes in the <comp_archive_spec> XML tag definitions are
-    used to define how the files in the \$RUNDIR are distributed into
-    corresponding subdirectories in the \$DOUT_S_ROOT archive
+    used to define how the files in the $RUNDIR are distributed into
+    corresponding subdirectories in the $DOUT_S_ROOT archive
     location and whether or not copies of files with specified
     suffices are preserved in the RUNDIR in addition to being copied
     to the DOUT_S_ROOT archive locations.
@@ -92,14 +35,14 @@ ENV_ARCHIVE.XML SCHEMA AND DOCUMENT TYPE DEFINITION (DTD)
     nested <file_extension> elements included as part of a well formed
     XML <comp_archive_spec> markup tag defintion.
 
-    When making changes to the env_archive.xml file in a \$CASEROOT,
-    it is recommended that the XML be validated against the xml schema
+    When making changes to the env_archive.xml file in a $CASEROOT, it
+    is recommended that the XML be validated against the xml schema
     defintion document in the
-    \$CIMEROOT/cime_config/xml_schemas/archive.xsd. For systems that
+    $CIMEROOT/cime_config/xml_schemas/archive.xsd. For systems that
     have the xmllint utility installed, execute the following:
 
-    > cd \$CASEROOT
-    > xmllint -schema \$CIMEROOT/cime_config/xml_schemas/archive.xsd env_archive.xml
+    > cd $CASEROOT
+    > xmllint -schema $CIMEROOT/cime_config/xml_schemas/archive.xsd env_archive.xml
 
     If the env_archive.xml file contains valid XML code, then output
     from this command should be a complete listing of the
@@ -125,14 +68,15 @@ ENV_ARCHIVE.XML SCHEMA AND DOCUMENT TYPE DEFINITION (DTD)
       Model component name (note: cam\\* and clm\\? are
       historical for CAM and CLM model components).
 
-        <rootdir>[string] (rest|cpl|dart|atm|lnd|rof|ice|ocn|glc|wav)</rootdir>
+        <rootdir>[string]</rootdir> 
         Component root directory name to be created under the
-        $\DOUT_S_ROOT location.  These may not correspond to the model
-        component name.
+        $DOUT_S_ROOT location.  These may not correspond to the model
+        component name. For cesm, [string] can have the values of
+        (rest|cpl|dart|atm|lnd|rof|ice|ocn|glc|wav).
 
         <files> <file_extension regex_suffix="[regular expression string]">
 	Perl regular expression specification for "globbing" filenames
-	for matching. Run the command "\$CASEROOT/st_archive -input"
+	for matching. Run the command "$CASEROOT/st_archive -input"
 	command to see the list of valid suffices. If the suffix
 	begins with a "." then all files matching *.(regex_suffix) are
 	included in the globbing. If the suffix begins with a
@@ -141,103 +85,112 @@ ENV_ARCHIVE.XML SCHEMA AND DOCUMENT TYPE DEFINITION (DTD)
 
             <subdir>[string] (logs|rest|hist|init|diag)</subdir>
 	    subdirectory name to be created under the
-	    \$DOUT_S_ROOT/rootdir location
+	    $DOUT_S_ROOT/rootdir location
 
 	    <keep_last_in_rundir>[string] (true|false)</keep_last_in_rundir>
-            Option to specify whether or not to keep the most
-            recent copy of the file with matching suffix in the RUNDIR
-            in addition to copying it to the
-            \$DOUT_S_ROOT/rootdir/subdir location.
+            Option to specify whether or not to keep the most recent
+            copy of the file with matching suffix in the RUNDIR in
+            addition to copying it to the $DOUT_S_ROOT/rootdir/subdir
+            location.
 
+ADDITIONAL XML VARIABLES USED BY THE SHORT TERM ARCHIVER 
 
-ADDITIONAL XML / ENVIRONMENT VARIABLES USED BY THE SHORT TERM ARCHIVER
-THAT ARE INCLUDED IN THE ENV_RUN.XML FILE
+    The following xml variables in $CASEROOT/env_run.xml control the
+    behavior of the short term archiver.  They can be queried using
+    the xmlquery tool and modified using the xmlchange tool.
 
-    The following xml variables read from the \$CASEROOT/env_run.xml
-    file are used to control the behavior of the short term archiver.
-    They can be queried using the xmlquery tool and modified using
-    the xmlchange tool.
-
-    DOUT_S - [boolean] Checked in \$CASE.run script. If TRUE
-    (default), then st_archive script called at the end of a job.
+    DOUT_S - [boolean] (default TRUE) Checked in $CASE.run script. If
+    TRUE then st_archive script called at the end of a job.
 
     DOUT_S_ROOT - [string] Valid directory path to stage short term
     archive files.
 
-    DOUT_S_SAVE_INTERIM_RESTART_FILES - [boolean] If TRUE (default
-    FALSE), perform short term archiving on all interim restart files,
-    not just those at the end of the run. By default, this value is
-    FALSE.  The restart files are saved under the specific component
-    directory of \$DOUT_S_ROOT/[comp_archive_spec/rootdir]/rest in
-    addition to the top-level \$DOUT_S_ROOT/rest/[dname] directory.
-    Interim restart files are created using the \$REST_N and
-    \$REST_OPTION variables.  The associated rpointer files are not
-    saved with the interim restart files and need to be manually
-    generated in order for these restart files to be used to restart a
-    run. This is for expert users ONLY and requires expert
-    knowledge. We will not document this further in this guide.
+    DOUT_S_SAVE_INTERIM_RESTART_FILES - [boolean] (default FALSE). If
+    TRUE, then perform short term archiving on all interim restart
+    files, not just those at the end of the run. The restart files
+    are saved under the specific component directory of
+    $DOUT_S_ROOT/[comp_archive_spec/rootdir]/rest in addition to the
+    top-level $DOUT_S_ROOT/rest/[datename] directory.  Interim restart
+    files are created using the $REST_N and $REST_OPTION variables.
+    The associated rpointer files are not saved with the interim
+    restart files and need to be manually generated in order for these
+    restart files to be used to restart a run. This is for expert
+    users ONLY and requires expert knowledge. We will not document
+    this further in this guide.
 
-USAGE
-    st_archive [options]
+"""
 
-OPTIONS
-    -help|-h     Print usage to STDOUT.
-
-    -input|-in   List out the contents of the env_archive.xml datafile in a
-                 friendly format and check the env_archive.xml file for
-                 validity.
-
-    -output|-out List out the contents of the archive directory.
-
-    -undo        move all the files from the \$DOUT_S_ROOT back into the \$RUNDIR
-
-    -loglevel    set level of output from this script DEBUG, INFO, WARN, ERROR, FATAL (default INFO)
+from standard_script_setup import *
+from shutil           import copyfile
+from CIME.utils       import expect, get_model
+from CIME.case        import Case
+from CIME.XML.archive import Archive
 
 
-EOF
-#" added for emacs perl mode parsing
+from os.path import isfile, isdir, join, basename, exists
+from os import listdir, mkdir, makedirs 
+import shutil
+import stat
+import fnmatch
+import glob
+import re
 
-    $logger->info($usgstatement);
-    exit(1);
-}
+logger = logging.getLogger(__name__)
 
-#-----------------------------------------------------------------------------------------------
-# Parse command-line options.
-#-----------------------------------------------------------------------------------------------
-sub getOptions
-{
-    GetOptions(
-	"h|help"        => \$opts{'help'},
-        "in|input"      => \$opts{'input'},
-        "out|output"    => \$opts{'output'},
-	"undo"          => \$opts{'undo'},
-	"loglevel"      => \$opts{loglevel}
-    );
-    usage() if $opts{'help'};
-}
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
 
-#-----------------------------------------------------------------------------------------------
-# check the run environment and create the associated directories
-#-----------------------------------------------------------------------------------------------
-sub checkRun
-{
-    my $statusFile = shift;
-    my $runComplete = 0;
+    cime_model = CIME.utils.get_model()
+    
+    parser = argparse.ArgumentParser(
+        description=description,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
 
-    $logger->debug("In checkRun...");
+    CIME.utils.setup_standard_logging_options(parser)
 
+    parser.add_argument("--input", "-in", action="store_true",
+                        help="List out the contents of the env_archive.xml datafile in a"
+                        "friendly format and check the env_archive.xml file for validity.")
+
+    parser.add_argument("--output", "-out", action="store_true",
+                        help="List out the contents of the archive directory.")
+
+    parser.add_argument("--undo", "-undo", action="store_true",
+                        help="move all the files from the $DOUT_S_ROOT back into the $RUNDIR")
+
+    args = parser.parse_args()
+
+    CIME.utils.handle_standard_logging_options(args)
+
+    return args.input, args.output, args.undo
+
+###############################################################################
+def checkRun(case):
+###############################################################################
+
+    # check the run environment and create the associated directories
+    logger.debug("In checkRun...")
+
+    dout_s_root = case.get_value("DOUT_S_ROOT")
+    dout_s_save_interim = case.get_value("DOUT_S_SAVE_INTERIM_RESTART_FILES")
+    rest_n = int(case.get_value("REST_N"))
+    stop_n = int(case.get_value("STOP_N"))
+    caseroot = case.get_value("CASEROOT")
+    
     # check if DOUT_S_ROOT is defined
-    if( !defined $config{'DOUT_S_ROOT'} || uc($config{'DOUT_S_ROOT'}) eq 'UNSET' ) {
-	$logger->logdie("st_archive: Error - XML variable DOUT_S_ROOT is required for root location of short-term achiver. Exiting...");
-    }
-
-    # check if DOUT_S_ROOT dir needs to be created (or not) and if it can be read - creation permissions defaults to user's umask setting
-
-    # my $config{'DOUT_S_ROOT'} = dirname( $config{'DOUT_S_ROOT'} );
-    mkpath( $config{'DOUT_S_ROOT'}, {verbose => 1, error => \my $err_list} ) unless ( -d $config{'DOUT_S_ROOT'} );
-    chdir( $config{'DOUT_S_ROOT'} ) or $logger->logdie ("st_archive: Error - cannot access directory $config{'DOUT_S_ROOT'} with error $err_list. Exiting...");
+    if dout_s_root is None or dout_s_root == 'UNSET': 
+        expect(False, 
+               "XML variable DOUT_S_ROOT is required for root location of short-term achiver")
+    
+    # check if DOUT_S_ROOT dir needs to be created (or not) 
+    # creation permissions defaults to user's umask setting
+    if not isdir(dout_s_root):
+        os.mkdir(dout_s_root)
 
     # check if interim restart files should be saved - if not, print a warning
+<<<<<<< HEAD
     if( ( uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) eq 'FALSE' ||
 	  uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) eq 'UNSET' )  &&
 	($config{'REST_N'} < $config{'STOP_N'}) ) {
@@ -300,246 +253,182 @@ EOF
 
     my $elname = $rootel->getName();
     $logger->info("Root element is a $elname and it contains ...");
+=======
+    if dout_s_save_interim == "FALSE" or dout_s_save_interim == "UNSET":
+        if rest_n < stop_n:
+            logger.warn("Restart files from end of run will be saved, interim restart files will be deleted")
+
+    # check if the run completed successfully
+    statusFile = "CaseStatus"
+    runComplete = False
+    if isfile(join(caseroot, statusFile)):
+        if 'run SUCCESSFUL' in open(join(caseroot, statusFile)).read():
+            runComplete = True
+
+    return runComplete
+
+###############################################################################
+def listXMLin(case, archive):
+###############################################################################
+
+    # list archive XML file contents
+    logger.debug("In listXMLin...")
+
+    # FIXME: print the env_archive.xml brief XML tag schema:"
+>>>>>>> first set of changes for pythonizing short term archiving
 
     # list out the components nodes
-    my @comps = ($xml->findnodes('//comp_archive_spec'));
-    foreach my $comp (@comps) {
+    for archive_spec_node in archive.get_nodes("comp_archive_spec"):
+	comp = archive_spec_node.attrib['name']
+        rootdir_node = archive.get_node("rootdir", root=archive_spec_node)
+        rootdir = rootdir_node.text
+        ninst = case.get_value("NINST_" + rootdir.upper())   
+        multi = ninst > 1
 
-	my $compname = $comp->getAttribute('name');
-	my $rootdir = $comp->findvalue('./rootdir');
-	my $ninst = getcompninst($compname);
-	my $multi = "false";
-	if($ninst > 1){
-	    $multi = "true";
-	}
+        logger.info("\n============================================================================")
+	logger.info("component name = %s " %comp)
+	logger.info("rootdir = %s" %rootdir)
+	logger.info("multiple-instance support = %s " %multi)
 
+        casename = case.get_value("CASENAME")
+        dout_s_root = case.get_value("DOUT_S_ROOT")
 
-	$logger->info("\n============================================================================");
-	$logger->info("Component name = $compname");
-	$logger->info("rootdir = $rootdir");
-	$logger->info("multiple-instance support = $multi");
+        for file_extension in archive.get_nodes("file_extension", root=archive_spec_node):
+	    suffix = file_extension.attrib['regex_suffix']
+	    subdir = archive.get_node("subdir", root=file_extension).text
+	    keep_last_in_rundir = archive.get_node("keep_last_in_rundir", root=file_extension).text
 
-	my @files = $comp->findnodes('./files/file_extension');
-        foreach my $file (@files)
-	{
-	    my $suffix = $file->getAttribute('regex_suffix');
-	    my $subdir = $file->findvalue('./subdir');
-	    my $keep_last_in_rundir = $file->findvalue('./keep_last_in_rundir');
+	    logger.info("\n  ***** File extension specification")
+	    logger.info("  regex_suffix = %s " %suffix)
+	    logger.info("  subdir = %s " %(join(dout_s_root, rootdir, subdir)))
+	    logger.info("  keep_last_in_rundir %s = " %keep_last_in_rundir)
 
-	    $logger->info("\n***** File extension specification");
-	    $logger->info("  regex_suffix = $suffix");
-	    $logger->info("  subdir = $config{'DOUT_S_ROOT'}/$config{'CASENAME'}$rootdir/$subdir");
-	    $logger->info("  keep_last_in_rundir = $keep_last_in_rundir");
-	}
-    }
-}
+###############################################################################
+def listArchive(dirname):
+###############################################################################
 
-#-----------------------------------------------------------------------------------------------
-# get the date name from the most current coupler restart file
-#-----------------------------------------------------------------------------------------------
-sub getDname
-{
-    $logger->debug("In getDname...");
+    # recursive file tree traverse function to print out the archive
 
-    my $DIR = $config{'RUNDIR'};
-    opendir( my $dh, $DIR ) or $logger->logdie("st_archive: Error - cannot open directory $DIR. Exiting...");
+    logger.debug("In listArchive: %s ..." %dirname)
+    logger.info("%s " %dirname);
 
-    my @files = sort( grep(m/^*\.cpl\.r.(.*).nc$/, readdir $dh) );
+    if isdir(dirname):
+        list_dirs = os.walk(dirname) 
+        for root, dirs, files in list_dirs: 
+            for f in files: 
+                print join(root, f) 
+        return
 
-    my @names = split(/\./,$files[$#files]);
+###############################################################################
+def getDatename(case):
+###############################################################################
 
-    my $dname = '';
-    if (@names) {
-	$dname = $names[-2];
-    } else {
-	$logger->logdie("st_archive: Error - cannot find a cpl.r.*.nc file in directory $DIR. Exiting...");
-    }
-    $logger->debug("Cpl dName: $dname");
-    return $dname;
-}
+    # get the date name from the most current coupler restart file
+    logger.debug("In getDatename...")
 
-#-----------------------------------------------------------------------------------------------
-# recursive file tree traverse function to print out the archive
-#-----------------------------------------------------------------------------------------------
-sub listArchive
-{
-    my ($thing) = @_;
-    $logger->debug("In listArchive: $thing ...");
+    rundir = case.get_value("RUNDIR")
+    expect(isdir(rundir),
+           "Cannot open directory %s " %rundir)
 
-    $logger->info("$thing ");
-    return if not -d $thing;
-    opendir my $dh, $thing or die;
-    while (my $sub = readdir $dh) {
-	next if $sub eq '.' or $sub eq '..';
- 	listArchive( "$thing/$sub" );
-    }
-    closedir $dh;
-    return;
-}
+    files = sorted(glob.glob(rundir + '/*cpl.r*.nc'))
+    rfile = files[-1] # last element
+    names = rfile.split('.') 
 
-#-----------------------------------------------------------------------------------------------
-# get the NINST_[comp] from the config hash to determine if multiple instances are supported
-#-----------------------------------------------------------------------------------------------
-sub getcompninst
-{
-    my ($comp) = @_;
+    if names:
+	datename = names[-2]
+        logger.debug("Cpl dateName: %s " %datename)
+        return datename
+    else:
+        expect(False,
+               "Cannot find a cpl.r.*.nc file in directory %s " %rundir)
 
-    # the comp variable corresponds to the name attribute of the comp_archive_spec
-    # in the env_archive.xml. Only need the first word of the comp and not the
-    # regex punctuation
-    $comp = (split('\[',$comp))[0];
+###############################################################################
+def moveFiles(case, keep_last_in_rundir, suffix, destdir, restdir, datename, 
+              runfiles ):
+##############################################################################
 
-    # this loop is only executed the first time the subroutine is called
-    # in order to load the compmap hash with all the actual model names
-    # for a given component
-    if(! defined $compmap){
-	foreach( qw(ATM CPL OCN WAV GLC ICE ROF LND )){
-	    if($comp = $config{"COMP_".$_}){
-		$compmap->{$comp} = $_;
-	    }
-	}
-    }
+    # moveFiles routine to move files into the DOUT_S_ROOT and check whether or not to preserve a
+    # working copy in the rundir and the rest/datename dir
 
-    # with the compmap hash, look for the NINST value in the global config hash
-    my $ninstname = "NINST_".$compmap->{$comp};
-    $logger->debug("Looking for $ninstname in config");
-    if(defined $config{$ninstname}){
-	return $config{$ninstname};
-    }else{
-	return 1;
-    }
-}
+    logger.debug("In moveFiles...")
 
-
-#-----------------------------------------------------------------------------------------------
-# undoArchive routine loops through the DOUT_S_ROOT getting the list of archived files
-# and then moves the file back into the RUNDIR.
-#-----------------------------------------------------------------------------------------------
-sub undoArchive
-{
-    my @archivefiles;
-    find( sub {
-	return unless -f;
-	push @archivefiles, $File::Find::name;
-	  },
-	  $config{'DOUT_S_ROOT'});
-
-    my $numArchivefiles = @archivefiles;
-    if( $numArchivefiles > 0 ) {
-	foreach my $file (@archivefiles) {
-	    move( $file, $config{'RUNDIR'} );
-	}
-    }
-}
-
-#-----------------------------------------------------------------------------------------------
-# moveFiles routine to move files into the DOUT_S_ROOT and check whether or not to preserve a
-# working copy in the rundir and the rest/dname dir
-#-----------------------------------------------------------------------------------------------
-sub moveFiles
-{
-    my $keep_last_in_rundir = shift;
-    my $suffix = shift;
-    my $destdir = shift;
-    my $restdir = shift;
-    my $dname = shift;
-    my $runfilesref = shift;
-
-    my @runfiles = @{$runfilesref};
-
-    my %time = '';
-    my $restFile = '';
-    $logger->debug("In moveFiles...");
-
-    # make sure operating from within the RUNDIR
-    chdir( $config{'RUNDIR'} );
+    rundir = case.get_value("RUNDIR")
 
     # filter the file list in the rundir to match the suffix value from the xml
-    my @files = sort( grep(/${suffix}/, @runfiles));
+    p = re.compile(suffix)
+    files = [f for f in os.listdir(rundir) if p.match(f)]
+    numfiles = len(files)
 
     # get the name of the most recent file in the $source list
     # sorting on the date string in the filename
-    my $numfiles = @files;
-    if( $numfiles > 0 ) {
+    if numfiles > 0:
 
-	# get the most recent copy to keep in the RUNDIR
-	my $keepFile = $files[$#files];
-	if( $keep_last_in_rundir eq 'true' ) {
+        # get the most recent copy to keep in the RUNDIR
+	keepFile = files[-1]
 
-	    # copy the last file into the destination dir or the restdir
-	    $logger->debug("keepFile = $keepFile");
+	if keep_last_in_rundir:
+            print "I AM HERE"
+            # copy the last file into the destination dir or the restdir
+	    logger.debug("keepFile = %s " %keepFile)
 
-	    copy( $keepFile, $destdir );
+            shutil.copy(join(rundir,keepfile),
+                        join(restdir,keepfile))
 
-	    foreach my $file (@files) {
-		if( $file ne $keepFile && -f $file ) {
-		    # move all the remaining files except the last
-		    # file into the destination dir
-		    move( $file, $destdir );
-		}
-	    }
-	} else {
-	    foreach my $file (@files) {
-		move( $file, $destdir );
-	    }
-	}
-    }
+            # move all the remaining files except the last file into
+            # the destination dir
+	    for filename in files:
+		if filename != keepFile and isfile(filename):
+		    shutil.move(join(rundir,filename), 
+                                join(destdir,filename))
+        else:
+	    for filename in files:
+                shutil.move(join(rundir,filename), 
+                            join(destdir,filename))
 
-    # splice the filename out of the runfiles array so it's not revisited
-    # should only match on one filename since they must be unique filenames in the rundir
-    foreach my $file (@files) {
-	if ( -f $file ) {
-	    my @index = grep { $runfiles[$_] eq $file } 0..$#runfiles;
-	    splice @runfiles, $index[0], 1;
-	}
-    }
+        # remove filename out of the runfiles array so it's not revisited
+        # should only match on one filename since they must be unique filenames in the rundir
+        for filename in files:
+            runfiles.remove(filename)
 
-    # also get the file that matches the dname for this suffix and
-    # copy to the restdir for a complete restart set
-    my @restFiles = grep(/${dname}/, @files);
-    if( $#restFiles == 0 ) {
-	my @path = split /\//, $restFiles[$#restFiles];
-	if ( $#path >= 0 ) {
-	    $restFile = $path[$#path];
-	    if ( -f $destdir . "/" . $restFile ) {
-		copy( $destdir . "/" . $restFile, $restdir . "/" . $restFile );
-	    }
-	}
-    } elsif ( $#restFiles > 0 ) {
-	$logger->info("st_archive: multiple restart files found for suffix=$suffix");
-    }
-    return $numfiles, \@runfiles;
-}
+        # also get the file that matches the datename for this suffix and
+        # copy to the restdir for a complete restart set
+        restFiles = fnmatch.filter(files, datename)
+        if len(restFiles) == 0: 
+            restFile = basename(restFiles[-1])
+            if isfile(join(destdir,restFile)):
+		shutil.copy(join(destdir,restFile),
+                            join(restdir,restFile))
+        elif len(RestFiles) > 0:
+            expect(False,
+                  "Multiple restart files found for suffix %s " %suffix)
 
-#-----------------------------------------------------------------------------------------------
-# short term archive routine
-#-----------------------------------------------------------------------------------------------
-sub archiveProcess
-{
-    my ($XMLin) = shift;
-    my $dname = shift;
-    my $runfilesref = shift;
+    return numfiles, runfiles
 
-    my @runfiles = @{$runfilesref};
+###############################################################################
+def archiveProcess(case, archive, datename, runfiles):
+###############################################################################
 
-    $logger->debug("In archiveProcess...");
-    my %fExt = ();
-    my %comp = ();
-    my ($source, $destdir, $linkdir, $outfile) = '';
+    # short term archive routine
+
+    logger.debug("In archiveProcess...")
+
+    dout_s_root = case.get_value("DOUT_S_ROOT")
+    rundir = case.get_value("RUNDIR")
+    casename = case.get_value("CASE")
 
     # create the restdir for a complete restart set with the coupler extension
-    my $restdir = qq($config{'DOUT_S_ROOT'}/rest/$dname);
-    mkpath( $restdir, {verbose => 1, error => \my $err_list} )  unless ( -d $restdir );
-    chdir ($restdir ) or $logger->logdie("st_archive: Error - cannot access directory $restdir with error $err_list. Exiting...");
+    restdir = join(dout_s_root, "rest", datename)
+    if not exists(restdir):
+       makedirs(restdir)
 
     # copy rpointer files for all components to the $restdir
-    chdir ($config{'RUNDIR'});
-    my @rpointers = <$config{'RUNDIR'}/rpointer.*>;
-    foreach my $rpointer (@rpointers) {
-	copy( $rpointer, $restdir ) or $logger->logdie("st_archive: Error - cannot copy $rpointer file to directory $restdir. Exiting...");
-    }
+    all_to_copy = [item for item in glob.glob(rundir + "/*")]
+    for item in all_to_copy:
+        if isfile(item):
+            shutil.copy(item, join(restdir, basename(item)))
 
     # main loop through the comp_archive_spec XML elements handling the associated files accordingly
+<<<<<<< HEAD
     my @xmlcomps = ($XMLin->findnodes('//comp_archive_spec'));
     foreach my $xmlcomp (@xmlcomps) {
 	my $str = $xmlcomp->getAttribute('name');
@@ -673,4 +562,105 @@ sub main
 
 main(@ARGV) unless caller;
 
+=======
+    for archive_spec_node in archive.get_nodes("comp_archive_spec"):
+	comp = archive_spec_node.attrib['name']
+        rootdir_node = archive.get_node("rootdir", root=archive_spec_node)
+        rootdir = rootdir_node.text
+
+        # get the number of instances running for each component 
+        ninst = case.get_value("NINST_" + rootdir.upper())   
+
+        # loop through the file extensions for this component to copy
+        # over files with those matching extensions to the ARCHIVE_DIR
+        # locations
+        for file_extension in archive.get_nodes("file_extension", root=archive_spec_node):
+	    suffix = file_extension.attrib['regex_suffix']
+	    subdir = archive.get_node("subdir", root=file_extension).text
+	    keep_last_in_rundir = archive.get_node("keep_last_in_rundir", root=file_extension).text
+
+            # setup the subdir for this component
+	    destdir = join(dout_s_root, rootdir, subdir)
+            if not os.path.exists(destdir):
+                os.makedirs(destdir)
+
+            # main loop to move files
+            for i in range(1,ninst+1):
+                ninst_suffix = ''
+                if ninst > 1:
+		    ninst_suffix = "_" + "%04d" %i
+                    
+                # build up the new suffix based on whether the XML
+                # regex_suffix starts with a "."
+                newSuffix = suffix
+                if suffix[0:1] == ".":
+                    if subdir == 'logs':
+                        # component logs are handled a little differently
+                        newSuffix = rootdir + ninst_suffix + suffix
+                    else:
+                        newSuffix = casename + '.' + comp + ninst_suffix + suffix
+
+                # move the Files to the correct sub-directory in dout_s_root
+                numfiles, runfiles = moveFiles( case, keep_last_in_rundir.lower, newSuffix,
+                                                destdir, restdir, datename, runfiles )
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+
+    input_flag, output_flag, undo_flag = parse_command_line(sys.argv, description)
+
+    case = Case() 
+    archive = Archive()
+
+    caseroot          = case.get_value("CASEROOT")
+    dout_s_root       = case.get_value("DOUT_S_ROOT")
+    rundir            = case.get_value("RUNDIR")
+    dout_save_interim = case.get_value("DOUT_S_SAVE_INTERIM_RESTART_FILES")
+
+    runComplete = checkRun(case)
+
+    # list the input env_archive.xml values
+    if input_flag:
+	listXMLin( case, archive )
+
+    # list the directories in the dout_s_root directory
+    elif output_flag:
+        if runComplete:
+            logger.info("Short-term archive listing of %s " %dout_s_root)
+            listArchive(dout_s_root)
+        else:
+            expect(False,
+                   "st_archive: run is not complete")
+
+    # unlink the archive process and move all files in the archive back to rundir
+    elif undo_flag:
+	undoArchive(case)
+
+    # load the runfiles global array with all the files in rundir
+    elif runComplete:
+
+        # get the date name from the most current coupler log file
+	datename  = getDatename(case)
+
+        # determine the files in rundir
+        runfiles = [f for f in listdir(rundir) if isfile(join(rundir, f))]
+
+        # run the archive process
+	archiveProcess( case, archive, datename, runfiles )
+
+        # remove restart duplicate files from the comp/rest and rest/datename directories
+	if dout_save_interim.upper() == 'TRUE':
+	    removeDups( datename )
+
+	logger.info("short term archiving is complete.")
+
+    else:
+        logger.info("based on CaseStatus output, run is either not complete or was not successful")
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func(__doc__)
+>>>>>>> first set of changes for pythonizing short term archiving
 
