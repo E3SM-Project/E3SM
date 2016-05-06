@@ -574,7 +574,7 @@
 
 <machine MACH="blues">
          <DESC>ANL/LCRC Linux Cluster</DESC>
-         <NODENAME_REGEX>blogin</NODENAME_REGEX>
+         <NODENAME_REGEX>(blogin|^b\d)</NODENAME_REGEX>
          <TESTS>acme_integration,acme_developer</TESTS>
          <COMPILERS>gnu,intel</COMPILERS>
          <MPILIBS>mvapich</MPILIBS>
