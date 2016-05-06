@@ -9,14 +9,12 @@ module vertical_gradient_calculator_factory
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_log_mod, only : errMsg => shr_log_errMsg
   use vertical_gradient_calculator_2nd_order, only : vertical_gradient_calculator_2nd_order_type
-  use vertical_gradient_calculator_continuous, only : vertical_gradient_calculator_continuous_type
   use mct_mod
 
   implicit none
   private
 
   public :: create_vertical_gradient_calculator_2nd_order
-  public :: create_vertical_gradient_calculator_continuous
 
   ! The following routines are public just to support unit testing, and shouldn't be
   ! called from production code
@@ -66,54 +64,6 @@ contains
          field = field, topo = topo, elevclass_bounds = elevclass_bounds)
 
   end function create_vertical_gradient_calculator_2nd_order
-
-  !-----------------------------------------------------------------------
-  function create_vertical_gradient_calculator_continuous( &
-       attr_vect, fieldname, toponame, elevclass_names, elevclass_bounds) &
-       result(calculator)
-    !
-    ! !DESCRIPTION:
-    ! Creates and returns a vertical_gradient_calculator_continuous_type object
-    !
-    ! The attribute vector is assumed to have fields named fieldname //
-    ! elevclass_names(1), toponame // elevclass_names(1), etc.
-    !
-    ! !USES:
-    !
-    ! !ARGUMENTS:
-    type(vertical_gradient_calculator_continuous_type) :: calculator  ! function result
-    type(mct_aVect)  , intent(in) :: attr_vect ! attribute vector in which we can find the data
-    character(len=*) , intent(in) :: fieldname ! base name of the field of interest
-    character(len=*) , intent(in) :: toponame  ! base name of the topographic field
-    character(len=*) , intent(in) :: elevclass_names(:) ! strings corresponding to each elevation class
-    ! bounds of each elevation class; this array should have one more element than the
-    ! number of elevation classes, since it contains lower and upper bounds for each
-    ! elevation class
-    real(r8)         , intent(in) :: elevclass_bounds(0:)
-    !
-    ! !LOCAL VARIABLES:
-    integer :: nelev
-    real(r8), allocatable :: field(:,:)
-    real(r8), allocatable :: topo(:,:)
-    type(vertical_gradient_calculator_2nd_order_type) :: calculator_initial_guess
-
-    character(len=*), parameter :: subname = 'create_vertical_gradient_calculator_continuous'
-    !-----------------------------------------------------------------------
-
-    nelev = size(elevclass_names)
-    SHR_ASSERT_ALL((ubound(elevclass_bounds) == (/nelev/)), errMsg(__FILE__, __LINE__))
-
-    call extract_data_from_attr_vect(attr_vect, fieldname, toponame, elevclass_names, &
-         field, topo)
-
-    calculator_initial_guess = vertical_gradient_calculator_2nd_order_type( &
-         field = field, topo = topo, elevclass_bounds = elevclass_bounds)
-
-    calculator = vertical_gradient_calculator_continuous_type( &
-         field = field, topo = topo, elevclass_bounds = elevclass_bounds, &
-         calculator_initial_guess = calculator_initial_guess)
-
-  end function create_vertical_gradient_calculator_continuous
 
   !-----------------------------------------------------------------------
   subroutine extract_data_from_attr_vect(attr_vect, fieldname, toponame, elevclass_names, &
