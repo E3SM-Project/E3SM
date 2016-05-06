@@ -23,7 +23,7 @@ from CIME.XML.machines import Machines
 from CIME.task_maker import TaskMaker
 from CIME.XML.lt_archive import LTArchive
 
-import re, stat, time
+import re, stat
 
 logger = logging.getLogger(__name__)
 
@@ -254,12 +254,8 @@ within model's Machines directory, and add a batch system type for this machine
 
         template_text = self.transform_vars(open(input_filename, "r").read())
 
-        try:
-            with open(output_filename, "w") as fd:
-                fd.write(template_text)
-        except:
-            import pdb
-            pdb.set_trace()
+        with open(output_filename, "w") as fd:
+            fd.write(template_text)
 
         os.chmod(output_filename, os.stat(output_filename).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
