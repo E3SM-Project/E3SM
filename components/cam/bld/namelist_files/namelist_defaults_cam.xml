@@ -1161,6 +1161,7 @@
 <zmconv_c0_ocn                   hgrid="512x1024" phys="cam4"         > 0.0040D0 </zmconv_c0_ocn>
 
 <zmconv_tau			                                                      > 3600</zmconv_tau>
+<zmconv_alfa			                                                      > 0.1</zmconv_alfa>
 
 <zmconv_ke                                                            > 3.0E-6 </zmconv_ke>
 <zmconv_ke      dyn="fv"                                              > 1.0E-6 </zmconv_ke>
