@@ -350,7 +350,7 @@ class TestCreateTestCommon(unittest.TestCase):
         self._testroot          = MACHINE.get_value("CESMSCRATCHROOT")
         self._jenkins_root      = os.path.join(self._testroot, "jenkins")
         self._compiler          = MACHINE.get_default_compiler()
-        self._hasbatch          = MACHINE.has_batch_system()
+        self._hasbatch          = MACHINE.has_batch_system() and not NO_BATCH
         self._do_teardown       = True # Will never do teardown if test failed
         # wait_for_tests could blow away our dart config, need to back it up
         if (os.path.exists(DART_CONFIG)):
@@ -528,7 +528,7 @@ class E_TestSystemTest(TestCreateTestCommon):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
-        ct = SystemTest(tests, test_id=test_id)
+        ct = SystemTest(tests, test_id=test_id, no_batch=NO_BATCH)
 
         build_fail_test = [item for item in tests if "TESTBUILDFAIL" in item][0]
         run_fail_test   = [item for item in tests if "TESTRUNFAIL" in item][0]
@@ -555,6 +555,7 @@ class E_TestSystemTest(TestCreateTestCommon):
             elif (test_name == run_fail_test):
                 self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             elif (test_name == mem_fail_test):
+                self.assertTrue("memleak" in status, "memleak missing in %s for test %s" % (status, test_name))
                 self.assertEqual(status["memleak"], wait_for_tests.TEST_FAIL_STATUS)
                 self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
             else:
@@ -571,6 +572,8 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
+        if NO_BATCH:
+            extra_args += " --no-batch"
         cmd = "%s/jenkins_generic_job %s" % (TOOLS_DIR, extra_args)
         stat, output, errput = run_cmd(cmd, ok_to_fail=True)
         if (expect_works):
@@ -785,7 +788,7 @@ class Z_FullSystemTest(TestCreateTestCommon):
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
-        if (MACHINE.has_batch_system()):
+        if (self._hasbatch):
             stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, self._baseline_name),
                                            ok_to_fail=True, from_dir=self._testroot)
             self.assertEqual(stat, 0,
