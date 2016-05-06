@@ -115,7 +115,7 @@ class Batch(GenericXML):
         Return a list of jobs with the first element the name of the case script
         and the second a dict of qualifiers for the job
         """
-        jobs = list()
+        jobs = []
         bnode = self.get_node("batch_jobs")
         for jnode in bnode:
             if jnode.tag == "job":
@@ -132,11 +132,11 @@ class Batch(GenericXML):
         '''
         return a list of touples (flag, name)
         '''
-        values = list()
+        values = []
         bs_nodes = self.get_nodes("batch_system",{"type":self.batch_system})
         if machine is not None:
             bs_nodes += self.get_nodes("batch_system",{"MACH":machine})
-        submit_arg_nodes = list()
+        submit_arg_nodes = []
         for node in bs_nodes:
             submit_arg_nodes += self.get_nodes("arg",root=node)
         for arg in submit_arg_nodes:

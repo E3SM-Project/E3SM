@@ -23,7 +23,7 @@ class BatchUtils(object):
         self.batchobj = None
         self.override_node_count = None
         self.batchmaker = None
-        self.jobs = list()
+        self.jobs = []
         self.prereq_jobid = prereq_jobid
 
     def submit_jobs(self, no_batch=False):
@@ -53,7 +53,7 @@ class BatchUtils(object):
             if dependancy is not None:
                 deps = dependancy.split()
             else:
-                deps = list()
+                deps = []
             jobid = ""
             if job == self.job and self.prereq_jobid is not None:
                 jobid = self.prereq_jobid
@@ -74,9 +74,10 @@ class BatchUtils(object):
             depid[job] = self.submit_single_job(job, batchtype, jobid)
 
     def submit_single_job(self, job, batchtype, depid=None):
+        caseroot = self.case.get_value("CASEROOT")
         if batchtype == "none":
             logger.info("Starting job script %s"%job)
-            run_cmd(os.path.join(".", job))
+            run_cmd("%s --caseroot %s"%(os.path.join(".", job),caseroot))
             return
 
         submitargs = self.get_submit_args(job, batchtype)
@@ -90,7 +91,7 @@ class BatchUtils(object):
         batchsubmit = self.case.get_value("BATCHSUBMIT",subgroup=None)
         batchredirect = self.case.get_value("BATCHREDIRECT",subgroup=None)
         submitcmd = batchsubmit + " " + submitargs + " " + batchredirect + \
-            " " + job
+            " " + job + " --caseroot %s"%caseroot
         logger.info("Submitting job script %s"%submitcmd)
         output = run_cmd(submitcmd)
         jobid = self.get_job_id(batchtype, output)
@@ -114,7 +115,6 @@ class BatchUtils(object):
             self.batchmaker.override_node_count = int(task_count)
 
         self.batchmaker.set_job(job)
-
         submit_args = self.batchobj.get_submit_args()
         submitargs=""
         for flag, name in submit_args:
@@ -127,4 +127,5 @@ class BatchUtils(object):
                         submitargs+=" %s%s"%(flag,val)
                     else:
                         submitargs+=" %s %s"%(flag,val)
+        logger.debug("Submit args are %s"%" ".join(submitargs))
         return submitargs

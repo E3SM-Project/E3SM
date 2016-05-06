@@ -69,7 +69,7 @@ class EnvBatch(EnvBase):
         return type_info
 
     def get_jobs(self):
-        result = list()
+        result = []
         for node in self.get_nodes("job"):
             name = node.get("name")
             pdict = {}
@@ -85,7 +85,7 @@ class EnvBatch(EnvBase):
         group = self.get_node("group", {"id":"job_submission"})
         # look to see if any jobs are already defined
         cjobs = self.get_jobs()
-        childnodes = list()
+        childnodes = []
 
         expect(len(cjobs)==0," Looks like job groups have already been created")
 
@@ -104,4 +104,17 @@ class EnvBatch(EnvBase):
             for child in childnodes:
                 newjob.append(deepcopy(child))
             group.append(newjob)
+
+    def cleanupnode(self, node):
+        if node.get("id") == "batch_system":
+            fnode = node.find(".//file")
+            node.remove(fnode)
+            gnode = node.find(".//group")
+            node.remove(gnode)
+            vnode = node.find(".//values")
+            if vnode is not None:
+                node.remove(vnode)
+        else:
+            node = EnvBase.cleanupnode(self, node)
+        return node
 

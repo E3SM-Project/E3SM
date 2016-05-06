@@ -21,9 +21,9 @@ class EnvModule(object):
         self._caseroot = caseroot
         self._mpilib   = mpilib
         self._debug    = debug
-        self._cshscript = list()
+        self._cshscript = []
         self._cshscript.append( self._mach_specific_header("csh"))
-        self._shscript = list()
+        self._shscript = []
         self._shscript.append( self._mach_specific_header("sh"))
         self._module_system = self._machine.get_module_system_type()
 
@@ -106,7 +106,7 @@ class EnvModule(object):
 
     def _get_module_module_commands(self, modules_to_load, shell):
         mod_cmd = self._machine.get_module_system_cmd_path(shell)
-        cmds = list()
+        cmds = []
         for action, argument in modules_to_load:
             if argument is None:
                 argument = ""

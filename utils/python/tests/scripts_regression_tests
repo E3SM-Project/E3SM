@@ -134,7 +134,9 @@ class B_TestCreateNewcase(unittest.TestCase):
 ###############################################################################
     def setUp(self):
         self._testroot = MACHINE.get_value("CESMSCRATCHROOT")
-        self._testdir = os.path.join(self._testroot, tempfile.mktemp())
+        self._testdir = os.path.join(self._testroot, 'scripts_regression_tests.testcreatenewcase')
+        if os.path.exists(self._testdir):
+            shutil.rmtree(self._testdir)
         self._do_teardown = False
 
     def test_createnewcase(self):
