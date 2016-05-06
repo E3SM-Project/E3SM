@@ -190,70 +190,6 @@ def checkRun(case):
         os.mkdir(dout_s_root)
 
     # check if interim restart files should be saved - if not, print a warning
-<<<<<<< HEAD
-    if( ( uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) eq 'FALSE' ||
-	  uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) eq 'UNSET' )  &&
-	($config{'REST_N'} < $config{'STOP_N'}) ) {
-	$config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'} = 'FALSE';
-	$logger->warn("st_archive: Warning - restart files from end of run will be saved, interim restart files will be deleted.");
-    }
-
-    # check if the run completed successfully
-    if( -f $statusFile ) {
-	open my $CASESTATUS, "<", "$statusFile"  or die qq(st_archive: unable to open $statusFile. Exiting...\n);
-	while( <$CASESTATUS> ){
-	    chomp $_;
-	    if( /run SUCCESSFUL/i ) {$runComplete = 1;}
-	}
-	close( $CASESTATUS );
-    }
-    return $runComplete;
-}
-
-
-#-----------------------------------------------------------------------------------------------
-# read the archive XML file - env_archive.xml
-#-----------------------------------------------------------------------------------------------
-sub readXMLin
-{
-    my $filename = shift;
-    $logger->debug("In readXMLin...");
-    my $parser = XML::LibXML->new();
-    my $xml = $parser->parse_file($filename);
-    return $xml;
-}
-
-#-----------------------------------------------------------------------------------------------
-# list archive XML file contents
-#-----------------------------------------------------------------------------------------------
-sub listXMLin
-{
-    my ($xml) = shift;
-    $logger->debug("In listXMLin...");
-    my $rootel = $xml->getDocumentElement();
-
-    my $schema = <<EOF;
-
-The env_archive.xml brief XML tag schema:
-
-    <comp_archive_spec name="[string:component name] (cpl|dart|cam\*|datm|clm\?|dlnd|rtm|mosart|cice|dice|pop|docn|cism|ww3|dwav)">
-	<rootdir>[string:root directory name after DOUT_S_ROOT] (rest|cpl|dart|atm|lnd|rof|ice|ocn|glc|wav)</rootdir>
-        <files>
-            <file_extension regex_suffix="[string: perl regular expression for matching file suffix patterns"]>
-	    <keep_last_in_rundir>[string: specify if the most recent copy of the matching file should be saved in the RUNDIR] (true|false)</keep_last_in_rundir>
-        </files>
-    </comp_archive_spec>
-
-Run st_archive --help for complete tag schema descriptions.
-
-EOF
-# added for emacs perl mode parsing
-
-    print $schema;
-
-    my $elname = $rootel->getName();
-    $logger->info("Root element is a $elname and it contains ...");
-=======
     if dout_s_save_interim == "FALSE" or dout_s_save_interim == "UNSET":
         if rest_n < stop_n:
             logger.warn("Restart files from end of run will be saved, interim restart files will be deleted")
@@ -275,7 +211,6 @@ def listXMLin(case, archive):
     logger.debug("In listXMLin...")
 
     # FIXME: print the env_archive.xml brief XML tag schema:"
->>>>>>> first set of changes for pythonizing short term archiving
 
     # list out the components nodes
     for archive_spec_node in archive.get_nodes("comp_archive_spec"):
@@ -428,141 +363,6 @@ def archiveProcess(case, archive, datename, runfiles):
             shutil.copy(item, join(restdir, basename(item)))
 
     # main loop through the comp_archive_spec XML elements handling the associated files accordingly
-<<<<<<< HEAD
-    my @xmlcomps = ($XMLin->findnodes('//comp_archive_spec'));
-    foreach my $xmlcomp (@xmlcomps) {
-	my $str = $xmlcomp->getAttribute('name');
-	$str =~ s/^\s+//;
-	$str =~ s/\s+$//;
-	my $compname = $str;
-	my $rootdir = $xmlcomp->findvalue('./rootdir');
-
-	# get the number of instances running for each component that supports multiple instances
-	my $ninst = getcompninst($compname);
-
-	# loop through the file extensions for this component to copy
-	# over files with those matching extensions to the ARCHIVE_DIR locations
-	my @infiles = ($xmlcomp->findnodes('./files/file_extension'));
-	foreach my $infile (@infiles) {
-	    my $suffix = $infile->getAttribute('regex_suffix');
-	    my $subdir = $infile->findvalue('./subdir');
-	    my $keep_last_in_rundir = $infile->findvalue('./keep_last_in_rundir');
-
-	    # setup the subdir for this component
-	    $destdir = qq($config{'DOUT_S_ROOT'}/$rootdir/$subdir);
-	    mkpath( $destdir, {verbose => 1, error => \my $err_list} )  unless ( -d $destdir );
-	    chdir( $destdir ) or $logger->logdie("st_archive: Error - cannot access directory $destdir with error $err_list. Exiting...");
-
-	    # main loop to move files
-	    for( my $i = 1; $i <= $ninst; $i++ ) {
-		my $ninst_suffix = '';
-		if( $ninst > 1 ) {
-		    $ninst_suffix = sprintf( '%04d', $i );
-		    $ninst_suffix = qq(_$ninst_suffix);
-		}
-
-		# build up the new suffix based on whether the XML
-		# regex_suffix starts with a "."
-		my $newSuffix = qq($suffix);
-		if( substr($suffix, 0, 1) eq '.' ) {
-		    if( $subdir eq 'logs' ) {
-			# component logs are handled a little differently
-			$newSuffix = qq($rootdir$ninst_suffix$suffix);
-		    }
-		    else {
-			$newSuffix = qq($config{'CASE'}.$compname$ninst_suffix$suffix);
-		    }
-		}
-
-		# move the Files to the DOUT_S_ROOT correct sub-directory
-		my ($numfiles, $runfilesref) = moveFiles( lc($keep_last_in_rundir), $newSuffix, $destdir, $restdir, $dname, \@runfiles );
-		@runfiles = @{$runfilesref};
-	    }
-	}
-    }
-}
-
-#----------------------------------------------------------------------------------------------
-# remove restart duplicate files from the comp/rest and rest/dname directories
-#-----------------------------------------------------------------------------------------------
-sub removeDups
-{
-    my $dname = shift;
-    my $restdir = qq($config{'DOUT_S_ROOT'}/rest/$dname);
-
-    chdir( $restdir ) or $logger->logdie("st_archive: Error - cannot access directory $restdir in removeDups. Exiting...");
-
-    my @restfiles;
-    find( sub {
-	return unless -f;
-	push @restfiles, $File::Find::name;
-	  },
-	  $restdir);
-
-    foreach my $restfile (@restfiles) {
-	my @path = split /\//, $restfile;
-	my $file = @path[-1];
-
-	my @matchfiles  = File::Find::Rule->file->name($file)->in($config{'DOUT_S_ROOT'});
-	foreach my $matchfile (@matchfiles) {
-	    if( $matchfile =~ /\/rest\// && $matchfile ne $restfile && $matchfile !~ /\/hist\// ) {
-		$logger->debug("Dedebugng matchfile=$matchfile matches restfile=$restfile");
-		unlink( $matchfile );
-	    }
-	}
-    }
-}
-
-#-----------------------------------------------------------------------------------------------
-# Main program
-#-----------------------------------------------------------------------------------------------
-sub main
-{
-    my $dname;
-    getOptions();
-
-    if( defined $opts{'help'} ) {
-	usage(); exit 0;
-    }
-
-    my $runComplete = checkRun( "$config{'CASEROOT'}/CaseStatus" );
-    my $XMLin  = readXMLin( "$config{'CASEROOT'}/env_archive.xml" );
-
-    if( defined $opts{'input'} ) {
-	# list the input env_archive.xml values
-	listXMLin( $XMLin );
-    } elsif( defined $opts{'output'} && $runComplete ) {
-	# list the directories in the $config{'DOUT_S_ROOT'} directory
-	$dname  = getDname();
-	$logger->info("Short-term archive listing of $config{'DOUT_S_ROOT'}:");
-	listArchive( $config{'DOUT_S_ROOT'} );
-    } elsif ( defined $opts{'undo'} ) {
-	# unlink the archive process and move all files in the archive back to rundir
-	undoArchive();
-    } elsif ( $runComplete ) {
-	# load the runfiles global array with all the files in the RUNDIR
-	my @runfiles;
-        find( sub { return unless -f; push @runfiles, $File::Find::name; }, $config{'RUNDIR'});
-
-	# get the date name from the most current coupler log file
-	$dname  = getDname();
-
-	# run the archive process
-	archiveProcess( $XMLin, $dname, \@runfiles );
-
-	if( uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) == 'TRUE' ){
-	    # remove restart duplicate files from the comp/rest and rest/dname directories
-	    removeDups( $dname );
-	}
-	$logger->info("st_archive process complete."); exit 0;
-    } else {
-	$logger->info("st_archive: run is not yet complete or was not successful. Unable to perform option..."); exit 1;
-    }
-}
-
-main(@ARGV) unless caller;
-
-=======
     for archive_spec_node in archive.get_nodes("comp_archive_spec"):
 	comp = archive_spec_node.attrib['name']
         rootdir_node = archive.get_node("rootdir", root=archive_spec_node)
@@ -662,5 +462,4 @@ def _main_func(description):
 
 if __name__ == "__main__":
     _main_func(__doc__)
->>>>>>> first set of changes for pythonizing short term archiving
 
