@@ -122,6 +122,12 @@ contains
     ! data. At a glance, it looks like the problems are just outside of Greenland, so this
     ! should be okay. When we have new TG forcing data, we should try uncommenting this
     ! call to check_topo.
+    !
+    ! Alternatively, we could change check_topo to set a flag for each point saying
+    ! whether topo values are bad for that point. Then, when computing gradients, set
+    ! them to 0 for all points with bad topo values. (We did something similar for the
+    ! now-deleted vertical_gradient_calculator_continuous.) However, longer-term, an
+    ! abort may be more appropriate rather than silently setting gradients to 0.
 
     ! call this%check_topo()
 
