@@ -6,7 +6,7 @@ import sys
 import os
 _CIMEROOT = os.environ.get("CIMEROOT")
 if _CIMEROOT is None:
-    raise exc_type("ERROR: must set CIMEROOT environment variable")
+    raise SystemExit("ERROR: must set CIMEROOT environment variable")
 
 _LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
 sys.path.append(_LIBDIR)

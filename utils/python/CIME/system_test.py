@@ -358,7 +358,15 @@ class SystemTest(object):
                 return False
             create_newcase_cmd += " -user_mods_dir %s" % test_mod_file
 
-        logger.debug("Calling create_newcase: "+create_newcase_cmd)
+        if case_opts is not None:
+            for case_opt in case_opts:
+                if case_opt.startswith('M'):
+                    match =  re.match('M(.+)', case_opt)
+                    mpilib = case_opt[1:]
+                    create_newcase_cmd += " --mpilib %s" % mpilib
+                    logger.debug (" MPILIB set to %s" % mpilib)
+
+        logger.debug("Calling create_newcase: " + create_newcase_cmd)
         return self._shell_cmd_for_phase(test, create_newcase_cmd, CREATE_NEWCASE_PHASE)
 
     ###########################################################################
@@ -442,10 +450,8 @@ class SystemTest(object):
                     logger.debug (" STOP_N      set to %s" %opti)
 
                 elif opt.startswith('M'):
-                    match =  re.match('M(.+)', opt)
-                    mpilib = opt[1:]
-                    envtest.set_test_parameter("MPILIB", opt)
-                    logger.debug (" MPILIB set to %s" %opt)
+                    # M option handled by create newcase
+                    continue
 
                 elif opt.startswith('P'):
                     match =  re.match('P([0-9]+)', opt)

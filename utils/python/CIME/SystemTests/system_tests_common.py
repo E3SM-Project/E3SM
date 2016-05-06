@@ -93,11 +93,12 @@ class SystemTestsCommon(object):
         """
         memlist = list()
         meminfo = re.compile(".*model date =\s+(\w+).*memory =\s+(\d+\.?\d+).*highwater")
-        with gzip.open(cpllog, "rb") as f:
-            for line in f:
-                m = meminfo.match(line)
-                if m:
-                    memlist.append((m.group(1), m.group(2)))
+        if cpllog is not None:
+            with gzip.open(cpllog, "rb") as f:
+                for line in f:
+                    m = meminfo.match(line)
+                    if m:
+                        memlist.append((m.group(1), m.group(2)))
         return memlist
 
     def _checkformemleak(self, cpllog):
@@ -145,10 +146,11 @@ class SystemTestsCommon(object):
         find and return the latest cpl log file in the run directory
         """
         cpllog = None
-        cpllogs = glob.iglob(os.path.join(
+        cpllogs = glob.glob(os.path.join(
                     self._case.get_value('RUNDIR'),'cpl.log.*'))
         if cpllogs:
             cpllog = min(cpllogs, key=os.path.getctime)
+
         return cpllog
 
 
