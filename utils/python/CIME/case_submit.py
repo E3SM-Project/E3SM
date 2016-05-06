@@ -54,7 +54,7 @@ def submit(caseroot, job=None, resubmit=None, no_batch=False, prereq_jobid=None)
     env_module.load_env_for_case()
     batchobj = BatchUtils(job, case, prereq_jobid=prereq_jobid)
     case.set_value("RUN_WITH_SUBMIT",True)
-    case.flush(flushall=True)
+    case.flush()
     batchobj.submit_jobs(no_batch=no_batch)
 
 def check_case(case,caseroot):

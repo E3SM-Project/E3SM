@@ -17,10 +17,6 @@ from CIME.XML.standard_module_setup import *
 from CIME.case                      import Case
 from CIME.utils                     import expect, get_model, run_cmd, does_file_have_string, appendStatus
 
-#workdir = os.environ.get("PBS_O_WORKDIR")
-#if workdir is not None:
-#    os.chdir(workdir)
-
 logger = logging.getLogger(__name__)
 
 # Batch system directives

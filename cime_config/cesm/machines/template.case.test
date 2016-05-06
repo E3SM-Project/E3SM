@@ -6,10 +6,6 @@
 """
 import os, sys
 
-#workdir = os.environ.get("PBS_O_WORKDIR")
-#if workdir is not None:
-#    os.chdir(workdir)
-
 _CIMEROOT = os.environ.get("CIMEROOT")
 if _CIMEROOT is None:
     raise SystemExit("ERROR: must set CIMEROOT environment variable")
