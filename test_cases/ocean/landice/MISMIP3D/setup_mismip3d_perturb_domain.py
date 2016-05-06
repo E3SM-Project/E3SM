@@ -54,7 +54,8 @@ yCell = gridfile.variables['yCell'][:]
 unique_ys = np.array(sorted(list(set(yCell[:]))))
 unique_xs = np.array(sorted(list(set(xCell[:]))))
 
-if dcEdge.max() != dcEdgeStnd.max() or dcEdge.min() != dcEdgeStnd.min():
+if np.absolute(dcEdge.max() - dcEdgeStnd.max()) > 0.01 or np.absolute(dcEdge.min() - dcEdgeStnd.min()) > 0.01:  # use a tolerance here (in m)
+   print "dcEdge maxes, mins:", dcEdge.max(),dcEdgeStnd.max(),  dcEdge.min(), dcEdgeStnd.min()
    sys.exit('ERROR: The two files are not the same resolution')
 
 if nCellsStnd == nCells:
