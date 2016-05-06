@@ -18,9 +18,9 @@ DESCRIPTION
 
 USAGE, OPTIONS, AND EXAMPLES
 
-    There are two modes of operation: -query and -add 
+    There are two modes of operation: -query and -add
 
-    Usage for each of the modes are described below.  
+    Usage for each of the modes are described below.
 
     -query:
 
@@ -31,15 +31,15 @@ USAGE, OPTIONS, AND EXAMPLES
 	compsets/resolution combinations.  second, they depend on compset
 	and resolution.   you can imagine a T31_g37 range being 100 cores
 	to 1000 cores from S to X.  but ne240_t12 would probably be 10000 at S
-	and 100,000 at X, for instance.  
+	and 100,000 at X, for instance.
 
     -add:
  
-       This mode is intended for adding new pe layouts to the peslist. The 
-       script will parse your text list, and add the new pe-layout to the 
+       This mode is intended for adding new pe layouts to the peslist. The
+       script will parse your text list, and add the new pe-layout to the
        appropriate grid, machine and optional argument (i.e. compset, pesize)
        entry.  If duplicates are found, they will be silently ignored, even if
-       they contain a different comment.  
+       they contain a different comment.
        Example:
 
          manage_pes -add -pes_setby <component_name> -machine -grid -attributes
@@ -54,34 +54,34 @@ USAGE, OPTIONS, AND EXAMPLES
                <pes pesize="entry" compset="entry">
          	<comment>entry</comment>
          	<ntasks>
-         	  <ntasks_atm>integer</ntasks_atm> 
-         	  <ntasks_lnd>integer</ntasks_lnd>           
-         	  <ntasks_rof>integer</ntasks_rof> 
-         	  <ntasks_ice>integer</ntasks_ice> 
-         	  <ntasks_ocn>integer</ntasks_ocn> 
-         	  <ntasks_glc>integer</ntasks_glc> 
-         	  <ntasks_wav>integer</ntasks_wav> 
-         	  <ntasks_cpl>integer</ntasks_cpl> 
+         	  <ntasks_atm>integer</ntasks_atm>
+         	  <ntasks_lnd>integer</ntasks_lnd>
+         	  <ntasks_rof>integer</ntasks_rof>
+         	  <ntasks_ice>integer</ntasks_ice>
+         	  <ntasks_ocn>integer</ntasks_ocn>
+         	  <ntasks_glc>integer</ntasks_glc>
+         	  <ntasks_wav>integer</ntasks_wav>
+         	  <ntasks_cpl>integer</ntasks_cpl>
          	</ntasks>
          	<nthrds>
-         	  <nthrds_atm>integer</nthrds_atm>                   
-         	  <nthrds_lnd>integer</nthrds_lnd> 
-         	  <nthrds_rof>integer</nthrds_rof> 
-         	  <nthrds_ice>integer</nthrds_ice> 
-         	  <nthrds_ocn>integer</nthrds_ocn> 
-         	  <nthrds_glc>integer</nthrds_glc> 
-         	  <nthrds_wav>integer</nthrds_wav> 
-         	  <nthrds_cpl>integer</nthrds_cpl> 
+         	  <nthrds_atm>integer</nthrds_atm>
+         	  <nthrds_lnd>integer</nthrds_lnd>
+         	  <nthrds_rof>integer</nthrds_rof>
+         	  <nthrds_ice>integer</nthrds_ice>
+         	  <nthrds_ocn>integer</nthrds_ocn>
+         	  <nthrds_glc>integer</nthrds_glc>
+         	  <nthrds_wav>integer</nthrds_wav>
+         	  <nthrds_cpl>integer</nthrds_cpl>
          	</nthrds>
          	<rootpe>
-         	  <rootpe_atm>integer</rootpe_atm> 
-         	  <rootpe_lnd>integer</rootpe_lnd> 
-         	  <rootpe_rof>integer</rootpe_rof> 
-         	  <rootpe_ice>integer</rootpe_ice>    
-         	  <rootpe_ocn>integer</rootpe_ocn>   
-         	  <rootpe_glc>integer</rootpe_glc> 
-         	  <rootpe_wav>integer</rootpe_wav> 
-         	  <rootpe_cpl>integer</rootpe_cpl>                         
+         	  <rootpe_atm>integer</rootpe_atm>
+         	  <rootpe_lnd>integer</rootpe_lnd>
+         	  <rootpe_rof>integer</rootpe_rof>
+         	  <rootpe_ice>integer</rootpe_ice>
+         	  <rootpe_ocn>integer</rootpe_ocn>
+         	  <rootpe_glc>integer</rootpe_glc>
+         	  <rootpe_wav>integer</rootpe_wav>
+         	  <rootpe_cpl>integer</rootpe_cpl>
          	</rootpe>
                </pes>
              </mach>
@@ -89,28 +89,28 @@ USAGE, OPTIONS, AND EXAMPLES
          </config_pes>
 
          grid name="entry"    : entry can have the value of "any" OR
- 	                        a regular expression that matches the 
+ 	                        a regular expression that matches the
                                 grid naming convention, e.g.
                      	        <grid name="%1.9x2.5.+oi%gx1v6">
          mach name="entry"    : entry can have the value of "any" OR
 	                        a valid machine name e.g.
 				<mach name="yellowstone">
          pesize name="entry"  : entry can have the value of "any" OR
-	                        the currently supported values of pesize 
+	                        the currently supported values of pesize
                                 ("S", "M", "L", "X"), e.g. pesize="S"
          compset name="entry" : entry can have the value of "any" OR
 	                        a regular expression that matches the compset
                                 naming convention, e.g.
                           compset="2000_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV"
 
-    
+
 Query Mode
-   manage_pes  --query [ --pes_setby <component_name> ] 
+   manage_pes  --query [ --pes_setby <component_name> ]
        [ --grid <grid_name> ] [ --machine <machine_name> ]  [ -h|--help ]
 
 Add Mode
    manage_pes  --add --file <pes_filename> --pes_setby <component_name>
-""" 
+"""
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
