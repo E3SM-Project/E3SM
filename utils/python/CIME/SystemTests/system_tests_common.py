@@ -12,12 +12,14 @@ import CIME.build as build
 logger = logging.getLogger(__name__)
 
 class SystemTestsCommon(object):
-    def __init__(self, caseroot=os.getcwd(), case=None):
+    def __init__(self, caseroot=None, case=None):
         """
         initialize a CIME system test object, if the file LockedFiles/env_run.orig.xml
         does not exist copy the current env_run.xml file.  If it does exist restore values
         changed in a previous run of the test.
         """
+        if caseroot is None:
+            caseroot = os.getcwd()
         self._caseroot = caseroot
         self._runstatus = None
         # Needed for sh scripts
