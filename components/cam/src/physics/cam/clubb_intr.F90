@@ -2199,7 +2199,9 @@ end subroutine clubb_init_cnst
    ! Optional Accretion enhancement factor             !
    ! ------------------------------------------------- !   
 
-     accre_enhan(:ncol,:pver) = 1._r8
+!PMA     accre_enhan(:ncol,:pver) = 1._r8
+     accre_enhan(:ncol,:pver) = 2._r8
+
    
    ! ------------------------------------------------- !
    ! Diagnose some output variables                    !

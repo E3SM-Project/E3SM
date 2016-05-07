@@ -994,7 +994,7 @@ subroutine micro_mg_cam_init(pbuf2d)
       call pbuf_set_field(pbuf2d, acgcme_idx, 0._r8)
       call pbuf_set_field(pbuf2d, acnum_idx,  0)
       call pbuf_set_field(pbuf2d, relvar_idx, 2._r8)
-      call pbuf_set_field(pbuf2d, accre_enhan_idx, 1._r8)
+      call pbuf_set_field(pbuf2d, accre_enhan_idx, 2._r8) !PMA
       call pbuf_set_field(pbuf2d, am_evp_st_idx,  0._r8)
       call pbuf_set_field(pbuf2d, evprain_st_idx, 0._r8)
       call pbuf_set_field(pbuf2d, evpsnow_st_idx, 0._r8)

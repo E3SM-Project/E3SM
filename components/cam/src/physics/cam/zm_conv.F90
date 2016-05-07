@@ -81,7 +81,7 @@ module zm_conv
    
    integer  limcnv       ! top interface level limit for convection
 
-   real(r8),parameter ::  tiedke_add = 0.5_r8   
+   real(r8),parameter ::  tiedke_add = 0.7_r8   
 
 contains
 
@@ -3232,7 +3232,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 !
 !--------------------------Local Variables------------------------------
 !
-   real(r8) capeten(pcols,5)     ! provisional value of cape
+   real(r8) capeten(pcols,1)     ! provisional value of cape
    real(r8) tv(pcols,pver)       !
    real(r8) tpv(pcols,pver)      !
    real(r8) buoy(pcols,pver)
@@ -3248,7 +3248,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 
    logical plge600(pcols)
    integer knt(pcols)
-   integer lelten(pcols,5)
+   integer lelten(pcols,1)
 
    real(r8) cp
    real(r8) e
@@ -3268,7 +3268,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 !
 !-----------------------------------------------------------------------
 !
-   do n = 1,5
+   do n = 1,1
       do i = 1,ncol
          lelten(i,n) = pver
          capeten(i,n) = 0._r8
@@ -3297,7 +3297,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 ! set "launching" level(mx) to be at maximum moist static energy.
 ! search for this level stops at planetary boundary layer top.
 !
-   bot_layer = pver -1
+   bot_layer = pver -2
    if(pver == 30)bot_layer = pver !BSINGH - special case for 30 layer model
 #ifdef PERGRO
    do k = bot_layer,msg + 1,-1
@@ -3382,7 +3382,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
       do i = 1,ncol
          if (k < lcl(i) .and. plge600(i)) then
             if (buoy(i,k+1) > 0._r8 .and. buoy(i,k) <= 0._r8) then
-               knt(i) = min(5,knt(i) + 1)
+               knt(i) = min(1,knt(i) + 1)
                lelten(i,knt(i)) = k
             end if
          end if
@@ -3391,7 +3391,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 !
 ! calculate convective available potential energy (cape).
 !
-   do n = 1,5
+   do n = 1,1
       do k = msg + 1,pver
          do i = 1,ncol
             if (plge600(i) .and. k <= mx(i) .and. k > lelten(i,n)) then
@@ -3405,7 +3405,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 ! one sounding,
 ! and use it as the final cape, april 26, 1995
 !
-   do n = 1,5
+   do n = 1,1
       do i = 1,ncol
          if (capeten(i,n) > cape(i)) then
             cape(i) = capeten(i,n)
