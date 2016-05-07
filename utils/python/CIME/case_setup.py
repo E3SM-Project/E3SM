@@ -42,7 +42,7 @@ def _check_pelayouts_require_rebuild(case, models):
 
                 if old_tasks != new_tasks or old_threads != new_threads or old_inst != new_inst:
                     logger.warn("%s pe change requires clean build" % comp)
-                    cleanflag = comp[0].lower()
+                    cleanflag = comp.lower()
                     run_cmd("./case.build --clean %s" % cleanflag)
 
         os.remove(locked_pes)
