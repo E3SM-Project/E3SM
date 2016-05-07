@@ -20,15 +20,17 @@ class EnvArchive(GenericXML):
         # Check/Build path to env_archive.xml
         if case_root is None:
             case_root = os.getcwd()
+
         if os.path.isabs(infile):
             fullpath = infile
         else:
             fullpath = os.path.join(case_root, infile)
 
         # Initialize self
+        # If env_archive.xml file does not exists in case directory read default from config
         GenericXML.__init__(self, fullpath)
 
-        # If env_archive.xml file does not exists in case directory read default from config
+        # The following creates the CASEROOT/env_archive.xml contents in self.root
         if not os.path.isfile(fullpath):
             headerobj = Headers()
             headernode = headerobj.get_header_node(os.path.basename(fullpath))
