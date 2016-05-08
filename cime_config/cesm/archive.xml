@@ -92,11 +92,15 @@
   <comp_archive_spec name="datm">
     <rootdir>atm</rootdir>
     <files>
+      <file_extension regex_suffix="datm.log\..*">
+        <subdir>logs</subdir>
+        <keep_last_in_rundir>false</keep_last_in_rundir>
+      </file_extension>
       <file_extension regex_suffix=".r\..*">
 	<subdir>rest</subdir>
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rs\..*">
+      <file_extension regex_suffix=".rs1\..*">
 	<subdir>rest</subdir>
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -180,11 +184,15 @@
   <comp_archive_spec name="dlnd">
     <rootdir>lnd</rootdir>
     <files>
+      <file_extension regex_suffix="dlnd.log\..*">
+        <subdir>logs</subdir>
+        <keep_last_in_rundir>false</keep_last_in_rundir>
+      </file_extension>
       <file_extension regex_suffix=".r\..*">
 	<subdir>rest</subdir>
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rs\..*">
+      <file_extension regex_suffix=".rs1\..*">
 	<subdir>rest</subdir>
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -290,11 +298,15 @@
   <comp_archive_spec name="drof">
     <rootdir>rof</rootdir>
     <files>
+      <file_extension regex_suffix="drof.log\..*">
+        <subdir>logs</subdir>
+        <keep_last_in_rundir>false</keep_last_in_rundir>
+      </file_extension>
       <file_extension regex_suffix=".r\..*">
 	<subdir>rest</subdir>
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rs\..*">
+      <file_extension regex_suffix=".rs1\..*">
 	<subdir>rest</subdir>
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -330,11 +342,15 @@
   <comp_archive_spec name="dice">
     <rootdir>ice</rootdir>
     <files>
+      <file_extension regex_suffix="dice.log\..*">
+        <subdir>logs</subdir>
+        <keep_last_in_rundir>false</keep_last_in_rundir>
+      </file_extension>
       <file_extension regex_suffix=".r\..*">
 	<subdir>rest</subdir>
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rs\..*">
+      <file_extension regex_suffix=".rs1\..*">
 	<subdir>rest</subdir>
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -418,11 +434,15 @@
   <comp_archive_spec name="docn">
     <rootdir>ocn</rootdir>
     <files>
+      <file_extension regex_suffix="docn.log\..*">
+        <subdir>logs</subdir>
+        <keep_last_in_rundir>false</keep_last_in_rundir>
+      </file_extension>
       <file_extension regex_suffix=".r\..*">
 	<subdir>rest</subdir>
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rs\..*">
+      <file_extension regex_suffix=".rs1\..*">
 	<subdir>rest</subdir>
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -484,11 +504,15 @@
   <comp_archive_spec name="dwav">
     <rootdir>wav</rootdir>
     <files>
+      <file_extension regex_suffix="dwav.log\..*">
+        <subdir>logs</subdir>
+        <keep_last_in_rundir>false</keep_last_in_rundir>
+      </file_extension>
       <file_extension regex_suffix=".r\..*">
 	<subdir>rest</subdir>
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rs\..*">
+      <file_extension regex_suffix=".rs1\..*">
 	<subdir>rest</subdir>
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
