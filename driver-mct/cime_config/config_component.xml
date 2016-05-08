@@ -381,6 +381,9 @@
     <desc>
       sets frequency of full model barrier (same options as STOP_OPTION) for synchronization with BARRIER_N and BARRIER_DATE
     </desc>
+    <values>
+      <value compset="DATM.+CLM">ndays</value>   <!-- Daily barrier needed for concurrent PE layouts so that DATM doesn't get ahead -->
+    </values>
   </entry>
 
   <entry id="BARRIER_N">
@@ -391,6 +394,9 @@
     <desc>
       sets periodic model barriers with BARRIER_OPTION and BARRIER_DATE for synchronization
     </desc>
+    <values>
+      <value compset="DATM.+CLM">1</value>   <!-- Daily barrier needed for concurrent PE layouts so that DATM doesn't get ahead -->
+    </values>
   </entry>
 
   <entry id="BARRIER_DATE">
@@ -1115,6 +1121,13 @@
     <desc>number of rof cells in j direction - DO NOT EDIT (for experts only)</desc>
   </entry>
 
+  <entry id="GLC_GRID">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>(glc) grid for the coupler</desc>
+  </entry>
 
   <entry id="GLC_NX">
     <type>integer</type>
@@ -2231,47 +2244,6 @@
     <desc>Layout of wave instances</desc>
   </entry>
 
-  <entry id="NTASKS_ESP">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_esp</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of external processing tool mpi tasks</desc>
-  </entry>
-
-  <entry id="NTHRDS_ESP">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_esp</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of external processing tool mpi threads</desc>
-  </entry>
-
-  <entry id="ROOTPE_ESP">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_esp</group>
-    <file>env_mach_pes.xml</file>
-    <desc>root ocn mpi task</desc>
-  </entry>
-
-  <entry id="NINST_ESP">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_esp</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Number of external processing tool instances</desc>
-  </entry>
-
-  <entry id="NINST_ESP_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_esp</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of external processing tool instances</desc>
-  </entry>
-
   <entry id="PSTRID_ATM">
     <type>integer</type>
     <default_value>1</default_value>
@@ -2338,15 +2310,6 @@
     <group>mach_pes_stride</group>
     <file>env_mach_pes.xml</file>
     <desc>stride of mpi tasks for wav comp - currently should always be set to 1</desc>
-  </entry>
-
-  <entry id="PSTRID_ESP">
-    <type>integer</type>
-    <valid_values>1</valid_values>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for esp comp - currently should always be set to 1</desc>
   </entry>
 
   <entry id="TOTALPES">
@@ -3053,7 +3016,7 @@
     </values>
     <desc>Base period associated with NCPL coupling frequency.
     This xml variable is only used to set the driver namelist variables,
-    atm_cpl_dt, lnd_cpl_dt, ocn_cpl_dt, ice_cpl_dt, glc_cpl_dt, rof_cpl_dt, wav_cpl_dt, and esp_dt.</desc>
+    atm_cpl_dt, lnd_cpl_dt, ocn_cpl_dt, ice_cpl_dt, glc_cpl_dt, rof_cpl_dt and wav_cpl_dt.</desc>
   </entry>
 
   <entry id="ATM_NCPL">
@@ -3069,7 +3032,7 @@
       <value compset="_DATM%COPYALL_NPS"    >72</value>
       <value compset="_DATM.*_CLM"          >48</value>
       <value compset="_DATM.*_DICE.*_POP2"  >4</value>
-      <value compset="_DATM.*_SLND.*_CICE.*_POP2">24</value>
+      <value compset="_DATM.*_CICE.*_POP2"  >24</value>
       <value compset="_DATM.*_CICE.*_DOCN"  >24</value>
       <value compset="_DATM.*_DOCN%US20"    >24</value>
       <value compset="_MPAS"                >1</value>
@@ -3157,7 +3120,7 @@
     <type>integer</type>
     <default_value>8</default_value>
     <values>
-      <value compset="_DATM.*_POP2.*_DROF">$ATM_NCPL</value>
+      <value compset="_DATM.*_POP2">$ATM_NCPL</value>
       <value compset="_DATM.*_DOCN%SOM">$ATM_NCPL</value>
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN">$ATM_NCPL</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">$ATM_NCPL</value>
@@ -3181,8 +3144,6 @@
   </entry>
 
 
-  <!-- Logic for CPL_ALBAV should be reworked to depend on datm forcing rather
-       than compset: see https://github.com/ESMCI/cime/issues/120 -->
   <entry id="CPL_ALBAV">
     <type>logical</type>
     <valid_values>true,false</valid_values>
@@ -3194,7 +3155,7 @@
     <group>run_component_cpl</group>
     <file>env_run.xml</file>
     <desc>
-      Only used for compsets with DATM and POP (currently C, G and J):
+      Only used for compsets with DATM and POP (currently C and G):
       If true, compute albedos to work with daily avg SW down
       If false (default), albedos are computed with the assumption that downward
       solar radiation from the atm component has a diurnal cycle and zenith-angle
@@ -3202,10 +3163,7 @@
       If true, albedos are computed with the assumption that downward
       solar radiation from the atm component is a daily average quantity and
       does not have a zenith-angle dependence. This is often the case when
-      using a data atm component. Only used for compsets with DATM and POP (currently C, G and J).
-      NOTE: This should really depend on the datm forcing and not the compset per se.
-      So, for example, whether it is set in a J compset should depend on
-      what datm forcing is used.
+      using a data atm component. Only used for compsets with DATM and POP (currently C and G)
     </desc>
   </entry>
 
@@ -3219,12 +3177,12 @@
     <group>run_component_cpl</group>
     <file>env_run.xml</file>
     <desc>
-      Only used for compsets with DATM and POP (currently C, G and J):
+      Only used for compsets with DATM and POP (currently C and G):
       If ocn, ocn provides EP balance factor for precipitation.
       Provides EP balance factor for precip for POP. A factor computed by
       POP is applied to precipitation so that precipitation balances
       evaporation and ocn global salinity does not drift. This is intended
-      for use when coupling POP to a DATM. Only used for C, G and J compsets.
+      for use when coupling POP to a DATM. Only used for C and G compsets.
       Default is off
     </desc>
   </entry>
@@ -3552,6 +3510,15 @@
       run MPASLI on a machine that does not have Albany, or for which
       the CIME scripts are not aware of the existence of
       Albany.</desc>
+  </entry>
+
+  <entry id="GLC_SMB">
+    <type>logical</type>
+    <valid_values>true,false</valid_values>
+    <default_value>true</default_value>
+    <group>run_component_mpasli</group>
+    <file>env_run.xml</file>
+    <desc>true => have LND calculate surface mass balance</desc>
   </entry>
 
   <entry id="GLC_TWO_WAY_COUPLING">
