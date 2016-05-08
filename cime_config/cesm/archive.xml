@@ -92,7 +92,7 @@
   <comp_archive_spec name="datm">
     <rootdir>atm</rootdir>
     <files>
-      <file_extension regex_suffix="datm.log\..*">
+      <file_extension regex_suffix=".log\..*">
         <subdir>logs</subdir>
         <keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -184,7 +184,7 @@
   <comp_archive_spec name="dlnd">
     <rootdir>lnd</rootdir>
     <files>
-      <file_extension regex_suffix="dlnd.log\..*">
+      <file_extension regex_suffix=".log\..*">
         <subdir>logs</subdir>
         <keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -298,7 +298,7 @@
   <comp_archive_spec name="drof">
     <rootdir>rof</rootdir>
     <files>
-      <file_extension regex_suffix="drof.log\..*">
+      <file_extension regex_suffix=".log\..*">
         <subdir>logs</subdir>
         <keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -342,7 +342,7 @@
   <comp_archive_spec name="dice">
     <rootdir>ice</rootdir>
     <files>
-      <file_extension regex_suffix="dice.log\..*">
+      <file_extension regex_suffix=".log\..*">
         <subdir>logs</subdir>
         <keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -434,7 +434,7 @@
   <comp_archive_spec name="docn">
     <rootdir>ocn</rootdir>
     <files>
-      <file_extension regex_suffix="docn.log\..*">
+      <file_extension regex_suffix=".log\..*">
         <subdir>logs</subdir>
         <keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -504,7 +504,7 @@
   <comp_archive_spec name="dwav">
     <rootdir>wav</rootdir>
     <files>
-      <file_extension regex_suffix="dwav.log\..*">
+      <file_extension regex_suffix=".log\..*">
         <subdir>logs</subdir>
         <keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>

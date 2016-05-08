@@ -17,7 +17,6 @@ def checkRun(case):
     if dout_s_root is None or dout_s_root == 'UNSET':
         expect(False, 'XML variable DOUT_S_ROOT is required for root location of short-term achiver')
     if not isdir(dout_s_root):
-        print "DEBUG: dout_s_root is ",dout_s_root
         os.makedirs(dout_s_root)
     dout_s_save_interim = case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES')
     if dout_s_save_interim == 'FALSE' or dout_s_save_interim == 'UNSET':
@@ -151,12 +150,10 @@ def archiveProcess(case, archive, datename, runfiles):
                 ninst_suffix = ''
                 if ninst > 1:
                     ninst_suffix = '_' + '%04d' % i
-                print 'DEBUG: comp %s with subdir %s' % (comp, subdir)
                 newSuffix = suffix
                 if suffix[0:1] == '.':
                     if subdir == 'logs':
                         newSuffix = rootdir + ninst_suffix + suffix
-                        print 'DEBUG: comp %s log newSuffix %s ' % (comp, newSuffix)
                     else:
                         casename = case.get_value('CASE')
                         newSuffix = casename + '.' + comp + ninst_suffix + suffix
