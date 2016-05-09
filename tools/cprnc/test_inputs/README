@@ -30,11 +30,11 @@ The files here are:
 - diffs_in_vals_and_fill.nc: a single variable has differences in both
   values and fill pattern
 
-- extra_variable.nc: has an extra variable beyond those in copy.nc
+- extra_variables.nc: has two extra variables beyond those in copy.nc
 
 - lon_differs.nc: number of longitude points differs
 
-- missing_variable.nc: missing a variable that's present in copy.nc
+- missing_variables.nc: missing two variables that are present in copy.nc
 
 - vals_differ_by_1.1.nc: testvar has values equal to 1.1 times those
   in the control file. This is useful for testing the relative
