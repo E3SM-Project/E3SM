@@ -6,6 +6,7 @@ module dice_comp_mod
 ! !USES:
 
   use shr_const_mod
+  use shr_frz_mod, only: shr_frz_freezetemp
   use shr_sys_mod
   use shr_kind_mod , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, &
                            CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
@@ -75,7 +76,7 @@ module dice_comp_mod
 
   real(R8),parameter  :: pi     = shr_const_pi      ! pi
   real(R8),parameter  :: spval  = shr_const_spval   ! flags invalid data
-  real(R8),parameter  :: tFrz   = shr_const_tkfrzsw ! temp of freezing salt-water
+  real(R8),parameter  :: tFrz   = shr_const_tkfrz   ! temp of freezing 
   real(R8),parameter  :: latice = shr_const_latice  ! latent heat of fusion
   real(R8),parameter  :: cDay   = shr_const_cDay    ! sec in calendar day
   real(R8),parameter  :: waterMax = 1000.0_R8        ! wrt iFrac comp & frazil ice (kg/m^2)
@@ -98,6 +99,7 @@ module dice_comp_mod
   integer(IN) :: kswvdr,kswndr,kswvdf,kswndf,kq,kz,kua,kva,kptem,kshum,kdens,ktbot
   integer(IN) :: kiFrac,kt,kavsdr,kanidr,kavsdf,kanidf,kswnet,kmelth,kmeltw
   integer(IN) :: ksen,klat,klwup,kevap,ktauxa,ktauya,ktref,kqref,kswpen,ktauxo,ktauyo,ksalt
+  integer(IN) :: ksalinity
 
   ! optional per thickness category fields
   integer(IN) :: kiFrac_01,kswpen_iFrac_01
@@ -108,6 +110,7 @@ module dice_comp_mod
   integer(IN) , pointer :: imask(:)
   real(R8)    , pointer :: yc(:)
   real(R8)    , pointer :: water(:)
+  real(R8)    , pointer :: tfreeze(:)
 !  real(R8)    , pointer :: ifrac0(:)
 
   integer(IN),parameter :: ktrans = 42
@@ -486,6 +489,7 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     kshum  = mct_aVect_indexRA(x2i,'Sa_shum')
     kdens  = mct_aVect_indexRA(x2i,'Sa_dens')
     ktbot  = mct_aVect_indexRA(x2i,'Sa_tbot')
+    ksalinity = mct_aVect_indexRA(x2i,'So_s')
 
     ! call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
     ! call mct_aVect_zero(avstrm)
@@ -493,6 +497,7 @@ subroutine dice_comp_init( EClock, cdata, x2i, i2x, NLFilename )
     allocate(imask(lsize))
     allocate(yc(lsize))
     allocate(water(lsize))
+    allocate(tfreeze(lsize))
     ! allocate(iFrac0(lsize))
 
     kfld = mct_aVect_indexRA(ggrid%data,'mask')
@@ -724,6 +729,8 @@ subroutine dice_comp_run( EClock, cdata,  x2i, i2x)
 
       lsize = mct_avect_lsize(i2x)
 
+      tfreeze = shr_frz_freezetemp(x2i%rAttr(ksalinity,:)) + tFrz ! convert to Kelvin
+
       do n = 1,lsize
 
          !--- fix erroneous iFrac ---
@@ -791,7 +798,7 @@ subroutine dice_comp_run( EClock, cdata,  x2i, i2x)
             !--- non-zero water => non-zero iFrac ---
             if (i2x%rAttr(kiFrac,n) <= 0.0_R8  .and.  water(n) > 0.0_R8) then
                i2x%rAttr(kiFrac,n) = min(1.0_R8,water(n)/waterMax)
-               ! i2x%rAttr(kT,n) = Tfrz     ! T can be above freezing?!?
+               ! i2x%rAttr(kT,n) = tfreeze(n)     ! T can be above freezing?!?
             end if
 
             !--- cpl multiplies melth & meltw by iFrac ---
@@ -806,8 +813,8 @@ subroutine dice_comp_run( EClock, cdata,  x2i, i2x)
             end if
          end if
 
-         !--- modify T wrt iFrac: (iFrac -> 0) => (T -> Tfrz) ---
-         i2x%rAttr(kt,n) = Tfrz + i2x%rAttr(kiFrac,n)*(i2x%rAttr(kt,n)-Tfrz) 
+         !--- modify T wrt iFrac: (iFrac -> 0) => (T -> tfreeze) ---
+         i2x%rAttr(kt,n) = tfreeze(n) + i2x%rAttr(kiFrac,n)*(i2x%rAttr(kt,n)-tfreeze(n)) 
 
       end do
 

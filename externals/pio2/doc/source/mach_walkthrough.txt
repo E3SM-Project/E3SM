@@ -349,7 +349,7 @@ with: <pre>tar zxf parallel-netcdf-1.6.1.tar.gz</pre>
 
 <p>Build with:
 <pre>cd parallel-netcdf-1.6.1
-FC=mpifort CC=mpicc ./configure --prefix=/usr/local
+FC=mpifort CC=mpicc CFLAGS=-fPIC ./configure --prefix=/usr/local
 make all check
 sudo make install </pre>
 
@@ -371,16 +371,29 @@ sudo make install </pre>
 
 <p>Download the netcdf C library from the <a
 href="http://www.unidata.ucar.edu/downloads/netcdf/index.jsp">NetCDF download
-page</a>. (These instructions were tested using version 4.3.3.1). Untar
-with: <pre>tar zxf netcdf-4.3.3.1.tar.gz</pre>
+page</a>. (These instructions were tested using version 4.4.0). Untar
+with: <pre>tar zxf netcdf-c-4.4.0.tar.gz</pre>
 
 
 <p>Build with:
-<pre>cd netcdf-4.3.3.1
+<pre>cd netcdf-c-4.4.0
 CC=mpicc ./configure --with-zlib=/usr/local --prefix=/usr/local --with-szlib=/usr/local --with-hdf5=/usr/local --enable-pnetcdf --enable-parallel-tests --enable-logging
 make all check
 sudo make install </pre>
 
+<li>Installing NetCDF-4 Fortran Library
+
+<p>Download the netcdf Fortran library from the <a
+href="http://www.unidata.ucar.edu/downloads/netcdf/index.jsp">NetCDF download
+page</a>. (These instructions were tested using version 4.4.3). Untar
+with: <pre>tar zxf netcdf-fortran-4.4.3.tar.gz</pre>
+
+
+<p>Build with:
+<pre>cd netcdf-fortran-4.4.3
+F77=mpif77 F90=mpif90  ./configure --with-zlib=/usr/local --prefix=/usr/local --with-szlib=/usr/local --with-hdf5=/usr/local --enable-pnetcdf --enable-parallel-tests --enable-logging
+make all check
+sudo make install </pre>
 
 <li>Installing ParallelIO Library
 

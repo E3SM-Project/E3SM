@@ -42,32 +42,35 @@ cp -f env_build.xml    env_build.xml.1
 # Halve the number of tasks and threads and ROOTPE and build again,
 #-----------------------------------------------------
 
-set NTASKS_ATM  = `./xmlquery NTASKS_ATM	-value`
-set NTASKS_LND  = `./xmlquery NTASKS_LND	-value`
-set NTASKS_ROF  = `./xmlquery NTASKS_ROF	-value`
-set NTASKS_WAV  = `./xmlquery NTASKS_WAV	-value`
-set NTASKS_OCN  = `./xmlquery NTASKS_OCN	-value`
-set NTASKS_ICE  = `./xmlquery NTASKS_ICE	-value`
-set NTASKS_GLC  = `./xmlquery NTASKS_GLC	-value`
-set NTASKS_CPL  = `./xmlquery NTASKS_CPL	-value`
+set NTASKS_ATM  = `./xmlquery NTASKS_ATM        -value`
+set NTASKS_LND  = `./xmlquery NTASKS_LND        -value`
+set NTASKS_ROF  = `./xmlquery NTASKS_ROF        -value`
+set NTASKS_WAV  = `./xmlquery NTASKS_WAV        -value`
+set NTASKS_OCN  = `./xmlquery NTASKS_OCN        -value`
+set NTASKS_ICE  = `./xmlquery NTASKS_ICE        -value`
+set NTASKS_GLC  = `./xmlquery NTASKS_GLC        -value`
+set NTASKS_ESP  = `./xmlquery NTASKS_ESP        -value`
+set NTASKS_CPL  = `./xmlquery NTASKS_CPL        -value`
 
-set NTHRDS_ATM  = `./xmlquery NTHRDS_ATM	-value`
-set NTHRDS_LND  = `./xmlquery NTHRDS_LND	-value`
-set NTHRDS_ROF  = `./xmlquery NTHRDS_ROF	-value`
-set NTHRDS_WAV  = `./xmlquery NTHRDS_WAV	-value`
-set NTHRDS_OCN  = `./xmlquery NTHRDS_OCN	-value`
-set NTHRDS_ICE  = `./xmlquery NTHRDS_ICE	-value`
-set NTHRDS_GLC  = `./xmlquery NTHRDS_GLC	-value`
-set NTHRDS_CPL  = `./xmlquery NTHRDS_CPL	-value`
+set NTHRDS_ATM  = `./xmlquery NTHRDS_ATM        -value`
+set NTHRDS_LND  = `./xmlquery NTHRDS_LND        -value`
+set NTHRDS_ROF  = `./xmlquery NTHRDS_ROF        -value`
+set NTHRDS_WAV  = `./xmlquery NTHRDS_WAV        -value`
+set NTHRDS_OCN  = `./xmlquery NTHRDS_OCN        -value`
+set NTHRDS_ICE  = `./xmlquery NTHRDS_ICE        -value`
+set NTHRDS_GLC  = `./xmlquery NTHRDS_GLC        -value`
+set NTHRDS_ESP  = `./xmlquery NTHRDS_ESP        -value`
+set NTHRDS_CPL  = `./xmlquery NTHRDS_CPL        -value`
 
-set ROOTPE_ATM  = `./xmlquery ROOTPE_ATM	-value`
-set ROOTPE_LND  = `./xmlquery ROOTPE_LND	-value`
-set ROOTPE_ROF  = `./xmlquery ROOTPE_ROF	-value`
-set ROOTPE_WAV  = `./xmlquery ROOTPE_WAV	-value`
-set ROOTPE_OCN  = `./xmlquery ROOTPE_OCN	-value`
-set ROOTPE_ICE  = `./xmlquery ROOTPE_ICE	-value`
-set ROOTPE_GLC  = `./xmlquery ROOTPE_GLC	-value`
-set ROOTPE_CPL  = `./xmlquery ROOTPE_CPL	-value`
+set ROOTPE_ATM  = `./xmlquery ROOTPE_ATM        -value`
+set ROOTPE_LND  = `./xmlquery ROOTPE_LND        -value`
+set ROOTPE_ROF  = `./xmlquery ROOTPE_ROF        -value`
+set ROOTPE_WAV  = `./xmlquery ROOTPE_WAV        -value`
+set ROOTPE_OCN  = `./xmlquery ROOTPE_OCN        -value`
+set ROOTPE_ICE  = `./xmlquery ROOTPE_ICE        -value`
+set ROOTPE_GLC  = `./xmlquery ROOTPE_GLC        -value`
+set ROOTPE_ESP  = `./xmlquery ROOTPE_ESP        -value`
+set ROOTPE_CPL  = `./xmlquery ROOTPE_CPL        -value`
 
 if ( $NTHRDS_ATM > 1 || $NTHRDS_LND > 1 || $NTHRDS_ROF > 1 || $NTHRDS_WAV > 1 || $NTHRDS_OCN > 1 || $NTHRDS_ICE > 1 || $NTHRDS_GLC > 1 || $NTHRDS_CPL > 1 ) then
   ./xmlchange -file env_build.xml -id BUILD_THREADED  -val TRUE
@@ -102,6 +105,10 @@ if ( $NTASKS_GLC > 1 ) then
   @ ntask = $NTASKS_GLC / 2
   ./xmlchange -file env_mach_pes.xml -id NTASKS_GLC  -val $ntask
 endif
+if ( $NTASKS_ESP > 1 ) then
+  @ ntask = $NTASKS_ESP / 2
+  ./xmlchange -file env_mach_pes.xml -id NTASKS_ESP  -val $ntask
+endif
 if ( $NTASKS_CPL > 1 ) then
   @ ntask = $NTASKS_CPL / 2
   ./xmlchange -file env_mach_pes.xml -id NTASKS_CPL  -val $ntask
@@ -122,6 +129,8 @@ endif
   ./xmlchange -file env_mach_pes.xml -id ROOTPE_ICE  -val $rootpe
   @ rootpe = $ROOTPE_GLC / 2
   ./xmlchange -file env_mach_pes.xml -id ROOTPE_GLC  -val $rootpe
+  @ rootpe = $ROOTPE_ESP / 2
+  ./xmlchange -file env_mach_pes.xml -id ROOTPE_ESP  -val $rootpe
   @ rootpe = $ROOTPE_CPL / 2
   ./xmlchange -file env_mach_pes.xml -id ROOTPE_CPL  -val $rootpe
 
@@ -154,6 +163,10 @@ endif
 if ( $NTHRDS_GLC > 1 ) then
   @ nthrd = $NTHRDS_GLC / 2
   ./xmlchange -file env_mach_pes.xml -id NTHRDS_GLC  -val $nthrd
+endif
+if ( $NTHRDS_ESP > 1 ) then
+  @ nthrd = $NTHRDS_ESP / 2
+  ./xmlchange -file env_mach_pes.xml -id NTHRDS_ESP  -val $nthrd
 endif
 if ( $NTHRDS_CPL > 1 ) then
   @ nthrd = $NTHRDS_CPL / 2

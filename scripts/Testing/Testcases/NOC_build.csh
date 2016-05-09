@@ -15,7 +15,7 @@ set EXEROOT     = `./xmlquery EXEROOT		-value`
 ./xmlchange -file env_mach_pes.xml -id NINST_OCN  -val 1
 set maxtasks = 0
 
-foreach comp (ATM LND ROF WAV ICE GLC)
+foreach comp (ATM LND ROF WAV ICE GLC ESP)
   ./xmlchange NINST_$comp=2
 
   set tasks = `./xmlquery NTASKS_$comp -value`

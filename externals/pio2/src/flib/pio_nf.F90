@@ -10,24 +10,32 @@ module pio_nf
   private
 
   public :: &
-       pio_def_var                                          ,   &
-       pio_def_dim                                          ,  &
-       pio_inq_attname                                      ,    & 
-       pio_inq_att                                          ,        &
-       pio_inq_attlen                                       ,     &
-       pio_inq_varid                                        ,      &
-       pio_inq_varname                                      ,    &
-       pio_inq_vartype                                      ,    &
-       pio_inq_varndims                                     ,   &
-       pio_inq_vardimid                                     ,   &
-       pio_inq_varnatts                                     ,   &
+       pio_def_var                                          , &
+       pio_def_var_deflate                                  , &
+       pio_def_var_chunking                                 , &
+       pio_def_dim                                          , &
+       pio_inq_attname                                      , & 
+       pio_inq_att                                          , &
+       pio_inq_attlen                                       , &
+       pio_inq_varid                                        , &
+       pio_inq_varname                                      , &
+       pio_inq_vartype                                      , &
+       pio_inq_varndims                                     , &
+       pio_inq_vardimid                                     , &
+       pio_inq_varnatts                                     , &
+       pio_inq_var_deflate                                  , &       
        pio_inquire_variable                                 , &
        pio_inquire_dimension                                , &
        pio_inq_dimname                                      , &
        pio_inq_dimlen                                       , &
        pio_inq_dimid                                        , &
+       pio_inq_unlimdim                                     , &
        pio_inquire                                          , &
        pio_enddef                                           , &
+       pio_set_chunk_cache                                  , &
+       pio_get_chunk_cache                                  , &
+       pio_set_var_chunk_cache                              , &
+       pio_get_var_chunk_cache                              , &
        pio_redef
 !       pio_copy_att    to be done
 
@@ -37,6 +45,15 @@ module pio_nf
           def_var_md_desc                                   , &
           def_var_0d_id                                     , &
           def_var_md_id 
+  end interface
+  interface pio_def_var_deflate
+     module procedure &
+          def_var_deflate_desc                              , &         
+          def_var_deflate_id
+  end interface
+  interface pio_def_var_chunking
+     module procedure &
+          def_var_chunking
   end interface
   interface pio_inq_attname
      module procedure &
@@ -93,6 +110,12 @@ module pio_nf
           inq_varnatts_desc                                 , &
           inq_varnatts_vid                                  ,    &
           inq_varnatts_id
+  end interface
+  interface pio_inq_var_deflate
+     module procedure &
+          inq_var_deflate_desc                                 , &
+          inq_var_deflate_vid                                  , &
+          inq_var_deflate_id
   end interface
   interface pio_inquire_dimension
      module procedure &
@@ -168,6 +191,28 @@ module pio_nf
      module procedure &
           inquire_desc                                      , &
           inquire_id
+  end interface
+
+  interface pio_set_chunk_cache
+     module procedure &
+          set_chunk_cache
+  end interface
+
+  interface pio_get_chunk_cache
+     module procedure &
+          get_chunk_cache
+  end interface
+
+  interface pio_set_var_chunk_cache
+     module procedure &
+          set_var_chunk_cache_desc                          , &
+          set_var_chunk_cache_id
+  end interface
+
+  interface pio_get_var_chunk_cache
+     module procedure &
+          get_var_chunk_cache_desc                          , &
+          get_var_chunk_cache_id
   end interface
 
 contains
@@ -509,7 +554,7 @@ contains
        end function PIOc_inq_unlimdim
     end interface
     ierr = PIOc_inq_unlimdim(ncid                           ,unlimdim)
-    unlimdim=unlimdim+1
+    if(unlimdim>=0) unlimdim=unlimdim+1
   end function inq_unlimdim_id
 
 !>
@@ -994,7 +1039,76 @@ contains
 
     ierr = PIOc_inq_varnatts(ncid                           ,varid-1,natts)
   end function inq_varnatts_id
-    
+
+!>
+!!  @defgroup PIO_inq_var_deflate PIO_inq_var_deflate
+!<
+!>
+!! @public 
+!! @ingroup PIO_inq_var_deflate
+!! @brief Gets metadata information for netcdf file.
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param vardesc @copydoc var_desc_t
+!! @param type : The type of variable
+!! @retval ierr @copydoc error_return
+!<
+  integer function inq_var_deflate_desc(File, vardesc, shuffle, deflate, &
+       deflate_level) result(ierr)
+
+    type (File_desc_t), intent(in) :: File
+    type (Var_desc_t), intent(in) :: vardesc
+    integer, intent(out) :: shuffle
+    integer, intent(out) :: deflate
+    integer, intent(out) :: deflate_level
+
+    ierr = pio_inq_var_deflate(File%fh, vardesc%varid, shuffle, deflate, deflate_level)
+  end function inq_var_deflate_desc
+
+!>
+!! @public 
+!! @ingroup PIO_inq_var_deflate
+!! @brief Gets metadata information for netcdf file.
+!<
+  integer function inq_var_deflate_vid(File, varid, shuffle, deflate, deflate_level) result(ierr)
+
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    integer, intent(out) :: shuffle
+    integer, intent(out) :: deflate
+    integer, intent(out) :: deflate_level
+
+    ierr = pio_inq_var_deflate(File%fh, varid, shuffle, deflate, deflate_level)
+  end function inq_var_deflate_vid
+
+!>
+!! @public 
+!! @ingroup PIO_inq_var_deflate
+!! @brief Gets metadata information for netcdf file.
+!<
+  integer function inq_var_deflate_id(ncid, varid, shuffle, deflate, &
+       deflate_level) result(ierr)
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    integer, intent(out) :: shuffle
+    integer, intent(out) :: deflate
+    integer, intent(out) :: deflate_level
+
+    interface
+       integer(C_INT) function PIOc_inq_var_deflate(ncid, varid, shuffle, deflate, deflate_level) &
+            bind(C, name="PIOc_inq_var_deflate")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         integer(C_INT) :: shuffle
+         integer(C_INT) :: deflate
+         integer(C_INT) :: deflate_level
+       end function PIOc_inq_var_deflate
+    end interface
+
+    ierr = PIOc_inq_var_deflate(ncid, varid-1, shuffle, deflate, deflate_level)
+  end function inq_var_deflate_id
+  
 !>
 !! @defgroup PIO_inq_varname
 !<
@@ -1412,5 +1526,233 @@ contains
     varid = varid+1
   end function def_var_md_id
 
+!> 
+!! @public 
+!! @ingroup PIO_def_var_deflate
+!! @brief Changes compression settings for a netCDF-4/HDF5 variable.
+!<
+  integer function def_var_deflate_id(file, varid, shuffle, deflate, deflate_level) &
+       result(ierr)
+    type (File_desc_t), intent(in)  :: file
+    integer, intent(in) :: varid
+    integer, intent(in) :: shuffle
+    integer, intent(in) :: deflate
+    integer, intent(in) :: deflate_level
+
+    interface
+       integer (C_INT) function PIOc_def_var_deflate(ncid, varid, shuffle, deflate, &
+            deflate_level) bind(c,name="PIOc_def_var_deflate")
+         use iso_c_binding
+         integer(c_int), value :: ncid
+         integer(c_int), value :: varid
+         integer(c_int), value :: shuffle
+         integer(c_int), value :: deflate
+         integer(c_int), value :: deflate_level
+       end function PIOc_def_var_deflate
+    end interface
+
+    ierr = PIOc_def_var_deflate(file%fh, varid-1, shuffle, deflate, deflate_level)
+  end function def_var_deflate_id
+
+!> 
+!! @public 
+!! @ingroup PIO_def_var_deflate
+!! @brief Changes compression settings for a netCDF-4/HDF5 variable.
+!<
+  integer function def_var_deflate_desc(file, vardesc, shuffle, deflate, deflate_level) &
+       result(ierr)
+    type (File_desc_t), intent(in)  :: file
+    type (var_desc_t), intent(in) :: vardesc
+    integer, intent(in) :: shuffle
+    integer, intent(in) :: deflate
+    integer, intent(in) :: deflate_level
+
+    ierr = def_var_deflate_id(file, vardesc%varid, shuffle, deflate, deflate_level)
+  end function def_var_deflate_desc
+
+!> 
+!! @public 
+!! @ingroup PIO_def_var_chunking
+!! @brief Changes chunking settings for a netCDF-4/HDF5 variable.
+!<
+  integer function def_var_chunking(file, vardesc, storage, chunksizes) result(ierr)
+    type (File_desc_t), intent(in)  :: file
+    type (var_desc_t), intent(in) :: vardesc
+    integer, intent(in) :: storage
+    integer, intent(in) :: chunksizes(:)
+    integer(C_INT) :: cchunksizes(PIO_MAX_VAR_DIMS)
+    integer :: ndims, i    
+
+    interface
+       integer (C_INT) function PIOc_def_var_chunking(ncid, varid, storage, chunksizes) &
+            bind(c,name="PIOc_def_var_chunking")
+         use iso_c_binding
+         integer(c_int), value :: ncid
+         integer(c_int), value :: varid
+         integer(c_int), value :: storage
+         integer(c_int) :: chunksizes(*)
+       end function PIOc_def_var_chunking
+    end interface
+    ndims = size(chunksizes)
+    do i=1,ndims
+       cchunksizes(i) = chunksizes(ndims-i+1)-1
+    enddo
+
+    ierr = PIOc_def_var_chunking(file%fh, vardesc%varid-1, storage, cchunksizes)
+  end function def_var_chunking
+
+!> 
+!! @public 
+!! @ingroup PIO_set_chunk_cache
+!! @brief Changes chunk cache settings for netCDF-4/HDF5 files created after this call.
+!<
+  integer function set_chunk_cache(iosysid, iotype, chunk_cache_size, chunk_cache_nelems, &
+       chunk_cache_preemption) result(ierr)
+    integer, intent(in) :: iosysid
+    integer, intent(in) :: iotype 
+    integer(kind=PIO_OFFSET_KIND), intent(in) :: chunk_cache_size
+    integer(kind=PIO_OFFSET_KIND), intent(in) :: chunk_cache_nelems
+    real, intent(in) :: chunk_cache_preemption
+
+    interface
+       integer (C_INT) function PIOc_set_chunk_cache(iosysid, iotype, chunk_cache_size, &
+            chunk_cache_nelems, chunk_cache_preemption) &
+            bind(c,name="PIOc_set_chunk_cache")
+         use iso_c_binding
+         integer(c_int), value :: iosysid
+         integer(c_int), value :: iotype
+         integer(c_size_t), value :: chunk_cache_size
+         integer(c_size_t), value :: chunk_cache_nelems
+         real(c_float), value :: chunk_cache_preemption
+       end function PIOc_set_chunk_cache
+    end interface
+
+    ierr = PIOc_set_chunk_cache(iosysid, iotype, chunk_cache_size, chunk_cache_nelems, &
+         chunk_cache_preemption)
+  end function set_chunk_cache
+
+!> 
+!! @public
+!! @ingroup PIO_set_chunk_cache  
+!! @brief Gets current settings for chunk cache (only relevant for netCDF4/HDF5 files.)
+!<
+  integer function get_chunk_cache(iosysid, iotype, chunk_cache_size, chunk_cache_nelems, &
+       chunk_cache_preemption) result(ierr)
+    integer, intent(in) :: iosysid
+    integer, intent(in) :: iotype
+    integer(kind=PIO_OFFSET_KIND), intent(out) :: chunk_cache_size
+    integer(kind=PIO_OFFSET_KIND), intent(out) :: chunk_cache_nelems
+    real, intent(out) :: chunk_cache_preemption
+
+    interface
+       integer (C_INT) function PIOc_get_chunk_cache(iosysid, iotype, chunk_cache_size, &
+            chunk_cache_nelems, chunk_cache_preemption) &
+            bind(c,name="PIOc_get_chunk_cache")
+         use iso_c_binding
+         integer(c_int), value :: iosysid
+         integer(c_int), value :: iotype
+         integer(c_size_t) :: chunk_cache_size
+         integer(c_size_t) :: chunk_cache_nelems
+         real(c_float) :: chunk_cache_preemption
+       end function PIOc_get_chunk_cache
+    end interface
+
+    ierr = PIOc_get_chunk_cache(iosysid, iotype, chunk_cache_size, chunk_cache_nelems, &
+         chunk_cache_preemption)
+  end function get_chunk_cache
+
+!> 
+!! @public 
+!! @ingroup PIO_set_chunk_cache
+!! @brief Changes chunk cache settings for a variable in a netCDF-4/HDF5 file.
+!<
+  integer function set_var_chunk_cache_id(file, varid, chunk_cache_size, &
+       chunk_cache_nelems, chunk_cache_preemption) result(ierr)
+    type (File_desc_t), intent(in)  :: file
+    integer, intent(in) :: varid
+    integer(PIO_OFFSET_KIND), intent(in) :: chunk_cache_size
+    integer(PIO_OFFSET_KIND), intent(in) :: chunk_cache_nelems
+    real, intent(in) :: chunk_cache_preemption
+
+    interface
+       integer (C_INT) function PIOc_set_var_chunk_cache(ncid, varid, chunk_cache_size, &
+            chunk_cache_nelems, chunk_cache_preemption) &
+            bind(c,name="PIOc_set_var_chunk_cache")
+         use iso_c_binding
+         integer(c_int), value :: ncid
+         integer(c_int), value :: varid
+         integer(c_size_t), value :: chunk_cache_size
+         integer(c_size_t), value :: chunk_cache_nelems
+         real(c_float), value :: chunk_cache_preemption
+       end function PIOc_set_var_chunk_cache
+    end interface
+
+    ierr = PIOc_set_var_chunk_cache(file%fh, varid-1, chunk_cache_size, &
+         chunk_cache_nelems, chunk_cache_preemption)
+  end function set_var_chunk_cache_id
+
+  !> 
+!! @public 
+!! @ingroup PIO_set_var_chunk_cache
+!! @brief Changes chunk cacne for a variable.
+!<
+  integer function set_var_chunk_cache_desc(file, vardesc, chunk_cache_size, &
+       chunk_cache_nelems, chunk_cache_preemption) result(ierr)
+    type (File_desc_t), intent(in)  :: file
+    type (var_desc_t), intent(in) :: vardesc
+    integer(PIO_OFFSET_KIND), intent(in) :: chunk_cache_size
+    integer(PIO_OFFSET_KIND), intent(in) :: chunk_cache_nelems
+    real, intent(in) :: chunk_cache_preemption
+
+    ierr = set_var_chunk_cache_id(file, vardesc%varid, chunk_cache_size, &
+         chunk_cache_nelems, chunk_cache_preemption)
+  end function set_var_chunk_cache_desc
+
+!> 
+!! @public 
+!! @ingroup PIO_get_var_chunk_cache
+!! @brief Get the chunk cache settings for a variable.
+!<
+  integer function get_var_chunk_cache_desc(file, vardesc, chunk_cache_size, &
+       chunk_cache_nelems, chunk_cache_preemption) result(ierr)
+    type (File_desc_t), intent(in)  :: file
+    type (var_desc_t), intent(in) :: vardesc
+    integer(PIO_OFFSET_KIND), intent(out) :: chunk_cache_size
+    integer(PIO_OFFSET_KIND), intent(out) :: chunk_cache_nelems
+    real, intent(out) :: chunk_cache_preemption
+
+    ierr = get_var_chunk_cache_id(file, vardesc%varid, chunk_cache_size, &
+         chunk_cache_nelems, chunk_cache_preemption)
+  end function get_var_chunk_cache_desc
+
+!> 
+!! @public 
+!! @ingroup PIO_get_var_chunk_cache
+!! @brief Get the chunk cache settings for a variable.
+!<
+  integer function get_var_chunk_cache_id(file, varid, chunk_cache_size, &
+       chunk_cache_nelems, chunk_cache_preemption) result(ierr)
+    type (File_desc_t), intent(in)  :: file
+    integer, intent(in) :: varid
+    integer(PIO_OFFSET_KIND), intent(out) :: chunk_cache_size
+    integer(PIO_OFFSET_KIND), intent(out) :: chunk_cache_nelems
+    real, intent(out) :: chunk_cache_preemption
+
+    interface
+       integer (C_INT) function PIOc_get_var_chunk_cache(ncid, varid, &
+            chunk_cache_size, chunk_cache_nelems, chunk_cache_preemption) &
+            bind(c,name="PIOc_get_var_chunk_cache")
+         use iso_c_binding
+         integer(c_int), value :: ncid
+         integer(c_int), value :: varid
+         integer(c_size_t) :: chunk_cache_size
+         integer(c_size_t) :: chunk_cache_nelems
+         real(c_float) :: chunk_cache_preemption
+       end function PIOc_get_var_chunk_cache
+    end interface
+
+    ierr = PIOc_get_var_chunk_cache(file%fh, varid-1, chunk_cache_size, &
+         chunk_cache_nelems, chunk_cache_preemption)
+  end function get_var_chunk_cache_id
 
 end module pio_nf
