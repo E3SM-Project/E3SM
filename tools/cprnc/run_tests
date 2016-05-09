@@ -17,11 +17,14 @@ use Getopt::Long;
 # hash reference containing at least the associated control file (key:
 # control), and possibly extra arguments to cprnc (key: extra_args)
 my %tests = ('copy.nc' => {control => 'control.nc'},
+             'extra_variable.nc' => {control => 'control.nc'},
              'diffs_in_vals.nc' => {control => 'control.nc'},
+             'diffs_in_vals_and_extra_and_missing.nc' => {control => 'control.nc'},
              'diffs_in_fill.nc' => {control => 'control.nc'},
              'diffs_in_vals_and_diffs_in_fill.nc' => {control => 'control.nc'},
              'diffs_in_vals_and_fill.nc' => {control => 'control.nc'},
              'lon_differs.nc' => {control => 'control.nc'},
+             'missing_variable.nc' => {control => 'control.nc'},
              'vals_differ_by_1.1.nc' => {control => 'control.nc'},
              'vals_differ_by_1.1_somewhere.nc' => {control => 'control.nc'},
              'vals_differ_by_varying_amounts.nc' => {control => 'control.nc'},
