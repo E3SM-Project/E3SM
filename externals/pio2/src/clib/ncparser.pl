@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl 
 use strict;
 
 my $netcdf_incdir = $ARGV[0];
@@ -16,7 +16,7 @@ foreach my $line (@file){
   chomp($line);
   next if($line =~ /^\s*\/\*/);
   next if($line =~ /^\s*[#\*]/);
-  $line =~ s/\s+/ /g;
+  $line =~ s/\s+/ /g; 
   if($line =~ / ncmpi_(.*)(\(.*)$/) {
     $func = $1;
 
@@ -35,7 +35,7 @@ my $func="";
 foreach my $line (@file){
   chomp($line);
   next if($line =~ /^\s*\/\*/);
-  next if($line =~ /^\s*[#\*]/);
+  next if($line =~ /^\s*[#\*]/); 
   $line =~ s/\s+/ /g;
   if($line =~ /^\s*nc_([^_].*)(\(.*)$/) {
     $func = $1;
@@ -50,18 +50,18 @@ close(NF);
 my $func="";
 
 open(F,">pio_nc.c");
-print F
+print F 
 "/**
-* \@file
+* \@file   
 * \@author Jim Edwards (jedwards\@ucar.edu)
-* \@date     Feburary 2014
+* \@date     Feburary 2014 
 * \@brief    PIO interfaces to [NetCDF](http://www.unidata.ucar.edu/software/netcdf/docs/modules.html) support functions
 * \@details
 *  This file provides an interface to the [NetCDF](http://www.unidata.ucar.edu/software/netcdf/docs/modules.html) support functions.
-*  Each subroutine calls the underlying netcdf or pnetcdf or netcdf4 functions from
-*  the appropriate subset of mpi tasks (io_comm). Each routine must be called
+*  Each subroutine calls the underlying netcdf or pnetcdf or netcdf4 functions from 
+*  the appropriate subset of mpi tasks (io_comm). Each routine must be called 
 *  collectively from union_comm.
-*
+*  
 */
 #include <pio.h>
 #include <pio_internal.h>\n\n";
@@ -123,7 +123,7 @@ foreach my $func (keys %{$functions}){
 	  }
 	  if($line =~/function/){
 	      if($line =~ s/PIO_function/PIOc_$func/){
-		  $line =~ s/\(\)/ $functions->{$func}{pnetcdf} / ;
+		  $line =~ s/\(\)/ $functions->{$func}{pnetcdf} / ; 
 #	      $line =~ s/int ncid/file_desc_t *file/;
 		  $line =~ s/MPI_Offset/PIO_Offset/g;
 		  $line =~ s/\;//;
@@ -141,14 +141,14 @@ foreach my $func (keys %{$functions}){
 		  } else {
 		      $currurl = $urls->{other}; }
 
-		  print F
-"/**
+		  print F 
+"/** 
  * \@ingroup PIOc_$func
  * The PIO-C interface for the NetCDF function nc_$func.
  *
- * This routine is called collectively by all tasks in the communicator
+ * This routine is called collectively by all tasks in the communicator 
  * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at:
+ * please read about this function in the NetCDF documentation at: 
  * ".$currurl."
  *
  * \@param ncid the ncid of the open file, obtained from
@@ -183,8 +183,8 @@ foreach my $func (keys %{$functions}){
 		  if($functions->{$func}{pnetcdf} =~ /\*nattsp/){
 		      print F " * \@param nattsp a pointer that will get the number of attributes \n";
 		  }
-
-print F
+		  
+print F 
 " * \@return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */\n";
 
@@ -195,7 +195,7 @@ print F
 		      $args = $functions->{$func}{pnetcdf} ;
 		  }
 		  if($line =~ s/nc_function/nc_$func/){
-		      $args = $functions->{$func}{netcdf}  ;
+		      $args = $functions->{$func}{netcdf}  ; 
 		  }
 		  $args =~ s/int ncid/file->fh/;
 #      $args =~ s/int varid/vdesc->varid/;
@@ -217,7 +217,7 @@ print F
 		  }else{
 		      $args =~ s/size_t /\(size_t\)/g;
 		  }
-
+		  
 		  $line =~ s/\(\)/$args/;
 	      }
 	  }
@@ -229,7 +229,7 @@ print F
 	      }else{
 		  print F "    errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));\n";
 		  print F "    sprintf(errstr,\"in file %s\",__FILE__);\n";
-	      }
+	      }	      
               print F "  }\n";
 	  }
 
@@ -243,9 +243,9 @@ print F
 	      printf F "        ierr = nc_def_var(file->fh, name, xtype, ndims, dimidsp, varidp);\n";
 	      printf F "        if(ierr == PIO_NOERR){\n";
 	      printf F "          ierr = nc_def_var_deflate(file->fh, *varidp, 0,1,1);\n";
-	      printf F "        }\n";
-	      printf F "      }\n";
-	      printf F "      break;\n";
+	      printf F "        }\n";  
+	      printf F "      }\n";  
+	      printf F "      break;\n";  
 	  }
 	  if($line =~ /msg =/){
 	      if($func =~ /inq_varndims/){
@@ -264,15 +264,15 @@ print F
 	      }elsif($func =~ /inq_unlimdim/){
 		  print F "    mpierr = MPI_Bcast(unlimdimidp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_ndims/){
-		  print F "    mpierr = MPI_Bcast(ndimsp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "    mpierr = MPI_Bcast(ndimsp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
 	      }elsif($func =~ /var_fill/){
                   print F "    mpierr = MPI_Bcast(fill_value, 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /def_var/){
-		  print F "    mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "    mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
 	      }elsif($func =~ /def_dim/){
-		  print F "    mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "    mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
 	      }elsif($func =~ /inq_format/){
-		  print F "    mpierr = MPI_Bcast(formatp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "    mpierr = MPI_Bcast(formatp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
 	      }elsif($func =~ /inq_natts/){
 		  print F "    mpierr = MPI_Bcast(ngattsp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_varnatts/){
@@ -301,7 +301,7 @@ print F
 		  print F "    if(name != NULL){ \n";
 		  print F "      int slen;\n";
 		  print F "      if(ios->iomaster)\n";
-		  print F "        slen = (int) strlen(name);\n";
+		  print F "        slen = (int) strlen(name) + 1;\n";
 		  print F "      mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 		  print F "      mpierr = MPI_Bcast(name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);\n    }\n";
 
@@ -311,12 +311,12 @@ print F
 		  print F "    }\n";
 
 
-
+		  
 	      }elsif($func =~ /inq_dim$/){
 		  print F  "    if(name != NULL){ \n";
 		  print F "      int slen;\n";
 		  print F "      if(ios->iomaster)\n";
-		  print F "        slen = (int) strlen(name);\n";
+		  print F "        slen = (int) strlen(name) + 1;\n";
 		  print F "      mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 		  print F "      mpierr = MPI_Bcast(name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);\n    }\n";
 		  print F "      if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
@@ -324,7 +324,7 @@ print F
 		  print F "    if(name != NULL){\n";
 		  print F "      int slen;\n";
 		  print F "      if(ios->iomaster)\n";
-		  print F "        slen = (int) strlen(name);\n";
+		  print F "        slen = (int) strlen(name) + 1;\n";
 		  print F "      mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 		  print F "      mpierr = MPI_Bcast(name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);\n    }\n";
 	      }elsif($func =~ /inq_vardimid/){
@@ -336,7 +336,7 @@ print F
 	      }elsif($func =~ /get_att_(\w+)/){
 		  my $atype = $1;
 		  print F "      if(ierr == PIO_NOERR){\n";
-		  print F "        PIO_Offset attlen;\n";
+		  print F "        PIO_Offset attlen;\n";		  
 		  print F "        PIOc_inq_attlen(file->fh, varid, name, \&attlen);\n";
 		  print F "        mpierr = MPI_Bcast(ip , (int) attlen, $typemap->{$atype}, ios->ioroot, ios->my_comm);\n ";
 		  print F "     }\n";
@@ -358,5 +358,5 @@ print F
 #    print "$func  $functions->{$func}{pnetcdf} $functions->{$func}{netcdf}\n";
       print F "\n";
   }
-}
+} 
 close(F);
