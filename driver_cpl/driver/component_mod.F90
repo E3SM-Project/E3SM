@@ -150,7 +150,18 @@ contains
 
        ! Determine initial value of comp_present in infodata - to do - add this to component 
 
+#ifdef CPRPGI
+       if (comp(1)%oneletterid == 'a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'o') call seq_infodata_getData(infodata, ocn_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'r') call seq_infodata_getData(infodata, rof_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'e') call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+#else
        call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
+#endif
     end do
 
   end subroutine component_init_pre
@@ -238,7 +249,18 @@ contains
     ! Determine final value of comp_present in infodata (after component initialization)
 
     do eci = 1,size(comp) 
+#ifdef CPRPGI
+       if (comp(1)%oneletterid == 'a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'o') call seq_infodata_getData(infodata, ocn_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'r') call seq_infodata_getData(infodata, rof_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'e') call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+#else
        call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
+#endif
     end do
 
 
@@ -435,7 +457,23 @@ contains
              ! The following is only from infodata updates on the component pes
 
              cid = comp(1)%oneletterid
+#ifdef CPRPGI
+             if (cid=='a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present, atm_nx=nx, atm_ny=ny)
+             if (cid=='l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present, lnd_nx=nx, lnd_ny=ny)
+             if (cid=='i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present, ice_nx=nx, ice_ny=ny)
+             if (cid=='o') call seq_infodata_getData(infodata, ocn_present=comp(eci)%present, ocn_nx=nx, ocn_ny=ny)
+             if (cid=='r') call seq_infodata_getData(infodata, rof_present=comp(eci)%present, rof_nx=nx, rof_ny=ny)
+             if (cid=='g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present, glc_nx=nx, glc_ny=ny)
+             if (cid=='w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present, wav_nx=nx, wav_ny=ny)
+             if (cid=='e') then
+                ! We really shouldn't get here but let's do something in case
+                call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+                nx = 0
+                ny = 0
+             end if
+#else
              call seq_infodata_getData(cid, infodata, comp_present=comp(eci)%present, comp_nx=nx, comp_ny=ny)
+#endif
 
              if (init_phase == 1 .and. comp(eci)%present) then
 
@@ -576,7 +614,18 @@ contains
     ! Determine final value of comp_present in infodata (after component initialization)
 
     do eci = 1,size(comp) 
+#ifdef CPRPGI
+       if (comp(1)%oneletterid == 'a') call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'l') call seq_infodata_getData(infodata, lnd_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'i') call seq_infodata_getData(infodata, ice_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'o') call seq_infodata_getData(infodata, ocn_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'r') call seq_infodata_getData(infodata, rof_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'e') call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+#else
       call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
+#endif
     end do
 
     !--------------------------------------------------
@@ -991,7 +1040,18 @@ contains
        else
           firstloop = .false.
        endif
+#ifdef CPRPGI
+       if (comp(1)%oneletterid == 'a') call seq_infodata_putData(infodata, atm_phase=phase)
+       if (comp(1)%oneletterid == 'l') call seq_infodata_putData(infodata, lnd_phase=phase)
+       if (comp(1)%oneletterid == 'i') call seq_infodata_putData(infodata, ice_phase=phase)
+       if (comp(1)%oneletterid == 'o') call seq_infodata_putData(infodata, ocn_phase=phase)
+       if (comp(1)%oneletterid == 'r') call seq_infodata_putData(infodata, rof_phase=phase)
+       if (comp(1)%oneletterid == 'g') call seq_infodata_putData(infodata, glc_phase=phase)
+       if (comp(1)%oneletterid == 'w') call seq_infodata_putData(infodata, wav_phase=phase)
+       if (comp(1)%oneletterid == 'e') call seq_infodata_putData(infodata, esp_phase=phase)
+#else
        call seq_infodata_putData(comp(1)%oneletterid, infodata, comp_phase=phase)
+#endif
 
        do eci = 1,num_inst
           if (comp(eci)%iamin_compid) then

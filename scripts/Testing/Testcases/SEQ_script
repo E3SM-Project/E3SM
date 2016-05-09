@@ -77,6 +77,7 @@ echo "doing a second a ${STOP_N} ${STOP_OPTION} with all rootpes set to 0" >>& $
 ./xmlchange -file env_mach_pes.xml -id ROOTPE_GLC -val 0
 ./xmlchange -file env_mach_pes.xml -id ROOTPE_OCN -val 0
 ./xmlchange -file env_mach_pes.xml -id ROOTPE_ICE -val 0
+./xmlchange -file env_mach_pes.xml -id ROOTPE_ESP -val 0
 ./xmlchange -file env_mach_pes.xml -id ROOTPE_CPL -val 0
 
 cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml
