@@ -111,11 +111,11 @@ program piocprnc
          write(6,700) ' A total number of ',num_sizes_differ + num_not_analyzed, &
               ' fields could not be analyzed'
          write(6,700) ' A total number of ',numnotfound,' fields on file 1 were not found on file2.'
-         if (nvars > 0 .and. ndiffs == 0 .and. nfilldiffs == 0 .and. &
-              num_sizes_differ == 0 .and. num_not_analyzed<nvars) then
-            write(6,700) '  diff_test: the two files seem to be IDENTICAL '
-         else
+         if (nvars == 0 .or. ndiffs > 0 .or. nfilldiffs > 0 .or. &
+              num_sizes_differ > 0 .or. num_not_analyzed >= nvars) then
             write(6,700) '  diff_test: the two files seem to be DIFFERENT '
+         else
+            write(6,700) '  diff_test: the two files seem to be IDENTICAL '
          end if
       end if
       write(6,*) ' '
