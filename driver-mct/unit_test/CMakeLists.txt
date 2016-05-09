@@ -8,6 +8,7 @@ add_definitions(
   -DNUM_COMP_INST_GLC=1
   -DNUM_COMP_INST_WAV=1
   -DNUM_COMP_INST_ROF=1
+  -DNUM_COMP_INST_ESP=1
   )
 
 # Add source directories from stubs. This should be done first, so that in the
