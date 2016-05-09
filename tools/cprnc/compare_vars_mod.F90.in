@@ -20,14 +20,13 @@ module compare_vars_mod
 contains
 
   subroutine compare_vars(n,file, vtotal, ndiffs, nfilldiffs, vsizes_differ, &
-       vnot_analyzed, vnotfound )
+       vnot_analyzed )
     integer, intent(in) :: n       ! number of files to analyze (1 or 2)
     integer, intent(out) :: vtotal
     integer, intent(out) :: ndiffs     ! number of fields with differences (not counting fields that differ only in the fill pattern)
     integer, intent(out) :: nfilldiffs ! number of fields with differences in fill pattern
     integer, intent(out) :: vsizes_differ
     integer, intent(out) :: vnot_analyzed
-    integer, intent(out) :: vnotfound
 
 
     type(file_t) :: file(n)
@@ -48,7 +47,6 @@ contains
     vtotal = 0
     vsizes_differ = 0
     vnot_analyzed = 0
-    vnotfound=0
     if(n==2 .and. .not.ignoretime) then
        call checknf90(nf90_inq_varid(file(1)%fh, 'time', vid1))
        
@@ -96,7 +94,7 @@ contains
           vtotal = vtotal+1
           
           call compare_one_var(v1=v1, numcases=n, file=file, varnum=i, &
-               vnotfound=vnotfound, vsizes_differ=vsizes_differ, &
+               vsizes_differ=vsizes_differ, &
                vnot_analyzed=vnot_analyzed, &
                ndiffs=ndiffs, nfilldiffs=nfilldiffs)
 
@@ -153,7 +151,7 @@ contains
                 write(6,145) trim(v1%name),trim(dimstr), t1, t2
 
                 call compare_one_var(v1=v1, numcases=n, file=file, varnum=i, &
-                     vnotfound=vnotfound, vsizes_differ=vsizes_differ, &
+                     vsizes_differ=vsizes_differ, &
                      vnot_analyzed=vnot_analyzed, &
                      ndiffs=ndiffs, nfilldiffs=nfilldiffs, &
                      tindex=(/t1, t2/))
@@ -172,40 +170,38 @@ contains
   ! Compare a single variable, and update counts
   ! For variables with multiple time slices, this just does comparisons for a single time slice
   subroutine compare_one_var(v1, numcases, file, varnum, &
-                             vnotfound, vsizes_differ, vnot_analyzed, ndiffs, nfilldiffs, &
+                             vsizes_differ, vnot_analyzed, ndiffs, nfilldiffs, &
                              tindex)
     type(var_t) , intent(in) :: v1             ! variable info for the variable in file 1
     integer     , intent(in) :: numcases
     type(file_t), intent(in) :: file(numcases)
     integer     , intent(in) :: varnum
-    integer  , intent(inout) :: vnotfound
     integer  , intent(inout) :: vsizes_differ
     integer  , intent(inout) :: vnot_analyzed
     integer  , intent(inout) :: ndiffs
     integer  , intent(inout) :: nfilldiffs
     integer     , intent(in), optional :: tindex(numcases)
 
-    integer :: idiff, ifilldiff, isizes_differ, inotfound, inot_analyzed
+    integer :: idiff, ifilldiff, isizes_differ, inot_analyzed
 
     ! initialize output arguments of compare_var in case compare_var doesn't get called
     idiff = 0
     ifilldiff = 0
     isizes_differ = 0
-    inotfound = 0
     inot_analyzed = 0
 
     select case(v1%xtype)
     case(nf90_int)
        call compare_var_int(numcases,file,(/varnum,v1%matchid/), &
-                            idiff, ifilldiff, isizes_differ, inotfound, &
+                            idiff, ifilldiff, isizes_differ, &
                             tindex)
     case(nf90_float)
        call compare_var_real(numcases,file,(/varnum,v1%matchid/), &
-                             idiff, ifilldiff, isizes_differ, inotfound, &
+                             idiff, ifilldiff, isizes_differ, &
                              tindex)
     case(nf90_double)
        call compare_var_double(numcases,file,(/varnum,v1%matchid/), &
-                               idiff, ifilldiff, isizes_differ, inotfound, &
+                               idiff, ifilldiff, isizes_differ, &
                                tindex)
     case(nf90_char)
        inot_analyzed = 1
@@ -214,7 +210,6 @@ contains
        print *,'Type not recognized for variable: ', v1%name
     end select
 
-    vnotfound = vnotfound+inotfound
     vsizes_differ = vsizes_differ+isizes_differ
     vnot_analyzed = vnot_analyzed+inot_analyzed
     ndiffs = ndiffs+idiff
@@ -223,7 +218,7 @@ contains
 
 
   ! TYPE real,int,double
-  subroutine compare_var_{TYPE}(n,file, vid, idiff, ifilldiff, ifail, inotfound, tindex)
+  subroutine compare_var_{TYPE}(n,file, vid, idiff, ifilldiff, ifail, tindex)
     integer, intent(in) :: n
     type(file_t) :: file(2)
     integer, intent(in) :: vid(2)
@@ -231,7 +226,6 @@ contains
     integer, intent(out) :: ifilldiff  ! 1 if diffs in fill pattern, 0 otherwise 
                                        ! (idiff & ifilldiff are both 1 if there are diffs in both the fill pattern and the valid values)
     integer, intent(out) :: ifail      ! 1 if variable sizes differ, 0 otherwise
-    integer, intent(out) :: inotfound  ! 1 if variable on file 1 not found on file 2, 0 otherwise
     integer, optional :: tindex(2)
 
     integer :: s1, s2, l1(1), i, ierr
@@ -258,7 +252,6 @@ contains
     end if
 
     compare2 = (n==2 .and. vid(2)>0)
-    inotfound = 0
     ifail = 0
     ifilldiff = 0
     idiff = 0
@@ -449,7 +442,6 @@ contains
        end if
     else   ! Single file analysis output
        if(n==2 ) then
-          inotfound=1
           write(6,*) 'Variable on file1: ',trim(file(1)%var(vid(1))%name),' not found on file2'
        end if
        
