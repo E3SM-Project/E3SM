@@ -114,6 +114,8 @@ program piocprnc
          if (nvars == 0 .or. ndiffs > 0 .or. nfilldiffs > 0 .or. &
               num_sizes_differ > 0 .or. num_not_analyzed >= nvars) then
             write(6,700) '  diff_test: the two files seem to be DIFFERENT '
+         else if (numnotfound > 0) then
+            write(6,'(a)') '  diff_test: the two files DIFFER only in their field lists'
          else
             write(6,700) '  diff_test: the two files seem to be IDENTICAL '
          end if
