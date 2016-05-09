@@ -88,50 +88,51 @@ int close_file_handler(iosystem_desc_t *ios)
  * only ever run on the IO tasks. 
  *
  * @param ios pointer to the iosystem_desc_t. 
- * @param msg the message sent my the comp root task. 
  * @return PIO_NOERR for success, error code otherwise. 
 */
-int inq_handler(iosystem_desc_t *ios, int msg)
+int inq_handler(iosystem_desc_t *ios)
 {
     int ncid;
+    int ndims, nvars, ngatts, unlimdimid;
+    int *ndimsp = NULL, *nvarsp = NULL, *ngattsp = NULL, *unlimdimidp = NULL;
+    char ndims_present, nvars_present, ngatts_present, unlimdimid_present;
     int mpierr;
     int ret;
     
     int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);    
-    printf("%d inq_handler msg = %d\n", my_rank, msg);
+    printf("%d inq_handler\n", my_rank);
 
     /* Get the parameters for this function that the the comp master
      * task is broadcasting. */
     if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
+    printf("%d inq_handler1\n", my_rank);
+    if ((mpierr = MPI_Bcast(&ndims_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    printf("%d inq_handler2\n", my_rank);
+    if ((mpierr = MPI_Bcast(&nvars_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    printf("%d inq_handler3\n", my_rank);
+    if ((mpierr = MPI_Bcast(&ngatts_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    printf("%d inq_handler4\n", my_rank);
+    if ((mpierr = MPI_Bcast(&unlimdimid_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    printf("%d inq_handler ndims_present = %d nvars_present = %d ngatts_present = %d unlimdimid_present = %d\n",
+	   my_rank, ndims_present, nvars_present, ngatts_present, unlimdimid_present);
 
-    /* Call the inq file function. */
-    int ndims, nvars, ngatts, unlimdimid;
-    int *ndimsp = NULL, *nvarsp = NULL, *ngattsp = NULL, *unlimdimidp = NULL;
-    switch (msg)
-    {
-    case PIO_MSG_INQ:
+    /* NULLs passed in to any of the pointers in the original call
+     * need to be matched with NULLs here. Assign pointers where
+     * non-NULL pointers were passed in. */
+    if (ndims_present)
 	ndimsp = &ndims;
+    if (nvars_present)
 	nvarsp = &nvars;
+    if (ngatts_present)
 	ngattsp = &ngatts;
+    if (unlimdimid_present)
 	unlimdimidp = &unlimdimid;
-	break;
-    case PIO_MSG_INQ_NVARS:
-	nvarsp = &nvars;
-	break;
-    case PIO_MSG_INQ_NDIMS:
-	ndimsp = &ndims;
-	break;
-    case PIO_MSG_INQ_NATTS:
-	ngattsp = &ngatts;
-	break;
-    case PIO_MSG_INQ_UNLIMDIM:
-	unlimdimidp = &unlimdimid;
-	break;
-    default:
-	return PIO_EINVAL;
-    }
 
     /* Call the inq function to get the values. */
     if ((ret = PIOc_inq(ncid, ndimsp, nvarsp, ngattsp, unlimdimidp)))
@@ -151,12 +152,18 @@ int inq_dim_handler(iosystem_desc_t *ios, int msg)
 {
     int ncid;
     int dimid;
+    char name_present, len_present;    
+    char *dimnamep = NULL;
+    PIO_Offset *dimlenp = NULL;
+    char dimname[NC_MAX_NAME + 1];
+    PIO_Offset dimlen;
+
     int mpierr;
     int ret;
     
     int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);    
-    printf("%d inq_handler msg = %d\n", my_rank, msg);
+    printf("%d inq_dim_handler\n", my_rank);
 
     /* Get the parameters for this function that the the comp master
      * task is broadcasting. */
@@ -164,27 +171,18 @@ int inq_dim_handler(iosystem_desc_t *ios, int msg)
 	return PIO_EIO;
     if ((mpierr = MPI_Bcast(&dimid, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&name_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&len_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    printf("%d inq_handler name_present = %d len_present = %d\n",
+	   my_rank, name_present, len_present);
 
-    /* Call the inq_dim function. */
-    char *dimnamep = NULL;
-    PIO_Offset *dimlenp = NULL;
-    char dimname[NC_MAX_NAME + 1];
-    PIO_Offset dimlen;
-    switch (msg)
-    {
-    case PIO_MSG_INQ_DIM:
+    /* Set the non-null pointers. */
+    if (name_present)
 	dimnamep = dimname;
+    if (len_present)
 	dimlenp = &dimlen;
-	break;
-    case PIO_MSG_INQ_DIMLEN:
-	dimlenp = &dimlen;
-	break;
-    case PIO_MSG_INQ_DIMNAME:
-	dimnamep = dimname;
-	break;
-    default:
-	return PIO_EINVAL;
-    }
 
     /* Call the inq function to get the values. */
     if ((ret = PIOc_inq_dim(ncid, dimid, dimnamep, dimlenp)))
@@ -202,30 +200,89 @@ int inq_dim_handler(iosystem_desc_t *ios, int msg)
 int inq_dimid_handler(iosystem_desc_t *ios)
 {
     int ncid;
-    int dimid;
+    int *dimidp = NULL, dimid;
     int mpierr;
+    int id_present;
     int ret;
     int namelen;
     char *name;
     
+    int my_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);    
+    printf("%d inq_dimid_handler\n", my_rank);
+
     /* Get the parameters for this function that the the comp master
      * task is broadcasting. */
     if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
+    printf("%d inq_dimid_handler ncid = %d\n", my_rank, ncid);    
     if ((mpierr = MPI_Bcast(&namelen, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
+    printf("%d inq_dimid_handler ncid = %d namelen = %d\n", my_rank, ncid, namelen);    
     if (!(name = malloc((namelen + 1) * sizeof(char))))
 	return PIO_ENOMEM;
     if ((mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, 0, ios->intercomm)))
 	return PIO_EIO;
+    printf("%d inq_dimid_handler ncid = %d namelen = %d name = %s\n",
+	   my_rank, ncid, namelen, name);    
+    if ((mpierr = MPI_Bcast(&id_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    printf("%d inq_dimid_handler ncid = %d namelen = %d name = %s id_present = %d\n",
+	   my_rank, ncid, namelen, name, id_present);    
+
+    /* Set non-null pointer. */
+    if (id_present)
+	dimidp = &dimid;
 
     /* Call the inq_dimid function. */
-    if ((ret = PIOc_inq_dimid(ncid, name, &dimid)))
+    if ((ret = PIOc_inq_dimid(ncid, name, dimidp)))
 	return ret;
 
     /* Free resources. */
     free(name);
     
+    return PIO_NOERR;
+}
+
+/** Handle attribute inquiry operations. This code only runs on IO
+ * tasks.
+ *
+ * @param ios pointer to the iosystem_desc_t. 
+ * @param msg the message sent my the comp root task. 
+ * @return PIO_NOERR for success, error code otherwise. 
+*/
+int inq_att_handler(iosystem_desc_t *ios, int msg)
+{
+    int ncid;
+    int varid;
+    int mpierr;
+    int ret;
+    char *name5;
+    int namelen;
+    PIO_Offset attlen;
+    nc_type xtype;
+    int *op, *ip;
+    
+    int my_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    printf("%d inq_att_handler\n", my_rank);
+
+    /* Get the parameters for this function that the the comp master
+     * task is broadcasting. */
+    if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+    if (!(name5 = malloc((namelen + 1) * sizeof(char))))
+	return PIO_ENOMEM;
+    mpierr = MPI_Bcast((void *)name5, namelen + 1, MPI_CHAR, ios->compmaster,
+		       ios->intercomm);
+	
+    /* Call the function to learn about the attribute. */
+    if ((ret = PIOc_inq_att(ncid, varid, name5, &xtype, &attlen)))
+	return ret;
+
     return PIO_NOERR;
 }
 
@@ -243,44 +300,68 @@ int att_handler(iosystem_desc_t *ios, int msg)
     int ret;
     char *name5;
     int namelen;
-    int len;
+    PIO_Offset len;
     nc_type xtype;
-    int *op;
+    int *op, *ip;
     
     int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     printf("%d att_handler\n", my_rank);
 
-    /* Get the parameters for this function that the the comp master
-     * task is broadcasting. */
-    if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
-	return PIO_EIO;
-    if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
-	return PIO_EIO;
-    mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-    if (!(name5 = malloc((namelen + 1) * sizeof(char))))
-	return PIO_ENOMEM;
-    mpierr = MPI_Bcast((void *)name5, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-    mpierr = MPI_Bcast(&xtype, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-    mpierr = MPI_Bcast(&len, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-    if (!(op = malloc(len * sizeof(int))))
-	return PIO_ENOMEM;
-    mpierr = MPI_Bcast(op, len, MPI_INT,  ios->compmaster, ios->intercomm);
-
-    /* Call the function to write the attribute. */
-    if ((ret = PIOc_put_att_int(ncid, varid, name5, xtype, len, op)))
-	return ret;
-
-    free(op);
-    if (!(op = malloc(20)))
+    if (msg == PIO_MSG_PUT_ATT_INT)
     {
-    	printf("%d att_handler4 ncid = %d varid = %d namelen = %d name = %d\n",
-    	       my_rank, ncid, varid, namelen, name5);
-    }
+	/* Get the parameters for this function that the the comp master
+	 * task is broadcasting. */
+	if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
+	    return PIO_EIO;
+	if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
+	    return PIO_EIO;
+	mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	if (!(name5 = malloc((namelen + 1) * sizeof(char))))
+	    return PIO_ENOMEM;
+	mpierr = MPI_Bcast((void *)name5, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	mpierr = MPI_Bcast(&xtype, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	mpierr = MPI_Bcast(&len, 1, MPI_OFFSET,  ios->compmaster, ios->intercomm);
+	if (!(op = malloc(len * sizeof(int))))
+	    return PIO_ENOMEM;
+	mpierr = MPI_Bcast(op, len, MPI_INT,  ios->compmaster, ios->intercomm);
+	
+	/* Call the function to write the attribute. */
+	if ((ret = PIOc_put_att_int(ncid, varid, name5, xtype, len, op)))
+	    return ret;
 
-    /* Free resources. */
-    free(name5);
-    free(op);
+	/* Free resources. */
+	free(name5);
+	free(op);
+    }
+    else if (msg = PIO_MSG_GET_ATT_INT)
+    {
+	/* Get the parameters for this function that the the comp master
+	 * task is broadcasting. */
+	if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
+	    return PIO_EIO;
+	if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
+	    return PIO_EIO;
+	mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	if (!(name5 = malloc((namelen + 1) * sizeof(char))))
+	    return PIO_ENOMEM;
+	mpierr = MPI_Bcast((void *)name5, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+
+	/* Allocate space for the attribute data. */
+        if ((ret = PIOc_inq_attlen(ncid, varid, name5, &len)))
+	    return ret;
+	if (!(ip = malloc(len * sizeof(int))))
+	    return PIO_ENOMEM;
+	
+	/* Call the function to read the attribute. */
+	if ((ret = PIOc_get_att_int(ncid, varid, name5, ip)))
+	    return ret;
+	printf("%d att_handler got att with first element %d\n", my_rank, ip[0]);	
+
+	/* Free resources. */
+	free(name5);
+	free(ip);
+    }
 
     return PIO_NOERR;
 }
@@ -841,15 +922,9 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	    def_var_handler(my_iosys);
 	    break;
 	case PIO_MSG_INQ:
-	case PIO_MSG_INQ_NVARS:
-	case PIO_MSG_INQ_NDIMS:
-	case PIO_MSG_INQ_NATTS:
-	case PIO_MSG_INQ_UNLIMDIM:
-	    inq_handler(my_iosys, msg);
+	    inq_handler(my_iosys);
 	    break;
 	case PIO_MSG_INQ_DIM:
-	case PIO_MSG_INQ_DIMLEN:
-	case PIO_MSG_INQ_DIMNAME:
 	    inq_dim_handler(my_iosys, msg);
 	    break;
 	case PIO_MSG_INQ_DIMID:
@@ -864,14 +939,15 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	    inq_var_handler(my_iosys, msg);
 	    break;
 	case PIO_MSG_GET_ATT_INT:
+	case PIO_MSG_PUT_ATT_INT:
 	    ret = att_handler(my_iosys, msg);
 	    printf("att_handler returned %d\n", ret);
 	    break;
-	case PIO_MSG_PUT_ATT_INT:
-	    att_handler(my_iosys, msg);
-	    break;
 	case PIO_MSG_INQ_VARID:
 	    inq_varid_handler(my_iosys);
+	    break;
+	case PIO_MSG_INQ_ATT:
+	    inq_att_handler(my_iosys, msg);
 	    break;
 	case PIO_MSG_INITDECOMP_DOF:
 	    initdecomp_dof_handler(my_iosys);
