@@ -174,7 +174,7 @@ contains
 
       integer, dimension(:,:), pointer :: regionCellMasks 
       integer, dimension(:), pointer :: cellMask 
-      integer, pointer :: nCellsSolve, nRegions, nRegionGroups !, maxRegionsInGroup  !! SFP: is last one needed here?
+      integer, pointer :: nCellsSolve, nRegions, nRegionGroups !, maxRegionsInGroup  !! maxRegionsInGroup not needed / used yet 
       integer :: k, iCell, iRegion, iGroup
 
       ! scalars to be calculated here from regional sums
@@ -221,10 +221,6 @@ contains
          call mpas_pool_get_array(regionalStatsAMPool, 'regionalIceArea', regionalIceArea)
          call mpas_pool_get_array(regionalStatsAMPool, 'regionalIceVolume', regionalIceVolume)
 
-         print *, ' '
-         print *, 'sum( regionCellMasks(:,1) ) = ', sum( regionCellMasks(1,:) )
-         print *, ' '
-
          ! allocate & initialize sums over blocks to 0
          allocate(blockSumRegionIceArea(nRegions)) 
          allocate(blockSumRegionIceVolume(nRegions))
@@ -239,18 +235,6 @@ contains
             ! regional sums of ice area over cells with ice (m^2)
             blockSumRegionIceArea(iRegion) = blockSumRegionIceArea(iRegion) + ( real(regionCellMasks(iRegion,iCell),RKIND) & 
                * areaCell(iCell) * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) ) 
-
-            !if( real(li_mask_is_ice_int(cellMask(iCell)),RKIND) /= 0.0 .and. blockSumRegionIceArea(iRegion) /= 0.0 )then
-            if( real(li_mask_is_ice_int(cellMask(iCell)),RKIND) /= 0.0 )then
-              print *, ' '
-!              print *, 'iCell, iRegion = ', iCell, iRegion                 
-!              print *, 'real(regionCellMasks(iRegion,iCell),RKIND) = ', real(regionCellMasks(iRegion,iCell),RKIND)                 
-!              print *, 'real(li_mask_is_ice_int(cellMask(iCell)),RKIND) = ', real(li_mask_is_ice_int(cellMask(iCell)),RKIND)
-!              print *, 'areaCell(iCell) = ', areaCell(iCell)                 
-!              print *, 'thickness(iCell) = ', thickness(iCell)                 
-!              print *, 'blockSumRegionIceArea(iRegion) = ', blockSumRegionIceArea(iRegion)
-              print *, ' '
-            endif
 
             ! regional sums of ice volume over cells with ice (m^3)
             blockSumRegionIceVolume(iRegion) = blockSumRegionIceVolume(iRegion) + ( real(regionCellMasks(iRegion,iCell),RKIND) & 
