@@ -26,11 +26,41 @@
 	</packages>
 
 	<var_struct name="regionalStatsAM" time_levs="1" packages="regionalStatsAMPKG">
-                <var name="regionalIceVolume" type="real" dimensions="nRegions Time" units="m^3"
-			description="total ice sheet volume"
-		/>
 		<var name="regionalIceArea" type="real" dimensions="nRegions Time" units="m^2"
-			description="total ice sheet area"
+			description="total ice sheet area within region"
+		/>
+                <var name="regionalIceVolume" type="real" dimensions="nRegions Time" units="m^3"
+			description="total ice sheet volume within region"
+		/>
+		<var name="regionalGroundedIceArea" type="real" dimensions="nRegions Time" units="m^2"
+			description="total grounded ice sheet area within region"
+		/>
+                <var name="regionalGroundedIceVolume" type="real" dimensions="nRegions Time" units="m^3"
+			description="total grounded ice sheet volume within region"
+		/>
+		<var name="regionalFloatingIceArea" type="real" dimensions="nRegions Time" units="m^2"
+			description="total floating ice sheet area within region"
+		/>
+                <var name="regionalFloatingIceVolume" type="real" dimensions="nRegions Time" units="m^3"
+			description="total floating ice sheet volume within region"
+		/>
+                <var name="regionalIceThicknessMin" type="real" dimensions="nRegions Time" units="m"
+			description="min ice thickness within region"
+		/>
+                <var name="regionalIceThicknessMax" type="real" dimensions="nRegions Time" units="m"
+			description="max ice thickness within region"
+		/>
+                <var name="regionalIceThicknessMean" type="real" dimensions="nRegions Time" units="m"
+			description="mean ice thickness within region"
+		/>
+                <var name="regionalSumSfcMassBal" type="real" dimensions="nRegions Time" units="kg yr^-1"
+			description="area-integrated surface mass balance within region"
+		/>
+                <var name="regionalSumBasalMassBal" type="real" dimensions="nRegions Time" units="kg yr^-1"
+			description="area-integrated basal mass balance within region"
+		/>
+                <var name="regionalSumCalvingFlux" type="real" dimensions="nRegions Time" units="kg yr^-1"
+			description="area-integrated calving flux within region"
 		/>
  	</var_struct>
 
