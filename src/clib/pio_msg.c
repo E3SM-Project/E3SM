@@ -373,15 +373,21 @@ int att_handler(iosystem_desc_t *ios, int msg)
  * @param msg the message sent my the comp root task. 
  * @return PIO_NOERR for success, error code otherwise. 
 */
-int inq_var_handler(iosystem_desc_t *ios, int msg)
+int inq_var_handler(iosystem_desc_t *ios)
 {
     int ncid;
     int varid;
     int mpierr;
+    char name_present, xtype_present, ndims_present, dimids_present, natts_present;
+    char name[NC_MAX_NAME + 1], *namep;
+    nc_type xtype, *xtypep = NULL;
+    int *ndimsp = NULL, *dimidsp = NULL, *nattsp = NULL;    
+    int ndims, dimids[NC_MAX_DIMS], natts;    
     int ret;
     
     int my_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);    
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    printf("%d inq_var_handler\n", my_rank);
 
     /* Get the parameters for this function that the the comp master
      * task is broadcasting. */
@@ -389,40 +395,31 @@ int inq_var_handler(iosystem_desc_t *ios, int msg)
 	return PIO_EIO;
     if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
-    printf("%d inq_var_handler ncid = %d varid = %d\n", my_rank, ncid, varid);
+    if ((mpierr = MPI_Bcast(&name_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&xtype_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&ndims_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&dimids_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&natts_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    printf("%d inq_var_handler ncid = %d varid = %d name_present = %d xtype_present = %d ndims_present = %d "
+	   "dimids_present = %d natts_present = %d\n",
+	   my_rank, ncid, varid, name_present, xtype_present, ndims_present, dimids_present, natts_present);
 
-    /* Call the inq_var function. */
-    char name[NC_MAX_NAME + 1], *namep;
-    nc_type xtype, *xtypep = NULL;
-    int *ndimsp = NULL, *dimidsp = NULL, *nattsp = NULL;    
-    int ndims, dimids[NC_MAX_DIMS], natts;    
-    switch (msg)
-    {
-    case PIO_MSG_INQ_VAR:
+    /* Set the non-NULL pointers. */
+    if (name_present)
 	namep = name;
+    if (xtype_present)
 	xtypep = &xtype;
+    if (ndims_present)
 	ndimsp = &ndims;
+    if (dimids_present)
 	dimidsp = dimids;
+    if (natts_present)
 	nattsp = &natts;
-	break;
-    case PIO_MSG_INQ_VARNATTS:
-	nattsp = &natts;
-	break;
-    case PIO_MSG_INQ_VARNAME:
-	namep = name;
-	break;
-    case PIO_MSG_INQ_VARNDIMS:
-	ndimsp = &ndims;
-	break;
-    case PIO_MSG_INQ_VARDIMID:
-	dimidsp = dimids;
-	break;
-    case PIO_MSG_INQ_VARTYPE:
-	xtypep = &xtype;
-	break;
-    default:
-	return PIO_EINVAL;
-    }
 
     /* Call the inq function to get the values. */
     if ((ret = PIOc_inq_var(ncid, varid, namep, xtypep, ndimsp, dimidsp, nattsp)))
@@ -931,12 +928,7 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	    inq_dimid_handler(my_iosys);
 	    break;
 	case PIO_MSG_INQ_VAR:
-	case PIO_MSG_INQ_VARNATTS:
-	case PIO_MSG_INQ_VARNAME:
-	case PIO_MSG_INQ_VARNDIMS:
-	case PIO_MSG_INQ_VARDIMID:
-	case PIO_MSG_INQ_VARTYPE:
-	    inq_var_handler(my_iosys, msg);
+	    inq_var_handler(my_iosys);
 	    break;
 	case PIO_MSG_GET_ATT_INT:
 	case PIO_MSG_PUT_ATT_INT:

@@ -736,7 +736,7 @@ int PIOc_inq_dim(int ncid, int dimid, char *name, PIO_Offset *lenp)
 	case PIO_IOTYPE_NETCDF4C:
 #endif
 	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
+	    if (ios->io_rank == 0){
 		ierr = nc_inq_dim(file->fh, dimid, name, (size_t *)lenp);;
 	    }
 	    break;
@@ -1038,83 +1038,6 @@ int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp)
 }
 
 /** 
- * @ingroup PIOc_inq_vartype
- * The PIO-C interface for the NetCDF function nc_inq_vartype.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @param varid the variable ID.
- * @param xtypep a pointer that will get the type of the attribute.
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
- */
-int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep) 
-{
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_INQ_VARTYPE;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast(&varid, 1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_vartype(file->fh, varid, xtypep);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_inq_vartype(file->fh, varid, xtypep);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_inq_vartype(file->fh, varid, xtypep);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if (xtypep)
-	mpierr = MPI_Bcast(xtypep, 1, MPI_INT, ios->ioroot, ios->my_comm);
-    if(errstr != NULL) free(errstr);
-    return ierr;
-}
-
-/** 
  * @ingroup PIOc_put_att_schar
  * The PIO-C interface for the NetCDF function nc_put_att_schar.
  *
@@ -1183,86 +1106,6 @@ int PIOc_put_att_schar (int ncid, int varid, const char *name, nc_type xtype, PI
 	sprintf(errstr,"in file %s",__FILE__);
     }
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(errstr != NULL) free(errstr);
-    return ierr;
-}
-
-/** 
- * @ingroup PIOc_inq_vardimid
- * The PIO-C interface for the NetCDF function nc_inq_vardimid.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @param varid the variable ID.
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
- */
-int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp) 
-{
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_INQ_VARDIMID;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast(&varid, 1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_vardimid(file->fh, varid, dimidsp);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_inq_vardimid(file->fh, varid, dimidsp);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_inq_vardimid(file->fh, varid, dimidsp);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if (!ierr && dimidsp)
-    {
-	int ndims;
-	PIOc_inq_varndims(file->fh, varid, &ndims);
-	mpierr = MPI_Bcast(dimidsp , ndims, MPI_INT, ios->ioroot, ios->my_comm);
-    }
     if(errstr != NULL) free(errstr);
     return ierr;
 }
@@ -1636,50 +1479,75 @@ int PIOc_put_att_ulonglong (int ncid, int varid, const char *name, nc_type xtype
  * @param nattsp a pointer that will get the number of attributes 
  * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
-int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
-		  int *dimidsp, int *nattsp) 
+int PIOc_inq_var(int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
+		 int *dimidsp, int *nattsp) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
     iosystem_desc_t *ios;
     file_desc_t *file;
-    char *errstr;
+    char *errstr = NULL;
+    int ndims;    /** The number of dimensions for this variable. */
+    int ierr = PIO_NOERR;
+    int msg = PIO_MSG_INQ_VAR;
+    int mpierr;
 
-    errstr = NULL;
-    ierr = PIO_NOERR;
+   /* For debugging purposes only... */
+    int my_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);    
+    printf("%d PIOc_inq_var\n", my_rank);
 
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
+    /* Get the file info, based on the ncid. */
+    if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
     ios = file->iosystem;
-    msg = PIO_MSG_INQ_VAR;
+    printf("%d PIOc_inq_var got file\n", my_rank);
 
-    if(ios->async_interface && ! ios->ioproc){
+    /* If using async, and this is not an IO task, send the parameters to the IO task. */
+    if (ios->async_interface && !ios->ioproc)
+    {
+	char name_present = name ? true : false;
+	char xtype_present = xtypep ? true : false;
+	char ndims_present = ndimsp ? true : false;
+	char dimids_present = dimidsp ? true : false;
+	char natts_present = nattsp ? true : false;
 	if(ios->compmaster) 
 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	printf("%d PIOc_inq_var ncid = %d\n", my_rank, ncid);
 	mpierr = MPI_Bcast(&varid, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	mpierr = MPI_Bcast(&name_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	mpierr = MPI_Bcast(&xtype_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	mpierr = MPI_Bcast(&ndims_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	mpierr = MPI_Bcast(&dimids_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	mpierr = MPI_Bcast(&natts_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	printf("%d PIOc_inq_var name_present = %d xtype_present = %d ndims_present = %d dimids_present = %d, natts_present = %d nattsp = %d\n",
+	       my_rank, name_present, xtype_present, ndims_present, dimids_present, natts_present, nattsp);
     }
 
+    printf("%d PIOc_inq_var ios->ioproc = %d nattsp = %d\n", my_rank, ios->ioproc, nattsp);
 
-    if(ios->ioproc){
+    /* Call the netCDF layer. */
+    if (ios->ioproc)
+    {
 	switch(file->iotype){
 #ifdef _NETCDF
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_var(file->fh, varid, name, xtypep, ndimsp, dimidsp, nattsp);;
+	    ierr = nc_inq_varndims(file->fh, varid, &ndims);
+	    ierr = nc_inq_var(file->fh, varid, name, xtypep, ndimsp, dimidsp, nattsp);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
 #endif
 	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
+	    if (ios->io_rank == 0)
+	    {
+		ierr = nc_inq_varndims(file->fh, varid, &ndims);
 		ierr = nc_inq_var(file->fh, varid, name, xtypep, ndimsp, dimidsp, nattsp);;
 	    }
 	    break;
 #endif
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
+	    ierr = ncmpi_inq_varndims(file->fh, varid, &ndims);
 	    ierr = ncmpi_inq_var(file->fh, varid, name, xtypep, ndimsp, dimidsp, nattsp);;
 	    break;
 #endif
@@ -1693,31 +1561,142 @@ int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
 	sprintf(errstr,"in file %s",__FILE__);
     }
     ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if (xtypep)
-	mpierr = MPI_Bcast(xtypep, 1, MPI_INT, ios->ioroot, ios->my_comm);
-    if (ndimsp)
-    {
-	mpierr = MPI_Bcast(ndimsp, 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
-	file->varlist[varid].ndims = (*ndimsp);
-    }
-    if (nattsp)
-	mpierr = MPI_Bcast(nattsp, 1, MPI_INT, ios->ioroot, ios->my_comm);
+    printf("%d called netcdf nc_inq_var ierr = %d\n", my_rank, ierr);
+
+    /* Broadcast the results for non-null pointers. */
     if (name)
     { 
 	int slen;
 	if(ios->iomaster)
-	    slen = (int) strlen(name) + 1;
+	    slen = strlen(name);
+	printf("%d PIOc_inq_var slen = %d\n", my_rank, slen);
 	mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);
-	mpierr = MPI_Bcast((void *)name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);
+	printf("%d PIOc_inq_var slen = %d\n", my_rank, slen);
+	mpierr = MPI_Bcast((void *)name, slen + 1, MPI_CHAR, ios->ioroot, ios->my_comm);
+	printf("%d PIOc_inq_var name = %s\n", my_rank, name);
+    }
+    if (xtypep)
+    {
+	mpierr = MPI_Bcast(xtypep, 1, MPI_INT, ios->ioroot, ios->my_comm);
+	printf("%d PIOc_inq_var xtype = %d\n", my_rank, *xtypep);
+    }	
+    if (ndimsp)
+    {
+	printf("%d PIOc_inq_var ndims = %d\n", my_rank, *ndimsp);
+	mpierr = MPI_Bcast(ndimsp, 1, MPI_INT, ios->ioroot, ios->my_comm);
+	file->varlist[varid].ndims = (*ndimsp);
+	printf("%d PIOc_inq_var bcast complete ndims = %d\n", my_rank, *ndimsp);
     }
     if (dimidsp)
     {
-	int ndims;
-	PIOc_inq_varndims(file->fh, varid, &ndims);
+	mpierr = MPI_Bcast(&ndims, 1, MPI_INT, ios->ioroot, ios->my_comm);	
 	mpierr = MPI_Bcast(dimidsp, ndims, MPI_INT, ios->ioroot, ios->my_comm);
+    }
+    if (nattsp)
+    {
+	printf("%d PIOc_inq_var natts = %d\n", my_rank, *nattsp);	
+	mpierr = MPI_Bcast(nattsp, 1, MPI_INT, ios->ioroot, ios->my_comm);
+	printf("%d PIOc_inq_var natts = %d\n", my_rank, *nattsp);
     }
     if(errstr != NULL) free(errstr);
     return ierr;
+}
+
+/** 
+ * @ingroup PIOc_inq_varname
+ * The PIO-C interface for the NetCDF function nc_inq_varname.
+ *
+ * This routine is called collectively by all tasks in the communicator 
+ * ios.union_comm. For more information on the underlying NetCDF commmand
+ * please read about this function in the NetCDF documentation at: 
+ * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ *
+ * @param ncid the ncid of the open file, obtained from
+ * PIOc_openfile() or PIOc_createfile().
+ * @param varid the variable ID.
+ * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
+ */
+int PIOc_inq_varname (int ncid, int varid, char *name) 
+{
+    return PIOc_inq_var(ncid, varid, name, NULL, NULL, NULL, NULL);
+}
+
+/** 
+ * @ingroup PIOc_inq_vartype
+ * The PIO-C interface for the NetCDF function nc_inq_vartype.
+ *
+ * This routine is called collectively by all tasks in the communicator 
+ * ios.union_comm. For more information on the underlying NetCDF commmand
+ * please read about this function in the NetCDF documentation at: 
+ * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ *
+ * @param ncid the ncid of the open file, obtained from
+ * PIOc_openfile() or PIOc_createfile().
+ * @param varid the variable ID.
+ * @param xtypep a pointer that will get the type of the attribute.
+ * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
+ */
+int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep) 
+{
+    return PIOc_inq_var(ncid, varid, NULL, xtypep, NULL, NULL, NULL);
+}
+
+/** 
+ * @ingroup PIOc_inq_varndims
+ * The PIO-C interface for the NetCDF function nc_inq_varndims.
+ *
+ * This routine is called collectively by all tasks in the communicator 
+ * ios.union_comm. For more information on the underlying NetCDF commmand
+ * please read about this function in the NetCDF documentation at: 
+ * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ *
+ * @param ncid the ncid of the open file, obtained from
+ * PIOc_openfile() or PIOc_createfile().
+ * @param varid the variable ID.
+ * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
+ */
+int PIOc_inq_varndims (int ncid, int varid, int *ndimsp) 
+{
+    return PIOc_inq_var(ncid, varid, NULL, NULL, ndimsp, NULL, NULL);
+}
+
+/** 
+ * @ingroup PIOc_inq_vardimid
+ * The PIO-C interface for the NetCDF function nc_inq_vardimid.
+ *
+ * This routine is called collectively by all tasks in the communicator 
+ * ios.union_comm. For more information on the underlying NetCDF commmand
+ * please read about this function in the NetCDF documentation at: 
+ * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ *
+ * @param ncid the ncid of the open file, obtained from
+ * PIOc_openfile() or PIOc_createfile().
+ * @param varid the variable ID.
+ * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
+ */
+int PIOc_inq_vardimid(int ncid, int varid, int *dimidsp) 
+{
+    return PIOc_inq_var(ncid, varid, NULL, NULL, NULL, dimidsp, NULL);
+}
+
+/** 
+ * @ingroup PIOc_inq_varnatts
+ * The PIO-C interface for the NetCDF function nc_inq_varnatts.
+ *
+ * This routine is called collectively by all tasks in the communicator 
+ * ios.union_comm. For more information on the underlying NetCDF commmand
+ * please read about this function in the NetCDF documentation at: 
+ * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
+ *
+ * @param ncid the ncid of the open file, obtained from
+ * PIOc_openfile() or PIOc_createfile().
+ * @param varid the variable ID.
+ * @param nattsp a pointer that will get the number of attributes 
+ * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
+ */
+int PIOc_inq_varnatts (int ncid, int varid, int *nattsp) 
+{
+    return PIOc_inq_var(ncid, varid, NULL, NULL, NULL, NULL, nattsp);
 }
 
 /** 
@@ -2893,82 +2872,6 @@ int PIOc_put_att_longlong (int ncid, int varid, const char *name, nc_type xtype,
     return ierr;
 }
 
-/** 
- * @ingroup PIOc_inq_varnatts
- * The PIO-C interface for the NetCDF function nc_inq_varnatts.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @param varid the variable ID.
- * @param nattsp a pointer that will get the number of attributes 
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
- */
-int PIOc_inq_varnatts (int ncid, int varid, int *nattsp) 
-{
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_INQ_VARNATTS;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast(&varid, 1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_varnatts(file->fh, varid, nattsp);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_inq_varnatts(file->fh, varid, nattsp);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_inq_varnatts(file->fh, varid, nattsp);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if (nattsp)
-	mpierr = MPI_Bcast(nattsp, 1, MPI_INT, ios->ioroot, ios->my_comm);
-    if(errstr != NULL) free(errstr);
-    return ierr;
-}
 
 /** 
  * @ingroup PIOc_get_att_ubyte
@@ -3350,170 +3253,6 @@ int PIOc_get_att_ulonglong (int ncid, int varid, const char *name, unsigned long
         PIO_Offset attlen;
         PIOc_inq_attlen(file->fh, varid, name, &attlen);
         mpierr = MPI_Bcast(ip , (int) attlen, MPI_UNSIGNED_LONG_LONG, ios->ioroot, ios->my_comm);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
-}
-
-/** 
- * @ingroup PIOc_inq_varndims
- * The PIO-C interface for the NetCDF function nc_inq_varndims.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @param varid the variable ID.
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
- */
-int PIOc_inq_varndims (int ncid, int varid, int *ndimsp) 
-{
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_INQ_VARNDIMS;
-    if(file->varlist[varid].ndims > 0){
-	(*ndimsp) = file->varlist[varid].ndims;
-	return PIO_NOERR;
-    }
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast(&varid,1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_varndims(file->fh, varid, ndimsp);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_inq_varndims(file->fh, varid, ndimsp);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_inq_varndims(file->fh, varid, ndimsp);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if (ndimsp)
-    {
-	mpierr = MPI_Bcast(ndimsp,1, MPI_INT, ios->ioroot, ios->my_comm);
-	file->varlist[varid].ndims = (*ndimsp);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
-}
-
-/** 
- * @ingroup PIOc_inq_varname
- * The PIO-C interface for the NetCDF function nc_inq_varname.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @param varid the variable ID.
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
- */
-int PIOc_inq_varname (int ncid, int varid, char *name) 
-{
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_INQ_VARNAME;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast(&varid, 1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_varname(file->fh, varid, name);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_inq_varname(file->fh, varid, name);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_inq_varname(file->fh, varid, name);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(name != NULL){
-	int slen;
-	if(ios->iomaster)
-	    slen = (int) strlen(name) + 1;
-	mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);
-	mpierr = MPI_Bcast((void *)name, slen, MPI_CHAR, ios->ioroot, ios->my_comm);
     }
     if(errstr != NULL) free(errstr);
     return ierr;
