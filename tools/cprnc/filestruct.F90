@@ -252,9 +252,13 @@ contains
   end subroutine compare_dimensions
 
 
-  subroutine match_vars( file1, file2, num_not_found_on_file2 )
+  subroutine match_vars( file1, file2, &
+       num_not_found_on_file1, num_not_found_on_file2 )
     type(file_t), intent(inout) :: file1, file2
-    
+
+    ! Accumulates count of variables on file2 not found on file1
+    integer, intent(inout) :: num_not_found_on_file1
+
     ! Accumulates count of variables on file1 not found on file2
     integer, intent(inout) :: num_not_found_on_file2
 
@@ -287,6 +291,7 @@ contains
     do i=1,vs2
        if(varfile2(i)%matchid<0) then
           print *, 'Could not find match for file2 variable ',trim(varfile2(i)%name), ' in file1'
+          num_not_found_on_file1 = num_not_found_on_file1 + 1
        end if
     end do
   end subroutine match_vars

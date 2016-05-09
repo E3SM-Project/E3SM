@@ -91,7 +91,7 @@ program piocprnc
       num_not_found_on_file1 = 0
       num_not_found_on_file2 = 0
       call match_vars( file(1), file(2), &
-           num_not_found_on_file2)
+           num_not_found_on_file1, num_not_found_on_file2)
    end if
    call compare_vars(numcases, file, nvars, ndiffs, nfilldiffs, &
         num_sizes_differ, num_not_analyzed)
@@ -119,7 +119,7 @@ program piocprnc
          if (nvars == 0 .or. ndiffs > 0 .or. nfilldiffs > 0 .or. &
               num_sizes_differ > 0 .or. num_not_analyzed >= nvars) then
             write(6,700) '  diff_test: the two files seem to be DIFFERENT '
-         else if (num_not_found_on_file2 > 0) then
+         else if (num_not_found_on_file1 > 0 .or. num_not_found_on_file2 > 0) then
             write(6,'(a)') '  diff_test: the two files DIFFER only in their field lists'
          else
             write(6,700) '  diff_test: the two files seem to be IDENTICAL '
