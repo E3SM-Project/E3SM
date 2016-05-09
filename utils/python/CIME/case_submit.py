@@ -33,7 +33,7 @@ def submit(caseroot, job=None, resubmit=None, no_batch=False, prereq_jobid=None)
 
     cimeroot = case.get_value("CIMEROOT")
     os.environ["CIMEROOT"] = cimeroot
-    # if case.submit is called with the no_batch flag then we assume that this 
+    # if case.submit is called with the no_batch flag then we assume that this
     # flag will stay in effect for the duration of the RESUBMITs
     if resubmit is None:
         env_batch = case._get_env("batch")

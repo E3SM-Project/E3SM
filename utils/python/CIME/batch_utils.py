@@ -92,8 +92,8 @@ class BatchUtils(object):
         batchredirect = self.case.get_value("BATCHREDIRECT",subgroup=None)
         submitcmd = batchsubmit + " " + submitargs + " " + batchredirect + \
             " " + job
-        if batchtype != "lsf":
-            submitcmd += " --caseroot %s"%caseroot
+        if batchtype == "pbs":
+            submitcmd += " -F \"--caseroot %s\""%caseroot
         logger.info("Submitting job script %s"%submitcmd)
         output = run_cmd(submitcmd)
         jobid = self.get_job_id(batchtype, output)

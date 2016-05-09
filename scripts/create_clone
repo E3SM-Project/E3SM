@@ -48,11 +48,11 @@ def parse_command_line(args):
     CIME.utils.handle_standard_logging_options(args)
 
     if args.case is None:
-        expect(False, 
+        expect(False,
                "Must specify -case as an input argument")
 
     if args.clone is None:
-        expect(False, 
+        expect(False,
                "Must specify -clone as an input argument")
 
     return args.case, args.clone, args.keepexe, args.mach_dir, args.project

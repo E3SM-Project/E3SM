@@ -30,9 +30,9 @@ class Component(EntryID):
         from the entries in the model CONFIG_DRV_FILE
         """
         components = []
-        comps = self.get_nodes("comp", root=self.get_node("components"))
-        for comp in comps:
-            components.append(comp.text)
+        comps_node = self.get_node("entry", {"id":"COMP_CLASSES"})
+        comps = self.get_default_value(comps_node)
+        components = comps.split(',')
         return components
 
     def print_values(self):

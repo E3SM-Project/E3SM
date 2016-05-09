@@ -17,36 +17,21 @@ def stringify_bool(val):
     return "TRUE" if val else "FALSE"
 
 ###############################################################################
-def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
-                comp_atm, comp_lnd, comp_ice, comp_ocn, comp_glc, comp_wav, comp_rof,
-                nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav,
-                nthrds_rof, lid, caseroot, cimeroot, use_esmf_lib, comp_interface):
+def build_model(case, build_threaded, exeroot, clm_config_opts, incroot, complist,
+                lid, caseroot, cimeroot, use_esmf_lib, comp_interface):
 ###############################################################################
-    config_atm_dir = os.path.dirname(case.get_value("CONFIG_ATM_FILE"))
-    config_lnd_dir = os.path.dirname(case.get_value("CONFIG_LND_FILE"))
-    config_ice_dir = os.path.dirname(case.get_value("CONFIG_ICE_FILE"))
-    config_ocn_dir = os.path.dirname(case.get_value("CONFIG_OCN_FILE"))
-    config_glc_dir = os.path.dirname(case.get_value("CONFIG_GLC_FILE"))
-    config_wav_dir = os.path.dirname(case.get_value("CONFIG_WAV_FILE"))
-    config_rof_dir = os.path.dirname(case.get_value("CONFIG_ROF_FILE"))
-
-    # Also defines build order
-    models_build_data = [("atm", comp_atm, config_atm_dir, nthrds_atm),
-                         ("lnd", comp_lnd, config_lnd_dir, nthrds_lnd),
-                         ("ice", comp_ice, config_ice_dir, nthrds_ice),
-                         ("ocn", comp_ocn, config_ocn_dir, nthrds_ocn),
-                         ("glc", comp_glc, config_glc_dir, nthrds_glc),
-                         ("wav", comp_wav, config_wav_dir, nthrds_wav),
-                         ("rof", comp_rof, config_rof_dir, nthrds_rof)]
 
     logs = []
     overall_smp = os.environ["SMP"]
     sharedpath = os.environ["SHAREDPATH"]
 
     thread_bad_results = []
-    for model, comp, config_dir, nthrds in models_build_data:
+    for model, comp, nthrds, ninst, config_dir in complist:
         # aquap has a dependency on atm so we will build it after the threaded loop
         if comp == "aquap":
+            continue
+        # coupler handled seperately
+        if model == "cpl":
             continue
         os.environ["MODEL"] = model
         os.environ["SMP"] = stringify_bool(nthrds > 1 or build_threaded)
@@ -94,7 +79,7 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
         time.sleep(1)
 
     # aquap has a dependancy on atm so we build it after the threaded loop
-    if comp_ocn == "aquap":
+    if "aquap" in complist:
         _build_model_thread(config_ocn_dir, caseroot, bldroot, "aquap", file_build,
                             exeroot, "ocn", "aquap", objdir, incroot, thread_bad_results)
 
@@ -171,6 +156,8 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
     case = Case() if case is None else case
     cimeroot = case.get_value("CIMEROOT")
 
+    comp_classes = case.get_value("COMP_CLASSES").split(',')
+
     if not sharedlib_only:
         check_all_input_data(case)
 
@@ -183,13 +170,25 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
     incroot             = case.get_value("INCROOT")
     libroot             = case.get_value("LIBROOT")
     sharedlibroot       = case.get_value("SHAREDLIBROOT")
-    comp_atm            = case.get_value("COMP_ATM")
-    comp_lnd            = case.get_value("COMP_LND")
-    comp_ice            = case.get_value("COMP_ICE")
-    comp_ocn            = case.get_value("COMP_OCN")
-    comp_glc            = case.get_value("COMP_GLC")
-    comp_wav            = case.get_value("COMP_WAV")
-    comp_rof            = case.get_value("COMP_ROF")
+
+    complist = []
+    for comp_class in comp_classes:
+        if comp_class == "DRV":
+            comp_class = "CPL"
+            ninst = 1
+            config_dir = None
+        else:
+            ninst = case.get_value("NINST_%s"%comp_class)
+            config_dir = os.path.dirname(case.get_value("CONFIG_%s_FILE"%comp_class))
+
+        comp = case.get_value("COMP_%s"%comp_class)
+        thrds =  case.get_value("NTHRDS_%s"%comp_class)
+        complist.append((comp_class.lower(), comp, thrds, ninst, config_dir ))
+        os.environ["COMP_%s"%comp_class] = comp
+
+    machines_file       = case.get_value("MACHINES_SPEC_FILE")
+    ocn_submodel        = case.get_value("OCN_SUBMODEL")
+    profile_papi_enable = case.get_value("PROFILE_PAPI_ENABLE")
     compiler            = case.get_value("COMPILER")
     comp_interface      = case.get_value("COMP_INTERFACE")
     mpilib              = case.get_value("MPILIB")
@@ -206,19 +205,6 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
     ninst_value         = case.get_value("NINST_VALUE")
     mach                = case.get_value("MACH")
     os_                 = case.get_value("OS")
-    comp_cpl            = case.get_value("COMP_CPL")
-    machines_file       = case.get_value("MACHINES_SPEC_FILE")
-    ocn_submodel        = case.get_value("OCN_SUBMODEL")
-    profile_papi_enable = case.get_value("PROFILE_PAPI_ENABLE")
-    nthrds_cpl          = case.get_value("NTHRDS_CPL")
-    nthrds_atm          = case.get_value("NTHRDS_ATM")
-    nthrds_lnd          = case.get_value("NTHRDS_LND")
-    nthrds_ice          = case.get_value("NTHRDS_ICE")
-    nthrds_ocn          = case.get_value("NTHRDS_OCN")
-    nthrds_glc          = case.get_value("NTHRDS_GLC")
-    nthrds_wav          = case.get_value("NTHRDS_WAV")
-    nthrds_rof          = case.get_value("NTHRDS_ROF")
-
     # Load some params into env
     os.environ["CIMEROOT"]             = cimeroot
     os.environ["CASETOOLS"]            = casetools
@@ -236,14 +222,6 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
     os.environ["MPILIB"]               = mpilib
     os.environ["DEBUG"]                = stringify_bool(debug)
     os.environ["OS"]                   = os_
-    os.environ["COMP_CPL"]             = comp_cpl
-    os.environ["COMP_ATM"]             = comp_atm
-    os.environ["COMP_LND"]             = comp_lnd
-    os.environ["COMP_ICE"]             = comp_ice
-    os.environ["COMP_OCN"]             = comp_ocn
-    os.environ["COMP_GLC"]             = comp_glc
-    os.environ["COMP_WAV"]             = comp_wav
-    os.environ["COMP_ROF"]             = comp_rof
     os.environ["CLM_CONFIG_OPTS"]      = clm_config_opts     if clm_config_opts     is not None else ""
     os.environ["CAM_CONFIG_OPTS"]      = cam_config_opts     if cam_config_opts     is not None else ""
     os.environ["PIO_CONFIG_OPTS"]      = pio_config_opts     if pio_config_opts     is not None else ""
@@ -300,8 +278,7 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
         preview_namelists(case=case)
 
     build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib,
-                 sharedlibroot, nthrds_cpl, nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn,
-                 nthrds_glc, nthrds_wav, nthrds_rof, ninst_build, smp_value)
+                 sharedlibroot, complist, ninst_build, smp_value)
 
     t2 = time.time()
     logs = []
@@ -311,9 +288,7 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
                                machines_file)
 
     if not sharedlib_only:
-        logs.extend(build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
-                                comp_atm,   comp_lnd,   comp_ice,   comp_ocn,   comp_glc,   comp_wav,   comp_rof,
-                                nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn, nthrds_glc, nthrds_wav, nthrds_rof,
+        logs.extend(build_model(case, build_threaded, exeroot, clm_config_opts, incroot, complist,
                                 lid, caseroot, cimeroot, use_esmf_lib, comp_interface))
 
     if not sharedlib_only:
@@ -391,34 +366,33 @@ and prestage the restart data to $RUNDIR manually
 
 ###############################################################################
 def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib,
-                 sharedlibroot, nthrds_cpl, nthrds_atm, nthrds_lnd, nthrds_ice, nthrds_ocn,
-                 nthrds_glc, nthrds_wav, nthrds_rof, ninst_build, smp_value):
+                 sharedlibroot, complist, ninst_build, smp_value):
 ###############################################################################
-    ninst_atm    = case.get_value("NINST_ATM")
-    ninst_lnd    = case.get_value("NINST_LND")
-    ninst_ice    = case.get_value("NINST_ICE")
-    ninst_ocn    = case.get_value("NINST_OCN")
-    ninst_glc    = case.get_value("NINST_GLC")
-    ninst_wav    = case.get_value("NINST_WAV")
-    ninst_rof    = case.get_value("NINST_ROF")
+
     ninst_value  = case.get_value("NINST_VALUE")
     smp_build    = case.get_value("SMP_BUILD")
     build_status = case.get_value("BUILD_STATUS")
 
-    atmstr = 1 if (build_threaded or nthrds_atm > 1) else 0
-    lndstr = 1 if (build_threaded or nthrds_lnd > 1) else 0
-    icestr = 1 if (build_threaded or nthrds_ice > 1) else 0 # not in perl
-    ocnstr = 1 if (build_threaded or nthrds_ocn > 1) else 0
-    rofstr = 1 if (build_threaded or nthrds_rof > 1) else 0
-    glcstr = 1 if (build_threaded or nthrds_glc > 1) else 0
-    wavstr = 1 if (build_threaded or nthrds_wav > 1) else 0
-    cplstr = 1 if (build_threaded or nthrds_cpl > 1) else 0
+    smpstr = ""
+    inststr = ""
+    for model, comp, nthrds, ninst, comp_dir in complist:
+        if nthrds > 1:
+            build_threaded = True
+        if build_threaded:
+            smpstr += "%s1"%model[0]
+        else:
+            smpstr += "%s0"%model[0]
+        inststr += "%s%d"%(model[0],ninst)
 
-    if (nthrds_atm > 1 or nthrds_lnd > 1 or nthrds_ice > 1 or nthrds_ocn > 1 or
-        nthrds_rof > 1 or nthrds_glc > 1 or nthrds_wav > 1 or nthrds_cpl > 1):
+    if build_threaded:
         os.environ["SMP"] = "TRUE"
     else:
         os.environ["SMP"] = "FALSE"
+    case.set_value("SMP_VALUE", smpstr)
+    os.environ["SMP_VALUE"] = smpstr
+    case.set_value("NINST_VALUE", inststr)
+    os.environ["NINST_VALUE"] = inststr
+
 
     debugdir = "debug" if debug else "nodebug"
     threaddir = "threads" if (os.environ["SMP"] == "TRUE" or build_threaded) else "nothreads"
@@ -426,18 +400,6 @@ def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, comp
     logger.debug("compiler=%s mpilib=%s debugdir=%s threaddir=%s"%
                  (compiler,mpilib,debugdir,threaddir))
     os.environ["SHAREDPATH"] = sharedpath
-
-    smpstr = "a%dl%dr%di%do%dg%dw%dc%d" % \
-        (atmstr, lndstr, rofstr, icestr, ocnstr,  glcstr, wavstr, cplstr)
-
-    case.set_value("SMP_VALUE", smpstr)
-    os.environ["SMP_VALUE"] = smpstr
-
-    inststr = "a%dl%dr%di%do%dg%dw%d" % \
-        (ninst_atm, ninst_lnd, ninst_rof, ninst_ice, ninst_ocn, ninst_glc, ninst_wav)
-
-    case.set_value("NINST_VALUE", inststr)
-    os.environ["NINST_VALUE"] = inststr
 
     expect( ninst_build == ninst_value or ninst_build == "0",
             """

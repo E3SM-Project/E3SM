@@ -9,16 +9,13 @@
      should be provided by the driver. This list should follow the same order
      as compset longnames follows -->
 
-  <components>
-    <comp>DRV</comp>
-    <comp>ATM</comp>
-    <comp>LND</comp>
-    <comp>ICE</comp>
-    <comp>OCN</comp>
-    <comp>ROF</comp>
-    <comp>GLC</comp>
-    <comp>WAV</comp>
-  </components>
+  <entry id="COMP_CLASSES">
+    <type>char</type>
+    <default_value>DRV,ATM,LND,ICE,OCN,ROF,GLC,WAV</default_value>
+    <file>env_case.xml</file>
+    <group>case_comp</group>
+    <desc>List of component classes supported by this driver</desc>
+  </entry>
 
   <entry id="COMP_CPL">
     <type>char</type>
