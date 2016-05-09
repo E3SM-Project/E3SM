@@ -18,7 +18,7 @@ program piocprnc
   type(dim_t) :: dimoptions(12)
   integer :: dimoptioncnt
   integer :: nvars, ndiffs, nfilldiffs
-  integer :: num_not_found_on_file2
+  integer :: num_not_found_on_file1, num_not_found_on_file2
   integer :: num_sizes_differ
   integer :: num_not_analyzed
 
@@ -88,6 +88,7 @@ program piocprnc
 
       call compare_dimensions( file(1)%dim, file(2)%dim) 
 
+      num_not_found_on_file1 = 0
       num_not_found_on_file2 = 0
       call match_vars( file(1), file(2), &
            num_not_found_on_file2)
@@ -114,6 +115,7 @@ program piocprnc
          write(6,700) ' A total number of ',num_sizes_differ + num_not_analyzed, &
               ' fields could not be analyzed'
          write(6,700) ' A total number of ',num_not_found_on_file2,' fields on file 1 were not found on file2.'
+         write(6,700) ' A total number of ',num_not_found_on_file1,' fields on file 2 were not found on file1.'
          if (nvars == 0 .or. ndiffs > 0 .or. nfilldiffs > 0 .or. &
               num_sizes_differ > 0 .or. num_not_analyzed >= nvars) then
             write(6,700) '  diff_test: the two files seem to be DIFFERENT '
