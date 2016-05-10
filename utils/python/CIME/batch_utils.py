@@ -124,7 +124,7 @@ class BatchUtils(object):
                 submitargs+=" %s"%flag
             else:
                 val = self.case.get_value(name,subgroup=job)
-                if val is not None and len(val) > 0:
+                if val is not None and len(val) > 0 and val != "None":
                     if flag.rfind("=", len(flag)-1, len(flag)) >= 0:
                         submitargs+=" %s%s"%(flag,val)
                     else:
