@@ -895,7 +895,7 @@
 	  <ntasks_lnd>-5</ntasks_lnd>
 	  <ntasks_rof>-5</ntasks_rof>
 	  <ntasks_ice>-7</ntasks_ice>
-	  <ntasks_ocn>-2</ntasks_ocn>
+	  <ntasks_ocn>-8</ntasks_ocn>
 	  <ntasks_glc>-1</ntasks_glc>
 	  <ntasks_wav>-12</ntasks_wav>
 	  <ntasks_cpl>-12</ntasks_cpl>
@@ -1336,14 +1336,14 @@
       <pes pesize="any" compset="CAM5.+CLM.+CICE.+POP.+">
 	<comment>none</comment>
 	<ntasks>
-	  <ntasks_atm>600</ntasks_atm>
-	  <ntasks_lnd>210</ntasks_lnd>
-	  <ntasks_rof>210</ntasks_rof>
-	  <ntasks_ice>390</ntasks_ice>
-	  <ntasks_ocn>30</ntasks_ocn>
-	  <ntasks_glc>600</ntasks_glc>
-	  <ntasks_wav>600</ntasks_wav>
-	  <ntasks_cpl>600</ntasks_cpl>
+	  <ntasks_atm>-40</ntasks_atm>
+	  <ntasks_lnd>-24</ntasks_lnd>
+	  <ntasks_rof>-24</ntasks_rof>
+	  <ntasks_ice>-16</ntasks_ice>
+	  <ntasks_ocn>-6</ntasks_ocn>
+	  <ntasks_glc>-40</ntasks_glc>
+	  <ntasks_wav>-40</ntasks_wav>
+	  <ntasks_cpl>-40</ntasks_cpl>
 	</ntasks>
 	<nthrds>
 	  <nthrds_atm>2</nthrds_atm>
@@ -1359,8 +1359,47 @@
 	  <rootpe_atm>0</rootpe_atm>
 	  <rootpe_lnd>0</rootpe_lnd>
 	  <rootpe_rof>0</rootpe_rof>
-	  <rootpe_ice>210</rootpe_ice>
-	  <rootpe_ocn>600</rootpe_ocn>
+	  <rootpe_ice>-24</rootpe_ice>
+	  <rootpe_ocn>-40</rootpe_ocn>
+	  <rootpe_glc>0</rootpe_glc>
+	  <rootpe_wav>0</rootpe_wav>
+	  <rootpe_cpl>0</rootpe_cpl>
+	</rootpe>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1" >
+    <mach name="yellowstone">
+      <pes pesize="X" compset="CAM5.+CLM.+CICE.+POP.+">
+	<PES_PER_NODE>16</PES_PER_NODE>
+	<MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+	<comment>none</comment>
+	<ntasks>
+	  <ntasks_atm>-108</ntasks_atm>
+	  <ntasks_lnd>-68</ntasks_lnd>
+	  <ntasks_rof>-68</ntasks_rof>
+	  <ntasks_ice>-40</ntasks_ice>
+	  <ntasks_ocn>-10</ntasks_ocn>
+	  <ntasks_glc>1</ntasks_glc>
+	  <ntasks_wav>1</ntasks_wav>
+	  <ntasks_cpl>-108</ntasks_cpl>
+	</ntasks>
+	<nthrds>
+	  <nthrds_atm>2</nthrds_atm>
+	  <nthrds_lnd>2</nthrds_lnd>
+	  <nthrds_rof>2</nthrds_rof>
+	  <nthrds_ice>2</nthrds_ice>
+	  <nthrds_ocn>2</nthrds_ocn>
+	  <nthrds_glc>2</nthrds_glc>
+	  <nthrds_wav>2</nthrds_wav>
+	  <nthrds_cpl>2</nthrds_cpl>
+	</nthrds>
+	<rootpe>
+	  <rootpe_atm>0</rootpe_atm>
+	  <rootpe_lnd>0</rootpe_lnd>
+	  <rootpe_rof>0</rootpe_rof>
+	  <rootpe_ice>-68</rootpe_ice>
+	  <rootpe_ocn>-108</rootpe_ocn>
 	  <rootpe_glc>0</rootpe_glc>
 	  <rootpe_wav>0</rootpe_wav>
 	  <rootpe_cpl>0</rootpe_cpl>
@@ -1407,7 +1446,7 @@
   </grid>
   <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1" >
     <mach name="yellowstone">
-      <pes pesize="any" compset="BGC">
+      <pes pesize="any" compset="CAM.+CLM.+CICE.+POP.+BGC">
 	<comment>none</comment>
 	<ntasks>
 	  <ntasks_atm>300</ntasks_atm>
@@ -1627,5 +1666,59 @@
       </pes>
     </mach>
   </grid>
+
+  <!-- J compset (all active except data atmosphere)
+       Laid out as follows:
+       |LND|ICE|ATM|OCN|
+       |ROF|
+       |..CPL..|
+       |......GLC......|
+  -->
+  <!-- Ideally, we wouldn't specify the atmosphere resolution here, because it
+       is irrelevant. However, ConfigPES doesn't seem to match the grid properly
+       unless the atmosphere resolution is specified. -->
+  <grid name="a%0.9x1.25.+l%0.9x1.25.+oi%gx1">
+     <!-- Ideally, we wouldn't match against yellowstone here. However, if we
+          set mach name="any", it seems that the ConfigPES logic just tries
+          looking in other blocks (which have a specific grid and specific
+          machine), and doesn't check this block. (See
+          https://github.com/CESM-Development/cime/issues/403) -->
+     <mach name="yellowstone">
+        <pes pesize="any" compset="DATM.+CLM.+CICE.+POP">
+           <comment>Load balanced for 1850_DATM%CRU_CLM50%BGC_CICE_POP2_MOSART_CISM2_SWAV on yellowstone</comment>
+           <ntasks>
+              <ntasks_atm>-1</ntasks_atm>
+              <ntasks_lnd>-21</ntasks_lnd>
+              <ntasks_rof>-21</ntasks_rof>
+              <ntasks_ice>-10</ntasks_ice>
+              <ntasks_ocn>-16</ntasks_ocn>
+              <ntasks_glc>-48</ntasks_glc>
+              <ntasks_wav>1</ntasks_wav>
+              <ntasks_cpl>-31</ntasks_cpl>
+           </ntasks>
+           <nthrds>
+	      <nthrds_atm>1</nthrds_atm>
+	      <nthrds_lnd>1</nthrds_lnd>
+	      <nthrds_rof>1</nthrds_rof>
+	      <nthrds_ice>1</nthrds_ice>
+	      <nthrds_ocn>1</nthrds_ocn>
+	      <nthrds_glc>1</nthrds_glc>
+	      <nthrds_wav>1</nthrds_wav>
+	      <nthrds_cpl>1</nthrds_cpl>
+           </nthrds>
+           <rootpe>
+              <rootpe_atm>-31</rootpe_atm>
+              <rootpe_lnd>0</rootpe_lnd>
+              <rootpe_rof>0</rootpe_rof>
+              <rootpe_ice>-21</rootpe_ice>
+              <rootpe_ocn>-32</rootpe_ocn>
+              <rootpe_glc>0</rootpe_glc>
+              <rootpe_wav>0</rootpe_wav>
+              <rootpe_cpl>0</rootpe_cpl>
+           </rootpe>
+        </pes>
+     </mach>
+  </grid>
+
 
 </config_pes>

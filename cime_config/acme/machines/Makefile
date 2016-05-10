@@ -358,7 +358,7 @@ ifdef INC_ALBANY
 endif
 
 ifeq ($(MODEL),driver)
-  INCLDIR += -I$(EXEROOT)/atm/obj -I$(EXEROOT)/ice/obj -I$(EXEROOT)/ocn/obj -I$(EXEROOT)/glc/obj -I$(EXEROOT)/rof/obj -I$(EXEROOT)/wav/obj
+  INCLDIR += -I$(EXEROOT)/atm/obj -I$(EXEROOT)/ice/obj -I$(EXEROOT)/ocn/obj -I$(EXEROOT)/glc/obj -I$(EXEROOT)/rof/obj -I$(EXEROOT)/wav/obj -I$(EXEROOT)/esp/obj
 # nagfor and gcc have incompatible LDFLAGS.
 # nagfor requires the weird "-Wl,-Wl,," syntax.
 # If done in config_compilers.xml, we break MCT.
@@ -719,6 +719,7 @@ ifeq ($(ULIBDEP),$(null))
      ULIBDEP += $(LIBROOT)/librof.a
      ULIBDEP += $(LIBROOT)/libglc.a
      ULIBDEP += $(LIBROOT)/libwav.a
+     ULIBDEP += $(LIBROOT)/libesp.a
      ifeq ($(COMP_GLC), cism)
        ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
        ifeq ($(CISM_USE_TRILINOS), TRUE)
@@ -812,6 +813,10 @@ cleanwav:
 	$(RM) -f $(LIBROOT)/libwav.a
 	cd $(EXEROOT)/wav/obj ; $(RM) -f *.o *.mod
 
+cleanesp:
+	$(RM) -f $(LIBROOT)/libesp.a
+	cd $(EXEROOT)/esp/obj ; $(RM) -f *.o *.mod
+
 cleanglc:
 	$(RM) -f $(LIBROOT)/libglc.a
 	$(RM) -fr $(EXEROOT)/glc
@@ -844,7 +849,7 @@ cleangptl:
 	$(RM) -f $(GPTLLIB)
 	$(RM) -fr $(GPTL_LIBDIR)
 
-clean: cleanatm cleanocn cleanwav cleanglc cleanice cleanrof cleanlnd
+clean: cleanatm cleanocn cleanwav cleanglc cleanice cleanrof cleanlnd cleanesp
 
 realclean: clean cleancsmshare cleanpio cleanmct cleangptl
 

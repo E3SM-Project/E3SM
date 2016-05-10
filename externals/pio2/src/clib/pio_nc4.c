@@ -16,7 +16,7 @@
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
  * function.
- *
+ * 
  * @param ncid the ncid of the open file.
  * @param varid the ID of the variable.
  * @param shuffle non-zero to turn on shuffle filter (can be good for
@@ -25,7 +25,7 @@
  * variable.
  * @param deflate_level 1 to 9, with 1 being faster and 9 being more
  * compressed.
- *
+ * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
 int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
@@ -46,18 +46,26 @@ int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
     ios = file->iosystem;
     msg = PIO_MSG_DEF_VAR_DEFLATE;
 
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster)
+    if (ios->async_interface && ! ios->ioproc)
+    {
+	if (ios->compmaster) 
 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
     }
 
-    if(ios->ioproc){
-	switch(file->iotype){
+    if (ios->ioproc)
+    {
+	switch (file->iotype)
+	{
 #ifdef _NETCDF
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_def_var_deflate(file->fh, varid, shuffle, deflate, deflate_level);
+	    /* Versions of netCDF 4.4 and earlier do not return an
+	     * error when attempting to turn on deflation with
+	     * parallel I.O. But this is not allowed by HDF5. So
+	     * return the correct error code. */
+	    ierr = NC_EINVAL;
+	    //ierr = nc_def_var_deflate(file->fh, varid, shuffle, deflate, deflate_level);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
 	    if (!ios->io_rank)
@@ -65,12 +73,12 @@ int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 	default:
@@ -78,14 +86,22 @@ int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
 	}
     }
 
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr != PIO_NOERR){
+    /* If there is an error, allocate space for the error string. */
+    if (ierr != PIO_NOERR)
+    {
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
-    if(errstr != NULL) free(errstr);
+
+    /* Check the netCDF return code, and broadcast it to all tasks. */
+    ierr = check_netcdf(file, ierr, errstr,__LINE__);
+
+    /* Free the error string if it was allocated. */
+    if (errstr != NULL)
+	free(errstr);
+
     return ierr;
-}
+}    
 
 /**
  * @ingroup PIO_inq_var
@@ -99,7 +115,7 @@ int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
  * function.
- *
+ * 
  * @param ncid the ncid of the open file.
  * @param varid the ID of the variable to set chunksizes for.
  * @param shufflep pointer to an int that will get the status of the
@@ -108,7 +124,7 @@ int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
  * deflation is in use for this variable.
  * @param deflate_levelp pointer to an int that will get the deflation
  * level (from 1-9) if deflation is in use for this variable.
- *
+ * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
 int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
@@ -120,6 +136,7 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
     iosystem_desc_t *ios;
     file_desc_t *file;
     char *errstr;
+    int ret;
 
     errstr = NULL;
     ierr = PIO_NOERR;
@@ -127,34 +144,36 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
     if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
     ios = file->iosystem;
-    msg = PIO_MSG_INQ_VAR_CHUNKING;
+    msg = PIO_MSG_INQ_VAR_DEFLATE;
 
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster)
+    if (ios->async_interface && ! ios->ioproc)
+    {
+	if (ios->compmaster) 
 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
     }
 
-    if(ios->ioproc){
-	switch(file->iotype){
+    if (ios->ioproc)
+    {
+	switch (file->iotype)
+	{
 #ifdef _NETCDF
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
 	    ierr = nc_inq_var_deflate(file->fh, varid, shufflep, deflatep, deflate_levelp);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
-	    if(ios->io_rank==0){
+	    if (ios->io_rank == 0)
 		ierr = nc_inq_var_deflate(file->fh, varid, shufflep, deflatep, deflate_levelp);
-	    }
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 	default:
@@ -162,265 +181,37 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
 	}
     }
 
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr != PIO_NOERR){
+    /* If there is an error, allocate space for the error string. */
+    if (ierr != PIO_NOERR)
+    {
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
-    if(errstr != NULL) free(errstr);
+
+    /* Check the netCDF return code, and broadcast it to all tasks. */
+    ierr = check_netcdf(file, ierr, errstr, __LINE__);
+
+    /* Free the error string if it was allocated. */
+    if (errstr != NULL)
+	free(errstr);
+
+    /* Broadcast results to all tasks. */
+    if (ierr == PIO_NOERR)
+    {
+	if (shufflep)
+	    ierr = MPI_Bcast(shufflep, 1, MPI_INT, ios->ioroot, ios->my_comm);
+	if (deflatep)
+	    ierr = MPI_Bcast(deflatep, 1, MPI_INT, ios->ioroot, ios->my_comm);
+	if (deflate_levelp)
+	    ierr = MPI_Bcast(deflate_levelp, 1, MPI_INT, ios->ioroot, ios->my_comm);
+    }
     return ierr;
-}
-
-/**
- * @ingroup PIO_inq_var
- * Inquire about szip settings for a variable.
- *
- * This function only applies to netCDF-4 files. When used with netCDF
- * classic files, the error PIO_ENOTNC4 will be returned.
- *
- * Szip is a read-only compression format in netCDF-4. Only raw HDF5
- * can create szip files, but netcdf-4 can read them.
- *
- * See the <a
- * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
- * variable documentation</a> for details about the operation of this
- * function.
- *
- * @param ncid the ncid of the open file.
- * @param varid the ID of the variable to set chunksizes for.
- * @param options_maskp will get the options mask.
- * @param pixels_per_block will get the pixels per block.
- *
- * @return PIO_NOERR for success, otherwise an error code.
- */
-int PIOc_inq_var_szip(int ncid, int varid, int *options_maskp,
-		      int *pixels_per_blockp)
-{
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    if (!(file = pio_get_file_from_id(ncid)))
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_INQ_VAR_SZIP;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster)
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-    }
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_var_szip(file->fh, varid, options_maskp, pixels_per_blockp);
-		break;
-	case PIO_IOTYPE_NETCDF4C:
-	    if (!ios->io_rank)
-		ierr = nc_inq_var_szip(file->fh, varid, options_maskp, pixels_per_blockp);
-	    break;
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    return PIO_ENOTNC4;
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    return PIO_ENOTNC4;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
-}
-
-/**
- * @ingroup PIO_def_var
- * Turn on checksums for a variable (serial netCDF-4 only).
- *
- * This function only applies to netCDF-4 files. When used with netCDF
- * classic files, the error PIO_ENOTNC4 will be returned.
- *
- * This function turns on the fletcher32 filter for this variable in
- * the HDF5 layer. This causes a 4-byte checksum to be written for
- * each chunk of data. These checksums are checked automatically when
- * the file is read, and an error thrown if they don't match. There
- * will be a performance penalty on read for checking the checksum.
- *
- * This function is only available for netCDF-4 Serial files. It is
- * not available for netCDF-4 parallel files.
- *
- * See the <a
- * href="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf-c/nc_005fdef_005fvar_005ffletcher32.html#nc_005fdef_005fvar_005ffletcher32">netCDF
- * documentation</a> for details about the operation of this function.
- *
- * @param ncid the ncid of the open file.
- * @param varid the ID of the variable to set chunksizes for.
- * @param fletcher32 non-zero to turn on fletcher32 filter.
- *
- * @return PIO_NOERR for success, otherwise an error code.
- */
-int PIOc_def_var_fletcher32(int ncid, int varid, int fletcher32)
-{
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    if (!(file = pio_get_file_from_id(ncid)))
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_DEF_VAR_FLETCHER32;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster)
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-    }
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_def_var_fletcher32(file->fh, varid, fletcher32);
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-	    if(ios->io_rank==0){
-		ierr = nc_def_var_fletcher32(file->fh, varid, fletcher32);
-	    }
-	    break;
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    return PIO_ENOTNC4;
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    return PIO_ENOTNC4;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
-}
-
-/**
- * @ingroup PIO_inq_var
- * Inquire about chunksizes for a variable.
- *
- * This function only applies to netCDF-4 files. When used with netCDF
- * classic files, the error PIO_ENOTNC4 will be returned.
- *
- * See the <a
- * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
- * variable documentation</a> for details about the operation of this
- * function.
- *
- * @param ncid the ncid of the open file.
- * @param varid the ID of the variable to set chunksizes for.
- * @param storagep pointer to int which will be set to either
- * NC_CONTIGUOUS or NC_CHUNKED.
- * @param chunksizep pointer to memory where chunksizes will be
- * set. There are the same number of chunksizes as there are
- * dimensions.
- *
- * @return PIO_NOERR for success, otherwise an error code.
- */
-int PIOc_inq_var_fletcher32(int ncid, int varid, int *fletcher32p)
-{
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    if (!(file = pio_get_file_from_id(ncid)))
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_INQ_VAR_FLETCHER32;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster)
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-    }
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_var_fletcher32(file->fh, varid, fletcher32p);
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-	    if (!ios->io_rank)
-		ierr = nc_inq_var_fletcher32(file->fh, varid, fletcher32p);
-	    break;
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    return PIO_ENOTNC4;
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    return PIO_ENOTNC4;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
-}
+}    
 
 /**
  * @ingroup PIO_def_var
  * Set chunksizes for a variable.
- *
+ * 
  * This function only applies to netCDF-4 files. When used with netCDF
  * classic files, the error PIO_ENOTNC4 will be returned.
  *
@@ -438,11 +229,11 @@ int PIOc_inq_var_fletcher32(int ncid, int varid, int *fletcher32p)
  * @param storage NC_CONTIGUOUS or NC_CHUNKED.
  * @param chunksizep an array of chunksizes. Must have a chunksize for
  * every variable dimension.
- *
+ * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
 int PIOc_def_var_chunking(int ncid, int varid, int storage,
-			  const size_t *chunksizesp)
+			  const PIO_Offset *chunksizesp) 
 {
     int ierr;
     int msg;
@@ -459,21 +250,25 @@ int PIOc_def_var_chunking(int ncid, int varid, int storage,
     ios = file->iosystem;
     msg = PIO_MSG_DEF_VAR_CHUNKING;
 
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster)
+    if (ios->async_interface && ! ios->ioproc)
+    {
+	if (ios->compmaster) 
 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
     }
 
-    if(ios->ioproc){
-	switch(file->iotype){
+    if (ios->ioproc)
+    {
+	switch (file->iotype)
+	{
 #ifdef _NETCDF
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
 	    ierr = nc_def_var_chunking(file->fh, varid, storage, chunksizesp);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
-	    if(ios->io_rank==0){
+	    if (ios->io_rank==0)
+	    {
 		ierr = nc_def_var_chunking(file->fh, varid, storage, chunksizesp);
 	    }
 	    break;
@@ -492,12 +287,20 @@ int PIOc_def_var_chunking(int ncid, int varid, int storage,
 	}
     }
 
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr != PIO_NOERR){
+    /* Allocate an error string if needed. */
+    if (ierr != PIO_NOERR)
+    {
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
-    if(errstr != NULL) free(errstr);
+
+    /* Check for netCDF error. */
+    ierr = check_netcdf(file, ierr, errstr,__LINE__);
+
+    /* Free the error string if it was allocated. */
+    if (errstr != NULL)
+	free(errstr);
+
     return ierr;
 }
 
@@ -512,7 +315,7 @@ int PIOc_def_var_chunking(int ncid, int varid, int storage,
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
  * function.
- *
+ * 
  * @param ncid the ncid of the open file.
  * @param varid the ID of the variable to set chunksizes for.
  * @param storagep pointer to int which will be set to either
@@ -520,10 +323,10 @@ int PIOc_def_var_chunking(int ncid, int varid, int storage,
  * @param chunksizep pointer to memory where chunksizes will be
  * set. There are the same number of chunksizes as there are
  * dimensions.
- *
+ * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizesp)
+int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, PIO_Offset *chunksizesp)
 {
     int ierr;
     int msg;
@@ -531,6 +334,7 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizes
     iosystem_desc_t *ios;
     file_desc_t *file;
     char *errstr;
+    int ndims;
 
     errstr = NULL;
     ierr = PIO_NOERR;
@@ -540,22 +344,29 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizes
     ios = file->iosystem;
     msg = PIO_MSG_INQ_VAR_CHUNKING;
 
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster)
+    if (ios->async_interface && ! ios->ioproc)
+    {
+	if (ios->compmaster) 
 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
     }
 
-    if(ios->ioproc){
-	switch(file->iotype){
+    if (ios->ioproc)
+    {
+	switch (file->iotype)
+	{
 #ifdef _NETCDF
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
 	    ierr = nc_inq_var_chunking(file->fh, varid, storagep, chunksizesp);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
-	    if(ios->io_rank==0){
-		ierr = nc_inq_var_chunking(file->fh, varid, storagep, chunksizesp);
+	    if (ios->io_rank == 0)
+	    {
+		if ((ierr = nc_inq_var_chunking(file->fh, varid, storagep, chunksizesp)))
+		    return ierr;
+		if ((ierr = nc_inq_varndims(file->fh, varid, &ndims)))
+		    return ierr;
 	    }
 	    break;
 #endif
@@ -573,12 +384,27 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizes
 	}
     }
 
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr != PIO_NOERR){
+    /* If there is an error, allocate space for the error string. */
+    if (ierr != PIO_NOERR)
+    {
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
-    if(errstr != NULL) free(errstr);
+
+    /* Check the netCDF return code, and broadcast it to all tasks. */
+    ierr = check_netcdf(file, ierr, errstr,__LINE__);
+
+    /* Free the error stringif it was allocated. */
+    if (errstr != NULL)
+	free(errstr);
+
+    /* Broadcast results to all tasks. */
+    ierr = MPI_Bcast(&ndims, 1, MPI_INT, ios->ioroot, ios->my_comm);
+    if (storagep)
+	ierr = MPI_Bcast(storagep, 1, MPI_INT, ios->ioroot, ios->my_comm);
+    if (chunksizesp)
+	ierr = MPI_Bcast(chunksizesp, ndims, MPI_OFFSET, ios->ioroot, ios->my_comm);
+
     return ierr;
 }
 
@@ -593,7 +419,7 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizes
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
  * function.
- *
+ * 
  * Chunksizes have important performance repercussions. NetCDF
  * attempts to choose sensible chunk sizes by default, but for best
  * performance check chunking against access patterns.
@@ -603,7 +429,7 @@ int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, size_t *chunksizes
  * @param storage NC_CONTIGUOUS or NC_CHUNKED.
  * @param chunksizep an array of chunksizes. Must have a chunksize for
  * every variable dimension.
- *
+ * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
 int PIOc_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
@@ -623,21 +449,25 @@ int PIOc_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
     ios = file->iosystem;
     msg = PIO_MSG_SET_FILL;
 
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster)
+    if (ios->async_interface && ! ios->ioproc)
+    {
+	if (ios->compmaster) 
 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
     }
 
-    if(ios->ioproc){
-	switch(file->iotype){
+    if (ios->ioproc)
+    {
+	switch (file->iotype)
+	{
 #ifdef _NETCDF
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
 	    ierr = nc_def_var_fill(file->fh, varid, no_fill, fill_value);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
-	    if(ios->io_rank==0){
+	    if (ios->io_rank==0)
+	    {
 		ierr = nc_def_var_fill(file->fh, varid, no_fill, fill_value);
 	    }
 	    break;
@@ -656,12 +486,20 @@ int PIOc_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
 	}
     }
 
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr != PIO_NOERR){
+    /* Allocate an error string if needed. */
+    if (ierr != PIO_NOERR)
+    {
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
-    if(errstr != NULL) free(errstr);
+
+    /* Check for netCDF error. */
+    ierr = check_netcdf(file, ierr, errstr,__LINE__);
+
+    /* Free the error string if it was allocated. */
+    if (errstr != NULL)
+	free(errstr);
+
     return ierr;
 }
 
@@ -676,7 +514,7 @@ int PIOc_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
  * function.
- *
+ * 
  * Chunksizes have important performance repercussions. NetCDF
  * attempts to choose sensible chunk sizes by default, but for best
  * performance check chunking against access patterns.
@@ -686,7 +524,7 @@ int PIOc_def_var_fill(int ncid, int varid, int no_fill, const void *fill_value)
  * @param storage NC_CONTIGUOUS or NC_CHUNKED.
  * @param chunksizep an array of chunksizes. Must have a chunksize for
  * every variable dimension.
- *
+ * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
 int PIOc_def_var_endian(int ncid, int varid, int endian)
@@ -706,32 +544,36 @@ int PIOc_def_var_endian(int ncid, int varid, int endian)
     ios = file->iosystem;
     msg = PIO_MSG_DEF_VAR_ENDIAN;
 
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster)
+    if (ios->async_interface && ! ios->ioproc)
+    {
+	if (ios->compmaster) 
 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
     }
 
-    if(ios->ioproc){
-	switch(file->iotype){
+    if (ios->ioproc)
+    {
+	switch (file->iotype)
+	{
 #ifdef _NETCDF
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
 	    ierr = nc_def_var_endian(file->fh, varid, endian);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
-	    if(ios->io_rank==0){
+	    if (ios->io_rank==0)
+	    {
 		ierr = nc_def_var_endian(file->fh, varid, endian);
 	    }
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 	default:
@@ -739,12 +581,20 @@ int PIOc_def_var_endian(int ncid, int varid, int endian)
 	}
     }
 
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr != PIO_NOERR){
+    /* Allocate an error string if needed. */
+    if (ierr != PIO_NOERR)
+    {
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
-    if(errstr != NULL) free(errstr);
+
+    /* Check for netCDF error. */
+    ierr = check_netcdf(file, ierr, errstr,__LINE__);
+
+    /* Free the error string if it was allocated. */
+    if (errstr != NULL)
+	free(errstr);
+
     return ierr;
 }
 
@@ -759,7 +609,7 @@ int PIOc_def_var_endian(int ncid, int varid, int endian)
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
  * function.
- *
+ * 
  * @param ncid the ncid of the open file.
  * @param varid the ID of the variable to set chunksizes for.
  * @param storagep pointer to int which will be set to either
@@ -767,7 +617,7 @@ int PIOc_def_var_endian(int ncid, int varid, int endian)
  * @param chunksizep pointer to memory where chunksizes will be
  * set. There are the same number of chunksizes as there are
  * dimensions.
- *
+ * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
 int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
@@ -787,14 +637,17 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
     ios = file->iosystem;
     msg = PIO_MSG_INQ_VAR_CHUNKING;
 
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster)
+    if (ios->async_interface && ! ios->ioproc)
+    {
+	if (ios->compmaster) 
 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
     }
 
-    if(ios->ioproc){
-	switch(file->iotype){
+    if (ios->ioproc)
+    {
+	switch (file->iotype)
+	{
 #ifdef _NETCDF
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
@@ -806,12 +659,12 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 	default:
@@ -819,14 +672,26 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
 	}
     }
 
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr != PIO_NOERR){
+    /* If there is an error, allocate space for the error string. */
+    if (ierr != PIO_NOERR)
+    {
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
-    if(errstr != NULL) free(errstr);
+
+    /* Check the netCDF return code, and broadcast it to all tasks. */
+    ierr = check_netcdf(file, ierr, errstr,__LINE__);
+
+    /* Free the error string if it was allocated. */
+    if (errstr != NULL)
+	free(errstr);
+
+    /* Broadcast results to all tasks. */
+    if (endianp)
+	ierr = MPI_Bcast(endianp, 1, MPI_INT, ios->ioroot, ios->my_comm);
+
     return ierr;
-}
+}    
 
 /**
  * @ingroup PIO_def_var
@@ -846,17 +711,16 @@ int PIOc_inq_var_endian(int ncid, int varid, int *endianp)
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
  * function.
- *
+ * 
  * @param iotype the iotype of files to be created or opened.
-`* @param io_rank the rank of the calling process.
  * @param size size of file cache.
  * @param nelems number of elements in file cache.
  * @param preemption preemption setting for file cache.
- *
+ * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size,
-			 size_t nelems, float preemption)
+int PIOc_set_chunk_cache(int iosysid, int iotype, PIO_Offset size,
+			 PIO_Offset nelems, float preemption)
 {
     int ierr;
     int msg;
@@ -867,15 +731,19 @@ int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size,
 
     errstr = NULL;
     ierr = PIO_NOERR;
-    /*msg = PIO_MSG_SET_CHUNK_CACHE;*/
+    msg = PIO_MSG_SET_CHUNK_CACHE;
 
-    /* if(ios->async_interface && ! ios->ioproc){ */
-    /* 	if(ios->compmaster)  */
+    ios = pio_get_iosystem_from_id(iosysid);
+    if(ios == NULL)
+	return PIO_EBADID;
+
+  /* if (ios->async_interface && ! ios->ioproc){ */
+    /* 	if (ios->compmaster) */
     /* 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm); */
     /* 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm); */
     /* } */
 
-    switch(iotype)
+    switch (iotype)
     {
 #ifdef _NETCDF
 #ifdef _NETCDF4
@@ -883,31 +751,28 @@ int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size,
 	ierr = nc_set_chunk_cache(size, nelems, preemption);
 	break;
     case PIO_IOTYPE_NETCDF4C:
-	if (!io_rank)
+	if (!ios->io_rank)
 	    ierr = nc_set_chunk_cache(size, nelems, preemption);
 	break;
 #endif
     case PIO_IOTYPE_NETCDF:
-	return PIO_ENOTNC4;
+	ierr = PIO_ENOTNC4;
 	break;
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-	return PIO_ENOTNC4;
+	ierr = PIO_ENOTNC4;
 	break;
 #endif
     default:
 	ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
 
-    /* ierr = check_netcdf(file, ierr, errstr,__LINE__); */
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
-    }
-    if(errstr != NULL) free(errstr);
+    /* Propogate error code to all processes. */
+    MPI_Bcast(&ierr, 1, MPI_INTEGER, ios->ioroot, ios->my_comm);    
+
     return ierr;
-}
+}    
 
 /**
  * @ingroup PIO_def_var
@@ -927,70 +792,86 @@ int PIOc_set_chunk_cache(int iotype, int io_rank, size_t size,
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
  * function.
- *
+ * 
  * Chunksizes have important performance repercussions. NetCDF
  * attempts to choose sensible chunk sizes by default, but for best
  * performance check chunking against access patterns.
  *
  * @param iotype the iotype of files to be created or opened.
-`* @param io_rank the rank of the calling process.
  * @param sizep gets the size of file cache.
  * @param nelemsp gets the number of elements in file cache.
  * @param preemptionp gets the preemption setting for file cache.
- *
+ * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_get_chunk_cache(int iotype, int io_rank, size_t *sizep,
-			 size_t *nelemsp, float *preemptionp)
+int PIOc_get_chunk_cache(int iosysid, int iotype, PIO_Offset *sizep,
+			 PIO_Offset *nelemsp, float *preemptionp)
 {
     int ierr;
     int msg;
     int mpierr;
+    iosystem_desc_t *ios;
     char *errstr;
 
     errstr = NULL;
     ierr = PIO_NOERR;
+
+    ios = pio_get_iosystem_from_id(iosysid);
+    if(ios == NULL)
+	return PIO_EBADID;
 
     /* Since this is a property of the running HDF5 instance, not the
      * file, it's not clear if this message passing will apply. For
      * now, comment it out. EJH */
     /* msg = PIO_MSG_INQ_VAR_FLETCHER32; */
 
-    /* if(ios->async_interface && ! ios->ioproc){ */
-    /* 	if(ios->compmaster)  */
+    /* if (ios->async_interface && ! ios->ioproc){ */
+    /* 	if (ios->compmaster)  */
     /* 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm); */
     /* 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm); */
     /* } */
 
-    switch(iotype){
+    switch (iotype)
+    {
 #ifdef _NETCDF
 #ifdef _NETCDF4
     case PIO_IOTYPE_NETCDF4P:
-	ierr = nc_get_chunk_cache(sizep, nelemsp, preemptionp);
+	ierr = nc_get_chunk_cache((size_t *)sizep, (size_t *)nelemsp, preemptionp);
 	break;
     case PIO_IOTYPE_NETCDF4C:
-	if (!io_rank)
-	    ierr = nc_get_chunk_cache(sizep, nelemsp, preemptionp);
+	if (!ios->io_rank)
+	    ierr = nc_get_chunk_cache((size_t *)sizep, (size_t *)nelemsp, preemptionp);
 	break;
 #endif
     case PIO_IOTYPE_NETCDF:
-	return PIO_ENOTNC4;
+	ierr = PIO_ENOTNC4;
 	break;
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-	return PIO_ENOTNC4;
+	ierr = PIO_ENOTNC4;
 	break;
 #endif
     default:
 	ierr = iotype_error(iotype,__FILE__,__LINE__);
     }
 
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
+
+    /* Check for netCDF error. */
+    MPI_Bcast(&ierr, 1, MPI_INTEGER, ios->ioroot, ios->my_comm);
+    if (!ierr)
+    {
+	if (sizep)
+	    if ((ierr = MPI_Bcast(sizep, 1, MPI_OFFSET, ios->ioroot, ios->my_comm)))
+		ierr = PIO_EIO;
+	if (nelemsp && !ierr)
+	    if ((ierr = MPI_Bcast(nelemsp, 1, MPI_OFFSET, ios->ioroot, ios->my_comm)))
+		ierr = PIO_EIO;
+	if (preemptionp && !ierr)
+	    if ((ierr = MPI_Bcast(preemptionp, 1, MPI_FLOAT, ios->ioroot, ios->my_comm)))
+		ierr = PIO_EIO;
     }
-    if(errstr != NULL) free(errstr);
+
     return ierr;
 }
 
@@ -1005,7 +886,7 @@ int PIOc_get_chunk_cache(int iotype, int io_rank, size_t *sizep,
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
  * function.
- *
+ * 
  * Chunksizes have important performance repercussions. NetCDF
  * attempts to choose sensible chunk sizes by default, but for best
  * performance check chunking against access patterns.
@@ -1015,10 +896,10 @@ int PIOc_get_chunk_cache(int iotype, int io_rank, size_t *sizep,
  * @param storage NC_CONTIGUOUS or NC_CHUNKED.
  * @param chunksizep an array of chunksizes. Must have a chunksize for
  * every variable dimension.
- *
+ * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_set_var_chunk_cache(int ncid, int varid, size_t size, size_t nelems,
+int PIOc_set_var_chunk_cache(int ncid, int varid, PIO_Offset size, PIO_Offset nelems,
 			     float preemption)
 {
     int ierr;
@@ -1036,32 +917,34 @@ int PIOc_set_var_chunk_cache(int ncid, int varid, size_t size, size_t nelems,
     ios = file->iosystem;
     msg = PIO_MSG_SET_VAR_CHUNK_CACHE;
 
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster)
+    if (ios->async_interface && ! ios->ioproc)
+    {
+	if (ios->compmaster) 
 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
     }
 
-    if(ios->ioproc){
-	switch(file->iotype){
+    if (ios->ioproc)
+    {
+	switch (file->iotype)
+	{
 #ifdef _NETCDF
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
 	    ierr = nc_set_var_chunk_cache(file->fh, varid, size, nelems, preemption);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
-	    if(ios->io_rank==0){
+	    if (!ios->io_rank)
 		ierr = nc_set_var_chunk_cache(file->fh, varid, size, nelems, preemption);
-	    }
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 	default:
@@ -1069,14 +952,22 @@ int PIOc_set_var_chunk_cache(int ncid, int varid, size_t size, size_t nelems,
 	}
     }
 
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr != PIO_NOERR){
+    /* Allocate an error string if needed. */
+    if (ierr != PIO_NOERR)
+    {
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
-    if(errstr != NULL) free(errstr);
+
+    /* Check for netCDF error. */
+    ierr = check_netcdf(file, ierr, errstr,__LINE__);
+
+    /* Free the error string if it was allocated. */
+    if (errstr != NULL)
+	free(errstr);
+
     return ierr;
-}
+}    
 
 /**
  * @ingroup PIO_inq_var
@@ -1092,16 +983,16 @@ int PIOc_set_var_chunk_cache(int ncid, int varid, size_t size, size_t nelems,
  * href="http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html">netCDF
  * variable documentation</a> for details about the operation of this
  * function.
- *
+ * 
  * @param ncid the ncid of the open file.
  * @param varid the ID of the variable to set chunksizes for.
  * @param sizep will get the size of the cache in bytes.
  * @param nelemsp will get the number of elements in the cache.
  * @param preemptionp will get the cache preemption value.
- *
+ * 
  * @return PIO_NOERR for success, otherwise an error code.
  */
-int PIOc_get_var_chunk_cache(int ncid, int varid, size_t *sizep, size_t *nelemsp,
+int PIOc_get_var_chunk_cache(int ncid, int varid, PIO_Offset *sizep, PIO_Offset *nelemsp,
 			     float *preemptionp)
 {
     int ierr;
@@ -1123,31 +1014,35 @@ int PIOc_get_var_chunk_cache(int ncid, int varid, size_t *sizep, size_t *nelemsp
      * now, comment it out. EJH */
     /* msg = PIO_MSG_INQ_VAR_FLETCHER32; */
 
-    /* if(ios->async_interface && ! ios->ioproc){ */
-    /* 	if(ios->compmaster)  */
+    /* if (ios->async_interface && ! ios->ioproc){ */
+    /* 	if (ios->compmaster)  */
     /* 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm); */
     /* 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm); */
     /* } */
 
-    if(ios->ioproc){
-	switch(file->iotype){
+    if (ios->ioproc)
+    {
+	switch (file->iotype)
+	{
 #ifdef _NETCDF
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_get_var_chunk_cache(file->fh, varid,  sizep, nelemsp, preemptionp);
+	    ierr = nc_get_var_chunk_cache(file->fh, varid,  (size_t *)sizep, (size_t *)nelemsp,
+					  preemptionp);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
-	    if (!ios->io_rank)
-		ierr = nc_get_var_chunk_cache(file->fh, varid,  sizep, nelemsp, preemptionp);
+	    if (ios->io_rank == 0)
+		ierr = nc_get_var_chunk_cache(file->fh, varid,  (size_t *)sizep, (size_t *)nelemsp,
+					      preemptionp);
 	    break;
 #endif
 	case PIO_IOTYPE_NETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
-	    return PIO_ENOTNC4;
+	    ierr = PIO_ENOTNC4;
 	    break;
 #endif
 	default:
@@ -1155,13 +1050,29 @@ int PIOc_get_var_chunk_cache(int ncid, int varid, size_t *sizep, size_t *nelemsp
 	}
     }
 
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr != PIO_NOERR){
+    /* If there is an error, allocate space for the error string. */
+    if (ierr != PIO_NOERR)
+    {
 	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
 	sprintf(errstr,"in file %s",__FILE__);
     }
-    if(errstr != NULL) free(errstr);
+
+    /* Check the netCDF return code, and broadcast it to all tasks. */
+    ierr = check_netcdf(file, ierr, errstr,__LINE__);
+
+    /* Free the error string if it was allocated. */
+    if (errstr != NULL)
+	free(errstr);
+
+    /* Broadcast results to all tasks. */
+    if (sizep && !ierr)
+	ierr = MPI_Bcast(sizep, 1, MPI_OFFSET, ios->ioroot, ios->my_comm);	
+    if (nelemsp && !ierr)
+    	ierr = MPI_Bcast(nelemsp, 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
+    if (preemptionp && !ierr)
+    	ierr = MPI_Bcast(preemptionp, 1, MPI_FLOAT, ios->ioroot, ios->my_comm);
+
     return ierr;
-}
+}    
 
-
+	    

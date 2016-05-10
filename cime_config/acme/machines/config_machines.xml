@@ -1176,7 +1176,10 @@
   <PES_PER_NODE>15</PES_PER_NODE>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
   <batch_system type="none" version="0.0"/>
-  <mpirun>
+  <mpirun >
+    <executable>mpirun.lsf</executable>
+  </mpirun>
+  <mpirun mpilib="mpi-serial">
     <executable></executable>
   </mpirun>
   <module_system type="module">

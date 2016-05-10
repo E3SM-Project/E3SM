@@ -1,15 +1,16 @@
 /**
- * @file
+ * @file 
  * @brief A simple C example for the ParallelIO Library.
  *
  * This example creates a netCDF output file with one dimension and
  * one variable. It first writes, then reads the sample file using the
- * ParallelIO library.
+ * ParallelIO library. 
  *
  * This example can be run in parallel for 1, 2, 4, 8, or 16
  * processors.
  */
 
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -57,7 +58,7 @@ typedef struct examplePioClass
 
     /** Pointer to function that cleans up example memory, and library resources. */
     struct examplePioClass* (*cleanUp) (struct examplePioClass*);
-
+    
     /** Pointer to function that handles errors. */
     struct examplePioClass* (*errorHandler) (struct examplePioClass*, const char*, const int);
 
@@ -128,12 +129,12 @@ typedef struct examplePioClass
     PIO_Offset *compdof;
 
     /** The example file name. */
-    char *fileName;
-
+    char *fileName;     
+    
 } examplePioClass;
 
-/** @brief Initialize libraries, create sample data.
-
+/** @brief Initialize libraries, create sample data. 
+    
     This function is called as part of the creation of a sample data
     file for this example.
 
@@ -170,7 +171,7 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
     /*
     ** initialize MPI
     */
-
+    
     ierr = MPI_Init(NULL, NULL);
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &this->myRank);
     ierr = MPI_Comm_size(MPI_COMM_WORLD, &this->ntasks);
@@ -180,39 +181,39 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
 	  this->ntasks == 8 || this->ntasks == 16))
 	this->errorHandler(this, "Number of processors must be 1, 2, 4, 8, or 16!",
 			   ERR_CODE);
-
+    
     /*
     ** set up PIO for rest of example
     */
-
+        
     this->stride        = 1;
     this->numAggregator = 0;
     this->optBase       = 0;
     this->iotype        = PIO_IOTYPE_NETCDF;
     this->fileName      = "examplePio_c.nc";
     this->dimLen[0]     = LEN;
-
+    
     this->niotasks = this->ntasks; /* keep things simple - 1 iotask per MPI process */
-
+    
     if (this->myRank == 0){
         printf("Running with %d MPI processes and %d PIO processes. \n",this->ntasks,this->niotasks);
     }
-
+    
     PIOc_Init_Intracomm(MPI_COMM_WORLD, this->niotasks, this->stride, this->optBase, PIO_REARR_SUBSET, &this->pioIoSystem);
-
+    
     /*
     ** set up some data that we will write to a netcdf file
     */
-
+    
     this->arrIdxPerPe = LEN / this->ntasks;
-
+    
     if (this->arrIdxPerPe < 1) {
         this->errorHandler(this, "Not enough work to distribute among pes",ERR_CODE);
     }
-
+        
     this->ista = this->myRank * this->arrIdxPerPe;
     this->isto = this->ista + (this->arrIdxPerPe - 1);
-
+    
     this->dataBuffer = (int *)malloc(this->arrIdxPerPe * sizeof (int));
     this->readBuffer = (int *)malloc(this->arrIdxPerPe * sizeof (int));
     this->compdof = (PIO_Offset *)malloc(this->arrIdxPerPe * sizeof(PIO_Offset));
@@ -220,14 +221,14 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
     /*
     ** assign values to various arrays
     */
-
+    
     localVal = this->ista;
     for (i = 0; i < this->arrIdxPerPe; i++ ){
-
+        
         this->dataBuffer[i] = this->myRank + VAL;
         this->compdof[i] = localVal + 1;
         this->readBuffer[i] = 99;
-
+        
         if (localVal > this->isto) {
             printf("error, should ABORT \n");
         }
@@ -316,11 +317,11 @@ struct examplePioClass* epc_createDecomp( struct examplePioClass* this )
     Uses the function PIOc_createfile() to create the netCDF output
     file. The format of the file is created in accordance with the
     iotype member variable, which specifies one of the following
-    values:
+    values: 
 
-    - PIO_IOTYPE_PNETCDF=1 Parallel Netcdf (parallel)
-    - PIO_IOTYPE_NETCDF=2 Netcdf3 Classic format (serial)
-    - PIO_IOTYPE_NETCDF4C=3 NetCDF4 (HDF5) compressed format (serial)
+    - PIO_IOTYPE_PNETCDF=1 Parallel Netcdf (parallel) 
+    - PIO_IOTYPE_NETCDF=2 Netcdf3 Classic format (serial) 
+    - PIO_IOTYPE_NETCDF4C=3 NetCDF4 (HDF5) compressed format (serial) 
     - PIO_IOTYPE_NETCDF4P=4 NetCDF4 (HDF5) parallel
 
     The PIOc_createfile() function has the following parameters:
@@ -331,7 +332,7 @@ struct examplePioClass* epc_createDecomp( struct examplePioClass* this )
     - the name of the sample file.
     - the NetCDF file creating mode, PIO_CLOBBER means overwrite any
       existing file with this name.
-
+    
     @param [in] this  Pointer to self.
     @retval examplePioClass* Pointer to self.
  */
@@ -345,7 +346,7 @@ struct examplePioClass* epc_createFile( struct examplePioClass* this )
 }
 
 /** @brief Define netCDF metadata.
-
+    
     This function is called as part of the creation of a sample data
     file for this example.
 
@@ -355,7 +356,7 @@ struct examplePioClass* epc_createFile( struct examplePioClass* this )
 
     All of the functions take the pioFileDesc returned by
     PIOc_createfile(). This is the ncid of the netCDF file.
-
+    
     @param [in] this  Pointer to self.
     @retval examplePioClass* Pointer to self.
  */
@@ -378,7 +379,7 @@ struct examplePioClass* epc_defineVar( struct examplePioClass* this )
     The data are written with the PIOc_write_darray() function. After
     the write is complete, ensure the file is synced for all processes
     after the write.
-
+    
     @param [in] this  Pointer to self.
     @retval examplePioClass* Pointer to self.
  */
@@ -389,7 +390,7 @@ struct examplePioClass* epc_writeVar( struct examplePioClass* this )
     PIOc_write_darray(this->pioFileDesc, this->pioVar, this->iodescNCells,
                       (PIO_Offset)this->arrIdxPerPe, this->dataBuffer, NULL);
     PIOc_sync(this->pioFileDesc);
-
+    
     return this;
 }
 
@@ -400,14 +401,14 @@ struct examplePioClass* epc_writeVar( struct examplePioClass* this )
 
     This function reads the data that has been written to the sample
     data file. The data are read with the PIOc_read_darray() function.
-
+    
     @param [in] this  Pointer to self.
     @retval examplePioClass* Pointer to self.
  */
 struct examplePioClass* epc_readVar( struct examplePioClass* this )
 {
     int i;
-
+    
     PIOc_read_darray(this->pioFileDesc, this->pioVar, this->iodescNCells,
                      (PIO_Offset)this->arrIdxPerPe, this->readBuffer);
 
@@ -417,7 +418,7 @@ struct examplePioClass* epc_readVar( struct examplePioClass* this )
 	    this->errorHandler(this, "The data was not what was expected!", ERR_CODE);
     if (this->verbose)
 	printf("rank: %d Data read matches expected data.\n", this->myRank);
-
+    
     return this;
 }
 
@@ -434,7 +435,7 @@ struct examplePioClass* epc_closeFile( struct examplePioClass* this )
     if (this->verbose)
 	printf("rank: %d Closing the sample data file...\n", this->myRank);
     PIOc_closefile(this->pioFileDesc);
-
+    
     return this;
 }
 
@@ -444,24 +445,24 @@ struct examplePioClass* epc_closeFile( struct examplePioClass* this )
     ParallelIO library function PIOc_freedecomp() to free
     decomposition resources. Then calles PIOc_finalize() and
     MPI_finalize() to free library resources.
-
+    
     @param [in] this  Pointer to self.
     @retval examplePioClass* Pointer to self.
  */
 struct examplePioClass* epc_cleanUp( struct examplePioClass* this )
 {
     int ierr;
-
+    
     if (this->verbose)
 	printf("rank: %d Freeing local and library resources...\n", this->myRank);
     free(this->dataBuffer);
     free(this->readBuffer);
     free(this->compdof);
-
+    
     ierr = PIOc_freedecomp(this->pioIoSystem, this->iodescNCells);
     ierr = PIOc_finalize(this->pioIoSystem);
     ierr = MPI_Finalize();
-
+    
     return this;
 }
 
@@ -470,7 +471,7 @@ struct examplePioClass* epc_cleanUp( struct examplePioClass* this )
     On error, process with rank zero will print error message, the
     netCDF file will be closed with PIOc_closefile(), and MPI_Abort is
     called to end the example execution on all processes.
-
+    
     @param [in] this  Pointer to self.
     @param [in] errMsg  an error message
     @param [in] retVal  the non-zero return value that indicated an error
@@ -481,17 +482,17 @@ struct examplePioClass* epc_errorHandler(struct examplePioClass* this, const cha
    /* class(pioExampleClass), intent(inout) :: this
     character(len=*),       intent(in)    :: errMsg
     integer,                intent(in)    :: retVal*/
-
+    
     if (retVal != PIO_NOERR){
-
+        
         if (this->myRank == 0){
             printf("%d %s\n",retVal,errMsg);
         }
-
+    
         PIOc_closefile(this->pioFileDesc);
         MPI_Abort(MPI_COMM_WORLD, retVal);
     }
-
+    
     return this;
 }
 
@@ -500,16 +501,16 @@ struct examplePioClass* epc_errorHandler(struct examplePioClass* this, const cha
     This function allocates memory for the struct that contains the
     code and data for this example. Then pointers are to the functions
     used in the example.
-
+    
     @param [in] verbose  Non-zero for output to stdout.
     @retval examplePioClass* Pointer to self.
  */
 struct examplePioClass* epc_new(int verbose)
 {
     struct examplePioClass* this = malloc((sizeof(struct examplePioClass)));
-
+    
     /* assign function pointers to impls */
-
+    
     this->init = epc_init;
     this->createDecomp = epc_createDecomp;
     this->createFile = epc_createFile;
@@ -520,7 +521,7 @@ struct examplePioClass* epc_new(int verbose)
     this->cleanUp = epc_cleanUp;
     this->errorHandler = epc_errorHandler;
     this->verbose = verbose;
-
+    
     return this;
 }
 
@@ -557,7 +558,7 @@ struct examplePioClass* epc_new(int verbose)
         foo = 42, 42, 42, 42, 43, 43, 43, 43, 44, 44, 44, 44, 45, 45, 45, 45 ;
     }
     </pre>
-
+    
     @param [in] argc argument count (should be zero)
     @param [in] argv argument array (should be NULL)
     @retval examplePioClass* Pointer to self.
@@ -577,14 +578,14 @@ int main(int argc, char* argv[])
 	}
 
     struct examplePioClass* pioExInst = epc_new(verbose);
-
-#ifdef TIMING
+    
+#ifdef TIMING    
     /* Initialize the GPTL timing library. */
     int ret;
     if ((ret = GPTLinitialize ()))
       return ret;
-#endif
-
+#endif    
+    
     pioExInst->init(pioExInst);
     pioExInst->createDecomp(pioExInst);
     pioExInst->createFile(pioExInst);
@@ -593,12 +594,12 @@ int main(int argc, char* argv[])
     pioExInst->readVar(pioExInst);
     pioExInst->closeFile(pioExInst);
     pioExInst->cleanUp(pioExInst);
-
-#ifdef TIMING
+    
+#ifdef TIMING    
 	/* Finalize the GPTL timing library. */
 	if ((ret = GPTLfinalize ()))
 	    return ret;
-#endif
+#endif    
 
     free(pioExInst);
     return 0;
