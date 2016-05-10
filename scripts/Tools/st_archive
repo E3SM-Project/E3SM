@@ -720,7 +720,7 @@ sub main
 # run the archive process
 	archiveProcess( $XMLin, $dname, \@runfiles );
 
-	if( uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) == 'TRUE' )
+	if( uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) eq 'TRUE' )
 	{
 # remove restart duplicate files from the comp/rest and rest/dname directories
 	    removeDups( $dname );
