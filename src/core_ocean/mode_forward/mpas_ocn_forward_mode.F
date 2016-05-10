@@ -499,6 +499,7 @@ module ocn_forward_mode
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
          write(stderrUnit,*) 'Doing timestep ', trim(timeStamp)
 
+         write(stderrUnit,*) '   Computing surface flux arrays'
          block_ptr => domain % blocklist
          do while(associated(block_ptr))
            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -521,6 +522,7 @@ module ocn_forward_mode
 
          !$omp parallel default(firstprivate) shared(domain, dt, timeStamp)
 
+         write(stderrUnit,*) '   Computing forward time step'
          call ocn_timestep(domain, dt, timeStamp)
 
          !$omp end parallel
@@ -528,13 +530,16 @@ module ocn_forward_mode
          call mpas_timer_stop("time integration")
 
          ! Move time level 2 fields back into time level 1 for next time step
+         write(stderrUnit,*) '   Shifting time levels'
          call mpas_pool_get_subpool(domain % blocklist % structs, 'state', statePool)
          call mpas_pool_shift_time_levels(statePool)
 
+         write(stderrUnit,*) '   Handling analysis members'
          call ocn_analysis_compute(domain, err)
          call ocn_analysis_restart(domain, err)
          call ocn_analysis_write(domain, err)
 
+         write(stderrUnit,*) '   Performing I/O'
          call mpas_timer_start('io_write')
          call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=ierr)
          call mpas_timer_stop('io_write')
@@ -548,6 +553,7 @@ module ocn_forward_mode
 
          if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='restart', direction=MPAS_STREAM_OUTPUT, &
                                              ierr=ierr) ) then
+            write(stderrUnit,*) '   Writing restart timestamp file'
             if ( domain % dminfo % my_proc_id == 0 ) then
                open(22, file=config_restart_timestamp_name, form='formatted', status='replace')
                write(22, *) trim(timeStamp)
