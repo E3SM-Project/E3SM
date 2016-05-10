@@ -552,8 +552,10 @@ def clean(case, cleanlist):
 
     if testcase is not None:
         if clm_config_opts is not None:
-            if "clm4_0" in clm_config_opts:
-                cleanlist.remove('cleanlnd')
+            # we only want to clean lnd here if it is clm4_0 otherwise remove
+            # it from the cleanlist
+            if "clm4_0" not in clm_config_opts:
+                cleanlist.remove('lnd')
 
     cmd = gmake + " -f " + casetools + "/Makefile"
     for item in cleanlist:

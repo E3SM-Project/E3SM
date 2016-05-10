@@ -421,6 +421,11 @@ class Case(object):
             if compclass not in pes_nthrds.keys():
                 mach_pes_obj.set_value(compclass,1)
 
+        # FIXME - this is a short term fix for dealing with the restriction that
+        # CISM1 cannot run on multiple cores
+        if "CISM1" in self._compsetname:
+            mach_pes_obj.set_value("NTASKS_GLC",1)
+            mach_pes_obj.set_value("NTHRDS_GLC",1)
 
         self.set_value("COMPSET",self._compsetname)
 
