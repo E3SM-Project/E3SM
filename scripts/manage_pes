@@ -1,155 +1,124 @@
 #!/usr/bin/env python2
 """
-Manage pes layouts
+Manage pes layouts -- Adds or queries pes with the xml pe-layout
+files for a pes file set by the argument "-pes_setby"
 """
 
 from Tools.standard_script_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
 from CIME.XML.pes import Pes
+from CIME.XML.component import Component
 import argparse, sys, os, logging
 import datetime, shutil, re
 
-usagetext = """manage_pes
+queryhelp = """
+Query the peslist by grid and machine
 
-DESCRIPTION
-    Adds and queries pes with the xml pe-layout files for a pes file set by the
-    argument "-pes_setby"
+A note on the pesize specifiers:
+S, M, L, X are not constant.  first, they are only defined for a few
+compsets/resolution combinations.  second, they depend on compset
+and resolution.   you can imagine a T31_g37 range being 100 cores
+to 1000 cores from S to X.  but ne240_t12 would probably be 10000 at S
+and 100,000 at X, for instance.
 
-USAGE, OPTIONS, AND EXAMPLES
+"""
 
-    There are two modes of operation: -query and -add
+addhelp = """ 
+This mode is intended for adding new pe layouts to the peslist. The
+script will parse your text list, and add the new pe-layout to the
+propriate grid, machine and optional argument (i.e. compset, pesize)
+try.  If duplicates are found, they will be silently ignored, even if
+ey contain a different comment.
+e format for the pe layout file should be in the following xml:
 
-    Usage for each of the modes are described below.
+<?xml version="1.0"?>
+<config_pes>
+  <grid name="entry">
+    <mach name="entry">
+      <pes pesize="entry" compset="entry">
+	<comment>entry</comment>
+	<ntasks>
+	  <ntasks_atm>integer</ntasks_atm>
+          ...
+	</ntasks>
+	<nthrds>
+	  <nthrds_atm>integer</nthrds_atm>
+          ...
+	</nthrds>
+	<rootpe>
+	  <rootpe_atm>integer</rootpe_atm>
+          ...
+	</rootpe>
+      </pes>
+    </mach>
+  </grid>
+</config_pes>
 
-    -query:
+grid name="entry"    : entry can have the value of "any" OR
+                       a regular expression that matches the
+                       grid naming convention, e.g.
+            	        <grid name="%%1.9x2.5.+oi%%gx1v6">
+mach name="entry"    : entry can have the value of "any" OR
+                       a valid machine name e.g.
+       		       <mach name="yellowstone">
+pesize name="entry"  : entry can have the value of "any" OR
+                       the currently supported values of pesize
+                       ("S", "M", "L", "X"), e.g. pesize="S"
+compset name="entry" : entry can have the value of "any" OR
+                       a regular expression that matches the compset
+                       naming convention, e.g.
+                       compset="2000_CAM5_CLM40%%SP_CICE_POP2_RTM_SGLC_SWAV"
 
-	Query the peslist by grid and machine
-
-        A note on the pesize specifiers:
-	S, M, L, X are not constant.  first, they are only defined for a few
-	compsets/resolution combinations.  second, they depend on compset
-	and resolution.   you can imagine a T31_g37 range being 100 cores
-	to 1000 cores from S to X.  but ne240_t12 would probably be 10000 at S
-	and 100,000 at X, for instance.
-
-    -add:
- 
-       This mode is intended for adding new pe layouts to the peslist. The
-       script will parse your text list, and add the new pe-layout to the
-       appropriate grid, machine and optional argument (i.e. compset, pesize)
-       entry.  If duplicates are found, they will be silently ignored, even if
-       they contain a different comment.
-       Example:
-
-         manage_pes -add -pes_setby <component_name> -machine -grid -attributes
-             -file <xml file with new pelayout>
-
-         pes_filename needs to have the following form:
-
-         <?xml version="1.0"?>
-         <config_pes>
-           <grid name="entry">
-             <mach name="entry">
-               <pes pesize="entry" compset="entry">
-         	<comment>entry</comment>
-         	<ntasks>
-         	  <ntasks_atm>integer</ntasks_atm>
-         	  <ntasks_lnd>integer</ntasks_lnd>
-         	  <ntasks_rof>integer</ntasks_rof>
-         	  <ntasks_ice>integer</ntasks_ice>
-         	  <ntasks_ocn>integer</ntasks_ocn>
-         	  <ntasks_glc>integer</ntasks_glc>
-         	  <ntasks_wav>integer</ntasks_wav>
-         	  <ntasks_cpl>integer</ntasks_cpl>
-         	</ntasks>
-         	<nthrds>
-         	  <nthrds_atm>integer</nthrds_atm>
-         	  <nthrds_lnd>integer</nthrds_lnd>
-         	  <nthrds_rof>integer</nthrds_rof>
-         	  <nthrds_ice>integer</nthrds_ice>
-         	  <nthrds_ocn>integer</nthrds_ocn>
-         	  <nthrds_glc>integer</nthrds_glc>
-         	  <nthrds_wav>integer</nthrds_wav>
-         	  <nthrds_cpl>integer</nthrds_cpl>
-         	</nthrds>
-         	<rootpe>
-         	  <rootpe_atm>integer</rootpe_atm>
-         	  <rootpe_lnd>integer</rootpe_lnd>
-         	  <rootpe_rof>integer</rootpe_rof>
-         	  <rootpe_ice>integer</rootpe_ice>
-         	  <rootpe_ocn>integer</rootpe_ocn>
-         	  <rootpe_glc>integer</rootpe_glc>
-         	  <rootpe_wav>integer</rootpe_wav>
-         	  <rootpe_cpl>integer</rootpe_cpl>
-         	</rootpe>
-               </pes>
-             </mach>
-           </grid>
-         </config_pes>
-
-         grid name="entry"    : entry can have the value of "any" OR
- 	                        a regular expression that matches the
-                                grid naming convention, e.g.
-                     	        <grid name="%1.9x2.5.+oi%gx1v6">
-         mach name="entry"    : entry can have the value of "any" OR
-	                        a valid machine name e.g.
-				<mach name="yellowstone">
-         pesize name="entry"  : entry can have the value of "any" OR
-	                        the currently supported values of pesize
-                                ("S", "M", "L", "X"), e.g. pesize="S"
-         compset name="entry" : entry can have the value of "any" OR
-	                        a regular expression that matches the compset
-                                naming convention, e.g.
-                          compset="2000_CAM5_CLM40%SP_CICE_POP2_RTM_SGLC_SWAV"
-
-
-Query Mode
-   manage_pes  --query [ --pes_setby <component_name> ]
-       [ --grid <grid_name> ] [ --machine <machine_name> ]  [ -h|--help ]
-
-Add Mode
-   manage_pes  --add --file <pes_filename> --pes_setby <component_name>
 """
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 ############################################################################
 def parse_command_line(args, description):
 ############################################################################
     parser = argparse.ArgumentParser(
-        usagetext,
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        formatter_class=argparse.RawTextHelpFormatter)
 
     CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("-add", "--add", action="store_true", default=False,
-                        help="add a new pes layout")
-    parser.add_argument("-pes_setby", "--pes_setby",
-                        choices=['allactive', 'cam', 'cice', 'cism', 'clm',
-                                 'drv', 'pop'],
+                        help=addhelp)
+
+    compchoices = Files().get_components("COMPSETS_SPEC_FILE")
+
+    parser.add_argument("-pes_setby", "--pes_setby", choices=compchoices,
                         help="component name")
     parser.add_argument("-file", "--file", default=None,
                         help="test list to add")
     parser.add_argument("-grid", "--grid", default=None,
                         help="a regular expression that matches the grid naming"
-                        "convention")
+                        " convention")
     parser.add_argument("-query", "--query", action="store_true", default=False,
-                        help="Query the peslist by grid and machine")
+                        help=queryhelp)
     parser.add_argument("-machine", "--machine", default=None,
                         help="can be a supported machine name")
     args = parser.parse_args(args[1:])
     CIME.utils.handle_standard_logging_options(args)
+    CIME.utils.expect(args.add or args.query,
+                      "Either --query or --add must be on command line")
+    
+    CIME.utils.expect(not (args.add and args.query),
+                      "Only one of (--query, --add) can be on command line")
+
+    if args.add:
+        CIME.utils.expect(args.file is not None,
+                          "xml file not given using --file options\n"
+                          "Use manage_pes -h for information on file format")
+        CIME.utils.expect(args.pes_setby is not None,
+                          "pes_setby option required for adding new pes\n"
+                          "Use manage_pes -h for information on file format")
 
     return (args.file, args.add, args.query, args.pes_setby,
             args.grid, args.machine)
 
-class Manage_Pes:
-    ADD_MODE = 1
-    QUERY_MODE = 2
-
+class ManagePes(object):
     def __init__(self, filename, add, query, setby, grid, machine):
         self.filename = filename
         self.add = add
@@ -159,37 +128,7 @@ class Manage_Pes:
         self.grid = grid
         self.machine = machine
 
-    def checkargs(self):
-        logger.debug("filename=%s", self.filename)
-        logger.debug("add=%s", self.add)
-        logger.debug("query=%s", self.query)
-        logger.debug("model=%s", self.model)
-        logger.debug("setby=%s", self.setby)
-        logger.debug("grid=%s", self.grid)
-        logger.debug("machine=%s", self.machine)
-
-        if self.add and self.query:
-            return False
-        if not self.add and not self.query:
-            return False
-
-        if self.add:
-            self.mode = Manage_Pes.ADD_MODE
-            if self.filename is None:
-                logger.warning("No filename given for add mode")
-                return False
-            if self.setby is None:
-                logger.warning("No pes_setby given for add mode")
-                return False
-        else:
-            self.mode = Manage_Pes.QUERY_MODE
-
-        return True
-
-    def usage(self):
-        sys.stdout.write(usagetext)
-
-    def getMatches(self, pesxml, grid=None, mach=None, pesize=None,
+    def get_matches(self, pesxml, grid=None, mach=None, pesize=None,
                    compset=None):
         gridnodes = pesxml.get_nodes(nodename="grid")
         matchnodes = []
@@ -200,8 +139,7 @@ class Manage_Pes:
             pesnode = machnode.find("pes")
             pesizename = pesnode.get("pesize")
             compsetname = pesnode.get("compset")
-            logger.debug("grid: %s\n\tmach: %s\n\tpesize: %s\n\tcompset: %s\n",
-                         gridname, machname, pesizename, compsetname)
+
             # check if node matches given values
             if (grid is not None and grid != "any" and
                 re.search(grid, gridname) is None):
@@ -221,61 +159,53 @@ class Manage_Pes:
 
     def checkFile(self, pesxml):
         gridnodes = pesxml.get_nodes(nodename="grid")
-        if len(gridnodes) == 0:
-            logger.critical(' xml file %s has no <grid> entry\n', self.filename)
-            sys.exit(1)
-        if len(gridnodes) > 1:
-            logger.critical(' xml file %s has multiple <grid> entries.'
-                            ' Not supported yet\n', self.filename)
-            sys.exit(1)
+
+        # Check for exactly one grid node
+        CIME.utils.expect(len(gridnodes) != 0,
+                          'xml file %s missing <grid> entry' % self.filename)
+
+        CIME.utils.expect(len(gridnodes) <= 1,
+                          'xml file %s has multiple <grid> entries.'
+                          'Not supported yet\n' % self.filename)
 
         for gridnode in gridnodes:
             gridname = gridnode.get("name")
-            if gridname is None:
-                logger.critical(' xml file %s has no <grid name="">'
-                                ' attribute \n', self.filename)
-                sys.exit(1)
+            CIME.utils.expect(gridname is not None,
+                              'xml file %s missing <grid name=""> '
+                              'attribute' % self.filename)
 
             machnode = gridnode.find("mach")
-            if machnode is None:
-                logger.critical(' xml file %s has no <grid><mach> entry\n',
-                                self.filename)
-                sys.exit(1)
+            CIME.utils.expect(machnode is not None,
+                              'xml file %s missing <grid><mach> entry' %
+                              self.filename)
 
             machname = machnode.get("name")
-            if machname is None:
-                logger.critical(' xml file %s has no <mach name=""> '
-                                'attribute\n', self.filename)
-                sys.exit(1)
+            CIME.utils.expect(machname is not None,
+                              'xml file %s missing <mach name=""> '
+                              'attribute' % self.filename)
 
             pesnode = machnode.find("pes")
-            if pesnode is None:
-                logger.critical(' xml file %s has no <grid><mach><pes> '
-                                'entry\n', self.filename)
-                sys.exit(1)
+            CIME.utils.expect(pesnode is not None,
+                              'xml file %s missing <grid><mach><pes> '
+                              'entry' % self.filename)
 
             pesizename = pesnode.get("pesize")
-            if pesizename is None:
-                logger.critical(' xml file %s has no <pes pesize=""> '
-                                'attribute\n', self.filename)
-                sys.exit(1)
+            CIME.utils.expect(pesizename is not None,
+                              'xml file %s missing <pes pesize=""> '
+                              'attribute' % self.filename)
 
             compsetname = pesnode.get("compset")
-            if compsetname is None:
-                logger.critical(' xml file %s has no <pes compsetname=""> '
-                                'attribute\n', self.filename)
-                sys.exit(1)
+            CIME.utils.expect(compsetname is not None,
+                              'xml file %s missing <pes compsetname=""> '
+                              'attribute' % self.filename)
 
-            logger.debug("grid: %s\n\tmach: %s\n\tpesize: %s\n\tcompset: %s\n",
-                         gridname, machname, pesizename, compsetname)
             return (gridname, machname, pesizename, compsetname)
 
-    def addPes(self):
+    def add_pes(self):
         """
         Add a new pe-layout for a target machine and grid.
         """
         filesxml = Files()
-        compsetfile = None
         compsetfile = filesxml.get_value("COMPSETS_SPEC_FILE",
                                     attribute={"component":self.setby})
         pesxmlfile = filesxml.get_value("PES_SPEC_FILE",
@@ -288,13 +218,12 @@ class Manage_Pes:
             p2 = posixpath.normpath(pesxmlfile)
             compsetfile = p1
             pesxmlfile = p2
-        except Exception, e:
+        except ImportError:
             pass
 
         # Read in given xml file
-        if not os.path.isfile(self.filename):
-            logger.critical(" File %s not found", self.filename)
-            sys.exit(1)
+        CIME.utils.expect(os.path.isfile(self.filename),
+                          " File %s not found" % self.filename)
 
         newxml = Pes(infile=self.filename)
 
@@ -305,90 +234,99 @@ class Manage_Pes:
         # If so, query if the new settings should replace the current ones
         # If not - just add the new settings
         pesxml = Pes(infile=pesxmlfile)
-        sys.stdout.write("------------------------------------------- \n")
-        sys.stdout.write(" Pes set by     : %s \n"
-                         % pesxmlfile)
-        sys.stdout.write(" Compsets set by: %s \n" % compsetfile)
-        sys.stdout.write("------------------------------------------- \n\n")
-        matches = self.getMatches(pesxml, grid=gridname, mach=machname,
-                                  compset=compsetname)
-        newmatch = self.getMatches(newxml, grid=gridname,
-                                   mach=machname, compset=compsetname)[0]
+        logger.info("-------------------------------------------")
+        logger.info(" Pes set by     : %s", pesxmlfile)
+        logger.info(" Compsets set by: %s", compsetfile)
+        logger.info("------------------------------------------- \n")
+        logger.info("")
+        matches = self.get_matches(pesxml, grid=gridname, mach=machname,
+                                   compset=compsetname)
+        newmatch = self.get_matches(newxml, grid=gridname,
+                                    mach=machname, compset=compsetname)[0]
 
         if len(matches) > 0:
             match = matches[0]
 
-            sys.stdout.write(" The following pe-layout match already exists\n")
-            self.printMatches([match])
-            sys.stdout.write(" The new values would be\n")
-            self.printMatches([newmatch])
+            logger.info(" The following pe-layout match already exists")
+            self.print_gridnodes([match])
+            logger.info(" The new values would be")
+            self.print_gridnodes([newmatch])
             override = raw_input(" Do you want to override the match with"
                                  " your pe-layout [yes/no] (default is no)\n")
             if override.lower() != "y" and override.lower() != "yes":
+                logger.info("Nothing done.")
                 return
 
             # remove old node
             pesxml.root.remove(match)
+        else:
+            logger.info("Adding new <grid> node with values:")
+            logger.info("")
 
         # add new node
         pesxml.add_child(newmatch)
-
-
+                    
+        
+        self.print_gridnodes([newmatch])
         newfilename = "%s-%s" % (pesxml.filename,
                         datetime.datetime.now().strftime("%d%b%Y-%H%M%S"))
 
-        sys.stdout.write("\n now writing the new pes list to %s\n" %
-                         newfilename)
-        sys.stdout.write("Please carefully review and/or diff the new file "
-                         "against the\n")
-        sys.stdout.write("original, and if you are satisfied with the "
-                         "changes, move \n")
-        sys.stdout.write("%s to \n" % newfilename)
-        sys.stdout.write("as in with the unix command: \n")
-        sys.stdout.write("mv %s %s\n\n" % (newfilename, pesxml.filename))
+        logger.info("Now writing the new pes list to %s\n", newfilename)
+        logger.info("Please carefully review and/or diff the new file "
+                    "against the original, and if you are satisfied with the "
+                    "changes, move")
+        logger.info("%s\n  to", newfilename)
+        logger.info("%s\n  as in with the unix command:", pesxml.filename)
+        logger.info("mv %s %s\n", newfilename, pesxml.filename)
 
         pesxml.write(newfilename)
 
 
-    def queryPes(self):
+    def query_pes(self):
         """
         Read the xml files, query the object, and print the user's choice
         of output.
         """
 
-        logger.debug("starting queryPes")
         filesxml = Files()
         if self.setby is None:
-            comps = ["allactive", "cam", "cice", "cism", "clm", "drv", "pop"]
+            comps = filesxml.get_components("COMPSETS_SPEC_FILE")
         else:
             comps = [self.setby]
         for comp in comps:
-            compsetfile = None
             compsetfile = filesxml.get_value("COMPSETS_SPEC_FILE",
                                              attribute={"component":comp})
             pesxmlfile = filesxml.get_value("PES_SPEC_FILE",
                                             attribute={"component":comp})
+            # Try to collapse any '../' in filenames
+            # cosmetic only, don't worry if it breaks
+            try:
+                import posixpath
+                p1 = posixpath.normpath(compsetfile)
+                p2 = posixpath.normpath(pesxmlfile)
+                compsetfile = p1
+                pesxmlfile = p2
+            except ImportError:
+                pass
+            
             pesxml = Pes(infile=pesxmlfile)
             if not os.path.isfile(pesxmlfile):
-                logger.warning("File %s not found", pesxmlfile)
+                logger.warning("File %s not found -- skipping", pesxmlfile)
                 continue
             if not os.path.isfile(compsetfile):
-                logger.warning("File %s not found", compsetfile)
+                logger.warning("File %s not found -- skipping", compsetfile)
                 continue
 
-            sys.stdout.write("------------------------------------------- \n")
-            sys.stdout.write(" Pes set by     : %s \n"
-                             % pesxmlfile)
-            sys.stdout.write(" Compsets set by: %s \n" % compsetfile)
-            sys.stdout.write("------------------------------------------- \n\n")
-            matches = self.getMatches(pesxml, grid=self.grid,
-                                      mach=self.machine)
-            self.printMatches(matches)
+            logger.info("------------------------------------------- ")
+            logger.info(" Pes set by     : %s", pesxmlfile)
+            logger.info(" Compsets set by: %s", compsetfile)
+            logger.info("------------------------------------------- \n")
+            matches = self.get_matches(pesxml, grid=self.grid,
+                                       mach=self.machine)
+            self.print_gridnodes(matches)
 
-        logger.debug("exiting queryPes")
-
-    def printMatches(self, gridmatches):
-        for gridnode in gridmatches:
+    def print_gridnodes(self, gridnodes):
+        for gridnode in gridnodes:
             comment = None
             gridname = gridnode.get("name")
             machnode = gridnode.find("mach")
@@ -396,27 +334,31 @@ class Manage_Pes:
             pesnode = machnode.find("pes")
             pesizename = pesnode.get("pesize")
             compsetname = pesnode.get("compset")
-            commentnode = pesnode.get("comment")
-            sys.stdout.write("grid: %s  machine: %s  compset: %s   "
-                             "pesize: %s \n\n"
-                             % (gridname, machname, compsetname, pesizename))
-            if commentnode:
-                comment = commentnode.text
-            comps = ("atm", "lnd", "ice", "ocn", "rof", "glc", "wav", "cpl")
-            sys.stdout.write("                   "
-                             + " %-10s"*8 % (comps) + "\n")
+            logger.info("grid: %s  machine: %s  compset:%s  "
+                        "pesize: %s\n", 
+                        gridname, machname, compsetname, pesizename)
+            drv_config_file = Files().get_value("CONFIG_DRV_FILE")
+            drv_comps = [x.lower() for x in
+                        Component(drv_config_file).get_valid_model_components()]
+            if "drv" in drv_comps:
+                drv_comps[drv_comps.index("drv")] = "cpl"
+
+            logger.info("                   " +
+                        (len(drv_comps)*' {:10}').format(*drv_comps))
+
             for name in ['ntasks', 'nthrds', 'rootpe']:
                 node = pesnode.find(name)
                 items = [name]
-                for comp in comps:
+                for comp in drv_comps:
                     child = node.find("%s_%s" % (name, comp))
                     if child is None:
                         items.append(" ")
                     else:
                         items.append(child.text)
-                sys.stdout.write("        " + (" %-10s"*len(items)  %
-                                               tuple(items))+"\n")
-            sys.stdout.write("\n")
+                logger.info("        " +
+                            (len(items)*' {:10}').format(*items))
+
+            logger.info("")
 
 ###############################################################################
 def __main_func(description):
@@ -427,15 +369,12 @@ def __main_func(description):
 
     filename, add, query, setby, grid, machine = parse_command_line(sys.argv,
                                                                     description)
-    manager = Manage_Pes(filename, add, query, setby, grid, machine)
-    if not manager.checkargs():
-        manager.usage()
-        return 1
+    manager = ManagePes(filename, add, query, setby, grid, machine)
 
-    if manager.mode == Manage_Pes.ADD_MODE:
-        manager.addPes()
+    if manager.add:
+        manager.add_pes()
     else:
-        manager.queryPes()
+        manager.query_pes()
 
     return 0
 
