@@ -356,7 +356,7 @@ class SystemTest(object):
             if not os.path.exists(test_mod_file):
                 self._log_output(test, "Missing testmod file '%s'" % test_mod_file)
                 return False
-            create_newcase_cmd += " -user_mods_dir %s" % test_mod_file
+            create_newcase_cmd += " --user-mods-dir %s" % test_mod_file
 
         if case_opts is not None:
             for case_opt in case_opts:

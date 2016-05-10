@@ -18,7 +18,7 @@ if ( -e LockedFiles/env_mach_pes.ERP1.xml )  then
   cp -f LockedFiles/env_mach_pes.ERP1.xml   env_mach_pes.xml
   cp -f env_mach_pes.xml   LockedFiles/env_mach_pes.xml
   rm    $EXEROOT/${CIME_MODEL}.exe >& /dev/null
-  cp -f $EXEROOT/${CIME_MODEL}.ERP1 $EXEROOT/${CIME_MODEL}.exe || exit -9
+  cp -f $EXEROOT/${CIME_MODEL}.exe.ERP1 $EXEROOT/${CIME_MODEL}.exe || exit -9
   cp -f LockedFiles/env_build.ERP1.xml      env_build.xml
   cp -f env_build.xml      LockedFiles/env_build.xml
 else
@@ -113,7 +113,7 @@ cp -f LockedFiles/env_mach_pes.ERP2.xml env_mach_pes.xml
 cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml
 
 rm $EXEROOT/${CIME_MODEL}.exe >& /dev/null
-cp -f $EXEROOT/${CIME_MODEL}.ERP2.exe $EXEROOT/${CIME_MODEL}.exe || exit -9
+cp -f $EXEROOT/${CIME_MODEL}.exe.ERP2 $EXEROOT/${CIME_MODEL}.exe || exit -9
 cp -f LockedFiles/env_build.ERP2.xml    env_build.xml
 cp -f env_build.xml    LockedFiles/env_build.xml
 

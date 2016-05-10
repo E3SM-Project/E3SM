@@ -236,6 +236,7 @@ class Case(object):
             expect(False,
                    "Could not find a compset match for either alias or longname in %s" %(compset_name))
 
+
     def get_compset_components(self):
         # If are doing a create_clone then, self._compsetname is not set yet
         components = []
@@ -304,7 +305,7 @@ class Case(object):
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
-                  user_grid=False, gridfile=None):
+                  user_grid=False, gridfile=None, user_mods_dir=None):
 
         #--------------------------------------------
         # compset, pesfile, and compset components
@@ -439,6 +440,13 @@ class Case(object):
             project = get_project()
         if project is not None:
             self.set_value("PROJECT", project)
+
+        if user_mods_dir is not None:
+            if os.path.isabs(user_mods_dir):
+                user_mods_path = user_mods_dir
+            else:
+                user_mods_path = files.get_value('USER_MODS_DIR', {"component":comp_name})
+                user_mods_path = os.path.join(user_mods_path, user_mods_dir)
 
 
     def set_initial_test_values(self):
