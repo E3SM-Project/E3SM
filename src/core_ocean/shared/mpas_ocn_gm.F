@@ -406,7 +406,7 @@ contains
          !$omp do schedule(runtime) private(k, rtmp)
          do iCell=1,nCells
            do k = 1, maxLevelCell(iCell)
-             rtmp = -zMid(k,iCell)/max(1.0_RKIND,boundaryLayerDepth(iCell)) - config_Redi_surface_layer_tapering_extent
+             rtmp = -zMid(k,iCell)/max(config_Redi_surface_layer_tapering_extent,boundaryLayerDepth(iCell)+epsGM)
              rtmp = max(0.0_RKIND,rtmp)
              rtmp = min(1.0_RKIND,rtmp)
              relativeSlopeTaperingCell(k,iCell) = rtmp*relativeSlopeTaperingCell(k,iCell)
@@ -422,7 +422,7 @@ contains
          !$omp do schedule(runtime) private(k, rtmp)
          do iCell=1,nCells
            do k = 1, maxLevelCell(iCell)
-             rtmp = (zMid(k,iCell)-zMid(maxLevelCell(iCell),iCell))/(config_Redi_bottom_layer_tapering_depth++epsGM)
+             rtmp = (zMid(k,iCell)-zMid(maxLevelCell(iCell),iCell))/(config_Redi_bottom_layer_tapering_depth+epsGM)
              rtmp = max(0.0_RKIND,rtmp)
              rtmp = min(1.0_RKIND,rtmp)
              relativeSlopeTaperingCell(k,iCell) = rtmp*relativeSlopeTaperingCell(k,iCell)
