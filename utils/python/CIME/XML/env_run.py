@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class EnvRun(EnvBase):
 
-    def __init__(self, case_root=os.getcwd(), infile="env_run.xml"):
+    def __init__(self, case_root=None, infile="env_run.xml"):
         """
         initialize an object interface to file env_run.xml in the case directory
         """

@@ -22,6 +22,10 @@ class Pes(GenericXML):
         mach_match = None
         compset_match = None
         pesize_match = None
+        grid_choice = None
+        mach_choice = None
+        compset_choice = None
+        pesize_choice = None
         max_points = -1
         # Get all the nodes
         grid_nodes = self.get_nodes("grid")
@@ -46,6 +50,10 @@ class Pes(GenericXML):
                                if points > max_points:
                                    pe_select = pes_node
                                    max_points = points
+                                   mach_choice = mach_match
+                                   grid_choice = grid_match
+                                   compset_choice = compset_match
+                                   pesize_choice = pesize_match
                                elif points == max_points:
                                    expect(False, "We dont expect to be here" )
 
@@ -60,11 +68,13 @@ class Pes(GenericXML):
                 pes_data[name] = value
                 logger.debug("%s %s " % (name, value))
 
+        machmatch = pe_select.findall(".//mach")
+
         logger.info("Pes setting: grid          is %s " %grid)
         logger.info("Pes setting: compset       is %s " %compset)
-        logger.info("Pes setting: grid match    is %s " %grid_match )
-        logger.info("Pes setting: machine match is %s " %mach_match)
-        logger.info("Pes setting: compset_match is %s " %compset_match)
-        logger.info("Pes setting: pesize match  is %s " %pesize_match)
+        logger.info("Pes setting: grid match    is %s " %grid_choice )
+        logger.info("Pes setting: machine match is %s " %mach_choice)
+        logger.info("Pes setting: compset_match is %s " %compset_choice)
+        logger.info("Pes setting: pesize match  is %s " %pesize_choice)
 
         return pes_ntasks, pes_nthrds, pes_rootpe

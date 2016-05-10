@@ -307,7 +307,7 @@ def parse_test_status(file_contents):
     rv = OrderedDict()
     test_name = None
     for line in file_contents.splitlines():
-        if (line.split()[0] == COMMENT_STATUS):
+        if (line.strip().startswith(COMMENT_STATUS)):
             pass # skip comments
         elif (len(line.split()) == 3):
             status, curr_test_name, phase = line.split()
@@ -347,6 +347,8 @@ def interpret_status(file_contents, check_throughput=False, check_memory=False, 
     ('testname', 'FAIL')
     >>> interpret_status('PASS testname RUN\nNLFAIL testname nlcomp')
     ('testname', 'NLFAIL')
+    >>> interpret_status('PASS testname RUN\nFAIL testname memleak')
+    ('testname', 'FAIL')
     >>> interpret_status('PASS testname RUN\nNLFAIL testname nlcomp', ignore_namelists=True)
     ('testname', 'PASS')
     >>> interpret_status('PASS testname compare\nNLFAIL testname nlcomp\nFAIL testname compare')

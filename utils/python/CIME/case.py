@@ -4,10 +4,12 @@ Wrapper around all env XML for a case.
 All interaction with and between the module files in XML/ takes place
 through the Case module.
 """
-
+from copy   import deepcopy
+import glob, shutil
 from CIME.XML.standard_module_setup import *
-from shutil import copyfile
-from CIME.utils                     import expect, run_cmd, get_cime_root, convert_to_type, get_model
+
+from CIME.utils                     import expect, run_cmd, get_cime_root
+from CIME.utils                     import convert_to_type, get_model, get_project
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
 from CIME.XML.files                 import Files
@@ -29,11 +31,15 @@ from CIME.XML.env_batch             import EnvBatch
 
 from CIME.XML.generic_xml           import GenericXML
 
+
 logger = logging.getLogger(__name__)
 
 class Case(object):
 
-    def __init__(self, case_root=os.getcwd()):
+    def __init__(self, case_root=None):
+
+        if case_root is None:
+            case_root = os.getcwd()
 
         self._env_files_that_need_rewrite = set()
 
@@ -76,6 +82,24 @@ class Case(object):
               if os.path.basename(env_file.filename) == full_name:
                   return env_file
           expect(False, "Could not find object for %s in case"%full_name)
+
+    def copy(self, newcasename, newcaseroot, newcimeroot=None, newsrcroot=None):
+        newcase = deepcopy(self)
+        for env_file in newcase._files:
+            basename = os.path.basename(env_file.filename)
+            env_file.filename = os.path.join(newcaseroot,basename)
+
+        if newcimeroot is not None:
+            newcase.set_value("CIMEROOT", newcimeroot)
+
+        if newsrcroot is not None:
+            newcase.set_value("SRCROOT", newsrcroot)
+
+        newcase.set_value("CASE",newcasename)
+        newcase.set_value("CASEROOT",newcaseroot)
+        newcase.set_value("CONTINUE_RUN","FALSE")
+        newcase.set_value("RESUBMIT",0)
+        return newcase
 
     def flush(self, flushall=False):
         if flushall:
@@ -213,16 +237,23 @@ class Case(object):
                    "Could not find a compset match for either alias or longname in %s" %(compset_name))
 
     def get_compset_components(self):
-        elements = self._compsetname.split('_')
+        # If are doing a create_clone then, self._compsetname is not set yet
+        components = []
+        compset = self.get_value("COMPSET")
+        if compset is None:
+            compset = self._compsetname
+        expect(compset is not None,
+               "ERROR: compset is not set")
+        elements = compset.split('_')
         for element in elements:
-            # ignore the initial date in the compset longname
-            if re.search(r'^\d+$',element):
-                pass
+            # ignore the initial date in the compset longname and the possible BGC modifier
+            if re.search(r'^\d+$',element) or element.startswith("BGC%") :
+                continue
             else:
                 element_component = element.split('%')[0].lower()
                 element_component = re.sub(r'[0-9]*',"",element_component)
-                self._components.append(element_component)
-        return self._components
+                components.append(element_component)
+        return components
 
     def __iter__(self):
         for entryid_file in self._env_entryid_files:
@@ -247,12 +278,15 @@ class Case(object):
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
         component_classes =drv_comp.get_valid_model_components()
+        if len(component_classes) > len(self._components):
+            self._components.append('sesp')
+
         for i in xrange(1,len(component_classes)):
             comp_class = component_classes[i]
             comp_name  = self._components[i-1]
 	    node_name = 'CONFIG_' + comp_class + '_FILE';
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=True)
-            logger.debug( "DEBUG: comp_config_file is %s"%comp_config_file)
+            expect(comp_config_file is not None,"No config file for component %s"%comp_name)
             compobj = Component(comp_config_file)
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist);
@@ -267,8 +301,8 @@ class Case(object):
             if result is not None:
                 del self.lookups[key]
 
-    def configure(self, compset_name, grid_name, machine_name,
-                  pecount=None, compiler=None, mpilib=None,
+    def configure(self, compset_name, grid_name, machine_name=None,
+                  project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
                   user_grid=False, gridfile=None):
 
@@ -277,7 +311,7 @@ class Case(object):
         #--------------------------------------------
         self._set_compset_and_pesfile(compset_name, user_compset=user_compset, pesfile=pesfile)
 
-        self.get_compset_components()
+        self._components = self.get_compset_components()
         #FIXME - if --user-compset is True then need to determine that
         #all of the compset settings are valid
 
@@ -308,6 +342,7 @@ class Case(object):
         # set machine values in env_xxx files
         machobj = Machines(machine=machine_name)
         machine_name = machobj.get_machine_name()
+        self.set_value("MACH",machine_name)
         nodenames = machobj.get_node_names()
 
         if "COMPILER" in nodenames: nodenames.remove("COMPILER")
@@ -326,6 +361,7 @@ class Case(object):
         else:
             expect(machobj.is_valid_compiler(compiler),
                    "compiler %s is not supported on machine %s" %(compiler, machine_name))
+
         self.set_value("COMPILER",compiler)
 
         if mpilib is None:
@@ -354,6 +390,7 @@ class Case(object):
         bjobs = batch.get_batch_jobs()
         env_batch = self._get_env("batch")
         env_batch.set_value("batch_system", batch_system)
+        env_batch.set_default_value("batch_system", batch_system)
         env_batch.create_job_groups(bjobs)
 
         self._env_files_that_need_rewrite.add(env_batch)
@@ -381,6 +418,13 @@ class Case(object):
         logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)
 
+        # Set project id
+        if project is None:
+            project = get_project()
+        if project is not None:
+            self.set_value("PROJECT", project)
+
+
     def set_initial_test_values(self):
         testobj = self._get_env("test")
         testobj.set_initial_values(self)
@@ -407,7 +451,6 @@ class Case(object):
         # setup executable files in caseroot/
         exefiles = (os.path.join(toolsdir, "case.setup"),
                     os.path.join(toolsdir, "case.build"),
-                    os.path.join(toolsdir, "case.clean_build"),
                     os.path.join(toolsdir, "case.submit"),
                     os.path.join(toolsdir, "preview_namelists"),
                     os.path.join(toolsdir, "testcase.setup"),
@@ -449,22 +492,22 @@ class Case(object):
         for dep in (machine, compiler):
             dfile = "Depends.%s"%dep
             if os.path.isfile(os.path.join(machines_dir,dfile)):
-                copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot,dfile))
+                shutil.copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot,dfile))
         dfile = "Depends.%s.%s"%(machine,compiler)
         if os.path.isfile(os.path.join(machines_dir,dfile)):
-            copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot, dfile))
+            shutil.copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot, dfile))
             # set up infon files
             # infofiles = os.path.join(os.path.join(toolsdir, README.post_process")
-    #FIXME - the following does not work
-    # print "DEBUG: infofiles are ",infofiles
-    #    try:
-    #        for infofile in infofiles:
-    #            print "DEBUG: infofile is %s, %s"  %(infofile, os.path.basename(infofile))
-    #            dst_file = caseroot + "/" + os.path.basename(infofile)
-    #            copyfile(infofile, dst_file)
-    #            os.chmod(dst_file, os.stat(dst_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
-    #    except Exception as e:
-    #        logger.warning("FAILED to set up infofiles: %s" % str(e))
+            #FIXME - the following does not work
+            # print "DEBUG: infofiles are ",infofiles
+            #    try:
+            #        for infofile in infofiles:
+            #            print "DEBUG: infofile is %s, %s"  %(infofile, os.path.basename(infofile))
+            #            dst_file = caseroot + "/" + os.path.basename(infofile)
+            #            shutil.copyfile(infofile, dst_file)
+            #            os.chmod(dst_file, os.stat(dst_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
+            #    except Exception as e:
+            #        logger.warning("FAILED to set up infofiles: %s" % str(e))
 
     def _create_caseroot_sourcemods(self):
         components = self.get_compset_components()
@@ -517,4 +560,76 @@ class Case(object):
 
         self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
+
+    def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None):
+
+        newcaseroot = os.path.abspath(newcase)
+        expect(not os.path.isdir(newcaseroot),
+               "New caseroot directory %s already exists" % newcaseroot)
+        newcasename = os.path.basename(newcaseroot)
+        newcase_cimeroot = os.path.abspath(get_cime_root())
+
+        # create clone from self to case
+        clone_cimeroot = self.get_value("CIMEROOT")
+        if newcase_cimeroot != clone_cimeroot:
+            logger.warning(" case  CIMEROOT is %s " %newcase_cimeroot)
+            logger.warning(" clone CIMEROOT is %s " %clone_cimeroot)
+            logger.warning(" It is NOT recommended to clone cases from different versions of CIMEROOT")
+
+        # *** create case object as deepcopy of clone object ***
+        srcroot = os.path.join(newcase_cimeroot,"..")
+        newcase = self.copy(newcasename, newcaseroot, newsrcroot=srcroot)
+
+        # determine if will use clone executable or not
+        if keepexe:
+            orig_exeroot = self.get_value("EXEROOT")
+            newcase.set_value("EXEROOT", orig_exeroot)
+            newcase.set_value("BUILD_COMPLETE","TRUE")
+        else:
+            newcase.set_value("BUILD_COMPLETE","FALSE")
+
+        # set machdir
+        if mach_dir is not None:
+            newcase.set_value("MACHDIR", mach_dir)
+
+        # Set project id
+        # Note: we do not just copy this from the clone because it seems likely that
+        # users will want to change this sometimes, especially when cloning another
+        # user's case. However, note that, if a project is not given, the fallback will
+        # be to copy it from the clone, just like other xml variables are copied.
+        if project is None:
+            project = get_project()
+        if project is not None:
+            newcase.set_value("PROJECT", project)
+
+        # create caseroot
+        newcase.create_caseroot()
+        newcase.flush(flushall=True, )
+
+        # copy user_nl_files
+        cloneroot = self.get_value("CASEROOT")
+        files = glob.glob(cloneroot + '/user_nl_*')
+        for item in files:
+            shutil.copy(item, newcaseroot)
+
+        # copy SourceMod files
+        directories = glob.glob(cloneroot + "/SourceMods/*")
+        for directory in directories:
+            files = glob.glob(directory + "/*")
+            if files:
+                moddir = os.path.basename(directory)
+                for item in files:
+                    shutil.copy(item, os.path.join(caseroot, "SourceMods", moddir))
+
+        # copy env_case.xml to LockedFiles
+        shutil.copy(os.path.join(newcaseroot,"env_case.xml"), os.path.join(newcaseroot,"LockedFiles"))
+
+        # Update README.case
+        fclone   = open(cloneroot + "/README.case", "r")
+        fnewcase = open(newcaseroot  + "/README.case", "a")
+        fnewcase.write("\n    *** original clone README follows ****")
+        fnewcase.write("\n " +  fclone.read())
+
+        clonename = self.get_value("CASE")
+        logger.info(" Successfully created new case %s from clone case %s " %(newcasename, clonename))
 

@@ -77,15 +77,18 @@
     <batch_directive>#PBS</batch_directive>
     <jobid_pattern>^(\d+)\.</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
+    <submit_args>
+      <arg flag="-q" name="JOB_QUEUE"/>
+      <arg flag="-l walltime=" name="JOB_WALLCLOCK_TIME"/>
+      <arg flag="-A" name="PROJECT"/>
+    </submit_args>
     <directives>
       <directive> -N {{ job_id }}</directive>
-      <directive> -q {{ queue }}</directive>
-      <directive> -l walltime={{ wall_time }}</directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
       <!-- <directive> -j oe {{ output_error_path }} </directive> -->
       <directive> -j oe </directive>
       <directive default="ae"  > -m {{ mail_options }} </directive>
-      <directive default="/bin/bash" > -S {{ shell }} -V </directive>
+      <directive default="/bin/bash" > -S {{ shell }} </directive>
     </directives>
   </batch_system>
 
@@ -99,6 +102,7 @@
       <directive> -N {{ job_id }}</directive>
       <directive> -l walltime={{ wall_time }}</directive>
       <directive> -j oe </directive>
+      <directive> -A {{ project }} </directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
       <directive default="ae"  > -m {{ mail_options }} </directive>
       <directive default="/bin/bash" > -S {{ shell }}</directive>
@@ -111,9 +115,6 @@
      <batch_directive>#SBATCH</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>
      <depend_string> --dependency=afterok:jobid</depend_string>
-     <submit_args>
-       <arg flag="--account" name="project"/>
-     </submit_args>
      <directives>
        <directive> --job-name={{ job_id }}</directive>
        <directive> --nodes={{ num_nodes }}</directive>
@@ -122,13 +123,14 @@
        <directive> --exclusive                        </directive>
        <directive> --time={{ wall_time }}</directive>
        <directive> --partition={{ queue }}</directive>
+       <directive> --account={{ project }}</directive>
      </directives>
    </batch_system>
 
     <!-- blues is PBS -->
     <batch_system MACH="blues" version="x.y">
       <directives>
-        <directive>-A {{ project }}</directive>
+        <directive>-A {{ PROJECT }}</directive>
         <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
       </directives>
     </batch_system>
@@ -150,7 +152,7 @@
     </directives>
    </batch_system>
 
-     <!-- skybridge is slurm -->
+   <!-- skybridge is slurm -->
 
    <batch_system MACH="skybridge" version="x.y">
      <directives>
@@ -210,23 +212,48 @@
      </directives>
    </batch_system>
 
-   <batch_jobs>
-     <job name="case.run">
-       <template>template.case.run</template>
-       <task_count>default</task_count>
-     </job>
-     <job name="case.test">
-       <template>python.case.test</template>
-       <task_count>default</task_count>
-     </job>
-     <job name="case.st_archive">
-       <template>template.st_archive</template>
-       <task_count>1</task_count>
-     </job>
-     <job name="case.lt_archive">
-       <template>template.lt_archive</template>
-       <task_count>1</task_count>
-     </job>
-   </batch_jobs>
+   <batch_system MACH="lawrencium-lr2" version="x.y">
+     <directives>
+       <directive>--partition=lr2</directive>
+       <directive>--account={{ project }}</directive>
+       <directive>--exclusive</directive>
+     </directives>
+   </batch_system>
+
+   <batch_system MACH="lawrencium-lr3" version="x.y">
+     <directives>
+       <directive>--partition=lr3</directive>
+       <directive>--account={{ project }}</directive>
+       <directive>--exclusive</directive>
+     </directives>
+   </batch_system>
+
+  <batch_jobs>
+    <!-- order matters, with no-batch jobs will be run in the order listed here -->
+    <job name="case.run">
+      <template>template.case.run</template>
+      <task_count>default</task_count>
+      <prereq>$BUILD_COMPLETE and not $TEST</prereq>
+    </job>
+   <job name="case.test">
+      <template>template.case.test</template>
+      <task_count>default</task_count>
+      <prereq>$BUILD_COMPLETE and $TEST</prereq>
+    </job>
+    <job name="case.st_archive">
+      <template>template.st_archive</template>
+      <task_count>1</task_count>
+      <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
+      <dependancy>case.run or case.test</dependancy>
+      <prereq>$DOUT_S</prereq>
+    </job>
+    <job name="case.lt_archive">
+      <template>template.lt_archive</template>
+      <task_count>1</task_count>
+      <dependancy>case.st_archive</dependancy>
+      <prereq>$DOUT_L_MS</prereq>
+    </job>
+  </batch_jobs>
+
 </config_batch>
 

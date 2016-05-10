@@ -86,9 +86,19 @@
       <lname>a%5x5_amazon_l%5x5_amazon_oi%5x5_amazon_r%null_m%reg_g%null_w%null</lname>
     </grid>
 
-    <grid compset="DATM.+CLM">
+    <grid compset="DATM.+CLM.+SGLC">
       <sname>hcru_hcru</sname>
       <lname>a%360x720cru_l%360x720cru_oi%360x720cru_r%r05_m%360x720cru_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="DATM.+CLM.+CISM1">
+      <sname>hcru_hcru</sname>
+      <lname>a%360x720cru_l%360x720cru_oi%360x720cru_r%r05_m%360x720cru_g%gland5UM_w%null</lname>
+    </grid>
+
+    <grid compset="DATM.+CLM.+CISM2">
+      <sname>hcru_hcru</sname>
+      <lname>a%360x720cru_l%360x720cru_oi%360x720cru_r%r05_m%360x720cru_g%gland4_w%null</lname>
     </grid>
 
     <!-- eulerian grids -->
@@ -98,6 +108,43 @@
       <alias>T31_g37</alias>
       <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null</lname>
     </grid>
+
+    <grid compset="_CISM1">
+      <sname>T31_gx3v7</sname>
+      <alias>T31_g37</alias>
+      <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland5UM_w%null</lname>
+    </grid>
+
+    <grid compset="_CISM2">
+      <sname>T31_gx3v7</sname>
+      <alias>T31_g37</alias>
+      <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland4_w%null</lname>
+    </grid>
+
+    <grid compset="_CISM">
+      <sname>T31_gx3v7_gland4</sname>
+      <alias>T31_g37_gl4</alias>
+      <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland4_w%null</lname>
+    </grid>
+
+    <grid compset="_CISM">
+      <sname>T31_gx3v7_gland10</sname>
+      <alias>T31_g37_gl10</alias>
+      <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland10_w%null</lname>
+    </grid>
+
+    <grid compset="_CISM">
+      <sname>T31_gx3v7_gland20</sname>
+      <alias>T31_g37_gl20</alias>
+      <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland20_w%null</lname>
+    </grid>
+
+    <grid compset="_CISM">
+      <sname>T31_gx3v7_gl5</sname>
+      <alias>T31_g37_gl5</alias>
+      <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland5UM_w%null</lname>
+    </grid> <!-- back compat -->
+
     <grid>
       <sname>T85_0.9x1.25_tx0.1v2</sname>
       <alias>T85_f09_t12</alias>
@@ -121,6 +168,18 @@
       <alias>T31_T31</alias>
       <lname>a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland5UM_w%null</lname>
     </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN).+CISM2">
+      <sname>T31_T31</sname>
+      <alias>T31_T31</alias>
+      <lname>a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland4_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN).*_CISM">
+      <sname>T31_T31_gl5</sname>
+      <alias>T31_T31_gl5</alias>
+      <lname>a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland5UM_w%null</lname>
+    </grid> <!-- back compat -->
 
     <grid compset="(DOCN|XOCN|SOCN)">
       <sname>T42_T42</sname>
@@ -208,211 +267,28 @@
       <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%ww3a</lname>
     </grid>
 
+    <grid compset="CISM2.+SWAV">
+      <sname>0.9x1.25_gx1v6</sname>
+      <alias>f09_g16</alias>
+      <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland4_w%null</lname>
+    </grid>
+
+    <grid compset="CISM2.+DWAV">
+      <sname>0.9x1.25_gx1v6</sname>
+      <alias>f09_g16</alias>
+      <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland4_w%ww3a</lname>
+    </grid>
+
     <grid compset="SGLC.+DWAV">
       <sname>0.9x1.25_gx1v6</sname>
       <alias>f09_g16</alias>
       <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%ww3a</lname>
     </grid>
 
-    <grid>
-      <sname>1.9x2.5_gx1v6</sname>
-      <alias>f19_g16</alias>
-      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
-    </grid>
-
-    <grid compset="CISM1.+SWAV">
-      <sname>1.9x2.5_gx1v6</sname>
-      <alias>f19_g16</alias>
-      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
-    </grid>
-    <grid compset="CISM1.+DWAV">
-      <sname>1.9x2.5_gx1v6</sname>
-      <alias>f19_g16</alias>
-      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%ww3a</lname>
-    </grid>
-    <grid compset="SGLC.+DWAV">
-      <sname>1.9x2.5_gx1v6</sname>
-      <alias>f19_g16</alias>
-      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%ww3a</lname>
-    </grid>
-
-    <grid>
-      <sname>4x5_gx3v7</sname>
-      <alias>f45_g37</alias>
-      <lname>a%4x5_l%4x5_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null</lname>
-    </grid>
-
-    <grid>
-      <sname>1.9x2.5_gx1v6_r01</sname>
-      <alias>f19_g16_r01</alias>
-      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r01_m%gx1v6_g%null_w%null</lname>
-      <support>Non-standard grid, for testing high resolution RTM grid</support>
-    </grid>
-
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
-      <sname>0.23x0.31_0.23x0.31</sname>
-      <alias>f02_f02</alias>
-      <lname>a%0.23x0.31_l%0.23x0.31_oi%0.23x0.31_r%r05_m%gx1v6_g%null_w%null</lname>
-    </grid>
-
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+SGLC">
-      <sname>0.9x1.25_0.9x1.25</sname>
-      <alias>f09_f09</alias>
-      <lname>a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%null_w%null</lname>
-    </grid>
-
-
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM1">
-      <sname>0.9x1.25_0.9x1.25</sname>
-      <alias>f09_f09</alias>
-      <lname>a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
-    </grid>
-
-
-
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
-      <sname>1.9x2.5_1.9x2.5</sname>
-      <alias>f19_f19</alias>
-      <lname>a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%null_w%null</lname>
-    </grid>
-
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM1">
-      <sname>1.9x2.5_1.9x2.5</sname>
-      <alias>f19_f19</alias>
-      <lname>a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
-    </grid>
-
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
-      <sname>2.5x3.33_2.5x3.33</sname>
-      <alias>f25_f25</alias>
-      <lname>a%2.5x3.33_l%2.5x3.33_oi%2.5x3.33_r%r05_m%gx1v6_g%null_w%null</lname>
-    </grid>
-
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
-      <sname>4x5_4x5</sname>
-      <alias>f45_f45</alias>
-      <lname>a%4x5_l%4x5_oi%4x5_r%r05_m%gx3v7_g%null_w%null</lname>
-    </grid>
-
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
-      <sname>10x15_10x15</sname>
-      <alias>f10_f10</alias>
-      <lname>a%10x15_l%10x15_oi%10x15_r%r05_m%usgs_g%null_w%null</lname>
-    </grid>
-
-    <!--  spectral element grids -->
-
-    <grid>
-      <sname>ne16np4_gx3v7</sname>
-      <alias>ne16_g37</alias>
-      <lname>a%ne16np4_l%ne16np4_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null</lname>
-    </grid>
-
-    <grid>
-      <sname>ne30np4_gx1v6</sname>
-      <alias>ne30_g16</alias>
-      <lname>a%ne30np4_l%ne30np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
-    </grid>
-
-    <grid>
-      <sname>ne30np4_1.9x2.5_gx1v6</sname>
-      <alias>ne30_f19_g16</alias>
-      <lname>a%ne30np4_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
-      <support>For testing tri-grid</support>
-    </grid>
-
-    <grid>
-      <sname>ne30np4_0.9x1.25_gx1v6</sname>
-      <alias>ne30_f09_g16</alias>
-      <lname>a%ne30np4_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
-      <support>For testing tri-grid</support>
-    </grid>
-
-    <grid>
-      <sname>ne60np4_gx1v6</sname>
-      <alias>ne60_g16</alias>
-      <lname>a%ne60np4_l%ne60np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
-    </grid>
-
-    <grid>
-      <sname>ne120np4_gx1v6</sname>
-      <alias>ne120_g16</alias>
-      <lname>a%ne120np4_l%ne120np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
-    </grid>
-
-    <grid>
-      <sname>ne120np4_tx0.1v2</sname>
-      <alias>ne120_t12</alias>
-      <lname>a%ne120np4_l%ne120np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</lname>
-    </grid>
-
-    <grid>
-      <sname>ne240np4_0.23x0.31_gx1v6</sname>
-      <alias>ne240_f02_g16</alias>
-      <lname>a%ne240np4_l%0.23x0.31_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
-      <support>For testing high resolution tri-grid</support>
-    </grid>
-
-    <grid>
-      <sname>ne240np4_tx0.1v2</sname>
-      <alias>ne240_t12</alias>
-      <lname>a%ne240np4_l%ne240np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</lname>
-    </grid>
-
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
-      <sname>ne16np4_ne16np4</sname>
-      <alias>ne16_ne16</alias>
-      <lname>a%ne16np4_l%ne16np4_oi%ne16np4_r%r05_m%gx3v7_g%null_w%null</lname>
-    </grid>
-
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
-      <sname>ne30np4_ne30np4</sname>
-      <alias>ne30_ne30</alias>
-      <lname>a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6_g%null_w%null</lname>
-    </grid>
-
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
-      <sname>ne60np4_ne60np4</sname>
-      <alias>ne60_ne60</alias>
-      <lname>a%ne60np4_l%ne60np4_oi%ne60np4_r%r05_m%gx1v6_g%null_w%null</lname>
-    </grid>
-
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
-      <sname>ne120np4_ne120np4</sname>
-      <alias>ne120_ne120</alias>
-      <lname>a%ne120np4_l%ne120np4_oi%ne120np4_r%r05_m%gx1v6_g%null_w%null</lname>
-    </grid>
-
-    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
-      <sname>ne240np4_ne240np4</sname>
-      <alias>ne240_ne240</alias>
-      <lname>a%ne240np4_l%ne240np4_oi%ne240np4_r%null_m%gx1v6_g%null_w%null</lname>
-    </grid>
-
-    <!--- cism grids -->
-
     <grid compset="_CISM">
       <sname>0.9x1.25_gx1v6_gland4</sname>
       <alias>f09_g16_gl4</alias>
       <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland4_w%null</lname>
-    </grid>
-
-    <grid compset="_CISM">
-      <sname>1.9x2.5_gx1v6_gland4</sname>
-      <alias>f19_g16_gl4</alias>
-      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland4_w%null</lname>
-    </grid>
-
-    <grid compset="_CISM">
-      <sname>T31_gx3v7_gland4</sname>
-      <alias>T31_g37_gl4</alias>
-      <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland4_w%null</lname>
-    </grid>
-
-    <grid compset="_CISM">
-      <sname>T31_gx3v7_gland10</sname>
-      <alias>T31_g37_gl10</alias>
-      <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland10_w%null</lname>
     </grid>
 
     <grid compset="_CISM">
@@ -428,16 +304,52 @@
     </grid>
 
     <grid compset="_CISM">
-      <sname>T31_gx3v7_gland20</sname>
-      <alias>T31_g37_gl20</alias>
-      <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland20_w%null</lname>
+      <sname>0.9x1.25_gx1v6_gl5</sname>
+      <alias>f09_g16_gl5</alias>
+      <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
+    </grid> <!-- back compat -->
+
+    <grid>
+      <sname>1.9x2.5_gx1v6</sname>
+      <alias>f19_g16</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="CISM1.+SWAV">
+      <sname>1.9x2.5_gx1v6</sname>
+      <alias>f19_g16</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
+    </grid>
+
+    <grid compset="CISM1.+DWAV">
+      <sname>1.9x2.5_gx1v6</sname>
+      <alias>f19_g16</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%ww3a</lname>
+    </grid>
+
+    <grid compset="CISM2.+SWAV">
+      <sname>1.9x2.5_gx1v6</sname>
+      <alias>f19_g16</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland4_w%null</lname>
+    </grid>
+
+    <grid compset="CISM2.+DWAV">
+      <sname>1.9x2.5_gx1v6</sname>
+      <alias>f19_g16</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland4_w%ww3a</lname>
+    </grid>
+
+    <grid compset="SGLC.+DWAV">
+      <sname>1.9x2.5_gx1v6</sname>
+      <alias>f19_g16</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%ww3a</lname>
     </grid>
 
     <grid compset="_CISM">
-      <sname>T31_gx3v7_gl5</sname>
-      <alias>T31_g37_gl5</alias>
-      <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland5UM_w%null</lname>
-    </grid> <!-- back compat -->
+      <sname>1.9x2.5_gx1v6_gland4</sname>
+      <alias>f19_g16_gl4</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland4_w%null</lname>
+    </grid>
 
     <grid compset="_CISM">
       <sname>1.9x2.5_gx1v6_gl5</sname>
@@ -445,66 +357,424 @@
       <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
     </grid> <!-- back compat -->
 
-    <grid compset="_CISM">
-      <sname>0.9x1.25_gx1v6_gl5</sname>
-      <alias>f09_g16_gl5</alias>
-      <lname>a%0.9x1.25_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
-    </grid> <!-- back compat -->
-
-    <grid compset="DOCN.*_CISM">
-      <sname>1.9x2.5_1.9x2.5_gland10</sname>
-      <alias>f19_f19_gl10</alias>
-      <lname>a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland10_w%null</lname>
+    <grid>
+      <sname>1.9x2.5_gx1v6_r01</sname>
+      <alias>f19_g16_r01</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r01_m%gx1v6_g%null_w%null</lname>
+      <support>Non-standard grid, for testing high resolution RTM grid</support>
     </grid>
 
-    <grid compset="DOCN.*_CISM">
-      <sname>T31_T31_gl5</sname>
-      <alias>T31_T31_gl5</alias>
-      <lname>a%T31_l%T31_oi%T31_r%r05_m%gx3v7_g%gland5UM_w%null</lname>
-    </grid> <!-- back compat -->
+    <grid>
+      <sname>4x5_gx3v7</sname>
+      <alias>f45_g37</alias>
+      <lname>a%4x5_l%4x5_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null</lname>
+    </grid>
 
-    <grid compset="DOCN.*_CISM">
-      <sname>1.9x2.5_1.9x2.5_gl5</sname>
-      <alias>f19_f19_gl5</alias>
-      <lname>a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
-    </grid> <!-- back compat -->
+    <grid compset="_CISM1">
+      <sname>4x5_gx3v7</sname>
+      <alias>f45_g37</alias>
+      <lname>a%4x5_l%4x5_oi%gx3v7_r%r05_m%gx3v7_g%gland5UM_w%null</lname>
+    </grid>
 
-    <grid compset="DOCN.*_CISM">
+    <grid compset="_CISM2">
+      <sname>4x5_gx3v7</sname>
+      <alias>f45_g37</alias>
+      <lname>a%4x5_l%4x5_oi%gx3v7_r%r05_m%gx3v7_g%gland4_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+      <sname>0.23x0.31_0.23x0.31</sname>
+      <alias>f02_f02</alias>
+      <lname>a%0.23x0.31_l%0.23x0.31_oi%0.23x0.31_r%r05_m%gx1v6_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+SGLC">
+      <sname>0.9x1.25_0.9x1.25</sname>
+      <alias>f09_f09</alias>
+      <lname>a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM1">
+      <sname>0.9x1.25_0.9x1.25</sname>
+      <alias>f09_f09</alias>
+      <lname>a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM2">
+      <sname>0.9x1.25_0.9x1.25</sname>
+      <alias>f09_f09</alias>
+      <lname>a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland4_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).*_CISM">
       <sname>0.9x1.25_0.9x1.25_gl5</sname>
       <alias>f09_f09_gl5</alias>
       <lname>a%0.9x1.25_l%0.9x1.25_oi%0.9x1.25_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
     </grid> <!-- back compat -->
 
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+      <sname>1.9x2.5_1.9x2.5</sname>
+      <alias>f19_f19</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM1">
+      <sname>1.9x2.5_1.9x2.5</sname>
+      <alias>f19_f19</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM2">
+      <sname>1.9x2.5_1.9x2.5</sname>
+      <alias>f19_f19</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland4_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).*_CISM">
+      <sname>1.9x2.5_1.9x2.5_gland10</sname>
+      <alias>f19_f19_gl10</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland10_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).*_CISM">
+      <sname>1.9x2.5_1.9x2.5_gl5</sname>
+      <alias>f19_f19_gl5</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%1.9x2.5_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
+    </grid> <!-- back compat -->
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+      <sname>2.5x3.33_2.5x3.33</sname>
+      <alias>f25_f25</alias>
+      <lname>a%2.5x3.33_l%2.5x3.33_oi%2.5x3.33_r%r05_m%gx1v6_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+SGLC">
+      <sname>4x5_4x5</sname>
+      <alias>f45_f45</alias>
+      <lname>a%4x5_l%4x5_oi%4x5_r%r05_m%gx3v7_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM1">
+      <sname>4x5_4x5</sname>
+      <alias>f45_f45</alias>
+      <lname>a%4x5_l%4x5_oi%4x5_r%r05_m%gx3v7_g%gland5UM_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM2">
+      <sname>4x5_4x5</sname>
+      <alias>f45_f45</alias>
+      <lname>a%4x5_l%4x5_oi%4x5_r%r05_m%gx3v7_g%gland4_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+SGLC">
+      <sname>10x15_10x15</sname>
+      <alias>f10_f10</alias>
+      <lname>a%10x15_l%10x15_oi%10x15_r%r05_m%usgs_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM1">
+      <sname>10x15_10x15</sname>
+      <alias>f10_f10</alias>
+      <lname>a%10x15_l%10x15_oi%10x15_r%r05_m%usgs_g%gland5UM_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM2">
+      <sname>10x15_10x15</sname>
+      <alias>f10_f10</alias>
+      <lname>a%10x15_l%10x15_oi%10x15_r%r05_m%usgs_g%gland4_w%null</lname>
+    </grid>
+
+    <!--  spectral element grids -->
+
+    <grid>
+      <sname>ne16np4_gx3v7</sname>
+      <alias>ne16_g37</alias>
+      <lname>a%ne16np4_l%ne16np4_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="_CISM1">
+      <sname>ne16np4_gx3v7</sname>
+      <alias>ne16_g37</alias>
+      <lname>a%ne16np4_l%ne16np4_oi%gx3v7_r%r05_m%gx3v7_g%gland5UM_w%null</lname>
+    </grid>
+
+    <grid compset="_CISM2">
+      <sname>ne16np4_gx3v7</sname>
+      <alias>ne16_g37</alias>
+      <lname>a%ne16np4_l%ne16np4_oi%gx3v7_r%r05_m%gx3v7_g%gland4_w%null</lname>
+    </grid>
+
+    <grid>
+      <sname>ne30np4_gx1v6</sname>
+      <alias>ne30_g16</alias>
+      <lname>a%ne30np4_l%ne30np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="_CISM1">
+      <sname>ne30np4_gx1v6</sname>
+      <alias>ne30_g16</alias>
+      <lname>a%ne30np4_l%ne30np4_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
+    </grid>
+
+    <grid compset="_CISM2">
+      <sname>ne30np4_gx1v6</sname>
+      <alias>ne30_g16</alias>
+      <lname>a%ne30np4_l%ne30np4_oi%gx1v6_r%r05_m%gx1v6_g%gland4_w%null</lname>
+    </grid>
+
+    <grid>
+      <sname>ne30np4_1.9x2.5_gx1v6</sname>
+      <alias>ne30_f19_g16</alias>
+      <lname>a%ne30np4_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
+      <support>For testing tri-grid</support>
+    </grid>
+
+    <grid compset="_CISM1">
+      <sname>ne30np4_1.9x2.5_gx1v6</sname>
+      <alias>ne30_f19_g16</alias>
+      <lname>a%ne30np4_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
+      <support>For testing tri-grid</support>
+    </grid>
+
+    <grid compset="_CISM2">
+      <sname>ne30np4_1.9x2.5_gx1v6</sname>
+      <alias>ne30_f19_g16</alias>
+      <lname>a%ne30np4_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland4_w%null</lname>
+      <support>For testing tri-grid</support>
+    </grid>
+
+    <grid>
+      <sname>ne30np4_0.9x1.25_gx1v6</sname>
+      <alias>ne30_f09_g16</alias>
+      <lname>a%ne30np4_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
+      <support>For testing tri-grid</support>
+    </grid>
+
+    <grid compset="_CISM1">
+      <sname>ne30np4_0.9x1.25_gx1v6</sname>
+      <alias>ne30_f09_g16</alias>
+      <lname>a%ne30np4_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
+      <support>For testing tri-grid</support>
+    </grid>
+
+    <grid compset="_CISM2">
+      <sname>ne30np4_0.9x1.25_gx1v6</sname>
+      <alias>ne30_f09_g16</alias>
+      <lname>a%ne30np4_l%0.9x1.25_oi%gx1v6_r%r05_m%gx1v6_g%gland4_w%null</lname>
+      <support>For testing tri-grid</support>
+    </grid>
+
+    <grid>
+      <sname>ne60np4_gx1v6</sname>
+      <alias>ne60_g16</alias>
+      <lname>a%ne60np4_l%ne60np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
+    </grid>
+
+    <grid>
+      <sname>ne120np4_gx1v6</sname>
+      <alias>ne120_g16</alias>
+      <lname>a%ne120np4_l%ne120np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="_CISM1">
+      <sname>ne120np4_gx1v6</sname>
+      <alias>ne120_g16</alias>
+      <lname>a%ne120np4_l%ne120np4_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
+    </grid>
+
+    <grid compset="_CISM2">
+      <sname>ne120np4_gx1v6</sname>
+      <alias>ne120_g16</alias>
+      <lname>a%ne120np4_l%ne120np4_oi%gx1v6_r%r05_m%gx1v6_g%gland4_w%null</lname>
+    </grid>
+
+    <grid>
+      <sname>ne120np4_tx0.1v2</sname>
+      <alias>ne120_t12</alias>
+      <lname>a%ne120np4_l%ne120np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="_CISM1">
+      <sname>ne120np4_tx0.1v2</sname>
+      <alias>ne120_t12</alias>
+      <lname>a%ne120np4_l%ne120np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%gland5UM_w%null</lname>
+    </grid>
+
+    <grid compset="_CISM2">
+      <sname>ne120np4_tx0.1v2</sname>
+      <alias>ne120_t12</alias>
+      <lname>a%ne120np4_l%ne120np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%gland4_w%null</lname>
+    </grid>
+
+    <grid>
+      <sname>ne240np4_0.23x0.31_gx1v6</sname>
+      <alias>ne240_f02_g16</alias>
+      <lname>a%ne240np4_l%0.23x0.31_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</lname>
+      <support>For testing high resolution tri-grid</support>
+    </grid>
+
+    <grid>
+      <sname>ne240np4_tx0.1v2</sname>
+      <alias>ne240_t12</alias>
+      <lname>a%ne240np4_l%ne240np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+SGLC">
+      <sname>ne16np4_ne16np4</sname>
+      <alias>ne16_ne16</alias>
+      <lname>a%ne16np4_l%ne16np4_oi%ne16np4_r%r05_m%gx3v7_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM1">
+      <sname>ne16np4_ne16np4</sname>
+      <alias>ne16_ne16</alias>
+      <lname>a%ne16np4_l%ne16np4_oi%ne16np4_r%r05_m%gx3v7_g%gland5UM_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM2">
+      <sname>ne16np4_ne16np4</sname>
+      <alias>ne16_ne16</alias>
+      <lname>a%ne16np4_l%ne16np4_oi%ne16np4_r%r05_m%gx3v7_g%gland4_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+SGLC">
+      <sname>ne30np4_ne30np4</sname>
+      <alias>ne30_ne30</alias>
+      <lname>a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM1">
+      <sname>ne30np4_ne30np4</sname>
+      <alias>ne30_ne30</alias>
+      <lname>a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM2">
+      <sname>ne30np4_ne30np4</sname>
+      <alias>ne30_ne30</alias>
+      <lname>a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6_g%gland4_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+      <sname>ne60np4_ne60np4</sname>
+      <alias>ne60_ne60</alias>
+      <lname>a%ne60np4_l%ne60np4_oi%ne60np4_r%r05_m%gx1v6_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+SGLC">
+      <sname>ne120np4_ne120np4</sname>
+      <alias>ne120_ne120</alias>
+      <lname>a%ne120np4_l%ne120np4_oi%ne120np4_r%r05_m%gx1v6_g%null_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM1">
+      <sname>ne120np4_ne120np4</sname>
+      <alias>ne120_ne120</alias>
+      <lname>a%ne120np4_l%ne120np4_oi%ne120np4_r%r05_m%gx1v6_g%gland5UM_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP).+CISM2">
+      <sname>ne120np4_ne120np4</sname>
+      <alias>ne120_ne120</alias>
+      <lname>a%ne120np4_l%ne120np4_oi%ne120np4_r%r05_m%gx1v6_g%gland4_w%null</lname>
+    </grid>
+
+    <grid compset="(DOCN|XOCN|SOCN|AQUAP)">
+      <sname>ne240np4_ne240np4</sname>
+      <alias>ne240_ne240</alias>
+      <lname>a%ne240np4_l%ne240np4_oi%ne240np4_r%null_m%gx1v6_g%null_w%null</lname>
+    </grid>
+
     <!-- new runoff grids for data runoff model DROF -->
 
-    <grid compset="_DROF">
+    <grid compset="_DROF.+SGLC">
       <sname>T31_gx3v7_rx1</sname>
       <alias>T31_g37_rx1</alias>
       <lname>a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null</lname>
     </grid> <!-- back compat -->
 
-    <grid compset="_DROF">
+    <grid compset="_DROF.+CISM1">
+      <sname>T31_gx3v7_rx1</sname>
+      <alias>T31_g37_rx1</alias>
+      <lname>a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%gland5UM_w%null</lname>
+    </grid> <!-- back compat -->
+
+    <grid compset="_DROF.+CISM2">
+      <sname>T31_gx3v7_rx1</sname>
+      <alias>T31_g37_rx1</alias>
+      <lname>a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%gland4_w%null</lname>
+    </grid> <!-- back compat -->
+
+    <grid compset="_DROF.+SGLC">
       <sname>4x5_gx3v7_rx1</sname>
       <alias>f45_g37_rx1</alias>
       <lname>a%4x5_l%4x5_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%null</lname>
     </grid> <!-- back compat -->
 
-    <grid compset="_DROF">
+    <grid compset="_DROF.+CISM1">
+      <sname>4x5_gx3v7_rx1</sname>
+      <alias>f45_g37_rx1</alias>
+      <lname>a%4x5_l%4x5_oi%gx3v7_r%rx1_m%gx3v7_g%gland5UM_w%null</lname>
+    </grid> <!-- back compat -->
+
+    <grid compset="_DROF.+CISM2">
+      <sname>4x5_gx3v7_rx1</sname>
+      <alias>f45_g37_rx1</alias>
+      <lname>a%4x5_l%4x5_oi%gx3v7_r%rx1_m%gx3v7_g%gland4_w%null</lname>
+    </grid> <!-- back compat -->
+
+    <grid compset="_DROF.+SGLC">
       <sname>1.9x2.5_gx1v6_rx1</sname>
       <alias>f19_g16_rx1</alias>
       <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</lname>
     </grid> <!-- back compat -->
 
-    <grid compset="_DROF">
+    <grid compset="_DROF.+CISM1">
+      <sname>1.9x2.5_gx1v6_rx1</sname>
+      <alias>f19_g16_rx1</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%gland5UM_w%null</lname>
+    </grid> <!-- back compat -->
+
+    <grid compset="_DROF.+CISM2">
+      <sname>1.9x2.5_gx1v6_rx1</sname>
+      <alias>f19_g16_rx1</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%gland4_w%null</lname>
+    </grid> <!-- back compat -->
+
+    <grid compset="_DROF.+SGLC">
       <sname>ne30np4_gx1v6_rx1</sname>
       <alias>ne30_g16_rx1</alias>
       <lname>a%ne30np4_l%ne30np4_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</lname>
     </grid> <!-- back compat -->
 
-    <grid compset="_DROF">
+    <grid compset="_DROF.+CISM1">
+      <sname>ne30np4_gx1v6_rx1</sname>
+      <alias>ne30_g16_rx1</alias>
+      <lname>a%ne30np4_l%ne30np4_oi%gx1v6_r%rx1_m%gx1v6_g%gland5UM_w%null</lname>
+    </grid> <!-- back compat -->
+
+    <grid compset="_DROF.+CISM2">
+      <sname>ne30np4_gx1v6_rx1</sname>
+      <alias>ne30_g16_rx1</alias>
+      <lname>a%ne30np4_l%ne30np4_oi%gx1v6_r%rx1_m%gx1v6_g%gland4_w%null</lname>
+    </grid> <!-- back compat -->
+
+    <grid compset="_DROF.+SGLC">
       <sname>ne30np4_1.9x2.5_gx1v6_rx1</sname>
       <alias>ne30_f19_g16_rx1</alias>
       <lname>a%ne30np4_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%null</lname>
+    </grid><!-- back compat -->
+
+    <grid compset="_DROF.+CISM1">
+      <sname>ne30np4_1.9x2.5_gx1v6_rx1</sname>
+      <alias>ne30_f19_g16_rx1</alias>
+      <lname>a%ne30np4_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%gland5UM_w%null</lname>
+    </grid><!-- back compat -->
+
+    <grid compset="_DROF.+CISM2">
+      <sname>ne30np4_1.9x2.5_gx1v6_rx1</sname>
+      <alias>ne30_f19_g16_rx1</alias>
+      <lname>a%ne30np4_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%gland4_w%null</lname>
     </grid><!-- back compat -->
 
     <!-- ww3 grids -->
@@ -517,34 +787,94 @@
 
 
     <!-- QL, 150525, ww3 grids -->
-    <grid compset="(_DWAV|_XWAV|_WW3)">
+    <grid compset="_SGLC.*(_DWAV|_XWAV|_WW3)">
       <sname>1.9x2.5_gx1v6_r05_ww3a</sname>
       <alias>f19_g16_r05_ww3</alias>
       <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%ww3a</lname>
     </grid>
 
-    <grid compset="(_DWAV|_XWAV|_WW3)">
+    <grid compset="_CISM1.*(_DWAV|_XWAV|_WW3)">
+      <sname>1.9x2.5_gx1v6_r05_ww3a</sname>
+      <alias>f19_g16_r05_ww3</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%ww3a</lname>
+    </grid>
+
+    <grid compset="_CISM2.*(_DWAV|_XWAV|_WW3)">
+      <sname>1.9x2.5_gx1v6_r05_ww3a</sname>
+      <alias>f19_g16_r05_ww3</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland4_w%ww3a</lname>
+    </grid>
+
+    <grid compset="_SGLC.*(_DWAV|_XWAV|_WW3)">
       <sname>0.9x1.25_gx1v6_r05_ww3a</sname>
       <alias>f09_g16_r05_ww3</alias>
       <lname>a%0.9x1.25_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%null_w%ww3a</lname>
     </grid>
 
-    <grid compset="(_DWAV|_XWAV|_WW3)">
+    <grid compset="_CISM1.*(_DWAV|_XWAV|_WW3)">
+      <sname>0.9x1.25_gx1v6_r05_ww3a</sname>
+      <alias>f09_g16_r05_ww3</alias>
+      <lname>a%0.9x1.25_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%ww3a</lname>
+    </grid>
+
+    <grid compset="_CISM2.*(_DWAV|_XWAV|_WW3)">
+      <sname>0.9x1.25_gx1v6_r05_ww3a</sname>
+      <alias>f09_g16_r05_ww3</alias>
+      <lname>a%0.9x1.25_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland4_w%ww3a</lname>
+    </grid>
+
+    <grid compset="_SGLC.*(_DWAV|_XWAV|_WW3)">
       <sname>T31_gx3v7_r05_ww3a</sname>
       <alias>T31_g37_r05_ww3</alias>
       <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%null_w%ww3a</lname>
     </grid>
 
-    <grid compset="(_DROF.*_DWAV|_DROF.*_WW3)">
+    <grid compset="_CISM1.*(_DWAV|_XWAV|_WW3)">
+      <sname>T31_gx3v7_r05_ww3a</sname>
+      <alias>T31_g37_r05_ww3</alias>
+      <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland5UM_w%ww3a</lname>
+    </grid>
+
+    <grid compset="_CISM2.*(_DWAV|_XWAV|_WW3)">
+      <sname>T31_gx3v7_r05_ww3a</sname>
+      <alias>T31_g37_r05_ww3</alias>
+      <lname>a%T31_l%T31_oi%gx3v7_r%r05_m%gx3v7_g%gland4_w%ww3a</lname>
+    </grid>
+
+    <grid compset="(_DROF.*_SGLC.*_DWAV|_DROF.*_SGLC.*_WW3)">
       <sname>1.9x2.5_gx1v6_rx1_ww3a</sname>
       <alias>f19_g16_rx1_ww3</alias>
       <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%null_w%ww3a</lname>
     </grid>
 
-    <grid compset="(_DROF.*_DWAV|_DROF.*_WW3)">
+    <grid compset="(_DROF.*_CISM1.*_DWAV|_DROF.*_CISM1.*_WW3)">
+      <sname>1.9x2.5_gx1v6_rx1_ww3a</sname>
+      <alias>f19_g16_rx1_ww3</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%gland5UM_w%ww3a</lname>
+    </grid>
+
+    <grid compset="(_DROF.*_CISM2.*_DWAV|_DROF.*_CISM2.*_WW3)">
+      <sname>1.9x2.5_gx1v6_rx1_ww3a</sname>
+      <alias>f19_g16_rx1_ww3</alias>
+      <lname>a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%rx1_m%gx1v6_g%gland4_w%ww3a</lname>
+    </grid>
+
+    <grid compset="(_DROF.*_SGLC.*_DWAV|_DROF.*_SGLC.*_WW3)">
       <sname>T31_gx3v7_rx1_ww3a</sname>
       <alias>T31_g37_rx1_ww3</alias>
       <lname>a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%ww3a</lname>
+    </grid>
+
+    <grid compset="(_DROF.*_CISM1.*_DWAV|_DROF.*_CISM1.*_WW3)">
+      <sname>T31_gx3v7_rx1_ww3a</sname>
+      <alias>T31_g37_rx1_ww3></alias>
+      <lname>a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%gland5UM_w%ww3a</lname>
+    </grid>
+
+    <grid compset="(_DROF.*_CISM2.*_DWAV|_DROF.*_CISM2.*_WW3)">
+      <sname>T31_gx3v7_rx1_ww3a</sname>
+      <alias>T31_g37_rx1_ww3></alias>
+      <lname>a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%gland4_w%ww3a</lname>
     </grid>
 
     <grid compset="(DATM.+DWAV|XATM.+XWAV|SATM.+SWAV)">
@@ -1308,7 +1638,10 @@
       <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_gx3v7_e1000r500_090903.nc</ROF2OCN_RMAPNAME>
     </gridmap>
     <gridmap rof_grid="r05" ocn_grid="gx1v6" >
-      <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_gx1v6_e1000r300_090226.nc</ROF2OCN_RMAPNAME>
+      <ROF2OCN_RMAPNAME >cpl/gridmaps/r05/map_r05_to_gx1v6_e1000r300_151109.nc</ROF2OCN_RMAPNAME>
+    </gridmap>
+    <gridmap rof_grid="r05" ocn_grid="gx1v7" >
+      <ROF2OCN_RMAPNAME >cpl/gridmaps/r05/map_r05_to_gx1v7_e1000r300_151109b.nc</ROF2OCN_RMAPNAME>
     </gridmap>
     <gridmap rof_grid="r05" ocn_grid="tx1v1" >
       <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_tx1v1_e1000r500_080505.nc</ROF2OCN_RMAPNAME>
@@ -1358,6 +1691,48 @@
       <GLC2LND_SMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_T31_aave.150514.nc</GLC2LND_SMAPNAME>
     </gridmap>
 
+    <gridmap lnd_grid="360x720cru" glc_grid="gland4" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/360x720/map_360x720_TO_gland4km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/360x720/map_360x720_TO_gland4km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_360x720_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_360x720_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="10x15" glc_grid="gland4" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/fv10x15/map_fv10x15_TO_gland4km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/fv10x15/map_fv10x15_TO_gland4km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_fv10x15_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_fv10x15_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="4x5" glc_grid="gland4" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/fv4x5/map_fv4x5_TO_gland4km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/fv4x5/map_fv4x5_TO_gland4km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_fv4x5_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_fv4x5_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="ne16np4" glc_grid="gland4" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/ne16np4/map_ne16np4_TO_gland4km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/ne16np4/map_ne16np4_TO_gland4km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_ne16np4_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_ne16np4_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="ne30np4" glc_grid="gland4" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/ne30np4/map_ne30np4_TO_gland4km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/ne30np4/map_ne30np4_TO_gland4km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_ne30np4_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_ne30np4_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="ne120np4" glc_grid="gland4" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/ne120np4/map_ne120np4_TO_gland4km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/ne120np4/map_ne120np4_TO_gland4km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_ne120np4_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland4km/map_gland4km_TO_ne120np4_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
     <!-- ====================  -->
     <!-- GLC: gland5           -->
     <!-- Use same mapping files for gland5 and gland5UM, because they use the same grids -->
@@ -1384,6 +1759,48 @@
       <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_T31_aave.150514.nc</GLC2LND_SMAPNAME>
     </gridmap>
 
+    <gridmap lnd_grid="360x720cru" glc_grid="gland5" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/360x720/map_360x720_TO_gland5km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/360x720/map_360x720_TO_gland5km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_360x720_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_360x720_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="10x15" glc_grid="gland5" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/fv10x15/map_fv10x15_TO_gland5km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/fv10x15/map_fv10x15_TO_gland5km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_fv10x15_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_fv10x15_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="4x5" glc_grid="gland5" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/fv4x5/map_fv4x5_TO_gland5km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/fv4x5/map_fv4x5_TO_gland5km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_fv4x5_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_fv4x5_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="ne16np4" glc_grid="gland5" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/ne16np4/map_ne16np4_TO_gland5km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/ne16np4/map_ne16np4_TO_gland5km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_ne16np4_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_ne16np4_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="ne30np4" glc_grid="gland5" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/ne30np4/map_ne30np4_TO_gland5km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/ne30np4/map_ne30np4_TO_gland5km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_ne30np4_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_ne30np4_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="ne120np4" glc_grid="gland5" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/ne120np4/map_ne120np4_TO_gland5km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/ne120np4/map_ne120np4_TO_gland5km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_ne120np4_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_ne120np4_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
     <!-- ====================  -->
     <!-- GLC: gland5UM         -->
     <!-- Use same mapping files for gland5 and gland5UM, because they use the same grids -->
@@ -1408,6 +1825,48 @@
       <LND2GLC_SMAPNAME>cpl/gridmaps/T31/map_T31_TO_gland5km_blin.150514.nc</LND2GLC_SMAPNAME>
       <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_T31_aave.150514.nc</GLC2LND_FMAPNAME>
       <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_T31_aave.150514.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="360x720cru" glc_grid="gland5UM" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/360x720/map_360x720_TO_gland5km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/360x720/map_360x720_TO_gland5km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_360x720_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_360x720_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="10x15" glc_grid="gland5UM" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/fv10x15/map_fv10x15_TO_gland5km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/fv10x15/map_fv10x15_TO_gland5km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_fv10x15_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_fv10x15_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="4x5" glc_grid="gland5UM" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/fv4x5/map_fv4x5_TO_gland5km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/fv4x5/map_fv4x5_TO_gland5km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_fv4x5_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_fv4x5_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="ne16np4" glc_grid="gland5UM" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/ne16np4/map_ne16np4_TO_gland5km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/ne16np4/map_ne16np4_TO_gland5km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_ne16np4_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_ne16np4_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="ne30np4" glc_grid="gland5UM" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/ne30np4/map_ne30np4_TO_gland5km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/ne30np4/map_ne30np4_TO_gland5km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_ne30np4_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_ne30np4_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="ne120np4" glc_grid="gland5UM" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/ne120np4/map_ne120np4_TO_gland5km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/ne120np4/map_ne120np4_TO_gland5km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_ne120np4_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland5km/map_gland5km_TO_ne120np4_aave.160329.nc</GLC2LND_SMAPNAME>
     </gridmap>
 
     <!-- ====================  -->
@@ -1458,6 +1917,48 @@
       <LND2GLC_SMAPNAME>cpl/gridmaps/T31/map_T31_TO_gland20km_blin.150514.nc</LND2GLC_SMAPNAME>
       <GLC2LND_FMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_T31_aave.150514.nc</GLC2LND_FMAPNAME>
       <GLC2LND_SMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_T31_aave.150514.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="360x720cru" glc_grid="gland20" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/360x720/map_360x720_TO_gland20km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/360x720/map_360x720_TO_gland20km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_360x720_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_360x720_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="10x15" glc_grid="gland20" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/fv10x15/map_fv10x15_TO_gland20km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/fv10x15/map_fv10x15_TO_gland20km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_fv10x15_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_fv10x15_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="4x5" glc_grid="gland20" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/fv4x5/map_fv4x5_TO_gland20km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/fv4x5/map_fv4x5_TO_gland20km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_fv4x5_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_fv4x5_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="ne16np4" glc_grid="gland20" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/ne16np4/map_ne16np4_TO_gland20km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/ne16np4/map_ne16np4_TO_gland20km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_ne16np4_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_ne16np4_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="ne30np4" glc_grid="gland20" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/ne30np4/map_ne30np4_TO_gland20km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/ne30np4/map_ne30np4_TO_gland20km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_ne30np4_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_ne30np4_aave.160329.nc</GLC2LND_SMAPNAME>
+    </gridmap>
+
+    <gridmap lnd_grid="ne120np4" glc_grid="gland20" >
+       <LND2GLC_FMAPNAME>cpl/gridmaps/ne120np4/map_ne120np4_TO_gland20km_aave.160329.nc</LND2GLC_FMAPNAME>
+       <LND2GLC_SMAPNAME>cpl/gridmaps/ne120np4/map_ne120np4_TO_gland20km_blin.160329.nc</LND2GLC_SMAPNAME>
+       <GLC2LND_FMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_ne120np4_aave.160329.nc</GLC2LND_FMAPNAME>
+       <GLC2LND_SMAPNAME>cpl/gridmaps/gland20km/map_gland20km_TO_ne120np4_aave.160329.nc</GLC2LND_SMAPNAME>
     </gridmap>
 
     <!-- ======================================================== -->

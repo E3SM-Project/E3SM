@@ -11,7 +11,7 @@ import re
 from ConfigParser import SafeConfigParser as config_parser
 
 # Return this error code if the scripts worked but tests failed
-TESTS_FAILED_ERR_CODE = 165
+TESTS_FAILED_ERR_CODE = 100
 logger = logging.getLogger(__name__)
 
 def expect(condition, error_msg, exc_type=SystemExit):
@@ -233,6 +233,8 @@ def parse_test_name(test_name):
     ['ERS', ['D'], 'fe12_123', 'JGF', None, None, None]
     >>> parse_test_name('ERS_D_P1.fe12_123.JGF')
     ['ERS', ['D', 'P1'], 'fe12_123', 'JGF', None, None, None]
+    >>> parse_test_name('SMS_D_Ln9_Mmpi-serial.f19_g16_rx1.A')
+    ['SMS', ['D', 'Ln9', 'Mmpi-serial'], 'f19_g16_rx1', 'A', None, None, None]
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler')
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', None]
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test-mods')
@@ -476,10 +478,10 @@ def get_project():
     """
     Hierarchy for choosing PROJECT:
     1. Environment variable PROJECT
-    2 environment variable ACCOUNT   (this is for backward compatibility)
-    3. File $HOME/.cime/config   (this is new)
-    4 File $HOME/.cesm_proj  (again - backward compatibility)
-    5 config_machines.xml
+    2  Environment variable ACCOUNT  (this is for backward compatibility)
+    3. File $HOME/.cime/config       (this is new)
+    4  File $HOME/.cesm_proj         (this is for backward compatibility)
+    5  config_machines.xml
     """
     project = os.environ.get("PROJECT")
     if (project is not None):
@@ -654,3 +656,19 @@ def convert_to_seconds(time_str):
 
     return result
 
+def appendStatus(msg, caseroot='.', sfile="CaseStatus"):
+    """
+    Append msg to sfile in caseroot
+    """
+    ctime = ""
+    # Don't put the time stamp in TestStatus
+    if sfile != "TestStatus":
+        ctime = time.strftime("%Y-%m-%d %H:%M:%S: ")
+    with open(os.path.join(caseroot,sfile), "a") as fd:
+        fd.write(ctime + msg + "\n")
+
+def does_file_have_string(filepath, text):
+    """
+    Does the text string appear in the filepath file
+    """
+    return os.path.isfile(filepath) and text in open(filepath).read()

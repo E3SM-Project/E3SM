@@ -812,7 +812,7 @@ sub setCESMRun()
         }
     }
 
-    $self->{'mpirun'} .= "qx( " . $executableString . " " . $mpiargstring .  " " . $defaultrunsuffix . ");";
+    $self->{'mpirun'} .= "run_cmd( " . $executableString . " " . $mpiargstring .  " " . $defaultrunsuffix . ")";
 }
 
 

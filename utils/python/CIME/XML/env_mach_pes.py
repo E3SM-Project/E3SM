@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class EnvMachPes(EnvBase):
 
-    def __init__(self, case_root=os.getcwd(), infile="env_mach_pes.xml"):
+    def __init__(self, case_root=None, infile="env_mach_pes.xml"):
         """
         initialize an object interface to file env_mach_pes.xml in the case directory
         """
@@ -24,9 +24,9 @@ class EnvMachPes(EnvBase):
         if "ROOTPE" in vid and value < 0:
             value = -1*value*self.get_value("PES_PER_NODE")
         return value
-#
-# We need a set value until we full transition from perl
-#
+    #
+    # We need a set value until we full transition from perl
+    #
 
     def _set_value(self, node, value, vid=None, subgroup=None, ignore_type=False):
         if vid is None:

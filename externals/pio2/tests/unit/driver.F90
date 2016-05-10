@@ -15,7 +15,7 @@ Program pio_unit_test_driver
 
   ! local variables
   character(len=str_len) :: err_msg
-  integer :: fail_cnt, test_cnt, ios, test_id, ierr, test_val
+  integer :: fail_cnt, test_cnt, ios, test_id, ierr, test_val 
   logical :: ltest_netcdf, ltest_pnetcdf
   logical :: ltest_netcdf4p, ltest_netcdf4c
   namelist/piotest_nml/  ltest_netcdf,     &
@@ -149,14 +149,12 @@ Program pio_unit_test_driver
         if (master_task) write(*,"(3x,A,1x)") "testing PIO_createfile..."
         call test_create(test_id, err_msg)
         call parse(err_msg, fail_cnt)
-           print *,__FILE__,__LINE__,fail_cnt
 
         ! test_open()
 
         if (master_task) write(*,"(3x,A,I3)", advance="no") "testing PIO_openfile...",test_id
         call test_open(test_id, err_msg)
         call parse(err_msg, fail_cnt)
-           print *,__FILE__,__LINE__,fail_cnt
 
         call mpi_barrier(mpi_comm_world,ierr)
         ! netcdf-specific tests
@@ -165,12 +163,17 @@ Program pio_unit_test_driver
            if (master_task) write(*,"(3x,A,1x)", advance="no") "testing PIO_redef..."
            call test_redef(test_id, err_msg)
            call parse(err_msg, fail_cnt)
-           print *,__FILE__,__LINE__,fail_cnt
 
            if (master_task) write(*,"(3x,A,1x)", advance="no") "testing PIO_enddef..."
            call test_enddef(test_id, err_msg)
+           print *, 'err_msg =', err_msg, ' fail_cnt = ', fail_cnt
            call parse(err_msg, fail_cnt)
-           print *,__FILE__,__LINE__,fail_cnt
+
+           if (master_task) write(*,"(3x,A,1x)", advance="no") "testing PIO netCDF-4 functions..."
+           print *, 'err_msg =', err_msg, ' fail_cnt = ', fail_cnt
+           call test_nc4(test_id, err_msg)
+           print *, 'err_msg =', err_msg, ' fail_cnt = ', fail_cnt
+           call parse(err_msg, fail_cnt)
         end if
 
 
@@ -193,7 +196,7 @@ Program pio_unit_test_driver
   call MPI_Finalize(ierr)
   if(fail_cnt>0) then
      stop 1
-  else
+  else	 
      stop 0
   endif
 Contains

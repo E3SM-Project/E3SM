@@ -16,24 +16,31 @@ _TEST_SUITES = {
                    ),
 
     "acme_test_only_pass" : (None,
-                   ("TESTRUNPASS_P1.f19_g16_rx1.A",
-                    "TESTRUNPASS_P1.ne30_g16_rx1.A",
-                    "TESTRUNPASS_P1.f45_g37_rx1.A")
+                   ("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A",
+                    "TESTRUNPASS_Mmpi-serial.ne30_g16_rx1.A",
+                    "TESTRUNPASS_Mmpi-serial.f45_g37_rx1.A")
                    ),
 
     "acme_test_only_slow_pass" : (None,
-                   ("TESTRUNSLOWPASS_P1.f19_g16_rx1.A",
-                    "TESTRUNSLOWPASS_P1.ne30_g16_rx1.A",
-                    "TESTRUNSLOWPASS_P1.f45_g37_rx1.A")
+                   ("TESTRUNSLOWPASS_Mmpi-serial.f19_g16_rx1.A",
+                    "TESTRUNSLOWPASS_Mmpi-serial.ne30_g16_rx1.A",
+                    "TESTRUNSLOWPASS_Mmpi-serial.f45_g37_rx1.A")
                    ),
 
     "acme_test_only" : (None,
                    ("TESTBUILDFAIL.f19_g16_rx1.A",
-                    "TESTRUNFAIL_P1.f19_g16_rx1.A",
-                    "TESTRUNPASS_P1.f19_g16_rx1.A")
+                    "TESTRUNFAIL_Mmpi-serial.f19_g16_rx1.A",
+                    "TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A",
+                    "TESTMEMLEAKFAIL_Mmpi-serial.f19_g16.X",
+                    "TESTMEMLEAKPASS_Mmpi-serial.f19_g16.X")
                    ),
 
-    "acme_land_developer" : (None,
+    "acme_runoff_developer" : (None,
+                             ("SMS.f19_f19.IM1850CLM45CN",
+                              "SMS.f19_f19.IMCLM45")
+                             ),
+
+    "acme_land_developer" : ("acme_runoff_developer",
                              ("SMS.f19_f19.I1850CLM45CN",
                               "SMS.f09_g16.I1850CLM45CN",
                               "SMS.hcru_hcru.I1850CRUCLM45CN")
@@ -44,10 +51,15 @@ _TEST_SUITES = {
                              "ERS.ne16_ne16.FC5PLMOD",
                              "ERS.ne16_ne16.FC5CLBMG2",
                              "ERS.ne16_ne16.FC5CLBMG2MAM4",
+                             "ERS.ne16_ne16.FC5CLBMG2MAM4MOM",
                              "ERS.ne16_ne16.FC5CLBMG2MAM4RESUS",
+                             "ERS.ne16_ne16.FC5CLBMG2LINMAM4RESUSMOM",
                              "ERS.f19_g16.FC5CLBMG2MAM4RESUSBC",
                              "ERS.f19_g16.FC5CLBMG2MAM4RESUSMOMBC",
-                             "ERS.f19_g16.FC5ATMMOD")
+                             "ERS.f19_g16.FC5ATMMOD",
+                             "SMS.f19_g16.FC5ATMMOD",
+                             "SMS.f19_g16.FC5ATMMODCOSP",
+                             "SMS_D.f19_g16.FC5ATMMODCOSP")
                             ),
 
     "cime_developer" : (None,
@@ -56,7 +68,8 @@ _TEST_SUITES = {
                              "SEQ_Ld3.f09_g16.X",
                              "ERS_Ld3.ne30_g16_rx1.A",
                              "ERS_N2_Ld3.f19_g16_rx1.A",
-                             "ERR_Ld3.f45_g37_rx1.A")
+                             "ERR_Ld3.f45_g37_rx1.A",
+                             "SMS_D_Ln9_Mmpi-serial.f19_g16_rx1.A")
                             ),
 
     "acme_developer" : ("acme_land_developer",
@@ -71,13 +84,16 @@ _TEST_SUITES = {
                          "ERS_IOP4p.f19_g16_rx1.A",
                          "ERS_IOP4p.ne30_g16_rx1.A",
                          ("ERP_Ln9.ne30_ne30.FC5", "cam-outfrq9s"),
+                         "HOMME_P24.f19_g16_rx1.A",
                          "NCK.f19_g16_rx1.A",
                          "PEA_P1_M.f45_g37_rx1.A",
                          "SMS.ne30_f19_g16_rx1.A",
                          "ERS_Ld5.T62_mpas120.C_MPAS_NORMAL_YEAR",
                          "ERS.f09_g16_g.MPASLI_ONLY",
                          "SMS.T62_mpas120_gis20.MPAS_LISIO_TEST",
-                         "SMS.f09_g16_a.IGCLM45_MLI")
+                         "SMS.f09_g16_a.IGCLM45_MLI",
+                         "SMS_D_Ln1.ne30_ne30.FC5AV1C",
+                         "SMS_D_Ld1.ne16_ne16.FC5ATMMOD")
                         ),
 
     "acme_integration" : ("acme_developer",
@@ -99,11 +115,15 @@ _TEST_SUITES = {
                            "PFS.ne30_ne30.FC5",
                            "SEQ_IOP.f19_g16.X",
                            "SEQ.f45_g37.B1850C5",
-                           "SMS.ne30_m120.A_B1850CN",
+                           "SMS.ne30_oEC.A_WCYCL2000",
                            "SMS.ne16_ne16.FC5AQUAP",
                            "SMS_D.f19_g16.B20TRC5",
                            "SMS_D_Ld3.ne16_ne16.FC5",
-                           "SMS.f09_g16_a.MPASLIALB_ONLY")
+                           "SMS.f09_g16_a.MPASLIALB_ONLY",
+                           "ERS.ne16_ne16.FC5ATMMOD",
+                           "SMS_Ld1.ne30_ne30.FC5AV1F",
+                           "SMS_Ld1.ne30_ne30.FC5AV1C",
+                           "SMS_D_Ld1.ne16_ne16.FC5ATMMODCOSP")
                           ),
 }
 

@@ -60,6 +60,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--submit-to-cdash", action="store_true",
                         help="Send results to CDash")
 
+    parser.add_argument("--no-batch", action="store_true",
+                        help="Do not use batch system even if on batch machine")
+
     parser.add_argument("-c", "--cdash-build-name",
                         help="Build name to use for CDash submission. Default will be <TEST_SUITE>_<BRANCH>_<COMPILER>")
 
@@ -86,7 +89,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     expect(not (args.cdash_project is not wait_for_tests.ACME_MAIN_CDASH and not args.submit_to_cdash),
            "Does not make sense to use --cdash-project without --submit-to-cdash")
 
-    return args.generate_baselines, args.submit_to_cdash, args.baseline_name, args.cdash_build_name, args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare
+    return args.generate_baselines, args.submit_to_cdash, args.no_batch, args.baseline_name, args.cdash_build_name, args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare
 
 ###############################################################################
 def cleanup_queue(set_of_jobs_we_created):
@@ -104,7 +107,8 @@ def cleanup_queue(set_of_jobs_we_created):
             logging.warning("FAILED to clean up leftover jobs!")
 
 ###############################################################################
-def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
+def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
+                        baseline_name,
                         arg_cdash_build_name, cdash_project,
                         arg_test_suite,
                         cdash_build_group, baseline_compare):
@@ -114,7 +118,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
     """
     start_time = time.time()
 
-    use_batch = _MACHINE.has_batch_system()
+    use_batch = _MACHINE.has_batch_system() and not no_batch
     compiler = _MACHINE.get_default_compiler()
     test_suite = _MACHINE.get_value("TESTS")
     scratch_root = _MACHINE.get_value("CESMSCRATCHROOT")
@@ -202,9 +206,11 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, baseline_name,
         elif (baseline_compare == "yes"):
             baseline_args = "-c -b %s" % baseline_name
 
+        batch_args = "--no-batch" if no_batch else ""
+
         test_id = "%s_%s" % (test_id_root, CIME.utils.get_utc_timestamp())
-        create_test_cmd = "./create_test %s --test-root %s -t %s %s" % \
-                          (test_suite, test_root, test_id, baseline_args)
+        create_test_cmd = "./create_test %s --test-root %s -t %s %s %s" % \
+                          (test_suite, test_root, test_id, baseline_args, batch_args)
 
         if (not wait_for_tests.SIGNAL_RECEIVED):
             create_test_stat = CIME.utils.run_cmd(create_test_cmd, from_dir=CIME.utils.get_scripts_root(),
@@ -256,10 +262,10 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    generate_baselines, submit_to_cdash, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare = \
+    generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare)
+    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare)
              else CIME.utils.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################

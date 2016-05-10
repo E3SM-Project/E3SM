@@ -13,13 +13,16 @@ shr_reprosum_mod.o: shr_reprosum_mod.F90
 
 # These routines benefit from -qnostrict without violating the bfb test
 PERFOBJS=\
-prim_advection_mod.o \
-edge_mod.o \
-derivative_mod.o \
-bndry_mod.o \
+prim_advection_mod_base.o \
+vertremap_mod_base.o \
+edge_mod_base.o \
+derivative_mod_base.o \
+bndry_mod_base.o \
 prim_advance_mod.o \
 uwshcu.o \
 wetdep.o
+
+
 ifeq ($(DEBUG),FALSE)
   $(PERFOBJS): %.o: %.F90
 	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qnostrict  $<
@@ -49,7 +52,7 @@ clmtypeInitMod.o: clmtypeInitMod.F90
 # this takes 2 mins to compile with -qsmp=omp
 clmtype.o: clmtype.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -qsmp=noopt $<
-
+ 
 # disable inlining (some issues with pure functions therein)
 advance_xm_wpxp_module.o: advance_xm_wpxp_module.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -Q! $<

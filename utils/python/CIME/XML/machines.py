@@ -225,7 +225,7 @@ class Machines(GenericXML):
         >>> machobj.is_valid_MPIlib("mpi-serial")
         True
         """
-        if self.get_field_from_list("MPILIBS", mpilib) is not None:
+        if mpilib == "mpi-serial" or self.get_field_from_list("MPILIBS", mpilib) is not None:
             return True
         return False
 
@@ -309,6 +309,7 @@ class Machines(GenericXML):
         best_num_matched = -1
         default_match = None
         best_num_matched_default = -1
+        args = {}
         for mpirun_node in mpirun_nodes:
             xml_attribs = mpirun_node.attrib
             all_match = True
@@ -335,6 +336,12 @@ class Machines(GenericXML):
                 expect(key in attribs, "Unhandled MPI property '%s'" % key)
 
             if all_match:
+                arg_node = self.get_optional_node("arguments", root=mpirun_node)
+                if arg_node is not None:
+                    arg_nodes = self.get_nodes("arg", root=arg_node)
+                    for arg_node in arg_nodes:
+                        arg_value = batch_maker.transform_vars(arg_node.text, arg_node.get("default"))
+                        args[arg_node.get("name")] = arg_value
                 if is_default:
                     if matches > best_num_matched_default:
                         default_match = mpirun_node
@@ -349,15 +356,6 @@ class Machines(GenericXML):
 
         the_match = best_match if best_match is not None else default_match
 
-        args = {}
-        arg_node = self.get_optional_node("arguments", root=the_match)
-        if arg_node is not None:
-            arg_nodes = self.get_nodes("arg", root=arg_node)
-            for arg_node in arg_nodes:
-                arg_value = self.get_resolved_value(arg_node.text)
-                arg_value = batch_maker.transform_vars(arg_value, arg_node.get("default"))
-
-                args[arg_node.get("name")] = arg_value
 
         executable = self.get_node("executable", root=the_match)
 

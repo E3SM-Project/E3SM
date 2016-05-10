@@ -80,6 +80,8 @@
 <wv_sat_use_tables>.false.</wv_sat_use_tables>
 <wv_sat_table_spacing>1.0D0</wv_sat_table_spacing>
 
+<tfreeze_option>minus1p8</tfreeze_option>
+
 <timing_dir>./timing</timing_dir>
 
 <tchkpt_dir>./timing/checkpoints</tchkpt_dir>
@@ -149,6 +151,7 @@
 <profile_detail_limit TIMER_DETAIL="pos">$TIMER_DETAIL</profile_detail_limit>
 
 <profile_ovhd_measurement>.false.</profile_ovhd_measurement>
+<profile_add_detail>.false.</profile_add_detail>
 <profile_outpe_num>1</profile_outpe_num>
 <profile_papi_enable>.false.</profile_papi_enable>
 

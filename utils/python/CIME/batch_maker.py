@@ -15,7 +15,7 @@ of those based on the machine.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, run_cmd, get_model, convert_to_seconds
+from CIME.utils import expect, run_cmd, get_model, convert_to_seconds, get_project
 from CIME.case import Case
 from CIME.XML.env_batch import EnvBatch
 from CIME.XML.batch import Batch
@@ -114,7 +114,7 @@ class BatchMaker(object):
             return
 
         # Make sure to check default queue first.
-        all_queues = list()
+        all_queues = []
         all_queues.append( self.config_machines_parser.get_default_queue())
         all_queues = all_queues + self.config_machines_parser.get_all_queues()
         for queue in all_queues:
@@ -150,7 +150,7 @@ class BatchMaker(object):
         # if we didn't find a walltime previously, use the default.
         if not self.wall_time:
             self.wall_time = self.config_machines_parser.get_default_walltime()
-            if self.wall_time:
+            if self.wall_time is not None:
                 self.wall_time = self.wall_time.text
             else:
                 self.wall_time = "0"
@@ -165,7 +165,7 @@ class BatchMaker(object):
         if self.env_batch.get_value("PROJECT_REQUIRED", subgroup=self.job):
             self.project = self.env_batch.get_value("PROJECT", subgroup=self.job)
             if not self.project:
-                project = find_project()
+                project = get_project()
                 self.env_batch.set_value("PROJECT", project, subgroup=self.job)
         else:
             self.project = None
@@ -205,7 +205,7 @@ within model's Machines directory, and add a batch system type for this machine
 
         mpi_arg_string = " ".join(args.values())
 
-        self.mpirun = "qx(%s %s %s);" % (executable if executable is not None else "", mpi_arg_string, default_run_suffix)
+        self.mpirun = "cmd =\"%s %s %s \" " % (executable if executable is not None else "", mpi_arg_string, default_run_suffix)
 
     def _set_batch_directives(self):
         """
@@ -231,18 +231,21 @@ within model's Machines directory, and add a batch system type for this machine
             m = directive_re.search(text)
             variable = m.groups()[0]
             whole_match = m.group()
-
             if hasattr(self, variable.lower()) and getattr(self, variable.lower()) is not None:
                 repl = getattr(self, variable.lower())
                 text = text.replace(whole_match, str(repl))
-            elif self.case.get_value(variable.upper()) is not None:
-                repl = self.case.get_value(variable.upper())
+            elif self.case.get_value(variable.upper(),subgroup=self.job) is not None:
+                repl = self.case.get_value(variable.upper(),subgroup=self.job)
                 text = text.replace(whole_match, str(repl))
             elif default is not None:
                 text = text.replace(whole_match, default)
             else:
-                logger.warn("Could not replace variable '%s'" % variable)
-                text = text.replace(whole_match, "")
+                # If no queue exists, then the directive '-q' by itself will cause an error
+                if text.find('-q {{ queue }}')>0:
+                    text = ""
+                else:
+                    logger.warn("Could not replace variable '%s'" % variable)
+                    text = text.replace(whole_match, "")
 
         return text
 
@@ -287,11 +290,4 @@ def get_batch_maker(job, case=None):
     else:
         return batch_maker
 
-
-def find_project():
-    project = None
-    for envvar in ("PROJECT", "ACCOUNT"):
-        project = os.environ.get(envvar)
-        if project is not None:
-            return project
 
