@@ -24,7 +24,7 @@ class Files(EntryID):
     def get_components(self, nodename, resolved=True):
         node = self.get_optional_node("entry", {"id":nodename})
         valnodes = self.get_nodes("value", root=node)
-        values = list();
+        values = []
         for valnode in valnodes:
             value = valnode.get("component")
             values.append(value)

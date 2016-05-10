@@ -574,7 +574,7 @@
 
 <machine MACH="blues">
          <DESC>ANL/LCRC Linux Cluster</DESC>
-         <NODENAME_REGEX>blogin</NODENAME_REGEX>
+         <NODENAME_REGEX>(blogin|^b\d)</NODENAME_REGEX>
          <TESTS>acme_integration,acme_developer</TESTS>
          <COMPILERS>gnu,intel</COMPILERS>
          <MPILIBS>mvapich</MPILIBS>
@@ -598,6 +598,9 @@
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
 	 <PROJECT>ACME</PROJECT>
          <batch_system type="pbs" version="x.y">
+	   <queues>
+	     <queue>shared</queue>
+           </queues>
            <walltimes>
              <walltime default="true">15:00</walltime>
            </walltimes>
@@ -634,21 +637,21 @@
     </module_system>
     <environment_variables compiler="gnu">
       <env name="NETCDFROOT">/soft/netcdf_serial/4.3.3.1/gnu-5.2</env>
-      <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm</env>
       <env name="LD_LIBRARY_PATH">/soft/mvapich2/2.2b_psm/gnu-5.2/lib:/soft/netcdf_serial/4.3.3.1/gnu-5.2/lib:/soft/gcc/5.2.0/lib64:/soft/gcc/5.2.0/lib/gcc/x86_64-redhat-linux/5.2.0:/soft/python/2.7.3/lib:/soft/gcc/4.4.2/lib64:/soft/gcc/4.4.2/lib:/soft/lcrc/lib:/usr/lib64:/usr/lib:/soft/mvapich2/1.4-gcc-4.4.2/lib:/soft/tau/2.20.2/tau_latest/x86_64/lib</env>
     </environment_variables>
+    <environment_variables compiler="gnu" mpilib="mvapich">
+      <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm</env>
+    </environment_variables>
+
     <environment_variables compiler="intel">
       <env name="NETCDFROOT">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1</env>
       <env name="NETCDF_INCLUDES">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/include</env>
       <env name="NETCDF_LIBS">/soft/climate/netcdf/4.3.3.1c-4.2cxx-4.4.2f-serial/intel-15.0.1/lib</env>
-      <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/intel-15.0.1/mvapich2-2.2a-intel-15.0</env>
       <env name="PATH">$NETCDFROOT/bin:$PATH</env>
       <env name="LD_LIBRARY_PATH">$NETCDFROOT/lib:/soft/intel/15.0.1/mkl/lib/intel64:$LD_LIBRARY_PATH</env>
     </environment_variables>
-
-    <environment_variables compiler="gnu">
-      <env name="NETCDFROOT">/soft/netcdf_serial/4.3.3.1/gnu-5.2</env>
-      <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/gcc-5.2/mvapich2-2.2b-gcc-5.2-psm</env>
+    <environment_variables compiler="intel" mpilib="mvapich">
+      <env name="PNETCDFROOT">/soft/climate/pnetcdf/1.6.1/intel-15.0.1/mvapich2-2.2a-intel-15.0</env>
     </environment_variables>
 
 </machine>
@@ -1173,7 +1176,10 @@
   <PES_PER_NODE>15</PES_PER_NODE>
   <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
   <batch_system type="none" version="0.0"/>
-  <mpirun>
+  <mpirun >
+    <executable>mpirun.lsf</executable>
+  </mpirun>
+  <mpirun mpilib="mpi-serial">
     <executable></executable>
   </mpirun>
   <module_system type="module">

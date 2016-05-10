@@ -134,7 +134,9 @@ class B_TestCreateNewcase(unittest.TestCase):
 ###############################################################################
     def setUp(self):
         self._testroot = MACHINE.get_value("CESMSCRATCHROOT")
-        self._testdir = os.path.join(self._testroot, tempfile.mktemp())
+        self._testdir = os.path.join(self._testroot, 'scripts_regression_tests.testcreatenewcase')
+        if os.path.exists(self._testdir):
+            shutil.rmtree(self._testdir)
         self._do_teardown = False
 
     def test_createnewcase(self):
@@ -455,7 +457,7 @@ class E_TestSystemTest(TestCreateTestCommon):
     ###########################################################################
         # exclude the MEMLEAK tests here.
         tests = update_acme_tests.get_full_test_names(["acme_test_only",
-                                                       "^TESTMEMLEAKFAIL_P1.f19_g16.X", "^TESTMEMLEAKPASS_P1.f19_g16.X"],
+                                                       "^TESTMEMLEAKFAIL_Mmpi-serial.f19_g16.X", "^TESTMEMLEAKPASS_Mmpi-serial.f19_g16.X"],
                                                       self._machine, self._compiler)
         self.assertEqual(len(tests), 3)
         ct = SystemTest(tests)
@@ -654,7 +656,7 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
 class TestBlessTestResults(TestCreateTestCommon):
 ###############################################################################
 
-    _test_name = "TESTRUNDIFF_P1.f19_g16_rx1.A"
+    _test_name = "TESTRUNDIFF_Mmpi-serial.f19_g16_rx1.A"
 
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
@@ -811,7 +813,7 @@ class TestCimeCase(TestCreateTestCommon):
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
         casedir = os.path.join(self._testroot,
-                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
         case = Case(casedir)
 

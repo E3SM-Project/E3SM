@@ -34,6 +34,17 @@ class EntryID(GenericXML):
             value = ""
         return value
 
+    def set_default_value(self, vid, val, attributes={}):
+        node = self.get_optional_node("entry", {"id":vid})
+        if node is not None:
+            default_node = self.get_optional_node("default_value", root=node)
+            if default_node is not None:
+                default_node.text = val
+            else:
+                logger.warn("Called set_default_value on a node without default_value field")
+
+        return val
+
     def get_value_match(self, vid, attributes={}):
         # Handle this case:
         # <entry id ...>

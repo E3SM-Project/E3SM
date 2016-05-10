@@ -225,7 +225,7 @@ class Machines(GenericXML):
         >>> machobj.is_valid_MPIlib("mpi-serial")
         True
         """
-        if self.get_field_from_list("MPILIBS", mpilib) is not None:
+        if mpilib == "mpi-serial" or self.get_field_from_list("MPILIBS", mpilib) is not None:
             return True
         return False
 

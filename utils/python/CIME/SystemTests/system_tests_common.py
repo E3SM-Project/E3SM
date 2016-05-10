@@ -12,13 +12,14 @@ import CIME.build as build
 logger = logging.getLogger(__name__)
 
 class SystemTestsCommon(object):
-    def __init__(self, caseroot=os.getcwd(), case=None):
+    def __init__(self, caseroot=None, case=None):
         """
         initialize a CIME system test object, if the file LockedFiles/env_run.orig.xml
         does not exist copy the current env_run.xml file.  If it does exist restore values
         changed in a previous run of the test.
         """
-        print caseroot
+        if caseroot is None:
+            caseroot = os.getcwd()
         self._caseroot = caseroot
         self._runstatus = None
         # Needed for sh scripts
@@ -36,7 +37,7 @@ class SystemTestsCommon(object):
                 os.stat(lockedfiles)
             except:
                 os.mkdir(lockedfiles)
-            shutil.copy("env_run.xml",
+            shutil.copy(os.path.join(caseroot,"env_run.xml"),
                         os.path.join(lockedfiles, "env_run.orig.xml"))
 
         self._case.set_initial_test_values()
@@ -49,7 +50,7 @@ class SystemTestsCommon(object):
 
 
     def run(self):
-        rc, out, err = run_cmd("./case.run", ok_to_fail=True)
+        rc, out, err = run_cmd("./case.run --caseroot %s"%self._caseroot, ok_to_fail=True)
         if rc == 0 and self.coupler_log_indicates_run_complete():
             self._runstatus = "PASS"
         else:
@@ -91,7 +92,7 @@ class SystemTestsCommon(object):
         Examine memory usage as recorded in the cpl log file and look for unexpected
         increases.
         """
-        memlist = list()
+        memlist = []
         meminfo = re.compile(".*model date =\s+(\w+).*memory =\s+(\d+\.?\d+).*highwater")
         if cpllog is not None:
             with gzip.open(cpllog, "rb") as f:

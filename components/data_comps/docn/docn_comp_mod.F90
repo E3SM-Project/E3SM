@@ -6,6 +6,7 @@ module docn_comp_mod
 ! !USES:
 
   use shr_const_mod
+  use shr_frz_mod, only: shr_frz_freezetemp
   use shr_sys_mod
   use shr_kind_mod     , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, &
                                CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
@@ -55,7 +56,7 @@ module docn_comp_mod
   integer(IN)   :: logunit               ! logging unit number
   integer       :: inst_index            ! number of current instance (ie. 1)
   character(len=16) :: inst_name         ! fullname of current instance (ie. "lnd_0001")
-  character(len=16) :: inst_suffix       ! char string associated with instance
+  character(len=16) :: inst_suffix       ! char string associated with instance 
                                          ! (ie. "_0001" or "")
   character(CL) :: ocn_mode              ! mode
   integer(IN)   :: dbug = 0              ! debug level (higher is more)
@@ -83,6 +84,7 @@ module docn_comp_mod
   type(mct_rearr) :: rearr
   type(mct_avect) :: avstrm   ! av of data from stream
   real(R8), pointer :: somtp(:)
+  real(R8), pointer :: tfreeze(:)
   integer , pointer :: imask(:)
   character(len=*),parameter :: flds_strm = 'strm_h:strm_qbot'
 
@@ -273,7 +275,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
     call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
-
+ 
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)
     if (force_prognostic_true) then
@@ -320,7 +322,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
        ocn_present = .true.
        call seq_timemgr_EClockGetData( EClock, calendar=calendar )
        iosystem => shr_pio_getiosys(trim(inst_name))
-
+       
        call shr_strdata_pioinit(SDOCN, iosystem, shr_pio_getiotype(trim(inst_name)))
 
        if (scmmode) then
@@ -426,6 +428,7 @@ subroutine docn_comp_init( EClock, cdata, x2o, o2x, NLFilename )
     kqbot = mct_aVect_indexRA(avstrm,'strm_qbot')
 
     allocate(somtp(lsize))
+    allocate(tfreeze(lsize))
     allocate(imask(lsize))
 
     kmask = mct_aVect_indexRA(ggrid%data,'mask')
@@ -555,7 +558,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
    type(seq_infodata_type), pointer :: infodata
 
    real(R8), parameter     :: swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) &
-      /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
+      /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8) 
    character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
    character(*), parameter :: F04   = "('(docn_comp_run) ',2a,2i8,'s')"
    character(*), parameter :: subName = "(docn_comp_run) "
@@ -643,7 +646,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
 
    select case (trim(ocn_mode))
 
-   case('COPYALL')
+   case('COPYALL') 
       ! do nothing extra
 
    case('SSTDATA')
@@ -686,13 +689,14 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
             o2x%rAttr(kq,n) = 0.0_R8
          enddo
       else   ! firstcall
+         tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz
          do n = 1,lsize
          if (imask(n) /= 0) then
             !--- pull out h from av for resuse below ---
             hn = avstrm%rAttr(kh,n)
             !--- compute new temp ---
             o2x%rAttr(kt,n) = somtp(n) + &
-               (x2o%rAttr(kswnet,n) + &  ! shortwave
+               (x2o%rAttr(kswnet,n) + &  ! shortwave 
                 x2o%rAttr(klwup ,n) + &  ! longwave
                 x2o%rAttr(klwdn ,n) + &  ! longwave
                 x2o%rAttr(ksen  ,n) + &  ! sensible
@@ -702,8 +706,8 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
                 (x2o%rAttr(ksnow,n)+x2o%rAttr(krofi,n))*latice) * &  ! latent by prec and roff
                 dt/(cpsw*rhosw*hn)
              !--- compute ice formed or melt potential ---
-            o2x%rAttr(kq,n) = (TkFrzSw - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0
-            o2x%rAttr(kt,n) = max(TkFrzSw,o2x%rAttr(kt,n))                    ! reset temp
+            o2x%rAttr(kq,n) = (tfreeze(n) - o2x%rAttr(kt,n))*(cpsw*rhosw*hn)/dt  ! ice formed q>0
+            o2x%rAttr(kt,n) = max(tfreeze(n),o2x%rAttr(kt,n))                    ! reset temp
             somtp(n) = o2x%rAttr(kt,n)                                        ! save temp
          endif
          enddo
@@ -754,7 +758,7 @@ subroutine docn_comp_run( EClock, cdata,  x2o, o2x)
       call shr_sys_flush(logunit)
    end if
    firstcall = .false.
-
+      
    call shr_file_setLogUnit (shrlogunit)
    call shr_file_setLogLevel(shrloglev)
    call shr_sys_flush(logunit)
@@ -793,11 +797,11 @@ subroutine docn_comp_final()
 
    call t_startf('DOCN_FINAL')
    if (my_task == master_task) then
-      write(logunit,F91)
+      write(logunit,F91) 
       write(logunit,F00) trim(myModelName),': end of main integration loop'
-      write(logunit,F91)
+      write(logunit,F91) 
    end if
-
+      
    call t_stopf('DOCN_FINAL')
 
 end subroutine docn_comp_final

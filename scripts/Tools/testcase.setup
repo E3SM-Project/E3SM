@@ -546,6 +546,7 @@ my $testcase_end = <<'END_TEST';
 	 rm -r -f $EXEROOT*/glc          >& /dev/null
 	 rm -r -f $EXEROOT*/wav          >& /dev/null
 	 rm -r -f $EXEROOT*/rof          >& /dev/null
+	 rm -r -f $EXEROOT*/esp          >& /dev/null
 	 rm -r -f $EXEROOT*/cpl          >& /dev/null
 	 rm -r -f $EXEROOT*/cesm         >& /dev/null
 	 rm -r -f $EXEROOT*/csm_share    >& /dev/null

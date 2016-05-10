@@ -114,10 +114,18 @@ class BatchMaker(object):
             return
 
         # Make sure to check default queue first.
-        queue_node = self.config_machines_parser.select_best_queue(self.fullsum)
-        if queue_node is not None:
-            self.queue = queue_node.text
-            self.wall_time_max = queue_node.get("walltimemax")
+        all_queues = []
+        all_queues.append( self.config_machines_parser.get_default_queue())
+        all_queues = all_queues + self.config_machines_parser.get_all_queues()
+        for queue in all_queues:
+            if queue is not None:
+                jobmin = queue.get("jobmin")
+                jobmax = queue.get("jobmax")
+                # if the fullsum is between the min and max # jobs, then use this queue.
+                if jobmin is not None and jobmax is not None and self.fullsum >= int(jobmin) and self.fullsum <= int(jobmax):
+                    self.queue = queue.text
+                    self.wall_time_max = queue.get("walltimemax")
+                    break
 
         if self.queue:
             self.case.set_value("JOB_QUEUE", self.queue, subgroup=self.job)
@@ -226,8 +234,8 @@ within model's Machines directory, and add a batch system type for this machine
             if hasattr(self, variable.lower()) and getattr(self, variable.lower()) is not None:
                 repl = getattr(self, variable.lower())
                 text = text.replace(whole_match, str(repl))
-            elif self.case.get_value(variable.upper()) is not None:
-                repl = self.case.get_value(variable.upper())
+            elif self.case.get_value(variable.upper(),subgroup=self.job) is not None:
+                repl = self.case.get_value(variable.upper(),subgroup=self.job)
                 text = text.replace(whole_match, str(repl))
             elif default is not None:
                 text = text.replace(whole_match, default)

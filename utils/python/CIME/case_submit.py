@@ -33,6 +33,20 @@ def submit(caseroot, job=None, resubmit=None, no_batch=False, prereq_jobid=None)
 
     cimeroot = case.get_value("CIMEROOT")
     os.environ["CIMEROOT"] = cimeroot
+    # if case.submit is called with the no_batch flag then we assume that this
+    # flag will stay in effect for the duration of the RESUBMITs
+    if resubmit is None:
+        env_batch = case._get_env("batch")
+        if no_batch:
+            batch_system = "none"
+        else:
+            bs_node = env_batch.get_node("entry", {"id":"batch_system"})
+            batch_system = env_batch.get_default_value(bs_node)
+        case.set_value("batch_system", batch_system)
+    else:
+        if case.get_value("batch_system") == "none":
+            no_batch = True
+
     #Load Modules
     env_module = EnvModule(case.get_value("MACH"), case.get_value("COMPILER"),
                            case.get_value("CIMEROOT"),caseroot, case.get_value("MPILIB"),
