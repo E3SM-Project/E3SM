@@ -1049,29 +1049,37 @@
 					description="Initialize using Haney number constraint under ice shelves"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_rx1_smooth_count" type="integer" default_value="20" units="unitless"
-					description="The number of smoothing passes used in modifying the vertical grid such that the Haney number rx1 is less than rx1Max"
+		<nml_option name="config_rx1_outer_iter_count" type="integer" default_value="20" units="unitless"
+					description="The number of outer iterations (first smoothing then rx1 constraint) during initialization of the vertical grid."
 					possible_values="any positive integer"
 		/>
-		<nml_option name="config_rx1_inner_iteration_count" type="integer" default_value="10" units="unitless"
-					description="The number of inner iterations used in constraining the Haney number rx1 is less than rx1Max, allowing changes to propagate horizontally within a layer"
+		<nml_option name="config_rx1_inner_iter_count" type="integer" default_value="10" units="unitless"
+					description="The number of iterations used to constrain rx1 in each layer."
 					possible_values="any positive integer"
 		/>
-		<nml_option name="config_rx1_inner_iteration_weight" type="real" default_value="0.1" units="unitless"
-					description="During inner iteration, layers with rx1 > rx1Max are thickened toward a target thickness by this fraction.  A smaller weights will result in less layer thickening but will require more inner iterations to converge."
+		<nml_option name="config_rx1_init_inner_weight" type="real" default_value="0.1" units="unitless"
+					description="The weight by which layer thicknesses are altered at the beginning of inner iteration. This weight linearly increases to 1.0 by the final iteration."
 					possible_values="a positive value less than or equal to 1"
 		/>
-		<nml_option name="config_rx1_max" type="real" default_value="10.0" units="unitless"
+		<nml_option name="config_rx1_max" type="real" default_value="5.0" units="unitless"
 					description="The maximum value rx1Max of the Haney number (rx1) after modification of the vertical grid"
 					possible_values="any positive value, typically greater than or equal to 1"
 		/>
-		<nml_option name="config_rx1_horiz_smooth_weight" type="real" default_value="0.5" units="unitless"
-					description="The averaging weight of neighbors used for horizontal smoothing of layer interface depth"
-					possible_values="Between 0 and 1, with a larger number indicating more smoothing per iteration"
+		<nml_option name="config_rx1_horiz_smooth_weight" type="real" default_value="1.0" units="unitless"
+					description="Relative weight of horizontal neighbors compared to this cell when smoothing vertical stretching"
+					possible_values="A non-negative number"
 		/>
-		<nml_option name="config_rx1_vert_smooth_weight" type="real" default_value="0.5" units="unitless"
-					description="The averaging weight of neighbors used for vertical smoothing of layerThickness"
-					possible_values="Between 0 and 1, with a larger number indicating more smoothing per iteration"
+		<nml_option name="config_rx1_vert_smooth_weight" type="real" default_value="1.0" units="unitless"
+					description="Relative weight of vertical neighbors compared to this cell when smoothing vertical stretching"
+					possible_values="A non-negative number"
+		/>
+		<nml_option name="config_rx1_slope_weight" type="real" default_value="1e-1" units="unitless"
+					description="Weight used to nudge level interfaces toward being flat (thus decreasing the Haney number)"
+					possible_values="A non-negative number"
+		/>
+		<nml_option name="config_rx1_zstar_weight" type="real" default_value="1.0" units="unitless"
+					description="Weight used to nudge vertical stretching toward z-star during each outer iteration"
+					possible_values="A non-negative number"
 		/>
 		<nml_option name="config_rx1_horiz_smooth_open_ocean_cells" type="integer" default_value="20" units="unitless"
 					description="The size (in cells) of a buffer region around land ice for smoothing.  Smoothing is performed under land ice and in the buffer region of open ocean."
@@ -2424,10 +2432,21 @@
 			 description="The global maximum Haney number (rx1)."
 			 packages="initMode;debugDiagnosticsAMPKG"
 		/>
-		<!-- diagnostic fields for Haney number constrained init -->
+		<var name="globalVerticalStretchMax" type="real" dimensions="Time" units="unitless"
+			 description="The global maximum stretching of the vertical grid compared with z-level."
+			 packages="initMode"
+		/>
+		<var name="globalVerticalStretchMin" type="real" dimensions="Time" units="unitless"
+			 description="The global minimum stretching of the vertical grid compared with z-level."
+			 packages="initMode"
+		/>
 		<var name="rx1InitSmoothingMask" type="integer" dimensions="nCells Time" units="unitless"
 			description="A mask indicating where layer interface and thickness smoothing is to be performed during Haney number constrained initializaiton."
-			 packages="initMode"
+			packages="initMode"
+		/>
+		<var name="verticalStretch" type="real" dimensions="nVertLevels nCells" units="unitless"
+			description="the stretch factor of each layer compared with the default z-level coordinate"
+			packages="initMode"
 		/>
 		<var name="pressureAdjustedSSH" type="real" dimensions="nCells Time" units="m"
 			 description="sea surface height adjusted by sea surface pressure"
@@ -3046,6 +3065,16 @@
 			type="real" dimensions="nVertLevelsP1 nCells" units="m"
 			description="location of layer interfaces at cell centers, used for thickening layers constrained by the Haney number (rx1)"
 		/>
+		<var name="goalStretchScratch"
+			persistence="scratch"
+			type="real" dimensions="nVertLevels nCells" units="unitless"
+			description="the goal stretch field for the vertical coordinate"
+		/>
+		<var name="goalWeightScratch"
+			persistence="scratch"
+			type="real" dimensions="nVertLevels nCells" units="unitless"
+			description="the sum of weights used to determine the goal stretch field"
+		/>
 		<var name="zTopScratch"
 			persistence="scratch"
 			type="real" dimensions="nCells" units="m"
@@ -3064,17 +3093,7 @@
 		<var name="smoothingMaskNewScratch"
 			persistence="scratch"
 			type="integer" dimensions="nCells" units="unitless"
-			description="a copy of the smoothing mask used to iteratively expand the mask in the buffer region of open ocean around land ice."
-		/>
-		<var name="layerThicknessNewScratch"
-			persistence="scratch"
-			type="real" dimensions="nVertLevels nCells" units="m"
-			description="a copy of layerThickness used during smoothing of the vertical grid while constraining the Haney number (rx1)"
-		/>
-		<var name="bottomDepthMaxLevelScratch"
-			persistence="scratch"
-			type="real" dimensions="nCells" units="unitless"
-			description="the linearly interpolated level at which z=-bottomDepth in a z-level coordinate, used to prevent vertical grid from getting too squashed."
+			description="a copy of the smoothing mask used to iteratively expand the field into a buffer region of open ocean around land ice."
 		/>
 	</var_struct>
 	<var_struct name="pointLocations" time_levs="1">

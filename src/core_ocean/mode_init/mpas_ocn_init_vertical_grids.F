@@ -652,10 +652,10 @@ contains
 
       type (block_type), pointer :: block_ptr
 
-      type (mpas_pool_type), pointer :: meshPool, diagnosticsPool
+      type (mpas_pool_type), pointer :: meshPool, diagnosticsPool, statePool
       real (kind=RKIND), dimension(:,:), pointer :: zMid
       real (kind=RKIND), dimension(:,:), pointer :: rx1Edge, rx1Cell
-      real (kind=RKIND), dimension(:), pointer :: rx1MaxEdge, rx1MaxCell
+      real (kind=RKIND), dimension(:), pointer :: rx1MaxEdge, rx1MaxCell, ssh
       real (kind=RKIND), pointer :: globalRx1Max
 
       integer, pointer :: nCells, nVertLevels, nEdges
@@ -674,6 +674,7 @@ contains
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
 
         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -682,13 +683,13 @@ contains
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
-        call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
+        call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid, 1)
+        call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
 
-        call mpas_pool_get_array(diagnosticsPool, 'rx1Edge', rx1Edge)
-        call mpas_pool_get_array(diagnosticsPool, 'rx1Cell', rx1Cell)
-        call mpas_pool_get_array(diagnosticsPool, 'rx1MaxEdge', rx1MaxEdge)
-        call mpas_pool_get_array(diagnosticsPool, 'rx1MaxCell', rx1MaxCell)
-        call mpas_pool_get_array(diagnosticsPool, 'globalRx1Max', globalRx1Max)
+        call mpas_pool_get_array(diagnosticsPool, 'rx1Edge', rx1Edge, 1)
+        call mpas_pool_get_array(diagnosticsPool, 'rx1Cell', rx1Cell, 1)
+        call mpas_pool_get_array(diagnosticsPool, 'rx1MaxEdge', rx1MaxEdge, 1)
+        call mpas_pool_get_array(diagnosticsPool, 'rx1MaxCell', rx1MaxCell, 1)
 
         rx1Edge(:,:) = 0.0_RKIND
         rx1Cell(:,:) = 0.0_RKIND
@@ -700,11 +701,17 @@ contains
           ! not a valid edge
           if((c1 > nCells) .or. (c2 > nCells)) cycle
           maxLevelEdge = min(maxLevelCell(c1), maxLevelCell(c2))
-          do k = 1,maxLevelEdge-1
-            dzVert1 = zMid(k,c1)-zMid(k+1,c1)
-            dzVert2 = zMid(k,c2)-zMid(k+1,c2)
-            dzEdgeK = zMid(k,c2)-zMid(k,c1)
-            dzEdgeKp1 = zMid(k+1,c2)-zMid(k+1,c1)
+          do k = 1,maxLevelEdge
+            if(k == 1) then
+              dzVert1 = 2.0_RKIND*(ssh(c1)-zMid(k,c1))
+              dzVert2 = 2.0_RKIND*(ssh(c2)-zMid(k,c2))
+              dzEdgeK = ssh(c2)-ssh(c1)
+            else
+              dzVert1 = zMid(k-1,c1)-zMid(k,c1)
+              dzVert2 = zMid(k-1,c2)-zMid(k,c2)
+              dzEdgeK = zMid(k-1,c2)-zMid(k-1,c1)
+            end if
+            dzEdgeKp1 = zMid(k,c2)-zMid(k,c1)
 
             rx1 = abs(dzEdgeK+dzEdgeKp1)/(dzVert1+dzVert2)
 
@@ -722,6 +729,8 @@ contains
 
         block_ptr => block_ptr % next
       end do
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
+      call mpas_pool_get_array(diagnosticsPool, 'globalRx1Max', globalRx1Max, 1)
       call mpas_dmpar_max_real(domain % dminfo, localMaxRx1Edge, globalRx1Max)
       write (stdoutUnit,'(a, es10.2)') ' global max of rx1:', globalRx1Max
 
@@ -752,40 +761,50 @@ contains
 
       type (mpas_pool_type), pointer :: meshPool, statePool, diagnosticsPool, verticalMeshPool, scratchPool, forcingPool
 
-      integer, pointer :: config_rx1_smooth_count, config_rx1_inner_iteration_count, config_rx1_horiz_smooth_open_ocean_cells, &
-                          config_rx1_min_levels
+      integer, pointer :: config_rx1_outer_iter_count, config_rx1_inner_iter_count, &
+                          config_rx1_horiz_smooth_open_ocean_cells, config_rx1_min_levels
       real (kind=RKIND), pointer :: config_rx1_max, config_rx1_horiz_smooth_weight, &
-                           config_rx1_vert_smooth_weight, config_rx1_inner_iteration_weight, &
+                           config_rx1_vert_smooth_weight, config_rx1_slope_weight, &
+                           config_rx1_zstar_weight, config_rx1_init_inner_weight, &
                            config_rx1_min_layer_thickness
 
-      type (field2DReal), pointer :: zInterfaceField, layerThicknessNewField
-      type (field1DReal), pointer :: zTopField, zBotField, zBotNewField, bottomDepthMaxLevelField
+      type (field2DReal), pointer :: zInterfaceField, goalStretchField, goalWeightField, &
+                                     verticalStretchField
+      type (field1DReal), pointer :: zTopField, zBotField, zBotNewField
       type (field1DInteger), pointer :: smoothingMaskField, smoothingMaskNewField
 
-      real (kind=RKIND), dimension(:,:), pointer :: zMid, layerThickness, restingThickness, zInterface, layerThicknessNew
+      real (kind=RKIND), dimension(:,:), pointer :: zMid, layerThickness, restingThickness, zInterface, &
+                                                    verticalStretch, goalStretch, goalWeight, rx1Edge
       real (kind=RKIND), dimension(:), pointer :: ssh, bottomDepth, refBottomDepth, zTop, zBot, zBotNew, landIceFraction, &
-                                        bottomDepthMaxLevel
+                                        refLayerThickness
+
+      real (kind=RKIND), pointer :: globalRx1Max, globalVerticalStretchMax, globalVerticalStretchMin
 
       integer, pointer :: nCells, nVertLevels, nEdges
       integer, dimension(:), pointer :: maxLevelCell, cullCell, nEdgesOnCell, smoothingMask, smoothingMaskNew
-      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell
+      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, edgesOnCell
 
-      integer :: iCell, iEdge, coc, c1, c2, k, maxLevelEdge, iSmooth, iterIndex, maxLevel
+      integer :: iCell, iEdge, coc, c1, c2, k, maxLevelEdge, iSmooth, iterIndex
 
-      real (kind=RKIND) :: dzEdgeK, dzEdgeKp1, stretch, dzEdgeMean, dzVertGoal, &
-                           zThreshold, zMin, zMean, weight, sigma, zBotEdge, rx1Goal, dzVertMean, &
-                           zBot_bottomLayer, zInterfaceNew, zMidNext, zInterfaceNext
+      real (kind=RKIND) :: dzEdgeK, dzEdgeKp1, dzEdgeMean, dzVertGoal, &
+                           zMean, weight, rx1Goal, dzVertMean, &
+                           zMidNext, frac, stretch, localMaxRx1Edge, &
+                           localStretchMax, localStretchMin
+
+      logical :: moveInterface
 
       real (kind=RKIND), parameter :: eps=1e-6_RKIND
 
       iErr = 0
 
-      call mpas_pool_get_config(domain % configs, 'config_rx1_smooth_count', config_rx1_smooth_count)
-      call mpas_pool_get_config(domain % configs, 'config_rx1_inner_iteration_count', config_rx1_inner_iteration_count)
-      call mpas_pool_get_config(domain % configs, 'config_rx1_inner_iteration_weight', config_rx1_inner_iteration_weight)
+      call mpas_pool_get_config(domain % configs, 'config_rx1_outer_iter_count', config_rx1_outer_iter_count)
+      call mpas_pool_get_config(domain % configs, 'config_rx1_inner_iter_count', config_rx1_inner_iter_count)
+      call mpas_pool_get_config(domain % configs, 'config_rx1_init_inner_weight', config_rx1_init_inner_weight)
       call mpas_pool_get_config(domain % configs, 'config_rx1_max', config_rx1_max)
       call mpas_pool_get_config(domain % configs, 'config_rx1_horiz_smooth_weight', config_rx1_horiz_smooth_weight)
       call mpas_pool_get_config(domain % configs, 'config_rx1_vert_smooth_weight', config_rx1_vert_smooth_weight)
+      call mpas_pool_get_config(domain % configs, 'config_rx1_slope_weight', config_rx1_slope_weight)
+      call mpas_pool_get_config(domain % configs, 'config_rx1_zstar_weight', config_rx1_zstar_weight)
       call mpas_pool_get_config(domain % configs, 'config_rx1_horiz_smooth_open_ocean_cells', &
                                 config_rx1_horiz_smooth_open_ocean_cells)
       call mpas_pool_get_config(domain % configs, 'config_rx1_min_levels', config_rx1_min_levels)
@@ -796,41 +815,34 @@ contains
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
       call mpas_pool_get_field(diagnosticsPool, 'rx1InitSmoothingMask', smoothingMaskField, 1)
+      call mpas_pool_get_field(diagnosticsPool, 'verticalStretch', verticalStretchField, 1)
+      call mpas_pool_get_array(diagnosticsPool, 'globalRx1Max', globalRx1Max, 1)
+      call mpas_pool_get_array(diagnosticsPool, 'globalVerticalStretchMax', globalVerticalStretchMax, 1)
+      call mpas_pool_get_array(diagnosticsPool, 'globalVerticalStretchMin', globalVerticalStretchMin, 1)
 
       ! allocate scratch variables that persist across blocks
       call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
       call mpas_pool_get_field(scratchPool, 'zInterfaceScratch', zInterfaceField)
       call mpas_pool_get_field(scratchPool, 'zTopScratch', zTopField)
       call mpas_pool_get_field(scratchPool, 'zBotScratch', zBotField)
-      call mpas_pool_get_field(scratchPool, 'bottomDepthMaxLevelScratch', bottomDepthMaxLevelField)
       call mpas_allocate_scratch_field(zInterfaceField, .false.)
       call mpas_allocate_scratch_field(zTopField, .false.)
       call mpas_allocate_scratch_field(zBotField, .false.)
-      call mpas_allocate_scratch_field(bottomDepthMaxLevelField, .false.)
 
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
-        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
         call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
 
         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-        call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
         call mpas_pool_get_array(meshPool, 'cullCell', cullCell)
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-        call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
-        call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-        call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
-        call mpas_pool_get_array(scratchPool, 'zInterfaceScratch', zInterface)
 
         call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
         call mpas_pool_get_array(diagnosticsPool, 'rx1InitSmoothingMask', smoothingMask, 1)
-        call mpas_pool_get_array(scratchPool, 'bottomDepthMaxLevelScratch', bottomDepthMaxLevel)
 
-        ! initialize zInterface to z* without PBCs and extended to nVertLevels+1 (beyond bottomDepth)
         maxLevelCell(nCells+1) = -1
         do iCell = 1, nCells
           if(associated(cullCell)) then
@@ -839,37 +851,7 @@ contains
               maxLevelCell(iCell) = -1
             end if
           end if
-
-          if(maxLevelCell(iCell) <= 0) then
-            ! this is land
-            zInterface(:,iCell) = 0.0_RKIND
-            cycle
-          end if
-
-          ! don't let bottomDepth go below the z-level grid
-          bottomDepth(iCell) = min(bottomDepth(iCell), refBottomDepth(nVertLevels))
-
-          ! lower bottomDepth if the whole column is thinner than the minimum
-          bottomDepth(iCell) = max(bottomDepth(iCell), -ssh(iCell) + config_rx1_min_layer_thickness*config_rx1_min_levels)
-
-          stretch = (ssh(iCell) + bottomDepth(iCell))/bottomDepth(iCell)
-          zInterface(1,iCell) = ssh(iCell)
-          zInterface(2:nVertLevels+1,iCell) = stretch*(-refBottomDepth(:) + bottomDepth(iCell)) - bottomDepth(iCell)
-
-          ! Linearly interpolate the level at which bottomDepth = refBottomDepth.  Later on, bottomDepth will
-          ! always be constrained to be at a layer no deeper than this, meaning that the vertical coordinate
-          ! cannot become more squashed than a z* coordinate
-          if(bottomDepth(iCell) < refBottomDepth(1)) then
-            bottomDepthMaxLevel(iCell) = bottomDepth(iCell)/refBottomDepth(1)
-          else
-            k = 2
-            do while((k < nVertLevels) .and. (bottomDepth(iCell) >= refBottomDepth(k)))
-              k = k + 1
-            end do
-            bottomDepthMaxLevel(iCell) = k + (bottomDepth(iCell)-refBottomDepth(k-1))/(refBottomDepth(k)-refBottomDepth(k-1))
-          end if
-
-        end do !iCell
+        end do
 
         ! initialize the smoothing mask to valid cells under land ice
         smoothingMask(:) = 0
@@ -907,10 +889,12 @@ contains
 
             do iEdge = 1, nEdgesOnCell(iCell)
               coc = cellsOnCell(iEdge,iCell)
-              if(maxLevelCell(coc) <= 0) cycle
-
-              ! we have a neighbor of a masked cell, so make sure it is also masked
-              smoothingMaskNew(coc) = 1
+              if(coc > 0) then
+                if((maxLevelCell(coc) > 0) .and. (smoothingMaskNew(coc) == 0)) then
+                  ! we have a neighbor of a cell being smoothed so this one should also be smoothed
+                  smoothingMaskNew(coc) = 1
+                end if
+              end if
             end do !iEdge
           end do !iCell
 
@@ -924,313 +908,345 @@ contains
         call mpas_dmpar_exch_halo_field(smoothingMaskField)
       end do !iSmooth
 
-      do iSmooth = 1, config_rx1_smooth_count
+      block_ptr => domain % blocklist
+      do while(associated(block_ptr))
+        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
 
-        write(stderrUnit, *) "smoothing iteration ", iSmooth
+        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+        call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-        if(iSmooth > 1) then
-          ! only do smoothing for passes after the first
+        call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+        call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+        call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+        call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
+        call mpas_pool_get_array(scratchPool, 'zInterfaceScratch', zInterface)
+
+        call mpas_pool_get_array(diagnosticsPool, 'verticalStretch', verticalStretch, 1)
+        call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
+
+        do iCell = 1, nCells
+          if(maxLevelCell(iCell) <= 0) then
+            ! this is land
+            zInterface(:,iCell) = 0.0_RKIND
+            verticalStretch(:,iCell) = 1.0_RKIND
+            cycle
+          end if
+
+          ! initialize zInterface to z* without PBCs and extended to nVertLevels+1 (beyond bottomDepth)
+
+          ! don't let bottomDepth go below the z-level grid
+          bottomDepth(iCell) = min(bottomDepth(iCell), refBottomDepth(nVertLevels))
+
+          ! lower bottomDepth if the whole column is thinner than the minimum
+          !bottomDepth(iCell) = max(bottomDepth(iCell), -ssh(iCell) + config_rx1_min_layer_thickness*config_rx1_min_levels)
+
+          verticalStretch(:,iCell) = (ssh(iCell) + bottomDepth(iCell))/bottomDepth(iCell)
+
+          zInterface(1,iCell) = ssh(iCell)
+          do k = 1, nVertLevels
+            zInterface(k+1,iCell) = zInterface(k,iCell) - verticalStretch(k,iCell)*refLayerThickness(k)
+          end do
+
+        end do !iCell
+
+        block_ptr => block_ptr % next
+      end do !block_ptr
+
+
+      do iterIndex = 1, config_rx1_outer_iter_count
+
+        ! smooth/nudge twice so changes propagate further per halo update
+        do iSmooth = 1, 2
           block_ptr => domain % blocklist
           do while(associated(block_ptr))
             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
             call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
             call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
             call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+            call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
 
             call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+            call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
             call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
             call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
             call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+            call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
             call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-
             call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
-            call mpas_pool_get_array(scratchPool, 'zInterfaceScratch', zInterface)
-            call mpas_pool_get_array(statePool, 'layerThickness', layerThickness,1)
-            call mpas_pool_get_array(scratchPool, 'zTopScratch', zTop)
+
+            call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
+
+            call mpas_pool_get_array(diagnosticsPool, 'verticalStretch', verticalStretch, 1)
             call mpas_pool_get_array(diagnosticsPool, 'rx1InitSmoothingMask', smoothingMask, 1)
+            call mpas_pool_get_array(diagnosticsPool, 'rx1Edge', rx1Edge, 1)
 
-            call mpas_pool_get_field(scratchPool, 'layerThicknessNewScratch', layerThicknessNewField)
-            call mpas_allocate_scratch_field(layerThicknessNewField, .true.)
-            call mpas_pool_get_array(scratchPool, 'layerThicknessNewScratch', layerThicknessNew)
-            call mpas_pool_get_array(scratchPool, 'bottomDepthMaxLevelScratch', bottomDepthMaxLevel)
+            call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
 
-            ! smooth zInterface horizontally (except in top layer, which is held fixed at ssh)
-            do k = 2, nVertLevels+1
-              zTop(:) = zInterface(k,:)
-              do iCell = 1, nCells
-                if(smoothingMask(iCell) == 0) cycle ! this also covers cases where maxLevelCell <= 0
-                zMean = 0.0_RKIND
-                weight = 0.0_RKIND
-                do iEdge = 1, nEdgesOnCell(iCell)
-                  coc = cellsOnCell(iEdge,iCell)
-                  if(maxLevelCell(coc) <= 0) cycle
+            call mpas_pool_get_field(scratchPool, 'goalStretchScratch', goalStretchField)
+            call mpas_allocate_scratch_field(goalStretchField, .true.)
+            call mpas_pool_get_array(scratchPool, 'goalStretchScratch', goalStretch)
+            call mpas_pool_get_field(scratchPool, 'goalWeightScratch', goalWeightField)
+            call mpas_allocate_scratch_field(goalWeightField, .true.)
+            call mpas_pool_get_array(scratchPool, 'goalWeightScratch', goalWeight)
 
-                  zMean = zMean + zInterface(k,coc)
-                  weight = weight + 1.0_RKIND
-                end do !iEdge
-                ! use zTop for temporary storage
-                if(weight > 0.0_RKIND) then
-                   zTop(iCell) = config_rx1_horiz_smooth_weight*zMean/weight  &
-                            + (1.0_RKIND - config_rx1_horiz_smooth_weight)*zInterface(k, iCell)
-                else
-                   zTop(iCell) = zInterface(k, iCell)
-                end if
-              end do !iCell
-              ! copy back from temporary storage in zTop
-              zInterface(k,:) = zTop(:)
-            end do !k
+            goalStretch(:,:) = 0.0_RKIND
+            goalWeight(:,:) = 0.0_RKIND
 
             do iCell = 1, nCells
               if(smoothingMask(iCell) == 0) cycle
-              call ocn_init_rx1_grid_constrain_bottom_depth_level(zInterface(:,iCell), bottomDepth(iCell), &
-                                             config_rx1_min_levels, bottomDepthMaxLevel(iCell))
-            end do
 
-            ! no halo exchange in zInterface should be required because halo exchange of zBot will handle this
+              do iEdge = 1, nEdgesOnCell(iCell)
+                coc = cellsOnCell(iEdge,iCell)
+                if(maxLevelCell(coc) <= 0) cycle
 
-            layerThickness(:,:) = max(config_rx1_min_layer_thickness, zInterface(1:nVertLevels,:) - zInterface(2:nVertLevels+1,:))
-            layerThicknessNew(:,:) = layerThickness(:,:)
+                ! average horiz neighbors
+                goalStretch(:, iCell) = goalStretch(:, iCell) + config_rx1_horiz_smooth_weight*verticalStretch(:, coc)
+                goalWeight(:, iCell) = goalWeight(:, iCell) + config_rx1_horiz_smooth_weight
 
-            ! smooth layerThickness vertically
-            weight = config_rx1_vert_smooth_weight
+                ! change stretch toward flatter level interfaces
+                do k = 1, nVertLevels
+                  ! we want to try to move the bottom interface to zMean so it's more level
+                  zMean = 0.5_RKIND*(zInterface(k+1,iCell) + zInterface(k+1,coc))
+                  ! frac is the factor by which we want to modify the stretch above (and including) this cell
+                  frac = (ssh(iCell)-zMean)/(ssh(iCell)-zInterface(k+1,iCell))
+                  goalStretch(1:k, iCell) = goalStretch(1:k, iCell) &
+                                          + config_rx1_slope_weight*frac*verticalStretch(1:k, iCell)
+                  goalWeight(1:k, iCell) = goalWeight(1:k, iCell) + config_rx1_slope_weight
+                end do
+              end do !iEdge
+
+              ! include this cell in average
+              goalStretch(:, iCell) = goalStretch(:, iCell) + verticalStretch(:, iCell)
+              goalWeight(:, iCell) = goalWeight(:, iCell) + 1.0_RKIND
+
+              ! average vert neighbors
+              goalStretch(1:nVertLevels-1, iCell) = goalStretch(1:nVertLevels-1, iCell) &
+                + config_rx1_vert_smooth_weight*verticalStretch(2:nVertLevels, iCell)
+              goalWeight(1:nVertLevels-1, iCell) = goalWeight(1:nVertLevels-1, iCell) &
+                + config_rx1_vert_smooth_weight
+              goalStretch(2:nVertLevels, iCell) = goalStretch(2:nVertLevels, iCell) &
+                + config_rx1_vert_smooth_weight*verticalStretch(1:nVertLevels-1, iCell)
+              goalWeight(2:nVertLevels, iCell) = goalWeight(2:nVertLevels, iCell) &
+                + config_rx1_vert_smooth_weight
+
+              ! nudge toward z-star
+              stretch = (ssh(iCell) + bottomDepth(iCell))/bottomDepth(iCell)
+              goalStretch(:, iCell) = goalStretch(:, iCell) + config_rx1_zstar_weight*stretch
+              goalWeight(:, iCell) = goalWeight(:, iCell) + config_rx1_zstar_weight
+
+            end do !iCell
+
             do iCell = 1, nCells
-              if(smoothingMask(iCell) == 0) cycle
-
-              layerThicknessNew(1,iCell) = (1.0_RKIND - weight)*layerThickness(1,iCell) &
-                                      + weight*layerThickness(2,iCell)
-              do k = 2, nVertLevels-1
-                layerThicknessNew(k,iCell) = (1.0_RKIND - weight)*layerThickness(k,iCell) &
-                                        + weight*0.5_RKIND*(layerThickness(k-1,iCell)+layerThickness(k+1,iCell))
-              end do
-              layerThicknessNew(nVertLevels,iCell) = (1.0_RKIND - weight)*layerThickness(nVertLevels,iCell) &
-                                      + weight*layerThickness(nVertLevels-1,iCell)
-            end do
-            layerThickness(:,:) = layerThicknessNew(:,:)
-
-            ! recompute zInterface for k > 1 from layerThickness
-            do k = 1, nVertLevels
-              zInterface(k+1,:) = zInterface(k,:) - layerThickness(k,:)
-            end do
-            do iCell = 1, nCells
-              if(smoothingMask(iCell) == 0) cycle
-              call ocn_init_rx1_grid_constrain_bottom_depth_level(zInterface(:,iCell), bottomDepth(iCell), &
-                                             config_rx1_min_levels, bottomDepthMaxLevel(iCell))
+              if(smoothingMask(iCell) == 1) then
+                do k = 1, nVertLevels
+                  ! minimum allowed stretch
+                  stretch = config_rx1_min_layer_thickness/refLayerThickness(k)
+                  verticalStretch(k,iCell) = max(stretch, goalStretch(k,iCell)/goalWeight(k,iCell))
+                end do
+              end if
             end do
 
-            call mpas_deallocate_scratch_field(layerThicknessNewField, .true.)
+            call mpas_deallocate_scratch_field(goalStretchField, .true.)
+            call mpas_deallocate_scratch_field(goalWeightField, .true.)
 
             block_ptr => block_ptr % next
           end do !block_ptr
-        end if !iSmooth > 1
+        end do !iSmooth
+
+        ! do a halo exchange on verticalStretch
+        call mpas_dmpar_exch_halo_field(verticalStretchField)
 
         block_ptr => domain % blocklist
         do while(associated(block_ptr))
+          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
           call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
           call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
 
-          call mpas_pool_get_array(scratchPool, 'zInterfaceScratch', zInterface)
-          call mpas_pool_get_array(scratchPool, 'zTopScratch', zTop)
           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+          call mpas_pool_get_array(scratchPool, 'zTopScratch', zTop)
+          call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
           call mpas_pool_get_array(diagnosticsPool, 'rx1InitSmoothingMask', smoothingMask, 1)
 
-          ! rx1 that constrains top layer is a special case, since there's no layer above
-          zTop(:) = zInterface(1,:)
-
-          ! set maxLevelCell to -1 in regions we will modify; it will be recomputed as we work our way down
-          where (smoothingMask == 1)
-            maxLevelCell = -1
+          zTop(:) = ssh(:)
+          where(smoothingMask == 1)
+            ! start with maxLevelCell == 1; we will update it when we encounter the bottom
+            maxLevelCell(:) = 1
           end where
 
           block_ptr => block_ptr % next
-        end do !block_ptr
+        end do
 
-        ! rx1 is allowed to get twice as big in the top layer because we're only looking at half a layer
-        rx1Goal = 2.0_RKIND*config_rx1_max
-
-        do k = 1,nVertLevels
+        do k = 1, nVertLevels
           block_ptr => domain % blocklist
           do while(associated(block_ptr))
+            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
             call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+            call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+            call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
+
+            call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+            call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+            call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
             call mpas_pool_get_array(scratchPool, 'zInterfaceScratch', zInterface)
             call mpas_pool_get_array(scratchPool, 'zBotScratch', zBot)
+            call mpas_pool_get_array(diagnosticsPool, 'verticalStretch', verticalStretch, 1)
+            call mpas_pool_get_array(diagnosticsPool, 'rx1InitSmoothingMask', smoothingMask, 1)
+            call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
 
-            ! make zInterface(k+1,:) deeper if layer k would be too thin
-            zInterface(k+1,:) = min(zInterface(k+1,:), &
-                                    zInterface(k,:) - config_rx1_min_layer_thickness)
+            zInterface(k+1,:) = zInterface(k,:) - verticalStretch(k,:)*refLayerThickness(k)
 
+            ! match interfaces to bottomDepth
+            if(k >= config_rx1_min_levels) then
+              moveInterface = .false.
+              if(config_rx1_outer_iter_count == 1) then
+                weight = 1.0_RKIND
+              else
+                weight = (iterIndex - 1.0_RKIND)/(config_rx1_outer_iter_count - 1.0_RKIND)
+              end if
+
+              do iCell = 1, nCells
+                if((smoothingMask(iCell) == 0) .or. (maxLevelCell(iCell) .ne. 1)) cycle
+
+                if(-bottomDepth(iCell) > zBot(iCell)) then
+                  ! we missed maxLevelCell, either because k < config_rx1_min_levels or
+                  ! because our guess at the layer depth wasn't accurate.  We can't move
+                  ! the layer interface to match bottomDepth but we can at least set
+                  ! maxLevelCell to the appropriate value
+                  maxLevelCell(iCell) = k
+                  cycle
+                end if
+
+                if(k == nVertLevels) then
+                  ! match the bottom of the layer to bottomDepth
+                  moveInterface = .true.
+                else
+                  zInterface(k+1,iCell) = zInterface(k,iCell) - verticalStretch(k,iCell)*refLayerThickness(k)
+                  ! our current best guess at the mid depth of the next layer
+                  zMidNext = zInterface(k+1,iCell) - 0.5_RKIND*verticalStretch(k+1,iCell)*refLayerThickness(k+1)
+                  moveInterface = -bottomDepth(iCell) >= zMidNext
+                end if
+                ! relax toward bottomDepth with increasing strength with each iteration
+                if(moveInterface) then
+                  zInterface(k+1,iCell) = (1.0 - weight)*zInterface(k+1,iCell) + weight*(-bottomDepth(iCell))
+                  maxLevelCell(iCell) = k
+                end if
+              end do
+            end if
             zBot(:) = 0.5_RKIND*(zInterface(k,:) + zInterface(k+1,:))
 
             block_ptr => block_ptr % next
           end do !block_ptr
 
-          do iterIndex = 1, config_rx1_inner_iteration_count
-            block_ptr => domain % blocklist
-            do while(associated(block_ptr))
-              call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-              call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
-              call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
-
-              call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-              call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-              call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-
-              call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-
-              call mpas_pool_get_array(scratchPool, 'zInterfaceScratch', zInterface)
-              call mpas_pool_get_array(scratchPool, 'zTopScratch', zTop)
-              call mpas_pool_get_array(scratchPool, 'zBotScratch', zBot)
-              call mpas_pool_get_array(diagnosticsPool, 'rx1InitSmoothingMask', smoothingMask, 1)
-
-              call mpas_pool_get_field(scratchPool, 'zBotNewScratch', zBotNewField)
-              call mpas_allocate_scratch_field(zBotNewField, .true.)
-              call mpas_pool_get_array(scratchPool, 'zBotNewScratch', zBotNew)
-
-              zBotNew(:) = zBot(:)
-              do iEdge = 1,nEdges
-                c1 = cellsOnEdge(1,iEdge)
-                c2 = cellsOnEdge(2,iEdge)
-                if((smoothingMask(c1) == 0) .or. (smoothingMask(c2) == 0)) then
-                  ! this not and edge we're allowed to alter, so leave zBot alone
-                  cycle
-                end if
-
-                dzEdgeK = zTop(c2)-zTop(c1)
-                dzEdgeKp1 = zBot(c2)-zBot(c1)
-                dzEdgeMean = 0.5_RKIND*abs(dzEdgeK+dzEdgeKp1)
-                dzVertGoal = dzEdgeMean/rx1Goal
-                zBotEdge = 0.5_RKIND*(zTop(c1)+zTop(c2)) - dzVertGoal
-                dzVertMean = 0.5_RKIND*(zTop(c1)-zBot(c1)+zTop(c2)-zBot(c2))
-
-                ! Once iteration has converged, we want 0.5_RKIND*(zBot(c1) + zBot(c2)) <= zBotEdge
-                zBotNew(c1) = min(zBotNew(c1), 2.0_RKIND*zBotEdge - zBot(c2))
-                zBotNew(c2) = min(zBotNew(c2), 2.0_RKIND*zBotEdge - zBot(c1))
-              end do !iEdge
-
-              ! first, adjust zBot so zInterface(k+1,:) matched -bottomDepth where appropriate
-              if(config_rx1_smooth_count == 1) then
-                 weight = 1.0_RKIND
-              else
-                ! the weight goes from 0.0 for the first smoothing iteration to 1.0 for the last
-                weight = (iSmooth - 1.0_RKIND)/(config_rx1_smooth_count - 1.0_RKIND)
-              end if
-
-              if(k >= config_rx1_min_levels) then
-                do iCell = 1, nCells
-                  if(smoothingMask(iCell) == 0) cycle ! not modifying this column
-
-                  if(k == nVertLevels) then
-                    ! there is no zInterface(k+2,iCell), and we don't really need it
-                    zMidNext = 2.0_RKIND*zBot(iCell) - zInterface(k,iCell) !zInterface(k+1,iCell)
-                  else
-                    ! first, compute the location of zInterface(k+2), making sure layers are thick enough
-                    zInterfaceNext = min(zInterface(k+2,iCell), &
-                                   2.0_RKIND*zBot(iCell) - zInterface(k,iCell) &
-                                   + config_rx1_min_layer_thickness)
-                    ! next, compute the location of the middle of the next layer
-                    zMidNext = zBot(iCell) - 0.5_RKIND*(zInterface(k,iCell) - zInterfaceNext)
-                  end if
-
-                  ! zInterface(k+1) isn't deep enough to be closest to -bottomDepth
-                  if((bottomDepth(iCell) > -zMidNext) .and. (k < nVertLevels)) cycle
-
-                  !we already found the bottom layer above this one
-                  if((maxLevelCell(iCell) >= config_rx1_min_levels) .and. (maxLevelCell(iCell) < k)) cycle
-
-                  ! this must be the bottom layer
-                  maxLevelCell(iCell) = k
-                  if(bottomDepth(iCell) > -zInterface(k,iCell)) then
-                    ! bottomDepth is below the top of this layer so we can adjust zBot such that
-                    ! zIterface(k+1,iCell) = -bottomDepth
-                    ! Don't let this process make the layer too thin
-                    zBot_bottomLayer = zInterface(k,iCell) &
-                                     - 0.5_RKIND*max(bottomDepth(iCell) + zInterface(k,iCell), &
-                                                     config_rx1_min_layer_thickness)
-                    ! -bottomDepth is closer to zInterface(k+1,:) than to other interfaces
-                    ! relax zBot toward zBot_bottomLayer, with stronger weighting for higher smoothing iteration
-                    zBot(iCell) = (1.0_RKIND - weight)*zBot(iCell) + weight*zBot_bottomLayer
-                    zBot(iCell) = min(zBot(iCell), zInterface(k,iCell) + 0.5_RKIND*config_rx1_min_layer_thickness)
-                  end if
-                end do ! iCell
-              end if ! k >= config_rx1_min_levels
-
-              ! next, adjust zBot toward zBotNew (with rx1 < rx1Max)
-              if(config_rx1_inner_iteration_count == 1) then
-                 weight = 0.0_RKIND
-              else
-                weight = (iterIndex - 1.0_RKIND)/(config_rx1_inner_iteration_count - 1.0_RKIND)
-              end if
-              ! the weight goes from config_rx1_inner_iteration_weight for the first iteration to 1.0 for the last
-              weight = (1.0_RKIND - weight)*config_rx1_inner_iteration_weight + weight
-              zBot(:) = (1.0_RKIND - weight)*zBot(:) + weight*zBotNew(:)
-
-              call mpas_deallocate_scratch_field(zBotNewField, .true.)
-
-              block_ptr => block_ptr % next
-            end do !block_ptr
-
-            ! do halo update on zBot
-            call mpas_dmpar_exch_halo_field(zBotField)
-
-          end do !iterIndex
+          if(k == 1) then
+            ! rx1 is allowed to get twice as big in the top layer because we're only looking at half a layer
+            rx1Goal = 2.0_RKIND*config_rx1_max
+          else
+            rx1Goal = config_rx1_max
+          end if
+          call constrain_rx1_layer(domain, config_rx1_inner_iter_count, config_rx1_init_inner_weight, rx1Goal, iErr)
 
           ! update zInterface, layerThickness, zTop
           block_ptr => domain % blocklist
           do while(associated(block_ptr))
             call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
             call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+            call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
 
             call mpas_pool_get_array(scratchPool, 'zInterfaceScratch', zInterface)
             call mpas_pool_get_array(scratchPool, 'zTopScratch', zTop)
             call mpas_pool_get_array(scratchPool, 'zBotScratch', zBot)
             call mpas_pool_get_array(diagnosticsPool, 'rx1InitSmoothingMask', smoothingMask, 1)
+            call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid, 1)
+            call mpas_pool_get_array(diagnosticsPool, 'verticalStretch', verticalStretch, 1)
+            call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
 
             where (smoothingMask(:) == 1)
+              verticalStretch(k,:) = 2.0_RKIND*(zInterface(k,:) - zBot(:))/refLayerThickness(k)
               zInterface(k+1,:) = 2.0_RKIND*zBot(:) - zInterface(k,:)
             end where
 
             zTop(:) = zBot(:)
+            zMid(k,:) = zBot(:)
 
             block_ptr => block_ptr % next
           end do !block_ptr
 
-          rx1Goal = config_rx1_max
-
         end do !k
 
-        ! compute maxLevelCell and adjust zInterfaces
-        ! for full or partial bottom cells (if requested)
+
+        localMaxRx1Edge = -1e30_RKIND
+        localStretchMin = 1e30_RKIND
+        localStretchMax = -1e30_RKIND
+
+
         block_ptr => domain % blocklist
         do while(associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
           call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
 
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
           call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
+          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-          call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
-          call mpas_pool_get_array(scratchPool, 'zInterfaceScratch', zInterface)
-          call mpas_pool_get_array(diagnosticsPool, 'rx1InitSmoothingMask', smoothingMask, 1)
-          call mpas_pool_get_array(scratchPool, 'bottomDepthMaxLevelScratch', bottomDepthMaxLevel)
+          call mpas_pool_get_array(diagnosticsPool, 'verticalStretch', verticalStretch, 1)
+          call mpas_pool_get_array(diagnosticsPool, 'rx1Edge', rx1Edge, 1)
+          call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid, 1)
+          call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
 
-          ! put zInterface back within bounds if necessary
+          ! compute rx1Edge so we can determine which cells need to be thickened
+          rx1Edge(:,:) = 0.0_RKIND
+          do iEdge = 1,nEdges
+            c1 = cellsOnEdge(1,iEdge)
+            c2 = cellsOnEdge(2,iEdge)
+            if((c1 <= 0) .or. (c2 <= 0) .or. (c1 > nCells) .or. (c2 > nCells)) cycle
+            if((maxLevelCell(c1) <= 0) .or. (maxLevelCell(c2) <= 0)) cycle
+
+            ! at the top level, use ssh instead of zMid
+            dzVertMean = 0.5_RKIND*(ssh(c1)-zMid(1,c1)+ssh(c2)-zMid(1,c2))
+            dzEdgeMean = 0.5_RKIND*abs(ssh(c2)-ssh(c1)+zMid(1,c2)-zMid(1,c1))
+            ! a factor of 0.5 because ssh is at top interface, not middle of the previous layer
+            rx1Edge(1,iEdge) = 0.5_RKIND*dzEdgeMean/dzVertMean
+            maxLevelEdge = min(maxLevelCell(c1), maxLevelCell(c2))
+            do k = 1, maxLevelEdge-1
+              dzVertMean = 0.5_RKIND*(zMid(k,c1)-zMid(k+1,c1)+zMid(k,c2)-zMid(k+1,c2))
+              dzEdgeMean = 0.5_RKIND*abs(zMid(k,c2)-zMid(k,c1)+zMid(k+1,c2)-zMid(k+1,c1))
+              rx1Edge(k+1,iEdge) = dzEdgeMean/dzVertMean
+            end do
+          end do
+
+          localMaxRx1Edge = max(localMaxRx1Edge,maxval(rx1Edge))
+
           do iCell = 1, nCells
-            if(smoothingMask(iCell) == 0) cycle
-
-            call ocn_init_rx1_grid_constrain_bottom_depth_level(zInterface(:,iCell), bottomDepth(iCell), &
-                                           config_rx1_min_levels, bottomDepthMaxLevel(iCell))
-
-            maxLevelCell(iCell) = min(maxLevelCell(iCell),int(bottomDepthMaxLevel(iCell)))
+            if(maxLevelCell(iCell) <= 0) cycle
+            do k = 1, maxLevelCell(iCell)
+              localStretchMax = max(localStretchMax, verticalStretch(k,iCell))
+              localStretchMin = min(localStretchMax, verticalStretch(k,iCell))
+            end do
           end do
 
           block_ptr => block_ptr % next
-        end do !block_ptr
-      end do !iSmooth
+        end do
+        call mpas_dmpar_max_real(domain % dminfo, localMaxRx1Edge, globalRx1Max)
+        write (stdoutUnit,'(a, i5, a, es10.2)') ' iter:', iterIndex, ' global max of rx1:', globalRx1Max
+        call mpas_dmpar_min_real(domain % dminfo, localStretchMin, globalVerticalStretchMin)
+        write (stdoutUnit,'(a, es10.2)') '            global min of verticalStretch:', globalVerticalStretchMin
+        call mpas_dmpar_max_real(domain % dminfo, localStretchMax, globalVerticalStretchMax)
+        write (stdoutUnit,'(a, es10.2)') '            global max of verticalStretch:', globalVerticalStretchMax
+
+      end do !iterIndex
 
       ! compute maxLevelCell, zMid and restingThickness; update bottomDepth and layerThickness
       ! for full or partial bottom cells (if requested)
@@ -1248,6 +1264,7 @@ contains
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+        call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
         call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
@@ -1265,7 +1282,15 @@ contains
             cycle
           end if
 
-          if(smoothingMask(iCell) == 1) then
+
+          if(smoothingMask(iCell) == 0) then
+            ! initialize with PBCs
+            call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
+            if(iErr .ne. 0) then
+              write(stderrUnit,*) 'ERROR: ocn_alter_bottomDepth_for_pbcs failed.'
+              return
+            end if
+          else
             ! we may not have been able to put the layer interface exactly at bottomDepth,
             ! either because bottomDepth was too shallow for the minimum number of layers
             ! or because contracting the layer would have led to rx1 > rx1Max
@@ -1290,63 +1315,128 @@ contains
       call mpas_deallocate_scratch_field(zInterfaceField, .false.)
       call mpas_deallocate_scratch_field(zTopField, .false.)
       call mpas_deallocate_scratch_field(zBotField, .false.)
-      call mpas_deallocate_scratch_field(bottomDepthMaxLevelField, .false.)
 
     end subroutine ocn_init_vertical_grid_with_max_rx1
 
 !***********************************************************************
 !
-!  routine ocn_init_rx1_grid_constrain_bottom_depth_level
+!  routine constrain_rx1_layer
 !
-!> \brief   constrain the min and max index where z=-bottomDepth
+!> \brief   modify zBot in a layer so rx1 <= rx1Goal
 !> \author  Xylar Asay-Davis
-!> \date    12/04/2015
+!> \date    05/09/2015
 !> \details
-!>  This routine constrains vertical grid in a given column to have at
-!>  least bottomDepthMinLevel and at most bottomDepthMaxLevel vertical
-!>  levels between z=ssh and z=-bottomDepth.  If necessary, the column
-!>  is rescaled, holding the top fixed, until the constraint is
-!>  satisfied.  bottomDepthMaxLevel can be non-integer, and is
-!>  computed based on the level in refBottomDepth where bottomDepth
-!>  would occur (i.e. the number of vertical levels in a z-level
-!>  coordinate with bathymetry at -bottomDepth).
+!>  This routine is used to iteratively constrains zBot such that
+!>  rx1 <= rx1Goal.  zBot is nudged toward a goal field initially
+!>  with weight initIterWeight and finally with a weight of 1.0.
+!>
 !
 !-----------------------------------------------------------------------
-    subroutine ocn_init_rx1_grid_constrain_bottom_depth_level(zInterface, bottomDepth, bottomDepthMinLevel, bottomDepthMaxLevel)
 
-      real (kind=RKIND), dimension(:), intent(inout) :: zInterface
-      integer, intent(in) :: bottomDepthMinLevel
-      real (kind=RKIND), intent(in) :: bottomDepth, bottomDepthMaxLevel
+    subroutine constrain_rx1_layer(domain, iterCount, initIterWeight, rx1Goal, iErr)
 
-      integer :: nVertLevels, k
+      type (domain_type), intent(inout) :: domain
+      integer, intent(in) :: iterCount
+      real (kind=RKIND), intent(in) :: initIterWeight, rx1Goal
+      integer, intent(out) :: iErr
 
-      real (kind=RKIND) :: stretch, frac, z, z0
+      type (block_type), pointer :: block_ptr
 
-      z0 = zInterface(1)
+      type (mpas_pool_type), pointer :: meshPool, diagnosticsPool, scratchPool
 
-      if(z0 <= -bottomDepth) return ! this must be a land cell, so there's nothing to do
+      type (field1DReal), pointer :: zBotField, zBotNewField
 
-      !k = bottomDepthMinLevel+1
-      !z = zInterface(k)
-      !if(z < -bottomDepth) then
-      !  ! the column has become too stretched, so squash it so z --> -bottomDepth
-      !  stretch = (z0+bottomDepth)/(z0-z)
-      !  zInterface(:) = stretch*(zInterface(:)-z0) + z0
-      !  return
-      !end if
+      real (kind=RKIND), dimension(:), pointer :: zTop, zBot, zBotNew, bottomDepth
 
-      nVertLevels = size(zInterface)-1
+      integer, pointer :: nCells, nVertLevels, nEdges
+      integer, dimension(:), pointer :: maxLevelCell, smoothingMask
+      integer, dimension(:,:), pointer :: cellsOnEdge
 
-      k = min(int(bottomDepthMaxLevel),nVertLevels)
-      frac = bottomDepthMaxLevel - k
-      z = zInterface(k) + frac*(zInterface(k+1) - zInterface(k))
-      if(z > -bottomDepth) then
-        ! the column has become too squashed, so stretch it so z --> -bottomDepth
-        stretch = (z0+bottomDepth)/(z0-z)
-        zInterface(:) = stretch*(zInterface(:)-z0) + z0
-      end if
+      integer :: iCell, iEdge, c1, c2, iterIndex
 
-    end subroutine ocn_init_rx1_grid_constrain_bottom_depth_level
+      real (kind=RKIND) :: dzEdgeK, dzEdgeKp1, dzEdgeMean, dzVertGoal, weight, zBotEdge, &
+                           deltaZBot
+
+      iErr = 0
+
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
+      call mpas_pool_get_field(scratchPool, 'zBotScratch', zBotField)
+
+      do iterIndex = 1, iterCount
+        ! next, adjust zBot toward zBotNew (with rx1 < rx1Max)
+        if(iterCount == 1) then
+          weight = 1.0_RKIND
+        else
+          weight = (iterIndex - 1.0_RKIND)/(iterCount - 1.0_RKIND)
+        end if
+        ! the weight goes from initIterWeight for the first iteration to 1.0 for the last
+        weight = (1.0_RKIND - weight)*initIterWeight + weight
+
+        block_ptr => domain % blocklist
+        do while(associated(block_ptr))
+          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+
+          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
+          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+          call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+
+          call mpas_pool_get_array(scratchPool, 'zTopScratch', zTop)
+          call mpas_pool_get_array(scratchPool, 'zBotScratch', zBot)
+          call mpas_pool_get_array(diagnosticsPool, 'rx1InitSmoothingMask', smoothingMask, 1)
+
+          call mpas_pool_get_field(scratchPool, 'zBotNewScratch', zBotNewField)
+          call mpas_allocate_scratch_field(zBotNewField, .true.)
+          call mpas_pool_get_array(scratchPool, 'zBotNewScratch', zBotNew)
+
+          zBotNew(:) = zBot(:)
+          do iEdge = 1,nEdges
+            c1 = cellsOnEdge(1,iEdge)
+            c2 = cellsOnEdge(2,iEdge)
+            if((c1 <= 0) .or. (c1 > nCells) .or. (c2 <= 0) .or. (c2 > nCells)) cycle
+            if((maxLevelCell(c1) <= 0) .or. (maxLevelCell(c2) <= 0)) cycle
+            if((smoothingMask(c1) == 0) .and. (smoothingMask(c2) == 0)) cycle
+
+            ! if both cells are definitely below the bathymetry, no need to constrain rx1
+            if((zTop(c1) < -bottomDepth(c1)) .and. (zTop(c2) < -bottomDepth(c2))) cycle
+
+            dzEdgeK = zTop(c2)-zTop(c1)
+            dzEdgeKp1 = zBot(c2)-zBot(c1)
+            dzEdgeMean = 0.5_RKIND*abs(dzEdgeK+dzEdgeKp1)
+            dzVertGoal = dzEdgeMean/rx1Goal
+            zBotEdge = 0.5_RKIND*(zTop(c1)+zTop(c2)) - dzVertGoal
+
+            ! Once iteration has converged, we want 0.5_RKIND*(zBot(c1) + zBot(c2)) <= zBotEdge
+            deltaZBot = (2.0_RKIND*zBotEdge - zBot(c2) - zBotNew(c1))
+            if(deltaZBot < 0.0_RKIND) then
+              zBotNew(c1) = zBotNew(c1) + deltaZBot
+            end if
+            deltaZBot = (2.0_RKIND*zBotEdge - zBot(c1) - zBotNew(c2))
+            if(deltaZBot < 0.0_RKIND) then
+              zBotNew(c2) = zBotNew(c2) + deltaZBot
+            end if
+          end do !iEdge
+
+          where(smoothingMask(:) == 1)
+            zBot(:) = (1.0_RKIND - weight)*zBot(:) + weight*zBotNew(:)
+          end where
+
+          call mpas_deallocate_scratch_field(zBotNewField, .true.)
+
+          block_ptr => block_ptr % next
+        end do !block_ptr
+
+        ! do halo update on zBot
+        call mpas_dmpar_exch_halo_field(zBotField)
+
+      end do !iterIndex
+
+    end subroutine constrain_rx1_layer
 
 !***********************************************************************
 
