@@ -7,8 +7,14 @@
  * @see http://code.google.com/p/parallelio/
  */
 
+#include <config.h>
 #include <pio.h>
 #include <pio_internal.h>
+
+#ifdef PIO_ENABLE_LOGGING
+extern int my_rank;
+extern int pio_log_level;
+#endif /* PIO_ENABLE_LOGGING */
 
 /** This function is run on the IO tasks to create a netCDF file. */
 int create_file_handler(iosystem_desc_t *ios)

@@ -15,8 +15,79 @@
  * @date     Feburary 2014, April 2016
  */
 
+#include <config.h>
+#ifdef PIO_ENABLE_LOGGING
+#include <stdarg.h>
+#endif /* PIO_ENABLE_LOGGING */
 #include <pio.h>
 #include <pio_internal.h>
+
+#ifdef PIO_ENABLE_LOGGING
+int pio_log_level = 0;
+int my_rank;
+#endif /* PIO_ENABLE_LOGGING */
+
+/** Set the logging level. Set to -1 for nothing, 0 for errors only, 1
+ * for important logging, and so on. Log levels below 1 are only
+ * printed on the io/component root. If the library is not built with
+ * logging, this function does nothing. */
+int PIOc_set_log_level(int level)
+{
+#ifdef PIO_ENABLE_LOGGING
+    printf("setting log level to %d\n", level);
+    pio_log_level = level;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    return PIO_NOERR;
+#endif /* PIO_ENABLE_LOGGING */
+}
+
+#ifdef PIO_ENABLE_LOGGING
+/** This function prints out a message, if the severity of the message
+   is lower than the global pio_log_level. To use it, do something
+   like this:
+   
+   pio_log(0, "this computer will explode in %d seconds", i);
+
+   After the first arg (the severity), use the rest like a normal
+   printf statement. Output will appear on stdout.
+   This function is heavily based on the function in section 15.5 of
+   the C FAQ. 
+*/
+void 
+pio_log(int severity, const char *fmt, ...)
+{
+   va_list argp;
+   int t;
+
+   /* If the severity is greater than the log level, we don't print
+      this message. */
+   if (severity > pio_log_level)
+      return;
+
+   /* If the severity is 1 or less, only print on rank 0. */
+   if (severity < 2 && my_rank != 0)
+       return;
+
+   /* If the severity is zero, this is an error. Otherwise insert that
+      many tabs before the message. */
+   if (!severity)
+       fprintf(stdout, "ERROR: ");
+   for (t = 0; t < severity; t++)
+       fprintf(stdout, "\t");
+
+   /* Show the rank. */
+   fprintf(stdout, "%d ", my_rank);
+   
+   /* Print out the variable list of args with vprintf. */
+   va_start(argp, fmt);
+   vfprintf(stdout, fmt, argp);
+   va_end(argp);
+   
+   /* Put on a final linefeed. */
+   fprintf(stdout, "\n");
+   fflush(stdout);
+}
+#endif /* PIO_ENABLE_LOGGING */
 
 /** 
  * @ingroup PIOc_inq
@@ -44,10 +115,7 @@ int PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp,
     int ierr = PIO_NOERR;  /** Return code from function calls. */
     int mpierr;            /** Return code from MPI function codes. */
 
-    /* For debugging purposes. */
-    int my_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);    
-    printf("%d PIOc_inq ncid = %d\n", my_rank, ncid);
+    LOG((1, "PIOc_inq ncid = %d", ncid));
 
     /* Find the info about this file. */
     if (!(file = pio_get_file_from_id(ncid)))
@@ -67,15 +135,11 @@ int PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp,
 	if(ios->compmaster) 
 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
-	printf("%d PIOc_inq netcdf Bcast ncid = %d\n", my_rank, file->fh);
 	mpierr = MPI_Bcast(&ndims_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-	printf("%d PIOc_inq netcdf Bcast ndims_present = %d\n", my_rank, ndims_present);
 	mpierr = MPI_Bcast(&nvars_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-	printf("%d PIOc_inq netcdf Bcast nvars_present = %d\n", my_rank, nvars_present);
 	mpierr = MPI_Bcast(&ngatts_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-	printf("%d PIOc_inq netcdf Bcast ngatts_present = %d\n", my_rank, ngatts_present);
 	mpierr = MPI_Bcast(&unlimdimid_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-	printf("%d PIOc_inq netcdf Bcast unlimdimid_present = %d\n", my_rank, unlimdimid_present);
+	LOG((2, "PIOc_inq netcdf Bcast unlimdimid_present = %d", unlimdimid_present));
     }
 
     /* If this is an IO task, then call the netCDF function. */
@@ -132,22 +196,22 @@ int PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp,
     if (ndimsp)
     {
 	mpierr = MPI_Bcast(ndimsp, 1, MPI_INT, ios->ioroot, ios->my_comm);
-	printf("%d PIOc__inq bcast ndims = %d\n", my_rank, *ndimsp);
+	LOG((2, "PIOc__inq bcast ndims = %d\n", *ndimsp));
     }
     if(nvarsp)
     {
 	mpierr = MPI_Bcast(nvarsp, 1, MPI_INT, ios->ioroot, ios->my_comm);
-	printf("%d PIOc__inq bcast nvars = %d\n", my_rank, *nvarsp);
+	LOG((2, "%d PIOc__inq bcast nvars = %d\n", my_rank, *nvarsp));
     }
     if(ngattsp)
     {
 	mpierr = MPI_Bcast(ngattsp, 1, MPI_INT, ios->ioroot, ios->my_comm);
-	printf("%d PIOc__inq bcast ngatts = %d\n", my_rank, *ngattsp);
+	LOG((2, "%d PIOc__inq bcast ngatts = %d\n", my_rank, *ngattsp));
     }
     if(unlimdimidp)
     {
 	mpierr = MPI_Bcast(unlimdimidp, 1, MPI_INT, ios->ioroot, ios->my_comm);
-	printf("%d PIOc__inq bcast unlimdimid = %d\n", my_rank, *unlimdimidp);
+	LOG((2, "%d PIOc__inq bcast unlimdimid = %d\n", my_rank, *unlimdimidp));
     }
 	
     if(errstr)
@@ -171,9 +235,7 @@ int PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp,
  */
 int PIOc_inq_ndims (int ncid, int *ndimsp) 
 {
-    int my_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);    
-    printf("%d calling PIOc_inq_ndims\n", my_rank);
+    LOG((1, "PIOc_inq_ndims"));
     return PIOc_inq(ncid, ndimsp, NULL, NULL, NULL);
 }
 
@@ -552,7 +614,7 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims,
 	    mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
 	mpierr = MPI_Bcast(&(file->fh), 1, MPI_INT, ios->compmaster, ios->intercomm);
 	namelen = strlen(name);
-	printf("bcasting namelen = %d name = %s\n", namelen, name);
+	LOG((2, "bcasting namelen = %d name = %s\n", namelen, name));
 	if (!ios->compmaster)
 	    ios->compmaster = MPI_PROC_NULL;
 	mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
@@ -700,10 +762,7 @@ int PIOc_inq_dim(int ncid, int dimid, char *name, PIO_Offset *lenp)
     int msg = PIO_MSG_INQ_DIM;
     int mpierr;
 
-    /* For debugging purposes only... */
-    int my_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);    
-    printf("%d PIOc_inq_dim\n", my_rank);
+    LOG((1, "PIOc_inq_dim"));
 
     /* Get the file info, based on the ncid. */
     if (!(file = pio_get_file_from_id(ncid)))
@@ -720,9 +779,9 @@ int PIOc_inq_dim(int ncid, int dimid, char *name, PIO_Offset *lenp)
 	mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	mpierr = MPI_Bcast(&dimid, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	mpierr = MPI_Bcast(&name_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-	printf("%d PIOc_inq netcdf Bcast name_present = %d\n", my_rank, name_present);
+	LOG((2, "PIOc_inq netcdf Bcast name_present = %d", name_present));
 	mpierr = MPI_Bcast(&len_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-	printf("%d PIOc_inq netcdf Bcast len_present = %d\n", my_rank, len_present);
+	LOG((2, "PIOc_inq netcdf Bcast len_present = %d", len_present));
     }
 
     /* Make the call to the netCDF layer. */
@@ -1221,9 +1280,7 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
     ios = file->iosystem;
     msg = PIO_MSG_INQ_VARID;
 
-    int my_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);    
-    printf("%d PIOc_inq_varid ncid = %d name = %s\n", my_rank, ncid, name);
+    LOG((1, "PIOc_inq_varid ncid = %d name = %s", ncid, name));
 
     if(ios->async_interface && ! ios->ioproc){
 	if(ios->compmaster) 
@@ -1232,11 +1289,8 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
 	mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	int namelen;
 	namelen = strlen(name);
-	printf("%d PIOc_inq_varid BCast namelen = %d\n", my_rank, namelen);
 	mpierr = MPI_Bcast(&namelen, 1, MPI_INT, ios->compmaster, ios->intercomm);
-	printf("%d PIOc_inq_varid BCast name = %s\n", my_rank, name);
 	mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-	printf("%d PIOc_inq_varid BCast done\n", my_rank);
     }
 
     if(ios->ioproc){
@@ -1490,16 +1544,12 @@ int PIOc_inq_var(int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
     int msg = PIO_MSG_INQ_VAR;
     int mpierr;
 
-   /* For debugging purposes only... */
-    int my_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);    
-    printf("%d PIOc_inq_var\n", my_rank);
+    LOG((1, "PIOc_inq_var\n"));
 
     /* Get the file info, based on the ncid. */
     if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
     ios = file->iosystem;
-    printf("%d PIOc_inq_var got file\n", my_rank);
 
     /* If using async, and this is not an IO task, send the parameters to the IO task. */
     if (ios->async_interface && !ios->ioproc)
@@ -1512,18 +1562,16 @@ int PIOc_inq_var(int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
 	if(ios->compmaster) 
 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
-	printf("%d PIOc_inq_var ncid = %d\n", my_rank, ncid);
 	mpierr = MPI_Bcast(&varid, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	mpierr = MPI_Bcast(&name_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	mpierr = MPI_Bcast(&xtype_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	mpierr = MPI_Bcast(&ndims_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	mpierr = MPI_Bcast(&dimids_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	mpierr = MPI_Bcast(&natts_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-	printf("%d PIOc_inq_var name_present = %d xtype_present = %d ndims_present = %d dimids_present = %d, natts_present = %d nattsp = %d\n",
-	       my_rank, name_present, xtype_present, ndims_present, dimids_present, natts_present, nattsp);
+	LOG((2, "PIOc_inq_var name_present = %d xtype_present = %d ndims_present = %d "
+	     "dimids_present = %d, natts_present = %d nattsp = %d",
+	     name_present, xtype_present, ndims_present, dimids_present, natts_present, nattsp));
     }
-
-    printf("%d PIOc_inq_var ios->ioproc = %d nattsp = %d\n", my_rank, ios->ioproc, nattsp);
 
     /* Call the netCDF layer. */
     if (ios->ioproc)

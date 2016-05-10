@@ -321,7 +321,12 @@ main(int argc, char **argv)
 
 	comp_task = 0;
     }
-    
+
+    /* Turn on logging. */
+    if ((ret = PIOc_set_log_level(2)))
+	ERR(ret);
+
+    /* Initialize the async setup. */
     if ((ret = PIOc_Init_Intercomm(COMPONENT_COUNT, MPI_COMM_WORLD, &comp_comms,
 				   io_comm, &iosysid)))
 	ERR(ret);

@@ -647,7 +647,7 @@ int PIOc_set_blocksize(const int newblocksize);
   int PIOc_get_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned long long *buf);  
   int PIOc_get_var_schar (int ncid, int varid, signed char *buf); 
   int PIOc_iotype_available(const int iotype);
-
+  int PIOc_set_log_level(int level);
 #if defined(__cplusplus)
 }
 #endif

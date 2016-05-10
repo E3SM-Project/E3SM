@@ -17,6 +17,12 @@
 #include <gptl.h>
 #endif
 
+#ifdef PIO_ENABLE_LOGGING
+void nc_log(int severity, const char *fmt, ...);
+#define LOG(e) pio_log e
+#else
+#define LOG(e)
+#endif /* PIO_ENABLE_LOGGING */
 
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
