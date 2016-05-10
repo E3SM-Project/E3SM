@@ -41,6 +41,11 @@ my %tests = ('copy.nc' => {control => 'control.nc'},
              'cpl.hi.subset.test.nc' => {control => 'cpl.hi.subset.control.nc'},
              'clm2.h0.subset.test.nc' => {control => 'clm2.h0.subset.control.nc'},
              'clm2.h1.subset.test.nc' => {control => 'clm2.h1.subset.control.nc'},
+
+             'diffs_in_attribute.nc' => {control => 'control_attributes.nc'},
+
+             'copy_char.nc' => {control => 'control_char.nc',
+                                extra_args => '-m'},
              );
 
 #----------------------------------------------------------------------
