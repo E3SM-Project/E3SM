@@ -18,7 +18,7 @@
 #endif
 
 #ifdef PIO_ENABLE_LOGGING
-void nc_log(int severity, const char *fmt, ...);
+void pio_log(int severity, const char *fmt, ...);
 #define LOG(e) pio_log e
 #else
 #define LOG(e)
