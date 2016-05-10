@@ -13,7 +13,7 @@
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<option name="config_do_restart">.true.</option>
 		<template file="restart_setup_template.xml" path_base="script_test_dir"/>
-		<option name="config_start_time">'0000-01-01_04:00:00'</option>
+		<option name="config_start_time">'0001-01-01_04:00:00'</option>
 		<option name="config_run_duration">'04:00:00'</option>
 	</namelist>
 
