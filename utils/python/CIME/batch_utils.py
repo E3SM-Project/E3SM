@@ -1,5 +1,5 @@
 """
-BatchUtils class for submitting jobs and managing dependancies.
+BatchUtils class for submitting jobs and managing dependencies.
 """
 
 from CIME.XML.standard_module_setup import *
@@ -47,11 +47,12 @@ class BatchUtils(object):
                 except:
                     expect(False,"Unable to evaluate prereq expression '%s' for job '%s'"%(jobdict['prereq'],job))
                 if prereq:
-                    self.jobs.append((job,jobdict['dependancy']))
+                    self.jobs.append((job,jobdict['dependency']))
+
         depid = {}
-        for job, dependancy in self.jobs:
-            if dependancy is not None:
-                deps = dependancy.split()
+        for job, dependency in self.jobs:
+            if dependency is not None:
+                deps = dependency.split()
             else:
                 deps = list()
             jobid = ""
@@ -107,6 +108,7 @@ class BatchUtils(object):
     def get_submit_args(self, job, batchtype):
         if self.batchmaker is None:
             self.batchmaker = get_batch_maker(job, case=self.case)
+
         task_count = self.case.get_value("task_count", subgroup=job)
         if task_count == "default":
             self.batchmaker.override_node_count = None
@@ -127,4 +129,5 @@ class BatchUtils(object):
                         submitargs+=" %s%s"%(flag,val)
                     else:
                         submitargs+=" %s %s"%(flag,val)
+
         return submitargs

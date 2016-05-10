@@ -114,18 +114,10 @@ class BatchMaker(object):
             return
 
         # Make sure to check default queue first.
-        all_queues = list()
-        all_queues.append( self.config_machines_parser.get_default_queue())
-        all_queues = all_queues + self.config_machines_parser.get_all_queues()
-        for queue in all_queues:
-            if queue is not None:
-                jobmin = queue.get("jobmin")
-                jobmax = queue.get("jobmax")
-                # if the fullsum is between the min and max # jobs, then use this queue.
-                if jobmin is not None and jobmax is not None and self.fullsum >= int(jobmin) and self.fullsum <= int(jobmax):
-                    self.queue = queue.text
-                    self.wall_time_max = queue.get("walltimemax")
-                    break
+        queue_node = self.config_machines_parser.select_best_queue(self.fullsum)
+        if queue_node is not None:
+            self.queue = queue_node.text
+            self.wall_time_max = queue_node.get("walltimemax")
 
         if self.queue:
             self.case.set_value("JOB_QUEUE", self.queue, subgroup=self.job)
@@ -149,9 +141,9 @@ class BatchMaker(object):
 
         # if we didn't find a walltime previously, use the default.
         if not self.wall_time:
-            self.wall_time = self.config_machines_parser.get_default_walltime()
-            if self.wall_time is not None:
-                self.wall_time = self.wall_time.text
+            wall_time_node = self.config_machines_parser.get_default_walltime()
+            if wall_time_node is not None:
+                self.wall_time = wall_time_node.text
             else:
                 self.wall_time = "0"
 

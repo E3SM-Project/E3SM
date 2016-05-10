@@ -29,9 +29,9 @@ PHASES = [INITIAL_PHASE, CREATE_NEWCASE_PHASE, XML_PHASE, SETUP_PHASE,
           NAMELIST_PHASE, SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE, RUN_PHASE] # Order matters
 CONTINUE = [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]
 
-###############################################################################
 logger = logging.getLogger(__name__)
 
+###############################################################################
 class SystemTest(object):
 ###############################################################################
 
@@ -44,7 +44,8 @@ class SystemTest(object):
                  clean=False, compare=False, generate=False, namelists_only=False,
                  project=None, parallel_jobs=None,
                  xml_machine=None, xml_compiler=None, xml_category=None,
-                 xml_testlist=None, walltime=None):
+                 xml_testlist=None, walltime=None, proc_pool=None,
+                 use_existing=False):
     ###########################################################################
         self._cime_root = CIME.utils.get_cime_root()
         self._cime_model = CIME.utils.get_model()
@@ -194,8 +195,12 @@ class SystemTest(object):
             self._tests[test_name] = (INITIAL_PHASE, TEST_PASS_STATUS, False)
 
         # Oversubscribe by 1/4
-        pes = int(self._machobj.get_value("PES_PER_NODE"))
-        self._proc_pool = int(pes * 1.25)
+        if proc_pool is None:
+            pes = int(self._machobj.get_value("PES_PER_NODE"))
+            self._proc_pool = int(pes * 1.25)
+        else:
+            self._proc_pool = int(proc_pool)
+
         self._procs_avail = self._proc_pool
 
         # Setup phases
@@ -208,11 +213,21 @@ class SystemTest(object):
         if not self._compare and not self._generate:
             self._phases.remove(NAMELIST_PHASE)
 
-        # None of the test directories should already exist.
-        for test in self._tests:
-            expect(not os.path.exists(self._get_test_dir(test)),
-                   "Cannot create new case in directory '%s', it already exists."
-                   " Pick a different test-id" % self._get_test_dir(test))
+        if use_existing:
+            for test in self._tests:
+                test_status_file = os.path.join(self._get_test_dir(test), TEST_STATUS_FILENAME)
+                statuses = wait_for_tests.parse_test_status_file(test_status_file)[0]
+                for phase, status in statuses.iteritems():
+                    if phase != INITIAL_PHASE:
+                        self._update_test_status(test, phase, TEST_PENDING_STATUS)
+                        self._update_test_status(test, phase, status)
+        else:
+            # None of the test directories should already exist.
+            for test in self._tests:
+                expect(not os.path.exists(self._get_test_dir(test)),
+                       "Cannot create new case in directory '%s', it already exists."
+                       " Pick a different test-id" % self._get_test_dir(test))
+
         # By the end of this constructor, this program should never hard abort,
         # instead, errors will be placed in the TestStatus files for the various
         # tests cases
@@ -284,8 +299,8 @@ class SystemTest(object):
 
         if old_phase == phase:
             expect(old_status == TEST_PENDING_STATUS,
-                   "Only valid to transition from PENDING to something else, found '%s'" %
-                   old_status)
+                   "Only valid to transition from PENDING to something else, found '%s' for phase '%s'" %
+                   (old_status, phase))
             expect(status != TEST_PENDING_STATUS,
                    "Cannot transition from PEND -> PEND")
         else:
@@ -297,7 +312,6 @@ class SystemTest(object):
                    "Skipped phase?")
         # Must be atomic
         self._tests[test] = (phase, status, old_nl_fail)
-
 
     ###########################################################################
     def _test_has_nl_problem(self, test):
@@ -336,7 +350,7 @@ class SystemTest(object):
     ###########################################################################
         test_dir = self._get_test_dir(test)
 
-        test_case, case_opts, grid, compset,\
+        _, case_opts, grid, compset,\
             machine, compiler, test_mods = CIME.utils.parse_test_name(test)
         if compiler != self._compiler:
             raise StandardError("Test '%s' has compiler that does"
@@ -361,7 +375,6 @@ class SystemTest(object):
         if case_opts is not None:
             for case_opt in case_opts:
                 if case_opt.startswith('M'):
-                    match =  re.match('M(.+)', case_opt)
                     mpilib = case_opt[1:]
                     create_newcase_cmd += " --mpilib %s" % mpilib
                     logger.debug (" MPILIB set to %s" % mpilib)
@@ -505,10 +518,12 @@ class SystemTest(object):
             os.mkdir(lockedfiles)
         shutil.copy(os.path.join(test_dir,"env_run.xml"),
                     os.path.join(lockedfiles, "env_run.orig.xml"))
+
         case = Case(test_dir)
         case.set_value("SHAREDLIBROOT",
                        os.path.join(self._test_root,
                                     "sharedlibroot.%s"%self._test_id))
+
         envtest.set_initial_values(case)
         return True
 
@@ -652,7 +667,7 @@ class SystemTest(object):
             return False
 
     ###########################################################################
-    def _get_procs_needed(self, test, phase, threads_in_flight):
+    def _get_procs_needed(self, test, phase, threads_in_flight=None):
     ###########################################################################
         if phase == RUN_PHASE and self._no_batch:
             test_dir = self._get_test_dir(test)
@@ -794,7 +809,6 @@ class SystemTest(object):
     ###########################################################################
         try:
             python_libs_root = CIME.utils.get_python_libs_root()
-            scripts_root = CIME.utils.get_scripts_root()
             template_file = os.path.join(python_libs_root, "cs.status.template")
             template = open(template_file, "r").read()
             template = template.replace("<PATH>",

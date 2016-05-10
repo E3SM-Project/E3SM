@@ -149,14 +149,6 @@
     </directives>
    </batch_system>
 
-   <!-- skybridge is slurm -->
-
-   <batch_system MACH="skybridge" version="x.y">
-     <directives>
-       <directive>--account={{ project }}</directive>
-     </directives>
-   </batch_system>
-
    <!-- Constance is slurm -->
 
    <batch_system MACH="constance" version="x.y">
@@ -167,12 +159,6 @@
        <directive>--output=slurm.out</directive>
        <directive>--error=slurm.err</directive>
     </directives>
-   </batch_system>
-
-   <batch_system MACH="redsky" version="x.y">
-     <directives>
-       <directive>--account={{ project }}</directive>
-     </directives>
    </batch_system>
 
    <batch_system MACH="mustang" version="x.y">
@@ -241,13 +227,13 @@
       <template>template.st_archive</template>
       <task_count>1</task_count>
       <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
-      <dependancy>case.run or case.test</dependancy>
+      <dependency>case.run or case.test</dependency>
       <prereq>$DOUT_S</prereq>
     </job>
     <job name="case.lt_archive">
       <template>template.lt_archive</template>
       <task_count>1</task_count>
-      <dependancy>case.st_archive</dependancy>
+      <dependency>case.st_archive</dependency>
       <prereq>$DOUT_L_MS</prereq>
     </job>
   </batch_jobs>

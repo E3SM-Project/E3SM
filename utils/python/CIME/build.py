@@ -93,7 +93,7 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot,
     while(threading.active_count() > 1):
         time.sleep(1)
 
-    # aquap has a dependancy on atm so we build it after the threaded loop
+    # aquap has a dependency on atm so we build it after the threaded loop
     if comp_ocn == "aquap":
         _build_model_thread(config_ocn_dir, caseroot, bldroot, "aquap", file_build,
                             exeroot, "ocn", "aquap", objdir, incroot, thread_bad_results)

@@ -285,6 +285,21 @@ class Machines(GenericXML):
     def get_all_queues(self):
         return self.get_nodes("queue", root=self.machine_node)
 
+    def select_best_queue(self, num_pes):
+        # Make sure to check default queue first.
+        all_queues = []
+        all_queues.append( self.get_default_queue())
+        all_queues = all_queues + self.get_all_queues()
+        for queue in all_queues:
+            if queue is not None:
+                jobmin = queue.get("jobmin")
+                jobmax = queue.get("jobmax")
+                # if the fullsum is between the min and max # jobs, then use this queue.
+                if jobmin is not None and jobmax is not None and num_pes >= int(jobmin) and num_pes <= int(jobmax):
+                    return queue
+
+        return None
+
     def get_walltimes(self):
         return self.get_nodes("walltime", root=self.machine_node)
 

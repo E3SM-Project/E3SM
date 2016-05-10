@@ -302,13 +302,13 @@
       <template>template.st_archive</template>
       <task_count>1</task_count>
       <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
-      <dependancy>case.run or case.test</dependancy>
+      <dependency>case.run or case.test</dependency>
       <prereq>$DOUT_S</prereq>
     </job>
     <job name="case.lt_archive">
       <template>template.lt_archive</template>
       <task_count>1</task_count>
-      <dependancy>case.st_archive</dependancy>
+      <dependency>case.st_archive</dependency>
       <prereq>$DOUT_L_MS</prereq>
     </job>
   </batch_jobs>
