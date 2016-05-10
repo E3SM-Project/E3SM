@@ -149,9 +149,9 @@ class BatchMaker(object):
 
         # if we didn't find a walltime previously, use the default.
         if not self.wall_time:
-            self.wall_time = self.config_machines_parser.get_default_walltime()
-            if self.wall_time is not None:
-                self.wall_time = self.wall_time.text
+            wall_time_node = self.config_machines_parser.get_default_walltime()
+            if wall_time_node is not None:
+                self.wall_time = wall_time_node.text
             else:
                 self.wall_time = "0"
 

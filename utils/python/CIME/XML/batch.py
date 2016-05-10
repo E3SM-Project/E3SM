@@ -88,25 +88,31 @@ class Batch(GenericXML):
 
         return value
 
-    def get_batch_directives(self, batch_maker):
+    def get_batch_directives(self, batch_maker=None):
         """
         """
         result = []
         directive_prefix = self.get_node("batch_directive", root=self.batch_system_node).text
         directive_prefix = "" if directive_prefix is None else directive_prefix
-        if self.machine_node is not None:
-            nodes = self.get_nodes("directive", root=self.machine_node)
-            for node in nodes:
-                directive = self.get_resolved_value(node.text)
-                directive = batch_maker.transform_vars(directive, default=node.get("default"))
 
-                result.append("%s %s" % (directive_prefix, directive))
+        roots = [self.machine_node, self.batch_system_node]
+        for root in roots:
+            if root is not None:
+                nodes = self.get_nodes("directive", root=root)
+                for node in nodes:
+                    directive = self.get_resolved_value("" if node.text is None else node.text)
+                    if batch_maker is None:
+                        default = node.get("default")
+                        if default is not None:
+                            directive_re = re.compile(r"{{ (\w+) }}", flags=re.M)
+                            m = directive_re.search(directive)
+                            if m is not None:
+                                whole_match = m.group()
+                                directive = directive.replace(whole_match, default)
+                    else:
+                        directive = batch_maker.transform_vars(directive, default=node.get("default"))
 
-        nodes = self.get_nodes("directive", root=self.batch_system_node)
-        for node in nodes:
-            directive = self.get_resolved_value("" if node.text is None else node.text)
-            directive = batch_maker.transform_vars(directive, default=node.get("default"))
-            result.append("%s %s" % (directive_prefix, directive))
+                    result.append("%s %s" % (directive_prefix, directive))
 
         return result
 
@@ -128,7 +134,7 @@ class Batch(GenericXML):
 
         return jobs
 
-    def get_submit_args(self, machine=None):
+    def get_submit_args(self):
         '''
         return a list of touples (flag, name)
         '''

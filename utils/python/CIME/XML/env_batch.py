@@ -75,7 +75,7 @@ class EnvBatch(EnvBase):
             pdict = {}
             pdict['template'] = self.get_value("template", subgroup=name)
             pdict['task_count'] = self.get_value("task_count", subgroup=name)
-            pdict['dependancy'] = self.get_value("dependancy",subgroup=name)
+            pdict['dependency'] = self.get_value("dependency",subgroup=name)
             pdict['prereq'] = self.get_value("prereq", subgroup=name)
             result.append((name,pdict))
         return result
