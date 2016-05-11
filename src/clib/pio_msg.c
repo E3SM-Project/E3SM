@@ -308,7 +308,7 @@ int att_handler(iosystem_desc_t *ios, int msg)
     int ret;
     char *name5;
     int namelen;
-    PIO_Offset len;
+    PIO_Offset attlen;
     nc_type xtype;
     int *op, *ip;
 
@@ -329,13 +329,13 @@ int att_handler(iosystem_desc_t *ios, int msg)
 	    return PIO_ENOMEM;
 	mpierr = MPI_Bcast((void *)name5, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	mpierr = MPI_Bcast(&xtype, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast(&len, 1, MPI_OFFSET,  ios->compmaster, ios->intercomm);
-	if (!(op = malloc(len * sizeof(int))))
+	mpierr = MPI_Bcast(&attlen, 1, MPI_OFFSET,  ios->compmaster, ios->intercomm);
+	if (!(op = malloc(attlen * sizeof(int))))
 	    return PIO_ENOMEM;
-	mpierr = MPI_Bcast(op, len, MPI_INT,  ios->compmaster, ios->intercomm);
+	mpierr = MPI_Bcast(op, attlen, MPI_INT,  ios->compmaster, ios->intercomm);
 
 	/* Call the function to write the attribute. */
-	if ((ret = PIOc_put_att_int(ncid, varid, name5, xtype, len, op)))
+	if ((ret = PIOc_put_att_int(ncid, varid, name5, xtype, attlen, op)))
 	    return ret;
 
 	/* Free resources. */
@@ -356,9 +356,9 @@ int att_handler(iosystem_desc_t *ios, int msg)
 	mpierr = MPI_Bcast((void *)name5, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 
 	/* Allocate space for the attribute data. */
-        if ((ret = PIOc_inq_attlen(ncid, varid, name5, &len)))
+        if ((ret = PIOc_inq_attlen(ncid, varid, name5, &attlen)))
 	    return ret;
-	if (!(ip = malloc(len * sizeof(int))))
+	if (!(ip = malloc(attlen * sizeof(int))))
 	    return PIO_ENOMEM;
 
 	/* Call the function to read the attribute. */
@@ -496,7 +496,7 @@ int sync_file_handler(iosystem_desc_t *ios)
     if ((ret = PIOc_sync(ncid)))
 	return ret;
 
-    printf("%d sync_file_handler succeeded!\n", my_rank);
+    LOG((2, "sync_file_handler succeeded!"));
     return PIO_NOERR;
 }
 
@@ -598,16 +598,14 @@ int def_dim_handler(iosystem_desc_t *ios)
 
     int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    LOG((1, "%d def_dim_handler comproot = %d\n", my_rank, ios->comproot));
+    LOG((1, "def_dim_handler comproot = %d", ios->comproot));
 
     /* Get the parameters for this function that the he comp master
      * task is broadcasting. */
     if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
-    printf("%d def_dim_handler ncid = %d\n", my_rank, ncid);
     if ((mpierr = MPI_Bcast(&namelen, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
-    printf("%d def_dim_handler ncid = %d namelen %d\n", my_rank, ncid, namelen);
     if (!(name = malloc(namelen + 1 * sizeof(char))))
     	return PIO_ENOMEM;
     if ((mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, 0,
@@ -615,9 +613,8 @@ int def_dim_handler(iosystem_desc_t *ios)
     	return PIO_EIO;
     if ((mpierr = MPI_Bcast(&len, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
-    printf("%d def_dim_handler got parameters namelen = %d "
-    	   "name = %s len = %d ncid = %d\n",
-    	   my_rank, namelen, name, len, ncid);
+    LOG((2, "def_dim_handler got parameters namelen = %d "
+	 "name = %s len = %d ncid = %d", namelen, name, len, ncid));
 
     /* Call the create file function. */
     if ((ret = PIOc_def_dim(ncid, name, len, &dimid)))
@@ -685,9 +682,8 @@ int vara_handler(iosystem_desc_t *ios, int msg)
 	if ((mpierr = MPI_Bcast(data, size_in_bytes, MPI_INT, 0,
 				ios->intercomm)))
 	    return PIO_EIO;
-	printf("%d def_var_handler got parameters namelen = %d "
-	       "name = %s len = %d ncid = %d\n",
-	       my_rank, namelen, name, len, ncid);
+	LOG((2, " def_var_handler got parameters namelen = %d "
+	     "name = %s len = %d ncid = %d", namelen, name, len, ncid));
 
 	/* Call the create file function. */
 	if ((ret = PIOc_put_vara_int(ncid, varid, start, count, data)))
@@ -893,7 +889,7 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	LOG((3, "about to call msg MPI_Bcast"));
 	mpierr = MPI_Bcast(&msg, 1, MPI_INT, 0, my_iosys->io_comm);
 	CheckMPIReturn(mpierr, __FILE__, __LINE__);
-	LOG((3, "msg MPI_Bcast complete msg = %d", msg));
+	LOG((1, "msg MPI_Bcast complete msg = %d", msg));
 
 	/* Handle the message. This code is run on all IO tasks. */
 	switch (msg)
