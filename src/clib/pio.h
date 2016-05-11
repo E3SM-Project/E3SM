@@ -648,6 +648,8 @@ int PIOc_set_blocksize(const int newblocksize);
   int PIOc_get_var_schar (int ncid, int varid, signed char *buf); 
   int PIOc_iotype_available(const int iotype);
   int PIOc_set_log_level(int level);
+  int PIOc_put_att(int ncid, int varid, const char *name, nc_type xtype, size_t len, const void *op);
+  int PIOc_get_att(int ncid, int varid, const char *name, void *ip);
 #if defined(__cplusplus)
 }
 #endif

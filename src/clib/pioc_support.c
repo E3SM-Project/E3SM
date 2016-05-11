@@ -114,6 +114,32 @@ void pioassert(_Bool expression, const char *msg, const char *fname, const int l
 
 }
 
+/** Handle MPI errors. An error message is sent to stderr, then the
+  check_netcdf() function is called with PIO_EIO.
+
+  @param file pointer to the file_desc_t info
+  @param mpierr the MPI return code to handle
+  @param filename the name of the code file where error occured.
+  @param line the line of code where error occured.
+ */
+void check_mpi(file_desc_t *file, const int mpierr, const char *filename,
+	       const int line)
+{
+    if (mpierr)
+    {
+	char errstring[MPI_MAX_ERROR_STRING];
+	int errstrlen;
+
+	/* If we can get an error string from MPI, print it to stderr. */
+	if (!MPI_Error_string(mpierr, errstring, &errstrlen))
+	    fprintf(stderr, "MPI ERROR: %s in file %s at line %d\n",
+		    errstring, filename, line);
+
+	/* Handle all MPI errors as PIO_EIO. */
+	check_netcdf(file, PIO_EIO, filename, line);
+    }
+}
+
 /** Check the result of a netCDF API call. 
  * 
  * @param file pointer to the PIO structure describing this file.
