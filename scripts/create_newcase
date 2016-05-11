@@ -152,9 +152,9 @@ def _main_func():
     caseobj.configure(compset, grid, machine_name=machine, project=project,
                       pecount=pecount, compiler=compiler, mpilib=mpilib,
                       user_compset=user_compset, pesfile=pesfile,
-                      user_grid=user_grid, gridfile=gridfile, user_mods_dir=user_mods_dir)
+                      user_grid=user_grid, gridfile=gridfile)
 
-    caseobj.create_caseroot()
+    caseobj.create_caseroot(user_mods_dir)
 
     # Write out the case files
     caseobj.flush(flushall=True)

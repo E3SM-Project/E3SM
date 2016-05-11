@@ -30,7 +30,7 @@ from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
 
 from CIME.XML.generic_xml           import GenericXML
-
+from CIME.user_mod_support      import apply_user_mods
 
 logger = logging.getLogger(__name__)
 
@@ -305,7 +305,7 @@ class Case(object):
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
-                  user_grid=False, gridfile=None, user_mods_dir=None):
+                  user_grid=False, gridfile=None):
 
         #--------------------------------------------
         # compset, pesfile, and compset components
@@ -441,14 +441,6 @@ class Case(object):
         if project is not None:
             self.set_value("PROJECT", project)
 
-        if user_mods_dir is not None:
-            if os.path.isabs(user_mods_dir):
-                user_mods_path = user_mods_dir
-            else:
-                user_mods_path = files.get_value('USER_MODS_DIR', {"component":comp_name})
-                user_mods_path = os.path.join(user_mods_path, user_mods_dir)
-
-
     def set_initial_test_values(self):
         testobj = self._get_env("test")
         testobj.set_initial_values(self)
@@ -565,7 +557,7 @@ class Case(object):
                 with open(readme_file, "w") as fd:
                     fd.write(str_to_write)
 
-    def create_caseroot(self):
+    def create_caseroot(self, user_mods_dir=None):
         caseroot = self.get_value("CASEROOT")
         if not os.path.exists(caseroot):
         # Make the case directory
@@ -584,6 +576,18 @@ class Case(object):
 
         self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
+
+        if user_mods_dir is not None:
+            if os.path.isabs(user_mods_dir):
+                user_mods_path = user_mods_dir
+            else:
+                user_mods_path = self.get_value('USER_MODS_DIR')
+                user_mods_path = os.path.join(user_mods_path, user_mods_dir)
+            apply_user_mods(self.get_value("CASEROOT"), user_mods_path)
+
+
+
+
 
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None):
 
