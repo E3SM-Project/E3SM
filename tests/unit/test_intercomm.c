@@ -92,6 +92,7 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     if ((ret = PIOc_openfile(iosysid, &ncid, &format, filename,
 			     NC_NOWRITE)))
 	ERR(ret);
+    sleep(2);
     
     /* Find the number of dimensions, variables, and global attributes.*/
     if ((ret = PIOc_inq(ncid, &ndims, &nvars, &ngatts, &unlimdimid)))
@@ -136,10 +137,10 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     	ERR(ret);
     if (dimlen2 != DIM_LEN)
     	ERR(ERR_WRONG);
-    if ((ret = PIOc_inq_dimid(ncid, DIM_NAME, &dimid2)))
-    	ERR(ret);
-    if (dimid2 != 0)
-    	ERR(ERR_WRONG);
+    /* if ((ret = PIOc_inq_dimid(ncid, DIM_NAME, &dimid2))) */
+    /* 	ERR(ret); */
+    /* if (dimid2 != 0) */
+    /* 	ERR(ERR_WRONG); */
 
     /* Check out the variable. */
     if ((ret = PIOc_inq_var(ncid, 0, varname, &vartype, &varndims, &vardimids, &varnatts)))
@@ -169,29 +170,30 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     	ERR(ret);
     if (varnatts2 != 0)
     	ERR(ERR_WRONG);
-    if ((ret = PIOc_inq_varid(ncid, VAR_NAME, &varid2)))
-    	ERR(ret);
-    if (varid2 != 0)
-    	ERR(ERR_WRONG);
+    /* if ((ret = PIOc_inq_varid(ncid, VAR_NAME, &varid2))) */
+    /* 	ERR(ret); */
+    /* if (varid2 != 0) */
+    /* 	ERR(ERR_WRONG); */
 
     /* Check out the global attributes. */
     nc_type atttype;
     PIO_Offset attlen;
-    if ((ret = PIOc_inq_att(ncid, NC_GLOBAL, ATT_NAME, &atttype, &attlen)))
-    	ERR(ret);
-    if (atttype != NC_INT || attlen != 1)
-    	ERR(ERR_WRONG);
-    if ((ret = PIOc_inq_attlen(ncid, NC_GLOBAL, ATT_NAME, &attlen)))
-    	ERR(ret);
-    if (attlen != 1)
-    	ERR(ERR_WRONG);
-    /* if ((ret = PIOc_get_att_int(ncid, NC_GLOBAL, ATT_NAME, &att_data))) */
+    /* if ((ret = PIOc_inq_att(ncid, NC_GLOBAL, ATT_NAME, &atttype, &attlen))) */
     /* 	ERR(ret); */
-    /* sleep(2); */
-    /* if (verbose) */
-    /* 	printf("%d test_intercomm att_data = %d\n", my_rank, att_data); */
-    /* if (att_data != ATT_VALUE) */
+    /* if (atttype != NC_INT || attlen != 1) */
     /* 	ERR(ERR_WRONG); */
+    /* if ((ret = PIOc_inq_attlen(ncid, NC_GLOBAL, ATT_NAME, &attlen))) */
+    /* 	ERR(ret); */
+    /* if (attlen != 1) */
+    /* 	ERR(ERR_WRONG); */
+    sleep(2);
+    if ((ret = PIOc_get_att_int(ncid, NC_GLOBAL, ATT_NAME, &att_data)))
+    	ERR(ret);
+    sleep(2);
+    if (verbose)
+    	printf("%d test_intercomm att_data = %d\n", my_rank, att_data);
+    if (att_data != ATT_VALUE)
+    	ERR(ERR_WRONG);
 	    
     /* Close the file. */
     if (verbose)

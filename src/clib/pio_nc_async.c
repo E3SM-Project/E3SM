@@ -18,6 +18,7 @@
 #include <config.h>
 #ifdef PIO_ENABLE_LOGGING
 #include <stdarg.h>
+#include <unistd.h>
 #endif /* PIO_ENABLE_LOGGING */
 #include <pio.h>
 #include <pio_internal.h>
@@ -64,8 +65,8 @@ pio_log(int severity, const char *fmt, ...)
    if (severity > pio_log_level)
       return;
 
-   /* If the severity is 1 or less, only print on rank 0. */
-   if (severity < 2 && my_rank != 0)
+   /* If the severity is 0, only print on rank 0. */
+   if (severity < 1 && my_rank != 0)
        return;
 
    /* If the severity is zero, this is an error. Otherwise insert that
@@ -1534,12 +1535,16 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
     int msg = PIO_MSG_GET_ATT_INT;
     iosystem_desc_t *ios;
     file_desc_t *file;
+    PIO_Offset attlen;
+    nc_type atttype;
     int ierr = PIO_NOERR;
     int mpierr = MPI_SUCCESS;
 
     /* User must provide a name and destination pointer. */
     if (!name || !ip)
 	return PIO_EINVAL;
+
+    LOG((1, "PIOc_get_att ncid %d varid %d name %s", ncid, varid, name));
 
     /* Find the info about this file. */
     if (!(file = pio_get_file_from_id(ncid)))
@@ -1564,6 +1569,7 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
 		mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&file->iotype, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	    LOG((2, "broadcast iotype = %d", file->iotype));
 	}
 
 	/* Handle MPI errors. */
@@ -1580,23 +1586,32 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
 	    ierr = nc_get_att(file->fh, varid, name, ip);
+	    if (!ierr)
+		ierr = nc_inq_att(file->fh, varid, name, &atttype, (size_t *)&attlen);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
 #endif
 	case PIO_IOTYPE_NETCDF:
 	    if (ios->io_rank == 0)
+	    {
 		ierr = nc_get_att(file->fh, varid, name, ip);
+		if (!ierr)
+		    ierr = nc_inq_att(file->fh, varid, name, &atttype, (size_t *)&attlen);
+	    }
 	    break;
 #endif
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
 	    ierr = ncmpi_get_att(file->fh, varid, name, ip);
+	    if (!ierr)
+		ierr = ncmpi_inq_att(file->fh, varid, name, &atttype, &attlen);
 	    break;
 #endif
 	default:
 	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
 	}
     }
+    LOG((2, "PIOc_get_att called netcdf layer ierr = %d", ierr));
 
     /* Broadcast and check the return code. */
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
@@ -1606,9 +1621,12 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
     /* Broadcast results to all tasks. */
     if (!ierr)
     {
-        PIO_Offset attlen;
-        PIOc_inq_attlen(file->fh, varid, name, &attlen);
-        mpierr = MPI_Bcast(ip , (int) attlen, MPI_INT, ios->ioroot, ios->my_comm);
+	LOG((2, "PIOc_get_att broadcasting attlen  = %d", attlen));	
+        mpierr = MPI_Bcast(&attlen, 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
+	LOG((2, "PIOc_get_att done broadcasting attlen  = %d", attlen));	
+	LOG((2, "PIOc_get_att broadcasting att data"));	
+        mpierr = MPI_Bcast(ip, (int)attlen, MPI_INT, ios->ioroot, ios->my_comm);
+	LOG((2, "PIOc_get_att done broadcasting att data"));	
     }
     return ierr;
 }
@@ -1700,68 +1718,9 @@ int PIOc_put_att_short (int ncid, int varid, const char *name, nc_type xtype, PI
  * @param varid the variable ID.
  * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
-int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip) 
+int PIOc_get_att_double(int ncid, int varid, const char *name, double *ip) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_GET_ATT_DOUBLE;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_get_att_double(file->fh, varid, name, ip);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_get_att_double(file->fh, varid, name, ip);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_get_att_double(file->fh, varid, name, ip);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
-	sprintf(errstr,"name %s in file %s",name,__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr == PIO_NOERR){
-        PIO_Offset attlen;
-        PIOc_inq_attlen(file->fh, varid, name, &attlen);
-        mpierr = MPI_Bcast(ip , (int) attlen, MPI_DOUBLE, ios->ioroot, ios->my_comm);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
+    return PIOc_get_att(ncid, varid, name, (void *)ip);
 }
 
 /** 
@@ -1853,66 +1812,7 @@ int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, P
  */
 int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_GET_ATT_UCHAR;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_get_att_uchar(file->fh, varid, name, ip);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_get_att_uchar(file->fh, varid, name, ip);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_get_att_uchar(file->fh, varid, name, ip);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
-	sprintf(errstr,"name %s in file %s",name,__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr == PIO_NOERR){
-        PIO_Offset attlen;
-        PIOc_inq_attlen(file->fh, varid, name, &attlen);
-        mpierr = MPI_Bcast(ip , (int) attlen, MPI_UNSIGNED_CHAR, ios->ioroot, ios->my_comm);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
+    return PIOc_get_att(ncid, varid, name, (void *)ip);
 }
 
 /** 
@@ -2004,66 +1904,7 @@ int PIOc_put_att_schar (int ncid, int varid, const char *name, nc_type xtype, PI
  */
 int PIOc_get_att_ushort (int ncid, int varid, const char *name, unsigned short *ip) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_GET_ATT_USHORT;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_get_att_ushort(file->fh, varid, name, ip);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_get_att_ushort(file->fh, varid, name, ip);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_get_att_ushort(file->fh, varid, name, ip);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
-	sprintf(errstr,"name %s in file %s",name,__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr == PIO_NOERR){
-        PIO_Offset attlen;
-        PIOc_inq_attlen(file->fh, varid, name, &attlen);
-        mpierr = MPI_Bcast(ip , (int) attlen, MPI_UNSIGNED_SHORT, ios->ioroot, ios->my_comm);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
+    return PIOc_get_att(ncid, varid, name, (void *)ip);
 }
 
 /** 
@@ -2374,66 +2215,7 @@ int PIOc_put_att_text (int ncid, int varid, const char *name, PIO_Offset len, co
  */
 int PIOc_get_att_uint (int ncid, int varid, const char *name, unsigned int *ip) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_GET_ATT_UINT;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_get_att_uint(file->fh, varid, name, ip);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_get_att_uint(file->fh, varid, name, ip);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_get_att_uint(file->fh, varid, name, ip);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
-	sprintf(errstr,"name %s in file %s",name,__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr == PIO_NOERR){
-        PIO_Offset attlen;
-        PIOc_inq_attlen(file->fh, varid, name, &attlen);
-        mpierr = MPI_Bcast(ip , (int) attlen, MPI_UNSIGNED, ios->ioroot, ios->my_comm);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
+    return PIOc_get_att(ncid, varid, name, (void *)ip);
 }
 
 /** 
@@ -2526,66 +2308,7 @@ int PIOc_inq_format (int ncid, int *formatp)
  */
 int PIOc_get_att_long (int ncid, int varid, const char *name, long *ip) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_GET_ATT_LONG;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_get_att_long(file->fh, varid, name, ip);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_get_att_long(file->fh, varid, name, ip);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_get_att_long(file->fh, varid, name, ip);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
-	sprintf(errstr,"name %s in file %s",name,__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr == PIO_NOERR){
-        PIO_Offset attlen;
-        PIOc_inq_attlen(file->fh, varid, name, &attlen);
-        mpierr = MPI_Bcast(ip , (int) attlen, MPI_LONG, ios->ioroot, ios->my_comm);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
+    return PIOc_get_att(ncid, varid, name, (void *)ip);
 }
 
 /** 
@@ -2695,66 +2418,7 @@ int PIOc_inq_unlimdim(int ncid, int *unlimdimidp)
  */
 int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_GET_ATT_FLOAT;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_get_att_float(file->fh, varid, name, ip);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_get_att_float(file->fh, varid, name, ip);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_get_att_float(file->fh, varid, name, ip);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
-	sprintf(errstr,"name %s in file %s",name,__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr == PIO_NOERR){
-        PIO_Offset attlen;
-        PIOc_inq_attlen(file->fh, varid, name, &attlen);
-        mpierr = MPI_Bcast(ip , (int) attlen, MPI_FLOAT, ios->ioroot, ios->my_comm);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
+    return PIOc_get_att(ncid, varid, name, (void *)ip);
 }
 
 /** 
@@ -3077,66 +2741,7 @@ int PIOc_put_att_longlong (int ncid, int varid, const char *name, nc_type xtype,
  */
 int PIOc_get_att_ubyte (int ncid, int varid, const char *name, unsigned char *ip) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_GET_ATT_UBYTE;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_get_att_ubyte(file->fh, varid, name, ip);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_get_att_ubyte(file->fh, varid, name, ip);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_get_att_ubyte(file->fh, varid, name, ip);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
-	sprintf(errstr,"name %s in file %s",name,__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr == PIO_NOERR){
-        PIO_Offset attlen;
-        PIOc_inq_attlen(file->fh, varid, name, &attlen);
-        mpierr = MPI_Bcast(ip , (int) attlen, MPI_BYTE, ios->ioroot, ios->my_comm);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
+    return PIOc_get_att(ncid, varid, name, (void *)ip);
 }
 
 /** 
@@ -3155,66 +2760,7 @@ int PIOc_get_att_ubyte (int ncid, int varid, const char *name, unsigned char *ip
  */
 int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_GET_ATT_TEXT;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_get_att_text(file->fh, varid, name, ip);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_get_att_text(file->fh, varid, name, ip);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_get_att_text(file->fh, varid, name, ip);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
-	sprintf(errstr,"name %s in file %s",name,__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr == PIO_NOERR){
-        PIO_Offset attlen;
-        PIOc_inq_attlen(file->fh, varid, name, &attlen);
-        mpierr = MPI_Bcast(ip , (int) attlen, MPI_CHAR, ios->ioroot, ios->my_comm);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
+    return PIOc_get_att(ncid, varid, name, (void *)ip);
 }
 
 /** 
@@ -3306,66 +2852,7 @@ int PIOc_del_att (int ncid, int varid, const char *name)
  */
 int PIOc_get_att_schar (int ncid, int varid, const char *name, signed char *ip) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_GET_ATT_SCHAR;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_get_att_schar(file->fh, varid, name, ip);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_get_att_schar(file->fh, varid, name, ip);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_get_att_schar(file->fh, varid, name, ip);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
-	sprintf(errstr,"name %s in file %s",name,__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr == PIO_NOERR){
-        PIO_Offset attlen;
-        PIOc_inq_attlen(file->fh, varid, name, &attlen);
-        mpierr = MPI_Bcast(ip , (int) attlen, MPI_CHAR, ios->ioroot, ios->my_comm);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
+    return PIOc_get_att(ncid, varid, name, (void *)ip);
 }
 
 /** 
@@ -3384,66 +2871,7 @@ int PIOc_get_att_schar (int ncid, int varid, const char *name, signed char *ip)
  */
 int PIOc_get_att_ulonglong (int ncid, int varid, const char *name, unsigned long long *ip) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_GET_ATT_ULONGLONG;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_get_att_ulonglong(file->fh, varid, name, ip);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_get_att_ulonglong(file->fh, varid, name, ip);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_get_att_ulonglong(file->fh, varid, name, ip);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
-	sprintf(errstr,"name %s in file %s",name,__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr == PIO_NOERR){
-        PIO_Offset attlen;
-        PIOc_inq_attlen(file->fh, varid, name, &attlen);
-        mpierr = MPI_Bcast(ip , (int) attlen, MPI_UNSIGNED_LONG_LONG, ios->ioroot, ios->my_comm);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
+    return PIOc_get_att(ncid, varid, name, (void *)ip);
 }
 
 /** 
@@ -3618,66 +3046,7 @@ int PIOc_put_att_uint (int ncid, int varid, const char *name, nc_type xtype, PIO
  */
 int PIOc_get_att_short (int ncid, int varid, const char *name, short *ip) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_GET_ATT_SHORT;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_get_att_short(file->fh, varid, name, ip);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_get_att_short(file->fh, varid, name, ip);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_get_att_short(file->fh, varid, name, ip);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
-	sprintf(errstr,"name %s in file %s",name,__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr == PIO_NOERR){
-        PIO_Offset attlen;
-        PIOc_inq_attlen(file->fh, varid, name, &attlen);
-        mpierr = MPI_Bcast(ip , (int) attlen, MPI_SHORT, ios->ioroot, ios->my_comm);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
+    return PIOc_get_att(ncid, varid, name, (void *)ip);
 }
 
 /** 
@@ -3841,70 +3210,7 @@ int PIOc_put_att_ubyte (int ncid, int varid, const char *name, nc_type xtype, PI
  */
 int PIOc_get_att_int (int ncid, int varid, const char *name, int *ip) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-    int namelen;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_GET_ATT_INT;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast(&varid, 1, MPI_INT, ios->compmaster, ios->intercomm);
-	namelen = strlen(name);
-	mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-    }
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_get_att_int(file->fh, varid, name, ip);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_get_att_int(file->fh, varid, name, ip);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_get_att_int(file->fh, varid, name, ip);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
-	sprintf(errstr,"name %s in file %s",name,__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr == PIO_NOERR){
-        PIO_Offset attlen;
-        PIOc_inq_attlen(file->fh, varid, name, &attlen);
-        mpierr = MPI_Bcast(ip , (int) attlen, MPI_INT, ios->ioroot, ios->my_comm);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
+    return PIOc_get_att(ncid, varid, name, (void *)ip);
 }
 
 /** 
@@ -3923,66 +3229,7 @@ int PIOc_get_att_int (int ncid, int varid, const char *name, int *ip)
  */
 int PIOc_get_att_longlong (int ncid, int varid, const char *name, long long *ip) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_GET_ATT_LONGLONG;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_get_att_longlong(file->fh, varid, name, ip);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_get_att_longlong(file->fh, varid, name, ip);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_get_att_longlong(file->fh, varid, name, ip);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(name)+strlen(__FILE__) + 40)* sizeof(char));
-	sprintf(errstr,"name %s in file %s",name,__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(ierr == PIO_NOERR){
-        PIO_Offset attlen;
-        PIOc_inq_attlen(file->fh, varid, name, &attlen);
-        mpierr = MPI_Bcast(ip , (int) attlen, MPI_LONG_LONG, ios->ioroot, ios->my_comm);
-    }
-    if(errstr != NULL) free(errstr);
-    return ierr;
+    return PIOc_get_att(ncid, varid, name, (void *)ip);
 }
 
 /** 

@@ -377,8 +377,11 @@ int att_get_handler(iosystem_desc_t *ios)
 		       ios->intercomm);
     if ((mpierr = MPI_Bcast(&iotype, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
+    LOG((1, "att_get_handler ncid = %d varid = %d namelen = %d name = %s iotype = %d",
+	 ncid, varid, namelen, name, iotype));    
 
     /* Get the length and the type of the attribute. */
+    LOG((1, "att_get_handler magic iotype = %d", iotype));    
     switch (iotype)
     {
 #ifdef _NETCDF
@@ -780,9 +783,8 @@ int open_file_handler(iosystem_desc_t *ios)
     	return PIO_EIO;
     if ((mpierr = MPI_Bcast(&mode, 1, MPI_INT, 0, ios->intercomm)))
     	return PIO_EIO;
-    LOG((1, "%d open_file_handler got parameters len = %d "
-    	   "filename = %s iotype = %d mode = %d\n",
-	 my_rank, len, filename, iotype, mode));
+    LOG((2, "open_file_handler got parameters len = %d filename = %s iotype = %d mode = %d\n",
+	 len, filename, iotype, mode));
 
     /* Call the open file function. */
     if ((ret = PIOc_openfile(ios->iosysid, &ncid, &iotype, filename, mode)))
