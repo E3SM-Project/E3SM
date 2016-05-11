@@ -84,7 +84,10 @@ module RtmMod
 !local (gdc)
   real(r8), save, pointer :: evel(:,:)       ! effective tracer velocity (m/s)
   real(r8), save, pointer :: flow(:,:)       ! mosart flow (m3/s)
-  real(r8), save, pointer :: erout_prev(:,:) ! erout previous timestep (m3/s)
+  real(r8), save, pointer :: eroup_lagi(:,:) ! erout previous timestep (m3/s)
+  real(r8), save, pointer :: eroup_lagf(:,:) ! erout current timestep (m3/s)
+  real(r8), save, pointer :: erowm_regi(:,:) ! erout previous timestep (m3/s)
+  real(r8), save, pointer :: erowm_regf(:,:) ! erout current timestep (m3/s)
   real(r8), save, pointer :: eroutup_avg(:,:)! eroutup average over coupling period (m3/s)
   real(r8), save, pointer :: erlat_avg(:,:)  ! erlateral average over coupling period (m3/s)
 
@@ -941,7 +944,10 @@ contains
 
     allocate (evel    (rtmCTL%begr:rtmCTL%endr,nt_rtm), &
               flow    (rtmCTL%begr:rtmCTL%endr,nt_rtm), &
-              erout_prev(rtmCTL%begr:rtmCTL%endr,nt_rtm), &
+              eroup_lagi(rtmCTL%begr:rtmCTL%endr,nt_rtm), &
+              eroup_lagf(rtmCTL%begr:rtmCTL%endr,nt_rtm), &
+              erowm_regi(rtmCTL%begr:rtmCTL%endr,nt_rtm), &
+              erowm_regf(rtmCTL%begr:rtmCTL%endr,nt_rtm), &
               eroutup_avg(rtmCTL%begr:rtmCTL%endr,nt_rtm), &
               erlat_avg(rtmCTL%begr:rtmCTL%endr,nt_rtm), &
               stat=ier)
@@ -949,10 +955,13 @@ contains
        write(iulog,*) subname,' Allocation ERROR for flow'
        call shr_sys_abort(subname//' Allocationt ERROR flow')
     end if
-    flow(:,:)    = 0._r8
-    erout_prev(:,:) = 0._r8
+    flow(:,:)        = 0._r8
+    eroup_lagi(:,:)  = 0._r8
+    eroup_lagf(:,:)  = 0._r8
+    erowm_regi(:,:)  = 0._r8
+    erowm_regf(:,:)  = 0._r8
     eroutup_avg(:,:) = 0._r8
-    erlat_avg(:,:) = 0._r8
+    erlat_avg(:,:)   = 0._r8
 
     !-------------------------------------------------------
     ! Allocate runoff datatype 
@@ -1423,16 +1432,78 @@ contains
 ! !LOCAL VARIABLES:
 !EOP
     integer  :: i, j, n, nr, ns, nt, n2, nf, idam ! indices
-    real(r8) :: budget_terms(50,nt_rtm)     ! BUDGET terms
-        ! BUDGET terms 1-10, 41-50 are for volumes (m3)
-        ! BUDGET terms 11-40 are for flows (m3/s)
-    real(r8) :: budget_input, budget_output, budget_volume, budget_total, &
-                budget_euler, budget_eroutlag
+    integer, parameter :: budget_terms_total = 80
+    logical  :: output_all_budget_terms = .false.   ! output flag
+    real(r8) :: budget_terms (budget_terms_total,nt_rtm)    ! local budget sums
+    real(r8) :: budget_global(budget_terms_total,nt_rtm)    ! global budget sums
     real(r8),save :: budget_accum(nt_rtm)   ! BUDGET accumulator over run
     integer ,save :: budget_accum_cnt       ! counter for budget_accum
-    logical  :: output_all_budget_terms = .true.   ! output flag
-    real(r8) :: budget_global(50,nt_rtm)    ! global budget sum
+    real(r8) :: budget_input, budget_output, budget_volume, budget_total, &
+                budget_other
     logical  :: budget_check                ! do global budget check
+
+    ! BUDGET term ids
+    ! budget computed in m3 over each coupling period
+    ! use delt_coupling to convert from rates to volumes
+    ! General equation is as follows
+    !   Vf = Vi + input - output + other
+    !     or
+    !   Vf-Vi - input + output - other == 0 for conservation
+    ! budget_volume = Vf-Vi
+    ! budget_input = input
+    ! budget_output = output
+    ! budget_other = other terms
+    ! budget_total = budget_volume - budget_input + budget_output - budget_other
+    ! bv_ generally accumulates a volume (m3)
+    ! br_ generally accumulates a rate (m3/s)
+
+    ! Storage/Volume TERMS (volumes, m3)
+    integer,parameter :: bv_volt_i = 1  ! initial total volume
+    integer,parameter :: bv_volt_f = 2  ! final   total volume
+    integer,parameter :: bv_wt_i   = 3  ! initial wt volume
+    integer,parameter :: bv_wt_f   = 4  ! final   wt volume
+    integer,parameter :: bv_wr_i   = 5  ! initial wr volume
+    integer,parameter :: bv_wr_f   = 6  ! final   wr volume
+    integer,parameter :: bv_wh_i   = 7  ! initial wh volume
+    integer,parameter :: bv_wh_f   = 8  ! final   wh volume
+    integer,parameter :: bv_dstor_i= 9 ! initial dam storage
+    integer,parameter :: bv_dstor_f= 10 ! final   dam storage
+
+    ! Input TERMS (rates, m3/s)
+    integer,parameter :: br_qsur   = 20 ! input qsur
+    integer,parameter :: br_qsub   = 21 ! input qsub
+    integer,parameter :: br_qgwl   = 22 ! input qgwl
+    integer,parameter :: br_qdto   = 23 ! input qdto
+
+    ! Output TERMS (rates m3/s or volumes m3)
+    integer,parameter :: br_ocnout = 40 ! runoff output to ocean
+    integer,parameter :: br_lndout = 41 ! runoff output on non ocean points
+    integer,parameter :: br_flood  = 42 ! flood term back to land
+    integer,parameter :: br_direct = 43 ! direct output term
+    integer,parameter :: bv_dsupp_i= 44 ! initial dam supply
+    integer,parameter :: bv_dsupp_f= 45 ! final   dam supply
+
+    ! Other Diagnostic TERMS (rates, m3/s)
+    integer,parameter :: br_erolpo = 60 ! erout lag ocn previous
+    integer,parameter :: br_erolco = 61 ! erout lag ocn current
+    integer,parameter :: br_erorpo = 62 ! erout lag ocn previous
+    integer,parameter :: br_erorco = 63 ! erout lag ocn current
+    integer,parameter :: br_eroutup= 64 ! erout upstream average
+    integer,parameter :: br_erolpn = 65 ! erout lag non-ocn previous
+    integer,parameter :: br_erolcn = 66 ! erout lag non-ocn current
+    integer,parameter :: br_erorpn = 67 ! erout lag non-ocn previous
+    integer,parameter :: br_erorcn = 68 ! erout lag non-ocn current
+    integer,parameter :: br_erlat  = 69 ! erlateral 
+
+    ! Accumuluation TERMS
+    integer,parameter :: bv_naccum = 80 ! accumulated net budget
+
+    !   volume = 2 - 1 + bv_dstor_f - bv_dstor_i
+    !   input  = br_qsur + br_qsub + br_qgwl + br_qdto
+    !   output = br_ocnout + br_flood + br_direct + 42
+    !   total  = volume - input + output
+    !   erlag  = br_erolpn - br_erolcn
+
     real(r8) :: volr_init                   ! temporary storage to compute dvolrdt
     real(r8),parameter :: budget_tolerance = 1.0e-6   ! budget tolerance, m3/day
     logical  :: abort                       ! abort flag
@@ -1479,7 +1550,10 @@ contains
     budget_terms = 0._r8
 
     flow = 0._r8
-    erout_prev = 0._r8
+    eroup_lagi = 0._r8
+    eroup_lagf = 0._r8
+    erowm_regi = 0._r8
+    erowm_regf = 0._r8
     eroutup_avg = 0._r8
     erlat_avg = 0._r8
     rtmCTL%runoff = 0._r8
@@ -1491,31 +1565,30 @@ contains
     rtmCTL%dvolrdtlnd = spval
     rtmCTL%dvolrdtocn = spval
 
-    ! BUDGET 
-    ! BUDGET terms 1-10, 41-50 are for volumes (m3)
-    ! BUDGET terms 11-40 are for flows (m3/s)
 !    if (budget_check) then
        call t_startf('mosartr_budget')
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
-          budget_terms( 1,nt) = budget_terms( 1,nt) + rtmCTL%volr(nr,nt)
-          budget_terms( 3,nt) = budget_terms( 3,nt) + TRunoff%wt(nr,nt)
-          budget_terms( 5,nt) = budget_terms( 5,nt) + TRunoff%wr(nr,nt)
-          budget_terms( 7,nt) = budget_terms( 7,nt) + TRunoff%wh(nr,nt)*rtmCTL%area(nr)
-          budget_terms(13,nt) = budget_terms(13,nt) + rtmCTL%qsur(nr,nt)
-          budget_terms(14,nt) = budget_terms(14,nt) + rtmCTL%qsub(nr,nt)
-          budget_terms(15,nt) = budget_terms(15,nt) + rtmCTL%qgwl(nr,nt)
-          budget_terms(16,nt) = budget_terms(16,nt) + rtmCTL%qdto(nr,nt)
-          budget_terms(17,nt) = budget_terms(17,nt) + rtmCTL%qsur(nr,nt) + rtmCTL%qsub(nr,nt) + &
-                               rtmCTL%qgwl(nr,nt) + rtmCTL%qdto(nr,nt)
+          budget_terms(bv_volt_i,nt) = budget_terms( bv_volt_i,nt) + rtmCTL%volr(nr,nt)
+          budget_terms(bv_wt_i,nt) = budget_terms(bv_wt_i,nt) + TRunoff%wt(nr,nt)
+          budget_terms(bv_wr_i,nt) = budget_terms(bv_wr_i,nt) + TRunoff%wr(nr,nt)
+          budget_terms(bv_wh_i,nt) = budget_terms(bv_wh_i,nt) + TRunoff%wh(nr,nt)*rtmCTL%area(nr)
+          budget_terms(br_qsur,nt) = budget_terms(br_qsur,nt) + rtmCTL%qsur(nr,nt)*delt_coupling
+          budget_terms(br_qsub,nt) = budget_terms(br_qsub,nt) + rtmCTL%qsub(nr,nt)*delt_coupling
+          budget_terms(br_qgwl,nt) = budget_terms(br_qgwl,nt) + rtmCTL%qgwl(nr,nt)*delt_coupling
+          budget_terms(br_qdto,nt) = budget_terms(br_qdto,nt) + rtmCTL%qdto(nr,nt)*delt_coupling
        enddo
        enddo
 
 #ifdef INCLUDE_WRM
        if (wrmflag) then
+          StorWater%supply = 0._r8
           nt = 1
+          do nr = rtmCTL%begr,rtmCTL%endr
+             budget_terms(bv_dsupp_i,nt) = budget_terms(bv_dsupp_i,nt) + StorWater%supply(nr)
+          enddo
           do idam = 1,ctlSubwWRM%LocalNumDam
-             budget_terms(43,nt) = budget_terms(43,nt) + StorWater%storage(idam)
+             budget_terms(bv_dstor_i,nt) = budget_terms(bv_dstor_i,nt) + StorWater%storage(idam)
           enddo
        endif
 #endif
@@ -1705,18 +1778,6 @@ contains
     ! --- convert TRunoff fields from m3/s to m/s before calling Euler
     !-----------------------------------
 
-!    if (budget_check) then
-       call t_startf('mosartr_budget')
-       do nt = 1,nt_rtm
-       do nr = rtmCTL%begr,rtmCTL%endr
-          budget_terms(20,nt) = budget_terms(20,nt) + TRunoff%qsur(nr,nt) + &
-             TRunoff%qsub(nr,nt) + TRunoff%qgwl(nr,nt)
-          budget_terms(29,nt) = budget_terms(29,nt) + TRunoff%qgwl(nr,nt)
-       enddo
-       enddo
-       call t_stopf('mosartr_budget')
-!    endif
-
     do nt = 1,nt_rtm
     do nr = rtmCTL%begr,rtmCTL%endr
        TRunoff%qsur(nr,nt) = TRunoff%qsur(nr,nt) / rtmCTL%area(nr)
@@ -1775,7 +1836,10 @@ contains
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
           flow(nr,nt) = flow(nr,nt) + TRunoff%flow(nr,nt)
-          erout_prev(nr,nt) = erout_prev(nr,nt) + TRunoff%erout_prev(nr,nt)
+          eroup_lagi(nr,nt) = eroup_lagi(nr,nt) + TRunoff%eroup_lagi(nr,nt)
+          eroup_lagf(nr,nt) = eroup_lagf(nr,nt) + TRunoff%eroup_lagf(nr,nt)
+          erowm_regi(nr,nt) = erowm_regi(nr,nt) + TRunoff%erowm_regi(nr,nt)
+          erowm_regf(nr,nt) = erowm_regf(nr,nt) + TRunoff%erowm_regf(nr,nt)
           eroutup_avg(nr,nt) = eroutup_avg(nr,nt) + TRunoff%eroutup_avg(nr,nt)
           erlat_avg(nr,nt) = erlat_avg(nr,nt) + TRunoff%erlat_avg(nr,nt)
        enddo
@@ -1788,7 +1852,10 @@ contains
     !-----------------------------------
 
     flow        = flow        / float(nsub)
-    erout_prev  = erout_prev  / float(nsub)
+    eroup_lagi  = eroup_lagi  / float(nsub)
+    eroup_lagf  = eroup_lagf  / float(nsub)
+    erowm_regi  = erowm_regi  / float(nsub)
+    erowm_regf  = erowm_regf  / float(nsub)
     eroutup_avg = eroutup_avg / float(nsub)
     erlat_avg   = erlat_avg   / float(nsub)
 
@@ -1827,46 +1894,44 @@ contains
     ! BUDGET
     !-----------------------------------
 
-    ! BUDGET 
-    ! BUDGET terms 1-10, 41-50 are for volumes (m3)
-    ! BUDGET terms 11-40 are for flows (m3/s)
-    ! BUDGET only ocean runoff and direct gets out of the system
 !    if (budget_check) then
        call t_startf('mosartr_budget')
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
-          budget_terms( 2,nt) = budget_terms( 2,nt) + rtmCTL%volr(nr,nt)
-          budget_terms( 4,nt) = budget_terms( 4,nt) + TRunoff%wt(nr,nt)
-          budget_terms( 6,nt) = budget_terms( 6,nt) + TRunoff%wr(nr,nt)
-          budget_terms( 8,nt) = budget_terms( 8,nt) + TRunoff%wh(nr,nt)*rtmCTL%area(nr)
-          budget_terms(21,nt) = budget_terms(21,nt) + rtmCTL%direct(nr,nt)
+          budget_terms(bv_volt_f,nt) = budget_terms(bv_volt_f,nt) + rtmCTL%volr(nr,nt)
+          budget_terms(bv_wt_f,nt) = budget_terms(bv_wt_f,nt) + TRunoff%wt(nr,nt)
+          budget_terms(bv_wr_f,nt) = budget_terms(bv_wr_f,nt) + TRunoff%wr(nr,nt)
+          budget_terms(bv_wh_f,nt) = budget_terms(bv_wh_f,nt) + TRunoff%wh(nr,nt)*rtmCTL%area(nr)
+          budget_terms(br_direct,nt) = budget_terms(br_direct,nt) + rtmCTL%direct(nr,nt)*delt_coupling
           if (rtmCTL%mask(nr) >= 2) then
-             budget_terms(18,nt) = budget_terms(18,nt) + rtmCTL%runoff(nr,nt)
-             budget_terms(26,nt) = budget_terms(26,nt) - erout_prev(nr,nt)
-             budget_terms(27,nt) = budget_terms(27,nt) + flow(nr,nt)
+             budget_terms(br_ocnout,nt) = budget_terms(br_ocnout,nt) + rtmCTL%runoff(nr,nt)*delt_coupling
+             budget_terms(br_erolpo,nt) = budget_terms(br_erolpo,nt) + eroup_lagi(nr,nt)*delt_coupling
+             budget_terms(br_erolco,nt) = budget_terms(br_erolco,nt) + eroup_lagf(nr,nt)*delt_coupling
+             budget_terms(br_erorpo,nt) = budget_terms(br_erorpo,nt) + erowm_regi(nr,nt)*delt_coupling
+             budget_terms(br_erorco,nt) = budget_terms(br_erorco,nt) + erowm_regf(nr,nt)*delt_coupling
           else
-             budget_terms(23,nt) = budget_terms(23,nt) - erout_prev(nr,nt)
-             budget_terms(24,nt) = budget_terms(24,nt) + flow(nr,nt)
+             budget_terms(br_lndout,nt) = budget_terms(br_lndout,nt) + rtmCTL%runoff(nr,nt)*delt_coupling
+             budget_terms(br_erolpn,nt) = budget_terms(br_erolpn,nt) + eroup_lagi(nr,nt)*delt_coupling
+             budget_terms(br_erolcn,nt) = budget_terms(br_erolcn,nt) + eroup_lagf(nr,nt)*delt_coupling
+             budget_terms(br_erorpn,nt) = budget_terms(br_erorpn,nt) + erowm_regi(nr,nt)*delt_coupling
+             budget_terms(br_erorcn,nt) = budget_terms(br_erorcn,nt) + erowm_regf(nr,nt)*delt_coupling
           endif
-          budget_terms(25,nt) = budget_terms(25,nt) - eroutup_avg(nr,nt)
-          budget_terms(28,nt) = budget_terms(28,nt) - erlat_avg(nr,nt)
-          budget_terms(22,nt) = budget_terms(22,nt) + rtmCTL%runoff(nr,nt) + rtmCTL%direct(nr,nt) + eroutup_avg(nr,nt) 
+          budget_terms(br_eroutup,nt) = budget_terms(br_eroutup,nt) - eroutup_avg(nr,nt)*delt_coupling
+          budget_terms(br_erlat,nt) = budget_terms(br_erlat,nt) - erlat_avg(nr,nt)*delt_coupling
        enddo
        enddo
        nt = 1
        do nr = rtmCTL%begr,rtmCTL%endr
-          budget_terms(19,nt) = budget_terms(19,nt) + rtmCTL%flood(nr)
-          budget_terms(22,nt) = budget_terms(22,nt) + rtmCTL%flood(nr)
+          budget_terms(br_flood,nt) = budget_terms(br_flood,nt) + rtmCTL%flood(nr)*delt_coupling
        enddo
 #ifdef INCLUDE_WRM
        if (wrmflag) then
           nt = 1
           do nr = rtmCTL%begr,rtmCTL%endr
-             budget_terms(42,nt) = budget_terms(42,nt) + StorWater%supply(nr)
-             budget_terms(22,nt) = budget_terms(22,nt) + StorWater%supply(nr) / delt_coupling
+             budget_terms(bv_dsupp_f,nt) = budget_terms(bv_dsupp_f,nt) + StorWater%supply(nr)
           enddo
           do idam = 1,ctlSubwWRM%LocalNumDam
-             budget_terms(44,nt) = budget_terms(44,nt) + StorWater%storage(idam)
+             budget_terms(bv_dstor_f,nt) = budget_terms(bv_dstor_f,nt) + StorWater%storage(idam)
           enddo
        endif
 #endif
@@ -1874,24 +1939,21 @@ contains
        ! accumulate the budget total over the run to make sure it's decreasing on avg
        budget_accum_cnt = budget_accum_cnt + 1
        do nt = 1,nt_rtm
-          budget_volume = (budget_terms( 2,nt) - budget_terms( 1,nt) + &
-                           budget_terms(44,nt) - budget_terms(43,nt)) / delt_coupling
-          budget_input  = (budget_terms(13,nt) + budget_terms(14,nt) + &
-                           budget_terms(15,nt) + budget_terms(16,nt))
-          budget_output = (budget_terms(18,nt) + budget_terms(19,nt) + &
-                           budget_terms(21,nt) + budget_terms(42,nt))
-          budget_total  = budget_volume - budget_input + budget_output
-          budget_accum(nt) = budget_accum(nt) + budget_total
-          budget_terms(30,nt) = budget_accum(nt)/budget_accum_cnt
+          budget_volume =  budget_terms(bv_volt_f,nt) - budget_terms(bv_volt_i,nt) + &
+                           budget_terms(bv_dstor_f,nt) - budget_terms(bv_dstor_i,nt)
+          budget_input  =  budget_terms(br_qsur,nt) + budget_terms(br_qsub,nt) + &
+                           budget_terms(br_qgwl,nt) + budget_terms(br_qdto,nt)
+          budget_output =  budget_terms(br_ocnout,nt) + budget_terms(br_flood,nt) + &
+                           budget_terms(br_direct,nt) + &
+                           budget_terms(bv_dsupp_f,nt) - budget_terms(bv_dsupp_i,nt)
+          budget_accum(nt) = budget_accum(nt) + budget_volume - budget_input + budget_output
+          budget_terms(bv_naccum,nt) = budget_accum(nt)/budget_accum_cnt
        enddo
        call t_stopf('mosartr_budget')
 
     if (budget_check) then
        call t_startf('mosartr_budget')
        !--- check budget
-
-       ! convert fluxes from m3/s to m3 by mult by coupling_period
-       budget_terms(11:40,:) = budget_terms(11:40,:) * delt_coupling
 
        ! convert terms from m3 to million m3
        budget_terms(:,:) = budget_terms(:,:) * 1.0e-6_r8
@@ -1903,82 +1965,109 @@ contains
        if (masterproc) then
           write(iulog,'(2a,i10,i6)') trim(subname),' MOSART BUDGET diagnostics (million m3) for ',ymd,tod
           do nt = 1,nt_rtm
-            budget_volume = (budget_global( 2,nt) - budget_global( 1,nt) + &
-                             budget_global(44,nt) - budget_global(43,nt))
-            budget_input  = (budget_global(13,nt) + budget_global(14,nt) + &
-                             budget_global(15,nt) + budget_global(16,nt))
-            budget_output = (budget_global(18,nt) + budget_global(19,nt) + &
-                             budget_global(21,nt) + budget_global(42,nt))
-            budget_total  = budget_volume - budget_input + budget_output
-            budget_euler  = budget_volume - budget_global(20,nt) + budget_global(18,nt)
-            budget_eroutlag = budget_global(23,nt) - budget_global(24,nt)
+            budget_volume = (budget_global(bv_volt_f,nt) - budget_global(bv_volt_i,nt) + &
+                             budget_global(bv_dstor_f,nt) - budget_global(bv_dstor_i,nt))
+            budget_input  = (budget_global(br_qsur,nt) + budget_global(br_qsub,nt) + &
+                             budget_global(br_qgwl,nt) + budget_global(br_qdto,nt))
+            budget_output = (budget_global(br_ocnout,nt) + budget_global(br_flood,nt) + &
+                             budget_global(br_direct,nt) + &
+                             budget_global(bv_dsupp_f,nt) - budget_global(bv_dsupp_i,nt))
+            ! erout lag, need to remove current term and add in previous term, current term used in next timestep
+            budget_other  = budget_global(br_erolpn,nt) - budget_global(br_erolcn,nt) + &
+                            budget_global(br_erorpn,nt) - budget_global(br_erorcn,nt)
+            budget_total  = budget_volume - budget_input + budget_output - budget_other
+
+            write(iulog,'(2a)') trim(subname),'-----------------------------------------------------------------'
             write(iulog,'(2a,i4)')        trim(subname),'  tracer = ',nt
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   volume   init = ',nt,budget_global(1,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   volume  final = ',nt,budget_global(2,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wh    = ',nt,budget_global(bv_wh_f,nt)-budget_global(bv_wh_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wt    = ',nt,budget_global(bv_wt_f,nt)-budget_global(bv_wt_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wr    = ',nt,budget_global(bv_wr_f,nt)-budget_global(bv_wr_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume dstor = ',nt,budget_global(bv_dstor_f,nt)-budget_global(bv_dstor_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' * dvolume total = ',nt,budget_volume
           if (output_all_budget_terms) then
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x volumeh  init = ',nt,budget_global(7,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x volumeh final = ',nt,budget_global(8,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x volumet  init = ',nt,budget_global(3,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x volumet final = ',nt,budget_global(4,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x volumer  init = ',nt,budget_global(5,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x volumer final = ',nt,budget_global(6,nt)
+            write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x dvolume check = ',nt,budget_volume - &
+                                                                             (budget_global(bv_wh_f,nt)-budget_global(bv_wh_i,nt) + &
+                                                                              budget_global(bv_wt_f,nt)-budget_global(bv_wt_i,nt) + &
+                                                                              budget_global(bv_wr_f,nt)-budget_global(bv_wr_i,nt) + &
+                                                                              budget_global(bv_dstor_f,nt)-budget_global(bv_dstor_i,nt)),&
+                                                                              ' (should be zero)'
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volume   init = ',nt,budget_global(bv_volt_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volume  final = ',nt,budget_global(bv_volt_f,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumeh  init = ',nt,budget_global(bv_wh_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumeh final = ',nt,budget_global(bv_wh_f,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumet  init = ',nt,budget_global(bv_wt_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumet final = ',nt,budget_global(bv_wt_f,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumer  init = ',nt,budget_global(bv_wr_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumer final = ',nt,budget_global(bv_wr_f,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x storage  init = ',nt,budget_global(bv_dstor_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x storage final = ',nt,budget_global(bv_dstor_f,nt)
           endif
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   storage  init = ',nt,budget_global(43,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   storage final = ',nt,budget_global(44,nt)
-          if (output_all_budget_terms) then
             write(iulog,'(2a)') trim(subname),'----------------'
-          endif
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   input surface = ',nt,budget_global(13,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   input subsurf = ',nt,budget_global(14,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   input gwl     = ',nt,budget_global(15,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   input dto     = ',nt,budget_global(16,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   input total   = ',nt,budget_global(17,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input surface = ',nt,budget_global(br_qsur,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input subsurf = ',nt,budget_global(br_qsub,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input gwl     = ',nt,budget_global(br_qgwl,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input dto     = ',nt,budget_global(br_qdto,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' * input total   = ',nt,budget_input
           if (output_all_budget_terms) then
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x input check   = ',nt,budget_input - budget_global(17,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x input euler   = ',nt,budget_global(20,nt)
+            write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x input check   = ',nt,budget_input - &
+                                                                             (budget_global(br_qsur,nt)+budget_global(br_qsub,nt)+ &
+                                                                              budget_global(br_qgwl,nt)+budget_global(br_qdto,nt)), &
+                                                                             ' (should be zero)'
+          endif
             write(iulog,'(2a)') trim(subname),'----------------'
-          endif
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   output flow   = ',nt,budget_global(18,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   output direct = ',nt,budget_global(21,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   output flood  = ',nt,budget_global(19,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   output supply = ',nt,budget_global(42,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   output total  = ',nt,budget_global(22,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output runoff = ',nt,budget_global(br_ocnout,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output direct = ',nt,budget_global(br_direct,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output flood  = ',nt,budget_global(br_flood,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output supply = ',nt,budget_global(bv_dsupp_f,nt)-budget_global(bv_dsupp_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' * output total  = ',nt,budget_output
           if (output_all_budget_terms) then
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x output check  = ',nt,budget_output - budget_global(22,nt)
+            write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x output check  = ',nt,budget_output - &
+                                                                             (budget_global(br_ocnout,nt) + budget_global(br_direct,nt) + &
+                                                                              budget_global(br_flood,nt) + &
+                                                                              budget_global(bv_dsupp_f,nt)-budget_global(bv_dsupp_i,nt)), &
+                                                                             ' (should be zero)'
+          endif
             write(iulog,'(2a)') trim(subname),'----------------'
-          endif
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   sum input     = ',nt,budget_input
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   sum dvolume   = ',nt,budget_volume
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   sum output    = ',nt,budget_output
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   other dwn lag = ',nt,budget_global(br_erolpn,nt) - budget_global(br_erolcn,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   other reg lnd = ',nt,budget_global(br_erorpn,nt) - budget_global(br_erorcn,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' * other total   = ',nt,budget_other
           if (output_all_budget_terms) then
+            write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x other check   = ',nt,budget_other - &
+                                                                            (budget_global(br_erolpn,nt) - budget_global(br_erolcn,nt) + &
+                                                                             budget_global(br_erorpn,nt) - budget_global(br_erorcn,nt)), &
+                                                                            ' (should be zero)'
+          endif
             write(iulog,'(2a)') trim(subname),'----------------'
-          endif
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   net (dv-i+o)  = ',nt,budget_total
           if (output_all_budget_terms) then
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x net euler     = ',nt,budget_euler
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum dvolume   = ',nt,budget_volume
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum input     = ',nt,budget_input
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum output    = ',nt,budget_output
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum other     = ',nt,budget_other 
           endif
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   eul erout lag = ',nt,budget_eroutlag
+            write(iulog,'(2a,i4,f22.6,a)') trim(subname),' * sum budget ** = ',nt,budget_total,' (should be zero, dv-in+out-oth)'
           if (output_all_budget_terms) then
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x accum (dv-i+o)= ',nt,budget_global(30,nt)
+            ! accum budget is just dv-i+o and should show that over time, the other terms go to zero (lag yes, reg land no)
             write(iulog,'(2a)') trim(subname),'----------------'
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x erout_prev  no= ',nt,budget_global(23,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x erout       no= ',nt,budget_global(24,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x eroutup_avg   = ',nt,budget_global(25,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x erout_prev out= ',nt,budget_global(26,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x erout      out= ',nt,budget_global(27,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x erlateral     = ',nt,budget_global(28,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x euler gwl     = ',nt,budget_global(29,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),' x net main chan = ',nt,budget_global(6,nt)-budget_global(5,nt)+budget_global(24,nt)-budget_global(23,nt)+budget_global(27,nt)+budget_global(28,nt)+budget_global(29,nt)
+            write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x accum budget  = ',nt,budget_global(bv_naccum,nt),' (should tend to zero over run, dv-in+out)'
+            write(iulog,'(2a)') trim(subname),'----------------'
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x runoff     ocn= ',nt,budget_global(br_ocnout,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x eroup_lagi ocn= ',nt,budget_global(br_erolpo,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x eroup_lagf ocn= ',nt,budget_global(br_erolco,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x erowm_regi ocn= ',nt,budget_global(br_erorpo,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x erowm_regf ocn= ',nt,budget_global(br_erorco,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x other reg ocn = ',nt,budget_global(br_erorpo,nt) - budget_global(br_erorco,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x runoff     lnd= ',nt,budget_global(br_lndout,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x eroup_lagi lnd= ',nt,budget_global(br_erolpn,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x eroup_lagf lnd= ',nt,budget_global(br_erolcn,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x erowm_regi lnd= ',nt,budget_global(br_erorpn,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x erowm_regf lnd= ',nt,budget_global(br_erorcn,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x eroutup_avg   = ',nt,budget_global(br_eroutup,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x erlateral     = ',nt,budget_global(br_erlat,nt)
             write(iulog,'(2a)') trim(subname),'----------------'
           endif
 
-            if ((budget_total-budget_eroutlag) > 1.0e-6) then
+            if ((budget_total) > 1.0e-6) then
                write(iulog,'(2a,i4)') trim(subname),' ***** BUDGET WARNING error gt 1. m3 for nt = ',nt
-            endif
-            if ((budget_total+budget_eroutlag) >= 1.0e-6) then
-               if ((budget_total-budget_eroutlag)/(budget_total+budget_eroutlag) > 0.001_r8) then
-                  write(iulog,'(2a,i4)') trim(subname),' ***** BUDGET WARNING out of balance for nt = ',nt
-               endif
             endif
           enddo
           write(iulog,'(a)') '----------------------------------- '
@@ -2454,8 +2543,17 @@ contains
      allocate (TRunoff%erout(begr:endr,nt_rtm))
      TRunoff%erout = 0._r8
 
-     allocate (TRunoff%erout_prev(begr:endr,nt_rtm))
-     TRunoff%erout_prev = 0._r8
+     allocate (TRunoff%eroup_lagi(begr:endr,nt_rtm))
+     TRunoff%eroup_lagi = 0._r8
+
+     allocate (TRunoff%eroup_lagf(begr:endr,nt_rtm))
+     TRunoff%eroup_lagf = 0._r8
+
+     allocate (TRunoff%erowm_regi(begr:endr,nt_rtm))
+     TRunoff%erowm_regi = 0._r8
+
+     allocate (TRunoff%erowm_regf(begr:endr,nt_rtm))
+     TRunoff%erowm_regf = 0._r8
 
      allocate (TRunoff%eroutUp(begr:endr,nt_rtm))
      TRunoff%eroutUp = 0._r8

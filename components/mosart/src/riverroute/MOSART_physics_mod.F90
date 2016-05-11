@@ -29,7 +29,7 @@ MODULE MOSART_physics_mod
                              estimate_returnflow_deficit
   use WRM_subw_io_mod, only : WRM_readDemand
 #endif
-  use rof_cpl_indices, only : nt_rtm, rtm_tracers
+  use rof_cpl_indices, only : nt_rtm, rtm_tracers, nt_nliq
   use perf_mod, only: t_startf, t_stopf
   use mct_mod
 
@@ -85,7 +85,8 @@ MODULE MOSART_physics_mod
           call WRM_storage_targets()
        end if
        StorWater%demand = StorWater%demand0 * Tctl%DeltaT
-       StorWater%supply = 0._r8
+       !supply is set to zero in RtmMod so it can be accumulated there for the budget
+       !StorWater%supply = 0._r8
        StorWater%deficit =0._r8
     endif
 #endif
@@ -114,27 +115,23 @@ MODULE MOSART_physics_mod
        call t_startf('mosartr_wrm_IESubN')
        ! extraction from available surface runoff 
        if (ctlSubwWRM%ExtractionFlag > 0) then
-          call irrigationExtractionSubNetwork
+          do iunit=rtmCTL%begr,rtmCTL%endr
+             if (TUnit%mask(iunit) > 0) then
+                call irrigationExtractionSubNetwork(iunit, Tctl%DeltaT )
+             endif
+          enddo
        end if
        call t_stopf('mosartr_wrm_IESubN')
     endif
 #endif
 
     TRunoff%flow = 0._r8
-    TRunoff%erout_prev = 0._r8
+    TRunoff%eroup_lagi = 0._r8
+    TRunoff%eroup_lagf = 0._r8
     TRunoff%eroutup_avg = 0._r8
     TRunoff%erlat_avg = 0._r8
     negchan = 9999.0_r8
     do m=1,Tctl%DLevelH2R
-
-       !--- accumulate/average erout at prior timestep (used in eroutUp calc) for budget analysis
-       do nt=1,nt_rtm
-       if (TUnit%euler_calc(nt)) then
-       do iunit=rtmCTL%begr,rtmCTL%endr
-          TRunoff%erout_prev(iunit,nt) = TRunoff%erout_prev(iunit,nt) + TRunoff%erout(iunit,nt)
-       end do
-       endif
-       end do
 
        !------------------
        ! subnetwork
@@ -169,6 +166,9 @@ MODULE MOSART_physics_mod
           call mpi_barrier(mpicom_rof,ier)
           call t_stopf('mosartr_SMeroutUp_barrier')    
        endif
+
+       !--- accumulate/average erout at prior timestep (used in eroutUp calc) for budget analysis
+       Trunoff%eroup_lagi = Trunoff%eroup_lagi - Trunoff%erout
 
        call t_startf('mosartr_SMeroutUp')    
        TRunoff%eroutUp = 0._r8
@@ -235,7 +235,7 @@ MODULE MOSART_physics_mod
              TRunoff%erout(iunit,nt) = temp_erout
 #ifdef INCLUDE_WRM
              if (wrmflag) then
-                if (nt == 1) then
+                if (nt == nt_nliq) then
                    localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
                    if (ctlSubwWRM%ExtractionMainChannelFlag > 0 .AND. ctlSubwWRM%ExtractionFlag > 0 ) then
                       call IrrigationExtractionMainChannel(iunit, localDeltaT )
@@ -248,18 +248,19 @@ MODULE MOSART_physics_mod
                       TRunoff%wr(iunit,nt) = TRunoff%wr(iunit,nt) + TRunoff%dwr(iunit,nt) * localDeltaT
                       call UpdateState_mainchannel(iunit,nt)
                    endif
+! tcraig, moved out of loop
 !                   if ( ctlSubwWRM%RegulationFlag>0 .and. WRMUnit%INVicell(iunit) > 0 .and. WRMUnit%MeanMthFlow(iunit,13) > 0.01_r8 ) then
 !                      call Regulation(iunit, localDeltaT)
-! tcx moved out of loop
 !                      if ( ctlSubwWRM%ExtractionFlag > 0 ) then
 !                         call ExtractionRegulatedFlow(iunit, localDeltaT)
 !                      endif
 !                   endif
                 endif
-                ! do not update wr after regulation or extraction from reservoir release. Because of the regulation, 
-                ! the wr might get to crazy uncontrolled values, assume in this case wr is not changed. The storage in reservoir handles it.
+!                ! do not update wr after regulation or extraction from reservoir release. Because of the regulation, 
+!                ! the wr might get to crazy uncontrolled values, assume in this case wr is not changed. The storage in reservoir handles it.
              endif
 #endif
+             Trunoff%eroup_lagf(iunit,nt) = Trunoff%eroup_lagf(iunit,nt) - Trunoff%erout(iunit,nt)
              TRunoff%flow(iunit,nt) = TRunoff%flow(iunit,nt) - TRunoff%erout(iunit,nt)
           endif
        end do ! iunit
@@ -268,16 +269,37 @@ MODULE MOSART_physics_mod
        negchan = min(negchan, minval(TRunoff%wr(:,:)))
 
        call t_stopf('mosartr_chanroute')    
-    end do
+    end do  ! DLevelH2R
+
+! check for negative channel storage
+    if (negchan < -1.e-10) then
+       write(iulog,*) 'Warning: Negative channel storage found! ',negchan
+!       call shr_sys_abort('mosart: negative channel storage')
+    endif
+    TRunoff%flow = TRunoff%flow / Tctl%DLevelH2R
+    TRunoff%eroup_lagi = TRunoff%eroup_lagi / Tctl%DLevelH2R
+    TRunoff%eroup_lagf = TRunoff%eroup_lagf / Tctl%DLevelH2R
+    TRunoff%eroutup_avg = TRunoff%eroutup_avg / Tctl%DLevelH2R
+    TRunoff%erlat_avg = TRunoff%erlat_avg / Tctl%DLevelH2R
 
     !------------------
+    ! WRM Regulation
     ! WRM ExtractionRegulatedFlow
+    ! Do not update wr after regulation or extraction from reservoir release. 
+    ! Because of the regulation, the wr might get to crazy uncontrolled values, 
+    ! assume in this case wr is not changed. The storage in reservoir handles it.
     !------------------
 
 #ifdef INCLUDE_WRM
+!tcx
     if (wrmflag) then
-       localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
        if (ctlSubwWRM%RegulationFlag>0) then
+          ! compute the erowm_reg terms and adjust the flow diagnostic
+          do iunit=rtmCTL%begr,rtmCTL%endr
+             TRunoff%erowm_regi(iunit,nt_nliq) = -TRunoff%erout(iunit,nt_nliq)
+             TRunoff%flow(iunit,nt_nliq) = TRunoff%flow(iunit,nt_nliq) + TRunoff%erout(iunit,nt_nliq)
+          enddo
+          localDeltaT = Tctl%DeltaT
           call t_startf('mosartr_wrm_Reg')
           do iunit=rtmCTL%begr,rtmCTL%endr
              if (TUnit%mask(iunit) > 0) then
@@ -290,6 +312,12 @@ MODULE MOSART_physics_mod
              call ExtractionRegulatedFlow(localDeltaT)
              call t_stopf('mosartr_wrm_ERFlow')
           endif
+          !--- now subtract updated erout to update flow calc
+          ! compute the erowm_reg terms and adjust the flow diagnostic
+          do iunit=rtmCTL%begr,rtmCTL%endr
+             TRunoff%erowm_regf(iunit,nt_nliq) = -TRunoff%erout(iunit,nt_nliq)
+             TRunoff%flow(iunit,nt_nliq) = TRunoff%flow(iunit,nt_nliq) - TRunoff%erout(iunit,nt_nliq)
+          enddo
        endif
     endif
 #endif
@@ -308,16 +336,6 @@ MODULE MOSART_physics_mod
        call t_stopf('mosartr_wrm_estrfdef')
     endif
 #endif
-
-! check for negative channel storage
-    if (negchan < -1.e-10) then
-       write(iulog,*) 'Warning: Negative channel storage found! ',negchan
-!       call shr_sys_abort('mosart: negative channel storage')
-    endif
-    TRunoff%flow = TRunoff%flow / Tctl%DLevelH2R
-    TRunoff%erout_prev = TRunoff%erout_prev / Tctl%DLevelH2R
-    TRunoff%eroutup_avg = TRunoff%eroutup_avg / Tctl%DLevelH2R
-    TRunoff%erlat_avg = TRunoff%erlat_avg / Tctl%DLevelH2R
 
   end subroutine Euler
 

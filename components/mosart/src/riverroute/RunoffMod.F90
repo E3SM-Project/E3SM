@@ -38,12 +38,16 @@ module RunoffMod
      real(r8), pointer :: lonc(:)          ! lon of cell
      real(r8), pointer :: latc(:)          ! lat of cell
      real(r8), pointer :: area(:)          ! area of cell
+     integer , pointer :: mask(:)          ! general mask of cell 1=land, 2=ocean, 3=outlet
      integer , pointer :: gindex(:)        ! global index consistent with map file
      integer , pointer :: dsig(:)          ! downstream index, global index
      integer , pointer :: outletg(:)       ! outlet index, global index
+     real(r8), pointer :: rmask(:)         ! general mask of cell 1=land, 2=ocean, 3=outlet
+     real(r8), pointer :: rgindex(:)       ! global index consistent with map file
+     real(r8), pointer :: rdsig(:)         ! downstream index, global index
+     real(r8), pointer :: routletg(:)      ! outlet index, global index
 
      !    - global 
-     integer , pointer :: mask(:)          ! general mask of cell 1=land, 2=ocean, 3=outlet
      real(r8), pointer :: rlon(:)          ! rtm longitude list, 1d
      real(r8), pointer :: rlat(:)          ! rtm latitude list, 1d
      real(r8)          :: totarea          ! global area
@@ -67,7 +71,7 @@ module RunoffMod
      real(r8), pointer :: wh(:,:)          ! MOSART hillslope surface water storage (m)
      real(r8), pointer :: wt(:,:)          ! MOSART sub-network water storage (m3)
      real(r8), pointer :: wr(:,:)          ! MOSART main channel water storage (m3)
-     real(r8), pointer :: erout(:,:)       ! MOSART flow out of the main channel, instantaneous (m3/s)
+     real(r8), pointer :: erout(:,:)       ! MOSART flow out of the main channel, instantaneous (m3/s) (negative is out)
 
      ! inputs
      real(r8), pointer :: qsur(:,:)        ! coupler surface forcing [m3/s]
@@ -239,12 +243,15 @@ module RunoffMod
      real(r8), pointer :: erlg(:,:)    ! evaporation, [m/s]
      real(r8), pointer :: erlateral(:,:) ! lateral flow from hillslope, including surface and subsurface runoff generation components, [m3/s]
      real(r8), pointer :: erin(:,:)    ! inflow from upstream links, [m3/s]
-     real(r8), pointer :: erout(:,:)   ! outflow into downstream links, [m3/s]
-     real(r8), pointer :: erout_prev(:,:) ! outflow into downstream links from previous timestep, [m3/s]
+     real(r8), pointer :: erout(:,:)   ! outflow into downstream links, [m3/s] (negative is out)
+     real(r8), pointer :: eroup_lagi(:,:) ! outflow into downstream links from previous timestep, [m3/s]
+     real(r8), pointer :: eroup_lagf(:,:) ! outflow into downstream links from current timestep, [m3/s]
+     real(r8), pointer :: erowm_regi(:,:) ! initial outflow before dam regulation at current timestep, [m3/s]
+     real(r8), pointer :: erowm_regf(:,:) ! final outflow after dam regulation at current timestep, [m3/s]
      real(r8), pointer :: eroutUp(:,:) ! outflow sum of upstream gridcells, instantaneous (m3/s)
      real(r8), pointer :: eroutUp_avg(:,:) ! outflow sum of upstream gridcells, average [m3/s]
      real(r8), pointer :: erlat_avg(:,:) ! erlateral average [m3/s]
-     real(r8), pointer :: flow(:,:)    ! streamflow from the outlet of the reach, [m3/s]
+     real(r8), pointer :: flow(:,:)    ! streamflow from the outlet of the reach, [m3/s] (positive is out)
      real(r8), pointer :: erin1(:,:)   ! inflow from upstream links during previous step, used for Muskingum method, [m3/s]
      real(r8), pointer :: erin2(:,:)   ! inflow from upstream links during current step, used for Muskingum method, [m3/s]
      real(r8), pointer :: ergwl(:,:)   ! flux item for the adjustment of water balance residual in glacie, wetlands and lakes dynamics [m3/s]
@@ -299,7 +306,9 @@ contains
              rtmCTL%lonc(begr:endr),              &
              rtmCTL%latc(begr:endr),              &
              rtmCTL%dsig(begr:endr),              &
+             rtmCTL%rdsig(begr:endr),             &
              rtmCTL%outletg(begr:endr),           &
+             rtmCTL%routletg(begr:endr),          &
              rtmCTL%runofflnd_nt1(begr:endr),     &
              rtmCTL%runofflnd_nt2(begr:endr),     &
              rtmCTL%runoffocn_nt1(begr:endr),     &
@@ -323,7 +332,9 @@ contains
              rtmCTL%qdto_nt1(begr:endr),          &
              rtmCTL%qdto_nt2(begr:endr),          &
              rtmCTL%mask(begr:endr),              &
+             rtmCTL%rmask(begr:endr),             &
              rtmCTL%gindex(begr:endr),            &
+             rtmCTL%rgindex(begr:endr),           &
              rtmCTL%fthresh(begr:endr),           &
              rtmCTL%flood(begr:endr),             &
              rtmCTL%direct(begr:endr,nt_rtm),     &

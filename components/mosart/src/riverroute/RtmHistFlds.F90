@@ -42,6 +42,22 @@ contains
     implicit none
     !-------------------------------------------------------
 
+    call RtmHistAddfld (fname='MASK', units='none',  &
+         avgflag='A', long_name='MOSART mask 1=land 2=ocean 3=outlet ', &
+         ptr_rof=rtmCTL%rmask, default='active')
+
+    call RtmHistAddfld (fname='GINDEX', units='none',  &
+         avgflag='A', long_name='MOSART global index ', &
+         ptr_rof=rtmCTL%rgindex, default='active')
+
+    call RtmHistAddfld (fname='DSIG', units='none',  &
+         avgflag='A', long_name='MOSART downstream index ', &
+         ptr_rof=rtmCTL%rdsig, default='active')
+
+    call RtmHistAddfld (fname='OUTLETG', units='none',  &
+         avgflag='A', long_name='MOSART outlet index ', &
+         ptr_rof=rtmCTL%routletg, default='active')
+
     call RtmHistAddfld (fname='RIVER_DISCHARGE_OVER_LAND'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
          avgflag='A', long_name='MOSART river basin flow: '//trim(rtm_tracers(1)), &
          ptr_rof=rtmCTL%runofflnd_nt1, default='active')
@@ -174,6 +190,11 @@ contains
     !-----------------------------------------------------------------------
 
     ! Currently only have two tracers
+
+    rtmCTL%rmask(:)          = rtmCTL%mask(:)
+    rtmCTL%rgindex(:)        = rtmCTL%gindex(:)
+    rtmCTL%rdsig(:)          = rtmCTL%dsig(:)
+    rtmCTL%routletg(:)       = rtmCTL%outletg(:)
 
     rtmCTL%runofflnd_nt1(:)  = rtmCTL%runofflnd(:,1)
     rtmCTL%runofflnd_nt2(:)  = rtmCTL%runofflnd(:,2)

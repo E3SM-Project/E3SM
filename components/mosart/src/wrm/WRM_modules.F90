@@ -195,65 +195,87 @@ MODULE WRM_modules
 #endif
 !-----------------------------------------------------------------------
 
-  subroutine irrigationExtraction
+  subroutine irrigationExtraction(iunit, TheDeltaT)
 
      ! !DESCRIPTION: subnetwork channel routing irrigation extraction
 
      implicit none    
-     integer :: iunit      ! local index
-     real(r8) :: flow_vol, temp         ! flow in cubic meter rather than cms
+     integer, intent(in) :: iunit
+     real(r8), intent(in) :: theDeltaT
+     real(r8) :: flow_vol      ! flow in cubic meter rather than cms
+     real(r8) :: budget
+     logical  :: check_local_budget = .false.
      character(len=*),parameter :: subname='(irrigationExtraction)'
 
-     do iunit=rtmCTL%begr,rtmCTL%endr
+     if (check_local_budget) then
+        budget = Trunoff%erlateral(iunit,nt_nliq)*TheDeltaT + StorWater%supply(iunit)
+     endif
 
-        flow_vol = Trunoff%erlateral(iunit,nt_nliq) * Tctl%DeltaT/Tctl%DLevelH2R
-        temp = flow_vol
-        if (TUnit%mask(iunit) > 0) then
-           if ( flow_vol >= StorWater%demand(iunit) ) then 
-              StorWater%supply(iunit)= StorWater%supply(iunit) + StorWater%demand(iunit)
-              flow_vol = flow_vol - StorWater%demand(iunit)
-              StorWater%demand(iunit)= 0._r8
-           else
-              StorWater%supply(iunit)= StorWater%supply(iunit) + flow_vol
-              StorWater%demand(iunit)= StorWater%demand(iunit) - flow_vol
-              flow_vol = 0._r8
-           end if 
+     flow_vol = Trunoff%erlateral(iunit,nt_nliq) * TheDeltaT
+
+     if ( flow_vol >= StorWater%demand(iunit) ) then 
+        StorWater%supply(iunit)= StorWater%supply(iunit) + StorWater%demand(iunit)
+        flow_vol = flow_vol - StorWater%demand(iunit)
+        StorWater%demand(iunit)= 0._r8
+     else
+        StorWater%supply(iunit)= StorWater%supply(iunit) + flow_vol
+        StorWater%demand(iunit)= StorWater%demand(iunit) - flow_vol
+        flow_vol = 0._r8
+     end if 
 ! dwt is not updated because extraction is taken from water getting out of subnetwork channel routing only
-        end if
-        Trunoff%erlateral(iunit,nt_nliq) = flow_vol / (Tctl%DeltaT/Tctl%DLevelH2R)
-        !if ( StorWater%demand(iunit) > 0 .and. iunit.eq.96) then
-        !  print*, temp, flow_vol, StorWater%supply(iunit), StorWater%demand(iunit)
-        !endif 
-     end do
+
+     Trunoff%erlateral(iunit,nt_nliq) = flow_vol / TheDeltaT
+
+     if (check_local_budget) then
+        budget = budget - (Trunoff%erlateral(iunit,nt_nliq)*TheDeltaT + StorWater%supply(iunit))
+        if (budget > 0.001_r8) then   ! in m3 
+           write(iulog,'(2a,i8,g20.12)') subname,' budget ',iunit,budget
+           call shr_sys_abort(subname//' ERROR in budget')
+         endif
+     endif
+
   end subroutine irrigationExtraction
 
 !-----------------------------------------------------------------------
 
-  subroutine irrigationExtractionSubNetwork
+  subroutine irrigationExtractionSubNetwork(iunit, TheDeltaT)
 
      ! !DESCRIPTION: subnetwork channel routing irrigation extraction
 
      implicit none
-     integer :: iunit      ! local index
+     integer, intent(in) :: iunit
+     real(r8), intent(in) :: theDeltaT
      real(r8) :: flow_vol, temp, temp_vol         ! flow in cubic meter rather than cms
+     real(r8) :: budget
+     logical  :: check_local_budget = .false.
      character(len=*),parameter :: subname='(irrigationExtractionSubNetwork)'
 
-     do iunit=rtmCTL%begr,rtmCTL%endr
+     if (check_local_budget) then
+        budget = Trunoff%etin(iunit,nt_nliq)*TheDeltaT + StorWater%supply(iunit)
+     endif
 
-        flow_vol = Trunoff%etin(iunit,nt_nliq)* Tctl%DeltaT/Tctl%DLevelH2R
-        if (TUnit%mask(iunit) > 0) then
-           if ( flow_vol >= StorWater%demand(iunit) ) then
-              StorWater%supply(iunit)= StorWater%supply(iunit) + StorWater%demand(iunit)
-              flow_vol = flow_vol - StorWater%demand(iunit)
-              StorWater%demand(iunit)= 0._r8
-           else
-              StorWater%supply(iunit)= StorWater%supply(iunit) + flow_vol
-              StorWater%demand(iunit)= StorWater%demand(iunit) - flow_vol
-              flow_vol = 0._r8
-           end if
-        end if
-        Trunoff%etin(iunit,nt_nliq) = flow_vol / (Tctl%DeltaT/Tctl%DLevelH2R)
-     end do
+     flow_vol = Trunoff%etin(iunit,nt_nliq)*TheDeltaT
+
+     if ( flow_vol >= StorWater%demand(iunit) ) then
+        StorWater%supply(iunit) = StorWater%supply(iunit) + StorWater%demand(iunit)
+        flow_vol = flow_vol - StorWater%demand(iunit)
+        StorWater%demand(iunit)= 0._r8
+     else
+        StorWater%supply(iunit)= StorWater%supply(iunit) + flow_vol
+        StorWater%demand(iunit)= StorWater%demand(iunit) - flow_vol
+        flow_vol = 0._r8
+     end if
+
+     Trunoff%etin(iunit,nt_nliq) = flow_vol / (TheDeltaT)
+
+     if (check_local_budget) then
+        budget = budget - (Trunoff%etin(iunit,nt_nliq)*TheDeltaT + StorWater%supply(iunit))
+        if (budget > 0.001_r8) then   ! in m3 
+           write(iulog,'(2a,i8,g20.12)') subname,' budget ',iunit,budget
+           call shr_sys_abort(subname//' ERROR in budget')
+         endif
+     endif
+
   end subroutine irrigationExtractionSubNetwork
 
 !-----------------------------------------------------------------------
@@ -261,16 +283,21 @@ MODULE WRM_modules
   subroutine irrigationExtractionMainChannel(iunit, TheDeltaT )
 
      ! !DESCRIPTION: main channel routing irrigation extraction - restrict to 50% of the flow, something needs to flow else instability
-
      implicit none
-     integer :: match
      integer, intent(in) :: iunit
      real(r8), intent(in) :: theDeltaT
      real(r8) :: flow_vol, frac         ! flow in cubic meter rather than cms
+     real(r8) :: budget
+     logical  :: check_local_budget = .false.
      character(len=*),parameter :: subname='(irrigationExtractionMainChannel)'
 
-     match = 0
+!tcx fix this method, remove if mask/rlen
+
      frac = 0.5_r8 ! control the fraction of the flow that can be extracted
+
+     if (check_local_budget) then
+        budget = Trunoff%wr(iunit,nt_nliq) + StorWater%supply(iunit)
+     endif
 
      ! added if statement for test
      if (Trunoff%wr(iunit,nt_nliq) > MYTINYVALUE .and. StorWater%demand(iunit) > MYTINYVALUE) then
@@ -290,14 +317,18 @@ MODULE WRM_modules
            !Trunoff%erout(iunit,nt_nliq) = -flow_vol / (theDeltaT)
            Trunoff%wr(iunit,nt_nliq) = flow_vol
            if ( Trunoff%wr(iunit,nt_nliq) < MYTINYVALUE ) then
-              print*, "error with extraction from main chanel, ",iunit, Trunoff%wr(iunit,nt_nliq)
+              write(iulog,*) subname,"ERROR with extraction from main chanel, ",iunit, Trunoff%wr(iunit,nt_nliq)
            endif
         endif
      endif
 
-     !if (  match > 0 ) then
-     !   print*, "MAIN after extract", StorWater%demand(137), StorWater%supply(137), -Trunoff%erout(137,nt_nliq)
-     !endif
+     if (check_local_budget) then
+        budget = budget - (Trunoff%wr(iunit,nt_nliq) + StorWater%supply(iunit))
+        if (budget > 0.001_r8) then   ! in m3 
+           write(iulog,'(2a,i8,g20.12)') subname,' budget ',iunit,budget
+           call shr_sys_abort(subname//' ERROR in budget')
+         endif
+     endif
 
   end subroutine irrigationExtractionMainChannel
 
@@ -540,7 +571,7 @@ MODULE WRM_modules
      integer  :: yr, month, day, tod
      integer  :: damID,k,isDam
      real(r8) :: flow_vol, flow_res, min_flow, min_stor, evap, max_stor, stor_init, budget
-     logical  :: check_local_budget = .true.
+     logical  :: check_local_budget = .false.
      character(len=*),parameter :: subname='(Regulation)'
 
      match = 0
@@ -649,7 +680,7 @@ MODULE WRM_modules
      real(r8),allocatable :: dam_uptake_sum(:)  ! dam uptake from gridcells sum over all pes
      real(r8),allocatable :: fracsum(:)     ! sum of dam fraction on gridcells
      real(r8) :: demand, demand_orig, supply, budget_term(4),budget_sum(4),budget
-     logical  :: check_local_budget = .true.
+     logical  :: check_local_budget = .false.
      character(len=*),parameter :: subname='(ExtractionRegulatedFlow)'
 
      call t_startf('moswrm_ERFlow')
