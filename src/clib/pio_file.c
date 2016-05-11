@@ -1,3 +1,4 @@
+#include <config.h>
 #include <pio.h>
 #include <pio_internal.h>
 /**
@@ -21,6 +22,8 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   file_desc_t *file;
   int ierr = PIO_NOERR;
   int mpierr = MPI_SUCCESS;
+
+  LOG((1, "PIOc_openfile iosysid = %d", iosysid));
 
   /* Get the IO system info from the iosysid. */
   if (!(ios = pio_get_iosystem_from_id(iosysid)))
