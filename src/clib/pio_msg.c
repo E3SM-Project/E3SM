@@ -255,7 +255,6 @@ int inq_att_handler(iosystem_desc_t *ios)
     int ret;
     char *name5;
     int namelen;
-    PIO_Offset attlen;
     int *op, *ip;
     nc_type xtype, *xtypep = NULL;
     PIO_Offset len, *lenp = NULL;
@@ -309,12 +308,10 @@ int att_handler(iosystem_desc_t *ios, int msg)
     char *name5;
     int namelen;
     PIO_Offset attlen;
-    nc_type xtype;
+    nc_type atttype;
     int *op, *ip;
 
-    int my_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    LOG((1, "%d att_handler\n", my_rank));
+    LOG((1, "att_handler msg = %d", msg));
 
     if (msg == PIO_MSG_PUT_ATT_INT)
     {
@@ -328,47 +325,94 @@ int att_handler(iosystem_desc_t *ios, int msg)
 	if (!(name5 = malloc((namelen + 1) * sizeof(char))))
 	    return PIO_ENOMEM;
 	mpierr = MPI_Bcast((void *)name5, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast(&xtype, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	mpierr = MPI_Bcast(&atttype, 1, MPI_INT,  ios->compmaster, ios->intercomm);
 	mpierr = MPI_Bcast(&attlen, 1, MPI_OFFSET,  ios->compmaster, ios->intercomm);
 	if (!(op = malloc(attlen * sizeof(int))))
 	    return PIO_ENOMEM;
 	mpierr = MPI_Bcast(op, attlen, MPI_INT,  ios->compmaster, ios->intercomm);
 
 	/* Call the function to write the attribute. */
-	if ((ret = PIOc_put_att_int(ncid, varid, name5, xtype, attlen, op)))
+	if ((ret = PIOc_put_att_int(ncid, varid, name5, atttype, attlen, op)))
 	    return ret;
 
 	/* Free resources. */
 	free(name5);
 	free(op);
     }
-    else if (msg = PIO_MSG_GET_ATT_INT)
+
+    return PIO_NOERR;
+}
+
+/** Handle attribute operations. This code only runs on IO tasks.
+ *
+ * @param ios pointer to the iosystem_desc_t.
+ * @param msg the message sent my the comp root task.
+ * @return PIO_NOERR for success, error code otherwise.
+*/
+int att_get_handler(iosystem_desc_t *ios)
+{
+    int ncid;
+    int varid;
+    int mpierr;
+    int ierr;
+    char *name;
+    int namelen;
+    PIO_Offset attlen;
+    nc_type atttype;
+    int *op, *ip;
+    int iotype;
+
+    LOG((1, "att_get_handler"));
+
+    /* Get the parameters for this function that the the comp master
+     * task is broadcasting. */
+    if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+    if (!(name = malloc((namelen + 1) * sizeof(char))))
+	return PIO_ENOMEM;
+    mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, ios->compmaster,
+		       ios->intercomm);
+    if ((mpierr = MPI_Bcast(&iotype, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+
+    /* Get the length and the type of the attribute. */
+    switch (iotype)
     {
-	/* Get the parameters for this function that the the comp master
-	 * task is broadcasting. */
-	if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
-	    return PIO_EIO;
-	if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
-	    return PIO_EIO;
-	mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-	if (!(name5 = malloc((namelen + 1) * sizeof(char))))
-	    return PIO_ENOMEM;
-	mpierr = MPI_Bcast((void *)name5, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-
-	/* Allocate space for the attribute data. */
-        if ((ret = PIOc_inq_attlen(ncid, varid, name5, &attlen)))
-	    return ret;
-	if (!(ip = malloc(attlen * sizeof(int))))
-	    return PIO_ENOMEM;
-
-	/* Call the function to read the attribute. */
-	if ((ret = PIOc_get_att_int(ncid, varid, name5, ip)))
-	    return ret;
-
-	/* Free resources. */
-	free(name5);
-	free(ip);
+#ifdef _NETCDF
+#ifdef _NETCDF4
+    case PIO_IOTYPE_NETCDF4P:
+	ierr = nc_inq_att(ncid, varid, name, &atttype, (size_t *)&attlen);
+	break;
+    case PIO_IOTYPE_NETCDF4C:
+#endif
+    case PIO_IOTYPE_NETCDF:
+	if (ios->io_rank == 0)
+	    ierr = nc_inq_att(ncid, varid, name, &atttype, (size_t *)&attlen);		
+	break;
+#endif
+#ifdef _PNETCDF
+    case PIO_IOTYPE_PNETCDF:
+	ierr = ncmpi_inq_att(ncid, varid, name, &atttype, &attlen);		
+	break;
+#endif
+    default:
+	ierr = iotype_error(iotype,__FILE__,__LINE__);
     }
+    
+    /* Allocate space for the attribute data. */
+    if (!(ip = malloc(attlen * sizeof(int))))
+	return PIO_ENOMEM;
+    
+    /* Call the function to read the attribute. */
+    if ((ierr = PIOc_get_att_int(ncid, varid, name, ip)))
+	return ierr;
+    
+    /* Free resources. */
+    free(name);
+    free(ip);
 
     return PIO_NOERR;
 }
@@ -931,6 +975,8 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	    inq_var_handler(my_iosys);
 	    break;
 	case PIO_MSG_GET_ATT_INT:
+	    ret = att_get_handler(my_iosys);
+	    break;
 	case PIO_MSG_PUT_ATT_INT:
 	    ret = att_handler(my_iosys, msg);
 	    break;
