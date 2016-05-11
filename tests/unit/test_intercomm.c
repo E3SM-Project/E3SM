@@ -170,10 +170,10 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     	ERR(ret);
     if (varnatts2 != 0)
     	ERR(ERR_WRONG);
-    /* if ((ret = PIOc_inq_varid(ncid, VAR_NAME, &varid2))) */
-    /* 	ERR(ret); */
-    /* if (varid2 != 0) */
-    /* 	ERR(ERR_WRONG); */
+    if ((ret = PIOc_inq_varid(ncid, VAR_NAME, &varid2)))
+    	ERR(ret);
+    if (varid2 != 0)
+    	ERR(ERR_WRONG);
 
     /* Check out the global attributes. */
     nc_type atttype;
