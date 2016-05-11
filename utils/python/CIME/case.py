@@ -594,7 +594,6 @@ class Case(object):
                 ninst_comp = self.get_value("NINST_%s"%comp_class)
                 if ninst_comp > 1:
                     ninst_vals[comp_name] = ninst_comp
-            print ninst_vals
             apply_user_mods(self.get_value("CASEROOT"), user_mods_path, ninst_vals)
 
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None):
