@@ -137,10 +137,12 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     	ERR(ret);
     if (dimlen2 != DIM_LEN)
     	ERR(ERR_WRONG);
-    /* if ((ret = PIOc_inq_dimid(ncid, DIM_NAME, &dimid2))) */
-    /* 	ERR(ret); */
-    /* if (dimid2 != 0) */
-    /* 	ERR(ERR_WRONG); */
+    sleep(2);
+    if ((ret = PIOc_inq_dimid(ncid, DIM_NAME, &dimid2)))
+    	ERR(ret);
+    if (dimid2 != 0)
+    	ERR(ERR_WRONG);
+    sleep(2);
 
     /* Check out the variable. */
     if ((ret = PIOc_inq_var(ncid, 0, varname, &vartype, &varndims, &vardimids, &varnatts)))

@@ -207,9 +207,7 @@ int inq_dimid_handler(iosystem_desc_t *ios)
     int namelen;
     char *name;
 
-    int my_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    LOG((1, "inq_dimid_handler\n", my_rank));
+    LOG((1, "inq_dimid_handler"));
 
     /* Get the parameters for this function that the the comp master
      * task is broadcasting. */
@@ -223,7 +221,7 @@ int inq_dimid_handler(iosystem_desc_t *ios)
 	return PIO_EIO;
     if ((mpierr = MPI_Bcast(&id_present, 1, MPI_CHAR, 0, ios->intercomm)))
 	return PIO_EIO;
-    LOG((1, "%d inq_dimid_handler ncid = %d namelen = %d name = %s id_present = %d\n",
+    LOG((1, "inq_dimid_handler ncid = %d namelen = %d name = %s id_present = %d",
 	 ncid, namelen, name, id_present));
 
     /* Set non-null pointer. */

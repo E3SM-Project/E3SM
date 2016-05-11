@@ -440,11 +440,10 @@ int PIOc_inq_dimlen(int ncid, int dimid, PIO_Offset *lenp)
  */
 int PIOc_inq_dimid(int ncid, const char *name, int *idp) 
 {
-    int msg = PIO_MSG_INQ_DIMID;
     iosystem_desc_t *ios;
     file_desc_t *file;
     int ierr = PIO_NOERR;
-    int mpierr;
+    int mpierr = MPI_SUCCESS;
 
     /* Name must be provided. */
     if (!name)
@@ -462,10 +461,12 @@ int PIOc_inq_dimid(int ncid, const char *name, int *idp)
     {
 	if (!ios->ioproc)
 	{
+	    int msg = PIO_MSG_INQ_DIMID;
 	    char id_present = idp ? true : false;
 	    
 	    if(ios->compmaster) 
 		mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+	    
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	    int namelen = strlen(name);
