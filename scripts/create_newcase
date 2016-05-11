@@ -40,6 +40,10 @@ def parse_command_line(args, cimeroot):
                         help="Specify a compiler. "
                         "To see list of supported compilers for each machine, use the utility manage_case in this directory")
 
+    parser.add_argument("--ninst",default=1,
+                        help="Specify number of component instances"
+                        "Set the number of component instances in the case.")
+
     parser.add_argument("--mpilib", "-mpilib",
                         help="Specify the mpilib. "
                         "To see list of supported mpilibs for each machine, use the utility manage_case in this directory. "
@@ -119,7 +123,7 @@ def parse_command_line(args, cimeroot):
     return args.case, args.compset, args.res, args.mach, args.compiler,\
         args.mpilib, args.project, args.pecount, \
         args.mach_dir, args.user_mods_dir, args.user_compset, args.pesfile, \
-        args.user_grid, args.gridfile, args.srcroot, args.test
+        args.user_grid, args.gridfile, args.srcroot, args.test, args.ninst
 
 ###############################################################################
 def _main_func():
@@ -129,7 +133,7 @@ def _main_func():
     case, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
         machine_dir, user_mods_dir, user_compset, pesfile, \
-        user_grid, gridfile, srcroot, test \
+        user_grid, gridfile, srcroot, test, ninst \
         = parse_command_line(sys.argv, cimeroot)
 
     caseroot = os.path.abspath(case)
@@ -152,7 +156,7 @@ def _main_func():
     caseobj.configure(compset, grid, machine_name=machine, project=project,
                       pecount=pecount, compiler=compiler, mpilib=mpilib,
                       user_compset=user_compset, pesfile=pesfile,
-                      user_grid=user_grid, gridfile=gridfile)
+                      user_grid=user_grid, gridfile=gridfile, ninst=ninst)
 
     caseobj.create_caseroot(user_mods_dir)
 

@@ -305,7 +305,7 @@ class Case(object):
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
-                  user_grid=False, gridfile=None):
+                  user_grid=False, gridfile=None, ninst=1):
 
         #--------------------------------------------
         # compset, pesfile, and compset components
@@ -415,6 +415,8 @@ class Case(object):
         for compclass in self._component_classes:
             if compclass == "DRV":
                 continue
+            key = "NINST_%s"%compclass
+            mach_pes_obj.set_value(key, ninst)
             key = "NTASKS_%s"%compclass
             if key not in pes_ntasks.keys():
                 mach_pes_obj.set_value(key,1)
@@ -583,11 +585,17 @@ class Case(object):
             else:
                 user_mods_path = self.get_value('USER_MODS_DIR')
                 user_mods_path = os.path.join(user_mods_path, user_mods_dir)
-            apply_user_mods(self.get_value("CASEROOT"), user_mods_path)
-
-
-
-
+            ninst_vals = {}
+            for i in xrange(1,len(self._component_classes)):
+                comp_class = self._component_classes[i]
+                comp_name  = self._components[i-1]
+                if comp_class == "DRV":
+                    continue
+                ninst_comp = self.get_value("NINST_%s"%comp_class)
+                if ninst_comp > 1:
+                    ninst_vals[comp_name] = ninst_comp
+            print ninst_vals
+            apply_user_mods(self.get_value("CASEROOT"), user_mods_path, ninst_vals)
 
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None):
 
