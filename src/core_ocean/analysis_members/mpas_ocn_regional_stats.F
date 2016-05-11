@@ -515,7 +515,6 @@ subroutine add_new_string(all_fields, inpool, outpool, field_name, target_ptr)
   call mpas_pool_get_field(inpool, ONE_STRING_MEMORY, srcString, 1)
   call mpas_duplicate_field(srcString, dstString)
   dstString % fieldName = field_name
-  allocate(dstString % attLists(1))
   call mpas_pool_add_field(outpool, dstString % fieldName, dstString)
   call mpas_pool_add_field(all_fields, dstString % fieldName, dstString)
   if (present(target_ptr)) then
@@ -550,7 +549,6 @@ subroutine add_new_integer(all_fields, inpool, outpool, field_name, target_ptr)
   call mpas_pool_get_field(inpool, ONE_INTEGER_MEMORY, srcInteger, 1)
   call mpas_duplicate_field(srcInteger, dstInteger)
   dstInteger % fieldName = field_name
-  allocate(dstInteger % attLists(1))
   call mpas_pool_add_field(outpool, dstInteger % fieldName, dstInteger)
   call mpas_pool_add_field(all_fields, dstInteger % fieldName, dstInteger)
   if (present(target_ptr)) then
@@ -585,7 +583,6 @@ subroutine add_new_real(all_fields, inpool, outpool, field_name, target_ptr)
   call mpas_pool_get_field(inpool, ONE_REAL_MEMORY, srcReal, 1)
   call mpas_duplicate_field(srcReal, dstReal)
   dstReal % fieldName = field_name
-  allocate(dstReal % attLists(1))
   call mpas_pool_add_field(outpool, dstReal % fieldName, dstReal)
   call mpas_pool_add_field(all_fields, dstReal % fieldName, dstReal)
   if (present(target_ptr)) then
