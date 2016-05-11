@@ -6,7 +6,6 @@ module  ThermalKSPTemperatureSnowAuxType
   use clm_varctl         , only : iulog
   use abortutils         , only : endrun
   use shr_log_mod        , only : errMsg => shr_log_errMsg
-  use shr_kind_mod       , only : r8 => shr_kind_r8
   use ThermalKSPTemperatureBaseAuxType
   !
   ! !PUBLIC TYPES:
@@ -72,7 +71,7 @@ contains
        return
     else
        bw = (this%ice_areal_den + this%liq_areal_den)/(this%frac * dz)
-       this%therm_cond   = tkair + (7.75e-5_r8*bw + 1.105e-6_r8*bw*bw)*(tkice-tkair)
+       this%therm_cond   = tkair + (7.75d-5*bw + 1.105d-6*bw*bw)*(tkice-tkair)
        this%heat_cap_pva = cpliq*this%liq_areal_den + cpice*this%ice_areal_den
     endif
 

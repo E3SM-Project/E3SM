@@ -1505,7 +1505,8 @@ contains
                                );
          CHKERRQ(ierr)
 
-         call vsfm_mpp%sysofeqns%StepDT(dtime, converged, converged_reason, ierr); CHKERRQ(ierr)
+         call vsfm_mpp%sysofeqns%StepDT(dtime, get_nstep(), &
+              converged, converged_reason, ierr); CHKERRQ(ierr)
 
          if (.not. converged) then
 

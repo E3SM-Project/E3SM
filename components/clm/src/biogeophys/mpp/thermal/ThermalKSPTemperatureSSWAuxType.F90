@@ -7,7 +7,6 @@ module ThermalKSPTemperatureSSWAuxType
   use clm_varctl         , only : iulog
   use abortutils         , only : endrun
   use shr_log_mod        , only : errMsg => shr_log_errMsg
-  use shr_kind_mod       , only : r8 => shr_kind_r8
   use ThermalKSPTemperatureBaseAuxType
   !
   ! !PUBLIC TYPES:

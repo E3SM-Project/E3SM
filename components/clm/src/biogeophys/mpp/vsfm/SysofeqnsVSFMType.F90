@@ -97,7 +97,7 @@ contains
   end subroutine VSFMSOEInit
 
   !------------------------------------------------------------------------
-  subroutine VSFMSOESetup(this, mpp_type, soe_type, meshes, nmesh)
+  subroutine VSFMSOESetup(this, mpi_rank, mpp_type, soe_type, meshes, nmesh)
     !
     ! !DESCRIPTION:
     ! Sets up SoE for the VSFM
@@ -111,12 +111,15 @@ contains
     !
     ! !ARGUMENTS
     class(sysofeqns_vsfm_type) :: this
+    PetscInt                   :: mpi_rank
     PetscInt                   :: mpp_type
     PetscInt                   :: soe_type
     class(mesh_type), pointer  :: meshes(:)
     PetscInt                   :: nmesh
 
     call this%Init()
+
+    this%mpi_rank = mpi_rank
 
     select case (soe_type)
     case (SOE_RE_ODE)

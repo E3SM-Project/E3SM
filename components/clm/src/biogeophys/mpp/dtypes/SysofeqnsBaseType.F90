@@ -44,8 +44,11 @@ module SystemOfEquationsBaseType
      PetscInt                        :: ngoveqns                     ! number of governing equations within SoE
 
 
+     PetscInt                        :: mpi_rank                     ! [-]
+
      PetscReal                       :: time                         ! [sec]
      PetscReal                       :: dtime                        ! [sec]
+     PetscReal                       :: nstep                        ! [-]
 
      PetscInt                        :: cumulative_newton_iterations ! Total number of Newton iterations
      PetscInt                        :: cumulative_linear_iterations ! Total number of Linear iterations
@@ -105,8 +108,11 @@ contains
     this%itype                        = 0
     this%ngoveqns                     = 0
 
+    this%mpi_rank                     = 0
+
     this%time                         = 0.d0
     this%dtime                        = 0.d0
+    this%nstep                        = 0
 
     this%cumulative_newton_iterations = 0
     this%cumulative_linear_iterations = 0
@@ -315,7 +321,7 @@ contains
   end subroutine SOEBasePostStepDT
 
   !------------------------------------------------------------------------
-  subroutine SOEBaseStepDT(this, dt, converged, converged_reason, ierr)
+  subroutine SOEBaseStepDT(this, dt, nstep, converged, converged_reason, ierr)
     !
     ! !DESCRIPTION:
     ! Solves SoE by calling appropriate subroutine dependning on the choice
@@ -331,6 +337,7 @@ contains
     ! !ARGUMENTS
     class(sysofeqns_base_type) :: this
     PetscReal                  :: dt
+    PetscInt                   :: nstep
     PetscBool,intent(out)      :: converged
     PetscInt,intent(out)       :: converged_reason
     PetscErrorCode             :: ierr
@@ -339,7 +346,7 @@ contains
     case (PETSC_TS)
        call SOEBaseStepDT_TS(this, dt, ierr)
     case (PETSC_SNES)
-       call SOEBaseStepDT_SNES(this, dt, converged, converged_reason, ierr)
+       call SOEBaseStepDT_SNES(this, dt, nstep, converged, converged_reason, ierr)
     case (PETSC_KSP)
        call SOEBaseStepDT_KSP(this, dt, converged, ierr)
     case default
@@ -376,14 +383,12 @@ contains
   end subroutine SOEBaseStepDT_TS
 
   !------------------------------------------------------------------------
-  subroutine SOEBaseStepDT_SNES(soe, dt, converged, converged_reason, ierr)
+  subroutine SOEBaseStepDT_SNES(soe, dt, nstep, converged, converged_reason, ierr)
     !
     ! !DESCRIPTION:
     ! Solves SoE via PETSc SNES
     !
     ! !USES
-    use spmdMod          , only : iam
-    use clm_time_manager , only : get_nstep
     use clm_varctl       , only : vsfm_use_dynamic_linesearch
     !
     implicit none
@@ -393,6 +398,7 @@ contains
     ! !ARGUMENTS
     class(sysofeqns_base_type) :: soe
     PetscErrorCode             :: ierr
+    PetscInt                   :: nstep
     PetscBool,intent(out)      :: converged
     PetscInt,intent(out)       :: converged_reason
     PetscReal                  :: dt
@@ -425,6 +431,7 @@ contains
     soe%time       = 0.d0
     target_time    = dt
     dt_iter        = dt
+    soe%nstep      = nstep
 
     ! Determine the default linesearch option
     call SNESGetLineSearch(soe%snes, linesearch, ierr); CHKERRQ(ierr)
@@ -503,7 +510,7 @@ contains
 
           if (vsfm_use_dynamic_linesearch .and. linesearch_iter < max_linesearch_iter) then
              ! Let's try another linesearch
-             write(iulog,*),'On proc ', iam, ' time_step = ', get_nstep(), &
+             write(iulog,*),'On proc ', soe%mpi_rank, ' time_step = ', soe%nstep, &
                   linesearch_name // ' unsuccessful. Trying another one.'
              call VecCopy(soe%soln_prev, soe%soln, ierr); CHKERRQ(ierr)
           else
@@ -514,7 +521,7 @@ contains
              ! SNES diverged, so let's cut the timestep and try again.
              num_time_cuts = num_time_cuts + 1
              dt_iter = 0.5d0*dt_iter
-             write(iulog,*),'On proc ', iam, ' time_step = ', get_nstep(), &
+             write(iulog,*),'On proc ', soe%mpi_rank, ' time_step = ', soe%nstep, &
                   'snes_reason = ',snes_reason,' cutting dt to ',dt_iter
           endif
 

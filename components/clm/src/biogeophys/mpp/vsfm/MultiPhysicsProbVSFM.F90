@@ -9,9 +9,6 @@ module MultiPhysicsProbVSFM
   !-----------------------------------------------------------------------
 
   ! !USES:
-  use SoilStateType                      , only : soilstate_type
-  use WaterstateType                     , only : waterstate_type
-  use SoilHydrologyType                  , only : soilhydrology_type
   use clm_varctl                         , only : iulog
   use abortutils                         , only : endrun
   use shr_log_mod                        , only : errMsg => shr_log_errMsg
@@ -80,10 +77,12 @@ contains
   end subroutine VSFMMPPInit
 
   !------------------------------------------------------------------------
-  subroutine VSFMMPPSetup(this, begg, endg, begc, endc, discretization_type, &
-       ncols_ghost, filter_hydrologyc, &
-       xc_col, yc_col, zc_col, area_col, grid_owner, &
-       soilstate_vars, waterstate_vars, soilhydrology_vars)
+  subroutine VSFMMPPSetup(this, begg, endg, begc, endc, mpi_rank, &
+       grc_landunit_indices, lun_coli, lun_colf, &                               
+       discretization_type, ncols_ghost, filter_vsfmc, &
+       xc_col, yc_col, zc_col, z, zi, dz, &
+       area_col, grid_owner, col_itype, &
+       watsat, hksat, bsw, sucsat, eff_porosity, zwt)
     !
     ! !DESCRIPTION:
     ! Sets up the Variably Saturated Flow Model (VSFM) - Multi-Phyiscs Problem 
@@ -103,23 +102,34 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(mpp_vsfm_type)                 :: this
-    integer, intent(in)                  :: begg,endg
-    integer, intent(in)                  :: begc,endc
-    integer, intent(in)                  :: discretization_type
-    integer, intent(in)                  :: ncols_ghost          ! number of ghost/halo columns
-    integer, intent(in)                  :: filter_hydrologyc(:) ! column filter for soil points
-    PetscReal, pointer, intent(in)       :: xc_col(:)
-    PetscReal, pointer, intent(in)       :: yc_col(:)
-    PetscReal, pointer, intent(in)       :: zc_col(:)
-    PetscReal, pointer, intent(in)       :: area_col(:)
-    PetscInt, pointer, intent(in)        :: grid_owner(:)
-    type(soilstate_type) , intent(in)    :: soilstate_vars
-    type(waterstate_type)  , intent(in)  :: waterstate_vars
-    type(soilhydrology_type), intent(in) :: soilhydrology_vars
+    class(mpp_vsfm_type)           :: this
+    integer, intent(in)            :: begg,endg
+    integer, intent(in)            :: begc,endc
+    PetscInt, intent(in)           :: mpi_rank
+    integer, intent(in)            :: grc_landunit_indices(:,:)
+    integer, intent(in)            :: lun_coli(:)
+    integer, intent(in)            :: lun_colf(:)
+    integer, intent(in)            :: discretization_type
+    integer, intent(in)            :: ncols_ghost          ! number of ghost/halo columns
+    PetscInt, pointer, intent(in)  :: filter_vsfmc(:) ! column filter for soil points
+    PetscReal, pointer, intent(in) :: xc_col(:)
+    PetscReal, pointer, intent(in) :: yc_col(:)
+    PetscReal, pointer, intent(in) :: zc_col(:)
+    PetscReal, pointer, intent(in) :: z(:,:)
+    PetscReal, pointer, intent(in) :: zi(:,:)
+    PetscReal, pointer, intent(in) :: dz(:,:)
+    PetscReal, pointer, intent(in) :: area_col(:)
+    PetscInt, pointer, intent(in)  :: grid_owner(:)
+    PetscInt, pointer, intent(in)  :: col_itype(:)
+    PetscReal, intent(in), pointer :: watsat(:,:)
+    PetscReal, intent(in), pointer :: hksat(:,:)
+    PetscReal, intent(in), pointer :: bsw(:,:)
+    PetscReal, intent(in), pointer :: sucsat(:,:)
+    PetscReal, intent(in), pointer :: eff_porosity(:,:)
+    PetscReal, intent(in), pointer :: zwt(:)
     !
     ! !LOCAL VARIABLES:
-    PetscInt                             :: soe_type
+    PetscInt                       :: soe_type
 
     ! Initialize
     call this%Init()
@@ -132,14 +142,16 @@ contains
     this%solver_type         = PETSC_SNES
     soe_type                 = SOE_RE_ODE
 
-    call this%meshes(1)%Create(MESH_CLM_SOIL_COL, begg, endg, begc, endc, &
-                               discretization_type, ncols_ghost, &
-                               xc_col, yc_col, zc_col, area_col, grid_owner, &
-                               waterstate_vars, soilhydrology_vars)
+    call this%meshes(1)%CreateFromCLMCols(begg, endg, begc, endc, &
+         grc_landunit_indices, lun_coli, lun_colf,                &                               
+         discretization_type, ncols_ghost,                        &
+         xc_col, yc_col, zc_col, zi, dz,                          &
+         area_col, grid_owner, col_itype,                         &
+         filter_vsfmc)
 
     ! Setup the system-of-equations
     allocate(this%sysofeqns)
-    call this%sysofeqns%Setup(this%id, soe_type, this%meshes, this%nmesh)
+    call this%sysofeqns%Setup(mpi_rank, this%id, soe_type, this%meshes, this%nmesh)
 
     this%sysofeqns%solver_type = this%solver_type
 
@@ -154,7 +166,7 @@ contains
 
     ! Initliaze the VSFM-MPP
     call VSFMMPPInitialize(this, begc, endc, ncols_ghost, &
-             zc_col, soilstate_vars, waterstate_vars, soilhydrology_vars)
+             zc_col, filter_vsfmc, watsat, hksat, bsw, sucsat, eff_porosity, zwt)
 
   end subroutine VSFMMPPSetup
 
@@ -269,7 +281,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPInitialize(vsfm_mpp, begc, endc, ncols_ghost, &
-       zc_col, soilstate_vars, waterstate_vars, soilhydrology_vars)
+       zc_col, filter_vsfmc, watsat, hksat, bsw, sucsat, eff_porosity, zwt)
 
     !
     ! !DESCRIPTION:
@@ -296,9 +308,13 @@ contains
     integer, intent(in)                               :: begc,endc
     integer, intent(in)                               :: ncols_ghost          ! number of ghost/halo columns
     PetscReal, pointer, intent(in)                    :: zc_col(:)
-    type(soilstate_type) , intent(in)                 :: soilstate_vars
-    type(waterstate_type), intent(in)                 :: waterstate_vars
-    type(soilhydrology_type), intent(in)              :: soilhydrology_vars
+    integer, intent(in)                               :: filter_vsfmc(:)
+    PetscReal, intent(in), pointer                    :: watsat(:,:)
+    PetscReal, intent(in), pointer                    :: hksat(:,:)
+    PetscReal, intent(in), pointer                    :: bsw(:,:)
+    PetscReal, intent(in), pointer                    :: sucsat(:,:)
+    PetscReal, intent(in), pointer                    :: eff_porosity(:,:)
+    PetscReal, intent(in), pointer                    :: zwt(:)
     !
     ! !LOCAL VARIABLES:
     PetscInt                                          :: size
@@ -312,8 +328,9 @@ contains
     vsfm_soe => vsfm_mpp%sysofeqns
 
     ! Set initial coniditions
-    call VSFMMPPSetSoils(vsfm_mpp, begc, endc, ncols_ghost, soilstate_vars     )
-    call VSFMMPPSetICs(  vsfm_mpp, begc, endc, zc_col, soilhydrology_vars )
+    call VSFMMPPSetSoils(vsfm_mpp, begc, endc, ncols_ghost, filter_vsfmc, &
+         watsat, hksat, bsw, sucsat, eff_porosity)
+    call VSFMMPPSetICs(  vsfm_mpp, begc, endc, zc_col, filter_vsfmc, zwt)
 
     ! Get pointers to governing-equations
     cur_goveq => vsfm_soe%goveqns
@@ -349,7 +366,7 @@ contains
   end subroutine VSFMMPPInitialize
 
   !------------------------------------------------------------------------
-  subroutine VSFMMPPSetICs(vsfm_mpp, begc, endc, zc_col, soilhydrology_vars)
+  subroutine VSFMMPPSetICs(vsfm_mpp, begc, endc, zc_col, filter_vsfmc, zwt)
     !
     ! !DESCRIPTION:
     ! Sets inital conditions for VSFM solver
@@ -363,11 +380,12 @@ contains
     class(mpp_vsfm_type)                 :: vsfm_mpp
     integer, intent(in)                  :: begc,endc
     PetscReal, pointer, intent(in)       :: zc_col(:)
-    type(soilhydrology_type), intent(in) :: soilhydrology_vars
+    integer, intent(in)                  :: filter_vsfmc(:)
+    PetscReal, intent(in), pointer       :: zwt(:)
 
     select case(vsfm_mpp%id)
     case (MPP_VSFM_SNES_CLM)
-       call VSFMMPPSetICsSNESCLM(vsfm_mpp, begc, endc, zc_col, soilhydrology_vars)
+       call VSFMMPPSetICsSNESCLM(vsfm_mpp, begc, endc, zc_col, filter_vsfmc, zwt)
     case default
        write(iulog,*) 'VSFMMPPSetICs: Unknown mpp_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -376,7 +394,8 @@ contains
   end subroutine VSFMMPPSetICs
 
   !------------------------------------------------------------------------
-  subroutine VSFMMPPSetSoils(vsfm_mpp, begc, endc, ncols_ghost, soilstate_vars)
+  subroutine VSFMMPPSetSoils(vsfm_mpp, begc, endc, ncols_ghost, filter_vsfmc, &
+       watsat, hksat, bsw, sucsat, eff_porosity)
     !
     ! !DESCRIPTION:
     ! Sets soil properties for VSFM solver
@@ -387,14 +406,20 @@ contains
     implicit none
     !
     ! !ARGUMENTS
-    class(mpp_vsfm_type)              :: vsfm_mpp
-    integer, intent(in)               :: begc,endc
-    integer, intent(in)               :: ncols_ghost
-    type(soilstate_type) , intent(in) :: soilstate_vars
+    class(mpp_vsfm_type)           :: vsfm_mpp
+    integer, intent(in)            :: begc,endc
+    integer, intent(in)            :: ncols_ghost
+    integer, intent(in)            :: filter_vsfmc(:) ! column filter for soil points
+    PetscReal, intent(in), pointer :: watsat(:,:)
+    PetscReal, intent(in), pointer :: hksat(:,:)
+    PetscReal, intent(in), pointer :: bsw(:,:)
+    PetscReal, intent(in), pointer :: sucsat(:,:)
+    PetscReal, intent(in), pointer :: eff_porosity(:,:)
 
     select case(vsfm_mpp%id)
     case (MPP_VSFM_SNES_CLM)
-       call VSFMMPPSetSoilsCLM(vsfm_mpp, begc, endc, ncols_ghost, soilstate_vars)
+       call VSFMMPPSetSoilsCLM(vsfm_mpp, begc, endc, ncols_ghost, filter_vsfmc, &
+            watsat, hksat, bsw, sucsat, eff_porosity)
     case default
        write(iulog,*) 'VSFMMPPSetSoils: Unknown mpp_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -403,7 +428,8 @@ contains
   end subroutine VSFMMPPSetSoils
 
   !------------------------------------------------------------------------
-  subroutine VSFMMPPSetSoilsCLM(vsfm_mpp, begc, endc, ncols_ghost, soilstate_vars)
+  subroutine VSFMMPPSetSoilsCLM(vsfm_mpp, begc, endc, ncols_ghost, filter_vsfmc, &
+       watsat, hksat, bsw, sucsat, eff_porosity)
     !
     ! !DESCRIPTION:
     ! Sets soil properties for VSFM solver from CLM
@@ -420,10 +446,6 @@ contains
     use ConditionType                 , only : condition_type
     use ConnectionSetType             , only : connection_set_type
     use clm_varpar                    , only : nlevgrnd
-    use ColumnType                    , only : col
-    use LandunitType                  , only : lun
-    use landunit_varcon               , only : istcrop, istsoil
-    use column_varcon                 , only : icol_road_perv
     use clm_varcon                    , only : grav, denh2o
     use clm_varctl                    , only : vsfm_satfunc_type
     !
@@ -433,7 +455,12 @@ contains
     class(mpp_vsfm_type)                              :: vsfm_mpp
     integer, intent(in)                               :: begc,endc
     integer, intent(in)                               :: ncols_ghost
-    type(soilstate_type) , intent(in)                 :: soilstate_vars
+    integer, intent(in)                               :: filter_vsfmc(:)
+    PetscReal, intent(in), pointer                    :: watsat(:,:)
+    PetscReal, intent(in), pointer                    :: hksat(:,:)
+    PetscReal, intent(in), pointer                    :: bsw(:,:)
+    PetscReal, intent(in), pointer                    :: sucsat(:,:)
+    PetscReal, intent(in), pointer                    :: eff_porosity(:,:)
     !
     ! !LOCAL VARIABLES:
     class (goveqn_richards_ode_pressure_type),pointer :: goveq_richards_ode_pres
@@ -461,19 +488,6 @@ contains
     PetscBool                                         :: dae_eqn
     PetscInt :: ierr
 
-    associate(&
-         smpmin       =>    soilstate_vars%smpmin_col       , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)
-         watsat       =>    soilstate_vars%watsat_col       , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
-         hksat        =>    soilstate_vars%hksat_col        , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
-         bsw          =>    soilstate_vars%bsw_col          , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"
-         sucsat       =>    soilstate_vars%sucsat_col       , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)
-         eff_porosity =>    soilstate_vars%eff_porosity_col , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice
-         rootr_col    =>    soilstate_vars%rootr_col        , & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer
-         smp_l        =>    soilstate_vars%smp_l_col        , & ! Input:  [real(r8) (:,:) ]  soil matrix potential [mm]
-         hk_l         =>    soilstate_vars%hk_l_col         , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity (mm/s)
-         rootr_pft    =>    soilstate_vars%rootr_patch        & ! Input:  [real(r8) (:,:) ]  effective fraction of roots in each soil layer
-         )
-
     first_active_hydro_col_id = -1
 
     vsfm_soe => vsfm_mpp%sysofeqns
@@ -494,11 +508,7 @@ contains
     ! Find the first hydrologically active soil column id
     first_active_hydro_col_id = -1
     do c = begc, endc
-       l = col%landunit(c)
-
-       if (col%active(c) .and. &
-           (lun%itype(l) == istsoil .or. col%itype(c) == icol_road_perv .or. &
-            lun%itype(l) == istcrop)) then
+       if (filter_vsfmc(c) == 1) then
           if (first_active_hydro_col_id == -1) then
              first_active_hydro_col_id = c
              exit
@@ -525,12 +535,7 @@ contains
           do j = 1, nlevgrnd
 
              icell = (c - begc)*nlevgrnd + j
-             g = col%gridcell(c)
-             l = col%landunit(c)
-
-             if (col%active(c) .and. &
-                 (lun%itype(l) == istsoil .or. col%itype(c) == icol_road_perv .or. &
-                  lun%itype(l) == istcrop)) then
+             if (filter_vsfmc(c) == 1 ) then
                 ! Columns on which hydrology is performed
                 col_id = c
              else
@@ -637,12 +642,10 @@ contains
 
     endif
 
-    end associate
-
   end subroutine VSFMMPPSetSoilsCLM
 
   !------------------------------------------------------------------------
-  subroutine VSFMMPPSetICsSNESCLM(vsfm_mpp, begc, endc, zc_col, soilhydrology_vars)
+  subroutine VSFMMPPSetICsSNESCLM(vsfm_mpp, begc, endc, zc_col, filter_vsfmc, zwt)
     !
     ! !DESCRIPTION:
     ! Sets inital conditions for VSFM solver from CLM
@@ -651,12 +654,7 @@ contains
     use SystemOfEquationsBasePointerType , only : SOEIFunction, SOEIJacobian
     use GoverningEquationBaseType        , only : goveqn_base_type
     use GoveqnRichardsODEPressureType    , only : goveqn_richards_ode_pressure_type
-    use clm_varpar                       , only : nlevgrnd, nlevsoi
-    use ColumnType                       , only : col
-    use LandunitType                     , only : lun
-    use column_varcon                    , only : icol_road_perv, icol_road_imperv
-    use landunit_varcon                  , only : istice, istwet, istice_mec, istcrop, istsoil
-    use clm_varcon                       , only : grav, denh2o
+    use clm_varpar                       , only : nlevgrnd
     use MultiPhysicsProbConstants        , only : GRAVITY_CONSTANT
     !
     implicit none
@@ -665,7 +663,8 @@ contains
     class(mpp_vsfm_type)                              :: vsfm_mpp
     integer, intent(in)                               :: begc,endc
     PetscReal, pointer, intent(in)                    :: zc_col(:)
-    type(soilhydrology_type), intent(in)              :: soilhydrology_vars
+    integer, intent(in)                               :: filter_vsfmc(:)
+    PetscReal, intent(in), pointer                    :: zwt(:)
     !
     ! !LOCAL VARIABLES:
     PetscInt                                          :: size
@@ -683,10 +682,6 @@ contains
     PetscInt                                          :: first_active_hydro_col_id
     PetscInt                                          :: icell
     PetscInt                                          :: col_id
-
-    associate(                                 &
-         zwt_col => soilhydrology_vars%zwt_col &
-         )
 
     first_active_hydro_col_id = -1
     vsfm_soe => vsfm_mpp%sysofeqns
@@ -721,11 +716,7 @@ contains
 
     first_active_hydro_col_id = -1
     do c = begc, endc
-       l = col%landunit(c)
-
-       if (col%active(c) .and. &
-           (lun%itype(l) == istsoil .or. col%itype(c) == icol_road_perv .or. &
-            lun%itype(l) == istcrop)) then
+       if (filter_vsfmc(c) == 1) then
           if (first_active_hydro_col_id == -1) then
              first_active_hydro_col_id = c
              exit
@@ -743,12 +734,8 @@ contains
        do j = 1, nlevgrnd
 
           icell = (c - begc)*nlevgrnd + j
-          g = col%gridcell(c)
-          l = col%landunit(c)
+          if (filter_vsfmc(c) == 1) then
 
-          if (col%active(c) .and. &
-              (lun%itype(l) == istsoil .or. col%itype(c) == icol_road_perv .or. &
-                lun%itype(l) == istcrop)) then
              ! Columns on which hydrology is performed
              col_id = c
           else
@@ -757,7 +744,7 @@ contains
 
           press_p(icell) = 101325.d0 + &
                            997.16d0*GRAVITY_CONSTANT * &
-                           (-zwt_col(col_id) - (goveq_richards_ode_pres%mesh%z(icell) - zc_col(c)) )
+                           (-zwt(col_id) - (goveq_richards_ode_pres%mesh%z(icell) - zc_col(c)) )
        enddo
     enddo
 
@@ -773,8 +760,6 @@ contains
     ! Free memory
     deallocate(dms)
     deallocate(soln_subvecs)
-
-    end associate
 
   end subroutine VSFMMPPSetICsSNESCLM
 

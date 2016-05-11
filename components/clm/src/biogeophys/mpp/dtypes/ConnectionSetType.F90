@@ -53,7 +53,6 @@ contains
     ! Return a new connection set
     !
     ! !USES:
-    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     implicit none
     !
     ! !ARGUMENTS
@@ -71,9 +70,9 @@ contains
 
     allocate(conn_set%id_up       (num_connections)); conn_set%id_up  (:) = 0
     allocate(conn_set%id_dn       (num_connections)); conn_set%id_dn  (:) = 0
-    allocate(conn_set%area        (num_connections)); conn_set%area   (:) = nan
-    allocate(conn_set%dist_up     (num_connections)); conn_set%dist_up(:) = nan
-    allocate(conn_set%dist_dn     (num_connections)); conn_set%dist_dn(:) = nan
+    allocate(conn_set%area        (num_connections)); conn_set%area   (:) = 0.d0
+    allocate(conn_set%dist_up     (num_connections)); conn_set%dist_up(:) = 0.d0
+    allocate(conn_set%dist_dn     (num_connections)); conn_set%dist_dn(:) = 0.d0
     allocate(conn_set%dist_unitvec(num_connections));
 
     nullify(conn_set%next)

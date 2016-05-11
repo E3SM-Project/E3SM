@@ -12,9 +12,6 @@ module MeshType
   use clm_varctl         , only : iulog
   use abortutils         , only : endrun
   use shr_log_mod        , only : errMsg => shr_log_errMsg
-  use shr_kind_mod       , only : r8 => shr_kind_r8
-  use WaterstateType     , only : waterstate_type
-  use SoilHydrologyType  , only : soilhydrology_type
   use ConnectionSetType  , only : connection_set_list_type
   !
   ! !PUBLIC TYPES:
@@ -55,11 +52,10 @@ module MeshType
    contains
      procedure, public :: Init
      procedure, public :: Clean
-     procedure, public :: Create
      procedure, public :: CreateFromCLMCols
-     procedure :: CreateCLMThermalSoilMesh
-     procedure :: CreateCLMThermalSnowMesh
-     procedure :: CreateCLMThermalSSWMesh
+     procedure, public :: CreateCLMThermalSoilMesh
+     procedure, public :: CreateCLMThermalSnowMesh
+     procedure, public :: CreateCLMThermalSSWMesh
   end type mesh_type
 
   public :: MeshCreateConnectionSet
@@ -110,65 +106,11 @@ contains
   end subroutine Init
 
   !------------------------------------------------------------------------
-  subroutine Create(this, mesh_itype, begg, endg, begc, endc, &
-       discretization_type, ncols_ghost,                      &
-       xc_col, yc_col, zc_col,                                &
-       area_col, grid_owner,                                  &
-       waterstate_vars, soilhydrology_vars)
-    !
-    ! !DESCRIPTION:
-    ! Creates a mesh from CLM column level data structure
-    !
-    ! !USES:
-    use MultiPhysicsProbConstants, only : MESH_CLM_SOIL_COL
-    use MultiPhysicsProbConstants, only : MESH_CLM_THERMAL_SOIL_COL
-    use MultiPhysicsProbConstants, only : MESH_CLM_SNOW_COL
-    use MultiPhysicsProbConstants, only : MESH_CLM_SSW_COL
-    !
-    implicit none
-    !
-    ! !ARGUMENTS
-    class(mesh_type)                      :: this
-    integer                  , intent(in) :: mesh_itype
-    integer                  , intent(in) :: begg,endg
-    integer                  , intent(in) :: begc,endc
-    integer                  , intent(in) :: discretization_type
-    integer                  , intent(in) :: ncols_ghost
-    PetscReal, pointer       , intent(in) :: xc_col(:)
-    PetscReal, pointer       , intent(in) :: yc_col(:)
-    PetscReal, pointer       , intent(in) :: zc_col(:)
-    PetscReal, pointer       , intent(in) :: area_col(:)
-    PetscInt, pointer        , intent(in) :: grid_owner(:)
-    type(waterstate_type)    , intent(in) :: waterstate_vars
-    type(soilhydrology_type) , intent(in) :: soilhydrology_vars
-
-    select case(mesh_itype)
-
-    case (MESH_CLM_SOIL_COL)
-       call this%CreateFromCLMCols(begg, endg, begc, endc, &
-              discretization_type, ncols_ghost, &
-              xc_col, yc_col, zc_col, area_col, grid_owner)
-
-    case (MESH_CLM_THERMAL_SOIL_COL)
-       call this%CreateCLMThermalSoilMesh(begc, endc)
-
-    case (MESH_CLM_SNOW_COL)
-       call this%CreateCLMThermalSnowMesh(begc, endc)
-
-    case (MESH_CLM_SSW_COL)
-       call this%CreateCLMThermalSSWMesh(begc, endc)
-
-    case default
-       write(iulog,*)'MeshType: Create() Unknown mesh_type = ',mesh_itype
-       call endrun(msg=errMsg(__FILE__, __LINE__))
-    end select
-
-  end subroutine Create
-
-  !------------------------------------------------------------------------
   subroutine CreateFromCLMCols(this, begg, endg, begc, endc, &
+       grc_landunit_indices, lun_coli, lun_colf, &
        discretization_type, ncols_ghost, &
-       xc_col, yc_col, zc_col, area_col, grid_owner)
+       xc_col, yc_col, zc_col, zi, dz,  &
+       area_col, grid_owner, col_itype, filter)
     !
     ! !DESCRIPTION:
     ! Creates a mesh from CLM column level data structure
@@ -176,11 +118,6 @@ contains
     ! !USES:
     use clm_varpar                  , only : nlevgrnd
     use clm_varctl                  , only : lateral_connectivity
-    use GridcellType                , only : grc
-    use ColumnType                  , only : col
-    use LandunitType                , only : lun
-    use landunit_varcon             , only : istcrop, istsoil
-    use column_varcon               , only : icol_road_perv
     use ConnectionSetType           , only : ConnectionSetNew
     use MultiPhysicsProbConstants   , only : MESH_ALONG_GRAVITY
     use MultiPhysicsProbConstants   , only : MESH_CLM_SOIL_COL
@@ -191,6 +128,7 @@ contains
     use ConnectionSetType           , only : connection_set_type
     use ConnectionSetType           , only : ConnectionSetListAddSet
     use domainLateralMod            , only : ldomain_lateral
+    use landunit_varcon             , only : istsoil
     !
     implicit none
     !
@@ -198,13 +136,20 @@ contains
     class(mesh_type)                :: this
     integer            , intent(in) :: begg,endg
     integer            , intent(in) :: begc,endc
+    integer            , intent(in) :: grc_landunit_indices(:,:)
+    integer            , intent(in) :: lun_coli(:)
+    integer            , intent(in) :: lun_colf(:)
     integer            , intent(in) :: discretization_type
     integer            , intent(in) :: ncols_ghost
     PetscReal, pointer , intent(in) :: xc_col(:)
     PetscReal, pointer , intent(in) :: yc_col(:)
     PetscReal, pointer , intent(in) :: zc_col(:)
     PetscReal, pointer , intent(in) :: area_col(:)
+    PetscReal, pointer , intent(in) :: zi(:,:)
+    PetscReal, pointer , intent(in) :: dz(:,:)
     PetscInt, pointer  , intent(in) :: grid_owner(:)
+    PetscInt, pointer  , intent(in) :: col_itype(:)
+    PetscInt, pointer  , intent(in) :: filter(:)
     !
     ! !LOCAL VARIABLES:
     PetscInt                          :: c,j,l                              !indices
@@ -257,11 +202,7 @@ contains
 
     first_active_hydro_col_id = -1
     do c = begc, endc
-       l = col%landunit(c)
-
-       if (col%active(c) .and. &
-            (lun%itype(l) == istsoil .or. col%itype(c) == icol_road_perv .or. &
-            lun%itype(l) == istcrop)) then
+       if (filter(c) == 1) then
           if (first_active_hydro_col_id == -1) then
              first_active_hydro_col_id = c
              exit
@@ -279,17 +220,13 @@ contains
        do j = 1, this%nlev
 
           icell = icell + 1
-          l = col%landunit(c)
           this%x (icell) = xc_col(c)
           this%y (icell) = yc_col(c)
 
-          this%dx(icell) = 1.0_r8
-          this%dy(icell) = 1.0_r8
+          this%dx(icell) = 1.0d0
+          this%dy(icell) = 1.0d0
 
-          if (col%active(c) .and. &
-               (lun%itype(l) == istsoil        .or. &
-                col%itype(c) == icol_road_perv .or. &
-                lun%itype(l) == istcrop)) then
+          if (filter(c) == 1) then
              col_id = c
              this%is_active(icell) = PETSC_TRUE
           else
@@ -297,11 +234,11 @@ contains
              this%is_active(icell) = PETSC_FALSE
           endif
 
-          this%z(icell) = -0.5_r8*(col%zi(col_id,j-1) + col%zi(col_id,j)) + zc_col(c)
-          this%z_m(icell) = -col%zi(col_id,j-1) + zc_col(c)
-          this%z_p(icell) = -col%zi(col_id,j  ) + zc_col(c)
+          this%z(icell) = -0.5d0*(zi(col_id,j-1) + zi(col_id,j)) + zc_col(c)
+          this%z_m(icell) = -zi(col_id,j-1) + zc_col(c)
+          this%z_p(icell) = -zi(col_id,j  ) + zc_col(c)
 
-          this%dz      (icell) = col%dz(col_id,j)
+          this%dz      (icell) = dz(col_id,j)
           this%area_xy (icell) = area_col(c)
           this%vol     (icell) = area_col(c)*this%dz(icell)
        enddo
@@ -335,14 +272,14 @@ contains
                 g_up = icell + begg - 1
                 g_dn = ldomain_lateral%ugrid%gridsOnGrid_local(iedge,icell) + begg - 1
 
-                l_idx_up = grc%landunit_indices(ltype, g_up)
-                l_idx_dn = grc%landunit_indices(ltype, g_dn)
+                l_idx_up = grc_landunit_indices(ltype, g_up)
+                l_idx_dn = grc_landunit_indices(ltype, g_dn)
 
                 c_idx_up = -1
                 c_idx_dn = -1
 
-                do c = lun%coli(l_idx_up), lun%colf(l_idx_up)
-                   if (col%itype(c) == ctype) then
+                do c = lun_coli(l_idx_up), lun_colf(l_idx_up)
+                   if (col_itype(c) == ctype) then
                       if (c_idx_up /= -1) then
                          write(iulog,*)'CreateFromCLMCols: More than one column found for ' // &
                               'ctype = ', ctype, ' for ltype = ', ltype, ' in grid cell ', g_up
@@ -352,8 +289,8 @@ contains
                    endif
                 enddo
 
-                do c = lun%coli(l_idx_dn), lun%colf(l_idx_dn)
-                   if (col%itype(c) == ctype) then
+                do c = lun_coli(l_idx_dn), lun_colf(l_idx_dn)
+                   if (col_itype(c) == ctype) then
                       if (c_idx_dn /= -1) then
                          write(iulog,*)'CreateFromCLMCols: More than one column found for ' // &
                               'ctype = ', ctype, ' for ltype = ', ltype, ' in grid cell ', g_dn
@@ -401,12 +338,12 @@ contains
 
           conn_set%area(iconn) = area_col(c)
 
-          conn_set%dist_up(iconn) = 0.5_r8*this%dz(id_up)
-          conn_set%dist_dn(iconn) = 0.5_r8*this%dz(id_dn)
+          conn_set%dist_up(iconn) = 0.5d0*this%dz(id_up)
+          conn_set%dist_dn(iconn) = 0.5d0*this%dz(id_dn)
 
-          conn_set%dist_unitvec(iconn)%arr(1) = 0._r8
-          conn_set%dist_unitvec(iconn)%arr(2) = 0._r8
-          conn_set%dist_unitvec(iconn)%arr(3) = -1._r8
+          conn_set%dist_unitvec(iconn)%arr(1) = 0.d0
+          conn_set%dist_unitvec(iconn)%arr(2) = 0.d0
+          conn_set%dist_unitvec(iconn)%arr(3) = -1.d0
 
        enddo
     enddo
@@ -436,14 +373,14 @@ contains
                 g_up = icell + begg - 1
                 g_dn = ldomain_lateral%ugrid%gridsOnGrid_local(iedge,icell) + begg - 1
 
-                l_idx_up = grc%landunit_indices(ltype, g_up)
-                l_idx_dn = grc%landunit_indices(ltype, g_dn)
+                l_idx_up = grc_landunit_indices(ltype, g_up)
+                l_idx_dn = grc_landunit_indices(ltype, g_dn)
 
                 c_idx_up = -1
                 c_idx_dn = -1
 
-                do c = lun%coli(l_idx_up), lun%colf(l_idx_up)
-                   if (col%itype(c) == ctype) then
+                do c = lun_coli(l_idx_up), lun_colf(l_idx_up)
+                   if (col_itype(c) == ctype) then
                       if (c_idx_up /= -1) then
                          write(iulog,*)'CreateFromCLMCols: More than one column found for ' // &
                               'ctype = ', ctype, ' for ltype = ', ltype, ' in grid cell ', g_up
@@ -453,8 +390,8 @@ contains
                    endif
                 enddo
 
-                do c = lun%coli(l_idx_dn), lun%colf(l_idx_dn)
-                   if (col%itype(c) == ctype) then
+                do c = lun_coli(l_idx_dn), lun_colf(l_idx_dn)
+                   if (col_itype(c) == ctype) then
                       if (c_idx_dn /= -1) then
                          write(iulog,*)'CreateFromCLMCols: More than one column found for ' // &
                               'ctype = ', ctype, ' for ltype = ', ltype, ' in grid cell ', g_dn
@@ -499,12 +436,12 @@ contains
                       conn_set%area(iconn) = this%dz(id_up)*dv
 
                       dist_x = dc
-                      dist_y = 0._r8
+                      dist_y = 0.d0
                       dist_z = this%z(id_dn) - this%z(id_up)
                       dist   = (dist_x**2.d0 + dist_y**2.d0 + dist_z**2.d0)**0.5d0
 
-                      conn_set%dist_up(iconn) = 0.5_r8*dist
-                      conn_set%dist_dn(iconn) = 0.5_r8*dist
+                      conn_set%dist_up(iconn) = 0.5d0*dist
+                      conn_set%dist_dn(iconn) = 0.5d0*dist
 
                       conn_set%dist_unitvec(iconn)%arr(1) = dist_x/dist
                       conn_set%dist_unitvec(iconn)%arr(2) = dist_y/dist
@@ -529,7 +466,7 @@ contains
   end subroutine CreateFromCLMCols
 
   !------------------------------------------------------------------------
-  subroutine CreateCLMThermalSoilMesh(this, begc, endc)
+  subroutine CreateCLMThermalSoilMesh(this, begc, endc, z, zi, dz, filter)
     !
     ! !DESCRIPTION:
     ! - Creates a mesh from CLM column level data structure for the
@@ -538,20 +475,21 @@ contains
     !
     ! !USES:
     use clm_varpar                , only : nlevgrnd, nlevsno
-    use ColumnType                , only : col
-    use LandunitType              , only : lun
     use ConnectionSetType         , only : ConnectionSetNew
     use MultiPhysicsProbConstants , only : MESH_ALONG_GRAVITY
     use MultiPhysicsProbConstants , only : MESH_CLM_THERMAL_SOIL_COL
     use ConnectionSetType         , only : connection_set_type
     use ConnectionSetType         , only : ConnectionSetListAddSet
-    use landunit_varcon           , only : istcrop, istsoil
     !
     implicit none
     !
     ! !ARGUMENTS
     class(mesh_type) :: this
     integer, intent(in) :: begc,endc
+    PetscInt, pointer, intent(in):: filter(:)
+    PetscReal, pointer , intent(in) :: z(:,:)
+    PetscReal, pointer , intent(in) :: zi(:,:)
+    PetscReal, pointer , intent(in) :: dz(:,:)
     !
     ! !LOCAL VARIABLES:
     PetscInt  :: l,c,j                             !indices
@@ -588,14 +526,12 @@ contains
     allocate(this%vol(this%ncells_all       ))
     allocate(this%is_active(this%ncells_all ))
 
-    dx = 1._r8   ! [m]
-    dy = 1._r8   ! [m]
+    dx = 1.d0   ! [m]
+    dy = 1.d0   ! [m]
 
     first_active_col_id = -1
     do c = begc, endc
-       l = col%landunit(c)
-
-       if (col%active(c) .and. .not.lun%lakpoi(l) .and. .not.lun%urbpoi(l)) then
+       if (filter(c) == 1) then
           if (first_active_col_id == -1) then
              first_active_col_id = c
              exit
@@ -612,14 +548,13 @@ contains
     !
     icell = 0
     do c = begc, endc
-       l = col%landunit(c)
 
        ! Soil layers
        do j = 1, nlevgrnd
 
           icell = icell + 1
 
-          if (col%active(c) .and. .not.lun%lakpoi(l) .and. .not.lun%urbpoi(l)) then
+          if (filter(c) == 1) then
              col_id = c
              this%is_active(icell) = PETSC_TRUE
           else
@@ -627,15 +562,15 @@ contains
              this%is_active(icell) = PETSC_FALSE
           endif
 
-          this%x(icell) = 0.0_r8
-          this%y(icell) = 0.0_r8
-          this%z(icell) = -0.5_r8*(col%zi(col_id,j-1) + col%zi(col_id,j))
+          this%x(icell) = 0.0d0
+          this%y(icell) = 0.0d0
+          this%z(icell) = -0.5d0*(zi(col_id,j-1) + zi(col_id,j))
 
           this%dx(icell) = dx
           this%dy(icell) = dy
-          this%dz(icell) = col%dz(col_id,j)
+          this%dz(icell) = dz(col_id,j)
 
-          this%area_xy(icell) = 1.0_r8
+          this%area_xy(icell) = 1.0d0
           this%vol(icell)     = this%area_xy(icell)*this%dz(icell)
        enddo
 
@@ -659,12 +594,12 @@ contains
           conn_set%id_dn(iconn) = id_dn
           conn_set%area(iconn)  = this%dx(id_up)*this%dy(id_dn)
 
-          conn_set%dist_up(iconn) = col%zi(c,j)   - col%z(c,j)
-          conn_set%dist_dn(iconn) = col%z( c,j+1) - col%zi(c,j)
+          conn_set%dist_up(iconn) = zi(c,j)   - z(c,j)
+          conn_set%dist_dn(iconn) = z( c,j+1) - zi(c,j)
 
-          conn_set%dist_unitvec(iconn)%arr(1) = 0._r8
-          conn_set%dist_unitvec(iconn)%arr(2) = 0._r8
-          conn_set%dist_unitvec(iconn)%arr(3) = -1._r8
+          conn_set%dist_unitvec(iconn)%arr(1) = 0.d0
+          conn_set%dist_unitvec(iconn)%arr(2) = 0.d0
+          conn_set%dist_unitvec(iconn)%arr(3) = -1.d0
 
        end do
     end do
@@ -674,7 +609,7 @@ contains
   end subroutine CreateCLMThermalSoilMesh
 
   !------------------------------------------------------------------------
-  subroutine CreateCLMThermalSnowMesh(this, begc, endc)
+  subroutine CreateCLMThermalSnowMesh(this, begc, endc, z, zi, dz, filter)
     !
     ! !DESCRIPTION:
     ! - Creates a mesh from CLM column level data structure for the
@@ -683,20 +618,21 @@ contains
     !
     ! !USES:
     use clm_varpar                , only : nlevsno
-    use ColumnType                , only : col
-    use LandunitType              , only : lun
     use ConnectionSetType         , only : ConnectionSetNew
     use MultiPhysicsProbConstants , only : MESH_ALONG_GRAVITY
     use MultiPhysicsProbConstants , only : MESH_CLM_SNOW_COL
     use ConnectionSetType         , only : connection_set_type
     use ConnectionSetType         , only : ConnectionSetListAddSet
-    use landunit_varcon           , only : istcrop, istsoil
     !
     implicit none
     !
     ! !ARGUMENTS
     class(mesh_type) :: this
     integer, intent(in) :: begc,endc
+    PetscReal, pointer , intent(in) :: z(:,:)
+    PetscReal, pointer , intent(in) :: zi(:,:)
+    PetscReal, pointer , intent(in) :: dz(:,:)
+    PetscInt, pointer, intent(in):: filter(:)
     !
     ! !LOCAL VARIABLES:
     PetscInt  :: l,c,j                             !indices
@@ -733,16 +669,12 @@ contains
     allocate(this%vol(this%ncells_all       ))
     allocate(this%is_active(this%ncells_all ))
 
-    dx = 1._r8   ! [m]
-    dy = 1._r8   ! [m]
+    dx = 1.d0   ! [m]
+    dy = 1.d0   ! [m]
 
     first_active_col_id = -1
     do c = begc, endc
-       l = col%landunit(c)
-
-       !if (col%active(c) .and. &
-       !     (lun%itype(l) == istsoil .or. lun%itype(l) == istcrop)) then
-       if (col%active(c) .and. .not.lun%lakpoi(l) .and. .not.lun%urbpoi(l)) then
+       if (filter(c) == 1) then
           if (first_active_col_id == -1) then
              first_active_col_id = c
              exit
@@ -759,14 +691,13 @@ contains
     !
     icell = 0
     do c = begc, endc
-       l = col%landunit(c)
 
        ! Soil layers
        do j = -nlevsno+1, 0
 
           icell = icell + 1
 
-          if (col%active(c) .and. .not.lun%lakpoi(l) .and. .not.lun%urbpoi(l)) then
+          if (filter(c) == 1) then
              col_id = c
              this%is_active(icell) = PETSC_TRUE
           else
@@ -774,17 +705,17 @@ contains
              this%is_active(icell) = PETSC_FALSE
           endif
 
-          this%x(icell)   = 0.0_r8
-          this%y(icell)   = 0.0_r8
-          this%z(icell)   = -0.5_r8*(col%zi(col_id,j-1) + col%zi(col_id,j))
-          this%z_m(icell) = -col%zi(c,j-1)
-          this%z_p(icell) = -col%zi(c,j  )
+          this%x(icell)   = 0.0d0
+          this%y(icell)   = 0.0d0
+          this%z(icell)   = -0.5d0*(zi(col_id,j-1) + zi(col_id,j))
+          this%z_m(icell) = -zi(c,j-1)
+          this%z_p(icell) = -zi(c,j  )
 
           this%dx(icell)  = dx
           this%dy(icell)  = dy
-          this%dz(icell)  = col%dz(col_id,j)
+          this%dz(icell)  = dz(col_id,j)
 
-          this%area_xy(icell) = 1.0_r8
+          this%area_xy(icell) = 1.0d0
           this%vol(icell)     = this%area_xy(icell)*this%dz(icell)
        enddo
 
@@ -808,12 +739,12 @@ contains
           conn_set%id_dn(iconn) = id_dn
           conn_set%area(iconn)  = this%dx(id_up)*this%dy(id_dn)
 
-          conn_set%dist_up(iconn) = col%zi(c,j)   - col%z(c,j)
-          conn_set%dist_dn(iconn) = col%z( c,j+1) - col%zi(c,j)
+          conn_set%dist_up(iconn) = zi(c,j)   - z(c,j)
+          conn_set%dist_dn(iconn) = z( c,j+1) - zi(c,j)
 
-          conn_set%dist_unitvec(iconn)%arr(1) = 0._r8
-          conn_set%dist_unitvec(iconn)%arr(2) = 0._r8
-          conn_set%dist_unitvec(iconn)%arr(3) = -1._r8
+          conn_set%dist_unitvec(iconn)%arr(1) = 0.d0
+          conn_set%dist_unitvec(iconn)%arr(2) = 0.d0
+          conn_set%dist_unitvec(iconn)%arr(3) = -1.d0
 
        end do
     end do
@@ -823,7 +754,7 @@ contains
   end subroutine CreateCLMThermalSnowMesh
 
   !------------------------------------------------------------------------
-  subroutine CreateCLMThermalSSWMesh(this, begc, endc)
+  subroutine CreateCLMThermalSSWMesh(this, begc, endc, zi, filter)
     !
     ! !DESCRIPTION:
     ! - Creates a mesh from CLM column level data structure for the
@@ -831,20 +762,19 @@ contains
     ! - The thermal model is NOT active on the lake and urban columns.
     !
     ! !USES:
-    use ColumnType                , only : col
-    use LandunitType              , only : lun
     use ConnectionSetType         , only : ConnectionSetNew
     use MultiPhysicsProbConstants , only : MESH_ALONG_GRAVITY
     use MultiPhysicsProbConstants , only : MESH_CLM_SSW_COL
     use ConnectionSetType         , only : connection_set_type
     use ConnectionSetType         , only : ConnectionSetListAddSet
-    use landunit_varcon           , only : istcrop, istsoil
     !
     implicit none
     !
     ! !ARGUMENTS
-    class(mesh_type)    :: this
-    integer, intent(in) :: begc,endc
+    class(mesh_type)                :: this
+    integer            , intent(in) :: begc,endc
+    PetscReal, pointer , intent(in) :: zi(:,:)
+    PetscInt, pointer  , intent(in) :: filter(:)
     !
     ! !LOCAL VARIABLES:
     PetscInt            :: l,c,j                             !indices
@@ -877,15 +807,13 @@ contains
     allocate(this%vol(this%ncells_all       ))
     allocate(this%is_active(this%ncells_all ))
 
-    dx = 1._r8     ! [m]
-    dy = 1._r8     ! [m]
-    dz = 1.0e-6_r8 ! [m]
+    dx = 1.d0     ! [m]
+    dy = 1.d0     ! [m]
+    dz = 1.0d-6   ! [m]
 
     first_active_col_id = -1
     do c = begc, endc
-       l = col%landunit(c)
-
-       if (col%active(c) .and. .not.lun%lakpoi(l) .and. .not.lun%urbpoi(l)) then
+       if (filter(c) == 1 ) then
           if (first_active_col_id == -1) then
              first_active_col_id = c
              exit
@@ -903,10 +831,9 @@ contains
     icell = 0
     j     = 1
     do c = begc, endc
-       l = col%landunit(c)
        icell = icell + 1
 
-       if (col%active(c) .and. .not.lun%lakpoi(l) .and. .not.lun%urbpoi(l)) then
+       if (filter(c) == 1) then
           col_id = c
           this%is_active(icell) = PETSC_TRUE
        else
@@ -914,15 +841,15 @@ contains
           this%is_active(icell) = PETSC_FALSE
        endif
 
-       this%x(icell) = 0.0_r8
-       this%y(icell) = 0.0_r8
-       this%z(icell) = -0.5_r8*(dz + col%zi(c,j))
+       this%x(icell) = 0.0d0
+       this%y(icell) = 0.0d0
+       this%z(icell) = -0.5d0*(dz + zi(c,j))
 
        this%dx(icell) = dx
        this%dy(icell) = dy
        this%dz(icell) = dz
 
-       this%area_xy(icell) = 1.0_r8
+       this%area_xy(icell) = 1.0d0
        this%vol(icell)     = this%area_xy(icell)*this%dz(icell)
     enddo
 
@@ -930,7 +857,7 @@ contains
 
 !------------------------------------------------------------------------
   subroutine MeshCreateConnectionSet(mesh, region_itype, conn_set, ncells_local, &
-       soil_top_cell_offset, use_clm_dist_to_interface)
+       soil_top_cell_offset, use_clm_dist_to_interface, begc, endc, z, zi)
     !
     ! !DESCRIPTION:
     ! Creates a connection set for a mesh that stores:
@@ -945,8 +872,6 @@ contains
     use MultiPhysicsProbConstants   , only : SNOW_TOP_CELLS, SNOW_BOTTOM_CELLS, SSW_TOP_CELLS, ALL_CELLS
     use MultiPhysicsProbConstants   , only : MESH_ALONG_GRAVITY, MESH_AGAINST_GRAVITY
     use ConnectionSetType           , only : connection_set_type
-    use ColumnType                  , only : col
-    use decompMod, only                  : bounds_type, get_proc_bounds
     !
     implicit none
     !
@@ -957,6 +882,9 @@ contains
     PetscInt, intent(out)             :: ncells_local
     PetscInt,optional                 :: soil_top_cell_offset
     PetscBool, optional               :: use_clm_dist_to_interface
+    PetscInt, optional                :: begc,endc
+    PetscReal, optional, pointer      :: z(:,:)
+    PetscReal, optional, pointer      :: zi(:,:)
     !
     ! !LOCAL VARIABLES:
     PetscInt                          :: c,j
@@ -966,17 +894,40 @@ contains
     PetscInt                          :: ncols
     PetscInt                          :: offset
     PetscBool                         :: use_centroid_in_dist_computation
-    type(bounds_type)                 :: bounds_proc
-
-    call get_proc_bounds(bounds_proc)
 
     ncols = mesh%ncells_local/mesh%nlev
 
     offset = 0
-    if (present(soil_top_cell_offset)) offset = soil_top_cell_offset
+    if (present(soil_top_cell_offset)) then
+       offset = soil_top_cell_offset
+    end if
 
     use_centroid_in_dist_computation = PETSC_FALSE
-    if (present(use_clm_dist_to_interface)) use_centroid_in_dist_computation = use_clm_dist_to_interface
+    if (present(use_clm_dist_to_interface)) then
+       use_centroid_in_dist_computation = use_clm_dist_to_interface
+
+       if (use_centroid_in_dist_computation) then
+          if (.not.present(begc)) then
+             write(iulog,*)'use_centroid_in_dist_computation=.true. but optional argument is absent: begc'
+             call endrun(msg=errMsg(__FILE__, __LINE__))
+          endif
+
+          if (.not.present(endc)) then
+             write(iulog,*)'use_centroid_in_dist_computation=.true. but optional argument is absent: endc'
+             call endrun(msg=errMsg(__FILE__, __LINE__))
+          endif
+
+          if (.not.present(z)) then
+             write(iulog,*)'use_centroid_in_dist_computation=.true. but optional argument is absent: z'
+             call endrun(msg=errMsg(__FILE__, __LINE__))
+          endif
+
+          if (.not.present(zi)) then
+             write(iulog,*)'use_centroid_in_dist_computation=.true. but optional argument is absent: zi'
+             call endrun(msg=errMsg(__FILE__, __LINE__))
+          endif
+       endif
+    endif
 
     select case (region_itype)
     case (SOIL_BOTTOM_CELLS, SOIL_TOP_CELLS, SNOW_TOP_CELLS, SNOW_BOTTOM_CELLS, SSW_TOP_CELLS)
@@ -996,18 +947,18 @@ contains
                 id_up = -1
                 id_dn = mesh%nlev*c + offset
 
-                conn_set%dist_unitvec(iconn)%arr(1) =  0._r8
-                conn_set%dist_unitvec(iconn)%arr(2) =  0._r8
-                conn_set%dist_unitvec(iconn)%arr(3) =  -1._r8
+                conn_set%dist_unitvec(iconn)%arr(1) =  0.d0
+                conn_set%dist_unitvec(iconn)%arr(2) =  0.d0
+                conn_set%dist_unitvec(iconn)%arr(3) =  -1.d0
 
              case (SOIL_BOTTOM_CELLS, SNOW_BOTTOM_CELLS)
 
                 id_up = -1
                 id_dn = mesh%nlev*(c-1) + 1 + offset
 
-                conn_set%dist_unitvec(iconn)%arr(1) =  0._r8
-                conn_set%dist_unitvec(iconn)%arr(2) =  0._r8
-                conn_set%dist_unitvec(iconn)%arr(3) =  1._r8
+                conn_set%dist_unitvec(iconn)%arr(1) =  0.d0
+                conn_set%dist_unitvec(iconn)%arr(2) =  0.d0
+                conn_set%dist_unitvec(iconn)%arr(3) =  1.d0
              end select
 
           case (MESH_ALONG_GRAVITY)
@@ -1016,17 +967,17 @@ contains
                 id_up = -1
                 id_dn = mesh%nlev*c + offset
 
-                conn_set%dist_unitvec(iconn)%arr(1) =  0._r8
-                conn_set%dist_unitvec(iconn)%arr(2) =  0._r8
-                conn_set%dist_unitvec(iconn)%arr(3) =  1._r8
+                conn_set%dist_unitvec(iconn)%arr(1) =  0.d0
+                conn_set%dist_unitvec(iconn)%arr(2) =  0.d0
+                conn_set%dist_unitvec(iconn)%arr(3) =  1.d0
 
              case (SOIL_TOP_CELLS, SNOW_TOP_CELLS, SSW_TOP_CELLS)
                 id_up = -1
                 id_dn = mesh%nlev*(c-1) + 1 + offset
 
-                conn_set%dist_unitvec(iconn)%arr(1) =  0._r8
-                conn_set%dist_unitvec(iconn)%arr(2) =  0._r8
-                conn_set%dist_unitvec(iconn)%arr(3) = -1._r8
+                conn_set%dist_unitvec(iconn)%arr(1) =  0.d0
+                conn_set%dist_unitvec(iconn)%arr(2) =  0.d0
+                conn_set%dist_unitvec(iconn)%arr(3) = -1.d0
              end select
 
           case default
@@ -1037,12 +988,12 @@ contains
           conn_set%id_up(iconn) = id_up
           conn_set%id_dn(iconn) = id_dn
           conn_set%area(iconn)  = mesh%area_xy(id_dn)
-          conn_set%dist_up(iconn) = 0.0_r8
+          conn_set%dist_up(iconn) = 0.0d0
           if (use_centroid_in_dist_computation) then
              j = 0
-             conn_set%dist_dn(iconn) = col%z( bounds_proc%begc,j+1) - col%zi(bounds_proc%endc,j)
+             conn_set%dist_dn(iconn) = z(begc+c,j+1) - zi(begc+c,j)
           else
-             conn_set%dist_dn(iconn) = 0.5_r8*mesh%dz(id_dn)
+             conn_set%dist_dn(iconn) = 0.5d0*mesh%dz(id_dn)
           endif
        enddo
 
@@ -1062,14 +1013,14 @@ contains
              conn_set%id_up(iconn) = id_up
              conn_set%id_dn(iconn) = id_dn
 
-             conn_set%dist_unitvec(iconn)%arr(1) =  0._r8
-             conn_set%dist_unitvec(iconn)%arr(2) =  0._r8
-             conn_set%dist_unitvec(iconn)%arr(3) =  0._r8
+             conn_set%dist_unitvec(iconn)%arr(1) =  0.d0
+             conn_set%dist_unitvec(iconn)%arr(2) =  0.d0
+             conn_set%dist_unitvec(iconn)%arr(3) =  0.d0
 
              conn_set%area(iconn)  = mesh%area_xy(id_dn)
 
-             conn_set%dist_up(iconn) = 0.0_r8
-             conn_set%dist_dn(iconn) = 0.0_r8
+             conn_set%dist_up(iconn) = 0.0d0
+             conn_set%dist_dn(iconn) = 0.0d0
 
           enddo
        enddo

@@ -41,7 +41,7 @@ contains
     !
     ! !USES:
     use clm_varcon       , only : capr
-    use clm_time_manager , only : get_step_size
+    use clm_time_manager , only : get_step_size, get_nstep
     use clm_varpar       , only : nlevsno, nlevgrnd
     use landunit_varcon  , only : istice, istice_mec, istsoil, istcrop
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
@@ -447,7 +447,8 @@ allocate(tsurf_tuning_factor_1d ((bounds%endc-bounds%begc+1)*(nlevgrnd+nlevsno+1
       call thermal_mpp%sysofeqns%PreStepDT()
 
       ! Solve
-      call thermal_mpp%sysofeqns%StepDT(dtime, converged, converged_reason, ierr); CHKERRQ(ierr)
+      call thermal_mpp%sysofeqns%StepDT(dtime, get_nstep(), &
+           converged, converged_reason, ierr); CHKERRQ(ierr)
 
       ! Did the model converge
       if (.not. converged) then

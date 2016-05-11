@@ -7,7 +7,6 @@ module ThermalKSPTemperatureSoilAuxType
   use clm_varctl         , only : iulog
   use abortutils         , only : endrun
   use shr_log_mod        , only : errMsg => shr_log_errMsg
-  use shr_kind_mod       , only : r8 => shr_kind_r8
   use ThermalKSPTemperatureBaseAuxType
   !
   ! !PUBLIC TYPES:
@@ -96,11 +95,11 @@ contains
        if (this%is_soil_shallow) then
 
           satw = (this%liq_areal_den/denh2o + this%ice_areal_den/denice)/(dz*this%por)
-          satw = min(1._r8, satw)
+          satw = min(1.d0, satw)
 
-          if (satw > .1e-6_r8) then
+          if (satw > .1e-6) then
              if (this%temperature >= tfrz) then       ! Unfrozen soil
-                dke = max(0._r8, log10(satw) + 1.0_r8)
+                dke = max(0.d0, log10(satw) + 1.0d0)
              else                                      ! Frozen soil
                 dke = satw
              end if
@@ -110,15 +109,15 @@ contains
 
              dksat = this%therm_cond_minerals*    &
                   tkwat**(fl*this%por)*        &
-                  tkice**((1._r8-fl)*this%por)
+                  tkice**((1.d0-fl)*this%por)
 
-             this%therm_cond = dke*dksat + (1._r8-dke)*this%therm_cond_dry
+             this%therm_cond = dke*dksat + (1.d0-dke)*this%therm_cond_dry
 
           else
              this%therm_cond     = this%therm_cond_dry
           endif
 
-          this%heat_cap_pva   = this%heat_cap_minerals_puv*(1._r8 - this%por)*dz + &
+          this%heat_cap_pva   = this%heat_cap_minerals_puv*(1.d0 - this%por)*dz + &
                                 this%ice_areal_den*cpice                         + &
                                 this%liq_areal_den*cpliq
 
@@ -129,7 +128,7 @@ contains
        else
 
           this%therm_cond     = thk_bedrock
-          this%heat_cap_pva   = this%heat_cap_minerals_puv*(1._r8 - this%por)*dz + &
+          this%heat_cap_pva   = this%heat_cap_minerals_puv*(1.d0 - this%por)*dz + &
                                 this%ice_areal_den*cpice                         + &
                                 this%liq_areal_den*cpliq
        endif

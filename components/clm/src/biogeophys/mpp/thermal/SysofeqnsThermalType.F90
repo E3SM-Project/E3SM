@@ -11,9 +11,6 @@ module SystemOfEquationsThermalType
   use clm_varctl      , only : iulog
   use abortutils      , only : endrun
   use shr_log_mod     , only : errMsg => shr_log_errMsg
-  use WaterstateType  , only : waterstate_type
-  use TemperatureType , only : temperature_type
-  use EnergyFluxType  , only : energyflux_type
   use GoverningEquationBaseType
   use GoveqnThermalKSPTemperatureSnowType
   use GoveqnThermalKSPTemperatureSSWType
@@ -106,7 +103,7 @@ contains
   end subroutine ThermalSOEInit
 
   !------------------------------------------------------------------------
-  subroutine ThermalSOESetup(this, mpp_type, soe_type, meshes, nmesh)
+  subroutine ThermalSOESetup(this, mpi_rank, mpp_type, soe_type, meshes, nmesh, begc, endc, z, zi)
     !
     ! !DESCRIPTION:
     ! Sets up SoE for the Thermal
@@ -120,12 +117,18 @@ contains
     !
     ! !ARGUMENTS
     class(sysofeqns_thermal_type) :: this
+    PetscInt                      :: mpi_rank
     PetscInt                      :: mpp_type
     PetscInt                      :: soe_type
-    class(mesh_type), pointer     :: meshes(:)
+    class(mesh_type) , pointer    :: meshes(:)
     PetscInt                      :: nmesh
+    integer          , intent(in) :: begc,endc
+    PetscReal        , pointer    :: z(:,:)
+    PetscReal        , pointer    :: zi(:,:)
 
     call this%Init()
+
+    this%mpi_rank = mpi_rank
 
     select case (soe_type)
 
@@ -133,7 +136,7 @@ contains
 
        select case(mpp_type)
        case (MPP_THERMAL_TBASED_KSP_CLM)
-          call ThermalSOEThermalKSPSetup(this, meshes, nmesh)
+          call ThermalSOEThermalKSPSetup(this, meshes, nmesh, begc, endc, z, zi)
 
        case default
           write(iulog,*) 'ThermalSOESetup: Unknown mpp_type'
@@ -150,7 +153,7 @@ contains
 
 
   !------------------------------------------------------------------------
-  subroutine ThermalSOEThermalKSPSetup(this, meshes, nmesh)
+  subroutine ThermalSOEThermalKSPSetup(this, meshes, nmesh, begc, endc, z, zi)
     !
     ! !DESCRIPTION:
     ! Sets up SoE for the Thermal
@@ -195,6 +198,9 @@ contains
     class(sysofeqns_thermal_type)                       :: this
     class(mesh_type)                          , pointer :: meshes(:)
     PetscInt                                            :: nmesh
+    integer, intent(in)                                 :: begc,endc
+    PetscReal, pointer                                  :: z(:,:)
+    PetscReal, pointer                                  :: zi(:,:)
     !
     ! !LOCAL VARIABLES:
     class (goveqn_thermal_ksp_temp_snow_type) , pointer :: goveq_snow
@@ -443,7 +449,8 @@ contains
                                  bc%region_itype,  &
                                  bc%conn_set,      &
                                  bc%ncells,        &
-                                 use_clm_dist_to_interface = PETSC_TRUE)
+                                 use_clm_dist_to_interface = PETSC_TRUE, &
+                                 begc=begc, endc=endc, z=z, zi=zi)
 
     soil_bc_auxvar_ncells_1               = bc%ncells
     soil_bc_auxvar_idx_1                  = 2
@@ -468,7 +475,8 @@ contains
                                  bc%region_itype,  &
                                  bc%conn_set,      &
                                  bc%ncells,        &
-                                 use_clm_dist_to_interface = PETSC_TRUE)
+                                 use_clm_dist_to_interface = PETSC_TRUE, &
+                                 begc=begc, endc=endc, z=z, zi=zi)
 
     soil_bc_auxvar_ncells_2               = bc%ncells
     soil_bc_auxvar_idx_2                  = 3
