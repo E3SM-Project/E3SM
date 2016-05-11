@@ -178,18 +178,16 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     /* Check out the global attributes. */
     nc_type atttype;
     PIO_Offset attlen;
-    /* if ((ret = PIOc_inq_att(ncid, NC_GLOBAL, ATT_NAME, &atttype, &attlen))) */
-    /* 	ERR(ret); */
-    /* if (atttype != NC_INT || attlen != 1) */
-    /* 	ERR(ERR_WRONG); */
-    /* if ((ret = PIOc_inq_attlen(ncid, NC_GLOBAL, ATT_NAME, &attlen))) */
-    /* 	ERR(ret); */
-    /* if (attlen != 1) */
-    /* 	ERR(ERR_WRONG); */
-    sleep(2);
+    if ((ret = PIOc_inq_att(ncid, NC_GLOBAL, ATT_NAME, &atttype, &attlen)))
+    	ERR(ret);
+    if (atttype != NC_INT || attlen != 1)
+    	ERR(ERR_WRONG);
+    if ((ret = PIOc_inq_attlen(ncid, NC_GLOBAL, ATT_NAME, &attlen)))
+    	ERR(ret);
+    if (attlen != 1)
+    	ERR(ERR_WRONG);
     if ((ret = PIOc_get_att_int(ncid, NC_GLOBAL, ATT_NAME, &att_data)))
     	ERR(ret);
-    sleep(2);
     if (verbose)
     	printf("%d test_intercomm att_data = %d\n", my_rank, att_data);
     if (att_data != ATT_VALUE)
