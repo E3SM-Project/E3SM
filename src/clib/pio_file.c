@@ -13,28 +13,33 @@
  */
 
 int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
-		  const char filename[], const int mode)
+		  const char *filename, const int mode)
 {
-  int ierr;
-  int msg;
-  int mpierr;
+  int msg = PIO_MSG_OPEN_FILE;
   size_t len;
   iosystem_desc_t *ios;
   file_desc_t *file;
+  int ierr = PIO_NOERR;
+  int mpierr = MPI_SUCCESS;
 
-  ierr = PIO_NOERR;
-
-  msg = PIO_MSG_OPEN_FILE;
-  ios = pio_get_iosystem_from_id(iosysid);
-  if(ios==NULL){
-    printf("bad iosysid %d\n",iosysid);
-    return PIO_EBADID;
+  /* Get the IO system info from the iosysid. */
+  if (!(ios = pio_get_iosystem_from_id(iosysid)))
+  {
+      printf("bad iosysid %d\n",iosysid);
+      return PIO_EBADID;
   }
 
-  file = (file_desc_t *) malloc(sizeof(*file));
-  if(file==NULL){
-    return PIO_ENOMEM;
-  }
+  /* User must provide valid input for these parameters. */
+  if (!ncidp || !iotype || !filename)
+      return PIO_EINVAL;
+  if (*iotype < PIO_IOTYPE_PNETCDF || *iotype > PIO_IOTYPE_NETCDF4P)
+      return PIO_ENOMEM;
+
+  /* Allocate space for the file info. */
+  if (!(file = (file_desc_t *) malloc(sizeof(*file))))
+      return PIO_ENOMEM;
+
+  /* Fill in some file values. */
   file->iotype = *iotype;
   file->next = NULL;
   file->iosystem = ios;
@@ -57,19 +62,35 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   file->buffer.frame=NULL;
   file->buffer.fillvalue=NULL;
 
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    len = strlen(filename);
-    mpierr = MPI_Bcast(&len, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-    mpierr = MPI_Bcast((void *)filename, len + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-    mpierr = MPI_Bcast(&file->iotype, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-    mpierr = MPI_Bcast(&file->mode, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+    /* If async is in use, and this is not an IO task, bcast the parameters. */
+  if (ios->async_interface)
+  {
+      if (!ios->ioproc)
+      {
+	  if(ios->comp_rank==0) 
+	      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+	  
+	  len = strlen(filename);
+	  if (!mpierr)
+	      mpierr = MPI_Bcast(&len, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	  if (!mpierr)
+	      mpierr = MPI_Bcast((void *)filename, len + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	  if (!mpierr)
+	      mpierr = MPI_Bcast(&file->iotype, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	  if (!mpierr)
+	      mpierr = MPI_Bcast(&file->mode, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+      }
+
+      /* Handle MPI errors. */
+      mpierr = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm);
+      check_mpi(file, mpierr, __FILE__, __LINE__);
   }
 
-  if(ios->ioproc){
-
-    switch(file->iotype){
+    /* If this is an IO task, then call the netCDF function. */
+  if (ios->ioproc)
+  {
+    switch (file->iotype)
+    {
 #ifdef _NETCDF
 #ifdef _NETCDF4
 
@@ -78,7 +99,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
       ierr = nc_open(filename, file->mode, &(file->fh));
 #else
       file->mode = file->mode |  NC_MPIIO;
-      ierr = nc_open_par(filename, file->mode, ios->io_comm,ios->info, &(file->fh));
+      ierr = nc_open_par(filename, file->mode, ios->io_comm, ios->info, &file->fh);
 #endif
       break;
 
@@ -89,18 +110,20 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){
-	ierr = nc_open(filename, file->mode, &(file->fh));
+	ierr = nc_open(filename, file->mode, &file->fh);
       }
       break;
 #endif
 
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ierr = ncmpi_open(ios->io_comm, filename, file->mode, ios->info, &(file->fh));
+      ierr = ncmpi_open(ios->io_comm, filename, file->mode, ios->info, &file->fh);
 
       // This should only be done with a file opened to append
-      if(ierr == PIO_NOERR && (file->mode & PIO_WRITE)){
-	if(ios->iomaster) printf("%d Setting IO buffer %ld\n",__LINE__,PIO_BUFFER_SIZE_LIMIT);
+      if (ierr == PIO_NOERR && (file->mode & PIO_WRITE))
+      {
+	if(ios->iomaster)
+	    printf("%d Setting IO buffer %ld\n",__LINE__,PIO_BUFFER_SIZE_LIMIT);
 	ierr = ncmpi_buffer_attach(file->fh, PIO_BUFFER_SIZE_LIMIT );
       }
       break;
@@ -129,19 +152,29 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 /* #endif */
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  /* Broadcast and check the return code. */
+  if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+      return PIO_EIO;
+  check_netcdf(file, ierr, __FILE__, __LINE__);
 
-  if (!ierr) {
-    mpierr = MPI_Bcast(&file->mode, 1, MPI_INT, ios->ioroot, ios->union_comm);
-    mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->ioroot, ios->union_comm);
-    *ncidp = file->fh;
-    pio_add_to_file_list(file);
-    *ncidp = file->fh;
+  /* Broadcast results to all tasks. Ignore NULL parameters. */    
+  if (!ierr)
+  {
+      if ((mpierr = MPI_Bcast(&file->mode, 1, MPI_INT, ios->ioroot, ios->union_comm)))
+	  return PIO_EIO;
+      
+      if ((mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->ioroot, ios->union_comm)))
+	  return PIO_EIO;
+      
+      *ncidp = file->fh;
+      pio_add_to_file_list(file);
   }
-  if(ios->io_rank==0){
-    printf("Open file %s %d\n",filename,file->fh); //,file->fh,file->id,ios->io_rank,ierr);
+  
+  if (ios->io_rank==0){
+      printf("Open file %s %d\n",filename,file->fh); //,file->fh,file->id,ios->io_rank,ierr);
 //    if(file->fh==5) print_trace(stdout);
   }
+  
   return ierr;
 }
 
