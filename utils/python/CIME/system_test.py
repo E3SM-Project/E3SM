@@ -370,7 +370,7 @@ class SystemTest(object):
             if not os.path.exists(test_mod_file):
                 self._log_output(test, "Missing testmod file '%s'" % test_mod_file)
                 return False
-            create_newcase_cmd += " -user_mods_dir %s" % test_mod_file
+            create_newcase_cmd += " --user-mods-dir %s" % test_mod_file
 
         if case_opts is not None:
             for case_opt in case_opts:
@@ -378,6 +378,10 @@ class SystemTest(object):
                     mpilib = case_opt[1:]
                     create_newcase_cmd += " --mpilib %s" % mpilib
                     logger.debug (" MPILIB set to %s" % mpilib)
+                if case_opt.startswith('N'):
+                    ninst = case_opt[1:]
+                    create_newcase_cmd += " --ninst %s" %ninst
+                    logger.debug (" NINST set to %s" % ninst)
 
         logger.debug("Calling create_newcase: " + create_newcase_cmd)
         return self._shell_cmd_for_phase(test, create_newcase_cmd, CREATE_NEWCASE_PHASE)
@@ -501,12 +505,8 @@ class SystemTest(object):
                     logger.debug (" ROOTPE_xxx set to %s 0")
 
                 elif opt.startswith('N'):
-                    opti = opt[1:]
-                    for component_class in component_classes:
-                        if component_class != 'DRV':
-                            string = "NINST_" + component_class
-                            envtest.set_test_parameter(string, opti)
-                    logger.debug (" Numer if component instances set to %s" %opti)
+                    # handled in create_newcase
+                    continue
                 else:
                     expect(False, "Could not parse option '%s' " %opt)
 

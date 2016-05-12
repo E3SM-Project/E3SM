@@ -134,30 +134,50 @@ class B_TestCreateNewcase(unittest.TestCase):
 ###############################################################################
     def setUp(self):
         self._testroot = MACHINE.get_value("CESMSCRATCHROOT")
-        self._testdir = os.path.join(self._testroot, 'scripts_regression_tests.testcreatenewcase')
-        if os.path.exists(self._testdir):
-            shutil.rmtree(self._testdir)
-        self._do_teardown = False
+        self._testdirs = []
+        self._do_teardown = []
 
     def test_createnewcase(self):
-        cmd = "%s/create_newcase --case %s --compset X --res f19_g16" % (SCRIPT_DIR, self._testdir)
+        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testcreatenewcase')
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        self._testdirs.append(testdir)
+        cmd = "%s/create_newcase --case %s --compset X --res f19_g16" % (SCRIPT_DIR, testdir)
         stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=SCRIPT_DIR)
         self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
         cmd = "./case.setup "
-        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=self._testdir)
-        self.assertEqual(stat, 0, msg="COMMAND '%s' from case directory '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, self._testdir, output, errput))
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=testdir)
+        self.assertEqual(stat, 0, msg="COMMAND '%s' from case directory '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, testdir, output, errput))
         cmd = "./case.build"
-        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=self._testdir)
-        self.assertEqual(stat, 0, msg="COMMAND '%s' from case directory '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, self._testdir,output, errput))
-        self._do_teardown = True
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=testdir)
+        self.assertEqual(stat, 0, msg="COMMAND '%s' from case directory '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, testdir,output, errput))
+        self._do_teardown.append(testdir)
+
+    def test_user_mods(self):
+        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testusermods')
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        self._testdirs.append(testdir)
+        user_mods_dir = os.path.join(CIME.utils.get_python_libs_root(), "tests", "user_mods_test1")
+        cmd = "%s/create_newcase --case %s --compset X --res f19_g16 --user-mods-dir %s" % (SCRIPT_DIR, testdir, user_mods_dir)
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=SCRIPT_DIR)
+        self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
+        self.assertTrue(os.path.isfile(os.path.join(testdir,"SourceMods","src.drv","somefile.F90")), msg="User_mods SourceMod missing")
+        with open(os.path.join(testdir,"user_nl_cpl"),"r") as fd:
+            contents = fd.read()
+        self.assertTrue("a different cpl test option" in contents, msg="User_mods contents of user_nl_cpl missing")
+        self.assertTrue("a cpl namelist option" in contents, msg="User_mods contents of user_nl_cpl missing")
+        self._do_teardown.append(testdir)
 
     def tearDown(self):
-        do_teardown = self._do_teardown and sys.exc_info() == (None, None, None)
-        if (not do_teardown):
-            print "Detected failed test or user request no teardown"
-            print "Leaving case directory : %s"%self._testdir
-        else:
-            shutil.rmtree(self._testdir)
+        do_teardown = len(self._do_teardown) > 0 and sys.exc_info() == (None, None, None)
+
+        for tfile in self._testdirs:
+            if tfile not in self._do_teardown:
+                print "Detected failed test or user request no teardown"
+                print "Leaving case directory : %s"%tfile
+            elif do_teardown:
+                shutil.rmtree(tfile)
 ###############################################################################
 class D_TestWaitForTests(unittest.TestCase):
 ###############################################################################

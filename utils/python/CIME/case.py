@@ -30,7 +30,7 @@ from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
 
 from CIME.XML.generic_xml           import GenericXML
-
+from CIME.user_mod_support      import apply_user_mods
 
 logger = logging.getLogger(__name__)
 
@@ -236,6 +236,7 @@ class Case(object):
             expect(False,
                    "Could not find a compset match for either alias or longname in %s" %(compset_name))
 
+
     def get_compset_components(self):
         # If are doing a create_clone then, self._compsetname is not set yet
         components = []
@@ -277,12 +278,12 @@ class Case(object):
 
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
-        component_classes =drv_comp.get_valid_model_components()
-        if len(component_classes) > len(self._components):
+        self._component_classes =drv_comp.get_valid_model_components()
+        if len(self._component_classes) > len(self._components):
             self._components.append('sesp')
 
-        for i in xrange(1,len(component_classes)):
-            comp_class = component_classes[i]
+        for i in xrange(1,len(self._component_classes)):
+            comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]
 	    node_name = 'CONFIG_' + comp_class + '_FILE';
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=True)
@@ -304,7 +305,7 @@ class Case(object):
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
-                  user_grid=False, gridfile=None):
+                  user_grid=False, gridfile=None, ninst=1):
 
         #--------------------------------------------
         # compset, pesfile, and compset components
@@ -411,6 +412,26 @@ class Case(object):
         for key, value in pes_rootpe.items():
             mach_pes_obj.set_value(key,int(value))
 
+        # Make sure that every component has been accounted for
+        # set, nthrds and ntasks to 1 otherwise. Also set the ninst values here.
+        for compclass in self._component_classes:
+            if compclass == "DRV":
+                continue
+            key = "NINST_%s"%compclass
+            mach_pes_obj.set_value(key, ninst)
+            key = "NTASKS_%s"%compclass
+            if key not in pes_ntasks.keys():
+                mach_pes_obj.set_value(key,1)
+            key = "NTHRDS_%s"%compclass
+            if compclass not in pes_nthrds.keys():
+                mach_pes_obj.set_value(compclass,1)
+
+        # FIXME - this is a short term fix for dealing with the restriction that
+        # CISM1 cannot run on multiple cores
+        if "CISM1" in self._compsetname:
+            mach_pes_obj.set_value("NTASKS_GLC",1)
+            mach_pes_obj.set_value("NTHRDS_GLC",1)
+
         self.set_value("COMPSET",self._compsetname)
 
         self._set_pio_xml()
@@ -423,7 +444,6 @@ class Case(object):
             project = get_project()
         if project is not None:
             self.set_value("PROJECT", project)
-
 
     def set_initial_test_values(self):
         testobj = self._get_env("test")
@@ -541,7 +561,7 @@ class Case(object):
                 with open(readme_file, "w") as fd:
                     fd.write(str_to_write)
 
-    def create_caseroot(self):
+    def create_caseroot(self, user_mods_dir=None):
         caseroot = self.get_value("CASEROOT")
         if not os.path.exists(caseroot):
         # Make the case directory
@@ -560,6 +580,23 @@ class Case(object):
 
         self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
+
+        if user_mods_dir is not None:
+            if os.path.isabs(user_mods_dir):
+                user_mods_path = user_mods_dir
+            else:
+                user_mods_path = self.get_value('USER_MODS_DIR')
+                user_mods_path = os.path.join(user_mods_path, user_mods_dir)
+            ninst_vals = {}
+            for i in xrange(1,len(self._component_classes)):
+                comp_class = self._component_classes[i]
+                comp_name  = self._components[i-1]
+                if comp_class == "DRV":
+                    continue
+                ninst_comp = self.get_value("NINST_%s"%comp_class)
+                if ninst_comp > 1:
+                    ninst_vals[comp_name] = ninst_comp
+            apply_user_mods(self.get_value("CASEROOT"), user_mods_path, ninst_vals)
 
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None):
 

@@ -14,16 +14,16 @@ if ($?COMPARE_BASELINE ) then
 endif
 
 # Reset beginning test settings
-if ( -e env_mach_pes.xml.1 )  then
-  cp -f env_mach_pes.xml.1   env_mach_pes.xml
-  cp -f env_mach_pes.xml.1   LockedFiles/env_mach_pes.xml
+if ( -e LockedFiles/env_mach_pes.ERP1.xml )  then
+  cp -f LockedFiles/env_mach_pes.ERP1.xml   env_mach_pes.xml
+  cp -f env_mach_pes.xml   LockedFiles/env_mach_pes.xml
   rm    $EXEROOT/${CIME_MODEL}.exe >& /dev/null
-  cp -f $EXEROOT/${CIME_MODEL}.exe.1 $EXEROOT/${CIME_MODEL}.exe || exit -9
-  cp -f env_build.xml.1      env_build.xml
-  cp -f env_build.xml.1      LockedFiles/env_build.xml
+  cp -f $EXEROOT/${CIME_MODEL}.exe.ERP1 $EXEROOT/${CIME_MODEL}.exe || exit -9
+  cp -f LockedFiles/env_build.ERP1.xml      env_build.xml
+  cp -f env_build.xml      LockedFiles/env_build.xml
 else
-  echo " ERROR: env_mach_pes.xml.1 does not exist"
-  echo "   this would been produced in the build - must run case.test_build"
+  echo " ERROR: LockedFiles/env_mach_pes.ERP1.xml does not exist"
+  echo "   this would been produced in the build - must run case.build"
   exit -1
 endif
 
@@ -109,13 +109,13 @@ echo " halving the number of openmp threads for all components with nthrds > 1" 
 ./xmlchange --file env_run.xml --id REST_OPTION  --val never
 ./xmlchange --file env_run.xml --id HIST_N       --val ${histn}
 
-cp -f env_mach_pes.xml.2 env_mach_pes.xml
-cp -f env_mach_pes.xml.2 LockedFiles/env_mach_pes.xml
+cp -f LockedFiles/env_mach_pes.ERP2.xml env_mach_pes.xml
+cp -f env_mach_pes.xml LockedFiles/env_mach_pes.xml
 
 rm $EXEROOT/${CIME_MODEL}.exe >& /dev/null
-cp -f $EXEROOT/${CIME_MODEL}.exe.2 $EXEROOT/${CIME_MODEL}.exe || exit -9
-cp -f env_build.xml.2    env_build.xml
-cp -f env_build.xml.2    LockedFiles/env_build.xml
+cp -f $EXEROOT/${CIME_MODEL}.exe.ERP2 $EXEROOT/${CIME_MODEL}.exe || exit -9
+cp -f LockedFiles/env_build.ERP2.xml    env_build.xml
+cp -f env_build.xml    LockedFiles/env_build.xml
 
 ./case.setup --clean --test-mode
 ./case.setup

@@ -29,6 +29,7 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot, complis
     for model, comp, nthrds, ninst, config_dir in complist:
         # aquap has a dependency on atm so we will build it after the threaded loop
         if comp == "aquap":
+            logger.debug("Skip aquap ocn build here")
             continue
         # coupler handled seperately
         if model == "cpl":
@@ -79,9 +80,12 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot, complis
         time.sleep(1)
 
     # aquap has a dependancy on atm so we build it after the threaded loop
-    if "aquap" in complist:
-        _build_model_thread(config_ocn_dir, caseroot, bldroot, "aquap", file_build,
-                            exeroot, "ocn", "aquap", objdir, incroot, thread_bad_results)
+
+    for model, comp, nthrds, ninst, config_dir in complist:
+        if comp == "aquap":
+            logger.debug("Now build aquap ocn component")
+            _build_model_thread(config_dir, caseroot, bldroot, comp, file_build,
+                                exeroot, model, comp, objdir, incroot, thread_bad_results)
 
     expect(not thread_bad_results, "\n".join(thread_bad_results))
 
@@ -552,8 +556,10 @@ def clean(case, cleanlist):
 
     if testcase is not None:
         if clm_config_opts is not None:
-            if "clm4_0" in clm_config_opts:
-                cleanlist.remove('cleanlnd')
+            # we only want to clean lnd here if it is clm4_0 otherwise remove
+            # it from the cleanlist
+            if "clm4_0" not in clm_config_opts:
+                cleanlist.remove('lnd')
 
     cmd = gmake + " -f " + casetools + "/Makefile"
     for item in cleanlist:
