@@ -18,8 +18,7 @@ CONTAINS
     ! !DESCRIPTION:
     ! Abort the model for abnormal termination
     !
-    use shr_sys_mod , only: shr_sys_abort
-    use clm_varctl  , only: iulog
+    use mpp_varctl  , only: iulog
     !
     !
     ! !ARGUMENTS:

@@ -577,7 +577,6 @@ contains
     ! Solves SoE via PETSc KSP
     !
     ! !USES
-    use clm_time_manager , only : get_nstep
     !
     implicit none
     !
