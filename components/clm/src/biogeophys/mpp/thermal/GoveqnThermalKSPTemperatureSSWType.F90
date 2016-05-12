@@ -8,7 +8,7 @@ module GoveqnThermalKSPTemperatureSSWType
 
   ! !USES:
   use mpp_varctl                       , only : iulog
-  use abortutils                       , only : endrun
+  use mpp_abortutils                       , only : endrun
   use mpp_shr_log_mod                      , only : errMsg => shr_log_errMsg
   use GoverningEquationBaseType        , only : goveqn_base_type
   use ThermalKSPTemperatureSSWAuxType  , only : therm_ksp_temp_ssw_auxvar_type

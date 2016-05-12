@@ -10,7 +10,7 @@ module MultiPhysicsProbVSFM
 
   ! !USES:
   use mpp_varctl                         , only : iulog
-  use abortutils                         , only : endrun
+  use mpp_abortutils                         , only : endrun
   use mpp_shr_log_mod                        , only : errMsg => shr_log_errMsg
   use MultiPhysicsProbBaseType           , only : multiphysicsprob_base_type
   use SystemOfEquationsVSFMType          , only : sysofeqns_vsfm_type
@@ -188,7 +188,7 @@ contains
     use MultiPhysicsProbConstants        , only : AUXVAR_INTERNAL
     use MultiPhysicsProbConstants        , only : VAR_TEMPERATURE
     use MultiPhysicsProbConstants        , only : MPP_VSFM_SNES_CLM
-    use abortutils                       , only : endrun
+    use mpp_abortutils                       , only : endrun
     !
     implicit none
     !
@@ -304,7 +304,7 @@ contains
     use MultiPhysicsProbConstants        , only : AUXVAR_INTERNAL
     use MultiPhysicsProbConstants        , only : VAR_TEMPERATURE
     use MultiPhysicsProbConstants        , only : MPP_VSFM_SNES_CLM
-    use abortutils                       , only : endrun
+    use mpp_abortutils                       , only : endrun
     !
     implicit none
     !

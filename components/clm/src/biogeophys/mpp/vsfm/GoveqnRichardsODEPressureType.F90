@@ -9,7 +9,7 @@ module GoveqnRichardsODEPressureType
 
   ! !USES:
   use mpp_varctl                    , only : iulog
-  use abortutils                    , only : endrun
+  use mpp_abortutils                    , only : endrun
   use mpp_shr_log_mod                   , only : errMsg => shr_log_errMsg
   use GoverningEquationBaseType     , only : goveqn_base_type
   use RichardsODEPressureAuxType    , only : rich_ode_pres_auxvar_type

@@ -9,7 +9,7 @@ module GoverningEquationBaseType
 
   ! !USES:
   use mpp_varctl         , only : iulog
-  use abortutils         , only : endrun
+  use mpp_abortutils         , only : endrun
   use mpp_shr_log_mod        , only : errMsg => shr_log_errMsg
   use MeshType           , only : mesh_type
   use ConditionType      , only : condition_list_type

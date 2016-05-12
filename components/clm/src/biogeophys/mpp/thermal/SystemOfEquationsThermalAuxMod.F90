@@ -5,7 +5,7 @@ module SystemOfEquationsThermalAuxMod
 
   ! !USES:
   use mpp_varctl                      , only : iulog
-  use abortutils                      , only : endrun
+  use mpp_abortutils                      , only : endrun
   use mpp_shr_log_mod                     , only : errMsg => shr_log_errMsg
   use SystemOfEquationsThermalAuxType , only : sysofeqns_thermal_auxvar_type
   !
