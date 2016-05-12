@@ -800,8 +800,6 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
    if(iodesc->rearranger>0){
      if(rlen>0){
        MPI_Type_size(iodesc->basetype, &vsize);
-       //printf("rlen*vsize = %ld\n",rlen*vsize);
-
        vdesc0->iobuf = bget((size_t) vsize* (size_t) rlen);
        if(vdesc0->iobuf==NULL){
 	 printf("%s %d %d %ld\n",__FILE__,__LINE__,nvars,vsize*rlen);
@@ -876,7 +874,6 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
        }
      }
      switch(file->iotype){
-     case PIO_IOTYPE_NETCDF4P:
      case PIO_IOTYPE_PNETCDF:
        ierr = pio_write_darray_multi_nc(file, nvars, vid,
 					iodesc->ndims, iodesc->basetype, iodesc->gsize,
@@ -884,6 +881,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid, con
 					iodesc->holegridsize, iodesc->num_aiotasks,
 					vdesc0->fillbuf, frame);
        break;
+     case PIO_IOTYPE_NETCDF4P:
      case PIO_IOTYPE_NETCDF4C:
      case PIO_IOTYPE_NETCDF:
        /*       ierr = pio_write_darray_multi_nc_serial(file, nvars, vid,
@@ -1511,7 +1509,6 @@ int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, const int vi
 	  if(ierr != PIO_NOERR){
 	    for(int i=0;i<fndims;i++)
 	      fprintf(stderr,"vid %d dim %d start %ld count %ld err %d\n",vid,i,start[i],count[i],ierr);
-
 	  }
 
 #endif

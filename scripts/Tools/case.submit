@@ -1,162 +1,62 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python2
 
-use strict;
-use XML::LibXML;
-use Getopt::Long;
+"""
+case.submit - Submit a cesm workflow to the queueing system or run it if there is no queueing system.   A cesm workflow may include multiple jobs.
+"""
 
-my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml");
-my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]");
-my $cimeroot = $nodes[0]->getAttribute('value');
-my %opts=(loglevel=>"DEBUG");
-$ENV{CIMEROOT}=$cimeroot;
-unshift @INC, "$cimeroot/utils/perl5lib";
-my $pypath = $ENV{PYTHONPATH};
-$ENV{PYTHONPATH} = "$cimeroot/utils/python:$cimeroot/scripts/Tools:$pypath";
+from standard_script_setup import *
+from CIME.case_submit import submit
 
-require Log::Log4perl;
-require Config::SetupTools;
-require Batch::BatchUtils;
-require Module::ModuleLoader;
-my $logger;
-my %config;
-# Get options, if any..
-sub opts()
-{
-    GetOptions( "resubmit"	=> \$opts{'resubmit'},
-                "scriptname=s"  => \$opts{'scriptname'},
-                "j|jobid=i"     => \$opts{'jobid'},
-	        "loglevel=s"    => \$opts{loglevel});
-}
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [<casedir>] [--verbose]
+OR
+%s --help
+OR
+%s --test
 
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Setup case \033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
-sub main
-{
-    &opts();
+    CIME.utils.setup_standard_logging_options(parser)
 
-    my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
-    Log::Log4perl->easy_init({level=>$level,
-			      layout=>'%m%n'});
-    $logger = Log::Log4perl::get_logger();
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory to setup")
 
-    %config	= SetupTools::getAllResolved();
-    my $machine		= $config{'MACH'};
-    my $machroot	= $config{'MACHDIR'};
-    my $compiler	= $config{'COMPILER'};
-    my $mpilib		= $config{'MPILIB'};
-    my $caseroot	= $config{'CASEROOT'};
-    my $case		= $config{'CASE'};
-    my $model		= $config{'MODEL'};
-    my $debug		= $config{'DEBUG'};
-    # Check the case only once..
-    if(!$opts{resubmit}){
-	$logger->info( "checking the case..");
-	system("./check_case");
-	if($?)
-	{
-	    $logger->error( "check_case failed");
-	    exit(-1);
-	}
-    }
+    parser.add_argument("--job", "-j",
+                        help="Name of the job to be submitted, default is case.run"
+                        " can be any of the jobs listed in env_batch.xml")
 
-    my $moduleloader = Module::ModuleLoader->new(machine  => $machine,
-						 compiler => $compiler,
-						 mpilib   => $mpilib,
-						 debug    => $debug,
-						 caseroot => $caseroot,
-						 cimeroot => $cimeroot,
-						 model    => $model);
+    parser.add_argument("--no-batch", action="store_true",
+                        help="Do not submit jobs to batch system, run locally.")
 
-    $moduleloader->moduleInit();
+    parser.add_argument("--prereq",
+                        help="Specify a prerequiset job id, this job will not start until the "
+                        "job with this id is completed (batch mode only)")
 
-    $moduleloader->findModulesForCase();
-    $moduleloader->loadModules();
+    args = parser.parse_args(args[1:])
 
+    CIME.utils.handle_standard_logging_options(args)
 
+    return args.caseroot, args.job, args.no_batch, args.prereq
 
-    my $job;
-    if(defined $config{TESTCASE}){
-	$job = "case.test";
-    }else{
-	$job = "case.run";
-    }
-    $logger->debug( "Job = $job");
-    my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case	   => $case,
-							      caseconfig   => \%config,
-							      caseroot	   => $caseroot,
-							      cimeroot	   => $cimeroot,
-							      compiler	   => $compiler,
-							      machine	   => $machine,
-							      machroot	   => $machroot,
-							      mpilib	   => $mpilib,
-	                                                      job                => $job);
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if "--test" in sys.argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
+    caseroot, job, no_batch, prereq = parse_command_line(sys.argv, description)
 
-    if(defined $opts{'resubmit'})
-    {
-	if( $batchutils->{batchtype} eq 'none'){
-	    exit;
-	}
+    submit(caseroot, job=job, no_batch=no_batch, prereq_jobid=prereq)
 
-        if(! defined $opts{'scriptname'})
-        {
-            $logger->logdie ("$config{'CASE'}.submit: resubmit option given without scriptname provided, aborting!");
-        }
-	`./xmlchange --noecho RUN_WITH_SUBMIT=TRUE`;
-	$config{RUN_WITH_SUBMIT}='TRUE';
-	$batchutils->doResubmit($opts{'scriptname'});
-    }
-    else
-    {
-        $batchutils->dependencyCheck();
-	my $loopcnt=1;
-	if($batchutils->{batchtype} eq 'none'){
-	    $loopcnt = $config{RESUBMIT}+1;
-	}
-	for(my $resub=0; $resub < $loopcnt; $resub++){
-	    check_DA_settings();
-	    `./xmlchange --noecho  RUN_WITH_SUBMIT=TRUE`;
-	    $config{RUN_WITH_SUBMIT}='TRUE';
-            if (defined $opts{'jobid'}) {
-                $batchutils->submitJobs(undef, $opts{'jobid'});
-            }
-            else {
-                $batchutils->submitJobs();
-            }
-	    if($batchutils->{batchtype} eq 'none'){
-		$batchutils->_decrementResubmitCounter(\%config);
-	    }
-	}
-    }
-
-}
-
-sub check_DA_settings
-{
-    if($config{DATA_ASSIMILATION} eq "TRUE"){
-	my $script = $config{DATA_ASSIMILATION_SCRIPT};
-	$logger->info( "DATA_ASSIMILATION enabled");
-	$logger->info ("   using script $script");
-	$logger->info ("   DATA_ASSIMILATION_CYCLES = $config{DATA_ASSIMILATION_CYCLES}");
-    }
-}
-
-sub doResubmit()
-{
-    my $scriptname = shift;
-    my $job;
-# This gets the extension (everything after the last . ) in $scriptname
-    $scriptname =~ /\.([^\.]+)$/;
-    $job = $1;
-    my $batchutils = Batch::BatchUtilsFactory::getBatchUtils( case => $config{'CASE'},
-                                                              caseconfig => \%config,
-                                                              cimeroot => $config{'CIMEROOT'},
-                                                              compiler => $config{'COMPILER'},
-                                                              machine =>  $config{'MACH'},
-                                                              machroot => $config{'MACHDIR'},
-                                                              mpilib   => $config{'MPILIB'},
-	                                                      job => $job);
-
-    $batchutils->doResubmit($scriptname);
-}
-
-main(@ARGV) ;
+if __name__ == "__main__":
+    _main_func(__doc__)

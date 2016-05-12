@@ -1,6 +1,6 @@
 """
 Common functions used by cime python scripts
-Warning: you cannot use CIME Classes in this module as it causes circular dependancies
+Warning: you cannot use CIME Classes in this module as it causes circular dependencies
 """
 import logging
 import logging.config
@@ -181,9 +181,11 @@ def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
     else:
         if (arg_stderr is not None):
             errput = errput if errput is not None else open(arg_stderr.name, "r").read()
-            expect(stat == 0, "Command: '%s' failed with error '%s'" % (cmd, errput))
+            expect(stat == 0, "Command: '%s' failed with error '%s'%s" %
+                   (cmd, errput, "" if from_dir is None else " from dir '%s'" % from_dir))
         else:
-            expect(stat == 0, "Command: '%s' failed. See terminal output" % cmd)
+            expect(stat == 0, "Command: '%s' failed%s. See terminal output" %
+                   (cmd, "" if from_dir is None else " from dir '%s'" % from_dir))
         return output
 
 def check_minimum_python_version(major, minor):
@@ -233,6 +235,8 @@ def parse_test_name(test_name):
     ['ERS', ['D'], 'fe12_123', 'JGF', None, None, None]
     >>> parse_test_name('ERS_D_P1.fe12_123.JGF')
     ['ERS', ['D', 'P1'], 'fe12_123', 'JGF', None, None, None]
+    >>> parse_test_name('SMS_D_Ln9_Mmpi-serial.f19_g16_rx1.A')
+    ['SMS', ['D', 'Ln9', 'Mmpi-serial'], 'f19_g16_rx1', 'A', None, None, None]
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler')
     ['ERS', None, 'fe12_123', 'JGF', 'machine', 'compiler', None]
     >>> parse_test_name('ERS.fe12_123.JGF.machine_compiler.test-mods')
@@ -654,12 +658,72 @@ def convert_to_seconds(time_str):
 
     return result
 
-def appendCaseStatus(caseroot, msg):
+def convert_to_babylonian_time(seconds):
     """
-    Append msg to CaseStatus file in caseroot
+    Convert time value to seconds to HH:MM:SS
+
+    >>> convert_to_babylonian_time(3661)
+    '01:01:01'
     """
-    with open(os.path.join(caseroot,"CaseStatus"), "a") as fd:
-        fd.write(msg)
+    hours = seconds / 3600
+    seconds %= 3600
+    minutes = seconds / 60
+    seconds %= 60
+
+    return "%02d:%02d:%02d" % (hours, minutes, seconds)
+
+def compute_total_time(job_cost_map, proc_pool):
+    """
+    Given a map: jobname -> (procs, est-time), return a total time
+    estimate for a given processor pool size
+
+    >>> job_cost_map = {"A" : (4, 3000), "B" : (2, 1000), "C" : (8, 2000), "D" : (1, 800)}
+    >>> compute_total_time(job_cost_map, 8)
+    5160
+    >>> compute_total_time(job_cost_map, 12)
+    3180
+    >>> compute_total_time(job_cost_map, 16)
+    3060
+    """
+    current_time = 0
+    waiting_jobs = dict(job_cost_map)
+    running_jobs = {} # name -> (procs, est-time, start-time)
+    while len(waiting_jobs) > 0 or len(running_jobs) > 0:
+        launched_jobs = []
+        for jobname, data in waiting_jobs.iteritems():
+            procs_for_job, time_for_job = data
+            if procs_for_job <= proc_pool:
+                proc_pool -= procs_for_job
+                launched_jobs.append(jobname)
+                running_jobs[jobname] = (procs_for_job, time_for_job, current_time)
+
+        for launched_job in launched_jobs:
+            del waiting_jobs[launched_job]
+
+        completed_jobs = []
+        for jobname, data in running_jobs.iteritems():
+            procs_for_job, time_for_job, time_started = data
+            if (current_time - time_started) >= time_for_job:
+                proc_pool += procs_for_job
+                completed_jobs.append(jobname)
+
+        for completed_job in completed_jobs:
+            del running_jobs[completed_job]
+
+        current_time += 60 # minute time step
+
+    return current_time
+
+def appendStatus(msg, caseroot='.', sfile="CaseStatus"):
+    """
+    Append msg to sfile in caseroot
+    """
+    ctime = ""
+    # Don't put the time stamp in TestStatus
+    if sfile != "TestStatus":
+        ctime = time.strftime("%Y-%m-%d %H:%M:%S: ")
+    with open(os.path.join(caseroot,sfile), "a") as fd:
+        fd.write(ctime + msg + "\n")
 
 def does_file_have_string(filepath, text):
     """

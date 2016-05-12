@@ -16,23 +16,23 @@ _TEST_SUITES = {
                    ),
 
     "acme_test_only_pass" : (None,
-                   ("TESTRUNPASS_P1.f19_g16_rx1.A",
-                    "TESTRUNPASS_P1.ne30_g16_rx1.A",
-                    "TESTRUNPASS_P1.f45_g37_rx1.A")
+                   ("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A",
+                    "TESTRUNPASS_Mmpi-serial.ne30_g16_rx1.A",
+                    "TESTRUNPASS_Mmpi-serial.f45_g37_rx1.A")
                    ),
 
     "acme_test_only_slow_pass" : (None,
-                   ("TESTRUNSLOWPASS_P1.f19_g16_rx1.A",
-                    "TESTRUNSLOWPASS_P1.ne30_g16_rx1.A",
-                    "TESTRUNSLOWPASS_P1.f45_g37_rx1.A")
+                   ("TESTRUNSLOWPASS_Mmpi-serial.f19_g16_rx1.A",
+                    "TESTRUNSLOWPASS_Mmpi-serial.ne30_g16_rx1.A",
+                    "TESTRUNSLOWPASS_Mmpi-serial.f45_g37_rx1.A")
                    ),
 
     "acme_test_only" : (None,
                    ("TESTBUILDFAIL.f19_g16_rx1.A",
-                    "TESTRUNFAIL_P1.f19_g16_rx1.A",
-                    "TESTRUNPASS_P1.f19_g16_rx1.A",
-                    "TESTMEMLEAKFAIL.f19_g16_rx1.A",
-                    "TESTMEMLEAKPASS.f19_g16_rx1.A")
+                    "TESTRUNFAIL_Mmpi-serial.f19_g16_rx1.A",
+                    "TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A",
+                    "TESTMEMLEAKFAIL_Mmpi-serial.f19_g16.X",
+                    "TESTMEMLEAKPASS_Mmpi-serial.f19_g16.X")
                    ),
 
     "acme_runoff_developer" : (None,
@@ -68,7 +68,8 @@ _TEST_SUITES = {
                              "SEQ_Ld3.f09_g16.X",
                              "ERS_Ld3.ne30_g16_rx1.A",
                              "ERS_N2_Ld3.f19_g16_rx1.A",
-                             "ERR_Ld3.f45_g37_rx1.A")
+                             "ERR_Ld3.f45_g37_rx1.A",
+                             "SMS_D_Ln9_Mmpi-serial.f19_g16_rx1.A")
                             ),
 
     "acme_developer" : ("acme_land_developer",

@@ -4,10 +4,10 @@ Wrapper around all env XML for a case.
 All interaction with and between the module files in XML/ takes place
 through the Case module.
 """
-
-from CIME.XML.standard_module_setup import *
-from shutil import copyfile
 from copy   import deepcopy
+import glob, shutil
+from CIME.XML.standard_module_setup import *
+
 from CIME.utils                     import expect, run_cmd, get_cime_root
 from CIME.utils                     import convert_to_type, get_model, get_project
 from CIME.XML.machines              import Machines
@@ -30,8 +30,8 @@ from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
 
 from CIME.XML.generic_xml           import GenericXML
-import glob, shutil
-import traceback 
+from CIME.user_mod_support          import apply_user_mods
+
 
 logger = logging.getLogger(__name__)
 
@@ -288,8 +288,10 @@ class Case(object):
             expect(False,
                    "Could not find a compset match for either alias or longname in %s" %(compset_name))
 
+
     def get_compset_components(self):
         # If are doing a create_clone then, self._compsetname is not set yet
+        components = []
         compset = self.get_value("COMPSET")
         if compset is None:
             compset = self._compsetname
@@ -297,14 +299,14 @@ class Case(object):
                "ERROR: compset is not set")
         elements = compset.split('_')
         for element in elements:
-            # ignore the initial date in the compset longname
-            if re.search(r'^\d+$',element):
-                pass
+            # ignore the initial date in the compset longname and the possible BGC modifier
+            if re.search(r'^\d+$',element) or element.startswith("BGC%") :
+                continue
             else:
                 element_component = element.split('%')[0].lower()
                 element_component = re.sub(r'[0-9]*',"",element_component)
-                self._components.append(element_component)
-        return self._components
+                components.append(element_component)
+        return components
 
 
     def __iter__(self):
@@ -330,13 +332,16 @@ class Case(object):
 
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
-        component_classes =drv_comp.get_valid_model_components()
-        for i in xrange(1,len(component_classes)):
-            comp_class = component_classes[i]
+        self._component_classes =drv_comp.get_valid_model_components()
+        if len(self._component_classes) > len(self._components):
+            self._components.append('sesp')
+
+        for i in xrange(1,len(self._component_classes)):
+            comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]
 	    node_name = 'CONFIG_' + comp_class + '_FILE';
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=True)
-            logger.debug( "comp_config_file is %s"%comp_config_file)
+            expect(comp_config_file is not None,"No config file for component %s"%comp_name)
             compobj = Component(comp_config_file)
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist);
@@ -354,14 +359,14 @@ class Case(object):
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
-                  user_grid=False, gridfile=None):
+                  user_grid=False, gridfile=None, ninst=1):
 
         #--------------------------------------------
         # compset, pesfile, and compset components
         #--------------------------------------------
         self._set_compset_and_pesfile(compset_name, user_compset=user_compset, pesfile=pesfile)
 
-        self.get_compset_components()
+        self._components = self.get_compset_components()
         #FIXME - if --user-compset is True then need to determine that
         #all of the compset settings are valid
 
@@ -440,6 +445,7 @@ class Case(object):
         bjobs = batch.get_batch_jobs()
         env_batch = self._get_env("batch")
         env_batch.set_value("batch_system", batch_system)
+        env_batch.set_default_value("batch_system", batch_system)
         env_batch.create_job_groups(bjobs)
 
         self._env_files_that_need_rewrite.add(env_batch)
@@ -460,6 +466,26 @@ class Case(object):
         for key, value in pes_rootpe.items():
             mach_pes_obj.set_value(key,int(value))
 
+        # Make sure that every component has been accounted for
+        # set, nthrds and ntasks to 1 otherwise. Also set the ninst values here.
+        for compclass in self._component_classes:
+            if compclass == "DRV":
+                continue
+            key = "NINST_%s"%compclass
+            mach_pes_obj.set_value(key, ninst)
+            key = "NTASKS_%s"%compclass
+            if key not in pes_ntasks.keys():
+                mach_pes_obj.set_value(key,1)
+            key = "NTHRDS_%s"%compclass
+            if compclass not in pes_nthrds.keys():
+                mach_pes_obj.set_value(compclass,1)
+
+        # FIXME - this is a short term fix for dealing with the restriction that
+        # CISM1 cannot run on multiple cores
+        if "CISM1" in self._compsetname:
+            mach_pes_obj.set_value("NTASKS_GLC",1)
+            mach_pes_obj.set_value("NTHRDS_GLC",1)
+
         self.set_value("COMPSET",self._compsetname)
 
         self._set_pio_xml()
@@ -472,7 +498,6 @@ class Case(object):
             project = get_project()
         if project is not None:
             self.set_value("PROJECT", project)
-
 
     def set_initial_test_values(self):
         testobj = self._get_env("test")
@@ -541,10 +566,10 @@ class Case(object):
         for dep in (machine, compiler):
             dfile = "Depends.%s"%dep
             if os.path.isfile(os.path.join(machines_dir,dfile)):
-                copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot,dfile))
+                shutil.copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot,dfile))
         dfile = "Depends.%s.%s"%(machine,compiler)
         if os.path.isfile(os.path.join(machines_dir,dfile)):
-            copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot, dfile))
+            shutil.copyfile(os.path.join(machines_dir,dfile), os.path.join(caseroot, dfile))
             # set up infon files
             # infofiles = os.path.join(os.path.join(toolsdir, README.post_process")
             #FIXME - the following does not work
@@ -553,7 +578,7 @@ class Case(object):
             #        for infofile in infofiles:
             #            print "DEBUG: infofile is %s, %s"  %(infofile, os.path.basename(infofile))
             #            dst_file = caseroot + "/" + os.path.basename(infofile)
-            #            copyfile(infofile, dst_file)
+            #            shutil.copyfile(infofile, dst_file)
             #            os.chmod(dst_file, os.stat(dst_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
             #    except Exception as e:
             #        logger.warning("FAILED to set up infofiles: %s" % str(e))
@@ -590,7 +615,7 @@ class Case(object):
                 with open(readme_file, "w") as fd:
                     fd.write(str_to_write)
 
-    def create_caseroot(self):
+    def create_caseroot(self, user_mods_dir=None):
         caseroot = self.get_value("CASEROOT")
         if not os.path.exists(caseroot):
         # Make the case directory
@@ -609,6 +634,23 @@ class Case(object):
 
         self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
+
+        if user_mods_dir is not None:
+            if os.path.isabs(user_mods_dir):
+                user_mods_path = user_mods_dir
+            else:
+                user_mods_path = self.get_value('USER_MODS_DIR')
+                user_mods_path = os.path.join(user_mods_path, user_mods_dir)
+            ninst_vals = {}
+            for i in xrange(1,len(self._component_classes)):
+                comp_class = self._component_classes[i]
+                comp_name  = self._components[i-1]
+                if comp_class == "DRV":
+                    continue
+                ninst_comp = self.get_value("NINST_%s"%comp_class)
+                if ninst_comp > 1:
+                    ninst_vals[comp_name] = ninst_comp
+            apply_user_mods(self.get_value("CASEROOT"), user_mods_path, ninst_vals)
 
     def create_clone(self, newcase, keepexe=False, mach_dir=None, project=None):
 
@@ -681,3 +723,4 @@ class Case(object):
 
         clonename = self.get_value("CASE")
         logger.info(" Successfully created new case %s from clone case %s " %(newcasename, clonename))
+

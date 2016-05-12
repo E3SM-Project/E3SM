@@ -1,5 +1,5 @@
 /**
- * @file
+ * @file 
  * A simple C example for the ParallelIO Library.
  *
  * This example creates a netCDF output file with one 3D variable. One
@@ -13,14 +13,15 @@
  * This example uses the MPE performace profiling library, if it is
  * present on the build machine. After the program is run, MPE will
  * produce a file called example2.clog2. In order to see the nice
- * graphs, execute the commands:
+ * graphs, execute the commands: 
  *
  * <pre>
  * clog2ToSlog2 example2.clog2
- * jumpshot example2.slog2
+ * jumpshot example2.slog2 
  * </pre>
  */
 
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -71,7 +72,7 @@
 	fprintf(stderr, "MPI error, line %d, file %s: %s\n", __LINE__, __FILE__, err_buffer); \
 	MPI_Finalize();							\
 	return 2;							\
-    } while (0)
+    } while (0) 
 
 /** Handle non-MPI errors by finalizing the MPI library and exiting
  * with an exit code. */
@@ -79,7 +80,7 @@
         fprintf(stderr, "Error %d in %s, line %d\n", e, __FILE__, __LINE__); \
 	MPI_Finalize();				\
 	return e;				\
-    } while (0)
+    } while (0) 
 
 /** Global err buffer for MPI. When there is an MPI error, this buffer
  * is used to store the error message that is associated with the MPI
@@ -144,10 +145,10 @@ size_t chunksize[NDIM] = {2, X_DIM_LEN/2, Y_DIM_LEN/2};
 #define ERR_INIT 12
 /**@}*/
 
-/** This will set up the MPE logging event numbers.
+/** This will set up the MPE logging event numbers. 
  *
  * @param my_rank the rank of the processor running the code.
- * @param event_num array of MPE event numbers.
+ * @param event_num array of MPE event numbers. 
  *
  * @return 0 for success, non-zero for failure.
  */
@@ -210,14 +211,14 @@ init_logging(int my_rank, int event_num[][NUM_EVENTS])
 
 /** Check the output file.
  *
- *  Use netCDF to check that the output is as expected.
+ *  Use netCDF to check that the output is as expected. 
  *
- * @param ntasks The number of processors running the example.
- * @param filename The name of the example file to check.
+ * @param ntasks The number of processors running the example. 
+ * @param filename The name of the example file to check. 
  *
  * @return 0 if example file is correct, non-zero otherwise. */
 int check_file(int ntasks, char *filename) {
-
+    
     int ncid;         /**< File ID from netCDF. */
     int ndims;        /**< Number of dimensions. */
     int nvars;        /**< Number of variables. */
@@ -234,7 +235,7 @@ int check_file(int ntasks, char *filename) {
     size_t count[NDIM];                /**< Number of elements to read. */
     int buffer[X_DIM_LEN];             /**< Buffer to read in data. */
     int expected[X_DIM_LEN];           /**< Data values we expect to find. */
-
+    
 /* Open the file. */
     if ((ret = nc_open(filename, 0, &ncid)))
 	return ret;
@@ -261,7 +262,7 @@ int check_file(int ntasks, char *filename) {
     int div = X_DIM_LEN * Y_DIM_LEN / ntasks;
     for (int d = 0; d < X_DIM_LEN; d++)
 	expected[d] = START_DATA_VAL + d/div;
-
+    
 /* Check the data. */
     start[0] = 0;
     count[0] = X_DIM_LEN;
@@ -279,11 +280,11 @@ int check_file(int ntasks, char *filename) {
     return 0;
 }
 
-/** Calculate sample data. This function is deliberately slow in order to take up some time calculating.
+/** Calculate sample data. This function is deliberately slow in order to take up some time calculating. 
  * @param my_rank the rank of the processor running the code.
  * @param timestep the timestep.
  * @param datap pointer where we should write datum.
- *
+ * 
  * @return zero for success, non-zero otherwise.
  */
 int calculate_value(int my_rank, int timestep, float *datap)
@@ -327,7 +328,7 @@ int calculate_value(int my_rank, int timestep, float *datap)
     foo = 42, 42, 42, 42, 43, 43, 43, 43, 44, 44, 44, 44, 45, 45, 45, 45 ;
     }
     </pre>
-
+    
     @param [in] argc argument count (should be zero)
     @param [in] argv argument array (should be NULL)
     @retval examplePioClass* Pointer to self.
@@ -349,7 +350,7 @@ int main(int argc, char* argv[])
      * classic format file (but with different libraries). The
      * last two produce netCDF4/HDF5 format files, written with
      * and without using netCDF-4 parallel I/O. */
-    int format[NUM_NETCDF_FLAVORS] = {PIO_IOTYPE_PNETCDF,
+    int format[NUM_NETCDF_FLAVORS] = {PIO_IOTYPE_PNETCDF, 
 				      PIO_IOTYPE_NETCDF,
 				      PIO_IOTYPE_NETCDF4C,
 				      PIO_IOTYPE_NETCDF4P};
@@ -363,7 +364,7 @@ int main(int argc, char* argv[])
 							  "example2_classic.nc",
 							  "example2_serial4.nc",
 							  "example2_parallel4.nc"};
-
+	
     /** Number of processors that will do IO. In this example we
      * will do IO from all processors. */
     int niotasks;
@@ -427,7 +428,7 @@ int main(int argc, char* argv[])
      * elements_per_pe. */
     PIO_Offset *compdof;
 
-#ifdef HAVE_MPE
+#ifdef HAVE_MPE	
     /** MPE event numbers used to track start and stop of
      * different parts of the program for later display with
      * Jumpshot. */
@@ -436,6 +437,8 @@ int main(int argc, char* argv[])
 
     /** Needed for command line processing. */
     int c;
+
+    int ret;
 
     /* Parse command line. */
     while ((c = getopt(argc, argv, "v")) != -1)
@@ -448,13 +451,12 @@ int main(int argc, char* argv[])
 	    break;
 	}
 
-#ifdef TIMING
+#ifdef TIMING    
     /* Initialize the GPTL timing library. */
-    int ret;
     if ((ret = GPTLinitialize ()))
 	return ret;
-#endif
-
+#endif    
+    
     /* Initialize MPI. */
     if ((ret = MPI_Init(&argc, &argv)))
 	MPIERR(ret);
@@ -487,8 +489,8 @@ int main(int argc, char* argv[])
 	MPIERR(ret);
 #endif /* HAVE_MPE */
 
-    /* keep things simple - 1 iotask per MPI process */
-    niotasks = ntasks;
+    /* keep things simple - 1 iotask per MPI process */    
+    niotasks = ntasks; 
 
     /* Initialize the PIO IO system. This specifies how
      * many and which processors are involved in I/O. */
@@ -503,7 +505,7 @@ int main(int argc, char* argv[])
     for (int i = 0; i < elements_per_pe; i++) {
 	compdof[i] = my_rank * elements_per_pe + i + 1;
     }
-
+	
     /* Create the PIO decomposition for this example. */
     if (verbose)
 	printf("rank: %d Creating decomposition...\n", my_rank);
@@ -517,10 +519,10 @@ int main(int argc, char* argv[])
     if ((ret = MPE_Log_event(event_num[END][INIT], 0, "end init")))
 	MPIERR(ret);
 #endif /* HAVE_MPE */
-
+	
     /* Use PIO to create the example file in each of the four
      * available ways. */
-    for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++)
+    for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++) 
     {
 #ifdef HAVE_MPE
 	/* Log with MPE that we are starting CREATE. */
@@ -535,7 +537,7 @@ int main(int argc, char* argv[])
 	if ((ret = PIOc_createfile(iosysid, &ncid, &(format[fmt]), filename[fmt],
 				   PIO_CLOBBER)))
 	    ERR(ret);
-
+	
 	/* Define netCDF dimensions and variable. */
 	if (verbose)
 	    printf("rank: %d Defining netCDF metadata...\n", my_rank);
@@ -552,7 +554,7 @@ int main(int argc, char* argv[])
 	if (format[fmt] == PIO_IOTYPE_NETCDF4C || format[fmt] == PIO_IOTYPE_NETCDF4P)
 	    if ((ret = PIOc_def_var_chunking(ncid, 0, NC_CHUNKED, chunksize)))
 		ERR(ret);
-
+	
 	if ((ret = PIOc_enddef(ncid)))
 	    ERR(ret);
 
@@ -588,7 +590,7 @@ int main(int argc, char* argv[])
 	    if ((ret = MPE_Log_event(event_num[START][WRITE], 0, "start write")))
 		MPIERR(ret);
 #endif /* HAVE_MPE */
-
+		
 	    /* Write data to the file. */
 	    if (verbose)
 		printf("rank: %d Writing sample data...\n", my_rank);
@@ -612,10 +614,10 @@ int main(int argc, char* argv[])
 	if ((ret = MPE_Log_event(event_num[START][CLOSE], 0, "start close")))
 	    MPIERR(ret);
 #endif /* HAVE_MPE */
-
+		
 	/* Free buffer space used in this example. */
 	free(buffer);
-
+	
 	/* Close the netCDF file. */
 	if (verbose)
 	    printf("rank: %d Closing the sample data file...\n", my_rank);
@@ -633,19 +635,19 @@ int main(int argc, char* argv[])
 	if ((ret = MPI_Barrier(MPI_COMM_WORLD)))
 	    MPIERR(ret);
     }
-
+	
 #ifdef HAVE_MPE
     /* Log with MPE that we are starting FREE. */
     if ((ret = MPE_Log_event(event_num[START][FREE], 0, "start free")))
 	MPIERR(ret);
 #endif /* HAVE_MPE */
-
+    
     /* Free the PIO decomposition. */
     if (verbose)
 	printf("rank: %d Freeing PIO decomposition...\n", my_rank);
     if ((ret = PIOc_freedecomp(iosysid, ioid)))
 	ERR(ret);
-
+	
     /* Finalize the IO system. */
     if (verbose)
 	printf("rank: %d Freeing PIO resources...\n", my_rank);
@@ -660,7 +662,7 @@ int main(int argc, char* argv[])
     if ((ret = MPE_Log_event(event_num[START][READ], 0, "start read")))
 	MPIERR(ret);
 #endif /* HAVE_MPE */
-
+    
     /* Check the output file. */
     /* if (!my_rank) */
     /*     for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++)  */
@@ -676,11 +678,11 @@ int main(int argc, char* argv[])
     /* Finalize the MPI library. */
     MPI_Finalize();
 
-#ifdef TIMING
+#ifdef TIMING    
     /* Finalize the GPTL timing library. */
     if ((ret = GPTLfinalize ()))
 	return ret;
-#endif
+#endif    
 
     if (verbose)
 	printf("rank: %d SUCCESS!\n", my_rank);

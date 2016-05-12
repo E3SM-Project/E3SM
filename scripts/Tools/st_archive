@@ -238,7 +238,7 @@ sub checkRun
     chdir( $config{'DOUT_S_ROOT'} ) or $logger->logdie ("st_archive: Error - cannot access directory $config{'DOUT_S_ROOT'} with error $err_list. Exiting...");
 
     # check if interim restart files should be saved - if not, print a warning
-    if( ( uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) eq 'FALSE' || 
+    if( ( uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) eq 'FALSE' ||
 	  uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) eq 'UNSET' )  &&
 	($config{'REST_N'} < $config{'STOP_N'}) ) {
 	$config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'} = 'FALSE';
@@ -250,7 +250,7 @@ sub checkRun
 	open my $CASESTATUS, "<", "$statusFile"  or die qq(st_archive: unable to open $statusFile. Exiting...\n);
 	while( <$CASESTATUS> ){
 	    chomp $_;
-	    if( /run SUCCESSFUL/ ) {$runComplete = 1;}
+	    if( /run SUCCESSFUL/i ) {$runComplete = 1;}
 	}
 	close( $CASESTATUS );
     }
@@ -654,7 +654,7 @@ sub main
 	# load the runfiles global array with all the files in the RUNDIR
 	my @runfiles;
         find( sub { return unless -f; push @runfiles, $File::Find::name; }, $config{'RUNDIR'});
-	
+
 	# get the date name from the most current coupler log file
 	$dname  = getDname();
 

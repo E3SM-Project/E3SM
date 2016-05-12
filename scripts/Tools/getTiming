@@ -7,7 +7,6 @@ from standard_script_setup import *
 import argparse, sys, os, logging
 import datetime, shutil, re
 from CIME.case import Case
-from CIME.XML.component import Component
 
 logger = logging.getLogger(__name__)
 
@@ -122,9 +121,7 @@ class TimingParser:
 
     def getTiming(self):
         case = Case(self.caseroot)
-        drv_config_file = case.get_value("CONFIG_DRV_FILE")
-        drv_comp = Component(drv_config_file)
-        components=[c.text for c in drv_comp.get_node("components")]
+        components=case.get_value("COMP_CLASSES").split(',')
         components[components.index("DRV")]="CPL"
         for s in components:
             self.models[s] = getTimingInfo(s)
@@ -136,6 +133,7 @@ class TimingParser:
         ocn = self.models['OCN']
         glc = self.models['GLC']
         cpl = self.models['CPL']
+        cime_model = case.get_value("MODEL")
         caseid = case.get_value("CASE")
         mach = case.get_value("MACH")
         user = case.get_value("USER")
@@ -178,11 +176,11 @@ class TimingParser:
                 not continue_run:
             inittype = "TRUE"
 
-        binfilename = os.path.join(rundir, "timing", "cesm_timing_stats")
+        binfilename = os.path.join(rundir, "timing", "model_timing_stats")
         finfilename = os.path.join(self.caseroot, "timing",
-                                   "cesm_timing_stats.%s" % self.lid)
+                                   "%s_timing_stats.%s" % (cime_model, self.lid))
         foutfilename = os.path.join(self.caseroot, "timing",
-                                    "cesm_timing.%s.%s" % (caseid, self.lid))
+                                    "%s_timing.%s.%s" % (cime_model, caseid, self.lid))
         try:
             shutil.copyfile(binfilename, finfilename)
         except Exception, e:
@@ -615,8 +613,8 @@ class TimingParser:
 
 def __main_func(description):
     """
-    Reads timing information from $CASEROOT/timing/cesm_timing_stats.$lid and
-    outputs to $CASEROOT/timing/cesm_timing.$CASE.$lid
+    Reads timing information from $CASEROOT/timing/$MODEL_timing_stats.$lid and
+    outputs to $CASEROOT/timing/$MODEL_timing.$CASE.$lid
     """
     caseroot, lid = parse_command_line(sys.argv, description)
     parser = TimingParser(caseroot, lid)

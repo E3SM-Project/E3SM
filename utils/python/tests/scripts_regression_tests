@@ -134,28 +134,50 @@ class B_TestCreateNewcase(unittest.TestCase):
 ###############################################################################
     def setUp(self):
         self._testroot = MACHINE.get_value("CESMSCRATCHROOT")
-        self._testdir =  os.path.join(self._testroot,tempfile.mktemp())
-        self._do_teardown = False
+        self._testdirs = []
+        self._do_teardown = []
 
     def test_createnewcase(self):
-        cmd = "%s/create_newcase --case %s --compset X --res f19_g16" % (SCRIPT_DIR, self._testdir)
+        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testcreatenewcase')
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        self._testdirs.append(testdir)
+        cmd = "%s/create_newcase --case %s --compset X --res f19_g16" % (SCRIPT_DIR, testdir)
         stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=SCRIPT_DIR)
         self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
         cmd = "./case.setup "
-        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=self._testdir)
-        self.assertEqual(stat, 0, msg="COMMAND '%s' from case directory '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, self._testdir, output, errput))
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=testdir)
+        self.assertEqual(stat, 0, msg="COMMAND '%s' from case directory '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, testdir, output, errput))
         cmd = "./case.build"
-        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=self._testdir)
-        self.assertEqual(stat, 0, msg="COMMAND '%s' from case directory '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, self._testdir,output, errput))
-        self._do_teardown = True
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=testdir)
+        self.assertEqual(stat, 0, msg="COMMAND '%s' from case directory '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, testdir,output, errput))
+        self._do_teardown.append(testdir)
+
+    def test_user_mods(self):
+        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testusermods')
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        self._testdirs.append(testdir)
+        user_mods_dir = os.path.join(CIME.utils.get_python_libs_root(), "tests", "user_mods_test1")
+        cmd = "%s/create_newcase --case %s --compset X --res f19_g16 --user-mods-dir %s" % (SCRIPT_DIR, testdir, user_mods_dir)
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=SCRIPT_DIR)
+        self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
+        self.assertTrue(os.path.isfile(os.path.join(testdir,"SourceMods","src.drv","somefile.F90")), msg="User_mods SourceMod missing")
+        with open(os.path.join(testdir,"user_nl_cpl"),"r") as fd:
+            contents = fd.read()
+        self.assertTrue("a different cpl test option" in contents, msg="User_mods contents of user_nl_cpl missing")
+        self.assertTrue("a cpl namelist option" in contents, msg="User_mods contents of user_nl_cpl missing")
+        self._do_teardown.append(testdir)
 
     def tearDown(self):
-        do_teardown = self._do_teardown and sys.exc_info() == (None, None, None)
-        if (not do_teardown):
-            print "Detected failed test or user request no teardown"
-            print "Leaving case directory : %s"%self._testdir
-        else:
-            shutil.rmtree(self._testdir)
+        do_teardown = len(self._do_teardown) > 0 and sys.exc_info() == (None, None, None)
+
+        for tfile in self._testdirs:
+            if tfile not in self._do_teardown:
+                print "Detected failed test or user request no teardown"
+                print "Leaving case directory : %s"%tfile
+            elif do_teardown:
+                shutil.rmtree(tfile)
 ###############################################################################
 class D_TestWaitForTests(unittest.TestCase):
 ###############################################################################
@@ -350,7 +372,7 @@ class TestCreateTestCommon(unittest.TestCase):
         self._testroot          = MACHINE.get_value("CESMSCRATCHROOT")
         self._jenkins_root      = os.path.join(self._testroot, "jenkins")
         self._compiler          = MACHINE.get_default_compiler()
-        self._hasbatch          = MACHINE.has_batch_system()
+        self._hasbatch          = MACHINE.has_batch_system() and not NO_BATCH
         self._do_teardown       = True # Will never do teardown if test failed
         # wait_for_tests could blow away our dart config, need to back it up
         if (os.path.exists(DART_CONFIG)):
@@ -453,7 +475,9 @@ class E_TestSystemTest(TestCreateTestCommon):
     ###########################################################################
     def test_a_phases(self):
     ###########################################################################
-        tests = update_acme_tests.get_full_test_names(["acme_test_only", "^TESTMEMLEAKFAIL.f19_g16_rx1.A", "^TESTMEMLEAKPASS.f19_g16_rx1.A"],
+        # exclude the MEMLEAK tests here.
+        tests = update_acme_tests.get_full_test_names(["acme_test_only",
+                                                       "^TESTMEMLEAKFAIL_Mmpi-serial.f19_g16.X", "^TESTMEMLEAKPASS_Mmpi-serial.f19_g16.X"],
                                                       self._machine, self._compiler)
         self.assertEqual(len(tests), 3)
         ct = SystemTest(tests)
@@ -526,7 +550,7 @@ class E_TestSystemTest(TestCreateTestCommon):
     ###########################################################################
         tests = update_acme_tests.get_full_test_names(["acme_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
-        ct = SystemTest(tests, test_id=test_id)
+        ct = SystemTest(tests, test_id=test_id, no_batch=NO_BATCH)
 
         build_fail_test = [item for item in tests if "TESTBUILDFAIL" in item][0]
         run_fail_test   = [item for item in tests if "TESTRUNFAIL" in item][0]
@@ -553,7 +577,7 @@ class E_TestSystemTest(TestCreateTestCommon):
             elif (test_name == run_fail_test):
                 self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_FAIL_STATUS)
             elif (test_name == mem_fail_test):
-                print mem_fail_test
+                self.assertTrue("memleak" in status, "memleak missing in %s for test %s" % (status, test_name))
                 self.assertEqual(status["memleak"], wait_for_tests.TEST_FAIL_STATUS)
                 self.assertEqual(status[CIME.system_test.RUN_PHASE], wait_for_tests.TEST_PASS_STATUS)
             else:
@@ -570,6 +594,8 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
     ###########################################################################
+        if NO_BATCH:
+            extra_args += " --no-batch"
         cmd = "%s/jenkins_generic_job %s" % (TOOLS_DIR, extra_args)
         stat, output, errput = run_cmd(cmd, ok_to_fail=True)
         if (expect_works):
@@ -650,7 +676,7 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
 class TestBlessTestResults(TestCreateTestCommon):
 ###############################################################################
 
-    _test_name = "TESTRUNDIFF_P1.f19_g16_rx1.A"
+    _test_name = "TESTRUNDIFF_Mmpi-serial.f19_g16_rx1.A"
 
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
@@ -784,7 +810,7 @@ class Z_FullSystemTest(TestCreateTestCommon):
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
-        if (MACHINE.has_batch_system()):
+        if (self._hasbatch):
             stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus" % (TOOLS_DIR, self._baseline_name),
                                            ok_to_fail=True, from_dir=self._testroot)
             self.assertEqual(stat, 0,
@@ -807,7 +833,7 @@ class TestCimeCase(TestCreateTestCommon):
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
         casedir = os.path.join(self._testroot,
-                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_P1.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
+                               "%s.%s" % (CIME.utils.get_full_test_name("TESTRUNPASS_Mmpi-serial.f19_g16_rx1.A", machine=self._machine, compiler=self._compiler), self._baseline_name))
         self.assertTrue(os.path.isdir(casedir), msg="Missing casedir '%s'" % casedir)
         case = Case(casedir)
 

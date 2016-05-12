@@ -15,7 +15,7 @@ of those based on the machine.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, run_cmd, get_model, convert_to_seconds
+from CIME.utils import expect, run_cmd, get_model, convert_to_seconds, get_project
 from CIME.case import Case
 from CIME.XML.env_batch import EnvBatch
 from CIME.XML.batch import Batch
@@ -114,7 +114,7 @@ class BatchMaker(object):
             return
 
         # Make sure to check default queue first.
-        all_queues = list()
+        all_queues = []
         all_queues.append( self.config_machines_parser.get_default_queue())
         all_queues = all_queues + self.config_machines_parser.get_all_queues()
         for queue in all_queues:
@@ -149,9 +149,9 @@ class BatchMaker(object):
 
         # if we didn't find a walltime previously, use the default.
         if not self.wall_time:
-            self.wall_time = self.config_machines_parser.get_default_walltime()
-            if self.wall_time is not None:
-                self.wall_time = self.wall_time.text
+            wall_time_node = self.config_machines_parser.get_default_walltime()
+            if wall_time_node is not None:
+                self.wall_time = wall_time_node.text
             else:
                 self.wall_time = "0"
 
@@ -165,7 +165,7 @@ class BatchMaker(object):
         if self.env_batch.get_value("PROJECT_REQUIRED", subgroup=self.job):
             self.project = self.env_batch.get_value("PROJECT", subgroup=self.job)
             if not self.project:
-                project = find_project()
+                project = get_project()
                 self.env_batch.set_value("PROJECT", project, subgroup=self.job)
         else:
             self.project = None
@@ -234,8 +234,8 @@ within model's Machines directory, and add a batch system type for this machine
             if hasattr(self, variable.lower()) and getattr(self, variable.lower()) is not None:
                 repl = getattr(self, variable.lower())
                 text = text.replace(whole_match, str(repl))
-            elif self.case.get_value(variable.upper()) is not None:
-                repl = self.case.get_value(variable.upper())
+            elif self.case.get_value(variable.upper(),subgroup=self.job) is not None:
+                repl = self.case.get_value(variable.upper(),subgroup=self.job)
                 text = text.replace(whole_match, str(repl))
             elif default is not None:
                 text = text.replace(whole_match, default)
@@ -290,11 +290,4 @@ def get_batch_maker(job, case=None):
     else:
         return batch_maker
 
-
-def find_project():
-    project = None
-    for envvar in ("PROJECT", "ACCOUNT"):
-        project = os.environ.get(envvar)
-        if project is not None:
-            return project
 

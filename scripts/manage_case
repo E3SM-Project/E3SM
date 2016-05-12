@@ -83,7 +83,7 @@ def query_component(name):
     # Loop through the elements for each component class (in config_files.xml)
     # and see if there is a match for the the target component in the component attribute
     match_found = False
-    valid_components = list()
+    valid_components = []
     for comp in components:
         string = "CONFIG_%s_FILE"%comp
 

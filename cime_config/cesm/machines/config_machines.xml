@@ -449,7 +449,7 @@
 
       <modules compiler="intel">
 	<command name="load">PrgEnv-intel</command>
-	<command name="switch">intel intel/2016.0.109</command>
+	<command name="switch">intel intel/16.0.2.181</command>
 	<command name="rm">cray-libsci</command>
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/cori</command>
       </modules>
@@ -1118,14 +1118,17 @@
       </arguments>
     </mpirun>
     <module_system type="module">
-      <init_path lang="perl">usr/share/Modules/init/perl.pm</init_path>
+      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
       <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
       <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
       <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <modules>
 	<command name="purge"/>
+	<command name="load">python/2.7.9</command>
 	<command name="load">gcc/5.1.0/openmpi/1.8.7</command>
 	<command name="load">cmake/2.8.12</command>
 	<command name="load">netcdf/4.3.2/gcc/5.1.0/openmpi/1.8.7</command>
