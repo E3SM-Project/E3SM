@@ -2897,13 +2897,24 @@ module init_atm_cases
          dz = zt/float(nz1)
 
 !... Laura D. Fowler: change the values als,alt,and zetal valid for nVertLevels=41 to values
-!    needed for nVertLevels=55.
-!        als   =  .075  ! 55 levels.
-!        alt   = 1.70   ! 55 levels.
-!        zetal =  .75   ! 55 levels.
-         als   =  .075  ! 41 levels.
-         alt   = 1.23   ! 41 levels.
-         zetal =  .31   ! 41 levels.
+!    needed for nVertLevels equal or greater than 55.
+         if(nVertLevels .ge. 55) then
+            als   =  .075  ! 55 levels.
+            alt   = 1.70   ! 55 levels.
+            zetal =  .75   ! 55 levels.
+         else
+            als   =  .075  ! 41 levels.
+            alt   = 1.23   ! 41 levels.
+            zetal =  .31   ! 41 levels.
+         endif
+         write(0,*)
+         write(0,*) '--- config_tc_vertical_grid = ', config_tc_vertical_grid
+         write(0,*) '--- als   = ', als
+         write(0,*) '--- alt   = ', alt
+         write(0,*) '--- zetal = ',zetal
+         if(nVertLevels /= 55 .or. nVertLevels /= 41) &
+            write(0,*) '--- Note that als,alt,and zetal have not been tested for nVertLevels equal ',nVertLevels
+         write(0,*)
 !... end Laura D. Fowler / 2016-04-12.
          do k=1,nz
             zl = 1.-alt*(1.-zetal)
