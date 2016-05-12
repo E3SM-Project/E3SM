@@ -412,6 +412,8 @@ class Case(object):
         for key, value in pes_rootpe.items():
             mach_pes_obj.set_value(key,int(value))
 
+        # Make sure that every component has been accounted for
+        # set, nthrds and ntasks to 1 otherwise. Also set the ninst values here.
         for compclass in self._component_classes:
             if compclass == "DRV":
                 continue

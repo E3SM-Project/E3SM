@@ -366,7 +366,6 @@ class SystemTest(object):
                     create_newcase_cmd += " --mpilib %s" % mpilib
                     logger.debug (" MPILIB set to %s" % mpilib)
                 if case_opt.startswith('N'):
-                    match =  re.match('N(\d+)', case_opt)
                     ninst = case_opt[1:]
                     create_newcase_cmd += " --ninst %s" %ninst
                     logger.debug (" NINST set to %s" % ninst)
