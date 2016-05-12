@@ -382,31 +382,6 @@ int att_get_handler(iosystem_desc_t *ios)
     LOG((1, "att_get_handler ncid = %d varid = %d namelen = %d name = %s iotype = %d",
 	 ncid, varid, namelen, name, iotype));    
 
-    /* Get the length and the type of the attribute. */
-    LOG((1, "att_get_handler magic iotype = %d", iotype));    
-    switch (iotype)
-    {
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-	ierr = nc_inq_att(ncid, varid, name, &atttype, (size_t *)&attlen);
-	break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-	if (ios->io_rank == 0)
-	    ierr = nc_inq_att(ncid, varid, name, &atttype, (size_t *)&attlen);		
-	break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-	ierr = ncmpi_inq_att(ncid, varid, name, &atttype, &attlen);		
-	break;
-#endif
-    default:
-	ierr = iotype_error(iotype,__FILE__,__LINE__);
-    }
-    
     /* Allocate space for the attribute data. */
     if (!(ip = malloc(attlen * sizeof(int))))
 	return PIO_ENOMEM;
