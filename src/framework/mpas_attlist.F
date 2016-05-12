@@ -491,6 +491,12 @@ contains
 
       allocate(destAttList)
 
+      destAttList % attType = -1
+      destAttList % attName = ''
+      nullify(destAttList % next)
+      nullify(destAttList % attValueIntA)
+      nullify(destAttList % attValueRealA)
+
       srcCursor => srcAttList
       do while ( associated(srcCursor) )
          if ( srcCursor % attType == MPAS_ATT_INT ) then
