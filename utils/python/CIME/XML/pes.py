@@ -55,6 +55,11 @@ class Pes(GenericXML):
                                    compset_choice = compset_match
                                    pesize_choice = pesize_match
                                elif points == max_points:
+                                   logger.warn("mach_choice %s mach_match %s"%(mach_choice, mach_match))
+                                   logger.warn("grid_choice %s grid_match %s"%(grid_choice, grid_match))
+                                   logger.warn("compset_choice %s compset_match %s"%(compset_choice, compset_match))
+                                   logger.warn("pesize_choice %s pesize_match %s"%(pesize_choice, pesize_match))
+                                   logger.warn("points = %d"%points)
                                    expect(False, "We dont expect to be here" )
 
         pes_ntasks, pes_nthrds, pes_rootpe = {}, {}, {}
