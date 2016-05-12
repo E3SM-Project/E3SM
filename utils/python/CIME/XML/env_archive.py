@@ -15,13 +15,20 @@ class EnvArchive(GenericXML):
         """
         initialize an object interface to file env_archive.xml in the case directory
         """
+        logger.debug("Case_root = %s" , case_root)
+        
+        # Check/Build path to env_archive.xml 
         if case_root is None:
             case_root = os.getcwd()
         if os.path.isabs(infile):
             fullpath = infile
         else:
             fullpath = os.path.join(case_root, infile)
-        GenericXML.__init__(self, fullpath)
+        
+        # Initialize self     
+        GenericXML.__init__(self, fullpath) 
+        
+        # If env_archive.xml file does not exists in case directory read default from config
         if not os.path.isfile(fullpath):
             headerobj = Headers()
             headernode = headerobj.get_header_node(os.path.basename(fullpath))
@@ -29,3 +36,75 @@ class EnvArchive(GenericXML):
             archive = Archive()
             self.root.append(archive.root)
 
+
+    def get_values(self, item, attribute={}, resolved=True, subgroup=None):
+        """Returns the value as a string of the first xml element with item as attribute value. 
+        <elememt_name attribute='attribute_value>value</element_name>"""
+        
+        logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__, item, attribute, resolved, subgroup)
+                
+        nodes   = [] # List of identified xml elements  
+        results = [] # List of identified parameters 
+       
+        # Find all nodes with attribute name and attribute value item
+        # xpath .//*[name='item']
+        if item :
+            logger.debug("Searching for %s" , item )   
+            nodes = self.get_nodes("*",{"name" : item})
+        else :
+           # Return all nodes
+           logger.debug("Retrieving all parameter")
+           nodes = self.get_nodes("comp_archive_spec")
+          
+        
+        logger.debug("Number found %s" , nodes.__len__())   
+        # Return value for first occurence of node with attribute value = item
+        for node in nodes:
+            logger.debug("Checking node %s" , node.tag )
+            group   = node.attrib['name']
+            rootdir = node.find('./rootdir').text
+            
+            for file in node.findall('./files/file_extension') :
+                
+            
+                keep    = file.find('./keep_last_in_rundir')
+            
+                val     = keep.text
+                attr    = rootdir + "/" + file.find('./subdir').text + "/" + file.get('regex_suffix')
+                t       = self._get_type(node)
+                desc    = self._get_description(keep)
+                #default = super(EnvBase , self).get_default(node)
+                default = self._get_default(keep)
+                file    = self.filename
+            
+
+                v = { 'group' : group , 'attribute' : attr , 'value' : val , 'type' : t , 'description' : desc , 'default' : default , 'file' : file}
+                results.append(v)
+        
+        return results 
+        
+    def _get_type(self, node=None) :
+        return None    
+        
+    def _get_description(self, node=None):
+        
+        description = None
+    
+        if node.tag == "keep_last_in_rundir" :
+            if node.get('description') :
+                description = node.get('description')
+            elif node.find('./description') :
+                description = node.find('./description').text
+            else:      
+                description = "Keep last in rundir"
+        
+        return description
+        
+    def _get_default(self, node=None):
+        return None
+        
+    def _get_archive():
+        pass
+        
+   
+            

@@ -30,7 +30,8 @@ from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
 
 from CIME.XML.generic_xml           import GenericXML
-from CIME.user_mod_support      import apply_user_mods
+from CIME.user_mod_support          import apply_user_mods
+
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,10 @@ class Case(object):
         if case_root is None:
             case_root = os.getcwd()
 
+        # Init first, if no valid case_root expect fails and tears down object, __del__ expects self._env_files_that_need_rewrite
         self._env_files_that_need_rewrite = set()
+        
+        logger.debug("Initializing Case.")       
 
         self._env_entryid_files = []
         self._env_entryid_files.append(EnvRun(case_root))
@@ -55,6 +59,10 @@ class Case(object):
         self._env_generic_files.append(EnvMachSpecific(case_root))
         self._env_generic_files.append(EnvArchive(case_root))
         self._files = self._env_entryid_files + self._env_generic_files
+
+
+        # self._case_root = case_root
+  
 
         # Hold arbitary values. In create_newcase we may set values
         # for xml files that haven't been created yet. We need a place
@@ -72,6 +80,7 @@ class Case(object):
         self._gridfile = None
         self._components = []
         self._component_config_files = []
+
 
     def __del__(self):
         self.flush()
@@ -115,26 +124,69 @@ class Case(object):
         result = None
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
+           
             result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
-            logging.debug("CASE %s %s"%(item,result))
+          
             if result is not None:
                 if resolved and type(result) is str:
                     return self.get_resolved_value(result)
                 return result
+                
+        for env_file in self._env_generic_files:
+      
+            result = env_file.get_value(item, attribute, resolved=False, subgroup=subgroup)
+    
+            if result is not None:
+                if resolved and type(result) is str:
+                    return self.get_resolved_value(result)
+                return result
+       
+        # Return empty result
+        return result
 
-        result = None
+
+    def get_values(self, item=None, attribute={}, resolved=True, subgroup=None):
+        
+        """
+        Return info object for given item, return all info for all item if item is empty.     
+        """
+        
+        # Empty result list
+        results = []
+        
         if item in self.lookups.keys():
-            result = self.lookups[item]
+            results = [self.lookups[item]]
+        
+        for env_file in self._files:
+            # Wait and resolve in self rather than in env_file
+            logger.debug("Searching in %s" , env_file.__class__.__name__)
+            result = None
+           
+            try:
+                # env_batch has its own implementation of get_values otherwise in entry_id
+                result = env_file.get_values(item, attribute, resolved=False, subgroup=subgroup)
+                # Method exists, and was used.  
+            except AttributeError:
+                # Method does not exist.  What now?
+                traceback.print_exc()
+                logger.debug("No get_values method for class %s (%s)" , env_file.__class__.__name__ , AttributeError)
+               
 
-        if result is None:
-            logger.debug("No value available for item '%s'" % item)
-        elif resolved:
-            result = self.get_resolved_value(result)
-            # Return value as right type
-            type_str = self._get_type_info(node)
-            return convert_to_type(result, type_str, item)
+            if result is not None and (len(result) >= 1):
+                
+                if resolved :
+                    for r in result :
+                        if type(r['value']) is str:
+                            logger.debug("Resolving %s" , r['value'])
+                            
+                            r['value'] = self.get_resolved_value(r['value'])
+             
+                results = results + result
+               
+        return results
+        
 
-        logging.debug("Not able to retreive value for item '%s'" % item)
+
 
     def get_type_info(self, item):
         result = None
@@ -256,6 +308,7 @@ class Case(object):
                 components.append(element_component)
         return components
 
+
     def __iter__(self):
         for entryid_file in self._env_entryid_files:
             for key, val in entryid_file:
@@ -263,6 +316,7 @@ class Case(object):
                     yield key, self.get_resolved_value(val)
                 else:
                     yield key, val
+
 
     def _get_component_config_data(self):
         # attributes used for multi valued defaults ($attlist is a hash reference)

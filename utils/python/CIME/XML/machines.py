@@ -9,6 +9,20 @@ from CIME.utils import expect
 import socket
 
 logger = logging.getLogger(__name__)
+# logger.setLevel(logging.DEBUG)
+#
+# # create console handler and set level to debug
+# ch = logging.StreamHandler()
+# ch.setLevel(logging.DEBUG)
+#
+# # create formatter
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+#
+# # add formatter to ch
+# ch.setFormatter(formatter)
+#
+# # add ch to logger
+# logger.addHandler(ch)
 
 class Machines(GenericXML):
 
@@ -37,7 +51,10 @@ class Machines(GenericXML):
         This could cause problems if node matchs are repeated when only one is expected
         """
         infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
+        logger.warning("Infile: %s" , infile)
+        print("Infile " , infile)
         if os.path.exists(infile):
+            
             GenericXML.read(self, infile)
 
         if machine is None:
@@ -93,6 +110,7 @@ class Machines(GenericXML):
         """
         machine = None
         nametomatch = socket.gethostname().split(".")[0]
+        print(nametomatch)
         nodes = self.get_nodes("machine")
 
         for node in nodes:

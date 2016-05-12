@@ -54,7 +54,68 @@ class EnvBatch(EnvBase):
                         type_str = self._get_type_info(node)
                         value = convert_to_type(value, type_str, item)
 
+
         return value
+
+    def get_values(self, item, attribute={}, resolved=True, subgroup=None):
+        """Returns the value as a string of the first xml element with item as attribute value. 
+        <elememt_name attribute='attribute_value>value</element_name>"""
+        
+        logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , item, attribute, resolved, subgroup)      
+                
+        nodes   = [] # List of identified xml elements  
+        results = [] # List of identified parameters 
+       
+        # Find all nodes with attribute name and attribute value item
+        # xpath .//*[name='item']
+        # for job in self.get_nodes("job") :    
+        groups = self.get_nodes("group")
+        
+        for group in groups :
+            
+            roots = []
+            jobs  = []
+            jobs  = self.get_nodes("job" , root=group)
+            
+            if (len(jobs)) :
+                roots = jobs
+            else : 
+                roots = [group]
+            
+            for r in roots :    
+            
+                if item :
+                    nodes = self.get_nodes("entry",{"id" : item} , root=r )
+                else :
+                   # Return all nodes
+                   nodes = self.get_nodes("entry" , root=r)
+      
+                # seach in all entry nodes
+                for node in nodes:
+                   
+                    # Init and construct attribute path
+                    attr      = None 
+                    if (r.tag == "job") :
+                        # make job part of attribute path
+                        attr = r.get('name') + "/" + node.get('id')
+                    else:
+                         attr = node.get('id')
+                         
+                    # Build return structure     
+                    g       = group.get('id')   
+                    val     = node.get('value')
+                    t       = self._get_type(node)
+                    desc    = self._get_description(node)
+                    default = super(EnvBase , self)._get_default(node)
+                    file    = self.filename
+    
+                    v = { 'group' : g , 'attribute' : attr , 'value' : val , 'type' : t , 'description' : desc , 'default' : default , 'file' : file}
+                    logger.debug("Found node with value for %s = %s" , item , v )   
+                    results.append(v)
+         
+        logger.debug("(get_values) Return value:  %s" , results )
+               
+        return results
 
     def get_type_info(self, vid):
         nodes = self.get_nodes("entry",{"id":vid})

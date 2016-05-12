@@ -15,6 +15,8 @@ class GenericXML(object):
         """
         Initialize an object
         """
+
+        logger.debug("Initializing %s" , infile)
         self.tree = None
 
         if infile == None:
@@ -28,7 +30,10 @@ class GenericXML(object):
         else:
             # if file does not exist create a root xml element
             # and set it's id to file
+
+            logger.warning("File %s does not exists." , infile)
             expect("$" not in infile,"File path not fully resolved %s"%infile)
+
             self.filename = infile
             root = ET.Element("xml")
             root.set("version", "1.0")
@@ -81,7 +86,9 @@ class GenericXML(object):
 
         Error unless exactly one match.
         """
+        
         nodes = self.get_nodes(nodename, attributes=attributes, root=root, xpath=xpath)
+
         expect(len(nodes) == 1, "Incorrect number of matches, %d, for nodename '%s' and attrs '%s' in file '%s'" %
                (len(nodes), nodename, attributes, self.filename))
         return nodes[0]
@@ -99,17 +106,23 @@ class GenericXML(object):
         return nodes[0] if nodes else None
 
     def get_nodes(self, nodename, attributes=None, root=None, xpath=None):
+        
+        logger.debug("(get_nodes) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , nodename , attributes , root , xpath)
+        
         if root is None:
             root = self.root
         nodes = []
+
         expect(attributes is None or xpath is None,
                " Arguments attributes and xpath are exclusive")
         if xpath is None:
             xpath = ".//"+nodename
+
         if attributes is not None:
             # xml.etree has limited support for xpath and does not allow more than
             # one attribute in an xpath query so we query seperately for each attribute
             # and create a result with the intersection of those lists
+
             for key, value in attributes.iteritems():
                 if value is not None:
                     expect(isinstance(value, str), " Bad value passed for key %s"%key)
@@ -124,10 +137,14 @@ class GenericXML(object):
                                 nodes.remove(node)
                     if not nodes:
                         return []
+
         else:
+            logger.debug("xpath: %s" , xpath , extra={attributes : None})
             nodes = root.findall(xpath)
 
-        return nodes
+        l = list(set(nodes))
+        logger.debug("Returning %s nodes (%s)" , len(l), l)
+        return l
 
     def add_child(self, node, root=None):
         """
@@ -142,8 +159,10 @@ class GenericXML(object):
         get_value is expected to be defined by the derived classes, if you get here
         the value was not found in the class.
         """
+
         logger.debug("Get Value for "+item)
         return None
+
 
     def set_value(self, vid, value, ignore_type=True):
         """
