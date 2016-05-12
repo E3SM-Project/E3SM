@@ -8,9 +8,9 @@ module SystemOfEquationsVSFMType
   ! Object for the Variable Saturate Flow Model (VSFM) system-of-equations
   !
   ! !USES:
-  use clm_varctl                     , only : iulog
+  use mpp_varctl                     , only : iulog
   use abortutils                     , only : endrun
-  use shr_log_mod                    , only : errMsg => shr_log_errMsg
+  use mpp_shr_log_mod                    , only : errMsg => shr_log_errMsg
   use SystemOfEquationsVSFMAuxType   , only : sysofeqns_vsfm_auxvar_type
   use SystemOfEquationsBaseType      , only : sysofeqns_base_type
   !
@@ -97,7 +97,7 @@ contains
   end subroutine VSFMSOEInit
 
   !------------------------------------------------------------------------
-  subroutine VSFMSOESetup(this, mpi_rank, mpp_type, soe_type, meshes, nmesh)
+  subroutine VSFMSOESetup(this, mpi_rank, discretization_type, mpp_type, soe_type, meshes, nmesh)
     !
     ! !DESCRIPTION:
     ! Sets up SoE for the VSFM
@@ -112,6 +112,7 @@ contains
     ! !ARGUMENTS
     class(sysofeqns_vsfm_type) :: this
     PetscInt                   :: mpi_rank
+    integer, intent(in)                               :: discretization_type
     PetscInt                   :: mpp_type
     PetscInt                   :: soe_type
     class(mesh_type), pointer  :: meshes(:)
@@ -126,7 +127,7 @@ contains
        this%itype = SOE_RE_ODE
        select case(mpp_type)
        case (MPP_VSFM_SNES_CLM)
-          call VSFMSOERichardsEqnODESetup(this, meshes, nmesh)
+          call VSFMSOERichardsEqnODESetup(this, discretization_type, meshes, nmesh)
        case default
           write(iulog,*) 'VSFMSOESetup: Unknown mpp_type'
           call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -139,13 +140,12 @@ contains
   end subroutine VSFMSOESetup
 
   !------------------------------------------------------------------------
-  subroutine VSFMSOERichardsEqnODESetup(vsfm_soe, meshes, nmesh)
+  subroutine VSFMSOERichardsEqnODESetup(vsfm_soe, discretization_type,  meshes, nmesh)
     !
     ! !DESCRIPTION:
     ! Sets up SoE for the VSFM that uses PETSc SNES.
     !
     ! !USES:
-    use clm_varctl                      , only : lateral_connectivity
     use MeshType                        , only : mesh_type
     use MeshType                        , only : MeshCreateConnectionSet
     use ConditionType                   , only : condition_type
@@ -160,6 +160,8 @@ contains
     use MultiPhysicsProbConstants       , only : COND_NULL
     use MultiPhysicsProbConstants       , only : COND_SEEPAGE_BC
     use MultiPhysicsProbConstants       , only : PRESSURE_REF
+    use MultiPhysicsProbConstants       , only : DISCRETIZATION_THREE_DIM
+    use MultiPhysicsProbConstants       , only : DISCRETIZATION_VERTICAL_WITH_SS
     use GoveqnRichardsODEPressureType   , only : goveqn_richards_ode_pressure_type
     use EOSWaterMod                     , only : DENSITY_TGDPB01
     use SystemOfEquationsBaseType       , only : SOESetMeshesOfGoveqns
@@ -168,6 +170,7 @@ contains
     !
     ! !ARGUMENTS
     class(sysofeqns_vsfm_type)                        :: vsfm_soe
+    integer, intent(in)                               :: discretization_type
     class(mesh_type), pointer                         :: meshes(:)
     type(condition_type),pointer                      :: bc
     type(condition_type),pointer                      :: ss
@@ -297,7 +300,8 @@ contains
     call ConditionListAddCondition(goveq_richards_pres%source_sinks, ss)
     nullify(ss)
 
-    if (lateral_connectivity) then
+    if (discretization_type == DISCRETIZATION_THREE_DIM        .or. &
+        discretization_type == DISCRETIZATION_VERTICAL_WITH_SS ) then
        ss               => ConditionNew()
        ss%name          = 'Lateral_flux'
        ss%units         = 'kg/s'

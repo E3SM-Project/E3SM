@@ -9,9 +9,9 @@ module MultiPhysicsProbThermal
   !-----------------------------------------------------------------------
 
   ! !USES:
-  use clm_varctl                         , only : iulog
+  use mpp_varctl                         , only : iulog
   use abortutils                         , only : endrun
-  use shr_log_mod                        , only : errMsg => shr_log_errMsg
+  use mpp_shr_log_mod                        , only : errMsg => shr_log_errMsg
   use MultiPhysicsProbBaseType           , only : multiphysicsprob_base_type
   use SystemOfEquationsThermalType       , only : sysofeqns_thermal_type
   use SystemOfEquationsBasePointerType   , only : sysofeqns_base_pointer_type
@@ -291,7 +291,7 @@ contains
     use GoverningEquationBaseType
     use GoveqnThermalKSPTemperatureSoilType
     use ThermalKSPTemperatureSoilAuxType
-    use clm_varpar      , only : nlevgrnd, nlevsoi, nlevsno
+    use mpp_varpar      , only : nlevgrnd, nlevsoi, nlevsno
     !
     implicit none
     !

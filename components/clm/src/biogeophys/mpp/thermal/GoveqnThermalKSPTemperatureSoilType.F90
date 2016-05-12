@@ -7,9 +7,9 @@ module GoveqnThermalKSPTemperatureSoilType
   !-----------------------------------------------------------------------
 
   ! !USES:
-  use clm_varctl                       , only : iulog
+  use mpp_varctl                       , only : iulog
   use abortutils                       , only : endrun
-  use shr_log_mod                      , only : errMsg => shr_log_errMsg
+  use mpp_shr_log_mod                      , only : errMsg => shr_log_errMsg
   use GoverningEquationBaseType        , only : goveqn_base_type
   use ThermalKSPTemperatureSoilAuxType , only : therm_ksp_temp_soil_auxvar_type
   use SystemOfEquationsThermalAuxType  , only : sysofeqns_thermal_auxvar_type
@@ -782,7 +782,7 @@ contains
     ! !USES:
     use ConditionType             , only : condition_type
     use ConnectionSetType         , only : connection_set_type
-    use clm_varcon                , only : cnfac
+    use mpp_varcon                , only : cnfac
     use MultiPhysicsProbConstants , only : COND_HEAT_FLUX
     use MultiPhysicsProbConstants , only : COND_HEAT_RATE
     use MultiPhysicsProbConstants , only : COND_DIRICHLET_FRM_OTR_GOVEQ
@@ -1025,7 +1025,7 @@ contains
     ! !USES:
     use ConnectionSetType         , only : connection_set_type
     use ConditionType             , only : condition_type
-    use clm_varcon                , only : cnfac
+    use mpp_varcon                , only : cnfac
     use MultiPhysicsProbConstants , only : COND_HEAT_FLUX
     use MultiPhysicsProbConstants , only : COND_DIRICHLET_FRM_OTR_GOVEQ
     !
@@ -1232,7 +1232,7 @@ contains
     ! !USES:
     use ConnectionSetType         , only : connection_set_type
     use ConditionType             , only : condition_type
-    use clm_varcon                , only : cnfac
+    use mpp_varcon                , only : cnfac
     use MultiPhysicsProbConstants , only : COND_HEAT_FLUX
     use MultiPhysicsProbConstants , only : COND_DIRICHLET_FRM_OTR_GOVEQ
     !
@@ -1349,7 +1349,7 @@ contains
     use MultiPhysicsProbConstants , only : COND_DIRICHLET_FRM_OTR_GOVEQ
     use ConnectionSetType, only          : connection_set_type
     use ConditionType, only              : condition_type
-    use clm_varpar, only                 : nlevsno
+    use mpp_varpar, only                 : nlevsno
     !
     implicit none
     !

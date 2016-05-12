@@ -4,9 +4,6 @@ module ThermalKSPTemperatureSoilAuxType
 
   !
   ! !USES:
-  use clm_varctl         , only : iulog
-  use abortutils         , only : endrun
-  use shr_log_mod        , only : errMsg => shr_log_errMsg
   use ThermalKSPTemperatureBaseAuxType
   !
   ! !PUBLIC TYPES:
@@ -74,8 +71,8 @@ contains
     !
     ! !DESCRIPTION:
     !
-    use clm_varcon      , only : denh2o, denice, tfrz, tkwat, tkice, cpice,  cpliq, thk_bedrock
-    use landunit_varcon , only : istice, istice_mec, istwet, istsoil, istcrop
+    use mpp_varcon , only : denh2o, denice, tfrz, tkwat, tkice, cpice,  cpliq, thk_bedrock
+    use mpp_varcon , only : istice, istice_mec, istwet, istsoil, istcrop
     !
     implicit none
     !

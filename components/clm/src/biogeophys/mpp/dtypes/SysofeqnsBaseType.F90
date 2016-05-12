@@ -10,8 +10,8 @@ module SystemOfEquationsBaseType
 
   ! !USES:
   use abortutils                , only : endrun
-  use clm_varctl                , only : iulog
-  use shr_log_mod               , only : errMsg => shr_log_errMsg
+  use mpp_varctl                , only : iulog
+  use mpp_shr_log_mod               , only : errMsg => shr_log_errMsg
   use MeshType                  , only : mesh_type
   use GoverningEquationBaseType , only : goveqn_base_type
   !

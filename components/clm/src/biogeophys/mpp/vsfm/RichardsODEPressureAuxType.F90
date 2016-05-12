@@ -3,9 +3,9 @@ module RichardsODEPressureAuxType
 #ifdef USE_PETSC_LIB
 
   ! !USES:
-  use clm_varctl          , only : iulog
+  use mpp_varctl          , only : iulog
   use abortutils          , only : endrun
-  use shr_log_mod         , only : errMsg => shr_log_errMsg
+  use mpp_shr_log_mod         , only : errMsg => shr_log_errMsg
   use PorosityFunctionMod , only : porosity_params_type
   use SaturationFunction  , only : saturation_params_type
   !

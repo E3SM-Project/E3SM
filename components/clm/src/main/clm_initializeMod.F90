@@ -898,8 +898,15 @@ contains
     ! CLM initialization - third phase
     !
     ! !USES:
+    use mpp_varpar, only : mpp_varpar_set_nlevsoi, mpp_varpar_set_nlevgrnd
+    use mpp_varpar, only : mpp_varpar_set_nlevsno
+    use clm_varpar, only : nlevsoi, nlevgrnd, nlevsno
 
     call t_startf('clm_init3')
+
+    call mpp_varpar_set_nlevsoi (nlevsoi )
+    call mpp_varpar_set_nlevgrnd(nlevgrnd)
+    call mpp_varpar_set_nlevsno (nlevsno )
 
     call initialize_vsfm()
     call initialize_petsc_thermal_model()
@@ -934,6 +941,7 @@ contains
     use landunit_varcon        , only : istcrop, istsoil
     use column_varcon          , only : icol_road_perv
     use landunit_varcon        , only : max_lunit
+    use clm_varctl             , only : vsfm_satfunc_type
 #ifdef USE_PETSC_LIB
     use domainLateralMod         , only : ldomain_lateral, ScatterDataG2L
     use MultiPhysicsProbVSFM     , only : vsfm_mpp
@@ -1260,7 +1268,10 @@ contains
                         vsfm_col_itype,              &
                         vsfm_watsat, vsfm_hksat,     &
                         vsfm_bsw, vsfm_sucsat,       &
-                        vsfm_eff_porosity, vsfm_zwt)
+                        vsfm_eff_porosity,           &
+                        vsfm_zwt,                    &
+                        vsfm_satfunc_type            &
+                        )
 
     ! Determing the source-sinks IDs of VSFM to map forcing data from
     ! CLM to VSFM.

@@ -4,9 +4,9 @@ module SystemOfEquationsThermalAuxMod
 #ifdef USE_PETSC_LIB
 
   ! !USES:
-  use clm_varctl                      , only : iulog
+  use mpp_varctl                      , only : iulog
   use abortutils                      , only : endrun
-  use shr_log_mod                     , only : errMsg => shr_log_errMsg
+  use mpp_shr_log_mod                     , only : errMsg => shr_log_errMsg
   use SystemOfEquationsThermalAuxType , only : sysofeqns_thermal_auxvar_type
   !
   ! !PUBLIC TYPES:

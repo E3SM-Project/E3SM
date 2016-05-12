@@ -8,9 +8,9 @@ module SystemOfEquationsThermalType
   !-----------------------------------------------------------------------
 
   ! !USES:
-  use clm_varctl      , only : iulog
+  use mpp_varctl      , only : iulog
   use abortutils      , only : endrun
-  use shr_log_mod     , only : errMsg => shr_log_errMsg
+  use mpp_shr_log_mod     , only : errMsg => shr_log_errMsg
   use GoverningEquationBaseType
   use GoveqnThermalKSPTemperatureSnowType
   use GoveqnThermalKSPTemperatureSSWType

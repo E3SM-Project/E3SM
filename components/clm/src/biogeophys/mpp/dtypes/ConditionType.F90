@@ -4,7 +4,7 @@ module ConditionType
 
   ! !USES:
   use ConnectionSetType  , only : connection_set_type
-  use clm_varctl         , only : iulog
+  use mpp_varctl         , only : iulog
   !
   ! !PUBLIC TYPES:
   implicit none

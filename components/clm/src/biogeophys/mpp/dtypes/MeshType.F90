@@ -9,9 +9,9 @@ module MeshType
   ! --------------------------------------------------------
 
   ! !USES:
-  use clm_varctl         , only : iulog
+  use mpp_varctl         , only : iulog
   use abortutils         , only : endrun
-  use shr_log_mod        , only : errMsg => shr_log_errMsg
+  use mpp_shr_log_mod        , only : errMsg => shr_log_errMsg
   use ConnectionSetType  , only : connection_set_list_type
   !
   ! !PUBLIC TYPES:
@@ -116,8 +116,7 @@ contains
     ! Creates a mesh from CLM column level data structure
     !
     ! !USES:
-    use clm_varpar                  , only : nlevgrnd
-    use clm_varctl                  , only : lateral_connectivity
+    use mpp_varpar                  , only : nlevgrnd
     use ConnectionSetType           , only : ConnectionSetNew
     use MultiPhysicsProbConstants   , only : MESH_ALONG_GRAVITY
     use MultiPhysicsProbConstants   , only : MESH_CLM_SOIL_COL
@@ -128,7 +127,7 @@ contains
     use ConnectionSetType           , only : connection_set_type
     use ConnectionSetType           , only : ConnectionSetListAddSet
     use domainLateralMod            , only : ldomain_lateral
-    use landunit_varcon             , only : istsoil
+    use mpp_varcon                  , only : istsoil
     !
     implicit none
     !
@@ -474,7 +473,7 @@ contains
     ! - The thermal model is NOT active on the lake and urban columns.
     !
     ! !USES:
-    use clm_varpar                , only : nlevgrnd, nlevsno
+    use mpp_varpar                , only : nlevgrnd, nlevsno
     use ConnectionSetType         , only : ConnectionSetNew
     use MultiPhysicsProbConstants , only : MESH_ALONG_GRAVITY
     use MultiPhysicsProbConstants , only : MESH_CLM_THERMAL_SOIL_COL
@@ -617,7 +616,7 @@ contains
     ! - The thermal model is NOT active on the lake and urban columns.
     !
     ! !USES:
-    use clm_varpar                , only : nlevsno
+    use mpp_varpar                , only : nlevsno
     use ConnectionSetType         , only : ConnectionSetNew
     use MultiPhysicsProbConstants , only : MESH_ALONG_GRAVITY
     use MultiPhysicsProbConstants , only : MESH_CLM_SNOW_COL

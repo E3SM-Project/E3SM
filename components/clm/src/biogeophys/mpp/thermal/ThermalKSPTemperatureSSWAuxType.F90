@@ -4,9 +4,6 @@ module ThermalKSPTemperatureSSWAuxType
 
   !
   ! !USES:
-  use clm_varctl         , only : iulog
-  use abortutils         , only : endrun
-  use shr_log_mod        , only : errMsg => shr_log_errMsg
   use ThermalKSPTemperatureBaseAuxType
   !
   ! !PUBLIC TYPES:
@@ -46,7 +43,7 @@ contains
     !
     ! !DESCRIPTION:
     !
-    use clm_varcon      , only : cpliq, denh2o, tkwat
+    use mpp_varcon      , only : cpliq, denh2o, tkwat
     !
     implicit none
     !

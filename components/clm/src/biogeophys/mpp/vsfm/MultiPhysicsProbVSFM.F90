@@ -9,9 +9,9 @@ module MultiPhysicsProbVSFM
   !-----------------------------------------------------------------------
 
   ! !USES:
-  use clm_varctl                         , only : iulog
+  use mpp_varctl                         , only : iulog
   use abortutils                         , only : endrun
-  use shr_log_mod                        , only : errMsg => shr_log_errMsg
+  use mpp_shr_log_mod                        , only : errMsg => shr_log_errMsg
   use MultiPhysicsProbBaseType           , only : multiphysicsprob_base_type
   use SystemOfEquationsVSFMType          , only : sysofeqns_vsfm_type
   use SystemOfEquationsBasePointerType   , only : sysofeqns_base_pointer_type
@@ -78,11 +78,12 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPSetup(this, begg, endg, begc, endc, mpi_rank, &
-       grc_landunit_indices, lun_coli, lun_colf, &                               
-       discretization_type, ncols_ghost, filter_vsfmc, &
-       xc_col, yc_col, zc_col, z, zi, dz, &
-       area_col, grid_owner, col_itype, &
-       watsat, hksat, bsw, sucsat, eff_porosity, zwt)
+       grc_landunit_indices, lun_coli, lun_colf,                  &                               
+       discretization_type, ncols_ghost, filter_vsfmc,            &
+       xc_col, yc_col, zc_col, z, zi, dz,                         &
+       area_col, grid_owner, col_itype,                           &
+       watsat, hksat, bsw, sucsat, eff_porosity, zwt,             &
+       vsfm_satfunc_type)
     !
     ! !DESCRIPTION:
     ! Sets up the Variably Saturated Flow Model (VSFM) - Multi-Phyiscs Problem 
@@ -127,6 +128,7 @@ contains
     PetscReal, intent(in), pointer :: sucsat(:,:)
     PetscReal, intent(in), pointer :: eff_porosity(:,:)
     PetscReal, intent(in), pointer :: zwt(:)
+    character(len=32), intent(in)  :: vsfm_satfunc_type
     !
     ! !LOCAL VARIABLES:
     PetscInt                       :: soe_type
@@ -151,7 +153,8 @@ contains
 
     ! Setup the system-of-equations
     allocate(this%sysofeqns)
-    call this%sysofeqns%Setup(mpi_rank, this%id, soe_type, this%meshes, this%nmesh)
+    call this%sysofeqns%Setup(mpi_rank, discretization_type, this%id, &
+         soe_type, this%meshes, this%nmesh)
 
     this%sysofeqns%solver_type = this%solver_type
 
@@ -166,7 +169,8 @@ contains
 
     ! Initliaze the VSFM-MPP
     call VSFMMPPInitialize(this, begc, endc, ncols_ghost, &
-             zc_col, filter_vsfmc, watsat, hksat, bsw, sucsat, eff_porosity, zwt)
+         zc_col, filter_vsfmc, watsat, hksat, bsw, sucsat, &
+         eff_porosity, zwt, vsfm_satfunc_type)
 
   end subroutine VSFMMPPSetup
 
@@ -281,7 +285,8 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPInitialize(vsfm_mpp, begc, endc, ncols_ghost, &
-       zc_col, filter_vsfmc, watsat, hksat, bsw, sucsat, eff_porosity, zwt)
+       zc_col, filter_vsfmc, watsat, hksat, bsw, sucsat, eff_porosity, zwt, &
+       vsfm_satfunc_type)
 
     !
     ! !DESCRIPTION:
@@ -315,6 +320,7 @@ contains
     PetscReal, intent(in), pointer                    :: sucsat(:,:)
     PetscReal, intent(in), pointer                    :: eff_porosity(:,:)
     PetscReal, intent(in), pointer                    :: zwt(:)
+    character(len=32), intent(in)                     :: vsfm_satfunc_type
     !
     ! !LOCAL VARIABLES:
     PetscInt                                          :: size
@@ -329,7 +335,7 @@ contains
 
     ! Set initial coniditions
     call VSFMMPPSetSoils(vsfm_mpp, begc, endc, ncols_ghost, filter_vsfmc, &
-         watsat, hksat, bsw, sucsat, eff_porosity)
+         watsat, hksat, bsw, sucsat, eff_porosity, vsfm_satfunc_type)
     call VSFMMPPSetICs(  vsfm_mpp, begc, endc, zc_col, filter_vsfmc, zwt)
 
     ! Get pointers to governing-equations
@@ -395,7 +401,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPSetSoils(vsfm_mpp, begc, endc, ncols_ghost, filter_vsfmc, &
-       watsat, hksat, bsw, sucsat, eff_porosity)
+       watsat, hksat, bsw, sucsat, eff_porosity, vsfm_satfunc_type)
     !
     ! !DESCRIPTION:
     ! Sets soil properties for VSFM solver
@@ -415,11 +421,12 @@ contains
     PetscReal, intent(in), pointer :: bsw(:,:)
     PetscReal, intent(in), pointer :: sucsat(:,:)
     PetscReal, intent(in), pointer :: eff_porosity(:,:)
+    character(len=32), intent(in)  :: vsfm_satfunc_type
 
     select case(vsfm_mpp%id)
     case (MPP_VSFM_SNES_CLM)
        call VSFMMPPSetSoilsCLM(vsfm_mpp, begc, endc, ncols_ghost, filter_vsfmc, &
-            watsat, hksat, bsw, sucsat, eff_porosity)
+            watsat, hksat, bsw, sucsat, eff_porosity, vsfm_satfunc_type)
     case default
        write(iulog,*) 'VSFMMPPSetSoils: Unknown mpp_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -429,7 +436,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPSetSoilsCLM(vsfm_mpp, begc, endc, ncols_ghost, filter_vsfmc, &
-       watsat, hksat, bsw, sucsat, eff_porosity)
+       watsat, hksat, bsw, sucsat, eff_porosity, vsfm_satfunc_type)
     !
     ! !DESCRIPTION:
     ! Sets soil properties for VSFM solver from CLM
@@ -445,9 +452,8 @@ contains
     use PorosityFunctionMod           , only : PorosityFunctionSetConstantModel
     use ConditionType                 , only : condition_type
     use ConnectionSetType             , only : connection_set_type
-    use clm_varpar                    , only : nlevgrnd
-    use clm_varcon                    , only : grav, denh2o
-    use clm_varctl                    , only : vsfm_satfunc_type
+    use mpp_varpar                    , only : nlevgrnd
+    use mpp_varcon                    , only : grav, denh2o
     !
     implicit none
     !
@@ -461,6 +467,7 @@ contains
     PetscReal, intent(in), pointer                    :: bsw(:,:)
     PetscReal, intent(in), pointer                    :: sucsat(:,:)
     PetscReal, intent(in), pointer                    :: eff_porosity(:,:)
+    character(len=32), intent(in)                     :: vsfm_satfunc_type
     !
     ! !LOCAL VARIABLES:
     class (goveqn_richards_ode_pressure_type),pointer :: goveq_richards_ode_pres
@@ -654,7 +661,7 @@ contains
     use SystemOfEquationsBasePointerType , only : SOEIFunction, SOEIJacobian
     use GoverningEquationBaseType        , only : goveqn_base_type
     use GoveqnRichardsODEPressureType    , only : goveqn_richards_ode_pressure_type
-    use clm_varpar                       , only : nlevgrnd
+    use mpp_varpar                       , only : nlevgrnd
     use MultiPhysicsProbConstants        , only : GRAVITY_CONSTANT
     !
     implicit none
