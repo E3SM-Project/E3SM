@@ -371,7 +371,7 @@ main(int argc, char **argv)
 
 	    /* Add a global attribute. */
 	    if (verbose)
-	    	printf("%d test_intercomm writing attribute %s\n", my_rank, ATT_NAME);
+	    	printf("%d test_intercomm writing attributes %s\n", my_rank, ATT_NAME);
 	    int att_data = ATT_VALUE;
 	    if ((ret = PIOc_put_att_int(ncid, NC_GLOBAL, ATT_NAME, NC_INT, 1, &att_data)))
 	    	ERR(ret);
