@@ -943,7 +943,8 @@ contains
     use landunit_varcon        , only : max_lunit
     use clm_varctl             , only : vsfm_satfunc_type
 #ifdef USE_PETSC_LIB
-    use domainLateralMod         , only : ldomain_lateral, ScatterDataG2L
+    use domainLateralMod         , only : ldomain_lateral
+    use UnstructuredGridType     , only : ScatterDataG2L
     use MultiPhysicsProbVSFM     , only : vsfm_mpp
     use MultiPhysicsProbConstants, only : VAR_MASS
     use MultiPhysicsProbConstants, only : VAR_SOIL_MATRIX_POT
@@ -1189,7 +1190,8 @@ contains
        enddo
 
        ! Scatter: Global-to-Local
-       call ScatterDataG2L(nblocks, ndata_send, data_send, ndata_recv, data_recv)
+       call ScatterDataG2L(ldomain_lateral%ugrid, nblocks, &
+            ndata_send, data_send, ndata_recv, data_recv)
 
        ! Save data for ghost subgrid category
        do c = bounds_proc%begc_all, bounds_proc%endc_all
@@ -1255,6 +1257,7 @@ contains
                         bounds_proc%begc,            &
                         bounds_proc%endc,            &
                         iam,                         &
+                        ldomain_lateral%ugrid,       &
                         vsfm_landunit_ind,           &
                         vsfm_coli,                   &
                         vsfm_colf,                   &

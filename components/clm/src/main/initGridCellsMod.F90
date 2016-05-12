@@ -543,11 +543,12 @@ contains
     !   Initialize ghost/halo landunits
     !
     ! !USES
-    use decompMod         , only : get_proc_bounds
-    use subgridWeightsMod , only : compute_higher_order_weights
-    use domainLateralMod  , only : ldomain_lateral, ScatterDataG2L
-    use landunit_varcon   , only : max_lunit
-    use spmdMod           , only : mpicom
+    use decompMod            , only : get_proc_bounds
+    use subgridWeightsMod    , only : compute_higher_order_weights
+    use domainLateralMod     , only : ldomain_lateral
+    use UnstructuredGridType , only : ScatterDataG2L
+    use landunit_varcon      , only : max_lunit
+    use spmdMod              , only : mpicom
     use LandunitMod
     !
     implicit none
@@ -625,7 +626,8 @@ contains
     deallocate(nlun)
 
     ! Scatter: Global-to-Local
-    call ScatterDataG2L(nblocks, ndata_send, data_send, ndata_recv, data_recv)
+    call ScatterDataG2L(ldomain_lateral%ugrid, &
+         nblocks, ndata_send, data_send, ndata_recv, data_recv)
 
     ! Save data for ghost subgrid category
     l = bounds_proc%endl
@@ -679,11 +681,12 @@ contains
     !   Initialize ghost/halo columns
     !
     ! !USES
-    use decompMod         , only : get_proc_bounds
-    use subgridWeightsMod , only : compute_higher_order_weights
-    use domainLateralMod  , only : ldomain_lateral, ScatterDataG2L
-    use landunit_varcon   , only : max_lunit
-    use spmdMod           , only : mpicom
+    use decompMod            , only : get_proc_bounds
+    use subgridWeightsMod    , only : compute_higher_order_weights
+    use domainLateralMod     , only : ldomain_lateral
+    use UnstructuredGridType , only : ScatterDataG2L
+    use landunit_varcon      , only : max_lunit
+    use spmdMod              , only : mpicom
     use ColumnMod
     !
     implicit none
@@ -811,7 +814,8 @@ contains
     deallocate(ncol)
 
     ! Scatter: Global-to-Local
-    call ScatterDataG2L(nblocks, ndata_send, data_send, ndata_recv, data_recv)
+    call ScatterDataG2L(ldomain_lateral%ugrid, &
+         nblocks, ndata_send, data_send, ndata_recv, data_recv)
 
     ! Save data for ghost subgrid category
     c = bounds_proc%endc
@@ -861,11 +865,12 @@ contains
     !   Initialize ghost/halo patch
     !
     ! !USES
-    use decompMod         , only : get_proc_bounds
-    use subgridWeightsMod , only : compute_higher_order_weights
-    use domainLateralMod  , only : ldomain_lateral, ScatterDataG2L
-    use landunit_varcon   , only : max_lunit
-    use spmdMod           , only : mpicom
+    use decompMod            , only : get_proc_bounds
+    use subgridWeightsMod    , only : compute_higher_order_weights
+    use domainLateralMod     , only : ldomain_lateral
+    use UnstructuredGridType , only : ScatterDataG2L
+    use landunit_varcon      , only : max_lunit
+    use spmdMod              , only : mpicom
     use PatchMod
     !
     implicit none
@@ -1018,7 +1023,8 @@ contains
     enddo
 
     ! Scatter: Global-to-Local
-    call ScatterDataG2L(nblocks, ndata_send, data_send, ndata_recv, data_recv)
+    call ScatterDataG2L(ldomain_lateral%ugrid, &
+         nblocks, ndata_send, data_send, ndata_recv, data_recv)
 
     ! Save data for ghost subgrid category
     p = bounds_proc%endp

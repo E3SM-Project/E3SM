@@ -867,7 +867,6 @@ end if
     ! Assign soil properties for ghost/halo columns
     !
     ! !USES:
-    use domainLateralMod       , only : ldomain_lateral, ScatterDataG2L
     use domainLateralMod       , only : ExchangeColumnLevelGhostData
     use shr_infnan_mod         , only : shr_infnan_isnan
     use shr_infnan_mod         , only : isnan => shr_infnan_isnan

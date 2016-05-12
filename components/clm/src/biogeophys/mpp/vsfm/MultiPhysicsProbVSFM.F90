@@ -78,7 +78,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPSetup(this, begg, endg, begc, endc, mpi_rank, &
-       grc_landunit_indices, lun_coli, lun_colf,                  &                               
+       ugrid, grc_landunit_indices, lun_coli, lun_colf,           &
        discretization_type, ncols_ghost, filter_vsfmc,            &
        xc_col, yc_col, zc_col, z, zi, dz,                         &
        area_col, grid_owner, col_itype,                           &
@@ -99,6 +99,7 @@ contains
     use MultiPhysicsProbConstants, only : PETSC_SNES
     use MultiPhysicsProbConstants, only : MPP_VSFM_SNES_CLM
     use MultiPhysicsProbConstants, only : SOE_RE_ODE
+    use UnstructuredGridType     , only : ugrid_type
     !
     implicit none
     !
@@ -107,6 +108,7 @@ contains
     integer, intent(in)            :: begg,endg
     integer, intent(in)            :: begc,endc
     PetscInt, intent(in)           :: mpi_rank
+    type(ugrid_type), pointer      :: ugrid
     integer, intent(in)            :: grc_landunit_indices(:,:)
     integer, intent(in)            :: lun_coli(:)
     integer, intent(in)            :: lun_colf(:)
@@ -145,7 +147,7 @@ contains
     soe_type                 = SOE_RE_ODE
 
     call this%meshes(1)%CreateFromCLMCols(begg, endg, begc, endc, &
-         grc_landunit_indices, lun_coli, lun_colf,                &                               
+         ugrid, grc_landunit_indices, lun_coli, lun_colf,         &
          discretization_type, ncols_ghost,                        &
          xc_col, yc_col, zc_col, zi, dz,                          &
          area_col, grid_owner, col_itype,                         &

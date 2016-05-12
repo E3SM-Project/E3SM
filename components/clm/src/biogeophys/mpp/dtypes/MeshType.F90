@@ -107,7 +107,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine CreateFromCLMCols(this, begg, endg, begc, endc, &
-       grc_landunit_indices, lun_coli, lun_colf, &
+       ugrid, grc_landunit_indices, lun_coli, lun_colf, &
        discretization_type, ncols_ghost, &
        xc_col, yc_col, zc_col, zi, dz,  &
        area_col, grid_owner, col_itype, filter)
@@ -126,8 +126,8 @@ contains
     use MultiPhysicsProbConstants   , only : CONN_HORIZONTAL
     use ConnectionSetType           , only : connection_set_type
     use ConnectionSetType           , only : ConnectionSetListAddSet
-    use domainLateralMod            , only : ldomain_lateral
     use mpp_varcon                  , only : istsoil
+    use UnstructuredGridType        , only : ugrid_type
     !
     implicit none
     !
@@ -135,6 +135,7 @@ contains
     class(mesh_type)                :: this
     integer            , intent(in) :: begg,endg
     integer            , intent(in) :: begc,endc
+    type(ugrid_type)   , pointer    :: ugrid
     integer            , intent(in) :: grc_landunit_indices(:,:)
     integer            , intent(in) :: lun_coli(:)
     integer            , intent(in) :: lun_colf(:)
@@ -264,12 +265,12 @@ contains
 
        ! Determine number of lateral connections
 
-       do icell = 1, ldomain_lateral%ugrid%ngrid_local
-          do iedge = 1, ldomain_lateral%ugrid%maxEdges
+       do icell = 1, ugrid%ngrid_local
+          do iedge = 1, ugrid%maxEdges
 
-             if (ldomain_lateral%ugrid%gridsOnGrid_local(iedge,icell) > icell) then
+             if (ugrid%gridsOnGrid_local(iedge,icell) > icell) then
                 g_up = icell + begg - 1
-                g_dn = ldomain_lateral%ugrid%gridsOnGrid_local(iedge,icell) + begg - 1
+                g_dn = ugrid%gridsOnGrid_local(iedge,icell) + begg - 1
 
                 l_idx_up = grc_landunit_indices(ltype, g_up)
                 l_idx_dn = grc_landunit_indices(ltype, g_dn)
@@ -365,12 +366,12 @@ contains
           ! connection list
        endif
 
-       do icell = 1, ldomain_lateral%ugrid%ngrid_local
+       do icell = 1, ugrid%ngrid_local
 
-          do iedge = 1, ldomain_lateral%ugrid%maxEdges
-             if (ldomain_lateral%ugrid%gridsOnGrid_local(iedge,icell) > icell) then
+          do iedge = 1, ugrid%maxEdges
+             if (ugrid%gridsOnGrid_local(iedge,icell) > icell) then
                 g_up = icell + begg - 1
-                g_dn = ldomain_lateral%ugrid%gridsOnGrid_local(iedge,icell) + begg - 1
+                g_dn = ugrid%gridsOnGrid_local(iedge,icell) + begg - 1
 
                 l_idx_up = grc_landunit_indices(ltype, g_up)
                 l_idx_dn = grc_landunit_indices(ltype, g_dn)
@@ -416,8 +417,8 @@ contains
                       c_idx_dn = tmp
                    endif
 
-                   dc = ldomain_lateral%ugrid%dcOnGrid_local(iedge, icell)
-                   dv = ldomain_lateral%ugrid%dvOnGrid_local(iedge, icell)
+                   dc = ugrid%dcOnGrid_local(iedge, icell)
+                   dv = ugrid%dvOnGrid_local(iedge, icell)
 
                    do j = 1, this%nlev
                       iconn = iconn + 1
@@ -447,7 +448,7 @@ contains
                       conn_set%dist_unitvec(iconn)%arr(3) = dist_z/dist
                    enddo
                 endif ! if (c_idx_up > -1 .and. c_idx_dn > -1)
-             endif ! if (ldomain_lateral%ugrid%gridsOnGrid_local(iedge,icell) > icell)
+             endif ! if (ugrid%gridsOnGrid_local(iedge,icell) > icell)
           enddo
        enddo
 

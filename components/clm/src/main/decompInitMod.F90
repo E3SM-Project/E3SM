@@ -1606,10 +1606,11 @@ contains
     !  - cohorts.
     !
     ! !USES:
-    use clm_varctl       , only : lateral_connectivity
-    use subgridMod       , only : subgrid_get_gcellinfo
+    use clm_varctl           , only : lateral_connectivity
+    use subgridMod           , only : subgrid_get_gcellinfo
 #ifdef USE_PETSC_LIB
-    use domainLateralMod  , only : ldomain_lateral, ScatterDataG2L
+    use domainLateralMod     , only : ldomain_lateral
+    use UnstructuredGridType , only : ScatterDataG2L
 #endif
     !
     implicit none
@@ -1720,7 +1721,8 @@ contains
        enddo
 
        ! Scatter: Global-to-Local
-       call ScatterDataG2L(nblocks, ndata_send, data_send, ndata_recv, data_recv)
+       call ScatterDataG2L(ldomain_lateral%ugrid, &
+            nblocks, ndata_send, data_send, ndata_recv, data_recv)
 
        ! Get number of ghost quantites at all subgrid categories
        procinfo%ncells_ghost    = ldomain_lateral%ugrid%ngrid_ghost
