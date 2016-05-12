@@ -238,6 +238,7 @@ integer :: &
    frzdep_idx = -1
 
    logical :: allow_sed_supersat  ! allow supersaturated conditions after sedimentation loop
+   real(r8) :: micro_mg_accre_enhan_fac = huge(1.0_r8) !Accretion enhancement factor from namelist
 
 interface p
    module procedure p1
@@ -360,7 +361,8 @@ subroutine micro_mg_cam_register
   logical :: save_subcol_microp ! If true, then need to store sub-columnized fields in pbuf
 
   call phys_getopts(use_subcol_microp_out = use_subcol_microp, &
-                    prog_modal_aero_out   = prog_modal_aero )
+                    prog_modal_aero_out   = prog_modal_aero, &
+                    micro_mg_accre_enhan_fac_out = micro_mg_accre_enhan_fac)
 
   ! Register microphysics constituents and save indices.
 
@@ -994,7 +996,7 @@ subroutine micro_mg_cam_init(pbuf2d)
       call pbuf_set_field(pbuf2d, acgcme_idx, 0._r8)
       call pbuf_set_field(pbuf2d, acnum_idx,  0)
       call pbuf_set_field(pbuf2d, relvar_idx, 2._r8)
-      call pbuf_set_field(pbuf2d, accre_enhan_idx, 2._r8) !PMA
+      call pbuf_set_field(pbuf2d, accre_enhan_idx, micro_mg_accre_enhan_fac)
       call pbuf_set_field(pbuf2d, am_evp_st_idx,  0._r8)
       call pbuf_set_field(pbuf2d, evprain_st_idx, 0._r8)
       call pbuf_set_field(pbuf2d, evpsnow_st_idx, 0._r8)

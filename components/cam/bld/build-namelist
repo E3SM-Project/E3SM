@@ -3392,6 +3392,7 @@ if ($cfg->get('microphys') =~ /^mg/) {
     add_default($nl, 'cld_macmic_num_steps');
     add_default($nl, 'micro_mg_precip_frac_method');
     add_default($nl, 'micro_mg_berg_eff_factor');
+    add_default($nl, 'micro_mg_accre_enhan_fac');
 }
 add_default($nl, 'micro_mg_dcs');
 add_default($nl, 'ice_sed_ai');
@@ -3533,6 +3534,10 @@ add_default($nl, 'zmconv_c0_lnd');
 add_default($nl, 'zmconv_c0_ocn');
 add_default($nl, 'zmconv_ke');
 add_default($nl, 'zmconv_tau');
+add_default($nl, 'zmconv_tiedke_add');
+add_default($nl, 'zmconv_cape_cin');
+add_default($nl, 'zmconv_mx_bot_lyr_adj');
+add_default($nl, 'zmconv_dmpdz');
 
 # moist convection rainwater coefficients
 add_default($nl, 'hkconv_cmftau');

@@ -2169,6 +2169,13 @@ Switch to turn on temperature dependent DCS.
 Default: .false.
 </entry>
 
+<entry id="micro_mg_accre_enhan_fac" type="real" category="microphysics"
+       group="phys_ctl_nl" valid_values="" >
+Accretion enhancement factor from namelist
+Default: 1.0_r8
+</entry>
+
+
 <!-- micro_aero -->
 <entry id="microp_aero_bulk_scale" type="real" category="microphysics"
        group="microp_aero_nl" valid_values="" >
@@ -2385,6 +2392,27 @@ Default: set by build-namelist
 Trigger and memory option in ZM deep convection scheme.
 Default: FALSE
 </entry>
+
+<entry id="zmconv_tiedke_add" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+A ZM deep convection parameter
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_cape_cin" type="integer" category="conv"
+       group="zmconv_nl" valid_values="" >
+Number of negative buoyancy regions that are allowed before the conv. top and CAPE calc are completed
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_mx_bot_lyr_adj" type="integer" category="conv"
+       group="zmconv_nl" valid_values="" >
+Bottom layer adjustment for setting "launching" level(mx) (to be at maximum moist static energy)
+Default: set by build-namelist
+</entry>
+
+
+
 
 <!-- Cloud sedimentation -->
 
