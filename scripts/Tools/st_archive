@@ -661,7 +661,7 @@ sub removeDups
 	my @matchfiles  = File::Find::Rule->file->name($file)->in($config{'DOUT_S_ROOT'});
 
 	foreach my $matchfile (@matchfiles) {
-	    if( $matchfile =~ /\/rest\// && $matchfile ne $restfile && $matchfile !~ /\/hist\// ) {
+	    if( $matchfile =~ /\/rest\// && $matchfile ne $restfile && $matchfile !~ /\/hist\// && $matchfile !~ /rpointer/) {
 		$logger->debug("Dedebugng matchfile=$matchfile matches restfile=$restfile");
 		unlink( $matchfile );
 	    }
