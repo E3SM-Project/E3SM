@@ -2095,7 +2095,10 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
 		mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&file->iotype, 1, MPI_INT, ios->compmaster, ios->intercomm);
-	    LOG((2, "broadcast iotype = %d", file->iotype));
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&atttype, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&attlen, 1, MPI_OFFSET, ios->compmaster, ios->intercomm);
 	}
 
 	/* Handle MPI errors. */

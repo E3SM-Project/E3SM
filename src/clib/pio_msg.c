@@ -375,6 +375,10 @@ int att_get_handler(iosystem_desc_t *ios)
 		       ios->intercomm);
     if ((mpierr = MPI_Bcast(&iotype, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&atttype, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&attlen, 1, MPI_OFFSET, 0, ios->intercomm)))
+	return PIO_EIO;
     LOG((1, "att_get_handler ncid = %d varid = %d namelen = %d name = %s iotype = %d",
 	 ncid, varid, namelen, name, iotype));    
 
