@@ -2074,6 +2074,13 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
 	{
 	    int msg = PIO_MSG_GET_ATT_INT;
 
+	    /* Get the type and length of the attribute. */
+	    if ((ierr = PIOc_inq_att(file->fh, varid, name, &atttype, &attlen)))
+	    {
+		check_netcdf(file, ierr, __FILE__, __LINE__);
+		return ierr;
+	    }
+
 	    if(ios->compmaster) 
 		mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	    
