@@ -394,7 +394,7 @@ int att_get_handler(iosystem_desc_t *ios)
     int ierr;
     char *name;
     int namelen;
-    PIO_Offset attlen;
+    PIO_Offset attlen, typelen;
     nc_type atttype;
     int *op, *ip;
     int iotype;
@@ -418,8 +418,11 @@ int att_get_handler(iosystem_desc_t *ios)
 	return PIO_EIO;
     if ((mpierr = MPI_Bcast(&attlen, 1, MPI_OFFSET, 0, ios->intercomm)))
 	return PIO_EIO;
-    LOG((1, "att_get_handler ncid = %d varid = %d namelen = %d name = %s iotype = %d",
-	 ncid, varid, namelen, name, iotype));    
+    if ((mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET, 0, ios->intercomm)))
+	return PIO_EIO;
+    LOG((1, "att_get_handler ncid = %d varid = %d namelen = %d name = %s iotype = %d"
+	 "atttype = %d attlen = %d typelen = %d",
+	 ncid, varid, namelen, name, iotype, atttype, attlen, typelen));    
 
     /* Allocate space for the attribute data. */
     if (!(ip = malloc(attlen * sizeof(int))))

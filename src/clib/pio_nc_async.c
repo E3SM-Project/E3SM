@@ -2179,7 +2179,7 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
 {
     iosystem_desc_t *ios;
     file_desc_t *file;
-    PIO_Offset attlen;
+    PIO_Offset attlen, typelen;
     nc_type atttype;
     int ierr = PIO_NOERR;
     int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
@@ -2209,9 +2209,18 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
 		return ierr;
 	    }
 
+	    /* Get the length (in bytes) of the type. */
+	    if ((ierr = PIOc_inq_type(file->fh, atttype, NULL, &typelen)))
+	    {
+		check_netcdf(file, ierr, __FILE__, __LINE__);
+		return ierr;
+	    }
+
+	    /* Send the message to IO master. */
 	    if(ios->compmaster) 
 		mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	    
+
+	    /* Send the function parameters. */
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
@@ -2227,6 +2236,8 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
 		mpierr = MPI_Bcast(&atttype, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&attlen, 1, MPI_OFFSET, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET, ios->compmaster, ios->intercomm);
 	}
 
 	/* Handle MPI errors. */
