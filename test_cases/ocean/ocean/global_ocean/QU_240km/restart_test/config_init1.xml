@@ -15,6 +15,7 @@
 	<run_script name="run.py">
 		<step executable="./init_step1.py">
 			<argument flag="-p">geometric_features</argument>
+			<argument flag="--with_critical_passages"></argument>
 		</step>
 	</run_script>
 </config>
