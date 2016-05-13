@@ -1,11 +1,83 @@
 /** @file 
  * Support functions.
  */
+#include <config.h>
+#ifdef PIO_ENABLE_LOGGING
+#include <stdarg.h>
+#include <unistd.h>
+#endif /* PIO_ENABLE_LOGGING */
 #include <pio.h>
 #include <pio_internal.h>
 
 #include <execinfo.h>
 #define versno 2001
+
+#ifdef PIO_ENABLE_LOGGING
+int pio_log_level = 0;
+int my_rank;
+#endif /* PIO_ENABLE_LOGGING */
+
+/** Set the logging level. Set to -1 for nothing, 0 for errors only, 1
+ * for important logging, and so on. Log levels below 1 are only
+ * printed on the io/component root. If the library is not built with
+ * logging, this function does nothing. */
+int PIOc_set_log_level(int level)
+{
+#ifdef PIO_ENABLE_LOGGING
+    printf("setting log level to %d\n", level);
+    pio_log_level = level;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    return PIO_NOERR;
+#endif /* PIO_ENABLE_LOGGING */
+}
+
+#ifdef PIO_ENABLE_LOGGING
+/** This function prints out a message, if the severity of the message
+   is lower than the global pio_log_level. To use it, do something
+   like this:
+   
+   pio_log(0, "this computer will explode in %d seconds", i);
+
+   After the first arg (the severity), use the rest like a normal
+   printf statement. Output will appear on stdout.
+   This function is heavily based on the function in section 15.5 of
+   the C FAQ. 
+*/
+void 
+pio_log(int severity, const char *fmt, ...)
+{
+   va_list argp;
+   int t;
+
+   /* If the severity is greater than the log level, we don't print
+      this message. */
+   if (severity > pio_log_level)
+      return;
+
+   /* If the severity is 0, only print on rank 0. */
+   if (severity < 1 && my_rank != 0)
+       return;
+
+   /* If the severity is zero, this is an error. Otherwise insert that
+      many tabs before the message. */
+   if (!severity)
+       fprintf(stdout, "ERROR: ");
+   for (t = 0; t < severity; t++)
+       fprintf(stdout, "\t");
+
+   /* Show the rank. */
+   fprintf(stdout, "%d ", my_rank);
+   
+   /* Print out the variable list of args with vprintf. */
+   va_start(argp, fmt);
+   vfprintf(stdout, fmt, argp);
+   va_end(argp);
+   
+   /* Put on a final linefeed. */
+   fprintf(stdout, "\n");
+   fflush(stdout);
+}
+#endif /* PIO_ENABLE_LOGGING */
 
 static pio_swapm_defaults swapm_defaults;
 bool PIO_Save_Decomps=false;
