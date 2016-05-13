@@ -193,6 +193,8 @@ module clubb_intr
   logical            :: do_cnst=.false.
 
   logical :: liqcf_fix  ! HW for liquid cloud fraction fix
+  
+  real(r8) :: micro_mg_accre_enhan_fac = huge(1.0_r8) !Accretion enhancement factor from namelist
 
   contains
   
@@ -222,7 +224,8 @@ module clubb_intr
                        do_tms_out                      = do_tms,      &
                        history_budget_out              = history_budget, &
                        history_budget_histfile_num_out = history_budget_histfile_num, &
-                       micro_do_icesupersat_out        = micro_do_icesupersat)
+                       micro_do_icesupersat_out        = micro_do_icesupersat, &
+                       micro_mg_accre_enhan_fac_out    = micro_mg_accre_enhan_fac)
 
     if (clubb_do_adv) then
        cnst_names =(/'THLP2  ','RTP2   ','RTPTHLP','WPTHLP ','WPRTP  ','WP2    ','WP3    ','UP2    ','VP2    '/)
@@ -2200,7 +2203,8 @@ end subroutine clubb_init_cnst
    ! Optional Accretion enhancement factor             !
    ! ------------------------------------------------- !   
 
-     accre_enhan(:ncol,:pver) = 1._r8
+     accre_enhan(:ncol,:pver) = micro_mg_accre_enhan_fac !default is 1._r8
+
    
    ! ------------------------------------------------- !
    ! Diagnose some output variables                    !

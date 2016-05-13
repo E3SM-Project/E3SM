@@ -49,6 +49,7 @@
 <effgw_oro>          0.25   </effgw_oro>
 <seasalt_emis_scale> 0.5    </seasalt_emis_scale>
 <dust_emis_fact>     0.40D0 </dust_emis_fact>
+<zmconv_mx_bot_lyr_adj   >1</zmconv_mx_bot_lyr_adj>
 
 <!-- Marine organic aerosol namelist settings -->
 <mam_mom_mixing_state>2</mam_mom_mixing_state>
