@@ -35,6 +35,54 @@ class Component(EntryID):
         components = comps.split(',')
         return components
 
+    def _get_value_match(self, node, attributes={}):
+        match_value = None
+        match_max = 0
+        match_count = 0
+        match_values = []
+        expect(node is not None," Empty node in _get_value_match")
+        values = self.get_optional_node("values", root=node)
+        if values is None:
+            return
+        for valnode in self.get_nodes("value", root=node):
+            # loop through all the keys in valnode (value nodes) attributes
+            for key,value in valnode.attrib.iteritems():
+                # determine if key is in attributes dictionary
+                match_count = 0
+                if key in attributes:
+                    if key == "compset":
+                        compset = attributes[key]
+                        if re.search(value+"[_%]", compset) or re.search(value+"$", compset):
+                            logger.debug("Value %s and key %s match with compset value %s"%(value, key, compset))
+                            match_count += 1
+                        else:
+                            match_count = 0
+                            break
+                    elif re.search(value, attributes[key]):
+                        logger.debug("Value %s and key %s match with value %s"%(value, key, attributes[key]))
+                        match_count += 1
+                    else:
+                        match_count = 0
+                        break
+            if match_count > 0:
+                # append the current result
+                if values.get("modifier") == "additive":
+                    match_values.append(valnode.text)
+                # replace the current result if it already contains the new value
+                # otherwise append the current result
+                elif values.get("modifier") == "merge":
+                    if valnode.text in match_values:
+                        del match_values[:]
+                    match_values.append(valnode.text)
+                # take the best match
+                elif match_count > match_max:
+                    match_max = match_count
+                    match_value = valnode.text
+        if len(match_values) > 0:
+            match_value = " ".join(match_values)
+        return match_value
+
+
     def print_values(self):
         """
         print values for help and description in target config_component.xml file

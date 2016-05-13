@@ -213,7 +213,6 @@ class Case(object):
                     self._pesfile = pes_filename
                     self._compsetsfile = compsets_filename
                     self._compsetname = match
-
                     self.set_value("COMPSETS_SPEC_FILE" ,
                                    files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
                     self.set_value("TESTS_SPEC_FILE"    , tests_filename)
@@ -333,6 +332,8 @@ class Case(object):
         #--------------------------------------------
         self._get_component_config_data()
 
+        self.get_compset_var_settings()
+
         # Add the group and elements for the config_files.xml
         for idx, config_file in enumerate(self._component_config_files):
             self.set_value(config_file[0],config_file[1])
@@ -439,11 +440,20 @@ class Case(object):
         logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)
 
+
         # Set project id
         if project is None:
             project = get_project()
         if project is not None:
             self.set_value("PROJECT", project)
+
+    def get_compset_var_settings(self):
+        compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))
+        matches = compset_obj.get_compset_var_settings(self._compsetname, self._gridname)
+        for name, value in matches:
+            if len(value) > 0:
+                logger.debug("Compset specific settings: name is %s and value is %s"%(name,value))
+                self.set_value(name, value)
 
     def set_initial_test_values(self):
         testobj = self._get_env("test")
