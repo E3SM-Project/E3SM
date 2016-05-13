@@ -68,7 +68,7 @@ mpas_cice_advection_upwind.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_d
 
 mpas_cice_advection_incremental_remap_tracers.o: mpas_cice_constants.o 
 
-mpas_cice_advection_incremental_remap.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_advection_incremental_remap_tracers.o
+mpas_cice_advection_incremental_remap.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_advection_incremental_remap_tracers.o mpas_cice_diagnostics.o
 
 mpas_cice_advection.o: mpas_cice_advection_upwind.o mpas_cice_advection_incremental_remap.o
 

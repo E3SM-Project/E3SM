@@ -67,6 +67,9 @@
 		<var name="maximumIcePressure" type="real" dimensions="nRegions Time" units="kN/m"
 			description="Maximum sea-ice pressure by region"
 		/>
+		<var name="maximumIceSpeed" type="real" dimensions="nRegions Time" units="m/s"
+			description="Maximum sea-ice speed by region"
+		/>
 	</var_struct>
 	<streams>
 		<stream name="regionalStatisticsOutput" type="output"
@@ -88,7 +91,8 @@
 			<var name="maximumIceVolume"/> 
 			<var name="maximumIceVolumeLocked"/>
 			<var name="maximumIceVolumeNotLocked"/>
-			<var name="maximumIcePressure"/> 
+			<var name="maximumIcePressure"/>
+			<var name="maximumIceSpeed"/>
 		</stream>
 		<stream name="regionalStatistics_ice_aggregate"
 			type="none"

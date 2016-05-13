@@ -24,7 +24,8 @@ module cice_diagnostics
   public :: &
        cice_initialize_time_diagnostics, &
        cice_set_time_diagnostics, &
-       cice_check_state
+       cice_check_state, &
+       cice_warning_message
 
 contains
 
@@ -165,6 +166,9 @@ contains
 
   subroutine cice_check_state(domain)
 
+    use cice_constants, only: &
+         ciceRadiansToDegrees
+
     type (domain_type), intent(in) :: &
          domain !< Input/Output:
 
@@ -285,7 +289,7 @@ contains
           ! open the error file
           call mpas_new_unit(errorUnit)
           write(filename,fmt='(a,i6.6,a)') "mpas_seaice_state_test_", domain % dminfo % my_proc_id, ".log"
-          open(errorUnit, file=trim(filename))
+          open(errorUnit, file=trim(filename), position="append")
 
           block => domain % blocklist
           do while (associated(block))
@@ -325,7 +329,7 @@ contains
                    if (iceVolumeCategory(1,iCategory,iCell) > iceVolumeLimit) then
 
                       write(errorUnit,fmt=10) "Time=", trim(xtime), ", iCell=", indexToCellID(iCell), ", iCategory=", iCategory, &
-                           ", lat=", latCell(iCell), ", lon=", lonCell(iCell), &
+                           ", lat=", latCell(iCell)*ciceRadiansToDegrees, ", lon=", lonCell(iCell)*ciceRadiansToDegrees, &
                            ", iceVolumeCategory=", iceVolumeCategory(1,iCategory,iCell)
 
                    endif ! seaice thickness check
@@ -334,7 +338,7 @@ contains
                    if (snowVolumeCategory(1,iCategory,iCell) > snowVolumeLimit) then
 
                       write(errorUnit,fmt=10) "Time=", trim(xtime), ", iCell=", indexToCellID(iCell), ", iCategory=", iCategory, &
-                           ", lat=", latCell(iCell), ", lon=", lonCell(iCell), &
+                           ", lat=", latCell(iCell)*ciceRadiansToDegrees, ", lon=", lonCell(iCell)*ciceRadiansToDegrees, &
                            ", snowVolumeCategory=", snowVolumeCategory(1,iCategory,iCell)
 
                    endif ! snow on seaice thickness check
@@ -344,7 +348,7 @@ contains
                        iceSalinity(1,iCategory,iCell) > iceSalinityUpperLimit) then
 
                       write(errorUnit,fmt=10) "Time=", trim(xtime), ", iCell=", indexToCellID(iCell), ", iCategory=", iCategory, &
-                           ", lat=", latCell(iCell), ", lon=", lonCell(iCell), &
+                           ", lat=", latCell(iCell)*ciceRadiansToDegrees, ", lon=", lonCell(iCell)*ciceRadiansToDegrees, &
                            ", iceSalinity=", iceSalinity(1,iCategory,iCell)
 
                    endif ! salinity check
@@ -360,7 +364,7 @@ contains
                 if (uVelocity(iVertex) >= velocityLimit .or. vVelocity(iVertex) >= velocityLimit) then
 
                    write(errorUnit,fmt=20) "Time=", trim(xtime), ", iVertex=", indexToVertexID(iVertex), &
-                        ", lat=", latVertex(iVertex), ", lon=", lonVertex(iVertex), &
+                        ", lat=", latVertex(iVertex)*ciceRadiansToDegrees, ", lon=", lonVertex(iVertex)*ciceRadiansToDegrees, &
                         ", uVelocity=", uVelocity(iVertex), ", vVelocity=", vVelocity(iVertex)
 
                 endif ! velocity check
@@ -382,6 +386,52 @@ contains
 20  format(a,a,a,i9,a,e12.4,a,e12.4,a,e12.4,a,e12.4)
 
   end subroutine cice_check_state
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  cice_warning_message
+!
+!> \brief 
+!> \author Adrian K. Turner, LANL
+!> \date 13th May 2016
+!> \details
+!>  
+!
+!-----------------------------------------------------------------------
+
+  subroutine cice_warning_message(domain, message)
+
+    type(domain_type), intent(in) :: &
+         domain
+
+    character(len=*), intent(in) :: &
+         message
+
+    integer :: &
+         errorUnit
+
+    character(len=strKIND) :: &
+         filename
+
+    type(MPAS_pool_type), pointer :: &
+         diagnosticsPool
+
+    character(len=strKIND), pointer :: &
+         xtime
+
+    call mpas_new_unit(errorUnit)
+    write(filename,fmt='(a,i6.6,a)') "mpas_seaice_state_test_", domain % dminfo % my_proc_id, ".log"
+    open(errorUnit, file=trim(filename), position="append")
+
+    call MPAS_pool_get_subpool(domain % blocklist % structs, "diagnostics", diagnosticsPool)
+    call MPAS_pool_get_array(diagnosticsPool, "xtime", xtime)
+
+    write(errorUnit,fmt='(a,a,a,a)') "Time=", trim(xtime), ", ", trim(message)
+
+    close(errorUnit)
+    call mpas_release_unit(errorUnit)
+
+  end subroutine cice_warning_message
 
 !-----------------------------------------------------------------------
 
