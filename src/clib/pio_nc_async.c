@@ -2252,11 +2252,13 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
 	    check_mpi(file, mpierr2, __FILE__, __LINE__);	    
 	check_mpi(file, mpierr, __FILE__, __LINE__);
 	
-	/* Broadcast values. */
-	if ((mpierr = MPI_Bcast(&attlen, 1, MPI_OFFSET, ios->ioroot, ios->my_comm)))
-	    check_mpi(file, mpierr, __FILE__, __LINE__);	    
-	if ((mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET, ios->ioroot, ios->my_comm)))
-	    check_mpi(file, mpierr, __FILE__, __LINE__);	    
+	/* Broadcast values currently only known on computation tasks to IO tasks. */
+	LOG((2, "PIOc_get_att bcast from comproot = %d attlen = %d typelen = %d", ios->comproot, attlen, typelen));
+	if ((mpierr = MPI_Bcast(&attlen, 1, MPI_OFFSET, ios->comproot, ios->my_comm)))
+	    check_mpi(file, mpierr, __FILE__, __LINE__);
+	if ((mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET, ios->comproot, ios->my_comm)))
+	    check_mpi(file, mpierr, __FILE__, __LINE__);
+	LOG((2, "PIOc_get_att bcast complete attlen = %d typelen = %d", attlen, typelen));
     }
 	
     /* If this is an IO task, then call the netCDF function. */
@@ -2268,25 +2270,17 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
 	    ierr = nc_get_att(file->fh, varid, name, ip);
-	    if (!ierr)
-		ierr = nc_inq_att(file->fh, varid, name, &atttype, (size_t *)&attlen);
 	    break;
 	case PIO_IOTYPE_NETCDF4C:
 #endif
 	case PIO_IOTYPE_NETCDF:
 	    if (ios->io_rank == 0)
-	    {
 		ierr = nc_get_att(file->fh, varid, name, ip);
-		if (!ierr)
-		    ierr = nc_inq_att(file->fh, varid, name, &atttype, (size_t *)&attlen);
-	    }
 	    break;
 #endif
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
 	    ierr = ncmpi_get_att(file->fh, varid, name, ip);
-	    if (!ierr)
-		ierr = ncmpi_inq_att(file->fh, varid, name, &atttype, &attlen);
 	    break;
 #endif
 	default:
@@ -2303,11 +2297,13 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
     /* Broadcast results to all tasks. */
     if (!ierr)
     {
-	LOG((2, "PIOc_get_att broadcasting attlen  = %d", attlen));	
-        mpierr = MPI_Bcast(&attlen, 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
-	LOG((2, "PIOc_get_att done broadcasting attlen  = %d", attlen));	
 	LOG((2, "PIOc_get_att broadcasting att data"));	
-        mpierr = MPI_Bcast(ip, (int)attlen, MPI_INT, ios->ioroot, ios->my_comm);
+        if ((mpierr = MPI_Bcast(ip, (int)attlen * typelen, MPI_BYTE, ios->ioroot,
+				ios->my_comm)))
+	{
+	    check_mpi(file, mpierr, __FILE__, __LINE__);
+	    return PIO_EIO;
+	}
 	LOG((2, "PIOc_get_att done broadcasting att data"));	
     }
     return ierr;
