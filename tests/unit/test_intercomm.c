@@ -338,8 +338,8 @@ main(int argc, char **argv)
      * and when the do, they should go straight to finalize. */
     if (comp_task)
     {
-	for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++) 
-/*	for (int fmt = 0; fmt < 1; fmt++) */
+/*	for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++) */
+	for (int fmt = 0; fmt < 1; fmt++) 
 	{
 	    int ncid, varid, dimid;
 	    PIO_Offset start[NDIM], count[NDIM] = {0};
@@ -386,6 +386,9 @@ main(int argc, char **argv)
 	    if (verbose)
 	    	printf("%d test_intercomm writing attributes %s\n", my_rank, ATT_NAME);
 	    int att_data = ATT_VALUE;
+	    short short_att_data = ATT_VALUE;
+	    if ((ret = PIOc_put_att_short(ncid, NC_GLOBAL, ATT_NAME, NC_INT, 1, &short_att_data)))
+	    	ERR(ret);
 	    if ((ret = PIOc_put_att_int(ncid, NC_GLOBAL, ATT_NAME, NC_INT, 1, &att_data)))
 	    	ERR(ret);
 
