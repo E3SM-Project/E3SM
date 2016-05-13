@@ -17,7 +17,7 @@ class EnvMachSpecific(EnvBase):
         initialize an object interface to file env_mach_specific.xml in the case directory
         """
         fullpath = infile if os.path.isabs(infile) else os.path.join(caseroot, infile)
-        EnvBase.__init__(self, fullpath)
+        EnvBase.__init__(self, caseroot, fullpath)
 
     def get_values(self, item, attribute={}, resolved=True, subgroup=None):
         """Returns the value as a string of the first xml element with item as attribute value.
