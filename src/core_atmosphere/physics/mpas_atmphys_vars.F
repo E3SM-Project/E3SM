@@ -47,7 +47,9 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-31.
 ! * changed the value of bl_mynn_cloudpdf from 2 to 0 which is the closure option used when the MYNN surface
 !   layer scheme and PBL scheme were originally implemented.
-!   Laura D. Fowler (laura@ucar.edu) / 2016-04.14.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-04-14.
+! * added the logical ua_phys needed in the call to subroutine sfcdiags. ua_phys is set to false.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-05-13.
 
 
 !=================================================================================================================
@@ -563,6 +565,10 @@
 !=================================================================================================================
 !.. variables and arrays related to land-surface parameterization:
 !=================================================================================================================
+
+ logical,parameter:: &
+    ua_phys=.false.    !option to activate UA Noah changes: a different snow-cover physics in the land-surface
+                       !scheme. That option is not currently implemented in MPAS.
 
  integer,public:: &
     sf_surface_physics !used to define the land surface scheme by a number instead of name. It
