@@ -108,7 +108,7 @@ thickness = np.zeros((nCells,))
 
 thicknessICtype = 1  # 1=uniform, 2=b.l. solution
 if thicknessICtype == 1:
-   thickness[:] = 10.0 # This is the IC prescribed by the Stnd experiment
+   thickness[:] = 200.0 # 10m is the IC prescribed by the Stnd experiment, but nothing is grounded at that thickness, so make it thick enough to ground
    thickness[ np.nonzero(np.absolute(xCell) > 800000.0) ] = 0.0
    gridfile.variables['thickness'][0,:] = thickness[:]
 elif thicknessICtype == 2:
