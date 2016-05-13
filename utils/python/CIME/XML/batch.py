@@ -140,8 +140,8 @@ class Batch(GenericXML):
         '''
         values = []
         bs_nodes = self.get_nodes("batch_system",{"type":self.batch_system})
-        if machine is not None:
-            bs_nodes += self.get_nodes("batch_system",{"MACH":machine})
+        if self.machine is not None:
+            bs_nodes += self.get_nodes("batch_system",{"MACH":self.machine})
         submit_arg_nodes = []
         for node in bs_nodes:
             submit_arg_nodes += self.get_nodes("arg",root=node)
