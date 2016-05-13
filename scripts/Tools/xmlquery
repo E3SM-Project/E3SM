@@ -24,6 +24,7 @@ from CIME.case import Case
 
 import argparse, doctest, shutil, glob
 import textwrap
+import sys
 
 logger = logging.getLogger("xmlquery")
 
@@ -60,11 +61,11 @@ def parse_command_line(args, description):
 
     parser.add_argument("-value", "--value", default=False, action="store_true",
                         help="Only print the value.")
-    parser.add_argument("-resolve", "--resolve", default=False, action="store_true",
+    parser.add_argument("-resolve", "--resolve", default=True, action="store_true",
                         help="Resolve variable names")
 
     args = parser.parse_args(args[1:])
-
+    args.debug = True
     CIME.utils.handle_standard_logging_options(args)
 
     if (len(sys.argv) == 1) :
@@ -157,13 +158,16 @@ def _main_func(description):
     # Initialize command line parser and get command line options
     args = parse_command_line(sys.argv, description)
 
-    # Debug statement - obvious
+    # Debug statement - obvious 
     logger.debug("CLI arguments: %s" , args)
     logger.debug("Searching for attributes '%s'" , args.attribute)
 
     # querry for attributes and print results
     for res in xmlquery(args.caseroot , args, args.attribute ) :
-        print res
 
+	if args.value == True :
+		sys.stdout.write(res)
+	else :
+		print res
 if (__name__ == "__main__"):
     _main_func(__doc__)
