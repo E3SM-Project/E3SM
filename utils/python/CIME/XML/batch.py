@@ -65,11 +65,12 @@ class Batch(GenericXML):
 
         return batch_system
 
-    def get_value(self, name, resolved=True):
+    def get_value(self, name, resolved=True, subgroup=None):
         """
         Get Value of fields in the config_batch.xml file
         """
         expect(self.batch_system_node is not None, "Batch object has no batch system defined")
+        expect(subgroup is None, "This class does not support subgroups")
         value = None
 
         node = self.get_optional_batch_node(name)
@@ -138,13 +139,10 @@ class Batch(GenericXML):
         '''
         return a list of touples (flag, name)
         '''
+        arg_nodes = self.get_nodes("arg", root=self.batch_system_node)
+        if self.machine_node is not None:
+            arg_nodes.extend(self.get_nodes("arg", root=self.machine_node))
+
         values = []
-        bs_nodes = self.get_nodes("batch_system",{"type":self.batch_system})
-        if machine is not None:
-            bs_nodes += self.get_nodes("batch_system",{"MACH":machine})
-        submit_arg_nodes = []
-        for node in bs_nodes:
-            submit_arg_nodes += self.get_nodes("arg",root=node)
-        for arg in submit_arg_nodes:
-            values.append((arg.get("flag"),arg.get("name")))
-        return values
+        for arg in arg_nodes:
+            values.append((arg.get("flag"), arg.get("name")))

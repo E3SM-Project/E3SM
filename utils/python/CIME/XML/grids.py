@@ -3,10 +3,10 @@ Common interface to XML files which follow the grids format,
 This is not an abstract class - but inherits from the abstact class GenericXML
 """
 
-from standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, convert_to_string, convert_to_type
 from CIME.XML.files import Files
-from generic_xml import GenericXML
+from CIME.XML.generic_xml import GenericXML
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +32,11 @@ class Grids(GenericXML):
         for node in nodes:
             if "compset" in node.attrib:
                 attrib = node.get("compset")
-                compsetRE = re.compile(attrib)
                 compset_match = re.search(attrib,compset)
                 if compset_match is not None:
-                    alias = self.get_value("alias",root=node)
-                    sname = self.get_value("sname",root=node)
-                    lname = self.get_value("lname",root=node)
+                    alias = self.get_value("alias", root=node)
+                    sname = self.get_value("sname", root=node)
+                    lname = self.get_value("lname", root=node)
                     if alias == name or lname == name or sname == name:
                         logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname))
                         component_grids = self._get_component_grids(lname)
@@ -48,14 +47,13 @@ class Grids(GenericXML):
                         gridinfo["GRID"] = lname
                         return gridinfo
 
-
         # if no matches were found for a possible compset match, then search for just a grid match with no
         # compset attribute
         for node in nodes:
             if "compset" not in node.attrib:
-                sname = self.get_value("sname",root=node)
-                alias = self.get_value("alias",root=node)
-                lname = self.get_value("lname",root=node)
+                sname = self.get_value("sname", root=node)
+                alias = self.get_value("alias", root=node)
+                lname = self.get_value("lname", root=node)
                 if alias == name or lname == name or sname == name:
                     logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname))
                     component_grids = self._get_component_grids(lname)
@@ -67,6 +65,7 @@ class Grids(GenericXML):
         expect (False,
                 "grid '%s'  is not supported, use manage_case to determine supported grids " %name)
 
+    # TODO - API needs to match inherited version
     def get_value(self, item, attributes=None, root=None):
         if root is None:
             root = self.root
@@ -92,7 +91,7 @@ class Grids(GenericXML):
         mask = component_grids[4]
 
         domains = {}
-        for idx, grid in enumerate(grids):
+        for grid in grids:
             file_name = grid[0] + "_DOMAIN_FILE"
             path_name = grid[0] + "_DOMAIN_PATH"
             mask_name = None
@@ -106,10 +105,10 @@ class Grids(GenericXML):
                 domains[grid[0]+"_NY"] = int(self.get_value("ny", root=root))
                 domains[grid[0] + "_GRID"] = grid[1]
                 if mask_name is not None:
-                    file = self.get_value("file", attributes={mask_name:mask}, root=root)
-                    path = self.get_value("path", attributes={mask_name:mask}, root=root)
-                    if file is not None:
-                        domains[file_name] = file
+                    file_ = self.get_value("file", attributes={mask_name:mask}, root=root)
+                    path  = self.get_value("path", attributes={mask_name:mask}, root=root)
+                    if file_ is not None:
+                        domains[file_name] = file_
                         if path is not None:
                             domains[path_name] = path
 
@@ -138,16 +137,10 @@ class Grids(GenericXML):
 
         return gridmaps
 
-
     def print_values(self, long_output=None):
         # write out help message
         helptext = self.get_value("help")
         logger.info("%s " %helptext)
-
-        # if long output mode is on, then also obtain nodes for domains and maps
-        if long_output is not None:
-            domain_nodes = self.get_nodes(nodename="domain")
-            gridmap_nodes = self.get_nodes(nodename="gridmap")
 
         # write out grid elements
         grid_nodes = self.get_nodes(nodename="grid")
@@ -155,7 +148,6 @@ class Grids(GenericXML):
             lname = self.get_value("lname",root=grid_node)
             sname = self.get_value("sname",root=grid_node)
             alias = self.get_value("alias",root=grid_node)
-            support = self.get_value("support",root=grid_node)
             logger.info("------------------------------------------------")
             logger.info("model grid: %s" %lname)
             logger.info("------------------------------------------------")
@@ -169,6 +161,9 @@ class Grids(GenericXML):
 
             # in long_output mode add domain description and mapping fiels
             if long_output is not None:
+                # get component grids (will contain duplicates)
+                component_grids = self._get_component_grids(lname)
+
                 # write out out only unique non-null component grids
                 for domain in list(set(component_grids)):
                     if domain != 'null':
@@ -176,8 +171,6 @@ class Grids(GenericXML):
                         domain_node = self.get_node(nodename="domain", attributes={"name":domain})
                         for child in domain_node:
                             logger.info("        %s: %s" %(child.tag, child.text))
-                # get component grids (will contain duplicates)
-                component_grids = self._get_component_grids(lname)
 
                 # write out mapping files
                 grids = [ ("atm_grid", component_grids[0]), ("lnd_grid", component_grids[1]), ("ocn_grid", component_grids[2]), \
@@ -193,4 +186,3 @@ class Grids(GenericXML):
                 logger.info("   ")
 
                 # write out XROT_FLOOD_MODE element TODO: (why is this in there???)
-

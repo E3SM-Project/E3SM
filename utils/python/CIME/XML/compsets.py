@@ -2,9 +2,9 @@
 Common interface to XML files which follow the compsets format,
 """
 
-from standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, convert_to_string, convert_to_type
-from generic_xml import GenericXML
+from CIME.XML.generic_xml import GenericXML
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +20,11 @@ class Compsets(GenericXML):
             alias = self.get_node("alias",root=node)
             lname = self.get_node("lname",root=node)
             if alias.text == name or lname.text == name:
-               logger.debug("Found node match with alias: %s and lname: %s" % (alias.text, lname.text))
-               return lname.text
+                logger.debug("Found node match with alias: %s and lname: %s" % (alias.text, lname.text))
+                return lname.text
 
-    def get_value(self, name, attribute={}, resolved=False):
+    def get_value(self, name, attribute={}, resolved=False, subgroup=None):
+        expect(subgroup is None, "This class does not support subgroups")
         if name == "help":
             rootnode = self.get_node("help")
             helptext = rootnode.text

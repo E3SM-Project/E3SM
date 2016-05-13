@@ -1,9 +1,9 @@
 """
 Interface to the config_files.xml file.  This class inherits from EntryID.py
 """
-from standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 
-from entry_id import EntryID
+from CIME.XML.entry_id import EntryID
 from CIME.utils import expect, get_cime_root, get_model
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ class Files(EntryID):
         infile = os.path.join(get_cime_root(), "cime_config", get_model(), "config_files.xml")
         EntryID.__init__(self, infile)
 
-    def get_components(self, nodename, resolved=True):
+    def get_components(self, nodename):
         node = self.get_optional_node("entry", {"id":nodename})
         valnodes = self.get_nodes("value", root=node)
         values = []

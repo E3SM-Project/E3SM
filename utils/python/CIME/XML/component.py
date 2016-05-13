@@ -1,9 +1,9 @@
 """
 Interface to the config_component.xml files.  This class inherits from EntryID.py
 """
-from standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 
-from entry_id import EntryID
+from CIME.XML.entry_id import EntryID
 from CIME.utils import expect, get_cime_root, get_model
 from CIME.XML.files import Files
 
@@ -21,7 +21,8 @@ class Component(EntryID):
 
         EntryID.__init__(self,infile)
 
-    def get_value(self, name, attribute={}, resolved=False):
+    def get_value(self, name, attribute={}, resolved=False, subgroup=None):
+        expect(subgroup is None, "This class does not support subgroups")
         return EntryID.get_value(self, name, attribute, resolved)
 
     def get_valid_model_components(self):

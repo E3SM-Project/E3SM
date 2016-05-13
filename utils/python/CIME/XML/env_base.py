@@ -1,10 +1,10 @@
 """
 Base class for env files .  This class inherits from EntryID.py
 """
-from standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 
-from entry_id import EntryID
-from headers import Headers
+from CIME.XML.entry_id import EntryID
+from CIME.XML.headers import Headers
 
 logger = logging.getLogger(__name__)
 

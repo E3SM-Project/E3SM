@@ -1,14 +1,15 @@
 """
 Interface to the config_pes.xml file.  This class inherits from GenericXML.py
 """
-from standard_module_setup import *
-from generic_xml import GenericXML
-from files import Files
+from CIME.XML.standard_module_setup import *
+from CIME.XML.generic_xml import GenericXML
+from CIME.XML.files import Files
 from CIME.utils import expect
 
 logger = logging.getLogger(__name__)
 
 class Pes(GenericXML):
+
     def __init__(self, infile):
         """
         initialize a files object given input pes specification file
@@ -41,21 +42,21 @@ class Pes(GenericXML):
                             pesize_match = pes_node.get("pesize")
                             compset_match = pes_node.get("compset")
                             if (pesize_match == "any" or (pesize_opts is not None and \
-                                                        re.search(pesize_match, pesize_opts))) and \
-                                                        (compset_match == "any" or \
-                                                        re.search(compset_match,compset)):
+                                                          re.search(pesize_match, pesize_opts))) and \
+                                                          (compset_match == "any" or \
+                                                           re.search(compset_match,compset)):
 
-                               points = int(grid_match!="any")*4+int(mach_match!="any")*3+\
-                                   int(compset_match!="any")*2+int(pesize_match!="any")
-                               if points > max_points:
-                                   pe_select = pes_node
-                                   max_points = points
-                                   mach_choice = mach_match
-                                   grid_choice = grid_match
-                                   compset_choice = compset_match
-                                   pesize_choice = pesize_match
-                               elif points == max_points:
-                                   expect(False, "We dont expect to be here" )
+                                points = int(grid_match!="any")*4+int(mach_match!="any")*3+\
+                                         int(compset_match!="any")*2+int(pesize_match!="any")
+                                if points > max_points:
+                                    pe_select = pes_node
+                                    max_points = points
+                                    mach_choice = mach_match
+                                    grid_choice = grid_match
+                                    compset_choice = compset_match
+                                    pesize_choice = pesize_match
+                                elif points == max_points:
+                                    expect(False, "We dont expect to be here" )
 
         pes_ntasks, pes_nthrds, pes_rootpe = {}, {}, {}
         for pes_data, xpath in [(pes_ntasks, "ntasks"),
@@ -67,8 +68,6 @@ class Pes(GenericXML):
                 value = node.text
                 pes_data[name] = value
                 logger.debug("%s %s " % (name, value))
-
-        machmatch = pe_select.findall(".//mach")
 
         logger.info("Pes setting: grid          is %s " %grid)
         logger.info("Pes setting: compset       is %s " %compset)
