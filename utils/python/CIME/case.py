@@ -154,8 +154,6 @@ class Case(object):
         # Empty result list
         results = []
 
-        if item in self.lookups.keys():
-            results = [self.lookups[item]]
 
         for env_file in self._files:
             # Wait and resolve in self rather than in env_file
