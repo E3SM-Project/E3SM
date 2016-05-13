@@ -677,6 +677,11 @@ contains
 #endif
     call shr_sys_flush(stderrUnit)
 
+#ifndef MPAS_DEBUG
+    if ( iam /= 0 ) then
+       open(stdout_shr, file='/dev/null', position='APPEND')
+    end if
+#endif
 
 !-----------------------------------------------------------------------
 !EOC
@@ -723,13 +728,21 @@ contains
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp, streamName
       type (MPAS_timeInterval_type) :: timeStep
-      integer :: ierr, streamDirection
+      integer :: ierr, streamDirection, my_proc_id
       logical :: streamActive
       logical, pointer :: config_write_output_on_startup
       logical, save :: first=.true.
       character (len=StrKIND), pointer :: config_restart_timestamp_name
       real(kind=RKIND), pointer :: &
             dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
+
+      my_proc_id = domain % dminfo % my_proc_id
+
+#ifndef MPAS_DEBUG
+    if ( my_proc_id /= 0 ) then
+       open(iceStdErrUnit, file='/dev/null', position='APPEND')
+    end if
+#endif
 
       call mpas_io_units_set_stdout(iceStdOutUnit)
       call mpas_io_units_set_stderr(iceStdErrUnit)
@@ -865,6 +878,13 @@ contains
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
 
+#ifndef MPAS_DEBUG
+    if ( my_proc_id /= 0 ) then
+       close(iceStdErrUnit)
+    end if
+#endif
+
+
 
 !-----------------------------------------------------------------------
 !EOC
@@ -901,12 +921,19 @@ contains
 !-----------------------------------------------------------------------
 
 
-    integer :: shrloglev, shrlogunit
+    integer :: shrloglev, shrlogunit, my_proc_id
     integer :: errorCode
 
     integer :: ierr
 
 !-----------------------------------------------------------------------
+    my_proc_id = domain % dminfo % my_proc_id
+
+#ifndef MPAS_DEBUG
+    if ( my_proc_id /= 0 ) then
+       open(iceStdErrUnit, file='/dev/null', position='APPEND')
+    end if
+#endif
 
     call mpas_io_units_set_stdout(iceStdOutUnit)
     call mpas_io_units_set_stderr(iceStdErrUnit)
@@ -929,6 +956,12 @@ contains
     ! Reset I/O logs
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
+
+#ifndef MPAS_DEBUG
+    if ( my_proc_id /= 0 ) then
+       close(iceStdErrUnit)
+    end if
+#endif
 
   end subroutine ice_final_mct!}}}
 
