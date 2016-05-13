@@ -285,7 +285,7 @@ contains
           ! open the error file
           call mpas_new_unit(errorUnit)
           write(filename,fmt='(a,i6.6,a)') "mpas_seaice_state_test_", domain % dminfo % my_proc_id, ".log"
-          open(errorUnit, file=trim(filename))
+          open(errorUnit, file=trim(filename), position="append")
 
           block => domain % blocklist
           do while (associated(block))
