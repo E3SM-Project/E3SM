@@ -166,6 +166,9 @@ contains
 
   subroutine cice_check_state(domain)
 
+    use cice_constants, only: &
+         ciceRadiansToDegrees
+
     type (domain_type), intent(in) :: &
          domain !< Input/Output:
 
@@ -326,7 +329,7 @@ contains
                    if (iceVolumeCategory(1,iCategory,iCell) > iceVolumeLimit) then
 
                       write(errorUnit,fmt=10) "Time=", trim(xtime), ", iCell=", indexToCellID(iCell), ", iCategory=", iCategory, &
-                           ", lat=", latCell(iCell), ", lon=", lonCell(iCell), &
+                           ", lat=", latCell(iCell)*ciceRadiansToDegrees, ", lon=", lonCell(iCell)*ciceRadiansToDegrees, &
                            ", iceVolumeCategory=", iceVolumeCategory(1,iCategory,iCell)
 
                    endif ! seaice thickness check
@@ -335,7 +338,7 @@ contains
                    if (snowVolumeCategory(1,iCategory,iCell) > snowVolumeLimit) then
 
                       write(errorUnit,fmt=10) "Time=", trim(xtime), ", iCell=", indexToCellID(iCell), ", iCategory=", iCategory, &
-                           ", lat=", latCell(iCell), ", lon=", lonCell(iCell), &
+                           ", lat=", latCell(iCell)*ciceRadiansToDegrees, ", lon=", lonCell(iCell)*ciceRadiansToDegrees, &
                            ", snowVolumeCategory=", snowVolumeCategory(1,iCategory,iCell)
 
                    endif ! snow on seaice thickness check
@@ -345,7 +348,7 @@ contains
                        iceSalinity(1,iCategory,iCell) > iceSalinityUpperLimit) then
 
                       write(errorUnit,fmt=10) "Time=", trim(xtime), ", iCell=", indexToCellID(iCell), ", iCategory=", iCategory, &
-                           ", lat=", latCell(iCell), ", lon=", lonCell(iCell), &
+                           ", lat=", latCell(iCell)*ciceRadiansToDegrees, ", lon=", lonCell(iCell)*ciceRadiansToDegrees, &
                            ", iceSalinity=", iceSalinity(1,iCategory,iCell)
 
                    endif ! salinity check
@@ -361,7 +364,7 @@ contains
                 if (uVelocity(iVertex) >= velocityLimit .or. vVelocity(iVertex) >= velocityLimit) then
 
                    write(errorUnit,fmt=20) "Time=", trim(xtime), ", iVertex=", indexToVertexID(iVertex), &
-                        ", lat=", latVertex(iVertex), ", lon=", lonVertex(iVertex), &
+                        ", lat=", latVertex(iVertex)*ciceRadiansToDegrees, ", lon=", lonVertex(iVertex)*ciceRadiansToDegrees, &
                         ", uVelocity=", uVelocity(iVertex), ", vVelocity=", vVelocity(iVertex)
 
                 endif ! velocity check
