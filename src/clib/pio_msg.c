@@ -425,7 +425,7 @@ int att_get_handler(iosystem_desc_t *ios)
 	 ncid, varid, namelen, name, iotype, atttype, attlen, typelen));    
 
     /* Allocate space for the attribute data. */
-    if (!(ip = malloc(attlen * sizeof(int))))
+    if (!(ip = malloc(attlen * typelen)))
 	return PIO_ENOMEM;
     
     /* Call the function to read the attribute. */

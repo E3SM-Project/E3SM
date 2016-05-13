@@ -2195,26 +2195,33 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
 	return PIO_EBADID;
     ios = file->iosystem;
 
-    /* If async is in use, and this is not an IO task, bcast the parameters. */
+    /* Run these on all tasks if async is not in use, but only on
+     * non-IO tasks if async is in use. */
+    if (!ios->async_interface || !ios->ioproc)
+    {
+	/* Get the type and length of the attribute. */
+	if ((ierr = PIOc_inq_att(file->fh, varid, name, &atttype, &attlen)))
+	{
+	    check_netcdf(file, ierr, __FILE__, __LINE__);
+	    return ierr;
+	}
+
+	/* Get the length (in bytes) of the type. */
+	if ((ierr = PIOc_inq_type(file->fh, atttype, NULL, &typelen)))
+	{
+	    check_netcdf(file, ierr, __FILE__, __LINE__);
+	    return ierr;
+	}
+    }
+    
+
+    /* If async is in use, and this is not an IO task, bcast the
+     * parameters and the attribute and type information we fetched. */
     if (ios->async_interface)
     {
 	if (!ios->ioproc)
 	{
 	    int msg = PIO_MSG_GET_ATT_INT;
-
-	    /* Get the type and length of the attribute. */
-	    if ((ierr = PIOc_inq_att(file->fh, varid, name, &atttype, &attlen)))
-	    {
-		check_netcdf(file, ierr, __FILE__, __LINE__);
-		return ierr;
-	    }
-
-	    /* Get the length (in bytes) of the type. */
-	    if ((ierr = PIOc_inq_type(file->fh, atttype, NULL, &typelen)))
-	    {
-		check_netcdf(file, ierr, __FILE__, __LINE__);
-		return ierr;
-	    }
 
 	    /* Send the message to IO master. */
 	    if(ios->compmaster) 
@@ -2244,6 +2251,12 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
 	if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
 	    check_mpi(file, mpierr2, __FILE__, __LINE__);	    
 	check_mpi(file, mpierr, __FILE__, __LINE__);
+	
+	/* Broadcast values. */
+	if ((mpierr = MPI_Bcast(&attlen, 1, MPI_OFFSET, ios->ioroot, ios->my_comm)))
+	    check_mpi(file, mpierr, __FILE__, __LINE__);	    
+	if ((mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET, ios->ioroot, ios->my_comm)))
+	    check_mpi(file, mpierr, __FILE__, __LINE__);	    
     }
 	
     /* If this is an IO task, then call the netCDF function. */
