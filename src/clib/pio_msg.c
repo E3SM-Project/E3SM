@@ -28,7 +28,7 @@ int inq_type_handler(iosystem_desc_t *ios)
     int mpierr;
     int ret;
 
-    LOG((1, "typelen_handler"));
+    LOG((1, "inq_type_handler"));
 
     /* Get the parameters for this function that the the comp master
      * task is broadcasting. */
@@ -40,7 +40,7 @@ int inq_type_handler(iosystem_desc_t *ios)
     	return PIO_EIO;
     if ((mpierr = MPI_Bcast(&size_present, 1, MPI_CHAR, 0, ios->intercomm)))
     	return PIO_EIO;
-    LOG((1, "inq_type_handler got parameters ncid = %d datatype = %d", ncid, xtype));
+    LOG((2, "inq_type_handler got parameters ncid = %d datatype = %d", ncid, xtype));
 
     if (name_present)
 	namep = name;
@@ -51,6 +51,8 @@ int inq_type_handler(iosystem_desc_t *ios)
     if ((ret = PIOc_inq_type(ncid, xtype, namep, sizep)))
 	return ret;
 
+    if (sizep)
+	LOG((2, "inq_type_handler size = %d", *sizep));
     LOG((1, "inq_type_handler succeeded!"));
     return PIO_NOERR;
 }

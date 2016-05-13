@@ -30,6 +30,7 @@
 
 /** The name of the global attribute in the netCDF output file. */
 #define ATT_NAME "gatt_test_intercomm"
+#define SHORT_ATT_NAME "short_gatt_test_intercomm"
 
 /** The value of the global attribute in the netCDF output file. */
 #define ATT_VALUE 42
@@ -85,6 +86,7 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     int varndims2, vardimids2, varnatts2;
     int varid2;
     int att_data;
+    short short_att_data;
         
     /* Re-open the file to check it. */
     if (verbose)
@@ -96,7 +98,7 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     /* Find the number of dimensions, variables, and global attributes.*/
     if ((ret = PIOc_inq(ncid, &ndims, &nvars, &ngatts, &unlimdimid)))
     	ERR(ret);
-    if (ndims != 1 || nvars != 1 || ngatts != 1 || unlimdimid != -1)
+    if (ndims != 1 || nvars != 1 || ngatts != 2 || unlimdimid != -1)
     	ERR(ERR_WRONG);
 
     /* This should return PIO_NOERR. */
@@ -114,7 +116,7 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     	ERR(ERR_WRONG);
     if ((ret = PIOc_inq_natts(ncid, &ngatts2)))
     	ERR(ret);
-    if (ngatts2 != 1)
+    if (ngatts2 != 2)
     	ERR(ERR_WRONG);
     if ((ret = PIOc_inq_unlimdim(ncid, &unlimdimid2)))
     	ERR(ret);
@@ -191,6 +193,15 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     	printf("%d test_intercomm att_data = %d\n", my_rank, att_data);
     if (att_data != ATT_VALUE)
     	ERR(ERR_WRONG);
+    if ((ret = PIOc_inq_att(ncid, NC_GLOBAL, SHORT_ATT_NAME, &atttype, &attlen)))
+    	ERR(ret);
+    if (atttype != NC_SHORT || attlen != 1)
+    	ERR(ERR_WRONG);
+    if ((ret = PIOc_get_att_short(ncid, NC_GLOBAL, SHORT_ATT_NAME, &short_att_data)))
+    	ERR(ret);
+    if (short_att_data != ATT_VALUE)
+    	ERR(ERR_WRONG);
+    
 	    
     /* Close the file. */
     if (verbose)
@@ -387,11 +398,9 @@ main(int argc, char **argv)
 	    	printf("%d test_intercomm writing attributes %s\n", my_rank, ATT_NAME);
 	    int att_data = ATT_VALUE;
 	    short short_att_data = ATT_VALUE;
-	    sleep(2);
-	    if ((ret = PIOc_put_att_short(ncid, NC_GLOBAL, ATT_NAME, NC_INT, 1, &short_att_data)))
-	    	ERR(ret);
-	    sleep(2);
 	    if ((ret = PIOc_put_att_int(ncid, NC_GLOBAL, ATT_NAME, NC_INT, 1, &att_data)))
+	    	ERR(ret);
+	    if ((ret = PIOc_put_att_short(ncid, NC_GLOBAL, SHORT_ATT_NAME, NC_SHORT, 1, &short_att_data)))
 	    	ERR(ret);
 
 	    /* End define mode. */
@@ -415,9 +424,9 @@ main(int argc, char **argv)
 	    if ((ret = PIOc_closefile(ncid)))
 	    	ERR(ret);
 
-	    /* /\* Check the file for correctness. *\/ */
-	    /* if ((ret = check_file(iosysid, format[fmt], filename[fmt], my_rank, verbose))) */
-	    /* 	ERR(ret); */
+	    /* Check the file for correctness. */
+	    if ((ret = check_file(iosysid, format[fmt], filename[fmt], my_rank, verbose)))
+	    	ERR(ret);
 
 	    /* Now delete the file. */
 	    /* if ((ret = PIOc_deletefile(iosysid, filename[fmt]))) */

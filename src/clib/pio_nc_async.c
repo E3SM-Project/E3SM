@@ -402,7 +402,7 @@ int PIOc_inq_type(int ncid, nc_type xtype, char *name, PIO_Offset *sizep)
 
     /* Broadcast and check the return code. */
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-	return PIO_EIO;
+	check_mpi(file, mpierr, __FILE__, __LINE__);
     check_netcdf(file, ierr, __FILE__, __LINE__);
     
     /* Broadcast results to all tasks. Ignore NULL parameters. */
@@ -2344,11 +2344,12 @@ int PIOc_put_att(int ncid, int varid, const char *name, nc_type xtype,
     if (!ios->async_interface || !ios->ioproc)
     {
 	/* Get the length (in bytes) of the type. */
-	if ((ierr = PIOc_inq_type(file->fh, xtype, NULL, &typelen)))
+	if ((ierr = PIOc_inq_type(ncid, xtype, NULL, &typelen)))
 	{
 	    check_netcdf(file, ierr, __FILE__, __LINE__);
 	    return ierr;
 	}
+	LOG((2, "PIOc_put_att typelen = %d", ncid, typelen));
     }
     
     /* If async is in use, and this is not an IO task, bcast the parameters. */
@@ -2379,6 +2380,8 @@ int PIOc_put_att(int ncid, int varid, const char *name, nc_type xtype,
 	    if (!mpierr)
 		mpierr = MPI_Bcast((void *)op, len * typelen, MPI_BYTE, ios->compmaster,
 				   ios->intercomm);
+	    LOG((2, "PIOc_put_att finished bcast ncid = %d varid = %d namelen = %d name = %s "
+		 "len = %d typelen = %d", file->fh, varid, namelen, name, len, typelen));
 	}
 
 	/* Handle MPI errors. */
@@ -2592,72 +2595,7 @@ int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip)
 int PIOc_put_att_int(int ncid, int varid, const char *name, nc_type xtype,
 		     PIO_Offset len, const int *op) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-    size_t namelen;
-
-    int my_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);    
-    printf("%d PIOc_inq_varid ncid = %d name = %s\n", my_rank, ncid, name);
-
-    errstr = NULL;
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
-    ios = file->iosystem;
-    msg = PIO_MSG_PUT_ATT_INT;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast(&varid, 1, MPI_INT, ios->compmaster, ios->intercomm);
-	namelen = strlen(name);
-	mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast(&xtype, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast(&len, 1, MPI_OFFSET,  ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast((void *)op, len, MPI_INT,  ios->compmaster, ios->intercomm);
-    }
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_put_att_int(file->fh, varid, name, xtype, (size_t)len, op);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_put_att_int(file->fh, varid, name, xtype, (size_t)len, op);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_put_att_int(file->fh, varid, name, xtype, len, op);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(errstr != NULL) free(errstr);
-    return ierr;
+    return PIOc_put_att(ncid, varid, name, xtype, len, op);    
 }
 
 /** 
