@@ -29,6 +29,7 @@ OBJS = \
 	module_sf_bem.o              \
 	module_sf_bep.o              \
 	module_sf_bep_bem.o          \
+	module_sf_sfcdiags.o         \
 	module_sf_mynn.o             \
 	module_sf_mynn.wrf-3.8.o     \
 	module_sf_noahdrv.o          \
