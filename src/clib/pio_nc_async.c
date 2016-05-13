@@ -2605,7 +2605,7 @@ int PIOc_put_att_int(int ncid, int varid, const char *name, nc_type xtype,
 int PIOc_put_att_uchar(int ncid, int varid, const char *name, nc_type xtype,
 		       PIO_Offset len, const unsigned char *op) 
 {
-    return PIOc_put_att(ncid, varid, name, NC_CHAR, len, op);
+    return PIOc_put_att(ncid, varid, name, xtype, len, op);
 }
 
 /** 
@@ -2615,7 +2615,7 @@ int PIOc_put_att_uchar(int ncid, int varid, const char *name, nc_type xtype,
 int PIOc_put_att_longlong(int ncid, int varid, const char *name, nc_type xtype,
 			  PIO_Offset len, const long long *op) 
 {
-    return PIOc_put_att(ncid, varid, name, NC_CHAR, len, op);
+    return PIOc_put_att(ncid, varid, name, xtype, len, op);
 }
 
 /** 
@@ -2625,7 +2625,7 @@ int PIOc_put_att_longlong(int ncid, int varid, const char *name, nc_type xtype,
 int PIOc_put_att_uint(int ncid, int varid, const char *name, nc_type xtype,
 		      PIO_Offset len, const unsigned int *op) 
 {
-    return PIOc_put_att(ncid, varid, name, NC_CHAR, len, op);
+    return PIOc_put_att(ncid, varid, name, xtype, len, op);
 }
 
 /** 
@@ -2635,7 +2635,7 @@ int PIOc_put_att_uint(int ncid, int varid, const char *name, nc_type xtype,
 int PIOc_put_att_ubyte(int ncid, int varid, const char *name, nc_type xtype,
 		       PIO_Offset len, const unsigned char *op) 
 {
-    return PIOc_put_att(ncid, varid, name, NC_CHAR, len, op);
+    return PIOc_put_att(ncid, varid, name, xtype, len, op);
 }
 
 /** 
@@ -2645,7 +2645,7 @@ int PIOc_put_att_ubyte(int ncid, int varid, const char *name, nc_type xtype,
 int PIOc_put_att_float(int ncid, int varid, const char *name, nc_type xtype,
 		       PIO_Offset len, const float *op) 
 {
-    return PIOc_put_att(ncid, varid, name, NC_CHAR, len, op);
+    return PIOc_put_att(ncid, varid, name, xtype, len, op);
 }
 
 /** 

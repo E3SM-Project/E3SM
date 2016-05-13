@@ -31,6 +31,8 @@
 /** The name of the global attribute in the netCDF output file. */
 #define ATT_NAME "gatt_test_intercomm"
 #define SHORT_ATT_NAME "short_gatt_test_intercomm"
+#define FLOAT_ATT_NAME "float_gatt_test_intercomm"
+#define DOUBLE_ATT_NAME "double_gatt_test_intercomm"
 
 /** The value of the global attribute in the netCDF output file. */
 #define ATT_VALUE 42
@@ -87,6 +89,8 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     int varid2;
     int att_data;
     short short_att_data;
+    float float_att_data;
+    double double_att_data;
         
     /* Re-open the file to check it. */
     if (verbose)
@@ -98,7 +102,7 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     /* Find the number of dimensions, variables, and global attributes.*/
     if ((ret = PIOc_inq(ncid, &ndims, &nvars, &ngatts, &unlimdimid)))
     	ERR(ret);
-    if (ndims != 1 || nvars != 1 || ngatts != 2 || unlimdimid != -1)
+    if (ndims != 1 || nvars != 1 || ngatts != 4 || unlimdimid != -1)
     	ERR(ERR_WRONG);
 
     /* This should return PIO_NOERR. */
@@ -116,7 +120,7 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     	ERR(ERR_WRONG);
     if ((ret = PIOc_inq_natts(ncid, &ngatts2)))
     	ERR(ret);
-    if (ngatts2 != 2)
+    if (ngatts2 != 4)
     	ERR(ERR_WRONG);
     if ((ret = PIOc_inq_unlimdim(ncid, &unlimdimid2)))
     	ERR(ret);
@@ -200,6 +204,14 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     if ((ret = PIOc_get_att_short(ncid, NC_GLOBAL, SHORT_ATT_NAME, &short_att_data)))
     	ERR(ret);
     if (short_att_data != ATT_VALUE)
+    	ERR(ERR_WRONG);
+    if ((ret = PIOc_get_att_float(ncid, NC_GLOBAL, FLOAT_ATT_NAME, &float_att_data)))
+    	ERR(ret);
+    if (float_att_data != ATT_VALUE)
+    	ERR(ERR_WRONG);
+    if ((ret = PIOc_get_att_double(ncid, NC_GLOBAL, DOUBLE_ATT_NAME, &double_att_data)))
+    	ERR(ret);
+    if (double_att_data != ATT_VALUE)
     	ERR(ERR_WRONG);
     
 	    
@@ -398,9 +410,15 @@ main(int argc, char **argv)
 	    	printf("%d test_intercomm writing attributes %s\n", my_rank, ATT_NAME);
 	    int att_data = ATT_VALUE;
 	    short short_att_data = ATT_VALUE;
+	    float float_att_data = ATT_VALUE;
+	    double double_att_data = ATT_VALUE;
 	    if ((ret = PIOc_put_att_int(ncid, NC_GLOBAL, ATT_NAME, NC_INT, 1, &att_data)))
 	    	ERR(ret);
 	    if ((ret = PIOc_put_att_short(ncid, NC_GLOBAL, SHORT_ATT_NAME, NC_SHORT, 1, &short_att_data)))
+	    	ERR(ret);
+	    if ((ret = PIOc_put_att_float(ncid, NC_GLOBAL, FLOAT_ATT_NAME, NC_FLOAT, 1, &float_att_data)))
+	    	ERR(ret);
+	    if ((ret = PIOc_put_att_double(ncid, NC_GLOBAL, DOUBLE_ATT_NAME, NC_DOUBLE, 1, &double_att_data)))
 	    	ERR(ret);
 
 	    /* End define mode. */
