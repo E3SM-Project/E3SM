@@ -2432,6 +2432,7 @@ contains
 
        ! do IR for this block
        call incremental_remap_block(&
+            domain,     &
             block,      &      
             dt,         &
             tracersHead)
@@ -2555,12 +2556,15 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine incremental_remap_block(&
+       domain,      &
        block,       &
        dt,          &
        tracersHead, &
        timeLevelIn)
 
     ! in/out arguments
+    type(domain_type), intent(in) :: &
+         domain       !< Input: domain
 
     type(block_type), intent(inout) :: &
          block        !< Input: block info
@@ -2900,6 +2904,7 @@ contains
 
     call mpas_timer_start("incr remap departure points")
     call find_departure_points(&
+         domain,                              &
          nVertices,                           &
          dt,                                  &
          uVelocity,    vVelocity,             &
@@ -5082,6 +5087,7 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine find_departure_points(&
+       domain,                              &
        nVertices,                           &
        dt,                                  &
        uVelocity,    vVelocity,             &
@@ -5090,8 +5096,14 @@ contains
        departurePoint,                      &
        on_a_sphere)
 
+    use cice_diagnostics, only: &
+         cice_warning_message
+
+    type(domain_type), intent(in) :: &
+         domain             !< Input: domain
+
     integer, intent(in) :: &
-         nVertices          !< Input:  number of vertices
+         nVertices          !< Input: number of vertices
 
     real(kind=RKIND) ::  &
          dt                 !< Input: time step
@@ -5120,6 +5132,9 @@ contains
          velocityGlobal   ! 3D velocity in global coordinates`
 
     real(kind=RKIND) :: trajectoryLength
+
+    character(len=strKIND) :: &
+         errorMessage ! error message for CFL warning
 
     ! initialize
     departurePoint(:,:) = 0.0_RKIND
@@ -5158,9 +5173,15 @@ contains
        ! compare to the length of the shortest edge that meets at this vertex (computed at initialization)
 
        if (trajectoryLength > minLengthEdgesOnVertex(iVertex)) then
-          write(stderrUnit,*) 'WARNING: Potential CFL violation in IR advection, global vertex ID =', indexToVertexID(iVertex)
-          write(stderrUnit,*) 'Speed at vertex =', trajectoryLength/dt
-          write(stderrUnit,*) 'Maximum safe speed =', minLengthEdgesOnVertex(iVertex)/dt
+          write(errorMessage,*) 'Potential CFL violation in IR advection, global vertex ID =', indexToVertexID(iVertex)
+          write(stderrUnit,*) 'WARNING: '//trim(errorMessage)
+          call cice_warning_message(domain, errorMessage)
+          write(errorMessage,*) 'Speed at vertex =', trajectoryLength/dt
+          write(stderrUnit,*) trim(errorMessage)
+          call cice_warning_message(domain, errorMessage)
+          write(errorMessage,*) 'Maximum safe speed =', minLengthEdgesOnVertex(iVertex)/dt
+          write(stderrUnit,*) trim(errorMessage)
+          call cice_warning_message(domain, errorMessage)
        endif
 
     enddo
