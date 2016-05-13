@@ -113,16 +113,16 @@ class EntryID(GenericXML):
             return None
         else:
             return self._get_type_info(node)
-    
+
     def _get_default(self, node):
         default = self.get_optional_node("default_value", root=node)
         if default is not None:
             return default.text
         else:
             return None
-        
-    
-    # Get type description , expect child with tag "type" for node         
+
+
+    # Get type description , expect child with tag "type" for node
     def _get_type (self, node):
         type_node = self.get_optional_node("type", root=node)
         if type_node is not None:
@@ -130,7 +130,7 @@ class EntryID(GenericXML):
         else:
             # Default to string
             return "char"
-            
+
     # Get description , expect child with tag "description" for parent node
     def _get_description (self, node):
         type_node = self.get_optional_node("desc", root=node)
@@ -140,9 +140,9 @@ class EntryID(GenericXML):
             return None
 
     # Get group , expect node with tag "group"
-    # entry id nodes are children of group nodes        
+    # entry id nodes are children of group nodes
     def _get_group (self, node):
-        
+
         if node is not None:
             return node.get('id')
         else:
@@ -181,7 +181,7 @@ class EntryID(GenericXML):
         or from the values field if the attribute argument is provided
         and matches
         """
-        
+
         logger.debug("Get Value")
         val = None
         node = self.get_optional_node("entry", {"id":vid})
@@ -214,44 +214,44 @@ class EntryID(GenericXML):
             return convert_to_type(val, type_str, vid)
 
     def get_values(self, item, attribute={}, resolved=True, subgroup=None): # (self, vid, att, resolved=True , subgroup=None ):
-     
+
         """
         If an entry includes a list of values return a list of dict matching each
         attribute to its associated value and group
         """
-        
+
         logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" ,  self.__class__.__name__ , item, attribute, resolved, subgroup)
 
-        
-        nodes   = [] # List of identified xml elements  
-        results = [] # List of identified parameters 
-        
-       
+
+        nodes   = [] # List of identified xml elements
+        results = [] # List of identified parameters
+
+
         # Find all nodes with attribute name and attribute value item
         # xpath .//*[name='item']
-        
+
         groups = self.get_nodes("group")
-        
+
         if (len(groups) == 0) :
             groups = [None]
-        
+
         for group in groups :
-        
+
             if item :
                 nodes = self.get_nodes("entry",{"id" : item} , root=group)
             else :
                # Return all nodes
                logger.debug("Retrieving all parameter")
                nodes = self.get_nodes("entry" , root=group)
-        
+
             if (len(nodes) == 0) :
                 logger.debug("Found no nodes for %s" , item)
             else :
                 logger.debug("Building return structure for %s nodes" , len(nodes))
-        
+
             for node in nodes :
                 logger.debug("Node tag=%s attribute=%s" , node.tag , node.attrib )
-            
+
                 g       = self._get_group(group)
                 val     = node.attrib['value']
                 attr    = node.attrib['id']
@@ -259,19 +259,19 @@ class EntryID(GenericXML):
                 desc    = self._get_description(node)
                 default = self._get_default(node)
                 file    = None
-                try :     
+                try :
                     file    = self.filename
                 except AttributeError:
-                    logger.debug("Can't call filename on %s (%s)" , self , self.__class__.__name__ )      
+                    logger.debug("Can't call filename on %s (%s)" , self , self.__class__.__name__ )
                 #t   =  super(EnvBase , self).get_type( node )
                 v = { 'group' : g , 'attribute' : attr , 'value' : val , 'type' : t , 'description' : desc , 'default' : default , 'file' : file}
-                
+
                 results.append(v)
-        
-        logger.debug("(get_values) Returning %s items" , len(results) )   
+
+        logger.debug("(get_values) Returning %s items" , len(results) )
         return results
-       
-   
+
+
     def get_child_content(self, vid, childname):
         val = None
         node = self.get_optional_node("entry", {"id" : vid})
