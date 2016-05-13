@@ -2221,7 +2221,7 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
     {
 	if (!ios->ioproc)
 	{
-	    int msg = PIO_MSG_GET_ATT_INT;
+	    int msg = PIO_MSG_GET_ATT;
 
 	    /* Send the message to IO master. */
 	    if(ios->compmaster) 
@@ -2328,16 +2328,29 @@ int PIOc_put_att(int ncid, int varid, const char *name, nc_type xtype,
 {
     iosystem_desc_t *ios;  /** Pointer to io system information. */
     file_desc_t *file;     /** Pointer to file information. */
+    PIO_Offset typelen; /** Length (in bytes) of the type. */
     int ierr = PIO_NOERR;  /** Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
 
-    LOG((1, "PIOc_inq_varid ncid = %d name = %s", ncid, name));
+    LOG((1, "PIOc_put_att ncid = %d varid = %d name = %s", ncid, varid, name));
 
     /* Find the info about this file. */
     if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
     ios = file->iosystem;
 
+    /* Run these on all tasks if async is not in use, but only on
+     * non-IO tasks if async is in use. */
+    if (!ios->async_interface || !ios->ioproc)
+    {
+	/* Get the length (in bytes) of the type. */
+	if ((ierr = PIOc_inq_type(file->fh, xtype, NULL, &typelen)))
+	{
+	    check_netcdf(file, ierr, __FILE__, __LINE__);
+	    return ierr;
+	}
+    }
+    
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async_interface)
     {
@@ -2362,13 +2375,21 @@ int PIOc_put_att(int ncid, int varid, const char *name, nc_type xtype,
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&len, 1, MPI_OFFSET,  ios->compmaster, ios->intercomm);
 	    if (!mpierr)
-		mpierr = MPI_Bcast((void *)op, len, MPI_INT,  ios->compmaster, ios->intercomm);
+		mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET,  ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast((void *)op, len * typelen, MPI_BYTE, ios->compmaster,
+				   ios->intercomm);
 	}
 
 	/* Handle MPI errors. */
 	if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
 	    check_mpi(file, mpierr2, __FILE__, __LINE__);	    
 	check_mpi(file, mpierr, __FILE__, __LINE__);
+
+	/* Broadcast values currently only known on computation tasks to IO tasks. */
+	LOG((2, "PIOc_put_att bcast from comproot = %d typelen = %d", ios->comproot, typelen));
+	if ((mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET, ios->comproot, ios->my_comm)))
+	    check_mpi(file, mpierr, __FILE__, __LINE__);
     }
     
     /* If this is an IO task, then call the netCDF function. */

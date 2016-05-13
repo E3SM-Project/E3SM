@@ -336,46 +336,53 @@ int inq_att_handler(iosystem_desc_t *ios)
  * @param msg the message sent my the comp root task.
  * @return PIO_NOERR for success, error code otherwise.
 */
-int att_handler(iosystem_desc_t *ios, int msg)
+int att_put_handler(iosystem_desc_t *ios)
 {
     int ncid;
     int varid;
     int mpierr;
-    int ret;
-    char *name5;
+    int ierr;
+    char *name;
     int namelen;
-    PIO_Offset attlen;
+    PIO_Offset attlen, typelen;
     nc_type atttype;
     int *op, *ip;
+    int iotype;
 
-    LOG((1, "att_handler msg = %d", msg));
+    LOG((1, "att_put_handler"));
 
-    if (msg == PIO_MSG_PUT_ATT_INT)
-    {
-	/* Get the parameters for this function that the the comp master
-	 * task is broadcasting. */
-	if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
-	    return PIO_EIO;
-	if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
-	    return PIO_EIO;
-	mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-	if (!(name5 = malloc((namelen + 1) * sizeof(char))))
-	    return PIO_ENOMEM;
-	mpierr = MPI_Bcast((void *)name5, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast(&atttype, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast(&attlen, 1, MPI_OFFSET,  ios->compmaster, ios->intercomm);
-	if (!(op = malloc(attlen * sizeof(int))))
-	    return PIO_ENOMEM;
-	mpierr = MPI_Bcast(op, attlen, MPI_INT,  ios->compmaster, ios->intercomm);
+    /* Get the parameters for this function that the the comp master
+     * task is broadcasting. */
+    if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+    if (!(name = malloc((namelen + 1) * sizeof(char))))
+	return PIO_ENOMEM;
+    mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, ios->compmaster,
+		       ios->intercomm);
+    if ((mpierr = MPI_Bcast(&atttype, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&attlen, 1, MPI_OFFSET, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET, 0, ios->intercomm)))
+	return PIO_EIO;
+    if (!(op = malloc(attlen * typelen)))
+	return PIO_ENOMEM;
+    if ((mpierr = MPI_Bcast((void *)op, attlen * typelen, MPI_BYTE, 0, ios->intercomm)))
+	return PIO_EIO;	
+    LOG((1, "att_put_handler ncid = %d varid = %d namelen = %d name = %s iotype = %d"
+	 "atttype = %d attlen = %d typelen = %d",
+	 ncid, varid, namelen, name, iotype, atttype, attlen, typelen));    
 
-	/* Call the function to write the attribute. */
-	if ((ret = PIOc_put_att_int(ncid, varid, name5, atttype, attlen, op)))
-	    return ret;
-
-	/* Free resources. */
-	free(name5);
-	free(op);
-    }
+    /* Call the function to read the attribute. */
+    if ((ierr = PIOc_put_att(ncid, varid, name, atttype, attlen, op)))
+	return ierr;
+    
+    /* Free resources. */
+    free(name);
+    free(op);
 
     return PIO_NOERR;
 }
@@ -998,11 +1005,11 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	case PIO_MSG_INQ_VAR:
 	    inq_var_handler(my_iosys);
 	    break;
-	case PIO_MSG_GET_ATT_INT:
+	case PIO_MSG_GET_ATT:
 	    ret = att_get_handler(my_iosys);
 	    break;
-	case PIO_MSG_PUT_ATT_INT:
-	    ret = att_handler(my_iosys, msg);
+	case PIO_MSG_PUT_ATT:
+	    ret = att_put_handler(my_iosys);
 	    break;
 	case PIO_MSG_INQ_VARID:
 	    inq_varid_handler(my_iosys);
