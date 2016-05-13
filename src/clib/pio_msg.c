@@ -16,6 +16,45 @@ extern int my_rank;
 extern int pio_log_level;
 #endif /* PIO_ENABLE_LOGGING */
 
+/** This function is run on the IO tasks to find netCDF type
+ * length. */
+int inq_type_handler(iosystem_desc_t *ios)
+{
+    int ncid;
+    int xtype;
+    char name_present, size_present;
+    char *namep = NULL, name[NC_MAX_NAME + 1];
+    PIO_Offset *sizep = NULL, size;
+    int mpierr;
+    int ret;
+
+    LOG((1, "typelen_handler"));
+
+    /* Get the parameters for this function that the the comp master
+     * task is broadcasting. */
+    if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&xtype, 1, MPI_INT, 0, ios->intercomm)))
+    	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&name_present, 1, MPI_CHAR, 0, ios->intercomm)))
+    	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&size_present, 1, MPI_CHAR, 0, ios->intercomm)))
+    	return PIO_EIO;
+    LOG((1, "inq_type_handler got parameters ncid = %d datatype = %d", ncid, xtype));
+
+    if (name_present)
+	namep = name;
+    if (size_present)
+	sizep = &size;
+
+    /* Call the function. */
+    if ((ret = PIOc_inq_type(ncid, xtype, namep, sizep)))
+	return ret;
+
+    LOG((1, "inq_type_handler succeeded!"));
+    return PIO_NOERR;
+}
+
 /** This function is run on the IO tasks to create a netCDF file. */
 int create_file_handler(iosystem_desc_t *ios)
 {
@@ -54,7 +93,7 @@ int create_file_handler(iosystem_desc_t *ios)
     /* Free resources. */
     free(filename);
 
-    LOG((1, "create_file_handler succeeded!\n", my_rank));
+    LOG((1, "create_file_handler succeeded!"));
     return PIO_NOERR;
 }
 
@@ -387,7 +426,7 @@ int att_get_handler(iosystem_desc_t *ios)
 	return PIO_ENOMEM;
     
     /* Call the function to read the attribute. */
-    if ((ierr = PIOc_get_att_int(ncid, varid, name, ip)))
+    if ((ierr = PIOc_get_att(ncid, varid, name, ip)))
 	return ierr;
     
     /* Free resources. */
@@ -917,6 +956,9 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	/* Handle the message. This code is run on all IO tasks. */
 	switch (msg)
 	{
+	case PIO_MSG_INQ_TYPE:
+	    inq_type_handler(my_iosys);
+	    break;
 	case PIO_MSG_CREATE_FILE:
 	    create_file_handler(my_iosys);
 	    break;

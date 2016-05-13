@@ -92,7 +92,6 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     if ((ret = PIOc_openfile(iosysid, &ncid, &format, filename,
 			     NC_NOWRITE)))
 	ERR(ret);
-    sleep(2);
     
     /* Find the number of dimensions, variables, and global attributes.*/
     if ((ret = PIOc_inq(ncid, &ndims, &nvars, &ngatts, &unlimdimid)))
@@ -137,12 +136,10 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     	ERR(ret);
     if (dimlen2 != DIM_LEN)
     	ERR(ERR_WRONG);
-    sleep(2);
     if ((ret = PIOc_inq_dimid(ncid, DIM_NAME, &dimid2)))
     	ERR(ret);
     if (dimid2 != 0)
     	ERR(ERR_WRONG);
-    sleep(2);
 
     /* Check out the variable. */
     if ((ret = PIOc_inq_var(ncid, 0, varname, &vartype, &varndims, &vardimids, &varnatts)))
@@ -341,8 +338,7 @@ main(int argc, char **argv)
      * and when the do, they should go straight to finalize. */
     if (comp_task)
     {
-	/*for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++) */
-	for (int fmt = 0; fmt < 1; fmt++) 
+	for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++) 
 	{
 	    int ncid, varid, dimid;
 	    PIO_Offset start[NDIM], count[NDIM] = {0};
@@ -357,6 +353,22 @@ main(int argc, char **argv)
 	    if (verbose)
 	    	printf("%d test_intercomm file created ncid = %d\n", my_rank, ncid);
 
+	    /* Test the inq_type function for atomic types. */
+	    char type_name[NC_MAX_NAME + 1];
+	    PIO_Offset type_size;
+	    #define NUM_TYPES 11
+	    nc_type xtype[NUM_TYPES] = {NC_CHAR, NC_BYTE, NC_SHORT, NC_INT, NC_FLOAT, NC_DOUBLE,
+					NC_UBYTE, NC_USHORT, NC_UINT, NC_INT64, NC_UINT64};
+	    int type_len[NUM_TYPES] = {1, 1, 2, 4, 4, 8, 1, 2, 4, 8, 8};
+	    int max_type = format[fmt] == PIO_IOTYPE_NETCDF ? NC_DOUBLE : NC_UINT64;
+	    for (int i = 0; i < max_type; i++)
+	    {
+		if ((ret = PIOc_inq_type(ncid, xtype[i], type_name, &type_size)))
+		    ERR(ret);
+		if (type_size != type_len[i])
+		    ERR(ERR_AWFUL);
+	    }
+	    
 	    /* Define a dimension. */
 	    if (verbose)
 	    	printf("%d test_intercomm defining dimension %s\n", my_rank, DIM_NAME);

@@ -299,6 +299,134 @@ int PIOc_inq_unlimdim(int ncid, int *unlimdimidp)
 }
 
 /** 
+ * @ingroup PIOc_typelen
+ * The PIO-C interface for the NetCDF function nctypelen.
+ */
+int PIOc_inq_type(int ncid, nc_type xtype, char *name, PIO_Offset *sizep)
+{
+    int msg = PIO_MSG_INQ_TYPE; /** Message for async notification. */
+    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    file_desc_t *file;     /** Pointer to file information. */
+    int ierr = PIO_NOERR;  /** Return code from function calls. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
+    int typelen;
+
+    LOG((1, "PIOc_inq_type ncid = %d xtype = %d", ncid, xtype));
+
+    /* Find the info about this file. */
+    if (!(file = pio_get_file_from_id(ncid)))
+	return PIO_EBADID;
+    ios = file->iosystem;
+
+    /* If async is in use, and this is not an IO task, bcast the parameters. */
+    if (ios->async_interface)
+    {
+	if (!ios->ioproc)
+	{
+	    char name_present = name ? true : false;	
+	    char size_present = sizep ? true : false;
+	    
+	    if (ios->compmaster) 
+		mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+	    
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&xtype, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&name_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&size_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	}
+
+	/* Handle MPI errors. */
+	if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	    check_mpi(file, mpierr2, __FILE__, __LINE__);	    
+	check_mpi(file, mpierr, __FILE__, __LINE__);
+    }
+    
+    /* If this is an IO task, then call the netCDF function. */
+    if (ios->ioproc)
+    {
+	switch (file->iotype)
+	{
+#ifdef _NETCDF
+#ifdef _NETCDF4
+	case PIO_IOTYPE_NETCDF4P:
+	    ierr = nc_inq_type(ncid, xtype, name, (size_t *)sizep);
+	    break;
+	case PIO_IOTYPE_NETCDF4C:
+#endif
+	case PIO_IOTYPE_NETCDF:
+	    if (!file->iosystem->io_rank)
+		ierr = nc_inq_type(ncid, xtype, name, (size_t *)sizep);		
+	    break;
+#endif
+#ifdef _PNETCDF
+	case PIO_IOTYPE_PNETCDF:
+	    switch (xtype)
+	    {
+	    case NC_UBYTE:
+	    case NC_BYTE:
+	    case NC_CHAR:
+		typelen = 1;
+		break;
+	    case NC_SHORT:
+	    case NC_USHORT:
+		typelen = 2;
+		break;
+	    case NC_UINT:
+	    case NC_INT:
+	    case NC_FLOAT:
+		typelen = 4;
+		break;
+	    case NC_UINT64:
+	    case NC_INT64:
+	    case NC_DOUBLE:
+		typelen = 8;
+		break;
+	    }
+	    
+	    if (sizep)
+		*sizep = typelen;
+	    if (name)
+		strcpy(name, "some type");
+	    break;
+#endif
+	default:
+	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
+	}
+
+	LOG((2, "PIOc_inq_type netcdf call returned %d", ierr));
+    }
+
+    /* Broadcast and check the return code. */
+    if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	return PIO_EIO;
+    check_netcdf(file, ierr, __FILE__, __LINE__);
+    
+    /* Broadcast results to all tasks. Ignore NULL parameters. */
+    if (!ierr)
+    {
+	if (name)
+	{ 
+	    int slen;
+	    if (ios->iomaster)
+		slen = strlen(name);
+	    if ((mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+		check_mpi(file, mpierr, __FILE__, __LINE__);
+	    if ((mpierr = MPI_Bcast((void *)name, slen + 1, MPI_CHAR, ios->ioroot, ios->my_comm)))
+		check_mpi(file, mpierr, __FILE__, __LINE__);
+	}
+	if (sizep)
+	    if ((mpierr = MPI_Bcast(sizep , 1, MPI_OFFSET, ios->ioroot, ios->my_comm)))
+		check_mpi(file, mpierr, __FILE__, __LINE__);	    
+    }
+
+    return ierr;
+}
+
+/** 
  * @ingroup PIOc_inq_format
  * The PIO-C interface for the NetCDF function nc_inq_format.
  *

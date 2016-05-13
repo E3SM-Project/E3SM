@@ -650,6 +650,7 @@ int PIOc_set_blocksize(const int newblocksize);
   int PIOc_set_log_level(int level);
   int PIOc_put_att(int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const void *op);
   int PIOc_get_att(int ncid, int varid, const char *name, void *ip);
+  int PIOc_inq_type(int ncid, nc_type xtype, char *name, PIO_Offset *sizep);    
 #if defined(__cplusplus)
 }
 #endif
