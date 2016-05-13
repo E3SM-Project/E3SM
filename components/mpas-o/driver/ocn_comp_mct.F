@@ -291,7 +291,7 @@ contains
     stdout_shr = shr_file_getUnit()
 #ifndef MPAS_DEBUG
     if ( iam /= 0 ) then
-       open(stdout_shr, file='/dev/null', position='APPEND')
+       open(stdout_shr, status='SCRATCH')
     else
        inquire(file='ocn_modelio.nml'//trim(inst_suffix),exist=exists)
        if(exists) then
@@ -761,7 +761,7 @@ contains
 
 #ifndef MPAS_DEBUG
     if ( domain % dminfo % my_proc_id /= 0 ) then
-       open(ocnStdErrUnit, file='/dev/null', position='APPEND')
+       open(ocnStdErrUnit, status='SCRATCH')
     end if
 #endif
 
@@ -969,7 +969,7 @@ contains
     my_proc_id = domain % dminfo % my_proc_id
 #ifndef MPAS_DEBUG
     if ( my_proc_id /= 0 ) then
-       open(ocnStdErrUnit, file='/dev/null', position='APPEND')
+       open(ocnStdErrUnit, status='SCRATCH')
     end if
 #endif
 
