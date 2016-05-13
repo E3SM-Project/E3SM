@@ -500,6 +500,7 @@ add_default($nl, 'config_include_pond_freshwater_feedback');
 add_default($nl, 'config_perform_unit_test');
 add_default($nl, 'config_unit_test_type');
 add_default($nl, 'config_unit_test_subtype');
+add_default($nl, 'config_use_test_ice_shelf');
 
 ###################################
 # Namelist group: velocity_solver #
@@ -804,6 +805,16 @@ add_default($nl, 'config_AM_pointwiseStats_compute_on_startup');
 add_default($nl, 'config_AM_pointwiseStats_write_on_startup');
 
 #################################
+# Namelist group: AM_iceShelves #
+#################################
+
+add_default($nl, 'config_AM_iceShelves_enable');
+add_default($nl, 'config_AM_iceShelves_compute_interval');
+add_default($nl, 'config_AM_iceShelves_output_stream');
+add_default($nl, 'config_AM_iceShelves_compute_on_startup');
+add_default($nl, 'config_AM_iceShelves_write_on_startup');
+
+#################################
 # Namelist group: AM_icePresent #
 #################################
 
@@ -864,7 +875,6 @@ add_default($nl, 'config_AM_timeSeriesStatsClimatology_duration_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_repeat_intervals');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_reset_intervals');
 
-
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpas-cice_in) and input dataset list (mpas--cice.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
@@ -904,6 +914,7 @@ my @groups = qw(cice_model
                 am_ponddiagnostics
                 am_unitconversion
                 am_pointwisestats
+                am_iceshelves
                 am_icepresent
                 am_timeseriesstatsdaily
                 am_timeseriesstatsmonthly
