@@ -7,8 +7,8 @@ ST_OBJS = streams_gen.o test_functions.o
 XML_OBJS = $(EZXML_PATH)/ezxml.o
 
 all: ezxml
-	($(MAKE) namelist_gen CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)")
-	($(MAKE) streams_gen CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)")
+	($(MAKE) -j 1 namelist_gen CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)")
+	($(MAKE) -j 1 streams_gen CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)")
 
 ezxml:
 	(cd $(EZXML_PATH); $(MAKE) CFLAGS="$(CFLAGS) $(TOOL_TARGET_ARCH)")

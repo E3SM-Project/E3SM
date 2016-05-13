@@ -7,6 +7,7 @@
 !
 module atm_core_interface
 
+   use mpas_attlist
 
    contains
 
@@ -164,7 +165,6 @@ module atm_core_interface
       use mpas_kind_types, only : StrKIND
       use mpas_derived_types, only : mpas_pool_type
       use mpas_pool_routines, only : mpas_pool_get_config
-      use mpas_dmpar, only: mpas_dmpar_global_abort
 
       implicit none
 

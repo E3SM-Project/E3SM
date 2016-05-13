@@ -29,6 +29,19 @@ if not args.variable:
 if (not args.l2_norm) and (not args.l1_norm) and (not args.linf_norm):
 	print "WARNING: Script will pass since no norm values have been defined."
 
+files_exist = True
+
+if not os.path.exists(args.filename1):
+	print "ERROR: File %s does not exist. Comparison will FAIL."%(args.filename1)
+	files_exist = False
+
+if not os.path.exists(args.filename2):
+	print "ERROR: File %s does not exist. Comparison will FAIL."%(args.filename2)
+	files_exist = False
+
+if not files_exist:
+	sys.exit(1)
+
 f1 = NetCDFFile(args.filename1,'r')
 f2 = NetCDFFile(args.filename2,'r')
 
@@ -44,27 +57,85 @@ except:
 	print "ERROR: Field '%s' does not exist in both"%(args.variable)
 	print "           file1: %s"%(args.filename1)
 	print "       and file2: %s"%(args.filename2)
-	print "Exiting with a successful comparision, since no comparision can be done."
-	sys.exit(0)
+	print "Exiting with a failed comparision, since no comparision can be done but a comparison was requested."
+	sys.exit(1)
 
 if not field1.shape == field2.shape:
 	print "ERROR: Field sizes don't match in different files."
+	sys.exit(1)
 
 linf_norm = -(sys.float_info.max)
 
 pass_val = True
 
-print "Comparing field '%s'"%(args.variable)
+print "Beginning variable comparisons for all time levels of field '%s'. Note any time levels reported are 0-based."%(args.variable)
+if ( args.l2_norm or args.l1_norm or args.linf_norm ):
+	print "    Pass thresholds are:"
+	if ( args.l1_norm ):
+		print "       L1: %f"%(float(args.l2_norm))
+	if ( args.l2_norm ):
+		print "       L2: %f"%(float(args.l1_norm))
+	if ( args.linf_norm ):
+		print "       L_Infinity: %f"%(float(args.linf_norm))
 
-for t in range( 0, time_length):
-	pass_time = True
-	diff = field1[t][:] - field2[t][:]
-	l2_norm = sum(diff * diff)
-	l2_norm = l2_norm / np.sum(field1[t][:].shape)
-	l2_norm = np.max(l2_norm)
-	
-	l1_norm = sum(diff)
-	l1_norm = l1_norm / np.sum(field1[t][:].shape)
+field_dims = field1.dimensions
+
+if "Time" in field_dims:
+	for t in range( 0, time_length):
+		pass_time = True
+		if len(field_dims) >= 2:
+			diff = np.absolute(field1[t][:] - field2[t][:])
+		else:
+			diff = np.absolute(field1[t] - field2[t])
+
+		l2_norm = np.sum(diff * diff)
+		l2_norm = np.sqrt(l2_norm)
+
+		l1_norm = np.sum(diff)
+		if len(field_dims) >= 2:
+			l1_norm = l1_norm / np.sum(field1[t][:].shape)
+		l1_norm = np.max(l1_norm)
+
+		if np.amax(diff) > linf_norm:
+			linf_norm = np.amax(diff)
+
+		diff_str = '%d: '%(t)
+		if args.l1_norm:
+			if float(args.l1_norm) < l1_norm:
+				pass_time = False
+		diff_str = '%s l1: %16.14e '%(diff_str, l1_norm)
+
+		if args.l2_norm:
+			if float(args.l2_norm) < l2_norm:
+				pass_time = False
+		diff_str = '%s l2: %16.14e '%(diff_str, l2_norm)
+
+		if args.linf_norm:
+			if float(args.linf_norm) < linf_norm:
+				pass_time = False
+		diff_str = '%s linf: %16.14e '%(diff_str, linf_norm)
+
+		if not args.quiet:
+			print diff_str
+		elif not pass_time:
+			print diff_str
+
+		if not pass_time:
+			pass_val = False
+
+		del diff
+else:
+	if len(field_dims) >= 2:
+		diff = np.absolute(field1[:] - field2[:])
+	else:
+		diff = np.absolute(field1[0] - field2[0])
+
+	l2_norm = np.sum(diff * diff)
+	l2_norm = np.sqrt(l2_norm)
+
+	l1_norm = np.sum(diff)
+	if len(field_dims) >= 2:
+		l1_norm = l1_norm / np.sum(field1[:].shape)
 	l1_norm = np.max(l1_norm)
 
 	if np.amax(diff) > linf_norm:
@@ -72,27 +143,24 @@ for t in range( 0, time_length):
 
 	diff_str = '%d: '%(t)
 	if args.l1_norm:
-		if float(args.l1_norm) < abs(l1_norm):
-			pass_time = False
+		if float(args.l1_norm) < l1_norm:
+			pass_val = False
 	diff_str = '%s l1: %16.14e '%(diff_str, l1_norm)
 
 	if args.l2_norm:
-		if float(args.l2_norm) < abs(l2_norm):
-			pass_time = False
+		if float(args.l2_norm) < l2_norm:
+			pass_val = False
 	diff_str = '%s l2: %16.14e '%(diff_str, l2_norm)
 
 	if args.linf_norm:
-		if float(args.linf_norm) < abs(linf_norm):
-			pass_time = False
+		if float(args.linf_norm) < linf_norm:
+			pass_val = False
 	diff_str = '%s linf: %16.14e '%(diff_str, linf_norm)
 
 	if not args.quiet:
 		print diff_str
-	elif not pass_time:
+	elif not pass_val:
 		print diff_str
-	
-	if not pass_time:
-		pass_val = False
 
 	del diff
 

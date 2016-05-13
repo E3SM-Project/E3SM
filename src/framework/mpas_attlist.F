@@ -462,6 +462,62 @@ contains
 
 !***********************************************************************
 !
+!  routine mpas_duplicate_attlist
+!
+!> \brief   MPAS duplicate attribute list routine
+!> \author  Doug Jacobsen
+!> \date    04/26/2016
+!> \details 
+!> This routine creates a copy of an attribute list, and returns it as destAttList.
+!> This routine assumes that destAttList is empty, however it will remove every
+!> attribute from destAttList before it attempts to copy into it.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_duplicate_attlist(srcAttList, destAttList, ierr)!{{{
+
+      implicit none
+
+      type ( att_list_type ), pointer :: srcAttList !< Input: Source attribute list
+      type ( att_list_type ), pointer :: destAttList !< Output: Destination attribute list
+      integer, intent(out), optional :: ierr !< Optional Output: Error code
+
+      type ( att_list_type ), pointer :: srcCursor
+
+      if ( present(ierr) ) ierr = 0
+
+      if ( associated(destAttList) ) then
+         call mpas_deallocate_attlist(destAttList)
+      end if
+
+      allocate(destAttList)
+
+      destAttList % attType = -1
+      destAttList % attName = ''
+      nullify(destAttList % next)
+      nullify(destAttList % attValueIntA)
+      nullify(destAttList % attValueRealA)
+
+      srcCursor => srcAttList
+      do while ( associated(srcCursor) )
+         if ( srcCursor % attType == MPAS_ATT_INT ) then
+            call mpas_add_att(destAttList, srcCursor % attName, srcCursor % attValueInt)
+         else if ( srcCursor % attType == MPAS_ATT_INTA ) then
+            call mpas_add_att(destAttList, srcCursor % attName, srcCursor % attValueIntA)
+         else if ( srcCursor % attType == MPAS_ATT_REAL ) then
+            call mpas_add_att(destAttList, srcCursor % attName, srcCursor % attValueReal)
+         else if ( srcCursor % attType == MPAS_ATT_REALA ) then
+            call mpas_add_att(destAttList, srcCursor % attName, srcCursor % attValueRealA)
+         else if ( srcCursor % attType == MPAS_ATT_TEXT ) then
+            call mpas_add_att(destAttList, srcCursor % attName, srcCursor % attValueText)
+         end if
+
+         srcCursor => srcCursor % next
+      end do
+
+   end subroutine mpas_duplicate_attlist!}}}
+
+!***********************************************************************
+!
 !  routine mpas_remove_att
 !
 !> \brief   MPAS remove attribute routine

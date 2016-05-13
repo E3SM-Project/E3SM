@@ -378,7 +378,7 @@ module mpas_io_streams
           return
       end if
 
-      call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attList)
+      call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attLists(1) % attList)
 
 
       !
@@ -481,10 +481,10 @@ module mpas_io_streams
 
       if (field % isVarArray) then
          do i=1,size(field % constituentNames)
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attLists(i) % attList)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attLists(1) % attList)
       end if
 
 
@@ -588,10 +588,10 @@ module mpas_io_streams
 
       if (field % isVarArray) then
          do i=1,size(field % constituentNames)
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attLists(i) % attList)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attLists(1) % attList)
       end if
 
 
@@ -694,10 +694,10 @@ module mpas_io_streams
 
       if (field % isVarArray) then
          do i=1,size(field % constituentNames)
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attLists(i) % attList)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attLists(1) % attList)
       end if
 
 
@@ -784,7 +784,7 @@ module mpas_io_streams
           return
       end if
 
-      call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attList)
+      call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attLists(1) % attList)
 
 
       !
@@ -897,10 +897,10 @@ module mpas_io_streams
 
       if (field % isVarArray) then
          do i=1,size(field % constituentNames)
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attLists(i) % attList)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attLists(1) % attList)
       end if
 
 
@@ -1013,10 +1013,10 @@ module mpas_io_streams
 
       if (field % isVarArray) then
          do i=1,size(field % constituentNames)
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attLists(i) % attList)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attLists(1) % attList)
       end if
 
 
@@ -1130,10 +1130,10 @@ module mpas_io_streams
 
       if (field % isVarArray) then
          do i=1,size(field % constituentNames)
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attLists(i) % attList)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attLists(1) % attList)
       end if
 
 
@@ -1248,10 +1248,10 @@ module mpas_io_streams
 
       if (field % isVarArray) then
          do i=1,size(field % constituentNames)
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attLists(i) % attList)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attLists(1) % attList)
       end if
 
 
@@ -1366,10 +1366,10 @@ module mpas_io_streams
 
       if (field % isVarArray) then
          do i=1,size(field % constituentNames)
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attLists(i) % attList)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attLists(1) % attList)
       end if
 
 
@@ -1460,10 +1460,10 @@ module mpas_io_streams
 
       if (field % isVarArray) then
          do i=1,size(field % constituentNames)
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attLists(i) % attList)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attLists(1) % attList)
       end if
 
 
@@ -1553,10 +1553,10 @@ module mpas_io_streams
 
       if (field % isVarArray) then
          do i=1,size(field % constituentNames)
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attLists(i) % attList)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attLists(1) % attList)
       end if
 
 
