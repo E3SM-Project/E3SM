@@ -202,6 +202,9 @@ contains
 
       endif
 
+      ! init vertex masks
+      call init_vertex_masks(domain)
+
       ! initialize the runtime regional statistics system
       call init_runtime_regional_statistics(domain)
 
@@ -361,6 +364,80 @@ contains
      enddo
 
    end subroutine init_hemisphere_regions
+
+!***********************************************************************
+!
+!  routine init_vertex_masks
+!
+!> \brief   Determine of the region mask is all zeros
+!> \author  Adrian K. Turner
+!> \date    13th May 2016
+!> \details Calculate the vertex masks from the cell masks
+!
+!-----------------------------------------------------------------------
+
+   subroutine init_vertex_masks(domain)
+
+     type(domain_type), intent(inout) :: &
+          domain
+
+     type(block_type), pointer :: &
+          block
+
+     type(MPAS_pool_type), pointer :: &
+          regionsPool, &
+          meshPool
+
+     integer, dimension(:,:), pointer :: &
+          regionCellMasks, &
+          regionVertexMasks, &
+          cellsOnVertex
+
+     integer, pointer :: &
+          nVerticesSolve, &
+          nRegions, &
+          vertexDegree
+
+     integer :: &
+          iVertex, &
+          iRegion, &
+          iCellOnVertex
+
+     block => domain % blocklist
+     do while (associated(block))
+
+        call MPAS_pool_get_subpool(block % structs, "regions", regionsPool)
+        call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+
+        call MPAS_pool_get_array(regionsPool, "regionCellMasks", regionCellMasks)
+        call MPAS_pool_get_array(regionsPool, "regionVertexMasks", regionVertexMasks)
+
+        call MPAS_pool_get_array(meshPool, "cellsOnVertex", cellsOnVertex)
+
+        call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+        call MPAS_pool_get_dimension(block % dimensions, "nRegions", nRegions)
+        call MPAS_pool_get_dimension(block % dimensions, "vertexDegree", vertexDegree)
+
+        do iVertex = 1, nVerticesSolve
+           do iRegion = 1, nRegions
+
+              regionVertexMasks(iRegion, iVertex) = 0
+
+              do iCellOnVertex = 1, vertexDegree
+
+                 if (regionCellMasks(iRegion,cellsOnVertex(iCellOnVertex,iVertex)) == 1) then
+                    regionVertexMasks(iRegion, iVertex) = 1
+                 endif
+
+              enddo ! iCellOnVertex
+
+           enddo ! iRegion
+        enddo ! iVertex
+
+        block => block % next
+     enddo
+
+   end subroutine init_vertex_masks
 
 !***********************************************************************
 !
@@ -900,11 +977,13 @@ contains
 
       integer, pointer :: &
            nRegions, &
-           nCellsSolve
+           nCellsSolve, &
+           nVerticesSolve
 
       integer :: &
            iRegion, &
-           iCell
+           iCell, &
+           iVertex
 
       real(kind=RKIND), dimension(:), pointer :: &
            areaCell, &
@@ -923,7 +1002,8 @@ contains
            vVelocityCell
 
       integer, dimension(:,:), pointer :: &
-           regionCellMasks
+           regionCellMasks, &
+           regionVertexMasks
 
       integer, dimension(:), pointer :: &
            dynamicallyLockedCellsMask
@@ -939,7 +1019,8 @@ contains
            maximumIceVolume, &
            maximumIceVolumeLocked, &
            maximumIceVolumeNotlocked, &
-           maximumIcePressure
+           maximumIcePressure, &
+           maximumIceSpeed
 
       real(kind=RKIND), dimension(:), allocatable :: &
            globalSumsIn, &
@@ -949,7 +1030,7 @@ contains
 
       integer, parameter :: &
            nSums = 8, &
-           nMaxs = 4
+           nMaxs = 5
 
       integer :: &
            iSum, &
@@ -986,6 +1067,7 @@ contains
          call MPAS_pool_get_subpool(block % structs, 'regionalStatisticsAM', regionalStatisticsAMPool)
 
          call MPAS_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+         call MPAS_pool_get_dimension(block % dimensions, 'nVerticesSolve', nVerticesSolve)
 
          call MPAS_pool_get_array(meshPool, 'areaCell', areaCell)
 
@@ -1005,6 +1087,7 @@ contains
          call MPAS_pool_get_array(velocitySolverPool, "dynamicallyLockedCellsMask", dynamicallyLockedCellsMask)
 
          call MPAS_pool_get_array(regionsPool, 'regionCellMasks', regionCellMasks)
+         call MPAS_pool_get_array(regionsPool, 'regionVertexMasks', regionVertexMasks)
 
          call MPAS_pool_get_array(regionalStatisticsAMPool, 'uVelocityCell', uVelocityCell)
          call MPAS_pool_get_array(regionalStatisticsAMPool, 'vVelocityCell', vVelocityCell)
@@ -1013,6 +1096,7 @@ contains
          call cice_interpolate_vertex_to_cell(meshPool, boundaryPool, uVelocityCell, uVelocity)
          call cice_interpolate_vertex_to_cell(meshPool, boundaryPool, vVelocityCell, vVelocity)
 
+         ! quantities on cells
          do iCell = 1, nCellsSolve
             do iRegion = 1, nRegions
 
@@ -1091,6 +1175,21 @@ contains
             enddo ! iRegion
          enddo ! iCell
 
+         ! quantities on vertices
+         do iVertex = 1, nVerticesSolve
+            do iRegion = 1, nRegions
+
+               if (regionVertexMasks(iRegion,iVertex) == 1) then
+
+                  ! maximum ice speed
+                  iMax = (iRegion-1) * nMaxs + 5
+                  globalMaxsIn(iMax) = max(globalMaxsIn(iMax), sqrt(uVelocity(iVertex)**2 + vVelocity(iVertex)**2))
+
+               endif ! regionVertexMasks == 1
+
+            enddo ! iRegion
+         enddo ! iVertex
+
          block => block % next
       enddo
 
@@ -1115,6 +1214,7 @@ contains
       call MPAS_pool_get_array(regionalStatisticsAMPool, 'maximumIceVolumeLocked', maximumIceVolumeLocked)
       call MPAS_pool_get_array(regionalStatisticsAMPool, 'maximumIceVolumeNotLocked', maximumIceVolumeNotLocked)
       call MPAS_pool_get_array(regionalStatisticsAMPool, 'maximumIcePressure', maximumIcePressure)
+      call MPAS_pool_get_array(regionalStatisticsAMPool, 'maximumIceSpeed', maximumIceSpeed)
 
       do iRegion = 1, nRegions
 
@@ -1131,6 +1231,7 @@ contains
          maximumIceVolumeLocked(iRegion)    = globalMaxsOut((iRegion-1) * nMaxs + 2)
          maximumIceVolumeNotLocked(iRegion) = globalMaxsOut((iRegion-1) * nMaxs + 3)
          maximumIcePressure(iRegion)        = globalMaxsOut((iRegion-1) * nMaxs + 4)
+         maximumIceSpeed(iRegion)           = globalMaxsOut((iRegion-1) * nMaxs + 5)
 
       enddo ! iRegion
 

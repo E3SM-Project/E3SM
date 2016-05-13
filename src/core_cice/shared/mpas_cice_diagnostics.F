@@ -401,7 +401,7 @@ contains
     type(domain_type), intent(in) :: &
          domain
 
-    character(len=strKIND), intent(in) :: &
+    character(len=*), intent(in) :: &
          message
 
     integer :: &
