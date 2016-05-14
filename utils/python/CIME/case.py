@@ -104,6 +104,7 @@ class Case(object):
         self._gridfile = None
         self._components = []
         self._component_config_files = []
+        self._component_classes = []
 
 
     def __del__(self):
@@ -382,6 +383,27 @@ class Case(object):
             result = self.set_value(key,value)
             if result is not None:
                 del self.lookups[key]
+
+    def get_components(self):
+        # return dictionary of the form [component_class:component],
+        # e.g. [atm:cam], for all compset components
+        files = Files()
+        drv_comp = Component(files.get_value("CONFIG_DRV_FILE"))
+
+        # Determine list of component classes that this coupler/driver knows how
+        # to deal with. This list follows the same order as compset longnames follow.
+        component_classes = drv_comp.get_valid_model_components()
+        components = self.get_compset_components()
+
+        # Note that component classes can have a bigger range than
+        # compents since stub esp (sesp) is an optional component - so
+        # need to take the min of the two below
+        comp_dict = {}                
+        for i in xrange(0,len(components)):
+            comp_name  = components[i]
+            comp_class = component_classes[i+1]
+            comp_dict[comp_class] = comp_name
+        return comp_dict
 
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,

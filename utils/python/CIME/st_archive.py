@@ -6,13 +6,13 @@ from XML.standard_module_setup import *
 from CIME.case import Case
 from CIME.utils import expect, appendStatus
 from CIME.XML.env_archive import EnvArchive
-from os.path import isfile, isdir, join, basename
+from os.path import isfile, isdir, join
 import shutil, glob, re
 
 logger = logging.getLogger(__name__)
 
-def checkRun(case):
-    logger.debug('In checkRun...')
+def check_run(case):
+    logger.debug('In check_run...')
     dout_s_root = case.get_value('DOUT_S_ROOT')
     if dout_s_root is None or dout_s_root == 'UNSET':
         expect(False, 'XML variable DOUT_S_ROOT is required for root location of short-term achiver')
@@ -33,8 +33,8 @@ def checkRun(case):
     return runComplete
 
 
-def listXMLin(case, archive):
-    logger.debug('In listXMLin...')
+def list_xml(case, archive):
+    logger.debug('In list_xml...')
     for archive_spec_node in archive.get_nodes('comp_archive_spec'):
         comp = archive_spec_node.attrib['name']
         rootdir_node = archive.get_node('rootdir', root=archive_spec_node)
@@ -57,8 +57,8 @@ def listXMLin(case, archive):
             logger.info('  keep_last_in_rundir %s = ' % keep_last_in_rundir)
 
 
-def listArchive(dirname):
-    logger.debug('In listArchive: %s ...' % dirname)
+def list_archive(dirname):
+    logger.debug('In list_archivoe: %s ...' % dirname)
     logger.info('%s ' % dirname)
     if isdir(dirname):
         list_dirs = os.walk(dirname)
@@ -67,97 +67,167 @@ def listArchive(dirname):
                 print join(root, f)
 
 
-def getDatename(case):
-    logger.debug('In getDatename...')
+def get_datenames(case):
+    logger.debug('In get_datename...')
     rundir = case.get_value('RUNDIR')
     expect(isdir(rundir), 'Cannot open directory %s ' % rundir)
-    files = sorted(glob.glob(rundir + '/*cpl.r*.nc'))
-    rfile = files[-1]
-    names = rfile.split('.')
-    if names:
+    casename = case.get_value("CASE")
+    files = sorted(glob.glob(os.path.join(rundir,casename + '.cpl.r*.nc')))
+    if not files:
+        expect(False, 'Cannot find a %s.cpl.r.*.nc file in directory %s ' % (casename,rundir))
+    datenames = []
+    for filename in files:
+        names = filename.split('.')
         datename = names[-2]
-        logger.debug('Cpl dateName: %s ' % datename)
-        return datename
-    expect(False, 'Cannot find a cpl.r.*.nc file in directory %s ' % rundir)
+        datenames.append(datename)
+        logger.debug('cpl dateName: %s ' % datename)
+    return datenames
 
 
-def moveFiles(case, keep_last_in_rundir, suffix, destdir, restdir, datename, runfiles):
-    logger.debug('In moveFiles...')
+def move_files(files, case, keep_last_in_rundir, suffix, archive_dir):
+    logger.debug('In move_files...')
     rundir = case.get_value('RUNDIR')
-    p = re.compile(suffix)
-    files = [ f for f in os.listdir(rundir) if p.match(f) ]
-    numfiles = len(files)
-    if numfiles > 0:
-        if keep_last_in_rundir:
-            keepfile = files[-1]
-            shutil.copy(join(rundir, keepfile), join(destdir, keepfile))
-            logger.debug('keepfile = %s ' % keepfile)
-            for filename in files:
-                if filename != keepfile and isfile(filename):
-                    shutil.move(join(rundir, filename), join(destdir, filename))
+    if keep_last_in_rundir:
+        keepfile = files[-1]
+        shutil.copy(join(rundir, keepfile), join(archive_dir, keepfile))
+        logger.debug('keepfile = %s ' % keepfile)
+        for filename in files:
+            if filename != keepfile and isfile(filename):
+                shutil.move(join(rundir, filename), join(archive_dir, filename))
+    else:
+        for filename in files:
+            shutil.move(join(rundir, filename), join(archive_dir, filename))
 
-        else:
-            for filename in files:
-                shutil.move(join(rundir, filename), join(destdir, filename))
-
-    for filename in files:
-        runfiles.remove(filename)
-
-    counter = 0
-    for filename in files:
-        if datename in filename:
-            counter = counter + 1
-            if counter > 1:
-                expect(False, 'Multiple restart files found for suffix %s ' % suffix)
-            restfile = basename(filename)
-            if isfile(join(destdir, restfile)):
-                shutil.copy(join(destdir, restfile), join(restdir, restfile))
-
-
-def archiveProcess(case, archive, datename, runfiles):
-    logger.debug('In archiveProcess...')
+           
+def archive_process(case, archive, datename, datename_is_last):
+    logger.debug('In archive_process...')
     dout_s_root = case.get_value('DOUT_S_ROOT')
     rundir = case.get_value('RUNDIR')
-    restdir = join(dout_s_root, 'rest', datename)
-    if not os.path.exists(restdir):
-        os.makedirs(restdir)
-    items_to_copy = [ item for item in glob.glob(rundir + '/rpointer.*') ]
-    for item in items_to_copy:
-        if isfile(item):
-            shutil.copy(item, join(restdir, basename(item)))
+
+    compset_comps = case.get_compset_components()
+    compset_comps.append('cpl')
 
     for archive_spec_node in archive.get_nodes('comp_archive_spec'):
-        compset_comps = case.get_compset_components()
-        compset_comps.append('cpl')
         comp = archive_spec_node.attrib['name']
         comp.split('[')[0]
         if comp not in compset_comps:
             continue
-        rootdir_node = archive.get_node('rootdir', root=archive_spec_node)
-        rootdir = rootdir_node.text
-        logger.info('doing short term archiving for %s (%s)' % (comp, rootdir))
-        ninst = case.get_value('NINST_' + rootdir.upper())
-        if ninst is None and comp == 'cpl':
+
+        node = archive.get_node('rootdir', root=archive_spec_node)
+        compclass = node.text
+        logger.info('doing short term archiving for %s (%s)' % (comp, compclass))
+
+        node = archive.get_node('rpointer_content', root=archive_spec_node)
+        rpointer_content = node.text
+
+        if rpointer_content is not None:
+            subs = dict()
+            subs['datename'] = datename
+            subs['casename'] = case.get_value("CASE")
+            for key in subs.keys():
+                rpointer_content = rpointer_content.replace(key, subs[key])
+
+        #-------------------------------------------------
+        # determine ninst and ninst_suffix
+        #-------------------------------------------------
+        ninst = case.get_value('NINST_' + compclass.upper())
+        if ninst is None:
             ninst = 1
+
+        ninst_suffix = []
+        for i in range(ninst):
+            if ninst > 1:
+                ninst_suffix.append('_' + '%04d' % i)
+            else:
+                ninst_suffix.append('')
+
+        logger.debug("ninst and ninst_suffix are: %s and %s for %s" %(ninst,ninst_suffix,compclass))
+        
+        #-------------------------------------------------
+        # archive history and log files over 
+        #-------------------------------------------------
         for file_extension in archive.get_nodes('file_extension', root=archive_spec_node):
-            suffix = file_extension.attrib['regex_suffix']
             subdir = archive.get_node('subdir', root=file_extension).text
+            if subdir == 'rest':
+                # handle restart files outside of this loop
+                continue
+
+            suffix = file_extension.attrib['regex_suffix']
             keep_last_in_rundir = archive.get_node('keep_last_in_rundir', root=file_extension).text
-            destdir = join(dout_s_root, rootdir, subdir)
-            if not os.path.exists(destdir):
-                os.makedirs(destdir)
+
+            archive_dir = os.path.join(dout_s_root,compclass,subdir);
+            if not os.path.exists(archive_dir):
+                os.makedirs(archive_dir)
+                logger.debug("created directory archive_dir")
             for i in range(ninst):
-                ninst_suffix = ''
-                if ninst > 1:
-                    ninst_suffix = '_' + '%04d' % i
-                newSuffix = suffix
-                if suffix[0:1] == '.':
-                    if subdir == 'logs':
-                        newSuffix = rootdir + ninst_suffix + suffix
+                newsuffix = suffix
+                if subdir == 'logs':
+                    newsuffix = compclass + ninst_suffix[i] + suffix
+                else:
+                    casename = case.get_value('CASE')
+                    newsuffix = casename + '.' + comp + ninst_suffix[i] + suffix
+
+                p = re.compile(newsuffix) 
+                files = [ f for f in os.listdir(rundir) if p.match(f) ]
+                logger.debug("short term archivign suffix is %s " %newsuffix)
+                logger.debug("hist/log files are %s " %files)
+                if files:
+                    move_files(files, case, keep_last_in_rundir, newsuffix, archive_dir)
+
+        #-------------------------------------------------
+        # archive restarts and all necessary associated fields (e.g. rpointer files)
+        #-------------------------------------------------
+        # determine directory for archiving restarts based on datename
+        archive_dir = join(dout_s_root, 'rest', datename)
+        if not os.path.exists(archive_dir):
+            os.makedirs(archive_dir)
+
+        # move all but latest restart files into the archive restart directory
+        # copy latest restart files to archive restart directory
+        for file_extension in archive.get_nodes('file_extension', root=archive_spec_node):
+            subdir = archive.get_node('subdir', root=file_extension).text
+            if subdir != 'rest':
+                continue
+
+            suffix = file_extension.attrib['regex_suffix']
+            for i in range(ninst):
+                pattern = ninst_suffix[i] + ".*" + suffix + datename 
+                p = re.compile(pattern) 
+                files = [ f for f in os.listdir(rundir) if p.match(f) ]
+                for filename in files:
+                    restfile = os.path.basename(filename)
+
+                    # Note that the latest file should be copied and not moved
+                    if (datename_is_last):
+                        shutil.copy(join(rundir,filename), join(archive_dir,restfile))
+                        # Add the copy of rpointer files
+                        rpointers = glob.glob(os.path.join(rundir,'rpointer.*'))
+                        for rpointer in rpointers:
+                            shutil.copy(rpointer,os.path.join(archive_dir,os.path.basename(rpointer)))
                     else:
-                        casename = case.get_value('CASE')
-                        newSuffix = casename + '.' + comp + ninst_suffix + suffix
-                moveFiles(case, keep_last_in_rundir.lower, newSuffix, destdir, restdir, datename, runfiles)
+                        dout_s_save_interim = case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES')
+                        # Only archive intermediate restarts if requested - otherwise remove them
+                        if dout_s_save_interim:
+                            shutil.move(join(rundir,filename), join(archive_dir,restfile))
+                            f = open(os.path.join(archive_dir,'rpointer.'+compclass),'w')
+                            for output in rpointer_content.split(','):
+                                f.write("%s \n" %output)
+                            f.close()
+                        else:
+                            os.remove(os.path.join(rundir,filename))
+
+                    # archive all history files that are needed on restart
+                    restart_hist_varname = archive.get_node("restart_history_varname",root=archive_spec_node).text
+                    if restart_hist_varname != 'unset':
+                        cmd = "ncdump -v %s %s " %(restart_hist_varname, restfile) 
+                        rc,out,error = run_cmd(cmd, ok_to_fail=True)
+                        searchname = "%s =" %restart_hist_varname
+                        offset = out.index(searchname)
+                        items  = out[offset:].split(",")
+                        for item in items:
+                            matchobj = re.search("\"(\w.*)\s?\"",item)
+                            if matchobj:
+                                print matchobj.group(1).strip() #FIXME - move this file from the archive hist to the archive/rest/datename
 
 
 def short_term_archive(input_flag, output_flag, undo_flag):
@@ -165,26 +235,36 @@ def short_term_archive(input_flag, output_flag, undo_flag):
     caseroot = case.get_value('CASEROOT')
     archive = EnvArchive(infile=os.path.join(caseroot, 'env_archive.xml'))
     rundir = case.get_value('RUNDIR')
-    runComplete = checkRun(case)
+    runComplete = check_run(case)
     if input_flag:
-        listXMLin(case, archive)
+        list_xml(case, archive)
+
     elif output_flag:
         if runComplete:
             dout_s_root = case.get_value('DOUT_S_ROOT')
             logger.info('Short-term archive listing of %s ' % dout_s_root)
-            listArchive(dout_s_root)
+            list_archive(dout_s_root)
         else:
             expect(False, 'st_archive: run is not complete')
+
     elif undo_flag:
         undoArchive(case)
+
     elif runComplete:
-        datename = getDatename(case)
-        runfiles = [ f for f in os.listdir(rundir) if isfile(join(rundir, f)) ]
         caseroot = case.get_value('CASEROOT')
         appendStatus('st_archiving starting', caseroot=caseroot, sfile='CaseStatus')
-        archiveProcess(case, archive, datename, runfiles)
+
+        # get all the unique datenames for the cpl restart files and
+        # also find the last one
+        datenames = get_datenames(case)
+        for datename in datenames:
+            datename_is_last = False
+            if datename == datenames[-1]:
+                datename_is_last = True
+            archive_process(case, archive, datename, datename_is_last)
+
         appendStatus('st_archiving completed', caseroot=caseroot, sfile='CaseStatus')
-        dout_save_interim = case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES')
         logger.info('short term archiving is complete.')
+
     else:
         expect(False, 'based on CaseStatus output, run is either not complete or was not successful')
