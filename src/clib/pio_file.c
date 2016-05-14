@@ -65,6 +65,14 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   file->buffer.frame=NULL;
   file->buffer.fillvalue=NULL;
 
+  /** Set to true if this task should participate in IO (only true for
+   * one task with netcdf serial files. */
+  if (file->iotype == PIO_IOTYPE_NETCDF4P || file->iotype == PIO_IOTYPE_PNETCDF ||
+      ios->io_rank == 0)
+      file->do_io = 1;
+  else
+      file->do_io = 0;
+
     /* If async is in use, and this is not an IO task, bcast the parameters. */
   if (ios->async_interface)
   {
@@ -75,13 +83,13 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 	  
 	  len = strlen(filename);
 	  if (!mpierr)
-	      mpierr = MPI_Bcast(&len, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	      mpierr = MPI_Bcast(&len, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	  if (!mpierr)
 	      mpierr = MPI_Bcast((void *)filename, len + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	  if (!mpierr)
-	      mpierr = MPI_Bcast(&file->iotype, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	      mpierr = MPI_Bcast(&file->iotype, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	  if (!mpierr)
-	      mpierr = MPI_Bcast(&file->mode, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	      mpierr = MPI_Bcast(&file->mode, 1, MPI_INT, ios->compmaster, ios->intercomm);
       }
 
       /* Handle MPI errors. */
@@ -193,7 +201,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
  ** @param mode : The netcdf mode for the open operation
  */
 
-int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
+int PIOc_createfile(const int iosysid, int *ncidp, int *iotype,
 		 const char filename[], const int mode)
 {
   int ierr;
@@ -235,18 +243,37 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
   msg = PIO_MSG_CREATE_FILE;
   file->mode = mode;
 
+  /** Set to true if this task should participate in IO (only true for
+   * one task with netcdf serial files. */
+  if (file->iotype == PIO_IOTYPE_NETCDF4P || file->iotype == PIO_IOTYPE_PNETCDF ||
+      ios->io_rank == 0)
+      file->do_io = 1;
+  else
+      file->do_io = 0;
 
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
-    len = strlen(filename);
-    mpierr = MPI_Bcast(&len, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-    mpierr = MPI_Bcast((void *)filename, len + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-    mpierr = MPI_Bcast(&file->iotype, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-    mpierr = MPI_Bcast(&file->mode, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-  }
+    /* If async is in use, and this is not an IO task, bcast the parameters. */
+  if (ios->async_interface)
+  {
+      if (!ios->ioproc)
+      {
+	  if(ios->comp_rank==0) 
+	      mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
+	  len = strlen(filename);
+	  if (!mpierr)
+	      mpierr = MPI_Bcast(&len, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	  if (!mpierr)
+	      mpierr = MPI_Bcast((void *)filename, len + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	  if (!mpierr)
+	      mpierr = MPI_Bcast(&file->iotype, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	  if (!mpierr)
+	      mpierr = MPI_Bcast(&file->mode, 1, MPI_INT, ios->compmaster, ios->intercomm);
+      }
+
+      /* Handle MPI errors. */
+      mpierr = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm);
+      check_mpi(file, mpierr, __FILE__, __LINE__);
+  }      
   
-
   if(ios->ioproc){
     switch(file->iotype){
 #ifdef _NETCDF
@@ -288,9 +315,9 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   if(ierr == PIO_NOERR){
-    mpierr = MPI_Bcast(&file->mode, 1, MPI_INT,  ios->ioroot, ios->union_comm);
+    mpierr = MPI_Bcast(&file->mode, 1, MPI_INT, ios->ioroot, ios->union_comm);
     file->mode = file->mode | PIO_WRITE;  // This flag is implied by netcdf create functions but we need to know if its set
-    mpierr = MPI_Bcast(&file->fh, 1, MPI_INT,  ios->ioroot, ios->union_comm);
+    mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->ioroot, ios->union_comm);
     *ncidp = file->fh;
     pio_add_to_file_list(file);
     *ncidp = file->fh;
@@ -403,7 +430,7 @@ int PIOc_deletefile(const int iosysid, const char filename[])
     if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     len = strlen(filename);
-    mpierr = MPI_Bcast(&len, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+    mpierr = MPI_Bcast(&len, 1, MPI_INT, ios->compmaster, ios->intercomm);
     mpierr = MPI_Bcast((void *)filename, len + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
   }
   // The barriers are needed to assure that no task is trying to operate on the file while it is being deleted.

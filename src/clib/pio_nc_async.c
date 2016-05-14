@@ -38,7 +38,6 @@
 int PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp,
 	     int *unlimdimidp) 
 {
-    int msg = PIO_MSG_INQ; /** Message for async notification. */
     iosystem_desc_t *ios;  /** Pointer to io system information. */
     file_desc_t *file;     /** Pointer to file information. */
     int ierr = PIO_NOERR;  /** Return code from function calls. */
@@ -56,6 +55,7 @@ int PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp,
     {
 	if (!ios->ioproc)
 	{
+	    int msg = PIO_MSG_INQ; /** Message for async notification. */
 	    char ndims_present = ndimsp ? true : false;
 	    char nvars_present = nvarsp ? true : false;
 	    char ngatts_present = ngattsp ? true : false;
@@ -86,43 +86,29 @@ int PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp,
     /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
     {
-	switch (file->iotype)
-	{
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq(ncid, ndimsp, nvarsp, ngattsp, unlimdimidp);
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if (!file->iosystem->io_rank)
-	    {
-		/* Should not be necessary to do this - nc_inq should
-		 * handle null pointers. This has been reported as a bug
-		 * to netCDF developers. */
-		int tmp_ndims, tmp_nvars, tmp_ngatts, tmp_unlimdimid;
-		ierr = nc_inq(ncid, &tmp_ndims, &tmp_nvars, &tmp_ngatts, &tmp_unlimdimid);
-		if (ndimsp)
-		    *ndimsp = tmp_ndims;
-		if (nvarsp)
-		    *nvarsp = tmp_nvars;
-		if (ngattsp)
-		    *ngattsp = tmp_ngatts;
-		if (unlimdimidp)
-		    *unlimdimidp = tmp_unlimdimid;
-	    }
-	    break;
-#endif
 #ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_inq(ncid, ndimsp, nvarsp, ngattsp, unlimdimidp);
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-
+	if (file->iotype == PIO_IOTYPE_PNETCDF)
+ 	    ierr = ncmpi_inq(ncid, ndimsp, nvarsp, ngattsp, unlimdimidp); 
+#endif /* _PNETCDF */
+#ifdef _NETCDF
+	if (file->iotype == PIO_IOTYPE_NETCDF && file->do_io)
+	{
+	    /* Should not be necessary to do this - nc_inq should
+	     * handle null pointers. This has been reported as a bug
+	     * to netCDF developers. */
+	    int tmp_ndims, tmp_nvars, tmp_ngatts, tmp_unlimdimid;
+	    ierr = nc_inq(ncid, &tmp_ndims, &tmp_nvars, &tmp_ngatts, &tmp_unlimdimid);
+	    if (ndimsp)
+		*ndimsp = tmp_ndims;
+	    if (nvarsp)
+		*nvarsp = tmp_nvars;
+	    if (ngattsp)
+		*ngattsp = tmp_ngatts;
+	    if (unlimdimidp)
+		*unlimdimidp = tmp_unlimdimid;
+	} else if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+ 	    ierr = nc_inq(ncid, ndimsp, nvarsp, ngattsp, unlimdimidp); 
+#endif /* _NETCDF */
 	LOG((2, "PIOc_inq netcdf call returned %d", ierr));
     }
 
@@ -275,24 +261,12 @@ int PIOc_inq_type(int ncid, nc_type xtype, char *name, PIO_Offset *sizep)
     }
     
     /* If this is an IO task, then call the netCDF function. */
+    /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
     {
-	switch (file->iotype)
-	{
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_type(ncid, xtype, name, (size_t *)sizep);
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if (!file->iosystem->io_rank)
-		ierr = nc_inq_type(ncid, xtype, name, (size_t *)sizep);		
-	    break;
-#endif
 #ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
+	if (file->iotype == PIO_IOTYPE_PNETCDF)
+	{
 	    switch (xtype)
 	    {
 	    case NC_UBYTE:
@@ -320,12 +294,12 @@ int PIOc_inq_type(int ncid, nc_type xtype, char *name, PIO_Offset *sizep)
 		*sizep = typelen;
 	    if (name)
 		strcpy(name, "some type");
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-
+    }
+#endif /* _PNETCDF */
+#ifdef _NETCDF
+	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+	    ierr = nc_inq_type(ncid, xtype, name, (size_t *)sizep);
+#endif /* _NETCDF */
 	LOG((2, "PIOc_inq_type netcdf call returned %d", ierr));
     }
 
@@ -445,9 +419,9 @@ int PIOc_inq_format (int ncid, int *formatp)
  */
 int PIOc_inq_dim(int ncid, int dimid, char *name, PIO_Offset *lenp) 
 {
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    int ierr = PIO_NOERR;
+    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    file_desc_t *file;     /** Pointer to file information. */
+    int ierr = PIO_NOERR;  /** Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
 
     LOG((1, "PIOc_inq_dim"));
@@ -487,30 +461,17 @@ int PIOc_inq_dim(int ncid, int dimid, char *name, PIO_Offset *lenp)
 	check_mpi(file, mpierr, __FILE__, __LINE__);
     }
 
-    /* Make the call to the netCDF layer. */
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_dim(file->fh, dimid, name, (size_t *)lenp);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if (ios->io_rank == 0){
-		ierr = nc_inq_dim(file->fh, dimid, name, (size_t *)lenp);;
-	    }
-	    break;
-#endif
+    /* If this is an IO task, then call the netCDF function. */
+    if (ios->ioproc)
+    {
 #ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_inq_dim(file->fh, dimid, name, lenp);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
+	if (file->iotype == PIO_IOTYPE_PNETCDF)
+	    ierr = ncmpi_inq_dim(file->fh, dimid, name, lenp);;	    
+#endif /* _PNETCDF */
+#ifdef _NETCDF
+	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+	    ierr = nc_inq_dim(file->fh, dimid, name, (size_t *)lenp);;	    
+#endif /* _NETCDF */
     }
 
     /* Broadcast and check the return code. */

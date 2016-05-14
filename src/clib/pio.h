@@ -259,6 +259,10 @@ typedef struct file_desc_t
   int mode;
   struct wmulti_buffer buffer;
   struct file_desc_t *next;
+
+  /** True if this task should participate in IO (only true for one
+   * task with netcdf serial files. */
+  int do_io;
 } file_desc_t;
 
 /**
