@@ -431,9 +431,16 @@ main(int argc, char **argv)
 	    	ERR(ret);
 
 	    /* Define a 1-D variable. */
+	    char varname2[NC_MAX_NAME + 1];
 	    if (verbose)
 	    	printf("%d test_intercomm defining variable %s\n", my_rank, VAR_NAME);
-	    if ((ret = PIOc_def_var(ncid, VAR_NAME, NC_INT, NDIM, &dimid, &varid)))
+	    if ((ret = PIOc_def_var(ncid, FIRST_VAR_NAME, NC_INT, NDIM, &dimid, &varid)))
+	    	ERR(ret);
+	    if ((ret = PIOc_inq_varname(ncid, 0, varname2)))
+		ERR(ret);
+	    if (strcmp(varname2, FIRST_VAR_NAME))
+		ERR(ERR_WRONG);
+	    if ((ret = PIOc_rename_var(ncid, 0, VAR_NAME)))
 	    	ERR(ret);
 
 	    /* Add a global attribute. */

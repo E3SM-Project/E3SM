@@ -875,6 +875,48 @@ int rename_dim_handler(iosystem_desc_t *ios)
     return PIO_NOERR;
 }
 
+/** This function is run on the IO tasks to rename a netCDF
+ * dimension. */
+int rename_var_handler(iosystem_desc_t *ios)
+{
+    int ncid;
+    int len, namelen;
+    int iotype;
+    char *name;
+    int mode;
+    int mpierr;
+    int ret;
+    int varid;
+    char name1[NC_MAX_NAME + 1];
+
+    LOG((1, "rename_var_handler"));
+
+    /* Get the parameters for this function that the he comp master
+     * task is broadcasting. */
+    if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&namelen, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if (!(name = malloc((namelen + 1) * sizeof(char))))
+	return PIO_ENOMEM;
+    if ((mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    LOG((2, "rename_var_handler got parameters namelen = %d "
+	 "name = %s ncid = %d varid = %d", namelen, name, ncid, varid));
+
+    /* Call the create file function. */
+    if ((ret = PIOc_rename_var(ncid, varid, name)))
+	return ret;
+
+    /* Free resources. */
+    free(name);
+
+    LOG((1, "%d rename_var_handler succeeded!\n", my_rank));
+    return PIO_NOERR;
+}
+
 /** This function is run on the IO tasks. It reads or writes an array
  *  of data to a netCDF variable.
  *
@@ -1167,6 +1209,9 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	    break;
 	case PIO_MSG_RENAME_DIM:
 	    rename_dim_handler(my_iosys);
+	    break;
+	case PIO_MSG_RENAME_VAR:
+	    rename_var_handler(my_iosys);
 	    break;
 	case PIO_MSG_DEF_DIM:
 	    def_dim_handler(my_iosys);
