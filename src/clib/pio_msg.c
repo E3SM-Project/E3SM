@@ -917,6 +917,52 @@ int rename_var_handler(iosystem_desc_t *ios)
     return PIO_NOERR;
 }
 
+/** This function is run on the IO tasks to rename a netCDF
+ * attribute. */
+int rename_att_handler(iosystem_desc_t *ios)
+{
+    int ncid;
+    int varid;
+    int namelen, newnamelen;
+    char *name, *newname;
+    int mpierr;
+    int ret;
+
+    LOG((1, "rename_att_handler"));
+
+    /* Get the parameters for this function that the he comp master
+     * task is broadcasting. */
+    if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&namelen, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if (!(name = malloc((namelen + 1) * sizeof(char))))
+	return PIO_ENOMEM;
+    if ((mpierr = MPI_Bcast(name, namelen + 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&newnamelen, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if (!(newname = malloc((newnamelen + 1) * sizeof(char))))
+	return PIO_ENOMEM;
+    if ((mpierr = MPI_Bcast(newname, newnamelen + 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    LOG((2, "rename_var_handler got parameters namelen = %d name = %s ncid = %d varid = %d"
+	 "newnamelen = %d newname = %s", namelen, name, ncid, varid, newnamelen, newname));
+
+    /* Call the create file function. */
+    if ((ret = PIOc_rename_att(ncid, varid, name, newname)))
+	return ret;
+
+    /* Free resources. */
+    free(name);
+    free(newname);
+
+    LOG((1, "%d rename_att_handler succeeded!\n", my_rank));
+    return PIO_NOERR;
+}
+
 /** This function is run on the IO tasks. It reads or writes an array
  *  of data to a netCDF variable.
  *
@@ -1212,6 +1258,9 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	    break;
 	case PIO_MSG_RENAME_VAR:
 	    rename_var_handler(my_iosys);
+	    break;
+	case PIO_MSG_RENAME_ATT:
+	    rename_att_handler(my_iosys);
 	    break;
 	case PIO_MSG_DEF_DIM:
 	    def_dim_handler(my_iosys);

@@ -1303,60 +1303,79 @@ int PIOc_rename_var(int ncid, int varid, const char *name)
  */
 int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
+{
+    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    file_desc_t *file;     /** Pointer to file information. */
+    int ierr = PIO_NOERR;  /** Return code from function calls. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
 
-    errstr = NULL;
-    ierr = PIO_NOERR;
+    /* User must provide names of correct length. */
+    if (!name || strlen(name) > NC_MAX_NAME ||
+	!newname || strlen(newname) > NC_MAX_NAME)
+	return PIO_EINVAL;
 
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
+    LOG((1, "PIOc_rename_att ncid = %d varid = %d name = %s newname = %s",
+	 ncid, varid, name, newname));
+
+    /* Find the info about this file. */
+    if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
     ios = file->iosystem;
-    msg = PIO_MSG_RENAME_ATT;
 
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
+    /* If async is in use, and this is not an IO task, bcast the parameters. */
+    if (ios->async_interface)
+    {
+	if (!ios->ioproc)
+	{
+	    int msg = PIO_MSG_RENAME_ATT; /** Message for async notification. */
+	    int namelen = strlen(name);
+	    int newnamelen = strlen(newname);
 
+	    if(ios->compmaster) 
+		mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_rename_att(file->fh, varid, name, newname);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_rename_att(file->fh, varid, name, newname);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_rename_att(file->fh, varid, name, newname);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&varid, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast((char *)name, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&newnamelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast((char *)newname, newnamelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	    LOG((2, "PIOc_rename_att Bcast file->fh = %d varid = %d namelen = %d name = %s"
+		 "newnamelen = %s newname = %s", file->fh, varid, namelen, name, newnamelen, newname));
 	}
+
+	/* Handle MPI errors. */
+	if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	    check_mpi(file, mpierr2, __FILE__, __LINE__);	    
+	check_mpi(file, mpierr, __FILE__, __LINE__);
     }
 
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
+    
+    /* If this is an IO task, then call the netCDF function. */
+    if (ios->ioproc)
+    {
+#ifdef _PNETCDF
+	if (file->iotype == PIO_IOTYPE_PNETCDF)
+	    ierr = ncmpi_rename_att(file->fh, varid, name, newname);
+#endif /* _PNETCDF */
+#ifdef _NETCDF
+	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+	    ierr = nc_rename_att(file->fh, varid, name, newname);
+#endif /* _NETCDF */
+	LOG((2, "PIOc_rename_att netcdf call returned %d", ierr));
     }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    if(errstr != NULL) free(errstr);
+
+    /* Broadcast and check the return code. */
+    if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	return PIO_EIO;
+    check_netcdf(file, ierr, __FILE__, __LINE__);
+    
     return ierr;
 }
 
