@@ -411,6 +411,58 @@ int inq_attname_handler(iosystem_desc_t *ios)
     return PIO_NOERR;
 }
 
+/** Handle attribute inquiry operations. This code only runs on IO
+ * tasks.
+ *
+ * @param ios pointer to the iosystem_desc_t.
+ * @param msg the message sent my the comp root task.
+ * @return PIO_NOERR for success, error code otherwise.
+*/
+int inq_attid_handler(iosystem_desc_t *ios)
+{
+    int ncid;
+    int varid;
+    int attnum;
+    char *name;
+    int namelen;
+    int id, *idp = NULL;
+    char id_present;
+    int mpierr;
+    int ret;
+
+    LOG((1, "inq_attid_handler"));
+
+    /* Get the parameters for this function that the the comp master
+     * task is broadcasting. */
+    if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm)))
+	return PIO_EIO;
+    if (!(name = malloc((namelen + 1) * sizeof(char))))
+	return PIO_ENOMEM;
+    if ((mpierr = MPI_Bcast(name, namelen + 1, MPI_CHAR,  ios->compmaster, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&id_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    LOG((2, "inq_attid_handler got ncid = %d varid = %d attnum = %d id_present = %d",
+	 ncid, varid, attnum, id_present));
+
+    /* Match NULLs in collective function call. */
+    if (id_present)
+	idp = &id;
+
+    /* Call the function to learn about the attribute. */
+    if ((ret = PIOc_inq_attid(ncid, varid, name, idp)))
+	return ret;
+
+    /* Free resources. */
+    free(name);
+
+    return PIO_NOERR;
+}
+
 /** Handle attribute operations. This code only runs on IO tasks.
  *
  * @param ios pointer to the iosystem_desc_t.
@@ -1103,6 +1155,9 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	    break;
 	case PIO_MSG_INQ_ATTNAME:
 	    inq_attname_handler(my_iosys);
+	    break;
+	case PIO_MSG_INQ_ATTID:
+	    inq_attid_handler(my_iosys);
 	    break;
 	case PIO_MSG_INITDECOMP_DOF:
 	    initdecomp_dof_handler(my_iosys);

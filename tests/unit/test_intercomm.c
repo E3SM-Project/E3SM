@@ -184,6 +184,7 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     nc_type atttype;
     PIO_Offset attlen;
     char myattname[NC_MAX_NAME + 1];
+    int myid;
     if ((ret = PIOc_inq_att(ncid, NC_GLOBAL, ATT_NAME, &atttype, &attlen)))
     	ERR(ret);
     if (atttype != NC_INT || attlen != 1)
@@ -195,6 +196,10 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     if ((ret = PIOc_inq_attname(ncid, NC_GLOBAL, 0, myattname)))
     	ERR(ret);
     if (strcmp(ATT_NAME, myattname))
+    	ERR(ERR_WRONG);
+    if ((ret = PIOc_inq_attid(ncid, NC_GLOBAL, ATT_NAME, &myid)))
+    	ERR(ret);
+    if (myid != 0)
     	ERR(ERR_WRONG);
     if ((ret = PIOc_get_att_int(ncid, NC_GLOBAL, ATT_NAME, &att_data)))
     	ERR(ret);
