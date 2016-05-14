@@ -348,6 +348,7 @@ end subroutine clubb_init_cnst
     use cam_abortutils,  only: endrun
     use stats_variables, only: l_stats, l_output_rad_files
     use mpishorthand
+    use parameters_tunable, only: clubb_param_readnl
 #endif
 
     character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
@@ -413,6 +414,10 @@ end subroutine clubb_init_cnst
     if (clubb_cloudtop_cooling) do_cldcool = .true.
     if (clubb_rainevap_turb) do_rainturb = .true.
     if (clubb_expldiff) do_expldiff = .true.
+
+    ! read tunable parameters from namelist, handlings of masterproc vs others
+    ! are done within clubb_param_readnl
+    call clubb_param_readnl(nlfile)
 
 #endif
   end subroutine clubb_readnl
