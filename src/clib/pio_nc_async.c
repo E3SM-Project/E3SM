@@ -143,15 +143,6 @@ int PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp,
 /** 
  * @ingroup PIOc_inq_ndims
  * The PIO-C interface for the NetCDF function nc_inq_ndims.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__dimensions.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
 int PIOc_inq_ndims (int ncid, int *ndimsp) 
 {
@@ -162,15 +153,6 @@ int PIOc_inq_ndims (int ncid, int *ndimsp)
 /** 
  * @ingroup PIOc_inq_nvars
  * The PIO-C interface for the NetCDF function nc_inq_nvars.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
 int PIOc_inq_nvars(int ncid, int *nvarsp) 
 {
@@ -180,15 +162,6 @@ int PIOc_inq_nvars(int ncid, int *nvarsp)
 /** 
  * @ingroup PIOc_inq_natts
  * The PIO-C interface for the NetCDF function nc_inq_natts.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
 int PIOc_inq_natts(int ncid, int *ngattsp) 
 {
@@ -198,15 +171,6 @@ int PIOc_inq_natts(int ncid, int *ngattsp)
 /** 
  * @ingroup PIOc_inq_unlimdim
  * The PIO-C interface for the NetCDF function nc_inq_unlimdim.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__dimensions.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
 int PIOc_inq_unlimdim(int ncid, int *unlimdimidp) 
 {
@@ -332,16 +296,6 @@ int PIOc_inq_type(int ncid, nc_type xtype, char *name, PIO_Offset *sizep)
 /** 
  * @ingroup PIOc_inq_format
  * The PIO-C interface for the NetCDF function nc_inq_format.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__datasets.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @param formatp a pointer that will get the file format 
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
 int PIOc_inq_format (int ncid, int *formatp) 
 {
@@ -504,15 +458,6 @@ int PIOc_inq_dim(int ncid, int dimid, char *name, PIO_Offset *lenp)
 /** 
  * @ingroup PIOc_inq_dimname
  * The PIO-C interface for the NetCDF function nc_inq_dimname.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__dimensions.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
 int PIOc_inq_dimname(int ncid, int dimid, char *name) 
 {
@@ -522,16 +467,6 @@ int PIOc_inq_dimname(int ncid, int dimid, char *name)
 /** 
  * @ingroup PIOc_inq_dimlen
  * The PIO-C interface for the NetCDF function nc_inq_dimlen.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__dimensions.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @param lenp a pointer that will get the number of values 
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
 int PIOc_inq_dimlen(int ncid, int dimid, PIO_Offset *lenp) 
 {
@@ -601,28 +536,14 @@ int PIOc_inq_dimid(int ncid, const char *name, int *idp)
     /* IO tasks call the netCDF functions. */
     if (ios->ioproc)
     {
-	switch(file->iotype)
-	{
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_dimid(file->fh, name, idp);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if (ios->io_rank == 0)
-		ierr = nc_inq_dimid(file->fh, name, idp);;
-	    break;
-#endif
 #ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
+	if (file->iotype == PIO_IOTYPE_PNETCDF)
 	    ierr = ncmpi_inq_dimid(file->fh, name, idp);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
+#endif /* _PNETCDF */
+#ifdef _NETCDF
+	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+	    ierr = nc_inq_dimid(file->fh, name, idp);;
+#endif /* _NETCDF */
     }
 
     /* Broadcast and check the return code. */
@@ -714,33 +635,20 @@ int PIOc_inq_var(int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
     /* Call the netCDF layer. */
     if (ios->ioproc)
     {
-	switch(file->iotype)
-	{
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_varndims(file->fh, varid, &ndims);
-	    ierr = nc_inq_var(file->fh, varid, name, xtypep, ndimsp, dimidsp, nattsp);
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if (ios->io_rank == 0)
-	    {
-		ierr = nc_inq_varndims(file->fh, varid, &ndims);
-		ierr = nc_inq_var(file->fh, varid, name, xtypep, ndimsp, dimidsp, nattsp);;
-	    }
-	    break;
-#endif
 #ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
+	if (file->iotype == PIO_IOTYPE_PNETCDF)
+	{
 	    ierr = ncmpi_inq_varndims(file->fh, varid, &ndims);
 	    ierr = ncmpi_inq_var(file->fh, varid, name, xtypep, ndimsp, dimidsp, nattsp);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
 	}
+#endif /* _PNETCDF */
+#ifdef _NETCDF
+	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+	{
+	    ierr = nc_inq_varndims(file->fh, varid, &ndims);
+	    ierr = nc_inq_var(file->fh, varid, name, xtypep, ndimsp, dimidsp, nattsp);
+	}	    
+#endif /* _NETCDF */
     }
 
     /* Broadcast and check the return code. */
@@ -789,16 +697,6 @@ int PIOc_inq_var(int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
 /** 
  * @ingroup PIOc_inq_varname
  * The PIO-C interface for the NetCDF function nc_inq_varname.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @param varid the variable ID.
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
 int PIOc_inq_varname (int ncid, int varid, char *name) 
 {
@@ -808,17 +706,6 @@ int PIOc_inq_varname (int ncid, int varid, char *name)
 /** 
  * @ingroup PIOc_inq_vartype
  * The PIO-C interface for the NetCDF function nc_inq_vartype.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @param varid the variable ID.
- * @param xtypep a pointer that will get the type of the attribute.
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
 int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep) 
 {
@@ -828,16 +715,6 @@ int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep)
 /** 
  * @ingroup PIOc_inq_varndims
  * The PIO-C interface for the NetCDF function nc_inq_varndims.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @param varid the variable ID.
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
 int PIOc_inq_varndims (int ncid, int varid, int *ndimsp) 
 {
@@ -847,16 +724,6 @@ int PIOc_inq_varndims (int ncid, int varid, int *ndimsp)
 /** 
  * @ingroup PIOc_inq_vardimid
  * The PIO-C interface for the NetCDF function nc_inq_vardimid.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @param varid the variable ID.
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
 int PIOc_inq_vardimid(int ncid, int varid, int *dimidsp) 
 {
@@ -866,17 +733,6 @@ int PIOc_inq_vardimid(int ncid, int varid, int *dimidsp)
 /** 
  * @ingroup PIOc_inq_varnatts
  * The PIO-C interface for the NetCDF function nc_inq_varnatts.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__variables.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @param varid the variable ID.
- * @param nattsp a pointer that will get the number of attributes 
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
 int PIOc_inq_varnatts (int ncid, int varid, int *nattsp) 
 {
@@ -944,28 +800,14 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
     /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
     {
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_varid(file->fh, name, varidp);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_inq_varid(file->fh, name, varidp);;
-	    }
-	    break;
-#endif
 #ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_inq_varid(file->fh, name, varidp);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
+	if (file->iotype == PIO_IOTYPE_PNETCDF)
+	    ierr = ncmpi_inq_varid(file->fh, name, varidp);;	    
+#endif /* _PNETCDF */
+#ifdef _NETCDF
+	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+	    ierr = nc_inq_varid(file->fh, name, varidp);
+#endif /* _NETCDF */
     }
 
     /* Broadcast and check the return code. */
@@ -1084,17 +926,6 @@ int PIOc_inq_att(int ncid, int varid, const char *name, nc_type *xtypep,
 /** 
  * @ingroup PIOc_inq_attlen
  * The PIO-C interface for the NetCDF function nc_inq_attlen.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @param varid the variable ID.
- * @param lenp a pointer that will get the number of values 
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
 int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp) 
 {
@@ -1104,17 +935,6 @@ int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp)
 /** 
  * @ingroup PIOc_inq_atttype
  * The PIO-C interface for the NetCDF function nc_inq_atttype.
- *
- * This routine is called collectively by all tasks in the communicator 
- * ios.union_comm. For more information on the underlying NetCDF commmand
- * please read about this function in the NetCDF documentation at: 
- * http://www.unidata.ucar.edu/software/netcdf/docs/group__attributes.html
- *
- * @param ncid the ncid of the open file, obtained from
- * PIOc_openfile() or PIOc_createfile().
- * @param varid the variable ID.
- * @param xtypep a pointer that will get the type of the attribute.
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
 int PIOc_inq_atttype(int ncid, int varid, const char *name, nc_type *xtypep) 
 {
@@ -2322,16 +2142,6 @@ int PIOc_put_att(int ncid, int varid, const char *name, nc_type xtype,
 }
 
 /** 
- * @ingroup PIOc_put_att_short
- * The PIO-C interface for the NetCDF function nc_put_att_short.
- */
-int PIOc_put_att_short(int ncid, int varid, const char *name, nc_type xtype,
-		       PIO_Offset len, const short *op) 
-{
-    return PIOc_put_att(ncid, varid, name, xtype, len, op);
-}
-
-/** 
  * @ingroup PIOc_get_att_double
  * The PIO-C interface for the NetCDF function nc_get_att_double.
  */
@@ -2341,32 +2151,12 @@ int PIOc_get_att_double(int ncid, int varid, const char *name, double *ip)
 }
 
 /** 
- * @ingroup PIOc_put_att_double
- * The PIO-C interface for the NetCDF function nc_put_att_double.
- */
-int PIOc_put_att_double(int ncid, int varid, const char *name, nc_type xtype,
-			PIO_Offset len, const double *op) 
-{
-    return PIOc_put_att(ncid, varid, name, xtype, len, op);
-}
-
-/** 
  * @ingroup PIOc_get_att_uchar
  * The PIO-C interface for the NetCDF function nc_get_att_uchar.
  */
 int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip) 
 {
     return PIOc_get_att(ncid, varid, name, (void *)ip);
-}
-
-/** 
- * @ingroup PIOc_put_att_schar
- * The PIO-C interface for the NetCDF function nc_put_att_schar.
- */
-int PIOc_put_att_schar(int ncid, int varid, const char *name, nc_type xtype,
-		       PIO_Offset len, const signed char *op) 
-{
-    return PIOc_put_att(ncid, varid, name, xtype, len, op);
 }
 
 /** 
@@ -2460,6 +2250,25 @@ int PIOc_get_att_longlong(int ncid, int varid, const char *name, long long *ip)
 }
 
 /** 
+ * @ingroup PIOc_get_att_float
+ * The PIO-C interface for the NetCDF function nc_get_att_float.
+ */
+int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip) 
+{
+    return PIOc_get_att(ncid, varid, name, (void *)ip);
+}
+
+/** 
+ * @ingroup PIOc_put_att_schar
+ * The PIO-C interface for the NetCDF function nc_put_att_schar.
+ */
+int PIOc_put_att_schar(int ncid, int varid, const char *name, nc_type xtype,
+		       PIO_Offset len, const signed char *op) 
+{
+    return PIOc_put_att(ncid, varid, name, xtype, len, op);
+}
+
+/** 
  * @ingroup PIOc_put_att_long
  * The PIO-C interface for the NetCDF function nc_put_att_long.
  */
@@ -2467,15 +2276,6 @@ int PIOc_put_att_long(int ncid, int varid, const char *name, nc_type xtype,
 		      PIO_Offset len, const long *op) 
 {
     return PIOc_put_att(ncid, varid, name, NC_CHAR, len, op);
-}
-
-/** 
- * @ingroup PIOc_get_att_float
- * The PIO-C interface for the NetCDF function nc_get_att_float.
- */
-int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip) 
-{
-    return PIOc_get_att(ncid, varid, name, (void *)ip);
 }
 
 /** 
@@ -2567,4 +2367,25 @@ int PIOc_put_att_text(int ncid, int varid, const char *name,
 {
     return PIOc_put_att(ncid, varid, name, NC_CHAR, len, op);
 }
+
+/** 
+ * @ingroup PIOc_put_att_short
+ * The PIO-C interface for the NetCDF function nc_put_att_short.
+ */
+int PIOc_put_att_short(int ncid, int varid, const char *name, nc_type xtype,
+		       PIO_Offset len, const short *op) 
+{
+    return PIOc_put_att(ncid, varid, name, xtype, len, op);
+}
+
+/** 
+ * @ingroup PIOc_put_att_double
+ * The PIO-C interface for the NetCDF function nc_put_att_double.
+ */
+int PIOc_put_att_double(int ncid, int varid, const char *name, nc_type xtype,
+			PIO_Offset len, const double *op) 
+{
+    return PIOc_put_att(ncid, varid, name, xtype, len, op);
+}
+
 
