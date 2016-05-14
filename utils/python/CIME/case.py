@@ -119,7 +119,9 @@ class Case(object):
             logging.debug("CASE %s %s"%(item,result))
             if result is not None:
                 if resolved and type(result) is str:
-                    return self.get_resolved_value(result)
+                    result = self.get_resolved_value(result)
+                    vtype = env_file.get_type_info(item)
+                    result = convert_to_type(result, vtype, item)
                 return result
 
         result = None
@@ -571,7 +573,7 @@ class Case(object):
                 with open(readme_file, "w") as fd:
                     fd.write(str_to_write)
 
-    def create_caseroot(self, user_mods_dir=None):
+    def create_caseroot(self):
         caseroot = self.get_value("CASEROOT")
         if not os.path.exists(caseroot):
         # Make the case directory
@@ -591,6 +593,7 @@ class Case(object):
         self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
 
+    def apply_user_mods(self, user_mods_dir=None):
         if user_mods_dir is not None:
             if os.path.isabs(user_mods_dir):
                 user_mods_path = user_mods_dir

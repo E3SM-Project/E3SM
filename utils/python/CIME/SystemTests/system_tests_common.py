@@ -32,7 +32,7 @@ class SystemTestsCommon(object):
         if os.path.isfile(os.path.join(caseroot, "LockedFiles", "env_run.orig.xml")):
             self.compare_env_run()
         elif os.path.isfile(os.path.join(caseroot, "env_run.xml")):
-            lockedfiles = os.path.join(caseroot, "Lockedfiles")
+            lockedfiles = os.path.join(caseroot, "LockedFiles")
             try:
                 os.stat(lockedfiles)
             except:
