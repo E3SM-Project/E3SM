@@ -885,30 +885,18 @@ int PIOc_inq_att(int ncid, int varid, const char *name, nc_type *xtypep,
 	mpierr = MPI_Bcast(&len_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
     }
 
+    /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
     {
-	switch (file->iotype)
-	{
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_att(file->fh, varid, name, xtypep, (size_t *)lenp);
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if (ios->io_rank == 0)
-		ierr = nc_inq_att(file->fh, varid, name, xtypep, (size_t *)lenp);
-	    break;
-#endif
 #ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
+	if (file->iotype == PIO_IOTYPE_PNETCDF)
 	    ierr = ncmpi_inq_att(file->fh, varid, name, xtypep, lenp);
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
+#endif /* _PNETCDF */
+#ifdef _NETCDF
+	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+	    ierr = nc_inq_att(file->fh, varid, name, xtypep, (size_t *)lenp);
+#endif /* _NETCDF */
+	LOG((2, "PIOc_inq netcdf call returned %d", ierr));
     }
 
     /* Handle MPI errors. */
@@ -963,58 +951,78 @@ int PIOc_inq_atttype(int ncid, int varid, const char *name, nc_type *xtypep)
  * @param attnum the attribute ID.
  * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
  */
-int PIOc_inq_attname (int ncid, int varid, int attnum, char *name) 
+int PIOc_inq_attname(int ncid, int varid, int attnum, char *name) 
 {
-    int ierr = PIO_NOERR;
-    int msg = PIO_MSG_INQ_ATTNAME;
+    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    file_desc_t *file;     /** Pointer to file information. */
+    int ierr = PIO_NOERR;  /** Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
-    iosystem_desc_t *ios;
-    file_desc_t *file;
 
+    LOG((1, "PIOc_inq_attname ncid = %d varid = %d attnum = %d", ncid, varid,
+	 attnum));
+
+    /* Find the info about this file. */
     if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
     ios = file->iosystem;
 
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_attname(file->fh, varid, attnum, name);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_inq_attname(file->fh, varid, attnum, name);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_inq_attname(file->fh, varid, attnum, name);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
-    }
-
-    check_netcdf(file, ierr, __FILE__, __LINE__);
-    if (name)
+    /* If async is in use, and this is not an IO task, bcast the parameters. */
+    if (ios->async_interface)
     {
-	int slen;
-	if(ios->iomaster)
-	    slen = (int) strlen(name);
-	mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm);
-	mpierr = MPI_Bcast((void *)name, slen + 1, MPI_CHAR, ios->ioroot, ios->my_comm);
+	if (!ios->ioproc)
+	{
+	    int msg = PIO_MSG_INQ_ATTNAME;
+	    char name_present = name ? true : false;
+
+	    if(ios->compmaster) 
+		mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+	    
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&varid, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&attnum, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&name_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	}
+
+	/* Handle MPI errors. */
+	if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	    check_mpi(file, mpierr2, __FILE__, __LINE__);	    
+	check_mpi(file, mpierr, __FILE__, __LINE__);
     }
+
+    /* If this is an IO task, then call the netCDF function. */
+    if (ios->ioproc)
+    {
+#ifdef _PNETCDF
+	if (file->iotype == PIO_IOTYPE_PNETCDF)
+	    ierr = ncmpi_inq_attname(file->fh, varid, attnum, name);;
+#endif /* _PNETCDF */
+#ifdef _NETCDF
+	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+	    ierr = nc_inq_attname(file->fh, varid, attnum, name);;
+#endif /* _NETCDF */
+	LOG((2, "PIOc_inq_attname netcdf call returned %d", ierr));
+    }
+
+    /* Broadcast and check the return code. */
+    if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	return PIO_EIO;
+    check_netcdf(file, ierr, __FILE__, __LINE__);
+    
+    /* Broadcast results to all tasks. Ignore NULL parameters. */
+    if (!ierr)
+	if (name)
+	{
+	    int namelen = strlen(name);
+	    if ((mpierr = MPI_Bcast(&namelen, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+		check_mpi(file, mpierr, __FILE__, __LINE__);
+	    if ((mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, ios->ioroot,
+				    ios->my_comm)))
+		check_mpi(file, mpierr, __FILE__, __LINE__);
+	}
 
     return ierr;
 }

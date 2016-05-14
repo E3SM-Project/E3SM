@@ -368,6 +368,49 @@ int inq_att_handler(iosystem_desc_t *ios)
     return PIO_NOERR;
 }
 
+/** Handle attribute inquiry operations. This code only runs on IO
+ * tasks.
+ *
+ * @param ios pointer to the iosystem_desc_t.
+ * @param msg the message sent my the comp root task.
+ * @return PIO_NOERR for success, error code otherwise.
+*/
+int inq_attname_handler(iosystem_desc_t *ios)
+{
+    int ncid;
+    int varid;
+    int attnum;
+    char name[NC_MAX_NAME + 1], *namep = NULL;
+    char name_present;
+    int mpierr;
+    int ret;
+
+    LOG((1, "inq_att_name_handler"));
+
+    /* Get the parameters for this function that the the comp master
+     * task is broadcasting. */
+    if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&attnum, 1, MPI_INT,  ios->compmaster, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&name_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    LOG((2, "inq_attname_handler got ncid = %d varid = %d attnum = %d name_present = %d",
+	 ncid, varid, attnum, name_present));
+
+    /* Match NULLs in collective function call. */
+    if (name_present)
+	namep = name;
+
+    /* Call the function to learn about the attribute. */
+    if ((ret = PIOc_inq_attname(ncid, varid, attnum, namep)))
+	return ret;
+
+    return PIO_NOERR;
+}
+
 /** Handle attribute operations. This code only runs on IO tasks.
  *
  * @param ios pointer to the iosystem_desc_t.
@@ -1057,6 +1100,9 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	    break;
 	case PIO_MSG_INQ_ATT:
 	    inq_att_handler(my_iosys);
+	    break;
+	case PIO_MSG_INQ_ATTNAME:
+	    inq_attname_handler(my_iosys);
 	    break;
 	case PIO_MSG_INITDECOMP_DOF:
 	    initdecomp_dof_handler(my_iosys);
