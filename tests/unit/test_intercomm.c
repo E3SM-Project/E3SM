@@ -23,12 +23,15 @@
 #define LOCAL_DIM_LEN 2
 
 /** The name of the dimension in the netCDF output file. */
+#define FIRST_DIM_NAME "jojo"
 #define DIM_NAME "dim_test_intercomm"
 
 /** The name of the variable in the netCDF output file. */
+#define FIRST_VAR_NAME "bill"
 #define VAR_NAME "var_test_intercomm"
 
 /** The name of the global attribute in the netCDF output file. */
+#define FIRST_ATT_NAME "willy"
 #define ATT_NAME "gatt_test_intercomm"
 #define SHORT_ATT_NAME "short_gatt_test_intercomm"
 #define FLOAT_ATT_NAME "float_gatt_test_intercomm"
@@ -415,9 +418,16 @@ main(int argc, char **argv)
 	    }
 	    
 	    /* Define a dimension. */
+	    char dimname2[NC_MAX_NAME + 1];
 	    if (verbose)
 	    	printf("%d test_intercomm defining dimension %s\n", my_rank, DIM_NAME);
-	    if ((ret = PIOc_def_dim(ncid, DIM_NAME, DIM_LEN, &dimid)))
+	    if ((ret = PIOc_def_dim(ncid, FIRST_DIM_NAME, DIM_LEN, &dimid)))
+	    	ERR(ret);
+	    if ((ret = PIOc_inq_dimname(ncid, 0, dimname2)))
+		ERR(ret);
+	    if (strcmp(dimname2, FIRST_DIM_NAME))
+		ERR(ERR_WRONG);
+	    if ((ret = PIOc_rename_dim(ncid, 0, DIM_NAME)))
 	    	ERR(ret);
 
 	    /* Define a 1-D variable. */

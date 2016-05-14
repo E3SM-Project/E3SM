@@ -1167,9 +1167,11 @@ int PIOc_rename_dim(int ncid, int dimid, const char *name)
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&dimid, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
-		mpierr = MPI_Bcast(&namelen, 1, MPI_INT, ios->compmaster, ios->intercomm);
+		mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
 	    if (!mpierr)
-		mpierr = MPI_Bcast(&name, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+		mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	    LOG((2, "PIOc_rename_dim Bcast file->fh = %d dimid = %d namelen = %d name = %s",
+		 file->fh, dimid, namelen, name));
 	}
 
 	/* Handle MPI errors. */

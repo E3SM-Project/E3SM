@@ -845,6 +845,7 @@ int rename_dim_handler(iosystem_desc_t *ios)
     int mpierr;
     int ret;
     int dimid;
+    char name1[NC_MAX_NAME + 1];
 
     LOG((1, "rename_dim_handler"));
 
@@ -856,13 +857,12 @@ int rename_dim_handler(iosystem_desc_t *ios)
 	return PIO_EIO;
     if ((mpierr = MPI_Bcast(&namelen, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
-    if (!(name = malloc(namelen + 1 * sizeof(char))))
-    	return PIO_ENOMEM;
-    if ((mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, 0,
-    			    ios->intercomm)))
-    	return PIO_EIO;
+    if (!(name = malloc((namelen + 1) * sizeof(char))))
+	return PIO_ENOMEM;
+    if ((mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
     LOG((2, "rename_dim_handler got parameters namelen = %d "
-	 "name = %s ncid = %d varid = %d", namelen, name, ncid, varid));
+	 "name = %s ncid = %d dimid = %d", namelen, name, ncid, dimid));
 
     /* Call the create file function. */
     if ((ret = PIOc_rename_dim(ncid, dimid, name)))
