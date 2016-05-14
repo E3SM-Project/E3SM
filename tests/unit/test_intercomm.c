@@ -377,6 +377,17 @@ main(int argc, char **argv)
 	    if (verbose)
 	    	printf("%d test_intercomm file created ncid = %d\n", my_rank, ncid);
 
+	    /* Test the inq_format function. */
+	    int myformat;
+	    if ((ret = PIOc_inq_format(ncid, &myformat))) 
+		ERR(ret); 
+	    if ((format[fmt] == PIO_IOTYPE_PNETCDF || format[fmt] == PIO_IOTYPE_NETCDF) &&
+		myformat != 1)
+		ERR(ERR_AWFUL);
+	    else if ((format[fmt] == PIO_IOTYPE_NETCDF4C || format[fmt] == PIO_IOTYPE_NETCDF4P) &&
+		     myformat != 3)
+		ERR(ERR_AWFUL);
+
 	    /* Test the inq_type function for atomic types. */
 	    char type_name[NC_MAX_NAME + 1];
 	    PIO_Offset type_size;

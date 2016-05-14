@@ -299,61 +299,68 @@ int PIOc_inq_type(int ncid, nc_type xtype, char *name, PIO_Offset *sizep)
  */
 int PIOc_inq_format (int ncid, int *formatp) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
+    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    file_desc_t *file;     /** Pointer to file information. */
+    int ierr = PIO_NOERR;  /** Return code from function calls. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
 
-    errstr = NULL;
-    ierr = PIO_NOERR;
+    LOG((1, "PIOc_inq ncid = %d", ncid));
 
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
+    /* Find the info about this file. */
+    if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
     ios = file->iosystem;
-    msg = PIO_MSG_INQ_FORMAT;
 
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-    }
+    /* If async is in use, and this is not an IO task, bcast the parameters. */
+    if (ios->async_interface)
+    {
+	if (!ios->ioproc)
+	{
+	    int msg = PIO_MSG_INQ_FORMAT;
+	    char format_present = formatp ? true : false;
+	
+	    if(ios->compmaster) 
+		mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 
-
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_inq_format(file->fh, formatp);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_inq_format(file->fh, formatp);;
-	    }
-	    break;
-#endif
-#ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_inq_format(file->fh, formatp);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&format_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	}
+
+	/* Handle MPI errors. */
+	if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	    check_mpi(file, mpierr2, __FILE__, __LINE__);	    
+	check_mpi(file, mpierr, __FILE__, __LINE__);
     }
 
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
+    /* If this is an IO task, then call the netCDF function. */
+    if (ios->ioproc)
+    {
+#ifdef _PNETCDF
+	if (file->iotype == PIO_IOTYPE_PNETCDF)
+	    ierr = ncmpi_inq_format(file->fh, formatp);
+#endif /* _PNETCDF */
+#ifdef _NETCDF
+	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+	    ierr = nc_inq_format(file->fh, formatp);
+#endif /* _NETCDF */
+	LOG((2, "PIOc_inq netcdf call returned %d", ierr));
     }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-    mpierr = MPI_Bcast(formatp , 1, MPI_INT, ios->ioroot, ios->my_comm);
-    if(errstr != NULL) free(errstr);
+
+    /* Broadcast and check the return code. */
+    if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	return PIO_EIO;
+    check_netcdf(file, ierr, __FILE__, __LINE__);
+    
+    /* Broadcast results to all tasks. Ignore NULL parameters. */
+    if (!ierr)
+    {
+	if (formatp)
+	    if ((mpierr = MPI_Bcast(formatp , 1, MPI_INT, ios->ioroot, ios->my_comm)))
+		check_mpi(file, mpierr, __FILE__, __LINE__);
+    }
+    
     return ierr;
 }
 

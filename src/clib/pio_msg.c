@@ -57,6 +57,42 @@ int inq_type_handler(iosystem_desc_t *ios)
     return PIO_NOERR;
 }
 
+/** This function is run on the IO tasks to find netCDF file
+ * format. */
+int inq_format_handler(iosystem_desc_t *ios)
+{
+    int ncid;
+    int *formatp = NULL, format;
+    char format_present;
+    int mpierr;
+    int ret;
+
+    LOG((1, "inq_format_handler"));
+
+    /* Get the parameters for this function that the the comp master
+     * task is broadcasting. */
+    if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&format_present, 1, MPI_CHAR, 0, ios->intercomm)))
+    	return PIO_EIO;
+    LOG((2, "inq_format_handler got parameters ncid = %d format_present = %d",
+	 ncid, format_present));
+
+    /* Manage NULL pointers. */
+    if (format_present)
+	formatp = &format;
+
+    /* Call the function. */
+    if ((ret = PIOc_inq_format(ncid, formatp)))
+	return ret;
+
+    if (formatp)
+	LOG((2, "inq_format_handler format = %d", *formatp));
+    LOG((1, "inq_format_handler succeeded!"));
+
+    return PIO_NOERR;
+}
+
 /** This function is run on the IO tasks to create a netCDF file. */
 int create_file_handler(iosystem_desc_t *ios)
 {
@@ -970,6 +1006,9 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	{
 	case PIO_MSG_INQ_TYPE:
 	    inq_type_handler(my_iosys);
+	    break;
+	case PIO_MSG_INQ_FORMAT:
+	    inq_format_handler(my_iosys);
 	    break;
 	case PIO_MSG_CREATE_FILE:
 	    create_file_handler(my_iosys);
