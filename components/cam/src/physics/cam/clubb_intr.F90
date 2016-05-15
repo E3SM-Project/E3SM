@@ -1506,13 +1506,14 @@ end subroutine clubb_init_cnst
    ! ------------------------------------------------- !
    ! Begin module to compute turbulent mountain stress !
    ! ------------------------------------------------- !
-   
-   call t_startf('compute_tms')
-   call compute_tms( pcols,        pver,      ncol,                   &
+    if ( do_tms) then
+       call t_startf('compute_tms')
+       call compute_tms( pcols,        pver,      ncol,                   &
                      state1%u,     state1%v,  state1%t,  state1%pmid, &
                      state1%exner, state1%zm, sgh30,     ksrftms,     &
                      tautmsx,      tautmsy,   cam_in%landfrac ) 
-   call t_stopf('compute_tms')
+       call t_stopf('compute_tms')
+    endif
    
    if (micro_do_icesupersat) then
      call physics_ptend_init(ptend_loc,state%psetcols, 'clubb', ls=.true., lu=.true., lv=.true., lq=lq)
@@ -1693,9 +1694,10 @@ end subroutine clubb_init_cnst
       ! ------------------------------------------------- !
       ! Apply TMS                                         !
       ! ------------------------------------------------- !    
-      
-      upwp_sfc = upwp_sfc-((ksrftms(i)*state1%u(i,pver))/rho_ds_zm(1))
-      vpwp_sfc = vpwp_sfc-((ksrftms(i)*state1%v(i,pver))/rho_ds_zm(1))           
+       if ( do_tms) then
+          upwp_sfc = upwp_sfc-((ksrftms(i)*state1%u(i,pver))/rho_ds_zm(1))
+          vpwp_sfc = vpwp_sfc-((ksrftms(i)*state1%v(i,pver))/rho_ds_zm(1))           
+       endif
   
       !  Need to flip arrays around for CLUBB core
       do k=1,pverp
