@@ -573,7 +573,7 @@ class Case(object):
                 with open(readme_file, "w") as fd:
                     fd.write(str_to_write)
 
-    def create_caseroot(self):
+    def create_caseroot(self, clone=False):
         caseroot = self.get_value("CASEROOT")
         if not os.path.exists(caseroot):
         # Make the case directory
@@ -582,15 +582,18 @@ class Case(object):
         os.chdir(caseroot)
 
         # Create relevant directories in $caseroot
-        newdirs = ("SourceMods", "LockedFiles", "Buildconf", "Tools")
+        if clone:
+            newdirs = ("LockedFiles", "Tools")
+        else:
+            newdirs = ("SourceMods", "LockedFiles", "Buildconf", "Tools")
         for newdir in newdirs:
             os.makedirs(newdir)
         # Open a new README.case file in $caseroot
         with open(os.path.join(caseroot,"README.case"), "w") as fd:
             for arg in sys.argv:
                 fd.write(" %s"%arg)
-
-        self._create_caseroot_sourcemods()
+        if not clone:
+            self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
 
     def apply_user_mods(self, user_mods_dir=None):
@@ -653,8 +656,8 @@ class Case(object):
             newcase.set_value("PROJECT", project)
 
         # create caseroot
-        newcase.create_caseroot()
-        newcase.flush(flushall=True, )
+        newcase.create_caseroot(clone=True)
+        newcase.flush(flushall=True)
 
         # copy user_nl_files
         cloneroot = self.get_value("CASEROOT")
@@ -662,14 +665,10 @@ class Case(object):
         for item in files:
             shutil.copy(item, newcaseroot)
 
-        # copy SourceMod files
-        directories = glob.glob(cloneroot + "/SourceMods/*")
-        for directory in directories:
-            files = glob.glob(directory + "/*")
-            if files:
-                moddir = os.path.basename(directory)
-                for item in files:
-                    shutil.copy(item, os.path.join(caseroot, "SourceMods", moddir))
+        # copy SourceMod and Buildconf files
+        for casesub in ("SourceMods", "Buildconf"):
+            shutil.copytree(os.path.join(cloneroot, casesub), os.path.join(newcaseroot, casesub))
+
 
         # copy env_case.xml to LockedFiles
         shutil.copy(os.path.join(newcaseroot,"env_case.xml"), os.path.join(newcaseroot,"LockedFiles"))
