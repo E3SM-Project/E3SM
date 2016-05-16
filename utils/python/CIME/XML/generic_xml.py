@@ -140,9 +140,8 @@ class GenericXML(object):
             logger.debug("xpath: %s" , xpath , extra={attributes : None})
             nodes = root.findall(xpath)
 
-        l = list(set(nodes))
-        logger.debug("Returning %s nodes (%s)" , len(l), l)
-        return l
+        logger.debug("Returning %s nodes (%s)" , len(nodes), nodes)
+        return nodes
 
     def add_child(self, node, root=None):
         """
