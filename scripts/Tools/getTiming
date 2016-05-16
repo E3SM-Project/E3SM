@@ -142,7 +142,6 @@ class TimingParser:
         run_type = case.get_value("RUN_TYPE")
         ncpl_base_period = case.get_value("NCPL_BASE_PERIOD")
         atm_ncpl = case.get_value("ATM_NCPL")
-        print type(atm_ncpl)
         ocn_ncpl = case.get_value("OCN_NCPL")
         ccsm_compset = case.get_value("CCSM_COMPSET")
         if ccsm_compset is None:
