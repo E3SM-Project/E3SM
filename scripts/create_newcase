@@ -158,10 +158,12 @@ def _main_func():
                       user_compset=user_compset, pesfile=pesfile,
                       user_grid=user_grid, gridfile=gridfile, ninst=ninst)
 
-    caseobj.create_caseroot(user_mods_dir)
+    caseobj.create_caseroot()
 
     # Write out the case files
     caseobj.flush(flushall=True)
+
+    caseobj.apply_user_mods(user_mods_dir)
     # Copy env_case.xml into LockedFiles
     copyfile(os.path.join(caseroot,"env_case.xml"),
              os.path.join(caseroot,"LockedFiles","env_case.xml"))

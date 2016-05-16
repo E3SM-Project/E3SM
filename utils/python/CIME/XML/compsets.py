@@ -2,9 +2,10 @@
 Common interface to XML files which follow the compsets format,
 """
 
-from standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, convert_to_string, convert_to_type
-from generic_xml import GenericXML
+from CIME.XML.generic_xml import GenericXML
+from CIME.XML.entry_id import EntryID
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +21,26 @@ class Compsets(GenericXML):
             alias = self.get_node("alias",root=node)
             lname = self.get_node("lname",root=node)
             if alias.text == name or lname.text == name:
-               logger.debug("Found node match with alias: %s and lname: %s" % (alias.text, lname.text))
-               return lname.text
+                logger.debug("Found node match with alias: %s and lname: %s" % (alias.text, lname.text))
+                return lname.text
 
-    def get_value(self, name, attribute={}, resolved=False):
+    def get_compset_var_settings(self, compset, grid):
+        '''
+        Variables can be set in config_compsets.xml in entry id settings with compset and grid attributes
+        find and return id value pairs here
+        '''
+        nodes = self.get_nodes("entry")
+        # Get an empty entryid obj to use
+        entryidobj = EntryID()
+        result = []
+        for node in nodes:
+            value = entryidobj.get_default_value(node, {"grid":grid, "compset":compset})
+            if value is not None:
+                result.append((node.get("id"), value))
+        return result
+
+    def get_value(self, name, attribute={}, resolved=False, subgroup=None):
+        expect(subgroup is None, "This class does not support subgroups")
         if name == "help":
             rootnode = self.get_node("help")
             helptext = rootnode.text

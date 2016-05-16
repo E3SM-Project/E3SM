@@ -31,10 +31,8 @@ class Compilers(GenericXML):
         if self.compiler is not None:
             self.set_compiler(compiler)
 
-        """
-        Append the contents of $HOME/.cime/config_compilers.xml if it exists
-        This could cause problems if node matchs are repeated when only one is expected
-        """
+        #Append the contents of $HOME/.cime/config_compilers.xml if it exists
+        #This could cause problems if node matchs are repeated when only one is expected
         infile = os.path.join(os.environ.get("HOME"),".cime","config_compilers.xml")
         if os.path.exists(infile):
             GenericXML.read(self, infile)
@@ -91,11 +89,12 @@ class Compilers(GenericXML):
             self.os       = os_
             self.mpilib   = mpilib
 
-    def get_value(self, name, resolved=True):
+    def get_value(self, name, resolved=True, subgroup=None):
         """
         Get Value of fields in the config_compilers.xml file
         """
         expect(self.compiler_nodes is not None, "Compiler object has no compiler defined")
+        expect(subgroup is None, "This class does not support subgroups")
         value = None
 
         node = self.get_optional_compiler_node(name)

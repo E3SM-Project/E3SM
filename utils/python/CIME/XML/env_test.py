@@ -1,7 +1,7 @@
 """
 Interface to the env_test.xml file.  This class inherits from EnvBase
 """
-from standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 
 from CIME.XML.env_base import EnvBase
 from CIME.utils import convert_to_type

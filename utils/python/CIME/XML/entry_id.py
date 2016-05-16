@@ -22,16 +22,18 @@ class EntryID(GenericXML):
         Set the value of an entry to the default value for that entry
         """
         value = self._get_value_match(node, attributes)
-        vid = node.get("id")
         if value is None:
             # Fall back to default value
             val_node = self.get_optional_node("default_value", root=node)
             if val_node is not None:
                 value = val_node.text
         else:
-            logger.debug("node is %s value is %s"%(node.get("id"),value))
+            logger.debug("node is %s value is %s" % (node.get("id"), value))
+
         if value is None:
+            logger.debug("For vid %s value is none"%node.get("id"))
             value = ""
+
         return value
 
     def set_default_value(self, vid, val, attributes={}):
@@ -58,14 +60,16 @@ class EntryID(GenericXML):
         node = self.get_optional_node(vid)
         value = None
         if node is not None:
-            value = self._get_value_match(self,node,attributes)
+            value = self._get_value_match(node, attributes)
         return value
 
     def _get_value_match(self, node, attributes={}):
+        '''
+        Note that the component class has a specific version of this function
+        '''
         match_value = None
         match_max = 0
         match_count = 0
-        match_values = []
         expect(node is not None," Empty node in _get_value_match")
         values = self.get_optional_node("values", root=node)
         if values is None:
@@ -77,26 +81,15 @@ class EntryID(GenericXML):
                 match_count = 0
                 if key in attributes:
                     if re.search(value, attributes[key]):
+                        logger.debug("Value %s and key %s match with value %s"%(value, key, attributes[key]))
                         match_count += 1
                     else:
                         match_count = 0
                         break
             if match_count > 0:
-                # append the current result
-                if values.get("modifier") == "additive":
-                    match_values.append(valnode.text)
-                # replace the current result if it already contains the new value
-                # otherwise append the current result
-                elif values.get("modifier") == "merge":
-                    if valnode.text in match_values:
-                        del match_values[:]
-                    match_values.append(valnode.text)
-                # take the best match
-                elif match_count > match_max:
+                if match_count > match_max:
                     match_max = match_count
                     match_value = valnode.text
-        if len(match_values) > 0:
-            match_value = " ".join(match_values)
         return match_value
 
     def _get_type_info(self, node):
@@ -113,16 +106,15 @@ class EntryID(GenericXML):
             return None
         else:
             return self._get_type_info(node)
-    
+
     def _get_default(self, node):
         default = self.get_optional_node("default_value", root=node)
         if default is not None:
             return default.text
         else:
             return None
-        
-    
-    # Get type description , expect child with tag "type" for node         
+
+    # Get type description , expect child with tag "type" for node
     def _get_type (self, node):
         type_node = self.get_optional_node("type", root=node)
         if type_node is not None:
@@ -130,7 +122,7 @@ class EntryID(GenericXML):
         else:
             # Default to string
             return "char"
-            
+
     # Get description , expect child with tag "description" for parent node
     def _get_description (self, node):
         type_node = self.get_optional_node("desc", root=node)
@@ -140,9 +132,9 @@ class EntryID(GenericXML):
             return None
 
     # Get group , expect node with tag "group"
-    # entry id nodes are children of group nodes        
+    # entry id nodes are children of group nodes
     def _get_group (self, node):
-        
+
         if node is not None:
             return node.get('id')
         else:
@@ -181,7 +173,7 @@ class EntryID(GenericXML):
         or from the values field if the attribute argument is provided
         and matches
         """
-        
+
         logger.debug("Get Value")
         val = None
         node = self.get_optional_node("entry", {"id":vid})
@@ -214,64 +206,61 @@ class EntryID(GenericXML):
             return convert_to_type(val, type_str, vid)
 
     def get_values(self, item, attribute={}, resolved=True, subgroup=None): # (self, vid, att, resolved=True , subgroup=None ):
-     
+
         """
         If an entry includes a list of values return a list of dict matching each
         attribute to its associated value and group
         """
-        
+
         logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" ,  self.__class__.__name__ , item, attribute, resolved, subgroup)
 
-        
-        nodes   = [] # List of identified xml elements  
-        results = [] # List of identified parameters 
-        
-       
+        nodes   = [] # List of identified xml elements
+        results = [] # List of identified parameters
+
         # Find all nodes with attribute name and attribute value item
         # xpath .//*[name='item']
-        
+
         groups = self.get_nodes("group")
-        
+
         if (len(groups) == 0) :
             groups = [None]
-        
+
         for group in groups :
-        
+
             if item :
                 nodes = self.get_nodes("entry",{"id" : item} , root=group)
             else :
-               # Return all nodes
-               logger.debug("Retrieving all parameter")
-               nodes = self.get_nodes("entry" , root=group)
-        
+                # Return all nodes
+                logger.debug("Retrieving all parameter")
+                nodes = self.get_nodes("entry" , root=group)
+
             if (len(nodes) == 0) :
                 logger.debug("Found no nodes for %s" , item)
             else :
                 logger.debug("Building return structure for %s nodes" , len(nodes))
-        
+
             for node in nodes :
                 logger.debug("Node tag=%s attribute=%s" , node.tag , node.attrib )
-            
+
                 g       = self._get_group(group)
                 val     = node.attrib['value']
                 attr    = node.attrib['id']
                 t       = self._get_type(node)
                 desc    = self._get_description(node)
                 default = self._get_default(node)
-                file    = None
-                try :     
-                    file    = self.filename
+                file_   = None
+                try :
+                    file_   = self.filename
                 except AttributeError:
-                    logger.debug("Can't call filename on %s (%s)" , self , self.__class__.__name__ )      
+                    logger.debug("Can't call filename on %s (%s)" , self , self.__class__.__name__ )
                 #t   =  super(EnvBase , self).get_type( node )
-                v = { 'group' : g , 'attribute' : attr , 'value' : val , 'type' : t , 'description' : desc , 'default' : default , 'file' : file}
-                
+                v = { 'group' : g , 'attribute' : attr , 'value' : val , 'type' : t , 'description' : desc , 'default' : default , 'file' : file_}
+
                 results.append(v)
-        
-        logger.debug("(get_values) Returning %s items" , len(results) )   
+
+        logger.debug("(get_values) Returning %s items" , len(results) )
         return results
-       
-   
+
     def get_child_content(self, vid, childname):
         val = None
         node = self.get_optional_node("entry", {"id" : vid})

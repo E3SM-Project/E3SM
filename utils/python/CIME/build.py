@@ -168,6 +168,10 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
     run_cmd("./Tools/check_lockedfiles --caseroot %s" % caseroot)
 
     # Retrieve relevant case data
+    # This environment variable gets set for cesm Make and
+    # needs to be unset before building again.
+    if "MODEL" in os.environ.keys():
+        del os.environ["MODEL"]
     build_threaded      = case.get_value("BUILD_THREADED")
     casetools           = case.get_value("CASETOOLS")
     exeroot             = case.get_value("EXEROOT")
@@ -189,7 +193,6 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
         thrds =  case.get_value("NTHRDS_%s"%comp_class)
         complist.append((comp_class.lower(), comp, thrds, ninst, config_dir ))
         os.environ["COMP_%s"%comp_class] = comp
-
     machines_file       = case.get_value("MACHINES_SPEC_FILE")
     ocn_submodel        = case.get_value("OCN_SUBMODEL")
     profile_papi_enable = case.get_value("PROFILE_PAPI_ENABLE")
@@ -558,7 +561,7 @@ def clean(case, cleanlist):
         if clm_config_opts is not None:
             # we only want to clean lnd here if it is clm4_0 otherwise remove
             # it from the cleanlist
-            if "clm4_0" not in clm_config_opts:
+            if "lnd" in cleanlist and "clm4_0" not in clm_config_opts:
                 cleanlist.remove('lnd')
 
     cmd = gmake + " -f " + casetools + "/Makefile"

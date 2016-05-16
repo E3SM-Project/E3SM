@@ -1,10 +1,10 @@
 """
 Interface to the config_headers.xml file.  This class inherits from EntryID.py
 """
-from standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 
-from entry_id import EntryID
-from files import Files
+from CIME.XML.entry_id import EntryID
+from CIME.XML.files import Files
 from CIME.utils import expect, get_cime_root, get_model
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class Headers(EntryID):
             infile = files.get_value('CASEFILE_HEADERS', resolved=True)
         EntryID.__init__(self, infile)
 
-    def get_header_node(self,fname):
+    def get_header_node(self, fname):
         fnode = self.get_node("file", attributes={"name" : fname})
         headernode = self.get_node("header", root=fnode)
         return headernode

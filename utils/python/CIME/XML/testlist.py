@@ -2,9 +2,9 @@
 Interface to the config_files.xml file.  This class inherits from generic_xml.py
 It supports versions 1.0 and 2.0 of the testlist.xml file
 """
-from standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 
-from generic_xml import GenericXML
+from CIME.XML.generic_xml import GenericXML
 from CIME.utils import expect, get_cime_root, get_model
 
 logger = logging.getLogger(__name__)
@@ -82,7 +82,7 @@ class Testlist(GenericXML):
 
                     optionnodes = self.get_nodes("option", root=mach)
                     for onode in optionnodes:
-                       thistest[onode.get('name')] = onode.text
+                        thistest[onode.get('name')] = onode.text
                     tests.append(thistest)
 
         return tests

@@ -2,7 +2,7 @@
 Common interface to XML files, this is an abstract class and is expected to
 be used by other XML interface modules and not directly.
 """
-from standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 from distutils.spawn import find_executable
 from xml.dom import minidom
 from CIME.utils import expect, get_cime_root, convert_to_string
@@ -31,7 +31,7 @@ class GenericXML(object):
             # if file does not exist create a root xml element
             # and set it's id to file
 
-            logger.warning("File %s does not exists." , infile)
+            logger.debug("File %s does not exists." , infile)
             expect("$" not in infile,"File path not fully resolved %s"%infile)
 
             self.filename = infile
@@ -65,9 +65,9 @@ class GenericXML(object):
         logger.debug("write: " + outfile)
         try:
             xmlstr = ET.tostring(self.root)
-        except:
+        except ET.ParseError as e:
             ET.dump(self.root)
-            expect(False, "Could not write file %s, xml formatting error"%self.filename)
+            expect(False, "Could not write file %s, xml formatting error '%s'" % (self.filename, e))
 
         # xmllint provides a better format option for the output file
         xmllint = find_executable("xmllint")
@@ -78,15 +78,13 @@ class GenericXML(object):
             with open(outfile,'w') as xmlout:
                 doc.writexml(xmlout,addindent='  ')
 
-
-
     def get_node(self, nodename, attributes=None, root=None, xpath=None):
         """
         Get an xml element matching nodename with optional attributes.
 
         Error unless exactly one match.
         """
-        
+
         nodes = self.get_nodes(nodename, attributes=attributes, root=root, xpath=xpath)
 
         expect(len(nodes) == 1, "Incorrect number of matches, %d, for nodename '%s' and attrs '%s' in file '%s'" %
@@ -106,9 +104,9 @@ class GenericXML(object):
         return nodes[0] if nodes else None
 
     def get_nodes(self, nodename, attributes=None, root=None, xpath=None):
-        
+
         logger.debug("(get_nodes) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , nodename , attributes , root , xpath)
-        
+
         if root is None:
             root = self.root
         nodes = []
@@ -154,17 +152,15 @@ class GenericXML(object):
             root = self.root
         self.root.append(node)
 
-    def get_value(self, item, resolved=True, settype=True):
+    def get_value(self, item, attribute={}, resolved=True, subgroup=None):
         """
         get_value is expected to be defined by the derived classes, if you get here
         the value was not found in the class.
         """
-
-        logger.debug("Get Value for "+item)
+        logger.debug("Get Value for " + item)
         return None
 
-
-    def set_value(self, vid, value, ignore_type=True):
+    def set_value(self, vid, value, subgroup=None, ignore_type=True):
         """
         ignore_type is not used in this flavor
         """
@@ -219,7 +215,4 @@ class GenericXML(object):
                 logging.debug("resolve from env: " + var)
                 item_data = item_data.replace(m.group(), os.environ[var])
 
-
         return item_data
-
-

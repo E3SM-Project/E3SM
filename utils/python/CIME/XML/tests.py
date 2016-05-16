@@ -1,10 +1,10 @@
 """
 Interface to the config_tests.xml file.  This class inherits from GenericEntry
 """
-from standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 
-from generic_xml import GenericXML
-from files import Files
+from CIME.XML.generic_xml import GenericXML
+from CIME.XML.files import Files
 
 logger = logging.getLogger(__name__)
 

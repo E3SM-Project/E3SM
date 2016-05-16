@@ -507,11 +507,13 @@ class SystemTest(object):
                 elif opt.startswith('N'):
                     # handled in create_newcase
                     continue
+                elif opt.startswith('IOP'):
+                    logger.warn("IOP test option not yet implemented")
                 else:
                     expect(False, "Could not parse option '%s' " %opt)
 
         envtest.write()
-        lockedfiles = os.path.join(test_dir, "Lockedfiles")
+        lockedfiles = os.path.join(test_dir, "LockedFiles")
         try:
             os.stat(lockedfiles)
         except:

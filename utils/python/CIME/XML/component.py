@@ -1,9 +1,9 @@
 """
 Interface to the config_component.xml files.  This class inherits from EntryID.py
 """
-from standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 
-from entry_id import EntryID
+from CIME.XML.entry_id import EntryID
 from CIME.utils import expect, get_cime_root, get_model
 from CIME.XML.files import Files
 
@@ -21,7 +21,8 @@ class Component(EntryID):
 
         EntryID.__init__(self,infile)
 
-    def get_value(self, name, attribute={}, resolved=False):
+    def get_value(self, name, attribute={}, resolved=False, subgroup=None):
+        expect(subgroup is None, "This class does not support subgroups")
         return EntryID.get_value(self, name, attribute, resolved)
 
     def get_valid_model_components(self):
@@ -34,6 +35,61 @@ class Component(EntryID):
         comps = self.get_default_value(comps_node)
         components = comps.split(',')
         return components
+
+    def _get_value_match(self, node, attributes={}):
+        match_value = None
+        match_max = 0
+        match_count = 0
+        match_values = []
+        expect(node is not None," Empty node in _get_value_match")
+        values = self.get_optional_node("values", root=node)
+        if values is None:
+            return
+        for valnode in self.get_nodes("value", root=node):
+            # loop through all the keys in valnode (value nodes) attributes
+            for key,value in valnode.attrib.iteritems():
+                # determine if key is in attributes dictionary
+                match_count = 0
+                if key in attributes:
+                    if key == "compset":
+                        compset = attributes[key]
+                        if re.search(value+"[_%]", compset) or re.search(value+"$", compset):
+                            logger.debug("Value %s and key %s match with compset value %s"%(value, key, compset))
+                            match_count += 1
+                        else:
+                            match_count = 0
+                            break
+                    elif re.search(value, attributes[key]):
+                        logger.debug("Value %s and key %s match with value %s"%(value, key, attributes[key]))
+                        match_count += 1
+                    else:
+                        match_count = 0
+                        break
+            if match_count > 0:
+                if len(match_values) == 0:
+                    # start with the default_value if present
+                    val_node = self.get_optional_node("default_value", root=node)
+                    value = val_node.text
+                    if value is not None and len(value) > 0 and value != "UNSET":
+                        match_values.append(value)
+                # append the current result
+                if values.get("modifier") == "additive":
+                    match_values.append(valnode.text)
+                # replace the current result if it already contains the new value
+                # otherwise append the current result
+                elif values.get("modifier") == "merge":
+                    if valnode.text in match_values:
+                        del match_values[:]
+                    match_values.append(valnode.text)
+                # take the *last* best match
+                elif match_count >= match_max:
+                    del match_values[:]
+                    match_max = match_count
+                    match_value = valnode.text
+        if len(match_values) > 0:
+            match_value = " ".join(match_values)
+        return match_value
+
 
     def print_values(self):
         """
