@@ -1,37 +1,37 @@
 <components>
+
   <comp_archive_spec name="cam">
     <rootdir>atm</rootdir>
-    <rpointer>unset</rpointer>
     <files>
-      <file_extension regex_suffix="cam.log\..*">
-	<subdir>logs</subdir>
+      <file_extension regex_suffix=".log\..*">
+	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="cam.r\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="cam.r[sa]\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r[sa]\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="cam.rh[012345]\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".rh[012345]\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix=".i\..*">
-	<subdir>init</subdir>
+	<subdir>init</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".h[01]\.[\w\-]*\.nc$">
-	<subdir>hist</subdir>
+      <file_extension regex_suffix=".h[01]\.[\w\-]*\.nc$">      
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".h[2345678s]\..*">
-	<subdir>hist</subdir>
+      <file_extension regex_suffix=".h[2345678s]\..*">      
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <rpointer_content>$CASE.cam.r.$DATENAME.nc</rpointer_content>
+      <rpointer_content>$CASE.cam$NINST_STRING.r.$DATENAME.nc</rpointer_content>
       <restart_history_varname>nhfil</restart_history_varname>
     </files>
   </comp_archive_spec>
@@ -39,433 +39,434 @@
   <comp_archive_spec name="datm">
     <rootdir>atm</rootdir>
     <files>
-      <file_extension regex_suffix="atm.log\..*">
-        <subdir>logs</subdir>
-        <keep_last_in_rundir>false</keep_last_in_rundir>
+      <file_extension regex_suffix=".log\..*">
+	<subdir>logs</subdir> 
+	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="datm.r\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="datm.rs1\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".rs1\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
+      <rpointer_content>$CASE.datm$NINST_STRING.r.$DATENAME.nc,$CASE.datm$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
+      <restart_history_varname>unset</restart_history_varname>
     </files>
-    <rpointer_content>casename.datm.r.datename.nc,casename.datm.rs1.datename.bin</rpointer_content>
-    <restart_history_varname>unset</restart_history_varname>
   </comp_archive_spec>
 
   <comp_archive_spec name="clm">
     <rootdir>lnd</rootdir>
     <files>
-      <file_extension regex_suffix="lnd.log\..*">
-	<subdir>logs</subdir>
+      <file_extension regex_suffix=".log\..*">
+	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="clm.r\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="clm.rh[012345]\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".rh[013456]\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="clm.i\..*">
-	<subdir>init</subdir>
+      <file_extension regex_suffix=".i\..*">
+	<subdir>init</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="clm.h0\.[\w\-]*\.nc$">
-	<subdir>hist</subdir>
+      <file_extension regex_suffix=".h0\.[\w\-]*\.nc$">      
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="clm.h[12345v]\..*">
-	<subdir>hist</subdir>
+      <file_extension regex_suffix=".h[12345v]\..*">      
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
+      <rpointer_content>./$CASE.clm2$NINST_STRING.r.$DATENAME.nc</rpointer_content>
+      <restart_history_varname>locfnh</restart_history_varname>
     </files>
-    <rpointer_content>./casename.clm2.r.datename.nc</rpointer_content>
-    <restart_history_varname>locfnh</restart_history_varname>
   </comp_archive_spec>
 
   <comp_archive_spec name="dlnd">
     <rootdir>lnd</rootdir>
     <files>
-      <file_extension regex_suffix="lnd.log\..*">
-        <subdir>logs</subdir>
-        <keep_last_in_rundir>false</keep_last_in_rundir>
+      <file_extension regex_suffix=".log\..*">
+	<subdir>logs</subdir> 
+	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="dlnd.r\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="dlnd.rs1\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".rs1\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
+      <rpointer_content>$CASE.dlnd$NINST_STRING.r.$DATENAME.nc,$CASE.dlnd$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
+      <restart_history_varname>unset</restart_history_varname>
     </files>
-    <rpointer_content>casename.dlnd.r.datename.nc,casename.dlnd.rs1.datename.bin</rpointer_content>
-    <restart_history_varname>unset</restart_history_varname>
   </comp_archive_spec>
 
   <comp_archive_spec name="rtm">
     <rootdir>rof</rootdir>
     <files>
-      <file_extension regex_suffix="rof.log\..*">
-	<subdir>logs</subdir>
+      <file_extension regex_suffix=".log\..*">
+	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="rtm.r\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="rtm.rh[0123]\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".rh[0123]\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="rtm.h[0123]\..*">
-	<subdir>hist</subdir>
+      <file_extension regex_suffix=".h[0123]\..*">      
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
+      <rpointer_content>$CASE.rtm$NINST_STRING.r.$DATENAME.nc</rpointer_content>
+      <restart_history_varname>unset</restart_history_varname>
     </files>
-    <rpointer_content>casename.rtm.r.datename.nc</rpointer_content>
-    <restart_history_varname>TBD</restart_history_varname>
   </comp_archive_spec>
 
   <comp_archive_spec name="mosart">
     <rootdir>rof</rootdir>
     <files>
-      <file_extension regex_suffix="rof.log\..*">
-	<subdir>logs</subdir>
+      <file_extension regex_suffix=".log\..*">
+	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="mosart.r\..*nc$">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="mosart.rh[0123]\..*nc$">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".rh[0123]\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="mosart.h[0123]\..*nc$">
-	<subdir>hist</subdir>
+      <file_extension regex_suffix=".h[0123]\..*">      
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
+      <rpointer_content>$CASE.mosart$NINST_STRING.r.$DATENAME.nc</rpointer_content>
+      <restart_history_varname>unset</restart_history_varname>
     </files>
-    <rpointer_content>./casename.mosart.r.datename.nc</rpointer_content>
-    <restart_history_varname>TBD</restart_history_varname>
   </comp_archive_spec>
 
   <comp_archive_spec name="drof">
     <rootdir>rof</rootdir>
     <files>
-      <file_extension regex_suffix=".rof.log\..*">
-        <subdir>logs</subdir>
-        <keep_last_in_rundir>false</keep_last_in_rundir>
+      <file_extension regex_suffix=".log\..*">
+	<subdir>logs</subdir> 
+	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="drof.r\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="drof.rs1\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".rs1\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
+      <rpointer_content>$CASE.drof$NINST_STRING.r.$DATENAME.nc,$CASE.drof$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
+      <restart_history_varname>unset</restart_history_varname>
     </files>
-    <rpointer_content>casename.drof.r.datename.nc,casename.drof.rs1.datename.bin</rpointer_content>
-    <restart_history_varname>unset</restart_history_varname>
   </comp_archive_spec>
 
   <comp_archive_spec name="cice">
     <rootdir>ice</rootdir>
     <files>
-      <file_extension regex_suffix="cice.log\..*">
-	<subdir>logs</subdir>
+      <file_extension regex_suffix=".log\..*">
+	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="cice.r\.\w+">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r\.\w+">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="cice.i\..*">
-	<subdir>init</subdir>
+      <file_extension regex_suffix=".i\..*">
+	<subdir>init</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="cice.h\.[\w\-]*\.nc$">
-	<subdir>hist</subdir>
+      <file_extension regex_suffix=".h\.[\w\-]*\.nc$">      
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
+      <rpointer_content>./$CASE.cice$NINST_STRING.r.$DATENAME.nc</rpointer_content>
+      <restart_history_varname>unset</restart_history_varname>
     </files>
-    <rpointer_content>./casename.cice.r.datename.nc</rpointer_content>
-    <restart_history_varname>TBD</restart_history_varname>
   </comp_archive_spec>
 
   <comp_archive_spec name="dice">
     <rootdir>ice</rootdir>
     <files>
-      <file_extension regex_suffix="ice.log\..*">
-        <subdir>logs</subdir>
-        <keep_last_in_rundir>false</keep_last_in_rundir>
+      <file_extension regex_suffix=".log\..*">
+	<subdir>logs</subdir> 
+	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="dice.r\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="dice.rs1\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".rs1\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
+      <rpointer_content>$CASE.dice$NINST_STRING.r.$DATENAME.nc,$CASE.dice$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
+      <restart_history_varname>unset</restart_history_varname>
     </files>
-    <rpointer_content>casename.dice.r.datename.nc,casename.dice.rs1.datename.bin</rpointer_content>
-    <restart_history_varname>unset</restart_history_varname>
   </comp_archive_spec>
 
   <comp_archive_spec name="pop">
     <rootdir>ocn</rootdir>
     <files>
-      <file_extension regex_suffix="ocn.log\..*">
-	<subdir>logs</subdir>
+      <file_extension regex_suffix=".log\..*">
+	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="pop.r\..*\.hdr">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r\..*\.hdr">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="pop.r\.[0-9|-]+\.nc">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r\.[0-9|-]+\.nc">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="pop..r\.[0-9|-]+[^\.nc]">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r\.[0-9|-]+[^\.nc]">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="pop..rh.ecosys\.\w+\.hdr">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".rh.ecosys\.\w+\.hdr">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="pop..rh.ecosys\.\w+\.nc">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".rh.ecosys\.\w+\.nc">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="pop..rh.ecosys\.[0-9|-]+[^\.nc]">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".rh.ecosys\.[0-9|-]+[^\.nc]">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="pop..rh\..*\.hdr">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".rh\..*\.hdr">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="pop..rh\.[0-9|-]+\.nc">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".rh\.[0-9|-]+\.nc">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="pop..rh\.[0-9|-]+[^\.nc]">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".rh\.[0-9|-]+[^\.nc]">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="pop..ro\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".ro\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="pop..d\w*">
-	<subdir>hist</subdir>
+      <file_extension regex_suffix=".d\w*">
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="pop..h.\d{4}-\d{2}\..*">
-	<subdir>hist</subdir>
+      <file_extension regex_suffix=".h.\d{4}-\d{2}\..*">      
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="pop..h.nday1\..*">
-	<subdir>hist</subdir>
+      <file_extension regex_suffix=".h.nday1\..*">      
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="pop..h.nyear1\..*">
-	<subdir>hist</subdir>
+      <file_extension regex_suffix=".h.nyear1\..*">      
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="pop..h\.[\w\-\.]*\.nc$">
-	<subdir>hist</subdir>
+      <file_extension regex_suffix=".h\.[\w\-\.]*\.nc$">      
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
+      <rpointer_content>./$CASE.pop$NINST_STRING.r.$DATENAME.nc,./$CASE.pop$NINST_STRING.ro.datename.nc,RESTART_FMT=nc</rpointer_content>
+      <restart_history_varname>unset</restart_history_varname>
     </files>
-    <rpointer_content>./casename.pop.r.datename.nc,./casename.pop.ro.datename.nc,RESTART_FMT=nc</rpointer_content>
-    <restart_history_varname>TBD</restart_history_varname>
   </comp_archive_spec>
 
   <comp_archive_spec name="docn">
     <rootdir>ocn</rootdir>
     <files>
-      <file_extension regex_suffix="ocn.log\..*">
-        <subdir>logs</subdir>
-        <keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
-      <file_extension regex_suffix="docn.r\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="docn.rs1\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".rs\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
+      <file_extension regex_suffix=".h\..*">      
+	<subdir>hist</subdir> 
+	<keep_last_in_rundir>false</keep_last_in_rundir>
+      </file_extension>
+      <rpointer_content>$CASE.docn$NINST_STRING.r.$DATENAME.nc,$CASE.docn$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
+      <restart_history_varname>unset</restart_history_varname>
     </files>
-    <rpointer_content>casename.docn.r.datename.nc,casename.docn.rs1.datename.bin</rpointer_content>
-    <restart_history_varname>unset</restart_history_varname>
   </comp_archive_spec>
 
   <comp_archive_spec name="cism">
     <rootdir>glc</rootdir>
     <files>
-      <file_extension regex_suffix="glc.log\..*">
-	<subdir>logs</subdir>
+      <file_extension regex_suffix=".log\..*">
+	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="cism.r.[0-9]*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r.[0-9]*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="cism.r\.\w+">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r\.\w+">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="cism.i\..*">
-	<subdir>init</subdir>
+      <file_extension regex_suffix=".i\..*">
+	<subdir>init</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="cism.h*">
-	<subdir>hist</subdir>
+      <file_extension regex_suffix=".h*">      
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
+      <rpointer_content>./$CASE.cism$NINST_STRING.r.$DATENAME.nc</rpointer_content>
+      <restart_history_varname>unset</restart_history_varname>
     </files>
-    <rpointer_content>casename.cism.r.datename.nc</rpointer_content>
-    <restart_history_varname>unset</restart_history_varname>
   </comp_archive_spec>
 
   <comp_archive_spec name="ww3">
     <rootdir>wav</rootdir>
     <files>
       <file_extension regex_suffix=".log\..*">
-	<subdir>logs</subdir>
+	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix=".r.[0-9]*">
-	<subdir>rest</subdir>
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix=".i\..*">
-	<subdir>init</subdir>
+	<subdir>init</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".h\..*">
-	<subdir>hist</subdir>
+      <file_extension regex_suffix=".h\..*">      
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
+      <rpointer_content>unset</rpointer_content>
+      <restart_history_varname>unset</restart_history_varname>
     </files>
-    <rpointer_content></rpointer_content>
-    <restart_history_varname>unset</restart_history_varname>
   </comp_archive_spec>
 
   <comp_archive_spec name="dwav">
     <rootdir>wav</rootdir>
     <files>
-      <file_extension regex_suffix="wav.log\..*">
-        <subdir>logs</subdir>
-        <keep_last_in_rundir>false</keep_last_in_rundir>
+      <file_extension regex_suffix=".log\..*">
+	<subdir>logs</subdir> 
+	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="dwav.r\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="dwav.rs1\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".rs1\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
+      <rpointer_content>$CASE.dwav$NINST_STRING.r.$DATENAME.nc,$CASE.dwav$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
+      <restart_history_varname>unset</restart_history_varname>
     </files>
-    <rpointer_content>casename.dwav.r.datename.nc,casename.dwav.rs1.datename.bin</rpointer_content>
-    <restart_history_varname>unset</restart_history_varname>
   </comp_archive_spec>
 
-  <comp_archive_spec name="dart">
+  <comp_archive_spec name="dart"> 
     <rootdir>dart</rootdir>
     <files>
       <file_extension regex_suffix="\w*dart_log\..*">
-	<subdir>logs</subdir>
+	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\w*True_State\..*\.nc">
-	<subdir>hist</subdir>
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\w*Prior_Diag\..*.nc">
-	<subdir>hist</subdir>
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\w*Posterior_Diag\..*.nc">
-	<subdir>hist</subdir>
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\w*obs_seq\..*.out">
-	<subdir>hist</subdir>
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\w*obs_seq\..*.final">
-	<subdir>hist</subdir>
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\w*obs_seq\..*.perfect">
-	<subdir>hist</subdir>
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="cam_\w*pr\w*inflate_restart\w*">
-	<subdir>rest</subdir>
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="cam_\w*po\w*inflate_restart\w*">
-	<subdir>rest</subdir>
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="clm_\w*pr\w*inflate_restart\w*">
-	<subdir>rest</subdir>
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="clm_\w*po\w*inflate_restart\w*">
-	<subdir>rest</subdir>
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="pop_\w*pr\w*inflate_restart\w*">
-	<subdir>rest</subdir>
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="pop_\w*po\w*inflate_restart\w*">
-	<subdir>rest</subdir>
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
+      <rpointer_content>unset</rpointer_content>
+      <restart_history_varname>unset</restart_history_varname>
     </files>
-    <rpointer_content></rpointer_content>
-    <restart_history_varname>unset</restart_history_varname>
   </comp_archive_spec>
 
-  <comp_archive_spec name="cpl">
+  <comp_archive_spec name="cpl"> 
     <rootdir>cpl</rootdir>
     <files>
       <file_extension regex_suffix="cpl.log\..*">
-	<subdir>logs</subdir>
+	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="cesm*.log\..*">
-	<subdir>logs</subdir>
+	<subdir>logs</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="cpl.r\..*">
-	<subdir>rest</subdir>
+      <file_extension regex_suffix=".r\..*">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix="cpl.h\w*">
-	<subdir>hist</subdir>
+      <file_extension regex_suffix=".h\w*">
+	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
+      <rpointer_content>$CASE.cpl.r.$DATENAME.nc</rpointer_content>
+      <restart_history_varname>unset</restart_history_varname>
     </files>
-    <rpointer_content>casename.cpl.r.datename.nc</rpointer_content>
-    <restart_history_varname>unset</restart_history_varname>
   </comp_archive_spec>
+
 </components>
 
