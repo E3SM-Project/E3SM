@@ -462,13 +462,35 @@ class Case(object):
         pes_ntasks, pes_nthrds, pes_rootpe = pesobj.find_pes_layout(self._gridname, self._compsetname,
                                                                     machine_name, pesize_opts=pecount)
         mach_pes_obj = self._get_env("mach_pes")
+        totaltasks = {}
         for key, value in pes_ntasks.items():
-            mach_pes_obj.set_value(key,int(value))
-        for key, value in pes_nthrds.items():
+            totaltasks[key[-3:]] = int(value)
             mach_pes_obj.set_value(key,int(value))
         for key, value in pes_rootpe.items():
+            totaltasks[key[-3:]] += int(value)
             mach_pes_obj.set_value(key,int(value))
+        for key, value in pes_nthrds.items():
+            totaltasks[key[-3:]] *= int(value)
+            mach_pes_obj.set_value(key,int(value))
+        maxval = 1
+        pes_per_node = mach_pes_obj.get_value("PES_PER_NODE")
+        for key, val in totaltasks.items():
+            if val < 0:
+                val = -1*val*pes_per_node
+            if val > maxval:
+                maxval = val
 
+        for name,jdict in bjobs:
+            if jdict["task_count"] == "default":
+                queue = machobj.select_best_queue(maxval)
+            else:
+                queue = machobj.select_best_queue(int(jdict["task_count"]))
+            self.set_value("JOB_QUEUE", queue, subgroup=name)
+            self.set_value("JOB_WALLCLOCK_TIME",  machobj.get_max_walltime(queue), subgroup=name)
+
+        queue = machobj.select_best_queue(1)
+        self.set_value("JOB_QUEUE", queue, subgroup="case.st_archive")
+        self.set_value("JOB_WALLCLOCK_TIME",  machobj.get_max_walltime(queue), subgroup="case.st_archive")
         # Make sure that every component has been accounted for
         # set, nthrds and ntasks to 1 otherwise. Also set the ninst values here.
         for compclass in self._component_classes:

@@ -294,9 +294,15 @@ class Machines(GenericXML):
                 jobmax = queue.get("jobmax")
                 # if the fullsum is between the min and max # jobs, then use this queue.
                 if jobmin is not None and jobmax is not None and num_pes >= int(jobmin) and num_pes <= int(jobmax):
-                    return queue
-
+                    return queue.text
         return None
+
+    def get_max_walltime(self, queue):
+        walltime = None
+        for queue_node in self.get_all_queues():
+            if queue_node.text == queue:
+                walltime = queue_node.get("walltimemax")
+        return walltime
 
     def get_walltimes(self):
         return self.get_nodes("walltime", root=self.machine_node)
