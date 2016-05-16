@@ -65,7 +65,7 @@ def parse_command_line(args, description):
                         help="Resolve variable names")
 
     args = parser.parse_args(args[1:])
-    args.debug = True
+    
     CIME.utils.handle_standard_logging_options(args)
 
     if (len(sys.argv) == 1) :
