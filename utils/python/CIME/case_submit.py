@@ -52,10 +52,10 @@ def submit(caseroot, job=None, resubmit=None, no_batch=False, prereq_jobid=None)
                            case.get_value("CIMEROOT"),caseroot, case.get_value("MPILIB"),
                            case.get_value("DEBUG"))
     env_module.load_env_for_case()
-    batchobj = BatchUtils(job, case, prereq_jobid=prereq_jobid)
+    batchobj = BatchUtils(job, case, prereq_jobid=prereq_jobid, no_batch=no_batch)
     case.set_value("RUN_WITH_SUBMIT",True)
     case.flush()
-    batchobj.submit_jobs(no_batch=no_batch)
+    batchobj.submit_jobs()
 
 def check_case(case,caseroot):
     check_lockedfiles(caseroot)
