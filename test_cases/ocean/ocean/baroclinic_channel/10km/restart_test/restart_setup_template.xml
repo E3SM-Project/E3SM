@@ -1,6 +1,6 @@
 <template>
 	<namelist>
-		<option name="config_start_time">0000-01-01_00:00:00</option>
+		<option name="config_start_time">0001-01-01_00:00:00</option>
 		<option name="config_run_duration">'0000_00:10:00'</option>
 		<option name="config_write_output_on_startup">.false.</option>
 	</namelist>

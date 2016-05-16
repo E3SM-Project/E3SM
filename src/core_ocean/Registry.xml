@@ -92,7 +92,7 @@
 					description="Path to the filename for restart timestamps to be read and written from."
 					possible_values="Path to a file."
 		/>
-		<nml_option name="config_start_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
+		<nml_option name="config_start_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
 					description="Timestamp describing the initial time of the simulation. If it is set to 'file', the initial time is read from restart_timestamp."
 					possible_values="'YYYY-MM-DD_HH:MM:SS' or 'file'"
 		/>
