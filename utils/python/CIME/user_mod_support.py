@@ -43,13 +43,16 @@ def apply_user_mods(caseroot, user_mods_path, ninst={}):
                         except:
                             expect(False, "Could not write file %s in caseroot %s"
                                    %(case_source_mods,caseroot))
+        case_shell_commands = None
         for shell_commands_file in glob.iglob(os.path.join(include_dir,"shell_commands")):
             case_shell_commands = shell_commands_file.replace(include_dir, caseroot)
             with open(shell_commands_file,"r") as fd:
                 new_shell_commands = fd.read()
             with open(case_shell_commands, "a") as fd:
                 fd.write(new_shell_commands)
-
+        if case_shell_commands is not None:
+            os.chmod(case_shell_commands, 0777)
+            run_cmd(case_shell_commands)
 
 def build_include_dirs_list(user_mods_path, include_dirs=[]):
     '''

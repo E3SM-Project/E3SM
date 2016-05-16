@@ -144,5 +144,12 @@ class Batch(GenericXML):
             arg_nodes.extend(self.get_nodes("arg", root=self.machine_node))
 
         values = []
-        for arg in arg_nodes:
-            values.append((arg.get("flag"), arg.get("name")))
+        bs_nodes = self.get_nodes("batch_system",{"type":self.batch_system})
+        if self.machine is not None:
+            bs_nodes += self.get_nodes("batch_system",{"MACH":self.machine})
+        submit_arg_nodes = []
+        for node in bs_nodes:
+            submit_arg_nodes += self.get_nodes("arg",root=node)
+        for arg in submit_arg_nodes:
+            values.append((arg.get("flag"),arg.get("name")))
+        return values

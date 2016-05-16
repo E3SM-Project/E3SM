@@ -31,6 +31,7 @@ class EntryID(GenericXML):
             logger.debug("node is %s value is %s" % (node.get("id"), value))
 
         if value is None:
+            logger.debug("For vid %s value is none"%node.get("id"))
             value = ""
 
         return value
@@ -63,10 +64,12 @@ class EntryID(GenericXML):
         return value
 
     def _get_value_match(self, node, attributes={}):
+        '''
+        Note that the component class has a specific version of this function
+        '''
         match_value = None
         match_max = 0
         match_count = 0
-        match_values = []
         expect(node is not None," Empty node in _get_value_match")
         values = self.get_optional_node("values", root=node)
         if values is None:
@@ -78,26 +81,15 @@ class EntryID(GenericXML):
                 match_count = 0
                 if key in attributes:
                     if re.search(value, attributes[key]):
+                        logger.debug("Value %s and key %s match with value %s"%(value, key, attributes[key]))
                         match_count += 1
                     else:
                         match_count = 0
                         break
             if match_count > 0:
-                # append the current result
-                if values.get("modifier") == "additive":
-                    match_values.append(valnode.text)
-                # replace the current result if it already contains the new value
-                # otherwise append the current result
-                elif values.get("modifier") == "merge":
-                    if valnode.text in match_values:
-                        del match_values[:]
-                    match_values.append(valnode.text)
-                # take the best match
-                elif match_count > match_max:
+                if match_count > match_max:
                     match_max = match_count
                     match_value = valnode.text
-        if len(match_values) > 0:
-            match_value = " ".join(match_values)
         return match_value
 
     def _get_type_info(self, node):

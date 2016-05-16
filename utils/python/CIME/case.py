@@ -129,7 +129,9 @@ class Case(object):
 
             if result is not None:
                 if resolved and type(result) is str:
-                    return self.get_resolved_value(result)
+                    result = self.get_resolved_value(result)
+                    vtype = env_file.get_type_info(item)
+                    result = convert_to_type(result, vtype, item)
                 return result
 
         for env_file in self._env_generic_files:
@@ -263,7 +265,6 @@ class Case(object):
                     self._pesfile = pes_filename
                     self._compsetsfile = compsets_filename
                     self._compsetname = match
-
                     self.set_value("COMPSETS_SPEC_FILE" ,
                                    files.get_value("COMPSETS_SPEC_FILE", {"component":component}, resolved=False))
                     self.set_value("TESTS_SPEC_FILE"    , tests_filename)
@@ -385,6 +386,8 @@ class Case(object):
         #--------------------------------------------
         self._get_component_config_data()
 
+        self.get_compset_var_settings()
+
         # Add the group and elements for the config_files.xml
         for idx, config_file in enumerate(self._component_config_files):
             self.set_value(config_file[0],config_file[1])
@@ -491,11 +494,20 @@ class Case(object):
         logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)
 
+
         # Set project id
         if project is None:
             project = get_project()
         if project is not None:
             self.set_value("PROJECT", project)
+
+    def get_compset_var_settings(self):
+        compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))
+        matches = compset_obj.get_compset_var_settings(self._compsetname, self._gridname)
+        for name, value in matches:
+            if len(value) > 0:
+                logger.debug("Compset specific settings: name is %s and value is %s"%(name,value))
+                self.set_value(name, value)
 
     def set_initial_test_values(self):
         testobj = self._get_env("test")
@@ -613,7 +625,7 @@ class Case(object):
                 with open(readme_file, "w") as fd:
                     fd.write(str_to_write)
 
-    def create_caseroot(self, user_mods_dir=None):
+    def create_caseroot(self, clone=False):
         caseroot = self.get_value("CASEROOT")
         if not os.path.exists(caseroot):
         # Make the case directory
@@ -622,17 +634,21 @@ class Case(object):
         os.chdir(caseroot)
 
         # Create relevant directories in $caseroot
-        newdirs = ("SourceMods", "LockedFiles", "Buildconf", "Tools")
+        if clone:
+            newdirs = ("LockedFiles", "Tools")
+        else:
+            newdirs = ("SourceMods", "LockedFiles", "Buildconf", "Tools")
         for newdir in newdirs:
             os.makedirs(newdir)
         # Open a new README.case file in $caseroot
         with open(os.path.join(caseroot,"README.case"), "w") as fd:
             for arg in sys.argv:
                 fd.write(" %s"%arg)
-
-        self._create_caseroot_sourcemods()
+        if not clone:
+            self._create_caseroot_sourcemods()
         self._create_caseroot_tools()
 
+    def apply_user_mods(self, user_mods_dir=None):
         if user_mods_dir is not None:
             if os.path.isabs(user_mods_dir):
                 user_mods_path = user_mods_dir
@@ -692,8 +708,8 @@ class Case(object):
             newcase.set_value("PROJECT", project)
 
         # create caseroot
-        newcase.create_caseroot()
-        newcase.flush(flushall=True, )
+        newcase.create_caseroot(clone=True)
+        newcase.flush(flushall=True)
 
         # copy user_nl_files
         cloneroot = self.get_value("CASEROOT")
@@ -701,14 +717,10 @@ class Case(object):
         for item in files:
             shutil.copy(item, newcaseroot)
 
-        # copy SourceMod files
-        directories = glob.glob(cloneroot + "/SourceMods/*")
-        for directory in directories:
-            files = glob.glob(directory + "/*")
-            if files:
-                moddir = os.path.basename(directory)
-                for item in files:
-                    shutil.copy(item, os.path.join(caseroot, "SourceMods", moddir))
+        # copy SourceMod and Buildconf files
+        for casesub in ("SourceMods", "Buildconf"):
+            shutil.copytree(os.path.join(cloneroot, casesub), os.path.join(newcaseroot, casesub))
+
 
         # copy env_case.xml to LockedFiles
         shutil.copy(os.path.join(newcaseroot,"env_case.xml"), os.path.join(newcaseroot,"LockedFiles"))

@@ -46,17 +46,22 @@ class Pes(GenericXML):
                                                           (compset_match == "any" or \
                                                            re.search(compset_match,compset)):
 
-                                points = int(grid_match!="any")*4+int(mach_match!="any")*3+\
-                                         int(compset_match!="any")*2+int(pesize_match!="any")
-                                if points > max_points:
-                                    pe_select = pes_node
-                                    max_points = points
-                                    mach_choice = mach_match
-                                    grid_choice = grid_match
-                                    compset_choice = compset_match
-                                    pesize_choice = pesize_match
-                                elif points == max_points:
-                                    expect(False, "We dont expect to be here" )
+                               points = int(grid_match!="any")*4+int(mach_match!="any")*3+\
+                                   int(compset_match!="any")*2+int(pesize_match!="any")
+                               if points > max_points:
+                                   pe_select = pes_node
+                                   max_points = points
+                                   mach_choice = mach_match
+                                   grid_choice = grid_match
+                                   compset_choice = compset_match
+                                   pesize_choice = pesize_match
+                               elif points == max_points:
+                                   logger.warn("mach_choice %s mach_match %s"%(mach_choice, mach_match))
+                                   logger.warn("grid_choice %s grid_match %s"%(grid_choice, grid_match))
+                                   logger.warn("compset_choice %s compset_match %s"%(compset_choice, compset_match))
+                                   logger.warn("pesize_choice %s pesize_match %s"%(pesize_choice, pesize_match))
+                                   logger.warn("points = %d"%points)
+                                   expect(False, "We dont expect to be here" )
 
         pes_ntasks, pes_nthrds, pes_rootpe = {}, {}, {}
         for pes_data, xpath in [(pes_ntasks, "ntasks"),
