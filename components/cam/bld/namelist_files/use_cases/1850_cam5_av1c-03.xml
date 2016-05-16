@@ -61,9 +61,9 @@
 <zmconv_dmpdz>      -0.75e-3</zmconv_dmpdz>
 <zmconv_ke>          0.5E-6 </zmconv_ke>
 <effgw_oro>          0.25   </effgw_oro>
-<seasalt_emis_scale> 0.87   </seasalt_emis_scale>
+<seasalt_emis_scale> 1.05   </seasalt_emis_scale>
 <dust_emis_fact>     2.05D0 </dust_emis_fact>
-<clubb_gamma_coef>   0.25   </clubb_gamma_coef>
+<clubb_gamma_coef>   0.29   </clubb_gamma_coef>
 <clubb_C8>           5.2    </clubb_C8>
 <cldfrc2m_rhmaxi>    1.05D0 </cldfrc2m_rhmaxi>
 <clubb_c_K10>        0.3    </clubb_c_K10>
