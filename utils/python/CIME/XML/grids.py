@@ -91,10 +91,10 @@ class Grids(GenericXML):
         mask = component_grids[4]
 
         domains = {}
+        mask_name = None
         for grid in grids:
             file_name = grid[0] + "_DOMAIN_FILE"
             path_name = grid[0] + "_DOMAIN_PATH"
-            mask_name = None
             if grid[0] == "ATM" or grid[0] == "LND":
                 mask_name = "lnd_mask"
             if grid[0] == "ICE" or grid[0] == "OCN":
@@ -109,8 +109,9 @@ class Grids(GenericXML):
                     path  = self.get_value("path", attributes={mask_name:mask}, root=root)
                     if file_ is not None:
                         domains[file_name] = file_
-                        if path is not None:
-                            domains[path_name] = path
+                    if path is not None:
+                        domains[path_name] = path
+
 
         return domains
 

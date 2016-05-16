@@ -296,10 +296,11 @@ class Case(object):
             compset = self._compsetname
         expect(compset is not None,
                "ERROR: compset is not set")
-        elements = compset.split('_')
+        # the first element is always the date operator - skip it
+        elements = compset.split('_')[1:]
         for element in elements:
-            # ignore the initial date in the compset longname and the possible BGC modifier
-            if re.search(r'^\d+$',element) or element.startswith("BGC%") :
+            # ignore the possible BGC modifier
+            if element.startswith("BGC%"):
                 continue
             else:
                 element_component = element.split('%')[0].lower()
@@ -379,6 +380,7 @@ class Case(object):
         gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
         self._gridname = gridinfo["GRID"]
         for key,value in gridinfo.items():
+            logger.debug("Set grid %s %s"%(key,value))
             self.set_value(key,value)
 
         #--------------------------------------------
