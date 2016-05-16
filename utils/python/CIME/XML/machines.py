@@ -35,7 +35,7 @@ class Machines(GenericXML):
         # Append the contents of $HOME/.cime/config_machines.xml if it exists
         # This could cause problems if node matchs are repeated when only one is expected
         infile = os.path.join(os.environ.get("HOME"),".cime","config_machines.xml")
-        logger.warning("Infile: %s" , infile)
+        logger.debug("Infile: %s" , infile)
         if os.path.exists(infile):
             GenericXML.read(self, infile)
 

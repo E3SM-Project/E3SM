@@ -31,7 +31,7 @@ class GenericXML(object):
             # if file does not exist create a root xml element
             # and set it's id to file
 
-            logger.warning("File %s does not exists." , infile)
+            logger.debug("File %s does not exists." , infile)
             expect("$" not in infile,"File path not fully resolved %s"%infile)
 
             self.filename = infile
