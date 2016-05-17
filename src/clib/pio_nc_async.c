@@ -1683,38 +1683,52 @@ int PIOc_redef (int ncid)
  */
 int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    char *errstr;
-    int namelen;
+    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    file_desc_t *file;     /** Pointer to file information. */
+    int ierr = PIO_NOERR;  /** Return code from function calls. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
 
-    errstr = NULL;
-    ierr = PIO_NOERR;
+    /* User must provide name. */
+    if (!name || strlen(name) > NC_MAX_NAME)
+	return PIO_EINVAL;
 
-    int my_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);    
-    printf("%d PIOc_def_dim ncid = %d name = %s len = %d\n", my_rank,
-	   ncid, name, len);
+    LOG((1, "PIOc_def_dim ncid = %d", ncid));
 
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
+    /* Find the info about this file. */
+    if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
     ios = file->iosystem;
-    msg = PIO_MSG_DEF_DIM;
 
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-	namelen = strlen(name);
-	mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast(&len, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+    /* If async is in use, and this is not an IO task, bcast the parameters. */
+    if (ios->async_interface)
+    {
+	if (!ios->ioproc)
+	{
+	    int msg = PIO_MSG_DEF_DIM;
+	    int namelen = strlen(name);
+
+	    if(ios->compmaster) 
+		mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
+
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast((void *)name, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&len, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	}
+
+
+	/* Handle MPI errors. */
+	if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	    check_mpi(file, mpierr2, __FILE__, __LINE__);	    
+	check_mpi(file, mpierr, __FILE__, __LINE__);
     }
-
+    
+    /* If this is an IO task, then call the netCDF function. */
     if(ios->ioproc){
 	switch(file->iotype){
 #ifdef _NETCDF
@@ -1744,9 +1758,13 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
 	return PIO_EIO;
     check_netcdf(file, ierr, __FILE__, __LINE__);
-    
-    mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);
-    if(errstr != NULL) free(errstr);
+
+    /* Broadcast results to all tasks. Ignore NULL parameters. */
+    if (!ierr)
+	if (idp)
+	    if ((mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm)))
+		check_mpi(file, mpierr, __FILE__, __LINE__);		
+
     return ierr;
 }
 
