@@ -1323,8 +1323,6 @@ int PIOc_rename_att (int ncid, int varid, const char *name,
 	return PIO_EBADID;
     ios = file->iosystem;
 
-    LOG((2, "PIOc_rename_att2 ncid = %d varid = %d name = %s newname = %s",
-	 ncid, varid, name, newname));
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async_interface)
     {
@@ -1333,8 +1331,6 @@ int PIOc_rename_att (int ncid, int varid, const char *name,
 	    int msg = PIO_MSG_RENAME_ATT; /** Message for async notification. */
 	    int namelen = strlen(name);
 	    int newnamelen = strlen(newname);
-
-	    LOG((2, "PIOc_rename_att sending msg"));
 
 	    if (ios->compmaster) 
 		mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
@@ -1354,17 +1350,13 @@ int PIOc_rename_att (int ncid, int varid, const char *name,
 		mpierr = MPI_Bcast((char *)newname, newnamelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	}
 
-
 	/* Handle MPI errors. */
 	if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
 	    check_mpi(file, mpierr2, __FILE__, __LINE__);	    
 	check_mpi(file, mpierr, __FILE__, __LINE__);
     }
-    LOG((2, "PIOc_rename_att calling netcdf function"));    
-
     
     /* If this is an IO task, then call the netCDF function. */
-    LOG((2, "PIOc_rename_att calling netcdf function"));    
     if (ios->ioproc)
     {
 #ifdef _PNETCDF
@@ -1375,18 +1367,13 @@ int PIOc_rename_att (int ncid, int varid, const char *name,
 	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
 	    ierr = nc_rename_att(file->fh, varid, name, newname);
 #endif /* _NETCDF */
-	LOG((2, "PIOc_rename_att netcdf call returned %d", ierr));
     }
 
     /* Broadcast and check the return code. */
-    LOG((2, "PIOc_rename_att Bcasting %d", ierr));    
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-    {
-	LOG((2, "PIOc_rename_att ERROR"));    
-	return PIO_EIO;
-    }
-    LOG((2, "PIOc_rename_att Bcast complete"));    
+	check_mpi(file, mpierr, __FILE__, __LINE__);
     check_netcdf(file, ierr, __FILE__, __LINE__);
+
     LOG((2, "PIOc_rename_att succeeded"));        
     return ierr;
 }
