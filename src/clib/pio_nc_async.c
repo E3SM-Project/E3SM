@@ -1791,10 +1791,9 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims,
     file_desc_t *file;     /** Pointer to file information. */
     int ierr = PIO_NOERR;  /** Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
-    int namelen = strlen(name);
 
     /* User must provide name and storage for varid. */
-    if (!name || !varidp || namelen > NC_MAX_NAME)
+    if (!name || !varidp || strlen(name) > NC_MAX_NAME)
     {
 	check_netcdf(file, PIO_EINVAL, __FILE__, __LINE__);	
 	return PIO_EINVAL;
@@ -1814,6 +1813,7 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims,
 	if (!ios->ioproc)
 	{
 	    int msg = PIO_MSG_DEF_VAR;
+	    int namelen = strlen(name);
 	    
 	    if(ios->compmaster) 
 		mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
@@ -1838,38 +1838,22 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims,
 	check_mpi(file, mpierr, __FILE__, __LINE__);
     }
 
-    /* IO tasks call the netCDF functions. */
+    /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
     {
-	switch (file->iotype)
-	{
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_def_var(file->fh, name, xtype, ndims, dimidsp, varidp);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-	    if (ios->io_rank == 0)
-	    {
-		ierr = nc_def_var(file->fh, name, xtype, ndims, dimidsp, varidp);
-		if (!ierr)
-		    ierr = nc_def_var_deflate(file->fh, *varidp, 0,1,1);
-	    }
-	    break;
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if (ios->io_rank == 0)
-		ierr = nc_def_var(file->fh, name, xtype, ndims, dimidsp, varidp);
-	    break;
-#endif
 #ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
+	if (file->iotype == PIO_IOTYPE_PNETCDF)
 	    ierr = ncmpi_def_var(file->fh, name, xtype, ndims, dimidsp, varidp);
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
+#endif /* _PNETCDF */
+#ifdef _NETCDF
+	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+	    ierr = nc_def_var(file->fh, name, xtype, ndims, dimidsp, varidp);
+#ifdef _NETCDF4
+	/* For netCDF-4 serial files, turn on compression for this variable. */
+	if (!ierr && file->iotype == PIO_IOTYPE_NETCDF4C)
+	    ierr = nc_def_var_deflate(file->fh, *varidp, 0, 1, 1);	    
+#endif /* _NETCDF4 */
+#endif /* _NETCDF */
     }
 
     /* Broadcast and check the return code. */
