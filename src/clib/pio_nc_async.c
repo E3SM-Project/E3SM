@@ -1949,15 +1949,15 @@ int PIOc_inq_var_fill(int ncid, int varid, int *no_fill, void *fill_valuep)
  */
 int PIOc_get_att(int ncid, int varid, const char *name, void *ip) 
 {
-    iosystem_desc_t *ios;
-    file_desc_t *file;
+    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    file_desc_t *file;     /** Pointer to file information. */
+    int ierr = PIO_NOERR;  /** Return code from function calls. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
     PIO_Offset attlen, typelen;
     nc_type atttype;
-    int ierr = PIO_NOERR;
-    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
 
     /* User must provide a name and destination pointer. */
-    if (!name || !ip)
+    if (!name || !ip || strlen(name) > NC_MAX_NAME)
 	return PIO_EINVAL;
 
     LOG((1, "PIOc_get_att ncid %d varid %d name %s", ncid, varid, name));
@@ -1985,7 +1985,6 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
 	    return ierr;
 	}
     }
-    
 
     /* If async is in use, and this is not an IO task, bcast the
      * parameters and the attribute and type information we fetched. */
