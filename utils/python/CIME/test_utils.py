@@ -22,10 +22,11 @@ def get_tests_from_xml(xml_machine=None,xml_category=None,xml_compiler=None, xml
         testlistfiles.append(xml_testlist)
     else:
         files = Files()
-        test_spec_files = files.get_values("TESTS_SPEC_FILE",att="component")
-        for spec_file in test_spec_files.viewvalues():
-            if(os.path.isfile(spec_file)):
-                testlistfiles.append(spec_file)
+        comps = files.get_components("TESTS_SPEC_FILE")
+        for comp in comps:
+            test_spec_file = files.get_value("TESTS_SPEC_FILE", {"component":comp})
+            if(os.path.isfile(test_spec_file)):
+                testlistfiles.append(test_spec_file)
 
     for testlistfile in testlistfiles:
         thistestlistfile = Testlist(testlistfile)
