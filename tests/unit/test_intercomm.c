@@ -390,6 +390,14 @@ main(int argc, char **argv)
 	    if (verbose)
 	    	printf("%d test_intercomm file created ncid = %d\n", my_rank, ncid);
 
+	    /* /\* End define mode, then re-enter it. *\/ */
+	    if ((ret = PIOc_enddef(ncid)))
+	    	ERR(ret);
+	    if (verbose)
+	    	printf("%d test_intercomm calling redef\n", my_rank);
+	    if ((ret = PIOc_redef(ncid)))
+	    	ERR(ret);
+
 	    /* Test the inq_format function. */
 	    int myformat;
 	    if ((ret = PIOc_inq_format(ncid, &myformat))) 

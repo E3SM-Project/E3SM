@@ -711,26 +711,23 @@ int sync_file_handler(iosystem_desc_t *ios)
  * @param ios pointer to the iosystem_desc_t.
  * @return PIO_NOERR for success, error code otherwise.
 */
-int enddef_file_handler(iosystem_desc_t *ios)
+int change_def_file_handler(iosystem_desc_t *ios, int msg)
 {
     int ncid;
     int mpierr;
     int ret;
 
-    int my_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    LOG((1, "%d enddef_file_handler\n", my_rank));
+    LOG((1, "change_def_file_handler"));
 
     /* Get the parameters for this function that the comp master
      * task is broadcasting. */
     if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
 
-    /* Call the sync file function. */
-    if ((ret = PIOc_enddef(ncid)))
-	return ret;
+    /* Call the function. */
+    ret = (msg == PIO_MSG_ENDDEF) ? PIOc_enddef(ncid) : PIOc_redef(ncid);
 
-    LOG((1, "%d enddef_file_handler succeeded!\n", my_rank));
+    LOG((1, "change_def_file_handler succeeded!"));
     return PIO_NOERR;
 }
 
@@ -1281,7 +1278,8 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	    sync_file_handler(my_iosys);
 	    break;
 	case PIO_MSG_ENDDEF:
-	    enddef_file_handler(my_iosys);
+	case PIO_MSG_REDEF:
+	    change_def_file_handler(my_iosys, msg);
 	    break;
 	case PIO_MSG_OPEN_FILE:
 	    open_file_handler(my_iosys);
