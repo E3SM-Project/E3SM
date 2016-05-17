@@ -180,6 +180,45 @@ int PIOc_inq_unlimdim(int ncid, int *unlimdimidp)
     return PIOc_inq(ncid, NULL, NULL, unlimdimidp, NULL);
 }
 
+/** Internal function to provide inq_type function for pnetcdf. */
+int pioc_pnetcdf_inq_type(int ncid, nc_type xtype, char *name,
+			  PIO_Offset *sizep)
+{
+    int typelen;
+    char typename[NC_MAX_NAME + 1];
+    
+    switch (xtype)
+    {
+    case NC_UBYTE:
+    case NC_BYTE:
+    case NC_CHAR:
+	typelen = 1;
+	break;
+    case NC_SHORT:
+    case NC_USHORT:
+	typelen = 2;
+	break;
+    case NC_UINT:
+    case NC_INT:
+    case NC_FLOAT:
+	typelen = 4;
+	break;
+    case NC_UINT64:
+    case NC_INT64:
+    case NC_DOUBLE:
+	typelen = 8;
+	break;
+    }
+
+    /* If pointers were supplied, copy results. */
+    if (sizep)
+	*sizep = typelen;
+    if (name)
+	strcpy(name, "some type");
+
+    return PIO_NOERR;
+}
+
 /** 
  * @ingroup PIOc_typelen
  * The PIO-C interface for the NetCDF function nctypelen.
@@ -228,40 +267,11 @@ int PIOc_inq_type(int ncid, nc_type xtype, char *name, PIO_Offset *sizep)
     }
     
     /* If this is an IO task, then call the netCDF function. */
-    /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
     {
 #ifdef _PNETCDF
 	if (file->iotype == PIO_IOTYPE_PNETCDF)
-	{
-	    switch (xtype)
-	    {
-	    case NC_UBYTE:
-	    case NC_BYTE:
-	    case NC_CHAR:
-		typelen = 1;
-		break;
-	    case NC_SHORT:
-	    case NC_USHORT:
-		typelen = 2;
-		break;
-	    case NC_UINT:
-	    case NC_INT:
-	    case NC_FLOAT:
-		typelen = 4;
-		break;
-	    case NC_UINT64:
-	    case NC_INT64:
-	    case NC_DOUBLE:
-		typelen = 8;
-		break;
-	    }
-	    
-	    if (sizep)
-		*sizep = typelen;
-	    if (name)
-		strcpy(name, "some type");
-    }
+	    ierr = pioc_pnetcdf_inq_type(ncid, xtype, name, sizep);	    
 #endif /* _PNETCDF */
 #ifdef _NETCDF
 	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
