@@ -836,7 +836,6 @@ contains
          itimestep = itimestep + 1
 
          write(stderrUnit,*) 'Starting timestep number ', iTimeStep
-         write(stdoutUnit,*) 'Starting timestep number ', iTimeStep
 
          ! ===
          ! === Perform Timestep
@@ -927,6 +926,7 @@ contains
              call mpas_dmpar_global_abort("An error has occurred in mpas_core_run. Aborting...")
          endif
 
+         write(stderrUnit,*) 'Completed timestep number ', iTimeStep
          call shr_sys_flush(stderrUnit)
       end do
       err = ior(err, err_tmp)

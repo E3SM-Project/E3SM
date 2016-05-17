@@ -1449,6 +1449,27 @@ add_default($nl, 'config_AM_mixedLayerDepths_temp_gradient_threshold');
 add_default($nl, 'config_AM_mixedLayerDepths_den_gradient_threshold');
 add_default($nl, 'config_AM_mixedLayerDepths_interp_method');
 
+####################################
+# Namelist group: AM_regionalStats #
+####################################
+
+add_default($nl, 'config_AM_regionalStats_enable');
+add_default($nl, 'config_AM_regionalStats_compute_on_startup');
+add_default($nl, 'config_AM_regionalStats_write_on_startup');
+add_default($nl, 'config_AM_regionalStats_compute_interval');
+add_default($nl, 'config_AM_regionalStats_output_stream');
+add_default($nl, 'config_AM_regionalStats_restart_stream');
+add_default($nl, 'config_AM_regionalStats_input_stream');
+add_default($nl, 'config_AM_regionalStats_operation');
+add_default($nl, 'config_AM_regionalStats_region_type');
+add_default($nl, 'config_AM_regionalStats_region_group');
+add_default($nl, 'config_AM_regionalStats_1d_weighting_function');
+add_default($nl, 'config_AM_regionalStats_2d_weighting_function');
+add_default($nl, 'config_AM_regionalStats_1d_weighting_field');
+add_default($nl, 'config_AM_regionalStats_2d_weighting_field');
+add_default($nl, 'config_AM_regionalStats_vertical_mask');
+add_default($nl, 'config_AM_regionalStats_vertical_dimension');
+
 ######################################
 # Namelist group: AM_timeSeriesStats #
 ######################################
@@ -1465,6 +1486,7 @@ add_default($nl, 'config_AM_timeSeriesStats_reference_times');
 add_default($nl, 'config_AM_timeSeriesStats_duration_intervals');
 add_default($nl, 'config_AM_timeSeriesStats_repeat_intervals');
 add_default($nl, 'config_AM_timeSeriesStats_reset_intervals');
+add_default($nl, 'config_AM_timeSeriesStats_backward_output_offset');
 
 #####################################
 # Namelist group: AM_pointwiseStats #
@@ -1485,6 +1507,34 @@ add_default($nl, 'config_AM_debugDiagnostics_compute_interval');
 add_default($nl, 'config_AM_debugDiagnostics_output_stream');
 add_default($nl, 'config_AM_debugDiagnostics_compute_on_startup');
 add_default($nl, 'config_AM_debugDiagnostics_write_on_startup');
+add_default($nl, 'config_AM_debugDiagnostics_check_state');
+
+####################################
+# Namelist group: AM_rpnCalculator #
+####################################
+
+add_default($nl, 'config_AM_rpnCalculator_enable');
+add_default($nl, 'config_AM_rpnCalculator_compute_on_startup');
+add_default($nl, 'config_AM_rpnCalculator_write_on_startup');
+add_default($nl, 'config_AM_rpnCalculator_compute_interval');
+add_default($nl, 'config_AM_rpnCalculator_output_stream');
+add_default($nl, 'config_AM_rpnCalculator_variable_a');
+add_default($nl, 'config_AM_rpnCalculator_variable_b');
+add_default($nl, 'config_AM_rpnCalculator_variable_c');
+add_default($nl, 'config_AM_rpnCalculator_variable_d');
+add_default($nl, 'config_AM_rpnCalculator_variable_e');
+add_default($nl, 'config_AM_rpnCalculator_variable_f');
+add_default($nl, 'config_AM_rpnCalculator_variable_g');
+add_default($nl, 'config_AM_rpnCalculator_variable_h');
+add_default($nl, 'config_AM_rpnCalculator_expression_1');
+add_default($nl, 'config_AM_rpnCalculator_expression_2');
+add_default($nl, 'config_AM_rpnCalculator_expression_3');
+add_default($nl, 'config_AM_rpnCalculator_expression_4');
+add_default($nl, 'config_AM_rpnCalculator_output_name_1');
+add_default($nl, 'config_AM_rpnCalculator_output_name_2');
+add_default($nl, 'config_AM_rpnCalculator_output_name_3');
+add_default($nl, 'config_AM_rpnCalculator_output_name_4');
+
 
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpas-o_in) and input dataset list (mpas-o.input_data_list) ***
@@ -1561,9 +1611,11 @@ my @groups = qw(run_modes
                 am_lagrparttrack
                 am_eliassenpalm
                 am_mixedlayerdepths
+                am_regionalstats
                 am_timeseriesstats
                 am_pointwisestats
                 am_debugdiagnostics
+                am_rpncalculator
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group

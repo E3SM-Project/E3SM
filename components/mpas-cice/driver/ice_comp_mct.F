@@ -808,18 +808,29 @@ contains
         write(stderrUnit,*) 'Doing timestep ', trim(timeStamp)
 
         ! pre-timestep analysis computation
+        write(stderrUnit,*) '   Starting analysis precompute'
         call cice_analysis_precompute(domain, ierr)
+        write(stderrUnit,*) '   Finished analysis precompute'
 
+        write(stderrUnit,*) '   Starting forward update'
         call mpas_timer_start("time integration", .false.)
         call cice_timestep(domain, domain % clock, dt, itimestep)
         call mpas_timer_stop("time integration")
+        write(stderrUnit,*) '   Finished forward update'
 
         ! update analysis members
+        write(stderrUnit,*) '   Starting AM compute'
         call cice_analysis_compute(domain, ierr)
+        write(stderrUnit,*) '   Finished AM compute'
+        write(stderrUnit,*) '   Starting AM restart'
         call cice_analysis_restart(domain, ierr)
+        write(stderrUnit,*) '   Finished AM restart'
+        write(stderrUnit,*) '   Starting AM write'
         call cice_analysis_write(domain, ierr)
+        write(stderrUnit,*) '   Finished AM write'
 
         ! Reset the restart alarm to prevent restart files being written without the coupler requesting it.
+        write(stderrUnit,*) '   Resetting restart stream alarms'
         call mpas_stream_mgr_begin_iteration(domain % streamManager)
         do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID=streamName, &
                    directionProperty=streamDirection, activeProperty=streamActive) )
@@ -827,13 +838,17 @@ contains
               call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID=streamName, ierr=ierr)
            end if
         end do
+        write(stderrUnit,*) '   Resetting restart stream alarms complete'
 
+        write(stderrUnit,*) '   Writing output streams'
         call mpas_stream_mgr_write(domain % streamManager, streamID='output', ierr=ierr)
         call mpas_stream_mgr_reset_alarms(domain % streamManager, streamID='output', ierr=ierr)
 
         call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
         call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
+        write(stderrUnit,*) '   Finished writing output streams'
 
+        write(stderrUnit,*) 'Completed timestep ', trim(timeStamp)
         call shr_sys_flush(stderrUnit)
      end do
 
@@ -841,11 +856,14 @@ contains
       ! We only write restart files at the end of a coupling interval
       if (seq_timemgr_RestartAlarmIsOn(EClock)) then
          ! Write a restart file, because the coupler asked for it.
+        write(stderrUnit,*) 'Writing restart streams'
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
          do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID=streamName, &
                     directionProperty=streamDirection, activeProperty=streamActive) )
             if ( streamActive .and. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) then
+               write(stderrUnit, *) '    Writing stream: ' // trim(streamName)
                call mpas_stream_mgr_write(domain % streamManager, forceWriteNow=.true., streamID=streamName, iErr=iErr)
+               write(stderrUnit, *) '    Finished Writing stream: ' // trim(streamName)
             end if
          end do
 
@@ -854,10 +872,14 @@ contains
             write(22, *) trim(timeStamp)
             close(22)
          end if
+        write(stderrUnit,*) 'Finished writing restart streams'
+
       end if
 
       ! Export state to coupler
+      write(stderrUnit,*) 'Exporting state'
       call ice_export_mct(i2x_i, ierr)
+      write(stderrUnit,*) 'Finished exporting state'
 
       ! Check if clocks are in sync
 !TODO?      call check_clocks_sync(domain % clock, Eclock, stderrUnit, ierr)
