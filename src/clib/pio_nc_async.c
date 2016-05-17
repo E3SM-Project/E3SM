@@ -1769,14 +1769,14 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
 int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims,
 		  const int *dimidsp, int *varidp) 
 {
-    iosystem_desc_t *ios;
-    file_desc_t *file;
-    int ierr = PIO_NOERR;
+    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    file_desc_t *file;     /** Pointer to file information. */
+    int ierr = PIO_NOERR;  /** Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
-    int namelen;
+    int namelen = strlen(name);
 
     /* User must provide name and storage for varid. */
-    if (!name || !varidp)
+    if (!name || !varidp || namelen > NC_MAX_NAME)
     {
 	check_netcdf(file, PIO_EINVAL, __FILE__, __LINE__);	
 	return PIO_EINVAL;
@@ -1796,14 +1796,12 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims,
 	if (!ios->ioproc)
 	{
 	    int msg = PIO_MSG_DEF_VAR;
+	    
 	    if(ios->compmaster) 
 		mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
+	    
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&(file->fh), 1, MPI_INT, ios->compmaster, ios->intercomm);
-	    namelen = strlen(name);
-	    LOG((2, "bcasting namelen = %d name = %s\n", namelen, name));
-	    if (!ios->compmaster)
-		ios->compmaster = MPI_PROC_NULL;
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
 	    if (!mpierr)
@@ -1864,8 +1862,9 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims,
     /* Broadcast results. */
     if (!ierr)
 	if (varidp)
-	    mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);
-
+	    if ((mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm)))
+		check_mpi(file, mpierr, __FILE__, __LINE__);
+    
     return ierr;
 }
 
