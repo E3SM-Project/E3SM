@@ -261,9 +261,8 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     else:
         wall_time_bab = wall_time
 
-    queue_node = mach.select_best_queue(proc_pool)
-    queue = queue_node.text
-    wall_time_max_bab = queue_node.get("walltimemax")
+    queue = mach.select_best_queue(proc_pool)
+    wall_time_max_bab = mach.get_max_walltime(queue)
     if wall_time_max_bab is not None:
         wall_time_max = convert_to_seconds(wall_time_max_bab)
         if wall_time_max < wall_time:
