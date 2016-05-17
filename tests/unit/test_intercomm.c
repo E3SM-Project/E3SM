@@ -451,6 +451,7 @@ main(int argc, char **argv)
 	    float float_att_data = ATT_VALUE;
 	    double double_att_data = ATT_VALUE;
 	    char attname2[NC_MAX_NAME + 1];
+	    /* Write an att and rename it. */
 	    if ((ret = PIOc_put_att_int(ncid, NC_GLOBAL, FIRST_ATT_NAME, NC_INT, 1, &att_data)))
 		ERR(ret);
 	    if ((ret = PIOc_inq_attname(ncid, NC_GLOBAL, 0, attname2)))
@@ -459,6 +460,16 @@ main(int argc, char **argv)
 		ERR(ERR_WRONG);
 	    if ((ret = PIOc_rename_att(ncid, NC_GLOBAL, FIRST_ATT_NAME, ATT_NAME)))
 		ERR(ret);
+
+	    /* Write an att and delete it. */
+	    /* if ((ret = PIOc_put_att_int(ncid, NC_GLOBAL, FIRST_ATT_NAME, NC_INT, 1, &att_data))) */
+	    /* 	ERR(ret); */
+	    /* if ((ret = PIOc_del_att(ncid, NC_GLOBAL, FIRST_ATT_NAME))) */
+	    /* 	ERR(ret); */
+	    /* if ((ret = PIOc_inq_att(ncid, NC_GLOBAL, FIRST_ATT_NAME, NULL, NULL)) != PIO_ENOTATT) */
+	    /* 	ERR(ERR_AWFUL); */
+
+	    /* Write some atts of different types. */
 	    if ((ret = PIOc_put_att_short(ncid, NC_GLOBAL, SHORT_ATT_NAME, NC_SHORT, 1, &short_att_data)))
 	    	ERR(ret);
 	    if ((ret = PIOc_put_att_float(ncid, NC_GLOBAL, FLOAT_ATT_NAME, NC_FLOAT, 1, &float_att_data)))
