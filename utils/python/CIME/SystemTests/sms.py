@@ -18,9 +18,11 @@ class SMS(SystemTestsCommon):
         self._case.set_value("REST_OPTION","none")
         self._case.set_value("HIST_OPTION","$STOP_OPTION")
         self._case.set_value("HIST_N","$STOP_N")
+        stop_n = self._case.get_value("STOP_N")
+        stop_option = self._case.get_value("STOP_OPTION")
 
         self._case.flush()
-        logger.info("doing an %d %s initial test, no restarts written"%(stop_n, stop_option))
+        logger.info("doing an %d %s initial test, no restarts written" % (stop_n, stop_option))
         SystemTestsCommon.run(self)
 
     def report(self):

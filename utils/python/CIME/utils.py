@@ -714,7 +714,7 @@ def compute_total_time(job_cost_map, proc_pool):
 
     return current_time
 
-def appendStatus(msg, caseroot='.', sfile="CaseStatus"):
+def append_status(msg, caseroot='.', sfile="CaseStatus"):
     """
     Append msg to sfile in caseroot
     """
