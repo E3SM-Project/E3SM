@@ -1122,8 +1122,8 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 
 <gridmap atm_grid="ne120np4" ocn_grid="oRRS15to5">
   <ATM2OCN_FMAPNAME>cpl/gridmaps/ne120np4/map_ne120np4_to_oRRS15to5_aave.160203.nc</ATM2OCN_FMAPNAME>
-  <ATM2OCN_SMAPNAME>cpl/gridmaps/ne120np4/map_ne120np4_to_oRRS15to5_patch.160203.nc</ATM2OCN_SMAPNAME>
-  <ATM2OCN_VMAPNAME>cpl/gridmaps/ne120np4/map_ne120np4_to_oRRS15to5_patch.160203.nc</ATM2OCN_VMAPNAME>
+  <ATM2OCN_SMAPNAME>cpl/gridmaps/ne120np4/map_ne120np4_to_oRRS15to5_bilin.160428.nc</ATM2OCN_SMAPNAME>
+  <ATM2OCN_VMAPNAME>cpl/gridmaps/ne120np4/map_ne120np4_to_oRRS15to5_bilin.160428.nc</ATM2OCN_VMAPNAME>
   <OCN2ATM_FMAPNAME>cpl/gridmaps/oRRS15to5/map_oRRS15to5_to_ne120np4_aave.160203.nc</OCN2ATM_FMAPNAME>
   <OCN2ATM_SMAPNAME>cpl/gridmaps/oRRS15to5/map_oRRS15to5_to_ne120np4_aave.160203.nc</OCN2ATM_SMAPNAME>
 </gridmap>
