@@ -413,8 +413,8 @@ int PIOc_inq_varnatts (int ncid, int varid, int *nattsp);
 int PIOc_def_var (int ncid, const char *name, nc_type xtype,  int ndims, const int *dimidsp, int *varidp);
 int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
 			 int deflate_level);
-int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
-			 int *deflatep, int *deflate_levelp);
+int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep, int *deflatep,
+			 int *deflate_levelp);
 int PIOc_inq_var_szip(int ncid, int varid, int *options_maskp, int *pixels_per_blockp);
 int PIOc_def_var_chunking(int ncid, int varid, int storage, const PIO_Offset *chunksizesp);
 int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, PIO_Offset *chunksizesp);

@@ -462,7 +462,7 @@ int PIOc_deletefile(const int iosysid, const char filename[])
 /** 
 * @name    PIOc_sync
 */
-int PIOc_sync (int ncid) 
+int PIOc_sync(int ncid) 
 {
   int ierr;
   int msg;
