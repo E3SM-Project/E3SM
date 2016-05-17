@@ -14,6 +14,7 @@ module cice_velocity_solver_constitutive_relation
 
   use mpas_derived_types
   use mpas_pool_routines
+  use mpas_dmpar
 
   implicit none
 
