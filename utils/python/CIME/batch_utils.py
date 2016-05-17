@@ -81,8 +81,7 @@ class BatchUtils(object):
 
         if depid is not None:
             dep_string = self.batchobj.get_value("depend_string")
-            dep_string = dep_string.replace("jobid",depid)
-
+            dep_string = dep_string.replace("jobid",depid.strip())
             submitargs += " "+dep_string
 
         batchsubmit = self.case.get_value("BATCHSUBMIT",subgroup=None)
@@ -123,7 +122,7 @@ class BatchUtils(object):
             else:
                 val = self.case.get_value(name,subgroup=job)
                 if val is not None and len(val) > 0 and val != "None":
-                    if flag.rfind("=", len(flag)-1, len(flag)) >= 0:
+                    if flag.rfind("[:=]", len(flag)-1, len(flag)) >= 0:
                         submitargs+=" %s%s"%(flag,val)
                     else:
                         submitargs+=" %s %s"%(flag,val)
