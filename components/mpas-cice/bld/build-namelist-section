@@ -95,6 +95,7 @@ add_default($nl, 'config_include_pond_freshwater_feedback');
 add_default($nl, 'config_perform_unit_test');
 add_default($nl, 'config_unit_test_type');
 add_default($nl, 'config_unit_test_subtype');
+add_default($nl, 'config_use_test_ice_shelf');
 
 ###################################
 # Namelist group: velocity_solver #
@@ -397,6 +398,16 @@ add_default($nl, 'config_AM_pointwiseStats_compute_interval');
 add_default($nl, 'config_AM_pointwiseStats_output_stream');
 add_default($nl, 'config_AM_pointwiseStats_compute_on_startup');
 add_default($nl, 'config_AM_pointwiseStats_write_on_startup');
+
+#################################
+# Namelist group: AM_iceShelves #
+#################################
+
+add_default($nl, 'config_AM_iceShelves_enable');
+add_default($nl, 'config_AM_iceShelves_compute_interval');
+add_default($nl, 'config_AM_iceShelves_output_stream');
+add_default($nl, 'config_AM_iceShelves_compute_on_startup');
+add_default($nl, 'config_AM_iceShelves_write_on_startup');
 
 #################################
 # Namelist group: AM_icePresent #

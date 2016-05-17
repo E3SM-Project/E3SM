@@ -1901,7 +1901,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_rx1_inner_iteration_weight" type="real"
 	category="constrain_Haney_number" group="constrain_Haney_number">
-During inner iteration, layers with rx1 > rx1Max are thickened toward a target thickness by this fraction.  A smaller weights will result in less layer thickening but will require more inner iterations to converge.
+During inner iteration, layers with rx1 greater than rx1Max are thickened toward a target thickness by this fraction.  A smaller weights will result in less layer thickening but will require more inner iterations to converge.
 
 Valid values: a positive value less than or equal to 1
 Default: Defined in namelist_defaults.xml
@@ -5772,6 +5772,137 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- AM_regionalStats -->
+
+<entry id="config_AM_regionalStats_enable" type="logical"
+	category="AM_regionalStats" group="AM_regionalStats">
+If true, ocean analysis member regional stats is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_compute_on_startup" type="logical"
+	category="AM_regionalStats" group="AM_regionalStats">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_write_on_startup" type="logical"
+	category="AM_regionalStats" group="AM_regionalStats">
+Logical flag determining if an analysis member output occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_compute_interval" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+Interval that determines frequency of computation for the regional stats analysis member.
+
+Valid values: Any valid time stamp, 'output_interval', or 'dt'.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_output_stream" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+Name of stream the regional stats analysis member will operate on that contains the list of input fields (and will be modified to contain the output stats fields).
+
+Valid values: An existing output stream that will be read for input fields. Cannot be 'none', like other analysis members.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_restart_stream" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+Name of stream the regional stats analysis member will use for the mask/region data.
+
+Valid values: An existing input stream that will be read for regions/masks. Cannot be 'none', like other analysis members, and should be the same as input_stream to ensure the masks are read on start or restart.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_input_stream" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+Name of stream the regional stats analysis member will use for the mask/region data.
+
+Valid values: An existing input stream that will be read for regions/masks. Cannot be 'none', like other analysis members, and should be the same as restart_stream to ensure the masks are read on start or restart.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_operation" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+An operation describing the statistic to apply to all variables in the output stream.
+
+Valid values: An operation, where it can be 'avg', 'min', or 'max'.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_region_type" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+The reduced dimension of the region masks that will be used during the regional stats operation. Needs to be the last dimension, and the same dimension as all of the reduced fields, weight fields, and masks.
+
+Valid values: The mask reduction dimension, where it can be 'cell' or 'vertex'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_region_group" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+The name of the group of region masks that will be used to subset the mesh during the regional stats operation.
+
+Valid values: a valid name in the region group names
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_1d_weighting_function" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+An operation applied to every element in a region WITHOUT a vertical dimension, with a 1D weighting field, prior to an average operation. The average is normalized by the sum of the weight field in the region (divided by the sum of regional weight values).
+
+Valid values: A weight operation, where it can be 'id' (for 'min', 'max', or 'avg') or 'mul' (where 'mul' is restricted to 'avg').
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_2d_weighting_function" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+An operation applied to every element in a region WITH a vertical dimension, with a 2D weighting field, prior to an average operation. The average is normalized by the sum of the weight field in the region (divided by the sum of regional weight values).
+
+Valid values: A weight operation, where it can be 'id' (for 'min', 'max', or 'avg') or 'mul' (where 'mul' is restricted to 'avg').
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_1d_weighting_field" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+A 1D real field used in conjunction with the 1D weighting function, to be used as a weighting scale factor (like area).
+
+Valid values: 'none' if 1D weighting function is 'id', otherwise any valid 1D real field with the same horizontal dimensions as the region masks
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_2d_weighting_field" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+A 2D real field used in conjunction with the 2D weighting function, to be used as a weighting scale factor (like area).
+
+Valid values: 'none' if weighting function is 'id', otherwise any valid 2D real field with the same horizontal dimensions as the region masks and the vertical mask (requires that there is a vertical mask and vertical dimension)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_vertical_mask" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+An additional 2D vertical integer mask field, which is used in conjunction with the regional masks. Used in cases when an input field has a second dimension that matches the vertical mask dimension.
+
+Valid values: 'none' if no vertical mask field is to be used, otherwise any integer 2D field with the configured second vertical dimension
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_regionalStats_vertical_dimension" type="char*1024"
+	category="AM_regionalStats" group="AM_regionalStats">
+The second dimension to be used for additional vertical mask.
+
+Valid values: 'none' if no vertical mask field is to be used, otherwise the name of the second dimension in the vertical mask field (where the first has to be the element dimension)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- AM_timeSeriesStats -->
 
 <entry id="config_AM_timeSeriesStats_enable" type="logical"
@@ -5784,7 +5915,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_timeSeriesStats_compute_on_startup" type="logical"
 	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
-Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this analysis member because it will accumulate any state prior to time stepping.
+Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this (time series) analysis member because it will accumulate any state prior to time stepping (double counting the last time step).
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -5802,7 +5933,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
 Interval that determines frequency of computation for the time series stats analysis member.
 
-Valid values: Any valid time stamp or 'dt'. This must also be less than or requal to output_interval / 2 (at least two samples in a series).
+Valid values: Any valid time stamp or 'dt'. This must also be less than or equal to output_interval / 2 (i.e., requires at least two samples in a series).
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -5810,7 +5941,7 @@ Default: Defined in namelist_defaults.xml
 	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
 Name of stream the time series stats analysis member will operate on.
 
-Valid values: An existing stream that will be modified (existing fields removed and new ones added) with time series stats outputs. Cannot be 'none', like other analysis members.
+Valid values: An existing stream that will be modified (existing real fields removed and new time series stats versions added) with time series stats outputs. Cannot be 'none', like other analysis members.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -5832,7 +5963,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_timeSeriesStats_operation" type="char*1024"
 	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
-An operation describing the statistic to apply to the time series for all variables in the output stream.
+An operation describing the statistic to apply to the time series for all variables in the output stream, reducing the time dimension.
 
 Valid values: An operation, where it can be 'avg', 'min', or 'max'.
 Default: Defined in namelist_defaults.xml
@@ -5840,7 +5971,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_timeSeriesStats_reference_times" type="char*1024"
 	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
-A list of absolute times describing when to start accumulating statistics. Each token indicates one statistic per variable in the output stream.
+A list of absolute times describing when to start accumulating statistics. Each time indicates the start of one time window (time series statistic) per variable, in the output stream (i.e., provide four start times if you want quarterly climatologies, only one time is needed for monthly or daily averages, etc.)
 
 Valid values: A list of absolute times or 'initial_time's, separated by ;.
 Default: Defined in namelist_defaults.xml
@@ -5848,15 +5979,15 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_timeSeriesStats_duration_intervals" type="char*1024"
 	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
-A list of time durations in d_h:m:s describing how long to accumulate statistics. It has to match the number of tokens in reference_times.
+A list of time durations in d_h:m:s describing how long to accumulate statistics in a time window for each repetition (repeat_interval). It has to match the number of start time tokens in reference_times.
 
-Valid values: A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or requal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)
+Valid values: A list of time durations in d_h:m:s or 'repeat_interval's, separated by ;. Each must be greater than or equal to compute_interval * 2 and less than or equal to repeat_interval. duration_intervals less than repeat_intervals allow for repeated statistics within the repeat_interval (i.e., for climatologies)
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_AM_timeSeriesStats_repeat_intervals" type="char*1024"
 	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
-A list of time durations in d_h:m:s describing the accumulation statistic periodicity (how often to accumulate). It has to match the number of tokens in reference_times.
+A list of time durations in d_h:m:s describing the accumulation statistic temporal periodicity (time between beginning to accumulate again after it started - duration_interval describes when to stop after starting/restarting). It has to match the number of tokens in reference_times.
 
 Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
@@ -5864,9 +5995,17 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_timeSeriesStats_reset_intervals" type="char*1024"
 	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
-A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset the accumulation). It has to match the number of tokens in reference_times.
+A list of time durations in d_h:m:s describing the statistic reset periodicity (how often to reset/clear/zero the accumulation). It has to match the number of tokens in reference_times.
 
 Valid values: A list of time durations in d_h:m:s, separated by ;. Ought to be greater than or equal to output_interval (not verified by the analysis member).
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_timeSeriesStats_backward_output_offset" type="char*1024"
+	category="AM_timeSeriesStats" group="AM_timeSeriesStats">
+Backward offset for filename timestamps when writing the output stream
+
+Valid values: A time interval in YYYY-MM-DD_hh:mm:ss.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -5953,6 +6092,185 @@ Default: Defined in namelist_defaults.xml
 Logical flag determining if an analysis member write occurs on start-up.
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_debugDiagnostics_check_state" type="logical"
+	category="AM_debugDiagnostics" group="AM_debugDiagnostics">
+Logical flag determining if state checking happens when the debug diagnostics AM is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_rpnCalculator -->
+
+<entry id="config_AM_rpnCalculator_enable" type="logical"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+If true, ocean analysis member RPN calculator is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_compute_on_startup" type="logical"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_write_on_startup" type="logical"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Logical flag determining if an analysis member output occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_compute_interval" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Interval that determines frequency of computation for the RPN calculator analysis member.
+
+Valid values: Any valid time stamp, 'output_interval', or 'dt'.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_output_stream" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of stream the RPN calculator analysis member put output fields.
+
+Valid values: 'none' or the name of an output stream
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_variable_a" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of a 0D or 1D real field that is bound to name 'a' in an RPN expression.
+
+Valid values: 'none' or the name of a valid MPAS 0D or 1D real field
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_variable_b" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of a 0D or 1D real field that is bound to name 'b' in an RPN expression.
+
+Valid values: 'none' or the name of a valid MPAS 0D or 1D real field
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_variable_c" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of a 0D or 1D real field that is bound to name 'c' in an RPN expression.
+
+Valid values: 'none' or the name of a valid MPAS 0D or 1D real field
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_variable_d" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of a 0D or 1D real field that is bound to name 'd' in an RPN expression.
+
+Valid values: 'none' or the name of a valid MPAS 0D or 1D real field
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_variable_e" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of a 0D or 1D real field that is bound to name 'e' in an RPN expression.
+
+Valid values: 'none' or the name of a valid MPAS 0D or 1D real field
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_variable_f" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of a 0D or 1D real field that is bound to name 'f' in an RPN expression.
+
+Valid values: 'none' or the name of a valid MPAS 0D or 1D real field
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_variable_g" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of a 0D or 1D real field that is bound to name 'g' in an RPN expression.
+
+Valid values: 'none' or the name of a valid MPAS 0D or 1D real field
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_variable_h" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+Name of a 0D or 1D real field that is bound to name 'h' in an RPN expression.
+
+Valid values: 'none' or the name of a valid MPAS 0D or 1D real field
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_expression_1" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+An RPN expression using fields bound to variable names.
+
+Valid values: 'none' or a valid RPN expression described in the documentation
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_expression_2" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+An RPN expression using fields bound to variable names.
+
+Valid values: 'none' or a valid RPN expression described in the documentation
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_expression_3" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+An RPN expression using fields bound to variable names.
+
+Valid values: 'none' or a valid RPN expression described in the documentation
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_expression_4" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+An RPN expression using fields bound to variable names.
+
+Valid values: 'none or a valid RPN expression described in the documentation
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_output_name_1" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+The name of the output field resulting from RPN expression 1.
+
+Valid values: a valid MPAS field output name if expression 1 is set, otherwise 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_output_name_2" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+The name of the output field resulting from RPN expression 2.
+
+Valid values: a valid MPAS field output name if expression 2 is set, otherwise 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_output_name_3" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+The name of the output field resulting from RPN expression 3.
+
+Valid values: a valid MPAS field output name if expression 3 is set, otherwise 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_rpnCalculator_output_name_4" type="char*1024"
+	category="AM_rpnCalculator" group="AM_rpnCalculator">
+The name of the output field resulting from RPN expression 4.
+
+Valid values: a valid MPAS field output name if expression 4 is set, otherwise 'none'
 Default: Defined in namelist_defaults.xml
 </entry>
 

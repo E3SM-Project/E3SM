@@ -66,6 +66,7 @@
 <config_perform_unit_test>false</config_perform_unit_test>
 <config_unit_test_type>''</config_unit_test_type>
 <config_unit_test_subtype>''</config_unit_test_subtype>
+<config_use_test_ice_shelf>false</config_use_test_ice_shelf>
 
 <!-- velocity_solver -->
 <config_dynamics_subcycle_number>1</config_dynamics_subcycle_number>
@@ -290,6 +291,13 @@
 <config_AM_pointwiseStats_output_stream>'pointwiseStatsOutput'</config_AM_pointwiseStats_output_stream>
 <config_AM_pointwiseStats_compute_on_startup>.false.</config_AM_pointwiseStats_compute_on_startup>
 <config_AM_pointwiseStats_write_on_startup>.false.</config_AM_pointwiseStats_write_on_startup>
+
+<!-- AM_iceShelves -->
+<config_AM_iceShelves_enable>.false.</config_AM_iceShelves_enable>
+<config_AM_iceShelves_compute_interval>'output_interval'</config_AM_iceShelves_compute_interval>
+<config_AM_iceShelves_output_stream>'iceShelvesOutput'</config_AM_iceShelves_output_stream>
+<config_AM_iceShelves_compute_on_startup>.true.</config_AM_iceShelves_compute_on_startup>
+<config_AM_iceShelves_write_on_startup>.true.</config_AM_iceShelves_write_on_startup>
 
 <!-- AM_icePresent -->
 <config_AM_icePresent_enable>.true.</config_AM_icePresent_enable>
