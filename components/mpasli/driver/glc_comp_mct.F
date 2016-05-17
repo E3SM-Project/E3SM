@@ -1033,7 +1033,7 @@ contains
 !  local variables
 !
 !-----------------------------------------------------------------------
-    integer :: shrloglev, shrlogunit my_proc_id
+    integer :: shrloglev, shrlogunit, my_proc_id
     integer :: err, err_tmp, iErr
 
 !-----------------------------------------------------------------------
