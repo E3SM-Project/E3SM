@@ -929,31 +929,41 @@ int rename_att_handler(iosystem_desc_t *ios)
     int ret;
 
     LOG((1, "rename_att_handler"));
+    LOG((1, "rename_att_handler2"));
 
     /* Get the parameters for this function that the he comp master
      * task is broadcasting. */
+    LOG((1, "rename_att_handler about to get ncid"));
     if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
+    LOG((2, "rename_att_handler ncid = %d", ncid));
     if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
+    LOG((2, "rename_att_handler varid = %d", varid));
     if ((mpierr = MPI_Bcast(&namelen, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
+    LOG((2, "rename_att_handler namelen = %d", namelen));
     if (!(name = malloc((namelen + 1) * sizeof(char))))
 	return PIO_ENOMEM;
     if ((mpierr = MPI_Bcast(name, namelen + 1, MPI_CHAR, 0, ios->intercomm)))
 	return PIO_EIO;
+    LOG((2, "rename_att_handler name = %s", name));
     if ((mpierr = MPI_Bcast(&newnamelen, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
+    LOG((2, "rename_att_handler newnamelen = %d", newnamelen));
     if (!(newname = malloc((newnamelen + 1) * sizeof(char))))
 	return PIO_ENOMEM;
     if ((mpierr = MPI_Bcast(newname, newnamelen + 1, MPI_CHAR, 0, ios->intercomm)))
 	return PIO_EIO;
-    LOG((2, "rename_var_handler got parameters namelen = %d name = %s ncid = %d varid = %d"
+    LOG((2, "rename_att_handler got parameters namelen = %d name = %s ncid = %d varid = %d "
 	 "newnamelen = %d newname = %s", namelen, name, ncid, varid, newnamelen, newname));
 
     /* Call the create file function. */
     if ((ret = PIOc_rename_att(ncid, varid, name, newname)))
+    {
+	LOG((2, "rename_att_handler rename_att returned %d", ret));
 	return ret;
+    }
 
     /* Free resources. */
     free(name);
@@ -1224,7 +1234,7 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	LOG((3, "about to call msg MPI_Bcast"));
 	mpierr = MPI_Bcast(&msg, 1, MPI_INT, 0, my_iosys->io_comm);
 	CheckMPIReturn(mpierr, __FILE__, __LINE__);
-	LOG((1, "msg MPI_Bcast complete msg = %d", msg));
+	LOG((1, "pio_msg_handler msg MPI_Bcast complete msg = %d", msg));
 
 	/* Handle the message. This code is run on all IO tasks. */
 	switch (msg)
@@ -1261,6 +1271,7 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	    break;
 	case PIO_MSG_RENAME_ATT:
 	    rename_att_handler(my_iosys);
+	    LOG((1, "rename_att_handler returned"));
 	    break;
 	case PIO_MSG_DEF_DIM:
 	    def_dim_handler(my_iosys);

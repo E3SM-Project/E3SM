@@ -1299,15 +1299,16 @@ int PIOc_rename_var(int ncid, int varid, const char *name)
  * @param ncid the ncid of the open file, obtained from
  * PIOc_openfile() or PIOc_createfile().
  * @param varid the variable ID.
- * @return PIO_NOERR for success, error code otherwise.  See PIOc_Set_File_Error_Handling
+ * @return PIO_NOERR for success, error code otherwise.  See
+ * PIOc_Set_File_Error_Handling
  */
-int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname) 
-{
+int PIOc_rename_att (int ncid, int varid, const char *name,
+		     const char *newname) 
 {
     iosystem_desc_t *ios;  /** Pointer to io system information. */
     file_desc_t *file;     /** Pointer to file information. */
     int ierr = PIO_NOERR;  /** Return code from function calls. */
-    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI functions. */
 
     /* User must provide names of correct length. */
     if (!name || strlen(name) > NC_MAX_NAME ||
@@ -1322,6 +1323,8 @@ int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname)
 	return PIO_EBADID;
     ios = file->iosystem;
 
+    LOG((2, "PIOc_rename_att2 ncid = %d varid = %d name = %s newname = %s",
+	 ncid, varid, name, newname));
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async_interface)
     {
@@ -1331,9 +1334,12 @@ int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname)
 	    int namelen = strlen(name);
 	    int newnamelen = strlen(newname);
 
-	    if(ios->compmaster) 
-		mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+	    LOG((2, "PIOc_rename_att sending msg"));
 
+	    if (ios->compmaster) 
+		mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
+
+	    LOG((2, "PIOc_rename_att done sending msg"));
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
@@ -1346,18 +1352,19 @@ int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname)
 		mpierr = MPI_Bcast(&newnamelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
 	    if (!mpierr)
 		mpierr = MPI_Bcast((char *)newname, newnamelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-	    LOG((2, "PIOc_rename_att Bcast file->fh = %d varid = %d namelen = %d name = %s"
-		 "newnamelen = %s newname = %s", file->fh, varid, namelen, name, newnamelen, newname));
 	}
+
 
 	/* Handle MPI errors. */
 	if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
 	    check_mpi(file, mpierr2, __FILE__, __LINE__);	    
 	check_mpi(file, mpierr, __FILE__, __LINE__);
     }
+    LOG((2, "PIOc_rename_att calling netcdf function"));    
 
     
     /* If this is an IO task, then call the netCDF function. */
+    LOG((2, "PIOc_rename_att calling netcdf function"));    
     if (ios->ioproc)
     {
 #ifdef _PNETCDF
@@ -1372,10 +1379,15 @@ int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname)
     }
 
     /* Broadcast and check the return code. */
+    LOG((2, "PIOc_rename_att Bcasting %d", ierr));    
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+    {
+	LOG((2, "PIOc_rename_att ERROR"));    
 	return PIO_EIO;
+    }
+    LOG((2, "PIOc_rename_att Bcast complete"));    
     check_netcdf(file, ierr, __FILE__, __LINE__);
-    
+    LOG((2, "PIOc_rename_att succeeded"));        
     return ierr;
 }
 
