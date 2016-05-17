@@ -1692,7 +1692,7 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
     if (!name || strlen(name) > NC_MAX_NAME)
 	return PIO_EINVAL;
 
-    LOG((1, "PIOc_def_dim ncid = %d", ncid));
+    LOG((1, "PIOc_def_dim ncid = %d name = %s len = %d", ncid, name, len));
 
     /* Find the info about this file. */
     if (!(file = pio_get_file_from_id(ncid)))
@@ -1729,29 +1729,17 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
     }
     
     /* If this is an IO task, then call the netCDF function. */
-    if(ios->ioproc){
-	switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_def_dim(file->fh, name, (size_t)len, idp);;
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_def_dim(file->fh, name, (size_t)len, idp);;
-	    }
-	    break;
-#endif
+    if (ios->ioproc)
+    {
 #ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
-	    ierr = ncmpi_def_dim(file->fh, name, len, idp);;
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
+	if (file->iotype == PIO_IOTYPE_PNETCDF)
+	    ierr = ncmpi_def_dim(file->fh, name, len, idp);;	    
+#endif /* _PNETCDF */
+#ifdef _NETCDF
+	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+	    ierr = nc_def_dim(file->fh, name, (size_t)len, idp);	    
+#endif /* _NETCDF */
+	LOG((2, "PIOc_inq netcdf call returned %d", ierr));
     }
 
     /* Broadcast and check the return code. */
