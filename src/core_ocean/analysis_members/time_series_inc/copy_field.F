@@ -9,7 +9,7 @@
 
   dst % fieldName = outname
 
-  if (allocated(dst % constituentNames)) then
+  if (associated(dst % constituentNames)) then
     do i = 1, size(dst % constituentNames, dim=1)
       dst % constituentNames(i) = trim(outname) // '_' // &
         trim(dst % constituentNames(i))
