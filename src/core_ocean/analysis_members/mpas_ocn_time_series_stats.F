@@ -1661,7 +1661,7 @@ subroutine add_new_field(info, inname, outname, pool)!{{{
   else if (info % nDims == 5) then
     call copy_field_5r(inname, pool, outname)
   else
-    call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // & ' ERROR: ' // &
+    call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
       'the impossible happened - tried to copy a real field "' // &
       trim(inname) // '" that does not have 0-5 dimensionality')
   end if
@@ -1835,7 +1835,7 @@ subroutine typed_operate(block, variable, buffers, operation)!{{{
       call operate5r_max(block, variable, buffers)
     end if
   else
-    call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // & ' ERROR: ' // &
+    call mpas_dmpar_global_abort(trim(CURRENT_CORE_NAME) // ' ERROR: ' // &
       'the impossible happened - tried to operate on a real field "' // &
       trim(variable % input_name) // '" that does not have 0-5 dimensionality')
   end if
