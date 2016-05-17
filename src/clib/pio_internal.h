@@ -152,8 +152,8 @@ typedef struct pio_swapm_defaults
 void flush_buffer(int ncid, wmulti_buffer *wmb, bool flushtodisk);
   void piomemerror(iosystem_desc_t ios, size_t req, char *fname, const int line);
   void compute_maxaggregate_bytes(const iosystem_desc_t ios, io_desc_t *iodesc);
-  void check_mpi(file_desc_t *file, const int mpierr, const char *filename,
-		 const int line);
+  int check_mpi(file_desc_t *file, const int mpierr, const char *filename,
+		const int line);
 
 #ifdef BGQ
   void identity(MPI_Comm comm, int *iotask);

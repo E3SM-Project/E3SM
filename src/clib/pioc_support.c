@@ -193,8 +193,9 @@ void pioassert(_Bool expression, const char *msg, const char *fname, const int l
   @param mpierr the MPI return code to handle
   @param filename the name of the code file where error occured.
   @param line the line of code where error occured.
+  @return PIO_NOERR for no error, otherwise PIO_EIO.
  */
-void check_mpi(file_desc_t *file, const int mpierr, const char *filename,
+int check_mpi(file_desc_t *file, const int mpierr, const char *filename,
 	       const int line)
 {
     if (mpierr)
@@ -209,7 +210,9 @@ void check_mpi(file_desc_t *file, const int mpierr, const char *filename,
 
 	/* Handle all MPI errors as PIO_EIO. */
 	check_netcdf(file, PIO_EIO, filename, line);
+	return PIO_EIO;
     }
+    return PIO_NOERR;
 }
 
 /** Check the result of a netCDF API call. 
