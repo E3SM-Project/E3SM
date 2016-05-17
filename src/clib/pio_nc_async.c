@@ -2152,34 +2152,22 @@ int PIOc_put_att(int ncid, int varid, const char *name, nc_type xtype,
     /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
     {
-	switch (file->iotype)
-	{
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	case PIO_IOTYPE_NETCDF4P:
-	    ierr = nc_put_att(file->fh, varid, name, xtype, (size_t)len, op);
-	    break;
-	case PIO_IOTYPE_NETCDF4C:
-#endif
-	case PIO_IOTYPE_NETCDF:
-	    if(ios->io_rank==0){
-		ierr = nc_put_att(file->fh, varid, name, xtype, (size_t)len, op);
-	    }
-	    break;
-#endif
 #ifdef _PNETCDF
-	case PIO_IOTYPE_PNETCDF:
+	if (file->iotype == PIO_IOTYPE_PNETCDF)
 	    ierr = ncmpi_put_att(file->fh, varid, name, xtype, len, op);
-	    break;
-#endif
-	default:
-	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	}
+#endif /* _PNETCDF */
+#ifdef _NETCDF
+	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+	    ierr = nc_put_att(file->fh, varid, name, xtype, (size_t)len, op);
+#endif /* _NETCDF */
     }
 
     /* Broadcast and check the return code. */
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+    {
+	check_mpi(file, mpierr, __FILE__, __LINE__);	    	
 	return PIO_EIO;
+    }
     check_netcdf(file, ierr, __FILE__, __LINE__);
     
     return ierr;
