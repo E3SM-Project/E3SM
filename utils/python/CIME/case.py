@@ -518,12 +518,13 @@ class Case(object):
         logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)
 
-
         # Set project id
         if project is None:
             project = get_project()
         if project is not None:
             self.set_value("PROJECT", project)
+        elif machobj.get_value("PROJECT_REQUIRED"):
+            expect(project is not None, " PROJECT_REQUIRED is true but no project found")
 
     def get_compset_var_settings(self):
         compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))

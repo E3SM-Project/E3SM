@@ -5,7 +5,7 @@ import shutil, glob, gzip
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
 from CIME.XML.env_run import EnvRun
-from CIME.utils import run_cmd, appendStatus
+from CIME.utils import run_cmd, append_status
 from CIME.case_setup import case_setup
 import CIME.build as build
 
@@ -48,17 +48,17 @@ class SystemTestsCommon(object):
         build.case_build(self._caseroot, case=self._case,
                          sharedlib_only=sharedlib_only, model_only=model_only)
 
-
     def run(self):
-        rc, out, err = run_cmd("./case.run --caseroot %s"%self._caseroot, ok_to_fail=True)
+        rc, out, err = run_cmd("./case.run --caseroot %s" % self._caseroot, ok_to_fail=True)
         if rc == 0 and self.coupler_log_indicates_run_complete():
             self._runstatus = "PASS"
         else:
             self._runstatus = "FAIL"
+
         if out:
-            appendStatus("case.run output is:\n %s\n"%out, sfile="TestStatus.log")
+            append_status("case.run output is:\n %s\n"%out, sfile="TestStatus.log")
         if err:
-            appendStatus("case.run error is:\n %s\n"%err, sfile="TestStatus.log")
+            append_status("case.run error is:\n %s\n"%err, sfile="TestStatus.log")
 
     def __del__(self):
         if self._runstatus is not None:
@@ -83,11 +83,9 @@ class SystemTestsCommon(object):
 
     def report(self):
         newestcpllogfile = self._getlatestcpllog()
-        self._checkformemleak(newestcpllogfile)
-        self._compare()
-        return
+        self._check_for_memleak(newestcpllogfile)
 
-    def _getmemusage(self, cpllog):
+    def _get_mem_usage(self, cpllog):
         """
         Examine memory usage as recorded in the cpl log file and look for unexpected
         increases.
@@ -102,15 +100,15 @@ class SystemTestsCommon(object):
                         memlist.append((m.group(1), m.group(2)))
         return memlist
 
-    def _checkformemleak(self, cpllog):
+    def _check_for_memleak(self, cpllog):
         """
         Examine memory usage as recorded in the cpl log file and look for unexpected
         increases.
         """
-        memlist = self._getmemusage(cpllog)
+        memlist = self._get_mem_usage(cpllog)
 
         if len(memlist)<3:
-            appendStatus("COMMENT: insuffiencient data for memleak test",sfile="TestStatus")
+            append_status("COMMENT: insuffiencient data for memleak test",sfile="TestStatus")
         else:
             finaldate = int(memlist[-1][0])
             originaldate = int(memlist[0][0])
@@ -118,12 +116,12 @@ class SystemTestsCommon(object):
             originalmem = float(memlist[0][1])
             memdiff = (finalmem - originalmem)/originalmem
             if memdiff < 0.01:
-                appendStatus("PASS %s memleak"%(self._case.get_value("CASEBASEID")),
+                append_status("PASS %s memleak"%(self._case.get_value("CASEBASEID")),
                              sfile="TestStatus")
             else:
-                appendStatus("memleak detected, memory went from %f to %f in %d days"
+                append_status("memleak detected, memory went from %f to %f in %d days"
                              %(originalmem, finalmem, finaldate-originaldate),sfile="TestStatus.log")
-                appendStatus("FAIL %s memleak"%(self._case.get_value("CASEBASEID")),
+                append_status("FAIL %s memleak"%(self._case.get_value("CASEBASEID")),
                              sfile="TestStatus")
 
     def compare_env_run(self, expected=None):
@@ -154,21 +152,6 @@ class SystemTestsCommon(object):
 
         return cpllog
 
-    def _compare(self):
-        """
-        check to see if there are history files to be compared, compare if they are there
-        """
-        cmd = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools",
-                                                "component_compare_test.sh")
-        rc, out, err = run_cmd("%s -rundir %s -testcase %s -testcase_base %s -suffix1 base -suffix2 rest"
-                               %(cmd, self._case.get_value('RUNDIR'), self._case.get_value('CASE'),
-                                 self._case.get_value('CASEBASEID')), ok_to_fail=True)
-        if rc == 0:
-            appendStatus(out, sfile="TestStatus")
-        else:
-            appendStatus("Component_compare_test.sh failed out: %s\n\nerr: %s\n"%(out,err)
-                         ,sfile="TestStatus.log")
-
     def compare_baseline(self):
         """
         compare the current test output to a baseline result
@@ -178,9 +161,9 @@ class SystemTestsCommon(object):
         basecmp_dir = os.path.join(baselineroot, self._case.get_value("BASECMP_CASE"))
         for bdir in (baselineroot, basecmp_dir):
             if not os.path.isdir(bdir):
-                appendStatus("GFAIL %s baseline\n",self._case.get_value("CASEBASEID"),
+                append_status("GFAIL %s baseline\n",self._case.get_value("CASEBASEID"),
                              sfile="TestStatus")
-                appendStatus("ERROR %s does not exist"%bdir, sfile="TestStatus.log")
+                append_status("ERROR %s does not exist"%bdir, sfile="TestStatus.log")
                 return -1
         compgen = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools",
                                "component_compgen_baseline.sh")
@@ -190,17 +173,17 @@ class SystemTestsCommon(object):
         compgen += " -testcase "+self._case.get_value("CASE")
         compgen += " -testcase_base "+self._case.get_value("CASEBASEID")
         rc, out, err = run_cmd(compgen, ok_to_fail=True)
-        appendStatus(out+"\n",sfile="TestStatus")
+        append_status(out+"\n",sfile="TestStatus")
         if rc != 0:
-            appendStatus("Error in Baseline compare: %s"%err, sfile="TestStatus.log")
+            append_status("Error in Baseline compare: %s"%err, sfile="TestStatus.log")
         # compare memory usage to baseline
         newestcpllogfile = self._getlatestcpllog()
-        memlist = self._getmemusage(newestcpllogfile)
+        memlist = self._get_mem_usage(newestcpllogfile)
         if len(memlist) > 3:
             baselog = os.path.join(basecmp_dir, "cpl.log")
-            blmemlist = self._getmemusage(baselog)
+            blmemlist = self._get_mem_usage(baselog)
             if(memlist[-1][1] > 1.10*blmemlist[-1][1]):
-                appendStatus("FAIL: Memory usage increase > 10% from baseline",sfile="TestStatus")
+                append_status("FAIL: Memory usage increase > 10% from baseline",sfile="TestStatus")
 
     def generate_baseline(self):
         """
@@ -212,9 +195,9 @@ class SystemTestsCommon(object):
         test_dir = self._case.get_value("CASEROOT")
         for bdir in (baselineroot, basegen_dir):
             if not os.path.isdir(bdir):
-                appendStatus("GFAIL %s baseline\n" % self._case.get_value("CASEBASEID"),
+                append_status("GFAIL %s baseline\n" % self._case.get_value("CASEBASEID"),
                              sfile="TestStatus")
-                appendStatus("ERROR %s does not exist" % bdir, sfile="TestStatus.log")
+                append_status("ERROR %s does not exist" % bdir, sfile="TestStatus.log")
                 return -1
         compgen = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools",
                                "component_compgen_baseline.sh")
@@ -228,9 +211,9 @@ class SystemTestsCommon(object):
         shutil.copyfile(newestcpllogfile,
                         os.path.join(basegen_dir,
                                      os.path.basename(newestcpllogfile)))
-        appendStatus(out,sfile="TestStatus")
+        append_status(out,sfile="TestStatus")
         if rc != 0:
-            appendStatus("Error in Baseline Generate: %s"%err,sfile="TestStatus.log")
+            append_status("Error in Baseline Generate: %s"%err,sfile="TestStatus.log")
 
 class FakeTest(SystemTestsCommon):
 

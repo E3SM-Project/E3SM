@@ -18,7 +18,7 @@ from CIME.case_submit                     import submit
 from CIME.XML.files                 import Files
 from CIME.XML.component             import Component
 from CIME.case                      import Case
-from CIME.utils                     import expect, get_model, run_cmd, appendStatus
+from CIME.utils                     import expect, get_model, run_cmd, append_status
 from CIME.env_module                import EnvModule
 from CIME.utils                     import expect
 from CIME.check_lockedfiles         import check_lockedfiles
@@ -43,7 +43,7 @@ def parse_command_line(args):
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("--caseroot", 
+    parser.add_argument("--caseroot",
                         help="Case directory to build")
 
     args = parser.parse_args()
@@ -114,7 +114,7 @@ def preRunCheck(case):
     preview_namelists()
 
     # document process
-    appendStatus("Run started ",caseroot=caseroot,
+    append_status("Run started ",caseroot=caseroot,
                  sfile="CaseStatus")
 
     logger.info( "-------------------------------------------------------------------------")
@@ -157,23 +157,23 @@ def postRunCheck(case, lid):
 
     if not os.path.isfile(model_logfile):
         msg = "Model did not complete, no %s log file "%model_logfile
-        appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
+        append_status(msg, caseroot=caseroot, sfile="CaseStatus")
         expect(False, msg)
     elif not os.path.isfile(cpl_logfile):
         msg = "Model did not complete, no cpl log file"
-        appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
+        append_status(msg, caseroot=caseroot, sfile="CaseStatus")
         expect(False, msg)
     elif os.stat(model_logfile).st_size == 0:
         msg = " Run FAILED "
-        appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
+        append_status(msg, caseroot=caseroot, sfile="CaseStatus")
         expect (False, msg)
     else:
         if 'SUCCESSFUL TERMINATION' in open(cpl_logfile).read():
             msg = "Run SUCCESSFUL"
-            appendStatus(msg, caseroot=caseroot, sfile="CaseStatus" )
+            append_status(msg, caseroot=caseroot, sfile="CaseStatus" )
         else:
             msg = "Model did not complete - see %s \n " %(cpl_logfile)
-            appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
+            append_status(msg, caseroot=caseroot, sfile="CaseStatus")
             expect (False, msg)
 
 ###############################################################################

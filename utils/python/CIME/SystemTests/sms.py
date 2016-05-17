@@ -22,7 +22,7 @@ class SMS(SystemTestsCommon):
         stop_option = self._case.get_value("STOP_OPTION")
 
         self._case.flush()
-        logger.info("doing an %d %s initial test, no restarts written"%(stop_n, stop_option))
+        logger.info("doing an %d %s initial test, no restarts written" % (stop_n, stop_option))
         SystemTestsCommon.run(self)
 
     def report(self):

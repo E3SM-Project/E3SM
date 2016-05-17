@@ -5,7 +5,7 @@ import shutil, traceback, stat, glob, threading, time, thread
 from CIME.XML.standard_module_setup import *
 import compare_namelists
 import CIME.utils
-from CIME.utils import expect, run_cmd, appendStatus
+from CIME.utils import expect, run_cmd, append_status
 import wait_for_tests, update_acme_tests
 from wait_for_tests import TEST_PASS_STATUS, TEST_FAIL_STATUS, TEST_PENDING_STATUS, \
     TEST_STATUS_FILENAME, NAMELIST_FAIL_STATUS, RUN_PHASE, NAMELIST_PHASE
@@ -240,7 +240,7 @@ class SystemTest(object):
             # Note: making this directory could cause create_newcase to fail
             # if this is run before.
             os.makedirs(test_dir)
-        appendStatus(output,caseroot=test_dir,sfile="TestStatus.log")
+        append_status(output,caseroot=test_dir,sfile="TestStatus.log")
 
     ###########################################################################
     def _get_case_id(self, test):
