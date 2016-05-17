@@ -451,22 +451,14 @@ main(int argc, char **argv)
 	    float float_att_data = ATT_VALUE;
 	    double double_att_data = ATT_VALUE;
 	    char attname2[NC_MAX_NAME + 1];
-	    if (fmt == 0)
-	    {
-		if ((ret = PIOc_put_att_int(ncid, NC_GLOBAL, ATT_NAME, NC_INT, 1, &att_data)))
-		    ERR(ret);
-	    }
-	    else
-	    {
-		if ((ret = PIOc_put_att_int(ncid, NC_GLOBAL, FIRST_ATT_NAME, NC_INT, 1, &att_data)))
-		    ERR(ret);
-		if ((ret = PIOc_inq_attname(ncid, NC_GLOBAL, 0, attname2)))
-		    ERR(ret);
-		if (strcmp(attname2, FIRST_ATT_NAME))
-		    ERR(ERR_WRONG);
-		if ((ret = PIOc_rename_att(ncid, NC_GLOBAL, FIRST_ATT_NAME, ATT_NAME)))
-		    ERR(ret);
-	    }
+	    if ((ret = PIOc_put_att_int(ncid, NC_GLOBAL, FIRST_ATT_NAME, NC_INT, 1, &att_data)))
+		ERR(ret);
+	    if ((ret = PIOc_inq_attname(ncid, NC_GLOBAL, 0, attname2)))
+		ERR(ret);
+	    if (strcmp(attname2, FIRST_ATT_NAME))
+		ERR(ERR_WRONG);
+	    if ((ret = PIOc_rename_att(ncid, NC_GLOBAL, FIRST_ATT_NAME, ATT_NAME)))
+		ERR(ret);
 	    if ((ret = PIOc_put_att_short(ncid, NC_GLOBAL, SHORT_ATT_NAME, NC_SHORT, 1, &short_att_data)))
 	    	ERR(ret);
 	    if ((ret = PIOc_put_att_float(ncid, NC_GLOBAL, FLOAT_ATT_NAME, NC_FLOAT, 1, &float_att_data)))
