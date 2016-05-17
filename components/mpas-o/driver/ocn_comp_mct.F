@@ -704,6 +704,12 @@ contains
 #endif
     call shr_sys_flush(stderrUnit)
 
+#ifndef MPAS_DEBUG
+    if ( iam /= 0 ) then
+       close(stdout_shr)
+    end if
+#endif
+
 
 !-----------------------------------------------------------------------
 !EOC
@@ -752,6 +758,13 @@ contains
       logical :: streamActive
       logical, pointer :: config_write_output_on_startup
       character (len=StrKIND), pointer :: config_restart_timestamp_name
+
+#ifndef MPAS_DEBUG
+    if ( domain % dminfo % my_proc_id /= 0 ) then
+       open(ocnStdErrUnit, file='/dev/null', position='APPEND')
+    end if
+#endif
+
 
       call mpas_io_units_set_stdout(ocnStdOutUnit)
       call mpas_io_units_set_stderr(ocnStdErrUnit)
@@ -903,6 +916,12 @@ contains
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
 
+#ifndef MPAS_DEBUG
+    if ( domain % dminfo % my_proc_id /= 0 ) then
+       close(ocnStdErrUnit)
+    end if
+#endif
+
 
 !-----------------------------------------------------------------------
 !EOC
@@ -944,9 +963,16 @@ contains
 
     type (domain_type), pointer :: domain_ptr
 
-    integer :: ierr
+    integer :: ierr, my_proc_id
 
 !-----------------------------------------------------------------------
+    my_proc_id = domain % dminfo % my_proc_id
+#ifndef MPAS_DEBUG
+    if ( my_proc_id /= 0 ) then
+       open(ocnStdErrUnit, file='/dev/null', position='APPEND')
+    end if
+#endif
+
     call mpas_io_units_set_stdout(ocnStdOutUnit)
     call mpas_io_units_set_stderr(ocnStdErrUnit)
 
@@ -970,6 +996,12 @@ contains
     ! Reset I/O logs
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
+
+#ifndef MPAS_DEBUG
+    if ( my_proc_id /= 0 ) then
+       close(ocnStdErrUnit)
+    end if
+#endif
 
   end subroutine ocn_final_mct!}}}
 
@@ -1090,11 +1122,11 @@ contains
 
     type (block_type), pointer :: block_ptr
 
-    type (mpas_pool_type), pointer :: meshPool
+    type (mpas_pool_type), pointer :: meshPool, forcingPool
 
     integer, pointer :: nCellsSolve
 
-    real (kind=RKIND), dimension(:), pointer :: lonCell, latCell, areaCell
+    real (kind=RKIND), dimension(:), pointer :: lonCell, latCell, areaCell, landIcePressure
 
     real (kind=RKIND), pointer :: sphere_radius
 
@@ -1132,9 +1164,6 @@ contains
     call mct_gGrid_importRAttr(dom_o,"lon"  ,data,lsize) 
     call mct_gGrid_importRAttr(dom_o,"area" ,data,lsize) 
     call mct_gGrid_importRAttr(dom_o,"aream",data,lsize) 
-    data(:) = 1.0_R8     
-    call mct_gGrid_importRAttr(dom_o,"mask",data,lsize) 
-    call mct_gGrid_importRAttr(dom_o,"frac",data,lsize) 
 
 !-------------------------------------------------------------------
 !
@@ -1195,7 +1224,36 @@ contains
     end do
     call mct_gGrid_importRattr(dom_o,"area",data,lsize) 
 
-    data(:) = 1.0_RKIND ! No land cells in MPAS-O, only Ocean cells
+    ! Build mask and frac based on landIcePressure
+    n = 0
+    block_ptr => domain % blocklist
+    do while (associated(block_ptr))
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+       call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+
+       call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
+
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+       if ( associated(landIcePressure) ) then
+          do i = 1, nCellsSolve
+             n = n + 1
+             if ( landIcePressure(i) > 0.0_RKIND ) then
+                 data(n) = 0.0_RKIND
+             else
+                 data(n) = 1.0_RKIND
+             end if
+          end do
+       else
+          do i = 1, nCellsSolve
+             n = n + 1
+             data(n) = 1.0_RKIND
+          end do
+       end if
+
+       block_ptr => block_ptr % next
+    end do
+
     call mct_gGrid_importRattr(dom_o,"mask",data,lsize) 
     call mct_gGrid_importRattr(dom_o,"frac",data,lsize) 
 
@@ -1299,7 +1357,7 @@ contains
                                   seaIceSalinityFluxField, &
                                   riverRunoffFluxField, iceRunoffFluxField, &
                                   shortWaveHeatFluxField, rainFluxField, &
-                                  seaSurfacePressureField, iceFractionField, &
+                                  seaSurfacePressureField, iceFractionField, landIcePressureField, &
                                   iceFluxDICField, &
                                   iceFluxDONField, &
                                   iceFluxNO3Field, &
@@ -1324,7 +1382,7 @@ contains
                                                seaIceSalinityFlux, &
                                                riverRunoffFlux, iceRunoffFlux, &
                                                shortWaveHeatFlux, rainFlux, &
-                                               seaSurfacePressure, iceFraction, &
+                                               seaSurfacePressure, iceFraction, landIcePressure, &
                                                iceFluxDIC,       &
                                                iceFluxDON, &
                                                iceFluxNO3, &
@@ -1388,6 +1446,7 @@ contains
       call mpas_pool_get_field(forcingPool, 'seaSurfacePressure', seaSurfacePressureField)
       call mpas_pool_get_field(forcingPool, 'iceFraction', iceFractionField)
       call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
+      call mpas_pool_get_field(forcingPool, 'landIcePressure', landIcePressureField)
 
       windStressZonal => windStressZonalField % array
       windStressMeridional => windStressMeridionalField % array
@@ -1407,6 +1466,7 @@ contains
       seaSurfacePressure => seaSurfacePressureField % array
       iceFraction => iceFractionField % array
       iceRunoffFlux => iceRunoffFluxField % array
+      landIcePressure => landIcePressureField % array
 
       ! BGC fields
       if (config_use_ecosysTracers) then
@@ -1493,8 +1553,8 @@ contains
         end if
         if ( iceRunoffFluxField % isActive ) then
            ! DWJ 03/03/2016: Disable solid ice runoff temporarily to prevent large sea ice growth
-           !iceRunoffFlux(i) = x2o_o % rAttr(index_x2o_Foxx_rofi, n)
-           iceRunoffFlux(i) = 0.0_RKIND
+           iceRunoffFlux(i) = x2o_o % rAttr(index_x2o_Foxx_rofi, n)
+           !iceRunoffFlux(i) = 0.0_RKIND
            if(iceRunoffFlux(n) < 0.0_RKIND) then
                call shr_sys_abort ('Error: incoming rofi_F is negative')
            end if
@@ -1511,6 +1571,7 @@ contains
            ! Set seaSurfacePressure to be the sum of atmospheric bottom pressure 
            ! and a limited version of sea ice pressure where it limits it to 5m of pressure
            seaSurfacePressure(i) = x2o_o % rAttr(index_x2o_Sa_pbot,   n) &
+                                 + landIcePressure(i) &
                                  + min( x2o_o % rAttr(index_x2o_Si_bpress, n), config_density0 * gravity * 5.0_RKIND )
         end if
         if ( iceFractionField % isActive ) then
@@ -1671,6 +1732,9 @@ contains
    end if
    if ( iceFractionField % isActive ) then
       call mpas_dmpar_exch_halo_field(iceFractionField)
+   end if
+   if ( landIcePressureField % isActive ) then
+      call mpas_dmpar_exch_halo_field(landIcePressureField)
    end if
 
    ! BGC fields

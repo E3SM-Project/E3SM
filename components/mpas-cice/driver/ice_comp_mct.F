@@ -1049,11 +1049,11 @@ contains
 
     type (block_type), pointer :: block_ptr
 
-    type (mpas_pool_type), pointer :: meshPool
+    type (mpas_pool_type), pointer :: meshPool, oceanCouplingPool
 
     integer, pointer :: nCellsSolve
 
-    real (kind=RKIND), dimension(:), pointer :: lonCell, latCell, areaCell
+    real (kind=RKIND), dimension(:), pointer :: lonCell, latCell, areaCell, landIcePressure
 
     real (kind=RKIND), pointer :: sphere_radius
 
@@ -1154,7 +1154,34 @@ contains
     end do
     call mct_gGrid_importRattr(dom_i,"area",data,lsize) 
 
-    data(:) = 1.0_RKIND ! No land cells in MPAS-CICE, only Ocean cells
+    ! Build mask and frac based on landIcePressure
+    block_ptr => domain % blocklist
+    do while ( associated(block_ptr) )
+       call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+       call mpas_pool_get_subpool(block_ptr % structs, 'ocean_coupling', oceanCouplingPool)
+
+       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+       call mpas_pool_get_array(oceanCouplingPool, 'landIcePressure', landIcePressure)
+
+       if ( associated(landIcePressure) ) then
+          do i = 1, nCellsSolve
+             n = n + 1
+             if ( landIcePressure(i) > 0.0_RKIND ) then
+                data(i) = 0.0_RKIND
+             else
+                data(i) = 1.0_RKIND
+             end if
+          end do
+       else
+          do i = 1, nCellsSolve
+             data(i) = 1.0_RKIND
+          end do
+       end if
+
+       block_ptr => block_ptr % next
+    end do
+
     call mct_gGrid_importRattr(dom_i,"mask",data,lsize) 
     call mct_gGrid_importRattr(dom_i,"frac",data,lsize) 
 
