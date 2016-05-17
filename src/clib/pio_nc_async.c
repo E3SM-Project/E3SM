@@ -899,11 +899,11 @@ int PIOc_inq_att(int ncid, int varid, const char *name, nc_type *xtypep,
 	LOG((2, "PIOc_inq netcdf call returned %d", ierr));
     }
 
-    /* Handle MPI errors. */
-    if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-	check_mpi(file, mpierr2, __FILE__, __LINE__);	    
-    check_mpi(file, mpierr, __FILE__, __LINE__);
-
+    /* Broadcast and check the return code. */
+    if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	return PIO_EIO;
+    check_netcdf(file, ierr, __FILE__, __LINE__);
+    
     /* Broadcast results. */
     if (!ierr)
     {
@@ -1104,11 +1104,11 @@ int PIOc_inq_attid(int ncid, int varid, const char *name, int *idp)
 	LOG((2, "PIOc_inq_attname netcdf call returned %d", ierr));
     }
 
-    /* Handle MPI errors. */
-    if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-	check_mpi(file, mpierr2, __FILE__, __LINE__);	    
-    check_mpi(file, mpierr, __FILE__, __LINE__);
-
+    /* Broadcast and check the return code. */
+    if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	return PIO_EIO;
+    check_netcdf(file, ierr, __FILE__, __LINE__);
+    
     /* Broadcast results. */
     if (!ierr)
     {
@@ -1335,7 +1335,6 @@ int PIOc_rename_att (int ncid, int varid, const char *name,
 	    if (ios->compmaster) 
 		mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
 
-	    LOG((2, "PIOc_rename_att done sending msg"));
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
@@ -1398,9 +1397,10 @@ int PIOc_del_att(int ncid, int varid, const char *name)
     file_desc_t *file;     /** Pointer to file information. */
     int ierr = PIO_NOERR;  /** Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI functions. */
+    int namelen = strlen(name); /** Length of name string. */
 
     /* User must provide name of correct length. */
-    if (!name || strlen(name) > NC_MAX_NAME)
+    if (!name || namelen > NC_MAX_NAME)
 	return PIO_EINVAL;
 
     LOG((1, "PIOc_del_att ncid = %d varid = %d name = %s", ncid, varid, name));
@@ -1421,7 +1421,13 @@ int PIOc_del_att(int ncid, int varid, const char *name)
 		mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 
 	    if (!mpierr)
-		mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
+		mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&varid, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast((char *)name, namelen + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	}
 
 	/* Handle MPI errors. */
@@ -1734,11 +1740,11 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
 	}
     }
 
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
+    /* Broadcast and check the return code. */
+    if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	return PIO_EIO;
+    check_netcdf(file, ierr, __FILE__, __LINE__);
+    
     mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);
     if(errstr != NULL) free(errstr);
     return ierr;
@@ -1927,11 +1933,11 @@ int PIOc_inq_var_fill (int ncid, int varid, int *no_fill, void *fill_value)
 	}
     }
 
-    if(ierr != PIO_NOERR){
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
-    }
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
+    /* Broadcast and check the return code. */
+    if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	return PIO_EIO;
+    check_netcdf(file, ierr, __FILE__, __LINE__);
+    
     mpierr = MPI_Bcast(fill_value, 1, MPI_INT, ios->ioroot, ios->my_comm);
     if(errstr != NULL) free(errstr);
     return ierr;

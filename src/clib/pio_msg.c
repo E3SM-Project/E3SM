@@ -929,28 +929,21 @@ int rename_att_handler(iosystem_desc_t *ios)
     int ret;
 
     LOG((1, "rename_att_handler"));
-    LOG((1, "rename_att_handler2"));
 
     /* Get the parameters for this function that the he comp master
      * task is broadcasting. */
-    LOG((1, "rename_att_handler about to get ncid"));
     if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
-    LOG((2, "rename_att_handler ncid = %d", ncid));
     if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
-    LOG((2, "rename_att_handler varid = %d", varid));
     if ((mpierr = MPI_Bcast(&namelen, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
-    LOG((2, "rename_att_handler namelen = %d", namelen));
     if (!(name = malloc((namelen + 1) * sizeof(char))))
 	return PIO_ENOMEM;
     if ((mpierr = MPI_Bcast(name, namelen + 1, MPI_CHAR, 0, ios->intercomm)))
 	return PIO_EIO;
-    LOG((2, "rename_att_handler name = %s", name));
     if ((mpierr = MPI_Bcast(&newnamelen, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
-    LOG((2, "rename_att_handler newnamelen = %d", newnamelen));
     if (!(newname = malloc((newnamelen + 1) * sizeof(char))))
 	return PIO_ENOMEM;
     if ((mpierr = MPI_Bcast(newname, newnamelen + 1, MPI_CHAR, 0, ios->intercomm)))
@@ -960,16 +953,52 @@ int rename_att_handler(iosystem_desc_t *ios)
 
     /* Call the create file function. */
     if ((ret = PIOc_rename_att(ncid, varid, name, newname)))
-    {
-	LOG((2, "rename_att_handler rename_att returned %d", ret));
 	return ret;
-    }
 
     /* Free resources. */
     free(name);
     free(newname);
 
     LOG((1, "%d rename_att_handler succeeded!\n", my_rank));
+    return PIO_NOERR;
+}
+
+/** This function is run on the IO tasks to delete a netCDF
+ * attribute. */
+int delete_att_handler(iosystem_desc_t *ios)
+{
+    int ncid;
+    int varid;
+    int namelen, newnamelen;
+    char *name, *newname;
+    int mpierr;
+    int ret;
+
+    LOG((1, "delete_att_handler"));
+
+    /* Get the parameters for this function that the he comp master
+     * task is broadcasting. */
+    if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&namelen, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if (!(name = malloc((namelen + 1) * sizeof(char))))
+	return PIO_ENOMEM;
+    if ((mpierr = MPI_Bcast(name, namelen + 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    LOG((2, "delete_att_handler namelen = %d name = %s ncid = %d varid = %d ",
+	 namelen, name, ncid, varid));
+
+    /* Call the create file function. */
+    if ((ret = PIOc_del_att(ncid, varid, name)))
+	return ret;
+
+    /* Free resources. */
+    free(name);
+
+    LOG((1, "delete_att_handler succeeded!"));
     return PIO_NOERR;
 }
 
@@ -1271,7 +1300,9 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	    break;
 	case PIO_MSG_RENAME_ATT:
 	    rename_att_handler(my_iosys);
-	    LOG((1, "rename_att_handler returned"));
+	    break;
+	case PIO_MSG_DEL_ATT:
+	    delete_att_handler(my_iosys);
 	    break;
 	case PIO_MSG_DEF_DIM:
 	    def_dim_handler(my_iosys);

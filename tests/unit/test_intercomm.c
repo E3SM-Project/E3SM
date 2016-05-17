@@ -462,12 +462,16 @@ main(int argc, char **argv)
 		ERR(ret);
 
 	    /* Write an att and delete it. */
-	    /* if ((ret = PIOc_put_att_int(ncid, NC_GLOBAL, FIRST_ATT_NAME, NC_INT, 1, &att_data))) */
-	    /* 	ERR(ret); */
-	    /* if ((ret = PIOc_del_att(ncid, NC_GLOBAL, FIRST_ATT_NAME))) */
-	    /* 	ERR(ret); */
+	    nc_type myatttype;
+	    if ((ret = PIOc_put_att_int(ncid, NC_GLOBAL, FIRST_ATT_NAME, NC_INT, 1, &att_data)))
+		ERR(ret);
+	    if ((ret = PIOc_del_att(ncid, NC_GLOBAL, FIRST_ATT_NAME)))
+		ERR(ret);
 	    /* if ((ret = PIOc_inq_att(ncid, NC_GLOBAL, FIRST_ATT_NAME, NULL, NULL)) != PIO_ENOTATT) */
+	    /* { */
+	    /* 	printf("ret = %d\n", ret); */
 	    /* 	ERR(ERR_AWFUL); */
+	    /* } */
 
 	    /* Write some atts of different types. */
 	    if ((ret = PIOc_put_att_short(ncid, NC_GLOBAL, SHORT_ATT_NAME, NC_SHORT, 1, &short_att_data)))
