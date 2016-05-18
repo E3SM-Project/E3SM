@@ -3,31 +3,27 @@
   <comp_archive_spec name="cam">
     <rootdir>atm</rootdir>
     <files>
-      <file_extension regex_suffix=".log\..*">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
-      <file_extension regex_suffix=".r\..*">
+      <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".r[sa]\..*">
+      <file_extension regex_suffix=".r[sa].">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rh[012345]\..*">
+      <file_extension regex_suffix=".rh[012345].">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".i\..*">
-	<subdir>init</subdir> 
+      <file_extension regex_suffix=".i.">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".h[01]\.[\w\-]*\.nc$">      
+      <file_extension regex_suffix="\.h[01]\.[\w\-]*\.nc$">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".h[2345678s]\..*">      
+      <file_extension regex_suffix="\.h[2345678s]\.">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -39,15 +35,11 @@
   <comp_archive_spec name="datm">
     <rootdir>atm</rootdir>
     <files>
-      <file_extension regex_suffix=".log\..*">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
-      <file_extension regex_suffix=".r\..*">
+      <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rs1\..*">
+      <file_extension regex_suffix="\.rs1\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -59,27 +51,23 @@
   <comp_archive_spec name="clm">
     <rootdir>lnd</rootdir>
     <files>
-      <file_extension regex_suffix=".log\..*">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
-      <file_extension regex_suffix=".r\..*">
+      <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rh[013456]\..*">
+      <file_extension regex_suffix="\.rh[013456]\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".i\..*">
-	<subdir>init</subdir> 
+      <file_extension regex_suffix="\.i\.">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".h0\.[\w\-]*\.nc$">      
+      <file_extension regex_suffix="\.h0\.[\w\-]*\.nc$">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".h[12345v]\..*">      
+      <file_extension regex_suffix="\.h[12345v]\.">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -91,15 +79,11 @@
   <comp_archive_spec name="dlnd">
     <rootdir>lnd</rootdir>
     <files>
-      <file_extension regex_suffix=".log\..*">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
-      <file_extension regex_suffix=".r\..*">
+      <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rs1\..*">
+      <file_extension regex_suffix="\.rs1\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -111,19 +95,15 @@
   <comp_archive_spec name="rtm">
     <rootdir>rof</rootdir>
     <files>
-      <file_extension regex_suffix=".log\..*">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
-      <file_extension regex_suffix=".r\..*">
+      <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rh[0123]\..*">
+      <file_extension regex_suffix="\.rh[0123]\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".h[0123]\..*">      
+      <file_extension regex_suffix="\.h[0123]\.">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -135,19 +115,15 @@
   <comp_archive_spec name="mosart">
     <rootdir>rof</rootdir>
     <files>
-      <file_extension regex_suffix=".log\..*">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
-      <file_extension regex_suffix=".r\..*">
+      <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rh[0123]\..*">
+      <file_extension regex_suffix="\.rh[0123]\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".h[0123]\..*">      
+      <file_extension regex_suffix="\.h[0123]\.">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -159,15 +135,11 @@
   <comp_archive_spec name="drof">
     <rootdir>rof</rootdir>
     <files>
-      <file_extension regex_suffix=".log\..*">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
-      <file_extension regex_suffix=".r\..*">
+      <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rs1\..*">
+      <file_extension regex_suffix="\.rs1\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -179,19 +151,15 @@
   <comp_archive_spec name="cice">
     <rootdir>ice</rootdir>
     <files>
-      <file_extension regex_suffix=".log\..*">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
-      <file_extension regex_suffix=".r\.\w+">
+      <file_extension regex_suffix="\.r\.\w+">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".i\..*">
-	<subdir>init</subdir> 
+      <file_extension regex_suffix="\.i\.">
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".h\.[\w\-]*\.nc$">      
+      <file_extension regex_suffix="\.h\.[\w\-]*\.nc$">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -203,15 +171,11 @@
   <comp_archive_spec name="dice">
     <rootdir>ice</rootdir>
     <files>
-      <file_extension regex_suffix=".log\..*">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
-      <file_extension regex_suffix=".r\..*">
+      <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rs1\..*">
+      <file_extension regex_suffix="\.rs1\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -223,67 +187,63 @@
   <comp_archive_spec name="pop">
     <rootdir>ocn</rootdir>
     <files>
-      <file_extension regex_suffix=".log\..*">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
-      <file_extension regex_suffix=".r\..*\.hdr">
+      <file_extension regex_suffix="\.r\..*\.hdr">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".r\.[0-9|-]+\.nc">
+      <file_extension regex_suffix="\.r\.[0-9|-]+\.nc">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".r\.[0-9|-]+[^\.nc]">
+      <file_extension regex_suffix="\.r\.[0-9|-]+[^\.nc]">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rh.ecosys\.\w+\.hdr">
+      <file_extension regex_suffix="\.rh.ecosys\.\w+\.hdr">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rh.ecosys\.\w+\.nc">
+      <file_extension regex_suffix="\.rh.ecosys\.\w+\.nc">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rh.ecosys\.[0-9|-]+[^\.nc]">
+      <file_extension regex_suffix="\.rh.ecosys\.[0-9|-]+[^\.nc]">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rh\..*\.hdr">
+      <file_extension regex_suffix="\.rh\..*\.hdr">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rh\.[0-9|-]+\.nc">
+      <file_extension regex_suffix="\.rh\.[0-9|-]+\.nc">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rh\.[0-9|-]+[^\.nc]">
+      <file_extension regex_suffix="\.rh\.[0-9|-]+[^\.nc]">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".ro\..*">
+      <file_extension regex_suffix="\.ro\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".d\w*">
+      <file_extension regex_suffix="\.d\w*">
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".h.\d{4}-\d{2}\..*">      
+      <file_extension regex_suffix="\.h.\d{4}-\d{2}\.">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".h.nday1\..*">      
+      <file_extension regex_suffix="\.h.nday1\.">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".h.nyear1\..*">      
+      <file_extension regex_suffix="\.h.nyear1\.">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".h\.[\w\-\.]*\.nc$">      
+      <file_extension regex_suffix="\.h\.[\w\-\.]*\.nc$">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
@@ -295,17 +255,13 @@
   <comp_archive_spec name="docn">
     <rootdir>ocn</rootdir>
     <files>
-      <file_extension regex_suffix=".r\..*">
+      <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rs\..*">
+      <file_extension regex_suffix="\.rs1\.">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
-      </file_extension>
-      <file_extension regex_suffix=".h\..*">      
-	<subdir>hist</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>$CASE.docn$NINST_STRING.r.$DATENAME.nc,$CASE.docn$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
       <restart_history_varname>unset</restart_history_varname>
@@ -315,10 +271,6 @@
   <comp_archive_spec name="cism">
     <rootdir>glc</rootdir>
     <files>
-      <file_extension regex_suffix=".log\..*">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
       <file_extension regex_suffix=".r.[0-9]*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
@@ -328,7 +280,7 @@
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix=".i\..*">
-	<subdir>init</subdir> 
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix=".h*">      
@@ -343,16 +295,12 @@
   <comp_archive_spec name="ww3">
     <rootdir>wav</rootdir>
     <files>
-      <file_extension regex_suffix=".log\..*">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
       <file_extension regex_suffix=".r.[0-9]*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix=".i\..*">
-	<subdir>init</subdir> 
+	<subdir>rest</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix=".h\..*">      
@@ -367,10 +315,6 @@
   <comp_archive_spec name="dwav">
     <rootdir>wav</rootdir>
     <files>
-      <file_extension regex_suffix=".log\..*">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
       <file_extension regex_suffix=".r\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
@@ -387,10 +331,6 @@
   <comp_archive_spec name="dart"> 
     <rootdir>dart</rootdir>
     <files>
-      <file_extension regex_suffix="\w*dart_log\..*">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
       <file_extension regex_suffix="\w*True_State\..*\.nc">
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
@@ -447,19 +387,11 @@
   <comp_archive_spec name="cpl"> 
     <rootdir>cpl</rootdir>
     <files>
-      <file_extension regex_suffix="cpl.log\..*">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
-      <file_extension regex_suffix="cesm*.log\..*">
-	<subdir>logs</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
-      </file_extension>
-      <file_extension regex_suffix=".r\..*">
+      <file_extension regex_suffix="\.r\.*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".h\w*">
+      <file_extension regex_suffix="\.h\w*">
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
