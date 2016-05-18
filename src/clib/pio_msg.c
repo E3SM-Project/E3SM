@@ -579,6 +579,145 @@ int att_get_handler(iosystem_desc_t *ios)
     return PIO_NOERR;
 }
 
+/** Handle var put operations. This code only runs on IO tasks.
+ *
+ * @param ios pointer to the iosystem_desc_t.
+ * @return PIO_NOERR for success, error code otherwise.
+*/
+int put_vars_handler(iosystem_desc_t *ios)
+{
+    int ncid;
+    int varid;
+    int mpierr;
+    int ierr;
+    char *name;
+    int namelen;
+    PIO_Offset typelen; /** Length (in bytes) of this type. */
+    nc_type xtype; /** Type of the data being written. */
+    char start_present, count_present, stride_present;
+    PIO_Offset *startp = NULL, *countp = NULL, *stridep = NULL;
+    int ndims; /** Number of dimensions. */
+    void *buf; /** Buffer for data storage. */
+    size_t num_elem; /** Number of data elements in the buffer. */    
+
+    LOG((1, "put_vars_handler"));
+
+    /* Get the parameters for this function that the the comp master
+     * task is broadcasting. */
+    if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&ndims, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+
+    /* Now we know how big to make these arrays. */
+    PIO_Offset start[ndims], count[ndims], stride[ndims];
+
+    if ((mpierr = MPI_Bcast(&start_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    if (!mpierr && start_present)
+	if ((mpierr = MPI_Bcast(start, ndims, MPI_CHAR, 0, ios->intercomm)))
+	    return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&count_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    if (!mpierr && count_present)
+	if ((mpierr = MPI_Bcast(count, ndims, MPI_CHAR, 0, ios->intercomm)))
+	    return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&stride_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    if (!mpierr && stride_present)
+	if ((mpierr = MPI_Bcast(stride, ndims, MPI_CHAR, 0, ios->intercomm)))
+	    return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&xtype, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&num_elem, 1, MPI_OFFSET, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET, 0, ios->intercomm)))
+	return PIO_EIO;
+
+    /* Allocate room for our data. */
+    if (!(buf = malloc(num_elem * typelen)))
+	return PIO_ENOMEM;
+
+    /* Get the data. */
+    if ((mpierr = MPI_Bcast(buf, num_elem * typelen, MPI_BYTE, 0, ios->intercomm)))
+	return PIO_EIO;
+    
+    LOG((1, "att_vars_handler ncid = %d varid = %d ndims = %d start_present = %d "
+	 "count_present = %d stride_present = %d xtype = %d num_elem = %d typelen = %d",
+	 ncid, varid, ndims, start_present, count_present, stride_present, xtype,
+	 num_elem, typelen));
+
+    /* Set the non-NULL pointers. */
+    if (start_present)
+	startp = start;
+    if (count_present)
+	countp = count;
+    if (stride_present)
+	stridep = stride;
+
+    /* Call the function to write the data. */
+    switch(xtype)
+    {
+    case NC_BYTE:
+	ierr = PIOc_put_vars_schar(ncid, varid, (size_t *)start, (size_t *)count,
+				   (ptrdiff_t *)stride, buf);
+	break;
+    case NC_CHAR:
+	ierr = PIOc_put_vars_schar(ncid, varid, (size_t *)start, (size_t *)count,
+				   (ptrdiff_t *)stride, buf);
+	break;
+    case NC_SHORT:
+	ierr = PIOc_put_vars_short(ncid, varid, (size_t *)start, (size_t *)count,
+				   (ptrdiff_t *)stride, buf);
+	break;
+    case NC_INT:
+	ierr = PIOc_put_vars_int(ncid, varid, (size_t *)start, (size_t *)count,
+				 (ptrdiff_t *)stride, buf);
+	break;
+    case NC_FLOAT:
+	ierr = PIOc_put_vars_float(ncid, varid, (size_t *)start, (size_t *)count,
+				   (ptrdiff_t *)stride, buf);
+	break;
+    case NC_DOUBLE:
+	ierr = PIOc_put_vars_double(ncid, varid, (size_t *)start, (size_t *)count,
+				    (ptrdiff_t *)stride, buf);
+	break;
+#ifdef _NETCDF4		
+    case NC_UBYTE:
+	ierr = PIOc_put_vars_uchar(ncid, varid, (size_t *)start, (size_t *)count,
+				   (ptrdiff_t *)stride, buf);
+	break;
+    case NC_USHORT:
+	ierr = PIOc_put_vars_ushort(ncid, varid, (size_t *)start, (size_t *)count,
+				    (ptrdiff_t *)stride, buf);
+	break;
+    case NC_UINT:
+	ierr = PIOc_put_vars_uint(ncid, varid, (size_t *)start, (size_t *)count,
+				  (ptrdiff_t *)stride, buf);
+	break;
+    case NC_INT64:
+	ierr = PIOc_put_vars_longlong(ncid, varid, (size_t *)start, (size_t *)count,
+				      (ptrdiff_t *)stride, buf);
+	break;
+    case NC_UINT64:
+	ierr = PIOc_put_vars_ulonglong(ncid, varid, (size_t *)start, (size_t *)count,
+				       (ptrdiff_t *)stride, buf);
+	break;
+	/* case NC_STRING: */
+	/* 	ierr = PIOc_put_vars_string(ncid, varid, (size_t *)start, (size_t *)count, */
+	/* 				  (ptrdiff_t *)stride, (void *)buf); */
+	/* 	break; */
+	/*    default:*/
+	/* ierr = PIOc_put_vars(ncid, varid, (size_t *)start, (size_t *)count, */
+	/* 		     (ptrdiff_t *)stride, buf); */
+#endif /* _NETCDF4 */		
+    }
+    
+    return PIO_NOERR;
+}
+
 /** Do an inq_var on a netCDF variable. This function is only run on
  * IO tasks.
  *
@@ -1338,6 +1477,12 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	case PIO_MSG_INQ_ATTID:
 	    inq_attid_handler(my_iosys);
 	    break;
+	case PIO_MSG_GET_VARS:
+	    var_handler(my_iosys, msg);
+	    break;
+	case PIO_MSG_PUT_VARS:
+	    put_vars_handler(my_iosys);
+	    break;
 	case PIO_MSG_INITDECOMP_DOF:
 	    initdecomp_dof_handler(my_iosys);
 	    break;
@@ -1349,15 +1494,6 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	    break;
 	case PIO_MSG_SETERRORHANDLING:
 	    seterrorhandling_handler(my_iosys);
-	    break;
-	case PIO_MSG_GET_VAR1:
-	    var_handler(my_iosys, msg);
-	    break;
-	case PIO_MSG_PUT_VAR1:
-	    var_handler(my_iosys, msg);
-	    break;
-	case PIO_MSG_PUT_VARA:
-	    vara_handler(my_iosys, msg);
 	    break;
 	case PIO_MSG_FREEDECOMP:
 	    freedecomp_handler(my_iosys);

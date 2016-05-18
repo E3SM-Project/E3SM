@@ -41,6 +41,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
     int ndims; /** The number of dimensions in the variable. */
     int *dimids; /** The IDs of the dimensions for this variable. */
     PIO_Offset typelen; /** Size (in bytes) of the data type of data in buf. */
+    size_t num_elem = 1; /** Number of data elements in the buffer. */
     var_desc_t *vdesc;
     PIO_Offset usage;
     int *request;
@@ -99,7 +100,6 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	}
 
 	/* How many elements in buf? */
-	size_t num_elem = 1;
 	for (int vd = 0; vd < ndims; vd++)
 	    num_elem *= (rcount[vd] - rstart[vd])/rstride[vd];
 	LOG((2, "PIOc_put_vars_tc num_elem = %d", num_elem));
@@ -123,6 +123,8 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&varid, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
+		mpierr = MPI_Bcast(&ndims, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
 		mpierr = MPI_Bcast(&start_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	    if (!mpierr && start_present)
 		mpierr = MPI_Bcast(&start, ndims, MPI_OFFSET, ios->compmaster, ios->intercomm);		
@@ -136,6 +138,15 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 		mpierr = MPI_Bcast(&stride, ndims, MPI_OFFSET, ios->compmaster, ios->intercomm);		
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&xtype, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&num_elem, 1, MPI_OFFSET, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET, ios->compmaster, ios->intercomm);
+	    
+	    /* Send the data. */
+	    if (!mpierr)
+		mpierr = MPI_Bcast(buf, num_elem * typelen, MPI_BYTE, ios->compmaster,
+				   ios->intercomm);
 	}
 
 	/* Handle MPI errors. */
