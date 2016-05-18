@@ -143,6 +143,10 @@ class SystemTestsCommon(object):
         Examine memory usage as recorded in the cpl log file and look for unexpected
         increases.
         """
+        if self._runstatus != "PASS":
+            append_status("Cannot check memory, test did not pass.\n", sfile="TestStatus.log")
+            return
+
         memlist = self._get_mem_usage(cpllog)
 
         if len(memlist)<3:
@@ -195,7 +199,7 @@ class SystemTestsCommon(object):
         compare the current test output to a baseline result
         """
         if self._runstatus != "PASS":
-            append_status("Cannot compare baselines, test did not pass.\n", "TestStatus.log")
+            append_status("Cannot compare baselines, test did not pass.\n", sfile="TestStatus.log")
             return
 
         baselineroot = self._case.get_value("BASELINE_ROOT")
@@ -232,7 +236,7 @@ class SystemTestsCommon(object):
         generate a new baseline case based on the current test
         """
         if self._runstatus != "PASS":
-            append_status("Cannot generate baselines, test did not pass.\n", "TestStatus.log")
+            append_status("Cannot generate baselines, test did not pass.\n", sfile="TestStatus.log")
             return
 
         newestcpllogfile = self._get_latest_cpl_log()
