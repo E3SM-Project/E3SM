@@ -868,7 +868,8 @@
     <DESC>"NCAR CGD Linux Cluster 48 pes/node, batch system is PBS"</DESC>
     <NODENAME_REGEX>hobart</NODENAME_REGEX>
     <COMPILERS>intel,pgi,nag,gnu</COMPILERS>
-    <MPILIBS>mvapich2,openmpi,mpi-serial</MPILIBS>
+    <MPILIBS compiler="nag">openmpi,mpi-serial</MPILIBS>
+    <MPILIBS compiler="gnu|intel">mvapich2,mpi-serial</MPILIBS>
     <RUNDIR>/scratch/cluster/$USER/$CASE/run</RUNDIR>
     <EXEROOT>/scratch/cluster/$USER/$CASE/bld</EXEROOT>
     <CESMSCRATCHROOT>/scratch/cluster/$USER</CESMSCRATCHROOT>
