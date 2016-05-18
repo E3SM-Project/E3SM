@@ -23,7 +23,7 @@ class SMS(SystemTestsCommon):
 
         self._case.flush()
         logger.info("doing an %d %s initial test, no restarts written" % (stop_n, stop_option))
-        SystemTestsCommon.run(self)
+        return SystemTestsCommon._run(self)
 
     def report(self):
         SystemTestsCommon.report(self)
