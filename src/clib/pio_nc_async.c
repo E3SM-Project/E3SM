@@ -1828,7 +1828,7 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims,
 		mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
 	    
 	    if (!mpierr)
-		mpierr = MPI_Bcast(&(file->fh), 1, MPI_INT, ios->compmaster, ios->intercomm);
+		mpierr = MPI_Bcast(&(ncid), 1, MPI_INT, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&namelen, 1, MPI_INT,  ios->compmaster, ios->intercomm);
 	    if (!mpierr)
@@ -1852,15 +1852,19 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype, int ndims,
     {
 #ifdef _PNETCDF
 	if (file->iotype == PIO_IOTYPE_PNETCDF)
-	    ierr = ncmpi_def_var(file->fh, name, xtype, ndims, dimidsp, varidp);
+	    ierr = ncmpi_def_var(ncid, name, xtype, ndims, dimidsp, varidp);
 #endif /* _PNETCDF */
 #ifdef _NETCDF
 	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
-	    ierr = nc_def_var(file->fh, name, xtype, ndims, dimidsp, varidp);
+	    ierr = nc_def_var(ncid, name, xtype, ndims, dimidsp, varidp);
 #ifdef _NETCDF4
 	/* For netCDF-4 serial files, turn on compression for this variable. */
 	if (!ierr && file->iotype == PIO_IOTYPE_NETCDF4C)
-	    ierr = nc_def_var_deflate(file->fh, *varidp, 0, 1, 1);	    
+	    ierr = nc_def_var_deflate(ncid, *varidp, 0, 1, 1);
+
+	/* For netCDF-4 parallel files, set parallel access to collective. */
+	if (!ierr && file->iotype == PIO_IOTYPE_NETCDF4P)
+	    ierr = nc_var_par_access(ncid, *varidp, NC_COLLECTIVE);
 #endif /* _NETCDF4 */
 #endif /* _NETCDF */
     }
