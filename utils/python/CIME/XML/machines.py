@@ -215,7 +215,7 @@ class Machines(GenericXML):
             return True
         return False
 
-    def is_valid_MPIlib(self, mpilib):
+    def is_valid_MPIlib(self, mpilib, attributes=None):
         """
         Check the MPILIB is valid for the current machine
 
@@ -223,7 +223,7 @@ class Machines(GenericXML):
         >>> machobj.is_valid_MPIlib("mpi-serial")
         True
         """
-        if mpilib == "mpi-serial" or self.get_field_from_list("MPILIBS", reqval=mpilib) is not None:
+        if mpilib == "mpi-serial" or self.get_field_from_list("MPILIBS", reqval=mpilib, attributes=attributes) is not None:
             return True
         return False
 

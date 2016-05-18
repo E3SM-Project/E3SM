@@ -31,7 +31,7 @@ class PEA(SystemTestsCommon):
             self._case.set_value("MPILIB",mpilib)
             self._case.flush()
             case_setup(self._caseroot, reset=True)
-            run_cmd('case.build --clean')
+            run_cmd('./case.build --clean', from_dir=self._caseroot)
             SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
             if (not sharedlib_only):
                 shutil.move("%s/%s.exe"%(exeroot,cime_model),

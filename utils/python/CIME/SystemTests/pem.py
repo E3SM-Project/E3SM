@@ -31,7 +31,7 @@ class PEM(SystemTestsCommon):
             logging.warn("Starting bld %s"%bld)
             self._case.flush()
             case_setup(self._caseroot,reset=True)
-            run_cmd('case.build --clean')
+            run_cmd('./case.build --clean')
             SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
             machpes = os.path.join("LockedFiles","env_mach_pes.PEM%s.xml"%bld)
 

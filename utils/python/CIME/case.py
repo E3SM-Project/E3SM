@@ -379,21 +379,6 @@ class Case(object):
         if user_grid is True and gridfile is not None:
             self.set_value("GRIDS_SPEC_FILE", gridfile);
         grids = Grids(gridfile)
-        #mechanism to specify atm levels
-        levmatch = re.match("([^_]+)z(\d+)(.*)$", grid_name)
-        if  levmatch:
-            atmgrid = levmatch.group(1)
-            atmnlev = levmatch.group(2)
-            grid_name = atmgrid+levmatch.group(3)
-            self.set_value("ATM_GRID","%sz%s"%(atmgrid,atmnlev))
-        
-        #mechanism to specify lnd levels
-        levmatch = re.match("(.*_)([^_]+)z(\d+)(.*)$", grid_name)
-        if  levmatch:
-            lndgrid = levmatch.group(2)
-            lndnlev = levmatch.group(3)
-            grid_name = levmatch.group(1)+lndgrid+levmatch.group(4)
-            self.set_value("LND_GRID","%sz%s"%(lndgrid,lndnlev))
 
         gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
         self._gridname = gridinfo["GRID"]
