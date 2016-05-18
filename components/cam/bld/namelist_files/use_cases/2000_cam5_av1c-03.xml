@@ -3,7 +3,7 @@
 <namelist_defaults>
 
 <!-- Solar constant from Lean (via Caspar Ammann): SOLAR_TSI_Lean_1610-2140_annual_c100301.nc -->
-<solar_data_file>atm/cam/solar/SOLAR_TSI_Lean_1976-2007_ave_c20160517.nc</solar_data_file>
+<solar_data_file>atm/cam/solar/spectral_irradiance_Lean_1976-2007_ave_c20160517.nc</solar_data_file>
 <solar_data_ymd>20000101</solar_data_ymd>
 <solar_data_type>FIXED</solar_data_type>
 
