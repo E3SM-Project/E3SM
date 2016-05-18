@@ -26,6 +26,7 @@
     <values>
       <value compset="%NYF"  >CORE2_NYF</value>
       <value compset="%IAF"  >CORE2_IAF</value>
+      <value compset="%WW3"  >WW3</value>
       <value compset="%NPS"  >COPYALL_NPS_v1</value>
       <value compset="%NPSC2">COPYALL_NPS_CORE2_v1</value>
       <value compset="%QIA"  >CLM_QIAN</value>
@@ -248,6 +249,7 @@
     <desc compset="^2000_DATM%1PT"	>single point tower site atm input data:</desc> 
     <desc compset="_DATM%NYF"		>COREv2 datm normal year forcing: (requires additional user-supplied data)</desc>
     <desc compset="_DATM%IAF"		>COREv2 datm interannual year forcing: (requires additional user-supplied data)</desc>
+    <desc compset="_DATM%WW3"		>WW3 wave watch data</desc>
     <desc compset="_DATM%NPS"		>DATM NPS forcing:</desc>
   </description>
 
