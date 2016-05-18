@@ -643,7 +643,7 @@
     <file>env_build.xml</file>
     <desc>Operating system - DO NOT EDIT UNLESS for userdefined machine - ignored once Macros has been created.</desc>
   </entry>
-
+<!--
   <entry id="COMPILERS">
     <type>char</type>
     <valid_values></valid_values>
@@ -653,7 +653,7 @@
     <desc>Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
     Machine compiler (must match one the supported compilers) - ignored once Macros has been created.</desc>
   </entry>
-
+-->
   <entry id="COMPILER">
     <type>char</type>
     <valid_values></valid_values>
@@ -664,7 +664,7 @@
     Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
     Must be explicitly set in env_build.xml for userdefined machine.</desc>
   </entry>
-
+<!--
   <entry id="MPILIBS">
     <type>char</type>
     <valid_values></valid_values>
@@ -675,7 +675,7 @@
       Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
       Must be explicitly set in env_build.xml for userdefined machine.</desc>
   </entry>
-
+-->
   <entry id="SUPPORTED_BY">
     <type>char</type>
     <valid_values></valid_values>
