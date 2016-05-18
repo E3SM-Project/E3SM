@@ -249,7 +249,7 @@
     <desc compset="^2000_DATM%1PT"	>single point tower site atm input data:</desc> 
     <desc compset="_DATM%NYF"		>COREv2 datm normal year forcing: (requires additional user-supplied data)</desc>
     <desc compset="_DATM%IAF"		>COREv2 datm interannual year forcing: (requires additional user-supplied data)</desc>
-    <desc compset="_DATM%WW3"		>WW3 wave watch data</desc>
+    <desc compset="_DATM%WW3"		>WW3 wave watch data from a short period of hi temporal frequency COREv2 data</desc>
     <desc compset="_DATM%NPS"		>DATM NPS forcing:</desc>
   </description>
 
