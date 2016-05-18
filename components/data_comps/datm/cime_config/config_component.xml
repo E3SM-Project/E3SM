@@ -21,7 +21,7 @@
     <file>env_run.xml</file>
     <desc>Mode for data atmosphere component.
       The default is CORE2_NYF (CORE2 normal year forcing) is the
-      DATM mode used in C and G compsets. CLM_QIAN, CLMCRUNCEP and CLM1PT are 
+      DATM mode used in C and G compsets. CLM_QIAN, CLMCRUNCEP and CLM1PT are
       modes using observational data for forcing CLM in I compsets.</desc>
     <values>
       <value compset="%NYF"  >CORE2_NYF</value>
@@ -40,16 +40,15 @@
     <valid_values>none,clim_1850,clim_2000,trans_1850-2000,rcp2.6,rcp4.5,rcp6.0,rcp8.5,pt1_pt1</valid_values>
     <default_value>none</default_value>
     <values>
-      <value compset="1850_">clim_1850</value>
-      <value compset="2000_">clim_2000</value>
-      <value compset="2003_">clim_2000</value>
-      <value compset="4804_">clim_2000</value>
-      <value compset="1850_">clim_1850</value>
-      <value compset="RCP8_">rcp8.5</value>
-      <value compset="RCP6_">rcp6.0</value>
-      <value compset="RCP4_">rcp4.5</value>
-      <value compset="RCP2_">rcp2.6</value>
-      <value compset="HIST_">trans_1850-2000</value>
+      <value compset="1850">clim_1850</value>
+      <value compset="2000">clim_2000</value>
+      <value compset="2003">clim_2000</value>
+      <value compset="4804">clim_2000</value>
+      <value compset="RCP8">rcp8.5</value>
+      <value compset="RCP6">rcp6.0</value>
+      <value compset="RCP4">rcp4.5</value>
+      <value compset="RCP2">rcp2.6</value>
+      <value compset="HIST">trans_1850-2000</value>
       <value compset="_DICE.*_POP2">none</value>
       <value compset="_DLND.*_DICE.*_DOCN">none</value>
     </values>
