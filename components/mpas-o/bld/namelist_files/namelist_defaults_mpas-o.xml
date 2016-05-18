@@ -848,6 +848,24 @@
 <config_AM_mixedLayerDepths_den_gradient_threshold>5E-8</config_AM_mixedLayerDepths_den_gradient_threshold>
 <config_AM_mixedLayerDepths_interp_method>1</config_AM_mixedLayerDepths_interp_method>
 
+<!-- AM_regionalStats -->
+<config_AM_regionalStats_enable>.false.</config_AM_regionalStats_enable>
+<config_AM_regionalStats_compute_on_startup>.false.</config_AM_regionalStats_compute_on_startup>
+<config_AM_regionalStats_write_on_startup>.false.</config_AM_regionalStats_write_on_startup>
+<config_AM_regionalStats_compute_interval>'output_interval'</config_AM_regionalStats_compute_interval>
+<config_AM_regionalStats_output_stream>'regionalStatsOutput'</config_AM_regionalStats_output_stream>
+<config_AM_regionalStats_restart_stream>'regionalMasksInput'</config_AM_regionalStats_restart_stream>
+<config_AM_regionalStats_input_stream>'regionalMasksInput'</config_AM_regionalStats_input_stream>
+<config_AM_regionalStats_operation>'avg'</config_AM_regionalStats_operation>
+<config_AM_regionalStats_region_type>'cell'</config_AM_regionalStats_region_type>
+<config_AM_regionalStats_region_group>'all'</config_AM_regionalStats_region_group>
+<config_AM_regionalStats_1d_weighting_function>'mul'</config_AM_regionalStats_1d_weighting_function>
+<config_AM_regionalStats_2d_weighting_function>'mul'</config_AM_regionalStats_2d_weighting_function>
+<config_AM_regionalStats_1d_weighting_field>'areaCell'</config_AM_regionalStats_1d_weighting_field>
+<config_AM_regionalStats_2d_weighting_field>'volumeCell'</config_AM_regionalStats_2d_weighting_field>
+<config_AM_regionalStats_vertical_mask>'cellMask'</config_AM_regionalStats_vertical_mask>
+<config_AM_regionalStats_vertical_dimension>'nVertLevels'</config_AM_regionalStats_vertical_dimension>
+
 <!-- AM_timeSeriesStats -->
 <config_AM_timeSeriesStats_enable>.true.</config_AM_timeSeriesStats_enable>
 <config_AM_timeSeriesStats_compute_on_startup>.false.</config_AM_timeSeriesStats_compute_on_startup>
@@ -861,6 +879,7 @@
 <config_AM_timeSeriesStats_duration_intervals>'repeat_interval'</config_AM_timeSeriesStats_duration_intervals>
 <config_AM_timeSeriesStats_repeat_intervals>'reset_interval'</config_AM_timeSeriesStats_repeat_intervals>
 <config_AM_timeSeriesStats_reset_intervals>'00-01-00_00:00:00'</config_AM_timeSeriesStats_reset_intervals>
+<config_AM_timeSeriesStats_backward_output_offset>'00-00-00_00:00:00'</config_AM_timeSeriesStats_backward_output_offset>
 
 <!-- AM_pointwiseStats -->
 <config_AM_pointwiseStats_enable>.false.</config_AM_pointwiseStats_enable>
@@ -871,9 +890,33 @@
 
 <!-- AM_debugDiagnostics -->
 <config_AM_debugDiagnostics_enable>.false.</config_AM_debugDiagnostics_enable>
-<config_AM_debugDiagnostics_compute_interval>'output_interval'</config_AM_debugDiagnostics_compute_interval>
+<config_AM_debugDiagnostics_compute_interval>'dt'</config_AM_debugDiagnostics_compute_interval>
 <config_AM_debugDiagnostics_output_stream>'debugDiagnosticsOutput'</config_AM_debugDiagnostics_output_stream>
 <config_AM_debugDiagnostics_compute_on_startup>.true.</config_AM_debugDiagnostics_compute_on_startup>
-<config_AM_debugDiagnostics_write_on_startup>.true.</config_AM_debugDiagnostics_write_on_startup>
+<config_AM_debugDiagnostics_write_on_startup>.false.</config_AM_debugDiagnostics_write_on_startup>
+<config_AM_debugDiagnostics_check_state>.true.</config_AM_debugDiagnostics_check_state>
+
+<!-- AM_rpnCalculator -->
+<config_AM_rpnCalculator_enable>.false.</config_AM_rpnCalculator_enable>
+<config_AM_rpnCalculator_compute_on_startup>.true.</config_AM_rpnCalculator_compute_on_startup>
+<config_AM_rpnCalculator_write_on_startup>.false.</config_AM_rpnCalculator_write_on_startup>
+<config_AM_rpnCalculator_compute_interval>'0010-00-00_00:00:00'</config_AM_rpnCalculator_compute_interval>
+<config_AM_rpnCalculator_output_stream>'none'</config_AM_rpnCalculator_output_stream>
+<config_AM_rpnCalculator_variable_a>'layerThickness'</config_AM_rpnCalculator_variable_a>
+<config_AM_rpnCalculator_variable_b>'areaCell'</config_AM_rpnCalculator_variable_b>
+<config_AM_rpnCalculator_variable_c>'none'</config_AM_rpnCalculator_variable_c>
+<config_AM_rpnCalculator_variable_d>'none'</config_AM_rpnCalculator_variable_d>
+<config_AM_rpnCalculator_variable_e>'none'</config_AM_rpnCalculator_variable_e>
+<config_AM_rpnCalculator_variable_f>'none'</config_AM_rpnCalculator_variable_f>
+<config_AM_rpnCalculator_variable_g>'none'</config_AM_rpnCalculator_variable_g>
+<config_AM_rpnCalculator_variable_h>'none'</config_AM_rpnCalculator_variable_h>
+<config_AM_rpnCalculator_expression_1>'a b *'</config_AM_rpnCalculator_expression_1>
+<config_AM_rpnCalculator_expression_2>'none'</config_AM_rpnCalculator_expression_2>
+<config_AM_rpnCalculator_expression_3>'none'</config_AM_rpnCalculator_expression_3>
+<config_AM_rpnCalculator_expression_4>'none'</config_AM_rpnCalculator_expression_4>
+<config_AM_rpnCalculator_output_name_1>'volumeCell'</config_AM_rpnCalculator_output_name_1>
+<config_AM_rpnCalculator_output_name_2>'none'</config_AM_rpnCalculator_output_name_2>
+<config_AM_rpnCalculator_output_name_3>'none'</config_AM_rpnCalculator_output_name_3>
+<config_AM_rpnCalculator_output_name_4>'none'</config_AM_rpnCalculator_output_name_4>
 
 </namelist_defaults>

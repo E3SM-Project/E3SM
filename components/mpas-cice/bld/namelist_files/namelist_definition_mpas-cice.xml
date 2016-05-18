@@ -425,6 +425,14 @@ Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_test_ice_shelf" type="logical"
+	category="unit_test" group="unit_test">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- velocity_solver -->
 
@@ -1873,6 +1881,49 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_pointwiseStats_write_on_startup" type="logical"
 	category="AM_pointwiseStats" group="AM_pointwiseStats">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_iceShelves -->
+
+<entry id="config_AM_iceShelves_enable" type="logical"
+	category="AM_iceShelves" group="AM_iceShelves">
+If true, ocean analysis member iceShelves is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_iceShelves_compute_interval" type="char*1024"
+	category="AM_iceShelves" group="AM_iceShelves">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_iceShelves_output_stream" type="char*1024"
+	category="AM_iceShelves" group="AM_iceShelves">
+Name of the stream that the iceShelves analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_iceShelves_compute_on_startup" type="logical"
+	category="AM_iceShelves" group="AM_iceShelves">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_iceShelves_write_on_startup" type="logical"
+	category="AM_iceShelves" group="AM_iceShelves">
 Logical flag determining if an analysis member write occurs on start-up.
 
 Valid values: .true. or .false.
