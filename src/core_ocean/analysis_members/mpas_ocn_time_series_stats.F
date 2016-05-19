@@ -461,8 +461,8 @@ subroutine debug_state(series)
     write(*,*) 'variable #: ', v
     write(*,*) 'input: ', trim(series % variables(v) % input_name)
     do b = 1, series % number_of_buffers
-      write(*,*), 'buffer #: ', b
-      write(*,*), 'output: ', trim(series % variables(v) % output_names(b))
+      write(*,*) 'buffer #: ', b
+      write(*,*) 'output: ', trim(series % variables(v) % output_names(b))
     end do
   end do
 
