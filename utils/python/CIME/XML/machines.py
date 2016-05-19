@@ -172,6 +172,10 @@ class Machines(GenericXML):
         """
         expect(self.machine_node is not None, "Machine object has no machine defined")
         supported_values = self.get_value(listname, attributes=attributes)
+        # if no match with attributes, try without
+        if supported_values is None:
+            supported_values = self.get_value(listname, attributes=None)
+
         expect(supported_values is not None,
                "No list found for " + listname + " on machine " + self.machine)
         supported_values = supported_values.split(",")

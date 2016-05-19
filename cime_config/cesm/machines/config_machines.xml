@@ -1627,7 +1627,7 @@
     <NODENAME_REGEX>(yslogin.*|pronghorn.*|caldera.*)</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,pgi,gnu,intel15</COMPILERS>
-    <MPILIBS>mpich2,pempi,mpi-serial</MPILIBS>
+    <MPILIBS>mpich2,pempi</MPILIBS>
     <CESMSCRATCHROOT>/glade/scratch/$USER</CESMSCRATCHROOT>
     <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
