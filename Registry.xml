@@ -64,13 +64,22 @@
 		/>
 		<dim name="nRegions" units="unitless"
 			description="Number of regions."
-			definition="0"/>
+			definition="1"
+		/>
 		<dim name="nRegionGroups" units="unitless"
 			description="Number of groups of regions."
-			definition="0"/>
+			definition="1"
+		/>
 		<dim name="maxRegionsInGroup" units="unitless"
 			description="Maximum number of regions in a group."
-			definition="0"/>
+			definition="1"
+		/>
+		<dim name="nTransects" definition="1" units="unitless"
+			 description="The number of transects for AM transectTransport"
+		/>
+		<dim name="maxEdgesInTransect" definition="1" units="unitless"
+			 description="Max number of edges in a transect for AM transectTransport"
+		/>
 	</dims>
 
 	<!--*************************************-->
@@ -1590,6 +1599,16 @@
 			<var name="pointCellGlobalID"/>
 		</stream>
 
+		<stream name="transect_masks"
+				type="input"
+				filename_template="transect_masks.nc"
+				immutable="true"
+				input_interval="initial_only"
+				mode="forward;analysis">
+
+			<var name="transectEdgeMasks"/>
+			<var name="transectEdgeMaskSigns"/>
+		</stream>
 	</streams>
 
 	<var_struct name="state" time_levs="2">

@@ -44,6 +44,7 @@ module ocn_analysis_driver
    use ocn_debug_diagnostics
    use ocn_regional_stats
    use ocn_rpn_calculator
+   use ocn_transect_transport
 !   use ocn_TEM_PLATE
 
    implicit none
@@ -167,6 +168,7 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStats', 1)
       call mpas_pool_add_config(analysisMemberList, 'pointwiseStats', 1)
       call mpas_pool_add_config(analysisMemberList, 'debugDiagnostics', 1)
+     call mpas_pool_add_config(analysisMemberList, 'transectTransport', 1)
 !     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
 
       ! DON'T EDIT BELOW HERE
@@ -974,6 +976,8 @@ contains
          call ocn_bootstrap_time_series_stats(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
          call ocn_bootstrap_pointwise_stats(domain, err_tmp)
+     else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
+        call ocn_init_transect_transport(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       end if
@@ -1034,6 +1038,8 @@ contains
          call ocn_init_pointwise_stats(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'debugDiagnostics' ) then
          call ocn_init_debug_diagnostics(domain, err_tmp)
+     else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
+        call ocn_init_transect_transport(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
@@ -1104,6 +1110,8 @@ contains
          call ocn_compute_pointwise_stats(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'debugDiagnostics' ) then
          call ocn_compute_debug_diagnostics(domain, timeLevel, err_tmp)
+     else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
+        call ocn_compute_transect_transport(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_compute_TEM_PLATE(domain, timeLevel, err_tmp)
       ! rpn is third to last
@@ -1173,6 +1181,8 @@ contains
          call ocn_restart_pointwise_stats(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'debugDiagnostics' ) then
          call ocn_restart_debug_diagnostics(domain, err_tmp)
+     else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
+        call ocn_restart_transect_transport(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_restart_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
@@ -1242,6 +1252,8 @@ contains
          call ocn_finalize_pointwise_stats(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'debugDiagnostics' ) then
          call ocn_finalize_debug_diagnostics(domain, err_tmp)
+     else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
+        call ocn_finalize_transect_transport(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_finalize_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
