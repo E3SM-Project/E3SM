@@ -60,7 +60,7 @@ def parse_command_line(args, description):
                         help="Only print the field name and value.")
 
     parser.add_argument("-value", "--value", default=False, action="store_true",
-                        help="Only print the value.")
+                        help="Only print one value without newline character. If more than one has been found print first value in list.")
     parser.add_argument("-resolve", "--resolve", default=True, action="store_true",
                         help="Resolve variable names")
 
@@ -163,11 +163,17 @@ def _main_func(description):
     logger.debug("Searching for attributes '%s'" , args.attribute)
 
     # querry for attributes and print results
-    for res in xmlquery(args.caseroot , args, args.attribute ) :
+    results = xmlquery(args.caseroot , args, args.attribute )
+   
+    # if called with value option omit newline and return only one value
+    if args.value == True :
+        # l = list( set (results) )
+        if len(results) > 0 :
+            sys.stdout.write(results[0])
+    else :    
+        for res in xmlquery(args.caseroot , args, args.attribute ) :
+            print res
 
-	if args.value == True :
-		sys.stdout.write(res)
-	else :
-		print res
+	
 if (__name__ == "__main__"):
     _main_func(__doc__)
