@@ -12,6 +12,7 @@ DATE_STAMP=$(date "+%Y-%m-%d_%H%M%S")
 export JENKINS_START_TIME=$(date "+%s")
 
 $SCRIPT_DIR/jenkins_generic_job "$@" >& JENKINS_$DATE_STAMP
+rv=$?
 
 cd $SCRIPT_DIR
 
@@ -22,3 +23,5 @@ done
 git config --remove-section submodule.mpas-o
 git config --remove-section submodule.mpas-cice
 git config --remove-section submodule.mpas-li
+
+exit $rv
