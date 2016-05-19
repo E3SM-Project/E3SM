@@ -17,6 +17,7 @@ from standard_script_setup import *
 from CIME.utils import expect, run_cmd
 from CIME.case import Case
 from CIME.SystemTests.sms import SMS
+from CIME.SystemTests.seq import SEQ
 from CIME.SystemTests.ers import ERS
 from CIME.SystemTests.system_tests_common import *
 import argparse, doctest, shutil, glob
@@ -58,16 +59,15 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
 def cimetest(caseroot, testname=None):
     case = Case(caseroot)
-    test = object()
     if testname is None:
         testname = case.get_value('TESTCASE')
 
-    expect(testname is not None,"testname argument not resolved %s"%caseroot)
-    logging.warn("Running test for %s"%testname)
+    expect(testname is not None,"testname argument not resolved %s" % caseroot)
+    logging.warn("Running test for %s" % testname)
 
     test = globals()[testname](caseroot, case)
 
-    test.run()
+    success = test.run()
 
     test.report()
 
@@ -77,6 +77,8 @@ def cimetest(caseroot, testname=None):
     if case.get_value("COMPARE_BASELINE"):
         test.compare_baseline()
 
+    return success
+
 def _main_func(description):
     if ("--test" in sys.argv):
         test_results = doctest.testmod(verbose=True)
@@ -84,7 +86,7 @@ def _main_func(description):
 
     caseroot, testname = parse_command_line(sys.argv, description)
 
-    cimetest(caseroot, testname)
+    sys.exit(0 if cimetest(caseroot, testname) else 1)
 
 if (__name__ == "__main__"):
     _main_func(__doc__)

@@ -49,16 +49,27 @@ class SystemTestsCommon(object):
                          sharedlib_only=sharedlib_only, model_only=model_only)
 
     def run(self):
+        return self._run()
+
+    def _run(self, suffix="base"):
         rc, out, err = run_cmd("./case.run --caseroot %s" % self._caseroot, ok_to_fail=True)
-        if rc == 0 and self.coupler_log_indicates_run_complete():
-            self._runstatus = "PASS"
+        if rc == 0 and self._coupler_log_indicates_run_complete():
+            success = True
+            if self._runstatus != "FAIL":
+                self._runstatus = "PASS"
         else:
+            success = False
             self._runstatus = "FAIL"
 
         if out:
             append_status("case.run output is:\n %s\n"%out, sfile="TestStatus.log")
         if err:
             append_status("case.run error is:\n %s\n"%err, sfile="TestStatus.log")
+
+        if success and suffix is not None:
+            self._component_compare_move(suffix)
+
+        return success
 
     def __del__(self):
         if self._runstatus is not None:
@@ -70,8 +81,8 @@ class SystemTestsCommon(object):
                 f.write(teststatusfile)
         return
 
-    def coupler_log_indicates_run_complete(self):
-        newestcpllogfile = self._getlatestcpllog()
+    def _coupler_log_indicates_run_complete(self):
+        newestcpllogfile = self._get_latest_cpl_log()
         logger.debug("Latest Coupler log file is %s"%newestcpllogfile)
         # Exception is raised if the file is not compressed
         try:
@@ -82,8 +93,35 @@ class SystemTestsCommon(object):
         return False
 
     def report(self):
-        newestcpllogfile = self._getlatestcpllog()
+        newestcpllogfile = self._get_latest_cpl_log()
         self._check_for_memleak(newestcpllogfile)
+
+    def _component_compare_move(self, suffix):
+        cmd = os.path.join(self._case.get_value("SCRIPTSROOT"), "Tools",
+                           "component_compare_move.sh")
+        rc, out, err = run_cmd("%s -rundir %s -testcase %s -suffix %s" %
+                               (cmd, self._case.get_value('RUNDIR'), self._case.get_value('CASE'), suffix),
+                               ok_to_fail=True)
+        if rc == 0:
+            append_status(out, sfile="TestStatus.log")
+        else:
+            append_status("Component_compare_test.sh failed out: %s\n\nerr: %s\n"%(out,err)
+                          ,sfile="TestStatus.log")
+
+    def _component_compare_test(self, suffix1, suffix2):
+        cmd = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools",
+                           "component_compare_test.sh")
+        rc, out, err = run_cmd("%s -rundir %s -testcase %s -testcase_base %s -suffix1 %s -suffix2 %s"
+                               %(cmd, self._case.get_value('RUNDIR'), self._case.get_value('CASE'),
+                                 self._case.get_value('CASEBASEID'), suffix1, suffix2), ok_to_fail=True)
+        if rc == 0:
+            append_status(out, sfile="TestStatus")
+        else:
+            append_status("Component_compare_test.sh failed out: %s\n\nerr: %s\n"%(out,err)
+                          ,sfile="TestStatus.log")
+            return False
+
+        return True
 
     def _get_mem_usage(self, cpllog):
         """
@@ -91,7 +129,7 @@ class SystemTestsCommon(object):
         increases.
         """
         memlist = []
-        meminfo = re.compile(".*model date =\s+(\w+).*memory =\s+(\d+\.?\d+).*highwater")
+        meminfo = re.compile(r".*model date =\s+(\w+).*memory =\s+(\d+\.?\d+).*highwater")
         if cpllog is not None:
             with gzip.open(cpllog, "rb") as f:
                 for line in f:
@@ -105,6 +143,10 @@ class SystemTestsCommon(object):
         Examine memory usage as recorded in the cpl log file and look for unexpected
         increases.
         """
+        if self._runstatus != "PASS":
+            append_status("Cannot check memory, test did not pass.\n", sfile="TestStatus.log")
+            return
+
         memlist = self._get_mem_usage(cpllog)
 
         if len(memlist)<3:
@@ -140,7 +182,7 @@ class SystemTestsCommon(object):
                 return False
         return True
 
-    def _getlatestcpllog(self):
+    def _get_latest_cpl_log(self):
         """
         find and return the latest cpl log file in the run directory
         """
@@ -148,7 +190,7 @@ class SystemTestsCommon(object):
         cpllogs = glob.glob(os.path.join(
                     self._case.get_value('RUNDIR'),'cpl.log.*'))
         if cpllogs:
-            cpllog = min(cpllogs, key=os.path.getctime)
+            cpllog = max(cpllogs, key=os.path.getctime)
 
         return cpllog
 
@@ -156,8 +198,11 @@ class SystemTestsCommon(object):
         """
         compare the current test output to a baseline result
         """
+        if self._runstatus != "PASS":
+            append_status("Cannot compare baselines, test did not pass.\n", sfile="TestStatus.log")
+            return
+
         baselineroot = self._case.get_value("BASELINE_ROOT")
-        test_dir = self._case.get_value("CASEROOT")
         basecmp_dir = os.path.join(baselineroot, self._case.get_value("BASECMP_CASE"))
         for bdir in (baselineroot, basecmp_dir):
             if not os.path.isdir(bdir):
@@ -176,8 +221,9 @@ class SystemTestsCommon(object):
         append_status(out+"\n",sfile="TestStatus")
         if rc != 0:
             append_status("Error in Baseline compare: %s"%err, sfile="TestStatus.log")
+
         # compare memory usage to baseline
-        newestcpllogfile = self._getlatestcpllog()
+        newestcpllogfile = self._get_latest_cpl_log()
         memlist = self._get_mem_usage(newestcpllogfile)
         if len(memlist) > 3:
             baselog = os.path.join(basecmp_dir, "cpl.log")
@@ -189,10 +235,13 @@ class SystemTestsCommon(object):
         """
         generate a new baseline case based on the current test
         """
-        newestcpllogfile = self._getlatestcpllog()
+        if self._runstatus != "PASS":
+            append_status("Cannot generate baselines, test did not pass.\n", sfile="TestStatus.log")
+            return
+
+        newestcpllogfile = self._get_latest_cpl_log()
         baselineroot = self._case.get_value("BASELINE_ROOT")
         basegen_dir = os.path.join(baselineroot, self._case.get_value("BASEGEN_CASE"))
-        test_dir = self._case.get_value("CASEROOT")
         for bdir in (baselineroot, basegen_dir):
             if not os.path.isdir(bdir):
                 append_status("GFAIL %s baseline\n" % self._case.get_value("CASEBASEID"),
@@ -230,6 +279,9 @@ class FakeTest(SystemTestsCommon):
             os.chmod(modelexe, 0755)
             self._case.set_value("BUILD_COMPLETE", True)
             self._case.flush()
+
+    def run(self):
+        return SystemTestsCommon._run(self, suffix=None)
 
 class TESTRUNPASS(FakeTest):
 
