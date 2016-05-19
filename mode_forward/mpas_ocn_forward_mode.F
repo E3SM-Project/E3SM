@@ -55,6 +55,7 @@ module ocn_forward_mode
    use ocn_frazil_forcing
 
    use ocn_tracer_hmix
+   use ocn_tracer_hmix_redi
    use ocn_tracer_surface_flux_to_tend
    use ocn_tracer_short_wave_absorption
    use ocn_tracer_short_wave_absorption_variable
@@ -210,6 +211,8 @@ module ocn_forward_mode
       ierr = ior(ierr, err_tmp)
 
       call ocn_tracer_hmix_init(err_tmp)
+      ierr = ior(ierr, err_tmp)
+      call ocn_tracer_hmix_redi_init(err_tmp)
       ierr = ior(ierr, err_tmp)
       call ocn_tracer_surface_flux_init(err_tmp)
       ierr = ior(ierr, err_tmp)

@@ -42,10 +42,15 @@ module ocn_gm
    private :: tridiagonal_solve
 
    ! Config options
-   real (kind=RKIND), pointer :: config_gravWaveSpeed_trunc, config_standardGM_tracer_kappa, &
-     config_max_relative_slope, config_Redi_kappa
-   logical, pointer :: config_use_standardGM
+   real (kind=RKIND), pointer :: config_gravWaveSpeed_trunc
+   real (kind=RKIND), pointer :: config_standardGM_tracer_kappa
+   real (kind=RKIND), pointer :: config_max_relative_slope
+   real (kind=RKIND), pointer :: config_Redi_kappa
    logical, pointer :: config_disable_redi_k33
+   logical, pointer :: config_use_Redi_surface_layer_tapering
+   logical, pointer :: config_use_Redi_bottom_layer_tapering
+   real (kind=RKIND), pointer :: config_Redi_surface_layer_tapering_extent
+   real (kind=RKIND), pointer :: config_Redi_bottom_layer_tapering_depth
 
    real (kind=RKIND), parameter :: epsGM = 1.0e-12_RKIND
 
@@ -98,11 +103,12 @@ contains
          gradZMidTopOfEdge, relativeSlopeTopOfEdge, relativeSlopeTopOfCell, k33, gmStreamFuncTopOfEdge, BruntVaisalaFreqTop, &
          gmStreamFuncTopOfCell, dDensityDzTopOfEdge, dDensityDzTopOfCell, relativeSlopeTapering, relativeSlopeTaperingCell, &
          areaCellSum
+      real(kind=RKIND), dimension(:), pointer   :: boundaryLayerDepth
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
       integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
-      integer                          :: i, k, iEdge, cell1, cell2, iCell, N
-      real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp, maxSlopeK33
+      integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter
+      real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp, stmp, maxSlopeK33
 
       ! Dimensions
       integer, pointer :: nCells, nEdges, nVertLevels
@@ -126,6 +132,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'BruntVaisalaFreqTop', BruntVaisalaFreqTop)
       call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfEdge', gmStreamFuncTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfCell', gmStreamFuncTopOfCell)
+
+      if(config_use_Redi_surface_layer_tapering) call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepth)
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop',  maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'maxLevelCell',  maxLevelCell)
@@ -361,7 +369,7 @@ contains
       !$omp do schedule(runtime) private(k)
       do iCell=1,nCells
         do k = 1, maxLevelCell(iCell)
-           relativeSlopeTopOfCell(k,iCell) = sqrt(relativeSlopeTopOfCell(k,iCell)/areaCellSum(k,iCell))
+           relativeSlopeTopOfCell(k,iCell) = sqrt( relativeSlopeTopOfCell(k,iCell)/areaCellSum(k,iCell) )
         end do
       end do
       !$omp end do
@@ -369,17 +377,78 @@ contains
       ! Compute tapering function
       ! Compute k33 at cell center and layer interface
 
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         k33(:, iCell) = 0.0_RKIND
+      end do
+      !$omp end do
+
+      ! use relativeSlopeTaperingCell as a temporary space for smoothing of relativeSlopeTopOfCell
+      relativeSlopeTaperingCell = relativeSlopeTopOfCell
+      do iter = 1, 5
+         !$omp barrier
+
+         !$omp do schedule(runtime) private(k, rtmp)
+         do iCell=1,nCells
+           relativeSlopeTaperingCell(1, iCell) = 0.0_RKIND
+           relativeSlopeTaperingCell(maxLevelCell(iCell):nVertLevels, iCell) = 0.0_RKIND
+           do k = 2, maxLevelCell(iCell)-1
+             rtmp = relativeSlopeTopOfCell(k-1,iCell) + relativeSlopeTopOfCell(k+1,iCell)
+             stmp = 2.0_RKIND*relativeSlopeTopOfCell(k,iCell)
+             relativeSlopeTaperingCell(k,iCell) = (rtmp+stmp)/4.0_RKIND
+           end do
+           relativeSlopeTopOfCell(:, iCell) = relativeSlopeTaperingCell(:, iCell)
+         end do
+         !$omp end do
+      end do  ! iter
+      relativeSlopeTaperingCell = 0.0_RKIND
+
+      ! first, compute tapering across full domain based on a maximum allowable slope
+      !$omp do schedule(runtime) private(k)
+      do iCell=1,nCells
+        do k = 1, maxLevelCell(iCell)
+          relativeSlopeTaperingCell(k,iCell) = min(1.0_RKIND, config_max_relative_slope / (relativeSlopeTopOfCell(k,iCell)+epsGM))
+        end do
+      end do
+      !$omp end do
+
+      ! now further taper in the boundary layer
+      ! vertical (k33) tapering starts at 2*OBL, increases linearly to OBL and is held uniform across OBL
+      ! rtmp = 1 @ zMid = -2.0*OBL, rtmp = 0 @ zMid = -OBL
+      if(config_use_Redi_surface_layer_tapering) then
+         !$omp do schedule(runtime) private(k, rtmp)
+         do iCell=1,nCells
+           do k = 1, maxLevelCell(iCell)
+             rtmp = -zMid(k,iCell)/max(config_Redi_surface_layer_tapering_extent,boundaryLayerDepth(iCell)+epsGM)
+             rtmp = max(0.0_RKIND,rtmp)
+             rtmp = min(1.0_RKIND,rtmp)
+             relativeSlopeTaperingCell(k,iCell) = rtmp*relativeSlopeTaperingCell(k,iCell)
+           end do
+         end do
+         !$omp end do
+      endif ! config_use_Redi_surface_layer_tapering
+
+      ! now further taper in the boundary layer
+      ! vertical (k33) tapering starts at 2*OBL, increases linearly to OBL and is held uniform across OBL
+      ! rtmp = 1 @ zMid = zMid(maxLevelCell) + config_Redi_bottom_layer_tapering_depth, rtmp = 0 @ zMid = zMid(maxLevelCell)
+      if(config_use_Redi_bottom_layer_tapering) then
+         !$omp do schedule(runtime) private(k, rtmp)
+         do iCell=1,nCells
+           do k = 1, maxLevelCell(iCell)
+             rtmp = (zMid(k,iCell)-zMid(maxLevelCell(iCell),iCell))/(config_Redi_bottom_layer_tapering_depth+epsGM)
+             rtmp = max(0.0_RKIND,rtmp)
+             rtmp = min(1.0_RKIND,rtmp)
+             relativeSlopeTaperingCell(k,iCell) = rtmp*relativeSlopeTaperingCell(k,iCell)
+           end do
+         end do
+         !$omp end do
+      endif ! config_use_Redi_bottom_layer_tapering
+
       !$omp do schedule(runtime) private(k)
       do iCell=1,nCells
         k33(:, iCell) = 0.0_RKIND
         do k = 2, maxLevelCell(iCell)
-          relativeSlopeTaperingCell(k,iCell) = min(1.0_RKIND, config_max_relative_slope**2 &
-                                             / (relativeSlopeTopOfCell(k,iCell)**2+epsGM))
-          k33(k,iCell) = relativeSlopeTaperingCell(k,iCell) * (relativeSlopeTopOfCell(k,iCell))**2
-
-          ! k33 is still non-dimensional measuring the limited (relative slope)^2 of neutral surfaces.
-          ! scale k33 by config_Redi_kappa so it has units of diffusivity
-          k33(k,iCell) = config_Redi_kappa * k33(k, iCell)
+          k33(k,iCell) = ( relativeSlopeTaperingCell(k,iCell) * relativeSlopeTopOfCell(k,iCell) )**2
         end do
       end do
       !$omp end do
@@ -389,7 +458,7 @@ contains
       do iEdge = 1, nEdges
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)
-        do k = 2, maxLevelEdgeTop(iEdge)
+        do k = 1, maxLevelEdgeTop(iEdge)
           relativeSlopeTapering(k,iEdge) = 0.5_RKIND * (relativeSlopeTaperingCell(k,cell1) + relativeSlopeTaperingCell(k,cell2))
         enddo
       enddo
@@ -608,8 +677,11 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_standardGM_tracer_kappa',config_standardGM_tracer_kappa)
       call mpas_pool_get_config(ocnConfigs, 'config_max_relative_slope',config_max_relative_slope)
       call mpas_pool_get_config(ocnConfigs, 'config_Redi_kappa', config_Redi_kappa)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_standardGM',config_use_standardGM)
       call mpas_pool_get_config(ocnConfigs, 'config_disable_redi_k33',config_disable_redi_k33)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_Redi_surface_layer_tapering',config_use_Redi_surface_layer_tapering)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_Redi_bottom_layer_tapering',config_use_Redi_bottom_layer_tapering)
+      call mpas_pool_get_config(ocnConfigs, 'config_Redi_surface_layer_tapering_extent',config_Redi_surface_layer_tapering_extent)
+      call mpas_pool_get_config(ocnConfigs, 'config_Redi_bottom_layer_tapering_depth',config_Redi_bottom_layer_tapering_depth)
 
    end subroutine ocn_gm_init!}}}
 

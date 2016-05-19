@@ -90,7 +90,7 @@ contains
 
     ! Define config variable pointers
     character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid
-    logical, pointer :: config_write_cull_cell_mask
+    logical, pointer :: config_write_cull_cell_mask, config_use_debugTracers
 
     ! ZISO test case run-time configuration parameters
     logical, pointer :: config_ziso_use_slopping_bathymetry
@@ -127,7 +127,7 @@ contains
 
     ! Define dimension pointers
     integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, nVertLevelsP1
-    integer, pointer :: index_temperature, index_salinity
+    integer, pointer :: index_temperature, index_salinity, index_tracer1
 
     ! Define variable pointers
     logical, pointer :: on_a_sphere
@@ -136,7 +136,7 @@ contains
          vertCoordMovementWeights, bottomDepth, &
          fCell, fEdge, fVertex, dcEdge
     real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
-    real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+    real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
     real (kind=RKIND), dimension(:, :), pointer ::    activeTracersPistonVelocity, activeTracersSurfaceRestoringValue
     real (kind=RKIND), dimension(:, :, :), pointer :: activeTracersInteriorRestoringValue, activeTracersInteriorRestoringRate
     real (kind=RKIND), dimension(:), pointer :: windStressZonal, windStressMeridional
@@ -160,6 +160,7 @@ contains
     write(stderrUnit,*) 'Starting initialization of Zonally periodic Idealized Southern Ocean (ZISO)'
 
     ! get config variables !{{{
+    call mpas_pool_get_config(domain % configs, 'config_use_debugTracers', config_use_debugTracers)
     call mpas_pool_get_config(domain % configs, 'config_write_cull_cell_mask', config_write_cull_cell_mask)
     call mpas_pool_get_config(domain % configs, 'config_ziso_use_slopping_bathymetry', config_ziso_use_slopping_bathymetry)
     call mpas_pool_get_config(domain % configs, 'config_ziso_bottom_depth', config_ziso_bottom_depth)
@@ -267,6 +268,7 @@ contains
 
        call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
        call mpas_pool_get_dimension(tracersPool, 'index_salinity', index_salinity)
+       call mpas_pool_get_dimension(tracersPool, 'index_tracer1', index_tracer1)
 
        call mpas_pool_get_array(meshPool, 'xCell', xCell)
        call mpas_pool_get_array(meshPool, 'yCell', yCell)
@@ -283,6 +285,7 @@ contains
        call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
 
        call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+       if(config_use_debugTracers) call mpas_pool_get_array(tracersPool, 'debugTracers', debugTracers, 1)
        call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
        call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
@@ -336,7 +339,6 @@ contains
        activeTracersInteriorRestoringValue(:,:,:) = 0.0_RKIND
        activeTracersPistonVelocity(:,:)  = 0.0_RKIND
        activeTracersSurfaceRestoringValue(:,:) = 0.0_RKIND
-
 
        ! Set refBottomDepth and refZMid
        do k = 1, nVertLevels
@@ -400,9 +402,15 @@ contains
             restingThickness(k, iCell) = layerThickness(k, iCell)
           end do
 
-          ! Set bottomDepth (above)
-
-          ! Set maxLevelCell (above)
+          ! set a passive tracer
+          if(config_use_debugTracers) then
+             idx = index_tracer1
+             do k = 1, nVertLevels
+                debugTracers(idx, k, iCell) = 1.0_RKIND + &
+                   100000.0_RKIND*exp(-(refZMid(k)+1250.0_RKIND)**2/100.0_RKIND**2) * &
+                   exp(-(yCell(iCell)-1250.0_RKIND*1000.0_RKIND)**2/(50.0_RKIND*1000.0_RKIND)**2)
+             enddo 
+          endif
 
           ! set windstress
           if (config_ziso_add_easterly_wind_stress_ASF) then
