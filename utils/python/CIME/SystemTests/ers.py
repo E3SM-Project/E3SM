@@ -19,9 +19,15 @@ class ERS(SystemTestsCommon):
         stop_option = self._case.get_value("STOP_OPTION")
         expect(stop_n > 0, "Bad STOP_N: %d" % stop_n)
 
+        # Move to config_tests.xml once that's ready
         rest_n = stop_n/2 + 1
-        self._case.set_value("REST_N",rest_n)
+        self._case.set_value("REST_N", rest_n)
+        self._case.set_value("REST_OPTION", stop_option)
+        self._case.set_value("HIST_N", stop_n)
+        self._case.set_value("HIST_OPTION", stop_option)
+        self._case.set_value("CONTINUE_RUN", False)
         self._case.flush()
+
         expect(stop_n > 2, "ERROR: stop_n value %d too short"%stop_n)
         logger.info("doing an %s %s initial test with restart file at %s %s"
                     %(str(stop_n), stop_option, str(rest_n), stop_option))
@@ -29,7 +35,7 @@ class ERS(SystemTestsCommon):
 
         if success:
             self._case.set_value("STOP_N", stop_n - rest_n)
-            self._case.set_value("CONTINUE_RUN",True)
+            self._case.set_value("CONTINUE_RUN", True)
             self._case.set_value("REST_OPTION","never")
             self._case.flush()
             logger.info("doing an %s %s restart test"

@@ -52,7 +52,7 @@ def normalize_cases(case1, case2):
         for log_dir in ["bld", "run"]:
             gzips = glob.glob(os.path.join(case_dir, log_dir, "*.gz"))
             if (gzips):
-                run_cmd("gunzip %s" % " ".join(gzips))
+                run_cmd("gunzip -f %s" % " ".join(gzips))
 
     # Change case1 to be as if it had same test-id as case2
     test_id1 = run_cmd("./xmlquery -value TEST_TESTID", from_dir=case1)
