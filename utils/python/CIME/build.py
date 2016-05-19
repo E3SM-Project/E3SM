@@ -538,8 +538,12 @@ def _build_model_thread(config_dir, caseroot, bldroot, compspec, file_build,
         shutil.copy(mod_file, incroot)
 
 ###############################################################################
-def clean(case, cleanlist):
+def clean(case, cleanlist=None):
 ###############################################################################
+    if cleanlist is None:
+        cleanlist = case.get_value("COMP_CLASSES").split(',')
+        cleanlist = [x.lower().replace('drv','cpl') for x in cleanlist]
+
     debug           = case.get_value("DEBUG")
     use_esmf_lib    = case.get_value("USE_ESMF_LIB")
     build_threaded  = case.get_value("BUILD_THREADED")

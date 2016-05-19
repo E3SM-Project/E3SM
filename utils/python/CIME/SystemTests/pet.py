@@ -25,7 +25,7 @@ class PET(SystemTestsCommon):
 
         self._case.flush()
         case_setup(self._caseroot, reset=True)
-        run_cmd('./case.build --clean')
+        self.clean_build()
         SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
 
     def run(self):
