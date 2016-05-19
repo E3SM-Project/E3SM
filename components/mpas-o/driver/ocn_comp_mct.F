@@ -1357,7 +1357,8 @@ contains
                                   seaIceSalinityFluxField, &
                                   riverRunoffFluxField, iceRunoffFluxField, &
                                   shortWaveHeatFluxField, rainFluxField, &
-                                  seaSurfacePressureField, iceFractionField, landIcePressureField, &
+                                  seaSurfacePressureField, iceFractionField, &
+                                  landIcePressureField, landIceFractionField, &
                                   iceFluxDICField, &
                                   iceFluxDONField, &
                                   iceFluxNO3Field, &
@@ -1382,7 +1383,8 @@ contains
                                                seaIceSalinityFlux, &
                                                riverRunoffFlux, iceRunoffFlux, &
                                                shortWaveHeatFlux, rainFlux, &
-                                               seaSurfacePressure, iceFraction, landIcePressure, &
+                                               seaSurfacePressure, iceFraction, &
+                                               landIcePressure, landIceFraction, &
                                                iceFluxDIC,       &
                                                iceFluxDON, &
                                                iceFluxNO3, &
@@ -1447,6 +1449,7 @@ contains
       call mpas_pool_get_field(forcingPool, 'iceFraction', iceFractionField)
       call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
       call mpas_pool_get_field(forcingPool, 'landIcePressure', landIcePressureField)
+      call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
 
       windStressZonal => windStressZonalField % array
       windStressMeridional => windStressMeridionalField % array
@@ -1467,6 +1470,7 @@ contains
       iceFraction => iceFractionField % array
       iceRunoffFlux => iceRunoffFluxField % array
       landIcePressure => landIcePressureField % array
+      landIceFraction => landIceFractionField % array
 
       ! BGC fields
       if (config_use_ecosysTracers) then
@@ -1576,6 +1580,13 @@ contains
         end if
         if ( iceFractionField % isActive ) then
            iceFraction(i) = x2o_o % rAttr(index_x2o_Si_ifrac, n)
+        end if
+        if ( landIceFractionField % isActive .and. landIcePressureField % isActive ) then
+           if ( landIcePressure(i) > 0.0_RKIND ) then
+              landIceFraction(i) = 1.0_RKIND
+           else
+              landIceFraction(i) = 0.0_RKIND
+           end if
         end if
 
         ! BGC fields
@@ -1735,6 +1746,9 @@ contains
    end if
    if ( landIcePressureField % isActive ) then
       call mpas_dmpar_exch_halo_field(landIcePressureField)
+   end if
+   if ( landIceFractionField % isActive ) then
+      call mpas_dmpar_exch_halo_field(landIceFractionField)
    end if
 
    ! BGC fields
