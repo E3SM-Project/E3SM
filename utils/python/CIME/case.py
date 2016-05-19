@@ -232,7 +232,10 @@ class Case(object):
                 self._env_files_that_need_rewrite.add(env_file)
                 return result
         if result is None:
-            self.lookups[item] = value
+            if item in self.lookups.keys():
+                logger.warn("Item %s already in lookups with value %s"%(item,self.lookups[item]))
+            else:
+                self.lookups[item] = value
 
     def _set_compset_and_pesfile(self, compset_name, user_compset=False, pesfile=None):
         """
@@ -402,11 +405,9 @@ class Case(object):
         machine_name = machobj.get_machine_name()
         self.set_value("MACH",machine_name)
         nodenames = machobj.get_node_names()
-
-        if "COMPILER" in nodenames: nodenames.remove("COMPILER")
-        if "MPILIB" in nodenames: nodenames.remove("MPILIB")
         nodenames =  [x for x in nodenames if
-                      '_system' not in x and '_variables' not in x and 'mpirun' not in x]
+                      '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
+                      'COMPILER' not in x and 'MPILIB' not in x]
 
         for nodename in nodenames:
             value = machobj.get_value(nodename)
@@ -423,9 +424,9 @@ class Case(object):
         self.set_value("COMPILER",compiler)
 
         if mpilib is None:
-            mpilib = machobj.get_default_MPIlib()
+            mpilib = machobj.get_default_MPIlib({"compiler":compiler})
         else:
-            expect(machobj.is_valid_MPIlib(mpilib),
+            expect(machobj.is_valid_MPIlib(mpilib, {"compiler":compiler}),
                    "MPIlib %s is not supported on machine %s" %(mpilib, machine_name))
         self.set_value("MPILIB",mpilib)
 

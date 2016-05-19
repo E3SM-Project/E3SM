@@ -644,16 +644,6 @@
     <desc>Operating system - DO NOT EDIT UNLESS for userdefined machine - ignored once Macros has been created.</desc>
   </entry>
 
-  <entry id="COMPILERS">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value></default_value>
-    <group>build_macros</group>
-    <file>env_build.xml</file>
-    <desc>Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
-    Machine compiler (must match one the supported compilers) - ignored once Macros has been created.</desc>
-  </entry>
-
   <entry id="COMPILER">
     <type>char</type>
     <valid_values></valid_values>
@@ -663,17 +653,6 @@
     <desc>Machine compiler (must match one the supported compilers)
     Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
     Must be explicitly set in env_build.xml for userdefined machine.</desc>
-  </entry>
-
-  <entry id="MPILIBS">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value></default_value>
-    <group>build_macros</group>
-    <file>env_build.xml</file>
-    <desc>Supported mpi libraries for target machine - set in config_machines.xml - (DO NOT EDIT)
-      Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
-      Must be explicitly set in env_build.xml for userdefined machine.</desc>
   </entry>
 
   <entry id="SUPPORTED_BY">

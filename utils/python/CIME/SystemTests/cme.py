@@ -26,7 +26,7 @@ class CME(SystemTestsCommon):
         for CPL in ['MCT','ESMF']:
             self._case.set_value('COMP_INTERFACE',CPL)
             self._case.flush()
-            run_cmd('case.build --clean')
+            self.clean_build()
             SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
             if (not sharedlib_only):
                 shutil.move("%s/%s.exe"%(exeroot,cime_model),

@@ -48,6 +48,10 @@ class SystemTestsCommon(object):
         build.case_build(self._caseroot, case=self._case,
                          sharedlib_only=sharedlib_only, model_only=model_only)
 
+    def clean_build(self, comps=None):
+        build.clean(self._case, cleanlist=comps)
+
+
     def run(self):
         return self._run()
 
