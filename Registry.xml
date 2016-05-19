@@ -1587,6 +1587,16 @@
 			<var name="pointCellGlobalID"/>
 		</stream>
 
+		<stream name="transect_masks"
+				type="input"
+				filename_template="transect_masks.nc"
+				immutable="true"
+				input_interval="initial_only"
+				mode="forward;analysis">
+
+			<var name="transectEdgeMasks"/>
+			<var name="transectEdgeMaskSigns"/>
+		</stream>
 	</streams>
 
 	<var_struct name="state" time_levs="2">
