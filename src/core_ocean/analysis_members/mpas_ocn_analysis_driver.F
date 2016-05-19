@@ -814,6 +814,8 @@ contains
       type (mpas_timeinterval_type) :: offsetInt
       integer :: nameLength
 
+      integer :: poolErrorLevel
+
       err = 0
 
       call mpas_timer_start('analysis_write', .false.)
@@ -826,6 +828,10 @@ contains
          call mpas_pool_get_config(domain % configs, configName, config_AM_enable)
 
          if ( config_AM_enable ) then
+
+            poolErrorLevel = mpas_pool_get_error_level()
+            call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
             nullify(config_AM_backwardOffset)
             nullify(config_AM_forwardOffset)
             write(stderrUnit,*) '      Writing AM ' // poolItr % memberName(1:nameLength)
@@ -835,6 +841,8 @@ contains
             call mpas_pool_get_config(domain % configs, configName, config_AM_backwardOffset)
             configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_forward_output_offset'
             call mpas_pool_get_config(domain % configs, configName, config_AM_forwardOffset)
+
+            call mpas_pool_set_error_level(poolErrorLevel)
             if ( config_AM_output_stream /= 'none' ) then
                timerName = trim(writeTimerPrefix) // poolItr % memberName(1:nameLength)
                call mpas_timer_start(timerName, .false.)
