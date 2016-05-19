@@ -1072,7 +1072,7 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 
 <gridmap atm_grid="ne30np4" ocn_grid="oEC60to30wLI">
   <ATM2OCN_FMAPNAME>cpl/gridmaps/ne30np4/map_ne30np4_TO_oEC60to30wLI_aave.160513.nc</ATM2OCN_FMAPNAME>
-  <ATM2OCN_SMAPNAME>cpl/gridmaps/ne30np4/map_ne30np4_TO_oEC60to30wLI_aave.160513.nc</ATM2OCN_SMAPNAME>
+  <ATM2OCN_SMAPNAME>cpl/gridmaps/ne30np4/map_ne30np4_TO_oEC60to30wLI_nm_aave.160513.nc</ATM2OCN_SMAPNAME>
   <ATM2OCN_VMAPNAME>cpl/gridmaps/ne30np4/map_ne30np4_TO_oEC60to30wLI_aave.160513.nc</ATM2OCN_VMAPNAME>
   <OCN2ATM_FMAPNAME>cpl/gridmaps/oEC60to30wLI/map_oEC60to30wLI_TO_ne30np4_aave.160513.nc</OCN2ATM_FMAPNAME>
   <OCN2ATM_SMAPNAME>cpl/gridmaps/oEC60to30wLI/map_oEC60to30wLI_TO_ne30np4_aave.160513.nc</OCN2ATM_SMAPNAME>
