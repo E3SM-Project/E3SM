@@ -172,7 +172,6 @@ contains
       ! COMPUTE the extra terms arising due to mismatch between the constant coordinate surfaces and the
       ! isopycnal surfaces.
       !
-      ! mrp note: Redi diffusion should be put in a separate subroutine
 
       call mpas_pool_get_field(scratchPool, 'gradTracerEdge', gradTracerEdgeField)
       call mpas_pool_get_field(scratchPool, 'gradTracerTopOfEdge', gradTracerTopOfEdgeField)
@@ -226,17 +225,15 @@ contains
 
                do k = 1, maxLevelEdgeTop(iEdge)
 
-                  ! this is the tapering of config_redi_kappa where abs(slope) > config_max_relative_slope
-                  s_tmp = relativeSlopeTapering(k,iEdge)
-
                   do iTracer = 1, num_tracers
                      ! \kappa_2 \nabla \phi on edge
                      tracer_turb_flux = tracers(iTracer, k, cell2) - tracers(iTracer, k, cell1)
 
                      ! div(h \kappa_2 \nabla \phi) at cell center
-                     flux = layerThicknessEdge(k, iEdge) * tracer_turb_flux * r_tmp * s_tmp
+                     flux = layerThicknessEdge(k, iEdge) * tracer_turb_flux * r_tmp
 
                      tend(iTracer, k, iCell) = tend(iTracer, k, iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
+
                   end do
                end do
 
@@ -304,7 +301,7 @@ contains
 
             ! Approximation of values on the top and bottom interfaces through the idea of having ghost cells above
             ! the top and below the bottom layers of the same depths and tracer concentration.
-            gradTracerTopOfEdge(1,iEdge) = gradTracerEdge(1,iEdge)
+            gradTracerTopOfEdge(1,iEdge) = gradTracerEdge(2,iEdge)
             gradTracerTopOfEdge(maxLevelEdgeTop(iEdge)+1,iEdge) = gradTracerEdge(max(maxLevelEdgeTop(iEdge),1),iEdge)
          end do
          !$omp end do
@@ -343,7 +340,7 @@ contains
                iEdge = edgesOnCell(i, iCell)
                areaEdge = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
                do k = 1, maxLevelEdgeTop(iEdge)
-                  r_tmp = areaEdge * relativeSlopeTopOfEdge(k,iEdge) * gradTracerTopOfEdge(k,iEdge)
+                  r_tmp = areaEdge * relativeSlopeTapering(k, iEdge) * relativeSlopeTopOfEdge(k,iEdge) * gradTracerTopOfEdge(k,iEdge)
                   gradHTracerSlopedTopOfCell(k, iCell) = gradHTracerSlopedTopOfCell(k, iCell) + r_tmp
                   areaCellSum(k, iCell) = areaCellSum(k, iCell) + areaEdge
                end do
@@ -366,8 +363,7 @@ contains
                gradHTracerSlopedTopOfCell(1,iCell) = 0.0_RKIND
                gradHTracerSlopedTopOfCell(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
                do k = 1, maxLevelCell(iCell)
-                  s_tmp = relativeSlopeTaperingCell(k,iCell)
-                  tend(iTracer,k,iCell) = tend(iTracer,k,iCell) + s_tmp * config_Redi_kappa * &
+                  tend(iTracer,k,iCell) = tend(iTracer,k,iCell) + config_Redi_kappa * &
                       (gradHTracerSlopedTopOfCell(k,iCell) - gradHTracerSlopedTopOfCell(k+1,iCell))
                end do
             end do
