@@ -111,6 +111,10 @@
 
 <!-- mesoscale_eddy_parameterization -->
 <config_use_standardGM>.true.</config_use_standardGM>
+<config_use_Redi_surface_layer_tapering>.false.</config_use_Redi_surface_layer_tapering>
+<config_Redi_surface_layer_tapering_extent>0.0</config_Redi_surface_layer_tapering_extent>
+<config_use_Redi_bottom_layer_tapering>.false.</config_use_Redi_bottom_layer_tapering>
+<config_Redi_bottom_layer_tapering_depth>0.0</config_Redi_bottom_layer_tapering_depth>
 <config_standardGM_tracer_kappa>600.0</config_standardGM_tracer_kappa>
 <config_Redi_kappa>0.0</config_Redi_kappa>
 <config_gravWaveSpeed_trunc>0.3</config_gravWaveSpeed_trunc>
@@ -918,5 +922,12 @@
 <config_AM_rpnCalculator_output_name_2>'none'</config_AM_rpnCalculator_output_name_2>
 <config_AM_rpnCalculator_output_name_3>'none'</config_AM_rpnCalculator_output_name_3>
 <config_AM_rpnCalculator_output_name_4>'none'</config_AM_rpnCalculator_output_name_4>
+
+<!-- AM_transectTransport -->
+<config_AM_transectTransport_enable>.false.</config_AM_transectTransport_enable>
+<config_AM_transectTransport_compute_interval>'output_interval'</config_AM_transectTransport_compute_interval>
+<config_AM_transectTransport_output_stream>'transectTransportOutput'</config_AM_transectTransport_output_stream>
+<config_AM_transectTransport_compute_on_startup>.true.</config_AM_transectTransport_compute_on_startup>
+<config_AM_transectTransport_write_on_startup>.true.</config_AM_transectTransport_write_on_startup>
 
 </namelist_defaults>
