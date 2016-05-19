@@ -398,7 +398,7 @@ class Case(object):
         # Note that component classes can have a bigger range than
         # compents since stub esp (sesp) is an optional component - so
         # need to take the min of the two below
-        comp_dict = {}                
+        comp_dict = {}
         for i in xrange(0,len(components)):
             comp_name  = components[i]
             comp_class = component_classes[i+1]
@@ -715,7 +715,7 @@ class Case(object):
     def create_caseroot(self, clone=False):
         caseroot = self.get_value("CASEROOT")
         if not os.path.exists(caseroot):
-        # Make the case directory
+            # Make the case directory
             logger.info(" Creating Case directory %s" %caseroot)
             os.makedirs(caseroot)
         os.chdir(caseroot)
@@ -820,4 +820,3 @@ class Case(object):
 
         clonename = self.get_value("CASE")
         logger.info(" Successfully created new case %s from clone case %s " %(newcasename, clonename))
-

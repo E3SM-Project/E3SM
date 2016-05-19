@@ -5,27 +5,21 @@
     <files>
       <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".r[sa].">
+      <file_extension regex_suffix="\.r[sa]\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".rh[012345].">
+      <file_extension regex_suffix="\.rh[012345]\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
-      <file_extension regex_suffix=".i.">
+      <file_extension regex_suffix="\.i\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.h[01]\.[\w\-]*\.nc$">      
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.h[2345678s]\.">      
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>$CASE.cam$NINST_STRING.r.$DATENAME.nc</rpointer_content>
       <restart_history_varname>nhfil</restart_history_varname>
@@ -37,11 +31,9 @@
     <files>
       <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.rs1\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>$CASE.datm$NINST_STRING.r.$DATENAME.nc,$CASE.datm$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
       <restart_history_varname>unset</restart_history_varname>
@@ -53,23 +45,18 @@
     <files>
       <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.rh[013456]\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.i\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.h0\.[\w\-]*\.nc$">      
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.h[12345v]\.">      
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>./$CASE.clm2$NINST_STRING.r.$DATENAME.nc</rpointer_content>
       <restart_history_varname>locfnh</restart_history_varname>
@@ -81,11 +68,9 @@
     <files>
       <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.rs1\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>$CASE.dlnd$NINST_STRING.r.$DATENAME.nc,$CASE.dlnd$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
       <restart_history_varname>unset</restart_history_varname>
@@ -97,15 +82,12 @@
     <files>
       <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.rh[0123]\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.h[0123]\.">      
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>$CASE.rtm$NINST_STRING.r.$DATENAME.nc</rpointer_content>
       <restart_history_varname>unset</restart_history_varname>
@@ -117,15 +99,12 @@
     <files>
       <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.rh[0123]\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.h[0123]\.">      
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>$CASE.mosart$NINST_STRING.r.$DATENAME.nc</rpointer_content>
       <restart_history_varname>unset</restart_history_varname>
@@ -137,11 +116,9 @@
     <files>
       <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.rs1\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>$CASE.drof$NINST_STRING.r.$DATENAME.nc,$CASE.drof$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
       <restart_history_varname>unset</restart_history_varname>
@@ -153,15 +130,12 @@
     <files>
       <file_extension regex_suffix="\.r\.\w+">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.i\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.h\.[\w\-]*\.nc$">      
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>./$CASE.cice$NINST_STRING.r.$DATENAME.nc</rpointer_content>
       <restart_history_varname>unset</restart_history_varname>
@@ -173,11 +147,9 @@
     <files>
       <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.rs1\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>$CASE.dice$NINST_STRING.r.$DATENAME.nc,$CASE.dice$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
       <restart_history_varname>unset</restart_history_varname>
@@ -189,63 +161,48 @@
     <files>
       <file_extension regex_suffix="\.r\..*\.hdr">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.r\.[0-9|-]+\.nc">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.r\.[0-9|-]+[^\.nc]">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.rh.ecosys\.\w+\.hdr">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.rh.ecosys\.\w+\.nc">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.rh.ecosys\.[0-9|-]+[^\.nc]">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.rh\..*\.hdr">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.rh\.[0-9|-]+\.nc">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.rh\.[0-9|-]+[^\.nc]">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.ro\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.d\w*">
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.h.\d{4}-\d{2}\.">      
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.h.nday1\.">      
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.h.nyear1\.">      
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.h\.[\w\-\.]*\.nc$">      
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>./$CASE.pop$NINST_STRING.r.$DATENAME.nc,./$CASE.pop$NINST_STRING.ro.datename.nc,RESTART_FMT=nc</rpointer_content>
       <restart_history_varname>unset</restart_history_varname>
@@ -257,11 +214,9 @@
     <files>
       <file_extension regex_suffix="\.r\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.rs1\.">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>$CASE.docn$NINST_STRING.r.$DATENAME.nc,$CASE.docn$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
       <restart_history_varname>unset</restart_history_varname>
@@ -273,19 +228,15 @@
     <files>
       <file_extension regex_suffix=".r.[0-9]*">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix=".r\.\w+">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix=".i\..*">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix=".h*">      
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>./$CASE.cism$NINST_STRING.r.$DATENAME.nc</rpointer_content>
       <restart_history_varname>unset</restart_history_varname>
@@ -297,15 +248,12 @@
     <files>
       <file_extension regex_suffix=".r.[0-9]*">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix=".i\..*">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix=".h\..*">      
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>unset</rpointer_content>
       <restart_history_varname>unset</restart_history_varname>
@@ -317,11 +265,9 @@
     <files>
       <file_extension regex_suffix=".r\..*">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix=".rs1\..*">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>$CASE.dwav$NINST_STRING.r.$DATENAME.nc,$CASE.dwav$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
       <restart_history_varname>unset</restart_history_varname>
@@ -333,51 +279,39 @@
     <files>
       <file_extension regex_suffix="\w*True_State\..*\.nc">
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\w*Prior_Diag\..*.nc">
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\w*Posterior_Diag\..*.nc">
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\w*obs_seq\..*.out">
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\w*obs_seq\..*.final">
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\w*obs_seq\..*.perfect">
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="cam_\w*pr\w*inflate_restart\w*">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="cam_\w*po\w*inflate_restart\w*">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="clm_\w*pr\w*inflate_restart\w*">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="clm_\w*po\w*inflate_restart\w*">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="pop_\w*pr\w*inflate_restart\w*">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="pop_\w*po\w*inflate_restart\w*">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>unset</rpointer_content>
       <restart_history_varname>unset</restart_history_varname>
@@ -389,11 +323,9 @@
     <files>
       <file_extension regex_suffix="\.r\.*">
 	<subdir>rest</subdir> 
-	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix="\.h\w*">
 	<subdir>hist</subdir> 
-	<keep_last_in_rundir>false</keep_last_in_rundir>
       </file_extension>
       <rpointer_content>$CASE.cpl.r.$DATENAME.nc</rpointer_content>
       <restart_history_varname>unset</restart_history_varname>
