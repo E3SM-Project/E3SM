@@ -41,17 +41,6 @@
 		/>
 	</var_struct>
 	<streams>
-		<stream name="transect_transport_masks"
-				type="input"
-				filename_template="transect_transport_masks.nc"
-				immutable="true"
-				input_interval="initial_only"
-				mode="forward;analysis">
-
-			<var name="transectEdgeMasks"/>
-			<var name="transectEdgeMaskSigns"/>
-		</stream>
-
 		<stream name="transectTransportOutput" type="output"
 				mode="forward;analysis"
 				filename_template="analysis_members/transectTransport.$Y-$M-$D.nc"
