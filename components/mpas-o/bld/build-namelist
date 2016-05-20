@@ -1616,6 +1616,7 @@ my @groups = qw(run_modes
                 am_pointwisestats
                 am_debugdiagnostics
                 am_rpncalculator
+                am_transecttransport
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group

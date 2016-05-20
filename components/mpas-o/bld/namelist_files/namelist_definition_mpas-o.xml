@@ -585,6 +585,38 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_Redi_surface_layer_tapering" type="logical"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+If true, the Redi K33 vertical mixing is limited in and just below the ocean boundary layer.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_surface_layer_tapering_extent" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Vertical component of Redi mixing limited in top config_Redi_surface_layer_tapering_extent*boundaryLayerDepth
+
+Valid values: Any positive real value, typically between 1 and 2.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_Redi_bottom_layer_tapering" type="logical"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+If true, the Redi K33 vertical mixing is limited in bottom boundary layer.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_bottom_layer_tapering_depth" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+Vertical component of Redi mixing limited in bottom config_Redi_surface_layer_tapering_depth
+
+Valid values: Any positive real value, typically between 100 and 500 m.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_standardGM_tracer_kappa" type="real"
 	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
 Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$
@@ -1901,7 +1933,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_rx1_inner_iteration_weight" type="real"
 	category="constrain_Haney_number" group="constrain_Haney_number">
-During inner iteration, layers with rx1 greater than rx1Max are thickened toward a target thickness by this fraction.  A smaller weights will result in less layer thickening but will require more inner iterations to converge.
+During inner iteration, layers with rx1 > rx1Max are thickened toward a target thickness by this fraction.  A smaller weights will result in less layer thickening but will require more inner iterations to converge.
 
 Valid values: a positive value less than or equal to 1
 Default: Defined in namelist_defaults.xml
@@ -6271,6 +6303,49 @@ Default: Defined in namelist_defaults.xml
 The name of the output field resulting from RPN expression 4.
 
 Valid values: a valid MPAS field output name if expression 4 is set, otherwise 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_transectTransport -->
+
+<entry id="config_AM_transectTransport_enable" type="logical"
+	category="AM_transectTransport" group="AM_transectTransport">
+If true, ocean analysis member transectTransport is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_transectTransport_compute_interval" type="char*1024"
+	category="AM_transectTransport" group="AM_transectTransport">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_transectTransport_output_stream" type="char*1024"
+	category="AM_transectTransport" group="AM_transectTransport">
+Name of the stream that the transectTransport analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_transectTransport_compute_on_startup" type="logical"
+	category="AM_transectTransport" group="AM_transectTransport">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_transectTransport_write_on_startup" type="logical"
+	category="AM_transectTransport" group="AM_transectTransport">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 

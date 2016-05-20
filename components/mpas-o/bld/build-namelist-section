@@ -144,6 +144,10 @@ add_default($nl, 'config_Leith_visc2_max');
 ###################################################
 
 add_default($nl, 'config_use_standardGM');
+add_default($nl, 'config_use_Redi_surface_layer_tapering');
+add_default($nl, 'config_Redi_surface_layer_tapering_extent');
+add_default($nl, 'config_use_Redi_bottom_layer_tapering');
+add_default($nl, 'config_Redi_bottom_layer_tapering_depth');
 add_default($nl, 'config_standardGM_tracer_kappa');
 add_default($nl, 'config_Redi_kappa');
 add_default($nl, 'config_gravWaveSpeed_trunc');
@@ -1128,4 +1132,14 @@ add_default($nl, 'config_AM_rpnCalculator_output_name_1');
 add_default($nl, 'config_AM_rpnCalculator_output_name_2');
 add_default($nl, 'config_AM_rpnCalculator_output_name_3');
 add_default($nl, 'config_AM_rpnCalculator_output_name_4');
+
+########################################
+# Namelist group: AM_transectTransport #
+########################################
+
+add_default($nl, 'config_AM_transectTransport_enable');
+add_default($nl, 'config_AM_transectTransport_compute_interval');
+add_default($nl, 'config_AM_transectTransport_output_stream');
+add_default($nl, 'config_AM_transectTransport_compute_on_startup');
+add_default($nl, 'config_AM_transectTransport_write_on_startup');
 
