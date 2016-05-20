@@ -543,7 +543,7 @@ class Case(object):
         logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)
 
-        # Miscilanious settings
+        # miscellaneous settings
         if self.get_value("RUN_TYPE") == 'hybrid':
             self.set_value("GET_REFCASE", True)
 
