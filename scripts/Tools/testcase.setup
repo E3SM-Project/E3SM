@@ -211,7 +211,8 @@ print $testfh " $eol cd $caseroot  $eol";
 
 # interpolate variables in following EOF block
 my $testcase_interp = <<END_INTERP;
-
+    setenv MPILIB `./xmlquery MPILIB --value`
+    setenv CIME_MODEL `./xmlquery MODEL --value`
     source .env_mach_specific.csh
     setenv CIMEROOT `./xmlquery CIMEROOT -value`
 
