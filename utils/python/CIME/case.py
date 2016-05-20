@@ -302,8 +302,8 @@ class Case(object):
         # the first element is always the date operator - skip it
         elements = compset.split('_')[1:]
         for element in elements:
-            # ignore the possible BGC modifier
-            if element.startswith("BGC%"):
+            # ignore the possible BGC or TEST modifier
+            if element.startswith("BGC%") or element.startswith("TEST"):
                 continue
             else:
                 element_component = element.split('%')[0].lower()
