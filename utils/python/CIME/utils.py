@@ -103,20 +103,21 @@ def get_model():
     """
     cime_config = get_cime_config()
     model = None
-    if (cime_config.has_option('main','MODEL')):
-        model = cime_config.get('main','MODEL')
+    if (cime_config.has_option('main','CIME_MODEL')):
+        model = cime_config.get('main','CIME_MODEL')
+        return model
+
+    model = os.environ.get("CIME_MODEL")
+    if (model is not None):
+        set_model(model)
     else:
-        model = os.environ.get("CIME_MODEL")
-        if (model is not None):
-            set_model(model)
-        else:
-            modelroot = os.path.join(get_cime_root(), "cime_config")
-            models = os.listdir(modelroot)
-            msg = "Environment variable CIME_MODEL must be set to one of: "
-            msg += ", ".join([model for model in models
-                              if os.path.isdir(os.path.join(modelroot,model))
-                              and model != "xml_schemas"])
-            expect(False, msg)
+        modelroot = os.path.join(get_cime_root(), "cime_config")
+        models = os.listdir(modelroot)
+        msg = ".cime/config or environment variable CIME_MODEL must be set to one of: "
+        msg += ", ".join([model for model in models
+                          if os.path.isdir(os.path.join(modelroot,model))
+                          and model != "xml_schemas"])
+        expect(False, msg)
 
     return model
 
@@ -500,12 +501,14 @@ def get_project():
         if (project is not None):
             logger.info("Using project from .cime/config "+project)
             return project
-        projectfile = os.path.abspath(os.path.join(os.path.expanduser("~"),
+
+    projectfile = os.path.abspath(os.path.join(os.path.expanduser("~"),
                                                    ".cesm_proj"))
-        if (os.path.isfile(projectfile)):
-            with open(projectfile,'r') as myfile:
-                project = myfile.read()
-                cime_config.set('main','PROJECT',project)
+    if (os.path.isfile(projectfile)):
+        with open(projectfile,'r') as myfile:
+            project = myfile.read().rstrip()
+            logger.info("Using project from .cesm_proj %s"%project)
+            cime_config.set('main','PROJECT',project)
 
     return project
 
