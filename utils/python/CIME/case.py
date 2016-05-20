@@ -181,7 +181,14 @@ class Case(object):
 
                             r['value'] = self.get_resolved_value(r['value'])
 
-                results = results + result
+                if subgroup :
+                    found = []
+                    for r in result :
+                        if r['group'] != subgroup :
+                            found += r
+                    results += found        
+                else:                 
+                    results = results + result
 
         return results
 
