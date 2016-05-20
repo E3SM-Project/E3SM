@@ -91,7 +91,7 @@ def set_model(model):
     Set the model to be used in this session
     """
     cime_config = get_cime_config()
-    cime_config.set('main','MODEL',model)
+    cime_config.set('main','CIME_MODEL',model)
 
 def get_model():
     """
@@ -101,25 +101,24 @@ def get_model():
     >>> print get_model()
     rocky
     """
+    model = os.environ.get("CIME_MODEL")
+    if (model is not None):
+        set_model(model)
+        return model
+
     cime_config = get_cime_config()
-    model = None
     if (cime_config.has_option('main','CIME_MODEL')):
         model = cime_config.get('main','CIME_MODEL')
         return model
 
-    model = os.environ.get("CIME_MODEL")
-    if (model is not None):
-        set_model(model)
-    else:
-        modelroot = os.path.join(get_cime_root(), "cime_config")
-        models = os.listdir(modelroot)
-        msg = ".cime/config or environment variable CIME_MODEL must be set to one of: "
-        msg += ", ".join([model for model in models
-                          if os.path.isdir(os.path.join(modelroot,model))
-                          and model != "xml_schemas"])
-        expect(False, msg)
+    modelroot = os.path.join(get_cime_root(), "cime_config")
+    models = os.listdir(modelroot)
+    msg = ".cime/config or environment variable CIME_MODEL must be set to one of: "
+    msg += ", ".join([model for model in models
+                      if os.path.isdir(os.path.join(modelroot,model))
+                      and model != "xml_schemas"])
+    expect(False, msg)
 
-    return model
 
 _hack=object()
 def run_cmd(cmd, ok_to_fail=False, input_str=None, from_dir=None, verbose=None,
