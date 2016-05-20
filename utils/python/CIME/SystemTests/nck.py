@@ -6,7 +6,9 @@ from CIME.XML.standard_module_setup import *
 from CIME.case import Case
 from CIME.case_setup import case_setup
 import CIME.utils
-from system_tests_common import SystemTestsCommon
+from CIME.SystemTests.system_tests_common import SystemTestsCommon
+
+logger = logging.getLogger(__name__)
 
 class NCK(SystemTestsCommon):
 
@@ -24,12 +26,10 @@ class NCK(SystemTestsCommon):
         if ( os.path.isfile(machpes1) ):
             shutil.copy(machpes1,"env_mach_pes.xml")
 
+        # Build two exectuables for this test, the first is a default build
+        # the second halves the number of tasks and runs two instances
+        # for each component
         for bld in range(1,3):
-            """
-            Build two exectuables for this test, the first is a default build
-            the second halves the number of tasks and runs two instances
-            for each component
-            """
             logging.warn("Starting bld %s"%bld)
             machpes = os.path.join("LockedFiles","env_mach_pes.NCK%s.xml"%bld)
             for comp in ['ATM','OCN','WAV','GLC','ICE','ROF','LND']:
