@@ -27,6 +27,19 @@ class Grids(GenericXML):
         """
         nodes = self.get_nodes("grid")
         gridinfo = {}
+        atmnlev = None
+        lndnlev = None
+        #mechanism to specify atm levels
+        levmatch = re.match("([^_]+)z(\d+)(.*)$", name)
+        if  levmatch:
+            atmnlev = levmatch.group(2)
+            name = levmatch.group(1)+levmatch.group(3)
+        #mechanism to specify lnd levels
+        levmatch = re.match("(.*_)([^_]+)z(\d+)(.*)$", name)
+        if  levmatch:
+            lndnlev = levmatch.group(3)
+            name = levmatch.group(1)+levmatch.group(2)+levmatch.group(4)
+
 
         # first search for all grids that have a compset match - if one is found then return
         for node in nodes:
@@ -41,7 +54,7 @@ class Grids(GenericXML):
                         logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname))
                         component_grids = self._get_component_grids(lname)
                         domains  = self._get_domains(component_grids)
-                        gridmaps = self._get_gridmaps(component_grids)
+                        gridmaps = self._get_gridmaps(component_grids, atmnlev, lndnlev)
                         gridinfo.update(domains)
                         gridinfo.update(gridmaps)
                         gridinfo["GRID"] = lname
@@ -58,7 +71,7 @@ class Grids(GenericXML):
                     logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname))
                     component_grids = self._get_component_grids(lname)
                     gridinfo.update(self._get_domains(component_grids))
-                    gridinfo.update(self._get_gridmaps(component_grids))
+                    gridinfo.update(self._get_gridmaps(component_grids, atmnlev, lndnlev))
                     gridinfo["GRID"] = lname
                     return gridinfo
 
@@ -115,7 +128,7 @@ class Grids(GenericXML):
 
         return domains
 
-    def _get_gridmaps(self, component_grids):
+    def _get_gridmaps(self, component_grids, atmnlev=None, lndnlev=None):
         # mapping files
         grids = [("atm_grid", component_grids[0]), \
                  ("lnd_grid", component_grids[1]), \
@@ -135,6 +148,11 @@ class Grids(GenericXML):
                         if gridmap is not None:
                             gridmaps[child.tag] = child.text
                             logger.debug(" %s: %s" %gridmap)
+
+        if atmnlev is not None:
+            grids["atm_grid"] += "z"+atmnlev
+        if lndnlev is not None:
+            grids["lnd_grid"] += "z"+lndnlev
 
         return gridmaps
 

@@ -14,3 +14,4 @@ class EnvBuild(EnvBase):
         initialize an object interface to file env_build.xml in the case directory
         """
         EnvBase.__init__(self, case_root, infile)
+

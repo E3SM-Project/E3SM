@@ -3,7 +3,7 @@ functions for building CIME models
 """
 from XML.standard_module_setup import *
 from CIME.case                 import Case
-from CIME.utils                import expect, run_cmd, get_model, appendStatus
+from CIME.utils                import expect, run_cmd, get_model, append_status
 from CIME.env_module           import EnvModule
 from CIME.preview_namelists    import preview_namelists
 from CIME.check_input_data     import check_input_data
@@ -538,8 +538,12 @@ def _build_model_thread(config_dir, caseroot, bldroot, compspec, file_build,
         shutil.copy(mod_file, incroot)
 
 ###############################################################################
-def clean(case, cleanlist):
+def clean(case, cleanlist=None):
 ###############################################################################
+    if cleanlist is None:
+        cleanlist = case.get_value("COMP_CLASSES").split(',')
+        cleanlist = [x.lower().replace('drv','cpl') for x in cleanlist]
+
     debug           = case.get_value("DEBUG")
     use_esmf_lib    = case.get_value("USE_ESMF_LIB")
     build_threaded  = case.get_value("BUILD_THREADED")
@@ -584,6 +588,6 @@ def clean(case, cleanlist):
 
     # append call of to CaseStatus
     msg = "cleanbuild %s "%" ".join(cleanlist)
-    appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
+    append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
 ###############################################################################

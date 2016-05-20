@@ -51,15 +51,7 @@ class Component(EntryID):
                 # determine if key is in attributes dictionary
                 match_count = 0
                 if key in attributes:
-                    if key == "compset":
-                        compset = attributes[key]
-                        if re.search(value+"[_%]", compset) or re.search(value+"$", compset):
-                            logger.debug("Value %s and key %s match with compset value %s"%(value, key, compset))
-                            match_count += 1
-                        else:
-                            match_count = 0
-                            break
-                    elif re.search(value, attributes[key]):
+                    if re.search(value, attributes[key]):
                         logger.debug("Value %s and key %s match with value %s"%(value, key, attributes[key]))
                         match_count += 1
                     else:

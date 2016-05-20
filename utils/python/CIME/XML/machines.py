@@ -133,7 +133,7 @@ class Machines(GenericXML):
 
         return machine
 
-    def get_value(self, name, attributes={}, resolved=True, subgroup=None):
+    def get_value(self, name, attributes=None, resolved=True, subgroup=None):
         """
         Get Value of fields in the config_machines.xml file
         """
@@ -146,9 +146,9 @@ class Machines(GenericXML):
         if name == "COMPILER":
             value = self.get_default_compiler()
         elif name == "MPILIB":
-            value = self.get_default_MPIlib()
+            value = self.get_default_MPIlib(attributes)
         else:
-            node = self.get_optional_node(name, root=self.machine_node)
+            node = self.get_optional_node(name, root=self.machine_node, attributes=attributes)
             if node is not None:
                 value = node.text
 
@@ -164,14 +164,18 @@ class Machines(GenericXML):
 
         return value
 
-    def get_field_from_list(self, listname, reqval=None):
+    def get_field_from_list(self, listname, reqval=None, attributes=None):
         """
         Some of the fields have lists of valid values in the xml, parse these
         lists and return the first value if reqval is not provided and reqval
         if it is a valid setting for the machine
         """
         expect(self.machine_node is not None, "Machine object has no machine defined")
-        supported_values = self.get_value(listname)
+        supported_values = self.get_value(listname, attributes=attributes)
+        # if no match with attributes, try without
+        if supported_values is None:
+            supported_values = self.get_value(listname, attributes=None)
+
         expect(supported_values is not None,
                "No list found for " + listname + " on machine " + self.machine)
         supported_values = supported_values.split(",")
@@ -191,11 +195,11 @@ class Machines(GenericXML):
         """
         return self.get_field_from_list("COMPILERS")
 
-    def get_default_MPIlib(self):
+    def get_default_MPIlib(self, attributes=None):
         """
         Get the MPILIB to use from the list of MPILIBS
         """
-        return self.get_field_from_list("MPILIBS")
+        return self.get_field_from_list("MPILIBS", attributes=attributes)
 
     def is_valid_compiler(self,compiler):
         """
@@ -211,11 +215,11 @@ class Machines(GenericXML):
         ...
         SystemExit: ERROR: COMPILERS value nag not supported for machine edison
         """
-        if self.get_field_from_list("COMPILERS", compiler) is not None:
+        if self.get_field_from_list("COMPILERS", reqval=compiler) is not None:
             return True
         return False
 
-    def is_valid_MPIlib(self, mpilib):
+    def is_valid_MPIlib(self, mpilib, attributes=None):
         """
         Check the MPILIB is valid for the current machine
 
@@ -223,7 +227,7 @@ class Machines(GenericXML):
         >>> machobj.is_valid_MPIlib("mpi-serial")
         True
         """
-        if mpilib == "mpi-serial" or self.get_field_from_list("MPILIBS", mpilib) is not None:
+        if mpilib == "mpi-serial" or self.get_field_from_list("MPILIBS", reqval=mpilib, attributes=attributes) is not None:
             return True
         return False
 

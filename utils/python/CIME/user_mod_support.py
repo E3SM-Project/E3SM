@@ -44,10 +44,12 @@ def apply_user_mods(caseroot, user_mods_path, ninst={}):
                             expect(False, "Could not write file %s in caseroot %s"
                                    %(case_source_mods,caseroot))
         case_shell_commands = None
-        for shell_commands_file in glob.iglob(os.path.join(include_dir,"shell_commands")):
+        shell_command_files = glob.glob(os.path.join(include_dir,"shell_commands")) +\
+                               glob.glob(os.path.join(include_dir,"xmlchange_cmnds"))
+        for shell_commands_file in shell_command_files:
             case_shell_commands = shell_commands_file.replace(include_dir, caseroot)
             with open(shell_commands_file,"r") as fd:
-                new_shell_commands = fd.read()
+                new_shell_commands = fd.read().replace("xmlchange","xmlchange --force")
             with open(case_shell_commands, "a") as fd:
                 fd.write(new_shell_commands)
         if case_shell_commands is not None:

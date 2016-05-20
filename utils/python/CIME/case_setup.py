@@ -10,7 +10,7 @@ from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.component     import Component
 from CIME.XML.compilers     import Compilers
 from CIME.case              import Case
-from CIME.utils             import expect, run_cmd, appendStatus
+from CIME.utils             import expect, run_cmd, append_status
 from CIME.batch_maker       import get_batch_maker
 
 import shutil, time, glob
@@ -80,10 +80,9 @@ def _build_usernl_files(case, model, comp):
 ###############################################################################
 def case_setup(caseroot, clean=False, test_mode=False, reset=False):
 ###############################################################################
-
     os.chdir(caseroot)
     msg = "case.setup starting"
-    appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
+    append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
     cimeroot = os.environ["CIMEROOT"]
 
@@ -137,7 +136,7 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
         logger.info("Some files have been saved to %s" % backup_dir)
 
         msg = "case.setup clean complete"
-        appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
+        append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
     if not clean:
         drv_comp = Component()
@@ -273,6 +272,7 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
         logger.info("If an old case build already exists, might want to run \'case.build --clean-all\' before building")
 
         # Create test script if appropriate
+        # Short term fix to be removed when csh tests are removed
         if os.path.exists("env_test.xml"):
             if not os.path.exists("case.test"):
                 logger.info("Starting testcase.setup")
@@ -280,5 +280,5 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
                 logger.info("Finished testcase.setup")
 
         msg = "case.setup complete"
-        appendStatus(msg, caseroot=caseroot, sfile="CaseStatus")
+        append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
