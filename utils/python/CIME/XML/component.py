@@ -58,28 +58,32 @@ class Component(EntryID):
                         match_count = 0
                         break
             if match_count > 0:
-                if len(match_values) == 0:
-                    # start with the default_value if present
-                    val_node = self.get_optional_node("default_value", root=node)
-                    value = val_node.text
-                    if value is not None and len(value) > 0 and value != "UNSET":
-                        match_values.append(value)
                 # append the current result
                 if values.get("modifier") == "additive":
                     match_values.append(valnode.text)
+
                 # replace the current result if it already contains the new value
                 # otherwise append the current result
                 elif values.get("modifier") == "merge":
                     if valnode.text in match_values:
                         del match_values[:]
                     match_values.append(valnode.text)
+
                 # take the *last* best match
                 elif match_count >= match_max:
                     del match_values[:]
                     match_max = match_count
                     match_value = valnode.text
+
         if len(match_values) > 0:
             match_value = " ".join(match_values)
+        else:
+            # use the default_value if present
+            val_node = self.get_optional_node("default_value", root=node)
+            value = val_node.text
+            if value is not None and len(value) > 0 and value != "UNSET":
+                match_values.append(value)
+            
         return match_value
 
 

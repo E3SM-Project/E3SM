@@ -147,12 +147,16 @@ class SystemTest(object):
                 if generate is not None and isinstance(generate, str):
                     self._baseline_gen_name = generate
                     self._generate = True
-                branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
-                expect(branch_name is not None,
-                       "Could not determine baseline name from branch, please use -b option")
+
                 if self._compare and self._baseline_cmp_name is None:
+                    branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
+                    expect(branch_name is not None,
+                           "Could not determine baseline name from branch, please use -b option")
                     self._baseline_cmp_name = os.path.join(self._compiler, branch_name)
                 if self._generate and self._baseline_gen_name is None:
+                    branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
+                    expect(branch_name is not None,
+                           "Could not determine baseline name from branch, please use -b option")
                     self._baseline_gen_name = os.path.join(self._compiler, branch_name)
             else:
                 if compare:

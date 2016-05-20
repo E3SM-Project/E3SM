@@ -5,6 +5,7 @@ import shutil
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
 import CIME.utils
+from CIME.case_setup import case_setup
 from system_tests_common import SystemTestsCommon
 
 class PET(SystemTestsCommon):

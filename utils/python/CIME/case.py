@@ -36,7 +36,31 @@ from CIME.user_mod_support          import apply_user_mods
 logger = logging.getLogger(__name__)
 
 class Case(object):
+    """
+    https://github.com/ESMCI/cime/wiki/Developers-Introduction
+    The Case class is the heart of the CIME Case Control system.  All
+    interactions with a Case take part through this class.  All of the
+    variables used to create and manipulate a case are defined in xml
+    files and for every xml file there is a python class to interact
+    with that file.
 
+    XML files which are part of the CIME distribution and are meant to
+    be readonly with respect to a case are typically named
+    config_something.xml and the corresponding python Class is
+    Something and can be found in file CIME.XML.something.py.  I'll
+    refer to these as the CIME config classes.
+
+    XML files which are part of a case and thus are read/write to a
+    case are typically named env_whatever.xml and the cooresponding
+    python modules are CIME.XML.env_whatever.py and classes are
+    EnvWhatever.  I'll refer to these as the Case env classes.
+
+    The Case Class includes an array of the Case env classes, in the
+    configure function and it's supporting functions defined below
+    the case object creates and manipulates the Case env classes
+    by reading and interpreting the CIME config classes.
+
+    """
     def __init__(self, case_root=None):
 
         if case_root is None:
@@ -518,6 +542,10 @@ class Case(object):
         logger.info(" Compset is: %s " %self._compsetname)
         logger.info(" Grid is: %s " %self._gridname )
         logger.info(" Components in compset are: %s " %self._components)
+
+        # miscellaneous settings
+        if self.get_value("RUN_TYPE") == 'hybrid':
+            self.set_value("GET_REFCASE", True)
 
         # Set project id
         if project is None:

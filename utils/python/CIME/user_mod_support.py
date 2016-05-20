@@ -52,9 +52,9 @@ def apply_user_mods(caseroot, user_mods_path, ninst={}):
                 new_shell_commands = fd.read().replace("xmlchange","xmlchange --force")
             with open(case_shell_commands, "a") as fd:
                 fd.write(new_shell_commands)
-        if case_shell_commands is not None:
-            os.chmod(case_shell_commands, 0777)
-            run_cmd(case_shell_commands)
+    if case_shell_commands is not None:
+        os.chmod(case_shell_commands, 0777)
+        run_cmd(case_shell_commands)
 
 def build_include_dirs_list(user_mods_path, include_dirs=[]):
     '''
@@ -72,7 +72,7 @@ def build_include_dirs_list(user_mods_path, include_dirs=[]):
         with open(include_file, "r") as fd:
             for newpath in fd:
                 newpath = newpath.rstrip()
-                if not newpath.startswith("#"):
+                if len(newpath) > 0 and not newpath.startswith("#"):
                     if not os.path.isabs(newpath):
                         newpath = os.path.join(user_mods_path, newpath)
                     if os.path.isabs(newpath):
