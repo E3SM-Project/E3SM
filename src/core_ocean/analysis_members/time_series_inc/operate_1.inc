@@ -4,5 +4,6 @@
 
   integer :: b
   type (block_type), pointer :: block
+  type (mpas_pool_type), pointer :: amPool
 
 ! 1 -> 2
