@@ -72,7 +72,7 @@ def build_include_dirs_list(user_mods_path, include_dirs=[]):
         with open(include_file, "r") as fd:
             for newpath in fd:
                 newpath = newpath.rstrip()
-                if not newpath.startswith("#"):
+                if len(newpath) > 0 and not newpath.startswith("#"):
                     if not os.path.isabs(newpath):
                         newpath = os.path.join(user_mods_path, newpath)
                     if os.path.isabs(newpath):
