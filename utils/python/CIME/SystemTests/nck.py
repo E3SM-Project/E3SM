@@ -62,7 +62,67 @@ class NCK(SystemTestsCommon):
                     os.path.join("LockedFiles","env_mach_pes.xml"))
 
     def run(self):
-        SystemTestsCommon.run(self)
+        os.chdir(self._caseroot)
+
+        exeroot = self._case.get_value("EXEROOT")
+        cime_model = CIME.utils.get_model()
+
+        # Reset beginning test settings
+        expect(os.path.exists("LockedFiles/env_mach_pes.NCK1.xml"),
+               "ERROR: LockedFiles/env_mach_pes.NCK1.xml does not exist\n"
+               "   this would been produced in the build - must run case.test_build")
+        shutil.copy("LockedFiles/env_mach_pes.NCK1.xml", "env_mach_pes.xml")
+        shutil.copy("env_mach_pes.xml", "LockedFiles/env_mach_pes.xml")
+        shutil.copy("%s/%s.exe.NCK1" % (exeroot, cime_model),
+                    "%s/%s.exe" % (exeroot, cime_model))
+        shutil.copy("LockedFiles/env_build.NCK1.xml", "env_build.xml")
+        shutil.copy("env_build.xml", "LockedFiles/env_build.xml")
+
+        # note - if you change the env_mach_pes.xml file - should always
+        # rerun the following two case.setup commands to ensure that the right
+        # settings are in the run script
+        # note that the following two commands will eliminate all the batch files except
+        # for the test file and copy the env_mach_pes.xml to the LockedFiles directory
+        case_setup(self._caseroot, clean=True, test_mode=True)
+        case_setup(self._caseroot)
+
+        stop_n      = self._case.get_value("STOP_N")
+        stop_option = self._case.get_value("STOP_OPTION")
+
+        self._case.set_value("HIST_N", stop_n)
+        self._case.set_value("HIST_OPTION", stop_option)
+        self._case.set_value("CONTINUE_RUN", False)
+        self._case.set_value("REST_OPTION", "none")
+        self._case.flush()
+
+        #======================================================================
+        # do an initial run test with NINST 1
+        #======================================================================
+        logger.info("default: doing a %s %s with NINST1" % (stop_n, stop_option))
+        success = SystemTestsCommon.run(self)
+
+        #======================================================================
+        # do an initial run test with NINST 2
+        # want to run on same pe counts per instance and same cpl pe count
+        #======================================================================
+
+        if success:
+            shutil.copy("%s/%s.exe.NCK2" % (exeroot, cime_model),
+                        "%s/%s.exe" % (exeroot, cime_model))
+            shutil.copy("LockedFiles/env_build.NCK2.xml", "env_build.xml")
+            shutil.copy("env_build.xml", "LockedFiles/env_build.xml")
+
+            case_setup(self._caseroot, clean=True, test_mode=True)
+            case_setup(self._caseroot)
+
+            logger.info("default: doing a %s %s with NINST2" % (stop_n, stop_option))
+            success = SystemTestsCommon._run(self, "multiinst")
+
+        # Compare
+        if success:
+            return self._component_compare_test("base", "multiinst")
+        else:
+            return False
 
     def report(self):
         SystemTestsCommon.report(self)
