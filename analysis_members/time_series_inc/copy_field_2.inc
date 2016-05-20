@@ -1,6 +1,6 @@
 ! 1 -> 2
 
-  call mpas_pool_get_field(pool, inname, src, 1)
+  call mpas_pool_get_field(all_fields, inname, src, 1)
   call mpas_duplicate_field(src, dst)
 
   dst % fieldName = outname
@@ -12,4 +12,5 @@
     end do
   end if
 
-  call mpas_pool_add_field(pool, dst % fieldName, dst)
+  call mpas_pool_add_field(all_fields, dst % fieldName, dst)
+  call mpas_pool_add_field(amPool, dst % fieldName, dst)
