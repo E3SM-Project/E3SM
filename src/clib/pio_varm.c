@@ -28,12 +28,9 @@ int PIOc_put_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offs
   ios = file->iosystem;
   msg = PIO_MSG_PUT_VARM;
 
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
+  /* Sorry, but varm functions are not supported by the async interface. */
+  if(ios->async_interface)
+      return PIO_EINVAL;
 
   if(ios->ioproc){
     switch(file->iotype){
@@ -106,12 +103,9 @@ int PIOc_put_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PI
   ios = file->iosystem;
   msg = PIO_MSG_PUT_VARM_UCHAR;
 
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
+  /* Sorry, but varm functions are not supported by the async interface. */
+  if(ios->async_interface)
+      return PIO_EINVAL;
 
   if(ios->ioproc){
     switch(file->iotype){
@@ -184,12 +178,9 @@ int PIOc_put_varm_short (int ncid, int varid, const PIO_Offset start[], const PI
   ios = file->iosystem;
   msg = PIO_MSG_PUT_VARM_SHORT;
 
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
+  /* Sorry, but varm functions are not supported by the async interface. */
+  if(ios->async_interface)
+      return PIO_EINVAL;
 
   if(ios->ioproc){
     switch(file->iotype){
@@ -261,11 +252,10 @@ int PIOc_put_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO
   ios = file->iosystem;
   msg = PIO_MSG_PUT_VARM_TEXT;
 
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
+  /* Sorry, but varm functions are not supported by the async interface. */
+  if(ios->async_interface)
+      return PIO_EINVAL;
+
 
 
   if(ios->ioproc){
@@ -339,11 +329,10 @@ int PIOc_put_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
   ios = file->iosystem;
   msg = PIO_MSG_PUT_VARM_USHORT;
 
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
+  /* Sorry, but varm functions are not supported by the async interface. */
+  if(ios->async_interface)
+      return PIO_EINVAL;
+
 
 
   if(ios->ioproc){
@@ -417,11 +406,10 @@ int PIOc_put_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   ios = file->iosystem;
   msg = PIO_MSG_PUT_VARM_ULONGLONG;
 
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
+  /* Sorry, but varm functions are not supported by the async interface. */
+  if(ios->async_interface)
+      return PIO_EINVAL;
+
 
 
   if(ios->ioproc){
@@ -494,11 +482,10 @@ int PIOc_put_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_
   ios = file->iosystem;
   msg = PIO_MSG_PUT_VARM_INT;
 
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
+  /* Sorry, but varm functions are not supported by the async interface. */
+  if(ios->async_interface)
+      return PIO_EINVAL;
+
 
 
   if(ios->ioproc){
@@ -572,11 +559,10 @@ int PIOc_put_varm_float (int ncid, int varid, const PIO_Offset start[], const PI
   ios = file->iosystem;
   msg = PIO_MSG_PUT_VARM_FLOAT;
 
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
+  /* Sorry, but varm functions are not supported by the async interface. */
+  if(ios->async_interface)
+      return PIO_EINVAL;
+
 
 
   if(ios->ioproc){
@@ -649,11 +635,10 @@ int PIOc_put_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO
   ios = file->iosystem;
   msg = PIO_MSG_PUT_VARM_LONG;
 
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
+  /* Sorry, but varm functions are not supported by the async interface. */
+  if(ios->async_interface)
+      return PIO_EINVAL;
+
 
 
   if(ios->ioproc){
@@ -727,11 +712,10 @@ int PIOc_put_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO
   ios = file->iosystem;
   msg = PIO_MSG_PUT_VARM_UINT;
 
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
+  /* Sorry, but varm functions are not supported by the async interface. */
+  if(ios->async_interface)
+      return PIO_EINVAL;
+
 
 
   if(ios->ioproc){
@@ -805,11 +789,10 @@ int PIOc_put_varm_double (int ncid, int varid, const PIO_Offset start[], const P
   ios = file->iosystem;
   msg = PIO_MSG_PUT_VARM_DOUBLE;
 
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
+  /* Sorry, but varm functions are not supported by the async interface. */
+  if(ios->async_interface)
+      return PIO_EINVAL;
+
 
 
   if(ios->ioproc){
@@ -882,11 +865,10 @@ int PIOc_put_varm_schar (int ncid, int varid, const PIO_Offset start[], const PI
   ios = file->iosystem;
   msg = PIO_MSG_PUT_VARM_SCHAR;
 
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
+  /* Sorry, but varm functions are not supported by the async interface. */
+  if(ios->async_interface)
+      return PIO_EINVAL;
+
 
 
   if(ios->ioproc){
@@ -960,12 +942,9 @@ int PIOc_put_varm_longlong (int ncid, int varid, const PIO_Offset start[], const
   ios = file->iosystem;
   msg = PIO_MSG_PUT_VARM_LONGLONG;
 
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
-
+  /* Sorry, but varm functions are not supported by the async interface. */
+  if(ios->async_interface)
+      return PIO_EINVAL;
 
   if(ios->ioproc){
     switch(file->iotype){
