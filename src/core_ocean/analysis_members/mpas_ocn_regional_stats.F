@@ -1688,7 +1688,7 @@ subroutine start_state(domain, instance, err)
 
   if (output_stream_name == NONE_TOKEN) then
     call mpas_dmpar_global_abort( &
-      trim(CURRENT_CORE_NAME) // ' ERROR: ouput stream cannot be "none" ' // &
+      trim(CURRENT_CORE_NAME) // ' ERROR: output stream cannot be "none" ' // &
       'for regional stats.')
   end if
 
@@ -1763,9 +1763,6 @@ subroutine start_state(domain, instance, err)
   v = 1
   do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
     output_stream_name, field_name))
-    ! get the info of the field
-    call mpas_pool_get_field_info(domain % blocklist % allFields, &
-      field_name, info)
 
     ! check if we can handle it
     if (valid_input(b)) then

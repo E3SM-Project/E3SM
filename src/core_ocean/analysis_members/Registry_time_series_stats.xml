@@ -42,13 +42,6 @@
 					possible_values="A restart stream with state of the time series stats."
 		/>
 
-		<nml_option name="config_AM_timeSeriesStats_add_mesh"
-					type="logical"
-					default_value=".true."
-					units="unitless"
-					description="Add the mesh to the output stream."
-					possible_values=".true. or .false."
-		/>
 		<nml_option name="config_AM_timeSeriesStats_operation"
 					type="character"
 					default_value="avg"
@@ -135,6 +128,7 @@
 				clobber_mode="truncate"
 				runtime_format="single_file">
 
+			<var name="xtime"/>
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
