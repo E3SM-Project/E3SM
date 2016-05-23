@@ -1,3 +1,4 @@
+#include <config.h>
 #include <pio.h>
 #include <pio_internal.h>
 
@@ -47,7 +48,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
     int *request;
 
     LOG((1, "PIOc_put_vars_tc ncid = %d varid = %d start = %d count = %d "
-	 "stride = %d xtype = %d", ncid, start, count, stride, xtype));
+    	 "stride = %d xtype = %d", ncid, varid, start, count, stride, xtype));
 
     /* User must provide some data. */
     if (!buf)
@@ -105,7 +106,6 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	LOG((2, "PIOc_put_vars_tc num_elem = %d", num_elem));
     }
 
-    sleep(2);
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async_interface)
     {
@@ -119,6 +119,8 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    if(ios->compmaster) 
 		mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
 
+	    /* Send the function parameters and associated informaiton
+	     * to the msg handler. */
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&ncid, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
@@ -128,15 +130,15 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&start_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	    if (!mpierr && start_present)
-		mpierr = MPI_Bcast(&start, ndims, MPI_OFFSET, ios->compmaster, ios->intercomm);		
+		mpierr = MPI_Bcast((PIO_Offset *)start, ndims, MPI_OFFSET, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&count_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	    if (!mpierr && count_present)
-		mpierr = MPI_Bcast(&count, ndims, MPI_OFFSET, ios->compmaster, ios->intercomm);		
+		mpierr = MPI_Bcast((PIO_Offset *)count, ndims, MPI_OFFSET, ios->compmaster, ios->intercomm);		
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&stride_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	    if (!mpierr && stride_present)
-		mpierr = MPI_Bcast(&stride, ndims, MPI_OFFSET, ios->compmaster, ios->intercomm);		
+		mpierr = MPI_Bcast((PIO_Offset *)stride, ndims, MPI_OFFSET, ios->compmaster, ios->intercomm);		
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&xtype, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
@@ -146,14 +148,16 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    LOG((2, "PIOc_put_vars_tc ncid = %d varid = %d ndims = %d start_present = %d "
 		 "count_present = %d stride_present = %d xtype = %d num_elem = %d", ncid, varid,
 		 ndims, start_present, count_present, stride_present, xtype, num_elem));
+
+	    for (int e = 0; e < num_elem; e++)
+		LOG((2, "PIOc_put_vars_tc element %d = %d", e, ((int *)buf)[e]));
 	    
 	    /* Send the data. */
 	    if (!mpierr)
-		mpierr = MPI_Bcast(buf, num_elem * typelen, MPI_BYTE, ios->compmaster,
+		mpierr = MPI_Bcast((void *)buf, num_elem * typelen, MPI_BYTE, ios->compmaster,
 				   ios->intercomm);
 	}
 
-	sleep(2);
 	/* Handle MPI errors. */
 	if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
 	    return check_mpi(file, mpierr2, __FILE__, __LINE__);	    
@@ -365,545 +369,38 @@ int PIOc_put_vars(int ncid, int varid, const PIO_Offset start[], const PIO_Offse
   return ierr;
 }
 
+/** Interface to netCDF data write function. */
 int PIOc_put_vars_uchar(int ncid, int varid, const PIO_Offset start[],
 			const PIO_Offset count[], const PIO_Offset stride[],
 			const unsigned char *op) 
 {
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARS_UCHAR;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_vars_uchar(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_vars_uchar(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_vars_uchar(file->fh, varid, start, count, stride, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_UBYTE, op);    
 }
 
-///
-/// PIO interface to nc_put_vars_ushort
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_vars_ushort (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const unsigned short *op) 
+/** Interface to netCDF data write function. */
+int PIOc_put_vars_ushort(int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[],
+			 const PIO_Offset stride[], const unsigned short *op) 
 {
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARS_USHORT;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_vars_ushort(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_vars_ushort(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_vars_ushort(file->fh, varid, start, count, stride, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_USHORT, op);        
 }
 
-///
-/// PIO interface to nc_put_vars_ulonglong
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_vars_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const unsigned long long *op) 
+/** Interface to netCDF data write function. */
+int PIOc_put_vars_ulonglong(int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[],
+			    const PIO_Offset stride[], const unsigned long long *op) 
 {
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARS_ULONGLONG;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_vars_ulonglong(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_vars_ulonglong(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_vars_ulonglong(file->fh, varid, start, count, stride, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_UINT64, op);        
 }
 
-///
-/// PIO interface to nc_put_varm
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_varm (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const void *buf, PIO_Offset bufcount, MPI_Datatype buftype) 
+/** Interface to netCDF data write function. */
+int PIOc_put_vars_uint(int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const unsigned int *op) 
 {
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARM;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_varm(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap,   buf);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_varm(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap,   buf);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_varm(file->fh, varid, start, count, stride, imap, buf, bufcount, buftype, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_UINT, op);            
 }
 
-///
-/// PIO interface to nc_put_vars_uint
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_vars_uint (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const unsigned int *op) 
+/** Interface to netCDF data write function. */
+int PIOc_put_var_ushort(int ncid, int varid, const unsigned short *op) 
 {
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARS_UINT;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_vars_uint(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_vars_uint(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_vars_uint(file->fh, varid, start, count, stride, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
-}
-
-///
-/// PIO interface to nc_put_varm_uchar
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_varm_uchar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const unsigned char *op) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARM_UCHAR;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_varm_uchar(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_varm_uchar(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_varm_uchar(file->fh, varid, start, count, stride, imap, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
-}
-
-///
-/// PIO interface to nc_put_var_ushort
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_var_ushort (int ncid, int varid, const unsigned short *op) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VAR_USHORT;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_var_ushort(file->fh, varid, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_var_ushort(file->fh, varid, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_var_ushort(file->fh, varid, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
+    return PIOc_put_vars_tc(ncid, varid, NULL, NULL, NULL, NC_USHORT, op);            
 }
 
 ///
@@ -984,170 +481,16 @@ int PIOc_put_var1_longlong (int ncid, int varid, const PIO_Offset index[], const
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_vara_uchar
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_vara_uchar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const unsigned char *op) 
+/** Interface to netCDF data write function. */
+int PIOc_put_vara_uchar(int ncid, int varid, const PIO_Offset start[],
+			const PIO_Offset count[], const unsigned char *op) 
 {
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARA_UCHAR;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_vara_uchar(file->fh, varid, (size_t *) start, (size_t *) count, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_vara_uchar(file->fh, varid, (size_t *) start, (size_t *) count, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_vara_uchar(file->fh, varid, start, count, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
+    return PIOc_put_vars_uchar(ncid, varid, start, count, NULL, op);
 }
 
-///
-/// PIO interface to nc_put_varm_short
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_varm_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const short *op) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
 
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARM_SHORT;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_varm_short(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_varm_short(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_varm_short(file->fh, varid, start, count, stride, imap, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
-}
-
-///
-/// PIO interface to nc_put_var1_long
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_var1_long (int ncid, int varid, const PIO_Offset index[], const long *ip) 
+/** Interface to netCDF data write function. */
+int PIOc_put_var1_long(int ncid, int varid, const PIO_Offset index[], const long *ip) 
 {
   int ierr;
   int msg;
@@ -1218,250 +561,23 @@ int PIOc_put_var1_long (int ncid, int varid, const PIO_Offset index[], const lon
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_vars_long
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_vars_long (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const long *op) 
+/** Interface to netCDF data write function. */
+int PIOc_put_vars_long(int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const long *op) 
 {
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARS_LONG;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_vars_long(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_vars_long(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_vars_long(file->fh, varid, start, count, stride, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_INT, op);
 }
 
-///
-/// PIO interface to nc_put_var_short
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_var_short (int ncid, int varid, const short *op) 
+/** Interface to netCDF data write function. */
+int PIOc_put_var_short(int ncid, int varid, const short *op) 
 {
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VAR_SHORT;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_var_short(file->fh, varid, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_var_short(file->fh, varid, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_var_short(file->fh, varid, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
+    return PIOc_put_vars_short(ncid, varid, NULL, NULL, NULL, op);
 }
 
-///
-/// PIO interface to nc_put_vara_int
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
+/** Interface to netCDF data write function. */
 int PIOc_put_vara_int(int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[],
 		      const int *op) 
 {
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-  int size;
-  int ret;
-  int ndims;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARA_INT;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-    mpierr = MPI_Bcast(&varid, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-    if ((ret = PIOc_inq_varndims(ncid, varid, &ndims)))
-	return ret;
-    mpierr = MPI_Bcast((void *)start, ndims, MPI_INT, ios->compmaster, ios->intercomm);
-    mpierr = MPI_Bcast((void *)count, ndims, MPI_INT, ios->compmaster, ios->intercomm);
-    for (int d = 0, size = 1; d < ndims; d++)
-	size *= count[d];
-    mpierr = MPI_Bcast((void *)op, size, MPI_INT, ios->compmaster, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_vara_int(file->fh, varid, (size_t *) start, (size_t *) count, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_vara_int(file->fh, varid, (size_t *) start, (size_t *) count, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_vara_int(file->fh, varid, start, count, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
+    return PIOc_put_vars_int(ncid, varid, start, count, NULL, op);
 }
 
 ///
@@ -1551,229 +667,7 @@ int PIOc_put_var1_ushort (int ncid, int varid, const PIO_Offset index[], const u
 ///
 int PIOc_put_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const char *op) 
 {
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARA_TEXT;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_vara_text(file->fh, varid, (size_t *) start, (size_t *) count, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_vara_text(file->fh, varid, (size_t *) start, (size_t *) count, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_vara_text(file->fh, varid, start, count, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
-}
-
-///
-/// PIO interface to nc_put_varm_text
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_varm_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const char *op) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARM_TEXT;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_varm_text(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_varm_text(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_varm_text(file->fh, varid, start, count, stride, imap, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
-}
-
-///
-/// PIO interface to nc_put_varm_ushort
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_varm_ushort (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const unsigned short *op) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARM_USHORT;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_varm_ushort(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_varm_ushort(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_varm_ushort(file->fh, varid, start, count, stride, imap, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
+    return PIOc_put_vars_text(ncid, varid, start, count, NULL, op);
 }
 
 ///
@@ -1785,73 +679,7 @@ int PIOc_put_varm_ushort (int ncid, int varid, const PIO_Offset start[], const P
 ///
 int PIOc_put_var_ulonglong (int ncid, int varid, const unsigned long long *op) 
 {
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VAR_ULONGLONG;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_var_ulonglong(file->fh, varid, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_var_ulonglong(file->fh, varid, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_var_ulonglong(file->fh, varid, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
+    return PIOc_put_vars_ulonglong(ncid, varid, NULL, NULL, NULL, op);
 }
 
 ///
@@ -2556,83 +1384,6 @@ int PIOc_put_vara_schar (int ncid, int varid, const PIO_Offset start[], const PI
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_varm_ulonglong
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const unsigned long long *op) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARM_ULONGLONG;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_varm_ulonglong(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_varm_ulonglong(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_varm_ulonglong(file->fh, varid, start, count, stride, imap, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
-}
 
 ///
 /// PIO interface to nc_put_var1_uchar
@@ -2712,83 +1463,6 @@ int PIOc_put_var1_uchar (int ncid, int varid, const PIO_Offset index[], const un
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_varm_int
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_varm_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const int *op) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARM_INT;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_varm_int(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_varm_int(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_varm_int(file->fh, varid, start, count, stride, imap, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
-}
 
 ///
 /// PIO interface to nc_put_vars_schar
@@ -3102,83 +1776,6 @@ int PIOc_put_var1_float (int ncid, int varid, const PIO_Offset index[], const fl
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_varm_float
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_varm_float (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const float *op) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARM_FLOAT;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_varm_float(file->fh, varid,(size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_varm_float(file->fh, varid,(size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_varm_float(file->fh, varid, start, count, stride, imap, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
-}
 
 ///
 /// PIO interface to nc_put_var1_text
@@ -3336,83 +1933,6 @@ int PIOc_put_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_varm_long
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_varm_long (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const long *op) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARM_LONG;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_varm_long(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_varm_long(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_varm_long(file->fh, varid, start, count, stride, imap, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
-}
 
 ///
 /// PIO interface to nc_put_vars_double
@@ -3804,83 +2324,6 @@ int PIOc_put_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], cons
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_varm_uint
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_varm_uint (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const unsigned int *op) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARM_UINT;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_varm_uint(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_varm_uint(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_varm_uint(file->fh, varid, start, count, stride, imap, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
-}
 
 ///
 /// PIO interface to nc_put_var1_uint
@@ -4350,83 +2793,6 @@ int PIOc_put_vara_ulonglong (int ncid, int varid, const PIO_Offset start[], cons
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_varm_double
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_varm_double (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const double *op) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARM_DOUBLE;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_varm_double(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_varm_double(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_varm_double(file->fh, varid, start, count, stride, imap, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
-}
 
 ///
 /// PIO interface to nc_put_vara
@@ -4663,84 +3029,6 @@ int PIOc_put_var1_double (int ncid, int varid, const PIO_Offset index[], const d
 }
 
 ///
-/// PIO interface to nc_put_varm_schar
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_varm_schar (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const signed char *op) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARM_SCHAR;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_varm_schar(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_varm_schar(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_varm_schar(file->fh, varid, start, count, stride, imap, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
-}
-
-///
 /// PIO interface to nc_put_var_text
 ///
 /// This routine is called collectively by all tasks in the communicator ios.union_comm.  
@@ -4818,82 +3106,11 @@ int PIOc_put_var_text (int ncid, int varid, const char *op)
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_vars_int
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const int *op) 
+/** PIO interface to nc_put_vars_int */
+int PIOc_put_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[],
+		       const PIO_Offset stride[], const int *op) 
 {
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARS_INT;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_vars_int(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_vars_int(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_vars_int(file->fh, varid, start, count, stride, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_INT, op);
 }
 
 ///
@@ -5287,81 +3504,4 @@ int PIOc_put_var_long (int ncid, int varid, const long *op)
   return ierr;
 }
 
-///
-/// PIO interface to nc_put_varm_longlong
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/netcdf_documentation.html"> netcdf documentation. </A>
-///
-int PIOc_put_varm_longlong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const long long *op) 
-{
-  int ierr;
-  int msg;
-  int mpierr;
-  iosystem_desc_t *ios;
-  file_desc_t *file;
-  var_desc_t *vdesc;
-  PIO_Offset usage;
-  int *request;
-
-  ierr = PIO_NOERR;
-
-  file = pio_get_file_from_id(ncid);
-  if(file == NULL)
-    return PIO_EBADID;
-  ios = file->iosystem;
-  msg = PIO_MSG_PUT_VARM_LONGLONG;
-
-  if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
-      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
-  }
-
-
-  if(ios->ioproc){
-    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-    case PIO_IOTYPE_NETCDF4P:
-      ierr = nc_var_par_access(file->fh, varid, NC_COLLECTIVE);
-      ierr = nc_put_varm_longlong(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      break;
-    case PIO_IOTYPE_NETCDF4C:
-#endif
-    case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
-	ierr = nc_put_varm_longlong(file->fh, varid, (size_t *) start, (size_t *) count, (ptrdiff_t *) stride, (ptrdiff_t *) imap, op);;
-      }
-      break;
-#endif
-#ifdef _PNETCDF
-    case PIO_IOTYPE_PNETCDF:
-      vdesc = file->varlist + varid;
-
-      if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-	vdesc->request = realloc(vdesc->request, 
-				 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
-      }
-      request = vdesc->request+vdesc->nreqs;
-
-      if(ios->io_rank==0){
-	ierr = ncmpi_bput_varm_longlong(file->fh, varid, start, count, stride, imap, op, request);;
-      }else{
-	*request = PIO_REQ_NULL;
-      }
-      vdesc->nreqs++;
-      flush_output_buffer(file, false, 0);
-      break;
-#endif
-    default:
-      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-    }
-  }
-
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-  return ierr;
-}
 

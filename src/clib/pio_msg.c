@@ -617,8 +617,11 @@ int put_vars_handler(iosystem_desc_t *ios)
     if ((mpierr = MPI_Bcast(&start_present, 1, MPI_CHAR, 0, ios->intercomm)))
 	return PIO_EIO;
     if (!mpierr && start_present)
+    {
 	if ((mpierr = MPI_Bcast(start, ndims, MPI_OFFSET, 0, ios->intercomm)))
 	    return PIO_EIO;
+	LOG((1, "put_vars_handler getting start[0] = %d ndims = %d", start[0], ndims));
+    }
     if ((mpierr = MPI_Bcast(&count_present, 1, MPI_CHAR, 0, ios->intercomm)))
 	return PIO_EIO;
     if (!mpierr && count_present)
@@ -639,6 +642,16 @@ int put_vars_handler(iosystem_desc_t *ios)
 	 "count_present = %d stride_present = %d xtype = %d num_elem = %d typelen = %d",
 	 ncid, varid, ndims, start_present, count_present, stride_present, xtype,
 	 num_elem, typelen));
+
+    for (int d = 0; d < ndims; d++)
+    {
+	if (start_present)
+	    LOG((2, "start[%d] = %d\n", d, start[d]));
+	if (count_present)
+	    LOG((2, "count[%d] = %d\n", d, count[d]));
+	if (stride_present)
+	    LOG((2, "stride[%d] = %d\n", d, stride[d]));
+    }
 
     /* Allocate room for our data. */
     if (!(buf = malloc(num_elem * typelen)))
@@ -663,57 +676,57 @@ int put_vars_handler(iosystem_desc_t *ios)
     switch(xtype)
     {
     case NC_BYTE:
-	ierr = PIOc_put_vars_schar(ncid, varid, (size_t *)start, (size_t *)count,
-				   (ptrdiff_t *)stride, buf);
+	ierr = PIOc_put_vars_schar(ncid, varid, (size_t *)startp, (size_t *)countp,
+				   (ptrdiff_t *)stridep, buf);
 	break;
     case NC_CHAR:
-	ierr = PIOc_put_vars_schar(ncid, varid, (size_t *)start, (size_t *)count,
-				   (ptrdiff_t *)stride, buf);
+	ierr = PIOc_put_vars_schar(ncid, varid, (size_t *)startp, (size_t *)countp,
+				   (ptrdiff_t *)stridep, buf);
 	break;
     case NC_SHORT:
-	ierr = PIOc_put_vars_short(ncid, varid, (size_t *)start, (size_t *)count,
-				   (ptrdiff_t *)stride, buf);
+	ierr = PIOc_put_vars_short(ncid, varid, (size_t *)startp, (size_t *)countp,
+				   (ptrdiff_t *)stridep, buf);
 	break;
     case NC_INT:
-	ierr = PIOc_put_vars_int(ncid, varid, (size_t *)start, (size_t *)count,
-				 (ptrdiff_t *)stride, buf);
+	ierr = PIOc_put_vars_int(ncid, varid, (size_t *)startp, (size_t *)countp,
+				 (ptrdiff_t *)stridep, buf);
 	break;
     case NC_FLOAT:
-	ierr = PIOc_put_vars_float(ncid, varid, (size_t *)start, (size_t *)count,
-				   (ptrdiff_t *)stride, buf);
+	ierr = PIOc_put_vars_float(ncid, varid, (size_t *)startp, (size_t *)countp,
+				   (ptrdiff_t *)stridep, buf);
 	break;
     case NC_DOUBLE:
-	ierr = PIOc_put_vars_double(ncid, varid, (size_t *)start, (size_t *)count,
-				    (ptrdiff_t *)stride, buf);
+	ierr = PIOc_put_vars_double(ncid, varid, (size_t *)startp, (size_t *)countp,
+				    (ptrdiff_t *)stridep, buf);
 	break;
 #ifdef _NETCDF4		
     case NC_UBYTE:
-	ierr = PIOc_put_vars_uchar(ncid, varid, (size_t *)start, (size_t *)count,
-				   (ptrdiff_t *)stride, buf);
+	ierr = PIOc_put_vars_uchar(ncid, varid, (size_t *)startp, (size_t *)countp,
+				   (ptrdiff_t *)stridep, buf);
 	break;
     case NC_USHORT:
-	ierr = PIOc_put_vars_ushort(ncid, varid, (size_t *)start, (size_t *)count,
-				    (ptrdiff_t *)stride, buf);
+	ierr = PIOc_put_vars_ushort(ncid, varid, (size_t *)startp, (size_t *)countp,
+				    (ptrdiff_t *)stridep, buf);
 	break;
     case NC_UINT:
-	ierr = PIOc_put_vars_uint(ncid, varid, (size_t *)start, (size_t *)count,
-				  (ptrdiff_t *)stride, buf);
+	ierr = PIOc_put_vars_uint(ncid, varid, (size_t *)startp, (size_t *)countp,
+				  (ptrdiff_t *)stridep, buf);
 	break;
     case NC_INT64:
-	ierr = PIOc_put_vars_longlong(ncid, varid, (size_t *)start, (size_t *)count,
-				      (ptrdiff_t *)stride, buf);
+	ierr = PIOc_put_vars_longlong(ncid, varid, (size_t *)startp, (size_t *)countp,
+				      (ptrdiff_t *)stridep, buf);
 	break;
     case NC_UINT64:
-	ierr = PIOc_put_vars_ulonglong(ncid, varid, (size_t *)start, (size_t *)count,
-				       (ptrdiff_t *)stride, buf);
+	ierr = PIOc_put_vars_ulonglong(ncid, varid, (size_t *)startp, (size_t *)countp,
+				       (ptrdiff_t *)stridep, buf);
 	break;
 	/* case NC_STRING: */
-	/* 	ierr = PIOc_put_vars_string(ncid, varid, (size_t *)start, (size_t *)count, */
-	/* 				  (ptrdiff_t *)stride, (void *)buf); */
+	/* 	ierr = PIOc_put_vars_string(ncid, varid, (size_t *)startp, (size_t *)countp, */
+	/* 				  (ptrdiff_t *)stridep, (void *)buf); */
 	/* 	break; */
 	/*    default:*/
-	/* ierr = PIOc_put_vars(ncid, varid, (size_t *)start, (size_t *)count, */
-	/* 		     (ptrdiff_t *)stride, buf); */
+	/* ierr = PIOc_put_vars(ncid, varid, (size_t *)startp, (size_t *)countp, */
+	/* 		     (ptrdiff_t *)stridep, buf); */
 #endif /* _NETCDF4 */		
     }
     

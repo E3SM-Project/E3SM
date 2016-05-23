@@ -19,9 +19,6 @@
 /** The length of our test data. */
 #define DIM_LEN 4
 
-/** The length of data on each (of 2) computational task. */
-#define LOCAL_DIM_LEN 2
-
 /** The name of the dimension in the netCDF output file. */
 #define FIRST_DIM_NAME "jojo"
 #define DIM_NAME "dim_test_intercomm"
@@ -379,7 +376,7 @@ main(int argc, char **argv)
 	{
 	    int ncid, varid, dimid;
 	    PIO_Offset start[NDIM], count[NDIM] = {0};
-	    int data[LOCAL_DIM_LEN];
+	    int data[DIM_LEN];
 	
 	    /* Create a netCDF file with one dimension and one variable. */
 	    if (verbose)
@@ -495,16 +492,21 @@ main(int argc, char **argv)
 	    if ((ret = PIOc_enddef(ncid)))
 	    	ERR(ret);
 
-	    /* /\* Write some data. *\/ */
-	    /* for (int i = 0; i < LOCAL_DIM_LEN; i++) */
-	    /* 	data[i] = my_rank; */
-	    /* if (verbose) */
-	    /* 	printf("%d test_intercomm writing data\n", my_rank); */
-	    /* start[0] = !my_rank ? 0 : 2; */
-	    /* count[0] = 2; */
-	    /* sleep(2); */
-	    /* if ((ret = PIOc_put_vars_tc(ncid, varid, start, count, NULL, NC_INT, data))) */
-	    /* 	ERR(ret); */
+	    /* Write some data. For the PIOc_put/get functions, all
+	     * data must be on compmaster before the function is
+	     * called. Only compmaster's arguments are passed to the
+	     * async msg handler. All other computation tasks are
+	     * ignored. */
+	    for (int i = 0; i < DIM_LEN; i++)
+	    	data[i] = i;
+	    if (verbose)
+	    	printf("%d test_intercomm writing data\n", my_rank);
+	    if (verbose)
+	    	printf("%d test_intercomm writing data\n", my_rank);
+	    start[0] = 0;
+	    count[0] = DIM_LEN;
+	    if ((ret = PIOc_put_vars_tc(ncid, varid, start, count, NULL, NC_INT, data)))
+	    	ERR(ret);
 
 	    /* Close the file. */
 	    if (verbose)
