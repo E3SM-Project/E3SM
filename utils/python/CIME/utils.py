@@ -103,13 +103,29 @@ def get_model():
     """
     model = os.environ.get("CIME_MODEL")
     if (model is not None):
+        logger.debug("Setting CIME_MODEL=%s from environment"%model)
+    else:
+        cime_config = get_cime_config()
+        if (cime_config.has_option('main','CIME_MODEL')):
+            model = cime_config.get('main','CIME_MODEL')
+            if model is not None:
+                logger.debug("Setting CIME_MODEL=%s from ~/.cime/config"%model)
+
+    # One last try
+    if (model is None):
+        srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
+        if os.path.isfile(os.path.join(srcroot, "SVN_EXTERNAL_DIRECTORIES")):
+            model = 'cesm'
+        else:
+            model = 'acme'
+        logger.info("Guessing CIME_MODEL=%s, set environment variable if this is incorrect"%model)
+
+
+    if model is not None:
         set_model(model)
         return model
 
-    cime_config = get_cime_config()
-    if (cime_config.has_option('main','CIME_MODEL')):
-        model = cime_config.get('main','CIME_MODEL')
-        return model
+
 
     modelroot = os.path.join(get_cime_root(), "cime_config")
     models = os.listdir(modelroot)
