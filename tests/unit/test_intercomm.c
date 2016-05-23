@@ -495,13 +495,15 @@ main(int argc, char **argv)
 	    if ((ret = PIOc_enddef(ncid)))
 	    	ERR(ret);
 
-	    /* Write some data. */
+	    /* /\* Write some data. *\/ */
 	    /* for (int i = 0; i < LOCAL_DIM_LEN; i++) */
 	    /* 	data[i] = my_rank; */
 	    /* if (verbose) */
 	    /* 	printf("%d test_intercomm writing data\n", my_rank); */
 	    /* start[0] = !my_rank ? 0 : 2; */
-	    /* if ((ret = PIOc_put_vara_int(ncid, varid, start, count, data))) */
+	    /* count[0] = 2; */
+	    /* sleep(2); */
+	    /* if ((ret = PIOc_put_vars_tc(ncid, varid, start, count, NULL, NC_INT, data))) */
 	    /* 	ERR(ret); */
 
 	    /* Close the file. */

@@ -617,17 +617,17 @@ int put_vars_handler(iosystem_desc_t *ios)
     if ((mpierr = MPI_Bcast(&start_present, 1, MPI_CHAR, 0, ios->intercomm)))
 	return PIO_EIO;
     if (!mpierr && start_present)
-	if ((mpierr = MPI_Bcast(start, ndims, MPI_CHAR, 0, ios->intercomm)))
+	if ((mpierr = MPI_Bcast(start, ndims, MPI_OFFSET, 0, ios->intercomm)))
 	    return PIO_EIO;
     if ((mpierr = MPI_Bcast(&count_present, 1, MPI_CHAR, 0, ios->intercomm)))
 	return PIO_EIO;
     if (!mpierr && count_present)
-	if ((mpierr = MPI_Bcast(count, ndims, MPI_CHAR, 0, ios->intercomm)))
+	if ((mpierr = MPI_Bcast(count, ndims, MPI_OFFSET, 0, ios->intercomm)))
 	    return PIO_EIO;
     if ((mpierr = MPI_Bcast(&stride_present, 1, MPI_CHAR, 0, ios->intercomm)))
 	return PIO_EIO;
     if (!mpierr && stride_present)
-	if ((mpierr = MPI_Bcast(stride, ndims, MPI_CHAR, 0, ios->intercomm)))
+	if ((mpierr = MPI_Bcast(stride, ndims, MPI_OFFSET, 0, ios->intercomm)))
 	    return PIO_EIO;
     if ((mpierr = MPI_Bcast(&xtype, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
@@ -635,6 +635,10 @@ int put_vars_handler(iosystem_desc_t *ios)
 	return PIO_EIO;
     if ((mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET, 0, ios->intercomm)))
 	return PIO_EIO;
+    LOG((1, "put_vars_handler ncid = %d varid = %d ndims = %d start_present = %d "
+	 "count_present = %d stride_present = %d xtype = %d num_elem = %d typelen = %d",
+	 ncid, varid, ndims, start_present, count_present, stride_present, xtype,
+	 num_elem, typelen));
 
     /* Allocate room for our data. */
     if (!(buf = malloc(num_elem * typelen)))
@@ -643,12 +647,10 @@ int put_vars_handler(iosystem_desc_t *ios)
     /* Get the data. */
     if ((mpierr = MPI_Bcast(buf, num_elem * typelen, MPI_BYTE, 0, ios->intercomm)))
 	return PIO_EIO;
-    
-    LOG((1, "att_vars_handler ncid = %d varid = %d ndims = %d start_present = %d "
-	 "count_present = %d stride_present = %d xtype = %d num_elem = %d typelen = %d",
-	 ncid, varid, ndims, start_present, count_present, stride_present, xtype,
-	 num_elem, typelen));
 
+    for (int e = 0; e < num_elem; e++)
+	LOG((2, "element %d = %d", e, ((int *)buf)[e]));
+    
     /* Set the non-NULL pointers. */
     if (start_present)
 	startp = start;

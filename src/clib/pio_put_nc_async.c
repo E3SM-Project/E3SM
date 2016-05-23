@@ -104,7 +104,8 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    num_elem *= (rcount[vd] - rstart[vd])/rstride[vd];
 	LOG((2, "PIOc_put_vars_tc num_elem = %d", num_elem));
     }
-    
+
+    sleep(2);
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async_interface)
     {
@@ -142,6 +143,9 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 		mpierr = MPI_Bcast(&num_elem, 1, MPI_OFFSET, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET, ios->compmaster, ios->intercomm);
+	    LOG((2, "PIOc_put_vars_tc ncid = %d varid = %d ndims = %d start_present = %d "
+		 "count_present = %d stride_present = %d xtype = %d num_elem = %d", ncid, varid,
+		 ndims, start_present, count_present, stride_present, xtype, num_elem));
 	    
 	    /* Send the data. */
 	    if (!mpierr)
@@ -149,6 +153,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 				   ios->intercomm);
 	}
 
+	sleep(2);
 	/* Handle MPI errors. */
 	if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
 	    return check_mpi(file, mpierr2, __FILE__, __LINE__);	    
