@@ -329,11 +329,11 @@ def check_all_input_data(case):
         run_refdir   = case.get_value("RUN_REFDIR")
         rundir       = case.get_value("RUNDIR")
 
-        refdir = os.path.join(run_refdir, run_refcase, run_refdate)
+        refdir = os.path.join(din_loc_root, run_refdir, run_refcase, run_refdate)
         expect(os.path.isdir(refdir),
 """
 *****************************************************************
-ccsm_prestage ERROR: $refdir is not on local disk
+prestage ERROR: $refdir is not on local disk
 obtain this data from the svn input data repository
 > mkdir -p %s
 > cd %s
