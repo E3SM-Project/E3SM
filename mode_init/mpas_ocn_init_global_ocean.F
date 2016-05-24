@@ -532,7 +532,8 @@ contains
 
        type (block_type), pointer :: block_ptr
 
-       type (mpas_pool_type), pointer :: meshPool, scratchPool, statePool, verticalMeshPool, diagnosticsPool
+       type (mpas_pool_type), pointer :: meshPool, scratchPool, statePool, verticalMeshPool, diagnosticsPool, &
+                                         criticalPassagesPool
 
        real (kind=RKIND) :: alpha, beta, depthLat1, depthLat2, proposedDepth
 
@@ -550,7 +551,8 @@ contains
        integer :: minimum_levels
 
        character (len=StrKIND), pointer :: config_global_ocean_topography_method
-       logical, pointer :: config_global_ocean_smooth_topography, config_global_ocean_topography_has_ocean_frac
+       logical, pointer :: config_global_ocean_smooth_topography, config_global_ocean_topography_has_ocean_frac, &
+                           config_global_ocean_deepen_critical_passages
        real (kind=RKIND), pointer :: config_global_ocean_minimum_depth
 
        logical :: isOcean
@@ -564,6 +566,8 @@ contains
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_method', config_global_ocean_topography_method)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_minimum_depth', config_global_ocean_minimum_depth)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_smooth_topography', config_global_ocean_smooth_topography)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_deepen_critical_passages', &
+                                 config_global_ocean_deepen_critical_passages)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_has_ocean_frac', &
                                  config_global_ocean_topography_has_ocean_frac)
 
@@ -637,7 +641,8 @@ contains
              ! Record depth of the bottom of the ocean, before any alterations for modeling purposes.
              ! Flip the sign to positive down.
              bottomDepthObserved(iCell) = -bottomDepthObserved(iCell)
-             isOcean = bottomDepthObserved(iCell) > 0.0_RKIND
+             !isOcean = bottomDepthObserved(iCell) > 0.0_RKIND
+             isOcean = .true.
              if (config_global_ocean_topography_has_ocean_frac) then
                 ! if there is an ocean-fraction field, mark cells that are < 50% ocean as land
                 isOcean = isOcean .and. (oceanFracObserved(iCell) >= 0.5_RKIND)
@@ -665,6 +670,10 @@ contains
              end if
           end do
 
+          if (config_global_ocean_deepen_critical_passages) then
+             call mpas_pool_get_subpool(block_ptr % structs, 'criticalPassages', criticalPassagesPool)
+             call ocn_init_setup_global_ocean_deepen_critical_passages(meshPool, criticalPassagesPool, iErr)
+          end if
 
           ! Smooth depth levels. Enforce different in maxLevelCell to only be a maximum
           ! of 1 vertical level between two neighboring cells.
@@ -732,6 +741,71 @@ contains
        end do
 
      end subroutine ocn_init_setup_global_ocean_create_model_topo!}}}
+
+!***********************************************************************
+!
+!  routine ocn_init_setup_global_ocean_deepen_critical_passages
+!
+!> \brief   Deepen critical passages in model grid so that relevant seas are included.
+!> \author  Xylar Asay-Davis
+!> \date    5 April 2016
+!> \details
+!>   Deepen cirtical passages in model grid so that relevant seas are included.
+!
+!-----------------------------------------------------------------------
+
+    subroutine ocn_init_setup_global_ocean_deepen_critical_passages(meshPool, criticalPassagesPool, iErr)!{{{
+       type (mpas_pool_type), intent(inout) :: meshPool, criticalPassagesPool
+       integer, intent(out) :: iErr
+
+       type (block_type), pointer :: block_ptr
+
+       integer, pointer :: nCells, nTransects, nVertLevels
+
+       real(kind=RKIND), dimension(:), pointer :: bottomDepth, criticalPassageDepths, &
+                                                  refBottomDepth
+       integer, dimension(:,:), pointer :: criticalPassageMasks
+       integer, dimension(:), pointer :: maxLevelCell
+
+       integer, dimension(:), pointer :: criticalPassageLevel
+
+       integer :: iCell, iTransect, k
+
+       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+       call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+
+       call mpas_pool_get_dimension(criticalPassagesPool, 'nTransects', nTransects)
+
+       call mpas_pool_get_array(criticalPassagesPool, 'transectCellMasks', criticalPassageMasks)
+       call mpas_pool_get_array(criticalPassagesPool, 'depthTransects', criticalPassageDepths)
+       call mpas_pool_get_array(criticalPassagesPool, 'criticalPassageLevel', criticalPassageLevel)
+
+       do iTransect = 1,nTransects
+          do k=1,nVertLevels
+             criticalPassageLevel(iTransect) = nVertLevels
+             if(refBottomDepth(k) > criticalPassageDepths(iTransect)) then
+                criticalPassageLevel(iTransect) = k
+                exit
+             end if
+          end do
+       end do
+
+       do iCell = 1,nCells
+          do iTransect = 1,nTransects
+             if(criticalPassageMasks(iTransect, iCell) == 0) cycle
+             k = criticalPassageLevel(iTransect)
+             if(bottomDepth(iCell) < refBottomDepth(k)) then
+                bottomDepth(iCell) = refBottomDepth(k)
+                maxLevelCell(iCell) = k
+             end if
+          end do
+       end do
+
+    end subroutine ocn_init_setup_global_ocean_deepen_critical_passages!}}}
 
 !***********************************************************************
 !
@@ -852,17 +926,19 @@ contains
           landIceFraction(:) = 0.0_RKIND
           modifySSHMask(:) = 0
            do iCell = 1, nCells
-             if(landIceGroundedFracObserved(iCell) >= groundedThreshold) then
+             ! XSAD: this is now taken care of using the Antarctic land coverage mask
+             !       from the geometric_features repository
+             !if(landIceGroundedFracObserved(iCell) >= groundedThreshold) then
                 ! Land ice is grounded.  Remove the full column from the ocean.
                 ! Note: land ice data file has grounded_mask variable.  This
                 ! could also be used
                 !    as another option to choose cells for removal.
-                maxLevelCell(iCell) = -1
+                !maxLevelCell(iCell) = -1
                 ! Set bottom depth to be zero.  Culling of inland seas is based
                 ! on bottom depth.
-                bottomDepth(iCell) = 0.0_RKIND
-                cycle
-             end if
+                !bottomDepth(iCell) = 0.0_RKIND
+                !cycle
+             !end if
 
              if(landIceFracObserved(iCell) > landIceFracThreshold) then
                 landIceFraction(iCell) = landIceFracObserved(iCell)
@@ -2416,6 +2492,7 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
 
       integer, pointer :: config_vert_levels
       logical, pointer :: landIceInitActive, config_global_ocean_depress_by_land_ice
+      logical, pointer :: criticalPassagesActive, config_global_ocean_deepen_critical_passages
 
       iocontext_ptr => iocontext
       iErr = 0
@@ -2452,6 +2529,8 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
                                 config_global_ocean_land_ice_topo_nlat_dimname)
       call mpas_pool_get_config(configPool, 'config_global_ocean_land_ice_topo_nlon_dimname', &
                                 config_global_ocean_land_ice_topo_nlon_dimname)
+      call mpas_pool_get_config(configPool, 'config_global_ocean_deepen_critical_passages', &
+                                config_global_ocean_deepen_critical_passages)
       call mpas_pool_get_config(configPool, 'config_global_ocean_windstress_file', &
                                 config_global_ocean_windstress_file)
       call mpas_pool_get_config(configPool, 'config_global_ocean_windstress_nlat_dimname', &
@@ -2469,6 +2548,11 @@ end subroutine ocn_init_setup_global_ocean_interpolate_swData!}}}
       call mpas_pool_get_package(packagePool, 'landIceInitActive', landIceInitActive)
       if ( config_global_ocean_depress_by_land_ice) then
          landIceInitActive = .true.
+      end if
+
+      call mpas_pool_get_package(packagePool, 'criticalPassagesActive', criticalPassagesActive)
+      if ( config_global_ocean_deepen_critical_passages) then
+         criticalPassagesActive = .true.
       end if
 
       if (trim(config_global_ocean_depth_file) == 'none') then

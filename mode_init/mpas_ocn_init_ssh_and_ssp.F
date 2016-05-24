@@ -418,7 +418,7 @@ contains
 
 
      real(kind=RKIND), dimension(:,:), pointer :: origZMid
-     integer, dimension(:), pointer :: origMaxLevelCell
+     integer, dimension(:), pointer :: origMaxLevelCell, modifySSHMask
      type (field2DReal), pointer :: origZMidField
      type (field1DInteger), pointer :: origMaxLevelCellField
      integer, pointer :: nCells, nVertLevels
@@ -459,6 +459,7 @@ contains
        call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
        call mpas_pool_get_array(diagnosticsPool, 'bottomPressure', bottomPressure)
        call mpas_pool_get_array(diagnosticsPool, 'density', density)
+       call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
 
        call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
        call mpas_pool_get_array(scratchPool, 'scratchZMid', origZMid)
@@ -474,9 +475,13 @@ contains
 
        if(config_iterative_init_variable == 'ssh') then
          do iCell = 1, nCells
-           ! compute ssh where pressure equals seaSurfacePressure
-           ssh(iCell) = find_z_given_pressure(seaSurfacePressure(iCell), density(:,iCell), &
-                                              layerThickness(:,iCell), nVertLevels, maxLevelCell(iCell))
+           if(modifySSHMask(iCell) == 1) then
+             ! compute ssh where pressure equals seaSurfacePressure
+             ssh(iCell) = find_z_given_pressure(seaSurfacePressure(iCell), density(:,iCell), &
+                                                layerThickness(:,iCell), nVertLevels, maxLevelCell(iCell))
+           else
+             ssh(iCell) = 0.0_RKIND
+           end if
          end do
        end if
 
@@ -515,6 +520,7 @@ contains
        call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
        call mpas_pool_get_array(diagnosticsPool, 'bottomPressure', bottomPressure)
        call mpas_pool_get_array(diagnosticsPool, 'density', density)
+       call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
 
        call mpas_pool_get_array(scratchPool, 'scratchZMid', origZMid)
        call mpas_pool_get_array(scratchPool, 'scratchMaxLevelCell', origMaxLevelCell)
@@ -541,7 +547,11 @@ contains
 
          ! the SSP is the weight of the full ocean column minus the weight of the column
          ! with the SSH applied (temporarily stored in seaSurfacePressure)
-         seaSurfacePressure(:) = bottomPressure(:) - seaSurfacePressure(:)
+         where(modifySSHMask(:) == 1)
+           seaSurfacePressure(:) = bottomPressure(:) - seaSurfacePressure(:)
+         elsewhere
+           seaSurfacePressure(:) = 0.0_RKIND
+         end where
        end if
 
        block_ptr => block_ptr % next
