@@ -351,25 +351,22 @@ and prestage the restart data to $RUNDIR manually
             logger.debug("Creating run directory: %s"%rundir)
             os.makedirs(rundir)
 
-        refcasefiles = glob.glob("%s/%s/*%s*" % (din_loc_root, refdir, run_refcase))
-        for rcfile in refcasefiles:
+        for rcfile in glob.iglob(os.path.join(refdir,"*%s*"%run_refcase)):
+            logger.debug("Staging file %s"%rcfile)
             rcbaseline = os.path.basename(rcfile)
             if not os.path.exists("%s/%s" % (rundir, rcbaseline)):
                 os.symlink(rcfile, "%s/%s" % ((rundir, rcbaseline)))
 
-            # copy the refcases' rpointer files to the run directory
-            rpointerfiles = glob.glob("%s/%s/*rpointer*" % (din_loc_root, refdir))
-            for rpointerfile in rpointerfiles:
-                shutil.copy(rpointerfile, rundir)
+        # copy the refcases' rpointer files to the run directory
+        for rpointerfile in  glob.iglob(os.path.join("%s","*rpointer*") % (refdir)):
+            logger.debug("Copy rpointer %s"%rpointerfile)
+            shutil.copy(rpointerfile, rundir)
 
-            cam2_list = glob.glob("%s/*.cam2.*" % rundir)
-            for cam2file in cam2_list:
-                camfile = cam2file.replace("cam2", "cam")
-                os.symlink(cam2file, camfile)
 
-            allrundirfiles = glob.glob("%s/*" % rundir)
-            for runfile in allrundirfiles:
-                os.chmod(runfile, 0755)
+        for cam2file in  glob.iglob(os.path.join("%s","*.cam2.*") % rundir):
+            camfile = cam2file.replace("cam2", "cam")
+            os.symlink(cam2file, camfile)
+
 
 ###############################################################################
 def build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib,
@@ -540,15 +537,22 @@ def _build_model_thread(config_dir, caseroot, bldroot, compspec, file_build,
 ###############################################################################
 def clean(case, cleanlist=None):
 ###############################################################################
+    clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
     if cleanlist is None:
         cleanlist = case.get_value("COMP_CLASSES").split(',')
         cleanlist = [x.lower().replace('drv','cpl') for x in cleanlist]
+        testcase        = case.get_value("TESTCASE")
+        if testcase is not None:
+            if clm_config_opts is not None:
+                # we only want to clean lnd here if it is clm4_0 otherwise remove
+                # it from the cleanlist
+                if "lnd" in cleanlist and "clm4_0" not in clm_config_opts:
+                    cleanlist.remove('lnd')
+
 
     debug           = case.get_value("DEBUG")
     use_esmf_lib    = case.get_value("USE_ESMF_LIB")
     build_threaded  = case.get_value("BUILD_THREADED")
-    clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
-    testcase        = case.get_value("TESTCASE")
     gmake           = case.get_value("GMAKE")
     caseroot        = case.get_value("CASEROOT")
     casetools       = case.get_value("CASETOOLS")
@@ -560,13 +564,6 @@ def clean(case, cleanlist=None):
     os.environ["COMP_INTERFACE"]  = case.get_value("COMP_INTERFACE")
     os.environ["PIO_VERSION"]     = str(case.get_value("PIO_VERSION"))
     os.environ["CLM_CONFIG_OPTS"] = clm_config_opts  if clm_config_opts is not None else ""
-
-    if testcase is not None:
-        if clm_config_opts is not None:
-            # we only want to clean lnd here if it is clm4_0 otherwise remove
-            # it from the cleanlist
-            if "lnd" in cleanlist and "clm4_0" not in clm_config_opts:
-                cleanlist.remove('lnd')
 
     cmd = gmake + " -f " + casetools + "/Makefile"
     for item in cleanlist:

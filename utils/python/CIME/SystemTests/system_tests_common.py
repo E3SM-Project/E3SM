@@ -139,8 +139,21 @@ class SystemTestsCommon(object):
                 for line in f:
                     m = meminfo.match(line)
                     if m:
-                        memlist.append((m.group(1), m.group(2)))
+                        memlist.append((float(m.group(1)), float(m.group(2))))
         return memlist
+
+    def _get_throughput(self, cpllog):
+        """
+        Examine memory usage as recorded in the cpl log file and look for unexpected
+        increases.
+        """
+        if cpllog is not None:
+            with gzip.open(cpllog, "rb") as f:
+                cpltext = f.read()
+                m = re.search(r"# simulated years / cmp-day =\s+(\d+\.\d+)\s",cpltext)
+                if m:
+                    return float(m.group(1))
+        return None
 
     def _check_for_memleak(self, cpllog):
         """
@@ -231,9 +244,25 @@ class SystemTestsCommon(object):
         memlist = self._get_mem_usage(newestcpllogfile)
         if len(memlist) > 3:
             baselog = os.path.join(basecmp_dir, "cpl.log")
-            blmemlist = self._get_mem_usage(baselog)
-            if(memlist[-1][1] > 1.10*blmemlist[-1][1]):
+            blmem = self._get_mem_usage(baselog)[-1][1]
+            curmem = memlist[-1][1]
+            diff = (curmem-blmem)/blmem
+            if(diff < 0.1):
+                append_status("PASS: Memory usage baseline compare ",sfile="TestStatus")
+            else:
                 append_status("FAIL: Memory usage increase > 10% from baseline",sfile="TestStatus")
+        # compare throughput to baseline
+        current = self._get_throughput(newestcpllogfile)
+        baselog = os.path.join(basecmp_dir, "cpl.log")
+        baseline = self._get_throughput(baselog)
+        #comparing ypd so bigger is better
+        diff = (baseline - current)/baseline
+        if(diff < 0.25):
+            append_status("PASS: Throughput baseline compare ",sfile="TestStatus")
+        else:
+            append_status("FAIL: Throughput increase > 25% from baseline",sfile="TestStatus")
+
+
 
     def generate_baseline(self):
         """

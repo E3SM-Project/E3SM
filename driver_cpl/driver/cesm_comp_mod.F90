@@ -3774,6 +3774,7 @@ end subroutine cesm_init
                                ' :stop at ',force_stop_ymd
          endif
       endif
+#ifndef CPL_BYPASS
       if (tod == 0 .or. info_debug > 1) then
          !! Report on memory usage
          !! For now, just look at the first instance of each component
@@ -3785,13 +3786,13 @@ end subroutine cesm_init
               glc(ens1)%iamroot_compid .or. &
               wav(ens1)%iamroot_compid) then
             call shr_mem_getusage(msize,mrss)
-#ifndef CPL_BYPASS
+
             write(logunit,105) ' memory_write: model date = ',ymd,tod, &
                  ' memory = ',mrss,' MB (highwater)    ',msize,' MB (usage)', &
                  '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
-#endif
          endif
       endif
+#endif
       if (info_debug > 1) then
          if (iamroot_CPLID) then
             call seq_infodata_GetData(infodata,nextsw_cday=nextsw_cday)

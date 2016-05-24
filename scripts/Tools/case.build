@@ -61,12 +61,12 @@ OR
     component = Component(config_file)
     comps = [x.lower() for x in component.get_valid_model_components()]
     comps = [x.replace('drv', 'cpl') for x in comps]
-    libs  = ["shr", "mct", "pio", "tim"]
+    libs  = ["csmshare", "mct", "pio", "gptl"]
     allobjs = comps + libs
 
     parser.add_argument("--clean", nargs="*", choices=allobjs,
                         help="objects to clean"
-                        "if no arguments then clean all objects other than shr, mct, pio, and tim")
+                        "if no arguments then clean all objects other than csmshare, mct, pio, and gptl")
 
     parser.add_argument("--clean-all", action="store_true",
                         help="clean all objects ")
