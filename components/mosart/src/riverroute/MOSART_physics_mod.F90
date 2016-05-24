@@ -75,7 +75,7 @@ MODULE MOSART_physics_mod
        endif
        !call readPotentialEvap(trim(theTime))
        if ( day == 1 .and. tod == 0) then    ! tcx should this be all timesteps on day=1
-          do idam=1,ctlSubwWRM%NDam
+          do idam=1,ctlSubwWRM%localNumDam
              if ( mon .eq. WRMUnit%MthStOp(idam)) then
                WRMUnit%StorMthStOp(idam) = StorWater%Storage(idam)
              end if

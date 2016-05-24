@@ -292,6 +292,7 @@ MODULE WRM_modules
      character(len=*),parameter :: subname='(irrigationExtractionMainChannel)'
 
 !tcx fix this method, remove if mask/rlen
+! NV okay if MOSART is doing those checks
 
      frac = 0.5_r8 ! control the fraction of the flow that can be extracted
 
@@ -317,7 +318,7 @@ MODULE WRM_modules
            !Trunoff%erout(iunit,nt_nliq) = -flow_vol / (theDeltaT)
            Trunoff%wr(iunit,nt_nliq) = flow_vol
            if ( Trunoff%wr(iunit,nt_nliq) < MYTINYVALUE ) then
-              write(iulog,*) subname,"ERROR with extraction from main chanel, ",iunit, Trunoff%wr(iunit,nt_nliq)
+              write(iulog,*) subname,"ERROR with extraction from main channel, ",iunit, Trunoff%wr(iunit,nt_nliq), StorWater%demand(iunit)
            endif
         endif
      endif
@@ -663,9 +664,38 @@ MODULE WRM_modules
 
   subroutine ExtractionRegulatedFlow(TheDeltaT)
 
+     !---------------------------
      !! DESCRIPTION: extract water from the reservoir release
-     ! !DESCRIPTION: the extraction needs to be distributed accross the dependent unit demand
-     !! DESCRIPTION: do not extract more than 10% of the mean monthly flow
+     !! DESCRIPTION: the extraction needs to be distributed accross the dependent unit demand
+     !
+     ! This is an iterative algorithm that converts main channel flow
+     ! at each dam into gridcell supply based on the demand of each
+     ! gridcell.
+     ! The basic algorithm is as follows
+     ! - Compute flow_vol at each dam based on the main channel flow at the gridcell
+     ! - Compute the demand at each dam based on the demand at each gridcell and the
+     !   gridcell/dam dependency.  This dependency is stored in the sparse matrix
+     !   SMatP_g2d.  The demand on each dam is the sum of the demand of all the gridcells
+     !   that depend on that dam.
+     ! - Covert dam flow_vol to gridcell supply.  In doing so, reduce the flow_vol
+     !   at the dam, reduce the demand at the gridcell, and increase the supply at
+     !   the gridcell by the same amount.  There are three conditions for this conversion
+     !   to occur and these are carried out in the following order.  dam fraction
+     !   is the ratio of the dam flow_vol over the total dam demand.
+     !   1. if any dam fraction >= 1.0 for a gridcell, then provide full demand to gridcell
+     !      prorated by the number of dams that can provide all the water.
+     !   2. if any sum of dam fraction >= 1.0 for a gridcell, then provide full demand to
+     !      gridcell prorated by the dam fraction of each dam.
+     !   3. if any sum of dam fraction < 1.0 for a gridcell, then provide fraction of 
+     !      demand to gridcell prorated by the dam fraction of each dam.
+     ! - Once the iterative solution has converged, convert the residual flow_vol
+     !   back into main channel flow.
+     !
+     ! This implementation assumes several things
+     ! - Each dam is associated with a particular gridcell and each gridcell has
+     !   either 0 or 1 dam associated with it.
+     ! - The local dam decomposition is consistent with the local gridcell decompositon.
+     !---------------------------
 
      implicit none
      real(r8), intent(in) :: TheDeltaT
@@ -680,6 +710,7 @@ MODULE WRM_modules
      real(r8),allocatable :: dam_uptake_sum(:)  ! dam uptake from gridcells sum over all pes
      real(r8),allocatable :: fracsum(:)     ! sum of dam fraction on gridcells
      real(r8) :: demand, demand_orig, supply, budget_term(4),budget_sum(4),budget
+     real(r8) :: flow_vol_ratio = 0.9_r8    ! amount of erout for flow_vol
      logical  :: check_local_budget = .false.
      character(len=*),parameter :: subname='(ExtractionRegulatedFlow)'
 
@@ -700,11 +731,22 @@ MODULE WRM_modules
      allocate(dam_uptake(ctlSubwWRM%NDam))
      allocate(dam_uptake_sum(ctlSubwWRM%NDam))
      allocate(fracsum(begr:endr))
-     allocate(flow_vol(ctlSubwWRM%LocalNumDam))
+     allocate(flow_vol(ctlSubwWRM%LocalNumDam)) 
+
+     !---------------------------
+     ! compute the flow_vol based on main channel flow, erout
+     ! this is per dam, local only
+     !---------------------------
+
      do idam = 1,ctlSubwWRM%LocalNumDam
         iunit = WRMUnit%icell(idam)
-        flow_vol(idam) = -Trunoff%erout(iunit,nt_nliq) * theDeltaT
+        flow_vol(idam) = flow_vol_ratio * ( -Trunoff%erout(iunit,nt_nliq) * theDeltaT )
+!NV
+        Trunoff%erout(iunit,nt_nliq) = Trunoff%erout(iunit,nt_nliq) + &
+             flow_vol(idam) / theDeltaT
      enddo
+!might need to add constraint here in order to make sure that 10% of the flow us
+!maintained and not taken out by grid cell - environment flow NV
 
 !debug     write(iulog,*) subname,' initial flow_vol ',minval(flow_vol),maxval(flow_vol)
 
@@ -720,7 +762,10 @@ MODULE WRM_modules
      do while (.not. done)
         iter = iter + 1
 
-        !--- copy gridcell demand into aVect_wg ---
+        !---------------------------
+        ! copy gridcell demand into aVect_wg
+        ! this is the demand for each gridcell
+        !---------------------------
 
         call mct_aVect_zero(aVect_wg)
         cnt = 0
@@ -736,7 +781,12 @@ MODULE WRM_modules
 !        endif
 !        call mct_aVect_clean(aVect_wgG)
 
-        !--- sum gridcell demand to dams
+        !---------------------------
+        ! mct_sMat_avMult sums gridcell demand to dams index
+        ! aVect_wg is input, that is demand per gridcell
+        ! aVect_wd is output, that is total demand on each dam
+        ! Both aVect are "local" onlyl
+        !---------------------------
 
         if (barrier_timers) then
            call t_startf('moswrm_ERFlow_avmult_barrier')
@@ -756,7 +806,12 @@ MODULE WRM_modules
 !        endif
 !        call mct_aVect_clean(aVect_wdG)
 
-        !--- compute new dam fraction from total gridcell demand
+        !---------------------------
+        ! compute new dam fraction from total gridcell demand
+        ! aVect_wd has total demand per dam, modify this field
+        ! and fill it with ratio of flow_vol / demand per dam
+        ! If flow_vol/demand > 1, it means there is more water than is demanded of dam
+        !---------------------------
 
 !debug        write(iulog,*) subname,' dam demand = ',iam,minval(aVect_wd%rAttr(1,:)),maxval(aVect_wd%rAttr(1,:))
         do idam = 1,ctlSubwWRM%LocalNumDam
@@ -771,7 +826,12 @@ MODULE WRM_modules
 
 !debug        write(iulog,'(2a,i8,2g20.10)') subname,' locdam frac =',iam,minval(aVect_wd%rAttr(1,:)),maxval(aVect_wd%rAttr(1,:))
 
-        !--- gather and bcast dam fraction
+        !---------------------------
+        ! gather and bcast dam fraction.
+        ! aVect_wd contains just the local values of the dam fraction
+        ! aVect_wdG contains all values of the dam fraction across the entire domain,
+        ! each MPI task has the same and complete information after the broadcast.
+        !---------------------------
 
         if (barrier_timers) then
            call t_startf('moswrm_ERFlow_gather_barrier')
@@ -795,18 +855,36 @@ MODULE WRM_modules
 
 !tcx debug
 !        write(iulog,'(2a,2i8,3g20.10)') subname,' dam frac =',iter,iam,minval(aVect_wdG%rAttr(1,:)),maxval(aVect_wdG%rAttr(1,:)),sum(aVect_wdG%rAttr(1,:))
-        if (masterproc) then
-           !do idam = 1,ctlSubwWRM%NDam
-           !   write(iulog,'(2a,2i8,g20.10)') subname,' dam frac =',iam,idam,aVect_wdG%rAttr(1,idam)
-           !enddo
-        endif
+!        if (masterproc) then
+!           do idam = 1,ctlSubwWRM%NDam
+!              write(iulog,'(2a,2i8,g20.10)') subname,' dam frac =',iam,idam,aVect_wdG%rAttr(1,idam)
+!           enddo
+!        endif
 
-        !--- reduce local demand based on fraction from dam
-        !--- if any dam fraction >= 1.0 for a gridcell, then update and iterate
-        !--- if any sum of dam fraction >= 1.0 for a gridcell, then update and iterate
-        !--- if any sum of dam fraction < 1.0 for a gridcell, then update and iterate
+        !---------------------------
+        ! Covert dam flow_vol to gridcell supply.  In doing so, reduce the flow_vol
+        ! at the dam, reduce the demand at the gridcell, and increase the supply at
+        ! the gridcell by the same amount.  There are three conditions for this conversion
+        ! to occur and these are carried out in the following order.  dam fraction
+        ! is the ratio of the dam flow_vol over the total dam demand.
+        ! 1. if any dam fraction >= 1.0 for a gridcell, then provide full demand to gridcell
+        !    prorated by the number of dams that can provide all the water.
+        ! 2. if any sum of dam fraction >= 1.0 for a gridcell, then provide full demand to
+        !    gridcell prorated by the dam fraction of each dam.
+        ! 3. if any sum of dam fraction < 1.0 for a gridcell, then provide fraction of 
+        !    demand to gridcell prorated by the dam fraction of each dam.
+        !
+        ! dam_uptake is the amount of water removed from the dam, it's a global array.
+        ! Gridcells from different tasks will accumluate the amount of water removed
+        ! from each dam in this array.
+        !---------------------------
 
         dam_uptake = 0._r8
+
+        !---------------------------
+        ! 1st case, provide full demand to gridcell
+        !---------------------------
+
         if (maxval(aVect_wdG%rAttr(1,:)) >= 1.0_r8) then
            do iunit = begr, endr
               cnt = 0
@@ -819,7 +897,8 @@ MODULE WRM_modules
                  do mdam = 1,WRMUnit%myDamNum(iunit)
                     gdam = WRMUnit%myDam(mdam,iunit)
                     if (aVect_wdG%rAttr(1,gdam) > 1.0_r8) then
-                       supply = max(demand_orig / float(cnt), StorWater%demand(iunit))
+! changed from max to min NV
+                       supply = min(demand_orig / float(cnt), StorWater%demand(iunit))
                        dam_uptake(gdam) = dam_uptake(gdam) + supply
                        StorWater%demand(iunit) = StorWater%demand(iunit) - supply
                        StorWater%supply(iunit) = StorWater%supply(iunit) + supply
@@ -827,6 +906,15 @@ MODULE WRM_modules
                  enddo
               endif
            enddo
+
+        !---------------------------
+        ! 2nd or 3rd case.  To start, compute the sum of the dam fraction for
+        ! all dams that the gridcell depends on, fracsum.
+        ! iflag = 0 or 1 (if fracsum at a gridcell is greater than 1)
+        ! iflagm is synchronized across all tasks, if any iflag = 1 then 
+        !    iflagm=1 on all tasks
+        !---------------------------
+
         else
            iflag = 0
            iflagm = 0
@@ -840,20 +928,50 @@ MODULE WRM_modules
            enddo
            call shr_mpi_max(iflag,iflagm,mpicom_rof,'wrm iflag',all=.true.)
 
-           do iunit = begr, endr
-              if ((iflagm >  0 .and. fracsum(iunit) >= 1.0_r8) .or. &
-                  (iflagm == 0 .and. fracsum(iunit) >  0._r8)) then
-                 demand_orig = StorWater%demand(iunit)
-                 do mdam = 1,WRMUnit%myDamNum(iunit)
-                    gdam = WRMUnit%myDam(mdam,iunit)
-                    supply = max(demand_orig*aVect_wdG%rAttr(1,gdam)/max(fracsum(iunit),1.0_r8), StorWater%demand(iunit))
-                    dam_uptake(gdam) = dam_uptake(gdam) + supply
-                    StorWater%demand(iunit) = StorWater%demand(iunit) - supply
-                    StorWater%supply(iunit) = StorWater%supply(iunit) + supply
-                 enddo
-              endif
-           enddo
+           !---------------------------
+           ! 2nd case, provide full demand prorated by dam fraction
+           !---------------------------
+
+           if (iflagm >  0) then
+              do iunit = begr, endr
+                 if  (fracsum(iunit) >=  1._r8) then
+                    demand_orig = StorWater%demand(iunit)
+                    do mdam = 1,WRMUnit%myDamNum(iunit)
+                       gdam = WRMUnit%myDam(mdam,iunit)
+!first max changed to min NV
+                       supply = min(demand_orig*aVect_wdG%rAttr(1,gdam)/fracsum(iunit), StorWater%demand(iunit))
+                       dam_uptake(gdam) = dam_uptake(gdam) + supply
+                       StorWater%demand(iunit) = StorWater%demand(iunit) - supply
+                       StorWater%supply(iunit) = StorWater%supply(iunit) + supply
+                    enddo
+                 endif
+              enddo
+
+           !---------------------------
+           ! 3nd case, provide partial demand prorated by dam fraction
+           !---------------------------
+
+           elseif (iflagm == 0) then
+              do iunit = begr, endr
+                 if (fracsum(iunit) >  0._r8) then
+                    demand_orig = StorWater%demand(iunit)
+                    do mdam = 1,WRMUnit%myDamNum(iunit)
+                       gdam = WRMUnit%myDam(mdam,iunit)
+!first max changed to min NV
+                       supply = min(demand_orig*aVect_wdG%rAttr(1,gdam), StorWater%demand(iunit))
+                       dam_uptake(gdam) = dam_uptake(gdam) + supply
+                       StorWater%demand(iunit) = StorWater%demand(iunit) - supply
+                       StorWater%supply(iunit) = StorWater%supply(iunit) + supply
+                    enddo
+                 endif
+              enddo
+           endif
+
         endif
+
+        !---------------------------
+        ! delete aVect_wdG memory
+        !---------------------------
 
         call t_startf('moswrm_ERFlow_cleanG')
         call mct_aVect_clean(aVect_wdG)
@@ -865,7 +983,13 @@ MODULE WRM_modules
            call t_stopf('moswrm_ERFlow_sum_barrier')
         endif
 
+        !---------------------------
+        ! Sum the dam_uptake across all tasks on all tasks.
+        ! Reduce the flow_vol by the amount of water provided to the gridcells
+        !---------------------------
+
         call t_startf('moswrm_ERFlow_sum')
+        dam_uptake_sum = 0._r8
         call shr_mpi_sum(dam_uptake,dam_uptake_sum,mpicom_rof,'wrm dam_uptake',all=.true.)
         call t_stopf('moswrm_ERFlow_sum')
 
@@ -874,15 +998,39 @@ MODULE WRM_modules
            flow_vol(idam) = flow_vol(idam) - dam_uptake_sum(gdam)
         enddo
 
+!---------------------------
+!add more iteration to a max of say 4-5 - 10 and/or add constraint stop when
+!Sum(demand) = 0 NV
+! tcraig, a few other ideas
+!   If sum(flow_vol) on all tasks = 0, can stop
+!   Can add some counters for case1, 2, and 3.  Maybe stop after case3 has been
+!     called at least once or twice
+!   Could add some relaxation to case2 and 3.  For those cases, maybe instead of
+!     converting all demand, convert maybe 50% or 80% or 90% on each iteration.
+!     That will require extra iterations for convergence, but will probably 
+!     provide a smoother and "fairer" distribution of water to gridcells.
+!---------------------------
+
+        !---------------------------
+        ! Check convergence
+        !---------------------------
+
         if (iter > 2) done = .true.
 
         if (masterproc) write(iulog,'(2a,i6,g20.10,l4)') subname,' iteration ',iter,sum(dam_uptake_sum),done
 
      enddo
 
+     !---------------------------
+     ! Add residual flow_vol back into the main channel flow, erout
+     !---------------------------
+
      do idam = 1,ctlSubwWRM%LocalNumDam
         iunit = WRMUnit%icell(idam)
-        Trunoff%erout(iunit,nt_nliq) = - flow_vol(idam) / (theDeltaT)
+!NV reimpleent the 10% environmental flow
+        !Trunoff%erout(iunit,nt_nliq) = - flow_vol(idam) / (theDeltaT)
+!NV
+        Trunoff%erout(iunit,nt_nliq) =  Trunoff%erout(iunit,nt_nliq) - flow_vol(idam) / (theDeltaT)
      enddo
      deallocate(flow_vol)
      deallocate(dam_uptake)

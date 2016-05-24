@@ -41,6 +41,7 @@ MODULE WRM_subw_IO_mod
   type(io_desc_t)  :: iodesc_dbl_dam2dam ! pio io desc, global dam to local dam
   character(len=*),parameter :: FORMI = '(2A,6i13)'
   character(len=*),parameter :: FORMR = '(2A,2g15.7)'
+  character(len=*),parameter :: FORMR2= '(2A,i8,2g15.7)'
 
 !-----------------------------------------------------------------------
   contains
@@ -835,7 +836,7 @@ MODULE WRM_subw_IO_mod
            StorWater%demand0(nr) = 0._r8
         end if
      end do
-     write(iulog,FORMR) trim(subname),' read totalDemand',iam,minval(StorWater%demand0),maxval(StorWater%demand0)
+     write(iulog,FORMR2) trim(subname),' read totalDemand',iam,minval(StorWater%demand0),maxval(StorWater%demand0)
      call shr_sys_flush(iulog)
 
   end subroutine WRM_readDemand
