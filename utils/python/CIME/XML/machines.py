@@ -91,7 +91,7 @@ class Machines(GenericXML):
         in the NODENAME_REGEX field in the file.   First match wins.
         """
         machine = None
-        nametomatch = socket.gethostname().split(".")[0]
+        nametomatch = socket.getfqdn()
         nodes = self.get_nodes("machine")
 
         for node in nodes:

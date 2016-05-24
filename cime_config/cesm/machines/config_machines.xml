@@ -1622,6 +1622,86 @@
     </mpirun>
   </machine>
 
+  <machine MACH="stampede">
+    <DESC>TACC DELL, os is Linux, 16 pes/node, batch system is SLURM</DESC>
+    <OS>LINUX</OS>
+    <NODENAME_REGEX>login\d+.stampede</NODENAME_REGEX> 
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>impi,mvapich2</MPILIBS>
+    <RUNDIR>$SCRATCH/$CASE/run</RUNDIR>
+    <EXEROOT>$SCRATCH/$CASE/bld</EXEROOT>
+    <CESMSCRATCHROOT>$SCRATCH</CESMSCRATCHROOT>
+    <DIN_LOC_ROOT>/scratch/projects/xsede/CESM/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>              
+    <CCSM_BASELINE>/scratch/projects/xsede/CESM/ccsm_baselines</CCSM_BASELINE>
+    <CCSM_CPRNC>/scratch/projects/xsede/CESM/tools/cprnc/cprnc</CCSM_CPRNC>
+    <BATCHQUERY>squeue</BATCHQUERY>
+    <BATCHSUBMIT>sbatch</BATCHSUBMIT>
+    <SUPPORTED_BY>cseg</SUPPORTED_BY>
+    <GMAKE_J>8</GMAKE_J>
+    <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>16</PES_PER_NODE>
+    <batch_system type="slurm" version="x.y">
+      <queues>
+        <queue walltimemax="36:00:00" jobmin="1" jobmax="130181" >regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="12288" default="true">debug</queue>
+      </queues>
+      <walltimes>
+	<walltime default="true">00:30:00</walltime>
+      </walltimes>
+    </batch_system>
+
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+	<arg name="label"> --label</arg>
+	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
+
+     	<arg name="thread_count" > -c {{ thread_count }}</arg>
+
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/opt/apps/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/opt/apps/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="sh">/opt/apps/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/opt/apps/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="perl">/opt/apps/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/opt/apps/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+	<command name="purge"></command>
+	<command name="load">TACC</command>
+	<command name="load">python/2.7.9</command>
+	<command name="load">intel/15.0.2</command>
+	<command name="load">perl/5.16.2</command>
+      </modules>
+      <modules mpilib="mvapich2">
+	<command name="load">mvapich2</command>
+	<command name="load">pnetcdf/1.6.1</command>
+	<command name="load">parallel-netcdf/4.3.3.1</command>
+      </modules>
+      <modules mpilib="impi">
+	<command name="rm">mvapich2</command>
+	<command name="load">impi</command>
+	<command name="load">pnetcdf/1.6.0</command>
+	<command name="load">parallel-netcdf/4.3.3.1</command>
+      </modules>
+      <modules mpilib="mpi-serial"> 
+	<command name="load">netcdf/4.3.3.1</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="OMP_STACKSIZE">256M</env>
+      <env name="NETCDF_PATH">$TACC_NETCDF_DIR</env>
+      <env name="PNETCDF_PATH">$TACC_PNETCDF_DIR</env>
+     </environment_variables>
+  </machine>
+
+
   <machine MACH="yellowstone">
     <DESC>NCAR IBM, os is Linux, 16 pes/node, batch system is LSF</DESC>
     <NODENAME_REGEX>(yslogin.*|pronghorn.*|caldera.*)</NODENAME_REGEX>
