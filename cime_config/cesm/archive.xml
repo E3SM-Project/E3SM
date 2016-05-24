@@ -1,335 +1,118 @@
 <components>
 
-  <comp_archive_spec name="cam">
-    <rootdir>atm</rootdir>
-    <files>
-      <file_extension regex_suffix="\.r\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.r[sa]\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.rh[012345]\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.i\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.h[01]\.[\w\-]*\.nc$">      
-	<subdir>hist</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.h[2345678s]\.">      
-	<subdir>hist</subdir> 
-      </file_extension>
-      <rpointer_content>$CASE.cam$NINST_STRING.r.$DATENAME.nc</rpointer_content>
-      <restart_history_varname>nhfil</restart_history_varname>
-    </files>
+  <comp_archive_spec compname="cam" compclass="atm">
+    <rest_file_extension>\.[ri].*</rest_file_extension>
+    <hist_file_extension>\.h.*</hist_file_extension>
+    <rest_history_varname>nhfil</rest_history_varname>
+    <rpointer_content>$CASE.cam$NINST_STRING.r.$DATENAME.nc</rpointer_content>
   </comp_archive_spec>
 
-  <comp_archive_spec name="datm">
-    <rootdir>atm</rootdir>
-    <files>
-      <file_extension regex_suffix="\.r\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.rs1\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <rpointer_content>$CASE.datm$NINST_STRING.r.$DATENAME.nc,$CASE.datm$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
-      <restart_history_varname>unset</restart_history_varname>
-    </files>
+  <comp_archive_spec compname="datm" compclass="atm">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer_content>$CASE.datm$NINST_STRING.r.$DATENAME.nc,$CASE.datm$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
   </comp_archive_spec>
 
-  <comp_archive_spec name="clm">
-    <rootdir>lnd</rootdir>
-    <files>
-      <file_extension regex_suffix="\.r\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.rh[013456]\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.i\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.h0\.[\w\-]*\.nc$">      
-	<subdir>hist</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.h[12345v]\.">      
-	<subdir>hist</subdir> 
-      </file_extension>
-      <rpointer_content>./$CASE.clm2$NINST_STRING.r.$DATENAME.nc</rpointer_content>
-      <restart_history_varname>locfnh</restart_history_varname>
-    </files>
+  <comp_archive_spec compname="clm" compclass="lnd">
+    <rest_file_extension>\.[ri].*</rest_file_extension>
+    <hist_file_extension>\.h.*</hist_file_extension>
+    <rest_history_varname>locfnh</rest_history_varname>
+    <rpointer_content>./$CASE.clm2$NINST_STRING.r.$DATENAME.nc</rpointer_content>
   </comp_archive_spec>
 
-  <comp_archive_spec name="dlnd">
-    <rootdir>lnd</rootdir>
-    <files>
-      <file_extension regex_suffix="\.r\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.rs1\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <rpointer_content>$CASE.dlnd$NINST_STRING.r.$DATENAME.nc,$CASE.dlnd$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
-      <restart_history_varname>unset</restart_history_varname>
-    </files>
+  <comp_archive_spec compname="dlnd" compclass="lnd">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer_content>$CASE.dlnd$NINST_STRING.r.$DATENAME.nc,$CASE.dlnd$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
   </comp_archive_spec>
 
-  <comp_archive_spec name="rtm">
-    <rootdir>rof</rootdir>
-    <files>
-      <file_extension regex_suffix="\.r\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.rh[0123]\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.h[0123]\.">      
-	<subdir>hist</subdir> 
-      </file_extension>
-      <rpointer_content>$CASE.rtm$NINST_STRING.r.$DATENAME.nc</rpointer_content>
-      <restart_history_varname>unset</restart_history_varname>
-    </files>
+  <comp_archive_spec compname="rtm" compclass="rof">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <hist_file_extension>\.h.*</hist_file_extension>
+    <rpointer_content>$CASE.rtm$NINST_STRING.r.$DATENAME.nc</rpointer_content>
+    <rest_history_varname>unset</rest_history_varname>
   </comp_archive_spec>
 
-  <comp_archive_spec name="mosart">
-    <rootdir>rof</rootdir>
-    <files>
-      <file_extension regex_suffix="\.r\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.rh[0123]\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.h[0123]\.">      
-	<subdir>hist</subdir> 
-      </file_extension>
-      <rpointer_content>$CASE.mosart$NINST_STRING.r.$DATENAME.nc</rpointer_content>
-      <restart_history_varname>unset</restart_history_varname>
-    </files>
+  <comp_archive_spec compname="mosart" compclass="rof">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <hist_file_extension>\.h.*</hist_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer_content>$CASE.mosart$NINST_STRING.r.$DATENAME.nc</rpointer_content>
   </comp_archive_spec>
 
-  <comp_archive_spec name="drof">
-    <rootdir>rof</rootdir>
-    <files>
-      <file_extension regex_suffix="\.r\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.rs1\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <rpointer_content>$CASE.drof$NINST_STRING.r.$DATENAME.nc,$CASE.drof$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
-      <restart_history_varname>unset</restart_history_varname>
-    </files>
+  <comp_archive_spec compname="drof" compclass="rof">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer_content>$CASE.drof$NINST_STRING.r.$DATENAME.nc,$CASE.drof$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
   </comp_archive_spec>
 
-  <comp_archive_spec name="cice">
-    <rootdir>ice</rootdir>
-    <files>
-      <file_extension regex_suffix="\.r\.\w+">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.i\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.h\.[\w\-]*\.nc$">      
-	<subdir>hist</subdir> 
-      </file_extension>
-      <rpointer_content>./$CASE.cice$NINST_STRING.r.$DATENAME.nc</rpointer_content>
-      <restart_history_varname>unset</restart_history_varname>
-    </files>
+  <comp_archive_spec compname="cice" compclass="ice">
+    <rest_file_extension>\.[ri].*</rest_file_extension>
+    <hist_file_extension>\.h.*</hist_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer_content>./$CASE.cice$NINST_STRING.r.$DATENAME.nc</rpointer_content>
   </comp_archive_spec>
 
-  <comp_archive_spec name="dice">
-    <rootdir>ice</rootdir>
-    <files>
-      <file_extension regex_suffix="\.r\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.rs1\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <rpointer_content>$CASE.dice$NINST_STRING.r.$DATENAME.nc,$CASE.dice$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
-      <restart_history_varname>unset</restart_history_varname>
-    </files>
+  <comp_archive_spec compname="dice" compclass="ice">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer_content>$CASE.dice$NINST_STRING.r.$DATENAME.nc,$CASE.dice$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
   </comp_archive_spec>
 
-  <comp_archive_spec name="pop">
-    <rootdir>ocn</rootdir>
-    <files>
-      <file_extension regex_suffix="\.r\..*\.hdr">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.r\.[0-9|-]+\.nc">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.r\.[0-9|-]+[^\.nc]">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.rh.ecosys\.\w+\.hdr">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.rh.ecosys\.\w+\.nc">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.rh.ecosys\.[0-9|-]+[^\.nc]">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.rh\..*\.hdr">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.rh\.[0-9|-]+\.nc">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.rh\.[0-9|-]+[^\.nc]">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.ro\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.d\w*">
-	<subdir>hist</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.h.\d{4}-\d{2}\.">      
-	<subdir>hist</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.h.nday1\.">      
-	<subdir>hist</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.h.nyear1\.">      
-	<subdir>hist</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.h\.[\w\-\.]*\.nc$">      
-	<subdir>hist</subdir> 
-      </file_extension>
-      <rpointer_content>./$CASE.pop$NINST_STRING.r.$DATENAME.nc,./$CASE.pop$NINST_STRING.ro.datename.nc,RESTART_FMT=nc</rpointer_content>
-      <restart_history_varname>unset</restart_history_varname>
-    </files>
+  <comp_archive_spec compname="pop" compclass="ocn">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <hist_file_extension>\.[hd].*</hist_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer_content>./$CASE.pop$NINST_STRING.r.$DATENAME.nc,./$CASE.pop$NINST_STRING.ro.datename.nc,RESTART_FMT=nc</rpointer_content>
   </comp_archive_spec>
 
-  <comp_archive_spec name="docn">
-    <rootdir>ocn</rootdir>
-    <files>
-      <file_extension regex_suffix="\.r\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.rs1\.">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <rpointer_content>$CASE.docn$NINST_STRING.r.$DATENAME.nc,$CASE.docn$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
-      <restart_history_varname>unset</restart_history_varname>
-    </files>
+  <comp_archive_spec compname="docn" compclass="ocn">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer_content>$CASE.docn$NINST_STRING.r.$DATENAME.nc,$CASE.docn$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
   </comp_archive_spec>
 
-  <comp_archive_spec name="cism">
-    <rootdir>glc</rootdir>
-    <files>
-      <file_extension regex_suffix=".r.[0-9]*">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix=".r\.\w+">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix=".i\..*">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix=".h*">      
-	<subdir>hist</subdir> 
-      </file_extension>
-      <rpointer_content>./$CASE.cism$NINST_STRING.r.$DATENAME.nc</rpointer_content>
-      <restart_history_varname>unset</restart_history_varname>
-    </files>
+  <comp_archive_spec compname="cism" compclass="glc">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_file_extension>\.i\.</rest_file_extension>
+    <hist_file_extension>\.h\*</hist_file_extension>      
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer_content>./$CASE.cism$NINST_STRING.r.$DATENAME.nc</rpointer_content>
   </comp_archive_spec>
 
-  <comp_archive_spec name="ww3">
-    <rootdir>wav</rootdir>
-    <files>
-      <file_extension regex_suffix=".r.[0-9]*">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix=".i\..*">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix=".h\..*">      
-	<subdir>hist</subdir> 
-      </file_extension>
-      <rpointer_content>unset</rpointer_content>
-      <restart_history_varname>unset</restart_history_varname>
-    </files>
+  <comp_archive_spec compname="ww3" compclass="wav">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_file_extension>\.i\..*</rest_file_extension>
+    <hist_file_extension>\.h\..*</hist_file_extension>      
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer_content>unset</rpointer_content>
   </comp_archive_spec>
 
-  <comp_archive_spec name="dwav">
-    <rootdir>wav</rootdir>
-    <files>
-      <file_extension regex_suffix=".r\..*">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix=".rs1\..*">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <rpointer_content>$CASE.dwav$NINST_STRING.r.$DATENAME.nc,$CASE.dwav$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
-      <restart_history_varname>unset</restart_history_varname>
-    </files>
+  <comp_archive_spec compname="dwav" compclass="wav">
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer_content>$CASE.dwav$NINST_STRING.r.$DATENAME.nc,$CASE.dwav$NINST_STRING.rs1.$DATENAME.bin</rpointer_content>
   </comp_archive_spec>
 
-  <comp_archive_spec name="dart"> 
-    <rootdir>dart</rootdir>
-    <files>
-      <file_extension regex_suffix="\w*True_State\..*\.nc">
-	<subdir>hist</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\w*Prior_Diag\..*.nc">
-	<subdir>hist</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\w*Posterior_Diag\..*.nc">
-	<subdir>hist</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\w*obs_seq\..*.out">
-	<subdir>hist</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\w*obs_seq\..*.final">
-	<subdir>hist</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\w*obs_seq\..*.perfect">
-	<subdir>hist</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="cam_\w*pr\w*inflate_restart\w*">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="cam_\w*po\w*inflate_restart\w*">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="clm_\w*pr\w*inflate_restart\w*">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="clm_\w*po\w*inflate_restart\w*">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="pop_\w*pr\w*inflate_restart\w*">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="pop_\w*po\w*inflate_restart\w*">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <rpointer_content>unset</rpointer_content>
-      <restart_history_varname>unset</restart_history_varname>
-    </files>
+  <comp_archive_spec compname="dart" compclass="unset"> 
+    <hist_file_extension>\w*True_State\..*\.nc</hist_file_extension>
+    <hist_file_extension>\w*Prior_Diag\..*.nc</hist_file_extension>
+    <hist_file_extension>\w*Posterior_Diag\..*.nc</hist_file_extension>
+    <hist_file_extension>\w*obs_seq\..*.out</hist_file_extension>
+    <hist_file_extension>\w*obs_seq\..*.final</hist_file_extension>
+    <hist_file_extension>\w*obs_seq\..*.perfect</hist_file_extension>
+    <rest_file_extension>cam_\w*p[ro]\w*inflate_restart\w*</rest_file_extension>
+    <rest_file_extension>clm_\w*p[ro]\w*inflate_restart\w*</rest_file_extension>
+    <rest_file_extension>pop_\w*p[ro]\w*inflate_restart\w*</rest_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer_content>unset</rpointer_content>
   </comp_archive_spec>
 
-  <comp_archive_spec name="cpl"> 
-    <rootdir>cpl</rootdir>
-    <files>
-      <file_extension regex_suffix="\.r\.*">
-	<subdir>rest</subdir> 
-      </file_extension>
-      <file_extension regex_suffix="\.h\w*">
-	<subdir>hist</subdir> 
-      </file_extension>
-      <rpointer_content>$CASE.cpl.r.$DATENAME.nc</rpointer_content>
-      <restart_history_varname>unset</restart_history_varname>
-    </files>
+  <comp_archive_spec compname="cpl" compclass="unset"> 
+    <rest_file_extension>\.r.*</rest_file_extension>
+    <hist_file_extension>\.h.*</hist_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer_content>$CASE.cpl.r.$DATENAME.nc</rpointer_content>
   </comp_archive_spec>
 
 </components>
