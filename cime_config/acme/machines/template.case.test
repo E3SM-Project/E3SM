@@ -19,6 +19,7 @@ from CIME.case import Case
 from CIME.SystemTests.sms import SMS
 from CIME.SystemTests.seq import SEQ
 from CIME.SystemTests.ers import ERS
+from CIME.SystemTests.nck import NCK
 from CIME.SystemTests.system_tests_common import *
 import argparse, doctest, shutil, glob
 
