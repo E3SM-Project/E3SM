@@ -194,7 +194,7 @@ MODULE WRM_modules
   end subroutine Euler_WRM
 #endif
 !-----------------------------------------------------------------------
-
+!this subrouting is not used - used to be when subnetwork routing was optional
   subroutine irrigationExtraction(iunit, TheDeltaT)
 
      ! !DESCRIPTION: subnetwork channel routing irrigation extraction
@@ -251,10 +251,12 @@ MODULE WRM_modules
      character(len=*),parameter :: subname='(irrigationExtractionSubNetwork)'
 
      if (check_local_budget) then
-        budget = Trunoff%etin(iunit,nt_nliq)*TheDeltaT + StorWater%supply(iunit)
+!        budget = Trunoff%etin(iunit,nt_nliq)*TheDeltaT + StorWater%supply(iunit)
+         budget =  Trunoff%wt(iunit,nt_nliq) + StorWater%supply(iunit)
      endif
 
-     flow_vol = Trunoff%etin(iunit,nt_nliq)*TheDeltaT
+     !flow_vol = Trunoff%etin(iunit,nt_nliq)*TheDeltaT
+     flow_vol = Trunoff%wt(iunit,nt_nliq)
 
      if ( flow_vol >= StorWater%demand(iunit) ) then
         StorWater%supply(iunit) = StorWater%supply(iunit) + StorWater%demand(iunit)
@@ -266,10 +268,12 @@ MODULE WRM_modules
         flow_vol = 0._r8
      end if
 
-     Trunoff%etin(iunit,nt_nliq) = flow_vol / (TheDeltaT)
+     !Trunoff%etin(iunit,nt_nliq) = flow_vol / (TheDeltaT)
+     Trunoff%wt(iunit,nt_nliq) = flow_vol 
 
      if (check_local_budget) then
-        budget = budget - (Trunoff%etin(iunit,nt_nliq)*TheDeltaT + StorWater%supply(iunit))
+        !budget = budget - (Trunoff%etin(iunit,nt_nliq)*TheDeltaT + StorWater%supply(iunit))
+        budget = budget - (Trunoff%wt(iunit,nt_nliq) + StorWater%supply(iunit))
         if (budget > 0.001_r8) then   ! in m3 
            write(iulog,'(2a,i8,g20.12)') subname,' budget ',iunit,budget
            call shr_sys_abort(subname//' ERROR in budget')
@@ -741,7 +745,7 @@ MODULE WRM_modules
      do idam = 1,ctlSubwWRM%LocalNumDam
         iunit = WRMUnit%icell(idam)
         flow_vol(idam) = flow_vol_ratio * ( -Trunoff%erout(iunit,nt_nliq) * theDeltaT )
-!NV
+!NV minimum flow remains in erout
         Trunoff%erout(iunit,nt_nliq) = Trunoff%erout(iunit,nt_nliq) + &
              flow_vol(idam) / theDeltaT
      enddo
