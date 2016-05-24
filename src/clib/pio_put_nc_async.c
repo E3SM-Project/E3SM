@@ -23,7 +23,7 @@
  * @param *stride an array of strides (must have same number of
  * entries as variable has dimensions). If NULL, strides of 1 will be
  * used.
- * 
+ *
  * @param xtype the netCDF type of the data being passed in buf. Data
  * will be automatically covnerted from this type to the type of the
  * variable being written to.
@@ -33,7 +33,7 @@
  * @return PIO_NOERR on success, error code otherwise.
  */
 int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-		     const PIO_Offset *stride, nc_type xtype, const void *buf) 
+		     const PIO_Offset *stride, nc_type xtype, const void *buf)
 {
     iosystem_desc_t *ios;  /** Pointer to io system information. */
     file_desc_t *file;     /** Pointer to file information. */
@@ -79,11 +79,11 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	if (!count)
 	{
 	    int dimid[ndims];
-	    
+
 	    /* Get the dimids for this var. */
 	    if ((ierr = PIOc_inq_vardimid(ncid, varid, dimid)))
 		return check_netcdf(file, ierr, __FILE__, __LINE__);
-	    
+
 	    /* Get the length of each dimension. */
 	    for (int vd = 0; vd < ndims; vd++)
 		if ((ierr = PIOc_inq_dimlen(ncid, dimid[vd], &dimlen[vd])))
@@ -116,7 +116,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    char count_present = count ? true : false;
 	    char stride_present = stride ? true : false;
 
-	    if(ios->compmaster) 
+	    if(ios->compmaster)
 		mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
 
 	    /* Send the function parameters and associated informaiton
@@ -134,11 +134,11 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&count_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	    if (!mpierr && count_present)
-		mpierr = MPI_Bcast((PIO_Offset *)count, ndims, MPI_OFFSET, ios->compmaster, ios->intercomm);		
+		mpierr = MPI_Bcast((PIO_Offset *)count, ndims, MPI_OFFSET, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&stride_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	    if (!mpierr && stride_present)
-		mpierr = MPI_Bcast((PIO_Offset *)stride, ndims, MPI_OFFSET, ios->compmaster, ios->intercomm);		
+		mpierr = MPI_Bcast((PIO_Offset *)stride, ndims, MPI_OFFSET, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&xtype, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
@@ -151,7 +151,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 
 	    for (int e = 0; e < num_elem; e++)
 		LOG((2, "PIOc_put_vars_tc element %d = %d", e, ((int *)buf)[e]));
-	    
+
 	    /* Send the data. */
 	    if (!mpierr)
 		mpierr = MPI_Bcast((void *)buf, num_elem * typelen, MPI_BYTE, ios->compmaster,
@@ -160,7 +160,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 
 	/* Handle MPI errors. */
 	if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-	    return check_mpi(file, mpierr2, __FILE__, __LINE__);	    
+	    return check_mpi(file, mpierr2, __FILE__, __LINE__);
 	check_mpi(file, mpierr, __FILE__, __LINE__);
 
 	/* /\* Broadcast values currently only known on computation tasks to IO tasks. *\/ */
@@ -169,7 +169,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	/* if ((mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET, ios->comproot, ios->my_comm))) */
 	/*     check_mpi(file, mpierr, __FILE__, __LINE__); */
     }
-    
+
     /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
     {
@@ -178,7 +178,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	{
 	    vdesc = file->varlist + varid;
 	    if (vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0)
-		vdesc->request = realloc(vdesc->request, 
+		vdesc->request = realloc(vdesc->request,
 					 sizeof(int) * (vdesc->nreqs + PIO_REQUEST_ALLOC_CHUNK));
 	    request = vdesc->request+vdesc->nreqs;
 
@@ -208,14 +208,14 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 		    break;
 		default:
 		    LOG((0, "Unknown type for pnetcdf file! xtype = %d", xtype));
-		    
+
 		}
 	    else
 		*request = PIO_REQ_NULL;
-	    
+
 	    vdesc->nreqs++;
 	    flush_output_buffer(file, false, 0);
-	}	    
+	}
 #endif /* _PNETCDF */
 #ifdef _NETCDF
 	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
@@ -245,7 +245,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 		ierr = nc_put_vars_double(ncid, varid, (size_t *)start, (size_t *)count,
 					  (ptrdiff_t *)stride, buf);
 		break;
-#ifdef _NETCDF4		
+#ifdef _NETCDF4
 	    case NC_UBYTE:
 		ierr = nc_put_vars_uchar(ncid, varid, (size_t *)start, (size_t *)count,
 					 (ptrdiff_t *)stride, buf);
@@ -273,7 +273,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    default:
 		ierr = nc_put_vars(ncid, varid, (size_t *)start, (size_t *)count,
 				   (ptrdiff_t *)stride, buf);
-#endif /* _NETCDF4 */		
+#endif /* _NETCDF4 */
 	    }
 #endif /* _NETCDF */
     }
@@ -288,326 +288,348 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 }
 
 /** Interface to netCDF data write function. */
+int PIOc_put_vars_text(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
+		       const PIO_Offset *stride, const char *op)
+{
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_CHAR, op);
+}
+
+/** Interface to netCDF data write function. */
 int PIOc_put_vars_uchar(int ncid, int varid, const PIO_Offset *start,
 			const PIO_Offset *count, const PIO_Offset *stride,
-			const unsigned char *op) 
+			const unsigned char *op)
 {
-    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_UBYTE, op);    
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_UBYTE, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_vars_schar(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
+			const PIO_Offset *stride, const signed char *op)
+{
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_BYTE, op);
 }
 
 /** Interface to netCDF data write function. */
 int PIOc_put_vars_ushort(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-			 const PIO_Offset *stride, const unsigned short *op) 
+			 const PIO_Offset *stride, const unsigned short *op)
 {
-    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_USHORT, op);        
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_USHORT, op);
 }
 
 /** Interface to netCDF data write function. */
-int PIOc_put_vars_ulonglong(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-			    const PIO_Offset *stride, const unsigned long long *op) 
+int PIOc_put_vars_short(int ncid, int varid, const PIO_Offset *start,
+			const PIO_Offset *count, const PIO_Offset *stride, const short *op)
 {
-    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_UINT64, op);        
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_SHORT, op);
 }
 
 /** Interface to netCDF data write function. */
 int PIOc_put_vars_uint(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-		       const PIO_Offset *stride, const unsigned int *op) 
+		       const PIO_Offset *stride, const unsigned int *op)
 {
-    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_UINT, op);            
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_UINT, op);
 }
 
-/** Interface to netCDF data write function. */
-int PIOc_put_var_ushort(int ncid, int varid, const unsigned short *op) 
-{
-    return PIOc_put_vars_tc(ncid, varid, NULL, NULL, NULL, NC_USHORT, op);            
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var1_text (int ncid, int varid, const PIO_Offset index[], const char *op) 
-{
-    int ndims;
-    int ierr;
-
-    /* Find the number of dimensions. */
-    if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
-	return ierr;
-
-    /* Set up count array. */
-    PIO_Offset count[ndims];
-    for (int c = 0; c < ndims; c++)
-	count[c] = 1;
-
-    return PIOc_put_vars_text(ncid, varid, index, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var1_uchar (int ncid, int varid, const PIO_Offset index[],
-			 const unsigned char *op) 
-{
-    int ndims;
-    int ierr;
-
-    /* Find the number of dimensions. */
-    if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
-	return ierr;
-
-    /* Set up count array. */
-    PIO_Offset count[ndims];
-    for (int c = 0; c < ndims; c++)
-	count[c] = 1;
-
-    return PIOc_put_vars_uchar(ncid, varid, index, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var1_schar(int ncid, int varid, const PIO_Offset index[], const signed char *op) 
-{
-    int ndims;
-    int ierr;
-
-    /* Find the number of dimensions. */
-    if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
-	return ierr;
-
-    /* Set up count array. */
-    PIO_Offset count[ndims];
-    for (int c = 0; c < ndims; c++)
-	count[c] = 1;
-
-    return PIOc_put_vars_schar(ncid, varid, index, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var1_ushort (int ncid, int varid, const PIO_Offset index[],
-			  const unsigned short *op) 
-{
-    int ndims;
-    int ierr;
-
-    /* Find the number of dimensions. */
-    if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
-	return ierr;
-
-    /* Set up count array. */
-    PIO_Offset count[ndims];
-    for (int c = 0; c < ndims; c++)
-	count[c] = 1;
-
-    return PIOc_put_vars_short(ncid, varid, index, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var1_uint(int ncid, int varid, const PIO_Offset index[], const unsigned int *op) 
-{
-    int ndims;
-    int ierr;
-
-    /* Find the number of dimensions. */
-    if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
-	return ierr;
-
-    /* Set up count array. */
-    PIO_Offset count[ndims];
-    for (int c = 0; c < ndims; c++)
-	count[c] = 1;
-
-    return PIOc_put_vars_uint(ncid, varid, index, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var1_short(int ncid, int varid, const PIO_Offset index[], const short *op) 
-{
-    int ndims;
-    int ierr;
-
-    /* Find the number of dimensions. */
-    if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
-	return ierr;
-
-    /* Set up count array. */
-    PIO_Offset count[ndims];
-    for (int c = 0; c < ndims; c++)
-	count[c] = 1;
-
-    return PIOc_put_vars_short(ncid, varid, index, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var1_int(int ncid, int varid, const PIO_Offset index[], const int *op) 
-{
-    int ndims;
-    int ierr;
-
-    /* Find the number of dimensions. */
-    if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
-	return ierr;
-
-    /* Set up count array. */
-    PIO_Offset count[ndims];
-    for (int c = 0; c < ndims; c++)
-	count[c] = 1;
-
-    return PIOc_put_vars_int(ncid, varid, index, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var1_float(int ncid, int varid, const PIO_Offset index[], const float *op) 
-{
-    int ndims;
-    int ierr;
-
-    /* Find the number of dimensions. */
-    if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
-	return ierr;
-
-    /* Set up count array. */
-    PIO_Offset count[ndims];
-    for (int c = 0; c < ndims; c++)
-	count[c] = 1;
-
-    return PIOc_put_vars_float(ncid, varid, index, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var1_long(int ncid, int varid, const PIO_Offset index[], const long *op) 
-{
-    int ndims;
-    int ierr;
-
-    /* Find the number of dimensions. */
-    if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
-	return ierr;
-
-    /* Set up count array. */
-    PIO_Offset count[ndims];
-    for (int c = 0; c < ndims; c++)
-	count[c] = 1;
-
-    return PIOc_put_vars_long(ncid, varid, index, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var1_double(int ncid, int varid, const PIO_Offset index[], const double *op) 
-{
-    int ndims;
-    int ierr;
-
-    /* Find the number of dimensions. */
-    if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
-	return ierr;
-
-    /* Set up count array. */
-    PIO_Offset count[ndims];
-    for (int c = 0; c < ndims; c++)
-	count[c] = 1;
-
-    return PIOc_put_vars_double(ncid, varid, index, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var1_ulonglong (int ncid, int varid, const PIO_Offset index[], const unsigned long long *op) 
-{
-    int ndims;
-    int ierr;
-
-    /* Find the number of dimensions. */
-    if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
-	return ierr;
-
-    /* Set up count array. */
-    PIO_Offset count[ndims];
-    for (int c = 0; c < ndims; c++)
-	count[c] = 1;
-
-    return PIOc_put_vars_ulonglong(ncid, varid, index, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var1_longlong (int ncid, int varid, const PIO_Offset index[], const long long *op) 
-{
-    int ndims;
-    int ierr;
-
-    /* Find the number of dimensions. */
-    if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
-	return ierr;
-
-    /* Set up count array. */
-    PIO_Offset count[ndims];
-    for (int c = 0; c < ndims; c++)
-	count[c] = 1;
-
-    return PIOc_put_vars_longlong(ncid, varid, index, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_vara_uchar(int ncid, int varid, const PIO_Offset *start,
-			const PIO_Offset *count, const unsigned char *op) 
-{
-    return PIOc_put_vars_uchar(ncid, varid, start, count, NULL, op);
-}
-
-
-/** Interface to netCDF data write function. */
-int PIOc_put_vars_long(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-		       const PIO_Offset *stride, const long *op) 
+/** PIO interface to nc_put_vars_int */
+int PIOc_put_vars_int(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
+		      const PIO_Offset *stride, const int *op)
 {
     return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_INT, op);
 }
 
 /** Interface to netCDF data write function. */
-int PIOc_put_var_short(int ncid, int varid, const short *op) 
+int PIOc_put_vars_long(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
+		       const PIO_Offset *stride, const long *op)
 {
-    return PIOc_put_vars_short(ncid, varid, NULL, NULL, NULL, op);
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_INT, op);
 }
 
 /** Interface to netCDF data write function. */
-int PIOc_put_vara_int(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-		      const int *op) 
+int PIOc_put_vars_float(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
+			const PIO_Offset *stride, const float *op)
 {
-    return PIOc_put_vars_int(ncid, varid, start, count, NULL, op);
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_FLOAT, op);
 }
 
 /** Interface to netCDF data write function. */
-int PIOc_put_vara_text (int ncid, int varid, const PIO_Offset *start,
-			const PIO_Offset *count, const char *op) 
+int PIOc_put_vars_longlong(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
+			   const PIO_Offset *stride, const long long *op)
+{
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_INT64, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_vars_double(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
+			 const PIO_Offset *stride, const double *op)
+{
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_DOUBLE, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_vars_ulonglong(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
+			    const PIO_Offset *stride, const unsigned long long *op)
+{
+    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_UINT64, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype,
+		     const void *op)
+{
+    int ndims;
+    int ierr;
+
+    /* Find the number of dimensions. */
+    if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
+	return ierr;
+
+    /* Set up count array. */
+    PIO_Offset count[ndims];
+    for (int c = 0; c < ndims; c++)
+	count[c] = 1;
+
+    return PIOc_put_vars_tc(ncid, varid, index, count, NULL, xtype, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var1_text(int ncid, int varid, const PIO_Offset *index, const char *op)
+{
+    return PIOc_put_var1_tc(ncid, varid, index, NC_CHAR, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var1_uchar(int ncid, int varid, const PIO_Offset *index,
+			const unsigned char *op)
+{
+    return PIOc_put_var1_tc(ncid, varid, index, NC_UBYTE, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var1_schar(int ncid, int varid, const PIO_Offset *index,
+			const signed char *op)
+{
+    return PIOc_put_var1_tc(ncid, varid, index, NC_BYTE, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var1_ushort(int ncid, int varid, const PIO_Offset *index,
+			 const unsigned short *op)
+{
+    return PIOc_put_var1_tc(ncid, varid, index, NC_USHORT, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var1_short(int ncid, int varid, const PIO_Offset *index,
+			const short *op)
+{
+    return PIOc_put_var1_tc(ncid, varid, index, NC_SHORT, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var1_uint(int ncid, int varid, const PIO_Offset *index,
+		       const unsigned int *op)
+{
+    return PIOc_put_var1_tc(ncid, varid, index, NC_UINT, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var1_int(int ncid, int varid, const PIO_Offset *index, const int *op)
+{
+    return PIOc_put_var1_tc(ncid, varid, index, NC_INT, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var1_float(int ncid, int varid, const PIO_Offset *index, const float *op)
+{
+    return PIOc_put_var1_tc(ncid, varid, index, NC_FLOAT, op);    
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var1_long(int ncid, int varid, const PIO_Offset *index, const long *op)
+{
+    return PIOc_put_var1_tc(ncid, varid, index, NC_LONG, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var1_double(int ncid, int varid, const PIO_Offset *index,
+			 const double *op)
+{
+    return PIOc_put_var1_tc(ncid, varid, index, NC_DOUBLE, op);    
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var1_ulonglong(int ncid, int varid, const PIO_Offset *index,
+			    const unsigned long long *op)
+{
+    return PIOc_put_var1_tc(ncid, varid, index, NC_UINT64, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var1_longlong(int ncid, int varid, const PIO_Offset *index,
+			   const long long *op)
+{
+    return PIOc_put_var1_tc(ncid, varid, index, NC_INT64, op);    
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_vara_text(int ncid, int varid, const PIO_Offset *start,
+			const PIO_Offset *count, const char *op)
 {
     return PIOc_put_vars_text(ncid, varid, start, count, NULL, op);
 }
 
 /** Interface to netCDF data write function. */
-int PIOc_put_var_ulonglong (int ncid, int varid, const unsigned long long *op) 
+int PIOc_put_vara_uchar(int ncid, int varid, const PIO_Offset *start,
+			const PIO_Offset *count, const unsigned char *op)
 {
-    return PIOc_put_vars_ulonglong(ncid, varid, NULL, NULL, NULL, op);
+    return PIOc_put_vars_uchar(ncid, varid, start, count, NULL, op);
 }
 
 /** Interface to netCDF data write function. */
-int PIOc_put_var_int(int ncid, int varid, const int *op) 
+int PIOc_put_vara_schar(int ncid, int varid, const PIO_Offset *start,
+			const PIO_Offset *count, const signed char *op)
 {
-    return PIOc_put_vars_int(ncid, varid, NULL, NULL, NULL, op);
+    return PIOc_put_vars_schar(ncid, varid, start, count, NULL, op);
 }
 
 /** Interface to netCDF data write function. */
-int PIOc_put_var_longlong(int ncid, int varid, const long long *op) 
+int PIOc_put_vara_ushort(int ncid, int varid, const PIO_Offset *start,
+			 const PIO_Offset *count, const unsigned short *op)
 {
-    return PIOc_put_vars_longlong(ncid, varid, NULL, NULL, NULL, op);
+    return PIOc_put_vars_ushort(ncid, varid, start, count, NULL, op);
 }
 
 /** Interface to netCDF data write function. */
-int PIOc_put_var_schar(int ncid, int varid, const signed char *op) 
+int PIOc_put_vara_short(int ncid, int varid, const PIO_Offset *start,
+			const PIO_Offset *count, const short *op)
+{
+    return PIOc_put_vars_short(ncid, varid, start, count, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_vara_uint(int ncid, int varid, const PIO_Offset *start,
+		       const PIO_Offset *count, const unsigned int *op)
+{
+    return PIOc_put_vars_uint(ncid, varid, start, count, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_vara_int(int ncid, int varid, const PIO_Offset *start,
+		      const PIO_Offset *count, const int *op)
+{
+    return PIOc_put_vars_int(ncid, varid, start, count, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_vara_long(int ncid, int varid, const PIO_Offset *start,
+		       const PIO_Offset *count, const long *op)
+{
+    return PIOc_put_vars_long(ncid, varid, start, count, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_vara_float(int ncid, int varid, const PIO_Offset *start,
+			const PIO_Offset *count, const float *op)
+{
+    return PIOc_put_vars_float(ncid, varid, start, count, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_vara_ulonglong(int ncid, int varid, const PIO_Offset *start,
+			    const PIO_Offset *count, const unsigned long long *op)
+{
+    return PIOc_put_vars_ulonglong(ncid, varid, start, count, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_vara_longlong(int ncid, int varid, const PIO_Offset *start,
+			   const PIO_Offset *count, const long long *op)
+{
+    return PIOc_put_vars_longlong(ncid, varid, start, count, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_vara_double(int ncid, int varid, const PIO_Offset *start,
+			 const PIO_Offset *count, const double *op)
+{
+    return PIOc_put_vars_double(ncid, varid, start, count, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var_text(int ncid, int varid, const char *op)
+{
+    return PIOc_put_vars_text(ncid, varid, NULL, NULL, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var_uchar(int ncid, int varid, const unsigned char *op)
+{
+    return PIOc_put_vars_uchar(ncid, varid, NULL, NULL, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var_schar(int ncid, int varid, const signed char *op)
 {
     return PIOc_put_vars_schar(ncid, varid, NULL, NULL, NULL, op);
 }
 
 /** Interface to netCDF data write function. */
-int PIOc_put_var_uint(int ncid, int varid, const unsigned int *op) 
+int PIOc_put_var_ushort(int ncid, int varid, const unsigned short *op)
 {
-    return PIOc_put_vars_uint(ncid, varid, NULL, NULL, NULL, op);    
+    return PIOc_put_vars_tc(ncid, varid, NULL, NULL, NULL, NC_USHORT, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var_short(int ncid, int varid, const short *op)
+{
+    return PIOc_put_vars_short(ncid, varid, NULL, NULL, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var_uint(int ncid, int varid, const unsigned int *op)
+{
+    return PIOc_put_vars_uint(ncid, varid, NULL, NULL, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var_int(int ncid, int varid, const int *op)
+{
+    return PIOc_put_vars_int(ncid, varid, NULL, NULL, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var_long(int ncid, int varid, const long *op)
+{
+    return PIOc_put_vars_long(ncid, varid, NULL, NULL, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var_float(int ncid, int varid, const float *op)
+{
+    return PIOc_put_vars_float(ncid, varid, NULL, NULL, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var_ulonglong(int ncid, int varid, const unsigned long long *op)
+{
+    return PIOc_put_vars_ulonglong(ncid, varid, NULL, NULL, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var_longlong(int ncid, int varid, const long long *op)
+{
+    return PIOc_put_vars_longlong(ncid, varid, NULL, NULL, NULL, op);
+}
+
+/** Interface to netCDF data write function. */
+int PIOc_put_var_double(int ncid, int varid, const double *op)
+{
+    return PIOc_put_vars_double(ncid, varid, NULL, NULL, NULL, op);
 }
 
 /** Interface to netCDF data write function. */
 int PIOc_put_var(int ncid, int varid, const void *buf, PIO_Offset bufcount,
-		 MPI_Datatype buftype) 
+		 MPI_Datatype buftype)
 {
     int ierr;
     int msg;
@@ -627,7 +649,7 @@ int PIOc_put_var(int ncid, int varid, const void *buf, PIO_Offset bufcount,
     msg = PIO_MSG_PUT_VAR;
 
     if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
+	if(ios->compmaster)
 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
     }
@@ -654,7 +676,7 @@ int PIOc_put_var(int ncid, int varid, const void *buf, PIO_Offset bufcount,
 	    vdesc = file->varlist + varid;
 
 	    if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-		vdesc->request = realloc(vdesc->request, 
+		vdesc->request = realloc(vdesc->request,
 					 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
 	    }
 	    request = vdesc->request+vdesc->nreqs;
@@ -678,149 +700,6 @@ int PIOc_put_var(int ncid, int varid, const void *buf, PIO_Offset bufcount,
     return ierr;
 }
 
-/** Interface to netCDF data write function. */
-int PIOc_put_vara_ushort(int ncid, int varid, const PIO_Offset *start,
-			 const PIO_Offset *count, const unsigned short *op) 
-{
-    return PIOc_put_vars_ushort(ncid, varid, start, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_vars_short (int ncid, int varid, const PIO_Offset *start,
-			 const PIO_Offset *count, const PIO_Offset *stride, const short *op) 
-{
-    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_SHORT, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_vara_uint(int ncid, int varid, const PIO_Offset *start,
-		       const PIO_Offset *count, const unsigned int *op) 
-{
-    return PIOc_put_vars_uint(ncid, varid, start, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_vara_schar (int ncid, int varid, const PIO_Offset *start,
-			 const PIO_Offset *count, const signed char *op) 
-{
-    return PIOc_put_vars_schar(ncid, varid, start, count, NULL, op);    
-}
-
-
-/** Interface to netCDF data write function. */
-int PIOc_put_vars_schar(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-			const PIO_Offset *stride, const signed char *op) 
-{
-    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_BYTE, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_vara_float(int ncid, int varid, const PIO_Offset *start,
-			const PIO_Offset *count, const float *op) 
-{
-    return PIOc_put_vars_float(ncid, varid, start, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_vars_text(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-		       const PIO_Offset *stride, const char *op) 
-{
-    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_CHAR, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_vars_double(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-			 const PIO_Offset *stride, const double *op) 
-{
-    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_DOUBLE, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_vara_longlong(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-			   const long long *op) 
-{
-    return PIOc_put_vars_longlong(ncid, varid, start, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var_double (int ncid, int varid, const double *op) 
-{
-    return PIOc_put_vars_double(ncid, varid, NULL, NULL, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var_float(int ncid, int varid, const float *op) 
-{
-    return PIOc_put_vars_float(ncid, varid, NULL, NULL, NULL, op);
-}
-
-int PIOc_put_vars_float(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-			const PIO_Offset *stride, const float *op) 
-{
-    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_FLOAT, op);
-}
-
-int PIOc_put_vara_short(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-			const short *op) 
-{
-    return PIOc_put_vars_short(ncid, varid, start, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_vara_ulonglong(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-			    const unsigned long long *op) 
-{
-    return PIOc_put_vars_ulonglong(ncid, varid, start, count, NULL, op);
-}
-
-
-/** Interface to netCDF data write function. */
-int PIOc_put_vara_long(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-		       const long *op) 
-{
-    return PIOc_put_vars_long(ncid, varid, start, count, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var_text(int ncid, int varid, const char *op) 
-{
-    return PIOc_put_vars_text(ncid, varid, NULL, NULL, NULL, op);
-}
-
-/** PIO interface to nc_put_vars_int */
-int PIOc_put_vars_int(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-		      const PIO_Offset *stride, const int *op) 
-{
-    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_INT, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_vars_longlong(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-			   const PIO_Offset *stride, const long long *op) 
-{
-    return PIOc_put_vars_tc(ncid, varid, start, count, stride, NC_INT64, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_vara_double(int ncid, int varid, const PIO_Offset *start,
-			 const PIO_Offset *count, const double *op) 
-{
-    return PIOc_put_vars_double(ncid, varid, start, count, NULL, op);
-}
-
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var_uchar(int ncid, int varid, const unsigned char *op) 
-{
-    return PIOc_put_vars_uchar(ncid, varid, NULL, NULL, NULL, op);
-}
-
-/** Interface to netCDF data write function. */
-int PIOc_put_var_long(int ncid, int varid, const long *op)
-{
-    return PIOc_put_vars_long(ncid, varid, NULL, NULL, NULL, op);
-}
-
 /**
  * PIO interface to nc_put_vars
  *
@@ -832,7 +711,7 @@ int PIOc_put_var_long(int ncid, int varid, const long *op)
  * netcdf documentation. </A> */
 int PIOc_put_vars(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
 		  const PIO_Offset *stride, const void *buf, PIO_Offset bufcount,
-		  MPI_Datatype buftype) 
+		  MPI_Datatype buftype)
 {
     int ierr;
     int msg;
@@ -852,7 +731,7 @@ int PIOc_put_vars(int ncid, int varid, const PIO_Offset *start, const PIO_Offset
     msg = PIO_MSG_PUT_VARS;
 
     if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
+	if(ios->compmaster)
 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
     }
@@ -880,7 +759,7 @@ int PIOc_put_vars(int ncid, int varid, const PIO_Offset *start, const PIO_Offset
 	    vdesc = file->varlist + varid;
 
 	    if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-		vdesc->request = realloc(vdesc->request, 
+		vdesc->request = realloc(vdesc->request,
 					 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
 	    }
 	    request = vdesc->request+vdesc->nreqs;
@@ -906,8 +785,8 @@ int PIOc_put_vars(int ncid, int varid, const PIO_Offset *start, const PIO_Offset
 }
 
 /** Interface to netCDF data write function. */
-int PIOc_put_var1 (int ncid, int varid, const PIO_Offset index[], const void *buf,
-		   PIO_Offset bufcount, MPI_Datatype buftype) 
+int PIOc_put_var1(int ncid, int varid, const PIO_Offset *index, const void *buf,
+		  PIO_Offset bufcount, MPI_Datatype buftype)
 {
     int ierr;
     int msg;
@@ -927,7 +806,7 @@ int PIOc_put_var1 (int ncid, int varid, const PIO_Offset index[], const void *bu
     msg = PIO_MSG_PUT_VAR1;
 
     if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
+	if(ios->compmaster)
 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
     }
@@ -954,7 +833,7 @@ int PIOc_put_var1 (int ncid, int varid, const PIO_Offset index[], const void *bu
 	    vdesc = file->varlist + varid;
 
 	    if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-		vdesc->request = realloc(vdesc->request, 
+		vdesc->request = realloc(vdesc->request,
 					 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
 	    }
 	    request = vdesc->request+vdesc->nreqs;
@@ -980,7 +859,7 @@ int PIOc_put_var1 (int ncid, int varid, const PIO_Offset index[], const void *bu
 
 /** Interface to netCDF data write function. */
 int PIOc_put_vara(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count, const void *buf,
-		  PIO_Offset bufcount, MPI_Datatype buftype) 
+		  PIO_Offset bufcount, MPI_Datatype buftype)
 {
     int ierr;
     int msg;
@@ -1000,7 +879,7 @@ int PIOc_put_vara(int ncid, int varid, const PIO_Offset *start, const PIO_Offset
     msg = PIO_MSG_PUT_VARA;
 
     if(ios->async_interface && ! ios->ioproc){
-	if(ios->compmaster) 
+	if(ios->compmaster)
 	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
     }
@@ -1027,7 +906,7 @@ int PIOc_put_vara(int ncid, int varid, const PIO_Offset *start, const PIO_Offset
 	    vdesc = file->varlist + varid;
 
 	    if(vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0 ){
-		vdesc->request = realloc(vdesc->request, 
+		vdesc->request = realloc(vdesc->request,
 					 sizeof(int)*(vdesc->nreqs+PIO_REQUEST_ALLOC_CHUNK));
 	    }
 	    request = vdesc->request+vdesc->nreqs;
@@ -1050,4 +929,3 @@ int PIOc_put_vara(int ncid, int varid, const PIO_Offset *start, const PIO_Offset
 
     return ierr;
 }
-
