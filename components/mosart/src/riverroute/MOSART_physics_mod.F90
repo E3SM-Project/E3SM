@@ -74,11 +74,6 @@ MODULE MOSART_physics_mod
           call insert_returnflow_soilcolumn
        endif
        !call readPotentialEvap(trim(theTime))
-!NV this needs to change dependening on set up
-! the demand is to be read by each time step depending on demand format
-!regulation release pattern is set up at the beginning of the month, 1st step
-! same for storage targets.
-
        if ( day == 1 .and. tod == 0) then    ! tcx should this be all timesteps on day=1
           do idam=1,ctlSubwWRM%localNumDam
              if ( mon .eq. WRMUnit%MthStOp(idam)) then
@@ -115,22 +110,20 @@ MODULE MOSART_physics_mod
     end do
     call t_stopf('mosartr_hillslope')
 
-!moved inside the submnetwork channel routing and work on wt instead of etin
-!#ifdef INCLUDE_WRM
-!    if (wrmflag) then
-!       call t_startf('mosartr_wrm_IESubN')
-!       ! extraction from available etin
-!       ! allows to skip the sub loop
-!       if (ctlSubwWRM%ExtractionFlag > 0) then
-!          do iunit=rtmCTL%begr,rtmCTL%endr
-!             if (TUnit%mask(iunit) > 0) then
-!                call irrigationExtractionSubNetwork(iunit, Tctl%DeltaT )
-!             endif
-!          enddo
-!       end if
-!       call t_stopf('mosartr_wrm_IESubN')
-!    endif
-!#endif
+#ifdef INCLUDE_WRM
+    if (wrmflag) then
+       call t_startf('mosartr_wrm_IESubN')
+       ! extraction from available surface runoff 
+       if (ctlSubwWRM%ExtractionFlag > 0) then
+          do iunit=rtmCTL%begr,rtmCTL%endr
+             if (TUnit%mask(iunit) > 0) then
+                call irrigationExtractionSubNetwork(iunit, Tctl%DeltaT )
+             endif
+          enddo
+       end if
+       call t_stopf('mosartr_wrm_IESubN')
+    endif
+#endif
 
     TRunoff%flow = 0._r8
     TRunoff%eroup_lagi = 0._r8
@@ -154,18 +147,6 @@ MODULE MOSART_physics_mod
              do k=1,TUnit%numDT_t(iunit)
                 call subnetworkRouting(iunit,nt,localDeltaT)
                 TRunoff%wt(iunit,nt) = TRunoff%wt(iunit,nt) + TRunoff%dwt(iunit,nt) * localDeltaT
-
-!extraction from subnetwork here from wt
-#ifdef INCLUDE_WRM
-             if (wrmflag) then
-                if (nt == nt_nliq) then
-                   localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
-                   if  (ctlSubwWRM%ExtractionFlag > 0 ) then
-                      call irrigationExtractionSubNetwork(iunit, localDeltaT )
-                   endif
-                endif
-            endif
-#endif
                 call UpdateState_subnetwork(iunit,nt)
                 TRunoff%erlateral(iunit,nt) = TRunoff%erlateral(iunit,nt)-TRunoff%etout(iunit,nt)
              end do ! numDT_t
