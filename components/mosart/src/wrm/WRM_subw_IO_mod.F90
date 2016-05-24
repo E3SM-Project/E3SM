@@ -681,8 +681,6 @@ MODULE WRM_subw_IO_mod
 
 ! tcx should this flag be here?
 !     if ( ctlSubwWRM%RegulationFlag > 0 ) then
-!NV : to be consistent with the flags, you can allow for extraction but not
-!regulation, flag should stay although very  likely not used
 
         !--- read mean monthly flow data
         do mth = 1,12
@@ -786,18 +784,6 @@ MODULE WRM_subw_IO_mod
 !!tcx this should be accumlating global data, not just local data, idepend could be outside begr:endr
 !!              WRMUnit%TotStorCapDepend(idepend) = WRMUnit%TotStorCapDepend(idepend) + WRMUnit%StorCap(idam)
 !!              WRMUnit%TotInflowDepend(idepend) = WRMUnit%TotInflowDepend(idepend) + WRMUnit%MeanMthFlow(idam,13)
-!           end do
-!        end do
-
-!recommented out after discussion with tcx
-! NV here I extracted piece of code without the databse check but needed for the
-! remaining of the code
-        !do idam = 1,ctlSubwWRM%localNumDam
-        !   do ng = 1,WRMUnit%dam_Ndepend(idam)
-        !      WRMUnit%TotStorCapDepend(idepend) =
-!WRMUnit%TotStorCapDepend(idepend) + WRMUnit%StorCap(idam)
-!              WRMUnit%TotInflowDepend(idepend) =
-!WRMUnit%TotInflowDepend(idepend) + WRMUnit%MeanMthFlow(idam,13)
 !           end do
 !        end do
 
