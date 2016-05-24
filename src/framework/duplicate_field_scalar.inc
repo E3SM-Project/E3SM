@@ -44,11 +44,21 @@
                dst_cursor % sendList => src_cursor % sendList
                dst_cursor % recvList => src_cursor % recvList
                dst_cursor % copyList => src_cursor % copyList
+
+               if ( associated(dst_cursor % attLists) ) then
+                  deallocate(dst_cursor % attLists)
+               end if
+
+               allocate(dst_cursor % attLists( size(src_cursor % attLists) ) )
+
+               do iConstituent = 1, size(src_cursor % attLists)
+                  call mpas_duplicate_attlist(src_cursor % attLists(iConstituent) % attList, dst_cursor % attLists(iConstituent) % attList)
+               end do
             end if
             if ( dst_cursor % isActive .and. src_cursor % isActive ) then
                dst_cursor % scalar = src_cursor % scalar
             end if
-   
+
 !           src_cursor => src_cursor % next
 !           if (.not. local_copy_only) then
 !              dst_cursor => dst_cursor % next
