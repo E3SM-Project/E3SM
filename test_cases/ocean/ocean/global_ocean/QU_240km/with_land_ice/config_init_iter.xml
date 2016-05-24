@@ -1,20 +1,19 @@
 <?xml version="1.0"?>
 <config case="init_iter">
-	<add_executable source="model" dest="ocean_model"/>
+	<add_link source="../init_step1/culled_mesh_final.nc" dest="mesh.nc"/>
+	<add_link source="../init_step1/culled_graph.info" dest="graph.info"/>
 
-	<add_link source="../init_step1/culled_mesh.nc" dest="mesh.nc"/>
-	<add_link source="../init_step1/temperature.nc" dest="temperature.nc"/>
-	<add_link source="../init_step1/salinity.nc" dest="salinity.nc"/>
-	<add_link source="../init_step1/wind_stress.nc" dest="wind_stress.nc"/>
-	<add_link source="../init_step1/topography.nc" dest="topography.nc"/>
-	<add_link source="../init_step1/swData.nc" dest="swData.nc"/>
-
-	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+	<add_link source="../init_step2/temperature.nc" dest="temperature.nc"/>
+	<add_link source="../init_step2/salinity.nc" dest="salinity.nc"/>
+	<add_link source="../init_step2/wind_stress.nc" dest="wind_stress.nc"/>
+	<add_link source="../init_step2/topography.nc" dest="topography.nc"/>
+	<add_link source="../init_step2/swData.nc" dest="swData.nc"/>
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init2.xml" path_base="script_configuration_dir"/>
 		<template file="template_init_with_land_ice.xml" path_base="script_configuration_dir"/>
 		<option name="config_global_ocean_depth_conversion_factor">0.01</option>
+		<option name="config_use_debugTracers">.true.</option>
 		<option name="config_read_ssh_and_ssp_from_stream">.true.</option>
 		<option name="config_rx1_horiz_smooth_open_ocean_cells">10</option>
 	</namelist>

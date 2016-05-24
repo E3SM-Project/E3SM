@@ -12,7 +12,7 @@
 		<option name="config_global_ocean_topography_lat_varname">'lat'</option>
 		<option name="config_global_ocean_topography_lon_varname">'lon'</option>
 		<option name="config_global_ocean_topography_varname">'bathymetry'</option>
-		<option name="config_global_ocean_topography_has_ocean_frac">.true.</option>
+		<option name="config_global_ocean_topography_has_ocean_frac">.false.</option>
 		<option name="config_global_ocean_topography_ocean_frac_varname">'ocean_mask'</option>
 		<option name="config_global_ocean_topography_method">'bilinear_interpolation'</option>
 		<option name="config_global_ocean_smooth_topography">.true.</option>
