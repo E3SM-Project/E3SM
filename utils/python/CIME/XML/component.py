@@ -45,6 +45,11 @@ class Component(EntryID):
         values = self.get_optional_node("values", root=node)
         if values is None:
             return
+        # use the default_value if present
+        val_node = self.get_optional_node("default_value", root=node)
+        value = val_node.text
+        if value is not None and len(value) > 0 and value != "UNSET":
+            match_values.append(value)
         for valnode in self.get_nodes("value", root=node):
             # loop through all the keys in valnode (value nodes) attributes
             for key,value in valnode.attrib.iteritems():
@@ -77,13 +82,7 @@ class Component(EntryID):
 
         if len(match_values) > 0:
             match_value = " ".join(match_values)
-        else:
-            # use the default_value if present
-            val_node = self.get_optional_node("default_value", root=node)
-            value = val_node.text
-            if value is not None and len(value) > 0 and value != "UNSET":
-                match_values.append(value)
-            
+
         return match_value
 
 

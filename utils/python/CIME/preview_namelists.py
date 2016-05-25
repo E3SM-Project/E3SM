@@ -81,7 +81,7 @@ def preview_namelists(dryrun=False, case=None, casedir=None):
         config_file = case.get_value("CONFIG_%s_FILE" % model_str.upper())
         config_dir = os.path.dirname(config_file)
         cmd = os.path.join(config_dir, "buildnml")
-
+        logger.info("Running %s"%cmd)
         if (logger.level == logging.DEBUG):
             run_cmd("PREVIEW_NML=1 %s %s" % (cmd, caseroot))
         else:

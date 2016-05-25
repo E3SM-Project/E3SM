@@ -174,7 +174,7 @@ class SystemTestsCommon(object):
             finalmem = float(memlist[-1][1])
             originalmem = float(memlist[0][1])
             memdiff = (finalmem - originalmem)/originalmem
-            if memdiff < 0.01:
+            if memdiff < 0.1:
                 append_status("PASS %s memleak"%(self._case.get_value("CASEBASEID")),
                              sfile="TestStatus")
             else:
@@ -237,7 +237,7 @@ class SystemTestsCommon(object):
         rc, out, err = run_cmd(compgen, ok_to_fail=True)
         append_status(out+"\n",sfile="TestStatus")
         if rc != 0:
-            append_status("Error in Baseline compare: %s"%err, sfile="TestStatus.log")
+            append_status("Error in Baseline compare: %s\n%s"%(out,err), sfile="TestStatus.log")
 
         # compare memory usage to baseline
         newestcpllogfile = self._get_latest_cpl_log()

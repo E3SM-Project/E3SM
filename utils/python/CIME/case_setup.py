@@ -259,6 +259,7 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
         # loop over models
         for model in models:
             comp = case.get_value("COMP_%s" % model)
+            logger.info("Building %s usernl files"%model)
             _build_usernl_files(case, model, comp)
             if comp == "cism":
                 run_cmd("%s/../components/cism/cime_config/cism.template %s" % (cimeroot, caseroot))
@@ -266,6 +267,7 @@ def case_setup(caseroot, clean=False, test_mode=False, reset=False):
         _build_usernl_files(case, "drv", "cpl")
 
         # Run preview namelists for scripts
+        logger.info("preview_namelists")
         preview_namelists(case=case)
 
         logger.info("See ./CaseDoc for component namelists")
