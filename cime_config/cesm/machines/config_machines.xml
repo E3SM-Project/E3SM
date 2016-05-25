@@ -1625,7 +1625,7 @@
   <machine MACH="stampede">
     <DESC>TACC DELL, os is Linux, 16 pes/node, batch system is SLURM</DESC>
     <OS>LINUX</OS>
-    <NODENAME_REGEX>.*stampede</NODENAME_REGEX> 
+    <NODENAME_REGEX>.*stampede</NODENAME_REGEX>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>impi,mvapich2</MPILIBS>
     <RUNDIR>$SCRATCH/$CASE/run</RUNDIR>
@@ -1634,7 +1634,7 @@
     <DIN_LOC_ROOT>/scratch/projects/xsede/CESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/scratch/projects/xsede/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$WORK/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>              
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
     <CCSM_BASELINE>/scratch/projects/xsede/CESM/ccsm_baselines</CCSM_BASELINE>
     <CCSM_CPRNC>/scratch/projects/xsede/CESM/tools/cprnc/cprnc</CCSM_CPRNC>
     <BATCHQUERY>squeue</BATCHQUERY>
@@ -1660,7 +1660,7 @@
 	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
      	<arg name="thread_count" > -c {{ thread_count }}</arg>
       </arguments>
-    </mpirun> 
+    </mpirun>
     <mpirun mpilib="mvapich2">
       <executable>srun</executable>
       <arguments>
@@ -1700,7 +1700,7 @@
 	<command name="load">pnetcdf/1.6.0</command>
 	<command name="load">parallel-netcdf/4.3.3.1</command>
       </modules>
-      <modules mpilib="mpi-serial"> 
+      <modules mpilib="mpi-serial">
 	<command name="load">netcdf/4.3.3.1</command>
       </modules>
     </module_system>
@@ -1714,7 +1714,7 @@
 
   <machine MACH="yellowstone">
     <DESC>NCAR IBM, os is Linux, 16 pes/node, batch system is LSF</DESC>
-    <NODENAME_REGEX>(yslogin.*|pronghorn.*|caldera.*)</NODENAME_REGEX>
+    <NODENAME_REGEX>.*yellowstone</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,pgi,gnu,intel15</COMPILERS>
     <MPILIBS>mpich2,pempi</MPILIBS>

@@ -134,7 +134,7 @@ class SystemTestsCommon(object):
         """
         memlist = []
         meminfo = re.compile(r".*model date =\s+(\w+).*memory =\s+(\d+\.?\d+).*highwater")
-        if cpllog is not None:
+        if cpllog is not None and os.path.isfile(cpllog):
             with gzip.open(cpllog, "rb") as f:
                 for line in f:
                     m = meminfo.match(line)
@@ -147,7 +147,7 @@ class SystemTestsCommon(object):
         Examine memory usage as recorded in the cpl log file and look for unexpected
         increases.
         """
-        if cpllog is not None:
+        if cpllog is not None and os.path.isfile(cpllog):
             with gzip.open(cpllog, "rb") as f:
                 cpltext = f.read()
                 m = re.search(r"# simulated years / cmp-day =\s+(\d+\.\d+)\s",cpltext)
@@ -256,11 +256,12 @@ class SystemTestsCommon(object):
         baselog = os.path.join(basecmp_dir, "cpl.log")
         baseline = self._get_throughput(baselog)
         #comparing ypd so bigger is better
-        diff = (baseline - current)/baseline
-        if(diff < 0.25):
-            append_status("PASS: Throughput baseline compare ",sfile="TestStatus")
-        else:
-            append_status("FAIL: Throughput increase > 25% from baseline",sfile="TestStatus")
+        if baseline is not None and current is not None:
+            diff = (baseline - current)/baseline
+            if(diff < 0.25):
+                append_status("PASS: Throughput baseline compare ",sfile="TestStatus")
+            else:
+                append_status("FAIL: Throughput increase > 25% from baseline",sfile="TestStatus")
 
 
 
