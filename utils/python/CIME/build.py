@@ -538,15 +538,16 @@ def _build_model_thread(config_dir, caseroot, bldroot, compspec, file_build,
 def clean(case, cleanlist=None):
 ###############################################################################
     clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
+    comp_lnd = case.get_value("COMP_LND")
     if cleanlist is None:
         cleanlist = case.get_value("COMP_CLASSES").split(',')
         cleanlist = [x.lower().replace('drv','cpl') for x in cleanlist]
         testcase        = case.get_value("TESTCASE")
-        if testcase is not None:
-            if clm_config_opts is not None:
-                # we only want to clean lnd here if it is clm4_0 otherwise remove
-                # it from the cleanlist
-                if "lnd" in cleanlist and "clm4_0" not in clm_config_opts:
+        # we only want to clean clm here if it is clm4_0 otherwise remove
+        # it from the cleanlist
+        if testcase is not None and comp_lnd == "clm" and\
+                clm_config_opts is not None and "lnd" in cleanlist and\
+                "clm4_0" not in clm_config_opts:
                     cleanlist.remove('lnd')
 
 
