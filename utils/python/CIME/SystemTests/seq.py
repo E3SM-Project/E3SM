@@ -91,7 +91,8 @@ class SEQ(SystemTestsCommon):
         shutil.copy(os.path.join("LockedFiles", "env_mach_pes.SEQ1.xml"), "env_mach_pes.xml")
         shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles", "env_mach_pes.xml"))
         success = SystemTestsCommon._run(self)
-
+        if not success:
+            return False
         shutil.copy(os.path.join("LockedFiles", "env_mach_pes.SEQ2.xml"), "env_mach_pes.xml")
         shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles", "env_mach_pes.xml"))
 
