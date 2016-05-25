@@ -49,7 +49,7 @@ class SEQ(SystemTestsCommon):
                 # here we set the cpl to have the first 2 tasks
                 # and each component to have a different ROOTPE
                 if comp == "DRV":
-                    self._case.set_value("NTASKS_CPL"%comp, 2)
+                    self._case.set_value("NTASKS_CPL", 2)
                 else:
                     ntasks = self._case.get_value("NTASKS_%s"%comp)
                     if ntasks > 1:
