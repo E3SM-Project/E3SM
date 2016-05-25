@@ -110,20 +110,21 @@ MODULE MOSART_physics_mod
     end do
     call t_stopf('mosartr_hillslope')
 
-#ifdef INCLUDE_WRM
-    if (wrmflag) then
-       call t_startf('mosartr_wrm_IESubN')
-       ! extraction from available surface runoff 
-       if (ctlSubwWRM%ExtractionFlag > 0) then
-          do iunit=rtmCTL%begr,rtmCTL%endr
-             if (TUnit%mask(iunit) > 0) then
-                call irrigationExtractionSubNetwork(iunit, Tctl%DeltaT )
-             endif
-          enddo
-       end if
-       call t_stopf('mosartr_wrm_IESubN')
-    endif
-#endif
+!moved inside the subnetwork channel routing and work on wt instead of etin
+!#ifdef INCLUDE_WRM
+!    if (wrmflag) then
+!       call t_startf('mosartr_wrm_IESubN')
+!       ! extraction from available surface runoff 
+!       if (ctlSubwWRM%ExtractionFlag > 0) then
+!          do iunit=rtmCTL%begr,rtmCTL%endr
+!             if (TUnit%mask(iunit) > 0) then
+!                call irrigationExtractionSubNetwork(iunit, Tctl%DeltaT )
+!             endif
+!          enddo
+!       end if
+!       call t_stopf('mosartr_wrm_IESubN')
+!    endif
+!#endif
 
     TRunoff%flow = 0._r8
     TRunoff%eroup_lagi = 0._r8
@@ -143,6 +144,18 @@ MODULE MOSART_physics_mod
        if (TUnit%euler_calc(nt)) then
        do iunit=rtmCTL%begr,rtmCTL%endr
           if(TUnit%mask(iunit) > 0) then
+!extraction from subnetwork here from wt
+#ifdef INCLUDE_WRM
+             if (wrmflag) then
+                if (nt == nt_nliq) then
+                   if  (ctlSubwWRM%ExtractionFlag > 0 ) then
+                      localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
+                      call irrigationExtractionSubNetwork(iunit, localDeltaT )
+                      call UpdateState_subnetwork(iunit,nt)
+                   endif
+                endif
+             endif
+#endif
              localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/TUnit%numDT_t(iunit)
              do k=1,TUnit%numDT_t(iunit)
                 call subnetworkRouting(iunit,nt,localDeltaT)
