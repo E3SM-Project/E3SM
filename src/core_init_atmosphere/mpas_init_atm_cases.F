@@ -14,12 +14,13 @@ module init_atm_cases
    use mpas_dmpar
    use mpas_sort
    use atm_advection
-   use mpas_atmphys_initialize_real
    use mpas_RBF_interpolation
    use mpas_vector_reconstruction
    use mpas_timer
    use mpas_init_atm_static
    use mpas_init_atm_surface
+   use mpas_atmphys_initialize_real
+   use mpas_atmphys_constants
 
    ! Added only clause to keep xlf90 from getting confused from the overloaded abs intrinsic in mpas_timekeeping
    use mpas_timekeeping !, only: MPAS_Time_type, MPAS_TimeInterval_type, MPAS_Clock_type, &
