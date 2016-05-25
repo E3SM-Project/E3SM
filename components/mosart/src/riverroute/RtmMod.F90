@@ -100,7 +100,7 @@ module RtmMod
   logical :: do_rtm
 
   character(len=256) :: nlfilename_rof = 'mosart_in' 
-  real(r8), save :: delt_save             ! previous delt !BSINGH- declare and initialize it globally
+  real(r8), save :: delt_save             ! previous delt 
 !
 !EOP
 !-----------------------------------------------------------------------
@@ -1426,7 +1426,6 @@ contains
     real(r8) :: delt                        ! delt associated with subcycling
     real(r8) :: delt_coupling               ! real value of coupling_period
     integer , save :: nsub_save             ! previous nsub
-    !real(r8), save :: delt_save             ! previous delt  !BSINGH- declare and initialize it globally
     logical , save :: first_call = .true.   ! first time flag (for backwards compatibility)
     character(len=256) :: filer             ! restart file name
     integer  :: cnt                         ! counter for gridcells
