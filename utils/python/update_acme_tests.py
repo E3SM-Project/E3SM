@@ -64,8 +64,8 @@ _TEST_SUITES = {
 
     "cime_developer" : (None,
                             ("NCK_Ld3.f45_g37_rx1.A",
-                             "ERI_D.f45_g37_rx1.A",
-                             "SEQ_Ld3.f09_g16.X",
+                             "ERI_D_Ln21.f45_g37.X",
+                             "SEQ_Ln9.f19_g16_rx1.A",
                              "ERS_Ld3.ne30_g16_rx1.A",
                              "ERS_N2_Ld3.f19_g16_rx1.A",
                              "ERR_Ld3.f45_g37_rx1.A",
