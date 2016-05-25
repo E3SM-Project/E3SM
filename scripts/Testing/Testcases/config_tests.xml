@@ -276,6 +276,7 @@
   <test NAME="SEQ">
     <DESC>sequencing bfb test (10 day seq,conc tests)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
+    <BFBFLAG>TRUE</BFBFLAG>
     <STOP_OPTION>ndays</STOP_OPTION>
     <STOP_N>10</STOP_N>
     <REST_OPTION>never</REST_OPTION>

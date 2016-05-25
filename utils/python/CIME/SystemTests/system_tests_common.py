@@ -12,7 +12,7 @@ import CIME.build as build
 logger = logging.getLogger(__name__)
 
 class SystemTestsCommon(object):
-    def __init__(self, caseroot=None, case=None):
+    def __init__(self, caseroot=None, case=None, expected=None):
         """
         initialize a CIME system test object, if the file LockedFiles/env_run.orig.xml
         does not exist copy the current env_run.xml file.  If it does exist restore values
@@ -30,7 +30,7 @@ class SystemTestsCommon(object):
             self._case = case
 
         if os.path.isfile(os.path.join(caseroot, "LockedFiles", "env_run.orig.xml")):
-            self.compare_env_run()
+            self.compare_env_run(expected=expected)
         elif os.path.isfile(os.path.join(caseroot, "env_run.xml")):
             lockedfiles = os.path.join(caseroot, "LockedFiles")
             try:
