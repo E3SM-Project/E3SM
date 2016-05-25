@@ -18,6 +18,8 @@ class PEA(SystemTestsCommon):
     def build(self, sharedlib_only=False, model_only=False):
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
+
+        # first set all component mpi tasks to 1
         for comp in ['ATM','CPL','OCN','WAV','GLC','ICE','ROF','LND']:
             self._case.set_value("NTASKS_%s"%comp, 1)
 
