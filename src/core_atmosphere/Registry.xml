@@ -6,26 +6,46 @@
 <!-- **************************************************************************************** -->
 
         <dims>
-                <dim name="nCells"/>
-                <dim name="nEdges"/>
-                <dim name="maxEdges"/>
-                <dim name="maxEdges2"/>
-                <dim name="nVertices"/>
-                <dim name="TWO"                definition="2"/>
-                <dim name="THREE"              definition="3"/>
-                <dim name="vertexDegree"/>
-                <dim name="FIFTEEN"            definition="15"/>
-                <dim name="TWENTYONE"          definition="21"/>
-                <dim name="R3"                 definition="3"/>
-                <dim name="nVertLevels"/>
-                <dim name="nVertLevelsP1"      definition="nVertLevels+1"/>
-                <dim name="nMonths"            definition="namelist:months"/>
-                <dim name="nSoilLevels"        definition="namelist:num_soil_layers"/>
-                <dim name="nLags"              definition="namelist:input_soil_temperature_lag"/>
-                <dim name="nOznLevels"         definition="namelist:noznlev"/>
-                <dim name="nAerLevels"         definition="namelist:naerlev"/>
-                <dim name="cam_dim1"           definition="namelist:camdim1"/>
-                <dim name="nVertLevelsP2"      definition="nVertLevels+2"/>
+                <dim name="nCells"
+                     description="The number of Voronoi cells in the primal mesh"/>
+                <dim name="nEdges"
+                     description="The number of cell faces (edges) in the primal and dual meshes"/>
+                <dim name="maxEdges"
+                     description="The largest number of neighbors that a primal mesh cell may have"/>
+                <dim name="maxEdges2"
+                     description="Twice the value of maxEdges"/>
+                <dim name="nVertices"
+                     description="The number of Delaunay triangles in the dual mesh, equivalent to the number of cell corners in the primal mesh"/>
+                <dim name="TWO"                definition="2"
+                     description="A constant value of 2"/>
+                <dim name="THREE"              definition="3"
+                     description="A constant value of 3"/>
+                <dim name="vertexDegree"
+                     description="The number of edges or cells that meet at vertices"/>
+                <dim name="FIFTEEN"            definition="15"
+                     description="A constant value of 15"/>
+                <dim name="TWENTYONE"          definition="21"
+                     description="A constant value of 21"/>
+                <dim name="R3"                 definition="3"
+                     description="The dimensionality of vectors in $\Re^3$"/>
+                <dim name="nVertLevels"
+                     description="The number of atmospheric layers"/>
+                <dim name="nVertLevelsP1"      definition="nVertLevels+1"
+                     description="The number of atmospheric levels, always one more than the number of layers"/>
+                <dim name="nMonths"            definition="namelist:months"
+                     description="The number of months in a year"/>
+                <dim name="nSoilLevels"        definition="namelist:num_soil_layers"
+                     description="The number of layers used by the land-surface scheme"/>
+                <dim name="nLags"              definition="namelist:input_soil_temperature_lag"
+                     description="The number of days affecting the deep soil temperature"/>
+                <dim name="nOznLevels"         definition="namelist:noznlev"
+                     description="The number of prescribed pressure levels for input climatological ozone volume mixing ratios"/>
+                <dim name="nAerLevels"         definition="namelist:naerlev"
+                     description="number of prescribed pressure levels for input climatological aerosol mixing ratio"/>
+                <dim name="cam_dim1"           definition="namelist:camdim1"
+                     description="dimension of CAM radiation absorption save array"/>
+                <dim name="nVertLevelsP2"      definition="nVertLevels+2"
+                     description="Two more than the number of atmospheric layers"/>
         </dims>
 
 
