@@ -7,11 +7,13 @@ from CIME.case import Case
 from CIME.XML.env_run import EnvRun
 from CIME.utils import run_cmd, append_status
 from CIME.case_setup import case_setup
+from CIME.case_run import case_run
 import CIME.build as build
 
 logger = logging.getLogger(__name__)
 
 class SystemTestsCommon(object):
+
     def __init__(self, caseroot=None, case=None, expected=None):
         """
         initialize a CIME system test object, if the file LockedFiles/env_run.orig.xml
@@ -40,8 +42,10 @@ class SystemTestsCommon(object):
             shutil.copy(os.path.join(caseroot,"env_run.xml"),
                         os.path.join(lockedfiles, "env_run.orig.xml"))
 
-        self._case.set_initial_test_values()
-        case_setup(self._caseroot, reset=True, test_mode=True)
+        if self._case.get_value("IS_FIRST_RUN"):
+            self._case.set_initial_test_values()
+
+        case_setup(self._case, reset=True, test_mode=True)
         self._case.set_value("TEST",True)
 
     def build(self, sharedlib_only=False, model_only=False):
@@ -51,24 +55,17 @@ class SystemTestsCommon(object):
     def clean_build(self, comps=None):
         build.clean(self._case, cleanlist=comps)
 
-
     def run(self):
         return self._run()
 
     def _run(self, suffix="base"):
-        rc, out, err = run_cmd("./case.run --caseroot %s" % self._caseroot, ok_to_fail=True)
-        if rc == 0 and self._coupler_log_indicates_run_complete():
-            success = True
+        success = case_run(self._case)
+        if success and self._coupler_log_indicates_run_complete():
             if self._runstatus != "FAIL":
                 self._runstatus = "PASS"
         else:
             success = False
             self._runstatus = "FAIL"
-
-        if out:
-            append_status("case.run output is:\n %s\n"%out, sfile="TestStatus.log")
-        if err:
-            append_status("case.run error is:\n %s\n"%err, sfile="TestStatus.log")
 
         if success and suffix is not None:
             self._component_compare_move(suffix)
@@ -300,15 +297,18 @@ class SystemTestsCommon(object):
 
 class FakeTest(SystemTestsCommon):
 
-    def build(self, script, sharedlib_only=False, model_only=False):
+    def _set_script(self, script):
+        self._script = script
+
+    def build(self, sharedlib_only=False, model_only=False):
         if (not sharedlib_only):
             exeroot = self._case.get_value("EXEROOT")
             cime_model = self._case.get_value("MODEL")
-            modelexe = os.path.join(exeroot, "%s.exe"%cime_model)
+            modelexe = os.path.join(exeroot, "%s.exe" % cime_model)
 
             with open(modelexe, 'w') as f:
                 f.write("#!/bin/bash\n")
-                f.write(script)
+                f.write(self._script)
 
             os.chmod(modelexe, 0755)
             self._case.set_value("BUILD_COMPLETE", True)
@@ -326,8 +326,9 @@ class TESTRUNPASS(FakeTest):
 echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 """ % rundir
-        FakeTest.build(self, script,
-                        sharedlib_only=sharedlib_only, model_only=model_only)
+        self._set_script(script)
+        FakeTest.build(self,
+                       sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNDIFF(FakeTest):
 
@@ -341,8 +342,9 @@ echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc.base
 """ % (rundir, cimeroot, rundir, case)
-        FakeTest.build(self, script,
-                        sharedlib_only=sharedlib_only, model_only=model_only)
+        self._set_script(script)
+        FakeTest.build(self,
+                       sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNFAIL(FakeTest):
 
@@ -354,7 +356,8 @@ echo Insta fail
 echo model failed > %s/cpl.log.$LID
 exit -1
 """ % rundir
-        FakeTest.build(self, script,
+        self._set_script(script)
+        FakeTest.build(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTBUILDFAIL(FakeTest):
@@ -373,7 +376,8 @@ sleep 300
 echo Slow pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
 """ % rundir
-        FakeTest.build(self, script,
+        self._set_script(script)
+        FakeTest.build(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTMEMLEAKFAIL(FakeTest):
@@ -386,7 +390,8 @@ class TESTMEMLEAKFAIL(FakeTest):
 echo Insta pass
 gunzip -c %s > %s/cpl.log.$LID
 """ % (testfile, rundir)
-        FakeTest.build(self, script,
+        self._set_script(script)
+        FakeTest.build(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTMEMLEAKPASS(FakeTest):
@@ -399,5 +404,6 @@ class TESTMEMLEAKPASS(FakeTest):
 echo Insta pass
 gunzip -c %s > %s/cpl.log.$LID
 """ % (testfile, rundir)
-        FakeTest.build(self, script,
+        self._set_script(script)
+        FakeTest.build(self,
                         sharedlib_only=sharedlib_only, model_only=model_only)

@@ -3,7 +3,7 @@ BatchUtils class for submitting jobs and managing dependencies.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, run_cmd, get_model, convert_to_seconds, get_project
+from CIME.utils import expect, run_cmd, get_model, convert_to_seconds, get_project, get_cime_root
 from CIME.case import Case
 from CIME.batch_maker import get_batch_maker
 from CIME.XML.batch import Batch
@@ -55,7 +55,7 @@ class BatchUtils(object):
             if job == self.job and self.prereq_jobid is not None:
                 jobid = self.prereq_jobid
             for dep in deps:
-                if dep in depid.keys():
+                if dep in depid.keys() and depid[dep] is not None:
                     jobid += " "+str(depid[dep])
 #TODO: doubt these will be used
 #               elif dep == "and":
@@ -73,8 +73,25 @@ class BatchUtils(object):
     def submit_single_job(self, job, depid=None):
         caseroot = self.case.get_value("CASEROOT")
         if self.batchtype == "none":
-            logger.info("Starting job script %s"%job)
-            run_cmd("%s --caseroot %s" % (os.path.join(".", job), caseroot))
+            # Import here to avoid circular include
+            from CIME.case_test       import case_test
+            from CIME.case_run        import case_run
+            from CIME.case_st_archive import case_st_archive
+            from CIME.case_lt_archive import case_lt_archive
+
+            logger.info("Starting job script %s" % job)
+
+            # Hack until all testcases are ported to python
+            testcase = self.case.get_value("TESTCASE")
+            cimeroot = get_cime_root()
+            testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
+            if job == "case.test" and testcase is not None and os.path.exists(testscript):
+                run_cmd("%s --caseroot %s" % (os.path.join(".", job), caseroot))
+            else:
+                # This is what we want longterm
+                function_name = job.replace(".", "_")
+                locals()[function_name](self.case)
+
             return
 
         submitargs = self.get_submit_args(job)

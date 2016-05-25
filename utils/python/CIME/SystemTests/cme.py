@@ -8,11 +8,12 @@ import CIME.utils
 from system_tests_common import SystemTestsCommon
 
 class CME(SystemTestsCommon):
-    def __init__(self, caseroot, case):
+
+    def __init__(self, caseroot=None, case=None):
         """
         initialize an object interface to the CME test
         """
-        SystemTestsCommon.__init__(self, caseroot, case)
+        SystemTestsCommon.__init__(self, caseroot=caseroot, case=case)
         self._testname = "CME"
 
     def build(self, sharedlib_only=False, model_only=False):

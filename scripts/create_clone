@@ -72,10 +72,10 @@ def _main_func():
 
     caseroot = os.path.abspath(case)
     casename = os.path.basename(caseroot)
-    caseroot = os.path.dirname(caseroot)
 
+    case = Case(caseroot)
     logger.info(" Running %s case.setup" %casename)
-    case_setup(caseroot, clean=False, test_mode=False)
+    case_setup(case, clean=False, test_mode=False)
 
 ###############################################################################
 

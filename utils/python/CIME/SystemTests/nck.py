@@ -12,11 +12,11 @@ logger = logging.getLogger(__name__)
 
 class NCK(SystemTestsCommon):
 
-    def __init__(self, caseroot, case):
+    def __init__(self, caseroot=None, case=None):
         """
         initialize a test object
         """
-        SystemTestsCommon.__init__(self, caseroot, case)
+        SystemTestsCommon.__init__(self, caseroot=caseroot, case=case)
 
     def build(self, sharedlib_only=False, model_only=False):
         exeroot = self._case.get_value("EXEROOT")
@@ -42,7 +42,7 @@ class NCK(SystemTestsCommon):
                         self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
             self._case.flush()
 
-            case_setup(self._caseroot, test_mode=True, reset=True)
+            case_setup(self._case, test_mode=True, reset=True)
             self.clean_build()
 
             SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
@@ -83,8 +83,8 @@ class NCK(SystemTestsCommon):
         # settings are in the run script
         # note that the following two commands will eliminate all the batch files except
         # for the test file and copy the env_mach_pes.xml to the LockedFiles directory
-        case_setup(self._caseroot, clean=True, test_mode=True)
-        case_setup(self._caseroot)
+        case_setup(self._case, clean=True, test_mode=True)
+        case_setup(self._case)
 
         stop_n      = self._case.get_value("STOP_N")
         stop_option = self._case.get_value("STOP_OPTION")
@@ -112,8 +112,8 @@ class NCK(SystemTestsCommon):
             shutil.copy("LockedFiles/env_build.NCK2.xml", "env_build.xml")
             shutil.copy("env_build.xml", "LockedFiles/env_build.xml")
 
-            case_setup(self._caseroot, clean=True, test_mode=True)
-            case_setup(self._caseroot)
+            case_setup(self._case, clean=True, test_mode=True)
+            case_setup(self._case)
 
             logger.info("default: doing a %s %s with NINST2" % (stop_n, stop_option))
             success = SystemTestsCommon._run(self, "multiinst")

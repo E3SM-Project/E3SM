@@ -15,7 +15,7 @@ of those based on the machine.
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, run_cmd, get_model, convert_to_seconds, get_project
+from CIME.utils import expect, run_cmd, get_model, convert_to_seconds, get_project, transform_vars
 from CIME.case import Case
 from CIME.XML.env_batch import EnvBatch
 from CIME.XML.batch import Batch
@@ -42,24 +42,20 @@ class BatchMaker(object):
         # set up paths to the template files, this could and should be
         # extracted out somehow??
         self.job_id = self.case.get_value("CASE")
-        mach = self.case.get_value("MACH")
-        if mach is None:
-            # Unit test, no viable case
-            pass
-        else:
-            if "pleiades" in self.case.get_value("MACH"):
-                # pleiades jobname needs to be limited to 15 chars
-                self.job_id = self.job_id[:15]
 
-            self.output_error_path = self.case.get_value("CASE")
+        if "pleiades" in self.case.get_value("MACH"):
+            # pleiades jobname needs to be limited to 15 chars
+            self.job_id = self.job_id[:15]
 
-            self.env_batch = EnvBatch()
+        self.output_error_path = self.case.get_value("CASE")
 
-            self.config_machines_parser = Machines(machine=self.case.get_value("MACH"))
-            self.batch_system = self.config_machines_parser.get_batch_system_type()
-            self.batch_parser = Batch(self.batch_system, machine=self.config_machines_parser.get_machine_name())
+        self.env_batch = EnvBatch()
 
-            self._initialize()
+        self.machine = Machines(machine=self.case.get_value("MACH"))
+        self.batch_system = self.machine.get_batch_system_type()
+        self.batch_parser = Batch(self.batch_system, machine=self.machine.get_machine_name())
+
+        self._initialize()
 
     def _initialize(self):
         self._set_task_info()
@@ -115,8 +111,8 @@ class BatchMaker(object):
 
         # Make sure to check default queue first.
         all_queues = []
-        all_queues.append( self.config_machines_parser.get_default_queue())
-        all_queues = all_queues + self.config_machines_parser.get_all_queues()
+        all_queues.append( self.machine.get_default_queue())
+        all_queues = all_queues + self.machine.get_all_queues()
         for queue in all_queues:
             if queue is not None:
                 jobmin = queue.get("jobmin")
@@ -140,7 +136,7 @@ class BatchMaker(object):
         # go through the walltime elements, and if our estimated cost is greater than the element's estimated cost,
         # then set the walltime.
         if not self.wall_time:
-            for wall_time in self.config_machines_parser.get_walltimes():
+            for wall_time in self.machine.get_walltimes():
                 estcost = wall_time.get("ccsm_estcost")
                 if estcost is not None and self.ccsm_estcost > int(estcost):
                     self.wall_time = wall_time.text
@@ -149,7 +145,7 @@ class BatchMaker(object):
 
         # if we didn't find a walltime previously, use the default.
         if not self.wall_time:
-            wall_time_node = self.config_machines_parser.get_default_walltime()
+            wall_time_node = self.machine.get_default_walltime()
             if wall_time_node is not None:
                 self.wall_time = wall_time_node.text
             else:
@@ -175,37 +171,20 @@ class BatchMaker(object):
         Get the long-term archiver options from $CIMEROOT/cime_config/cesm/machines
         These options will be used when creating the lt_archive run scrip
         """
-        lt_archive = LTArchive(self.config_machines_parser.get_machine_name())
+        lt_archive = LTArchive(self.machine.get_machine_name())
         self.lt_archive_args = lt_archive.get_lt_archive_args()
 
     def _set_model_run(self):
         """
         set the model run command per machine.
         """
-        default_run_exe = self.config_machines_parser.get_suffix("default_run_exe")
-        expect(default_run_exe is not None, "no default run exe defined!")
-        default_run_misc_suffix = self.config_machines_parser.get_suffix("default_run_misc_suffix")
-        default_run_misc_suffix = "" if default_run_misc_suffix is None else default_run_misc_suffix
-        default_run_suffix = default_run_exe + default_run_misc_suffix
-
         expect(self.batch_system,
 """
 No batch system type configured for this machine!  Please see config_batch.xml
 within model's Machines directory, and add a batch system type for this machine
 """)
 
-        # Things that will have to be matched against mpirun element attributes
-        mpi_attribs = {
-            "compiler" : self.case.get_value("COMPILER"),
-            "mpilib"   : self.case.get_value("MPILIB"),
-            "threaded" : self.case.get_value("BUILD_THREADED")
-            }
-
-        executable, args = self.config_machines_parser.get_mpirun(mpi_attribs, self)
-
-        mpi_arg_string = " ".join(args.values())
-
-        self.mpirun = "cmd =\"%s %s %s \" " % (executable if executable is not None else "", mpi_arg_string, default_run_suffix)
+        self.mpirun = self.machine.get_full_mpirun(self, self.case, self.job)
 
     def _set_batch_directives(self):
         """
@@ -215,44 +194,17 @@ within model's Machines directory, and add a batch system type for this machine
 
         self.batchdirectives = "\n".join(batch_directives)
 
-    def transform_vars(self, text, default=None):
+    def transform_vars_bm(self, text, default=None):
         """
         Do the variable substitution for any variables that need transforms
-        recursively.
-
-        >>> bm = BatchMaker("run")
-        >>> bm.transform_vars("{{ cesm_stdout }}","cesm.stdout")
-        'cesm.stdout'
+        recursively. Use the self BatchMaker for substitutions
         """
-        directive_re = re.compile(r"{{ (\w+) }}", flags=re.M)
-        # loop through directive text, replacing each string enclosed with
-        # template characters with the necessary values.
-        while directive_re.search(text):
-            m = directive_re.search(text)
-            variable = m.groups()[0]
-            whole_match = m.group()
-            if hasattr(self, variable.lower()) and getattr(self, variable.lower()) is not None:
-                repl = getattr(self, variable.lower())
-                text = text.replace(whole_match, str(repl))
-            elif self.case.get_value(variable.upper(),subgroup=self.job) is not None:
-                repl = self.case.get_value(variable.upper(),subgroup=self.job)
-                text = text.replace(whole_match, str(repl))
-            elif default is not None:
-                text = text.replace(whole_match, default)
-            else:
-                # If no queue exists, then the directive '-q' by itself will cause an error
-                if text.find('-q {{ queue }}')>0:
-                    text = ""
-                else:
-                    logger.warn("Could not replace variable '%s'" % variable)
-                    text = text.replace(whole_match, "")
-
-        return text
+        return transform_vars(text, case=self.case, subgroup=self.job, check_members=self, default=default)
 
     def make_batch_script(self, input_filename, output_filename):
         expect(os.path.exists(input_filename), "input file '%s' does not exist" % input_filename)
 
-        template_text = self.transform_vars(open(input_filename, "r").read())
+        template_text = self.transform_vars_bm(open(input_filename, "r").read())
 
         with open(output_filename, "w") as fd:
             fd.write(template_text)

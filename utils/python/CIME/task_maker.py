@@ -157,6 +157,7 @@ class TaskMaker(object):
 
 	# add all the calculated numbers as instance data.
         self.total_tasks = total_tasks
+        self.num_tasks   = total_tasks
         self.task_per_node = max_task_per_node
         self.task_per_numa = task_per_numa
         self.max_threads = max_threads
