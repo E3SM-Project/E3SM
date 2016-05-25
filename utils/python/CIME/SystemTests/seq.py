@@ -21,11 +21,13 @@ class SEQ(SystemTestsCommon):
         Build two cases.
         """
         SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+        if sharedlib_only:
+            return
+
         exeroot = self._case.get_value("EXEROOT")
         cime_model = self._case.get_value("MODEL")
-        if (not sharedlib_only):
-            shutil.move("%s/%s.exe"%(exeroot,cime_model),
-                        "%s/%s.exe.SEQ1"%(exeroot,cime_model))
+        shutil.move("%s/%s.exe"%(exeroot,cime_model),
+                    "%s/%s.exe.SEQ1"%(exeroot,cime_model))
         any_changes = False
         machpes1 = os.path.join("LockedFiles","env_mach_pes.SEQ1.xml")
         if ( os.path.isfile(machpes1) ):
@@ -33,7 +35,6 @@ class SEQ(SystemTestsCommon):
         else:
             logging.warn("Copying env_mach_pes.xml to %s"%(machpes1))
             shutil.copy("env_mach_pes.xml", machpes1)
-
 
         comp_classes = self._case.get_value("COMP_CLASSES").split(',')
         for comp in comp_classes:
@@ -60,13 +61,11 @@ class SEQ(SystemTestsCommon):
         case_setup(self._caseroot, test_mode=True, reset=True)
         self.clean_build()
         SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
-        if (not sharedlib_only):
-            shutil.move("%s/%s.exe"%(exeroot,cime_model),
-                        "%s/%s.exe.SEQ2"%(exeroot,cime_model))
+        shutil.move("%s/%s.exe"%(exeroot,cime_model),
+                    "%s/%s.exe.SEQ2"%(exeroot,cime_model))
         machpes2 = os.path.join("LockedFiles","env_mach_pes.SEQ2.xml")
         logging.warn("Copying env_mach_pes.xml to %s"%(machpes2))
         shutil.copy("env_mach_pes.xml", machpes2)
-
 
     def run(self):
         # Move to config_tests.xml once that's ready.
