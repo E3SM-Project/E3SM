@@ -24,6 +24,7 @@ class CME(SystemTestsCommon):
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
         for CPL in ['MCT','ESMF']:
+            self._case.set_value('USE_ESMF_LIB',CPL=='ESMF')
             self._case.set_value('COMP_INTERFACE',CPL)
             self._case.flush()
             self.clean_build()
