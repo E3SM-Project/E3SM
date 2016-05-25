@@ -5,10 +5,6 @@ Script to build a case.
 """
 
 from standard_script_setup import *
-
-import CIME.build as build
-from CIME.case import Case
-from CIME.SystemTests.system_tests_common import *
 from CIME.SystemTests.cme import CME
 from CIME.SystemTests.eri import ERI
 from CIME.SystemTests.erp import ERP
@@ -23,7 +19,11 @@ from CIME.SystemTests.pet import PET
 from CIME.SystemTests.pfs import PFS
 from CIME.SystemTests.seq import SEQ
 from CIME.SystemTests.sms import SMS
-from CIME.utils           import expect
+from CIME.SystemTests.system_tests_common import *
+
+import CIME.build as build
+from CIME.case import Case
+from CIME.utils           import expect, append_status
 from CIME.XML.files       import Files
 from CIME.XML.component   import Component
 
@@ -99,7 +99,7 @@ def _main_func(description):
     elif(testname is not None):
         logging.warn("Building test for %s in directory %s" % (testname, caseroot))
         try:
-            test = globals()[testname](caseroot, case)
+            test = globals()[testname](caseroot=caseroot, case=case)
         except KeyError:
             expect(False, "Could not find a test called '%s'" % testname)
         append_status("case.testbuild starting ",

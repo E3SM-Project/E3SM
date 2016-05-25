@@ -1,7 +1,9 @@
 #!/usr/bin/env python2
 
 """
-case.submit - Submit a cesm workflow to the queueing system or run it if there is no queueing system.   A cesm workflow may include multiple jobs.
+case.submit - Submit a cesm workflow to the queueing system or run it
+if there is no queueing system.  A cesm workflow may include multiple
+jobs.
 """
 
 from CIME.XML.standard_module_setup import *
@@ -15,37 +17,45 @@ from CIME.batch_utils import BatchUtils
 
 logger = logging.getLogger(__name__)
 
-def submit(caseroot, job=None, resubmit=None, no_batch=False, prereq_jobid=None):
-    case = Case(caseroot)
+def submit(case, job=None, resubmit=False, no_batch=False, prereq_jobid=None):
+    caseroot = case.get_value("CASEROOT")
     if job is None:
         if case.get_value("TEST"):
             job = "case.test"
         else:
             job = "case.run"
+
+    logger.info("Submitting job '%s', resubmit=%s" % (job, resubmit))
+
     if resubmit:
         resub = case.get_value("RESUBMIT")
         case.set_value("RESUBMIT",resub-1)
         if case.get_value("RESUBMIT_SETS_CONTINUE_RUN"):
-            case.set_value("CONTINUE_RUN",True)
+            case.set_value("CONTINUE_RUN", True)
     else:
         check_case(case, caseroot)
         check_DA_settings(case)
 
     cimeroot = case.get_value("CIMEROOT")
     os.environ["CIMEROOT"] = cimeroot
+
     # if case.submit is called with the no_batch flag then we assume that this
     # flag will stay in effect for the duration of the RESUBMITs
-    if resubmit is None:
-        env_batch = case._get_env("batch")
+    if not resubmit:
+        case.set_value("IS_FIRST_RUN", True)
         if no_batch:
             batch_system = "none"
         else:
+            env_batch = case._get_env("batch")
             bs_node = env_batch.get_node("entry", {"id":"batch_system"})
             batch_system = env_batch.get_default_value(bs_node)
         case.set_value("batch_system", batch_system)
     else:
         if case.get_value("batch_system") == "none":
             no_batch = True
+
+        # This is a resubmission, do not reinitialize test values
+        case.set_value("IS_FIRST_RUN", False)
 
     #Load Modules
     env_module = EnvModule(case.get_value("MACH"), case.get_value("COMPILER"),
@@ -57,7 +67,7 @@ def submit(caseroot, job=None, resubmit=None, no_batch=False, prereq_jobid=None)
     case.flush()
     batchobj.submit_jobs()
 
-def check_case(case,caseroot):
+def check_case(case, caseroot):
     check_lockedfiles(caseroot)
     preview_namelists(dryrun=False, casedir=caseroot)
     expect(case.get_value("BUILD_COMPLETE"), "Build complete is "

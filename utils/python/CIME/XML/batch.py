@@ -6,7 +6,7 @@ can be defined by providing a batch_system MACH="mach" block.
 """
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
-from CIME.utils import expect, get_cime_root, get_model
+from CIME.utils import expect, get_cime_root, get_model, transform_vars
 
 logger = logging.getLogger(__name__)
 
@@ -104,14 +104,9 @@ class Batch(GenericXML):
                     directive = self.get_resolved_value("" if node.text is None else node.text)
                     if batch_maker is None:
                         default = node.get("default")
-                        if default is not None:
-                            directive_re = re.compile(r"{{ (\w+) }}", flags=re.M)
-                            m = directive_re.search(directive)
-                            if m is not None:
-                                whole_match = m.group()
-                                directive = directive.replace(whole_match, default)
+                        directive = transform_vars(directive, default=default)
                     else:
-                        directive = batch_maker.transform_vars(directive, default=node.get("default"))
+                        directive = batch_maker.transform_vars_bm(directive, default=node.get("default"))
 
                     result.append("%s %s" % (directive_prefix, directive))
 

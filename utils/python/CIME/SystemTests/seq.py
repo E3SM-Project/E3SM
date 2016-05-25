@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 
 class SEQ(SystemTestsCommon):
 
-    def __init__(self, caseroot, case):
+    def __init__(self, caseroot=None, case=None):
         """
         initialize an object interface to file env_test.xml in the case directory
         """
-        SystemTestsCommon.__init__(self, caseroot, case, expected=["TEST"])
+        SystemTestsCommon.__init__(self, caseroot=caseroot, case=case, expected=["TEST"])
 
     def build(self, sharedlib_only=False, model_only=False):
         """
@@ -58,7 +58,7 @@ class SEQ(SystemTestsCommon):
                         self._case.set_value("ROOTPE_%s"%comp, rootpe+1)
                         rootpe += 1
         self._case.flush()
-        case_setup(self._caseroot, test_mode=True, reset=True)
+        case_setup(self._case, test_mode=True, reset=True)
         self.clean_build()
         SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
         shutil.move("%s/%s.exe"%(exeroot,cime_model),

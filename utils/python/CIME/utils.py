@@ -748,3 +748,40 @@ def does_file_have_string(filepath, text):
     Does the text string appear in the filepath file
     """
     return os.path.isfile(filepath) and text in open(filepath).read()
+
+def transform_vars(text, case=None, subgroup=None, check_members=None, default=None):
+    """
+    Do the variable substitution for any variables that need transforms
+    recursively.
+
+    >>> transform_vars("{{ cesm_stdout }}", default="cesm.stdout")
+    'cesm.stdout'
+    >>> member_store = lambda : None
+    >>> member_store.foo = "hi"
+    >>> transform_vars("I say {{ foo }}", check_members=member_store)
+    'I say hi'
+    """
+    directive_re = re.compile(r"{{ (\w+) }}", flags=re.M)
+    # loop through directive text, replacing each string enclosed with
+    # template characters with the necessary values.
+    while directive_re.search(text):
+        m = directive_re.search(text)
+        variable = m.groups()[0]
+        whole_match = m.group()
+        if check_members is not None and hasattr(check_members, variable.lower()) and getattr(check_members, variable.lower()) is not None:
+            repl = getattr(check_members, variable.lower())
+            text = text.replace(whole_match, str(repl))
+        elif case is not None and case.get_value(variable.upper(), subgroup=subgroup) is not None:
+            repl = case.get_value(variable.upper(), subgroup=subgroup)
+            text = text.replace(whole_match, str(repl))
+        elif default is not None:
+            text = text.replace(whole_match, default)
+        else:
+            # If no queue exists, then the directive '-q' by itself will cause an error
+            if "-q {{ queue }}" in text:
+                text = ""
+            else:
+                logger.warn("Could not replace variable '%s'" % variable)
+                text = text.replace(whole_match, "")
+
+    return text

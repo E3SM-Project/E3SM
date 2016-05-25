@@ -4,7 +4,7 @@ Interface to the config_machines.xml file.  This class inherits from GenericXML.
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
-from CIME.utils import expect
+from CIME.utils import expect, transform_vars
 
 import socket
 
@@ -323,7 +323,7 @@ class Machines(GenericXML):
 
         return None
 
-    def get_mpirun(self, attribs, batch_maker):
+    def get_mpirun(self, attribs, check_members, case, job):
         """
         Find best match, return (executable, {arg_name : text})
         """
@@ -363,7 +363,11 @@ class Machines(GenericXML):
                 if arg_node is not None:
                     arg_nodes = self.get_nodes("arg", root=arg_node)
                     for arg_node in arg_nodes:
-                        arg_value = batch_maker.transform_vars(arg_node.text, arg_node.get("default"))
+                        arg_value = transform_vars(arg_node.text,
+                                                   case=case,
+                                                   subgroup=job,
+                                                   check_members=check_members,
+                                                   default=arg_node.get("default"))
                         args[arg_node.get("name")] = arg_value
                 if is_default:
                     if matches > best_num_matched_default:
@@ -383,6 +387,26 @@ class Machines(GenericXML):
         executable = self.get_node("executable", root=the_match)
 
         return executable.text, args
+
+    def get_full_mpirun(self, check_members, case, job):
+        default_run_exe = self.get_suffix("default_run_exe")
+        expect(default_run_exe is not None, "no default run exe defined!")
+        default_run_misc_suffix = self.get_suffix("default_run_misc_suffix")
+        default_run_misc_suffix = "" if default_run_misc_suffix is None else default_run_misc_suffix
+        default_run_suffix = default_run_exe + default_run_misc_suffix
+
+        # Things that will have to be matched against mpirun element attributes
+        mpi_attribs = {
+            "compiler" : case.get_value("COMPILER"),
+            "mpilib"   : case.get_value("MPILIB"),
+            "threaded" : case.get_value("BUILD_THREADED")
+            }
+
+        executable, args = self.get_mpirun(mpi_attribs, check_members, case, job)
+
+        mpi_arg_string = " ".join(args.values())
+
+        return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, default_run_suffix)
 
     def print_values(self):
         # write out machines

@@ -10,11 +10,11 @@ from system_tests_common import SystemTestsCommon
 
 class PEM(SystemTestsCommon):
 
-    def __init__(self, caseroot, case):
+    def __init__(self, caseroot=None, case=None):
         """
         initialize a test object
         """
-        SystemTestsCommon.__init__(self, caseroot, case)
+        SystemTestsCommon.__init__(self, caseroot=caseroot, case=case)
 
     def build(self, sharedlib_only=False, model_only=False):
         """
@@ -30,7 +30,7 @@ class PEM(SystemTestsCommon):
         for bld in range(1,3):
             logging.warn("Starting bld %s"%bld)
             self._case.flush()
-            case_setup(self._caseroot,reset=True)
+            case_setup(self._case, reset=True)
             self.clean_build()
             SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
             machpes = os.path.join("LockedFiles","env_mach_pes.PEM%s.xml"%bld)

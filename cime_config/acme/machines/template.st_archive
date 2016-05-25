@@ -1,8 +1,11 @@
 #!/usr/bin/env python2
 
 """
-template to create a case short term archiving script
+template to create a case short term archiving script. This should only ever be called
+by case.submit when on batch system. This script only exists as a way of providing
+batch directives. Use case.submit from the command line to run your case.
 """
+
 import sys, os, time
 _CIMEROOT = os.environ.get("CIMEROOT")
 if _CIMEROOT is None:
@@ -12,10 +15,8 @@ _LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
 sys.path.append(_LIBDIR)
 
 from standard_script_setup          import *
-from CIME.case_submit               import submit
-from CIME.XML.standard_module_setup import *
-from CIME.case                      import Case
-from CIME.utils                     import get_model, run_cmd, append_status
+from CIME.case import Case
+from CIME.case_st_archive import case_st_archive
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +24,25 @@ logger = logging.getLogger(__name__)
 {{ batchdirectives }}
 
 ###############################################################################
-def parse_command_line(args):
+def parse_command_line(args, description):
 ###############################################################################
 
-    get_model()
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [--verbose]
+OR
+%s --help
+OR
+%s --test
 
-    parser = argparse.ArgumentParser()
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# case.run SMS\033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
 
     CIME.utils.setup_standard_logging_options(parser)
 
@@ -42,35 +56,22 @@ def parse_command_line(args):
     if args.caseroot is not None:
         os.chdir(args.caseroot)
 
+    return args.caseroot
+
 ###############################################################################
-def _main_func():
+def _main_func(description):
 ###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
-    parse_command_line(sys.argv)
+    caseroot = parse_command_line(sys.argv, description)
+    case = Case(caseroot)
+    success = case_st_archive(case)
 
-    case = Case()
-
-    caseroot = case.get_value("CASEROOT")
-
-    # do short-term archiving
-    append_status("st_archiving starting",
-                 caseroot=caseroot, sfile="CaseStatus")
-
-    cmd = os.path.join(caseroot, "Tools/st_archive") + " >> stArchiveStatus 2>&1"
-    run_cmd(cmd)
-
-    append_status("st_archiving completed",
-                 caseroot=caseroot, sfile="CaseStatus")
-
-    # resubmit case if appropriate
-    resubmit = int(case.get_value("RESUBMIT"))
-    if resubmit > 0:
-        append_status("resubmitting from st_archive",
-                     caseroot=caseroot, sfile="CaseStatus")
-        submit(caseroot, resubmit="case.st_archive")
-
+    sys.exit(0 if success else 1)
 
 ###############################################################################
 
 if __name__ == "__main__":
-    _main_func()
+    _main_func(__doc__)
