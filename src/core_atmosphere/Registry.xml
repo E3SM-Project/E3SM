@@ -2085,35 +2085,83 @@
                 <!--  smois          :soil moisture                                                            [m3 m-3] -->
                 <!--  tslb           :soil temperature                                                              [K] -->
 
-                <var name="isltyp"      type="integer"  dimensions="nCells"/>
-                <var name="ivgtyp"      type="integer"  dimensions="nCells"/>
-                <var name="mminlu"      type="text"     dimensions=""/>
-                <var name="landmask"    type="integer"  dimensions="nCells"/>
-                <var name="shdmin"      type="real"     dimensions="nCells"/>
-                <var name="shdmax"      type="real"     dimensions="nCells"/>
-                <var name="snoalb"      type="real"     dimensions="nCells"/>
-                <var name="ter"         type="real"     dimensions="nCells"/>
-                <var name="albedo12m"   type="real"     dimensions="nMonths nCells"/>
-                <var name="greenfrac"   type="real"     dimensions="nMonths nCells"/>
+                <var name="isltyp" type="integer" dimensions="nCells" units="unitless"
+                     description="dominant soil category"/>
 
-                <var name="dzs"         type="real"     dimensions="nSoilLevels nCells"/>
+                <var name="ivgtyp" type="integer" dimensions="nCells" units="unitless"
+                     description="dominant vegetation category"/>
 
-                <var name="sfc_albbck"  type="real"     dimensions="nCells Time"/>
-                <var name="skintemp"    type="real"     dimensions="nCells Time"/>
-                <var name="snow"        type="real"     dimensions="nCells Time"/>
-                <var name="snowc"       type="real"     dimensions="nCells Time"/>
-                <var name="snowh"       type="real"     dimensions="nCells Time"/>
-                <var name="sst"         type="real"     dimensions="nCells Time"/>
-                <var name="tmn"         type="real"     dimensions="nCells Time"/>
-                <var name="vegfra"      type="real"     dimensions="nCells Time"/>
-                <var name="seaice"      type="real"     dimensions="nCells Time"/>
-                <var name="xice"        type="real"     dimensions="nCells Time"/>
-                <var name="xland"       type="real"     dimensions="nCells Time"/>
+                <var name="mminlu" type="text" dimensions="" units="unitless"
+                     description="land use classification"/>
 
-                <var name="smcrel"      type="real"     dimensions="nSoilLevels nCells Time"/>
-                <var name="sh2o"        type="real"     dimensions="nSoilLevels nCells Time"/>
-                <var name="smois"       type="real"     dimensions="nSoilLevels nCells Time"/>
-                <var name="tslb"        type="real"     dimensions="nSoilLevels nCells Time"/>
+                <var name="landmask" type="integer"  dimensions="nCells" units="unitless"
+                     description="land-ocean mask (1=land ; 0=ocean)"/>
+
+                <var name="shdmin" type="real" dimensions="nCells" units="unitless"
+                     description="minimum fractional coverage of annual green vegetation fraction"/>
+
+                <var name="shdmax" type="real" dimensions="nCells" units="unitless"
+                     description="maximum fractional coverage of annual green vegetation fraction"/>
+
+                <var name="snoalb" type="real"  dimensions="nCells" units="unitless"
+                     description="annual maximum snow albedo"/>
+
+                <var name="ter" type="real" dimensions="nCells" units="m"
+                     description="terrain height"/>
+
+                <var name="albedo12m" type="real" dimensions="nMonths nCells" units="unitless"
+                     description="monthly-mean climatological aurface albedo"/>
+
+                <var name="greenfrac" type="real" dimensions="nMonths nCells" units="unitless"
+                     description="monthly-mean climatological greeness fraction"/>
+
+                <var name="dzs" type="real" dimensions="nSoilLevels nCells Time" units="m"
+                     description="soil layer thickness"/>
+
+                <var name="sfc_albbck" type="real" dimensions="nCells Time" units="unitless"
+                     description="background surface albedo"/>
+
+                <var name="skintemp" type="real" dimensions="nCells Time" units="K"
+                     description="ground or water surface temperature"/>
+
+                <var name="snow" type="real" dimensions="nCells Time" units="kg m^{-2}"
+                     description="snow water equivalent"/>
+
+                <var name="snowc" type="real" dimensions="nCells Time" units="unitless"
+                     description="flag for snow on ground (=0 no snow; =1,otherwise"/>
+
+                <var name="snowh" type="real" dimensions="nCells Time" units="m"
+                     description="physical snow depth"/>
+
+                <var name="sst" type="real" dimensions="nCells Time" units="K"
+                     description="sea-surface temperature"/>
+
+                <var name="tmn" type="real" dimensions="nCells Time" units="K"
+                     description="deep soil temperature"/>
+
+                <var name="vegfra" type="real" dimensions="nCells Time" units="unitless"
+                     description="vegetation fraction"/>
+
+                <var name="seaice" type="real" dimensions="nCells Time" units="unitless"
+                     description="sea-ice flag (0=no seaice; =1 otherwise)"/>
+
+                <var name="xice" type="real" dimensions="nCells Time" units="unitless"
+                     description="fractional area coverage of sea-ice"/>
+
+                <var name="xland" type="real" dimensions="nCells Time" units="unitless"
+                     description="land-ocean mask (1=land including sea-ice ; 2=ocean)"/>
+
+                <var name="smcrel" type="real" dimensions="nSoilLevels nCells Time" units="m3 m^{-3}"
+                     description="soil moisture threshold below which transpiration begins to stress"/>
+
+                <var name="sh2o" type="real" dimensions="nSoilLevels nCells Time" units="m3 m^{-3}"
+                     description="soil equivalent liquid water "/>
+
+                <var name="smois" type="real" dimensions="nSoilLevels nCells Time" units="m3 m^{-3}"
+                     description="soil moisture"/>
+
+                <var name="tslb" type="real" dimensions="nSoilLevels nCells Time" units="K"
+                     description="soil layer temperature"/>
 
                 <!-- ================================================================================================== -->
                 <!-- ... PARAMETERIZATION OF GRAVITY WAVE DRAG OVER OROGRAPHY:                                          -->
@@ -2130,15 +2178,34 @@
                 <!--  ol3        : orographic direction asymmetry function                                          (-) -->
                 <!--  ol4        : orographic direction asymmetry function                                          (-) -->
 
-		<var name="var2d"       type="real"     dimensions="nCells"/>
-		<var name="con"         type="real"     dimensions="nCells"/>
-		<var name="oa1"         type="real"     dimensions="nCells"/>
-		<var name="oa2"         type="real"     dimensions="nCells"/>
-		<var name="oa3"         type="real"     dimensions="nCells"/>
-		<var name="oa4"         type="real"     dimensions="nCells"/>
-		<var name="ol1"         type="real"     dimensions="nCells"/>
-		<var name="ol2"         type="real"     dimensions="nCells"/>
-		<var name="ol3"         type="real"     dimensions="nCells"/>
-		<var name="ol4"         type="real"     dimensions="nCells"/>
+                <var name="var2d" type="real" dimensions="nCells" units="m^{2}"
+                     description="variance of orography"/>
+
+                <var name="con" type="real" dimensions="nCells" units="m^{2}"
+                     description="convexity of orography"/>
+
+                <var name="oa1" type="real" dimensions="nCells" units="unitless"
+                     description="directional asymmetry function of orography"/>
+
+                <var name="oa2" type="real" dimensions="nCells" units="unitless"
+                     description="directional asymmetry function of orography"/>
+
+                <var name="oa3" type="real" dimensions="nCells" units="unitless"
+                     description="directional asymmetry function of orography"/>
+
+                <var name="oa4" type="real" dimensions="nCells" units="unitless"
+                     description="directional asymmetry function of orography"/>
+
+                <var name="ol1" type="real" dimensions="nCells" units="unitless"
+                     description="directional asymmetry function of orography"/>
+
+                <var name="ol2" type="real" dimensions="nCells" units="unitless"
+                     description="directional asymmetry function of orography"/>
+
+                <var name="ol3" type="real" dimensions="nCells" units="unitles"
+                     description="directional asymmetry function of orography"/>
+
+                <var name="ol4" type="real" dimensions="nCells" units="unitless"
+                     description="directional asymmetry function of orography"/>
         </var_struct>
 </registry>
