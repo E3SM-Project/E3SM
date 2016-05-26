@@ -2047,8 +2047,11 @@
 
         <var_struct name="atm_input" time_levs="1">
                 <!-- Monthly mean ozone climatology used in the CAM and RRTMG radiation codes -->
-                <var name="pin"         type="real"     dimensions="nOznLevels"/>
-                <var name="ozmixm"      type="real"     dimensions="nMonths nOznLevels nCells"/>
+                <var name="pin" type="real"  dimensions="nOznLevels" units="Pa"
+                     description="fixed pressure levels at which climatological ozone is defined"/>
+
+                <var name="ozmixm" type="real" dimensions="nMonths nOznLevels nCells" units="mol mol^{-1}"
+                     description="monthly-mean climatological ozone defined at fixed pressure levels"/>
         </var_struct>
 
         <var_struct name="sfc_input" time_levs="1">
