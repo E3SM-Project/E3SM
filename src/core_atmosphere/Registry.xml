@@ -1315,26 +1315,59 @@
 
                 
                 <!-- tendencies for prognostic variables -->
-                <var name="tend_u"             name_in_code="u"           type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="tend_w"             name_in_code="w"           type="real"     dimensions="nVertLevelsP1 nCells Time"/>
-                <var name="tend_rho"           name_in_code="rho_zz"      type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="tend_theta"         name_in_code="theta_m"     type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rt_diabatic_tend"                              type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="euler_tend_u"       name_in_code="u_euler"     type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="euler_tend_w"       name_in_code="w_euler"     type="real"     dimensions="nVertLevelsP1 nCells Time"/>
-                <var name="euler_tend_theta"   name_in_code="theta_euler" type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="tend_w_pgf"         name_in_code="w_pgf"       type="real"     dimensions="nVertLevelsP1 nCells Time"/>
-                <var name="tend_w_buoy"        name_in_code="w_buoy"      type="real"     dimensions="nVertLevelsP1 nCells Time"/>
-                <var name="tend_sfc_pressure"                             type="real"     dimensions="nCells Time"/>
+                <var name="tend_u" name_in_code="u" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-2}"
+                     description="Tendency of u from dynamics"/>
+
+                <var name="tend_w" name_in_code="w" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-2}"
+                     description="Tendency of w from dynamics"/>
+
+                <var name="tend_rho" name_in_code="rho_zz" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3} s^{-1}"
+                     description="Tendency of dry density from dynamics"/>
+
+                <var name="tend_theta" name_in_code="theta_m" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
+                     description="Tendency of potential temperature from dynamics"/>
+
+                <var name="rt_diabatic_tend" type="real" dimensions="nVertLevels nCells Time" units="kg K s^{-1}"
+                     description="Tendency of coupled potential temperature from physics"/>
+
+                <var name="euler_tend_u" name_in_code="u_euler" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-2}"
+                     description="Tendency of u from dynamics"/>
+
+                <var name="euler_tend_w" name_in_code="w_euler" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-2}"
+                     description="Tendency of w from dynamics"/>
+
+                <var name="euler_tend_theta" name_in_code="theta_euler" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
+                     description="Tendency of potential temperature from dynamics"/>
+
+                <var name="tend_w_pgf" name_in_code="w_pgf" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-2}"
+                     description="Tendency of w due to pressure gradient force"/>
+
+                <var name="tend_w_buoy" name_in_code="w_buoy" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-2}"
+                     description="Tendency of w due to buoyancy force"/>
+
+                <var name="tend_sfc_pressure" type="real" dimensions="nCells Time" units="Pa s^{-1}"
+                     description="Tendency of surface pressure"/>
 
                 <!-- scalar tendencies -->
                 <var_array name="scalars_tend" type="real" dimensions="nVertLevels nCells Time">
-                        <var name="tend_qv"    name_in_code="qv"        array_group="moist"/>
-                        <var name="tend_qc"    name_in_code="qc"        array_group="moist"/>
-                        <var name="tend_qr"    name_in_code="qr"        array_group="moist"/>
-                        <var name="tend_qi"    name_in_code="qi"        array_group="moist"/>
-                        <var name="tend_qs"    name_in_code="qs"        array_group="moist"/>
-                        <var name="tend_qg"    name_in_code="qg"        array_group="moist"/>
+                        <var name="tend_qv"    name_in_code="qv"        array_group="moist" units="kg kg^{-1} s^{-1}"
+                             description="Tendency of water vapor mixing ratio"/>
+
+                        <var name="tend_qc"    name_in_code="qc"        array_group="moist" units="kg kg^{-1} s^{-1}"
+                             description="Tendency of cloud water mixing ratio"/>
+
+                        <var name="tend_qr"    name_in_code="qr"        array_group="moist" units="kg kg^{-1} s^{-1}"
+                             description="Tendency of rain water mixing ratio"/>
+
+                        <var name="tend_qi"    name_in_code="qi"        array_group="moist" units="kg kg^{-1} s^{-1}"
+                             description="Tendency of ice mixing ratio"/>
+
+                        <var name="tend_qs"    name_in_code="qs"        array_group="moist" units="kg kg^{-1} s^{-1}"
+                             description="Tendency of snow ratio"/>
+
+                        <var name="tend_qg"    name_in_code="qg"        array_group="moist" units="kg kg^{-1} s^{-1}"
+                             description="Tendency of graupel mixing ratio"/>
+
                 </var_array>
         </var_struct>
 
