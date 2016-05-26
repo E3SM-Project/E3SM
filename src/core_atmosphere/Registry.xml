@@ -1116,36 +1116,83 @@
 
         <var_struct name="state" time_levs="2">
 
-                <var name="xtime"     type="text"     dimensions="Time"/>
+                <var name="xtime" type="text" dimensions="Time" units="YYYY-MM-DD_hh:mm:ss"
+                     description="Model valid time"/>
 
                 <!-- Prognostic variables: read from input, saved in restart, and written to output -->
-                <var name="u"         type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="w"         type="real"     dimensions="nVertLevelsP1 nCells Time"/>
-                <var name="rho_zz"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="theta_m"   type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="m_ps"      type="real"     dimensions="nCells Time"/>
+                <var name="u" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+                     description="Horizontal normal velocity at edges"/>
+
+                <var name="w" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+                     description="Vertical velocity at vertical cell faces"/>
+
+                <var name="rho_zz" type="real" dimensions="nVertLevels nCells Time" units="?"
+                     description="Dry density divided by d(zeta)/dz"/>
+
+                <var name="theta_m" type="real" dimensions="nVertLevels nCells Time" units="K"
+                     description="Moist potential temperature"/>
+
+                <var name="m_ps" type="real" dimensions="nCells Time" units="Pa"
+                     description="Surface pressure from match on MPAS grid"/>
+
                 <var_array name="scalars" type="real" dimensions="nVertLevels nCells Time">
-                        <var name="qv"      array_group="moist"/>
-                        <var name="qc"      array_group="moist"/>
-                        <var name="qr"      array_group="moist"/>
-                        <var name="qi"      array_group="moist"/>
-                        <var name="qs"      array_group="moist"/>
-                        <var name="qg"      array_group="moist"/>
+                        <var name="qv"      array_group="moist" units="kg kg^{-1}"
+                             description="Water vapor mixing ratio"/>
+
+                        <var name="qc"      array_group="moist" units="kg kg^{-1}"
+                             description="Cloud water mixing ratio"/>
+
+                        <var name="qr"      array_group="moist" units="kg kg^{-1}"
+                             description="Rain water mixing ratio"/>
+
+                        <var name="qi"      array_group="moist" units="kg kg^{-1}"
+                             description="Ice mixing ratio"/>
+
+                        <var name="qs"      array_group="moist" units="kg kg^{-1}"
+                             description="Snow mixing ratio"/>
+
+                        <var name="qg"      array_group="moist" units="kg kg^{-1}"
+                             description="Graupel mixing ratio"/>
+
                 </var_array>
 
                 <var_array name="aerosols" type="real" dimensions="nAerLevels nCells Time">
-                        <var name="sul"     array_group="aer_cam"/>
-                        <var name="sslt"    array_group="aer_cam"/>
-                        <var name="dust1"   array_group="aer_cam"/>
-                        <var name="dust2"   array_group="aer_cam"/>
-                        <var name="dust3"   array_group="aer_cam"/>
-                        <var name="dust4"   array_group="aer_cam"/>
-                        <var name="ocpho"   array_group="aer_cam"/>
-                        <var name="bcpho"   array_group="aer_cam"/>
-                        <var name="ocphi"   array_group="aer_cam"/>
-                        <var name="bcphi"   array_group="aer_cam"/>
-                        <var name="bg"      array_group="aer_cam"/>
-                        <var name="volc"    array_group="aer_cam"/>
+                        <var name="sul"     array_group="aer_cam" units="kg m^{-3}"
+                             description="Sulfate soluble (SUL) aerosol concentration"/>
+
+                        <var name="sslt"    array_group="aer_cam" units="kg m^{-3}"
+                             description="Sea-salt (SSLT) aerosol concentration"/>
+
+                        <var name="dust1"   array_group="aer_cam" units="kg m^{-3}"
+                             description="Dust type 1 (DUST1) aerosol concentration"/>
+
+                        <var name="dust2"   array_group="aer_cam" units="kg m^{-3}"
+                             description="Dust type 2 (DUST2) aerosol concentration"/>
+
+                        <var name="dust3"   array_group="aer_cam" units="kg m^{-3}"
+                             description="Dust type 3 (DUST3) aerosol concentration"/>
+
+                        <var name="dust4"   array_group="aer_cam" units="kg m^{-3}"
+                             description="Dust type 4 (DUST4) aerosol concentration"/>
+
+                        <var name="ocpho"   array_group="aer_cam" units="kg m^{-3}"
+                             description="Hydrophobic organic carbon (OCPHO) aerosol concentration"/>
+
+                        <var name="bcpho"   array_group="aer_cam" units="kg m^{-3}"
+                             description="Hydrophobic black carbon (BCPHO) aerosol concentration"/>
+
+                        <var name="ocphi"   array_group="aer_cam" units="kg m^{-3}"
+                             description="Hydrophilic organic carbon (OCPHI) aerosol concentration"/>
+
+                        <var name="bcphi"   array_group="aer_cam" units="kg m^{-3}"
+                             description="Hydrophilic black carbon (BCPHI) aerosol concentration"/>
+
+                        <var name="bg"      array_group="aer_cam" units="kg m^{-3}"
+                             description="Background (BG) aerosol concentration"/>
+
+                        <var name="volc"    array_group="aer_cam" units="kg m^{-3}"
+                             description="Volcanic (VOLC) aerosol concentration"/>
+
                 </var_array>
         </var_struct>
 
