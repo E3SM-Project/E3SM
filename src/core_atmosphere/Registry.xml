@@ -876,99 +876,242 @@
         <var_struct name="mesh" time_levs="1">
 
                 <!-- horizontal grid structure -->
-                <var name="latCell"                   type="real"     dimensions="nCells"/>
-                <var name="lonCell"                   type="real"     dimensions="nCells"/>
-                <var name="xCell"                     type="real"     dimensions="nCells"/>
-                <var name="yCell"                     type="real"     dimensions="nCells"/>
-                <var name="zCell"                     type="real"     dimensions="nCells"/>
-                <var name="indexToCellID"             type="integer"  dimensions="nCells"/>
-                <var name="latEdge"                   type="real"     dimensions="nEdges"/>
-                <var name="lonEdge"                   type="real"     dimensions="nEdges"/>
-                <var name="xEdge"                     type="real"     dimensions="nEdges"/>
-                <var name="yEdge"                     type="real"     dimensions="nEdges"/>
-                <var name="zEdge"                     type="real"     dimensions="nEdges"/>
-                <var name="indexToEdgeID"             type="integer"  dimensions="nEdges"/>
-                <var name="latVertex"                 type="real"     dimensions="nVertices"/>
-                <var name="lonVertex"                 type="real"     dimensions="nVertices"/>
-                <var name="xVertex"                   type="real"     dimensions="nVertices"/>
-                <var name="yVertex"                   type="real"     dimensions="nVertices"/>
-                <var name="zVertex"                   type="real"     dimensions="nVertices"/>
-                <var name="indexToVertexID"           type="integer"  dimensions="nVertices"/>
-                <var name="cellsOnEdge"               type="integer"  dimensions="TWO nEdges"/>
-                <var name="nEdgesOnCell"              type="integer"  dimensions="nCells"/>
-                <var name="nEdgesOnEdge"              type="integer"  dimensions="nEdges"/>
-                <var name="edgesOnCell"               type="integer"  dimensions="maxEdges nCells"/>
-                <var name="edgesOnEdge"               type="integer"  dimensions="maxEdges2 nEdges"/>
-                <var name="weightsOnEdge"             type="real"     dimensions="maxEdges2 nEdges"/>
-                <var name="dvEdge"                    type="real"     dimensions="nEdges"/>
-                <var name="dcEdge"                    type="real"     dimensions="nEdges"/>
-                <var name="angleEdge"                 type="real"     dimensions="nEdges"/>
-                <var name="areaCell"                  type="real"     dimensions="nCells"/>
-                <var name="invAreaCell"               type="real"     dimensions="nCells"/>
-                <var name="areaTriangle"              type="real"     dimensions="nVertices"/>
-                <var name="edgeNormalVectors"         type="real"     dimensions="R3 nEdges"/>
-                <var name="localVerticalUnitVectors"  type="real"     dimensions="R3 nCells"/>
-                <var name="cellTangentPlane"          type="real"     dimensions="R3 TWO nCells"/>
-                <var name="cellsOnCell"               type="integer"  dimensions="maxEdges nCells"/>
-                <var name="verticesOnCell"            type="integer"  dimensions="maxEdges nCells"/>
-                <var name="verticesOnEdge"            type="integer"  dimensions="TWO nEdges"/>
-                <var name="edgesOnVertex"             type="integer"  dimensions="vertexDegree nVertices"/>
-                <var name="cellsOnVertex"             type="integer"  dimensions="vertexDegree nVertices"/>
-                <var name="kiteAreasOnVertex"         type="real"     dimensions="vertexDegree nVertices"/>
-                <var name="fEdge"                     type="real"     dimensions="nEdges"/>
-                <var name="fVertex"                   type="real"     dimensions="nVertices"/>
-                <var name="meshDensity"               type="real"     dimensions="nCells"/>
-                <var name="meshScalingDel2"           type="real"     dimensions="nEdges"/>
-                <var name="meshScalingDel4"           type="real"     dimensions="nEdges"/>
+                <var name="latCell" type="real" dimensions="nCells" units="rad"
+                     description="Latitude of cells"/>
+
+                <var name="lonCell" type="real" dimensions="nCells" units="rad"
+                     description="Longitude of cells"/>
+
+                <var name="xCell" type="real" dimensions="nCells" units="m"
+                     description="Cartesian x-coordinate of cells"/>
+
+                <var name="yCell" type="real" dimensions="nCells" units="m"
+                     description="Cartesian y-coordinate of cells"/>
+
+                <var name="zCell" type="real" dimensions="nCells" units="m"
+                     description="Cartesian z-coordinate of cells"/>
+
+                <var name="indexToCellID" type="integer" dimensions="nCells" units="-"
+                     description="Mapping from local array index to global cell ID"/>
+
+                <var name="latEdge" type="real" dimensions="nEdges" units="rad"
+                     description="Latitude of edges"/>
+
+                <var name="lonEdge" type="real" dimensions="nEdges" units="rad"
+                     description="Longitude of edges"/>
+
+                <var name="xEdge" type="real" dimensions="nEdges" units="m"
+                     description="Cartesian x-coordinate of edges"/>
+
+                <var name="yEdge" type="real" dimensions="nEdges" units="m"
+                     description="Cartesian y-coordinate of edges"/>
+
+                <var name="zEdge" type="real" dimensions="nEdges" units="m"
+                     description="Cartesian z-coordinate of edges"/>
+
+                <var name="indexToEdgeID" type="integer" dimensions="nEdges" units="-"
+                     description="Mapping from local array index to global edge ID"/>
+
+                <var name="latVertex" type="real" dimensions="nVertices" units="rad"
+                     description="Latitude of vertices"/>
+
+                <var name="lonVertex" type="real" dimensions="nVertices" units="rad"
+                     description="Longitude of vertices"/>
+
+                <var name="xVertex" type="real" dimensions="nVertices" units="m"
+                     description="Cartesian x-coordinate of vertices"/>
+
+                <var name="yVertex" type="real" dimensions="nVertices" units="m"
+                     description="Cartesian y-coordinate of vertices"/>
+
+                <var name="zVertex" type="real" dimensions="nVertices" units="m"
+                     description="Cartesian z-coordinate of vertices"/>
+
+                <var name="indexToVertexID" type="integer" dimensions="nVertices" units="-"
+                     description="Mapping from local array index to global vertex ID"/>
+
+                <var name="cellsOnEdge" type="integer" dimensions="TWO nEdges" units="-"
+                     description="IDs of cells divided by an edge"/>
+
+                <var name="nEdgesOnCell" type="integer" dimensions="nCells" units="-"
+                     description="Number of edges forming the boundary of a cell"/>
+
+                <var name="nEdgesOnEdge" type="integer" dimensions="nEdges" units="-"
+                     description="Number of edges involved in reconstruction of tangential velocity for an edge"/>
+
+                <var name="edgesOnCell" type="integer" dimensions="maxEdges nCells" units="-"
+                     description="IDs of edges forming the boundary of a cell"/>
+
+                <var name="edgesOnEdge" type="integer" dimensions="maxEdges2 nEdges" units="-"
+                     description="IDs of edges involved in reconstruction of tangential velocity for an edge"/>
+
+                <var name="weightsOnEdge" type="real" dimensions="maxEdges2 nEdges" units="unitless"
+                     description="Weights used in reconstruction of tangential velocity for an edge"/>
+
+                <var name="dvEdge" type="real" dimensions="nEdges" units="m"
+                     description="Spherical distance between vertex endpoints of an edge"/>
+
+                <var name="dcEdge" type="real" dimensions="nEdges" units="m"
+                     description="Spherical distance between cells separated by an edge "/>
+
+                <var name="angleEdge" type="real" dimensions="nEdges" units="rad"
+                     description="Angle between local north and the positive tangential direction of an edge"/>
+
+                <var name="areaCell" type="real" dimensions="nCells" units="m^2"
+                     description="Spherical area of a Voronoi cell"/>
+
+                <var name="invAreaCell" type="real" dimensions="nCells" units="m^{-2}"
+                     description="Inverse of Voronoi cell area"/>
+
+                <var name="areaTriangle" type="real" dimensions="nVertices" units="m^2"
+                     description="Spherical area of a Delaunay triangle"/>
+
+                <var name="edgeNormalVectors" type="real" dimensions="R3 nEdges" units="unitless"
+                     description="Cartesian components of the vector normal to an edge and tangential to the surface of the sphere"/>
+
+                <var name="localVerticalUnitVectors" type="real" dimensions="R3 nCells" units="unitless"
+                     description="Cartesian components of the vector pointing in the local vertical direction for a cell"/>
+
+                <var name="cellTangentPlane" type="real" dimensions="R3 TWO nCells" units="unitless"
+                     description="Components of a pair of vectors defining the tangent plane at a cell"/>
+
+                <var name="cellsOnCell" type="integer" dimensions="maxEdges nCells" units="-"
+                     description="IDs of cells neighboring a cell"/>
+
+                <var name="verticesOnCell" type="integer" dimensions="maxEdges nCells" units="-"
+                     description="IDs of vertices (corner points) of a cell"/>
+
+                <var name="verticesOnEdge" type="integer" dimensions="TWO nEdges" units="-"
+                     description="IDs of the two vertex endpoints of an edge"/>
+
+                <var name="edgesOnVertex" type="integer" dimensions="vertexDegree nVertices" units="-"
+                     description="IDs of the edges that meet at a vertex"/>
+
+                <var name="cellsOnVertex" type="integer" dimensions="vertexDegree nVertices" units="-"
+                     description="IDs of the cells that meet at a vertex"/>
+
+                <var name="kiteAreasOnVertex" type="real" dimensions="vertexDegree nVertices" units="m^2"
+                     description="Intersection areas between primal (Voronoi) and dual (triangular) mesh cells"/>
+
+                <var name="fEdge" type="real" dimensions="nEdges" units="unitless"
+                     description="Coriolis parameter at an edge"/>
+
+                <var name="fVertex" type="real" dimensions="nVertices" units="unitless"
+                     description="Coriolis parameter at a vertex"/>
+
+                <var name="meshDensity" type="real" dimensions="nCells" units="unitless"
+                     description="Mesh density function (used when generating the mesh) evaluated at a cell"/>
+
+                <var name="meshScalingDel2" type="real" dimensions="nEdges" units="unitless"
+                     description="Scaling coefficient for $\nabla^2$ eddy viscosity"/>
+
+                <var name="meshScalingDel4" type="real" dimensions="nEdges" units="unitless"
+                     description="Scaling coefficient for $\nabla^4$ eddy hyper-viscosity"/>
 
                 <!-- coefficients for vertical extrapolation to the surface -->
-                <var name="cf1"                       type="real"     dimensions=""/>
-                <var name="cf2"                       type="real"     dimensions=""/>
-                <var name="cf3"                       type="real"     dimensions=""/>
+                <var name="cf1" type="real" dimensions="" units="unitless"
+                     description="Surface interpolation weight for level k=1 value"/>
+
+                <var name="cf2" type="real" dimensions="" units="unitless"
+                     description="Surface interpolation weight for level k=2 value"/>
+
+                <var name="cf3" type="real" dimensions="" units="unitless"
+                     description="Surface interpolation weight for level k=3 value"/>
 
                 <!-- coefficients used by "newpx" horizontal pressure gradient option -->
-                <var name="cpr"                       type="real"     dimensions="THREE nEdges"/>
-                <var name="cpl"                       type="real"     dimensions="THREE nEdges"/>
+                <var name="cpr" type="real" dimensions="THREE nEdges" units="unitless"
+                     description="Coefficients for right cell in `newpx' horizontal pressure gradient formulation"/>
+
+                <var name="cpl" type="real" dimensions="THREE nEdges" units="unitless"
+                     description="Coefficients for left cell in `newpx' horizontal pressure gradient formulation"/>
 
                 <!-- description of the vertical grid structure -->
-                <var name="zgrid"                     type="real"     dimensions="nVertLevelsP1 nCells"/>
-                <var name="rdzw"                      type="real"     dimensions="nVertLevels"/>
-                <var name="dzu"                       type="real"     dimensions="nVertLevels"/>
-                <var name="rdzu"                      type="real"     dimensions="nVertLevels"/>
-                <var name="fzm"                       type="real"     dimensions="nVertLevels"/>
-                <var name="fzp"                       type="real"     dimensions="nVertLevels"/>
-                <var name="zx"                        type="real"     dimensions="nVertLevelsP1 nEdges"/>
-                <var name="zz"                        type="real"     dimensions="nVertLevelsP1 nCells"/>
-                <var name="zb"                        type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
-                <var name="zb3"                       type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
-                <var name="pzm"                       type="real"     dimensions="nVertLevels nCells"/>
-                <var name="pzp"                       type="real"     dimensions="nVertLevels nCells"/>
+                <var name="zgrid" type="real" dimensions="nVertLevelsP1 nCells" units="m MSL"
+                     description="Geometric height of layer interfaces"/>
+
+                <var name="rdzw" type="real" dimensions="nVertLevels" units="unitless"
+                     description="Reciprocal dzw"/>
+
+                <var name="dzu" type="real" dimensions="nVertLevels" units="unitless"
+                     description="d(zeta) at w levels"/>
+
+                <var name="rdzu" type="real" dimensions="nVertLevels" units="unitless"
+                     description="Reciprocal dzu"/>
+
+                <var name="fzm" type="real" dimensions="nVertLevels" units="unitless"
+                     description="Weight for linear interpolation to w(k) point for u(k) level variable"/>
+
+                <var name="fzp" type="real" dimensions="nVertLevels" units="unitless"
+                     description="Weight for linear interpolation to w(k) point for u(k-1) level variable"/>
+
+                <var name="zx" type="real" dimensions="nVertLevelsP1 nEdges" units="m"
+                     description="dz/dx"/>
+
+                <var name="zz" type="real" dimensions="nVertLevelsP1 nCells" units="m^{-1}"
+                     description="d(zeta)/dz"/>
+
+                <var name="zb" type="real" dimensions="nVertLevelsP1 TWO nEdges" units="unitless"
+                     description="Coefficients for contribution from u to w diagnosis"/>
+
+                <var name="zb3" type="real" dimensions="nVertLevelsP1 TWO nEdges" units="unitless"
+                     description="Coefficients for 3rd-order contribution from u to w diagnosis"/>
+
+                <var name="pzm" type="real" dimensions="nVertLevels nCells" units="-"
+                     description="Used by newpx formulation"/>
+
+                <var name="pzp" type="real" dimensions="nVertLevels nCells" units="-"
+                     description="Used by newpx formulation"/>
 
                 <!-- W-Rayleigh damping coefficients -->
-                <var name="dss"                       type="real"     dimensions="nVertLevels nCells"/>
+                <var name="dss" type="real" dimensions="nVertLevels nCells" units="unitless"
+                     description="w-damping coefficient"/>
 
-                <var name="u_init"                    type="real"     dimensions="nVertLevels"/>
-                <var name="t_init"                    type="real"     dimensions="nVertLevels nCells"/>
-                <var name="qv_init"                   type="real"     dimensions="nVertLevels"/>
+                <!-- Reference profiles -->
+                <var name="u_init" type="real" dimensions="nVertLevels" units="m s^{-1}"
+                     description="u reference profile"/>
+
+                <var name="t_init" type="real" dimensions="nVertLevels nCells" units="K"
+                     description="theta reference profile"/>
+
+                <var name="qv_init" type="real" dimensions="nVertLevels" units="kg kg^{-1}"
+                     description="qv reference profile"/>
 
                 <!-- Space needed for advection -->
-                <var name="deriv_two"                 type="real"     dimensions="FIFTEEN TWO nEdges"/>
-                <var name="adv_coefs"                 type="real"     dimensions="FIFTEEN nEdges"/>
-                <var name="adv_coefs_3rd"             type="real"     dimensions="FIFTEEN nEdges"/>
-                <var name="advCellsForEdge"           type="integer"  dimensions="FIFTEEN nEdges"/>
-                <var name="nAdvCellsForEdge"          type="integer"  dimensions="nEdges"/>
+                <var name="deriv_two" type="real" dimensions="FIFTEEN TWO nEdges" units="unitless"
+                     description="weights for cell-centered second derivative, normal to edge, for transport scheme"/>
+
+                <var name="adv_coefs" type="real" dimensions="FIFTEEN nEdges" units="unitless"
+                     description="Weighting coefficents used for reconstructing cell-based foelds at edges"/>
+
+                <var name="adv_coefs_3rd" type="real" dimensions="FIFTEEN nEdges" units="unitless"
+                     description="Weighting coefficents used for reconstructing cell-based foelds at edges"/>
+
+                <var name="advCellsForEdge" type="integer" dimensions="FIFTEEN nEdges" units="-"
+                     description="Cells used to reconstruct a cell-based field at an edge"/>
+
+                <var name="nAdvCellsForEdge" type="integer" dimensions="nEdges" units="-"
+                     description="Number of cells used to reconstruct a cell-based field at an edge"/>
 
                 <!-- Space needed for deformation calculation weights -->
-                <var name="defc_a"                    type="real"     dimensions="maxEdges nCells"/>
-                <var name="defc_b"                    type="real"     dimensions="maxEdges nCells"/>
+                <var name="defc_a" type="real" dimensions="maxEdges nCells" units="unitless"
+                     description="Coefficients for computing the off-diagonal components of the horizontal deformation"/>
+
+                <var name="defc_b" type="real" dimensions="maxEdges nCells" units="unitless"
+                     description="Coefficients for computing the diagonal components of the horizontal deformation"/>
 
                 <!-- Arrays required for reconstruction of velocity field -->
-                <var name="coeffs_reconstruct"        type="real"     dimensions="R3 maxEdges nCells"/>
-                <var name="east"                      type="real"     dimensions="R3 nCells"/>
-                <var name="north"                     type="real"     dimensions="R3 nCells"/>
+                <var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
+                     description="Coefficients to reconstruct velocity vectors at cell centers"/>
+
+                <var name="east" type="real" dimensions="R3 nCells" units="unitless"
+                     description="Cartesian components of the local unit vector pointing east"/>
+
+                <var name="north" type="real" dimensions="R3 nCells" units="unitless"
+                     description="Cartesian components of the unit vector pointing north"/>
 
                 <!-- Arrays needed only in the CAM LW and SW radiation codes: Aerosols -->
-                <var name="m_hybi"                    type="real"     dimensions="nAerLevels nCells"/>
+                <var name="m_hybi" type="real" dimensions="nAerLevels nCells" units="unitless"
+                     description="Matched hybi (needs to be re-checked)"/>
         </var_struct>
 
         <var_struct name="state" time_levs="2">
