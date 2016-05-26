@@ -307,19 +307,21 @@ def parse_test_status(file_contents):
     rv = OrderedDict()
     test_name = None
     for line in file_contents.splitlines():
-        if (line.strip().startswith(COMMENT_STATUS)):
-            pass # skip comments
-        elif (len(line.split()) == 3):
-            status, curr_test_name, phase = line.split()
-            if (test_name is None):
-                test_name = curr_test_name
-            if (phase in rv):
-                # Phase names don't matter here, just need something unique
-                rv[phase] = reduce_stati({"%s_" % phase : status, phase : rv[phase]})
-            else:
-                rv[phase] = status
+        tokens = line.strip().split()
+        if (len(tokens)==0 or tokens[0] == COMMENT_STATUS):
+            pass # skip comments and blank lines
         else:
-            logging.warning("In TestStatus file for test '%s', line '%s' not in expected format" % (test_name, line))
+            if len(tokens) >= 3:
+                status, curr_test_name, phase = tokens[:3]
+                if (test_name is None):
+                    test_name = curr_test_name
+                if (phase in rv):
+                        # Phase names don't matter here, just need something unique
+                    rv[phase] = reduce_stati({"%s_" % phase : status, phase : rv[phase]})
+                else:
+                    rv[phase] = status
+            else:
+                logging.warning("In TestStatus file for test '%s', line '%s' not in expected format" % (test_name, line))
 
     return rv, test_name
 
