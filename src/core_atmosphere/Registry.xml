@@ -1158,51 +1158,183 @@
 
         <nml_record name="physics" in_defaults="true">
                 <!-- NAMELIST VARIABLES ADDED FOR INITIALIZATION OF SURFACE CHARACTERISTICS: -->
-                <nml_option name="input_soil_data"                   type="character"     default_value="STAS"       in_defaults="false"/>
-                <nml_option name="input_soil_temperature_lag"        type="integer"       default_value="140"        in_defaults="false"/>
-                <nml_option name="num_soil_layers"                   type="integer"       default_value="4"          in_defaults="false"/>
-                <nml_option name="months"                            type="integer"       default_value="12"         in_defaults="false"/>
+                <nml_option name="input_soil_data" type="character" default_value="STAS" in_defaults="false"
+                     units="-"
+                     description="input soil use classification"
+                     possible_values="`STAS`"/>
+
+                <nml_option name="input_soil_temperature_lag" type="integer" default_value="140" in_defaults="false"
+                     units="-"
+                     description="days over which the deep soil temperature is computed using skin temperature"
+                     possible_values="Positive integers"/>
+
+                <nml_option name="num_soil_layers" type="integer" default_value="4" in_defaults="false"
+                     units="-"
+                     description="number of soil layers in Noah land surface scheme"
+                     possible_values="Positive integers. For Noah LSM, must be set to 4."/>
+
+                <nml_option name="months" type="integer" default_value="12" in_defaults="false"
+                     units="-"
+                     description="number of months per year"
+                     possible_values="Positive integer values. DO NOT CHANGE."/>
 
                 <!-- ... DIMENSION NEEDED FOR OZONE AND AEROSOLS CONCENTRATIONS IN THE CAM LONGWAVE AND SHORTWAVE -->
                 <!-- ... RADIATION PARAMETERIZATIONS.                                                             -->
-                <nml_option name="noznlev"                           type="integer"       default_value="59"         in_defaults="false"/>
-                <nml_option name="naerlev"                           type="integer"       default_value="29"         in_defaults="false"/>
-                <nml_option name="camdim1"                           type="integer"       default_value="4"          in_defaults="false"/>
+                <nml_option name="noznlev" type="integer" default_value="59" in_defaults="false"
+                     units="-"
+                     description="number of prescribed pressure levels for input climatological ozone volume mixing ratios"
+                     possible_values="Positive integers"/>
+
+                <nml_option name="naerlev" type="integer" default_value="29" in_defaults="false"
+                     units="-"
+                     description="number of prescribed pressure levels for input climatological aerosol mixing ratio"
+                     possible_values="Positive integers"/>
+
+                <nml_option name="camdim1" type="integer" default_value="4" in_defaults="false"
+                     units="-"
+                     description="dimension of CAM radiation absorption save array"
+                     possible_values="Positive integers"/>
 
                 <!-- NAMELIST VARIABLES ADDED FOR PHYSICS CONFIGURATION: -->
-                <nml_option name="config_frac_seaice"                type="logical"       default_value="false"      in_defaults="false"/>
-                <nml_option name="config_sfc_albedo"                 type="logical"       default_value="true"       in_defaults="false"/>
-                <nml_option name="config_sfc_snowalbedo"             type="logical"       default_value="true"       in_defaults="false"/>
-                <nml_option name="config_sst_update"                 type="logical"       default_value="false"/>
-                <nml_option name="config_sstdiurn_update"            type="logical"       default_value="false"/>
-                <nml_option name="config_deepsoiltemp_update"        type="logical"       default_value="false"/>
-                <nml_option name="config_o3climatology"              type="logical"       default_value="false"      in_defaults="false"/>
+                <nml_option name="config_frac_seaice" type="logical" default_value="false" in_defaults="false"
+                     units="-"
+                     description="logical for configuration of fractional sea-ice"
+                     possible_values=".true. for sea-ice between 0 or 1; .false. for sea-ice equal to 0 or 1 (flag)."/>
 
-                <nml_option name="config_n_microp"                   type="integer"       default_value="1"          in_defaults="false"/>
+                <nml_option name="config_sfc_albedo" type="logical" default_value="true" in_defaults="false"
+                     units="-"
+                     description="logical for configuration of surface albedo"
+                     possible_values=".true. for climatologically varying surface albedo; .false. for fixed input data"/>
 
-                <nml_option name="config_radtlw_interval"            type="character"     default_value="00:30:00"/>
-                <nml_option name="config_radtsw_interval"            type="character"     default_value="00:30:00"/>
-                <nml_option name="config_conv_interval"              type="character"     default_value="none"       in_defaults="false"/>
-                <nml_option name="config_pbl_interval"               type="character"     default_value="none"       in_defaults="false"/>
-                <nml_option name="config_camrad_abs_update"          type="character"     default_value="06:00:00"   in_defaults="false"/>
-                <nml_option name="config_greeness_update"            type="character"     default_value="24:00:00"   in_defaults="false"/>
-                <nml_option name="config_bucket_update"              type="character"     default_value="none"/>
+                <nml_option name="config_sfc_snowalbedo" type="logical" default_value="true" in_defaults="false"
+                     units="-"
+                     description="logical for configuration of maximum surface albedo for snow"
+                     possible_values=".true. for geographical distribution; .false. for fixed input data"/>
 
-                <nml_option name="config_physics_suite"              type="character"     default_value="mesoscale_reference"  in_defaults="true"/>
+                <nml_option name="config_sst_update" type="logical" default_value="false"
+                     units="-"
+                     description="logical for configuration of sea-surface temperature"
+                     possible_values=".true. for time-varying sea-surface temperatures; .false., otherwise"/>
 
-                <nml_option name="config_microp_scheme"              type="character"     default_value="suite"      in_defaults="false"/>
-                <nml_option name="config_convection_scheme"          type="character"     default_value="suite"      in_defaults="false"/>
-                <nml_option name="config_lsm_scheme"                 type="character"     default_value="suite"      in_defaults="false"/>
-                <nml_option name="config_pbl_scheme"                 type="character"     default_value="suite"      in_defaults="false"/>
-                <nml_option name="config_gwdo_scheme"                type="character"     default_value="suite"      in_defaults="false"/>
-                <nml_option name="config_radt_cld_scheme"            type="character"     default_value="suite"      in_defaults="false"/>
-                <nml_option name="config_radt_lw_scheme"             type="character"     default_value="suite"      in_defaults="false"/>
-                <nml_option name="config_radt_sw_scheme"             type="character"     default_value="suite"      in_defaults="false"/>
-                <nml_option name="config_sfclayer_scheme"            type="character"     default_value="suite"      in_defaults="false"/>
+                <nml_option name="config_sstdiurn_update" type="logical" default_value="false"
+                     units="-"
+                     description="logical for configuration of diurnal cycle of sea-surface temperatures"
+                     possible_values=".true. for applying a diurnal cycle to sea-surface temperatures; .false., otherwise"/>
 
-                <nml_option name="config_bucket_radt"                type="real"          default_value="1.0e9"      in_defaults="false"/>
-                <nml_option name="config_bucket_rainc"               type="real"          default_value="100.0"      in_defaults="false"/>
-                <nml_option name="config_bucket_rainnc"              type="real"          default_value="100.0"      in_defaults="false"/>
+                <nml_option name="config_deepsoiltemp_update" type="logical" default_value="false"
+                     units="-"
+                     description="logical for configuration of deep soil temperatures"
+                     possible_values=".true. for slowly time-varying deep soil temperatures; .false. otherwise"/>
+
+                <nml_option name="config_o3climatology" type="logical" default_value="false" in_defaults="false"
+                     units="-"
+                     description="logical for configuration of input ozone data in RRMTG long- and short-wave radiation"
+                     possible_values=".true. for using monthly-varying ozone data; .false. for using fixed vertical profile"/>
+
+                <nml_option name="config_n_microp" type="integer" default_value="1" in_defaults="false"
+                     units="-"
+                     description="number of microphysics time-steps per physics time-steps"
+                     possible_values="Positive integers"/>
+
+                <nml_option name="config_radtlw_interval" type="character" default_value="00:30:00"
+                     units="-"
+                     description="time interval between calls to parameterization of long-wave radiation"
+                     possible_values="`DD_HH:MM:SS' or `none'"/>
+
+                <nml_option name="config_radtsw_interval" type="character" default_value="00:30:00"
+                     units="-"
+                     description="time interval between calls to parameterization of short-wave radiation"
+                     possible_values="`DD_HH:MM:SS' or `none'"/>
+
+                <nml_option name="config_conv_interval" type="character" default_value="none" in_defaults="false"
+                     units="-"
+                     description="time interval between calls to parameterization of convection"
+                     possible_values="`DD_HH:MM:SS' or `none'"/>
+
+                <nml_option name="config_pbl_interval" type="character" default_value="none" in_defaults="false"
+                     units="-"
+                     description="time interval between calls to parameterization of planetary boundary layer"
+                     possible_values="`DD_HH:MM:SS' or `none'"/>
+
+                <nml_option name="config_camrad_abs_update" type="character" default_value="06:00:00" in_defaults="false"
+                     units="-"
+                     description="time interval between updates of absorption/emission coefficients in CAM radiation"
+                     possible_values="`DD_HH:MM:SS' or `none'"/>
+
+                <nml_option name="config_greeness_update" type="character" default_value="24:00:00" in_defaults="false"
+                     units="-"
+                     description="time interval between updates of greeness fraction"
+                     possible_values="`DD_HH:MM:SS' or `none'"/>
+
+                <nml_option name="config_bucket_update" type="character" default_value="none"
+                     units="-"
+                     description="time interval between updates of accumulated rain and radiation diagnostics"
+                     possible_values="`DD_HH:MM:SS' or `none'"/>
+
+                <nml_option name="config_physics_suite" type="character" default_value="mesoscale_reference" in_defaults="true"
+                     units="-"
+                     description="Choice of physics suite"
+                     possible_values="`mesoscale_reference',`none'"/>
+
+                <nml_option name="config_microp_scheme" type="character" default_value="suite" in_defaults="false"
+                     units="-"
+                     description="configuration for cloud microphysics schemes"
+                     possible_values="`suite',`wsm6',`off'"/>
+
+                <nml_option name="config_convection_scheme" type="character" default_value="suite" in_defaults="false"
+                     units="-"
+                     description="configuration for convection schemes"
+                     possible_values="`suite',`kain_fritsch',`tiedtke',`off'"/>
+
+                <nml_option name="config_lsm_scheme" type="character" default_value="suite" in_defaults="false"
+                     units="-"
+                     description="configuration for land-surface schemes"
+                     possible_values="`suite',`noah',`off'"/>
+
+                <nml_option name="config_pbl_scheme" type="character" default_value="suite" in_defaults="false"
+                     units="-"
+                     description="configuration for planetary boundary layer schemes"
+                     possible_values="`suite',`ysu',`off'"/>
+
+                <nml_option name="config_gwdo_scheme" type="character" default_value="suite" in_defaults="false"
+                     units="-"
+                     description="configuration of gravity wave drag over orography"
+                     possible_values="`suite',`ysu_gwdo',`off'"/>
+
+                <nml_option name="config_radt_cld_scheme" type="character" default_value="suite" in_defaults="false"
+                     units="-"
+                     description="configuration for calculation of horizontal cloud fraction"
+                     possible_values="`suite',`cld_fraction',`cld_incidence'"/>
+
+                <nml_option name="config_radt_lw_scheme" type="character" default_value="suite" in_defaults="false"
+                     units="-"
+                     description="configuration for long-wave radiation schemes"
+                     possible_values="`suite',`rrtmg_lw',`cam_lw',`off'"/>
+
+                <nml_option name="config_radt_sw_scheme" type="character" default_value="suite" in_defaults="false"
+                     units="-"
+                     description="configuration for short-wave radiation schemes"
+                     possible_values="`suite',`rrtmg_sw',`cam_sw',`off'"/>
+
+                <nml_option name="config_sfclayer_scheme" type="character" default_value="suite" in_defaults="false"
+                     units="-"
+                     description="configuration for surface layer-scheme"
+                     possible_values="`suite',`monin_obukhov',`off'"/>
+
+                <nml_option name="config_bucket_radt" type="real" default_value="1.0e9" in_defaults="false"
+                     units="-"
+                     description="threshold above which accumulated radiation diagnostics are reset"
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_bucket_rainc" type="real" default_value="100.0" in_defaults="false"
+                     units="-"
+                     description="threshold above which the accumulated convective precipitation is reset"
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_bucket_rainnc" type="real" default_value="100.0" in_defaults="false"
+                     units="-"
+                     description="threshold above which the accumulated grid-scale precipitation is reset"
+                     possible_values="Positive real values"/>
         </nml_record>
 
         <var_struct name="diag_physics" time_levs="1">
