@@ -2295,25 +2295,40 @@
                 <!-- rqccuten  : tendency of cloud water mixing ratio due to cumulus convection            (kg/kg s-1)  -->
                 <!-- rqicuten  : tendency of cloud ice mixing ratio due to cumulus convection              (kg/kg s-1)  -->
 
-                <var name="rthcuten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqvcuten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqccuten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqicuten"    type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rthcuten" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
+                     description="tendency of potential temperature due to cumulus convection"/>
+
+                <var name="rqvcuten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
+                     description="tendency of water vapor mixing ratio due to cumulus convection"/>
+
+                <var name="rqccuten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
+                     description="tendency of cloud water mixing ratio due to cumulus convection"/>
+
+                <var name="rqicuten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
+                     description="tendency of cloud ice mixing ratio due to cumulus convection"/>
 
                 <!-- KAIN_FRITSCH -->
                 <!-- rqrcuten  : tendency of rain mixing ratio due to cumulus convection                   (kg/kg s-1) -->
                 <!-- rqscuten  : tendency of snow mixing ratio due to cumulus convection                   (kg/kg s-1) -->
 
-                <var name="rqrcuten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqscuten"    type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rqrcuten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
+                     description="tendency of rain mixing ratio due to cumulus convection"/>
+
+                <var name="rqscuten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
+                     description="tendency of snow mixing ratio due to cumulus convection"/>
 
                 <!-- TIEDTKE -->
                 <!-- rucuten   : tendency of zonal wind due to cumulus convection                              (m/s-1) -->
                 <!-- rvcuten   : tendency of meridional wind due to cumulus convection                         (m/s-1) -->
                 <!-- rqvdynten : tendency of water vapor due to horizontal and vertical advections         (kg/kg/s-1) -->
-                <var name="rqvdynten"   type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rucuten"     type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rvcuten"     type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rqvdynten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
+                     description="tendency of water vapor due to horizontal and vertical advections"/>
+
+                <var name="rucuten" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} s^{-1}"
+                     description="tendency of zonal wind due to cumulus convection"/>
+
+                <var name="rvcuten" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} s^{-1}"
+                     description="tendency of meridional wind due to cumulus convection"/>
 
 
                 <!-- ================================================================================================== -->
@@ -2326,12 +2341,23 @@
                 <!-- rqcblten  : tendency of cloud water mixing ratio due to pbl processes                 (kg/kg s-1)  -->
                 <!-- rqiblten  : tendency of cloud ice mixing ratio due to pbl processes                   (kg/kg s-1)  -->
 
-                <var name="rublten"     type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rvblten"     type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rthblten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqvblten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqcblten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqiblten"    type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rublten" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} s^{-1}"
+                     description="tendency of zonal wind due to pbl processes"/>
+
+                <var name="rvblten" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} s^{-1}"
+                     description="tendency of meridional wind due to pbl processes"/>
+
+                <var name="rthblten" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
+                     description="tendency of potential temperature due to pbl processes"/>
+
+                <var name="rqvblten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
+                     description="tendency of water vapor mixing ratio due to pbl processes"/>
+
+                <var name="rqcblten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
+                     description="tendency of cloud water mixing ratio due to pbl processes"/>
+
+                <var name="rqiblten" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1} s^{-1}"
+                     description="tendency of cloud ice mixing ratio due to pbl processes"/>
 
 
                 <!-- ================================================================================================== -->
@@ -2340,8 +2366,11 @@
                 <!--  rthratensw:uncoupled theta tendency due to shortwave radiation                            [K s-1] -->
                 <!--  rthratenlw:uncoupled theta tendency due to longwave radiation                             [K s-1] -->
 
-                <var name="rthratensw"  type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rthratenlw"  type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rthratensw" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
+                     description="tendency of potential temperature due to short wave radiation"/>
+
+                <var name="rthratenlw" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
+                     description="tendency of potential temperature due to short wave radiation"/>
         </var_struct>
 
         <var_struct name="atm_input" time_levs="1">
