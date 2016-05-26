@@ -253,9 +253,20 @@
         </nml_record>
 
         <nml_record name="io" in_defaults="true">
-                <nml_option name="config_restart_timestamp_name"     type="character"     default_value="restart_timestamp"  in_defaults="false"/>
-                <nml_option name="config_pio_num_iotasks"            type="integer"       default_value="0"/>
-                <nml_option name="config_pio_stride"                 type="integer"       default_value="1"/>
+                <nml_option name="config_restart_timestamp_name" type="character" default_value="restart_timestamp" in_defaults="false"
+                     units="-"
+                     description="Filename used to store most recent restart time stamp"
+                     possible_values="Any valid filename"/>
+
+                <nml_option name="config_pio_num_iotasks" type="integer" default_value="0"
+                     units="-"
+                     description="Number of tasks to perform file I/O"
+                     possible_values="Integer valued, 0 $\leq$ config_pio_num_iotasks $\leq$ \# MPI tasks, 0 indicates all tasks perform I/O"/>
+
+                <nml_option name="config_pio_stride" type="integer" default_value="1"
+                     units="-"
+                     description="Stride between file I/O tasks"
+                     possible_values="Integer valued, $\leq$ (\# MPI tasks) / config_pio_num_iotasks"/>
         </nml_record>
 
         <nml_record name="decomposition" in_defaults="true">
