@@ -270,10 +270,25 @@
         </nml_record>
 
         <nml_record name="decomposition" in_defaults="true">
-                <nml_option name="config_block_decomp_file_prefix"   type="character"     default_value="x1.40962.graph.info.part."/>
-                <nml_option name="config_number_of_blocks"           type="integer"       default_value="0"                  in_defaults="false"/>
-                <nml_option name="config_explicit_proc_decomp"       type="logical"       default_value="false"              in_defaults="false"/>
-                <nml_option name="config_proc_decomp_file_prefix"    type="character"     default_value="graph.info.part."   in_defaults="false"/>
+                <nml_option name="config_block_decomp_file_prefix" type="character" default_value="x1.40962.graph.info.part."
+                     units="-"
+                     description="Prefix of graph decomposition file, to be suffixed with the MPI task count"
+                     possible_values="Any valid filename"/>
+
+                <nml_option name="config_number_of_blocks" type="integer" default_value="0" in_defaults="false"
+                     units="-"
+                     description="Number of blocks to assign to each MPI task"
+                     possible_values="Positive integer values"/>
+
+                <nml_option name="config_explicit_proc_decomp" type="logical" default_value="false" in_defaults="false"
+                     units="-"
+                     description="Whether to use an explicit mapping of blocks to MPI tasks"
+                     possible_values=".true. or .false."/>
+
+                <nml_option name="config_proc_decomp_file_prefix" type="character" default_value="graph.info.part." in_defaults="false"
+                     units="-"
+                     description="Prefix of block mapping file"
+                     possible_values="Any valid filename"/>
         </nml_record>
 
         <nml_record name="restart" in_defaults="true">
