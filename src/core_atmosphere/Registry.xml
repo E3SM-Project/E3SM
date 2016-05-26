@@ -292,8 +292,15 @@
         </nml_record>
 
         <nml_record name="restart" in_defaults="true">
-                <nml_option name="config_do_restart"                 type="logical"       default_value="false"/>
-                <nml_option name="config_do_DAcycling"               type="logical"       default_value="false"              in_defaults="false"/>
+                <nml_option name="config_do_restart" type="logical" default_value="false"
+                     units="-"
+                     description="Whether this run of the model is to restart from a previous restart file or not"
+                     possible_values=".true. or .false."/>
+
+                <nml_option name="config_do_DAcycling" type="logical" default_value="false" in_defaults="false"
+                     units="-"
+                     description="Whether to re-compute coupled fields $\theta_m$, $\tilde{\rho}$, $\rho u$, etc. from uncoupled fields when restarting the model; used for cycling DA experiments that analyze uncoupled fields in restart files"
+                     possible_values=".true. or .false."/>
         </nml_record>
 
         <nml_record name="printout" in_defaults="true">
