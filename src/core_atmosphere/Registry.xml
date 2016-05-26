@@ -54,43 +54,190 @@
 <!-- **************************************************************************************** -->
 
         <nml_record name="nhyd_model" in_defaults="true">
-                <nml_option name="config_time_integration"           type="character"     default_value="SRK3"        in_defaults="false"/>
-                <nml_option name="config_dt"                         type="real"          default_value="720.0"/>
-                <nml_option name="config_calendar_type"              type="character"     default_value="gregorian"   in_defaults="false"/>
-                <nml_option name="config_start_time"                 type="character"     default_value="2010-10-23_00:00:00"/>
-                <nml_option name="config_stop_time"                  type="character"     default_value="none"        in_defaults="false"/>
-                <nml_option name="config_run_duration"               type="character"     default_value="5_00:00:00"/>
-                <nml_option name="config_split_dynamics_transport"   type="logical"       default_value="true"/>
-                <nml_option name="config_number_of_sub_steps"        type="integer"       default_value="2"/>
-                <nml_option name="config_dynamics_split_steps"       type="integer"       default_value="3"/>
-                <nml_option name="config_h_mom_eddy_visc2"           type="real"          default_value="0.0"/>
-                <nml_option name="config_h_mom_eddy_visc4"           type="real"          default_value="0.0"/>
-                <nml_option name="config_v_mom_eddy_visc2"           type="real"          default_value="0.0"/>
-                <nml_option name="config_h_theta_eddy_visc2"         type="real"          default_value="0.0"/>
-                <nml_option name="config_h_theta_eddy_visc4"         type="real"          default_value="0.0"/>
-                <nml_option name="config_v_theta_eddy_visc2"         type="real"          default_value="0.0"/>
-                <nml_option name="config_horiz_mixing"               type="character"     default_value="2d_smagorinsky"/>
-                <nml_option name="config_len_disp"                   type="real"          default_value="120000.0"/>
-                <nml_option name="config_visc4_2dsmag"               type="real"          default_value="0.05"/>
-                <nml_option name="config_del4u_div_factor"           type="real"          default_value="1.0"         in_defaults="false"/>
-                <nml_option name="config_w_adv_order"                type="integer"       default_value="3"/>
-                <nml_option name="config_theta_adv_order"            type="integer"       default_value="3"/>
-                <nml_option name="config_scalar_adv_order"           type="integer"       default_value="3"/>
-                <nml_option name="config_u_vadv_order"               type="integer"       default_value="3"/>
-                <nml_option name="config_w_vadv_order"               type="integer"       default_value="3"/>
-                <nml_option name="config_theta_vadv_order"           type="integer"       default_value="3"/>
-                <nml_option name="config_scalar_vadv_order"          type="integer"       default_value="3"/>
-                <nml_option name="config_scalar_advection"           type="logical"       default_value="true"/>
-                <nml_option name="config_positive_definite"          type="logical"       default_value="false"/>
-                <nml_option name="config_monotonic"                  type="logical"       default_value="true"/>
-                <nml_option name="config_coef_3rd_order"             type="real"          default_value="0.25"/>
-                <nml_option name="config_mix_full"                   type="logical"       default_value="true"        in_defaults="false"/>
-                <nml_option name="config_epssm"                      type="real"          default_value="0.1"/>
-                <nml_option name="config_smdiv"                      type="real"          default_value="0.1"/>
-                <nml_option name="config_newpx"                      type="logical"       default_value="false"/>
-                <nml_option name="config_apvm_upwinding"             type="real"          default_value="0.5"         in_defaults="false"/>
-                <nml_option name="config_h_ScaleWithMesh"            type="logical"       default_value="true"/>
-                <nml_option name="config_num_halos"                  type="integer"       default_value="2"           in_defaults="false"/>
+                <nml_option name="config_time_integration" type="character" default_value="SRK3" in_defaults="false"
+                     units="-"
+                     description="Time integration scheme"
+                     possible_values="`SRK3'"/>
+
+                <nml_option name="config_dt" type="real" default_value="720.0"
+                     units="s"
+                     description="Model time step, seconds"
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_calendar_type" type="character" default_value="gregorian" in_defaults="false"
+                     units="-"
+                     description="Simulation calendar type"
+                     possible_values="`gregorian',`gregorian_noleap'"/>
+
+                <nml_option name="config_start_time" type="character" default_value="2010-10-23_00:00:00"
+                     units="-"
+                     description="Starting time for model simulation"
+                     possible_values="`YYYY-MM-DD_hh:mm:ss'"/>
+
+                <nml_option name="config_stop_time" type="character" default_value="none" in_defaults="false"
+                     units="-"
+                     description="Stopping time for model simulation"
+                     possible_values="`YYYY-MM-DD_hh:mm:ss'"/>
+
+                <nml_option name="config_run_duration" type="character" default_value="5_00:00:00"
+                     units="-"
+                     description="Length of model simulation"
+                     possible_values="[DDD_]hh:mm:ss"/>
+
+                <nml_option name="config_split_dynamics_transport" type="logical" default_value="true"
+                     units="-"
+                     description="Whether to super-cycle scalar transport"
+                     possible_values="Logical values"/>
+
+                <nml_option name="config_number_of_sub_steps" type="integer" default_value="2"
+                     units="-"
+                     description="Number of acoustic steps per full RK step"
+                     possible_values="Positive, even integer values, typically 2 or 6 depending on transport splitting"/>
+
+                <nml_option name="config_dynamics_split_steps" type="integer" default_value="3"
+                     units="-"
+                     description="When config\_split\_dynamics\_transport = T, the number of RK steps per transport step"
+                     possible_values="Positive integer values"/>
+
+                <nml_option name="config_h_mom_eddy_visc2" type="real" default_value="0.0"
+                     units="m^2 s^{-1}"
+                     description="$\nabla^2$ eddy viscosity for horizontal diffusion of momentum"
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_h_mom_eddy_visc4" type="real" default_value="0.0"
+                     units="m^4 s^{-1}"
+                     description="$\nabla^4$ eddy hyper-viscosity for horizontal diffusion of momentum"
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_v_mom_eddy_visc2" type="real" default_value="0.0"
+                     units="m^2 s^{-1}"
+                     description="$\nabla^2$ eddy viscosity for vertical diffusion of momentum"
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_h_theta_eddy_visc2" type="real" default_value="0.0"
+                     units="m^2 s^{-1}"
+                     description="$\nabla^2$ eddy viscosity for horizontal diffusion of theta"
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_h_theta_eddy_visc4" type="real" default_value="0.0"
+                     units="m^4 s^{-1}"
+                     description="$\nabla^4$ eddy hyper-viscosity for horizontal diffusion of theta"
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_v_theta_eddy_visc2" type="real" default_value="0.0"
+                     units="m^2 s^{-1}"
+                     description="$\nabla^2$ eddy viscosity for vertical diffusion of theta"
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_horiz_mixing" type="character" default_value="2d_smagorinsky"
+                     units="-"
+                     description="Formulation of horizontal mixing"
+                     possible_values="`2d_fixed' or `2d_smagorinsky'"/>
+
+                <nml_option name="config_len_disp" type="real" default_value="120000.0"
+                     units="m"
+                     description="Horizontal length scale for Smagorinsky formulation of horizontal diffusion"
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_visc4_2dsmag" type="real" default_value="0.05"
+                     units="-"
+                     description="Scaling coefficient of $\delta x^3$ to obtain $\nabla^4$ diffusion coefficient"
+                     possible_values="Non-negative real values"/>
+
+                <nml_option name="config_del4u_div_factor" type="real" default_value="1.0" in_defaults="false"
+                     units="-"
+                     description="Scaling factor for the divergence component of $\nabla^4 u$ calculation"
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_w_adv_order" type="integer" default_value="3"
+                     units="-"
+                     description="Horizontal advection order for w"
+                     possible_values="2, 3, or 4"/>
+
+                <nml_option name="config_theta_adv_order" type="integer" default_value="3"
+                     units="-"
+                     description="Horizontal advection order for theta"
+                     possible_values="2, 3, or 4"/>
+
+                <nml_option name="config_scalar_adv_order" type="integer" default_value="3"
+                     units="-"
+                     description="Horizontal advection order for scalars"
+                     possible_values="2, 3, or 4"/>
+
+                <nml_option name="config_u_vadv_order" type="integer" default_value="3"
+                     units="-"
+                     description="Vertical advection order for normal velocities (u)"
+                     possible_values="2, 3, or 4"/>
+
+                <nml_option name="config_w_vadv_order" type="integer" default_value="3"
+                     units="-"
+                     description="Vertical advection order for w"
+                     possible_values="2, 3, or 4"/>
+
+                <nml_option name="config_theta_vadv_order" type="integer" default_value="3"
+                     units="-"
+                     description="Vertical advection order for theta"
+                     possible_values="2, 3, or 4"/>
+
+                <nml_option name="config_scalar_vadv_order" type="integer" default_value="3"
+                     units="-"
+                     description="Vertical advection order for scalars"
+                     possible_values="2, 3, or 4"/>
+
+                <nml_option name="config_scalar_advection" type="logical" default_value="true"
+                     units="-"
+                     description="Whether to advect scalar fields"
+                     possible_values=".true. or .false."/>
+
+                <nml_option name="config_positive_definite" type="logical" default_value="false"
+                     units="-"
+                     description="Whether to enable positive-definite advection of scalars"
+                     possible_values=".true. or .false."/>
+
+                <nml_option name="config_monotonic" type="logical" default_value="true"
+                     units="-"
+                     description="Whether to enable monotonic limiter in scalar advection"
+                     possible_values=".true. or .false."/>
+
+                <nml_option name="config_coef_3rd_order" type="real" default_value="0.25"
+                     units="-"
+                     description="Upwinding coefficient in the 3rd order advection scheme"
+                     possible_values="0 $\leq$ config_coef_3rd_order $\leq$ 1"/>
+
+                <nml_option name="config_mix_full" type="logical" default_value="true" in_defaults="false"
+                     units="-"
+                     description="Mix full $\theta$ and $u$ fields, or mix perturbation from intitial state"
+                     possible_values=".true. or .false."/>
+
+                <nml_option name="config_epssm" type="real" default_value="0.1"
+                     units="-"
+                     description="Off-centering parameter for the vertically implicit acoustic integration"
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_smdiv" type="real" default_value="0.1"
+                     units="-"
+                     description="3-d divergence damping coefficient"
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_newpx" type="logical" default_value="false"
+                     units="-"
+                     description="Whether to use experimental formulation for horizontal pressure gradient computation"
+                     possible_values=".true. or .false."/>
+
+                <nml_option name="config_apvm_upwinding" type="real" default_value="0.5" in_defaults="false"
+                     units="-"
+                     description="Amount of upwinding in APVM"
+                     possible_values="0 $\leq$ config_apvm_upwinding $\leq$ 1"/>
+
+                <nml_option name="config_h_ScaleWithMesh" type="logical" default_value="true"
+                     units="-"
+                     description="Scale eddy viscosities with mesh-density function for horizontal diffusion"
+                     possible_values=".true. or .false."/>
+
+                <nml_option name="config_num_halos" type="integer" default_value="2" in_defaults="false"
+                     units="-"
+                     description="Number of halo layers for fields"
+                     possible_values="Integer values, typically 2 or 3; DO NOT CHANGE"/>
         </nml_record>
 
         <nml_record name="damping" in_defaults="true">
