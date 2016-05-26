@@ -993,6 +993,7 @@ MODULE WRM_modules
         !---------------------------
 
         call t_startf('moswrm_ERFlow_sum')
+        dam_uptake_sum = 0._r8
         call shr_mpi_sum(dam_uptake,dam_uptake_sum,mpicom_rof,'wrm dam_uptake',all=.true.)
         call t_stopf('moswrm_ERFlow_sum')
 

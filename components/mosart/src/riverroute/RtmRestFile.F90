@@ -14,7 +14,7 @@ module RtmRestFile
   use RtmSpmd       , only : masterproc 
   use RtmVar        , only : rtmlon, rtmlat, iulog, inst_suffix, rpntfil, &
                              caseid, nsrest, brnch_retain_casename, &
-                             finidat_rtm, nrevsn_rtm, &
+                             finidat_rtm, nrevsn_rtm, wrmflag, &
                              nsrContinue, nsrBranch, nsrStartup, &
                              ctitle, version, username, hostname, conventions, source
   use RtmHistFile   , only : RtmHistRestart
@@ -23,6 +23,9 @@ module RtmRestFile
   use RunoffMod     , only : rtmCTL
   use RtmIO       
   use RtmDateTime
+#ifdef INCLUDE_WRM
+  use WRM_type_mod  , only : ctlSubwWRM, WRMUnit, StorWater
+#endif
   use rof_cpl_indices , only : nt_rtm, rtm_tracers 
 !
 ! !PUBLIC TYPES:
@@ -376,13 +379,24 @@ contains
     ! LOCAL VARIABLES:
     logical :: readvar          ! determine if variable is on initial file
     integer :: nt,nv,n          ! indices
+    integer :: nvmax            ! number of variables to write
+    integer :: ig, idam         ! indices
+    logical :: varok            ! variable ok flag for reading/writing
     real(r8) , pointer :: dfld(:) ! temporary array
     character(len=32)  :: vname,uname
     character(len=128) :: lname
     !-----------------------------------------------------------------------
 
-    do nv = 1,7
+#ifdef INCLUDE_WRM
+    nvmax = 8
+#else
+    nvmax = 7
+#endif
+
+    do nv = 1,nvmax
     do nt = 1,nt_rtm
+
+       varok = .true.
 
        if (nv == 1) then
           vname = 'RTM_VOLR_'//trim(rtm_tracers(nt))
@@ -419,11 +433,27 @@ contains
           lname = 'instataneous flow out of main channel in cell'
           uname = 'm3/s'
           dfld  => rtmCTL%erout(:,nt)
+#ifdef INCLUDE_WRM
+       elseif (nv == 8 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+          if (wrmflag) then
+             StorWater%storageG = 0._r8
+             if (flag == 'write') then
+                do idam = 1, ctlSubwWRM%localNumDam
+                   ig = WRMUnit%icell(idam)
+                   StorWater%storageG(ig) = StorWater%storage(idam)
+                enddo
+             endif
+             vname = 'DAM_STORAGE_'//trim(rtm_tracers(nt))
+             lname = 'dam storage'
+             uname = 'm3'
+             dfld  => StorWater%storageG(:)
+          endif
+#endif
        else
-          write(iulog,*) 'Rtm ERROR: illegal nv value a ',nv
-          call shr_sys_abort()
+          varok = .false.
        endif
 
+       if (varok) then
        if (flag == 'define') then
           call ncd_defvar(ncid=ncid, varname=trim(vname), &
                xtype=ncd_double,  dim1name='rtmlon', dim2name='rtmlat', &
@@ -439,6 +469,7 @@ contains
              end if
           end if
        end if
+       end if  ! varok
 
     enddo
     enddo
@@ -453,7 +484,12 @@ contains
              if (abs(rtmCTL%wt(n,nt))      > 1.e30) rtmCTL%wt(n,nt) = 0.
              if (abs(rtmCTL%wr(n,nt))      > 1.e30) rtmCTL%wr(n,nt) = 0.
              if (abs(rtmCTL%erout(n,nt))   > 1.e30) rtmCTL%erout(n,nt) = 0.
-          end do
+          end do  ! nt
+#ifdef INCLUDE_WRM
+          if (wrmflag) then
+             if (abs(storWater%storageG(n)) > 1.e30) storWater%storageG(n) = 0.
+          endif
+#endif
           if (rtmCTL%mask(n) == 1) then
              do nt = 1,nt_rtm
                 rtmCTL%runofflnd(n,nt) = rtmCTL%runoff(n,nt)
@@ -465,8 +501,16 @@ contains
                 rtmCTL%dvolrdtocn(n,nt)= rtmCTL%dvolrdt(n,nt)
              enddo
           endif
-       enddo
-    endif
+       enddo  ! n
+#ifdef INCLUDE_WRM
+       if (wrmflag) then
+          do idam = 1, ctlSubwWRM%localNumDam
+             ig = WRMUnit%icell(idam)
+             StorWater%storage(idam) = StorWater%storageG(ig)
+          enddo
+       endif
+#endif
+    endif  ! read
 
   end subroutine RtmRestart
 
