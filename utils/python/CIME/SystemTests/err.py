@@ -3,22 +3,33 @@ CIME ERR test  This class inherits from SystemTestsCommon
 ERR tests short term archiving and restart capabilities
 """
 from CIME.XML.standard_module_setup import *
-from system_tests_common import SystemTestsCommon
+from CIME.SystemTests.system_tests_common import SystemTestsCommon
+from CIME.SystemTests.ers import ERS
 
-class ERR(SystemTestsCommon):
-    def __init__(self, caseroot, case):
+import shutil, glob
+
+logger = logging.getLogger(__name__)
+
+class ERR(ERS):
+
+    def __init__(self, caseroot=None, case=None):
         """
         initialize an object interface to the ERR system test
         """
-        SystemTestsCommon.__init__(self, caseroot, case)
+        ERS.__init__(self, caseroot=caseroot, case=case)
 
     def run(self):
-        self._case.set_value("CONTINUE_RUN",False)
-        self._case.set_value("REST_OPTION","none")
-        self._case.set_value("HIST_OPTION","$STOP_OPTION")
-        self._case.set_value("HIST_N","$STOP_N")
-        self._case.flush()
-        SystemTestsCommon.run(self)
+        first_phase = self._case.get_value("RESUBMIT") == 1
 
-    def report(self):
-        SystemTestsCommon.report(self)
+        if first_phase:
+            self._case.set_value("DOUT_S", True)
+            self._case.flush()
+            return self._ers_first_phase()
+        else:
+            dout_s_root = self._case.get_value("DOUT_S_ROOT")
+            rundir = self._case.get_value("RUNDIR")
+            logger.info("staging files from archive %s" % dout_s_root)
+            for item in glob.glob(os.path.join(dout_s_root, "rest", "*", "*")):
+                shutil.copy(item, rundir)
+
+            return self._ers_second_phase()

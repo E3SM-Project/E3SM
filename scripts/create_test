@@ -273,10 +273,11 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     directives = directives.replace("{{ num_nodes }}", str(num_nodes))
     directives = directives.replace("{{ tasks_per_node }}", str(tasks_per_node))
     directives = directives.replace("{{ output_error_path }}", "create_test_single_submit_%s.err" % test_id)
-    directives = directives.replace("{{ output_error_path }}", "create_test_single_submit_%s.err" % test_id)
     directives = directives.replace("{{ wall_time }}", wall_time_bab)
     directives = directives.replace("{{ queue }}", queue)
     directives = directives.replace("{{ project }}", project)
+
+    expect("{{" not in directives, "Could not resolve all items in directives:\n%s" % directives)
 
     #
     # Make simple submit script and submit

@@ -2,16 +2,17 @@
 CIME smoke test  This class inherits from SystemTestsCommon
 """
 from CIME.XML.standard_module_setup import *
-from system_tests_common import SystemTestsCommon
+from CIME.SystemTests.system_tests_common import SystemTestsCommon
 
 logger = logging.getLogger(__name__)
 
 class SMS(SystemTestsCommon):
-    def __init__(self, caseroot, case):
+
+    def __init__(self, caseroot=None, case=None):
         """
         initialize an object interface to the SMS system test
         """
-        SystemTestsCommon.__init__(self, caseroot, case)
+        SystemTestsCommon.__init__(self, caseroot=caseroot, case=case)
 
     def run(self):
         self._case.set_value("CONTINUE_RUN",False)

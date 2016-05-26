@@ -10,11 +10,11 @@ from system_tests_common import SystemTestsCommon
 
 class NCR(SystemTestsCommon):
 
-    def __init__(self, caseroot, case):
+    def __init__(self, caseroot=None, case=None):
         """
         initialize a test object
         """
-        SystemTestsCommon.__init__(self, caseroot, case)
+        SystemTestsCommon.__init__(self, caseroot=caseroot, case=case)
 
     def build(self):
         exeroot = self._case.get_value("EXEROOT")
@@ -46,7 +46,7 @@ class NCR(SystemTestsCommon):
                     self._case.set_value("NTASKS_%s"%comp, ntasks*2)
             self._case.flush()
 
-            case_setup(self._caseroot, test_mode=True, reset=True)
+            case_setup(self._case, test_mode=True, reset=True)
             self.clean_build()
             SystemTestsCommon.build(self)
             shutil.move("%s/%s.exe"%(exeroot,cime_model),

@@ -10,11 +10,11 @@ from system_tests_common import SystemTestsCommon
 
 class PET(SystemTestsCommon):
 
-    def __init__(self, caseroot, case):
+    def __init__(self, caseroot=None, case=None):
         """
         initialize a test object
         """
-        SystemTestsCommon.__init__(self, caseroot, case)
+        SystemTestsCommon.__init__(self, caseroot=caseroot, case=case)
 
     def build(self, sharedlib_only=False, model_only=False):
         exeroot = self._case.get_value("EXEROOT")
@@ -37,7 +37,7 @@ class PET(SystemTestsCommon):
             shutil.copy(build1,"env_build.xml")
 
         self._case.flush()
-        case_setup(self._caseroot, reset=True)
+        case_setup(self._case, reset=True)
         self.clean_build()
         SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
         shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build_PET1.xml"))

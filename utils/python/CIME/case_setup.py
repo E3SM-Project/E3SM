@@ -78,15 +78,14 @@ def _build_usernl_files(case, model, comp):
                     shutil.copy(model_nl, nlfile)
 
 ###############################################################################
-def case_setup(caseroot, clean=False, test_mode=False, reset=False):
+def case_setup(case, clean=False, test_mode=False, reset=False):
 ###############################################################################
+    caseroot = case.get_value("CASEROOT")
     os.chdir(caseroot)
     msg = "case.setup starting"
     append_status(msg, caseroot=caseroot, sfile="CaseStatus")
 
     cimeroot = os.environ["CIMEROOT"]
-
-    case = Case()
 
     # Check that $DIN_LOC_ROOT exists - and abort if not a namelist compare tests
     din_loc_root = case.get_value("DIN_LOC_ROOT")

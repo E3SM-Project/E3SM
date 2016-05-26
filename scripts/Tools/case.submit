@@ -6,6 +6,7 @@ case.submit - Submit a cesm workflow to the queueing system or run it if there i
 
 from standard_script_setup import *
 from CIME.case_submit import submit
+from CIME.case        import Case
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -55,8 +56,9 @@ def _main_func(description):
         sys.exit(1 if test_results.failed > 0 else 0)
 
     caseroot, job, no_batch, prereq = parse_command_line(sys.argv, description)
+    case = Case(caseroot)
 
-    submit(caseroot, job=job, no_batch=no_batch, prereq_jobid=prereq)
+    submit(case, job=job, no_batch=no_batch, prereq_jobid=prereq)
 
 if __name__ == "__main__":
     _main_func(__doc__)

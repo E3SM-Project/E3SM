@@ -9,11 +9,12 @@ import CIME.utils
 from system_tests_common import SystemTestsCommon
 
 class ERP(SystemTestsCommon):
-    def __init__(self, caseroot, case):
+
+    def __init__(self, caseroot=None, case=None):
         """
         initialize a test object
         """
-        SystemTestsCommon.__init__(self, caseroot, case)
+        SystemTestsCommon.__init__(self, caseroot=caseroot, case=case)
 
     def build(self, sharedlib_only=False, model_only=False):
         """
@@ -47,7 +48,7 @@ class ERP(SystemTestsCommon):
                         self._case.set_value("NTHRDS_%s"%comp, nthreads/2)
             self._case.set_value("SMP_BUILD","0")
             self._case.flush()
-            case_setup(self._caseroot, test_mode=True, reset=True)
+            case_setup(self._case, test_mode=True, reset=True)
             self.clean_build()
             SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
             if (not sharedlib_only):
