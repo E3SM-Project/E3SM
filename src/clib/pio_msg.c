@@ -40,8 +40,8 @@ int inq_type_handler(iosystem_desc_t *ios)
     	return PIO_EIO;
     if ((mpierr = MPI_Bcast(&size_present, 1, MPI_CHAR, 0, ios->intercomm)))
     	return PIO_EIO;
-    LOG((2, "inq_type_handler got parameters ncid = %d datatype = %d", ncid, xtype));
 
+    /* Handle null pointer issues. */
     if (name_present)
 	namep = name;
     if (size_present)
@@ -51,8 +51,6 @@ int inq_type_handler(iosystem_desc_t *ios)
     if ((ret = PIOc_inq_type(ncid, xtype, namep, sizep)))
 	return ret;
 
-    if (sizep)
-	LOG((2, "inq_type_handler size = %d", *sizep));
     LOG((1, "inq_type_handler succeeded!"));
     return PIO_NOERR;
 }
@@ -676,60 +674,205 @@ int put_vars_handler(iosystem_desc_t *ios)
     switch(xtype)
     {
     case NC_BYTE:
-	ierr = PIOc_put_vars_schar(ncid, varid, (size_t *)startp, (size_t *)countp,
-				   (ptrdiff_t *)stridep, buf);
+	ierr = PIOc_put_vars_schar(ncid, varid, startp, countp, stridep, buf);
 	break;
     case NC_CHAR:
-	ierr = PIOc_put_vars_schar(ncid, varid, (size_t *)startp, (size_t *)countp,
-				   (ptrdiff_t *)stridep, buf);
+	ierr = PIOc_put_vars_schar(ncid, varid, startp, countp, stridep, buf);
 	break;
     case NC_SHORT:
-	ierr = PIOc_put_vars_short(ncid, varid, (size_t *)startp, (size_t *)countp,
-				   (ptrdiff_t *)stridep, buf);
+	ierr = PIOc_put_vars_short(ncid, varid, startp, countp, stridep, buf);
 	break;
     case NC_INT:
-	ierr = PIOc_put_vars_int(ncid, varid, (size_t *)startp, (size_t *)countp,
-				 (ptrdiff_t *)stridep, buf);
+	ierr = PIOc_put_vars_int(ncid, varid, startp, countp,
+				 stridep, buf);
 	break;
     case NC_FLOAT:
-	ierr = PIOc_put_vars_float(ncid, varid, (size_t *)startp, (size_t *)countp,
-				   (ptrdiff_t *)stridep, buf);
+	ierr = PIOc_put_vars_float(ncid, varid, startp, countp,
+				   stridep, buf);
 	break;
     case NC_DOUBLE:
-	ierr = PIOc_put_vars_double(ncid, varid, (size_t *)startp, (size_t *)countp,
-				    (ptrdiff_t *)stridep, buf);
+	ierr = PIOc_put_vars_double(ncid, varid, startp, countp,
+				    stridep, buf);
 	break;
 #ifdef _NETCDF4		
     case NC_UBYTE:
-	ierr = PIOc_put_vars_uchar(ncid, varid, (size_t *)startp, (size_t *)countp,
-				   (ptrdiff_t *)stridep, buf);
+	ierr = PIOc_put_vars_uchar(ncid, varid, startp, countp,
+				   stridep, buf);
 	break;
     case NC_USHORT:
-	ierr = PIOc_put_vars_ushort(ncid, varid, (size_t *)startp, (size_t *)countp,
-				    (ptrdiff_t *)stridep, buf);
+	ierr = PIOc_put_vars_ushort(ncid, varid, startp, countp,
+				    stridep, buf);
 	break;
     case NC_UINT:
-	ierr = PIOc_put_vars_uint(ncid, varid, (size_t *)startp, (size_t *)countp,
-				  (ptrdiff_t *)stridep, buf);
+	ierr = PIOc_put_vars_uint(ncid, varid, startp, countp,
+				  stridep, buf);
 	break;
     case NC_INT64:
-	ierr = PIOc_put_vars_longlong(ncid, varid, (size_t *)startp, (size_t *)countp,
-				      (ptrdiff_t *)stridep, buf);
+	ierr = PIOc_put_vars_longlong(ncid, varid, startp, countp,
+				      stridep, buf);
 	break;
     case NC_UINT64:
-	ierr = PIOc_put_vars_ulonglong(ncid, varid, (size_t *)startp, (size_t *)countp,
-				       (ptrdiff_t *)stridep, buf);
+	ierr = PIOc_put_vars_ulonglong(ncid, varid, startp, countp,
+				       stridep, buf);
 	break;
 	/* case NC_STRING: */
-	/* 	ierr = PIOc_put_vars_string(ncid, varid, (size_t *)startp, (size_t *)countp, */
-	/* 				  (ptrdiff_t *)stridep, (void *)buf); */
+	/* 	ierr = PIOc_put_vars_string(ncid, varid, startp, countp, */
+	/* 				  stridep, (void *)buf); */
 	/* 	break; */
 	/*    default:*/
-	/* ierr = PIOc_put_vars(ncid, varid, (size_t *)startp, (size_t *)countp, */
-	/* 		     (ptrdiff_t *)stridep, buf); */
+	/* ierr = PIOc_put_vars(ncid, varid, startp, countp, */
+	/* 		     stridep, buf); */
 #endif /* _NETCDF4 */		
     }
     
+    return PIO_NOERR;
+}
+
+/** Handle var get operations. This code only runs on IO tasks.
+ *
+ * @param ios pointer to the iosystem_desc_t.
+ * @return PIO_NOERR for success, error code otherwise.
+*/
+int get_vars_handler(iosystem_desc_t *ios)
+{
+    int ncid;
+    int varid;
+    int mpierr;
+    int ierr;
+    char *name;
+    int namelen;
+    PIO_Offset typelen; /** Length (in bytes) of this type. */
+    nc_type xtype; /** Type of the data being written. */
+    char start_present, count_present, stride_present;
+    PIO_Offset *startp = NULL, *countp = NULL, *stridep = NULL;
+    int ndims; /** Number of dimensions. */
+    void *buf; /** Buffer for data storage. */
+    size_t num_elem; /** Number of data elements in the buffer. */    
+
+    LOG((1, "get_vars_handler"));
+
+    /* Get the parameters for this function that the the comp master
+     * task is broadcasting. */
+    if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&ndims, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+
+    /* Now we know how big to make these arrays. */
+    PIO_Offset start[ndims], count[ndims], stride[ndims];
+
+    if ((mpierr = MPI_Bcast(&start_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    if (!mpierr && start_present)
+    {
+	if ((mpierr = MPI_Bcast(start, ndims, MPI_OFFSET, 0, ios->intercomm)))
+	    return PIO_EIO;
+	LOG((1, "put_vars_handler getting start[0] = %d ndims = %d", start[0], ndims));
+    }
+    if ((mpierr = MPI_Bcast(&count_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    if (!mpierr && count_present)
+	if ((mpierr = MPI_Bcast(count, ndims, MPI_OFFSET, 0, ios->intercomm)))
+	    return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&stride_present, 1, MPI_CHAR, 0, ios->intercomm)))
+	return PIO_EIO;
+    if (!mpierr && stride_present)
+	if ((mpierr = MPI_Bcast(stride, ndims, MPI_OFFSET, 0, ios->intercomm)))
+	    return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&xtype, 1, MPI_INT, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&num_elem, 1, MPI_OFFSET, 0, ios->intercomm)))
+	return PIO_EIO;
+    if ((mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET, 0, ios->intercomm)))
+	return PIO_EIO;
+    LOG((1, "get_vars_handler ncid = %d varid = %d ndims = %d start_present = %d "
+	 "count_present = %d stride_present = %d xtype = %d num_elem = %d typelen = %d",
+	 ncid, varid, ndims, start_present, count_present, stride_present, xtype,
+	 num_elem, typelen));
+
+    for (int d = 0; d < ndims; d++)
+    {
+	if (start_present)
+	    LOG((2, "start[%d] = %d\n", d, start[d]));
+	if (count_present)
+	    LOG((2, "count[%d] = %d\n", d, count[d]));
+	if (stride_present)
+	    LOG((2, "stride[%d] = %d\n", d, stride[d]));
+    }
+
+    /* Allocate room for our data. */
+    if (!(buf = malloc(num_elem * typelen)))
+	return PIO_ENOMEM;
+
+    /* Set the non-NULL pointers. */
+    if (start_present)
+	startp = start;
+    if (count_present)
+	countp = count;
+    if (stride_present)
+	stridep = stride;
+
+    /* Call the function to read the data. */
+    switch(xtype)
+    {
+    case NC_BYTE:
+	ierr = PIOc_get_vars_schar(ncid, varid, startp, countp,
+				   stridep, buf);
+	break;
+    case NC_CHAR:
+	ierr = PIOc_get_vars_schar(ncid, varid, startp, countp,
+				   stridep, buf);
+	break;
+    case NC_SHORT:
+	ierr = PIOc_get_vars_short(ncid, varid, startp, countp,
+				   stridep, buf);
+	break;
+    case NC_INT:
+	ierr = PIOc_get_vars_int(ncid, varid, startp, countp,
+				 stridep, buf);
+	break;
+    case NC_FLOAT:
+	ierr = PIOc_get_vars_float(ncid, varid, startp, countp,
+				   stridep, buf);
+	break;
+    case NC_DOUBLE:
+	ierr = PIOc_get_vars_double(ncid, varid, startp, countp,
+				    stridep, buf);
+	break;
+#ifdef _NETCDF4		
+    case NC_UBYTE:
+	ierr = PIOc_get_vars_uchar(ncid, varid, startp, countp,
+				   stridep, buf);
+	break;
+    case NC_USHORT:
+	ierr = PIOc_get_vars_ushort(ncid, varid, startp, countp,
+				    stridep, buf);
+	break;
+    case NC_UINT:
+	ierr = PIOc_get_vars_uint(ncid, varid, startp, countp,
+				  stridep, buf);
+	break;
+    case NC_INT64:
+	ierr = PIOc_get_vars_longlong(ncid, varid, startp, countp,
+				      stridep, buf);
+	break;
+    case NC_UINT64:
+	ierr = PIOc_get_vars_ulonglong(ncid, varid, startp, countp,
+				       stridep, buf);
+	break;
+	/* case NC_STRING: */
+	/* 	ierr = PIOc_get_vars_string(ncid, varid, startp, countp, */
+	/* 				  stridep, (void *)buf); */
+	/* 	break; */
+	/*    default:*/
+	/* ierr = PIOc_get_vars(ncid, varid, startp, countp, */
+	/* 		     stridep, buf); */
+#endif /* _NETCDF4 */		
+    }
+
+    LOG((1, "get_vars_handler succeeded!"));
     return PIO_NOERR;
 }
 
@@ -1493,7 +1636,7 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	    inq_attid_handler(my_iosys);
 	    break;
 	case PIO_MSG_GET_VARS:
-	    var_handler(my_iosys, msg);
+	    get_vars_handler(my_iosys);
 	    break;
 	case PIO_MSG_PUT_VARS:
 	    put_vars_handler(my_iosys);

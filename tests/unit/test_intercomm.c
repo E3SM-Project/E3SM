@@ -99,6 +99,19 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
 			     NC_NOWRITE)))
 	ERR(ret);
     
+    /* Try to read the data. */
+    PIO_Offset start[NDIM] = {0}, count[NDIM] = {DIM_LEN};    
+    int data_in[DIM_LEN];
+    if ((ret = PIOc_get_vars_tc(ncid, 0, start, count, NULL, NC_INT, data_in)))
+	ERR(ret);
+    for (int i = 0; i < DIM_LEN; i++)
+    {
+	if (verbose)
+	    printf("%d test_intercomm read data_in[%d] = %d\n", my_rank, i, data_in[i]);
+	if (data_in[i] != i)
+	    ERR(ERR_AWFUL);
+    }
+
     /* Find the number of dimensions, variables, and global attributes.*/
     if ((ret = PIOc_inq(ncid, &ndims, &nvars, &ngatts, &unlimdimid)))
     	ERR(ret);
@@ -372,7 +385,7 @@ main(int argc, char **argv)
     if (comp_task)
     {
 	for (int fmt = 0; fmt < NUM_NETCDF_FLAVORS; fmt++) 
-/*	for (int fmt = 0; fmt < 1; fmt++) */
+/*	for (int fmt = 1; fmt < 2; fmt++) */
 	{
 	    int ncid, varid, dimid;
 	    PIO_Offset start[NDIM], count[NDIM] = {0};

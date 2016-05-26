@@ -291,8 +291,9 @@ int PIOc_inq_type(int ncid, nc_type xtype, char *name, PIO_Offset *sizep)
                 slen = strlen(name);
             if ((mpierr = MPI_Bcast(&slen, 1, MPI_INT, ios->ioroot, ios->my_comm)))
                 return check_mpi(file, mpierr, __FILE__, __LINE__);
-            if ((mpierr = MPI_Bcast((void *)name, slen + 1, MPI_CHAR, ios->ioroot, ios->my_comm)))
-                return check_mpi(file, mpierr, __FILE__, __LINE__);
+	    if (!mpierr)
+		if ((mpierr = MPI_Bcast((void *)name, slen + 1, MPI_CHAR, ios->ioroot, ios->my_comm)))
+		    return check_mpi(file, mpierr, __FILE__, __LINE__);
         }
         if (sizep)
             if ((mpierr = MPI_Bcast(sizep , 1, MPI_OFFSET, ios->ioroot, ios->my_comm)))
