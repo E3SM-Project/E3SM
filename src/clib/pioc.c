@@ -340,7 +340,6 @@ int PIOc_InitDecomp_bc(const int iosysid, const int basetype,const int ndims, co
   return PIO_NOERR;
 }
 
-
 /** 
  ** @ingroup PIO_init
  ** @brief library initialization used when IO tasks are a subset of compute tasks
@@ -351,10 +350,9 @@ int PIOc_InitDecomp_bc(const int iosysid, const int basetype,const int ndims, co
  ** @param rearr the rearranger to use by default, this may be overriden in the @ref PIO_initdecomp
  ** @param iosysidp index of the defined system descriptor
  */
-
-int PIOc_Init_Intracomm(const MPI_Comm comp_comm, 
-			const int num_iotasks, const int stride, 
-			const int base,const int rearr, int *iosysidp)
+int PIOc_Init_Intracomm(const MPI_Comm comp_comm, const int num_iotasks,
+			const int stride, const int base, const int rearr,
+			int *iosysidp)
 {
   iosystem_desc_t *iosys;
   int ierr = PIO_NOERR;
@@ -438,10 +436,11 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
 				    &(iosys->iogroup)),__FILE__,__LINE__);
 
       /* Create an MPI communicator for the IO tasks. */
-      CheckMPIReturn(MPI_Comm_create(iosys->comp_comm, iosys->iogroup, &(iosys->io_comm)),__FILE__,__LINE__);
+      CheckMPIReturn(MPI_Comm_create(iosys->comp_comm, iosys->iogroup, &(iosys->io_comm))
+		     ,__FILE__,__LINE__);
 
       /* For the tasks that are doing IO, get their rank. */
-      if(iosys->ioproc)
+      if (iosys->ioproc)
 	  CheckMPIReturn(MPI_Comm_rank(iosys->io_comm, &(iosys->io_rank)),__FILE__,__LINE__);
       else
 	  iosys->io_rank = -1;

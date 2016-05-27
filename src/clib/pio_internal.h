@@ -17,6 +17,12 @@
 #include <gptl.h>
 #endif
 
+#ifdef PIO_ENABLE_LOGGING
+void pio_log(int severity, const char *fmt, ...);
+#define LOG(e) pio_log e
+#else
+#define LOG(e)
+#endif /* PIO_ENABLE_LOGGING */
 
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
@@ -146,6 +152,8 @@ typedef struct pio_swapm_defaults
 void flush_buffer(int ncid, wmulti_buffer *wmb, bool flushtodisk);
   void piomemerror(iosystem_desc_t ios, size_t req, char *fname, const int line);
   void compute_maxaggregate_bytes(const iosystem_desc_t ios, io_desc_t *iodesc);
+  int check_mpi(file_desc_t *file, const int mpierr, const char *filename,
+		const int line);
 
 #ifdef BGQ
   void identity(MPI_Comm comm, int *iotask);
@@ -166,15 +174,12 @@ enum PIO_MSG{
   PIO_MSG_INQ_ATT,
   PIO_MSG_INQ_FORMAT,
   PIO_MSG_INQ_VARID,
-  PIO_MSG_INQ_VARNATTS,
   PIO_MSG_DEF_VAR,
   PIO_MSG_INQ_VAR,
-  PIO_MSG_INQ_VARNAME,
   PIO_MSG_PUT_ATT_DOUBLE,
   PIO_MSG_PUT_ATT_INT,
   PIO_MSG_RENAME_ATT,
   PIO_MSG_DEL_ATT,
-  PIO_MSG_INQ_NATTS,
   PIO_MSG_INQ,
   PIO_MSG_GET_ATT_TEXT,
   PIO_MSG_GET_ATT_SHORT,
@@ -189,21 +194,14 @@ enum PIO_MSG{
   PIO_MSG_GET_ATT_ULONGLONG,
   PIO_MSG_GET_ATT_USHORT,
   PIO_MSG_PUT_ATT_ULONGLONG,
-  PIO_MSG_INQ_DIMLEN,
   PIO_MSG_GET_ATT_UINT,
   PIO_MSG_GET_ATT_LONGLONG,
   PIO_MSG_PUT_ATT_SCHAR,
   PIO_MSG_PUT_ATT_FLOAT,
-  PIO_MSG_INQ_NVARS,
   PIO_MSG_RENAME_DIM,
-  PIO_MSG_INQ_VARNDIMS,
   PIO_MSG_GET_ATT_LONG,
   PIO_MSG_INQ_DIM,
   PIO_MSG_INQ_DIMID,
-  PIO_MSG_INQ_UNLIMDIM,
-  PIO_MSG_INQ_VARDIMID,
-  PIO_MSG_INQ_ATTLEN,
-  PIO_MSG_INQ_DIMNAME,
   PIO_MSG_PUT_ATT_USHORT,
   PIO_MSG_GET_ATT_FLOAT,
   PIO_MSG_SYNC,
@@ -212,11 +210,8 @@ enum PIO_MSG{
   PIO_MSG_GET_ATT_SCHAR,
   PIO_MSG_INQ_ATTID,
   PIO_MSG_DEF_DIM,
-  PIO_MSG_INQ_NDIMS,
-  PIO_MSG_INQ_VARTYPE,
   PIO_MSG_GET_ATT_INT,
   PIO_MSG_GET_ATT_DOUBLE,
-  PIO_MSG_INQ_ATTTYPE,
   PIO_MSG_PUT_ATT_UCHAR,
   PIO_MSG_GET_ATT_UCHAR,
   PIO_MSG_PUT_VARS_UCHAR,
@@ -375,7 +370,10 @@ enum PIO_MSG{
   PIO_MSG_FREEDECOMP,
   PIO_MSG_CLOSE_FILE,
   PIO_MSG_DELETE_FILE,
-  PIO_MSG_EXIT
+  PIO_MSG_EXIT,
+  PIO_MSG_GET_ATT,
+  PIO_MSG_PUT_ATT,
+  PIO_MSG_INQ_TYPE
 };
 
 #endif

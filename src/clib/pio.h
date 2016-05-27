@@ -259,6 +259,10 @@ typedef struct file_desc_t
   int mode;
   struct wmulti_buffer buffer;
   struct file_desc_t *next;
+
+  /** True if this task should participate in IO (only true for one
+   * task with netcdf serial files. */
+  int do_io;
 } file_desc_t;
 
 /**
@@ -409,8 +413,8 @@ int PIOc_inq_varnatts (int ncid, int varid, int *nattsp);
 int PIOc_def_var (int ncid, const char *name, nc_type xtype,  int ndims, const int *dimidsp, int *varidp);
 int PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
 			 int deflate_level);
-int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
-			 int *deflatep, int *deflate_levelp);
+int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep, int *deflatep,
+			 int *deflate_levelp);
 int PIOc_inq_var_szip(int ncid, int varid, int *options_maskp, int *pixels_per_blockp);
 int PIOc_def_var_chunking(int ncid, int varid, int storage, const PIO_Offset *chunksizesp);
 int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, PIO_Offset *chunksizesp);
@@ -481,6 +485,8 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
 int PIOc_Init_Intracomm(const MPI_Comm comp_comm, 
 			  const int num_iotasks, const int stride, 
 			  const int base, const int rearr, int *iosysidp);
+int PIOc_Init_Intercomm(int component_count, MPI_Comm peer_comm, MPI_Comm *comp_comms,
+			MPI_Comm io_comm, int *iosysidp);
 int PIOc_closefile(int ncid);
 int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
 		    const char *fname, const int mode);
@@ -586,10 +592,11 @@ int PIOc_set_blocksize(const int newblocksize);
   int PIOc_put_vars_longlong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const long long *op);  
   int PIOc_put_vara_double (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const double *op);  
   int PIOc_put_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const void *buf, PIO_Offset bufcount, MPI_Datatype buftype);  
+  int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], nc_type xtype, const void *buf);  
   int PIOc_put_var_uchar (int ncid, int varid, const unsigned char *op); 
   int PIOc_put_var_long (int ncid, int varid, const long *op); 
   int PIOc_put_varm_longlong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], const long long *op);
- int PIOc_get_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], int *buf);
+  int PIOc_get_vara_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], int *buf);
   int PIOc_get_var1_float (int ncid, int varid, const PIO_Offset index[], float *buf); 
   int PIOc_get_var1_short (int ncid, int varid, const PIO_Offset index[], short *buf); 
   int PIOc_get_vars_int (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], int *buf);                      
@@ -641,11 +648,15 @@ int PIOc_set_blocksize(const int newblocksize);
   int PIOc_get_vars_text (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], char *buf);  
   int PIOc_get_var1_uchar (int ncid, int varid, const PIO_Offset index[], unsigned char *buf); 
   int PIOc_get_vars (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], void *buf, PIO_Offset bufcount, MPI_Datatype buftype);  
+  int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], nc_type xtype, void *buf);  
   int PIOc_get_varm_short (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], short *buf);  
   int PIOc_get_varm_ulonglong (int ncid, int varid, const PIO_Offset start[], const PIO_Offset count[], const PIO_Offset stride[], const PIO_Offset imap[], unsigned long long *buf);  
   int PIOc_get_var_schar (int ncid, int varid, signed char *buf); 
   int PIOc_iotype_available(const int iotype);
-
+  int PIOc_set_log_level(int level);
+  int PIOc_put_att(int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const void *op);
+  int PIOc_get_att(int ncid, int varid, const char *name, void *ip);
+  int PIOc_inq_type(int ncid, nc_type xtype, char *name, PIO_Offset *sizep);    
 #if defined(__cplusplus)
 }
 #endif
