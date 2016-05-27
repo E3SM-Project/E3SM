@@ -16,7 +16,6 @@ of those based on the machine.
 
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, run_cmd, get_model, convert_to_seconds, get_project, transform_vars
-from CIME.case import Case
 from CIME.XML.env_batch import EnvBatch
 from CIME.XML.batch import Batch
 from CIME.XML.machines import Machines
@@ -29,12 +28,12 @@ logger = logging.getLogger(__name__)
 
 class BatchMaker(object):
 
-    def __init__(self, job, case=None):
+    def __init__(self, job, case):
         """
         Class constructor.  We need to know where in the filesystem we are,
         so caseroot, case, machroot, machine, cimeroot
         """
-        self.case = case if case is not None else Case()
+        self.case = case
         self.job = job
 
         self.override_node_count = None
@@ -74,7 +73,7 @@ class BatchMaker(object):
         This can also be called from overrideNodeCount, in which case values can be
         manually overridden.
         """
-        self.task_maker = TaskMaker(case=self.case)
+        self.task_maker = TaskMaker(self.case)
         self.sumpes = self.task_maker.full_sum
         self.tasks_per_node = self.task_maker.task_per_node
         self.max_tasks_per_node = self.task_maker.MAX_TASKS_PER_NODE
@@ -220,7 +219,7 @@ within model's Machines directory, and add a batch system type for this machine
 
 # TODO: Machine-specific overrides
 
-def get_batch_maker(job, case=None):
+def get_batch_maker(job, case):
     """
     Simple factory class to get the right BatchMaker class for each machine.
     The only downside to this strategy is that we have to have a BatchMaker_${machine}
@@ -228,8 +227,6 @@ def get_batch_maker(job, case=None):
     TODO: REFACTOR this so that if no machine or batch class is found, then the base
     class is returned.
     """
-    case = case if case is not None else Case()
-
     machine = case.get_value("MACH")
     batch_maker = BatchMaker(job, case)
     subclassname = "BatchMaker_%s" % machine

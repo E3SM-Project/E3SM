@@ -3,33 +3,31 @@ Base class for CIME system tests
 """
 import shutil, glob, gzip
 from CIME.XML.standard_module_setup import *
-from CIME.case import Case
 from CIME.XML.env_run import EnvRun
 from CIME.utils import run_cmd, append_status
 from CIME.case_setup import case_setup
 from CIME.case_run import case_run
+from CIME.case_st_archive import case_st_archive
+
 import CIME.build as build
 
 logger = logging.getLogger(__name__)
 
 class SystemTestsCommon(object):
 
-    def __init__(self, caseroot=None, case=None, expected=None):
+    def __init__(self, case, expected=None):
         """
         initialize a CIME system test object, if the file LockedFiles/env_run.orig.xml
         does not exist copy the current env_run.xml file.  If it does exist restore values
         changed in a previous run of the test.
         """
-        if caseroot is None:
-            caseroot = os.getcwd()
+        self._case = case
+        caseroot = case.get_value("CASEROOT")
         self._caseroot = caseroot
+        self._orig_caseroot = caseroot
         self._runstatus = None
         # Needed for sh scripts
         os.environ["CASEROOT"] = caseroot
-        if case is None:
-            self._case = Case(caseroot)
-        else:
-            self._case = case
 
         if os.path.isfile(os.path.join(caseroot, "LockedFiles", "env_run.orig.xml")):
             self.compare_env_run(expected=expected)
@@ -58,9 +56,19 @@ class SystemTestsCommon(object):
     def run(self):
         return self._run()
 
-    def _run(self, suffix="base"):
+    def _set_active_case(self, case):
+        """
+        Use for tests that have multiple cases
+        """
+        self._case = case
+        self._caseroot = case.get_value("CASEROOT")
+
+    def _run(self, suffix="base", coupler_log_path=None, st_archive=False):
         success = case_run(self._case)
-        if success and self._coupler_log_indicates_run_complete():
+        if success and st_archive:
+            success = case_st_archive(self._case)
+
+        if success and self._coupler_log_indicates_run_complete(coupler_log_path):
             if self._runstatus != "FAIL":
                 self._runstatus = "PASS"
         else:
@@ -74,17 +82,17 @@ class SystemTestsCommon(object):
 
     def __del__(self):
         if self._runstatus is not None:
-            with open("TestStatus", 'r') as f:
+            test_status = os.path.join(self._orig_caseroot, "TestStatus")
+            with open(test_status, 'r') as f:
                 teststatusfile = f.read()
             li = teststatusfile.rsplit('PEND', 1)
             teststatusfile = self._runstatus.join(li)
-            with open("TestStatus", 'w') as f:
+            with open(test_status, 'w') as f:
                 f.write(teststatusfile)
-        return
 
-    def _coupler_log_indicates_run_complete(self):
-        newestcpllogfile = self._get_latest_cpl_log()
-        logger.debug("Latest Coupler log file is %s"%newestcpllogfile)
+    def _coupler_log_indicates_run_complete(self, coupler_log_path):
+        newestcpllogfile = self._get_latest_cpl_log(coupler_log_path)
+        logger.debug("Latest Coupler log file is %s" % newestcpllogfile)
         # Exception is raised if the file is not compressed
         try:
             if "SUCCESSFUL TERMINATION" in gzip.open(newestcpllogfile, 'rb').read():
@@ -112,9 +120,9 @@ class SystemTestsCommon(object):
     def _component_compare_test(self, suffix1, suffix2):
         cmd = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools",
                            "component_compare_test.sh")
-        rc, out, err = run_cmd("%s -rundir %s -testcase %s -testcase_base %s -suffix1 %s -suffix2 %s"
+        rc, out, err = run_cmd("%s -rundir %s -testcase %s -testcase_base %s -suffix1 %s -suffix2 %s -msg 'Compare %s and %s'"
                                %(cmd, self._case.get_value('RUNDIR'), self._case.get_value('CASE'),
-                                 self._case.get_value('CASEBASEID'), suffix1, suffix2), ok_to_fail=True)
+                                 self._case.get_value('CASEBASEID'), suffix1, suffix2, suffix1, suffix2), ok_to_fail=True)
         if rc == 0:
             append_status(out, sfile="TestStatus")
         else:
@@ -196,13 +204,13 @@ class SystemTestsCommon(object):
                 return False
         return True
 
-    def _get_latest_cpl_log(self):
+    def _get_latest_cpl_log(self, coupler_log_path=None):
         """
         find and return the latest cpl log file in the run directory
         """
+        coupler_log_path = self._case.get_value("RUNDIR") if coupler_log_path is None else coupler_log_path
         cpllog = None
-        cpllogs = glob.glob(os.path.join(
-                    self._case.get_value('RUNDIR'),'cpl.log.*'))
+        cpllogs = glob.glob(os.path.join(coupler_log_path, 'cpl.log.*'))
         if cpllogs:
             cpllog = max(cpllogs, key=os.path.getctime)
 

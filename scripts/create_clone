@@ -4,7 +4,6 @@ from Tools.standard_script_setup import *
 
 from CIME.utils import expect, get_model, run_cmd, get_project
 from CIME.case  import Case
-from CIME.case_setup import case_setup
 
 import stat
 import glob
@@ -70,16 +69,7 @@ def _main_func():
     clone = Case(cloneroot)
     clone.create_clone(case, keepexe, mach_dir, project)
 
-    caseroot = os.path.abspath(case)
-    casename = os.path.basename(caseroot)
-
-    case = Case(caseroot)
-    logger.info(" Running %s case.setup" %casename)
-    case_setup(case, clean=False, test_mode=False)
-
 ###############################################################################
 
 if __name__ == "__main__":
     _main_func()
-
-###############################################################################

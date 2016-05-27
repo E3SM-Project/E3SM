@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 
 class SEQ(SystemTestsCommon):
 
-    def __init__(self, caseroot=None, case=None):
+    def __init__(self, case):
         """
         initialize an object interface to file env_test.xml in the case directory
         """
-        SystemTestsCommon.__init__(self, caseroot=caseroot, case=case, expected=["TEST"])
+        SystemTestsCommon.__init__(self, case, expected=["TEST"])
 
     def build(self, sharedlib_only=False, model_only=False):
         """

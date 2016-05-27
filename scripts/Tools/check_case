@@ -54,9 +54,9 @@ def _main_func(description):
 
     check_lockedfiles()
 
-    preview_namelists()
-
     case  = Case()
+    preview_namelists(case)
+
     build_complete = case.get_value("BUILD_COMPLETE")
     if not build_complete:
         expect(False,
