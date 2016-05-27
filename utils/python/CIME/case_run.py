@@ -164,13 +164,10 @@ def getTimings(case, lid):
         logger.info( "gzipping timing stats.." )
         model = case.get_value("MODEL")
         timingfile = os.path.join(timingDir, model + "_timing_stats." + lid)
-        f_in = open(timingfile)
-        f_out = gzip.open(timingfile + '.gz', 'wb')
-        f_out.writelines(f_in)
-        f_out.close()
-        f_in.close()
+        with open(timingfile, 'rb') as f_in, gzip.open(timingfile + '.gz', 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
         os.remove(timingfile)
-
+        logger.info("Done with timings")
 ###############################################################################
 def saveLogs(case, lid):
 ###############################################################################
@@ -275,5 +272,4 @@ def case_run(case):
     except:
         logger.warning("Exception in case_run: %s" % sys.exc_info()[1])
         return False
-    else:
-        return True
+    return True

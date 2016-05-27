@@ -15,7 +15,10 @@ def case_st_archive(case):
                  caseroot=caseroot, sfile="CaseStatus")
 
     cmd = os.path.join(caseroot, "Tools/st_archive") + " >> stArchiveStatus 2>&1"
-    run_cmd(cmd)
+    rc, out, err = run_cmd(cmd, ok_to_fail=True)
+    if rc != 0:
+        append_status("st_archive failed: %s \nerr = %s"%(out,err),sfile="CaseStatus")
+        return False
 
     append_status("st_archiving completed",
                  caseroot=caseroot, sfile="CaseStatus")
@@ -26,3 +29,4 @@ def case_st_archive(case):
         append_status("resubmitting from st_archive",
                       caseroot=caseroot, sfile="CaseStatus")
         submit(case, resubmit=True)
+    return True

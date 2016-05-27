@@ -165,7 +165,7 @@ class SystemTestsCommon(object):
         memlist = self._get_mem_usage(cpllog)
 
         if len(memlist)<3:
-            append_status("COMMENT: insuffiencient data for memleak test",sfile="TestStatus")
+            append_status("COMMENT : insuffiencient data for memleak test",sfile="TestStatus")
         else:
             finaldate = int(memlist[-1][0])
             originaldate = int(memlist[0][0])
