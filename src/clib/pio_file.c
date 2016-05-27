@@ -146,11 +146,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
     }
 
     // If we failed to open a file due to an incompatible type of
-    // NetCDF, try it once with just plain old basic NetCDF. This is a
-    // dangerous thing to do, since it may result in models running
-    // with sequential access, while the user thinks they are getting
-    // parallel IO. It would be better if the users who want this took
-    // this action in their own code.
+    // NetCDF, try it once with just plain old basic NetCDF.
 #ifdef _NETCDF
     if((ierr == NC_ENOTNC || ierr == NC_EINVAL) && (file->iotype != PIO_IOTYPE_NETCDF)) {
         if(ios->iomaster) printf("PIO2 pio_file.c retry NETCDF\n");
