@@ -21,6 +21,7 @@
                 <dim name="nSoilLevels"        definition="namelist:config_nsoillevels"/>
                 <dim name="nFGLevels"          definition="namelist:config_nfglevels"/>
                 <dim name="nFGSoilLevels"      definition="namelist:config_nfgsoillevels"/>
+                <dim name="nGocartLevels"      definition="namelist:config_gocart"/>
                 <dim name="nVertLevelsP1"      definition="nVertLevels+1"/>
                 <dim name="nMonths"            definition="namelist:config_months"/>
         </dims>
@@ -45,6 +46,7 @@
                 <nml_option name="config_nsoillevels"           type="integer"       default_value="4"/>
                 <nml_option name="config_nfglevels"             type="integer"       default_value="38"/>
                 <nml_option name="config_nfgsoillevels"         type="integer"       default_value="4"/>
+                <nml_option name="config_gocart"                type="integer"       default_value="30"/>
                 <nml_option name="config_months"                type="integer"       default_value="12"      in_defaults="false"/>
         </nml_record>
 
@@ -347,6 +349,11 @@
                         <var name="v10" packages="met_stage_out"/>
                         <var name="q2" packages="met_stage_out"/>
                         <var name="t2m" packages="met_stage_out"/>
+                        <var name="nifa_clim" packages="met_stage_out"/>
+                        <var name="nwfa_clim" packages="met_stage_out"/>
+                        <var name="pwif_clim" packages="met_stage_out"/>
+                        <var name="nifa" packages="met_stage_out"/>
+                        <var name="nwfa" packages="met_stage_out"/>
 		</stream>
 
 		<stream name="surface" 
@@ -444,6 +451,11 @@
                 <var name="ol3"                                  type="real"     dimensions="nCells"/>
                 <var name="ol4"                                  type="real"     dimensions="nCells"/>
 
+                <!-- GOCART aerosol fields -->
+                <var name="nifa_clim"                            type="real"     dimensions="nMonths nGocartLevels nCells"/> 
+                <var name="nwfa_clim"                            type="real"     dimensions="nMonths nGocartLevels nCells"/>
+                <var name="pwif_clim"                            type="real"     dimensions="nMonths nGocartLevels nCells"/>
+
                 <!-- description of the vertical grid structure -->
                 <var name="hx"                         type="real"     dimensions="nVertLevelsP1 nCells"/>
                 <var name="zgrid"                      type="real"     dimensions="nVertLevelsP1 nCells"/>
@@ -487,6 +499,8 @@
                         <var name="qv"      array_group="moist"/>
                         <var name="qc"      array_group="moist"/>
                         <var name="qr"      array_group="moist"/>
+                        <var name="nifa"    array_group="aerosols"/>
+                        <var name="nwfa"    array_group="aerosols"/>
                 </var_array>
         </var_struct>
 
