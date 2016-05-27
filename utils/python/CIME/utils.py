@@ -97,9 +97,10 @@ def get_model():
     """
     Get the currently configured model value
 
+    >>> del os.environ["CIME_MODEL"]
     >>> set_model('rocky')
-    >>> print get_model()
-    rocky
+    >>> get_model()
+    'rocky'
     """
     model = os.environ.get("CIME_MODEL")
     if (model is not None):
@@ -785,3 +786,7 @@ def transform_vars(text, case=None, subgroup=None, check_members=None, default=N
                 text = text.replace(whole_match, "")
 
     return text
+
+def get_my_queued_jobs():
+    # TODO
+    return []
