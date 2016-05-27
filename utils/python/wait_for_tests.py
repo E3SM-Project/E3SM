@@ -321,7 +321,7 @@ def parse_test_status(file_contents):
                                       TEST_FAIL_STATUS, TEST_DIFF_STATUS, NAMELIST_FAIL_STATUS] or status.startswith("Test"),
                        "Unexpected status in parse_test_status")
                 expect(phase in ["INIT","CREATE_NEWCASE","XML","SETUP","SHAREDLIB_BUILD",
-                                 "MODEL_BUILD", "compare", "memleak", "RUN"], "phase %s not expected in parse_test_status"%phase)
+                                 "tputcomp","nlcomp","MODEL_BUILD", "compare", "memleak", "RUN"], "phase %s not expected in parse_test_status"%phase)
 
 
                 if (phase in rv):
@@ -346,11 +346,11 @@ def interpret_status(file_contents, check_throughput=False, check_memory=False, 
     r"""
     >>> interpret_status('PASS testname RUN')
     ('testname', 'PASS')
-    >>> interpret_status('PASS testname BUILD\nPEND testname RUN')
+    >>> interpret_status('PASS testname SHAREDLIB_BUILD\nPEND testname RUN')
     ('testname', 'PEND')
-    >>> interpret_status('FAIL testname BUILD\nPEND testname RUN')
+    >>> interpret_status('FAIL testname MODEL_BUILD\nPEND testname RUN')
     ('testname', 'PEND')
-    >>> interpret_status('PASS testname BUILD\nPASS testname RUN')
+    >>> interpret_status('PASS testname MODEL_BUILD\nPASS testname RUN')
     ('testname', 'PASS')
     >>> interpret_status('PASS testname RUN\nFAIL testname tputcomp')
     ('testname', 'PASS')
