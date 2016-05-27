@@ -1200,115 +1200,277 @@
 
                 <!-- coefficients for the vertical tridiagonal solve -->
                 <!-- Note:  these could be local but...              -->
-                <var name="cofrz"                   type="real"     dimensions="nVertLevels Time"/>
-                <var name="cofwr"                   type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="cofwz"                   type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="coftz"                   type="real"     dimensions="nVertLevelsP1 nCells Time"/>
-                <var name="cofwt"                   type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="a_tri"                   type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="alpha_tri"               type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="gamma_tri"               type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="cofrz" type="real" dimensions="nVertLevels Time" units="-"
+                     description="???"/>
+
+                <var name="cofwr" type="real" dimensions="nVertLevels nCells Time" units="-"
+                     description="???"/>
+
+                <var name="cofwz" type="real" dimensions="nVertLevels nCells Time" units="-"
+                     description="???"/>
+
+                <var name="coftz" type="real" dimensions="nVertLevelsP1 nCells Time" units="-"
+                     description="???"/>
+
+                <var name="cofwt" type="real" dimensions="nVertLevels nCells Time" units="-"
+                     description="???"/>
+
+                <var name="a_tri" type="real" dimensions="nVertLevels nCells Time" units="-"
+                     description="???"/>
+
+                <var name="alpha_tri" type="real" dimensions="nVertLevels nCells Time" units="-"
+                     description="???"/>
+
+                <var name="gamma_tri" type="real" dimensions="nVertLevels nCells Time" units="-"
+                     description="???"/>
 
                 <!-- state variables diagnosed from prognostic state -->
-                <var name="pressure_p"              type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="pressure_p" type="real" dimensions="nVertLevels nCells Time" units="Pa"
+                     description="Perturbation pressure"/>
 
                 <!-- Diagnostic fields: only written to output                                                           -->
                 <!-- NOTE: added the "r" option to rho,theta,uReconstructZonal,and uReconstructMeridional for use of the -->
                 <!-- non-hydrostatic dynamical core in a data assimilation framework. NOTE that the "r" option is not    -->
                 <!-- needed for those 4 variables to get bit for bit restart capabilities, otherwise.                    -->
-                <var name="rho"                     type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="theta"                   type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="relhum"                  type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="v"                       type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="divergence"              type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="vorticity"               type="real"     dimensions="nVertLevels nVertices Time"/>
-                <var name="pv_edge"                 type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="rho_edge"                type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="ke"                      type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="pv_vertex"               type="real"     dimensions="nVertLevels nVertices Time"/>
-                <var name="pv_cell"                 type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rho" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
+                     description="Dry air density"/>
+
+                <var name="theta" type="real" dimensions="nVertLevels nCells Time" units="K"
+                     description="Potential temperature"/>
+
+                <var name="relhum" type="real" dimensions="nVertLevels nCells Time" units="percent"
+                     description="Relative humidity"/>
+
+                <var name="v" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+                     description="Horizontal tangential velocity at edges"/>
+
+                <var name="divergence" type="real" dimensions="nVertLevels nCells Time" units="s^{-1}"
+                     description="Horizontal divergence at cells"/>
+
+                <var name="vorticity" type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
+                     description="Relative vorticity at vertices"/>
+
+                <var name="pv_edge" type="real" dimensions="nVertLevels nEdges Time" units="???"
+                     description="???"/>
+
+                <var name="rho_edge" type="real" dimensions="nVertLevels nEdges Time" units="kg m^{-3}"
+                     description="???"/>
+
+                <var name="ke" type="real" dimensions="nVertLevels nCells Time" units="???"
+                     description="Kinetic energy"/>
+
+                <var name="pv_vertex" type="real" dimensions="nVertLevels nVertices Time" units="???"
+                     description="???"/>
+
+                <var name="pv_cell" type="real" dimensions="nVertLevels nCells Time" units="???"
+                     description="???"/>
 
                 <!-- reconstructed horizontal velocity vectors at cell centers -->
-                <var name="uReconstructX"           type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="uReconstructY"           type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="uReconstructZ"           type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="uReconstructZonal"       type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="uReconstructMeridional"  type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="uReconstructX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+                     description="Cartesian x-component of reconstructed horizontal velocity at cell centers"/>
+
+                <var name="uReconstructY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+                     description="Cartesian y-component of reconstructed horizontal velocity at cell centers"/>
+
+                <var name="uReconstructZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+                     description="Cartesian z-component of reconstructed horizontal velocity at cell centers"/>
+
+                <var name="uReconstructZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+                     description="Zonal component of reconstructed horizontal velocity at cell centers"/>
+
+                <var name="uReconstructMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+                     description="Meridional component of reconstructed horizontal velocity at cell centers"/>
 
                 <!-- Other diagnostic variables -->
-                <var name="rv"                      type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="circulation"             type="real"     dimensions="nVertLevels nVertices Time"/>
-                <var name="gradPVt"                 type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="gradPVn"                 type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="h_divergence"            type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rv" type="real" dimensions="nVertLevels nEdges Time" units="???"
+                     description="???"/>
 
-                <var name="exner"                   type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="exner_base"              type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rtheta_base"             type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="pressure"                type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="pressure_base"           type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rho_base"                type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="theta_base"              type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="circulation" type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^{-1}"
+                     description="Horizontal circulation at vertices"/>
 
-                <var name="rho_zz_old_split"        type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="ruAvg"                   type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="wwAvg"                   type="real"     dimensions="nVertLevelsP1 nCells Time"/>
-                <var name="ruAvg_split"             type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="wwAvg_split"             type="real"     dimensions="nVertLevelsP1 nCells Time"/>
-                <var name="cqu"                     type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="cqw"                     type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="gradPVt" type="real" dimensions="nVertLevels nEdges Time" units="???"
+                     description="Gradient in the tangential direction of PV at edge locations"/>
+
+                <var name="gradPVn" type="real" dimensions="nVertLevels nEdges Time" units="???"
+                     description="Gradient in the normal direction of PV at edge locations"/>
+
+                <var name="h_divergence" type="real" dimensions="nVertLevels nCells Time" units="???"
+                     description="???"/>
+
+                <var name="exner" type="real" dimensions="nVertLevels nCells Time" units="unitless"
+                     description="Exner function"/>
+
+                <var name="exner_base" type="real" dimensions="nVertLevels nCells Time" units="unitless"
+                     description="Base-state Exner function"/>
+
+                <var name="rtheta_base" type="real" dimensions="nVertLevels nCells Time" units="???"
+                     description="???"/>
+
+                <var name="pressure" type="real" dimensions="nVertLevels nCells Time" units="Pa"
+                     description="Pressure"/>
+
+                <var name="pressure_base" type="real" dimensions="nVertLevels nCells Time" units="Pa"
+                     description="Base state pressure"/>
+
+                <var name="rho_base" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
+                     description="Base state dry air density"/>
+
+                <var name="theta_base" type="real" dimensions="nVertLevels nCells Time" units="K"
+                     description="Base state potential temperature"/>
+
+                <var name="rho_zz_old_split" type="real" dimensions="nVertLevels nCells Time" units="???"
+                     description="???"/>
+
+                <var name="ruAvg" type="real" dimensions="nVertLevels nEdges Time" units="???"
+                     description="???"/>
+
+                <var name="wwAvg" type="real" dimensions="nVertLevelsP1 nCells Time" units="???"
+                     description="???"/>
+
+                <var name="ruAvg_split" type="real" dimensions="nVertLevels nEdges Time" units="???"
+                     description="???"/>
+
+                <var name="wwAvg_split" type="real" dimensions="nVertLevelsP1 nCells Time" units="???"
+                     description="???"/>
+
+                <var name="cqu" type="real" dimensions="nVertLevels nEdges Time" units="???"
+                     description="???"/>
+
+                <var name="cqw" type="real" dimensions="nVertLevels nCells Time" units="???"
+                     description="???"/>
 
                 <!-- coupled variables needed by solver, but not output -->
-                <var name="ru"                      type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="ru_p"                    type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="ru_save"                 type="real"     dimensions="nVertLevels nEdges Time"/>
+                <var name="ru" type="real" dimensions="nVertLevels nEdges Time" units="???"
+                     description="???"/>
 
-                <var name="rw"                      type="real"     dimensions="nVertLevelsP1 nCells Time"/>
-                <var name="rw_p"                    type="real"     dimensions="nVertLevelsP1 nCells Time"/>
-                <var name="rw_save"                 type="real"     dimensions="nVertLevelsP1 nCells Time"/>
+                <var name="ru_p" type="real" dimensions="nVertLevels nEdges Time" units="???"
+                     description="???"/>
 
-                <var name="rtheta_p"                type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rtheta_pp"               type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rtheta_p_save"           type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rtheta_pp_old"           type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="ru_save" type="real" dimensions="nVertLevels nEdges Time" units="???"
+                     description="???"/>
 
-                <var name="rho_p"                   type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rho_pp"                  type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rho_p_save"              type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rw" type="real" dimensions="nVertLevelsP1 nCells Time" units="???"
+                     description="???"/>
 
-                <var name="kdiff"                   type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rw_p" type="real" dimensions="nVertLevelsP1 nCells Time" units="???"
+                     description="???"/>
 
-                <var name="surface_pressure"        type="real"     dimensions="nCells Time"/>
-                <var name="mslp"                    type="real"     dimensions="nCells Time"/>
+                <var name="rw_save" type="real" dimensions="nVertLevelsP1 nCells Time" units="???"
+                     description="???"/>
 
-                <var name="temperature_200hPa"     type="real"     dimensions="nCells Time"/>
-                <var name="temperature_500hPa"     type="real"     dimensions="nCells Time"/>
-                <var name="temperature_700hPa"     type="real"     dimensions="nCells Time"/>
-                <var name="temperature_850hPa"     type="real"     dimensions="nCells Time"/>
-                <var name="relhum_200hPa"          type="real"     dimensions="nCells Time"/>
-                <var name="relhum_500hPa"          type="real"     dimensions="nCells Time"/>
-                <var name="relhum_700hPa"          type="real"     dimensions="nCells Time"/>
-                <var name="relhum_850hPa"          type="real"     dimensions="nCells Time"/>
-                <var name="height_200hPa"          type="real"     dimensions="nCells Time"/>
-                <var name="height_500hPa"          type="real"     dimensions="nCells Time"/>
-                <var name="height_700hPa"          type="real"     dimensions="nCells Time"/>
-                <var name="height_850hPa"          type="real"     dimensions="nCells Time"/>
-                <var name="uzonal_200hPa"          type="real"     dimensions="nCells Time"/>
-                <var name="uzonal_500hPa"          type="real"     dimensions="nCells Time"/>
-                <var name="uzonal_700hPa"          type="real"     dimensions="nCells Time"/>
-                <var name="uzonal_850hPa"          type="real"     dimensions="nCells Time"/>
-                <var name="umeridional_200hPa"     type="real"     dimensions="nCells Time"/>
-                <var name="umeridional_500hPa"     type="real"     dimensions="nCells Time"/>
-                <var name="umeridional_700hPa"     type="real"     dimensions="nCells Time"/>
-                <var name="umeridional_850hPa"     type="real"     dimensions="nCells Time"/>
-                <var name="w_200hPa"               type="real"     dimensions="nCells Time"/>
-                <var name="w_500hPa"               type="real"     dimensions="nCells Time"/>
-                <var name="w_700hPa"               type="real"     dimensions="nCells Time"/>
-                <var name="w_850hPa"               type="real"     dimensions="nCells Time"/>
-                <var name="vorticity_200hPa"       type="real"     dimensions="nVertices Time"/>
-                <var name="vorticity_500hPa"       type="real"     dimensions="nVertices Time"/>
-                <var name="vorticity_700hPa"       type="real"     dimensions="nVertices Time"/>
-                <var name="vorticity_850hPa"       type="real"     dimensions="nVertices Time"/>
+                <var name="rtheta_p" type="real" dimensions="nVertLevels nCells Time" units="???"
+                     description="???"/>
+
+                <var name="rtheta_pp" type="real" dimensions="nVertLevels nCells Time" units="???"
+                     description="???"/>
+
+                <var name="rtheta_p_save" type="real" dimensions="nVertLevels nCells Time" units="???"
+                     description="???"/>
+
+                <var name="rtheta_pp_old" type="real" dimensions="nVertLevels nCells Time" units="???"
+                     description="???"/>
+
+                <var name="rho_p" type="real" dimensions="nVertLevels nCells Time" units="???"
+                     description="???"/>
+
+                <var name="rho_pp" type="real" dimensions="nVertLevels nCells Time" units="???"
+                     description="???"/>
+
+                <var name="rho_p_save" type="real" dimensions="nVertLevels nCells Time" units="???"
+                     description="???"/>
+
+                <var name="kdiff" type="real" dimensions="nVertLevels nCells Time" units="???"
+                     description="???"/>
+
+                <var name="surface_pressure" type="real" dimensions="nCells Time" units="Pa"
+                     description="Diagnosed surface pressure"/>
+
+                <var name="mslp" type="real" dimensions="nCells Time" units="Pa"
+                     description="Mean sea-level pressure"/>
+
+                <var name="temperature_200hPa" type="real" dimensions="nCells Time" units="K"
+                     description="Temperature vertically interpolated to 200 hPa"/>
+
+                <var name="temperature_500hPa" type="real" dimensions="nCells Time" units="K"
+                     description="Temperature vertically interpolated to 500 hPa"/>
+
+                <var name="temperature_700hPa" type="real" dimensions="nCells Time" units="K"
+                     description="Temperature vertically interpolated to 700 hPa"/>
+
+                <var name="temperature_850hPa" type="real" dimensions="nCells Time" units="K"
+                     description="Temperature vertically interpolated to 850 hPa"/>
+
+                <var name="relhum_200hPa" type="real" dimensions="nCells Time" units="percent"
+                     description="Relative humidity vertically interpolated to 200 hPa"/>
+
+                <var name="relhum_500hPa" type="real" dimensions="nCells Time" units="percent"
+                     description="Relative humidity vertically interpolated to 500 hPa"/>
+
+                <var name="relhum_700hPa" type="real" dimensions="nCells Time" units="percent"
+                     description="Relative humidity vertically interpolated to 700 hPa"/>
+
+                <var name="relhum_850hPa" type="real" dimensions="nCells Time" units="percent"
+                     description="Relative humidity vertically interpolated to 850 hPa"/>
+
+                <var name="height_200hPa" type="real" dimensions="nCells Time" units="m"
+                     description="Geometric height interpolated to 200 hPa"/>
+
+                <var name="height_500hPa" type="real" dimensions="nCells Time" units="m"
+                     description="Geometric height interpolated to 500 hPa"/>
+
+                <var name="height_700hPa" type="real" dimensions="nCells Time" units="m"
+                     description="Geometric height interpolated to 700 hPa"/>
+
+                <var name="height_850hPa" type="real" dimensions="nCells Time" units="m"
+                     description="Geometric height interpolated to 850 hPa"/>
+
+                <var name="uzonal_200hPa" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="Reconstructed zonal wind at cell centers, vertically interpolated to 200 hPa"/>
+
+                <var name="uzonal_500hPa" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="Reconstructed zonal wind at cell centers, vertically interpolated to 500 hPa"/>
+
+                <var name="uzonal_700hPa" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="Reconstructed zonal wind at cell centers, vertically interpolated to 700 hPa"/>
+
+                <var name="uzonal_850hPa" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="Reconstructed zonal wind at cell centers, vertically interpolated to 850 hPa"/>
+
+                <var name="umeridional_200hPa" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="Reconstructed meridional wind at cell centers, vertically interpolated to 200 hPa"/>
+
+                <var name="umeridional_500hPa" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="Reconstructed meridional wind at cell centers, vertically interpolated to 500 hPa"/>
+
+                <var name="umeridional_700hPa" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="Reconstructed meridional wind at cell centers, vertically interpolated to 700 hPa"/>
+
+                <var name="umeridional_850hPa" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="Reconstructed meridional wind at cell centers, vertically interpolated to 850 hPa"/>
+
+                <var name="w_200hPa" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="Vertical velocity vertically interpolated to 200 hPa"/>
+
+                <var name="w_500hPa" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="Vertical velocity vertically interpolated to 500 hPa"/>
+
+                <var name="w_700hPa" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="Vertical velocity vertically interpolated to 700 hPa"/>
+
+                <var name="w_850hPa" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="Vertical velocity vertically interpolated to 850 hPa"/>
+
+                <var name="vorticity_200hPa" type="real" dimensions="nVertices Time" units="s^{-1}"
+                     description="Relative vorticity vertically interpolated to 200 hPa"/>
+
+                <var name="vorticity_500hPa" type="real" dimensions="nVertices Time" units="s^{-1}"
+                     description="Relative vorticity vertically interpolated to 500 hPa"/>
+
+                <var name="vorticity_700hPa" type="real" dimensions="nVertices Time" units="s^{-1}"
+                     description="Relative vorticity vertically interpolated to 700 hPa"/>
+
+                <var name="vorticity_850hPa" type="real" dimensions="nVertices Time" units="s^{-1}"
+                     description="Relative vorticity vertically interpolated to 850 hPa"/>
         </var_struct>
 
         <var_struct name="tend" time_levs="1">
