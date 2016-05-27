@@ -315,6 +315,15 @@ def parse_test_status(file_contents):
                 status, curr_test_name, phase = tokens[:3]
                 if (test_name is None):
                     test_name = curr_test_name
+                else:
+                    expect(test_name == curr_test_name, "inconsistant test name in parse_test_status %s %s"%(test_name, curr_test_name))
+                expect(status in [TEST_PENDING_STATUS ,TEST_PASS_STATUS, \
+                                      TEST_FAIL_STATUS, TEST_DIFF_STATUS, NAMELIST_FAIL_STATUS] or status.startswith("Test"),
+                       "Unexpected status in parse_test_status")
+                expect(phase in ["INIT","CREATE_NEWCASE","XML","SETUP","SHAREDLIB_BUILD",
+                                 "MODEL_BUILD", "compare", "memleak", "RUN"], "phase %s not expected in parse_test_status"%phase)
+
+
                 if (phase in rv):
                         # Phase names don't matter here, just need something unique
                     rv[phase] = reduce_stati({"%s_" % phase : status, phase : rv[phase]})

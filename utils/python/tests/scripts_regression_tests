@@ -187,18 +187,24 @@ class D_TestWaitForTests(unittest.TestCase):
     ###########################################################################
     def setUp(self):
     ###########################################################################
-        self._testdir_all_pass     = tempfile.mkdtemp()
-        self._testdir_with_fail    = tempfile.mkdtemp()
-        self._testdir_unfinished   = tempfile.mkdtemp()
+        self._testroot = MACHINE.get_value("CESMSCRATCHROOT")
+        self._testdir_all_pass     = os.path.join(self._testroot, 'scripts_regression_tests.testdir_all_pass')
+        self._testdir_with_fail    =  os.path.join(self._testroot, 'scripts_regression_tests.testdir_with_fail')
+        self._testdir_unfinished =  os.path.join(self._testroot, 'scripts_regression_tests.testdir_unfinished')
+        for testdir in self._testdir_all_pass, self._testdir_with_fail, self._testdir_unfinished:
+            if os.path.exists(testdir):
+                shutil.rmtree(testdir)
+            os.makedirs(testdir)
+
 
         for r in range(10):
-            make_fake_teststatus(os.path.join(self._testdir_all_pass, "TestStatus_%d" % r), "Test_%d" % r, "PASS", "PHASE_%s" % r)
+            make_fake_teststatus(os.path.join(self._testdir_all_pass, "TestStatus_%d" % r), "Test_%d" % r, "PASS", "RUN")
 
         for r in range(10):
-            make_fake_teststatus(os.path.join(self._testdir_with_fail, "TestStatus_%d" % r), "Test_%d" % r, "PASS" if r % 2 == 0 else "FAIL", "PHASE_%s" % r)
+            make_fake_teststatus(os.path.join(self._testdir_with_fail, "TestStatus_%d" % r), "Test_%d" % r, "PASS" if r % 2 == 0 else "FAIL", "SETUP" )
 
         for r in range(10):
-            make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_%d" % r), "Test_%d" % r, "PEND" if r == 5 else "PASS", "PHASE_%s" % r)
+            make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_%d" % r), "Test_%d" % r, "PEND" if r == 5 else "PASS", "compare")
 
         # Set up proxy if possible
         self._unset_proxy = setup_proxy()
@@ -278,7 +284,7 @@ class D_TestWaitForTests(unittest.TestCase):
 
         self.assertTrue(run_thread.isAlive(), msg="wait_for_tests should have waited")
 
-        make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_5"), "Test_5", "PASS", "PHASE_5")
+        make_fake_teststatus(os.path.join(self._testdir_unfinished, "TestStatus_5"), "Test_5", "PASS", "RUN")
 
         run_thread.join(timeout=10)
 
