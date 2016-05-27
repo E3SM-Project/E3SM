@@ -307,9 +307,11 @@ main(int argc, char **argv)
 	MPIERR(ret);
 
     /* Check that a valid number of processors was specified. */
-    if (!(ntasks == 1 || ntasks == 2 || ntasks == 4 ||
-	  ntasks == 8 || ntasks == 16))
+    if (ntasks != 4)
+    {
 	fprintf(stderr, "test_intercomm Number of processors must be exactly 4!\n");
+	ERR(ERR_AWFUL);
+    }
     if (verbose)
 	printf("%d: test_intercomm ParallelIO Library test_intercomm running on %d processors.\n",
 	       my_rank, ntasks);
@@ -325,46 +327,41 @@ main(int argc, char **argv)
 #define COMPONENT_COUNT 1
     MPI_Comm comp_comms;
     MPI_Comm io_comm;
-    MPI_Group io_group;
-    MPI_Group comp_group;
 
     /* Tasks 0 and 1 will be computational. Tasks 2 and 3 will be I/O
      * tasks. */
-
-    // Get the group of processes in MPI_COMM_WORLD
-    MPI_Group world_group;
-    MPI_Comm_group(MPI_COMM_WORLD, &world_group);
     int comp_task;
 
+    int color = my_rank < 2 ? 0 : 1; // Determine color based on row
+
+    // Split the communicator based on the color and use the
+    // original rank for ordering
+    MPI_Comm row_comm;
+    MPI_Comm_split(MPI_COMM_WORLD, color, my_rank, &row_comm);
+
+    int row_rank, row_size;
+    MPI_Comm_rank(row_comm, &row_rank);
+    MPI_Comm_size(row_comm, &row_size);
+
+    printf("WORLD RANK: %d \t ROW RANK/SIZE: %d/%d\n",
+	   my_rank, row_rank, row_size);
     if (my_rank == 0 || my_rank == 1)
     {
 	/* We will define comp_comm. The io_comm will get null. */
 	io_comm = MPI_COMM_NULL;
-	int n = 2;
-	const int ranks[2] = {0, 1};
-
-	/* Construct a group with ranks 0, 1 in world_group. */
-	MPI_Group_incl(world_group, n, ranks, &comp_group);
-	MPI_Comm_create_group(MPI_COMM_WORLD, comp_group, 0, &comp_comms);
-	if (verbose)
-	    printf("%d test_intercomm included in comp_group.\n", my_rank);
-
+	comp_comms = row_comm;
 	comp_task = 1;
+	if (verbose)
+	    printf("%d added to the comp_comm\n", my_rank);
     }
     else
     {
 	/* We will define io_comm. The comp_comms array will get nulls. */
 	comp_comms = MPI_COMM_NULL;
-	int n = 2;
-	const int ranks[2] = {2, 3};
-
-	/* Construct a group with ranks 2, 3 in world_group. */
-	MPI_Group_incl(world_group, n, ranks, &io_group);
-	MPI_Comm_create_group(MPI_COMM_WORLD, io_group, 0, &io_comm);
-	if (verbose)
-	    printf("%d test_intercomm included in io_group.\n", my_rank);
-
+	io_comm = row_comm;
 	comp_task = 0;
+	if (verbose)
+	    printf("%d added to the io_comm\n", my_rank);
     }
 
     /* Turn on logging. */
@@ -544,15 +541,12 @@ main(int argc, char **argv)
     /* Free local MPI resources. */
     if (verbose)
 	printf("%d test_intercomm Freeing local MPI resources...\n", my_rank);
-    MPI_Group_free(&world_group);
     if (comp_task)
     {
-	MPI_Group_free(&comp_group);
 	MPI_Comm_free(&comp_comms);
     }
     else
     {
-	MPI_Group_free(&io_group);
 	MPI_Comm_free(&io_comm);
     }
     
