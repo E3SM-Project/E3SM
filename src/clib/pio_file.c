@@ -145,22 +145,26 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
       break;
     }
 
-    // If we failed to open a file due to an incompatible type of NetCDF, try it 
-    // once with just plain old basic NetCDF
-/* #ifdef _NETCDF */
-/*     if((ierr == NC_ENOTNC || ierr == NC_EINVAL) && (file->iotype != PIO_IOTYPE_NETCDF)) { */
-/*         if(ios->iomaster) printf("PIO2 pio_file.c retry NETCDF\n");  */
-/* 	// reset ierr on all tasks */
-/* 	ierr = PIO_NOERR; */
-/* 	// reset file markers for NETCDF on all tasks */
-/* 	file->iotype = PIO_IOTYPE_NETCDF; */
+    // If we failed to open a file due to an incompatible type of
+    // NetCDF, try it once with just plain old basic NetCDF. This is a
+    // dangerous thing to do, since it may result in models running
+    // with sequential access, while the user thinks they are getting
+    // parallel IO. It would be better if the users who want this took
+    // this action in their own code.
+#ifdef _NETCDF
+    if((ierr == NC_ENOTNC || ierr == NC_EINVAL) && (file->iotype != PIO_IOTYPE_NETCDF)) {
+        if(ios->iomaster) printf("PIO2 pio_file.c retry NETCDF\n");
+	// reset ierr on all tasks
+	ierr = PIO_NOERR;
+	// reset file markers for NETCDF on all tasks
+	file->iotype = PIO_IOTYPE_NETCDF;
 
-/* 	// open netcdf file serially on main task */
-/*         if(ios->io_rank==0){ */
-/* 	  ierr = nc_open(filename, file->mode, &(file->fh)); } */
+	// open netcdf file serially on main task
+        if(ios->io_rank==0){
+	  ierr = nc_open(filename, file->mode, &(file->fh)); }
 
-/*     } */
-/* #endif */
+    }
+#endif
   }
 
   /* Broadcast and check the return code. */
