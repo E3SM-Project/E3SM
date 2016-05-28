@@ -97,15 +97,14 @@ def cleanup_queue(set_of_jobs_we_created):
     """
     Delete all jobs left in the queue
     """
+    current_jobs = set(CIME.utils.get_my_queued_jobs())
+    jobs_to_delete = set_of_jobs_we_created & current_jobs
 
-#    current_jobs = set(CIME.utils.get_my_queued_jobs())
-#    jobs_to_delete = set_of_jobs_we_created & current_jobs
-
-#    if (jobs_to_delete):
-#        logging.warning("Found leftover batch jobs that need to be deleted: %s" % ", ".join(jobs_to_delete))
-#        stat = CIME.utils.delete_jobs(jobs_to_delete)[0]
-#        if (stat != 0):
-#            logging.warning("FAILED to clean up leftover jobs!")
+    if (jobs_to_delete):
+        logging.warning("Found leftover batch jobs that need to be deleted: %s" % ", ".join(jobs_to_delete))
+        stat = CIME.utils.delete_jobs(jobs_to_delete)[0]
+        if (stat != 0):
+            logging.warning("FAILED to clean up leftover jobs!")
 
 ###############################################################################
 def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
@@ -194,9 +193,8 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
         # them if we timeout
         #
         preexisting_queued_jobs = []
-#        if (use_batch):
-        # this subroutine no longer exists
-#            preexisting_queued_jobs = CIME.utils.get_my_queued_jobs()
+        if (use_batch):
+            preexisting_queued_jobs = CIME.utils.get_my_queued_jobs()
 
         #
         # Set up create_test command and run it
@@ -229,8 +227,8 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
             # user came from create_test.
             # TODO: change this to probe test_root for jobs ids
             #
-#            our_jobs = set(CIME.utils.get_my_queued_jobs()) - set(preexisting_queued_jobs)
-            our_jobs = []
+            our_jobs = set(CIME.utils.get_my_queued_jobs()) - set(preexisting_queued_jobs)
+
         #
         # Wait for tests
         #

@@ -117,10 +117,11 @@ class SystemTestsCommon(object):
                                  self._case.get_value('CASEBASEID'), suffix1, suffix2), ok_to_fail=True)
         logger.debug("run %s results %d %s %s"%(cmd,rc,out,err))
         if rc == 0:
-            append_status(out.replace("compare","compare functionality",1) + "\n", sfile="TestStatus")
+            append_status(out.replace("compare","compare functionality", 1) + "\n",
+                          sfile="TestStatus")
         else:
-            append_status("Component_compare_test.sh failed out: %s\n\nerr: %s\n"%(out,err)
-                          ,sfile="TestStatus.log")
+            append_status("Component_compare_test.sh failed out: %s\n\nerr: %s\n"%(out,err),
+                          sfile="TestStatus.log")
             return False
 
         return True
@@ -165,7 +166,7 @@ class SystemTestsCommon(object):
         memlist = self._get_mem_usage(cpllog)
 
         if len(memlist)<3:
-            append_status("COMMENT : insuffiencient data for memleak test",sfile="TestStatus")
+            append_status("COMMENT: insuffiencient data for memleak test",sfile="TestStatus")
         else:
             finaldate = int(memlist[-1][0])
             originaldate = int(memlist[0][0])
