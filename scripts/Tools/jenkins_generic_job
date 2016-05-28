@@ -230,7 +230,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
             # TODO: change this to probe test_root for jobs ids
             #
 #            our_jobs = set(CIME.utils.get_my_queued_jobs()) - set(preexisting_queued_jobs)
-
+            our_jobs = []
         #
         # Wait for tests
         #

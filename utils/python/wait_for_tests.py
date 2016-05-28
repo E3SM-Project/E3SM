@@ -320,7 +320,7 @@ def parse_test_status(file_contents):
                 expect(status in [TEST_PENDING_STATUS ,TEST_PASS_STATUS, \
                                       TEST_FAIL_STATUS, TEST_DIFF_STATUS, NAMELIST_FAIL_STATUS] or status.startswith("Test"),
                        "Unexpected status in parse_test_status")
-                expect(phase in ["INIT","CREATE_NEWCASE","XML","SETUP","SHAREDLIB_BUILD",
+                expect(phase in ["INIT","CREATE_NEWCASE","XML","SETUP","SHAREDLIB_BUILD", "generate",
                                  "tputcomp","nlcomp","MODEL_BUILD", "compare", "memleak", "RUN"], "phase %s not expected in parse_test_status"%phase)
 
 
@@ -331,7 +331,7 @@ def parse_test_status(file_contents):
                     rv[phase] = status
             else:
                 logging.warning("In TestStatus file for test '%s', line '%s' not in expected format" % (test_name, line))
-
+    print "rv=%s test_name=%s phase=%s"%(rv, test_name, phase)
     return rv, test_name
 
 ###############################################################################
