@@ -96,7 +96,9 @@ def set_model(model):
 def get_model():
     """
     Get the currently configured model value
+    The CIME_MODEL env variable may or may not be set
 
+    >>> os.environ["CIME_MODEL"] = "garbage"
     >>> del os.environ["CIME_MODEL"]
     >>> set_model('rocky')
     >>> get_model()
