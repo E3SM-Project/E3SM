@@ -149,9 +149,6 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 		 "count_present = %d stride_present = %d xtype = %d num_elem = %d", ncid, varid,
 		 ndims, start_present, count_present, stride_present, xtype, num_elem));
 
-	    for (int e = 0; e < num_elem; e++)
-		LOG((2, "PIOc_put_vars_tc element %d = %d", e, ((int *)buf)[e]));
-
 	    /* Send the data. */
 	    if (!mpierr)
 		mpierr = MPI_Bcast((void *)buf, num_elem * typelen, MPI_BYTE, ios->compmaster,
