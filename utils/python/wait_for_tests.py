@@ -307,12 +307,24 @@ def parse_test_status(file_contents):
     rv = OrderedDict()
     test_name = None
     for line in file_contents.splitlines():
-        if (line.strip().startswith(COMMENT_STATUS)):
-            pass # skip comments
-        elif (len(line.split()) == 3):
-            status, curr_test_name, phase = line.split()
+        line = line.strip()
+        tokens = line.split()
+        if line == "" or line.startswith(COMMENT_STATUS):
+            pass # skip comments and blank lines
+        elif len(tokens) >= 3:
+            status, curr_test_name, phase = tokens[:3]
             if (test_name is None):
                 test_name = curr_test_name
+            else:
+                expect(test_name == curr_test_name, "inconsistent test name in parse_test_status: '%s' != '%s'"%(test_name, curr_test_name))
+
+            expect(status in [TEST_PENDING_STATUS ,TEST_PASS_STATUS, \
+                              TEST_FAIL_STATUS, TEST_DIFF_STATUS, NAMELIST_FAIL_STATUS],
+                   "Unexpected status '%s' in parse_test_status" % status)
+            expect(phase in ["INIT","CREATE_NEWCASE","XML","SETUP","SHAREDLIB_BUILD",
+                             "tputcomp","nlcomp","MODEL_BUILD", "compare", "generate", "memleak", "RUN"],
+                   "phase '%s' not expected in parse_test_status" % phase)
+
             if (phase in rv):
                 # Phase names don't matter here, just need something unique
                 rv[phase] = reduce_stati({"%s_" % phase : status, phase : rv[phase]})
@@ -335,11 +347,11 @@ def interpret_status(file_contents, check_throughput=False, check_memory=False, 
     r"""
     >>> interpret_status('PASS testname RUN')
     ('testname', 'PASS')
-    >>> interpret_status('PASS testname BUILD\nPEND testname RUN')
+    >>> interpret_status('PASS testname SHAREDLIB_BUILD\nPEND testname RUN')
     ('testname', 'PEND')
-    >>> interpret_status('FAIL testname BUILD\nPEND testname RUN')
+    >>> interpret_status('FAIL testname MODEL_BUILD\nPEND testname RUN')
     ('testname', 'PEND')
-    >>> interpret_status('PASS testname BUILD\nPASS testname RUN')
+    >>> interpret_status('PASS testname MODEL_BUILD\nPASS testname RUN')
     ('testname', 'PASS')
     >>> interpret_status('PASS testname RUN\nFAIL testname tputcomp')
     ('testname', 'PASS')

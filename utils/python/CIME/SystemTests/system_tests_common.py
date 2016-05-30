@@ -115,11 +115,13 @@ class SystemTestsCommon(object):
         rc, out, err = run_cmd("%s -rundir %s -testcase %s -testcase_base %s -suffix1 %s -suffix2 %s"
                                %(cmd, self._case.get_value('RUNDIR'), self._case.get_value('CASE'),
                                  self._case.get_value('CASEBASEID'), suffix1, suffix2), ok_to_fail=True)
+        logger.debug("run %s results %d %s %s"%(cmd,rc,out,err))
         if rc == 0:
-            append_status(out, sfile="TestStatus")
+            append_status(out.replace("compare","compare functionality", 1) + "\n",
+                          sfile="TestStatus")
         else:
-            append_status("Component_compare_test.sh failed out: %s\n\nerr: %s\n"%(out,err)
-                          ,sfile="TestStatus.log")
+            append_status("Component_compare_test.sh failed out: %s\n\nerr: %s\n"%(out,err),
+                          sfile="TestStatus.log")
             return False
 
         return True
@@ -232,15 +234,19 @@ class SystemTestsCommon(object):
         compgen += " -testcase "+self._case.get_value("CASE")
         compgen += " -testcase_base "+self._case.get_value("CASEBASEID")
         rc, out, err = run_cmd(compgen, ok_to_fail=True)
-        append_status(out+"\n",sfile="TestStatus")
+
+        append_status(out.replace("compare","compare baseline", 1) + "/n",sfile="TestStatus")
         if rc != 0:
             append_status("Error in Baseline compare: %s\n%s"%(out,err), sfile="TestStatus.log")
 
         # compare memory usage to baseline
         newestcpllogfile = self._get_latest_cpl_log()
         memlist = self._get_mem_usage(newestcpllogfile)
-        if len(memlist) > 3:
+        baselog = os.path.join(basecmp_dir, "cpl.log.gz")
+        if not os.path.isfile(baselog):
+            # for backward compatibility
             baselog = os.path.join(basecmp_dir, "cpl.log")
+        if len(memlist) > 3:
             blmem = self._get_mem_usage(baselog)[-1][1]
             curmem = memlist[-1][1]
             diff = (curmem-blmem)/blmem
@@ -250,7 +256,6 @@ class SystemTestsCommon(object):
                 append_status("FAIL: Memory usage increase > 10% from baseline",sfile="TestStatus")
         # compare throughput to baseline
         current = self._get_throughput(newestcpllogfile)
-        baselog = os.path.join(basecmp_dir, "cpl.log")
         baseline = self._get_throughput(baselog)
         #comparing ypd so bigger is better
         if baseline is not None and current is not None:
@@ -288,9 +293,9 @@ class SystemTestsCommon(object):
         compgen += " -testcase_base "+self._case.get_value("CASEBASEID")
         rc, out, err = run_cmd(compgen, ok_to_fail=True)
         # copy latest cpl log to baseline
+        # drop the date so that the name is generic
         shutil.copyfile(newestcpllogfile,
-                        os.path.join(basegen_dir,
-                                     os.path.basename(newestcpllogfile)))
+                        os.path.join(basegen_dir,"cpl.log.gz"))
         append_status(out,sfile="TestStatus")
         if rc != 0:
             append_status("Error in Baseline Generate: %s"%err,sfile="TestStatus.log")
