@@ -659,8 +659,8 @@ int put_vars_handler(iosystem_desc_t *ios)
     if ((mpierr = MPI_Bcast(buf, num_elem * typelen, MPI_BYTE, 0, ios->intercomm)))
 	return PIO_EIO;
 
-    for (int e = 0; e < num_elem; e++)
-	LOG((2, "element %d = %d", e, ((int *)buf)[e]));
+    /* for (int e = 0; e < num_elem; e++) */
+    /* 	LOG((2, "element %d = %d", e, ((int *)buf)[e])); */
     
     /* Set the non-NULL pointers. */
     if (start_present)
