@@ -53,6 +53,7 @@ module pio
        PIO_def_var   ,        &
        PIO_def_var_deflate   ,        &
        PIO_redef     ,          &
+       PIO_set_log_level,          &
        PIO_inquire_variable , &
        PIO_inquire_dimension, &
        PIO_set_chunk_cache, &

@@ -36,7 +36,8 @@ module pio_nf
        pio_get_chunk_cache                                  , &
        pio_set_var_chunk_cache                              , &
        pio_get_var_chunk_cache                              , &
-       pio_redef
+       pio_redef                                            , &
+       pio_set_log_level
 !       pio_copy_att    to be done
 
   interface pio_def_var
@@ -185,6 +186,11 @@ module pio_nf
      module procedure &
           redef_desc                                        , &
           redef_id
+  end interface
+
+  interface pio_set_log_level
+     module procedure &
+          set_log_level                                      
   end interface
 
   interface pio_inquire
@@ -648,18 +654,42 @@ contains
     type (File_desc_t)                                      , intent(inout) :: File
     ierr = redef_id(file%fh)
   end function redef_desc
+
+!>
+!! @defgroup PIO_set_log_level
+!<
+!> 
+!! @public
+!! @ingroup PIO_set_log_level
+!! @brief Sets the logging level. Only takes effect if PIO was built with
+!! PIO_ENABLE_LOGGING=On
+!! @details
+!! @param log_level the logging level.
+!! @retval ierr @copydoc error_return
+!<
+  integer function set_log_level(log_level) result(ierr)
+    integer, intent(in) :: log_level
+    interface
+       integer(C_INT) function PIOc_set_log_level(log_level) &
+            bind(C ,name="PIOc_set_log_level")
+         use iso_c_binding
+         integer(C_INT), value :: log_level
+       end function PIOc_set_log_level
+    end interface
+    ierr = PIOc_set_log_level(log_level)
+  end function set_log_level
 !> 
 !! @public
 !! @ingroup PIO_redef
 !! @brief Wrapper for the C function \ref PIOc_redef .
 !<
   integer function redef_id(ncid) result(ierr)
-    integer                                                 ,intent(in) :: ncid
+    integer, intent(in) :: ncid
     interface
        integer(C_INT) function PIOc_redef(ncid) &
-            bind(C                                          ,name="PIOc_redef")
+            bind(C, name="PIOc_redef")
          use iso_c_binding
-         integer(C_INT)                                     , value :: ncid
+         integer(C_INT), value :: ncid
        end function PIOc_redef
     end interface
     ierr = PIOc_redef(ncid)
