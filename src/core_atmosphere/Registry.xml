@@ -1709,8 +1709,8 @@
                 <!-- rqvdynten : tendency of water vapor due to horizontal and vertical advections         (kg/kg/s-1) -->
 
                 <var name="rqvdynten"    type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_tiedtke_in"/>
-                <var name="rucuten"      type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_tiedtke_in"/>
-                <var name="rvcuten"      type="real"    dimensions="nVertLevels nCells Time" packages="cu_grell_freitas_in;cu_tiedtke_in"/>
+                <var name="rucuten"      type="real"    dimensions="nVertLevels nCells Time" packages="cu_tiedtke_in"/>
+                <var name="rvcuten"      type="real"    dimensions="nVertLevels nCells Time" packages="cu_tiedtke_in"/>
 
                 <!-- GRELL ONLY -->
                 <!-- rthdynten : tendency of potential temperature due to horizontal and vertical advections   (K/s-1) -->

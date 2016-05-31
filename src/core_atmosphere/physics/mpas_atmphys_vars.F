@@ -40,9 +40,6 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-28.
 ! * added local variables needed for the Grell-Freitas parameterization of deep and shallow convection.
 ! * Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
-! * added local parameter imomentum to include the calculation of the momentum tendencies due to convection
-!   in the Grell-Freitas parameterization of convection.
-!   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
 ! * added local arrays needed in the MYNN surface layer scheme and PBL scheme (for versions WRF 3.6.1 and 3.8).
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-31.
 ! * changed the value of bl_mynn_cloudpdf from 2 to 0 which is the closure option used when the MYNN surface
@@ -264,7 +261,6 @@
 
 !... grell-freitas specific parameters and arrays:
     integer, parameter:: ishallow  = 1 !shallow convection used with grell scheme.
-    integer, parameter:: imomentum = 1 !momentum used with grell scheme.
 
  integer,dimension(:,:),allocatable:: &
     k22_shallow_p,    &!

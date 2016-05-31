@@ -45,9 +45,6 @@
 ! * added the calculation of rthdynten which is the tendency of potential temperature due to horizontal and
 !   vertical advections needed in the Grell-Freitas scheme.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
-! * added the options cu_grell_freitas and cu_grell_freitas_momentum for the calculation of the
-!   u-wind tendency.
-!   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
 ! * added the option bl_mynn for the calculation of the tendency for the cloud ice number concentration.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
 
@@ -140,19 +137,8 @@
  call mpas_pool_get_array(tend_physics,'rqcblten',rqcblten)
  call mpas_pool_get_array(tend_physics,'rqiblten',rqiblten)
 
- call mpas_pool_get_array(tend_physics,'rucuten' ,rucuten )
- call mpas_pool_get_array(tend_physics,'rvcuten' ,rvcuten )
- call mpas_pool_get_array(tend_physics,'rthcuten',rthcuten)
- call mpas_pool_get_array(tend_physics,'rqvcuten',rqvcuten)
- call mpas_pool_get_array(tend_physics,'rqccuten',rqccuten)
- call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
- call mpas_pool_get_array(tend_physics,'rqicuten',rqicuten)
- call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
-
  call mpas_pool_get_array(tend_physics, 'rthratenlw', rthratenlw)
  call mpas_pool_get_array(tend_physics, 'rthratensw', rthratensw)
-
- call mpas_pool_get_array(tend_physics, 'rthdynten' , rthdynten)
 
  call mpas_pool_get_array(tend,'u'           , tend_u         )
  call mpas_pool_get_array(tend,'theta_m'     , tend_theta     )
@@ -226,6 +212,10 @@
 
 !add coupled tendencies due to convection:
  if(config_convection_scheme .ne. 'off') then
+    call mpas_pool_get_array(tend_physics,'rthcuten',rthcuten)
+    call mpas_pool_get_array(tend_physics,'rqvcuten',rqvcuten)
+    call mpas_pool_get_array(tend_physics,'rqccuten',rqccuten)
+    call mpas_pool_get_array(tend_physics,'rqicuten',rqicuten)
 
     if(config_convection_scheme .eq. 'tiedtke') then
        allocate(rucuten_Edge(nVertLevels,nEdges))
@@ -252,8 +242,32 @@
     enddo
 
     convection_select: select case(convection_scheme)
+
+       case('cu_grell_freitas')
+          call mpas_pool_get_array(tend_physics, 'rthdynten' , rthdynten)
+
+          do i = 1, nCellsSolve
+          do k = 1, nVertLevels
+             coeff = 1._RKIND/(1._RKIND + R_v/R_d*qv(k,i))
+             rthdynten(k,i) = coeff*(tend_theta(k,i)-tend_theta_euler(k,i) &
+                            - mass(k,i)*tend_diabatic(k,i))/mass(k,i)
+          enddo
+          enddo
+
+       case('cu_kain_fritsch')
+          call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
+          call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
+          do i = 1, nCellsSolve
+          do k = 1, nVertLevels
+             tend_qr(k,i) = tend_qr(k,i) + rqrcuten(k,i)*mass(k,i)
+             tend_qs(k,i) = tend_qs(k,i) + rqscuten(k,i)*mass(k,i)
+          enddo
+          enddo
     
-       case('cu_grell_freitas','cu_grell_freitas_momentum','cu_tiedtke')
+       case('cu_tiedtke')
+          call mpas_pool_get_array(tend_physics,'rucuten' ,rucuten )
+          call mpas_pool_get_array(tend_physics,'rvcuten' ,rvcuten )
+
           allocate(rucuten_Edge(nVertLevels,nEdges))
           rucuten_Edge(:,:) = 0.
           call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)
@@ -263,26 +277,6 @@
           enddo
           enddo
           deallocate(rucuten_Edge)
-
-          convection2_select: select case(convection_scheme)
-             case('cu_grell_freitas','cu_grell_freitas_momentum')
-                do i = 1, nCellsSolve
-                do k = 1, nVertLevels
-                   coeff = 1._RKIND/(1._RKIND + R_v/R_d*qv(k,i))
-                   rthdynten(k,i) = coeff*(tend_theta(k,i)-tend_theta_euler(k,i) &
-                                  - mass(k,i)*tend_diabatic(k,i))/mass(k,i)
-                enddo
-                enddo
-
-          end select convection2_select
-
-       case('cu_kain_fritsch')
-          do i = 1, nCellsSolve
-          do k = 1, nVertLevels
-             tend_qr(k,i) = tend_qr(k,i) + rqrcuten(k,i)*mass(k,i)
-             tend_qs(k,i) = tend_qs(k,i) + rqscuten(k,i)*mass(k,i)
-          enddo
-          enddo
 
         case default
 

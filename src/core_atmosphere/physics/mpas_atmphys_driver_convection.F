@@ -17,7 +17,6 @@
 
 !wrf physics:
  use module_cu_gf
- use module_cu_gf_momentum
  use module_cu_kfeta
  use module_cu_tiedtke
 
@@ -71,14 +70,12 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2014-09-11.
 ! * renamed "kain_fritsch" with "cu_kain_fritsch" and "tiedtke" with "cu_tiedtke".
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-22.
-! * added the implementation of the Grell-Freitas convection scheme (options cu_grell_freitas and
-!   cu_grell_freitas_momentum).
+! * added the implementation of the Grell-Freitas convection scheme (option cu_grell_freitas).
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-30.
 ! * reorganized the calls to mpas_pool_.. as functions of the parameterization of convection. this makes the
 !   code cleaner, now that we are using physics packages.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-01.
-! * in the calls to subroutine cu_grell_freitas and cu_grell_freitas_momentum, added the array pratec for the
-!   calculation of rainc.
+! * in the calls to subroutine cu_grell_freitas, added the array pratec for the calculation of rainc.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-14.
 ! * in the call to subroutine cu_grell_freitas, removed the argument ktop_deep.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-20.
@@ -122,7 +119,7 @@
 
  convection_select: select case(convection_scheme)
 
-    case ("cu_grell_freitas","cu_grell_freitas_momentum")
+    case ("cu_grell_freitas")
        if(.not.allocated(ht_p)           ) allocate(ht_p(ims:ime,jms:jme)               )
        if(.not.allocated(cubot_p)        ) allocate(cubot_p(ims:ime,jms:jme)            )
        if(.not.allocated(cutop_p)        ) allocate(cutop_p(ims:ime,jms:jme)            )
@@ -145,8 +142,6 @@
        if(.not.allocated(rthraten_p)     ) allocate(rthraten_p(ims:ime,kms:kme,jms:jme) )
        if(.not.allocated(rqvblten_p)     ) allocate(rqvblten_p(ims:ime,kms:kme,jms:jme) )
        if(.not.allocated(rqvdynten_p)    ) allocate(rqvdynten_p(ims:ime,kms:kme,jms:jme))
-       if(.not.allocated(rucuten_p)      ) allocate(rucuten_p(ims:ime,kms:kme,jms:jme)  )
-       if(.not.allocated(rvcuten_p)      ) allocate(rvcuten_p(ims:ime,kms:kme,jms:jme)  )
 
        if(.not.allocated(xmb_total_p)    ) allocate(xmb_total_p(ims:ime,jms:jme)        )
        if(.not.allocated(xmb_shallow_p)  ) allocate(xmb_shallow_p(ims:ime,jms:jme)      )
@@ -228,7 +223,7 @@
 
  convection_select: select case(convection_scheme)
 
-    case ("cu_grell_freitas","cu_grell_freitas_momentum")
+    case ("cu_grell_freitas")
        if(allocated(ht_p)           ) deallocate(ht_p           )
        if(allocated(cubot_p)        ) deallocate(cubot_p        )
        if(allocated(cutop_p)        ) deallocate(cutop_p        )
@@ -250,8 +245,6 @@
        if(allocated(rthraten_p)     ) deallocate(rthraten_p     )
        if(allocated(rqvblten_p)     ) deallocate(rqvblten_p     )
        if(allocated(rqvdynten_p)    ) deallocate(rqvdynten_p    )
-       if(allocated(rucuten_p)      ) deallocate(rucuten_p      )
-       if(allocated(rvcuten_p)      ) deallocate(rvcuten_p      )
 
        if(allocated(xmb_total_p)    ) deallocate(xmb_total_p    )
        if(allocated(xmb_shallow_p)  ) deallocate(xmb_shallow_p  )
@@ -438,45 +431,6 @@
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
                             )
 
-    case ("cu_grell_freitas_momentum")
-       dx_1d = len_disp
-!      write(0,*) '--- enter subroutine grell_freitas_momentum:',dx_1d
-!      write(0,*) '--- gfconv_closure_deep    =', gfconv_closure_deep
-!      write(0,*) '--- gfconv_closure_shallow =', gfconv_closure_shallow
-       call cu_grell_freitas_momentum( &
-             itimestep       = itimestep              , dt            = dt_dyn          , &
-             dxCell          = dx_p                   , areaCell      = area_p          , &
-             u               = u_p                    , v             = v_p             , &
-             w               = w_p                    , t             = t_p             , &
-             q               = qv_p                   , rho           = rho_p           , &
-             p               = pres_hyd_p             , pi            = pi_p            , &
-             p8w             = pres2_hyd_p            , dz8w          = dz_p            , &
-             ht              = ht_p                   , xland         = xland_p         , &
-             gsw             = gsw_p                  , xlv           = xlv             , &
-             cp              = cp                     , g             = gravity         , &
-             r_v             = R_v                    , hfx           = hfx_p           , &
-             qfx             = qfx_p                  , rthblten      = rthblten_p      , &
-             rqvblten        = rqvblten_p             , rthften       = rthdynten_p     , &
-             rqvften         = rqvdynten_p            , rthraten      = rthraten_p      , &
-             kpbl            = kpbl_p                 , raincv        = raincv_p        , &
-             pratec          = pratec_p               , htop          = cutop_p         , &
-             hbot            = cubot_p                , ktop_deep     = ktop_deep_p     , &
-             k22_shallow     = k22_shallow_p          , kbcon_shallow = kbcon_shallow_p , &
-             ktop_shallow    = ktop_shallow_p         , xmb_total     = xmb_total_p     , &
-             xmb_shallow     = xmb_shallow_p          , gdc           = qccu_p          , &
-             gdc2            = qicu_p                 , rthcuten      = rthcuten_p      , &
-             rqvcuten        = rqvcuten_p             , rqccuten      = rqccuten_p      , &
-             rqicuten        = rqicuten_p             , rucuten       = rucuten_p       , &
-             rvcuten         = rvcuten_p                                                , &
-             ichoice_deep    = gfconv_closure_deep                                      , &
-             ichoice_shallow = gfconv_closure_shallow                                   , &
-             ishallow_g3     = ishallow                                                 , &
-             imomentum       = imomentum                                                , &
-             ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde      , &
-             ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme      , &
-             its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
-                            )
-
     case ("cu_kain_fritsch")
        if(itimestep == 1) then
           ktau = itimestep
@@ -609,7 +563,7 @@
 
  convection_select: select case(convection_scheme)
 
-    case ("cu_grell_freitas","cu_grell_freitas_momentum")
+    case ("cu_grell_freitas")
        call mpas_pool_get_config(configs,'config_len_disp',len_disp)
 
        call mpas_pool_get_array(mesh,'areaCell'   ,areaCell   )
@@ -639,8 +593,6 @@
        call mpas_pool_get_array(tend_physics,'rthdynten' ,rthdynten )
        call mpas_pool_get_array(tend_physics,'rthratenlw',rthratenlw)
        call mpas_pool_get_array(tend_physics,'rthratensw',rthratensw)
-       call mpas_pool_get_array(tend_physics,'rucuten'   ,rucuten   )
-       call mpas_pool_get_array(tend_physics,'rvcuten'   ,rvcuten   )
 
        do j = jts,jte
        do i = its,ite
@@ -672,8 +624,6 @@
              rthraten_p(i,k,j)  = rthratenlw(k,i) + rthratensw(k,i)
              rqvblten_p(i,k,j)  = rqvblten(k,i)
              rqvdynten_p(i,k,j) = rqvdynten(k,i)
-             rucuten_p(i,k,j)   = rucuten(k,i)
-             rvcuten_p(i,k,j)   = rvcuten(k,k)
           enddo
        enddo
        enddo
@@ -792,7 +742,7 @@
 
  convection_select: select case(convection_scheme)
 
-    case ("cu_grell_freitas","cu_grell_freitas_momentum")
+    case ("cu_grell_freitas")
        call mpas_pool_get_array(diag_physics,'cubot'        ,cubot        )
        call mpas_pool_get_array(diag_physics,'cutop'        ,cutop        )
        call mpas_pool_get_array(diag_physics,'xmb_total'    ,xmb_total    )
@@ -803,9 +753,6 @@
        call mpas_pool_get_array(diag_physics,'ktop_deep'    ,ktop_deep    )
        call mpas_pool_get_array(diag_physics,'qc_cu'        ,qc_cu        )
        call mpas_pool_get_array(diag_physics,'qi_cu'        ,qi_cu        )
-
-       call mpas_pool_get_array(tend_physics,'rucuten',rucuten)
-       call mpas_pool_get_array(tend_physics,'rvcuten',rvcuten)
 
        do j = jts,jte
        do i = its,ite
@@ -821,8 +768,6 @@
           do k = kts,kte
              qc_cu(k,i)    = qccu_p(i,k,j)
              qi_cu(k,i)    = qicu_p(i,k,j)
-             rucuten(k,i)  = rucuten_p(i,k,j)
-             rvcuten(k,k)  = rvcuten_p(i,k,j)
           enddo
        enddo
        enddo
