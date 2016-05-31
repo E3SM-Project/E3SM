@@ -386,7 +386,7 @@ class Case(object):
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
-                  user_grid=False, gridfile=None, ninst=1):
+                  user_grid=False, gridfile=None, ninst=1, test=False):
 
         #--------------------------------------------
         # compset, pesfile, and compset components
@@ -456,6 +456,18 @@ class Case(object):
 
         machdir = machobj.get_machines_dir()
         self.set_value("MACHDIR", machdir)
+
+        # Overwriting an existing exeroot or rundir can cause problems
+        exeroot = self.get_value("EXEROOT")
+        rundir = self.get_value("RUNDIR")
+        for wdir in (exeroot, rundir):
+            if os.path.exists(wdir):
+                expect(not test, "Directory %s already exists, aborting test"% wdir)
+                response = raw_input("\nDirectory %s already exists, (r)eplace, (a)bort, or (u)se existing?"% wdir)
+                if response.startswith("r"):
+                    shutil.rmtree(wdir)
+                else:
+                    expect(response.startswith("u"), "Aborting by user request")
 
         # the following go into the env_mach_specific file
         vars = ("module_system", "environment_variables", "batch_system", "mpirun")
