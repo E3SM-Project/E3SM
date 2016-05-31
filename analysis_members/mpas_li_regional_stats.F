@@ -257,7 +257,7 @@ contains
          blockSumRegionIceArea = 0.0_RKIND; blockSumRegionIceVolume = 0.0_RKIND
          blockSumRegionGroundedIceArea = 0.0_RKIND; blockSumRegionGroundedIceVolume = 0.0_RKIND
          blockSumRegionFloatingIceArea = 0.0_RKIND; blockSumRegionFloatingIceVolume = 0.0_RKIND
-         blockRegionThickMin = 1000.0_RKIND; blockRegionThickMax = 0.0_RKIND
+         blockRegionThickMin = 10000.0_RKIND; blockRegionThickMax = 0.0_RKIND
          blockSumRegionSfcMassBal = 0.0_RKIND; blockSumRegionBasalMassBal = 0.0_RKIND
          blockSumRegionCalvingFlux = 0.0_RKIND
 
@@ -303,10 +303,13 @@ contains
                 * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) * calvingThickness(iCell) * areaCell(iCell) * config_ice_density / ( deltat / scyr ) )
 
             ! max, min thickness values (m)
-            if( thickness(iCell) > blockRegionThickMax(iRegion) )then
+            if( ( thickness(iCell) * real(regionCellMasks(iRegion,iCell),RKIND) * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) ) &
+                > blockRegionThickMax(iRegion) )then
                 blockRegionThickMax(iRegion) = thickness(iCell)
             endif
-            if( thickness(iCell) < blockRegionThickMin(iRegion) .and. thickness(iCell) > 0.0_RKIND)then
+            if( ( thickness(iCell) * real(regionCellMasks(iRegion,iCell),RKIND) * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) ) &
+                < blockRegionThickMin(iRegion) .and. ( thickness(iCell) * real(regionCellMasks(iRegion,iCell),RKIND) &
+                * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) ) > 0.0_RKIND )then 
                 blockRegionThickMin(iRegion) = thickness(iCell)
             endif
 
