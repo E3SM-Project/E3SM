@@ -895,9 +895,7 @@ int inq_var_handler(iosystem_desc_t *ios)
     int ndims, dimids[NC_MAX_DIMS], natts;
     int ret;
 
-    int my_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    LOG((1, "%d inq_var_handler\n", my_rank));
+    LOG((1, "inq_var_handler"));
 
     /* Get the parameters for this function that the the comp master
      * task is broadcasting. */
@@ -915,9 +913,9 @@ int inq_var_handler(iosystem_desc_t *ios)
 	return PIO_EIO;
     if ((mpierr = MPI_Bcast(&natts_present, 1, MPI_CHAR, 0, ios->intercomm)))
 	return PIO_EIO;
-    printf("%d inq_var_handler ncid = %d varid = %d name_present = %d xtype_present = %d ndims_present = %d "
-	   "dimids_present = %d natts_present = %d\n",
-	   my_rank, ncid, varid, name_present, xtype_present, ndims_present, dimids_present, natts_present);
+    LOG((2,"inq_var_handler ncid = %d varid = %d name_present = %d xtype_present = %d ndims_present = %d "
+	 "dimids_present = %d natts_present = %d\n",
+	 ncid, varid, name_present, xtype_present, ndims_present, dimids_present, natts_present));
 
     /* Set the non-NULL pointers. */
     if (name_present)
@@ -934,6 +932,9 @@ int inq_var_handler(iosystem_desc_t *ios)
     /* Call the inq function to get the values. */
     if ((ret = PIOc_inq_var(ncid, varid, namep, xtypep, ndimsp, dimidsp, nattsp)))
 	return ret;
+
+    if (ndims_present)
+	LOG((2, "inq_var_handler ndims = %d", ndims));
 
     return PIO_NOERR;
 }
@@ -985,15 +986,13 @@ int sync_file_handler(iosystem_desc_t *ios)
     int mpierr;
     int ret;
 
-    int my_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    LOG((1, "%d sync_file_handler\n", my_rank));
+    LOG((1, "sync_file_handler"));
 
     /* Get the parameters for this function that the comp master
      * task is broadcasting. */
     if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
 	return PIO_EIO;
-    LOG((1, "%d sync_file_handler got parameter ncid = %d\n", my_rank, ncid));
+    LOG((1, "sync_file_handler got parameter ncid = %d", ncid));
 
     /* Call the sync file function. */
     if ((ret = PIOc_sync(ncid)))
@@ -1786,6 +1785,7 @@ int PIOc_Init_Intercomm(int component_count, MPI_Comm peer_comm,
     int iam;
     int io_leader, comp_leader;
     int root;
+    MPI_Group io_grp, comm_grp, union_grp;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 

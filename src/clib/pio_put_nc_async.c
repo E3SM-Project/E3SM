@@ -156,18 +156,13 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	}
 
 	/* Handle MPI errors. */
-	LOG((2, "checking mpierr = %d", mpierr));
-	if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+	LOG((2, "PIOc_put_vars_tc bcasting mpierr = %d", mpierr));
+	if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->comproot, ios->my_comm)))
 	    return check_mpi(file, mpierr2, __FILE__, __LINE__);
+	LOG((2, "PIOc_put_vars_tc checking mpierr = %d", mpierr));
 	if (mpierr)
 	    check_mpi(file, mpierr, __FILE__, __LINE__);
-	LOG((2, "checked mpierr = %d", mpierr));
-
-	/* /\* Broadcast values currently only known on computation tasks to IO tasks. *\/ */
-	/* if ((mpierr = MPI_Bcast(&ndims, 1, MPI_INT, ios->comproot, ios->my_comm))) */
-	/*     check_mpi(file, mpierr, __FILE__, __LINE__); */
-	/* if ((mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET, ios->comproot, ios->my_comm))) */
-	/*     check_mpi(file, mpierr, __FILE__, __LINE__); */
+	LOG((2, "PIOc_put_vars_tc checked mpierr = %d", mpierr));
     }
 
     /* If this is an IO task, then call the netCDF function. */
