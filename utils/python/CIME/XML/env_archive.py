@@ -17,6 +17,7 @@ class EnvArchive(GenericXML):
         """
         logger.debug("Case_root = %s" , case_root)
 
+
         # Check/Build path to env_archive.xml
         if case_root is None:
             case_root = os.getcwd()
@@ -46,6 +47,10 @@ class EnvArchive(GenericXML):
         compclass = archive_entry.attrib['compclass']
         return compname,compclass
 
+    def get_entry_value(self, name, archive_entry):
+        node = self.get_optional_node(name, root=archive_entry)
+        return node.text
+
     def get_rest_file_extensions(self, archive_entry):
         file_extensions = []
         nodes = self.get_nodes('rest_file_extension', root=archive_entry)
@@ -60,7 +65,27 @@ class EnvArchive(GenericXML):
             file_extensions.append(node.text)
         return file_extensions
 
-    def get_value(self, name, archive_entry):
-        node = self.get_optional_node(name, root=archive_entry)
-        return node.text
+    def get_rpointer_contents(self, archive_entry):
+        rpointer_items = []
+        rpointer_nodes = self.get_nodes('rpointer', root=archive_entry)
+        for rpointer_node in rpointer_nodes:
+            file_node = self.get_node('rpointer_file', root=rpointer_node)
+            content_node = self.get_node('rpointer_content', root=rpointer_node)
+            rpointer_items.append([file_node.text,content_node.text])
+        return rpointer_items
+
+    def get_value(self, item, attribute={}, resolved=True, subgroup=None):
+        """
+        not currently used - but needs to appear here
+        """
+        logger.debug("Get Value for " + item)
+        return None
+
+    def get_values(self, item, attribute={}, resolved=True, subgroup=None):
+        """
+        not currently used - but needs to appear here
+        """
+        logger.debug("Get Values for " + item)
+        return None
+
         
