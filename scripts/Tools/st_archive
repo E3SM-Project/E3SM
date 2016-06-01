@@ -661,7 +661,7 @@ sub removeDups
 	my @matchfiles  = File::Find::Rule->file->name($file)->in($config{'DOUT_S_ROOT'});
 
 	foreach my $matchfile (@matchfiles) {
-	    if( $matchfile =~ /\/rest\// && $matchfile ne $restfile && $matchfile !~ /\/hist\// ) {
+	    if( $matchfile =~ /\/rest\// && $matchfile ne $restfile && $matchfile !~ /\/hist\// && $matchfile !~ /rpointer/) {
 		$logger->debug("Dedebugng matchfile=$matchfile matches restfile=$restfile");
 		unlink( $matchfile );
 	    }
@@ -720,7 +720,7 @@ sub main
 # run the archive process
 	archiveProcess( $XMLin, $dname, \@runfiles );
 
-	if( uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) == 'TRUE' )
+	if( uc($config{'DOUT_S_SAVE_INTERIM_RESTART_FILES'}) eq 'TRUE' )
 	{
 # remove restart duplicate files from the comp/rest and rest/dname directories
 	    removeDups( $dname );
