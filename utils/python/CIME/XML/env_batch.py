@@ -7,6 +7,8 @@ from CIME.XML.env_base import EnvBase
 from CIME.utils import convert_to_string
 from copy import deepcopy
 
+import re
+
 logger = logging.getLogger(__name__)
 
 class EnvBatch(EnvBase):
@@ -65,7 +67,15 @@ class EnvBatch(EnvBase):
 
         nodes   = [] # List of identified xml elements
         results = [] # List of identified parameters
-
+        job_group = None
+        
+        # Check item , if item is path split
+        parts = re.split( "/" , item)
+        if len(parts) == 2 :
+            item = parts[1]
+            job_group = parts[0]
+            
+        
         # Find all nodes with attribute name and attribute value item
         # xpath .//*[name='item']
         # for job in self.get_nodes("job") :
@@ -93,16 +103,17 @@ class EnvBatch(EnvBase):
                 # seach in all entry nodes
                 for node in nodes:
 
-                    # Init and construct attribute path
-                    attr      = None
-                    if (r.tag == "job") :
-                        # make job part of attribute path
-                        attr = r.get('name') + "/" + node.get('id')
-                    else:
-                        attr = node.get('id')
-
+                    
                     # Build return structure
-                    g       = group.get('id')
+                    attr      = node.get('id')
+                    g         = None
+                    
+                    # determine group
+                    if (r.tag == "job") :
+                        g = r.get('name') 
+                    else:
+                        g = r.get('id')
+
                     val     = node.get('value')
                     t       = self._get_type(node)
                     desc    = self._get_description(node)
