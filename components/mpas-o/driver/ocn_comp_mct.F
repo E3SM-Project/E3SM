@@ -291,7 +291,7 @@ contains
     stdout_shr = shr_file_getUnit()
 #ifndef MPAS_DEBUG
     if ( iam /= 0 ) then
-       open(stdout_shr, file='/dev/null', position='APPEND')
+       open(stdout_shr, status='SCRATCH')
     else
        inquire(file='ocn_modelio.nml'//trim(inst_suffix),exist=exists)
        if(exists) then
@@ -704,6 +704,12 @@ contains
 #endif
     call shr_sys_flush(stderrUnit)
 
+#ifndef MPAS_DEBUG
+    if ( iam /= 0 ) then
+       close(stdout_shr)
+    end if
+#endif
+
 
 !-----------------------------------------------------------------------
 !EOC
@@ -752,6 +758,13 @@ contains
       logical :: streamActive
       logical, pointer :: config_write_output_on_startup
       character (len=StrKIND), pointer :: config_restart_timestamp_name
+
+#ifndef MPAS_DEBUG
+    if ( domain % dminfo % my_proc_id /= 0 ) then
+       open(ocnStdErrUnit, status='SCRATCH')
+    end if
+#endif
+
 
       call mpas_io_units_set_stdout(ocnStdOutUnit)
       call mpas_io_units_set_stderr(ocnStdErrUnit)
@@ -925,6 +938,12 @@ contains
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
 
+#ifndef MPAS_DEBUG
+    if ( domain % dminfo % my_proc_id /= 0 ) then
+       close(ocnStdErrUnit)
+    end if
+#endif
+
 
 !-----------------------------------------------------------------------
 !EOC
@@ -966,9 +985,16 @@ contains
 
     type (domain_type), pointer :: domain_ptr
 
-    integer :: ierr
+    integer :: ierr, my_proc_id
 
 !-----------------------------------------------------------------------
+    my_proc_id = domain % dminfo % my_proc_id
+#ifndef MPAS_DEBUG
+    if ( my_proc_id /= 0 ) then
+       open(ocnStdErrUnit, status='SCRATCH')
+    end if
+#endif
+
     call mpas_io_units_set_stdout(ocnStdOutUnit)
     call mpas_io_units_set_stderr(ocnStdErrUnit)
 
@@ -992,6 +1018,12 @@ contains
     ! Reset I/O logs
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
+
+#ifndef MPAS_DEBUG
+    if ( my_proc_id /= 0 ) then
+       close(ocnStdErrUnit)
+    end if
+#endif
 
   end subroutine ocn_final_mct!}}}
 
