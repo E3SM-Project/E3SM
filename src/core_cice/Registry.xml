@@ -114,7 +114,7 @@
 		<nml_option name="config_forcing_restart_file"        type="character"     default_value="restart_forcing_timestamps"/>
 		<nml_option name="config_forcing_precipitation_units" type="character"     default_value="mm_per_sec"/>
 		<nml_option name="config_forcing_sst_type"            type="character"     default_value="ncar"/>
-		<nml_option name="config_update_ocean_fluxes"         type="logical"       default_value="false"/>
+		<nml_option name="config_update_ocean_fluxes"         type="logical"       default_value="true"/>
 		<nml_option name="config_include_pond_freshwater_feedback" type="logical"       default_value="false"/>
 	</nml_record>
 	<nml_record name="unit_test" in_defaults="true">
