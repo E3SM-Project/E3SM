@@ -40,11 +40,11 @@
      <jobid_pattern>(\d+)</jobid_pattern>
      <depend_string> --dependencies</depend_string>
      <submit_args>
-       <arg flag="--cwd" name="cwd"/>
-       <arg flag="-A" name="PROJECT"/>
-       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
-       <arg flag="-n" name="num_nodes"/>
-       <arg flag="-q" name="JOB_QUEUE"/>
+       <arg flag="--cwd" name="$CASEROOT"/>
+       <arg flag="-A" name="$PROJECT"/>
+       <arg flag="-t" name="$JOB_WALLCLOCK_TIME"/>
+       <arg flag="-n" name="$TOTALPES/$PES_PER_NODE"/>
+       <arg flag="-q" name="$JOB_QUEUE"/>
        <arg flag="--mode script"/>
      </submit_args>
    </batch_system>

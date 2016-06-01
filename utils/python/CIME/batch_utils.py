@@ -129,16 +129,20 @@ class BatchUtils(object):
             self.batchmaker.override_node_count = None
         else:
             self.batchmaker.override_node_count = int(task_count)
-
         self.batchmaker.set_job(job)
         submit_args = self.batchobj.get_submit_args()
         submitargs=""
         for flag, name in submit_args:
+            logger.debug("Submit arg is flag=%s name=%s"%(flag,name))
             if name is None:
                 submitargs+=" %s"%flag
             else:
                 val = str(self.case.get_value(name,subgroup=job)).strip()
-                if val is not None and len(val) > 0 and val != "None":
+                if val is None or val == "None":
+                    val =  str(self.case.get_resolved_value(name)).strip()
+                    if re.findall('\d+? *?[\-\+\*\/] *?\d+?', val):
+                        val = str(eval(val))
+                if val is not None and len(val) > 0:
                     if flag.rfind("=", len(flag)-1, len(flag)) >= 0 or\
                        flag.rfind(":", len(flag)-1, len(flag)) >= 0:
                         submitargs+=" %s%s"%(flag,val)

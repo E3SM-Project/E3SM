@@ -167,7 +167,7 @@ class EnvModule(object):
             if m:
                 key = m.groups()[0]
                 valunresolved = m.groups()[1]
-                val = string.Template(valunresolved).substitute(newenv)
+                val = string.Template(valunresolved).safe_substitute(newenv)
                 expect(val is not None, 
                        'string value %s unable to be resolved' % valunresolved)
                 newenv[key] = val
