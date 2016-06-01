@@ -83,7 +83,7 @@ contains
     type(mct_aVect)  , intent(in)    :: landfrac_l ! lfrac field on the land grid
     type(mct_aVect)  , intent(in)    :: g2x_g      ! glc -> cpl fields on the glc grid
     character(len=*) , intent(in)    :: fieldname  ! name of the field to map
-    class(vertical_gradient_calculator_base_type), intent(in) :: gradient_calculator
+    class(vertical_gradient_calculator_base_type), intent(inout) :: gradient_calculator
     type(seq_map)    , intent(inout) :: mapper
     type(mct_aVect)  , intent(inout) :: l2x_g      ! lnd -> cpl fields on the glc grid
     !
@@ -167,6 +167,7 @@ contains
     ! Map ice elevation classes
     ! ------------------------------------------------------------------------
 
+    call gradient_calculator%calc_gradients()
     do elevclass = 1, glc_get_num_elevation_classes()
        call map_one_elevation_class(l2x_l, landfrac_l, fieldname_trimmed, elevclass, &
             gradient_calculator, glc_topo, mapper, data_g_oneEC)
@@ -403,7 +404,7 @@ contains
 
     call mct_aVect_exportRattr(l2x_l, fieldname_ec, data_l)
     call mct_aVect_exportRattr(l2x_l, toponame_ec, topo_l)
-    call gradient_calculator%calc_vertical_gradient(elevclass, vertical_gradient_l)
+    call gradient_calculator%get_gradients_one_class(elevclass, vertical_gradient_l)
     partial_remap_l = data_l - (vertical_gradient_l * topo_l)
 
     call mct_aVect_importRattr(l2x_l_temp, partial_remap_tag, partial_remap_l)
