@@ -9,11 +9,11 @@ logger = logging.getLogger(__name__)
 
 class ERS(SystemTestsCommon):
 
-    def __init__(self, caseroot=None, case=None):
+    def __init__(self, case):
         """
         initialize an object interface to the ERS system test
         """
-        SystemTestsCommon.__init__(self, caseroot=caseroot, case=case)
+        SystemTestsCommon.__init__(self, case)
 
     def _ers_first_phase(self):
         stop_n      = self._case.get_value("STOP_N")

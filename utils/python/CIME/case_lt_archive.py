@@ -43,3 +43,5 @@ def case_lt_archive(case):
 
     # document completion
     append_status("lt_archive completed" ,caseroot=caseroot, sfile="CaseStatus")
+
+    return True

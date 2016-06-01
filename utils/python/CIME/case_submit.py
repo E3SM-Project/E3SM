@@ -69,7 +69,7 @@ def submit(case, job=None, resubmit=False, no_batch=False, prereq_jobid=None):
 
 def check_case(case, caseroot):
     check_lockedfiles(caseroot)
-    preview_namelists(dryrun=False, casedir=caseroot)
+    preview_namelists(case, dryrun=False)
     expect(case.get_value("BUILD_COMPLETE"), "Build complete is "
            "not True please rebuild the model by calling case.build")
     logger.info("Check case OK")

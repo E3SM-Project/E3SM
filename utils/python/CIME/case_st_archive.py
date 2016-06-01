@@ -29,4 +29,5 @@ def case_st_archive(case):
         append_status("resubmitting from st_archive",
                       caseroot=caseroot, sfile="CaseStatus")
         submit(case, resubmit=True)
+
     return True

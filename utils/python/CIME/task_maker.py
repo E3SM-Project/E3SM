@@ -4,7 +4,6 @@
 from CIME.XML.standard_module_setup import *
 from CIME.XML.component import Component
 from CIME.utils import expect, run_cmd
-from CIME.case import Case
 
 import math
 
@@ -12,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 class TaskMaker(object):
 
-    def __init__(self, case=None, remove_dead_tasks=False):
-        self.case = case if case is not None else Case()
+    def __init__(self, case, remove_dead_tasks=False):
+        self.case = case
         self.remove_dead_tasks = remove_dead_tasks
 
         drv_comp = Component()

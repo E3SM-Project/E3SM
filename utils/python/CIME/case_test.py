@@ -9,6 +9,7 @@ from CIME.SystemTests.seq import SEQ
 from CIME.SystemTests.ers import ERS
 from CIME.SystemTests.nck import NCK
 from CIME.SystemTests.err import ERR
+from CIME.SystemTests.eri import ERI
 from CIME.SystemTests.system_tests_common import *
 
 def case_test(case, testname=None):
@@ -18,7 +19,7 @@ def case_test(case, testname=None):
     expect(testname is not None, "testname argument not resolved")
     logging.warn("Running test for %s" % testname)
 
-    test = globals()[testname](case=case)
+    test = globals()[testname](case)
 
     success = test.run()
 

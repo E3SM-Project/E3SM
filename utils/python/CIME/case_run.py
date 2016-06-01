@@ -33,7 +33,7 @@ def preRunCheck(case):
     build_complete = case.get_value("BUILD_COMPLETE")
 
     # check for locked files.
-    check_lockedfiles()
+    check_lockedfiles(case.get_value("CASEROOT"))
     logger.debug("check_lockedfiles OK")
 
     # check that build is done
@@ -71,7 +71,7 @@ def preRunCheck(case):
     os.makedirs(os.path.join(rundir,"timing","checkpoints"))
 
     # run preview namelists
-    preview_namelists()
+    preview_namelists(case)
 
     # document process
     append_status("Run started ",caseroot=caseroot,
@@ -88,7 +88,7 @@ def runModel(case):
 ###############################################################################
 
     # Set OMP_NUM_THREADS
-    tm = TaskMaker(case=case)
+    tm = TaskMaker(case)
     num_threads = tm.thread_count
     os.environ["OMP_NUM_THREADS"] = str(num_threads)
 
@@ -241,35 +241,31 @@ def DoDataAssimilation(case, da_script, lid):
 ###############################################################################
 def case_run(case):
 ###############################################################################
+    # Set up the run, run the model, do the postrun steps
+    run_with_submit = case.get_value("RUN_WITH_SUBMIT")
+    expect (run_with_submit,
+            "You are not calling the run script via the submit script. "
+            "As a result, short-term archiving will not be called automatically."
+            "Please submit your run using the submit script like so:"
+            " ./case.submit")
 
-    try:
-        # Set up the run, run the model, do the postrun steps
-        run_with_submit = case.get_value("RUN_WITH_SUBMIT")
-        expect (run_with_submit,
-                "You are not calling the run script via the submit script. "
-                "As a result, short-term archiving will not be called automatically."
-                "Please submit your run using the submit script like so:"
-                " ./case.submit")
+    data_assimilation = case.get_value("DATA_ASSIMILATION")
+    data_assimilation_cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
+    data_assimilation_script = case.get_value("DATA_ASSIMILATION_SCRIPT")
 
-        data_assimilation = case.get_value("DATA_ASSIMILATION")
-        data_assimilation_cycles = case.get_value("DATA_ASSIMILATION_CYCLES")
-        data_assimilation_script = case.get_value("DATA_ASSIMILATION_SCRIPT")
+    # set up the LID
+    lid = time.strftime("%y%m%d-%H%M%S")
+    os.environ["LID"] = lid
 
-        # set up the LID
-        lid = time.strftime("%y%m%d-%H%M%S")
-        os.environ["LID"] = lid
+    for _ in range(data_assimilation_cycles):
+        preRunCheck(case)
+        runModel(case)
+        postRunCheck(case, lid)
+        saveLogs(case, lid)       # Copy log files back to caseroot
+        getTimings(case, lid)     # Run the getTiming script
+        if data_assimilation:
+            DoDataAssimilation(case, data_assimilation_script, lid)
 
-        for _ in range(data_assimilation_cycles):
-            preRunCheck(case)
-            runModel(case)
-            postRunCheck(case, lid)
-            saveLogs(case, lid)       # Copy log files back to caseroot
-            getTimings(case, lid)     # Run the getTiming script
-            if data_assimilation:
-                DoDataAssimilation(case, data_assimilation_script, lid)
+    resubmitCheck(case)
 
-        resubmitCheck(case)
-    except:
-        logger.warning("Exception in case_run: %s" % sys.exc_info()[1])
-        return False
     return True
