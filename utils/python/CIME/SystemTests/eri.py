@@ -9,6 +9,15 @@ import shutil, glob, os
 
 logger = logging.getLogger(__name__)
 
+def _helper(dout_sr, refdate, ref_to_d, rundir):
+    rest_path = os.path.join(dout_sr, "rest", "%s-%s" % (refdate, ref_to_d))
+
+    for item in glob.glob("%s/*%s*" % (rest_path, refdate)):
+        os.symlink(item, os.path.join(rundir, os.path.basename(item)))
+
+    for item in glob.glob("%s/*rpointer*" % rest_path):
+        shutil.copy(item, rundir)
+
 class ERI(SystemTestsCommon):
 
     def __init__(self, case):
@@ -137,10 +146,8 @@ class ERI(SystemTestsCommon):
 
         if not os.path.exists(rundir):
             os.makedirs(rundir)
-        # lazy, use shell even though we don't have to
-        rest_path = os.path.join(dout_sr1, "rest", "%s-%s" % (refdate_2, ref_to_d2))
-        run_cmd("ln -s %s/*%s*       %s/." % (rest_path, refdate_2, rundir))
-        run_cmd("cp    %s/*rpointer* %s/." % (rest_path, rundir))
+
+        _helper(dout_sr1, refdate_2, ref_to_d2, rundir)
 
         # run ref2 case (all component history files will go to short term archiving)
 
@@ -182,10 +189,8 @@ class ERI(SystemTestsCommon):
         rundir = self._case.get_value("RUNDIR")
         if not os.path.exists(rundir):
             os.makedirs(rundir)
-        # lazy, use shell even though we don't have to
-        rest_path = os.path.join(dout_sr2, "rest", "%s-%s" % (refdate_3, ref_to_d3))
-        run_cmd("ln -s %s/*%s*       %s/." % (rest_path, refdate_3, rundir))
-        run_cmd("cp    %s/*rpointer* %s/." % (rest_path, rundir))
+
+        _helper(dout_sr2, refdate_3, ref_to_d3, rundir)
 
         # the following lines creates the initial component history files for the restart test
         for item in glob.glob("%s/*/hist/*nc" % dout_sr2):
