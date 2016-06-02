@@ -148,7 +148,6 @@ mpas_atmphys_driver_sfclayer.o: \
 	mpas_atmphys_constants.o \
 	mpas_atmphys_vars.o \
 	./physics_wrf/module_sf_mynn.o \
-	./physics_wrf/module_sf_mynn.wrf-3.8.o \
 	./physics_wrf/module_sf_sfclay.o
 
 mpas_atmphys_init.o: \

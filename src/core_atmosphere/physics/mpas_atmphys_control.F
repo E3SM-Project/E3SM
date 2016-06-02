@@ -58,8 +58,6 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-31.
 ! * added the options sf_mynn and bl_mynn and for the MYNN parameterization from WRF versions 3.6.1.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-11.
-! * added the options sf_mynn and bl_mynn and for the MYNN parameterization from WRF versions 3.8.
-!   Laura D. Fowler (laura@ucar.edu) / 2016-04-14.
 
 
  contains
@@ -237,7 +235,6 @@
 !surface-layer scheme:
  if(.not. (config_sfclayer_scheme .eq. 'off'           .or.    &
            config_sfclayer_scheme .eq. 'sf_mynn'       .or. &
-           config_sfclayer_scheme .eq. 'sf_mynn_wrf38' .or. &
            config_sfclayer_scheme .eq. 'sf_monin_obukhov')) then
  
     write(mpas_err_message,'(A,A10)') 'illegal value for surface layer scheme: ', &
@@ -246,8 +243,6 @@
  else
     if(config_pbl_scheme == 'bl_mynn') then
        config_sfclayer_scheme = 'sf_mynn'
-    elseif(config_pbl_scheme == 'bl_mynn_wrf38') then
-       config_sfclayer_scheme = 'sf_mynn_wrf38'
     elseif(config_pbl_scheme == 'bl_ysu') then
        config_sfclayer_scheme = 'sf_monin_obukhov'
     endif
