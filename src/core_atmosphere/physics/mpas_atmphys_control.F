@@ -52,7 +52,7 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-22.
 ! * renamed "ysu" to "bl_ysu", "ysu_gwdo" to "bl_gwdo_ysu", and "monin_obukhov" to "sf_monin_obukhov".
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-25. 
-! * added the options mp_thompson_aerosols and mp_thompson.
+! * added the option mp_thompson.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-25.
 ! * added the options cu_grell_freitas.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-31.
@@ -134,10 +134,9 @@
  end if
 
 !cloud microphysics scheme:
- if(.not. (config_microp_scheme .eq. 'off'                  .or. &
-           config_microp_scheme .eq. 'mp_kessler'           .or. &
-           config_microp_scheme .eq. 'mp_thompson_aerosols' .or. &
-           config_microp_scheme .eq. 'mp_thompson'          .or. &
+ if(.not. (config_microp_scheme .eq. 'off'         .or. &
+           config_microp_scheme .eq. 'mp_kessler'  .or. &
+           config_microp_scheme .eq. 'mp_thompson' .or. &
            config_microp_scheme .eq. 'mp_wsm6'     )) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for config_microp_scheme:', &
@@ -147,9 +146,9 @@
  endif
 
 !convection scheme:
- if(.not. (config_convection_scheme .eq. 'off'                       .or. &
-           config_convection_scheme .eq. 'cu_grell_freitas'          .or. &
-           config_convection_scheme .eq. 'cu_kain_fritsch'           .or. &
+ if(.not. (config_convection_scheme .eq. 'off'              .or. &
+           config_convection_scheme .eq. 'cu_grell_freitas' .or. &
+           config_convection_scheme .eq. 'cu_kain_fritsch'  .or. &
            config_convection_scheme .eq. 'cu_tiedtke'                )) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for config_convection_scheme: ', &
@@ -159,8 +158,8 @@
  endif
 
 !pbl scheme:
- if(.not. (config_pbl_scheme .eq. 'off'           .or. &
-           config_pbl_scheme .eq. 'bl_mynn'       .or. &
+ if(.not. (config_pbl_scheme .eq. 'off'     .or. &
+           config_pbl_scheme .eq. 'bl_mynn' .or. &
            config_pbl_scheme .eq. 'bl_ysu' )) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for pbl_scheme: ', &
@@ -232,8 +231,8 @@
  endif
 
 !surface-layer scheme:
- if(.not. (config_sfclayer_scheme .eq. 'off'           .or.    &
-           config_sfclayer_scheme .eq. 'sf_mynn'       .or. &
+ if(.not. (config_sfclayer_scheme .eq. 'off'     .or.    &
+           config_sfclayer_scheme .eq. 'sf_mynn' .or. &
            config_sfclayer_scheme .eq. 'sf_monin_obukhov')) then
  
     write(mpas_err_message,'(A,A10)') 'illegal value for surface layer scheme: ', &
