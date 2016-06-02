@@ -138,8 +138,6 @@
        if(.not.allocated(tsq_p)     ) allocate(tsq_p(ims:ime,kms:kme,jms:jme)     )
        if(.not.allocated(sh3d_p)    ) allocate(sh3d_p(ims:ime,kms:kme,jms:jme)    )
        if(.not.allocated(elpbl_p)   ) allocate(elpbl_p(ims:ime,kms:kme,jms:jme)   )
-       if(.not.allocated(qcbl_p)    ) allocate(qcbl_p(ims:ime,kms:kme,jms:jme)    )
-       if(.not.allocated(cldfrabl_p)) allocate(cldfrabl_p(ims:ime,kms:kme,jms:jme))
        write(0,*) '--- end allocate sf_mynn.'
 
     case default
@@ -207,8 +205,6 @@
        if(allocated(tsq_p)     ) deallocate(tsq_p     )
        if(allocated(sh3d_p)    ) deallocate(sh3d_p    )
        if(allocated(elpbl_p)   ) deallocate(elpbl_p   )
-       if(allocated(qcbl_p)    ) deallocate(qcbl_p    )
-       if(allocated(cldfrabl_p)) deallocate(cldfrabl_p)
        write(0,*) '--- end deallocate sf_mynn.'
 
     case default
@@ -368,8 +364,6 @@
           tsq_p(i,k,j)      = tsq(k,i)
           sh3d_p(i,k,j)     = sh3d(k,i)
           elpbl_p(i,k,j)    = el_pbl(k,i)
-          qcbl_p(i,k,j)     = 0._RKIND
-          cldfrabl_p(i,k,j) = 0._RKIND
        enddo
        enddo
        enddo
