@@ -199,14 +199,22 @@ contains
 
     type(domain_type), intent(inout) :: domain
 
-    ! set non activated variable pointers to other memory
-    call init_column_non_activated_pointers(domain)
+    logical, pointer :: &
+         config_use_column_package
 
-    ! initialize the column package tracer object
-    call init_column_tracer_object(domain, ciceTracerObject)
+    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
+    if (config_use_column_package) then
 
-    ! initialize the column package parameters
-    call init_column_package_parameters(domain, ciceTracerObject)
+       ! set non activated variable pointers to other memory
+       call init_column_non_activated_pointers(domain)
+
+       ! initialize the column package tracer object
+       call init_column_tracer_object(domain, ciceTracerObject)
+
+       ! initialize the column package parameters
+       call init_column_package_parameters(domain, ciceTracerObject)
+
+    endif
 
   end subroutine cice_init_column_physics_package_parameters
 

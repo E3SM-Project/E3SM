@@ -30,4 +30,10 @@
 		<var name="broadbandAlbedo" type="real" dimensions="nCells Time" units="-"
 			description="snow/sea ice broadband albedo"
 		/>
+		<var name="coriolisStressVertexU" type="real" dimensions="nVertices Time" units=""
+			description="Coriolis stress in U direction"
+		/>
+		<var name="coriolisStressVertexV" type="real" dimensions="nVertices Time" units=""
+			description="Coriolis stress in V direction"
+		/>
 	</var_struct>
