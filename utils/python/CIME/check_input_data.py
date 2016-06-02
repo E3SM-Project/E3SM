@@ -41,17 +41,18 @@ def download_if_in_repo(svn_loc, input_data_root, rel_path):
 
     stat, out, err = run_cmd("svn --non-interactive --trust-server-cert ls %s" % full_url, ok_to_fail=True)
     if (stat != 0):
-        logging.warning("SVN repo '%s' does not have file '%s'" % (svn_loc, full_url))
+        logging.warning("FAIL: SVN repo '%s' does not have file '%s'\nReason:%s\n%s\n" % (svn_loc, full_url, out, err))
         return False
     else:
         stat, output, errput = \
             run_cmd("svn --non-interactive --trust-server-cert export %s %s" % (full_url, full_path), ok_to_fail=True)
         if (stat != 0):
-            logging.warning("svn export failed with output: %s and errput %s" % (output, errput))
+            logging.warning("svn export failed with output: %s and errput %s\n" % (output, errput))
             return False
         else:
             # Make sure it is group r/w
             os.chmod(full_path, 0664)
+            logging.info("SUCCESS\n")
             return True
 
 def check_input_data(case=None, svn_loc=None, input_data_root=None, data_list_dir="Buildconf", download=False):
