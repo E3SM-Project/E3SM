@@ -9,10 +9,10 @@ jobs.
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
 from CIME.utils import expect
-from CIME.env_module        import EnvModule
 from CIME.preview_namelists        import preview_namelists
 from CIME.check_lockedfiles        import check_lockedfiles
 from CIME.XML.batch                 import Batch
+from CIME.XML.env_mach_specific  import EnvMachSpecific
 from CIME.batch_utils import BatchUtils
 
 logger = logging.getLogger(__name__)
@@ -58,10 +58,13 @@ def submit(case, job=None, resubmit=False, no_batch=False, prereq_jobid=None):
         case.set_value("IS_FIRST_RUN", False)
 
     #Load Modules
-    env_module = EnvModule(case.get_value("MACH"), case.get_value("COMPILER"),
-                           case.get_value("CIMEROOT"),caseroot, case.get_value("MPILIB"),
-                           case.get_value("DEBUG"))
-    env_module.load_env_for_case()
+    env_module = case._get_env("mach_specific")
+
+
+    env_module.load_env_for_case(compiler=case.get_value("COMPILER"),
+                                 debug=case.get_value("DEBUG"),
+                                 mpilib=case.get_value("MPILIB"))
+
     batchobj = BatchUtils(job, case, prereq_jobid=prereq_jobid, no_batch=no_batch)
     case.set_value("RUN_WITH_SUBMIT",True)
     case.flush()
