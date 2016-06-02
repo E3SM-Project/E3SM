@@ -323,7 +323,6 @@
 			<var name="re_snow" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
 			<var name="nt_c" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
 			<var name="mu_c" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-			<var name="nwfa2d" packages="mp_thompson_aerosols_in"/>
 			<var name="xtime"/>
 			<var name="u"/>
 			<var name="w"/>
@@ -896,8 +895,6 @@
                      <var name="nr"     array_group="number"   packages="mp_thompson_aerosols_in;mp_thompson_in"/>
                      <var name="ni"     array_group="number"   packages="bl_mynn_in;mp_thompson_aerosols_in;mp_thompson_in"/>
                      <var name="nc"     array_group="number"   packages="bl_mynn_in;mp_thompson_aerosols_in"/>
-                     <var name="nwfa"   array_group="aerosols" packages="mp_thompson_aerosols_in"/>
-                     <var name="nifa"   array_group="aerosols" packages="mp_thompson_aerosols_in"/>
                 </var_array>
 
                 <var_array name="aerosols" type="real" dimensions="nAerLevels nCells Time">
@@ -1118,8 +1115,6 @@
                      <var name="tend_nr"     name_in_code="nr"     array_group="number"   packages="mp_thompson_aerosols_in;mp_thompson_in"/>
                      <var name="tend_ni"     name_in_code="ni"     array_group="number"   packages="bl_mynn_in;mp_thompson_aerosols_in;mp_thompson_in"/>
                      <var name="tend_nc"     name_in_code="nc"     array_group="number"   packages="bl_mynn_in;mp_thompson_aerosols_in"/>
-                     <var name="tend_nwfa"   name_in_code="nwfa"   array_group="aerosols" packages="mp_thompson_aerosols_in"/>
-                     <var name="tend_nifa"   name_in_code="nifa"   array_group="aerosols" packages="mp_thompson_aerosols_in"/>
                 </var_array>
         </var_struct>
 
@@ -1224,7 +1219,6 @@
                 <var name="graupelncv"   type="real"    dimensions="nCells Time" packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
                 <var name="snowncv"      type="real"    dimensions="nCells Time" packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
                 <var name="sr"           type="real"    dimensions="nCells Time" packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                <var name="nwfa2d"       type="real"    dimensions="nCells Time" packages="mp_thompson_aerosols_in"/>
 
                 <!-- added convective diagnostics, WCS 201503 -->
                 <var name="refl10cm_1km"           type="real"     dimensions="nCells Time"/>
