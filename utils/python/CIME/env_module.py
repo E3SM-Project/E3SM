@@ -178,7 +178,7 @@ class EnvModule(object):
                 del(os.environ[key])
             else:
                 os.environ[key] = newenv[key]
-            
+
     def _load_dotkit_modules(self, modules_to_load):
         expect(False, "Not yet implemented")
 
