@@ -156,10 +156,8 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	}
 
 	/* Handle MPI errors. */
-	LOG((2, "PIOc_put_vars_tc bcasting mpierr = %d", mpierr));
 	if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->comproot, ios->my_comm)))
 	    return check_mpi(file, mpierr2, __FILE__, __LINE__);
-	LOG((2, "PIOc_put_vars_tc checking mpierr = %d", mpierr));
 	if (mpierr)
 	    check_mpi(file, mpierr, __FILE__, __LINE__);
 	LOG((2, "PIOc_put_vars_tc checked mpierr = %d", mpierr));
@@ -171,6 +169,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 #ifdef _PNETCDF
 	if (file->iotype == PIO_IOTYPE_PNETCDF)
 	{
+	    LOG((2, "PIOc_put_vars_tc calling pnetcdf function"));
 	    vdesc = file->varlist + varid;
 	    if (vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0)
 		vdesc->request = realloc(vdesc->request,
@@ -214,6 +213,9 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 #endif /* _PNETCDF */
 #ifdef _NETCDF
 	if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+	{
+	    LOG((2, "PIOc_put_vars_tc calling netcdf function file->iotype = %d",
+		 file->iotype));	    
 	    switch(xtype)
 	    {
 	    case NC_BYTE:
@@ -270,14 +272,17 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 				   (ptrdiff_t *)stride, buf);
 #endif /* _NETCDF4 */
 	    }
+	}
 #endif /* _NETCDF */
     }
 
     /* Broadcast and check the return code. */
+    LOG((2, "PIOc_put_vars_tc bcasting netcdf return code %d", ierr));
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
 	return check_mpi(file, mpierr, __FILE__, __LINE__);
     if (ierr)
 	return check_netcdf(file, ierr, __FILE__, __LINE__);
+    LOG((2, "PIOc_put_vars_tc bcast netcdf return code %d complete", ierr));
 
     return ierr;
 }

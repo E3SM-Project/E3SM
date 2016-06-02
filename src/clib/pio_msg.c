@@ -236,9 +236,7 @@ int inq_dim_handler(iosystem_desc_t *ios, int msg)
     int mpierr;
     int ret;
 
-    int my_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    LOG((1, "inq_dim_handler\n", my_rank));
+    LOG((1, "inq_dim_handler"));
 
     /* Get the parameters for this function that the the comp master
      * task is broadcasting. */
@@ -250,8 +248,8 @@ int inq_dim_handler(iosystem_desc_t *ios, int msg)
 	return PIO_EIO;
     if ((mpierr = MPI_Bcast(&len_present, 1, MPI_CHAR, 0, ios->intercomm)))
 	return PIO_EIO;
-    printf("%d inq_handler name_present = %d len_present = %d\n",
-	   name_present, len_present);
+    LOG((2, "inq_handler name_present = %d len_present = %d", name_present,
+	 len_present));
 
     /* Set the non-null pointers. */
     if (name_present)
