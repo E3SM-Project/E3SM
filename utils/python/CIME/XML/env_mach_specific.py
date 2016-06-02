@@ -25,7 +25,7 @@ class EnvMachSpecific(EnvBase):
 
     def get_values(self, item, attribute={}, resolved=True, subgroup=None):
         """Returns the value as a string of the first xml element with item as attribute value.
-        <elememt_name attribute='attribute_value>value</element_name>"""
+        <element_name attribute='attribute_value>value</element_name>"""
 
         logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , item, attribute, resolved, subgroup)
 
@@ -240,11 +240,6 @@ class EnvMachSpecific(EnvBase):
     def get_module_system_type(self):
         """
         Return the module system used on this machine
-
-        >>> machobj = Machines()
-        >>> name = machobj.set_machine("edison")
-        >>> machobj.get_module_system_type()
-        'module'
         """
         module_system = self.get_node("module_system")
         return module_system.get("type")
