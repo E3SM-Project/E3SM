@@ -161,7 +161,6 @@
 !pbl scheme:
  if(.not. (config_pbl_scheme .eq. 'off'           .or. &
            config_pbl_scheme .eq. 'bl_mynn'       .or. &
-           config_pbl_scheme .eq. 'bl_mynn_wrf38' .or. &
            config_pbl_scheme .eq. 'bl_ysu' )) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for pbl_scheme: ', &

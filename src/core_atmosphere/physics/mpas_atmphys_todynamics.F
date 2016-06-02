@@ -130,13 +130,6 @@
 
  call mpas_pool_get_array(tend,'rt_diabatic_tend',tend_diabatic)
 
- call mpas_pool_get_array(tend_physics,'rublten' ,rublten )
- call mpas_pool_get_array(tend_physics,'rvblten' ,rvblten )
- call mpas_pool_get_array(tend_physics,'rthblten',rthblten)
- call mpas_pool_get_array(tend_physics,'rqvblten',rqvblten)
- call mpas_pool_get_array(tend_physics,'rqcblten',rqcblten)
- call mpas_pool_get_array(tend_physics,'rqiblten',rqiblten)
-
  call mpas_pool_get_array(tend_physics, 'rthratenlw', rthratenlw)
  call mpas_pool_get_array(tend_physics, 'rthratensw', rthratensw)
 
@@ -167,6 +160,13 @@
  
 !add coupled tendencies due to PBL processes:
  if(config_pbl_scheme .ne. 'off') then
+    call mpas_pool_get_array(tend_physics,'rublten' ,rublten )
+    call mpas_pool_get_array(tend_physics,'rvblten' ,rvblten )
+    call mpas_pool_get_array(tend_physics,'rthblten',rthblten)
+    call mpas_pool_get_array(tend_physics,'rqvblten',rqvblten)
+    call mpas_pool_get_array(tend_physics,'rqcblten',rqcblten)
+    call mpas_pool_get_array(tend_physics,'rqiblten',rqiblten)
+
     allocate(rublten_Edge(nVertLevels,nEdges))
     rublten_Edge(:,:) = 0.
     call tend_toEdges(block,mesh,rublten,rvblten,rublten_Edge)
@@ -191,7 +191,7 @@
 
     pbl_select: select case (trim(pbl_scheme))
 
-       case("bl_mynn","bl_mynn_wrf38")
+       case("bl_mynn")
           call mpas_pool_get_dimension(state,'index_ni',index_ni)
           tend_ni => tend_scalars(index_ni,:,:)
           tend_ni = 0._RKIND
