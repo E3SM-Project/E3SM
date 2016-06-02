@@ -329,25 +329,32 @@ contains
 
     integer :: &
          iVertex
+    logical, pointer :: &
+         config_calculate_coriolis
 
-    block => domain % blocklist
-    do while (associated(block))
+    call MPAS_pool_get_config(domain % configs, "config_calculate_coriolis", config_calculate_coriolis)
+    if (config_calculate_coriolis) then
 
-       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       block => domain % blocklist
+       do while (associated(block))
 
-       call MPAS_pool_get_dimension(meshPool, "nVertices", nVertices)
+          call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
 
-       call MPAS_pool_get_array(meshPool, "latVertex", latVertex)
-       call MPAS_pool_get_array(meshPool, "fVertex", fVertex)
+          call MPAS_pool_get_dimension(meshPool, "nVertices", nVertices)
 
-       do iVertex = 1, nVertices
+          call MPAS_pool_get_array(meshPool, "latVertex", latVertex)
+          call MPAS_pool_get_array(meshPool, "fVertex", fVertex)
+
+          do iVertex = 1, nVertices
        
-          fVertex(iVertex) = 2.0_RKIND * omega * sin(latVertex(iVertex))
+             fVertex(iVertex) = 2.0_RKIND * omega * sin(latVertex(iVertex))
 
-       enddo ! iVertex
+          enddo ! iVertex
 
-       block => block % next
-    enddo
+          block => block % next
+       enddo
+
+    endif
 
   end subroutine coriolis_parameter!}}}
 

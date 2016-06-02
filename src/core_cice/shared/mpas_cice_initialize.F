@@ -67,11 +67,6 @@ contains
     type(block_type), pointer :: &
          block
 
-    logical, pointer :: &
-         config_use_advection
-
-    call MPAS_pool_get_config(domain % configs, "config_use_advection", config_use_advection)
-
     ! initialize junk values
     call init_junk_values(domain)
 
@@ -320,6 +315,10 @@ contains
                   block, &
                   domain % configs)
 
+          else if (trim(config_initial_condition_type) == "none") then
+
+             continue
+
           else
 
              write(*,*) "Ice initial condition type unknown!"
@@ -382,6 +381,10 @@ contains
              call init_ice_velocity_special(&
                   block, &
                   domain % configs)
+
+          else if (trim(config_initial_velocity_type) == "none") then
+
+             continue
 
           else
 
@@ -1706,23 +1709,14 @@ contains
          biogeochemistry
 
     real(kind=RKIND), dimension(:), pointer :: &
-         airLevelHeight, &
-         airDensity, &
          uAirVelocity, &
          vAirVelocity, &
-         airPotentialTemperature, &
-         airTemperature, &
-         airSpecificHumidity, &
-         longwaveDown, &
-         uAirStress, &
-         vAirStress, &
          seaSurfaceSalinity, &
          seaFreezingTemperature, &
          seaSurfaceTemperature, &
-         oceanMixedLayerDepth, &
-         longwaveUp, &
          windSpeed, &
-         airDragCoefficient
+         airDragCoefficient, &
+         longwaveUp
 
     real(kind=RKIND), dimension(:), pointer :: & 
          oceanNitrateConc, &
@@ -1780,30 +1774,11 @@ contains
        call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCoupling)
        call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
 
-       call MPAS_pool_get_array(atmosCoupling, "airLevelHeight", airLevelHeight)
-       call MPAS_pool_get_array(atmosCoupling, "airDensity", airDensity)
        call MPAS_pool_get_array(atmosCoupling, "uAirVelocity", uAirVelocity)
        call MPAS_pool_get_array(atmosCoupling, "vAirVelocity", vAirVelocity)
-       call MPAS_pool_get_array(atmosCoupling, "airPotentialTemperature", airPotentialTemperature)
-       call MPAS_pool_get_array(atmosCoupling, "airTemperature", airTemperature)
-       call MPAS_pool_get_array(atmosCoupling, "airSpecificHumidity", airSpecificHumidity)
-       call MPAS_pool_get_array(atmosCoupling, "longwaveDown", longwaveDown)
 
-       call MPAS_pool_get_array(atmosForcing, "uAirStress", uAirStress)
-       call MPAS_pool_get_array(atmosForcing, "vAirStress", vAirStress)
        call MPAS_pool_get_array(atmosForcing, "windSpeed", windSpeed)
 
-       airLevelHeight          = 10.0_RKIND
-       airDensity              = 1.3_RKIND
-       uAirVelocity            = 5.0_RKIND
-       vAirVelocity            = 5.0_RKIND
-       airPotentialTemperature = 253.0_RKIND
-       airTemperature          = 253.0_RKIND
-       airSpecificHumidity     = 0.0006_RKIND
-       longwaveDown            = 180.0_RKIND
-       
-       uAirStress              = 0.05_RKIND
-       vAirStress              = 0.05_RKIND
        windSpeed = sqrt(uAirVelocity**2 + vAirVelocity**2)
 
        !-------------------------------------------------------------
@@ -1818,15 +1793,12 @@ contains
        call MPAS_pool_get_array(oceanCoupling, "seaSurfaceSalinity", seaSurfaceSalinity)
        call MPAS_pool_get_array(oceanCoupling, "seaFreezingTemperature", seaFreezingTemperature)       
        call MPAS_pool_get_array(oceanCoupling, "seaSurfaceTemperature", seaSurfaceTemperature)
-       call MPAS_pool_get_array(oceanCoupling, "oceanMixedLayerDepth", oceanMixedLayerDepth)
 
        call MPAS_pool_get_config(block % configs, "config_do_restart", config_do_restart)
 
-       seaSurfaceSalinity    = 34.0_RKIND
        do iCell = 1, nCells
           seaFreezingTemperature(iCell) = colpkg_liquidus_temperature(seaSurfaceSalinity(iCell))
        enddo ! iCell
-       oceanMixedLayerDepth  = 20.0_RKIND
 
        ! sea surface temperature is not initialized if we're restarting
        if (.not. config_do_restart) then

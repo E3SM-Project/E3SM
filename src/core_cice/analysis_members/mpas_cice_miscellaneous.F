@@ -267,7 +267,8 @@ contains
            miscellaneousAMPool, &
            tracersAggregatePool, &
            shortwavePool, &
-           icestatePool
+           icestatePool, &
+           velocitySolverPool
 
       real(kind=RKIND), dimension(:,:), pointer :: &
            iceSalinityCell
@@ -279,69 +280,116 @@ contains
            albedoVisibleDirectCell, &
            albedoIRDirectCell, &
            albedoVisibleDiffuseCell, &
-           albedoIRDiffuseCell
+           albedoIRDiffuseCell, &
+           coriolisStressVertexU, &
+           coriolisStressVertexV, &
+           uVelocity, &
+           vVelocity, &
+           totalMassVertexfVertex
       
       integer, pointer :: &
            nCellsSolve, &
+           nVerticesSolve, &
            nIceLayers
 
       integer :: &
-           iCell
+           iCell, &
+           iVertex
+
+      logical, pointer :: &
+           config_use_column_package, &
+           config_use_column_shortwave, &
+           config_use_velocity_solver
       
       err = 0
 
+      call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
+      call MPAS_pool_get_config(domain % configs, "config_use_column_shortwave", config_use_column_shortwave)
+      call MPAS_pool_get_config(domain % configs, "config_use_velocity_solver", config_use_velocity_solver)
+
       ! grid cell mean salinity
-      block => domain % blocklist
-      do while(associated(block))
+      if (config_use_column_package) then
+         block => domain % blocklist
+         do while(associated(block))
 
-         call MPAS_pool_get_subpool(block % structs, "miscellaneousAM", miscellaneousAMPool)
-         call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
-         
-         call MPAS_pool_get_array(tracersAggregatePool, "iceSalinityCell", iceSalinityCell)
-         call MPAS_pool_get_array(miscellaneousAMPool, "bulkSalinity", bulkSalinity)
+            call MPAS_pool_get_subpool(block % structs, "miscellaneousAM", miscellaneousAMPool)
+            call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
 
-         call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
-         call MPAS_pool_get_dimension(block % dimensions, "nIceLayers", nIceLayers)
-         
-         do iCell = 1, nCellsSolve
-            
-            bulkSalinity(iCell) = sum(iceSalinityCell(:,iCell)) / real(nIceLayers,RKIND)
+            call MPAS_pool_get_array(tracersAggregatePool, "iceSalinityCell", iceSalinityCell)
+            call MPAS_pool_get_array(miscellaneousAMPool, "bulkSalinity", bulkSalinity)
 
-         enddo ! iCell
+            call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
+            call MPAS_pool_get_dimension(block % dimensions, "nIceLayers", nIceLayers)
 
-         block => block % next
-      enddo
+            do iCell = 1, nCellsSolve
+
+               bulkSalinity(iCell) = sum(iceSalinityCell(:,iCell)) / real(nIceLayers,RKIND)
+
+            enddo ! iCell
+
+            block => block % next
+         enddo
+      endif
 
       ! snow/ice broad band albedo
-      block => domain % blocklist
-      do while(associated(block))
+      if (config_use_column_package .and. config_use_column_shortwave) then
+         block => domain % blocklist
+         do while(associated(block))
 
-         call MPAS_pool_get_subpool(block % structs, "miscellaneousAM", miscellaneousAMPool)
-         call MPAS_pool_get_subpool(block % structs, "shortwave", shortwavePool)
-         call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
+            call MPAS_pool_get_subpool(block % structs, "miscellaneousAM", miscellaneousAMPool)
+            call MPAS_pool_get_subpool(block % structs, "shortwave", shortwavePool)
+            call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
 
-         call MPAS_pool_get_array(miscellaneousAMPool, "broadbandAlbedo", broadbandAlbedo)
-         call MPAS_pool_get_array(shortwavePool, "albedoVisibleDirectCell", albedoVisibleDirectCell)
-         call MPAS_pool_get_array(shortwavePool, "albedoIRDirectCell", albedoIRDirectCell)
-         call MPAS_pool_get_array(shortwavePool, "albedoVisibleDiffuseCell", albedoVisibleDiffuseCell)
-         call MPAS_pool_get_array(shortwavePool, "albedoIRDiffuseCell", albedoIRDiffuseCell)
-         call MPAS_pool_get_array(icestatePool, "iceAreaCellInitial", iceAreaCellInitial)
+            call MPAS_pool_get_array(miscellaneousAMPool, "broadbandAlbedo", broadbandAlbedo)
+            call MPAS_pool_get_array(shortwavePool, "albedoVisibleDirectCell", albedoVisibleDirectCell)
+            call MPAS_pool_get_array(shortwavePool, "albedoIRDirectCell", albedoIRDirectCell)
+            call MPAS_pool_get_array(shortwavePool, "albedoVisibleDiffuseCell", albedoVisibleDiffuseCell)
+            call MPAS_pool_get_array(shortwavePool, "albedoIRDiffuseCell", albedoIRDiffuseCell)
+            call MPAS_pool_get_array(icestatePool, "iceAreaCellInitial", iceAreaCellInitial)
 
-         call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
+            call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
 
-         do iCell = 1, nCellsSolve
+            do iCell = 1, nCellsSolve
 
-            broadbandAlbedo(iCell) = &
-                 (awtvdr * albedoVisibleDirectCell(iCell) + &
-                  awtidr * albedoIRDirectCell(iCell) + &
-                  awtvdf * albedoVisibleDiffuseCell(iCell) + &
-                  awtidf * albedoIRDiffuseCell(iCell)) * &
-                 iceAreaCellInitial(iCell)
+               broadbandAlbedo(iCell) = &
+                    (awtvdr * albedoVisibleDirectCell(iCell) + &
+                    awtidr * albedoIRDirectCell(iCell) + &
+                    awtvdf * albedoVisibleDiffuseCell(iCell) + &
+                    awtidf * albedoIRDiffuseCell(iCell)) * &
+                    iceAreaCellInitial(iCell)
 
-         enddo ! iCell
+            enddo ! iCell
 
-         block => block % next
-      enddo
+            block => block % next
+         enddo
+      endif
+
+      ! coriolis stress
+      if (config_use_velocity_solver) then
+         block => domain % blocklist
+         do while(associated(block))
+
+            call MPAS_pool_get_subpool(block % structs, "miscellaneousAM", miscellaneousAMPool)
+            call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+
+            call MPAS_pool_get_array(miscellaneousAMPool, "coriolisStressVertexU", coriolisStressVertexU)
+            call MPAS_pool_get_array(miscellaneousAMPool, "coriolisStressVertexV", coriolisStressVertexV)
+            call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
+            call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
+            call MPAS_pool_get_array(velocitySolverPool, "totalMassVertexfVertex", totalMassVertexfVertex)
+
+            call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+
+            do iVertex = 1, nVerticesSolve
+
+               coriolisStressVertexU(iVertex) =  vVelocity(iVertex) * totalMassVertexfVertex(iVertex)
+               coriolisStressVertexV(iVertex) = -uVelocity(iVertex) * totalMassVertexfVertex(iVertex)
+
+            enddo ! iVertex
+
+            block => block % next
+         enddo
+      endif
 
    end subroutine cice_compute_miscellaneous!}}}
 
