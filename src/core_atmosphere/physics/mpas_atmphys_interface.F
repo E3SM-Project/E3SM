@@ -557,7 +557,7 @@
 !additional initialization as function of cloud microphysics scheme:
  microp_select_init: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
+    case ("mp_thompson","mp_wsm6")
        do j = jts, jte
        do k = kts, kte
        do i = its, ite
@@ -570,7 +570,7 @@
 
     microp2_select: select case(microp_scheme)
 
-       case("mp_thompson","mp_thompson_aerosols")
+       case("mp_thompson")
           !number concentrations:
           do j = jts,jte
           do i = its,ite
@@ -591,29 +591,6 @@
           enddo
           enddo
           enddo
-
-       microp3_select: select case(microp_scheme)
-
-          case("mp_thompson_aerosols")
-             do j = jts, jte
-             do i = its, ite
-                nwfa2d_p(i,j) = nwfa2d(i)
-             enddo
-             enddo
-
-             do j = jts, jte
-             do k = kts, kte
-             do i = its, ite
-                nc_p(i,k,j)   = nc(k,i)
-                nwfa_p(i,k,j) = nwfa(k,i)
-                nifa_p(i,k,j) = nifa(k,i)
-             enddo
-             enddo
-             enddo
-             
-          case default
-
-       end select microp3_select
 
        case default
 
@@ -770,7 +747,7 @@
 !variables specific to different cloud microphysics schemes:
  microp_select_init: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
+    case ("mp_thompson","mp_wsm6")
        do j = jts, jte
        do k = kts, kte
        do i = its, ite
@@ -783,7 +760,7 @@
 
     microp2_select: select case(microp_scheme)
 
-       case("mp_thompson","mp_thompson_aerosols")
+       case("mp_thompson")
           !number concentrations:
           do j = jts, jte
           do k = kts, kte
@@ -798,29 +775,6 @@
           enddo
           enddo
           enddo
-
-       microp3_select: select case(microp_scheme)
-
-          case("mp_thompson_aerosols")
-             do j = jts, jte
-             do i = its, ite
-                nwfa2d(i) = nwfa2d_p(i,j)
-             enddo
-             enddo
-
-             do j = jts, jte
-             do k = kts, kte
-             do i = its, ite
-                nc(k,i)   = nc_p(i,k,j)
-                nwfa(k,i) = nwfa_p(i,k,j)
-                nifa(k,i) = nifa_p(i,k,j)
-             enddo
-             enddo
-             enddo
-             
-          case default
-
-       end select microp3_select
 
        case default
 

@@ -102,7 +102,7 @@
 
  microp_select: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
+    case ("mp_thompson","mp_wsm6")
        !mass mixing ratios:
        if(.not.allocated(qi_p)        ) allocate(qi_p(ims:ime,kms:kme,jms:jme))
        if(.not.allocated(qs_p)        ) allocate(qs_p(ims:ime,kms:kme,jms:jme))
@@ -117,7 +117,7 @@
 
     microp2_select: select case(microp_scheme)
 
-       case("mp_thompson","mp_thompson_aerosols")
+       case("mp_thompson")
           !number concentrations:
           if(.not.allocated(ntc_p)) allocate(ntc_p(ims:ime,jms:jme))
           if(.not.allocated(muc_p)) allocate(muc_p(ims:ime,jms:jme))
@@ -129,20 +129,6 @@
           if(.not.allocated(recloud_p) ) allocate(recloud_p(ims:ime,kms:kme,jms:jme) )
           if(.not.allocated(reice_p)   ) allocate(reice_p(ims:ime,kms:kme,jms:jme)   )
           if(.not.allocated(resnow_p)  ) allocate(resnow_p(ims:ime,kms:kme,jms:jme)  )
-
-       microp3_select: select case(microp_scheme)
-
-          case("mp_thompson_aerosols")
-             !number concentrations:
-             if(.not.allocated(nc_p)) allocate(nc_p(ims:ime,kms:kme,jms:jme))
-             !aerosol concentrations:
-             if(.not.allocated(nifa_p)  ) allocate(nifa_p(ims:ime,kms:kme,jms:jme))
-             if(.not.allocated(nwfa_p)  ) allocate(nwfa_p(ims:ime,kms:kme,jms:jme))
-             if(.not.allocated(nwfa2d_p)) allocate(nwfa2d_p(ims:ime,jms:jme)      )
-
-          case default
-
-       end select microp3_select
 
        case default
 
@@ -178,7 +164,7 @@
 
  microp_select: select case(microp_scheme)
 
-    case ("mp_thompson","mp_thompson_aerosols","mp_wsm6")
+    case ("mp_thompson","mp_wsm6")
        !mass mixing ratios:
        if(allocated(qi_p)         ) deallocate(qi_p         )
        if(allocated(qs_p)         ) deallocate(qs_p         )
@@ -193,7 +179,7 @@
 
     microp2_select: select case(microp_scheme)
 
-       case("mp_thompson","mp_thompson_aerosols")
+       case("mp_thompson")
           !number concentrations:
           if(allocated(ntc_p)) deallocate(ntc_p)
           if(allocated(muc_p)) deallocate(muc_p)
@@ -205,20 +191,6 @@
           if(allocated(recloud_p) ) deallocate(recloud_p )
           if(allocated(reice_p)   ) deallocate(reice_p   )
           if(allocated(resnow_p)  ) deallocate(resnow_p  )
-
-       microp3_select: select case(microp_scheme)
-
-          case("mp_thompson_aerosols")
-             !number concentrations:
-             if(allocated(nc_p)) deallocate(nc_p)
-             !aerosol concentrations:
-             if(allocated(nifa_p)  ) deallocate(nifa_p  )
-             if(allocated(nwfa_p)  ) deallocate(nwfa_p  )
-             if(allocated(nwfa2d_p)) deallocate(nwfa2d_p)
-
-          case default
-
-       end select microp3_select
 
        case default
 
@@ -255,11 +227,6 @@
         call thompson_init
         call init_thompson_clouddroplets_forMPAS(mesh,sfc_input,diag_physics)
         write(0,*) '--- end subroutine thompson'
-
-     case("mp_thompson_aerosols")
-        call thompson_init
-        call init_thompson_clouddroplets_forMPAS(mesh,sfc_input,diag_physics)
-        call init_thompson_aerosols_forMPAS(dminfo,mesh,state,time_lev,diag_physics)
 
      case("mp_wsm6")
 !       write(0,*) '--- enter subroutine wsm6init:'
@@ -368,30 +335,6 @@
           istep = istep + 1
           enddo
 
-       case ("mp_thompson_aerosols")
-          istep = 1
-          do while (istep .le. n_microp)
-          call mp_gt_driver( &
-                  th        = th_p        , qv         = qv_p         , qc         = qc_p         , &
-                  qr        = qr_p        , qi         = qi_p         , qs         = qs_p         , &
-                  qg        = qg_p        , ni         = ni_p         , nr         = nr_p         , &
-                  pii       = pi_p        , p          = pres_p       , dz         = dz_p         , & 
-                  w         = w_p         , dt_in      = dt_microp    , itimestep  = itimestep    , &
-                  rainnc    = rainnc_p    , rainncv    = rainncv_p    , snownc     = snownc_p     , &
-                  snowncv   = snowncv_p   , graupelnc  = graupelnc_p  , graupelncv = graupelncv_p , &
-                  sr        = sr_p        , rainprod   = rainprod_p   , evapprod   = evapprod_p   , &
-                  re_cloud  = recloud_p   , re_ice     = reice_p      , re_snow    = resnow_p     , &
-                  has_reqc  = has_reqc    , has_reqi   = has_reqi     , has_reqs   = has_reqs     , &
-                  nc        = nc_p        , nifa       = nifa_p       , nwfa       = nwfa_p       , & 
-                  nwfa2d    = nwfa2d_p    , ntc        = ntc_p        , muc        = muc_p        , &
-                  ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde           , &
-                  ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme           , &
-                  its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte             &
-                           )
-          write(0,*) '--- end mp_thompson_aerosols:',istep
-          istep = istep + 1
-          enddo
-
     case ("mp_wsm6")
       call wsm6( &
                   th      = th_p        , q          = qv_p         , qc      = qc_p      , &
@@ -420,8 +363,7 @@
  
     ! Ensure that we only call compute_radar_reflectivity() if we are using an MPS that
     !    supports the computation of simulated radar reflectivity
-    if (trim(microp_scheme) == "mp_wsm6" .or. trim(microp_scheme) == "mp_thompson" .or. &
-        trim(microp_scheme) == "mp_thompson_aerosols") then
+    if (trim(microp_scheme) == "mp_wsm6" .or. trim(microp_scheme) == "mp_thompson") then
        call compute_radar_reflectivity(diag_physics)
     else
        write(0,*) '*** NOTICE: NOT computing simulated radar reflectivity'
@@ -681,7 +623,7 @@
        if(allocated(qg1d) ) deallocate(qg1d )
        if(allocated(dBz1d)) deallocate(dBZ1d)
 
-    case ("mp_thompson","mp_thompson_aerosols")
+    case ("mp_thompson")
 
        if(.not.allocated(p1d)  ) allocate(p1d(kts:kte)  )
        if(.not.allocated(t1d)  ) allocate(t1d(kts:kte)  )

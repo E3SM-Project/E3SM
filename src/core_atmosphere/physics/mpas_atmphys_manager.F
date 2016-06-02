@@ -676,7 +676,7 @@
 !... cloud microphysics:
  dt_microp = dt_dyn
  n_microp  = 1
- if(trim(microp_scheme)=='mp_thompson' .or. trim(microp_scheme)=='mp_thompson_aerosols') then
+ if(trim(microp_scheme)=='mp_thompson') then
     dt_microp = 90._RKIND
     n_microp  = max(nint(dt_dyn/dt_microp),1)
     dt_microp = dt_dyn / n_microp
