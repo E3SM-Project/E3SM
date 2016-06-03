@@ -1,41 +1,50 @@
-#! /bin/csh -f
+#!/usr/bin/env python2
+"""
+buildnml - create namelist
+"""
 
-set RUNDIR	= `./xmlquery  RUNDIR    -value`
-set NINST_WAV	= `./xmlquery  NINST_WAV -value`
-set WAV_NX	= `./xmlquery  WAV_NX	 -value`
-set WAV_NY	= `./xmlquery  WAV_NY	 -value`
+#Bootstrap python path
+import sys
+import os
+if "CIMEROOT" not in os.environ:
+    sys.stderr.write("ERROR: CIMEROOT must be defined\n")
+    sys.exit(1)
+sys.path.append(os.path.join(os.environ["CIMEROOT"],"scripts","Tools"))
 
-set NX = $WAV_NX
-set NY = $WAV_NY
+from standard_script_setup import *
+from CIME.case import Case
+import CIME.buildnml
 
-cd $RUNDIR
-set base_filename = "xwav_in"
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+	    description=description,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+	)
 
-set inst_counter = 1
+    CIME.utils.setup_standard_logging_options(parser)
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory for building namelist")
+    args = parser.parse_args(args[1:])
+    CIME.utils.handle_standard_logging_options(args)
+    return args.caseroot
 
-while ($inst_counter <= $NINST_WAV)
 
-    set inst_string = " "
-    if ($NINST_WAV > 1) then
-        set inst_string = $inst_counter
-        if ($inst_counter <= 999) set inst_string = 0$inst_string
-        if ($inst_counter <=  99) set inst_string = 0$inst_string
-        if ($inst_counter <=   9) set inst_string = 0$inst_string
-        set inst_string = _$inst_string
-    endif
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if "--test" in sys.argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
-    set in_filename = ${base_filename}${inst_string}
+    caseroot = parse_command_line(sys.argv, description)
+    case = Case(caseroot)
+    builder = CIME.buildnml.buildxnml(case,'xwav','WAV')
+    builder.build_namelist()
 
-    cat >! ${in_filename} << EOF
-$NX                  !  i-direction global dimension
-$NY                  !  j-direction global dimension
-1                    !  decomp_type  1=1d-by-lat, 2=1d-by-lon, 3=2d, 4=2d evensquare, 11=segmented
-0                    !  num of pes for i (type 3 only)
-0                    !  length of segments (type 4 only)
-EOF
 
-    @ inst_counter = $inst_counter + 1
-
-end
+if __name__ == "__main__":
+    _main_func(__doc__)
 
 
