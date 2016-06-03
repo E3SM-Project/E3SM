@@ -255,7 +255,7 @@ def probe_machine_name():
     >>> probe_machine_name() is not None
     True
     """
-    hostname = socket.gethostname().split(".")[0]
+    hostname = socket.getfqdn()
 
     machines = get_machines()
     for machine in machines:

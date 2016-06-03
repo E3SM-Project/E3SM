@@ -241,6 +241,9 @@
     <PIO_NUMTASKS>-1</PIO_NUMTASKS><PIO_STRIDE>-1</PIO_STRIDE> <PIO_TYPENAME>pnetcdf</PIO_TYPENAME> <PIO_ROOT>1</PIO_ROOT>
 </pes>
 
+<pes MACH="anlworkstation">
+    <PIO_TYPENAME>netcdf</PIO_TYPENAME>
+</pes>
 
 <!-------------------------------------------------------------------------------
   tasks/thread setup - GRID for one grid (not a pair of grids)
