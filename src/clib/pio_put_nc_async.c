@@ -175,6 +175,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 		vdesc->request = realloc(vdesc->request,
 					 sizeof(int) * (vdesc->nreqs + PIO_REQUEST_ALLOC_CHUNK));
 	    request = vdesc->request+vdesc->nreqs;
+	    LOG((2, "PIOc_put_vars_tc request = %d", vdesc->request));	    
 
 	    if(ios->io_rank == 0)
 		switch(xtype)
@@ -208,6 +209,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 		*request = PIO_REQ_NULL;
 
 	    vdesc->nreqs++;
+	    LOG((2, "PIOc_put_vars_tc flushing output buffer"));
 	    flush_output_buffer(file, false, 0);
 	}
 #endif /* _PNETCDF */
