@@ -253,7 +253,8 @@ typedef int MPI_Info;         /* handle */
 extern int MPI_Intercomm_create(MPI_Comm local_comm, int local_leader,
                           MPI_Comm peer_comm, int remote_leader,
                           int tag, MPI_Comm *newintercomm); 
-
+extern int MPI_Intercomm_merge(MPI_Comm intercomm, int high,
+			       MPI_Comm *newintercomm);
 extern int MPI_Cart_create(MPI_Comm comm_old, int ndims, int *dims,
                         int *periods, int reorder, MPI_Comm *comm_cart);
 extern int MPI_Cart_get(MPI_Comm comm, int maxdims, int *dims,

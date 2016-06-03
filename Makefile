@@ -19,6 +19,7 @@ SRCS_C		= mpi.c \
 		  handles.c \
                   comm.c \
 		  error.c \
+                  ic_merge.c \
                   group.c \
                   time.c \
                   pack.c \
