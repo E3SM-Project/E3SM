@@ -108,7 +108,6 @@
 
         <packages>
                 <package name="mp_kessler_in" description="parameterization of kessler microphysics."/>
-                <package name="mp_thompson_aerosols_in" description="parameterization of Thompson cloud microphysics with aerosols."/>
                 <package name="mp_thompson_in" description="parameterization of Thompson cloud microphysics."/>
                 <package name="mp_wsm6_in" description="parameterization of WSM6 cloud microphysics."/>
                 <package name="cu_grell_freitas_in" description="parameterization of Grell-Freitas convection."/>
@@ -318,13 +317,13 @@
 			<var name="east"/>
 			<var name="north"/>
 			<var_array name="scalars"/>
-			<var name="rainprod" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-			<var name="evapprod" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-			<var name="re_cloud" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-			<var name="re_ice" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-			<var name="re_snow" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-			<var name="nt_c" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-			<var name="mu_c" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
+			<var name="rainprod" packages="mp_thompson_in"/>
+			<var name="evapprod" packages="mp_thompson_in"/>
+			<var name="re_cloud" packages="mp_thompson_in"/>
+			<var name="re_ice" packages="mp_thompson_in"/>
+			<var name="re_snow" packages="mp_thompson_in"/>
+			<var name="nt_c" packages="mp_thompson_in"/>
+			<var name="mu_c" packages="mp_thompson_in"/>
 			<var name="xtime"/>
 			<var name="u"/>
 			<var name="w"/>
@@ -814,14 +813,13 @@
                 <var name="m_ps"      type="real"     dimensions="nCells Time"/>
                 <var_array name="scalars" type="real" dimensions="nVertLevels nCells Time">
                      <var name="qv"     array_group="moist"/>
-                     <var name="qc"     array_group="moist"    packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                     <var name="qr"     array_group="moist"    packages="mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                     <var name="qi"     array_group="moist"    packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                     <var name="qs"     array_group="moist"    packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                     <var name="qg"     array_group="moist"    packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                     <var name="nr"     array_group="number"   packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-                     <var name="ni"     array_group="number"   packages="bl_mynn_in;mp_thompson_aerosols_in;mp_thompson_in"/>
-                     <var name="nc"     array_group="number"   packages="bl_mynn_in;mp_thompson_aerosols_in"/>
+                     <var name="qc"     array_group="moist"    packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_in;mp_wsm6_in"/>
+                     <var name="qr"     array_group="moist"    packages="mp_kessler_in;mp_thompson_in;mp_wsm6_in"/>
+                     <var name="qi"     array_group="moist"    packages="bl_mynn_in;bl_ysu_in;cu_tiedtke_in;mp_thompson_in;mp_wsm6_in"/>
+                     <var name="qs"     array_group="moist"    packages="mp_thompson_in;mp_wsm6_in"/>
+                     <var name="qg"     array_group="moist"    packages="mp_thompson_in;mp_wsm6_in"/>
+                     <var name="nr"     array_group="number"   packages="mp_thompson_in"/>
+                     <var name="ni"     array_group="number"   packages="bl_mynn_in;mp_thompson_in"/>
                 </var_array>
 
                 <var_array name="aerosols" type="real" dimensions="nAerLevels nCells Time">
@@ -974,14 +972,13 @@
                 <!-- scalar tendencies -->
                 <var_array name="scalars_tend" type="real" dimensions="nVertLevels nCells Time">
                      <var name="tend_qv"     name_in_code="qv"     array_group="moist"/>
-                     <var name="tend_qc"     name_in_code="qc"     array_group="moist"    packages="bl_mynn_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                     <var name="tend_qr"     name_in_code="qr"     array_group="moist"    packages="mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                     <var name="tend_qi"     name_in_code="qi"     array_group="moist"    packages="bl_mynn_in;cu_tiedtke_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                     <var name="tend_qs"     name_in_code="qs"     array_group="moist"    packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                     <var name="tend_qg"     name_in_code="qg"     array_group="moist"    packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                     <var name="tend_nr"     name_in_code="nr"     array_group="number"   packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-                     <var name="tend_ni"     name_in_code="ni"     array_group="number"   packages="bl_mynn_in;mp_thompson_aerosols_in;mp_thompson_in"/>
-                     <var name="tend_nc"     name_in_code="nc"     array_group="number"   packages="bl_mynn_in;mp_thompson_aerosols_in"/>
+                     <var name="tend_qc"     name_in_code="qc"     array_group="moist"    packages="bl_mynn_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_in;mp_wsm6_in"/>
+                     <var name="tend_qr"     name_in_code="qr"     array_group="moist"    packages="mp_kessler_in;mp_thompson_in;mp_wsm6_in"/>
+                     <var name="tend_qi"     name_in_code="qi"     array_group="moist"    packages="bl_mynn_in;cu_tiedtke_in;mp_thompson_in;mp_wsm6_in"/>
+                     <var name="tend_qs"     name_in_code="qs"     array_group="moist"    packages="mp_thompson_in;mp_wsm6_in"/>
+                     <var name="tend_qg"     name_in_code="qg"     array_group="moist"    packages="mp_thompson_in;mp_wsm6_in"/>
+                     <var name="tend_nr"     name_in_code="nr"     array_group="number"   packages="mp_thompson_in"/>
+                     <var name="tend_ni"     name_in_code="ni"     array_group="number"   packages="bl_mynn_in;mp_thompson_in"/>
                 </var_array>
         </var_struct>
 
@@ -1079,26 +1076,26 @@
                 <!-- precipw   : precipitable water                                                            (kg/m2)  -->
                 <!-- refl10cm_max: maximum column reflectivity                                                   (dBz)  -->
 
-                <var name="refl10cm_max" type="real"    dimensions="nCells Time" packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                <var name="refl10cm_max" type="real"    dimensions="nCells Time" packages="mp_thompson_in;mp_wsm6_in"/>
 
-                <var name="i_rainnc"     type="integer" dimensions="nCells Time" packages="mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                <var name="rainncv"      type="real"    dimensions="nCells Time" packages="mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                <var name="graupelncv"   type="real"    dimensions="nCells Time" packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                <var name="snowncv"      type="real"    dimensions="nCells Time" packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                <var name="sr"           type="real"    dimensions="nCells Time" packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                <var name="i_rainnc"     type="integer" dimensions="nCells Time" packages="mp_kessler_in;mp_thompson_in;mp_wsm6_in"/>
+                <var name="rainncv"      type="real"    dimensions="nCells Time" packages="mp_kessler_in;mp_thompson_in;mp_wsm6_in"/>
+                <var name="graupelncv"   type="real"    dimensions="nCells Time" packages="mp_thompson_in;mp_wsm6_in"/>
+                <var name="snowncv"      type="real"    dimensions="nCells Time" packages="mp_thompson_in;mp_wsm6_in"/>
+                <var name="sr"           type="real"    dimensions="nCells Time" packages="mp_thompson_in;mp_wsm6_in"/>
 
-                <var name="rainnc"       type="real"    dimensions="nCells Time" packages="mp_kessler_in;mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                <var name="snownc"       type="real"    dimensions="nCells Time" packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
-                <var name="graupelnc"    type="real"    dimensions="nCells Time" packages="mp_thompson_aerosols_in;mp_thompson_in;mp_wsm6_in"/>
+                <var name="rainnc"       type="real"    dimensions="nCells Time" packages="mp_kessler_in;mp_thompson_in;mp_wsm6_in"/>
+                <var name="snownc"       type="real"    dimensions="nCells Time" packages="mp_thompson_in;mp_wsm6_in"/>
+                <var name="graupelnc"    type="real"    dimensions="nCells Time" packages="mp_thompson_in;mp_wsm6_in"/>
 
-                <var name="rainprod"     type="real"    dimensions="nVertLevels nCells Time" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-                <var name="evapprod"     type="real"    dimensions="nVertLevels nCells Time" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-                <var name="re_cloud"     type="real"    dimensions="nVertLevels nCells Time" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-                <var name="re_ice"       type="real"    dimensions="nVertLevels nCells Time" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-                <var name="re_snow"      type="real"    dimensions="nVertLevels nCells Time" packages="mp_thompson_aerosols_in;mp_thompson_in"/>
+                <var name="rainprod"     type="real"    dimensions="nVertLevels nCells Time" packages="mp_thompson_in"/>
+                <var name="evapprod"     type="real"    dimensions="nVertLevels nCells Time" packages="mp_thompson_in"/>
+                <var name="re_cloud"     type="real"    dimensions="nVertLevels nCells Time" packages="mp_thompson_in"/>
+                <var name="re_ice"       type="real"    dimensions="nVertLevels nCells Time" packages="mp_thompson_in"/>
+                <var name="re_snow"      type="real"    dimensions="nVertLevels nCells Time" packages="mp_thompson_in"/>
 
-                <var name="nt_c"         type="real"    dimensions="nCells"      packages="mp_thompson_aerosols_in;mp_thompson_in"/>
-                <var name="mu_c"         type="real"    dimensions="nCells"      packages="mp_thompson_aerosols_in;mp_thompson_in"/>
+                <var name="nt_c"         type="real"    dimensions="nCells"      packages="mp_thompson_in"/>
+                <var name="mu_c"         type="real"    dimensions="nCells"      packages="mp_thompson_in"/>
 
                 <var name="precipw"      type="real"    dimensions="nCells Time"/>
 
