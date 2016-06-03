@@ -11,6 +11,17 @@
 #include <pio.h>
 #include <pio_internal.h>
 
+/* MPI serial builds stub out MPI functions so that the MPI code can
+ * work on one processor. This function is missing from our serial MPI
+ * implementation, so it is included here. This can be removed after
+ * it is added to the MPI serial library. */
+#ifdef USE_MPI_SERIAL
+int MPI_Intercomm_merge(MPI_Comm intercomm, int high, MPI_Comm *newintracomm)
+{
+    return MPI_SUCCESS;
+}
+#endif /* USE_MPI_SERIAL */
+
 #ifdef PIO_ENABLE_LOGGING
 extern int my_rank;
 extern int pio_log_level;
@@ -1779,13 +1790,10 @@ int PIOc_Init_Intercomm(int component_count, MPI_Comm peer_comm,
     iosystem_desc_t *my_iosys;
     int ierr = PIO_NOERR;
     int mpierr;
-    int my_rank;
     int iam;
     int io_leader, comp_leader;
     int root;
     MPI_Group io_grp, comm_grp, union_grp;
-
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
     /* Allocate struct to hold io system info for each component. */
     if (!(iosys = (iosystem_desc_t *) calloc(1, sizeof(iosystem_desc_t) * component_count)))
@@ -2069,6 +2077,9 @@ int PIOc_Init_Intercomm(int component_count, MPI_Comm peer_comm,
 	    my_iosys->async_interface = true;
 
 	    /* For debug purposes, print the contents of the struct. */
+	    /*int my_rank;*/
+	    /* MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);*/
+
 	    /* for (int t = 0; t < my_iosys->num_iotasks + my_iosys->num_comptasks; t++) */
 	    /* { */
 	    /* 	MPI_Barrier(my_iosys->union_comm); */
@@ -2090,7 +2101,6 @@ int PIOc_Init_Intercomm(int component_count, MPI_Comm peer_comm,
     /* If there was an error, make sure all tasks see it. */
     if (ierr)
     {
-	/*mpierr = MPI_Bcast(&ierr, 1, MPI_INT, iosys->my_rank, iosys->intercomm);*/
 	mpierr = MPI_Bcast(&ierr, 1, MPI_INT, 0, iosys->intercomm);
 	CheckMPIReturn(mpierr, __FILE__, __LINE__);
 	if (mpierr)

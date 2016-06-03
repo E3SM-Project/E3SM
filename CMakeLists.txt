@@ -36,6 +36,12 @@ else()
   set(ENABLE_LOGGING 0)
 endif()
 
+if(PIO_USE_MPISERIAL)
+  set(USE_MPI_SERIAL 1)
+else()
+  set(USE_MPI_SERIAL 0)
+endif()
+
 #===== Library Variables =====
 set (PIO_FILESYSTEM_HINTS IGNORE CACHE STRING "Filesystem hints (lustre or gpfs)")
 
