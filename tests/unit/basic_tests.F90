@@ -286,10 +286,9 @@ module basic_tests
         ret_val = PIO_inq_unlimdim(pio_file, unlimdimid)
         if(unlimdimid /= -1) then
            err_msg = "Error in inq_unlimdim"
-           print *, "Error in inq_unlimdim ", unlimdimid
            call PIO_closefile(pio_file)
            print *,__FILE__,__LINE__,iotype, trim(err_msg)
-           !call mpi_abort(MPI_COMM_WORLD,0,ret_val)
+           call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
         ret_val = PIO_set_log_level(0)
         
