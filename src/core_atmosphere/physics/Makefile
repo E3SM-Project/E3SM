@@ -85,7 +85,8 @@ mpas_atmphys_driver.o: \
 
 mpas_atmphys_driver_cloudiness.o: \
 	mpas_atmphys_constants.o \
-	mpas_atmphys_vars.o
+	mpas_atmphys_vars.o      \
+	./physics_wrf/module_mp_thompson_cldfra3.o
 
 mpas_atmphys_driver_convection.o: \
 	mpas_atmphys_constants.o \

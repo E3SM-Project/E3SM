@@ -212,9 +212,10 @@
  endif
 
 !cloud fraction for radiation schemes:
- if(.not. (config_radt_cld_scheme .eq. 'off'           .or. &
-           config_radt_cld_scheme .eq. 'cld_incidence' .or. &
-           config_radt_cld_scheme .eq. 'cld_fraction')) then
+ if(.not. (config_radt_cld_scheme .eq. 'off'                  .or. &
+           config_radt_cld_scheme .eq. 'cld_incidence'        .or. &
+           config_radt_cld_scheme .eq. 'cld_fraction'         .or. &
+           config_radt_cld_scheme .eq. 'cld_fraction_thompson')) then
 
     write(mpas_err_message,'(A,A10)') 'illegal value for calculation of cloud fraction: ', &
           trim(config_radt_cld_scheme)

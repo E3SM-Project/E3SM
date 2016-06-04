@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_driver
  use mpas_kind_types
  use mpas_derived_types
@@ -93,15 +93,18 @@
 !>      the argument list.
 !>      Laura D. Fowler (laura@ucar.edu) / 2015-01-06.
 !>    * now only call subroutine update_convection_step2 when config_convection_scheme is not off.
-!>      Laura D. Fowler (laura@ucar.edu) / 2016-04/13. 
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-04-13.
+!>    * modified call to driver_cloudiness to accomodate the calculation of the cloud fraction with the Thompson
+!>      cloud microphysics scheme.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-06-04. 
 
 
  contains
 
 
-!==================================================================================================
+!=================================================================================================================
  subroutine physics_driver(domain,itimestep,xtime_s)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  integer,intent(in):: itimestep
@@ -136,7 +139,7 @@
 
  integer:: time_lev
 
-!==================================================================================================
+!=================================================================================================================
 
  call mpas_pool_get_config(domain%configs,'config_convection_scheme',config_convection_scheme)
  call mpas_pool_get_config(domain%configs,'config_gwdo_scheme'      ,config_gwdo_scheme      )
@@ -176,7 +179,7 @@
     !call to cloud scheme:
     if(l_radtlw .or. l_radtsw) then
        call allocate_cloudiness
-       call driver_cloudiness(diag_physics)
+       call driver_cloudiness(block%configs,mesh,diag_physics,sfc_input)
     endif
 
     !call to short wave radiation scheme:
@@ -257,6 +260,6 @@
 
  end subroutine physics_driver
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_driver
-!==================================================================================================
+!=================================================================================================================
