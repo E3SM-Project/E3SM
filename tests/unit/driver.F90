@@ -26,6 +26,7 @@ Program pio_unit_test_driver
 #if defined( _NETCDF4) && defined(LOGGING)
   integer, external :: nc_set_log_level2
 #endif
+  integer ret_val
   ! Set up MPI
   call MPI_Init(ierr)
   call MPI_Comm_rank(MPI_COMM_WORLD, my_rank, ierr)

@@ -74,6 +74,8 @@ int PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp,
                 mpierr = MPI_Bcast(&ngatts_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
             if (!mpierr)
                 mpierr = MPI_Bcast(&unlimdimid_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	    LOG((2, "PIOc_inq ncid = %d ndims_present = %d nvars_present = %d ngatts_present = %d unlimdimid_present = %d",
+		 ncid, ndims_present, nvars_present, ngatts_present, unlimdimid_present));
         }
 
         /* Handle MPI errors. */
@@ -88,16 +90,27 @@ int PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp,
     {
 #ifdef _PNETCDF
         if (file->iotype == PIO_IOTYPE_PNETCDF)
-            ierr = ncmpi_inq(ncid, ndimsp, nvarsp, ngattsp, unlimdimidp); 
+	{
+	    LOG((2, "PIOc_inq calling ncmpi_inq unlimdimidp = %d", unlimdimidp));
+            ierr = ncmpi_inq(ncid, ndimsp, nvarsp, ngattsp, unlimdimidp);
+	    LOG((2, "PIOc_inq called ncmpi_inq"));
+	    if (unlimdimidp)
+		LOG((2, "PIOc_inq returned from ncmpi_inq unlimdimid = %d", *unlimdimidp));		
+	}
 #endif /* _PNETCDF */
 #ifdef _NETCDF
         if (file->iotype == PIO_IOTYPE_NETCDF && file->do_io)
         {
+	    LOG((2, "PIOc_inq calling classic nc_inq"));
             /* Should not be necessary to do this - nc_inq should
              * handle null pointers. This has been reported as a bug
              * to netCDF developers. */
             int tmp_ndims, tmp_nvars, tmp_ngatts, tmp_unlimdimid;
+	    LOG((2, "PIOc_inq calling classic nc_inq"));
             ierr = nc_inq(ncid, &tmp_ndims, &tmp_nvars, &tmp_ngatts, &tmp_unlimdimid);
+	    LOG((2, "PIOc_inq calling classic nc_inq"));
+	    if (unlimdimidp)
+		LOG((2, "classic tmp_unlimdimid = %d", tmp_unlimdimid));
             if (ndimsp)
                 *ndimsp = tmp_ndims;
             if (nvarsp)
@@ -106,16 +119,23 @@ int PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp,
                 *ngattsp = tmp_ngatts;
             if (unlimdimidp)
                 *unlimdimidp = tmp_unlimdimid;
-        } else if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
-            ierr = nc_inq(ncid, ndimsp, nvarsp, ngattsp, unlimdimidp); 
+	    if (unlimdimidp)
+		LOG((2, "classic unlimdimid = %d", *unlimdimidp));
+        }
+	else if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+	{
+	    LOG((2, "PIOc_inq calling netcdf-4 nc_inq"));	    
+            ierr = nc_inq(ncid, ndimsp, nvarsp, ngattsp, unlimdimidp);
+	}
 #endif /* _NETCDF */
         LOG((2, "PIOc_inq netcdf call returned %d", ierr));
     }
 
     /* Broadcast and check the return code. */
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-        return check_mpi(file, mpierr, __FILE__, __LINE__);             
-    check_netcdf(file, ierr, __FILE__, __LINE__);
+        return check_mpi(file, mpierr, __FILE__, __LINE__);
+    if (mpierr)
+	return check_netcdf(file, ierr, __FILE__, __LINE__);
     
     /* Broadcast results to all tasks. Ignore NULL parameters. */
     if (!ierr)
@@ -174,7 +194,8 @@ int PIOc_inq_natts(int ncid, int *ngattsp)
  */
 int PIOc_inq_unlimdim(int ncid, int *unlimdimidp) 
 {
-    return PIOc_inq(ncid, NULL, NULL, unlimdimidp, NULL);
+    LOG((1, "PIOc_inq_unlimdim ncid = %d unlimdimidp = %d", ncid, unlimdimidp));
+    return PIOc_inq(ncid, NULL, NULL, NULL, unlimdimidp);
 }
 
 /** Internal function to provide inq_type function for pnetcdf. */

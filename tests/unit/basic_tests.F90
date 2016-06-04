@@ -147,6 +147,12 @@ module basic_tests
       integer :: unlimdimid
       type(var_desc_t)               :: pio_var
 
+      ! These will be used to set chunk cache sizes in netCDF-4/HDF5
+      ! files.
+      integer(kind=PIO_OFFSET_KIND) :: chunk_cache_size
+      integer(kind=PIO_OFFSET_KIND) :: chunk_cache_nelems
+      real :: chunk_cache_preemption
+
       err_msg = "no_error"
       dims(1) = 3*ntasks
       compdof = 3*my_rank+(/1,2,3/)  ! Where in the global array each task writes
@@ -276,15 +282,17 @@ module basic_tests
           call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
 
+        ret_val = PIO_set_log_level(3)
         ret_val = PIO_inq_unlimdim(pio_file, unlimdimid)
         if(unlimdimid /= -1) then
            err_msg = "Error in inq_unlimdim"
+           print *, "Error in inq_unlimdim ", unlimdimid
            call PIO_closefile(pio_file)
            print *,__FILE__,__LINE__,iotype, trim(err_msg)
-           call mpi_abort(MPI_COMM_WORLD,0,ret_val)
+           !call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
+        ret_val = PIO_set_log_level(0)
         
-
         ! Close file
         call PIO_closefile(pio_file)
       end if

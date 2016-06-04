@@ -139,6 +139,9 @@ check_file(int iosysid, int format, char *filename, int my_rank, int verbose)
     	ERR(ret);
     if (unlimdimid != -1)
     	ERR(ERR_WRONG);
+    /* Should succeed, do nothing. */   
+    if ((ret = PIOc_inq_unlimdim(ncid, NULL))) 
+    	ERR(ret);
 
     /* Check out the dimension. */
     if ((ret = PIOc_inq_dim(ncid, 0, dimname, &dimlen)))

@@ -181,7 +181,8 @@ module pio_nf
      module procedure &
           enddef_desc                                       , &
           enddef_id
-  end interface
+  end interface pio_enddef
+
   interface pio_redef
      module procedure &
           redef_desc                                        , &
@@ -191,7 +192,7 @@ module pio_nf
   interface pio_set_log_level
      module procedure &
           set_log_level                                      
-  end interface
+  end interface pio_set_log_level
 
   interface pio_inquire
      module procedure &
@@ -659,11 +660,10 @@ contains
 !! @defgroup PIO_set_log_level
 !<
 !> 
-!! @public
 !! @ingroup PIO_set_log_level
-!! @brief Sets the logging level. Only takes effect if PIO was built with
+!! Sets the logging level. Only takes effect if PIO was built with
 !! PIO_ENABLE_LOGGING=On
-!! @details
+!! 
 !! @param log_level the logging level.
 !! @retval ierr @copydoc error_return
 !<
@@ -671,7 +671,7 @@ contains
     integer, intent(in) :: log_level
     interface
        integer(C_INT) function PIOc_set_log_level(log_level) &
-            bind(C ,name="PIOc_set_log_level")
+            bind(C, name="PIOc_set_log_level")
          use iso_c_binding
          integer(C_INT), value :: log_level
        end function PIOc_set_log_level
@@ -1663,7 +1663,7 @@ contains
 
 !> 
 !! @public
-!! @ingroup PIO_set_chunk_cache  
+!! @ingroup PIO_get_chunk_cache  
 !! @brief Gets current settings for chunk cache (only relevant for netCDF4/HDF5 files.)
 !<
   integer function get_chunk_cache(iosysid, iotype, chunk_cache_size, chunk_cache_nelems, &
@@ -1693,7 +1693,7 @@ contains
 
 !> 
 !! @public 
-!! @ingroup PIO_set_chunk_cache
+!! @ingroup PIO_set_var_chunk_cache
 !! @brief Changes chunk cache settings for a variable in a netCDF-4/HDF5 file.
 !<
   integer function set_var_chunk_cache_id(file, varid, chunk_cache_size, &
