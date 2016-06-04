@@ -1,5 +1,7 @@
 !=================================================================================================================
-
+!module_mp_thompson was originally copied from./phys/module_mp_thompson.F from WRF version 3.8. Modifications made
+!to the original sourcecode are mostly confined to subroutine thompson_init.
+!Laura D. Fowler (laura@ucar.edu) / 2016-06-04.
 
 
 !+---+-----------------------------------------------------------------+

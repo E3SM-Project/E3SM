@@ -21,6 +21,7 @@ OBJS = \
 	module_mp_kessler.o          \
 	module_mp_radar.o            \
 	module_mp_thompson.o         \
+	module_mp_thompson_cldfra3.o \
 	module_mp_wsm6.o             \
 	module_ra_cam.o              \
 	module_ra_cam_support.o      \
