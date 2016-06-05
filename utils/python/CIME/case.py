@@ -8,7 +8,7 @@ from copy   import deepcopy
 import glob, shutil
 from CIME.XML.standard_module_setup import *
 
-from CIME.utils                     import expect, run_cmd, get_cime_root
+from CIME.utils                     import expect, get_cime_root
 from CIME.utils                     import convert_to_type, get_model, get_project
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -181,7 +181,7 @@ class Case(object):
         # Empty result list
         results = []
 
-        for env_file in self._files:
+        for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
             logger.debug("Searching in %s" , env_file.__class__.__name__)
             result = None

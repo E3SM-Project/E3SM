@@ -74,18 +74,16 @@ class EnvArchive(GenericXML):
             rpointer_items.append([file_node.text,content_node.text])
         return rpointer_items
 
-    def get_value(self, item, attribute={}, resolved=True, subgroup=None):
-        """
-        not currently used - but needs to appear here
-        """
-        logger.debug("Get Value for " + item)
-        return None
+    # def get_value(self, item, attribute={}, resolved=True, subgroup=None):
+    #     """
+    #     not currently used - but needs to appear here
+    #     """
+    #     logger.debug("Get Value for " + item)
+    #     return None
 
-    def get_values(self, item, attribute={}, resolved=True, subgroup=None):
-        """
-        not currently used - but needs to appear here
-        """
-        logger.debug("Get Values for " + item)
-        return None
-
-        
+    # def get_values(self, item, attribute={}, resolved=True, subgroup=None):
+    #     """
+    #     not currently used - but needs to appear here
+    #     """
+    #     logger.debug("Get Values for " + item)
+    #     return None
