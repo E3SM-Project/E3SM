@@ -10,17 +10,17 @@ from system_tests_common import SystemTestsCommon
 
 class PET(SystemTestsCommon):
 
-    def __init__(self, caseroot=None, case=None):
+    def __init__(self, case):
         """
         initialize a test object
         """
-        SystemTestsCommon.__init__(self, caseroot=caseroot, case=case)
+        SystemTestsCommon.__init__(self, case)
 
     def build(self, sharedlib_only=False, model_only=False):
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
 
-        # first make sure that all components have threaded settings 
+        # first make sure that all components have threaded settings
         for comp in ['ATM','CPL','OCN','WAV','GLC','ICE','ROF','LND']:
             if self._case.get_value("NTHRDS_%s"%comp) <= 1:
                 self._case.set_value("NTHRDS_%s"%comp, 2)

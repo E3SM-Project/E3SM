@@ -9,11 +9,11 @@ from system_tests_common import SystemTestsCommon
 
 class CME(SystemTestsCommon):
 
-    def __init__(self, caseroot=None, case=None):
+    def __init__(self, case):
         """
         initialize an object interface to the CME test
         """
-        SystemTestsCommon.__init__(self, caseroot=caseroot, case=case)
+        SystemTestsCommon.__init__(self, case)
         self._testname = "CME"
 
     def build(self, sharedlib_only=False, model_only=False):

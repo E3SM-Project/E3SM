@@ -12,11 +12,11 @@ logger = logging.getLogger(__name__)
 
 class ERR(ERS):
 
-    def __init__(self, caseroot=None, case=None):
+    def __init__(self, case):
         """
         initialize an object interface to the ERR system test
         """
-        ERS.__init__(self, caseroot=caseroot, case=case)
+        ERS.__init__(self, case)
 
     def run(self):
         first_phase = self._case.get_value("RESUBMIT") == 1

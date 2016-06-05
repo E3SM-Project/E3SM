@@ -122,7 +122,7 @@ class BatchUtils(object):
 
     def get_submit_args(self, job):
         if self.batchmaker is None:
-            self.batchmaker = get_batch_maker(job, case=self.case)
+            self.batchmaker = get_batch_maker(job, self.case)
 
         task_count = self.case.get_value("task_count", subgroup=job)
         if task_count == "default":

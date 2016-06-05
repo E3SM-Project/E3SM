@@ -4,19 +4,12 @@ API for preview namelist
 
 from XML.standard_module_setup import *
 from CIME.utils import expect, run_cmd
-from CIME.case import Case
 from CIME.env_module import EnvModule
 
 import glob, shutil
 logger = logging.getLogger(__name__)
 
-def preview_namelists(dryrun=False, case=None, casedir=None):
-    if (case is None):
-        if (casedir is None):
-            case = Case()
-        else:
-            case = Case(case_root=casedir)
-
+def preview_namelists(case, dryrun=False, casedir=None):
     # Get data from XML
     exeroot = case.get_value("EXEROOT")
     libroot = case.get_value("LIBROOT")

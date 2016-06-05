@@ -282,7 +282,7 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
     case.flush()
 
     if not sharedlib_only:
-        preview_namelists(case=case)
+        preview_namelists(case)
 
     build_checks(case, build_threaded, comp_interface, use_esmf_lib, debug, compiler, mpilib,
                  sharedlibroot, complist, ninst_build, smp_value)

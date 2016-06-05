@@ -6,8 +6,8 @@ from system_tests_common import SystemTestsCommon
 
 class PFS(SystemTestsCommon):
 
-    def __init__(self, caseroot=None, case=None):
+    def __init__(self, case):
         """
         initialize an object interface to the PFS system test
         """
-        SystemTestsCommon.__init__(self, caseroot=caseroot, case=case)
+        SystemTestsCommon.__init__(self, case)

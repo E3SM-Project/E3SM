@@ -31,7 +31,7 @@ from CIME.XML.env_batch             import EnvBatch
 
 from CIME.XML.generic_xml           import GenericXML
 from CIME.user_mod_support          import apply_user_mods
-
+from CIME.case_setup import case_setup
 
 logger = logging.getLogger(__name__)
 
@@ -819,3 +819,7 @@ class Case(object):
 
         clonename = self.get_value("CASE")
         logger.info(" Successfully created new case %s from clone case %s " %(newcasename, clonename))
+
+        case_setup(newcase, clean=False, test_mode=False)
+
+        return newcase

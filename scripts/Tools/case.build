@@ -99,7 +99,7 @@ def _main_func(description):
     elif(testname is not None):
         logging.warn("Building test for %s in directory %s" % (testname, caseroot))
         try:
-            test = globals()[testname](caseroot=caseroot, case=case)
+            test = globals()[testname](case)
         except KeyError:
             expect(False, "Could not find a test called '%s'" % testname)
         append_status("case.testbuild starting ",

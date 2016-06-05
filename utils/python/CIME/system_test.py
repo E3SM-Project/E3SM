@@ -24,7 +24,6 @@ XML_PHASE             = "XML"
 SETUP_PHASE           = "SETUP"
 SHAREDLIB_BUILD_PHASE = "SHAREDLIB_BUILD"
 MODEL_BUILD_PHASE     = "MODEL_BUILD"
-TEST_STATUS_PHASE     = "TEST_STATUS"
 PHASES = [INITIAL_PHASE, CREATE_NEWCASE_PHASE, XML_PHASE, SETUP_PHASE,
           NAMELIST_PHASE, SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE, RUN_PHASE] # Order matters
 CONTINUE = [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]
@@ -905,6 +904,6 @@ class SystemTest(object):
 
             logger.info( "    Case dir: %s" % self._get_test_dir(test))
 
-        logger.warn( "system_test took %s seconds"% (time.time() - start_time))
+        logger.info( "system_test took %s seconds"% (time.time() - start_time))
 
         return rv

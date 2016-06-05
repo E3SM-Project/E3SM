@@ -453,6 +453,59 @@
     </environment_variables>
 </machine>
 
+<machine MACH="anlworkstation">
+    <DESC>Linux workstation for ANL</DESC>
+    <NODENAME_REGEX>compute.*mcs.anl.gov</NODENAME_REGEX>
+    <PROXY></PROXY>
+    <TESTS>acme_developer</TESTS>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>mpich,mpi-serial</MPILIBS>
+    <CESMSCRATCHROOT>$ENV{HOME}/acme/scratch</CESMSCRATCHROOT>
+    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>/home/climate1/acme/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/home/climate1/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <CCSM_BASELINE>/home/climate1/acme/baselines</CCSM_BASELINE>
+    <CCSM_CPRNC>/home/climate1/acme/cprnc/build/cprnc</CCSM_CPRNC>
+    <BATCHQUERY></BATCHQUERY>
+    <BATCHSUBMIT></BATCHSUBMIT>
+    <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>32</GMAKE_J>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>64</PES_PER_NODE>
+    <batch_system type="none" version="x.y">
+      <queues>
+      </queues>
+      <walltimes>
+      </walltimes>
+    </batch_system>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np {{ num_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="soft">
+      <init_path lang="csh">/software/common/adm/packages/softenv-1.4.2/etc/softenv-load.csh</init_path>
+      <init_path lang="sh">/software/common/adm/packages/softenv-1.4.2/etc/softenv-load.sh</init_path>
+      <cmd_path lang="csh">source /software/common/adm/packages/softenv-1.4.2/etc/softenv-aliases.csh ; soft</cmd_path>
+      <cmd_path lang="sh">source /software/common/adm/packages/softenv-1.4.2/etc/softenv-aliases.sh ; soft</cmd_path>
+      <modules compiler="gnu">
+	<command name="add">+gcc-5.1.0</command>
+	<command name="add">+mpich-3.2-gcc-5.1</command>
+	<command name="add">+netcdf-4.3.3.1-parallel-gcc5.1-mpich3.2</command>
+	<command name="add">+cmake-2.8.12</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="NETCDFROOT">$(dirname $(dirname $(which ncdump)))</env>
+    </environment_variables>
+</machine>
+
 <machine MACH="skybridge">
   <DESC>SNL clust</DESC>
   <NODENAME_REGEX>skybridge-login</NODENAME_REGEX>

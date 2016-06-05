@@ -7,6 +7,7 @@ import CIME.utils
 from CIME.utils import expect, run_cmd
 from CIME.XML.machines import Machines
 from CIME.XML.env_mach_specific import EnvMachSpecific
+import string
 
 logger = logging.getLogger(__name__)
 
@@ -119,36 +120,64 @@ class EnvModule(object):
             exec(py_module_code)
 
     def _load_soft_modules(self, modules_to_load):
-        logging.info("Loading soft modules")
         sh_init_cmd = self._machine.get_module_system_init_path("sh")
         sh_mod_cmd = self._machine.get_module_system_cmd_path("sh")
+        
+        # Some machines can set the environment
+        # variables using a script (such as /etc/profile.d/00softenv.sh
+        # on mira or /etc/profile.d/a_softenv.sh on blues)
+        # which load the new environment variables using softenv-load.
 
-        cmd = "source %s && source $SOFTENV_ALIASES && source $SOFTENV_LOAD" % (sh_init_cmd)
+        # Other machines need to run soft-dec.sh and evaluate the output,
+        # which may or may not have unresolved variables such as
+        # PATH=/soft/com/packages/intel/16/initial/bin:${PATH}
 
+        cmd = "source %s" % sh_init_cmd
+
+        if os.environ.has_key("SOFTENV_ALIASES"):
+            cmd += " && source $SOFTENV_ALIASES"
+        if os.environ.has_key("SOFTENV_LOAD"):
+            cmd += " && source $SOFTENV_LOAD"
+            
         for action,argument in modules_to_load:
             cmd += " && %s %s %s" % (sh_mod_cmd, action, argument)
 
         cmd += " && env"
-        logging.debug("Command=%s" % cmd)
         output=run_cmd(cmd)
 
+        ###################################################
+        # Parse the output to set the os.environ dictionary
+        ###################################################
         newenv = {}
+        dolater = []
         for line in output.splitlines():
-            m=re.match(r'^(\S+)=(\S+)$',line)
+            if line.find('$')>0:
+                dolater.append(line)
+                continue
+                
+            m=re.match(r'^(\S+)=(\S+)\s*;*\s*$',line)
             if m:
                 key = m.groups()[0]
                 val = m.groups()[1]
-
                 newenv[key] = val
 
+        # Now that initial newenv has been set, resolve variables
+        for line in dolater:
+            m=re.match(r'^(\S+)=(\S+)\s*;*\s*$',line)
+            if m:
+                key = m.groups()[0]
+                valunresolved = m.groups()[1]
+                val = string.Template(valunresolved).substitute(newenv)
+                expect(val is not None, 
+                       'string value %s unable to be resolved' % valunresolved)
+                newenv[key] = val
 
+        # Set environment with new or updated values
         for key in newenv:
             if key in os.environ and key not in newenv:
                 del(os.environ[key])
             else:
                 os.environ[key] = newenv[key]
-
-
 
     def _load_dotkit_modules(self, modules_to_load):
         expect(False, "Not yet implemented")

@@ -10,11 +10,11 @@ from system_tests_common import SystemTestsCommon
 
 class NCR(SystemTestsCommon):
 
-    def __init__(self, caseroot=None, case=None):
+    def __init__(self, case):
         """
         initialize a test object
         """
-        SystemTestsCommon.__init__(self, caseroot=caseroot, case=case)
+        SystemTestsCommon.__init__(self, case)
 
     def build(self):
         exeroot = self._case.get_value("EXEROOT")

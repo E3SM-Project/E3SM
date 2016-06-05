@@ -3,7 +3,6 @@ API for checking locked files
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.case import Case
 from CIME.XML.env_build import EnvBuild
 from CIME.XML.env_case import EnvCase
 from CIME.XML.env_mach_pes import EnvMachPes

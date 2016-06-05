@@ -9,7 +9,6 @@ from CIME.preview_namelists import preview_namelists
 from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.component     import Component
 from CIME.XML.compilers     import Compilers
-from CIME.case              import Case
 from CIME.utils             import expect, run_cmd, append_status
 from CIME.batch_maker       import get_batch_maker
 
@@ -226,7 +225,7 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
             batchmaker = None
             for job, jparms in batch_jobs:
                 if batchmaker is None:
-                    batchmaker = get_batch_maker(job, case=case)
+                    batchmaker = get_batch_maker(job, case)
                 else:
                     task_count = jparms['task_count']
                     if task_count == "default":
@@ -267,7 +266,7 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
 
         # Run preview namelists for scripts
         logger.info("preview_namelists")
-        preview_namelists(case=case)
+        preview_namelists(case)
 
         logger.info("See ./CaseDoc for component namelists")
         logger.info("If an old case build already exists, might want to run \'case.build --clean-all\' before building")
