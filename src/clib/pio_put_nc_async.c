@@ -211,6 +211,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    vdesc->nreqs++;
 	    LOG((2, "PIOc_put_vars_tc flushing output buffer"));
 	    flush_output_buffer(file, false, 0);
+	    LOG((2, "PIOc_put_vars_tc flushed output buffer"));
 	}
 #endif /* _PNETCDF */
 #ifdef _NETCDF
