@@ -519,11 +519,13 @@ int att_put_handler(iosystem_desc_t *ios)
     /* Call the function to read the attribute. */
     if ((ierr = PIOc_put_att(ncid, varid, name, atttype, attlen, op)))
 	return ierr;
+    LOG((2, "put_handler called PIOc_put_att, ierr = %d", ierr));
     
     /* Free resources. */
     free(name);
     free(op);
 
+    LOG((2, "put_handler complete!"));
     return PIO_NOERR;
 }
 
