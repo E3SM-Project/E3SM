@@ -10,7 +10,6 @@ from CIME.XML.env_mach_pes  import EnvMachPes
 from CIME.XML.component     import Component
 from CIME.XML.compilers     import Compilers
 from CIME.utils             import expect, run_cmd, append_status
-from CIME.batch_maker       import get_batch_maker
 
 import shutil, time, glob
 
@@ -109,8 +108,8 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
         for fileglob in ["case.run", "env_build.xml", "env_mach_pes.xml", "Macros*"]:
             for filename in glob.glob(fileglob):
                 shutil.copy(filename, backup_dir)
-
-        os.remove("case.run")
+        if os.path.exists("case.run"):
+            os.remove("case.run")
 
         # only do the following if are NOT in testmode
         if not test_mode:
@@ -220,30 +219,18 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
 
             # Use BatchFactory to get the appropriate instance of a BatchMaker,
             # use it to create our batch scripts
-            batch_jobs = case.get_batch_jobs()
-
-            batchmaker = None
-            for job, jparms in batch_jobs:
-                if batchmaker is None:
-                    batchmaker = get_batch_maker(job, case)
-                else:
-                    task_count = jparms['task_count']
-                    if task_count == "default":
-                        batchmaker.override_node_count = None
-                    else:
-                        batchmaker.override_node_count = int(task_count)
-                    batchmaker.set_job(job)
-
-                input_batch_script  = os.path.join(case.get_value("MACHDIR"), jparms['template'])
+            env_batch = case._get_env("batch")
+            for job in env_batch.get_jobs():
+                input_batch_script  = os.path.join(case.get_value("MACHDIR"), env_batch.get_value('template', subgroup=job))
                 if job == "case.test" and testcase is not None and not test_mode:
                     logger.info("Writing %s script" % job)
                     testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
                     # Short term fix to be removed when csh tests are removed
                     if not os.path.exists(testscript):
-                        batchmaker.make_batch_script(input_batch_script, job)
+                        env_batch.make_batch_script(input_batch_script, job)
                 elif job != "case.test":
                     logger.info("Writing %s script" % job)
-                    batchmaker.make_batch_script(input_batch_script, job)
+                    env_batch.make_batch_script(input_batch_script, job, case)
 
             # Make a copy of env_mach_pes.xml in order to be able
             # to check that it does not change once case.setup is invoked

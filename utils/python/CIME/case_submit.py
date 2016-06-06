@@ -13,7 +13,6 @@ from CIME.preview_namelists        import preview_namelists
 from CIME.check_lockedfiles        import check_lockedfiles
 from CIME.XML.batch                 import Batch
 from CIME.XML.env_mach_specific  import EnvMachSpecific
-from CIME.batch_utils import BatchUtils
 
 logger = logging.getLogger(__name__)
 
@@ -41,17 +40,16 @@ def submit(case, job=None, resubmit=False, no_batch=False, prereq_jobid=None):
 
     # if case.submit is called with the no_batch flag then we assume that this
     # flag will stay in effect for the duration of the RESUBMITs
+    env_batch = case._get_env("batch")
     if not resubmit:
         case.set_value("IS_FIRST_RUN", True)
         if no_batch:
             batch_system = "none"
         else:
-            env_batch = case._get_env("batch")
-            bs_node = env_batch.get_node("entry", {"id":"batch_system"})
-            batch_system = env_batch.get_default_value(bs_node)
+            batch_system = env_batch.get_batch_system_type()
         case.set_value("batch_system", batch_system)
     else:
-        if case.get_value("batch_system") == "none":
+        if env_batch.get_value("batch_system", subgroup=None) == "none":
             no_batch = True
 
         # This is a resubmission, do not reinitialize test values
@@ -65,10 +63,9 @@ def submit(case, job=None, resubmit=False, no_batch=False, prereq_jobid=None):
                                  debug=case.get_value("DEBUG"),
                                  mpilib=case.get_value("MPILIB"))
 
-    batchobj = BatchUtils(job, case, prereq_jobid=prereq_jobid, no_batch=no_batch)
     case.set_value("RUN_WITH_SUBMIT",True)
     case.flush()
-    batchobj.submit_jobs()
+    case.submit_jobs(no_batch=no_batch)
 
 def check_case(case, caseroot):
     check_lockedfiles(caseroot)

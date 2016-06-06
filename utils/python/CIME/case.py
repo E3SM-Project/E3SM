@@ -484,8 +484,7 @@ class Case(object):
         batch = Batch(batch_system=batch_system, machine=machine_name)
         bjobs = batch.get_batch_jobs()
         env_batch = self._get_env("batch")
-        env_batch.set_value("batch_system", batch_system)
-        env_batch.set_default_value("batch_system", batch_system)
+        env_batch.set_batch_system(batch)
         env_batch.create_job_groups(bjobs)
 
         self._env_files_that_need_rewrite.add(env_batch)
@@ -803,3 +802,7 @@ class Case(object):
         case_setup(newcase, clean=False, test_mode=False)
 
         return newcase
+
+    def submit_jobs(self, no_batch=False):
+        env_batch = self._get_env('batch')
+        env_batch.submit_jobs(self, no_batch=no_batch)
