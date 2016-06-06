@@ -607,7 +607,7 @@ int put_vars_handler(iosystem_desc_t *ios)
     PIO_Offset *startp = NULL, *countp = NULL, *stridep = NULL;
     int ndims; /** Number of dimensions. */
     void *buf; /** Buffer for data storage. */
-    size_t num_elem; /** Number of data elements in the buffer. */    
+    PIO_Offset num_elem; /** Number of data elements in the buffer. */    
 
     LOG((1, "put_vars_handler"));
 
@@ -758,7 +758,7 @@ int get_vars_handler(iosystem_desc_t *ios)
     PIO_Offset *startp = NULL, *countp = NULL, *stridep = NULL;
     int ndims; /** Number of dimensions. */
     void *buf; /** Buffer for data storage. */
-    size_t num_elem; /** Number of data elements in the buffer. */    
+    PIO_Offset num_elem; /** Number of data elements in the buffer. */    
 
     LOG((1, "get_vars_handler"));
 

@@ -42,7 +42,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
     int ndims; /** The number of dimensions in the variable. */
     int *dimids; /** The IDs of the dimensions for this variable. */
     PIO_Offset typelen; /** Size (in bytes) of the data type of data in buf. */
-    size_t num_elem = 1; /** Number of data elements in the buffer. */
+    PIO_Offset num_elem = 1; /** Number of data elements in the buffer. */
     var_desc_t *vdesc;
     PIO_Offset usage;
     int *request;
