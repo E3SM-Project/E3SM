@@ -43,7 +43,7 @@ if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
         PRIVATE -ffree-line-length-none)
 endif()
 
-if (PIO_ENABLE_ASYNC)
+if (PIO_ENABLE_ASYNC AND NOT PIO_USE_MPI_SERIAL)
   add_executable (test_intercomm EXCLUDE_FROM_ALL test_intercomm.c)
   target_link_libraries (test_intercomm pioc)
   add_dependencies (tests test_intercomm)
@@ -67,10 +67,6 @@ add_dependencies (tests pio_unit_test)
 set (DEFAULT_TEST_TIMEOUT 240)
 
 if (PIO_USE_MPISERIAL)
-  if (PIO_ENABLE_ASYNC)
-    add_test(NAME test_intercomm
-      COMMAND test_intercomm)
-  endif ()
     add_test(NAME test_names
         COMMAND test_names)
     add_test(NAME test_nc4
