@@ -227,7 +227,7 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
                     testscript = os.path.join(cimeroot, "scripts", "Testing", "Testcases", "%s_script" % testcase)
                     # Short term fix to be removed when csh tests are removed
                     if not os.path.exists(testscript):
-                        env_batch.make_batch_script(input_batch_script, job)
+                        env_batch.make_batch_script(input_batch_script, job, case)
                 elif job != "case.test":
                     logger.info("Writing %s script" % job)
                     env_batch.make_batch_script(input_batch_script, job, case)
