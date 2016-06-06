@@ -178,6 +178,8 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    LOG((2, "PIOc_put_vars_tc request = %d", vdesc->request));	    
 
 	    if(ios->io_rank == 0)
+	    {
+		LOG((2, "PIOc_put_vars_tc io_rank 0 doing pnetcdf call"));	    
 		switch(xtype)
 		{
 		case NC_BYTE:
@@ -203,8 +205,9 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 		    break;
 		default:
 		    LOG((0, "Unknown type for pnetcdf file! xtype = %d", xtype));
-
 		}
+		LOG((2, "PIOc_put_vars_tc io_rank 0 done with pnetcdf call"));	    
+	    }
 	    else
 		*request = PIO_REQ_NULL;
 

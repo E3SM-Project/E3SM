@@ -140,6 +140,9 @@ int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 #ifdef PNET_READ_AND_BCAST
 	    LOG((1, "PNET_READ_AND_BCAST"));
 	    ncmpi_begin_indep_data(file->fh);
+
+	    /* Only the IO master does the IO, so we are not really
+	     * getting parallel IO here. */
 	    if (ios->iomaster)
 	    {
 		switch(xtype)
