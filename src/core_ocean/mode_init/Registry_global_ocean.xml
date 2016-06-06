@@ -1,8 +1,3 @@
-	<dims>
-		<dim name="nTransects" definition="1" units="unitless"
-			 description="The number of transects used for critical passages."
-		/>
-	</dims>
 	<nml_record name="global_ocean" mode="init" configuration="global_ocean">
 		<nml_option name="config_global_ocean_minimum_depth" type="real" default_value="15" units="m"
 					description="Minimum depth where column contains all water-filled cells.  The first layer with refBottomDepth greater than this value is included in whole, i.e. no partial bottom cells are used in this layer."
