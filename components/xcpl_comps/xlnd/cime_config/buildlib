@@ -13,7 +13,7 @@ sys.path.append(os.path.join(os.environ["CIMEROOT"],"scripts","Tools"))
 
 from standard_script_setup import *
 from CIME.case import Case
-import CIME.buildlib
+import CIME.build_lib
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -43,7 +43,7 @@ def _main_func(description):
     caseroot, buildroot, component = parse_command_line(sys.argv, description)
 
     case = Case(caseroot)
-    builder = CIME.buildlib.buildxlib(case, component[1:], component)
+    builder = CIME.build_lib.BuildXLib(case, component[1:], component)
     builder.buildlib()
     
 
