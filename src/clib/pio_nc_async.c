@@ -134,7 +134,7 @@ int PIOc_inq(int ncid, int *ndimsp, int *nvarsp, int *ngattsp,
     /* Broadcast and check the return code. */
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
         return check_mpi(file, mpierr, __FILE__, __LINE__);
-    if (mpierr)
+    if (ierr)
 	return check_netcdf(file, ierr, __FILE__, __LINE__);
     
     /* Broadcast results to all tasks. Ignore NULL parameters. */
