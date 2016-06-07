@@ -1640,7 +1640,8 @@ int pioc_change_def(int ncid, int is_enddef)
     if (!(file = pio_get_file_from_id(ncid)))
         return PIO_EBADID;
     ios = file->iosystem;
-
+    LOG((2, "pioc_change_def found file"));
+    
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async_interface)
     {
@@ -1649,10 +1650,11 @@ int pioc_change_def(int ncid, int is_enddef)
             int msg = is_enddef ? PIO_MSG_ENDDEF : PIO_MSG_REDEF;
 
             if(ios->compmaster) 
-                mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+                mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
 
             if (!mpierr)            
                 mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	    LOG((2, "pioc_change_def ncid = %d", file->fh));
         }
 
         /* Handle MPI errors. */
@@ -1665,6 +1667,7 @@ int pioc_change_def(int ncid, int is_enddef)
     /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
     {
+	LOG((2, "pioc_change_def calling netcdf function"));
 #ifdef _PNETCDF
         if (file->iotype == PIO_IOTYPE_PNETCDF)
             if (is_enddef)
@@ -1679,15 +1682,15 @@ int pioc_change_def(int ncid, int is_enddef)
             else
                 ierr = nc_redef(file->fh);
 #endif /* _NETCDF */
+	LOG((2, "pioc_change_def ierr = %d", ierr));
     }
 
     /* Broadcast and check the return code. */
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
-    {
-        check_mpi(file, mpierr, __FILE__, __LINE__);            
-        return PIO_EIO;
-    }
-    check_netcdf(file, ierr, __FILE__, __LINE__);
+        return check_mpi(file, mpierr, __FILE__, __LINE__);            
+    if (ierr)
+	return check_netcdf(file, ierr, __FILE__, __LINE__);
+    LOG((2, "pioc_change_def succeeded"));
 
     return ierr;
 }
