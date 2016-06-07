@@ -4,13 +4,13 @@ from CIME.case import Case
 buildlibx - given the caseroot and component name(cmp), build the stub component
 """
 
-class buildlib(object):
+class BuildLib(object):
     def __init__(self, case, model, comp):
         self.case = case
         self.model = model
         self.comp = comp
 
-class buildxlib(buildlib):
+class BuildXLib(buildlib):
     def buildlib(self):
         caseroot = self.case.get_value("CASEROOT")
         casetools = self.self.case.get_value("CASETOOLS")

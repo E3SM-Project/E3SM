@@ -1,14 +1,14 @@
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
 
-class buildnml(object):
+class BuildNml(object):
     def __init__(self, case, model, comp):
         self.case = case
         self.model = model
         self.comp = comp
 
     
-class buildxnml(buildnml):
+class buildXNml(buildnml):
     def build_namelist(self):
         rundir = case.get_value("RUNDIR")
         ninst = case.get_value("NINST_%s" % self.comp)
