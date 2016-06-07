@@ -43,7 +43,7 @@ class buildxlib(buildlib):
         macfile = os.path.join(self.caseroot, "Macros.%s" % self.mach)
 
         # build 
-        stat = run_cmd("%s complib -j %d MODEL=%s COMPLIB=%s -f %s MACFILE=%s"
-                       % (self.gmake, self.gmake_j, self.model, complib,
-                          makefile, macfile))
+        run_cmd("%s complib -j %d MODEL=%s COMPLIB=%s -f %s MACFILE=%s"
+                % (self.gmake, self.gmake_j, self.model, complib,
+                   makefile, macfile))
 
