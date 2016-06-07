@@ -134,6 +134,12 @@
         <directive>-A {{ PROJECT }}</directive>
         <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
       </directives>
+      <queues>
+	<queue>shared</queue>
+      </queues>
+      <walltimes>
+	<walltime default="true">15:00</walltime>
+      </walltimes>
     </batch_system>
 
     <!-- edison is SLURM as of Jan-4-2016 -->
@@ -141,6 +147,15 @@
       <directives>
         <directive> -A {{ account }} </directive>
       </directives>
+      <queues>
+        <queue walltimemax="36:00:00" jobmin="1" jobmax="130181" >regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="12288" default="true">debug</queue>
+      </queues>
+      <walltimes>
+	<walltime default="true">00:30:00</walltime>
+      </walltimes>
+    </batch_system>
+
     </batch_system>
 
     <!-- eos is PBS -->
@@ -151,9 +166,48 @@
       <directive>-l mppwidth={{ mppwidth }}</directive>
       <directive>-l  nodes={{ num_nodes }}</directive>
     </directives>
+    <queues>
+      <queue jobmin="1" jobmax="9999" default="true">batch</queue>
+    </queues>
+    <walltimes>
+      <walltime default="true">01:15:00</walltime>
+      <walltime ccsm_estcost="1">01:50:00</walltime>
+      <walltime ccsm_estcost="3">05:00:00</walltime>
+    </walltimes>
    </batch_system>
 
-   <!-- Constance is slurm -->
+    <batch_system MACH="corip1" type="slurm" version="x.y">
+      <queues>
+        <queue walltimemax="24:00:00" jobmin="1" jobmax="16384" default="true">regular</queue>
+        <queue walltimemax="12:00:00" jobmin="16385" jobmax="45440">regular</queue>
+	<queue walltimemax="00:30:00" jobmin="1" jobmax="4096">debug</queue>
+      </queues>
+      <walltimes>
+        <walltime default="true">01:15:00</walltime>
+        <walltime ccsm_estcost="1">01:50:00</walltime>
+        <walltime ccsm_estcost="3">05:00:00</walltime>
+      </walltimes>
+    </batch_system>
+
+    <batch_system MACH="mira" type="cobalt">
+      <queues>
+        <queue walltimemin="0" walltimemax="360" jobmin="512" jobmax="4096" default="true">default</queue>
+      </queues>
+      <walltimes>
+        <walltime default="true">30</walltime>
+        <walltime ccsm_estcost="-3">60</walltime>
+        <walltime ccsm_estcost="0">60</walltime>
+      </walltimes>
+    </batch_system>
+
+    <batch_system MACH="cetus" type="cobalt">
+      <queues>
+        <queue walltimemin="5" walltimemax="59" jobmin="64" jobmax="2048" default="true">default</queue>
+      </queues>
+      <walltimes>
+        <walltime default="true">59</walltime>
+      </walltimes>
+    </batch_system>
 
    <batch_system MACH="constance" version="x.y">
     <directives>
@@ -163,13 +217,46 @@
        <directive>--output=slurm.out</directive>
        <directive>--error=slurm.err</directive>
     </directives>
+    <queues>
+      <queue jobmin="1" jobmax="9999" default="true">slurm</queue>
+    </queues>
+    <walltimes>
+      <walltime default="true">0:30:00</walltime>
+    </walltimes>
    </batch_system>
+
+  <batch_system MACH="skybridge" type="slurm" version="x.y">
+    <queues>
+      <queue jobmin="1" jobmax="480" default="true">ec</queue>
+    </queues>
+    <walltimes>
+      <walltime default="true">0:50:00</walltime>
+      <walltime ccsm_estcost="0">1:50:00</walltime>
+      <walltime ccsm_estcost="1">5:00:00</walltime>
+    </walltimes>
+  </batch_system>
+  <batch_system MACH="redsky" type="slurm" version="x.y">
+    <queues>
+      <queue jobmin="1" jobmax="480" default="true">ec</queue>
+    </queues>
+    <walltimes>
+      <walltime default="true">0:50:00</walltime>
+      <walltime ccsm_estcost="0">1:50:00</walltime>
+      <walltime ccsm_estcost="1">6:00:00</walltime>
+    </walltimes>
+  </batch_system>
+
 
    <batch_system MACH="mustang" version="x.y">
    <batch_directive>#MSUB</batch_directive>
    <directives>
      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
    </directives>
+   <walltimes>
+     <walltime default="true">00:30:00</walltime>
+     <walltime ccsm_estcost="1">02:00:00</walltime>
+     <walltime ccsm_estcost="3">16:00:00</walltime>
+   </walltimes>
    </batch_system>
 
    <batch_system MACH="wolf" version="x.y">
@@ -177,18 +264,61 @@
 	<directives>
 		<directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
 	</directives>
+	<BATCHQUERY>mshow</BATCHQUERY>
+	<BATCHSUBMIT>msub</BATCHSUBMIT>
+	<BATCHREDIRECT></BATCHREDIRECT>
+	<walltimes>
+	  <walltime default="true">00:30:00</walltime>
+	  <walltime ccsm_estcost="1">02:00:00</walltime>
+	  <walltime ccsm_estcost="3">16:00:00</walltime>
+	</walltimes>
+    </batch_system>
+
+    <batch_system MACH="mesabi" type="pbs">
+      <queues>
+        <queue walltimemax="24:00" default="true">mesabi</queue>
+        <queue walltimemax="24:00">debug</queue>
+      </queues>
+      <walltimes>
+        <walltime default="true">00:45:00</walltime>
+        <walltime ccsm_estcost="1">02:00:00</walltime>
+      </walltimes>
     </batch_system>
 
    <batch_system MACH="oic2" version="x.y">
          <directives>
                  <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
          </directives>
+            <queues>
+              <queue default="true">esd08q</queue>
+            </queues>
+            <walltimes>
+              <walltime default="true">24:00:00</walltime>
+            </walltimes>
    </batch_system>
 
    <batch_system MACH="oic5" version="x.y">
          <directives>
                  <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
          </directives>
+         <queues>
+           <queue default="true">esd13q</queue>
+           <queue walltimemax="1:00">esddbg13q</queue>
+         </queues>
+         <walltimes>
+           <walltime default="true">24:00:00</walltime>
+         </walltimes>
+   </batch_system>
+
+   <batch_system MACH="itasca" type="pbs">
+     <queues>
+       <queue walltimemax="24:00" default="true">batch</queue>
+       <queue walltimemax="24:00">debug</queue>
+     </queues>
+     <walltimes>
+       <walltime default="true">00:45:00</walltime>
+       <walltime ccsm_estcost="1">02:00:00</walltime>
+     </walltimes>
    </batch_system>
 
    <batch_system MACH="titan" version="x.y">
@@ -197,6 +327,14 @@
        <directive>-A {{ project }}</directive>
        <directive>-l nodes={{ num_nodes }}</directive>
      </directives>
+     <queues>
+       <queue walltimemax="24:00" default="true">batch</queue>
+       <queue walltimemax="24:00">debug</queue>
+     </queues>
+     <walltimes>
+       <walltime default="true">00:45:00</walltime>
+       <walltime ccsm_estcost="1">02:00:00</walltime>
+     </walltimes>
    </batch_system>
 
    <batch_system MACH="lawrencium-lr2" version="x.y">
@@ -205,6 +343,12 @@
        <directive>--account={{ project }}</directive>
        <directive>--exclusive</directive>
      </directives>
+    <queues>
+      <queue walltimemin="0" walltimemax="72:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
+    </queues>
+    <walltimes>
+      <walltime default="true">00:59:00</walltime>
+    </walltimes>
    </batch_system>
 
    <batch_system MACH="lawrencium-lr3" version="x.y">
@@ -213,6 +357,12 @@
        <directive>--account={{ project }}</directive>
        <directive>--exclusive</directive>
      </directives>
+    <queues>
+      <queue walltimemin="0" walltimemax="72:00:00" jobmin="0" jobmax="64" default="true">lr_normal</queue>
+    </queues>
+    <walltimes>
+      <walltime default="true">00:59:00</walltime>
+    </walltimes>
    </batch_system>
 
   <batch_jobs>

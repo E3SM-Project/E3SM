@@ -168,6 +168,9 @@ class EnvBatch(EnvBase):
                 newjob.append(deepcopy(child))
             group.append(newjob)
 
+            
+
+
     def cleanupnode(self, node):
         if node.get("id") == "batch_system":
             fnode = node.find(".//file")
@@ -181,7 +184,9 @@ class EnvBatch(EnvBase):
             node = EnvBase.cleanupnode(self, node)
         return node
 
-    def set_batch_system(self, batchobj):
+    def set_batch_system(self, batchobj, batch_system_type=None):
+        if batch_system_type is not None:
+            self.set_batch_system_type(batch_system_type)
         if batchobj.batch_system_node is not None:
             self.root.append(deepcopy(batchobj.batch_system_node))
         if batchobj.machine_node is not None:
@@ -233,6 +238,25 @@ class EnvBatch(EnvBase):
             fd.write(output_text)
         os.chmod(job, os.stat(job).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
+
+    def set_job_defaults(self, bjobs, pesize=None):
+        if self.batchtype is None:
+            self.batchtype = self.get_batch_system_type()
+        if self.batchtype == 'none':
+            return
+        for job, jsect in bjobs:
+            task_count = jsect["task_count"]
+            if task_count is None or task_count == "default":
+                task_count = pesize
+            else:
+                task_count = int(task_count)
+            queue = self.select_best_queue(task_count)
+            self.set_value("JOB_QUEUE", queue, subgroup=job)
+            walltime = self.get_max_walltime(queue)
+            self.set_value( "JOB_WALLCLOCK_TIME", walltime , subgroup=job)
+            logger.info("Job %s queue %s walltime %s"%(job, queue, walltime))
+
+
     def get_batch_directives(self):
         """
         """
@@ -252,19 +276,33 @@ class EnvBatch(EnvBase):
 
         return "\n".join(result)
 
-
-    def get_submit_args(self):
+    def get_submit_args(self, case, job):
         '''
         return a list of touples (flag, name)
         '''
-        values = " "
+        submitargs = " "
         bs_nodes = self.get_nodes("batch_system")
         submit_arg_nodes = []
         for node in bs_nodes:
             submit_arg_nodes += self.get_nodes("arg",root=node)
         for arg in submit_arg_nodes:
-            values += " " + arg.get("flag") + " " + arg.get("name")
-        return values
+            flag = arg.get("flag")
+            name = arg.get("name")
+            if name is None:
+                submitargs+=" %s"%flag
+            else:
+                val = case.get_value(name,subgroup=job)
+                if val is None:
+                    val = case.get_resolved_value(name)
+
+                if val is not None and len(val) > 0 and val != "None":
+                    if flag.rfind("=", len(flag)-1, len(flag)) >= 0 or\
+                       flag.rfind(":", len(flag)-1, len(flag)) >= 0:
+                        submitargs+=" %s%s"%(flag,str(val).strip())
+                    else:
+                        submitargs+=" %s %s"%(flag,str(val).strip())
+
+        return submitargs
 
     def submit_jobs(self, case, no_batch=False):
         for job in self.get_jobs():
@@ -325,7 +363,7 @@ class EnvBatch(EnvBase):
 
             return
 
-        submitargs = case.get_resolved_value(self.get_submit_args())
+        submitargs = self.get_submit_args(case, job)
 
         if depid is not None:
             dep_string = self.get_value("depend_string", subgroup=None)
@@ -333,7 +371,11 @@ class EnvBatch(EnvBase):
             submitargs += " "+dep_string
         batchsubmit = self.get_value("batch_submit", subgroup=None)
         batchredirect = self.get_value("batch_redirect", subgroup=None)
-        submitcmd = batchsubmit + " " + submitargs + " " + batchredirect + " " + job
+        submitcmd = ''
+        for string in (batchsubmit, submitargs, batchredirect, job):
+            if  string is not None:
+                submitcmd += string + " "
+
         if self.batchtype == "pbs":
             submitcmd += " -F \"--caseroot %s\""%caseroot
 
@@ -344,12 +386,52 @@ class EnvBatch(EnvBase):
         return jobid
 
     def get_batch_system_type(self):
-        if self.batchtype is None:
-            self.batchtype = self.get_node("batch_system").get("type")
+        nodes = self.get_nodes("batch_system")
+        for node in nodes:
+            type = node.get("type")
+            if type is not None:
+                self.batchtype = type
         return self.batchtype
+
+    def set_batch_system_type(self, batchtype):
+        self.batchtype = batchtype
+
 
     def get_job_id(self, output):
         jobid_pattern = self.get_value("jobid_pattern", subgroup=None)
         expect(jobid_pattern is not None,"Could not find jobid_pattern in env_batch.xml")
         jobid = re.search(jobid_pattern, output).group(1)
         return jobid
+
+    def select_best_queue(self, num_pes):
+        # Make sure to check default queue first.
+        all_queues = []
+        all_queues.append( self.get_default_queue())
+        all_queues = all_queues + self.get_all_queues()
+        for queue in all_queues:
+            if queue is not None:
+                jobmin = queue.get("jobmin")
+                jobmax = queue.get("jobmax")
+                # if the fullsum is between the min and max # jobs, then use this queue.
+                if jobmin is not None and jobmax is not None and num_pes >= int(jobmin) and num_pes <= int(jobmax):
+                    return queue.text
+        return None
+
+    def get_max_walltime(self, queue):
+        walltime = None
+        for queue_node in self.get_all_queues():
+            if queue_node.text == queue:
+                walltime = queue_node.get("walltimemax")
+        return walltime
+
+    def get_walltimes(self):
+        return self.get_nodes("walltime", root=self.machine_node)
+
+    def get_default_walltime(self):
+        return self.get_optional_node("walltime", attributes={"default" : "true"}, root=self.machine_node)
+
+    def get_default_queue(self):
+        return self.get_optional_node("queue", attributes={"default" : "true"})
+
+    def get_all_queues(self):
+        return self.get_nodes("queue")

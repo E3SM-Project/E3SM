@@ -47,9 +47,9 @@ def submit(case, job=None, resubmit=False, no_batch=False, prereq_jobid=None):
             batch_system = "none"
         else:
             batch_system = env_batch.get_batch_system_type()
-        case.set_value("batch_system", batch_system)
+        case.set_value("BATCH_SYSTEM", batch_system)
     else:
-        if env_batch.get_value("batch_system", subgroup=None) == "none":
+        if env_batch.get_batch_system_type() == "none":
             no_batch = True
 
         # This is a resubmission, do not reinitialize test values
