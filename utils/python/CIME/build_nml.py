@@ -15,7 +15,6 @@ class buildXNml(buildnml):
         nx = case.get_value("%s_NX" % self.comp)
         ny = case.get_value("%s_NY" % self.comp)
         extras = []
-        base_filename = os.path.join(rundir, "%s_in" % self.model)
         dtype = 1
         npes = 0
         length = 0
@@ -45,16 +44,19 @@ class buildXNml(buildnml):
             # If only 1 file, name is 'model_in'
             # otherwise files are 'model_in0001', 'model_in0002', etc
             if ninst == 1:
-                infile = open(base_filename, 'w')
+                filename = os.path.join(rundir, "%s_in" % self.model)
             else:
-                infile = open("%s%4.4d" % (base_filename, i), 'w')
-                
-            infile.write("%-20d ! i-direction global dimension\n" % nx)
-            infile.write("%-20d ! j-direction global dimension\n" % ny)
-            infile.write("%-20d ! decomp_type  1=1d-by-lat, 2=1d-by-lon,"
-                         " 3=2d, 4=2d evensquare, 11=segmented\n" % dtype)
-            infile.write("%-20d ! num of pes for i (type 3 only)\n" % npes)
-            infile.write("%-20d ! length of segments (type 4 only)\n" % length)
-            for extra in extras:
-                infile.write("%-20s ! %s\n" % (extra[0], extra[1]))
-            infile.close()
+                filename = os.path.join(rundir, "%s_in%4.4d" % (self.model,i))
+
+
+            with open(filename, 'w') as infile:
+                infile.write("%-20d ! i-direction global dimension\n" % nx)
+                infile.write("%-20d ! j-direction global dimension\n" % ny)
+                infile.write("%-20d ! decomp_type  1=1d-by-lat, 2=1d-by-lon,"
+                             " 3=2d, 4=2d evensquare, 11=segmented\n" % dtype)
+                infile.write("%-20d ! num of pes for i (type 3 only)\n" % npes)
+                infile.write("%-20d ! length of segments (type 4 only)\n" 
+                             % length)
+                for extra in extras:
+                    infile.write("%-20s ! %s\n" % (extra[0], extra[1]))
+

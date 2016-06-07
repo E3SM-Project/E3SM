@@ -19,22 +19,15 @@ class BuildXLib(buildlib):
         libroot = self.case.get_value("LIBROOT")
         gmake_j = self.case.get_value("GMAKE_J")
         gmake = self.case.get_value("GMAKE")
-        try:
-            out = open('Filepath','w')
-            msg = None
-        except IOError, e:
-            msg = str(e)
-
-        expect(msg is None, msg)
 
         # Write directory list
-        out.write(os.path.join(caseroot, "SourceMods", "src.%s", self.comp)
-                  + "\n")
-        out.write(os.path.join(cimeroot, "components", "xcpl_comps",
-                               "xshare") + "\n")
-        out.write(os.path.join(cimeroot, "components", "xcpl_comps",
-                               self.comp, "cpl") + "\n")
-        out.close()
+        with open('Filepath','w') as out:
+            out.write(os.path.join(caseroot, "SourceMods", "src.%s", self.comp)
+                      + "\n")
+            out.write(os.path.join(cimeroot, "components", "xcpl_comps",
+                                   "xshare") + "\n")
+            out.write(os.path.join(cimeroot, "components", "xcpl_comps",
+                                   self.comp, "cpl") + "\n")
 
         # generate macro values
         complib = os.path.join(libroot, "lib%s.a" % self.model)
