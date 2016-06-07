@@ -363,19 +363,17 @@ int PIOc_createfile(const int iosysid, int *ncidp, int *iotype,
  */
 int PIOc_closefile(int ncid)
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
+    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    file_desc_t *file;     /** Pointer to file information. */
+    int ierr = PIO_NOERR;  /** Return code from function calls. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
 
-    ierr = PIO_NOERR;
 
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
-	return PIO_EBADID;
+    /* Find the info about this file. */
+    if (!(file = pio_get_file_from_id(ncid)))
+        return PIO_EBADID;
     ios = file->iosystem;
-    msg = PIO_MSG_CLOSE_FILE;
+
     if((file->mode & PIO_WRITE)){
 	PIOc_sync(ncid);
     }
@@ -384,15 +382,31 @@ int PIOc_closefile(int ncid)
      * sends a msg to the pio_msg_handler running on the IO master and
      * waiting for a message. Then broadcast the ncid over the intercomm
      * to the IO tasks. */
-    if(ios->async_interface && !ios->ioproc){
-	if(ios->comp_rank==0) {
-	    mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
+    if (ios->async_interface)
+    {
+	if (!ios->ioproc)
+	{
+	    int msg = PIO_MSG_CLOSE_FILE;
+	
+	    if(ios->compmaster) 
+		mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
+
+            if (!mpierr)
+                mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	}
-	mpierr = MPI_Bcast(&(file->fh), 1, MPI_INT, ios->compmaster, ios->intercomm);
+
+        /* Handle MPI errors. */
+        if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->comproot, ios->my_comm)))
+            return check_mpi(file, mpierr2, __FILE__, __LINE__);
+	if (mpierr)
+	    return check_mpi(file, mpierr, __FILE__, __LINE__);
     }
 
-    if(ios->ioproc){
-	switch(file->iotype){
+    /* If this is an IO task, then call the netCDF function. */    
+    if (ios->ioproc)
+    {
+	switch (file->iotype)
+	{
 #ifdef _NETCDF
 #ifdef _NETCDF4
 	case PIO_IOTYPE_NETCDF4P:
@@ -418,14 +432,15 @@ int PIOc_closefile(int ncid)
 	    ierr = iotype_error(file->iotype,__FILE__,__LINE__);
 	}
     }
-    if(ios->io_rank==0){
-	printf("Close file %d \n",file->fh);
-//    if(file->fh==5) print_trace(stdout);
-    }
 
-    ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+    /* Broadcast and check the return code. */
+    if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+        return check_mpi(file, mpierr, __FILE__, __LINE__);
+    if (ierr)
+	return check_netcdf(file, ierr, __FILE__, __LINE__);
 
-    int iret =  pio_delete_file_from_list(ncid);
+    /* Delete file from our list of open files. */
+    pio_delete_file_from_list(ncid);
 
     return ierr;
 }
