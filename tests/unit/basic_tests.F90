@@ -191,7 +191,6 @@ module basic_tests
       if (is_netcdf(iotype)) then
         ret_val = PIO_redef(pio_file)
         if (ret_val .ne. PIO_NOERR) then
-          ! Error in PIO_redef
           err_msg = "Could not enter redef mode"
           call PIO_closefile(pio_file)
           call mpi_abort(MPI_COMM_WORLD, 0, ret_val2)
