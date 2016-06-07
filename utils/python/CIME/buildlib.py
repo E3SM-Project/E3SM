@@ -41,7 +41,12 @@ class buildxlib(buildlib):
         makefile = os.path.join(casetools, "Makefile")
         macfile = os.path.join(caseroot, "Macros.%s" % mach)
 
-        # build 
-        run_cmd("%s complib -j %d MODEL=%s COMPLIB=%s -f %s MACFILE=%s"
-                % (gmake, gmake_j, self.model, complib, makefile, macfile))
-
+        # build
+        cmd = "%s complib -j %d MODEL=%s COMPLIB=%s -f %s MACFILE=%s" % (gmake,
+                    gmake_j, self.model, complib, makefile, macfile))
+        rc, out, err = run_cmd(cmd)
+        expect(rc == 0, "Command %s failed rc=%d\nout=%s\nerr=%s" % (cmd, rc,
+                                                                     out, err))
+        logger.info("Command %s completed with output %s\nerr %s"% (cmd, out,
+                                                                    err))
+        
