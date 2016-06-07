@@ -9,17 +9,16 @@ class buildlib(object):
         self.case = case
         self.model = model
         self.comp = comp
-        self.caseroot = case.get_value("CASEROOT")
-        self.casetools = case.get_value("CASETOOLS")
-        self.cimeroot = case.get_value("CIMEROOT")
-        self.mach = case.get_value("MACH")
-        self.objroot = case.get_value("OBJROOT")
-        self.libroot = case.get_value("LIBROOT")
-        self.gmake_j = case.get_value("GMAKE_J")
-        self.gmake = case.get_value("GMAKE")
 
 class buildxlib(buildlib):
     def buildlib(self):
+        caseroot = self.case.get_value("CASEROOT")
+        casetools = self.self.case.get_value("CASETOOLS")
+        cimeroot = self.case.get_value("CIMEROOT")
+        mach = self.case.get_value("MACH")
+        libroot = self.case.get_value("LIBROOT")
+        gmake_j = self.case.get_value("GMAKE_J")
+        gmake = self.case.get_value("GMAKE")
         try:
             out = open('Filepath','w')
             msg = None
@@ -29,21 +28,20 @@ class buildxlib(buildlib):
         expect(msg is None, msg)
 
         # Write directory list
-        out.write(os.path.join(self.caseroot, "SourceMods", "src.%s", self.comp)
+        out.write(os.path.join(caseroot, "SourceMods", "src.%s", self.comp)
                   + "\n")
-        out.write(os.path.join(self.cimeroot, "components", "xcpl_comps",
+        out.write(os.path.join(cimeroot, "components", "xcpl_comps",
                                "xshare") + "\n")
-        out.write(os.path.join(self.cimeroot, "components", "xcpl_comps",
+        out.write(os.path.join(cimeroot, "components", "xcpl_comps",
                                self.comp, "cpl") + "\n")
         out.close()
 
         # generate macro values
-        complib = os.path.join(self.libroot, "lib%s.a" % self.model)
-        makefile = os.path.join(self.casetools, "Makefile")
-        macfile = os.path.join(self.caseroot, "Macros.%s" % self.mach)
+        complib = os.path.join(libroot, "lib%s.a" % self.model)
+        makefile = os.path.join(casetools, "Makefile")
+        macfile = os.path.join(caseroot, "Macros.%s" % mach)
 
         # build 
         run_cmd("%s complib -j %d MODEL=%s COMPLIB=%s -f %s MACFILE=%s"
-                % (self.gmake, self.gmake_j, self.model, complib,
-                   makefile, macfile))
+                % (gmake, gmake_j, self.model, complib, makefile, macfile))
 
