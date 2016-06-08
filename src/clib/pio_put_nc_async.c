@@ -192,7 +192,9 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 		    ierr = ncmpi_bput_vars_short(ncid, varid, start, count, stride, buf, request);
 		    break;
 		case NC_INT:
+		    LOG((2, "PIOc_put_vars_tc io_rank 0 doing pnetcdf for int"));	    		    
 		    ierr = ncmpi_bput_vars_int(ncid, varid, start, count, stride, buf, request);
+		    LOG((2, "PIOc_put_vars_tc io_rank 0 done with pnetcdf call for int ierr = %d", ierr));	    		    
 		    break;
 		case NC_FLOAT:
 		    ierr = ncmpi_bput_vars_float(ncid, varid, start, count, stride, buf, request);
