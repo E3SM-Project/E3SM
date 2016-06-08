@@ -18,7 +18,6 @@ class EnvBatch(EnvBase):
         initialize an object interface to file env_batch.xml in the case directory
         """
         EnvBase.__init__(self, case_root, infile)
-        self.jobs = []
         self.prereq_jobid = None
         self.batchtype = None
 
@@ -304,18 +303,27 @@ class EnvBatch(EnvBase):
 
         return submitargs
 
-    def submit_jobs(self, case, no_batch=False):
-        for job in self.get_jobs():
+    def submit_jobs(self, case, no_batch=False, job=None):
+        alljobs = self.get_jobs()
+        startindex = 0
+        jobs = []
+        if job is not None:
+            expect(job in alljobs, "Do not know about batch job %s"%job)
+            startindex = alljobs.index(job)
+
+        for index, job in enumerate(alljobs):
+            if index < startindex:
+                continue
+            logger.debug( "Index %d job %s"%(index, job))
             try:
                 prereq = case.get_resolved_value(self.get_value('prereq', subgroup=job))
                 prereq = eval(prereq)
             except:
                 expect(False,"Unable to evaluate prereq expression '%s' for job '%s'"%(self.get_value('prereq',subgroup=job), job))
             if prereq:
-                self.jobs.append((job,self.get_value('dependency', subgroup=job)))
-
+                jobs.append((job,self.get_value('dependency', subgroup=job)))
         depid = {}
-        for job, dependency in self.jobs:
+        for job, dependency in jobs:
             if dependency is not None:
                 deps = dependency.split()
             else:

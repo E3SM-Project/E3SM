@@ -24,16 +24,17 @@ def submit(case, job=None, resubmit=False, no_batch=False, prereq_jobid=None):
         else:
             job = "case.run"
 
-    logger.info("Submitting job '%s', resubmit=%s" % (job, resubmit))
 
     if resubmit:
         resub = case.get_value("RESUBMIT")
+        logger.info("Submitting job '%s', resubmit=%d" % (job, resub))
         case.set_value("RESUBMIT",resub-1)
         if case.get_value("RESUBMIT_SETS_CONTINUE_RUN"):
             case.set_value("CONTINUE_RUN", True)
     else:
-        check_case(case, caseroot)
-        check_DA_settings(case)
+        if job in ("case.test","case.run"):
+            check_case(case, caseroot)
+            check_DA_settings(case)
 
     cimeroot = case.get_value("CIMEROOT")
     os.environ["CIMEROOT"] = cimeroot
@@ -65,7 +66,7 @@ def submit(case, job=None, resubmit=False, no_batch=False, prereq_jobid=None):
 
     case.set_value("RUN_WITH_SUBMIT",True)
     case.flush()
-    case.submit_jobs(no_batch=no_batch)
+    case.submit_jobs(no_batch=no_batch, job=job)
 
 def check_case(case, caseroot):
     check_lockedfiles(caseroot)

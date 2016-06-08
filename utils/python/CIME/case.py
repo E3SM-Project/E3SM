@@ -792,6 +792,6 @@ class Case(object):
 
         return newcase
 
-    def submit_jobs(self, no_batch=False):
+    def submit_jobs(self, no_batch=False, job=None):
         env_batch = self._get_env('batch')
-        env_batch.submit_jobs(self, no_batch=no_batch)
+        env_batch.submit_jobs(self, no_batch=no_batch, job=job)

@@ -39,8 +39,10 @@ class ERS(SystemTestsCommon):
         stop_option = self._case.get_value("STOP_OPTION")
 
         rest_n = stop_n/2 + 1
+        stop_new = stop_n - rest_n
+        expect(stop_new > 0, "ERROR: stop_n value %d too short %d %d"%(stop_new,stop_n,rest_n))
 
-        self._case.set_value("STOP_N", stop_n - rest_n)
+        self._case.set_value("STOP_N", stop_new)
         self._case.set_value("CONTINUE_RUN", True)
         self._case.set_value("REST_OPTION","never")
         self._case.flush()
