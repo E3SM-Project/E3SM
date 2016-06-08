@@ -1446,7 +1446,7 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
     MPI_Status status;
     int index;
     int mpierr;
-    int ret;
+    int ret = PIO_NOERR;
 
     int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
