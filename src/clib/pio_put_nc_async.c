@@ -43,6 +43,9 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
     int *dimids; /** The IDs of the dimensions for this variable. */
     PIO_Offset typelen; /** Size (in bytes) of the data type of data in buf. */
     PIO_Offset num_elem = 1; /** Number of data elements in the buffer. */
+    char start_present = start ? true : false; /* Is start non-NULL? */
+    char count_present = count ? true : false; /* Is count non-NULL? */
+    char stride_present = stride ? true : false; /* Is stride non-NULL? */
     var_desc_t *vdesc;
     PIO_Offset usage;
     int *request;
@@ -112,9 +115,6 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	if (!ios->ioproc)
 	{
 	    int msg = PIO_MSG_PUT_VARS;
-	    char start_present = start ? true : false;
-	    char count_present = count ? true : false;
-	    char stride_present = stride ? true : false;
 
 	    if(ios->compmaster)
 		mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
@@ -163,7 +163,6 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	LOG((2, "PIOc_put_vars_tc checked mpierr = %d", mpierr));
     }
 
-    sleep(1);
     /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
     {
@@ -180,7 +179,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 		    fake_stride[d] = 1;
 	    }
 	    else
-		fake_stride = stride;
+		fake_stride = (PIO_Offset *)stride;
 	    
 	    LOG((2, "PIOc_put_vars_tc calling pnetcdf function"));
 	    vdesc = file->varlist + varid;
