@@ -1602,7 +1602,7 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	}
 
 	/* If an error was returned by the handler, do something! */
-	LOG((3, "pio_msg_handler checking error"));
+	LOG((3, "pio_msg_handler checking error ret = %d", ret));
 	if (ret)
 	{
 	    LOG((0, "hander returned error code %d", ret));
