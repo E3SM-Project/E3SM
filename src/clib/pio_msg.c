@@ -1504,13 +1504,16 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	    break;
 	case PIO_MSG_CREATE_FILE:
 	    create_file_handler(my_iosys);
+	    LOG((2, "returned from create_file_handler"));
 	    break;
 	case PIO_MSG_SYNC:
 	    sync_file_handler(my_iosys);
 	    break;
 	case PIO_MSG_ENDDEF:
 	case PIO_MSG_REDEF:
+	    LOG((2, "calling change_def_file_handler"));
 	    change_def_file_handler(my_iosys, msg);
+	    LOG((2, "returned from change_def_file_handler"));
 	    break;
 	case PIO_MSG_OPEN_FILE:
 	    open_file_handler(my_iosys);
