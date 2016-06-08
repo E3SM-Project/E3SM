@@ -170,6 +170,18 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 #ifdef _PNETCDF
 	if (file->iotype == PIO_IOTYPE_PNETCDF)
 	{
+	    PIO_Offset *fake_stride;
+		
+	    if (!stride_present)
+	    {
+		if (!(fake_stride = malloc(ndims * sizeof(PIO_Offset))))
+		    return PIO_ENOMEM;
+		for (int d = 0; d < ndims; d++)
+		    fake_stride[d] = 1;
+	    }
+	    else
+		fake_stride = stride;
+	    
 	    LOG((2, "PIOc_put_vars_tc calling pnetcdf function"));
 	    vdesc = file->varlist + varid;
 	    if (vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0)
@@ -186,27 +198,27 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 		switch(xtype)
 		{
 		case NC_BYTE:
-		    ierr = ncmpi_bput_vars_schar(ncid, varid, start, count, stride, buf, request);
+		    ierr = ncmpi_bput_vars_schar(ncid, varid, start, count, fake_stride, buf, request);
 		    break;
 		case NC_CHAR:
-		    ierr = ncmpi_bput_vars_text(ncid, varid, start, count, stride, buf, request);
+		    ierr = ncmpi_bput_vars_text(ncid, varid, start, count, fake_stride, buf, request);
 		    break;
 		case NC_SHORT:
-		    ierr = ncmpi_bput_vars_short(ncid, varid, start, count, stride, buf, request);
+		    ierr = ncmpi_bput_vars_short(ncid, varid, start, count, fake_stride, buf, request);
 		    break;
 		case NC_INT:
 		    LOG((2, "PIOc_put_vars_tc io_rank 0 doing pnetcdf for int"));
-		    ierr = ncmpi_bput_vars_int(ncid, varid, start, count, stride, buf, request);
+		    ierr = ncmpi_bput_vars_int(ncid, varid, start, count, fake_stride, buf, request);
 		    LOG((2, "PIOc_put_vars_tc io_rank 0 done with pnetcdf call for int ierr = %d", ierr));	    		    
 		    break;
 		case NC_FLOAT:
-		    ierr = ncmpi_bput_vars_float(ncid, varid, start, count, stride, buf, request);
+		    ierr = ncmpi_bput_vars_float(ncid, varid, start, count, fake_stride, buf, request);
 		    break;
 		case NC_DOUBLE:
-		    ierr = ncmpi_bput_vars_double(ncid, varid, start, count, stride, buf, request);
+		    ierr = ncmpi_bput_vars_double(ncid, varid, start, count, fake_stride, buf, request);
 		    break;
 		case NC_INT64:
-		    ierr = ncmpi_bput_vars_longlong(ncid, varid, start, count, stride, buf, request);
+		    ierr = ncmpi_bput_vars_longlong(ncid, varid, start, count, fake_stride, buf, request);
 		    break;
 		default:
 		    LOG((0, "Unknown type for pnetcdf file! xtype = %d", xtype));
@@ -220,6 +232,10 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    LOG((2, "PIOc_put_vars_tc flushing output buffer"));
 	    flush_output_buffer(file, false, 0);
 	    LOG((2, "PIOc_put_vars_tc flushed output buffer"));
+
+	    /* Free malloced resources. */
+	    if (!stride_present)
+		free(fake_stride);
 	}
 #endif /* _PNETCDF */
 #ifdef _NETCDF
