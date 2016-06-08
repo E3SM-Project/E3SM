@@ -245,7 +245,8 @@ class Machines(GenericXML):
         """
         result = False
         batch_system = self.get_optional_node("BATCH_SYSTEM", root=self.machine_node)
-        result = (batch_system.text is not None and batch_system.text != "none")
+        if batch_system is not None:
+            result = (batch_system.text is not None and batch_system.text != "none")
         logger.debug("Machine %s has batch: %s" % (self.machine, result))
         return result
 

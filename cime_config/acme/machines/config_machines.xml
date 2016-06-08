@@ -992,7 +992,7 @@
 
 <machine MACH="caldera">
   <DESC>NCAR IBM, os is Linux, 16 pes/node, intended for ncar testing of acme cime</DESC>
-  <NODENAME_REGEX>(pronghorn*|caldera*)</NODENAME_REGEX>
+  <NODENAME_REGEX>.*yellowstone</NODENAME_REGEX>
   <OS>LINUX</OS>
   <COMPILERS>intel,pgi,gnu</COMPILERS>
   <MPILIBS>mpich2,pempi,mpi-serial</MPILIBS>
@@ -1006,7 +1006,7 @@
   <CCSM_BASELINE>$ENV{CESMDATAROOT}/ccsm_baselines</CCSM_BASELINE>
   <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
   <PERL5LIB>/glade/apps/opt/perlmods/lib64/perl5:/glade/apps/opt/perlmods/share/perl5</PERL5LIB>
-  <BATCH_SYSTEM>none</BATCH_SYTEM>
+  <BATCH_SYSTEM>none</BATCH_SYSTEM>
   <SUPPORTED_BY>jedwards@ucar.edu</SUPPORTED_BY>
   <GMAKE_J>8</GMAKE_J>
   <MAX_TASKS_PER_NODE>30</MAX_TASKS_PER_NODE>

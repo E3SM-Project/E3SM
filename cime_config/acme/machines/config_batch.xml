@@ -156,8 +156,6 @@
       </walltimes>
     </batch_system>
 
-    </batch_system>
-
     <!-- eos is PBS -->
     <batch_system MACH="eos" version="x.y">
     <jobid_pattern>^(\d+)</jobid_pattern>
