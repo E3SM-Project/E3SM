@@ -1602,16 +1602,19 @@ int pio_msg_handler(int io_rank, int component_count, iosystem_desc_t *iosys)
 	}
 
 	/* If an error was returned by the handler, do something! */
+	LOG((3, "pio_msg_handler checking error"));
 	if (ret)
 	{
 	    LOG((0, "hander returned error code %d", ret));
 	    MPI_Finalize();
 	}
 
+	LOG((3, "pio_msg_handler getting ready to listen"));
 	/* Unless finalize was called, listen for another msg from the
 	 * component whose message we just handled. */
 	if (!io_rank && msg != -1)
 	{
+	    LOG((3, "pio_msg_handler about to Irecv"));
 	    my_iosys = &iosys[index];
 	    mpierr = MPI_Irecv(&msg, 1, MPI_INT, my_iosys->comproot, MPI_ANY_TAG, my_iosys->union_comm,
 			       &req[index]);
