@@ -368,7 +368,7 @@ main(int argc, char **argv)
     }
 
     /* Turn on logging. */
-    if ((ret = PIOc_set_log_level(2)))
+    if ((ret = PIOc_set_log_level(3)))
 	ERR(ret);
 
     /* Initialize the async setup. */
