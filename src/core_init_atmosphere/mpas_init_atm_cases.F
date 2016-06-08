@@ -2574,7 +2574,7 @@ module init_atm_cases
       integer, pointer :: config_nsm
       real (kind=RKIND), pointer :: config_dzmin
       real (kind=RKIND), pointer :: config_ztop
-      logical, pointer :: config_use_specific_humidity
+      logical, pointer :: config_use_spechumd
       integer, pointer :: config_nfglevels
       integer, pointer :: config_nfgsoillevels
       logical, pointer :: config_smooth_surfaces
@@ -2632,7 +2632,7 @@ module init_atm_cases
       call mpas_pool_get_config(configs, 'config_nsm', config_nsm)
       call mpas_pool_get_config(configs, 'config_dzmin', config_dzmin)
       call mpas_pool_get_config(configs, 'config_ztop', config_ztop)
-      call mpas_pool_get_config(configs, 'config_use_specific_humidity', config_use_specific_humidity)
+      call mpas_pool_get_config(configs, 'config_use_spechumd', config_use_spechumd)
       call mpas_pool_get_config(configs, 'config_nfglevels', config_nfglevels)
       call mpas_pool_get_config(configs, 'config_nfgsoillevels', config_nfgsoillevels)
       call mpas_pool_get_config(configs, 'config_smooth_surfaces', config_smooth_surfaces)
@@ -4187,7 +4187,7 @@ write(0,*) 'PROCESSING SEAICE'
       ! Diagnose the water vapor mixing ratios:
       global_sh_min = 0._RKIND
       global_sh_max = 0._RKIND
-      if(config_use_specific_humidity) then
+      if(config_use_spechumd) then
          sh_min = minval(spechum(:,1:nCellsSolve))
          sh_max = maxval(spechum(:,1:nCellsSolve))
          call mpas_dmpar_min_real(dminfo,sh_min,global_sh_min)
@@ -4198,8 +4198,8 @@ write(0,*) 'PROCESSING SEAICE'
       write(0,*) '--- global_sh_max = ', global_sh_max
       write(0,*)
 
-      if(.not. config_use_specific_humidity .or. (global_sh_min==0._RKIND .and. global_sh_max==0._RKIND)) then
-         write(0,*) '--- config_use_specific_humidity = ', config_use_specific_humidity 
+      if(.not. config_use_spechumd .or. (global_sh_min==0._RKIND .and. global_sh_max==0._RKIND)) then
+         write(0,*) '--- config_use_spechumd = ', config_use_spechumd 
          !--- calculate the saturation mixing ratio and interpolated first-guess relative humidity:
          write(0,*) '--- calculates the water vapor mixing ratio using first-guess relative humidity.' 
          write(0,*)
