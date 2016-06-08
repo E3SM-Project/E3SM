@@ -400,8 +400,10 @@ main(int argc, char **argv)
 	    	printf("%d test_intercomm file created ncid = %d\n", my_rank, ncid);
 
 	    /* /\* End define mode, then re-enter it. *\/ */
+	    sleep(1);
 	    if ((ret = PIOc_enddef(ncid)))
 	    	ERR(ret);
+	    sleep(1);
 	    if (verbose)
 	    	printf("%d test_intercomm calling redef\n", my_rank);
 	    if ((ret = PIOc_redef(ncid)))
