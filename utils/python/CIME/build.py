@@ -27,50 +27,46 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot, complis
 
     thread_bad_results = []
     for model, comp, nthrds, ninst, config_dir in complist:
+
         # aquap has a dependency on atm so we will build it after the threaded loop
         if comp == "aquap":
             logger.debug("Skip aquap ocn build here")
             continue
+
         # coupler handled seperately
         if model == "cpl":
             continue
-        os.environ["MODEL"] = model
-        os.environ["SMP"] = stringify_bool(nthrds > 1 or build_threaded)
 
-        bldroot = exeroot # What is this for?
-
-        objdir = os.path.join(exeroot, model, "obj")
-        libdir = os.path.join(exeroot, model)
-        compspec = comp
-
-        # Special case for clm
+        # special case for clm
         # clm 4_0 is not a shared library and must be built here
         # clm 4_5 and newer is a shared library and should be built in build_libraries
         if comp == "clm":
             if "clm4_0" in clm_config_opts:
                 logger.info("         - Building clm4_0 Library ")
-                compspec = "lnd"
             else:
                 continue
 
-        logger.debug("bldroot is %s" % bldroot)
-        logger.debug("objdir is %s" % objdir)
-        logger.debug("libdir is %s" % libdir)
+        os.environ["MODEL"] = model
+        os.environ["SMP"] = stringify_bool(nthrds > 1 or build_threaded)
 
-        # Make sure obj, lib dirs exist
-        for build_dir in [objdir, libdir]:
+        bldroot = os.path.join(exeroot, model, "obj")
+        libroot = os.path.join(exeroot, "lib")
+        file_build = os.path.join(exeroot, "%s.bldlog.%s" % (model, lid))
+        logger.debug("bldroot is %s" % bldroot)
+        logger.debug("libroot is %s" % libroot)
+
+        # make sure bldroot and libroot exist
+        for build_dir in [bldroot, libroot]:
             if not os.path.exists(build_dir):
                 os.makedirs(build_dir)
 
-        file_build = os.path.join(exeroot, "%s.bldlog.%s" % (model, lid))
-
         # build the component library
         t = threading.Thread(target=_build_model_thread,
-            args=(config_dir, caseroot, bldroot, compspec, file_build,
-                  exeroot, model, comp, objdir, incroot, thread_bad_results))
+            args=(config_dir, model, caseroot, bldroot, libroot, incroot, file_build, 
+                  thread_bad_results))
         t.start()
 
-        for mod_file in glob.glob(os.path.join(objdir, "*_[Cc][Oo][Mm][Pp]_*.mod")):
+        for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
             shutil.copy(mod_file, incroot)
 
         logs.append(file_build)
@@ -84,8 +80,8 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot, complis
     for model, comp, nthrds, ninst, config_dir in complist:
         if comp == "aquap":
             logger.debug("Now build aquap ocn component")
-            _build_model_thread(config_dir, caseroot, bldroot, comp, file_build,
-                                exeroot, model, comp, objdir, incroot, thread_bad_results)
+            _build_model_thread(config_dir, caseroot, bldroot, libroot, incroot, file_build, 
+                                thread_bad_results)
 
     expect(not thread_bad_results, "\n".join(thread_bad_results))
 
@@ -114,6 +110,7 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot, complis
 ###############################################################################
 def post_build(case, logs):
 ###############################################################################
+
     logdir = case.get_value("LOGDIR")
 
     #zip build logs to CASEROOT/logs
@@ -143,6 +140,7 @@ def post_build(case, logs):
 ###############################################################################
 def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
 ###############################################################################
+
     t1 = time.time()
 
     expect(not (sharedlib_only and model_only),
@@ -309,6 +307,7 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
 ###############################################################################
 def check_all_input_data(case):
 ###############################################################################
+
     success = check_input_data(case=case, download=True)
     expect(success, "Failed to download input data")
 
@@ -507,36 +506,36 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
         logging.info("         - Building clm4_5/clm5_0 Library ")
         esmfdir = "esmf" if case.get_value("USE_ESMF_LIB") else "noesmf"
         sharedpath = os.environ["SHAREDPATH"]
-        bldroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir)
-        objdir = os.path.join(bldroot, "clm", "obj")
-        libdir = os.path.join(bldroot, "lib")
+        bldroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "lnd","obj" )
+        libroot = os.path.join(bldroot, "lib")
         file_build = os.path.join(exeroot, "lnd.bldlog.%s" %  lid)
         config_lnd_dir = os.path.dirname(case.get_value("CONFIG_LND_FILE"))
-        for ndir in [bldroot, objdir, libdir]:
-            if(not os.path.isdir(ndir)):
+        for ndir in [bldroot, libroot]:
+            if (not os.path.isdir(ndir)):
                 os.makedirs(ndir)
 
-        _build_model_thread(config_lnd_dir, caseroot, bldroot, "clm", file_build,
-                            exeroot, "lnd", "clm", objdir, os.path.join(sharedpath,"include"), logs)
+        _build_model_thread(config_lnd_dir, "lnd", caseroot, bldroot, libroot, incroot, file_build, logs)
 
     return logs
 
 ###############################################################################
-def _build_model_thread(config_dir, caseroot, bldroot, compspec, file_build,
-                        exeroot, model, comp, objdir, incroot, thread_bad_results):
+def _build_model_thread(config_dir, compclass, caseroot, bldroot, libroot, incroot, file_build, 
+                        thread_bad_results):
 ###############################################################################
-    stat = run_cmd("%s/buildlib %s %s %s >> %s 2>&1" %
-                   (config_dir, caseroot, bldroot, compspec, file_build),
-                   from_dir=objdir, ok_to_fail=True,verbose=True)[0]
-    if (stat != 0):
-        thread_bad_results.append("ERROR: %s.buildlib failed, see %s" % (comp, file_build))
 
-    for mod_file in glob.glob(os.path.join(objdir, "*_[Cc][Oo][Mm][Pp]_*.mod")):
+    stat = run_cmd("%s/buildlib %s %s %s >> %s 2>&1" %
+                   (config_dir, caseroot, bldroot, libroot, file_build),
+                   from_dir=bldroot, ok_to_fail=True,verbose=True)[0]
+    if (stat != 0):
+        thread_bad_results.append("ERROR: %s.buildlib failed, see %s" % (compclass, file_build))
+
+    for mod_file in glob.glob(os.path.join(bldroot, "*_[Cc][Oo][Mm][Pp]_*.mod")):
         shutil.copy(mod_file, incroot)
 
 ###############################################################################
 def clean(case, cleanlist=None):
 ###############################################################################
+
     clm_config_opts = case.get_value("CLM_CONFIG_OPTS")
     comp_lnd = case.get_value("COMP_LND")
     if cleanlist is None:
