@@ -40,8 +40,7 @@ def _main_func(description):
 
     caseroot = parse_command_line(sys.argv, description)
     case = Case(caseroot)
-    builder = CIME.build_nml.BuildXNml(case,'xrof','ROF')
-    builder.build_namelist()
+    CIME.build_nml.build_x_nml(case,'xrof','ROF')
 
 
 if __name__ == "__main__":
