@@ -179,7 +179,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 
 	    if(ios->io_rank == 0)
 	    {
-		LOG((2, "PIOc_put_vars_tc io_rank 0 doing pnetcdf call"));	    
+		LOG((2, "PIOc_put_vars_tc io_rank 0 doing pnetcdf call xtype = %d", xtype));	    
 		switch(xtype)
 		{
 		case NC_BYTE:
@@ -192,7 +192,8 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 		    ierr = ncmpi_bput_vars_short(ncid, varid, start, count, stride, buf, request);
 		    break;
 		case NC_INT:
-		    LOG((2, "PIOc_put_vars_tc io_rank 0 doing pnetcdf for int"));	    		    
+		    LOG((2, "PIOc_put_vars_tc io_rank 0 doing pnetcdf for int"));
+		    sleep(1);
 		    ierr = ncmpi_bput_vars_int(ncid, varid, start, count, stride, buf, request);
 		    LOG((2, "PIOc_put_vars_tc io_rank 0 done with pnetcdf call for int ierr = %d", ierr));	    		    
 		    break;
