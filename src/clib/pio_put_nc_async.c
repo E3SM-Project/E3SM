@@ -181,6 +181,8 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    if(ios->io_rank == 0)
 	    {
 		LOG((2, "PIOc_put_vars_tc io_rank 0 doing pnetcdf call xtype = %d this time I mean it!", xtype));	    
+		LOG((2, "PIOc_put_vars_tc ncid = %d varid = %d start[0] = %d count[0] = %d stride = %d",
+		     ncid, varid, start[0], count[0], stride));	    
 		switch(xtype)
 		{
 		case NC_BYTE:
