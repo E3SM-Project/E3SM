@@ -180,7 +180,6 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 
 	    if(ios->io_rank == 0)
 	    {
-		LOG((2, "PIOc_put_vars_tc io_rank 0 doing pnetcdf call xtype = %d", xtype));	    
 		LOG((2, "PIOc_put_vars_tc io_rank 0 doing pnetcdf call xtype = %d this time I mean it!", xtype));	    
 		switch(xtype)
 		{

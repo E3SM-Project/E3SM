@@ -71,7 +71,7 @@ int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	/* How many elements in buf? */
 	for (int vd = 0; vd < ndims; vd++)
 	    num_elem *= (rcount[vd] - rstart[vd])/rstride[vd];
-	LOG((2, "PIOc_put_vars_tc num_elem = %d", num_elem));
+	LOG((2, "PIOc_get_vars_tc num_elem = %d", num_elem));
     }
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
