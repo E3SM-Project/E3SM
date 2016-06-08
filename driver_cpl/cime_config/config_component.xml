@@ -619,7 +619,7 @@
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>Case executable root directory.
-    (executable is $EXEROOT/cesm.exe, component libraries are in $EXEROOT/bld)
+    (executable is $EXEROOT/$MODEL.exe, component libraries are in $EXEROOT/bld)
     This is where the model builds its executable and by default runs the executable.
     Note that EXEROOT needs to have enough disk space for the experimental configuration
     requirements. As an example, a model run can produce more than a terabyte of

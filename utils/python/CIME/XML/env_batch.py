@@ -6,7 +6,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.task_maker import TaskMaker
 from CIME.utils import convert_to_type
 from CIME.XML.env_base import EnvBase
-from CIME.utils import convert_to_string, transform_vars
+from CIME.utils import convert_to_string, transform_vars, get_cime_root
 from copy import deepcopy
 
 logger = logging.getLogger(__name__)
@@ -168,7 +168,7 @@ class EnvBatch(EnvBase):
                 newjob.append(deepcopy(child))
             group.append(newjob)
 
-            
+
 
 
     def cleanupnode(self, node):
@@ -341,7 +341,8 @@ class EnvBatch(EnvBase):
 
     def submit_single_job(self, case, job, depid=None):
         caseroot = case.get_value("CASEROOT")
-        if self.get_value("batchtype") == "none":
+        batch_system = self.get_value("BATCH_SYSTEM")
+        if batch_system is None or batch_system == "none":
             # Import here to avoid circular include
             from CIME.case_test       import case_test
             from CIME.case_run        import case_run

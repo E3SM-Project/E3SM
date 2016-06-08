@@ -3,7 +3,7 @@
   <!--
      File:    config_batch.xml
      Purpose: abstract out the parts of run scripts that are different, and use this configuration to
-     create cesm run scripts from a single template.
+     create acme run scripts from a single template.
 
      batch_system:     the batch system type and version
      batch_query:      the batch query command for each batch system.
@@ -64,8 +64,8 @@
       <directive                       > -N  </directive>
       <directive default="poe"         > -a {{ poe }} </directive>
       <directive                       > -x {{ queue_exclusive }} </directive>
-      <directive default="cesm.stdout" > -o {{ cesm_stdout }}.%J  </directive>
-      <directive default="cesm.stderr" > -e {{ cesm_stderr }}.%J  </directive>
+      <directive default="acme.stdout" > -o {{ acme_stdout }}.%J  </directive>
+      <directive default="acme.stderr" > -e {{ acme_stderr }}.%J  </directive>
       <directive                       > -J {{ job_id }} </directive>
       <directive                       > -W {{ wall_time }} </directive>
       <directive                       > -P {{ account }}  </directive>
