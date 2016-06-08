@@ -341,7 +341,7 @@ class EnvBatch(EnvBase):
 
     def submit_single_job(self, case, job, depid=None):
         caseroot = case.get_value("CASEROOT")
-        batch_system = self.get_value("BATCH_SYSTEM")
+        batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
         if batch_system is None or batch_system == "none":
             # Import here to avoid circular include
             from CIME.case_test       import case_test

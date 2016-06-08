@@ -566,8 +566,7 @@
 
   <entry id="mpirun">
     <type>char</type>
-    valid_values=""
-    <default_value>UNSET</default_value>
+    <default_value></default_value>
     <group>config_batch</group>
     <file>env_case.xml</file>
     <desc>The mpi run command associated with the machine configured batch system</desc>
