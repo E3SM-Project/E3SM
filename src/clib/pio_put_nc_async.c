@@ -163,6 +163,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	LOG((2, "PIOc_put_vars_tc checked mpierr = %d", mpierr));
     }
 
+    sleep(1);
     /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
     {
@@ -180,6 +181,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    if(ios->io_rank == 0)
 	    {
 		LOG((2, "PIOc_put_vars_tc io_rank 0 doing pnetcdf call xtype = %d", xtype));	    
+		LOG((2, "PIOc_put_vars_tc io_rank 0 doing pnetcdf call xtype = %d this time I mean it!", xtype));	    
 		switch(xtype)
 		{
 		case NC_BYTE:
@@ -193,7 +195,6 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 		    break;
 		case NC_INT:
 		    LOG((2, "PIOc_put_vars_tc io_rank 0 doing pnetcdf for int"));
-		    sleep(1);
 		    ierr = ncmpi_bput_vars_int(ncid, varid, start, count, stride, buf, request);
 		    LOG((2, "PIOc_put_vars_tc io_rank 0 done with pnetcdf call for int ierr = %d", ierr));	    		    
 		    break;
