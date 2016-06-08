@@ -1648,16 +1648,17 @@ int pioc_change_def(int ncid, int is_enddef)
         if (!ios->ioproc)
         {
             int msg = is_enddef ? PIO_MSG_ENDDEF : PIO_MSG_REDEF;
-
+	    LOG((2, "sending message msg = %d", msg));
             if(ios->compmaster) 
                 mpierr = MPI_Send(&msg, 1, MPI_INT, ios->ioroot, 1, ios->union_comm);
 
             if (!mpierr)            
                 mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster, ios->intercomm);
-	    LOG((2, "pioc_change_def ncid = %d", file->fh));
+	    LOG((2, "pioc_change_def ncid = %d mpierr = %d", file->fh, mpierr));
         }
 
         /* Handle MPI errors. */
+	LOG((2, "pioc_change_def handling MPI errors"));	
         if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->comproot, ios->my_comm)))
             check_mpi(file, mpierr2, __FILE__, __LINE__);           
         if (mpierr)
@@ -1665,6 +1666,7 @@ int pioc_change_def(int ncid, int is_enddef)
     }
 
     /* If this is an IO task, then call the netCDF function. */
+    LOG((2, "pioc_change_def ios->ioproc = %d", ios->ioproc));    
     if (ios->ioproc)
     {
 	LOG((2, "pioc_change_def calling netcdf function"));
@@ -1686,6 +1688,7 @@ int pioc_change_def(int ncid, int is_enddef)
     }
 
     /* Broadcast and check the return code. */
+    LOG((2, "pioc_change_def bcasting return code ierr = %d", ierr));
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
         return check_mpi(file, mpierr, __FILE__, __LINE__);            
     if (ierr)
