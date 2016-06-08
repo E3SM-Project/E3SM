@@ -41,9 +41,7 @@ def _main_func(description):
         sys.exit(1 if test_results.failed > 0 else 0)
 
     caseroot, buildroot, component = parse_command_line(sys.argv, description)
-
-    case = Case(caseroot)
-    build_lib.build_x_lib(case, component[1:], component.upper())
+    CIME.build_lib.build_x_lib(caseroot, component[1:], component.upper())
     
 
 if __name__ == "__main__":

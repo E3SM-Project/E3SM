@@ -6,7 +6,8 @@ These are used by components/<model_type>/<component>/cime_config/buildnml
 from CIME.XML.standard_module_setup import *
 from CIME.case import Case
 
-def build_x_nml(case, model, comp):
+def build_x_nml(caseroot, model, comp):
+    case = Case(caseroot)
     rundir = case.get_value("RUNDIR")
     ninst = case.get_value("NINST_%s" % comp)
     nx = case.get_value("%s_NX" % comp)

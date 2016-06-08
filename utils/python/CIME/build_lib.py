@@ -4,14 +4,15 @@ common implementation for building components
 These are used by components/<model_type>/<component>/cime_config/buildlib
 """
 from CIME.XML.standard_module_setup import *
-
+from CIME.case import Case
 
 logger = logging.getLogger(__name__)
 
-def build_x_lib(case, model, comp):
-    caseroot = case.get_value("CASEROOT")
+def build_x_lib(caseroot, model, comp):
+    case = Case(caseroot)
     casetools = case.get_value("CASETOOLS")
     cimeroot = case.get_value("CIMEROOT")
+    objroot = case.get_value("OBJROOT")
     mach = case.get_value("MACH")
     libroot = case.get_value("LIBROOT")
     gmake_j = case.get_value("GMAKE_J")
@@ -34,7 +35,7 @@ def build_x_lib(case, model, comp):
     # build
     cmd = "%s complib -j %d MODEL=%s COMPLIB=%s -f %s MACFILE=%s" % \
            (gmake, gmake_j, model, complib, makefile, macfile)
-    rc, out, err = run_cmd(cmd)
+    rc, out, err = run_cmd(cmd, from_dir=os.path.join(objroot,model,'obj'), ok_to_fail=True)
     expect(rc == 0, "Command %s failed rc=%d\nout=%s\nerr=%s" % (cmd, rc,
                                                                  out, err))
     logger.info("Command %s completed with output %s\nerr %s", cmd, out, err)

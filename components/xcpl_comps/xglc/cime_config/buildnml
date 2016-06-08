@@ -39,8 +39,7 @@ def _main_func(description):
         sys.exit(1 if test_results.failed > 0 else 0)
 
     caseroot = parse_command_line(sys.argv, description)
-    case = Case(caseroot)
-    CIME.build_nml.build_x_nml(case,'xglc','GLC')
+    CIME.build_nml.build_x_nml(caseroot,'xglc','GLC')
 
 
 if __name__ == "__main__":
