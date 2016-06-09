@@ -174,10 +174,11 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    if (!stride_present)
 	    {
 		LOG((2, "stride not present"));
-		if (!(fake_stride = malloc(ndims * sizeof(PIO_Offset))))
-		    return PIO_ENOMEM;
-		for (int d = 0; d < ndims; d++)
-		    fake_stride[d] = 1;
+		/* if (!(fake_stride = malloc(ndims * sizeof(PIO_Offset)))) */
+		/*     return PIO_ENOMEM; */
+		/* for (int d = 0; d < ndims; d++) */
+		/*     fake_stride[d] = 1; */
+		fake_stride = (PIO_Offset *)stride;		
 	    }
 	    else
 		fake_stride = (PIO_Offset *)stride;
@@ -190,12 +191,13 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    request = vdesc->request + vdesc->nreqs;
 	    LOG((2, "PIOc_put_vars_tc request = %d", vdesc->request));	    
 
-	    if(ios->io_rank == 0)
+	    /* Only the IO master actually does the call. */
+	    if (ios->iomaster)
 	    {
-		LOG((2, "PIOc_put_vars_tc ncid = %d varid = %d start[0] = %d count[0] = %d fake_stride[0] = %d",
-		     ncid, varid, start[0], count[0], fake_stride[0]));
-		for (int d = 0; d < ndims; d++)
-		    LOG((2, "start[%d] = %d count[%d] = %d stride[%d] = %d", d, start[d], d, count[d], d, stride[d]));
+/*		LOG((2, "PIOc_put_vars_tc ncid = %d varid = %d start[0] = %d count[0] = %d fake_stride[0] = %d",
+		ncid, varid, start[0], count[0], fake_stride[0]));*/
+		/* for (int d = 0; d < ndims; d++) */
+		/*     LOG((2, "start[%d] = %d count[%d] = %d stride[%d] = %d", d, start[d], d, count[d], d, stride[d])); */
 		switch(xtype)
 		{
 		case NC_BYTE:
