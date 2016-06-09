@@ -56,12 +56,16 @@ class Batch(GenericXML):
         """
         machine = machine if machine is not None else self.machine
         if self.batch_system != batch_system or self.batch_system_node is None:
-            self.batch_system_node = self.get_optional_node("batch_system", {"type" : batch_system})
-            expect(self.batch_system_node is not None, "No batch system '%s' found" % batch_system)
+            nodes = self.get_nodes("batch_system",{"type" : batch_system})
+            for node in nodes:
+                mach = node.get("MACH")
+                if mach is None:
+                    self.batch_system_node = node
+                elif mach == machine:
+                    self.machine = machine
+                    self.machine_node = node
 
-            if machine is not None:
-                self.machine_node = self.get_optional_node("batch_system", {"MACH" : machine})
-                self.machine = machine
+            expect(self.batch_system_node is not None, "No batch system '%s' found" % batch_system)
 
         return batch_system
 

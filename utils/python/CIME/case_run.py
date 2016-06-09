@@ -6,7 +6,7 @@ from CIME.XML.component             import Component
 from CIME.XML.machines              import Machines
 from CIME.case                      import Case
 from CIME.utils                     import expect, get_model, run_cmd, append_status
-from CIME.env_module                import EnvModule
+from CIME.XML.env_mach_specific import EnvMachSpecific
 from CIME.utils                     import expect
 from CIME.check_lockedfiles         import check_lockedfiles
 from CIME.preview_namelists         import preview_namelists
@@ -42,8 +42,10 @@ def preRunCheck(case):
     logger.debug("build complete is %s " %build_complete)
 
     # load the module environment...
-    env_module = EnvModule(mach, compiler, cimeroot, caseroot, mpilib, debug)
-    env_module.load_env_for_case()
+    env_module = case._get_env("mach_specific")
+    env_module.load_env_for_case(compiler=case.get_value("COMPILER"),
+                                 debug=case.get_value("DEBUG"),
+                                 mpilib=case.get_value("MPILIB"))
 
     # set environment variables
     # This is a requirement for yellowstone only

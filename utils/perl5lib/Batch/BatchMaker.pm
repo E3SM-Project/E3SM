@@ -55,6 +55,7 @@ sub new
 	machroot    => $params{'machroot'}  || ".",
 	mpilib      => $params{'mpilib'}    || undef,
 	threaded    => $params{'threaded'}  || undef,
+	BATCH_SYSTEM => $params{BATCH_SYSTEM},
 	job => $params{job} || undef,
     };
     $self->{'srcroot'} = $self->{'cimeroot'} if defined $self->{'cimeroot'};
@@ -218,16 +219,16 @@ sub getBatchSystemTypeForMachine()
     my $mach = $self->{'machine'};
     $self->getConfigMachinesParser();
     my $configmachinesparser = $self->{'configmachinesparser'};
-    my @batchtypes = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$mach\']/batch_system");
+    my @batchtypes = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$mach\']/BATCH_SYSTEM");
 
     if(@batchtypes)
     {
-	$self->{'batchtype'} = $batchtypes[0]->getAttribute('type');
+	$self->{'BATCH_SYSTEM'} = $batchtypes[0]->textContent();
     }else{
-	$self->{'batchtype'} = 'none';
+	$self->{'BATCH_SYSTEM'} = 'none';
 	$logger->warn("Could not find batch system for machine $self->{'machine'}, using none");
     }
-
+    print "HERE BATCH_SYSTEM IS $self->{BATCH_SYSTEM}\n";
 }
 
 #==============================================================================
@@ -290,15 +291,15 @@ sub setBatchDirectives()
 
     # get the batch directive for this particular queueing system.
 
-    my @batch_directive = $batchparser->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\']/batch_directive");
+    my @batch_directive = $batchparser->findnodes("/config_batch/batch_system[\@type=\'$self->{'BATCH_SYSTEM'}\']/batch_directive");
 
     if(!@batch_directive)
     {
-	die "Cannot find batch directive for the batch system type $self->{'batchtype'}";
+	die "Cannot find batch directive for the batch system type $self->{'BATCH_SYSTEM'}";
     }
     $self->{'batch_directive'} = $batch_directive[0]->textContent();
 
-    my @directives = $batchparser->findnodes("/config_batch/batch_system[\@type=\'$self->{'batchtype'}\' or \@MACH=\'$self->{machine}\']/directives/directive");
+    my @directives = $batchparser->findnodes("/config_batch/batch_system[\@type=\'$self->{'BATCH_SYSTEM'}\' or \@MACH=\'$self->{machine}\']/directives/directive");
     if(!@directives)
     {
 	die "could not find any directives for the machine $self->{'machine'}";
@@ -442,7 +443,7 @@ sub setWallTime()
     my $configmachinesparser = $self->{'configmachinesparser'};
 
     # loop through the walltime values, and set the walltime based on the reported EST_COST of the run.
-    my @walltimes = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system/walltimes/walltime");
+    my @walltimes = $batchparser->findnodes("/batch_system/machine[\@MACH=\'$self->{'machine'}\']/walltimes/walltime");
 
     # go through the walltime elements, and if our estimated cost is greater than the element's estimated cost,
     # then set the walltime.
@@ -636,7 +637,7 @@ sub setCESMRun()
     #my $defaultrunsuffix = $suffixes[0]->textContent();
     my $defaultrunsuffix = $defaultrunexe . $defaultrunmiscsuffix;
     # get the batch system type for this machine.
-    my @batchtype = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/batch_system");
+    my @batchtype = $configmachinesparser->findnodes("/config_machines/machine[\@MACH=\'$self->{'machine'}\']/BATCH_SYSTEM");
 
 
     if(! @batchtype)

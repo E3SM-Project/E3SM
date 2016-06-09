@@ -4,7 +4,7 @@ functions for building CIME models
 from XML.standard_module_setup import *
 from CIME.case                 import Case
 from CIME.utils                import expect, run_cmd, get_model, append_status
-from CIME.env_module           import EnvModule
+from CIME.XML.env_mach_specific import EnvMachSpecific
 from CIME.preview_namelists    import preview_namelists
 from CIME.check_input_data     import check_input_data
 
@@ -273,8 +273,11 @@ def case_build(caseroot, case=None, sharedlib_only=False, model_only=False):
     os.environ["USE_ALBANY"] = stringify_bool(use_albany)
 
     # Load modules
-    env_module = EnvModule(mach, compiler, cimeroot, caseroot, mpilib, debug)
-    env_module.load_env_for_case()
+    env_module = case._get_env("mach_specific")
+    env_module.load_env_for_case(compiler=case.get_value("COMPILER"),
+                                 debug=case.get_value("DEBUG"),
+                                 mpilib=case.get_value("MPILIB"))
+
 
     # Need to flush case xml to disk before calling preview_namelists
     case.flush()
