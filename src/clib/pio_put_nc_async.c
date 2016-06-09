@@ -192,8 +192,8 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 
 	    if(ios->io_rank == 0)
 	    {
-		LOG((2, "PIOc_put_vars_tc ncid = %d varid = %d start[0] = %d count[0] = %d stride = %d",
-		     ncid, varid, start[0], count[0], stride));
+		LOG((2, "PIOc_put_vars_tc ncid = %d varid = %d start[0] = %d count[0] = %d fake_stride[0] = %d",
+		     ncid, varid, start[0], count[0], fake_stride[0]));
 		for (int d = 0; d < ndims; d++)
 		    LOG((2, "start[%d] = %d count[%d] = %d stride[%d] = %d", d, start[d], d, count[d], d, stride[d]));
 		switch(xtype)
