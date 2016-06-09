@@ -35,7 +35,7 @@ def build_x_lib(caseroot, model, comp):
     # build
     cmd = "%s complib -j %d MODEL=%s COMPLIB=%s -f %s MACFILE=%s" % \
            (gmake, gmake_j, model, complib, makefile, macfile)
-    rc, out, err = run_cmd(cmd, from_dir=os.path.join(objroot,model,'obj'), ok_to_fail=True)
+    rc, out, err = run_cmd(cmd, ok_to_fail=True)
     expect(rc == 0, "Command %s failed rc=%d\nout=%s\nerr=%s" % (cmd, rc,
                                                                  out, err))
-    logger.info("Command %s completed with output %s\nerr %s", cmd, out, err)
+    logger.info("Command %s completed with output %s\nerr %s" ,cmd, out, err)
