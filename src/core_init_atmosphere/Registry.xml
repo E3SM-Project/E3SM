@@ -54,6 +54,7 @@
                 <nml_option name="config_sfc_prefix"            type="character"     default_value="SST"/>
                 <nml_option name="config_fg_interval"           type="integer"       default_value="86400"/>
                 <nml_option name="config_landuse_data"          type="character"     default_value="USGS"/>
+                <nml_option name="config_use_spechumd"          type="logical"       default_value="false"/>
         </nml_record>
 
         <nml_record name="vertical_grid" in_defaults="true">
@@ -299,6 +300,7 @@
                         <var name="p_fg" packages="met_stage_out"/>
                         <var name="z_fg" packages="met_stage_out"/>
                         <var name="rh_fg" packages="met_stage_out"/>
+                        <var name="sh_fg" packages="met_stage_out"/>
                         <var name="soilz_fg" packages="met_stage_out"/>
                         <var name="dz_fg" packages="met_stage_out"/>
                         <var name="dzs_fg" packages="met_stage_out"/>
@@ -327,6 +329,7 @@
                         <var name="theta" packages="met_stage_out"/>
                         <var name="v" packages="met_stage_out"/>
                         <var name="relhum" packages="met_stage_out"/>
+                        <var name="spechum" packages="met_stage_out"/>
                         <var name="uReconstructX" packages="met_stage_out"/>
                         <var name="uReconstructY" packages="met_stage_out"/>
                         <var name="uReconstructZ" packages="met_stage_out"/>
@@ -490,6 +493,7 @@
                 <var name="p_fg"       name_in_code="p"       type="real"     dimensions="nFGLevels nCells Time"/>
                 <var name="z_fg"       name_in_code="z"       type="real"     dimensions="nFGLevels nCells Time"/>
                 <var name="rh_fg"      name_in_code="rh"      type="real"     dimensions="nFGLevels nCells Time"/>
+                <var name="sh_fg"      name_in_code="sh"      type="real"     dimensions="nFGLevels nCells Time"/>
                 <var name="soilz_fg"   name_in_code="soilz"   type="real"     dimensions="nCells Time"/>
                 <var name="psfc_fg"    name_in_code="psfc"    type="real"     dimensions="nCells Time"/>
                 <var name="pmsl_fg"    name_in_code="pmsl"    type="real"     dimensions="nCells Time"/>
@@ -527,6 +531,7 @@
                 <var name="theta"                             type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="v"                                 type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="relhum"                            type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="spechum"                           type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructX"                     type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructY"                     type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructZ"                     type="real"     dimensions="nVertLevels nCells Time"/>
