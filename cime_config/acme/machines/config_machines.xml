@@ -341,6 +341,7 @@
     <GMAKE_J>32</GMAKE_J>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>64</PES_PER_NODE>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
@@ -394,12 +395,7 @@
     <GMAKE_J>32</GMAKE_J>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>64</PES_PER_NODE>
-    <batch_system type="none" version="x.y">
-      <queues>
-      </queues>
-      <walltimes>
-      </walltimes>
-    </batch_system>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
