@@ -1,50 +1,48 @@
-#! /bin/csh -f
+#!/usr/bin/env python2
+"""
+buildnml - create namelist
+"""
 
-set RUNDIR		= `./xmlquery  RUNDIR     	-value`
-set NINST_ROF		= `./xmlquery  NINST_ROF	-value`
-set ROF_NX		= `./xmlquery  ROF_NX		-value`
-set ROF_NY		= `./xmlquery  ROF_NY		-value`
-set XROF_FLOOD_MODE	= `./xmlquery  XROF_FLOOD_MODE	-value`
+#Bootstrap python path
+import sys
+import os
+if "CIMEROOT" not in os.environ:
+    sys.stderr.write("ERROR: CIMEROOT must be defined\n")
+    sys.exit(1)
+sys.path.append(os.path.join(os.environ["CIMEROOT"],"scripts","Tools"))
 
-cd $RUNDIR
+from standard_script_setup import *
+from CIME.case import Case
+import CIME.build_nml
 
-set NX = $ROF_NX
-set NY = $ROF_NY
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+	    description=description,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+	)
 
-set base_filename = "xrof_in"
+    CIME.utils.setup_standard_logging_options(parser)
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory for building namelist")
+    args = parser.parse_args(args[1:])
+    CIME.utils.handle_standard_logging_options(args)
+    return args.caseroot
 
-set inst_counter = 1
 
-set FLOOD = ".false."
-if ($XROF_FLOOD_MODE == ACTIVE) then
-  set FLOOD = ".true."
-endif
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if "--test" in sys.argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
-while ($inst_counter <= $NINST_ROF)
+    caseroot = parse_command_line(sys.argv, description)
+    CIME.build_nml.build_x_nml(caseroot,'xrof','ROF')
 
-    set inst_string = " "
-    if ($NINST_ROF > 1) then
-        set inst_string = $inst_counter
-        if ($inst_counter <= 999) set inst_string = 0$inst_string
-        if ($inst_counter <=  99) set inst_string = 0$inst_string
-        if ($inst_counter <=   9) set inst_string = 0$inst_string
-        set inst_string = _$inst_string
-    endif
 
-    set in_filename = ${base_filename}${inst_string}
-
-cat >! ${in_filename} << EOF
-$NX       !  i-direction global dimension
-$NY       !  j-direction global dimension
-11        !  decomp_type  1=1d-by-lat, 2=1d-by-lon, 3=2d, 4=2d evensquare, 11=segmented
-0         !  num of pes for i (type 3 only)
-0         !  length of segments (type 4 only)
-$FLOOD    !  flood flag
-EOF
-
-    @ inst_counter = $inst_counter + 1
-
-end
-
+if __name__ == "__main__":
+    _main_func(__doc__)
 
 
