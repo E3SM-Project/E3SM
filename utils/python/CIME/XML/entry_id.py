@@ -68,28 +68,37 @@ class EntryID(GenericXML):
         Note that the component class has a specific version of this function
         '''
         match_value = None
-        match_max = 0
+        match_max = -1
         match_count = 0
         expect(node is not None," Empty node in _get_value_match")
+
         values = self.get_optional_node("values", root=node)
         if values is None:
             return
-        for valnode in self.get_nodes("value", root=node):
+
+        for valnode in self.get_nodes("value", root=values):
             # loop through all the keys in valnode (value nodes) attributes
-            for key,value in valnode.attrib.iteritems():
-                # determine if key is in attributes dictionary
+            if len(valnode.attrib) == 0:
                 match_count = 0
-                if key in attributes:
-                    if re.search(value, attributes[key]):
-                        logger.debug("Value %s and key %s match with value %s"%(value, key, attributes[key]))
-                        match_count += 1
-                    else:
-                        match_count = 0
-                        break
-            if match_count > 0:
-                if match_count > match_max:
-                    match_max = match_count
-                    match_value = valnode.text
+            else:
+                for key,value in valnode.attrib.iteritems():
+                    # determine if key is in attributes dictionary
+                    match_count = 0
+                    if key in attributes:
+                        if re.search(value, attributes[key]):
+                            logger.debug("Value %s and key %s match with value %s"%(value, key, attributes[key]))
+                            match_count += 1
+                        else:
+                            match_count = -1
+                            break
+
+            if match_count > match_max:
+                match_max = match_count
+                match_value = valnode.text
+            elif match_count == match_max:
+                logger.debug("Ambiguous match for node '%s' for attributes '%s', falling back to order precedence" %
+                             (node.attrib["id"], attributes))
+
         return match_value
 
     def _get_type_info(self, node):
