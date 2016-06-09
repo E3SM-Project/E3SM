@@ -116,7 +116,8 @@ class EnvMachSpecific(EnvBase):
             if (self._match_attribs(node.attrib)):
                 for child in node:
                     expect(child.tag == child_tag, "Expected %s element" % child_tag)
-                    result.append( (child.get("name"), child.text) )
+                    if (self._match_attribs(child.attrib)):
+                        result.append( (child.get("name"), child.text) )
 
         return result
 

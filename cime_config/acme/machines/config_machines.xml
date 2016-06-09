@@ -341,6 +341,7 @@
     <GMAKE_J>32</GMAKE_J>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>64</PES_PER_NODE>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
@@ -394,12 +395,7 @@
     <GMAKE_J>32</GMAKE_J>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>64</PES_PER_NODE>
-    <batch_system type="none" version="x.y">
-      <queues>
-      </queues>
-      <walltimes>
-      </walltimes>
-    </batch_system>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
@@ -413,13 +409,15 @@
       <cmd_path lang="sh">source /software/common/adm/packages/softenv-1.4.2/etc/softenv-aliases.sh ; soft</cmd_path>
       <modules compiler="gnu">
 	<command name="add">+gcc-5.1.0</command>
-	<command name="add">+mpich-3.2-gcc-5.1</command>
+	<command name="add" mpilib="!mpi-serial">+mpich-3.2-gcc-5.1</command>
 	<command name="add">+netcdf-4.3.3.1-parallel-gcc5.1-mpich3.2</command>
+	<command name="add" mpilib="!mpi-serial">+pnetcdf-1.6.1-gcc-5.1-mpich-3.2</command>
 	<command name="add">+cmake-2.8.12</command>
       </modules>
     </module_system>
     <environment_variables>
       <env name="NETCDFROOT">$(dirname $(dirname $(which ncdump)))</env>
+      <env name="PNETCDFROOT" mpilib="!mpi-serial">$(dirname $(dirname $(which pnetcdf_version)))</env>
     </environment_variables>
 </machine>
 
