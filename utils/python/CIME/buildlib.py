@@ -3,9 +3,11 @@ common utilities for buildlib
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, run_cmd, append_status, handle_standard_logging_options
+from CIME.utils import expect, run_cmd, handle_standard_logging_options
 from CIME.case  import Case
-import sys, os, filecmp, shutil
+import sys, os 
+
+logger = logging.getLogger(__name__)
 
 ###############################################################################
 def parse_command_line(args, parser):
@@ -32,25 +34,33 @@ def build_data_model(compclass, compname, caseroot, bldroot, libroot):
 
     case = Case(caseroot)
 
-    CIMEROOT  = case.get_value("CIMEROOT")
-    CASEBUILD = case.get_value("CASEBUILD")
-    CASETOOLS = case.get_value("CASETOOLS")
-    GMAKE_J   = case.get_value("GMAKE_J")
-    GMAKE     = case.get_value("GMAKE")
-    MACH      = case.get_value("MACH") 
+    cimeroot  = case.get_value("CIMEROOT")
+    casetools = case.get_value("CASETOOLS")
+    gmake_j   = case.get_value("GMAKE_J")
+    gmake     = case.get_value("GMAKE")
+    mach      = case.get_value("MACH") 
 
     # Write directory list (Filepath)
     with open('Filepath', 'w') as out:
         out.write(os.path.join(caseroot, "SourceMods", "src.%s" %compname) + "\n")
-        out.write(os.path.join(CIMEROOT, "components", "data_comps", compname) + "\n")
+        out.write(os.path.join(cimeroot, "components", "data_comps", compname) + "\n")
 
     # Build the component
     complib  = os.path.join(libroot, "lib%s.a" % compclass)
-    makefile = os.path.join(CASETOOLS, "Makefile")
-    macfile  = os.path.join(caseroot, "Macros.%s" % MACH)
+    makefile = os.path.join(casetools, "Makefile")
+    macfile  = os.path.join(caseroot, "Macros.%s" % mach)
+    user_cppdefs  = ""
 
-    cmd = GMAKE + " complib  -j " + str(GMAKE_J) + " MODEL=" + compclass + " COMPLIB=" + complib 
-    cmd = cmd + " -f " + makefile + " MACFILE=" + macfile
-    
-    run_cmd(cmd)
+    run_gmake(gmake, gmake_j, compclass, complib, makefile, macfile, user_cppdefs)
 
+###############################################################################
+def run_gmake(gmake, gmake_j, compclass, complib, makefile, macfile, user_cppdefs):
+###############################################################################
+
+    cmd = "%s complib -j %d MODEL=%s COMPLIB=%s -f %s MACFILE=%s USER_CPPDEFS=%s" \
+        % (gmake, gmake_j, compclass, complib, makefile, macfile, user_cppdefs )
+
+    rc, out, err = run_cmd(cmd, ok_to_fail=True)
+    expect(rc == 0, "Command %s failed rc=%d\nout=%s\nerr=%s" % (cmd, rc, out, err))
+
+    logger.info("Command %s completed with output %s\nerr %s" ,cmd, out, err)
