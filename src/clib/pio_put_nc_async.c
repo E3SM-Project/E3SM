@@ -173,6 +173,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 		
 	    if (!stride_present)
 	    {
+		LOG((2, "stride not present"));
 		if (!(fake_stride = malloc(ndims * sizeof(PIO_Offset))))
 		    return PIO_ENOMEM;
 		for (int d = 0; d < ndims; d++)
@@ -183,16 +184,18 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    
 	    LOG((2, "PIOc_put_vars_tc calling pnetcdf function"));
 	    vdesc = file->varlist + varid;
-	    if (vdesc->nreqs%PIO_REQUEST_ALLOC_CHUNK == 0)
+	    if (vdesc->nreqs % PIO_REQUEST_ALLOC_CHUNK == 0)
 		vdesc->request = realloc(vdesc->request,
 					 sizeof(int) * (vdesc->nreqs + PIO_REQUEST_ALLOC_CHUNK));
-	    request = vdesc->request+vdesc->nreqs;
+	    request = vdesc->request + vdesc->nreqs;
 	    LOG((2, "PIOc_put_vars_tc request = %d", vdesc->request));	    
 
 	    if(ios->io_rank == 0)
 	    {
 		LOG((2, "PIOc_put_vars_tc ncid = %d varid = %d start[0] = %d count[0] = %d stride = %d",
-		     ncid, varid, start[0], count[0], stride));	    
+		     ncid, varid, start[0], count[0], stride));
+		for (int d = 0; d < ndims; d++)
+		    LOG((2, "start[%d] = %d count[%d] = %d stride[%d] = %d", d, start[d], d, count[d], d, stride[d]));
 		switch(xtype)
 		{
 		case NC_BYTE:
