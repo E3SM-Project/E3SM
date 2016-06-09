@@ -5,6 +5,7 @@ common utilities for buildlib
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, run_cmd, append_status, handle_standard_logging_options
 from CIME.case  import Case
+import sys, os, filecmp, shutil
 
 ###############################################################################
 def parse_command_line(args, parser):

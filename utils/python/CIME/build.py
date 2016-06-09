@@ -506,10 +506,12 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
         logging.info("         - Building clm4_5/clm5_0 Library ")
         esmfdir = "esmf" if case.get_value("USE_ESMF_LIB") else "noesmf"
         sharedpath = os.environ["SHAREDPATH"]
-        bldroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "lnd","obj" )
-        libroot = os.path.join(bldroot, "lib")
+        bldroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "clm","obj" )
+        libroot = os.path.join(sharedpath, case.get_value("COMP_INTERFACE"), esmfdir, "lib")
+        incroot = os.path.join(sharedpath,"include")
         file_build = os.path.join(exeroot, "lnd.bldlog.%s" %  lid)
         config_lnd_dir = os.path.dirname(case.get_value("CONFIG_LND_FILE"))
+
         for ndir in [bldroot, libroot]:
             if (not os.path.isdir(ndir)):
                 os.makedirs(ndir)
