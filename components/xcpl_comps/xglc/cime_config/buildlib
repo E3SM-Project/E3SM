@@ -1,34 +1,48 @@
-#! /usr/bin/env perl
-use strict;
+#!/usr/bin/env python2
+"""
+buildlib - make component library/executable
+"""
 
-if ($#ARGV == -1) {
-    die " ERROR xglc.buildexe: must specify a caseroot input argument";
-}
-my ($CASEROOT) = @ARGV;
-chdir "${CASEROOT}";
+#Bootstrap python path
+import sys
+import os
+if "CIMEROOT" not in os.environ:
+    sys.stderr.write("ERROR: CIMEROOT must be defined\n")
+    sys.exit(1)
+sys.path.append(os.path.join(os.environ["CIMEROOT"],"scripts","Tools"))
 
-my $model = "glc";
-my $comp  = "xglc";
+from standard_script_setup import *
+from CIME.case import Case
+import CIME.build_lib
 
-my $CASETOOLS = `./xmlquery CASETOOLS -value`;
-my $CIMEROOT  = `./xmlquery CIMEROOT  -value`;
-my $MACH      = `./xmlquery MACH      -value`;
-my $OBJROOT   = `./xmlquery OBJROOT   -value`;
-my $LIBROOT   = `./xmlquery LIBROOT   -value`;
-my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
-my $GMAKE     = `./xmlquery GMAKE     -value`;
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+	    description=description,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+	)
 
-chdir "${OBJROOT}/${model}/obj";
-
-open(file,">Filepath") or die "Could not open file Filepath to write";
-print file "${CASEROOT}/SourceMods/src.${comp}\n";
-print file "${CIMEROOT}/components/xcpl_comps/xshare\n";
-print file "${CIMEROOT}/components/xcpl_comps/${comp}/cpl\n";
-close(file);
-
-my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=${model} COMPLIB=${LIBROOT}/lib${model}.a -f ${CASETOOLS}/Makefile MACFILE=${CASEROOT}/Macros.${MACH}";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
-
-exit(0);
+    CIME.utils.setup_standard_logging_options(parser)
+    parser.add_argument("caseroot", help="case directory")
+    parser.add_argument("buildroot", help="build directory")
+    parser.add_argument("compspec", help="component")
+    print args[1:]
+    args = parser.parse_args(args[1:])
+    CIME.utils.handle_standard_logging_options(args)
+    return args.caseroot, args.buildroot, args.compspec
 
 
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if "--test" in sys.argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    caseroot, buildroot, component = parse_command_line(sys.argv, description)
+    CIME.build_lib.build_x_lib(caseroot, component[1:], component)
+    
+
+if __name__ == "__main__":
+    _main_func(__doc__)
