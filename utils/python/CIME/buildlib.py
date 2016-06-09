@@ -35,10 +35,6 @@ def build_data_model(compclass, compname, caseroot, bldroot, libroot):
     case = Case(caseroot)
 
     cimeroot  = case.get_value("CIMEROOT")
-    casetools = case.get_value("CASETOOLS")
-    gmake_j   = case.get_value("GMAKE_J")
-    gmake     = case.get_value("GMAKE")
-    mach      = case.get_value("MACH") 
 
     # Write directory list (Filepath)
     with open('Filepath', 'w') as out:
@@ -46,16 +42,24 @@ def build_data_model(compclass, compname, caseroot, bldroot, libroot):
         out.write(os.path.join(cimeroot, "components", "data_comps", compname) + "\n")
 
     # Build the component
+    user_cppdefs  = ""
+    complib = compclass
+
+    run_gmake(case, compclass, complib, libroot, user_cppdefs)
+
+###############################################################################
+def run_gmake(case, compclass, complib, libroot, user_cppdefs):
+###############################################################################
+
+    caseroot  = case.get_value("CASEROOT")
+    casetools = case.get_value("CASETOOLS")
+    gmake_j   = case.get_value("GMAKE_J")
+    gmake     = case.get_value("GMAKE")
+    mach      = case.get_value("MACH") 
+
     complib  = os.path.join(libroot, "lib%s.a" % compclass)
     makefile = os.path.join(casetools, "Makefile")
     macfile  = os.path.join(caseroot, "Macros.%s" % mach)
-    user_cppdefs  = ""
-
-    run_gmake(gmake, gmake_j, compclass, complib, makefile, macfile, user_cppdefs)
-
-###############################################################################
-def run_gmake(gmake, gmake_j, compclass, complib, makefile, macfile, user_cppdefs):
-###############################################################################
 
     cmd = "%s complib -j %d MODEL=%s COMPLIB=%s -f %s MACFILE=%s USER_CPPDEFS=%s" \
         % (gmake, gmake_j, compclass, complib, makefile, macfile, user_cppdefs )
