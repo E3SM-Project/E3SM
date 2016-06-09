@@ -4198,11 +4198,15 @@ write(0,*) 'PROCESSING SEAICE'
       write(0,*) '--- global_sh_max = ', global_sh_max
       write(0,*)
 
+      write(0,*) '--- config_use_spechumd = ', config_use_spechumd 
       if(.not. config_use_spechumd .or. (global_sh_min==0._RKIND .and. global_sh_max==0._RKIND)) then
-         write(0,*) '--- config_use_spechumd = ', config_use_spechumd 
          !--- calculate the saturation mixing ratio and interpolated first-guess relative humidity:
-         write(0,*) '--- calculates the water vapor mixing ratio using first-guess relative humidity.' 
+         if (config_use_spechumd) then
+            write(0,*) 'WARNING: config_use_spechumd=T, but specific humidity was not found in '//trim(config_met_prefix)//':'//config_start_time(1:13)
+         end if
+         write(0,*) ' *** initializing water vapor mixing ratio using first-guess relative humidity' 
          write(0,*)
+
          do k = 1, nVertLevels
             do iCell = 1, nCells
                es = svp1*10.*exp(svp2*(t(k,iCell)-svpt0)/(t(k,iCell)-svp3))
@@ -4213,7 +4217,7 @@ write(0,*) 'PROCESSING SEAICE'
          enddo
       else
          !--- use the interpolated first-guess specific humidity:
-         write(0,*) '--- calculates the water vapor mixing ratio using first-guess specific humidity.' 
+         write(0,*) ' *** initializing water vapor mixing ratio using first-guess specific humidity' 
          write(0,*)
          do k = 1, nVertLevels
             do iCell = 1, nCells
