@@ -6,7 +6,7 @@
 !===============================================================================
 
    use shr_kind_mod, only: R8=>SHR_KIND_R8, CS=>SHR_KIND_CS
-   use shr_log_mod, only: s_logunit => shr_log_Unit
+   use shr_log_mod, only: s_logunit => shr_log_Unit, shr_log_level
    use shr_sys_mod, only: shr_sys_abort
 
    implicit none
@@ -49,13 +49,13 @@
    ! Check tfreeze_option
    !---------------------------------------------------------------
    if (trim(tfreeze_option) == 'minus1p8') then
-      write(s_logunit,*) ' tfreeze_option is minus1p8'
+      if (shr_log_level>0) write(s_logunit,*) ' tfreeze_option is minus1p8'
       tfrz_option = TFREEZE_OPTION_MINUS1P8
    elseif (trim(tfreeze_option) == 'linear_salt') then
-      write(s_logunit,*) ' tfreeze_option is linear_salt'
+      if (shr_log_level>0)write(s_logunit,*) ' tfreeze_option is linear_salt'
       tfrz_option = TFREEZE_OPTION_LINEAR_SALT
    elseif (trim(tfreeze_option) == 'mushy') then
-      write(s_logunit,*) ' tfreeze_option is mushy'
+      if (shr_log_level>0) write(s_logunit,*) ' tfreeze_option is mushy'
       tfrz_option = TFREEZE_OPTION_MUSHY
    else
       call shr_sys_abort(subname//' ERROR: not a valid tfreeze_option '//trim(tfreeze_option))

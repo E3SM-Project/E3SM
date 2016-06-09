@@ -256,7 +256,7 @@ class Case(object):
                 self._env_files_that_need_rewrite.add(env_file)
                 return result
         if result is None:
-            if item in self.lookups.keys():
+            if item in self.lookups.keys() and self.lookups[item] is not None:
                 logger.warn("Item %s already in lookups with value %s"%(item,self.lookups[item]))
             else:
                 self.lookups[item] = value
@@ -470,25 +470,12 @@ class Case(object):
                     expect(response.startswith("u"), "Aborting by user request")
 
         # the following go into the env_mach_specific file
-        vars = ("module_system", "environment_variables", "batch_system", "mpirun")
+        vars = ("module_system", "environment_variables", "mpirun")
         env_mach_specific_obj = self._get_env("mach_specific")
         for var in vars:
             nodes = machobj.get_first_child_nodes(var)
             for node in nodes:
                 env_mach_specific_obj.add_child(node)
-
-        #--------------------------------------------
-        # batch system
-        #--------------------------------------------
-        batch_system = machobj.get_batch_system_type()
-        batch = Batch(batch_system=batch_system, machine=machine_name)
-        bjobs = batch.get_batch_jobs()
-        env_batch = self._get_env("batch")
-        env_batch.set_value("batch_system", batch_system)
-        env_batch.set_default_value("batch_system", batch_system)
-        env_batch.create_job_groups(bjobs)
-
-        self._env_files_that_need_rewrite.add(env_batch)
 
         #--------------------------------------------
         # pe payout
@@ -517,17 +504,6 @@ class Case(object):
             if val > maxval:
                 maxval = val
 
-        for name,jdict in bjobs:
-            if jdict["task_count"] == "default":
-                queue = machobj.select_best_queue(maxval)
-            else:
-                queue = machobj.select_best_queue(int(jdict["task_count"]))
-            self.set_value("JOB_QUEUE", queue, subgroup=name)
-            self.set_value("JOB_WALLCLOCK_TIME",  machobj.get_max_walltime(queue), subgroup=name)
-
-        queue = machobj.select_best_queue(1)
-        self.set_value("JOB_QUEUE", queue, subgroup="case.st_archive")
-        self.set_value("JOB_WALLCLOCK_TIME",  machobj.get_max_walltime(queue), subgroup="case.st_archive")
         # Make sure that every component has been accounted for
         # set, nthrds and ntasks to 1 otherwise. Also set the ninst values here.
         for compclass in self._component_classes:
@@ -547,6 +523,18 @@ class Case(object):
         if "CISM1" in self._compsetname:
             mach_pes_obj.set_value("NTASKS_GLC",1)
             mach_pes_obj.set_value("NTHRDS_GLC",1)
+
+        #--------------------------------------------
+        # batch system
+        #--------------------------------------------
+        batch_system_type = machobj.get_value("BATCH_SYSTEM")
+        batch = Batch(batch_system=batch_system_type, machine=machine_name)
+        bjobs = batch.get_batch_jobs()
+        env_batch = self._get_env("batch")
+        env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
+        env_batch.create_job_groups(bjobs)
+        env_batch.set_job_defaults(bjobs, pesize=maxval)
+        self._env_files_that_need_rewrite.add(env_batch)
 
         self.set_value("COMPSET",self._compsetname)
 
@@ -803,3 +791,7 @@ class Case(object):
         case_setup(newcase, clean=False, test_mode=False)
 
         return newcase
+
+    def submit_jobs(self, no_batch=False, job=None):
+        env_batch = self._get_env('batch')
+        env_batch.submit_jobs(self, no_batch=no_batch, job=job)
