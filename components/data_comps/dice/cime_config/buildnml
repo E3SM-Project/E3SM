@@ -1,86 +1,43 @@
-#! /usr/bin/env perl
-use strict;
-use Cwd;
+#!/usr/bin/env python2
 
-if ($#ARGV == -1) {
-    die " ERROR dice.buildexe: must specify a caseroot input argument";
-}
-my ($CASEROOT) = @ARGV;
-chdir "${CASEROOT}";
+"""
+build data model namelist input 
+"""
+import sys, os, time
 
-my $CIMEROOT	= `./xmlquery  CIMEROOT	   -value`;
-my $NINST_ICE	= `./xmlquery  NINST_ICE   -value`;
-my $RUNDIR	= `./xmlquery  RUNDIR      -value`;
-my $CIMEROOT	= `./xmlquery  CIMEROOT    -value`;
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise SystemExit("ERROR: must set CIMEROOT environment variable")
+sys.path.append(os.path.join(os.environ["CIMEROOT"],"scripts","Tools"))
 
-my @dirs = ("${CIMEROOT}/utils/perl5lib");
-unshift @INC, @dirs;
-require Config::SetupTools;
-my $sysmod;
+from standard_script_setup          import *
+from CIME.case                      import Case
+from CIME.buildnml                  import build_data_nml, parse_command_line
 
-if (! -d "$CASEROOT/Buildconf/diceconf" ) {
-    $sysmod = "mkdir $CASEROOT/Buildconf/diceconf";
-    system($sysmod) == 0 or die "ERROR dice.buildnml: $sysmod failed: $?\n";
-}
-chdir "$CASEROOT/Buildconf/diceconf";
+logger = logging.getLogger(__name__)
 
-my $inst_string;
-my $inst_counter = 1;
-while ($inst_counter <= $NINST_ICE) {
+###############################################################################
+def _main_func():
+###############################################################################
 
-    # -----------------------------------------------------
-    # determine instance string
-    # -----------------------------------------------------
+    if "--test" in sys.argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
-    $inst_string = "";
-    if ($NINST_ICE > 1) {
-	$inst_string = `printf _%04d $inst_counter`;
 
-	# If multi-instance case does not have restart file, use single-case restart
-	# for each instance
-	if ( (! -e "$RUNDIR/rpointer.ice${inst_string}") && (-e "$RUNDIR/rpointer.ice") ) {
-	    $sysmod = "cp -v $RUNDIR/rpointer.ice $RUNDIR/rpointer.ice${inst_string}";
-	    system($sysmod) == 0 or die "ERROR dice.buildnml: $sysmod failed: $?\n";
-	}
-    }
+    parser = argparse.ArgumentParser()
 
-    # -----------------------------------------------------
-    # create diceconf/cesm_namelist
-    # -----------------------------------------------------
+    CIME.utils.setup_standard_logging_options(parser)
 
-    SetupTools::create_namelist_infile("$CASEROOT",
-				       "$CASEROOT/user_nl_dice${inst_string}",
-				       "$CASEROOT/Buildconf/diceconf/cesm_namelist");
+    caseroot = parse_command_line(sys.argv, parser)
 
-    # -----------------------------------------------------
-    # call build-namelist
-    # -----------------------------------------------------
+    case = Case(caseroot)
 
-    $sysmod = "$CIMEROOT/components/data_comps/dice/bld/build-namelist";
-    $sysmod = "$sysmod -infile $CASEROOT/Buildconf/diceconf/cesm_namelist";
-    $sysmod = "$sysmod -caseroot $CASEROOT";
-    $sysmod = "$sysmod -cimeroot $CIMEROOT";
-    $sysmod = "$sysmod -inst_string \"$inst_string\"";
-    $sysmod = "$sysmod -user_xml_dir \"$CASEROOT/SourceMods/src.dice\"";
-    system($sysmod) == 0 or die "ERROR dice.buildnml: $sysmod failed: $?\n";
+    ninst = case.get_value("NINST_ICE")
 
-    if (-d ${RUNDIR}) {
-	$sysmod = "cp $CASEROOT/Buildconf/diceconf/dice_in     ${RUNDIR}/dice_in${inst_string}";
-	system($sysmod) == 0 or die "ERROR dice.buildnml: $sysmod failed: $?\n";
+    build_data_nml(case, "dice", "ice", ninst)
 
-	$sysmod = "cp $CASEROOT/Buildconf/diceconf/dice_ice_in ${RUNDIR}/dice_ice_in${inst_string}";
-	system($sysmod) == 0 or die "ERROR dice.buildnml: $sysmod failed: $?\n";
+###############################################################################
 
-	$sysmod = "cp $CASEROOT/Buildconf/diceconf/*txt* ${RUNDIR}/ >& /dev/null";
-	system($sysmod) == 0;
-    }
-
-    # -----------------------------------------------------
-    # increment instance counter
-    # -----------------------------------------------------
-
-    $inst_counter = $inst_counter + 1;
-
-}
-
-exit (0);
+if __name__ == "__main__":
+    _main_func()
