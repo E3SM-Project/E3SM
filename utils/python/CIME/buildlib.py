@@ -29,7 +29,7 @@ def parse_command_line(args, parser):
     return args.caseroot, args.bldroot, args.libroot
 
 ###############################################################################
-def build_data_model(compclass, compname, caseroot, bldroot, libroot):
+def build_data_lib(compclass, compname, caseroot, bldroot, libroot):
 ###############################################################################
 
     case = Case(caseroot)
@@ -40,6 +40,27 @@ def build_data_model(compclass, compname, caseroot, bldroot, libroot):
     with open('Filepath', 'w') as out:
         out.write(os.path.join(caseroot, "SourceMods", "src.%s" %compname) + "\n")
         out.write(os.path.join(cimeroot, "components", "data_comps", compname) + "\n")
+
+    # Build the component
+    user_cppdefs  = ""
+    complib = compclass
+
+    run_gmake(case, compclass, complib, libroot, user_cppdefs)
+
+###############################################################################
+def build_xcpl_lib(compclass, compname, caseroot, bldroot, libroot):
+###############################################################################
+
+    case = Case(caseroot)
+
+    cimeroot = case.get_value("CIMEROOT")
+
+    # Write directory list
+    with open('Filepath', 'w') as out:
+        out.write(os.path.join(caseroot, "SourceMods", "src.%s", compname) + "\n")
+        out.write(os.path.join(cimeroot, "components", "xcpl_comps", "xshare") + "\n")
+        out.write(os.path.join(cimeroot, "components", "xcpl_comps",compname, "cpl") + "\n")
+
 
     # Build the component
     user_cppdefs  = ""

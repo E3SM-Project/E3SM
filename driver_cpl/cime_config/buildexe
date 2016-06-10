@@ -1,35 +1,70 @@
-#! /usr/bin/env perl
-use strict;
+#!/usr/bin/env python2
 
-print " -------------------------------------------------------------------------\n";
-print " Building a single executable version of target coupled model  \n";
-print " -------------------------------------------------------------------------\n";
+"""
+build model executable
+"""
 
-my ($CASEROOT) = @ARGV;
-chdir "${CASEROOT}";
+import sys, os
 
-my $CASETOOLS = `./xmlquery CASETOOLS -value`;
-my $CIMEROOT  = `./xmlquery CIMEROOT  -value`;
-my $OBJROOT   = `./xmlquery OBJROOT   -value`;
-my $EXEROOT   = `./xmlquery EXEROOT   -value`;
-my $LIBROOT   = `./xmlquery LIBROOT   -value`;
-my $MACH      = `./xmlquery MACH      -value`;
-my $GMAKE   = `./xmlquery GMAKE   -value`;
-my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
-my $MODEL     = `./xmlquery MODEL     -value`;
-$ENV{PIO_VERSION}  = `./xmlquery PIO_VERSION   -value`;
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise SystemExit("ERROR: must set CIMEROOT environment variable")
+sys.path.append(os.path.join(os.environ["CIMEROOT"],"scripts","Tools"))
 
-chdir "${OBJROOT}/cpl/obj";
+from standard_script_setup import *
+from CIME.buildlib         import parse_command_line
+from CIME.case             import Case
+from CIME.utils            import expect, run_cmd
 
-open(file,">Filepath") or die "Could not open file Filepath to write";
-print file "${CASEROOT}/SourceMods/src.drv\n";
-print file "${CIMEROOT}/driver_cpl/driver\n";
-close(file);
+logger = logging.getLogger(__name__)
 
-my $sysmod = "${GMAKE} exec_se -j ${GMAKE_J} EXEC_SE=${EXEROOT}/${MODEL}.exe MODEL=driver LIBROOT=${LIBROOT} -f ${CASETOOLS}/Makefile ";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+###############################################################################
+def _main_func():
+###############################################################################
 
-exit(0);
+    if "--test" in sys.argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    parser = argparse.ArgumentParser()
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    caseroot, bldroot, libroot = parse_command_line(sys.argv, parser)
+
+    logger.info("Building a single executable version of target coupled model")
+
+    case = Case(caseroot)
+
+    casetools = case.get_value("CASETOOLS")
+    cimeroot  = case.get_value("CIMEROOT")
+    exeroot   = case.get_value("EXEROOT")
+    gmake     = case.get_value("GMAKE")
+    gmake_j   = case.get_value("GMAKE_J")
+    model     = case.get_value("MODEL")
+
+    os.environ["PIO_VERSION"] = str(case.get_value("PIO_VERSION"))
+
+    with open('Filepath', 'w') as out:
+        out.write(os.path.join(caseroot, "SourceMods", "src.drv") + "\n")
+        out.write(os.path.join(cimeroot, "driver_cpl", "driver") + "\n")
+
+    # build model executable
+
+    makefile = os.path.join(casetools, "Makefile")
+    exename = os.path.join(exeroot, model + ".exe") 
+
+    cmd = "%s exec_se -j %d EXEC_SE=%s MODEL=%s LIBROOT=%s -f %s "\
+        % (gmake, gmake_j, exename, "driver", libroot, makefile)
+
+    rc, out, err = run_cmd(cmd, ok_to_fail=True)
+    expect(rc==0,"Command %s failed rc=%d\nout=%s\nerr=%s"%(cmd,rc,out,err))
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func()
+
 
 
 
