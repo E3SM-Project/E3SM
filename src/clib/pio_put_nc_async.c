@@ -70,14 +70,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	/* Get the number of dims for this var. */
 	if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
 	    return check_netcdf(file, ierr, __FILE__, __LINE__);
-    }
 
-    /* Broadcase the number of dimensions to all tasks. */
-
-    /* Run these on all tasks if async is not in use, but only on
-     * non-IO tasks if async is in use. */
-    if (!ios->async_interface || !ios->ioproc)
-    {
 	/* Get the length of the data type. */
 	if ((ierr = PIOc_inq_type(ncid, xtype, NULL, &typelen)))
 	    return check_netcdf(file, ierr, __FILE__, __LINE__);
@@ -176,6 +169,12 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	if (mpierr)
 	    check_mpi(file, mpierr, __FILE__, __LINE__);
 	LOG((2, "PIOc_put_vars_tc checked mpierr = %d", mpierr));
+
+	/* Broadcast values currently only known on computation tasks to IO tasks. */
+	LOG((2, "PIOc_put_vars_tc bcast from comproot"));
+	if ((mpierr = MPI_Bcast(&ndims, 1, MPI_INT, ios->comproot, ios->my_comm)))
+	    return check_mpi(file, mpierr, __FILE__, __LINE__);
+	LOG((2, "PIOc_put_vars_tc complete bcast from comproot ndims = %d", ndims));
     }
 
     /* If this is an IO task, then call the netCDF function. */

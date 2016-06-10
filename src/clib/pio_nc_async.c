@@ -664,9 +664,9 @@ int PIOc_inq_var(int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
                 mpierr = MPI_Bcast(&dimids_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
             if (!mpierr)
                 mpierr = MPI_Bcast(&natts_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-        LOG((2, "PIOc_inq_var name_present = %d xtype_present = %d ndims_present = %d "
-             "dimids_present = %d, natts_present = %d nattsp = %d",
-             name_present, xtype_present, ndims_present, dimids_present, natts_present, nattsp));
+	    LOG((2, "PIOc_inq_var name_present = %d xtype_present = %d ndims_present = %d "
+		 "dimids_present = %d, natts_present = %d nattsp = %d",
+		 name_present, xtype_present, ndims_present, dimids_present, natts_present, nattsp));
         }
 
         /* Handle MPI errors. */
@@ -698,12 +698,13 @@ int PIOc_inq_var(int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
     }
 
     if (ndimsp)
-	LOG((2, "PIOc_inq_var ndims = %d", *ndimsp));
+	LOG((2, "PIOc_inq_var ndims = %d ierr = %d", *ndimsp, ierr));
 
     /* Broadcast and check the return code. */
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
         return check_mpi(file, mpierr, __FILE__, __LINE__);             
-    check_netcdf(file, ierr, __FILE__, __LINE__);
+    if (ierr)
+	return check_netcdf(file, ierr, __FILE__, __LINE__);
 
     /* Broadcast the results for non-null pointers. */
     if (!ierr)
@@ -724,9 +725,11 @@ int PIOc_inq_var(int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
         
         if (ndimsp)
         {
+	    if (ios->ioroot)
+		LOG((2, "PIOc_inq_var about to Bcast ndims = %d ios->ioroot = %d", *ndimsp, ios->ioroot));
             if ((mpierr = MPI_Bcast(ndimsp, 1, MPI_INT, ios->ioroot, ios->my_comm)))
                 return check_mpi(file, mpierr, __FILE__, __LINE__);         
-            file->varlist[varid].ndims = (*ndimsp);
+            file->varlist[varid].ndims = *ndimsp;
 	    LOG((2, "PIOc_inq_var Bcast ndims = %d", *ndimsp));
         }
         if (dimidsp)
@@ -2110,9 +2113,9 @@ int PIOc_get_att(int ncid, int varid, const char *name, void *ip)
         /* Broadcast values currently only known on computation tasks to IO tasks. */
         LOG((2, "PIOc_get_att bcast from comproot = %d attlen = %d typelen = %d", ios->comproot, attlen, typelen));
         if ((mpierr = MPI_Bcast(&attlen, 1, MPI_OFFSET, ios->comproot, ios->my_comm)))
-            check_mpi(file, mpierr, __FILE__, __LINE__);
+            return check_mpi(file, mpierr, __FILE__, __LINE__);
         if ((mpierr = MPI_Bcast(&typelen, 1, MPI_OFFSET, ios->comproot, ios->my_comm)))
-            check_mpi(file, mpierr, __FILE__, __LINE__);
+            return check_mpi(file, mpierr, __FILE__, __LINE__);
         LOG((2, "PIOc_get_att bcast complete attlen = %d typelen = %d", attlen, typelen));
     }
         
