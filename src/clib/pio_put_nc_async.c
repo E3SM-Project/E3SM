@@ -46,6 +46,7 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
     char start_present = start ? true : false; /* Is start non-NULL? */
     char count_present = count ? true : false; /* Is count non-NULL? */
     char stride_present = stride ? true : false; /* Is stride non-NULL? */
+    PIO_Offset *rstart, *rcount, *rstride;
     var_desc_t *vdesc;
     PIO_Offset usage;
     int *request;
@@ -66,12 +67,19 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
      * non-IO tasks if async is in use. */
     if (!ios->async_interface || !ios->ioproc)
     {
-	/* Get the length of the data type. */
-	if ((ierr = PIOc_inq_type(ncid, xtype, NULL, &typelen)))
-	    return check_netcdf(file, ierr, __FILE__, __LINE__);
-
 	/* Get the number of dims for this var. */
 	if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
+	    return check_netcdf(file, ierr, __FILE__, __LINE__);
+    }
+
+    /* Broadcase the number of dimensions to all tasks. */
+
+    /* Run these on all tasks if async is not in use, but only on
+     * non-IO tasks if async is in use. */
+    if (!ios->async_interface || !ios->ioproc)
+    {
+	/* Get the length of the data type. */
+	if ((ierr = PIOc_inq_type(ncid, xtype, NULL, &typelen)))
 	    return check_netcdf(file, ierr, __FILE__, __LINE__);
 
 	PIO_Offset dimlen[ndims];
@@ -93,9 +101,16 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 		    return check_netcdf(file, ierr, __FILE__, __LINE__);
 	}
 
+	/* Allocate memory for these arrays, now that we know ndims. */
+	if (!(rstart = malloc(ndims * sizeof(PIO_Offset))))
+	    return check_netcdf(file, PIO_ENOMEM, __FILE__, __LINE__);
+	if (!(rcount = malloc(ndims * sizeof(PIO_Offset))))
+	    return check_netcdf(file, PIO_ENOMEM, __FILE__, __LINE__);
+	if (!(rstride = malloc(ndims * sizeof(PIO_Offset))))
+	    return check_netcdf(file, PIO_ENOMEM, __FILE__, __LINE__);
+
 	/* Figure out the real start, count, and stride arrays. (The
 	 * user may have passed in NULLs.) */
-	PIO_Offset rstart[ndims], rcount[ndims], rstride[ndims];
 	for (int vd = 0; vd < ndims; vd++)
 	{
 	    rstart[vd] = start ? start[vd] : 0;
@@ -174,11 +189,10 @@ int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
 	    if (!stride_present)
 	    {
 		LOG((2, "stride not present"));
-		/* if (!(fake_stride = malloc(ndims * sizeof(PIO_Offset)))) */
-		/*     return PIO_ENOMEM; */
-		/* for (int d = 0; d < ndims; d++) */
-		/*     fake_stride[d] = 1; */
-		fake_stride = (PIO_Offset *)stride;		
+		if (!(fake_stride = malloc(ndims * sizeof(PIO_Offset))))
+		    return PIO_ENOMEM;
+		for (int d = 0; d < ndims; d++)
+		    fake_stride[d] = 1;
 	    }
 	    else
 		fake_stride = (PIO_Offset *)stride;
