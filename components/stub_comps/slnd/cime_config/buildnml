@@ -1,19 +1,40 @@
-#! /usr/bin/env perl
-use strict;
+#!/usr/bin/env python2
 
-if ($#ARGV == -1) {
-    die " ERROR slnd.buildnml: must specify a caseroot input argument";
-}
-my ($CASEROOT) = @ARGV;
-chdir "${CASEROOT}";
+"""
+buildnml - create namelist
+"""
 
-my $RUNDIR = `./xmlquery  RUNDIR -value`;
+import sys, os
 
-chdir "$RUNDIR";
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise SystemExit("ERROR: must set CIMEROOT environment variable")
+sys.path.append(os.path.join(os.environ["CIMEROOT"],"scripts","Tools"))
 
-# nothing to do for stubs
+from standard_script_setup import *
+from CIME.buildnml         import parse_command_line
 
+logger = logging.getLogger(__name__)
 
+###############################################################################
+def _main_func():
+###############################################################################
 
+    if "--test" in sys.argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    parser = argparse.ArgumentParser()
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    caseroot =  parse_command_line(sys.argv, parser)
+
+    # currently this does nothing for a stub model
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func()
 
 
