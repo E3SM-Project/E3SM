@@ -562,18 +562,23 @@ int PIOc_sync(int ncid)
     if (file->mode & PIO_WRITE)
     {
 	//  cn_buffer_report( *ios, true);
-	wmb = &(file->buffer); 
-	while(wmb != NULL){
+	wmb = &file->buffer; 
+	while(wmb)
+	{
 	    //    printf("%s %d %d %d\n",__FILE__,__LINE__,wmb->ioid, wmb->validvars);
-	    if(wmb->validvars>0){
+	    if (wmb->validvars > 0)
+	    {
 		flush_buffer(ncid, wmb, true);
 	    }
 	    twmb = wmb;
 	    wmb = wmb->next;
-	    if(twmb == &(file->buffer)){
-		twmb->ioid=-1;
-		twmb->next=NULL;
-	    }else{
+	    if (twmb == &file->buffer)
+	    {
+		twmb->ioid = -1;
+		twmb->next = NULL;
+	    }
+	    else
+	    {
 		brel(twmb);
 	    }
 	}
