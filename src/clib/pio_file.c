@@ -1,18 +1,18 @@
 #include <config.h>
 #include <pio.h>
 #include <pio_internal.h>
-/**
- ** @public
- ** @ingroup PIO_openfile
- ** @brief open an existing file using pio
- ** @details  Input parameters are read on comp task 0 and ignored elsewhere.
- ** @param iosysid : A defined pio system descriptor (input)
- ** @param ncidp : A pio file descriptor (output)
- ** @param iotype : A pio output format (input)
- ** @param filename : The filename to open 
- ** @param mode : The netcdf mode for the open operation
- */
 
+/* Open an existing file using pio
+ * @public
+ * @ingroup PIO_openfile
+ * 
+ * @details  Input parameters are read on comp task 0 and ignored elsewhere.
+ * @param iosysid : A defined pio system descriptor (input)
+ * @param ncidp : A pio file descriptor (output)
+ * @param iotype : A pio output format (input)
+ * @param filename : The filename to open 
+ * @param mode : The netcdf mode for the open operation
+ */
 int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 		  const char *filename, const int mode)
 {
@@ -193,16 +193,17 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
     return ierr;
 }
 
-/**
- ** @public
- ** @ingroup PIO_createfile
- ** @brief open a new file using pio
- ** @details  Input parameters are read on comp task 0 and ignored elsewhere.
- ** @param iosysid : A defined pio system descriptor (input)
- ** @param ncidp : A pio file descriptor (output)
- ** @param iotype : A pio output format (input)
- ** @param filename : The filename to open 
- ** @param mode : The netcdf mode for the open operation
+/* Open a new file using pio.  Input parameters are read on comp task
+ * 0 and ignored elsewhere.
+ *
+ * @public
+ * @ingroup PIO_createfile
+ * 
+ * @param iosysid : A defined pio system descriptor (input)
+ * @param ncidp : A pio file descriptor (output)
+ * @param iotype : A pio output format (input)
+ * @param filename : The filename to open 
+ * @param mode : The netcdf mode for the open operation
  */
 
 int PIOc_createfile(const int iosysid, int *ncidp, int *iotype,
@@ -357,10 +358,10 @@ int PIOc_createfile(const int iosysid, int *ncidp, int *iotype,
     return ierr;
 }
 
-/**
- ** @ingroup PIO_closefile
- ** Close a file previously opened with PIO
- ** @param ncid: the file pointer 
+/* Close a file previously opened with PIO.
+ * @ingroup PIO_closefile
+ * 
+ * @param ncid: the file pointer 
  */
 int PIOc_closefile(int ncid)
 {
@@ -374,9 +375,9 @@ int PIOc_closefile(int ncid)
         return PIO_EBADID;
     ios = file->iosystem;
 
-    if((file->mode & PIO_WRITE)){
+    /* Sync changes before closing. */
+    if (file->mode & PIO_WRITE)
 	PIOc_sync(ncid);
-    }
 
     /* If async is in use and this is a comp tasks, then the compmaster
      * sends a msg to the pio_msg_handler running on the IO master and
@@ -445,11 +446,11 @@ int PIOc_closefile(int ncid)
     return ierr;
 }
 
-/**
- ** @ingroup PIO_deletefile
- ** @brief Delete a file 
- ** @param iosysid : a pio system handle
- ** @param filename : a filename 
+/* Delete a file.
+ * @ingroup PIO_deletefile
+ * 
+ * @param iosysid : a pio system handle
+ * @param filename : a filename 
  */
 int PIOc_deletefile(const int iosysid, const char filename[])
 {
