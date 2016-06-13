@@ -2,7 +2,7 @@
 #include <pio.h>
 #include <pio_internal.h>
 
-/* Open an existing file using pio
+/* Open an existing file using pio.
  * @public
  * @ingroup PIO_openfile
  * 
@@ -205,7 +205,6 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
  * @param filename : The filename to open 
  * @param mode : The netcdf mode for the open operation
  */
-
 int PIOc_createfile(const int iosysid, int *ncidp, int *iotype,
 		    const char filename[], const int mode)
 {
@@ -479,6 +478,12 @@ int PIOc_deletefile(const int iosysid, const char filename[])
 	    if (!mpierr)
 		mpierr = MPI_Bcast((void *)filename, len + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
 	}
+
+        /* Handle MPI errors. */
+        if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->comproot, ios->my_comm)))
+            return check_mpi(file, mpierr2, __FILE__, __LINE__);
+	if (mpierr)
+	    return check_mpi(file, mpierr, __FILE__, __LINE__);
     }
 
     /* If this is an IO task, then call the netCDF function. The
@@ -519,6 +524,7 @@ int PIOc_sync(int ncid)
     int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
     wmulti_buffer *wmb, *twmb;
 
+    	return PIO_EBADID;
     /* Get the file info from the ncid. */
     if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
@@ -533,8 +539,10 @@ int PIOc_sync(int ncid)
 	    
 	    if(ios->comp_rank == 0) 
 		mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	    
-	    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
+
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster,
+				   ios->intercomm);
 	}
     }
 
