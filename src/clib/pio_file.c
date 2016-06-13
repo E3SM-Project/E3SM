@@ -584,29 +584,17 @@ int PIOc_sync(int ncid)
 	}
 	flush_output_buffer(file, true, 0);
 
-	if(ios->ioproc){
-	    switch(file->iotype){
-#ifdef _NETCDF
-#ifdef _NETCDF4
-	    case PIO_IOTYPE_NETCDF4P:
-		ierr = nc_sync(file->fh);;
-		break;
-	    case PIO_IOTYPE_NETCDF4C:
-#endif
-	    case PIO_IOTYPE_NETCDF:
-		if(ios->io_rank==0){
-		    ierr = nc_sync(file->fh);;
-		}
-		break;
-#endif
+	/* If this is an IO task, then call the netCDF function. */
+	if (ios->ioproc)
+	{
 #ifdef _PNETCDF
-	    case PIO_IOTYPE_PNETCDF:
-		ierr = ncmpi_sync(file->fh);;
-		break;
-#endif
-	    default:
-		ierr = iotype_error(file->iotype,__FILE__,__LINE__);
-	    }
+	    if (file->iotype == PIO_IOTYPE_PNETCDF)
+		ierr = ncmpi_sync(file->fh);
+#endif /* _PNETCDF */
+#ifdef _NETCDF
+	    if (file->iotype != PIO_IOTYPE_PNETCDF && file->do_io)
+		ierr = nc_sync(file->fh);
+#endif /* _NETCDF */
 	}
 
 	ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
