@@ -550,6 +550,8 @@ int PIOc_sync(int ncid)
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster,
 				   ios->intercomm);
+	    if (mpierr)
+	        return check_mpi(file, mpierr, __FILE__, __LINE__);
 	}
 
         /* Handle MPI errors. */
