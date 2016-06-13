@@ -1,18 +1,18 @@
 #include <config.h>
 #include <pio.h>
 #include <pio_internal.h>
-/**
- ** @public
- ** @ingroup PIO_openfile
- ** @brief open an existing file using pio
- ** @details  Input parameters are read on comp task 0 and ignored elsewhere.
- ** @param iosysid : A defined pio system descriptor (input)
- ** @param ncidp : A pio file descriptor (output)
- ** @param iotype : A pio output format (input)
- ** @param filename : The filename to open 
- ** @param mode : The netcdf mode for the open operation
- */
 
+/* Open an existing file using pio
+ * @public
+ * @ingroup PIO_openfile
+ * 
+ * @details  Input parameters are read on comp task 0 and ignored elsewhere.
+ * @param iosysid : A defined pio system descriptor (input)
+ * @param ncidp : A pio file descriptor (output)
+ * @param iotype : A pio output format (input)
+ * @param filename : The filename to open 
+ * @param mode : The netcdf mode for the open operation
+ */
 int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 		  const char *filename, const int mode)
 {
@@ -193,16 +193,17 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
     return ierr;
 }
 
-/**
- ** @public
- ** @ingroup PIO_createfile
- ** @brief open a new file using pio
- ** @details  Input parameters are read on comp task 0 and ignored elsewhere.
- ** @param iosysid : A defined pio system descriptor (input)
- ** @param ncidp : A pio file descriptor (output)
- ** @param iotype : A pio output format (input)
- ** @param filename : The filename to open 
- ** @param mode : The netcdf mode for the open operation
+/* Open a new file using pio.  Input parameters are read on comp task
+ * 0 and ignored elsewhere.
+ *
+ * @public
+ * @ingroup PIO_createfile
+ * 
+ * @param iosysid : A defined pio system descriptor (input)
+ * @param ncidp : A pio file descriptor (output)
+ * @param iotype : A pio output format (input)
+ * @param filename : The filename to open 
+ * @param mode : The netcdf mode for the open operation
  */
 
 int PIOc_createfile(const int iosysid, int *ncidp, int *iotype,
@@ -260,7 +261,8 @@ int PIOc_createfile(const int iosysid, int *ncidp, int *iotype,
     else
 	file->do_io = 0;
 
-    /* If async is in use, and this is not an IO task, bcast the parameters. */
+    /* If async is in use, and this is not an IO task, bcast the
+     * parameters. */
     if (ios->async_interface)
     {
 	int msg = PIO_MSG_CREATE_FILE;
@@ -356,10 +358,10 @@ int PIOc_createfile(const int iosysid, int *ncidp, int *iotype,
     return ierr;
 }
 
-/**
- ** @ingroup PIO_closefile
- ** @brief close a file previously opened with PIO
- ** @param ncid: the file pointer 
+/* Close a file previously opened with PIO.
+ * @ingroup PIO_closefile
+ * 
+ * @param ncid: the file pointer 
  */
 int PIOc_closefile(int ncid)
 {
@@ -368,15 +370,14 @@ int PIOc_closefile(int ncid)
     int ierr = PIO_NOERR;  /** Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
 
-
     /* Find the info about this file. */
     if (!(file = pio_get_file_from_id(ncid)))
         return PIO_EBADID;
     ios = file->iosystem;
 
-    if((file->mode & PIO_WRITE)){
+    /* Sync changes before closing. */
+    if (file->mode & PIO_WRITE)
 	PIOc_sync(ncid);
-    }
 
     /* If async is in use and this is a comp tasks, then the compmaster
      * sends a msg to the pio_msg_handler running on the IO master and
@@ -445,37 +446,44 @@ int PIOc_closefile(int ncid)
     return ierr;
 }
 
-/**
- ** @ingroup PIO_deletefile
- ** @brief Delete a file 
- ** @param iosysid : a pio system handle
- ** @param filename : a filename 
+/* Delete a file.
+ * @ingroup PIO_deletefile
+ * 
+ * @param iosysid : a pio system handle
+ * @param filename : a filename 
  */
 int PIOc_deletefile(const int iosysid, const char filename[])
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    int chkerr;
-    iosystem_desc_t *ios;
+    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    file_desc_t *file;     /** Pointer to file information. */
+    int ierr = PIO_NOERR;  /** Return code from function calls. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
+    int msg = PIO_MSG_DELETE_FILE;
     size_t len;
 
-    ierr = PIO_NOERR;
-    ios = pio_get_iosystem_from_id(iosysid);
-
-    if(ios == NULL)
+    /* Get the IO system info from the id. */
+    if (!(ios = pio_get_iosystem_from_id(iosysid)))
 	return PIO_EBADID;
 
-    msg = PIO_MSG_DELETE_FILE;
-
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->comp_rank==0) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	len = strlen(filename);
-	mpierr = MPI_Bcast(&len, 1, MPI_INT, ios->compmaster, ios->intercomm);
-	mpierr = MPI_Bcast((void *)filename, len + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+    /* If async is in use, send message to IO master task. */
+    if (ios->async_interface)
+    {
+	if (!ios->ioproc)
+	{
+	    if(ios->comp_rank==0) 
+		mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+	    
+	    len = strlen(filename);
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&len, 1, MPI_INT, ios->compmaster, ios->intercomm);
+	    if (!mpierr)
+		mpierr = MPI_Bcast((void *)filename, len + 1, MPI_CHAR, ios->compmaster, ios->intercomm);
+	}
     }
-    // The barriers are needed to assure that no task is trying to operate on the file while it is being deleted.
+
+    /* If this is an IO task, then call the netCDF function. The
+     * barriers are needed to assure that no task is trying to operate
+     * on the file while it is being deleted. */
     if(ios->ioproc){
 	MPI_Barrier(ios->io_comm);
 #ifdef _NETCDF
@@ -488,46 +496,50 @@ int PIOc_deletefile(const int iosysid, const char filename[])
 #endif
 	MPI_Barrier(ios->io_comm);
     }
+    
     //   Special case - always broadcast the return from the  
     MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm);
 
     return ierr;
 }
 
-///
-/// PIO interface to nc_sync
-///
-/// This routine is called collectively by all tasks in the communicator ios.union_comm.  
-/// 
-/// Refer to the <A HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html" target="_blank"> netcdf </A> documentation. 
-///
 /** 
- * @name    PIOc_sync
+ * PIO interface to nc_sync This routine is called collectively by all
+ * tasks in the communicator ios.union_comm.  
+ *
+ * Refer to the <A
+ * HREF="http://www.unidata.ucar.edu/software/netcdf/docs/modules.html"
+ * target="_blank"> netcdf </A> documentation.
  */
 int PIOc_sync(int ncid) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
+    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    file_desc_t *file;     /** Pointer to file information. */
+    int ierr = PIO_NOERR;  /** Return code from function calls. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
     wmulti_buffer *wmb, *twmb;
 
-    ierr = PIO_NOERR;
-
-    file = pio_get_file_from_id(ncid);
-    if(file == NULL)
+    /* Get the file info from the ncid. */
+    if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
     ios = file->iosystem;
-    msg = PIO_MSG_SYNC;
 
-    if(ios->async_interface && ! ios->ioproc){
-	if(ios->comp_rank == 0) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
+    /* If async is in use, send message to IO master tasks. */
+    if (ios->async_interface)
+    {
+	if (!ios->ioproc)
+	{
+	    int msg = PIO_MSG_SYNC;
+	    
+	    if(ios->comp_rank == 0) 
+		mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+	    
+	    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
+	}
     }
 
-    if((file->mode & PIO_WRITE)){
+    if (file->mode & PIO_WRITE)
+    {
 	//  cn_buffer_report( *ios, true);
 	wmb = &(file->buffer); 
 	while(wmb != NULL){
