@@ -31,10 +31,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 
     /* Get the IO system info from the iosysid. */
     if (!(ios = pio_get_iosystem_from_id(iosysid)))
-    {
-	LOG((0, "PIOc_openfile got bad iosysid %d",iosysid));
 	return PIO_EBADID;
-    }
 
     /* Allocate space for the file info. */
     if (!(file = (file_desc_t *) malloc(sizeof(*file))))
@@ -451,14 +448,17 @@ int PIOc_closefile(int ncid)
  * @param iosysid : a pio system handle
  * @param filename : a filename 
  */
-int PIOc_deletefile(const int iosysid, const char filename[])
+int PIOc_deletefile(const int iosysid, const char *filename)
 {
     iosystem_desc_t *ios;  /** Pointer to io system information. */
     file_desc_t *file;     /** Pointer to file information. */
     int ierr = PIO_NOERR;  /** Return code from function calls. */
+    int deleted = 0;       /** Becomes true when file is deleted. */
     int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
-    int msg = PIO_MSG_DELETE_FILE;
-    size_t len;
+
+    /* Filename must be provided. */
+    if (!filename || strlen(filename) > NC_MAX_NAME)
+	return PIO_EINVAL;
 
     /* Get the IO system info from the id. */
     if (!(ios = pio_get_iosystem_from_id(iosysid)))
@@ -469,10 +469,12 @@ int PIOc_deletefile(const int iosysid, const char filename[])
     {
 	if (!ios->ioproc)
 	{
-	    if(ios->comp_rank==0) 
+	    int msg = PIO_MSG_DELETE_FILE;
+	    size_t len = strlen(filename);
+
+	    if(ios->compmaster) 
 		mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 	    
-	    len = strlen(filename);
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&len, 1, MPI_INT, ios->compmaster, ios->intercomm);
 	    if (!mpierr)
@@ -489,21 +491,27 @@ int PIOc_deletefile(const int iosysid, const char filename[])
     /* If this is an IO task, then call the netCDF function. The
      * barriers are needed to assure that no task is trying to operate
      * on the file while it is being deleted. */
-    if(ios->ioproc){
+    if (ios->ioproc)
+    {
 	MPI_Barrier(ios->io_comm);
 #ifdef _NETCDF
-	if(ios->io_rank==0)
+	if (ios->iomaster)
 	    ierr = nc_delete(filename);
+	deleted++;
 #else
 #ifdef _PNETCDF
-	ierr = ncmpi_delete(filename, ios->info);
+	if (!deleted)
+	    ierr = ncmpi_delete(filename, ios->info);
 #endif
 #endif
 	MPI_Barrier(ios->io_comm);
     }
     
-    //   Special case - always broadcast the return from the  
-    MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm);
+    /* Broadcast and check the return code. */
+    if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+        return check_mpi(file, mpierr, __FILE__, __LINE__);
+    if (ierr)
+	return check_netcdf(file, ierr, __FILE__, __LINE__);
 
     return ierr;
 }
@@ -524,7 +532,6 @@ int PIOc_sync(int ncid)
     int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
     wmulti_buffer *wmb, *twmb;
 
-    	return PIO_EBADID;
     /* Get the file info from the ncid. */
     if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
@@ -537,13 +544,19 @@ int PIOc_sync(int ncid)
 	{
 	    int msg = PIO_MSG_SYNC;
 	    
-	    if(ios->comp_rank == 0) 
+	    if (ios->compmaster) 
 		mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
 
 	    if (!mpierr)
 		mpierr = MPI_Bcast(&file->fh, 1, MPI_INT, ios->compmaster,
 				   ios->intercomm);
 	}
+
+        /* Handle MPI errors. */
+        /* if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->comproot, ios->my_comm))) */
+        /*     return check_mpi(file, mpierr2, __FILE__, __LINE__); */
+	/* if (mpierr) */
+	/*     return check_mpi(file, mpierr, __FILE__, __LINE__); */
     }
 
     if (file->mode & PIO_WRITE)
@@ -593,6 +606,13 @@ int PIOc_sync(int ncid)
 
 	ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
     }
+
+    /* Broadcast and check the return code. */
+    /* if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm))) */
+    /*     return check_mpi(file, mpierr, __FILE__, __LINE__); */
+    /* if (ierr) */
+    /* 	return check_netcdf(file, ierr, __FILE__, __LINE__); */
+    
     return ierr;
 }
 
