@@ -14,7 +14,7 @@
 #
 #SBATCH --job-name baro
 #SBATCH --account=FY150001
-#SBATCH -N 8
+#SBATCH -N 20
 #SBATCH --time=0:30:00
 #
 #  set paths to source code, build directory and run directory
@@ -25,7 +25,7 @@ set input = $HOMME/test/jw_baroclinic    # input files for test case
 set vdir = $HOMME/test/vcoord            # vertical coordinate files
 set bld = $wdir/bld                      # cmake/build directory
 
-set MACH = $HOMME/cmake/machineFiles/skybride.cmake
+set MACH = $HOMME/cmake/machineFiles/skybridge.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan.cmake
 #set MACH = $HOMME/cmake/machineFiles/titan-cuda.cmake    # CMAKE file for Titan GPU support
 #set MACH = $HOMME/cmake/machineFiles/darwin.cmake
@@ -41,7 +41,7 @@ setenv OMP_NUM_THREADS 1
 
 if ( ${?SLURM_NNODES} ) then   # redsky
     set NCPU = $SLURM_NNODES
-    @ NCPU *= 8
+    @ NCPU *= 16
     @ NCPU /= $OMP_NUM_THREADS
 endif
 if ( ${?PBS_NUM_NODES} ) then  # titan, other PBS based systems?
@@ -53,6 +53,7 @@ endif
 
 
 echo using NCPU=$NCPU   NTHREADS=$OMP_NUM_THREADS
+#set mpirun = "mpirun --ntasks-per-node=36 -np $NCPU"
 set mpirun = "mpirun -np $NCPU"
 #set mpirun = "mpirun -loadbalance -np $NCPU"
 #set mpirun = "aprun -n $NCPU -d $OMP_NUM_THREADS "
@@ -65,7 +66,7 @@ set u_perturb = 1
 set rotate = 0
 
                   # number of elemnets:  6*ne*ne
-set ne = 4        # horizontal resolution   4,16,30,60,120,240
+set ne = 30        # horizontal resolution   4,16,30,60,120,240
 set qsize = 4     # use 4 tracers for testing
 
 # CAM4
