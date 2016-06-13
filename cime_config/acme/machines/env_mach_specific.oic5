@@ -23,14 +23,6 @@ setenv MPICH_VERSION_DISPLAY 1
 setenv MPICH_CPUMASK_DISPLAY 1
 setenv MPICH_RANK_REORDER_DISPLAY 1
 #setenv LD_LIBRARY_PATH /usr/lib64:${LD_LIBRARY_PATH}
-if ( $COMPILER == "gnu" ) then
-  setenv INC_NETCDF /projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4-nonetcdf/include
-  setenv LIB_NETCDF /projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4-nonetcdf/lib
-endif
-if ( $COMPILER == "pgi" ) then
-  setenv INC_NETCDF /home/zdr/opt/netcdf-4.1.3_pgf95/include
-  setenv LIB_NETCDF /home/zdr/opt/netcdf-4.1.3_pgf95/lib
-endif
 
 limit coredumpsize unlimited
 limit stacksize unlimited
