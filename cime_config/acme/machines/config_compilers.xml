@@ -303,8 +303,10 @@ for mct, etc.
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
 
-  <ADD_FFLAGS OS="Linux"> -mcmodel medium -shared-intel </ADD_FFLAGS>
+</compiler>
 
+<compiler COMPILER="intel" OS="Linux">
+  <ADD_FFLAGS> -mcmodel medium -shared-intel </ADD_FFLAGS>
 </compiler>
 
 <compiler COMPILER="intel14">
