@@ -531,8 +531,8 @@ main(int argc, char **argv)
 	    	ERR(ret);
 
 	    /* Now delete the file. */
-	    if ((ret = PIOc_deletefile(iosysid, filename[fmt])))
-	    	ERR(ret);
+	    /* if ((ret = PIOc_deletefile(iosysid, filename[fmt]))) */
+	    /* 	ERR(ret); */
 	    /* if ((ret = PIOc_openfile(iosysid, &ncid, &format[fmt], filename[fmt], */
 	    /* 			     NC_NOWRITE)) != PIO_ENFILE) */
 	    /* 	ERR(ERR_AWFUL); */
