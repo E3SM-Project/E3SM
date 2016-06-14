@@ -133,6 +133,18 @@ module li_core
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
       err = ior(err, err_tmp)
 
+      !
+      ! Read the remaining input streams
+      !
+      call mpas_timer_start('io_read', .false.)
+      call mpas_stream_mgr_read(domain % streamManager, ierr=err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop('io_read')
+      call mpas_timer_start('reset_io_alarms', .false.)
+      call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop('reset_io_alarms')
+
       ! ===
       ! Initialize some time stuff on each block
       ! ===
