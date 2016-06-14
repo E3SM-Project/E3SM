@@ -1022,10 +1022,10 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 </griddom>
 
 <griddom grid="ne11np4" mask="oQU240">
-  <ATM_DOMAIN_FILE></ATM_DOMAIN_FILE>
-  <LND_DOMAIN_FILE></LND_DOMAIN_FILE>
-  <ICE_DOMAIN_FILE></ICE_DOMAIN_FILE>
-  <OCN_DOMAIN_FILE></OCN_DOMAIN_FILE>
+  <ATM_DOMAIN_FILE>domain.lnd.ne11np4_oQU240.160614.nc</ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE>domain.lnd.ne11np4_oQU240.160614.nc</LND_DOMAIN_FILE>
+  <ICE_DOMAIN_FILE>domain.ocn.ne11np4_oQU240.160614.nc</ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE>domain.ocn.ne11np4_oQU240.160614.nc</OCN_DOMAIN_FILE>
 </griddom>
 
 <gridmap atm_grid="ne11np4" ocn_grid="gx3v7">
@@ -1037,11 +1037,11 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 </gridmap>
 
 <gridmap atm_grid="ne11np4" ocn_grid="oQU240">
-  <ATM2OCN_FMAPNAME>cpl/gridmaps/ne11np4/</ATM2OCN_FMAPNAME>
-  <ATM2OCN_SMAPNAME>cpl/gridmaps/ne11np4/</ATM2OCN_SMAPNAME>
-  <ATM2OCN_VMAPNAME>cpl/gridmaps/ne11np4/</ATM2OCN_VMAPNAME>
-  <OCN2ATM_FMAPNAME>cpl/gridmaps/oQU240/</OCN2ATM_FMAPNAME>
-  <OCN2ATM_SMAPNAME>cpl/gridmaps/oQU240/</OCN2ATM_SMAPNAME>
+  <ATM2OCN_FMAPNAME>cpl/gridmaps/ne11np4/map_ne11np4_to_oQU240_aave.160614.nc</ATM2OCN_FMAPNAME>
+  <ATM2OCN_SMAPNAME>cpl/gridmaps/ne11np4/map_ne11np4_to_oQU240_aave.160614.nc</ATM2OCN_SMAPNAME>
+  <ATM2OCN_VMAPNAME>cpl/gridmaps/ne11np4/map_ne11np4_to_oQU240_aave.160614.nc</ATM2OCN_VMAPNAME>
+  <OCN2ATM_FMAPNAME>cpl/gridmaps/oQU240/map_oQU240_to_ne11np4_aave.160614.nc</OCN2ATM_FMAPNAME>
+  <OCN2ATM_SMAPNAME>cpl/gridmaps/oQU240/map_oQU240_to_ne11np4_aave.160614.nc</OCN2ATM_SMAPNAME>
 </gridmap>
 
 <!-- ====================  -->
