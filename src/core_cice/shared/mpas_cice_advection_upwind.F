@@ -432,16 +432,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine cice_run_advection_upwind(domain, clock, dt)!{{{
+  subroutine cice_run_advection_upwind(domain, clock)!{{{
 
     type (domain_type), intent(inout) :: &
          domain !< Input/Output: 
 
     type (MPAS_Clock_type), intent(in) :: &
          clock !< Input:
-
-    real(kind=RKIND), intent(in) :: &
-         dt !< Input: 
 
     type(block_type), pointer :: &
          block
@@ -473,6 +470,9 @@ contains
 
     integer, dimension(:), pointer :: &
          interiorEdge
+
+    real(kind=RKIND), pointer :: &
+         dynamicsTimeStep
 
     block => domain % blocklist
     do while (associated(block))
@@ -522,6 +522,7 @@ contains
        call MPAS_pool_get_array(velocity_solver, "uVelocity", uVelocity)
        call MPAS_pool_get_array(velocity_solver, "vVelocity", vVelocity)
        call MPAS_pool_get_array(velocity_solver, "normalVectorEdge", normalVectorEdge)
+       call MPAS_pool_get_array(velocity_solver, "dynamicsTimeStep", dynamicsTimeStep)
 
        call MPAS_pool_get_array(boundary, "interiorEdge", interiorEdge)  
 
@@ -545,7 +546,7 @@ contains
                   edgeVelocity, &
                   edgeFlux, &
                   interiorEdge, &
-                  dt)
+                  dynamicsTimeStep)
 
           endif
 

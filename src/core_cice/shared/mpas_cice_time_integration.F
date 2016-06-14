@@ -43,7 +43,6 @@ contains
   subroutine cice_timestep(&
        domain, &
        clock, &
-       dt, &
        itimestep)!{{{
 
     use mpas_timer
@@ -77,9 +76,6 @@ contains
 
     type (MPAS_Clock_type), intent(in) :: &
          clock !< Input: 
-
-    real(kind=RKIND), intent(in) :: &
-         dt !< Input: 
 
     integer, intent(in) :: &
          itimestep !< Input: 
@@ -149,7 +145,7 @@ contains
        ! advection
        call mpas_timer_start("Advection")
        if (config_use_advection) &
-            call cice_run_advection(domain, clock, dt)
+            call cice_run_advection(domain, clock)
        call mpas_timer_stop("Advection")
 
        ! ridging
