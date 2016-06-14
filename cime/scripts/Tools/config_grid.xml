@@ -77,6 +77,8 @@ Each grid is associated with five names
 
 <!--  spectral element grids -->
 
+<GRID sname="ne4np4_oQU240"              alias="ne4_qu240"    >a%ne4np4_l%ne4np4_oi%oQU240_r%r05_m%oQU240_g%null_w%null</GRID>
+<GRID sname="ne11np4_oQU240"             alias="ne11_qu240"   >a%ne11np4_l%ne11np4_oi%oQU240_r%r05_m%oQU240_g%null_w%null</GRID>
 <GRID sname="ne16np4_oQU240"             alias="ne16_qu240"   >a%ne16np4_l%ne16np4_oi%oQU240_r%r05_m%oQU240_g%null_w%null</GRID>
 <GRID sname="ne16np4_oQU240_ais20"       alias="ne16_qu240_a" >a%ne16np4_l%ne16np4_oi%oQU240_r%r05_m%oQU240_g%mpas.ais20km_w%null</GRID>
 <GRID sname="ne16np4_gx3v7"              alias="ne16_g37"     >a%ne16np4_l%ne16np4_oi%gx3v7_r%r05_m%gx3v7_g%null_w%null</GRID>
@@ -94,6 +96,8 @@ Each grid is associated with five names
 <GRID sname="ne240np4_0.23x0.31_gx1v6"   alias="ne240_f02_g16" support_level="For testing high resolution tri-grid" >a%ne240np4_l%0.23x0.31_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</GRID>
 <GRID sname="ne240np4_tx0.1v2"           alias="ne240_t12"    >a%ne240np4_l%ne240np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</GRID>
 
+<GRID sname="ne4np4_ne4np4"         alias="ne4_ne4"      compset="(DOCN|XOCN|SOCN|AQUAP)">a%ne4np4_l%ne4np4_oi%ne4np4_r%r05_m%gx3v7_g%null_w%null</GRID>
+<GRID sname="ne11np4_ne11np4"       alias="ne11_ne11"    compset="(DOCN|XOCN|SOCN|AQUAP)">a%ne11np4_l%ne11np4_oi%ne11np4_r%r05_m%gx3v7_g%null_w%null</GRID>
 <GRID sname="ne16np4_ne16np4"       alias="ne16_ne16"    compset="(DOCN|XOCN|SOCN|AQUAP)">a%ne16np4_l%ne16np4_oi%ne16np4_r%r05_m%gx3v7_g%null_w%null</GRID>
 <GRID sname="ne30np4_ne30np4"       alias="ne30_ne30"    compset="(DOCN|XOCN|SOCN|AQUAP)">a%ne30np4_l%ne30np4_oi%ne30np4_r%r05_m%gx1v6_g%null_w%null</GRID>
 <GRID sname="ne60np4_ne60np4"       alias="ne60_ne60"    compset="(DOCN|XOCN|SOCN|AQUAP)">a%ne60np4_l%ne60np4_oi%ne60np4_r%r05_m%gx1v6_g%null_w%null</GRID>
@@ -300,10 +304,22 @@ Each grid is associated with five names
 <!-- spectral element grids-->
 <!-- NOTE: desc MUST be the last field in each <gridhorz> -->
 
+<gridhorz name="ne4np4">
+  <support_level>For low resolution spectral element grid testing</support_level>
+  <nx>866</nx> <ny>1</ny>
+  <desc>ne4np4 is Spectral Elem  7.5-deg grid:</desc>
+</gridhorz>
+
+<gridhorz name="ne11np4">
+  <support_level>For low resolution spectral element grid testing</support_level>
+  <nx>6536</nx> <ny>1</ny>
+  <desc>ne11np4 is Spectral Elem 2.7-deg grid:</desc>
+</gridhorz>
+
 <gridhorz name="ne16np4">
   <support_level>For low resolution spectral element grid testing</support_level>
   <nx>13826</nx> <ny>1</ny>   
-  <desc>ne16np4 is Spectral Elem 2-deg grid:</desc> 
+  <desc>ne16np4 is Spectral Elem 1.875-deg grid:</desc> 
 </gridhorz>
 
 <gridhorz name="ne30np4">
@@ -960,6 +976,75 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 </griddom>
 
 <!-- ====================  -->
+<!--  atm se: ne4np4      -->
+<!-- ====================  -->
+
+<griddom grid="ne4np4" mask="gx3v7">
+  <ATM_DOMAIN_FILE></ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE></LND_DOMAIN_FILE>
+  <ICE_DOMAIN_FILE></ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE></OCN_DOMAIN_FILE>
+</griddom>
+
+<griddom grid="ne4np4" mask="oQU240">
+  <ATM_DOMAIN_FILE></ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE></LND_DOMAIN_FILE>
+  <ICE_DOMAIN_FILE></ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE></OCN_DOMAIN_FILE>
+</griddom>
+
+<gridmap atm_grid="ne4np4" ocn_grid="gx3v7">
+  <ATM2OCN_FMAPNAME>cpl/gridmaps/ne4np4/</ATM2OCN_FMAPNAME>
+  <ATM2OCN_SMAPNAME>cpl/gridmaps/ne4np4/</ATM2OCN_SMAPNAME>
+  <ATM2OCN_VMAPNAME>cpl/gridmaps/ne4np4/</ATM2OCN_VMAPNAME>
+  <OCN2ATM_FMAPNAME>cpl/gridmaps/gx3v7/ </OCN2ATM_FMAPNAME>
+  <OCN2ATM_SMAPNAME>cpl/gridmaps/gx3v7/  </OCN2ATM_SMAPNAME>
+</gridmap>
+
+<gridmap atm_grid="ne4np4" ocn_grid="oQU240">
+  <ATM2OCN_FMAPNAME>cpl/gridmaps/ne4np4/</ATM2OCN_FMAPNAME>
+  <ATM2OCN_SMAPNAME>cpl/gridmaps/ne4np4/</ATM2OCN_SMAPNAME>
+  <ATM2OCN_VMAPNAME>cpl/gridmaps/ne4np4/</ATM2OCN_VMAPNAME>
+  <OCN2ATM_FMAPNAME>cpl/gridmaps/oQU240/</OCN2ATM_FMAPNAME>
+  <OCN2ATM_SMAPNAME>cpl/gridmaps/oQU240/</OCN2ATM_SMAPNAME>
+</gridmap>
+
+
+<!-- ====================  -->
+<!--  atm se: ne11np4      -->
+<!-- ====================  -->
+
+<griddom grid="ne11np4" mask="gx3v7">
+  <ATM_DOMAIN_FILE></ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE></LND_DOMAIN_FILE>
+  <ICE_DOMAIN_FILE></ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE></OCN_DOMAIN_FILE>
+</griddom>
+
+<griddom grid="ne11np4" mask="oQU240">
+  <ATM_DOMAIN_FILE></ATM_DOMAIN_FILE>
+  <LND_DOMAIN_FILE></LND_DOMAIN_FILE>
+  <ICE_DOMAIN_FILE></ICE_DOMAIN_FILE>
+  <OCN_DOMAIN_FILE></OCN_DOMAIN_FILE>
+</griddom>
+
+<gridmap atm_grid="ne11np4" ocn_grid="gx3v7">
+  <ATM2OCN_FMAPNAME>cpl/gridmaps/ne11np4/</ATM2OCN_FMAPNAME>
+  <ATM2OCN_SMAPNAME>cpl/gridmaps/ne11np4/</ATM2OCN_SMAPNAME>
+  <ATM2OCN_VMAPNAME>cpl/gridmaps/ne11np4/</ATM2OCN_VMAPNAME>
+  <OCN2ATM_FMAPNAME>cpl/gridmaps/gx3v7/  </OCN2ATM_FMAPNAME>
+  <OCN2ATM_SMAPNAME>cpl/gridmaps/gx3v7/  </OCN2ATM_SMAPNAME>
+</gridmap>
+
+<gridmap atm_grid="ne11np4" ocn_grid="oQU240">
+  <ATM2OCN_FMAPNAME>cpl/gridmaps/ne11np4/</ATM2OCN_FMAPNAME>
+  <ATM2OCN_SMAPNAME>cpl/gridmaps/ne11np4/</ATM2OCN_SMAPNAME>
+  <ATM2OCN_VMAPNAME>cpl/gridmaps/ne11np4/</ATM2OCN_VMAPNAME>
+  <OCN2ATM_FMAPNAME>cpl/gridmaps/oQU240/</OCN2ATM_FMAPNAME>
+  <OCN2ATM_SMAPNAME>cpl/gridmaps/oQU240/</OCN2ATM_SMAPNAME>
+</gridmap>
+
+<!-- ====================  -->
 <!--  atm se: ne16np4      -->
 <!-- ====================  -->
 
@@ -1500,6 +1585,16 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <gridmap lnd_grid="360x720cru" rof_grid="r05">
   <LND2ROF_FMAPNAME>lnd/clm2/mappingdata/maps/0.5x0.5/map_360x720_nomask_to_0.5x0.5_nomask_aave_da_c130103.nc</LND2ROF_FMAPNAME>
   <ROF2LND_FMAPNAME>lnd/clm2/mappingdata/maps/360x720/map_0.5x0.5_nomask_to_360x720_nomask_aave_da_c120830.nc</ROF2LND_FMAPNAME>
+</gridmap>
+
+<gridmap lnd_grid="ne4np4" rof_grid="r05">
+  <LND2ROF_FMAPNAME>lnd/clm2/mappingdata/maps/ne4np4/</LND2ROF_FMAPNAME>
+  <ROF2LND_FMAPNAME>lnd/clm2/mappingdata/maps/ne4np4/</ROF2LND_FMAPNAME>
+</gridmap>
+
+<gridmap lnd_grid="ne11np4" rof_grid="r05">
+  <LND2ROF_FMAPNAME>lnd/clm2/mappingdata/maps/ne11np4/</LND2ROF_FMAPNAME>
+  <ROF2LND_FMAPNAME>lnd/clm2/mappingdata/maps/ne11np4/</ROF2LND_FMAPNAME>
 </gridmap>
 
 <gridmap lnd_grid="ne16np4" rof_grid="r05">
