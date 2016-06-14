@@ -19,6 +19,7 @@
 #endif
 
 #ifdef SPMD
+#undef HAVE_MPI
 #define HAVE_MPI
 #endif
 

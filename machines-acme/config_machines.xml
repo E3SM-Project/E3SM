@@ -115,7 +115,7 @@
          <BATCHREDIRECT></BATCHREDIRECT>
          <SUPPORTED_BY>acme</SUPPORTED_BY>
          <GMAKE_J>8</GMAKE_J>
-         <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
+         <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
     	 <PES_PER_NODE>24</PES_PER_NODE>
          <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
@@ -162,7 +162,7 @@
     <BATCHREDIRECT></BATCHREDIRECT>
     <SUPPORTED_BY>acme</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
-    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>32</PES_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
@@ -445,7 +445,7 @@
          <DESC>ANL/LCRC Linux Cluster</DESC>
          <NODENAME_REGEX>blogin</NODENAME_REGEX>
          <TESTS>acme_integration</TESTS>
-         <COMPILERS>pgi,intel,gnu,nag</COMPILERS>
+         <COMPILERS>gnu,pgi,intel,nag</COMPILERS>
          <MPILIBS>mvapich,mpich,openmpi,mpi-serial</MPILIBS>
          <CESMSCRATCHROOT>/lcrc/project/$PROJECT/$USER/acme_scratch</CESMSCRATCHROOT>
          <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
@@ -523,7 +523,7 @@
                <arg name="num_tasks"> -n {{ num_tasks }}</arg>
                <arg name="locargs">  $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
-               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=32M</arg>
+               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
                <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
                <arg name="colon">:</arg>
              </arguments>
@@ -553,6 +553,46 @@
     <GMAKE_J>20</GMAKE_J>
     <MAX_TASKS_PER_NODE>20</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>2</PES_PER_NODE>
+</machine>
+
+<machine MACH="sierra">
+         <DESC>LLNL Linux Cluster, Linux (pgi), 12 pes/node, batch system is Moab</DESC>
+         <COMPILERS>intel, pgi</COMPILERS>
+         <MPILIBS>mpich,mpi-serial</MPILIBS>
+         <RUNDIR>/p/lscratche/$CCSMUSER/ACME/$CASE/run</RUNDIR>
+         <EXEROOT>/p/lscratche/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/p/lscratche/$USER</CESMSCRATCHROOT>
+         <DIN_LOC_ROOT>/p/lscratchd/ma21/ccsm3data/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/p/lscratchd/ma21/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/p/lscratche/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
+         <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
+         <CCSM_BASELINE>/p/lscratchd/$CCSMUSER/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
+         <OS>LINUX</OS>
+         <BATCHQUERY>mshow</BATCHQUERY>
+         <BATCHSUBMIT>msub</BATCHSUBMIT>
+	 <BATCHREDIRECT></BATCHREDIRECT>
+         <SUPPORTED_BY>wlin -at- bnl.gov</SUPPORTED_BY>
+         <GMAKE_J>8</GMAKE_J>
+         <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+	 <batch_system type="sierra_slurm" version="x.y">
+	   <queues>
+	     <queue jobmin="1" jobmax="9999" default="true">pbatch</queue>
+	   </queues>
+	   <walltimes>
+	     <walltime default="true">walltime=01:00:00</walltime>
+	   </walltimes>
+	 </batch_system>
+	 <mpirun mpilib="mpich">
+	   <executable>srun</executable>
+	   <arguments>
+	     <arg name="num_nodes"> -N {{ num_nodes }}</arg>
+	   </arguments>
+	 </mpirun>
+	 <mpirun mpilib="mpi-serial">
+           <executable></executable>
+	 </mpirun>
 </machine>
 
 <machine MACH="mira">
@@ -600,7 +640,7 @@
                <arg name="num_tasks"> -n {{ num_tasks }}</arg>
                <arg name="locargs">  $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
-               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=32M</arg>
+               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
                <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
                <arg name="colon">:</arg>
              </arguments>

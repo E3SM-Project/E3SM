@@ -229,7 +229,8 @@ static unsigned inline long long nanotime (void); /* read counter (assembler) */
 static float get_clockfreq (void);                /* cycles/sec */
 #endif
 
-static int tablesize = 1024;  /* per-thread size of hash table (settable parameter) */
+#define DEFAULT_TABLE_SIZE 2048
+static int tablesize = DEFAULT_TABLE_SIZE;  /* per-thread size of hash table (settable parameter) */
 static char *outdir = 0;      /* dir to write output files to (currently unused) */
 
 static double overhead_utr   = 0.0;                 /* timer cost estimate */
@@ -595,7 +596,7 @@ int GPTLfinalize (void)
   cyc2sec = -1;
 #endif
   outdir = 0;
-  tablesize = 1024;
+  tablesize = DEFAULT_TABLE_SIZE;
 
   return 0;
 }
