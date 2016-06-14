@@ -3,14 +3,24 @@ common implementation for building namelist commands
 
 These are used by components/<model_type>/<component>/cime_config/buildnml
 """
+
+from standard_script_setup import *
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, handle_standard_logging_options
 from CIME.case import Case
 import sys, os, shutil, glob
 
 ###############################################################################
-def parse_command_line(args, parser):
+def parse_input(argv):
 ###############################################################################
+
+    if "--test" in argv:
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
+
+    parser = argparse.ArgumentParser()
+
+    CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("caseroot", default=os.getcwd(),
                         help="Case directory")
@@ -22,35 +32,41 @@ def parse_command_line(args, parser):
     return args.caseroot
 
 ###############################################################################
-def build_xcpl_nml(caseroot, model, comp):
+def build_xcpl_nml(argv, compclass):
 ###############################################################################
+
+    caseroot = parse_input(argv)
+
+    compname = "x" + compclass
+
+    caseroot = parse_input(argv)
 
     case = Case(caseroot)
 
     rundir = case.get_value("RUNDIR")
-    ninst  = case.get_value("NINST_%s" % comp)
-    nx     = case.get_value("%s_NX" % comp)
-    ny     = case.get_value("%s_NY" % comp)
+    ninst  = case.get_value("NINST_%s" % compclass.upper())
+    nx     = case.get_value("%s_NX" % compclass.upper())
+    ny     = case.get_value("%s_NY" % compclass.upper())
 
     extras = []
     dtype = 1
     npes = 0
     length = 0
 
-    if model == "xatm":
+    if compname == "xatm":
         if ny == 1:
             dtype = 2
         extras = [["24",
                    "ncpl  number of communications w/coupler per dat"],
                   ["0.0",
                    "simul time proxy (secs): time between cpl comms"]]
-    elif model == "xglc" or model == "xice":
+    elif compname == "xglc" or compname == "xice":
         dtype = 2
-    elif model == "xlnd":
+    elif compname == "xlnd":
         dtype = 11
-    elif model == "xocn":
+    elif compname == "xocn":
         dtype = 4
-    elif model == "xrof":
+    elif compname == "xrof":
         dtype = 11
         flood_mode = Case('XROF_FLOOD_MODE')
         if flood_mode == "ACTIVE":
@@ -59,13 +75,12 @@ def build_xcpl_nml(caseroot, model, comp):
             extras = [[".false.", "flood flag"]]
 
     for i in range(1, ninst + 1):
-        # If only 1 file, name is 'model_in'
-        # otherwise files are 'model_in0001', 'model_in0002', etc
+        # If only 1 file, name is 'compclass_in'
+        # otherwise files are 'compclass_in0001', 'compclass_in0002', etc
         if ninst == 1:
-            filename = os.path.join(rundir, "%s_in" % model)
+            filename = os.path.join(rundir, "%s_in" % compname)
         else:
-            filename = os.path.join(rundir, "%s_in%4.4d" % (model, i))
-
+            filename = os.path.join(rundir, "%s_in%4.4d" % (compname, i))
 
         with open(filename, 'w') as infile:
             infile.write("%-20d ! i-direction global dimension\n" % nx)
@@ -80,12 +95,18 @@ def build_xcpl_nml(caseroot, model, comp):
 
 
 ###############################################################################
-def build_data_nml(case, compname, compclass, ninst):
+def build_data_nml(argv, compclass):
 ###############################################################################
 
+    caseroot = parse_input(argv)
+
+    case = Case(caseroot)
+
     cimeroot = case.get_value("CIMEROOT")
-    caseroot = case.get_value("CASEROOT")
     rundir   = case.get_value("RUNDIR")
+    ninst    = case.get_value("NINST_%s" % compclass.upper())
+
+    compname = "d" + compclass
 
     confdir = os.path.join(caseroot,"Buildconf",compname + "conf")
     if not os.path.isdir(confdir):
@@ -109,7 +130,7 @@ def build_data_nml(case, compname, compclass, ninst):
                                                 os.path.join(rundir,rpointer+inst_string)))
 
         # create namelist output infile using user_nl_file as input
-        user_nl_file    = os.path.join(caseroot, "user_nl_" + compname + inst_string)
+        user_nl_file = os.path.join(caseroot, "user_nl_" + compname + inst_string)
         expect(os.path.isfile(user_nl_file),
                "Missing required user_nl_file %s " %(user_nl_file))
         namelist_infile = os.path.join(confdir, "cesm_namelist")
