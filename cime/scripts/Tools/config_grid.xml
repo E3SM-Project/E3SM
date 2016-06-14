@@ -303,7 +303,7 @@ Each grid is associated with five names
 <gridhorz name="ne16np4">
   <support_level>For low resolution spectral element grid testing</support_level>
   <nx>13826</nx> <ny>1</ny>   
-  <desc>ne16np4 is Spectral Elem 2-deg grid:</desc> 
+  <desc>ne16np4 is Spectral Elem 1.875-deg grid:</desc> 
 </gridhorz>
 
 <gridhorz name="ne30np4">
