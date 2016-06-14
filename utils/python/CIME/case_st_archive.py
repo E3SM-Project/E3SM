@@ -61,6 +61,7 @@ def list_xml(case, archive):
         file_extensions = archive.get_rest_file_extensions(archive_entry)
         for suffix in file_extensions:
             logger.info('  restart file suffix = %s ' % suffix)
+
         file_extensions = archive.get_hist_file_extensions(archive_entry)
         for suffix in file_extensions:
             logger.info('  history file suffix = %s ' % suffix)
@@ -211,7 +212,7 @@ def archive_history_files(case, archive, archive_entry,
     rundir = case.get_value("RUNDIR")
     for suffix in archive.get_hist_file_extensions(archive_entry):
         for i in range(ninst):
-            if ninst_string: #FIXME - is this correct for ninst_string
+            if ninst_string:
                 newsuffix = compname + ".*" + ninst_string[i] + suffix
             else:
                 newsuffix = compname + ".*"  + suffix
@@ -287,15 +288,22 @@ def archive_restarts(case, archive, archive_entry,
     # get file_extension suffixes
     for suffix in archive.get_rest_file_extensions(archive_entry):
         for i in range(ninst):
+            restfiles = ""
             pattern = compname 
-            p = re.compile(pattern)
-            files = [ f for f in os.listdir(rundir) if p.search(f) ]
-            if ninst_strings: #FIXME - is this correct for ninst_strints???
-                pattern = ninst_strings[i] + suffix + datename 
+            if pattern != "dart":
+                p = re.compile(pattern)
+                files = [ f for f in os.listdir(rundir) if p.search(f) ]
+                if ninst_strings: 
+                    pattern = ninst_strings[i] + suffix + datename 
+                else:
+                    pattern = suffix + datename 
+                    p = re.compile(pattern)
+                    restfiles = [ f for f in files if p.search(f) ]
             else:
-                pattern = suffix + datename 
-            p = re.compile(pattern)
-            restfiles = [ f for f in files if p.search(f) ]
+                pattern = suffix
+                p = re.compile(pattern)
+                restfiles = [ f for f in os.listdir(rundir) if p.search(f)]
+                
             for restfile in restfiles:
                 restfile = os.path.basename(restfile)
 
@@ -351,6 +359,7 @@ def archive_process(case, archive):
     rundir = case.get_value('RUNDIR')
     compset_comps = case.get_compset_components()
     compset_comps.append('cpl')
+    compset_comps.append('dart')
 
     # archive log files
     archive_log_files(case)
@@ -360,9 +369,8 @@ def archive_process(case, archive):
         compname,compclass = archive.get_entry_info(archive_entry)
 
         # check for validity of compname
-        # FIXME - how do we turn on dart??? this is still not implemented and need a test
         if compname not in compset_comps:
-                continue
+            continue
 
         # archive restarts and all necessary associated fields (e.g. rpointer files)
         logger.info('doing short term archiving for %s (%s)' % (compname, compclass))
@@ -395,6 +403,7 @@ def case_st_archive(case):
                  caseroot=caseroot, sfile="CaseStatus")
 
     archive = EnvArchive(infile=os.path.join(caseroot, 'env_archive.xml'))
+    
     archive_process(case, archive)
 
     append_status("st_archiving completed",
