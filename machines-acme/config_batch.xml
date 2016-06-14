@@ -106,6 +106,30 @@
     </directives>
   </batch_system>
 
+  <!-- for Sierra.llnl -->
+   <batch_system type="sierra_slurm" version="x.y">
+     <batch_query>squeue</batch_query>
+     <batch_submit>sbatch</batch_submit>
+     <batch_directive>#MSUB</batch_directive>
+     <jobid_pattern>(\d+)$</jobid_pattern>
+     <depend_string> --dependency=afterok:jobid</depend_string>
+     <submit_args>
+       <arg flag="-q" name="queue"/>
+       <arg flag="-l" name="wall_time"/>
+       <arg flag="-A" name="project"/>
+     </submit_args>
+     <directives>
+       <directive>-V</directive>
+       <directive>-q {{ queue }}</directive>
+       <directive>-N {{ job_id }}</directive>
+       <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
+       <directive>-l {{ wall_time }}</directive>
+       <directive>-o {{ output_error_path }}.out</directive>
+       <directive>-e {{ output_error_path }}.err</directive>
+       <directive>-m be</directive>
+     </directives>
+   </batch_system>
+
    <batch_system type="slurm" version="x.y">
      <batch_query>squeue</batch_query>
      <batch_submit>sbatch</batch_submit>
