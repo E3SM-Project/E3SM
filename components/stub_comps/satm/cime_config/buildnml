@@ -1,18 +1,7 @@
-#! /usr/bin/env perl
-use strict;
+#!/usr/bin/env python2
 
-if ($#ARGV == -1) {
-    die " ERROR satm.buildnml: must specify a caseroot input argument";
-}
-my ($CASEROOT) = @ARGV;
-chdir "${CASEROOT}";
+"""
+build stub model namelist
+"""
 
-my $RUNDIR = `./xmlquery  RUNDIR -value`;
-
-chdir "$RUNDIR";
-
-# nothing to do for stubs
-
-
-
-
+# DO NOTHING

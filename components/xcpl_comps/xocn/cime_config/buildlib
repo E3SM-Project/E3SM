@@ -1,48 +1,17 @@
 #!/usr/bin/env python2
+
 """
-buildlib - make component library/executable
+build data model library
 """
 
-#Bootstrap python path
-import sys
-import os
-if "CIMEROOT" not in os.environ:
-    sys.stderr.write("ERROR: CIMEROOT must be defined\n")
-    sys.exit(1)
+import sys, os
+
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise SystemExit("ERROR: must set CIMEROOT environment variable")
 sys.path.append(os.path.join(os.environ["CIMEROOT"],"scripts","Tools"))
 
 from standard_script_setup import *
-from CIME.case import Case
-import CIME.build_lib
+from CIME.buildlib import build_xcpl_lib
 
-###############################################################################
-def parse_command_line(args, description):
-###############################################################################
-    parser = argparse.ArgumentParser(
-	    description=description,
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter
-	)
-
-    CIME.utils.setup_standard_logging_options(parser)
-    parser.add_argument("caseroot", help="case directory")
-    parser.add_argument("buildroot", help="build directory")
-    parser.add_argument("compspec", help="component")
-    print args[1:]
-    args = parser.parse_args(args[1:])
-    CIME.utils.handle_standard_logging_options(args)
-    return args.caseroot, args.buildroot, args.compspec
-
-
-###############################################################################
-def _main_func(description):
-###############################################################################
-    if "--test" in sys.argv:
-        test_results = doctest.testmod(verbose=True)
-        sys.exit(1 if test_results.failed > 0 else 0)
-
-    caseroot, buildroot, component = parse_command_line(sys.argv, description)
-    CIME.build_lib.build_x_lib(caseroot, component[1:], component)
-    
-
-if __name__ == "__main__":
-    _main_func(__doc__)
+build_xcpl_lib(sys.argv, 'ocn')
