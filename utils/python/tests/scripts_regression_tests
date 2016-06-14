@@ -14,8 +14,6 @@ from  CIME.case import Case
 
 SCRIPT_DIR  = CIME.utils.get_scripts_root()
 TOOLS_DIR   = os.path.join(SCRIPT_DIR,"Tools")
-DART_CONFIG = "DartConfiguration.tcl"
-DART_BACKUP = "temp_dart_backup"
 MACHINE     = Machines()
 FAST_ONLY   = False
 NO_BATCH    = False
@@ -196,7 +194,6 @@ class D_TestWaitForTests(unittest.TestCase):
                 shutil.rmtree(testdir)
             os.makedirs(testdir)
 
-
         for r in range(10):
             make_fake_teststatus(os.path.join(self._testdir_all_pass, "TestStatus_%d" % r), "Test_%d" % r, "PASS", "RUN")
 
@@ -211,10 +208,6 @@ class D_TestWaitForTests(unittest.TestCase):
 
         self._thread_error = None
 
-        # wait_for_tests could blow away our dart config, need to back it up
-        if (os.path.exists(DART_CONFIG)):
-            shutil.move(DART_CONFIG, DART_BACKUP)
-
     ###########################################################################
     def tearDown(self):
     ###########################################################################
@@ -227,12 +220,13 @@ class D_TestWaitForTests(unittest.TestCase):
         if (self._unset_proxy):
             del os.environ["http_proxy"]
 
-        if (os.path.exists(DART_BACKUP)):
-            shutil.move(DART_BACKUP, DART_CONFIG)
+    ###########################################################################
+    def simple_test(self, testdir, expected_results, extra_args="", build_name=None):
+    ###########################################################################
+        # Need these flags to test dashboard if acme
+        if CIME.utils.get_model() == "acme" and build_name is not None:
+            extra_args += " -b %s" % build_name
 
-    ###########################################################################
-    def simple_test(self, testdir, expected_results, extra_args=""):
-    ###########################################################################
         cmd = "%s/wait_for_tests -p ACME_test TestStatus* %s" % (TOOLS_DIR, extra_args)
         stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=testdir)
         if (expected_results == ["PASS"]*len(expected_results)):
@@ -249,10 +243,10 @@ class D_TestWaitForTests(unittest.TestCase):
             self.assertEqual(testname, "Test_%d" % idx)
 
     ###########################################################################
-    def threaded_test(self, testdir, expected_results, extra_args=""):
+    def threaded_test(self, testdir, expected_results, extra_args="", build_name=None):
     ###########################################################################
         try:
-            self.simple_test(testdir, expected_results, extra_args)
+            self.simple_test(testdir, expected_results, extra_args, build_name)
         except AssertionError as e:
             self._thread_error = str(e)
 
@@ -316,7 +310,8 @@ class D_TestWaitForTests(unittest.TestCase):
     def test_wait_for_test_cdash_pass(self):
     ###########################################################################
         expected_results = ["PASS"] * 10
-        run_thread = threading.Thread(target=self.threaded_test, args=(self._testdir_all_pass, expected_results, "-b regression_test_pass"))
+        run_thread = threading.Thread(target=self.threaded_test,
+                                      args=(self._testdir_all_pass, expected_results, "", "regression_test_pass"))
         run_thread.daemon = True
         run_thread.start()
 
@@ -332,7 +327,8 @@ class D_TestWaitForTests(unittest.TestCase):
     def test_wait_for_test_cdash_kill(self):
     ###########################################################################
         expected_results = ["PEND" if item == 5 else "PASS" for item in range(10)]
-        run_thread = threading.Thread(target=self.threaded_test, args=(self._testdir_unfinished, expected_results, "-b regression_test_kill"))
+        run_thread = threading.Thread(target=self.threaded_test,
+                                      args=(self._testdir_unfinished, expected_results, "", "regression_test_kill"))
         run_thread.daemon = True
         run_thread.start()
 
@@ -349,21 +345,22 @@ class D_TestWaitForTests(unittest.TestCase):
 
         assert_dashboard_has_build(self, "regression_test_kill")
 
-        cdash_result_dir = os.path.join(self._testdir_unfinished, "Testing")
-        tag_file         = os.path.join(cdash_result_dir, "TAG")
-        self.assertTrue(os.path.isdir(cdash_result_dir))
-        self.assertTrue(os.path.isfile(tag_file))
+        if CIME.utils.get_model() == "acme":
+            cdash_result_dir = os.path.join(self._testdir_unfinished, "Testing")
+            tag_file         = os.path.join(cdash_result_dir, "TAG")
+            self.assertTrue(os.path.isdir(cdash_result_dir))
+            self.assertTrue(os.path.isfile(tag_file))
 
-        tag = open(tag_file, "r").readlines()[0].strip()
-        xml_file = os.path.join(cdash_result_dir, tag, "Test.xml")
-        self.assertTrue(os.path.isfile(xml_file))
+            tag = open(tag_file, "r").readlines()[0].strip()
+            xml_file = os.path.join(cdash_result_dir, tag, "Test.xml")
+            self.assertTrue(os.path.isfile(xml_file))
 
-        xml_contents = open(xml_file, "r").read()
-        self.assertTrue(r'<TestList><Test>Test_0</Test><Test>Test_1</Test><Test>Test_2</Test><Test>Test_3</Test><Test>Test_4</Test><Test>Test_5</Test><Test>Test_6</Test><Test>Test_7</Test><Test>Test_8</Test><Test>Test_9</Test></TestList>'
-                        in xml_contents)
-        self.assertTrue(r'<Test Status="failed"><Name>Test_5</Name>' in xml_contents)
+            xml_contents = open(xml_file, "r").read()
+            self.assertTrue(r'<TestList><Test>Test_0</Test><Test>Test_1</Test><Test>Test_2</Test><Test>Test_3</Test><Test>Test_4</Test><Test>Test_5</Test><Test>Test_6</Test><Test>Test_7</Test><Test>Test_8</Test><Test>Test_9</Test></TestList>'
+                            in xml_contents)
+            self.assertTrue(r'<Test Status="failed"><Name>Test_5</Name>' in xml_contents)
 
-        # TODO: Any further checking of xml output worth doing?
+            # TODO: Any further checking of xml output worth doing?
 
 ###############################################################################
 class TestCreateTestCommon(unittest.TestCase):
@@ -382,9 +379,6 @@ class TestCreateTestCommon(unittest.TestCase):
         self._compiler          = MACHINE.get_default_compiler()
         self._hasbatch          = MACHINE.has_batch_system() and not NO_BATCH
         self._do_teardown       = True # Will never do teardown if test failed
-        # wait_for_tests could blow away our dart config, need to back it up
-        if (os.path.exists(DART_CONFIG)):
-            shutil.move(DART_CONFIG, DART_BACKUP)
 
     ###########################################################################
     def tearDown(self):
@@ -417,9 +411,6 @@ class TestCreateTestCommon(unittest.TestCase):
                     shutil.rmtree(file_to_clean)
                 else:
                     os.remove(file_to_clean)
-
-        if (os.path.exists(DART_BACKUP)):
-            shutil.move(DART_BACKUP, DART_CONFIG)
 
 ###############################################################################
 class C_TestCreateTest(TestCreateTestCommon):
@@ -599,6 +590,15 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
 ###############################################################################
 
     ###########################################################################
+    def setUp(self):
+    ###########################################################################
+        TestCreateTestCommon.setUp(self)
+
+        # Need to run in a subdir in order to not have CTest clash
+        self._testdir = os.path.join(self._testroot, "jenkins_generic_test_subdir_%s" % self._baseline_name)
+        os.makedirs(self._testdir)
+
+    ###########################################################################
     def simple_test(self, expect_works, extra_args, build_name=None):
     ###########################################################################
         if NO_BATCH:
@@ -609,7 +609,7 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
             extra_args += " -p ACME_test --submit-to-cdash --cdash-build-group=Nightly -c %s" % build_name
 
         cmd = "%s/jenkins_generic_job %s" % (TOOLS_DIR, extra_args)
-        stat, output, errput = run_cmd(cmd, ok_to_fail=True)
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=self._testdir)
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
         else:
@@ -645,7 +645,7 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
                          msg="Wrong number of leftover directories in %s, expected %d, see %s" % \
                              (self._jenkins_root, num_tests_in_tiny, jenkins_dirs))
 
-        self.assertEqual(num_tests_in_tiny, len(scratch_dirs),
+        self.assertEqual(num_tests_in_tiny + 1, len(scratch_dirs),
                          msg="Wrong number of leftover directories in %s, expected %d, see %s" % \
                              (self._testroot, num_tests_in_tiny, scratch_dirs))
 
