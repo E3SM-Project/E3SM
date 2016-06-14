@@ -63,7 +63,7 @@ Program pio_unit_test_driver
 
      ! Ignore namelist values if PIO not built with correct options
      ! (i.e. don't test pnetcdf if not built with pnetcdf)
-
+     ret_val = PIO_set_log_level(2)
 #ifndef _NETCDF
      if (ltest_netcdf) then
         write(*,"(A,1x,A)") "WARNING: can not test netcdf files because PIO", &
