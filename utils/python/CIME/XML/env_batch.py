@@ -67,18 +67,12 @@ class EnvBatch(EnvBase):
 
         nodes   = [] # List of identified xml elements
         results = [] # List of identified parameters
-        job_group = None
-        
-        # Check item , if item is path split
-        parts = re.split( "/" , item)
-        if len(parts) == 2 :
-            item = parts[1]
-            job_group = parts[0]
-            
+             
         
         # Find all nodes with attribute name and attribute value item
         # xpath .//*[name='item']
         # for job in self.get_nodes("job") :
+        
         groups = self.get_nodes("group")
 
         for group in groups :
