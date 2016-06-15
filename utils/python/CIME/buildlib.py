@@ -2,11 +2,10 @@
 common utilities for buildlib
 """
 
-from standard_script_setup import *
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, run_cmd, handle_standard_logging_options
 from CIME.case  import Case
-import sys, os 
+import sys, os
 
 logger = logging.getLogger(__name__)
 
@@ -25,24 +24,24 @@ def parse_input(argv):
     parser.add_argument("caseroot", default=os.getcwd(),
                         help="Case directory")
 
-    parser.add_argument("bldroot", 
+    parser.add_argument("bldroot",
                         help="root for building library")
 
-    parser.add_argument("libroot", 
+    parser.add_argument("libroot",
                         help="root for creating the library")
 
     args = parser.parse_args()
 
     handle_standard_logging_options(args)
 
-    return args.caseroot, args.libroot, args.bldroot 
+    return args.caseroot, args.libroot, args.bldroot
 
 ###############################################################################
 def build_data_lib(argv, compclass):
 ###############################################################################
 
     caseroot, libroot, bldroot = parse_input(argv)
-    
+
     case = Case(caseroot)
 
     cimeroot  = case.get_value("CIMEROOT")
@@ -61,7 +60,7 @@ def build_xcpl_lib(argv, compclass):
 ###############################################################################
 
     caseroot, libroot, bldroot = parse_input(argv)
-    
+
     case = Case(caseroot)
 
     cimeroot  = case.get_value("CIMEROOT")
@@ -81,7 +80,7 @@ def build_stub_lib(argv, compclass):
 ###############################################################################
 
     caseroot, libroot, bldroot = parse_input(argv)
-    
+
     case = Case(caseroot)
 
     cimeroot = case.get_value("CIMEROOT")
@@ -104,7 +103,7 @@ def run_gmake(case, compclass, libroot, libname="", user_cppdefs=""):
     casetools = case.get_value("CASETOOLS")
     gmake_j   = case.get_value("GMAKE_J")
     gmake     = case.get_value("GMAKE")
-    mach      = case.get_value("MACH") 
+    mach      = case.get_value("MACH")
 
     complib = ""
     if libname:

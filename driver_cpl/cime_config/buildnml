@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 """
-build data model namelist input 
+build data model namelist input
 """
 import sys, os, time, shutil, glob
 
@@ -42,7 +42,7 @@ def _main_func():
     if not os.path.isdir(confdir):
         os.makedirs(confdir)
 
-    # create cplconf/namelist 
+    # create cplconf/namelist
 
     infile_text = ""
     if comp_atm == 'cam':
@@ -74,10 +74,10 @@ def _main_func():
     expect(rc==0,"Command %s failed rc=%d\nout=%s\nerr=%s"%(cmd,rc,out,err))
 
     # copy drv_in, seq_maps.rc and all *modio* files to rundir
-    
+
     shutil.copy(os.path.join(confdir,"drv_in"), rundir)
 
-    shutil.copy(os.path.join(confdir,"seq_maps.rc"), rundir) 
+    shutil.copy(os.path.join(confdir,"seq_maps.rc"), rundir)
 
     for filename in glob.glob(os.path.join(confdir, "*modelio*")):
         shutil.copy(filename, rundir)
