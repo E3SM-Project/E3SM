@@ -44,9 +44,11 @@ class EnvBatch(EnvBase):
         """
         value = None
         if subgroup is None:
-            node = self.get_optional_node(item)
+            node = self.get_optional_node(item, attribute)
             if node is not None:
                 value = node.text
+                if resolved:
+                    value = self.get_resolved_value(value)
             else:
                 value = EnvBase.get_value(self,item,attribute,resolved)
         else:
@@ -167,9 +169,6 @@ class EnvBatch(EnvBase):
                 newjob.append(deepcopy(child))
             group.append(newjob)
 
-
-
-
     def cleanupnode(self, node):
         if node.get("id") == "batch_system":
             fnode = node.find(".//file")
@@ -230,13 +229,12 @@ class EnvBatch(EnvBase):
             self.job_id = self.job_id[:15]
         self.output_error_path = self.job_id
 
-        self.batchdirectives = self.get_batch_directives()
+        self.batchdirectives = self.get_batch_directives(case, job)
 
-        output_text = transform_vars(open(input_template,"r").read(), case=case, check_members=self)
+        output_text = transform_vars(open(input_template,"r").read(), case=case, subgroup=job, check_members=self)
         with open(job, "w") as fd:
             fd.write(output_text)
         os.chmod(job, os.stat(job).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
 
     def set_job_defaults(self, bjobs, pesize=None):
         if self.batchtype is None:
@@ -252,11 +250,14 @@ class EnvBatch(EnvBase):
             queue = self.select_best_queue(task_count)
             self.set_value("JOB_QUEUE", queue, subgroup=job)
             walltime = self.get_max_walltime(queue)
+            # JGF: Shouldn't walltime involve ccsm_estcost?
+            # Fall back to default if None
+            if walltime is None:
+                walltime = self.get_default_walltime()
             self.set_value( "JOB_WALLCLOCK_TIME", walltime , subgroup=job)
             logger.info("Job %s queue %s walltime %s"%(job, queue, walltime))
 
-
-    def get_batch_directives(self):
+    def get_batch_directives(self, case, job):
         """
         """
         result = []
@@ -270,7 +271,7 @@ class EnvBatch(EnvBase):
                 for node in nodes:
                     directive = self.get_resolved_value("" if node.text is None else node.text)
                     default = node.get("default")
-                    directive = transform_vars(directive, default=default, check_members=self)
+                    directive = transform_vars(directive, case=case, subgroup=job, default=default, check_members=self)
                     result.append("%s %s" % (directive_prefix, directive))
 
         return "\n".join(result)
@@ -430,14 +431,13 @@ class EnvBatch(EnvBase):
         walltime = None
         for queue_node in self.get_all_queues():
             if queue_node.text == queue:
-                walltime = queue_node.get("walltimemax")
-        return walltime
+                return queue_node.get("walltimemax")
 
     def get_walltimes(self):
         return self.get_nodes("walltime", root=self.machine_node)
 
     def get_default_walltime(self):
-        return self.get_optional_node("walltime", attributes={"default" : "true"}, root=self.machine_node)
+        return self.get_value("walltime", attribute={"default" : "true"}, subgroup=None)
 
     def get_default_queue(self):
         return self.get_optional_node("queue", attributes={"default" : "true"})

@@ -3,9 +3,9 @@ common utilities for buildlib
 """
 
 from CIME.XML.standard_module_setup import *
-from CIME.utils import expect, run_cmd, handle_standard_logging_options
+from CIME.utils import expect, run_cmd, handle_standard_logging_options, setup_standard_logging_options
 from CIME.case  import Case
-import sys, os
+import sys, os, argparse
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ def parse_input(argv):
 
     parser = argparse.ArgumentParser()
 
-    CIME.utils.setup_standard_logging_options(parser)
+    setup_standard_logging_options(parser)
 
     parser.add_argument("caseroot", default=os.getcwd(),
                         help="Case directory")

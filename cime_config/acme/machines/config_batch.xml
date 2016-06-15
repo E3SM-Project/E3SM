@@ -60,14 +60,14 @@
     <directives>
       <directive                       > -n {{ totaltasks }} </directive>
       <directive                       > -R "span[ptile={{ ptile }}]"</directive>
-      <directive                       > -q {{ queue }} </directive>
+      <directive                       > -q {{ job_queue }} </directive>
       <directive                       > -N  </directive>
       <directive default="poe"         > -a {{ poe }} </directive>
       <directive                       > -x {{ queue_exclusive }} </directive>
       <directive default="acme.stdout" > -o {{ acme_stdout }}.%J  </directive>
       <directive default="acme.stderr" > -e {{ acme_stderr }}.%J  </directive>
       <directive                       > -J {{ job_id }} </directive>
-      <directive                       > -W {{ wall_time }} </directive>
+      <directive                       > -W {{ job_wallclock_time }} </directive>
       <directive                       > -P {{ account }}  </directive>
     </directives>
   </batch_system>
@@ -101,7 +101,7 @@
     <depend_string> -W depend=afterok:jobid</depend_string>
     <directives>
       <directive> -N {{ job_id }}</directive>
-      <directive> -l walltime={{ wall_time }}</directive>
+      <directive> -l walltime={{ job_wallclock_time }}</directive>
       <directive> -j oe </directive>
       <directive> -A {{ project }} </directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
@@ -122,8 +122,8 @@
        <directive> --ntasks-per-node={{ tasks_per_node }}</directive>
        <directive> --output={{ output_error_path }}   </directive>
        <directive> --exclusive                        </directive>
-       <directive> --time={{ wall_time }}</directive>
-       <directive> --partition={{ queue }}</directive>
+       <directive> --time={{ job_wallclock_time }}</directive>
+       <directive> --partition={{ job_queue }}</directive>
        <directive> --account={{ project }}</directive>
      </directives>
    </batch_system>
