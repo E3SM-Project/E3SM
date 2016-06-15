@@ -786,6 +786,7 @@ contains
     use MultiPhysicsProbConstants , only : COND_HEAT_FLUX
     use MultiPhysicsProbConstants , only : COND_HEAT_RATE
     use MultiPhysicsProbConstants , only : COND_DIRICHLET_FRM_OTR_GOVEQ
+    use MultiPhysicsProbConstants , only : GE_THERM_SSW_TBASED
     !
     implicit none
     !
@@ -803,15 +804,15 @@ contains
     PetscReal                                :: area
     type(condition_type),pointer             :: cur_cond
     type(connection_set_type), pointer       :: cur_conn_set
-    PetscReal :: factor
+    PetscReal                                :: factor
     PetscReal                                :: T
     PetscReal                                :: dt
     PetscReal                                :: heat_cap
     PetscReal                                :: tfactor
     PetscReal                                :: vol
-    PetscBool :: is_bc_sh2o
-    PetscReal                                  :: dist, dist_up, dist_dn
-    PetscReal                                  :: therm_cond_aveg, therm_cond_up, therm_cond_dn
+    PetscBool                                :: is_bc_sh2o
+    PetscReal                                :: dist, dist_up, dist_dn
+    PetscReal                                :: therm_cond_aveg, therm_cond_up, therm_cond_dn
     PetscReal                                :: T_up, T_dn
 
     dt = geq_soil%dtime
@@ -870,7 +871,7 @@ contains
        if (.not.associated(cur_cond)) exit
 
        is_bc_sh2o = PETSC_FALSE
-       if (trim(cur_cond%name) == 'BC_from_standing_surface_water_governing_equation') then
+       if (cur_cond%itype_of_other_goveq == GE_THERM_SSW_TBASED) then
           is_bc_sh2o = PETSC_TRUE
        endif
 
@@ -1028,6 +1029,7 @@ contains
     use mpp_varcon                , only : cnfac
     use MultiPhysicsProbConstants , only : COND_HEAT_FLUX
     use MultiPhysicsProbConstants , only : COND_DIRICHLET_FRM_OTR_GOVEQ
+    use MultiPhysicsProbConstants , only : GE_THERM_SSW_TBASED
     !
     implicit none
     !
@@ -1144,7 +1146,7 @@ contains
        if (.not.associated(cur_cond)) exit
 
        is_bc_sh2o = PETSC_FALSE
-       if (trim(cur_cond%name) == 'BC_from_standing_surface_water_governing_equation') then
+       if (cur_cond%itype_of_other_goveq == GE_THERM_SSW_TBASED) then
           is_bc_sh2o = PETSC_TRUE
        endif
 
@@ -1235,6 +1237,7 @@ contains
     use mpp_varcon                , only : cnfac
     use MultiPhysicsProbConstants , only : COND_HEAT_FLUX
     use MultiPhysicsProbConstants , only : COND_DIRICHLET_FRM_OTR_GOVEQ
+    use MultiPhysicsProbConstants , only : GE_THERM_SSW_TBASED
     !
     implicit none
     !
@@ -1279,7 +1282,7 @@ contains
        if (.not.associated(cur_cond)) exit
 
        is_bc_sh2o = PETSC_FALSE
-       if (trim(cur_cond%name) == 'BC_from_standing_surface_water_governing_equation') then
+       if (cur_cond%itype_of_other_goveq == GE_THERM_SSW_TBASED) then
           is_bc_sh2o = PETSC_TRUE
        endif
        cur_conn_set => cur_cond%conn_set
@@ -1350,6 +1353,8 @@ contains
     use ConnectionSetType, only          : connection_set_type
     use ConditionType, only              : condition_type
     use mpp_varpar, only                 : nlevsno
+    use MultiPhysicsProbConstants , only : GE_THERM_SSW_TBASED
+    use MultiPhysicsProbConstants , only : GE_THERM_SNOW_TBASED
     !
     implicit none
     !
@@ -1373,11 +1378,11 @@ contains
        is_bc_snow = PETSC_FALSE
        is_bc_sh2o = PETSC_FALSE
 
-       if (trim(cur_cond%name) == 'BC_from_standing_surface_water_governing_equation') then
+       if (cur_cond%itype_of_other_goveq == GE_THERM_SSW_TBASED) then
           is_bc_sh2o = PETSC_TRUE
        endif
        
-       if (trim(cur_cond%name) == 'BC_from_snow_governing_equation' ) then
+       if (cur_cond%itype_of_other_goveq == GE_THERM_SNOW_TBASED) then
           is_bc_snow = PETSC_TRUE
        endif
 

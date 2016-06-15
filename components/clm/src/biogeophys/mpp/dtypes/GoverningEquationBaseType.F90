@@ -9,8 +9,8 @@ module GoverningEquationBaseType
 
   ! !USES:
   use mpp_varctl         , only : iulog
-  use mpp_abortutils         , only : endrun
-  use mpp_shr_log_mod        , only : errMsg => shr_log_errMsg
+  use mpp_abortutils     , only : endrun
+  use mpp_shr_log_mod    , only : errMsg => shr_log_errMsg
   use MeshType           , only : mesh_type
   use ConditionType      , only : condition_list_type
   !
@@ -70,6 +70,7 @@ module GoverningEquationBaseType
      procedure, public :: ComputeOperatorsOffDiag => GoveqnBaseComputeOperatorsOffDiag
      procedure, public :: SetDtime                => GoveqnBaseSetDtime
      procedure, public :: GetNumConditions        => GoveqnBaseGetNumConditions
+     procedure, public :: AddCondition            => GoveqnBaseAddCondition
   end type goveqn_base_type
   !------------------------------------------------------------------------
 
@@ -569,6 +570,80 @@ contains
     enddo
 
   end subroutine GoveqnBaseGetNumConditions
+
+  !------------------------------------------------------------------------
+  subroutine GoveqnBaseAddCondition(this, ss_or_bc_type, name, unit, &
+       cond_type, region_type, id_of_other_goveq, itype_of_other_goveq)
+    !
+    ! !DESCRIPTION:
+    ! Adds boundary/source-sink condition to governing equation
+    !
+    ! !USES:
+    use ConditionType             , only : condition_type
+    use ConditionType             , only : ConditionListAddCondition
+    use ConditionType             , only : ConditionNew
+    use MeshType                  , only : MeshCreateConnectionSet
+    use MultiPhysicsProbConstants , only : COND_BC
+    use MultiPhysicsProbConstants , only : COND_SS
+    use MultiPhysicsProbConstants , only : COND_DIRICHLET_FRM_OTR_GOVEQ
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(goveqn_base_type)       :: this
+    PetscInt                      :: ss_or_bc_type
+    character(len =*)             :: name
+    character(len =*)             :: unit
+    PetscInt                      :: cond_type
+    PetscInt                      :: region_type
+    PetscInt, optional            :: id_of_other_goveq
+    PetscInt, optional            :: itype_of_other_goveq
+    !
+    type(condition_type), pointer :: cond
+
+    cond => ConditionNew()
+
+    cond%name         = trim(name)
+    cond%units        = trim(unit)
+    cond%itype        = cond_type
+    cond%region_itype = region_type
+
+    allocate(cond%conn_set)
+    call MeshCreateConnectionSet(this%mesh, cond%region_itype, cond%conn_set, cond%ncells)
+
+    allocate(cond%value(cond%ncells))
+    cond%value(:) = 0.d0
+
+    select case (ss_or_bc_type)
+    case (COND_BC)
+       if (cond_type == COND_DIRICHLET_FRM_OTR_GOVEQ) then
+          if (.not.present(id_of_other_goveq)) then
+             write(iulog,*) 'BC type = COND_DIRICHLET_FRM_OTR_GOVEQ ' // &
+                  ' but id_of_other_goveq is absent'
+             call endrun(msg=errMsg(__FILE__, __LINE__))
+          endif
+
+          if (.not.present(itype_of_other_goveq)) then
+             write(iulog,*) 'BC type = COND_DIRICHLET_FRM_OTR_GOVEQ ' // &
+                  ' but itype_of_other_goveq is absent'
+             call endrun(msg=errMsg(__FILE__, __LINE__))
+          endif
+
+          cond%list_id_of_other_goveq = id_of_other_goveq
+          cond%itype_of_other_goveq   = itype_of_other_goveq
+       endif
+       call ConditionListAddCondition(this%boundary_conditions, cond)
+
+    case (COND_SS)
+       call ConditionListAddCondition(this%source_sinks, cond)
+
+    case default
+       write(iulog,*) 'Unknown condition type'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+
+    end select
+
+  end subroutine GoveqnBaseAddCondition
 
 #endif
 

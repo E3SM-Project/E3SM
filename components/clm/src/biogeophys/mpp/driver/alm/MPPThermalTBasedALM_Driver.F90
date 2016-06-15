@@ -1,38 +1,32 @@
 
-module SoilTemperaturePETScMod
+module MPPThermalTBasedALM_Driver
 
 #ifdef USE_PETSC_LIB
 
   !-----------------------------------------------------------------------
-  ! !DESCRIPTION:
-  ! Calculates snow and soil temperatures using PETSc
+  ! Performs land model initialization
   !
-  ! !USES:
-  use shr_kind_mod      , only : r8 => shr_kind_r8
-  use shr_log_mod       , only : errMsg => shr_log_errMsg
-  use shr_infnan_mod    , only : nan => shr_infnan_nan, assignment(=)
-  use decompMod         , only : bounds_type
-  use abortutils        , only : endrun
-  use perf_mod          , only : t_startf, t_stopf
-  use clm_varctl        , only : iulog
-  use WaterstateType    , only : waterstate_type
-  use TemperatureType   , only : temperature_type
-  use LandunitType      , only : lun                
-  use ColumnType        , only : col                
-  !
-  ! !PUBLIC TYPES:
-  implicit none
-  save
-  !
-  ! !PUBLIC MEMBER FUNCTIONS:
-  public :: SoilTemperaturePETSc
-  !-----------------------------------------------------------------------
+  use shr_kind_mod     , only : r8 => shr_kind_r8
+  use spmdMod          , only : masterproc, iam
+  use shr_log_mod      , only : errMsg => shr_log_errMsg
+  use decompMod        , only : bounds_type, get_proc_bounds 
+  use abortutils       , only : endrun
+  use mpp_varctl       , only : iulog
+  ! 
+  !-----------------------------------------
+  ! Definition of component types
+  !-----------------------------------------
+  use LandunitType           , only : lun                
+  use ColumnType             , only : col                
 
+  implicit none
+  
+  public :: MPPThermalTBasedALM_Solve
+
+  !------------------------------------------------------------------------
 contains
 
-  !-----------------------------------------------------------------------
-
-  subroutine SoilTemperaturePETSc(bounds, num_filter, filter, &
+  subroutine MPPThermalTBasedALM_Solve(bounds, num_filter, filter, &
        dtime,  sabg_lyr_col, dhsdT, hs_soil, hs_top_snow, hs_h2osfc, &
        waterstate_vars,  temperature_vars, tvector)
 
@@ -40,13 +34,14 @@ contains
     ! !DESCRIPTION:
     !
     ! !USES:
-    use clm_varcon       , only : capr
-    use clm_time_manager , only : get_step_size, get_nstep
-    use clm_varpar       , only : nlevsno, nlevgrnd
-    use landunit_varcon  , only : istice, istice_mec, istsoil, istcrop
-    use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
-    use landunit_varcon  , only : istwet, istice, istice_mec, istsoil, istcrop
-#ifdef USE_PETSC_LIB
+    use WaterstateType            , only : waterstate_type
+    use TemperatureType           , only : temperature_type
+    use clm_varcon                , only : capr
+    use clm_time_manager          , only : get_step_size, get_nstep
+    use clm_varpar                , only : nlevsno, nlevgrnd
+    use landunit_varcon           , only : istice, istice_mec, istsoil, istcrop
+    use column_varcon             , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
+    use landunit_varcon           , only : istwet, istice, istice_mec, istsoil, istcrop
     use MultiPhysicsProbThermal   , only : thermal_mpp
     use MultiPhysicsProbConstants , only : VAR_BC_SS_CONDITION
     use MultiPhysicsProbConstants , only : VAR_TEMPERATURE
@@ -65,7 +60,6 @@ contains
     use MultiPhysicsProbConstants , only : AUXVAR_INTERNAL
     use MultiPhysicsProbConstants , only : AUXVAR_BC
     use MultiPhysicsProbConstants , only : AUXVAR_SS
-#endif
     !
     ! !ARGUMENTS:
     implicit none
@@ -86,43 +80,43 @@ contains
     real(r8)               , intent(out) :: tvector( bounds%begc: , -nlevsno: )                ! Numerical solution of temperature
     !
     ! !LOCAL VARIABLES:
-    integer            :: j,c,l,idx                                                                  !  indices
-    integer            :: offset
-    integer            :: fc                                                                         ! lake filtered column indices
+    integer                              :: j,c,l,idx                                                                  !  indices
+    integer                              :: offset
+    integer                              :: fc                                                                         ! lake filtered column indices
 
-    integer            :: soe_auxvar_id
+    integer                              :: soe_auxvar_id
 
     ! internal auxvars
-    real(r8) , pointer :: temperature_1d         (:)
-    real(r8) , pointer :: liq_areal_den_1d       (:)
-    real(r8) , pointer :: ice_areal_den_1d       (:)
-    real(r8) , pointer :: snow_water_1d          (:)
-    real(r8) , pointer :: dz_1d                  (:)
-    real(r8) , pointer :: dist_up_1d             (:)
-    real(r8) , pointer :: dist_dn_1d             (:)
-    real(r8) , pointer :: frac_1d                (:)
-    integer  , pointer :: num_snow_layer_1d      (:)
-    logical  , pointer :: is_active_1d           (:)
+    real(r8) , pointer                   :: temperature_1d         (:)
+    real(r8) , pointer                   :: liq_areal_den_1d       (:)
+    real(r8) , pointer                   :: ice_areal_den_1d       (:)
+    real(r8) , pointer                   :: snow_water_1d          (:)
+    real(r8) , pointer                   :: dz_1d                  (:)
+    real(r8) , pointer                   :: dist_up_1d             (:)
+    real(r8) , pointer                   :: dist_dn_1d             (:)
+    real(r8) , pointer                   :: frac_1d                (:)
+    integer  , pointer                   :: num_snow_layer_1d      (:)
+    logical  , pointer                   :: is_active_1d           (:)
 
     ! boundary auxvars
-    real(r8) , pointer :: hs_snow_1d             (:)
-    real(r8) , pointer :: hs_sh2o_1d             (:)
-    real(r8) , pointer :: hs_soil_1d             (:)
-    real(r8) , pointer :: dhsdT_snow_1d          (:)
-    real(r8) , pointer :: dhsdT_sh2o_1d          (:)
-    real(r8) , pointer :: dhsdT_soil_1d          (:)
-    real(r8) , pointer :: frac_soil_1d           (:)
+    real(r8) , pointer                   :: hs_snow_1d             (:)
+    real(r8) , pointer                   :: hs_sh2o_1d             (:)
+    real(r8) , pointer                   :: hs_soil_1d             (:)
+    real(r8) , pointer                   :: dhsdT_snow_1d          (:)
+    real(r8) , pointer                   :: dhsdT_sh2o_1d          (:)
+    real(r8) , pointer                   :: dhsdT_soil_1d          (:)
+    real(r8) , pointer                   :: frac_soil_1d           (:)
 
     ! source sink
-    real(r8) , pointer :: sabg_snow_1d           (:)
-    real(r8) , pointer :: sabg_soil_1d           (:)
+    real(r8) , pointer                   :: sabg_snow_1d           (:)
+    real(r8) , pointer                   :: sabg_soil_1d           (:)
 
-    real(r8) , pointer :: tsurf_tuning_factor_1d (:)
+    real(r8) , pointer                   :: tsurf_tuning_factor_1d (:)
 
 
-    PetscErrorCode     :: ierr                                                                       ! PETSc return error code
-    PetscBool          :: converged                                                                  ! Did thermal solver converge to a solution?
-    PetscInt           :: converged_reason
+    PetscErrorCode                       :: ierr                                                                       ! PETSc return error code
+    PetscBool                            :: converged                                                                  ! Did thermal solver converge to a solution?
+    PetscInt                             :: converged_reason
     !-----------------------------------------------------------------------
     associate(                                                                & 
          snl                     => col%snl                                 , & ! Input:  [integer  (:)   ]  number of snow layers                    
@@ -165,10 +159,10 @@ contains
       allocate(dhsdT_soil_1d          ((bounds%endc-bounds%begc+1                      )))
       allocate(frac_soil_1d           ((bounds%endc-bounds%begc+1                      )))
 
-allocate(sabg_snow_1d           ((bounds%endc-bounds%begc+1)*nlevsno ))
-allocate(sabg_soil_1d           ((bounds%endc-bounds%begc+1)*nlevgrnd))
+      allocate(sabg_snow_1d           ((bounds%endc-bounds%begc+1)*nlevsno ))
+      allocate(sabg_soil_1d           ((bounds%endc-bounds%begc+1)*nlevgrnd))
 
-allocate(tsurf_tuning_factor_1d ((bounds%endc-bounds%begc+1)*(nlevgrnd+nlevsno+1 )))
+      allocate(tsurf_tuning_factor_1d ((bounds%endc-bounds%begc+1)*(nlevgrnd+nlevsno+1 )))
       ! Initialize
       temperature_1d(:)         = 273.15_r8 ! temperature_vars%t_soisno_col + temperature_vars%t_h2osfc_col
       liq_areal_den_1d(:)       = 0._r8     ! waterstate_vars%h2osoi_liq_col
@@ -395,7 +389,7 @@ allocate(tsurf_tuning_factor_1d ((bounds%endc-bounds%begc+1)*(nlevgrnd+nlevsno+1
       call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
            VAR_BC_SS_CONDITION, soe_auxvar_id, hs_snow_1d)
 
-      ! 2) top snow layer
+      ! 2) top standing water layer
       soe_auxvar_id = 2;
       call thermal_mpp%sysofeqns%SetRDataFromCLM(AUXVAR_BC, &
            VAR_BC_SS_CONDITION, soe_auxvar_id, hs_sh2o_1d)
@@ -526,8 +520,8 @@ allocate(tsurf_tuning_factor_1d ((bounds%endc-bounds%begc+1)*(nlevgrnd+nlevsno+1
 
     end associate
 
-  end subroutine SoilTemperaturePETSc
+  end subroutine MPPThermalTBasedALM_Solve
 
 #endif
 
-end module SoilTemperaturePETScMod
+end module MPPThermalTBasedALM_Driver

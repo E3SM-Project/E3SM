@@ -164,7 +164,7 @@ contains
     use landunit_varcon         , only : istwet, istice, istice_mec, istsoil, istcrop
     use BandDiagonalMod         , only : BandDiagonal
 #ifdef USE_PETSC_LIB
-    use SoilTemperaturePETScMod , only : SoilTemperaturePETSc
+    use MPPThermalTBasedALM_Driver, only : MPPThermalTBasedALM_Solve
 #endif
     !
     ! !ARGUMENTS:
@@ -461,7 +461,7 @@ contains
 
       case (petsc_thermal_model)
 #ifdef USE_PETSC_LIB
-         call SoilTemperaturePETSc(bounds,            &
+         call MPPThermalTBasedALM_Solve(bounds,       &
               num_nolakec_and_nourbanc,               &
               filter_nolakec_and_nourbanc,            &
               dtime,                                  &
@@ -477,7 +477,7 @@ contains
       end select
 
       !
-      ! Solve temperature for non-lake + urban column
+      ! Solve temperature for lake + urban column
       !
 
       urban_column = .true.

@@ -8,8 +8,8 @@ module GoveqnThermalKSPTemperatureSnowType
 
   ! !USES:
   use mpp_varctl                       , only : iulog
-  use mpp_abortutils                       , only : endrun
-  use mpp_shr_log_mod                      , only : errMsg => shr_log_errMsg
+  use mpp_abortutils                   , only : endrun
+  use mpp_shr_log_mod                  , only : errMsg => shr_log_errMsg
   use GoverningEquationBaseType        , only : goveqn_base_type
   use ThermalKSPTemperatureSnowAuxType , only : therm_ksp_temp_snow_auxvar_type
   use SystemOfEquationsThermalAuxType  , only : sysofeqns_thermal_auxvar_type
@@ -751,6 +751,7 @@ contains
     use ConnectionSetType, only          : connection_set_type
     use ConditionType, only              : condition_type
     use mpp_varpar, only                 : nlevsno
+    use MultiPhysicsProbConstants , only : GE_THERM_SOIL_TBASED
     !
     implicit none
     !
@@ -782,7 +783,7 @@ contains
           top_hflux_cond_found = PETSC_TRUE
        endif
        
-       if (trim(cur_cond%name) == 'BC_from_soil_governing_equation') then
+       if (cur_cond%itype_of_other_goveq == GE_THERM_SOIL_TBASED) then
           soil_temp_cond => cur_cond
           soil_temp_cond_found = PETSC_TRUE
        endif

@@ -93,10 +93,17 @@ module MultiPhysicsProbConstants
   PetscInt, parameter, public :: VAR_THERMAL_COND                  = 622
   PetscInt, parameter, public :: VAR_HEAT_CAP                      = 623
   PetscInt, parameter, public :: VAR_ACTIVE                        = 624
-  PetscInt, parameter, public :: VAR_DZ                            = 625
-  PetscInt, parameter, public :: VAR_DIST_UP                       = 626
-  PetscInt, parameter, public :: VAR_DIST_DN                       = 627
-  PetscInt, parameter, public :: VAR_TUNING_FACTOR                 = 628
+  PetscInt, parameter, public :: VAR_DX                            = 625
+  PetscInt, parameter, public :: VAR_DY                            = 626
+  PetscInt, parameter, public :: VAR_DZ                            = 627
+  PetscInt, parameter, public :: VAR_DIST_UP                       = 628
+  PetscInt, parameter, public :: VAR_DIST_DN                       = 629
+  PetscInt, parameter, public :: VAR_TUNING_FACTOR                 = 630
+  PetscInt, parameter, public :: VAR_XC                            = 631
+  PetscInt, parameter, public :: VAR_YC                            = 632
+  PetscInt, parameter, public :: VAR_ZC                            = 633
+  PetscInt, parameter, public :: VAR_AREA                          = 634
+  PetscInt, parameter, public :: VAR_VOLUME                        = 635
 
   !
   PetscInt, parameter, public :: AUXVAR_INTERNAL                   = 701
@@ -109,6 +116,8 @@ module MultiPhysicsProbConstants
 
   PetscInt, parameter, public :: CONN_VERTICAL                     = 901
   PetscInt, parameter, public :: CONN_HORIZONTAL                   = 902
+  PetscInt, parameter, public :: CONN_SET_INTERNAL                 = 903
+  PetscInt, parameter, public :: CONN_SET_LATERAL                  = 904
 
   !
   PetscReal, parameter, public :: PRESSURE_REF                     = 101325.d0     ! [Pa]

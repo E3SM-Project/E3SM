@@ -126,7 +126,7 @@ contains
        enddo
 
     case default
-       write(iulog,*) 'In ThermKSPTempSSWAuxVarSetValue: unknown var_type'
+       write(iulog,*) 'In ThermKSPTempSSWAuxVarGetValue: unknown var_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
 

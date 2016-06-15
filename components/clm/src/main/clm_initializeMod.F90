@@ -1423,172 +1423,17 @@ contains
     ! Initialization PETSc-based thermal model
     !
     ! !USES:
-    use spmdMod                , only : mpicom, npes
-    use clm_varctl             , only : use_petsc_thermal_model
-    use filterMod              , only : filter
-    use decompMod              , only : get_proc_clumps
-    use clm_varpar             , only : nlevgrnd, nlevsno
-    use clm_varctl             , only : finidat
-    use shr_infnan_mod         , only : shr_infnan_isnan
-    use abortutils             , only : endrun
-    use shr_infnan_mod         , only : isnan => shr_infnan_isnan
-    use clm_varcon             , only : spval
 #ifdef USE_PETSC_LIB
-    use MultiPhysicsProbThermal  , only : thermal_mpp
+    use MPPThermalTBasedALM_Initialize, only : MPPThermalTBasedALM_Init
 #endif
-    use spmdMod, only : iam
     !
     ! !ARGUMENTS
     implicit none
     !
-#ifdef USE_PETSC_LIB
-#include "finclude/petscsys.h"
-#endif
-    !
-    ! !LOCAL VARIABLES:
-    integer               :: nclumps               ! number of clumps on this processor
-    integer               :: nc                    ! clump index
-    integer               :: c,g,fc,j,l            ! do loop indices
-    type(bounds_type)     :: bounds_proc
-    integer               :: ncols_ghost           ! total number of ghost columns on the processor
-    real(r8), pointer     :: z(:,:)                ! centroid at "z" level [m]
-    real(r8), pointer     :: zi(:,:)               ! interface level below a "z" level (m)
-    real(r8), pointer     :: dz(:,:)               ! layer thickness at "z" level (m)
-    real(r8), pointer     :: xc_col(:)             ! x-position of grid cell [m]
-    real(r8), pointer     :: yc_col(:)             ! y-position of grid cell [m]
-    real(r8), pointer     :: zc_col(:)             ! z-position of grid cell [m]
-    real(r8), pointer     :: area_col(:)           ! area of grid cell [m^2]
-    integer, pointer      :: grid_owner(:)         ! MPI rank owner of grid cell
-    real(r8), pointer     :: thermal_watsat(:,:)
-    real(r8), pointer     :: thermal_csol(:,:)
-    real(r8), pointer     :: thermal_tkmg(:,:)
-    real(r8), pointer     :: thermal_tkdry(:,:)
-    real(r8), pointer     :: clm_watsat(:,:)
-    real(r8), pointer     :: clm_csol(:,:)
-    real(r8), pointer     :: clm_tkmg(:,:)
-    real(r8), pointer     :: clm_tkdry(:,:)
-    integer, pointer      :: thermal_filter(:)
-    integer, pointer      :: thermal_lun_type(:)
-    real(r8), pointer     :: thermal_z(:,:)
-    real(r8), pointer     :: thermal_dz(:,:)
-    real(r8), pointer     :: thermal_zi(:,:)
-    integer, pointer      :: thermal_col_itype(:)
-
-    !----------------------------------------------------------------------
-
-    z          =>    col%z
-    zi         =>    col%zi
-    dz         =>    col%dz
-    clm_watsat =>    soilstate_vars%watsat_col
-    clm_csol   =>    soilstate_vars%csol_col
-    clm_tkmg   =>    soilstate_vars%tkmg_col
-    clm_tkdry  =>    soilstate_vars%tkdry_col
-
-    if (.not.use_petsc_thermal_model) return
 
 #ifdef USE_PETSC_LIB
 
-    call get_proc_bounds(bounds_proc)
-    nclumps = get_proc_clumps()
-
-    if (nclumps /= 1) then
-       call endrun(msg='ERROR clm_initializeMod: '//&
-           'PETSc-based thermal model only supported for clumps = 1')
-    endif
-
-    nc = 1
-
-    allocate(xc_col(bounds_proc%begc_all:bounds_proc%endc_all))
-    allocate(yc_col(bounds_proc%begc_all:bounds_proc%endc_all))
-    allocate(zc_col(bounds_proc%begc_all:bounds_proc%endc_all))
-    allocate(area_col(bounds_proc%begc_all:bounds_proc%endc_all))
-    allocate(grid_owner(bounds_proc%begg_all:bounds_proc%endg_all))
-
-    allocate(thermal_filter  (bounds_proc%begc:bounds_proc%endc_all ))
-    allocate(thermal_col_itype(bounds_proc%begc_all:bounds_proc%endc_all))
-    allocate(thermal_lun_type(bounds_proc%begc:bounds_proc%endc_all ))
-    allocate(thermal_watsat  (bounds_proc%begc:bounds_proc%endc,nlevgrnd))
-    allocate(thermal_csol    (bounds_proc%begc:bounds_proc%endc,nlevgrnd))
-    allocate(thermal_tkmg    (bounds_proc%begc:bounds_proc%endc,nlevgrnd))
-    allocate(thermal_tkdry   (bounds_proc%begc:bounds_proc%endc,nlevgrnd))
-    allocate(thermal_z       (bounds_proc%begc_all:bounds_proc%endc_all, -nlevsno+1:nlevgrnd ))
-    allocate(thermal_dz      (bounds_proc%begc_all:bounds_proc%endc_all, -nlevsno+1:nlevgrnd ))
-    allocate(thermal_zi      (bounds_proc%begc_all:bounds_proc%endc_all, -nlevsno+0:nlevgrnd ))
-
-    xc_col(:)           = 0._r8
-    yc_col(:)           = 0._r8
-    zc_col(:)           = 0._r8
-    grid_owner(:)       = 0
-    area_col(:)         = 1._r8
-    ncols_ghost         = 0
-    thermal_filter(:)   = 0
-    thermal_lun_type(:) = 0
-    thermal_watsat(:,:) = 0._r8
-    thermal_csol(:,:)   = 0._r8
-    thermal_tkmg(:,:)   = 0._r8
-    thermal_tkdry(:,:)  = 0._r8
-    thermal_z(:,:) = 0._r8
-    thermal_dz(:,:) = 0._r8
-    thermal_zi(:,:) = 0._r8
-
-    do c = bounds_proc%begc, bounds_proc%endc
-       l = col%landunit(c)
-
-       thermal_lun_type(c)  = lun%itype(l)
-       thermal_col_itype(c) = col%itype(c)
-       write(*,*)'col_itype:', c, col%itype(c)
-
-       if (col%active(c) .and. .not.lun%lakpoi(l) .and. .not.lun%urbpoi(l)) then
-          thermal_filter(c) = 1
-          do j = 1,nlevgrnd
-             if (clm_watsat(c,j) /= spval) thermal_watsat(c,j) = clm_watsat(c,j)
-             if (clm_csol(  c,j) /= spval) thermal_csol  (c,j) = clm_csol  (c,j)
-             if (clm_tkmg(  c,j) /= spval) thermal_tkmg  (c,j) = clm_tkmg  (c,j)
-             if (clm_tkdry( c,j) /= spval) thermal_tkdry (c,j) = clm_tkdry (c,j)
-          enddo
-
-       endif
-       do j =  -nlevsno+1,nlevgrnd
-          thermal_dz(c,j) = dz(c,j)
-          thermal_z(c,j)  = z(c,j)
-       enddo
-
-       do j =  -nlevsno+0,nlevgrnd
-          thermal_zi(c,j) = zi(c,j)
-       enddo
-    enddo
-
-    ! Allocate memory and setup data structure for VSFM-MPP
-    call thermal_mpp%Setup(bounds_proc%begc,       &
-                           bounds_proc%endc,       &
-                           iam,                    &
-                           thermal_filter,         &
-                           thermal_z,              &
-                           thermal_zi,             &
-                           thermal_dz,             &
-                           thermal_lun_type,       &
-                           thermal_watsat,         &
-                           thermal_csol,           &
-                           thermal_tkmg,           &
-                           thermal_tkdry           &
-                           )
-
-    ! Free up memory
-    deallocate(xc_col           )
-    deallocate(yc_col           )
-    deallocate(zc_col           )
-    deallocate(area_col         )
-    deallocate(grid_owner       )
-    deallocate(thermal_filter   )
-    deallocate(thermal_lun_type )
-    deallocate(thermal_watsat   )
-    deallocate(thermal_csol     )
-    deallocate(thermal_tkmg     )
-    deallocate(thermal_tkdry    )
-    deallocate(thermal_col_itype    )
-    deallocate(thermal_zi           )
-    deallocate(thermal_dz           )
-    deallocate(thermal_z           )
+    call MPPThermalTBasedALM_Init()
 
 #else
 

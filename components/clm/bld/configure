@@ -655,6 +655,7 @@ sub write_filepath_cesmbld
                      "biogeophys/mpp/thermal",
                      "biogeophys/mpp/util",
                      "biogeophys/mpp/vsfm",
+                     "biogeophys/mpp/driver/alm",
 		     "biogeochem", 
 		     "dyn_subgrid",
 		     "ED/main",

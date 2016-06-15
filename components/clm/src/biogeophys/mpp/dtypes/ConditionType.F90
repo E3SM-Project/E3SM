@@ -24,6 +24,7 @@ module ConditionType
      PetscReal, pointer                 :: value(:)               ! Magnitude of the condition
 
      PetscInt                           :: list_id_of_other_goveq ! List ID of other governing equation
+     PetscInt                           :: itype_of_other_goveq   ! Type of other governing equation (e.g. GE_THERM_SSW_TBASED, GE_THERM_SNOW_TBASED, etc)
      PetscBool                          :: swap_order             ! FALSE(default): "upwind cell  " = BC; "downwind cell" = Internal cell
                                                                   ! TRUE          : "downwind cell" = BC; "upwind cell  " = Internal cell
 
@@ -71,6 +72,7 @@ contains
     cond%ncells                 = 0
 
     cond%list_id_of_other_goveq = -1
+    cond%itype_of_other_goveq   = -1
     cond%swap_order             = PETSC_FALSE
 
     nullify(cond%value    )

@@ -717,6 +717,7 @@ contains
     !
     use ConnectionSetType, only          : connection_set_type
     use ConditionType, only              : condition_type
+    use MultiPhysicsProbConstants , only : GE_THERM_SOIL_TBASED
     !
     implicit none
     !
@@ -738,7 +739,7 @@ contains
     do
        if (.not.associated(cur_cond)) exit
 
-       if (trim(cur_cond%name) == 'BC_from_soil_governing_equation') then
+       if (cur_cond%itype_of_other_goveq == GE_THERM_SOIL_TBASED) then
           soil_temp_cond => cur_cond
           soil_temp_cond_found = PETSC_TRUE
        endif

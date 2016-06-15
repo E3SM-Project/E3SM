@@ -9,9 +9,9 @@ module SystemOfEquationsBaseType
   !-----------------------------------------------------------------------
 
   ! !USES:
-  use mpp_abortutils                , only : endrun
+  use mpp_abortutils            , only : endrun
   use mpp_varctl                , only : iulog
-  use mpp_shr_log_mod               , only : errMsg => shr_log_errMsg
+  use mpp_shr_log_mod           , only : errMsg => shr_log_errMsg
   use MeshType                  , only : mesh_type
   use GoverningEquationBaseType , only : goveqn_base_type
   !
@@ -85,6 +85,8 @@ module SystemOfEquationsBaseType
      procedure, public :: SetDtime              => SOEBaseSetDtime
      procedure, public :: SetDataFromCLM        => SOEBaseSetDataFromCLM
      procedure, public :: GetDataForCLM         => SOEBaseGetDataForCLM
+     procedure, public :: AddGovEqn             => SOEBaseAddGovEqn
+     procedure, public :: SetMeshesOfGoveqns    => SOESetMeshesOfGoveqns
   end type sysofeqns_base_type
 
   public :: SOEBaseInit
@@ -854,6 +856,24 @@ contains
          'SOEBaseGetDataForCLM must be extended')
 
   end subroutine SOEBaseGetDataForCLM
+
+  !------------------------------------------------------------------------
+  subroutine SOEBaseAddGovEqn(this, geq_type, name)
+    !
+    ! !DESCRIPTION:
+    ! Adds a governing equation
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(sysofeqns_base_type) :: this
+    PetscInt                   :: geq_type
+    character(len =*)          :: name
+
+    write(iulog,*) 'SOEBaseAddGovEqn must be extended'
+    call endrun(msg=errMsg(__FILE__, __LINE__))
+
+  end subroutine SOEBaseAddGovEqn
 
   !------------------------------------------------------------------------
   subroutine SOEBaseClean(this)
