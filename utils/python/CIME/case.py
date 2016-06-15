@@ -152,7 +152,9 @@ class Case(object):
         """
         Return info object for given item, return all info for all item if item is empty.
         """
-
+        
+        logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__ , item, attribute, resolved, subgroup)
+        
         # Empty result list
         results = []
 
@@ -178,18 +180,18 @@ class Case(object):
                     for r in result :
                         if type(r['value']) is str:
                             logger.debug("Resolving %s" , r['value'])
-
                             r['value'] = self.get_resolved_value(r['value'])
 
                 if subgroup :
                     found = []
                     for r in result :
-                        if r['group'] != subgroup :
-                            found += r
+                        if r['group'] == subgroup :
+                            found.append(r)
                     results += found        
                 else:                 
                     results = results + result
-
+                    
+        logger.debug("(get_values) Return value:  %s" , results )            
         return results
 
 
