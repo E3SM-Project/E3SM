@@ -221,7 +221,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 			    (int)iodesc->basetype);
 		break;
 	    case PIO_IOTYPE_NETCDF4C:
-#endif
+#endif /* _NETCDF4 */
 	    case PIO_IOTYPE_NETCDF:
 	    {
 		mpierr = MPI_Type_size(iodesc->basetype, &dsize);
@@ -269,28 +269,30 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 					(int)iodesc->basetype);
 
 			    if (ierr == PIO_EEDGE)
-			    {
 				for (i = 0; i < ndims; i++)
 				    fprintf(stderr,"dim %d start %ld count %ld\n", i, tstart[i], tcount[i]);
-			    }
+
 			    if (tmp_buf != bufptr)
 				free(tmp_buf);
 			}
 		    }
-		}else if (ios->io_rank < iodesc->num_aiotasks )
+		}
+		else if (ios->io_rank < iodesc->num_aiotasks)
 		{
 		    buflen = 1;
-		    for (i = 0;i<ndims;i++)
+		    for (i = 0; i < ndims; i++)
 		    {
 			tstart[i] = (size_t) start[i];
 			tcount[i] = (size_t) count[i];
-			buflen*=tcount[i];
+			buflen *= tcount[i];
 			//               printf("%s %d %d %d %d\n",__FILE__,__LINE__,i,tstart[i],tcount[i]);
 		    }
-		    //	     printf("%s %d %d %d %d %d %d %d %d %d\n",__FILE__,__LINE__,ios->io_rank,tstart[0],tstart[1],tcount[0],tcount[1],buflen,ndims,fndims);
+		    /*	     printf("%s %d %d %d %d %d %d %d %d %d\n",__FILE__,__LINE__,ios->io_rank,tstart[0],
+			     tstart[1],tcount[0],tcount[1],buflen,ndims,fndims);*/
 		    mpierr = MPI_Recv(&ierr, 1, MPI_INT, 0, 0, ios->io_comm, &status);  // task0 is ready to recieve
 		    mpierr = MPI_Rsend(&buflen, 1, MPI_INT, 0, 1, ios->io_comm);
-		    if (buflen>0) {
+		    if (buflen > 0)
+		    {
 			mpierr = MPI_Rsend(tstart, ndims, MPI_OFFSET, 0, ios->num_iotasks+ios->io_rank,
 					    ios->io_comm);
 			mpierr = MPI_Rsend(tcount, ndims, MPI_OFFSET, 0,2*ios->num_iotasks+ios->io_rank,
@@ -301,13 +303,12 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 		break;
 	    }
 	    break;
-#endif
+#endif /* _NETCDF */
 #ifdef _PNETCDF
 	    case PIO_IOTYPE_PNETCDF:
-		for (i = 0,dsize = 1;i<ndims;i++)
-		{
+		for (i = 0, dsize = 1; i < ndims; i++)
 		    dsize *= count[i];
-		}
+
 		tdsize += dsize;
 		//	 if (dsize==1 && ndims==2)
 		//	 printf("%s %d %d\n",__FILE__,__LINE__,iodesc->basetype);
@@ -324,46 +325,37 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 		    //	   printf("%s %d %d %d\n",__FILE__,__LINE__,ios->io_rank,dsize);
 		    startlist[rrcnt] = (PIO_Offset *) calloc(fndims, sizeof(PIO_Offset));
 		    countlist[rrcnt] = (PIO_Offset *) calloc(fndims, sizeof(PIO_Offset));
-		    for (i=0; i<fndims;i++)
+		    for (i = 0; i < fndims; i++)
 		    {
-			startlist[rrcnt][i]=start[i];
-			countlist[rrcnt][i]=count[i];
+			startlist[rrcnt][i] = start[i];
+			countlist[rrcnt][i] = count[i];
 		    }
 		    rrcnt++;
 		}
-		if (regioncnt==iodesc->maxregions-1)
+		if (regioncnt == iodesc->maxregions - 1)
 		{
 		    // printf("%s %d %d %ld %ld\n",__FILE__,__LINE__,ios->io_rank,iodesc->llen, tdsize);
 		    //	   ierr = ncmpi_put_varn_all(ncid, vid, iodesc->maxregions, startlist, countlist,
 		    //			     IOBUF, iodesc->llen, iodesc->basetype);
 		    int reqn = 0;
 
-
 		    if (vdesc->nreqs % PIO_REQUEST_ALLOC_CHUNK == 0 )
 		    {
 			vdesc->request = realloc(vdesc->request,
-						 sizeof(int)*(vdesc->nreqs + PIO_REQUEST_ALLOC_CHUNK));
+						 sizeof(int) * (vdesc->nreqs + PIO_REQUEST_ALLOC_CHUNK));
 
-			for (int i=vdesc->nreqs;i<vdesc->nreqs + PIO_REQUEST_ALLOC_CHUNK;i++)
-			{
+			for (int i = vdesc->nreqs; i < vdesc->nreqs + PIO_REQUEST_ALLOC_CHUNK; i++)
 			    vdesc->request[i] = NC_REQ_NULL;
-			}
 			reqn = vdesc->nreqs;
 		    }
 		    else
-		    {
-			while(vdesc->request[reqn] != NC_REQ_NULL )
-			{
+			while(vdesc->request[reqn] != NC_REQ_NULL)
 			    reqn++;
-			}
-		    }
 
 		    ierr = ncmpi_bput_varn(ncid, vid, rrcnt, startlist, countlist,
 					   IOBUF, iodesc->llen, iodesc->basetype, vdesc->request+reqn);
 		    if (vdesc->request[reqn] == NC_REQ_NULL)
-		    {
 			vdesc->request[reqn] = PIO_REQ_NULL;  //keeps wait calls in sync
-		    }
 		    vdesc->nreqs = reqn;
 
 		    //	   printf("%s %d %X %d\n",__FILE__,__LINE__,IOBUF,request);
@@ -374,7 +366,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 		    }
 		}
 		break;
-#endif
+#endif /* _PNETCDF */
 	    default:
 		ierr = iotype_error(file->iotype,__FILE__,__LINE__);
 	    }
