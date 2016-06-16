@@ -753,7 +753,7 @@ class Case(object):
         # user's case. However, note that, if a project is not given, the fallback will
         # be to copy it from the clone, just like other xml variables are copied.
         if project is None:
-            project = self.get_value("PROJECT")
+            project = self.get_value("PROJECT", subgroup="case.run")
         if project is not None:
             newcase.set_value("PROJECT", project)
 

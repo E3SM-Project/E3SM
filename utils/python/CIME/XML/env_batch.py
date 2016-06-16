@@ -195,26 +195,26 @@ class EnvBatch(EnvBase):
 
         task_maker = TaskMaker(case)
 
-        self.maxthreads = task_maker.max_threads
-        self.taskgeometry = task_maker.task_geom
-        self.threadgeometry = task_maker.thread_geom
-        self.taskcount = task_maker.task_count
+        self.maxthreads = task_maker.maxthreads
+        self.taskgeometry = task_maker.taskgeometry
+        self.threadgeometry = task_maker.threadgeometry
+        self.taskcount = task_maker.taskcount
         self.thread_count = task_maker.thread_count
         self.pedocumentation = task_maker.document()
         self.ptile = task_maker.ptile
-        self.tasks_per_node = task_maker.task_per_node
+        self.tasks_per_node = task_maker.tasks_per_node
         self.max_tasks_per_node = task_maker.MAX_TASKS_PER_NODE
-        self.tasks_per_numa = task_maker.task_per_numa
-        self.num_tasks = task_maker.total_tasks
+        self.tasks_per_numa = task_maker.tasks_per_numa
+        self.num_tasks = task_maker.totaltasks
 
         task_count = self.get_value("task_count")
         if task_count == "default":
-            self.sumpes = task_maker.full_sum
-            self.totaltasks = task_maker.total_tasks
-            self.fullsum = task_maker.full_sum
-            self.sumtasks = task_maker.total_tasks
-            self.task_count = task_maker.full_sum
-            self.num_nodes = task_maker.node_count
+            self.sumpes = task_maker.fullsum
+            self.totaltasks = task_maker.totaltasks
+            self.fullsum = task_maker.fullsum
+            self.sumtasks = task_maker.totaltasks
+            self.task_count = task_maker.fullsum
+            self.num_nodes = task_maker.num_nodes
         else:
             self.sumpes = task_count
             self.totaltasks = task_count

@@ -295,16 +295,6 @@ class Machines(GenericXML):
                 expect(key in attribs, "Unhandled MPI property '%s'" % key)
 
             if all_match:
-                arg_node = self.get_optional_node("arguments", root=mpirun_node)
-                if arg_node is not None:
-                    arg_nodes = self.get_nodes("arg", root=arg_node)
-                    for arg_node in arg_nodes:
-                        arg_value = transform_vars(arg_node.text,
-                                                   case=case,
-                                                   subgroup=job,
-                                                   check_members=check_members,
-                                                   default=arg_node.get("default"))
-                        args[arg_node.get("name")] = arg_value
                 if is_default:
                     if matches > best_num_matched_default:
                         default_match = mpirun_node
@@ -318,6 +308,18 @@ class Machines(GenericXML):
                "Could not find a matching MPI for attributes: %s" % attribs)
 
         the_match = best_match if best_match is not None else default_match
+
+        # Now that we know the best match, compute the arguments
+        arg_node = self.get_optional_node("arguments", root=the_match)
+        if arg_node is not None:
+            arg_nodes = self.get_nodes("arg", root=arg_node)
+            for arg_node in arg_nodes:
+                arg_value = transform_vars(arg_node.text,
+                                           case=case,
+                                           subgroup=job,
+                                           check_members=check_members,
+                                           default=arg_node.get("default"))
+                args[arg_node.get("name")] = arg_value
 
 
         executable = self.get_node("executable", root=the_match)

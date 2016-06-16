@@ -101,7 +101,7 @@ class TaskMaker(object):
         aprun = ""
         pbsrs = ""
 
-        task_per_node, total_node_count, max_total_node_count = 0, 0, 0
+        tasks_per_node, total_node_count, max_total_node_count = 0, 0, 0
         for c1 in xrange(1, total_tasks):
             sum_ += maxt[c1]
 
@@ -115,16 +115,16 @@ class TaskMaker(object):
             thread_geom += ":%d" % maxt[c1]
 
             if maxt[c1] != thread_count:
-                task_per_node = min(self.PES_PER_NODE, self.MAX_TASKS_PER_NODE / thread_count)
+                tasks_per_node = min(self.PES_PER_NODE, self.MAX_TASKS_PER_NODE / thread_count)
 
-                task_per_node = min(task_count, task_per_node)
+                tasks_per_node = min(task_count, tasks_per_node)
 
-                aprun += " -n %d -N %d -d %d %s :" % (task_count, task_per_node, thread_count, self.DEFAULT_RUN_EXE_TEMPLATE_STR)
+                aprun += " -n %d -N %d -d %d %s :" % (task_count, tasks_per_node, thread_count, self.DEFAULT_RUN_EXE_TEMPLATE_STR)
 
-                node_count = int(math.ceil(float(task_count) / task_per_node))
+                node_count = int(math.ceil(float(task_count) / tasks_per_node))
 
                 total_node_count += node_count
-                pbsrs += "%d:ncpus=%d:mpiprocs=%d:ompthreads=%d:model=" % (node_count, self.MAX_TASKS_PER_NODE, task_per_node, thread_count)
+                pbsrs += "%d:ncpus=%d:mpiprocs=%d:ompthreads=%d:model=" % (node_count, self.MAX_TASKS_PER_NODE, tasks_per_node, thread_count)
 
                 thread_count = maxt[c1]
                 max_thread_count = max(max_thread_count, maxt[c1])
@@ -133,47 +133,47 @@ class TaskMaker(object):
             else:
                 task_count = 1
 
-        max_task_per_node = min(self.MAX_TASKS_PER_NODE / max_thread_count, self.PES_PER_NODE, max_task_count)
-        max_total_node_count = int(math.ceil(float(max_task_count) / max_task_per_node))
+        max_tasks_per_node = min(self.MAX_TASKS_PER_NODE / max_thread_count, self.PES_PER_NODE, max_task_count)
+        max_total_node_count = int(math.ceil(float(max_task_count) / max_tasks_per_node))
 
         full_sum += sum_
-        self.full_sum = full_sum
+        self.sumpes = full_sum
         task_geom += ")"
-        self.task_geom = task_geom
+        self.taskgeometry = task_geom
         if self.PES_PER_NODE > 0:
-            task_per_node = min(self.PES_PER_NODE, self.MAX_TASKS_PER_NODE / thread_count)
+            tasks_per_node = min(self.PES_PER_NODE, self.MAX_TASKS_PER_NODE / thread_count)
         else:
-            task_per_node = self.MAX_TASKS_PER_NODE / thread_count
-        task_per_node = min(task_count, task_per_node)
+            tasks_per_node = self.MAX_TASKS_PER_NODE / thread_count
+        tasks_per_node = min(task_count, tasks_per_node)
 
-        total_node_count += int(math.ceil(float(task_count) / task_per_node))
+        total_node_count += int(math.ceil(float(task_count) / tasks_per_node))
 
-        task_per_numa = int(math.ceil(task_per_node / 2.0))
-        if self.COMPILER == "intel" and task_per_node > 1:
+        task_per_numa = int(math.ceil(tasks_per_node / 2.0))
+        if self.COMPILER == "intel" and tasks_per_node > 1:
             aprun += " -S %d -cc numa_node " % task_per_numa
 
-        aprun += " -n %d -N %d -d %d %s " % (task_count, task_per_node, thread_count, self.DEFAULT_RUN_EXE_TEMPLATE_STR)
+        aprun += " -n %d -N %d -d %d %s " % (task_count, tasks_per_node, thread_count, self.DEFAULT_RUN_EXE_TEMPLATE_STR)
 
 	# add all the calculated numbers as instance data.
-        self.total_tasks = total_tasks
+        self.totaltasks = total_tasks
         self.num_tasks   = total_tasks
-        self.task_per_node = max_task_per_node
-        self.task_per_numa = task_per_numa
-        self.max_threads = max_threads
+        self.tasks_per_node = max_tasks_per_node
+        self.tasks_per_numa = task_per_numa
+        self.maxthreads = max_threads
         self.min_threads = min_threads
-        self.task_geom = task_geom
-        self.thread_geom = thread_geom
-        self.task_count = task_count
+        self.taskgeometry = task_geom
+        self.threadgeometry = thread_geom
+        self.taskcount = task_count
         self.thread_count = max_thread_count
         self.aprun = aprun
         self.opt_node_count = total_node_count
-        self.node_count = max_total_node_count
-        self.pbsrs = pbsrs + "%d:ncpus=%d:mpiprocs=%d:ompthreads=%d:model=" % (max_total_node_count, self.MAX_TASKS_PER_NODE, task_per_node, thread_count)
+        self.num_nodes = max_total_node_count
+        self.pbsrs = pbsrs + "%d:ncpus=%d:mpiprocs=%d:ompthreads=%d:model=" % (max_total_node_count, self.MAX_TASKS_PER_NODE, tasks_per_node, thread_count)
 
         # calculate ptile..
         ptile = self.MAX_TASKS_PER_NODE / 2
-        if self.max_threads > 1:
-            ptile = int(math.floor(float(self.MAX_TASKS_PER_NODE) / self.max_threads))
+        if self.maxthreads > 1:
+            ptile = int(math.floor(float(self.MAX_TASKS_PER_NODE) / self.maxthreads))
 
         self.ptile = ptile
 
@@ -200,13 +200,13 @@ class TaskMaker(object):
 # PE Layout:
 #   Total number of tasks: %d
 #   Maximum threads per task: %d
-""" % (self.total_tasks, self.max_threads)
+""" % (self.totaltasks, self.maxthreads)
 
         for comp, ntasks, nthrds, rootpe, ninst, pstrid in zip(self.COMP, self.NTASKS, self.NTHRDS, self.ROOTPE, self.NINST, self.PSTRID):
             doc += "#    %s ntasks=%d nthreads=%d rootpe=%d ninst=%d pstrid=%d\n" % (comp, ntasks, nthrds, rootpe, ninst, pstrid)
 
         doc += "#\n"
-        doc +=  "#    total number of hw pes = %d\n" % self.full_sum
+        doc +=  "#    total number of hw pes = %d\n" % self.sumpes
 
         for comp, ntasks, nthrds, rootpe, pstrid in zip(self.COMP, self.NTASKS, self.NTHRDS, self.ROOTPE, self.PSTRID):
             tt = rootpe + (ntasks - 1) * pstrid
