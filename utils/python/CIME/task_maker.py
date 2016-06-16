@@ -137,7 +137,7 @@ class TaskMaker(object):
         max_total_node_count = int(math.ceil(float(max_task_count) / max_tasks_per_node))
 
         full_sum += sum_
-        self.sumpes = full_sum
+        self.fullsum = full_sum
         task_geom += ")"
         self.taskgeometry = task_geom
         if self.PES_PER_NODE > 0:
@@ -206,7 +206,7 @@ class TaskMaker(object):
             doc += "#    %s ntasks=%d nthreads=%d rootpe=%d ninst=%d pstrid=%d\n" % (comp, ntasks, nthrds, rootpe, ninst, pstrid)
 
         doc += "#\n"
-        doc +=  "#    total number of hw pes = %d\n" % self.sumpes
+        doc +=  "#    total number of hw pes = %d\n" % self.fullsum
 
         for comp, ntasks, nthrds, rootpe, pstrid in zip(self.COMP, self.NTASKS, self.NTHRDS, self.ROOTPE, self.PSTRID):
             tt = rootpe + (ntasks - 1) * pstrid
