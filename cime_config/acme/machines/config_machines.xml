@@ -454,6 +454,9 @@
       <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
     </arguments>
   </mpirun>
+  <mpirun mpilib="mpi-serial">
+    <executable></executable>
+  </mpirun>
   <module_system type="module">
     <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
     <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
@@ -471,16 +474,18 @@
       <command name="load">sierra-python</command>
       <command name="load">gnu/4.9.2</command>
       <command name="load">intel/intel-15.0.3.187</command>
-      <command name="load">openmpi-intel/1.6</command>
+      <command name="load" mpilib="!mpi-serial">openmpi-intel/1.6</command>
       <command name="load">libraries/intel-mkl-15.0.2.164</command>
       <command name="load">libraries/intel-mkl-15.0.2.164</command>
-      <command name="load">hdf5/1.8.11/intel/13.0.1/openmpi/1.6.5</command>
-      <command name="load">netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5</command>
+      <command name="load" mpilib="!mpi-serial">hdf5/1.8.11/intel/13.0.1/openmpi/1.6.5</command>
+      <command name="load" mpilib="!mpi-serial">netcdf/4.3.2/intel/13.0.1/openmpi/1.6.5</command>
+      <command name="load" mpilib="mpi-serial">hdf5/1.8.11/intel/13.0.1/base</command>
+      <command name="load" mpilib="mpi-serial">netcdf/4.3.2/intel/13.0.1/base</command>
     </modules>
   </module_system>
   <environment_variables>
     <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env>
-    <env name="PNETCDFROOT">$SEMS_NETCDF_ROOT</env>
+    <env name="PNETCDFROOT" mpilib="!mpi-serial">$SEMS_NETCDF_ROOT</env>
   </environment_variables>
 </machine>
 
