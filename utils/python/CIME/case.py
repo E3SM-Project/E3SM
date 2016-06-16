@@ -84,10 +84,6 @@ class Case(object):
         self._env_generic_files.append(EnvArchive(case_root))
         self._files = self._env_entryid_files + self._env_generic_files
 
-
-        # self._case_root = case_root
-
-
         # Hold arbitary values. In create_newcase we may set values
         # for xml files that haven't been created yet. We need a place
         # to store them until we are ready to create the file. At file
@@ -104,7 +100,6 @@ class Case(object):
         self._gridfile = None
         self._components = []
         self._component_config_files = []
-
 
     def __del__(self):
         self.flush()
@@ -549,11 +544,11 @@ class Case(object):
 
         # Set project id
         if project is None:
-            project = get_project()
+            project = get_project(machobj)
         if project is not None:
             self.set_value("PROJECT", project)
         elif machobj.get_value("PROJECT_REQUIRED"):
-            expect(project is not None, " PROJECT_REQUIRED is true but no project found")
+            expect(project is not None, "PROJECT_REQUIRED is true but no project found")
 
     def get_compset_var_settings(self):
         compset_obj = Compsets(infile=self.get_value("COMPSETS_SPEC_FILE"))
@@ -758,7 +753,7 @@ class Case(object):
         # user's case. However, note that, if a project is not given, the fallback will
         # be to copy it from the clone, just like other xml variables are copied.
         if project is None:
-            project = get_project()
+            project = self.get_value("PROJECT", subgroup="case.run")
         if project is not None:
             newcase.set_value("PROJECT", project)
 
@@ -775,7 +770,6 @@ class Case(object):
         # copy SourceMod and Buildconf files
         for casesub in ("SourceMods", "Buildconf"):
             shutil.copytree(os.path.join(cloneroot, casesub), os.path.join(newcaseroot, casesub))
-
 
         # copy env_case.xml to LockedFiles
         shutil.copy(os.path.join(newcaseroot,"env_case.xml"), os.path.join(newcaseroot,"LockedFiles"))

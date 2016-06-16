@@ -2,7 +2,7 @@
 
 from Tools.standard_script_setup import *
 
-from CIME.utils import expect, get_model, run_cmd, get_project
+from CIME.utils import expect, get_model
 from CIME.case  import Case
 
 import stat

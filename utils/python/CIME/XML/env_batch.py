@@ -44,9 +44,11 @@ class EnvBatch(EnvBase):
         """
         value = None
         if subgroup is None:
-            node = self.get_optional_node(item)
+            node = self.get_optional_node(item, attribute)
             if node is not None:
                 value = node.text
+                if resolved:
+                    value = self.get_resolved_value(value)
             else:
                 value = EnvBase.get_value(self,item,attribute,resolved)
         else:
@@ -167,9 +169,6 @@ class EnvBatch(EnvBase):
                 newjob.append(deepcopy(child))
             group.append(newjob)
 
-
-
-
     def cleanupnode(self, node):
         if node.get("id") == "batch_system":
             fnode = node.find(".//file")
@@ -196,26 +195,26 @@ class EnvBatch(EnvBase):
 
         task_maker = TaskMaker(case)
 
-        self.maxthreads = task_maker.max_threads
-        self.taskgeometry = task_maker.task_geom
-        self.threadgeometry = task_maker.thread_geom
-        self.taskcount = task_maker.task_count
+        self.maxthreads = task_maker.maxthreads
+        self.taskgeometry = task_maker.taskgeometry
+        self.threadgeometry = task_maker.threadgeometry
+        self.taskcount = task_maker.taskcount
         self.thread_count = task_maker.thread_count
         self.pedocumentation = task_maker.document()
         self.ptile = task_maker.ptile
-        self.tasks_per_node = task_maker.task_per_node
+        self.tasks_per_node = task_maker.tasks_per_node
         self.max_tasks_per_node = task_maker.MAX_TASKS_PER_NODE
-        self.tasks_per_numa = task_maker.task_per_numa
-        self.num_tasks = task_maker.total_tasks
+        self.tasks_per_numa = task_maker.tasks_per_numa
+        self.num_tasks = task_maker.totaltasks
 
         task_count = self.get_value("task_count")
         if task_count == "default":
-            self.sumpes = task_maker.full_sum
-            self.totaltasks = task_maker.total_tasks
-            self.fullsum = task_maker.full_sum
-            self.sumtasks = task_maker.total_tasks
-            self.task_count = task_maker.full_sum
-            self.num_nodes = task_maker.node_count
+            self.sumpes = task_maker.fullsum
+            self.totaltasks = task_maker.totaltasks
+            self.fullsum = task_maker.fullsum
+            self.sumtasks = task_maker.totaltasks
+            self.task_count = task_maker.fullsum
+            self.num_nodes = task_maker.num_nodes
         else:
             self.sumpes = task_count
             self.totaltasks = task_count
@@ -230,13 +229,12 @@ class EnvBatch(EnvBase):
             self.job_id = self.job_id[:15]
         self.output_error_path = self.job_id
 
-        self.batchdirectives = self.get_batch_directives()
+        self.batchdirectives = self.get_batch_directives(case, job)
 
-        output_text = transform_vars(open(input_template,"r").read(), case=case, check_members=self)
+        output_text = transform_vars(open(input_template,"r").read(), case=case, subgroup=job, check_members=self)
         with open(job, "w") as fd:
             fd.write(output_text)
         os.chmod(job, os.stat(job).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
 
     def set_job_defaults(self, bjobs, pesize=None):
         if self.batchtype is None:
@@ -252,11 +250,14 @@ class EnvBatch(EnvBase):
             queue = self.select_best_queue(task_count)
             self.set_value("JOB_QUEUE", queue, subgroup=job)
             walltime = self.get_max_walltime(queue)
+            # JGF: Shouldn't walltime involve ccsm_estcost?
+            # Fall back to default if None
+            if walltime is None:
+                walltime = self.get_default_walltime()
             self.set_value( "JOB_WALLCLOCK_TIME", walltime , subgroup=job)
             logger.info("Job %s queue %s walltime %s"%(job, queue, walltime))
 
-
-    def get_batch_directives(self):
+    def get_batch_directives(self, case, job):
         """
         """
         result = []
@@ -270,7 +271,7 @@ class EnvBatch(EnvBase):
                 for node in nodes:
                     directive = self.get_resolved_value("" if node.text is None else node.text)
                     default = node.get("default")
-                    directive = transform_vars(directive, default=default, check_members=self)
+                    directive = transform_vars(directive, case=case, subgroup=job, default=default, check_members=self)
                     result.append("%s %s" % (directive_prefix, directive))
 
         return "\n".join(result)
@@ -345,12 +346,12 @@ class EnvBatch(EnvBase):
             if slen == 0:
                 jobid = None
 
-            depid[job] = self.submit_single_job(case, job, jobid)
+            depid[job] = self.submit_single_job(case, job, jobid, no_batch=no_batch)
 
-    def submit_single_job(self, case, job, depid=None):
+    def submit_single_job(self, case, job, depid=None, no_batch=False):
         caseroot = case.get_value("CASEROOT")
         batch_system = self.get_value("BATCH_SYSTEM", subgroup=None)
-        if batch_system is None or batch_system == "none":
+        if batch_system is None or batch_system == "none" or no_batch:
             # Import here to avoid circular include
             from CIME.case_test       import case_test
             from CIME.case_run        import case_run
@@ -377,7 +378,8 @@ class EnvBatch(EnvBase):
         if depid is not None:
             dep_string = self.get_value("depend_string", subgroup=None)
             dep_string = dep_string.replace("jobid",depid.strip())
-            submitargs += " "+dep_string
+            submitargs += " " + dep_string
+
         batchsubmit = self.get_value("batch_submit", subgroup=None)
         batchredirect = self.get_value("batch_redirect", subgroup=None)
         submitcmd = ''
@@ -397,9 +399,9 @@ class EnvBatch(EnvBase):
     def get_batch_system_type(self):
         nodes = self.get_nodes("batch_system")
         for node in nodes:
-            type = node.get("type")
-            if type is not None:
-                self.batchtype = type
+            type_ = node.get("type")
+            if type_ is not None:
+                self.batchtype = type_
         return self.batchtype
 
     def set_batch_system_type(self, batchtype):
@@ -427,17 +429,12 @@ class EnvBatch(EnvBase):
         return None
 
     def get_max_walltime(self, queue):
-        walltime = None
         for queue_node in self.get_all_queues():
             if queue_node.text == queue:
-                walltime = queue_node.get("walltimemax")
-        return walltime
-
-    def get_walltimes(self):
-        return self.get_nodes("walltime", root=self.machine_node)
+                return queue_node.get("walltimemax")
 
     def get_default_walltime(self):
-        return self.get_optional_node("walltime", attributes={"default" : "true"}, root=self.machine_node)
+        return self.get_value("walltime", attribute={"default" : "true"}, subgroup=None)
 
     def get_default_queue(self):
         return self.get_optional_node("queue", attributes={"default" : "true"})

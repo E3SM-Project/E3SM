@@ -97,7 +97,6 @@ def runModel(case):
     # Run the model
     logger.info("%s MODEL EXECUTION BEGINS HERE" %(time.strftime("%Y-%m-%d %H:%M:%S")))
 
-    # Compute mpirun command
     machine = Machines(machine=case.get_value("MACH"))
     cmd = machine.get_full_mpirun(tm, case, "case.run")
     cmd = case.get_resolved_value(cmd)

@@ -495,40 +495,47 @@ def get_utc_timestamp(timestamp_format="%Y%m%d_%H%M%S"):
     utc_time_tuple = time.gmtime()
     return time.strftime(timestamp_format, utc_time_tuple)
 
-def get_project():
+def get_project(machobj=None):
     """
     Hierarchy for choosing PROJECT:
     1. Environment variable PROJECT
     2  Environment variable ACCOUNT  (this is for backward compatibility)
     3. File $HOME/.cime/config       (this is new)
     4  File $HOME/.cesm_proj         (this is for backward compatibility)
-    5  config_machines.xml
+    5  config_machines.xml (if machobj provided)
     """
     project = os.environ.get("PROJECT")
     if (project is not None):
-        logger.info("Using project from env PROJECT "+project)
+        logger.info("Using project from env PROJECT: " + project)
         return project
     project = os.environ.get("ACCOUNT")
     if (project is not None):
-        logger.info("Using project from env ACCOUNT "+project)
+        logger.info("Using project from env ACCOUNT: " + project)
         return project
 
     cime_config = get_cime_config()
     if (cime_config.has_option('main','PROJECT')):
         project = cime_config.get('main','PROJECT')
         if (project is not None):
-            logger.info("Using project from .cime/config "+project)
+            logger.info("Using project from .cime/config: " + project)
             return project
 
-    projectfile = os.path.abspath(os.path.join(os.path.expanduser("~"),
-                                                   ".cesm_proj"))
+    projectfile = os.path.abspath(os.path.join(os.path.expanduser("~"), ".cesm_proj"))
     if (os.path.isfile(projectfile)):
         with open(projectfile,'r') as myfile:
             project = myfile.read().rstrip()
-            logger.info("Using project from .cesm_proj %s"%project)
+            logger.info("Using project from .cesm_proj: " + project)
             cime_config.set('main','PROJECT',project)
+            return project
 
-    return project
+    if machobj is not None:
+        project = machobj.get_value("PROJECT")
+        if project is not None:
+            logger.info("Using project from config_machines.xml: " + project)
+            return project
+
+    logger.info("No project info available")
+    return None
 
 def setup_standard_logging_options(parser):
     parser.add_argument("-v", "--verbose", action="store_true",

@@ -216,7 +216,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     batch = Batch(batch_system=mach.get_batch_system_type(), machine=machine_name)
 
     if project is None:
-        project = CIME.utils.get_project()
+        project = CIME.utils.get_project(mach)
         if project is None:
             project = mach.get_value("PROJECT")
 
