@@ -43,6 +43,8 @@ module MultiPhysicsProbVSFM
      procedure, public :: Setup                  => VSFMMPPSetup
      procedure, public :: Restart                => VSFMMPPRestart
      procedure, public :: UpdateSysOfEqnsAuxVars => VSFMMPPUpdateSysOfEqnsAuxVars
+     procedure, public :: SetMPIRank             => VSFMMPPSetMPIRank
+
   end type mpp_vsfm_type
 
   type(mpp_vsfm_type), public, target :: vsfm_mpp
@@ -75,6 +77,24 @@ contains
     nullify(this%sysofeqns_ptr%ptr)
 
   end subroutine VSFMMPPInit
+
+  !------------------------------------------------------------------------
+  subroutine VSFMMPPSetMPIRank(this, rank)
+    !
+    ! !DESCRIPTION:
+    ! Sets MPI rank
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(mpp_vsfm_type)    :: this
+    PetscInt                :: rank
+
+    if (associated(this%sysofeqns)) then
+       this%sysofeqns%mpi_rank = rank
+    endif
+
+  end subroutine VSFMMPPSetMPIRank
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPSetup(this, begg, endg, begc, endc, mpi_rank, &
