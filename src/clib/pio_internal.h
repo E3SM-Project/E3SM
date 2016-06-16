@@ -17,7 +17,7 @@
 #include <gptl.h>
 #endif
 
-#ifdef PIO_ENABLE_LOGGING
+#if PIO_ENABLE_LOGGING
 void pio_log(int severity, const char *fmt, ...);
 #define LOG(e) pio_log e
 #else

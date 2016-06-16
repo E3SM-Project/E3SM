@@ -2,7 +2,7 @@
  * Support functions.
  */
 #include <config.h>
-#ifdef PIO_ENABLE_LOGGING
+#if PIO_ENABLE_LOGGING
 #include <stdarg.h>
 #include <unistd.h>
 #endif /* PIO_ENABLE_LOGGING */
@@ -12,7 +12,7 @@
 #include <execinfo.h>
 #define versno 2001
 
-#ifdef PIO_ENABLE_LOGGING
+#if PIO_ENABLE_LOGGING
 int pio_log_level = 0;
 int my_rank;
 #endif /* PIO_ENABLE_LOGGING */
@@ -23,15 +23,15 @@ int my_rank;
  * logging, this function does nothing. */
 int PIOc_set_log_level(int level)
 {
-#ifdef PIO_ENABLE_LOGGING
+#if PIO_ENABLE_LOGGING
     printf("setting log level to %d\n", level);
     pio_log_level = level;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    return PIO_NOERR;
 #endif /* PIO_ENABLE_LOGGING */
+    return PIO_NOERR;
 }
 
-#ifdef PIO_ENABLE_LOGGING
+#if PIO_ENABLE_LOGGING
 /** This function prints out a message, if the severity of the message
    is lower than the global pio_log_level. To use it, do something
    like this:
