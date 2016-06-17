@@ -8,7 +8,7 @@
 !subroutine cal_cldfra3 was originally copied from ./phys/module_radiation_driver.F from WRF version 3.8.
 !Laura D. Fowler (laura@ucar.edu) / 2016-06-04.
 
- implicit
+ implicit none
  private
  public:: cal_cldfra3
 
