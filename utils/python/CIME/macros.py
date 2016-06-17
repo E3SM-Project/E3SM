@@ -529,11 +529,12 @@ class PossibleValues(object):
         This function raises an error if an ambiguity is found.
         """
         for i in range(len(self.settings)-1):
-            expect(not any(self.settings[i].is_ambiguous_with(other)
-                           for other in self.settings[i+1:]),
-                   "Variable "+self.name+" is set ambiguously in "
-                   "config_build.xml. Check this file for multiple "
-                   "settings that could apply to this machine.")
+            for other in self.settings[i+1:]:
+                expect(not self.settings[i].is_ambiguous_with(other),
+                       "Variable "+self.name+" is set ambiguously in "
+                       "config_build.xml. Check the file for these "
+                       "conflicting settings: \n1: {}\n2: {}".format(
+                           self.settings[i].conditions, other.conditions))
 
     def to_cond_trees(self):
         """Convert this object to a pair of MacroConditionTree objects.
