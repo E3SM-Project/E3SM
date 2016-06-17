@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 """
 case.submit - Submit a cesm workflow to the queueing system or run it

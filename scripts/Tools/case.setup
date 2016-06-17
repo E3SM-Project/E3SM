@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 """
 case.setup - create the $caseroot/case.run script and user_nl_xxx component namelist mod files
