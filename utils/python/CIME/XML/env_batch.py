@@ -86,37 +86,39 @@ class EnvBatch(EnvBase):
             else :
                 roots = [group]
 
-            for r in roots :
+            for root in roots :
 
                 if item :
-                    nodes = self.get_nodes("entry",{"id" : item} , root=r )
+                    nodes = self.get_nodes("entry",{"id" : item} , root=root )
                 else :
                     # Return all nodes
-                    nodes = self.get_nodes("entry" , root=r)
+                    nodes = self.get_nodes("entry" , root=root)
 
                 # seach in all entry nodes
                 for node in nodes:
 
                     
                     # Build return structure
-                    attr      = node.get('id')
-                    g         = None
+                    attr          = node.get('id')
+                    group_name     = None
                     
                     # determine group
-                    if (r.tag == "job") :
-                        g = r.get('name') 
+                    if (root.tag == "job") :
+                        group_name = r.get('name') 
                     else:
-                        g = r.get('id')
+                        group_name = r.get('id')
 
-                    val     = node.get('value')
-                    t       = self._get_type(node)
-                    desc    = self._get_description(node)
-                    default = super(EnvBatch , self)._get_default(node)
-                    filename= self.filename
+                    val             = node.get('value')
+                    attribute_type  = self._get_type(node)
+                    desc            = self._get_description(node)
+                    default         = super(EnvBatch , self)._get_default(node)
+                    filename        = self.filename
 
-                    v = { 'group' : g , 'attribute' : attr , 'value' : val , 'type' : t , 'description' : desc , 'default' : default , 'file' : filename}
-                    logger.debug("Found node with value for %s = %s" , item , v )
-                    results.append(v)
+                    tmp = { 'group' : group_name , 'attribute' : attr , 'value' : val , 'type' : attribute_type , 'description' : desc , 'default' : default , 'file' : filename}
+                    logger.debug("Found node with value for %s = %s" , item , tmp )
+                    
+                    # add single result to list
+                    results.append(tmp) 
 
         logger.debug("(get_values) Return value:  %s" , results )
 
