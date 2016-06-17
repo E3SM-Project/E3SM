@@ -381,6 +381,8 @@ class EnvBatch(EnvBase):
             submitargs += " " + dep_string
 
         batchsubmit = self.get_value("batch_submit", subgroup=None)
+        expect(batchsubmit is not None,
+               "Unable to determine the correct command for batch submission.")
         batchredirect = self.get_value("batch_redirect", subgroup=None)
         submitcmd = ''
         for string in (batchsubmit, submitargs, batchredirect, job):
