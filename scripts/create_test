@@ -213,7 +213,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     expect(mach.has_batch_system(), "Single submit does not make sense on non-batch machine '%s'" % mach.get_machine_name())
 
     machine_name = mach.get_machine_name()
-    batch = Batch(batch_system=mach.get_batch_system_type(), machine=machine_name)
+    batch = Batch(batch_system=mach.get_value("BATCH_SYSTEM"), machine=machine_name)
 
     if project is None:
         project = CIME.utils.get_project(mach)
