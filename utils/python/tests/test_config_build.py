@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 """Tests for the generation of Macros files from config_build.xml"""
 
 # The invalid-name check is not very useful, while line-too-long and
