@@ -224,8 +224,6 @@ module init_atm_cases
 
             call init_atm_case_gfs(block_ptr, mesh, nCells, nEdges, nVertLevels, fg, state, &
                                    diag, diag_physics, config_init_case, block_ptr % dimensions, block_ptr % configs)
-
-            call init_atm_gocart(block_ptr, mesh, block_ptr % configs, diag, state)
             
             if (config_met_interp) then
                call init_atm_gocart(block_ptr, mesh, block_ptr % configs, diag, state)
