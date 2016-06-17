@@ -116,7 +116,6 @@ for mct, etc.
 <compiler COMPILER="gnu">
   <CFLAGS>
     <base> -mcmodel=medium -std=gnu99 </base>
-    <base> -std=gnu99 </base>
     <append compile_threaded="true"> -fopenmp </append>
     <append DEBUG="TRUE"> -g -Wall </append>
     <append DEBUG="FALSE"> -O </append>
