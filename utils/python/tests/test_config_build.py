@@ -25,6 +25,26 @@ from CIME.macros import MacroMaker # pylint: disable=import-error,wrong-import-p
 # Let CMake tests be skipped (they are slow).
 NO_CMAKE = ("SKIP_CMAKE" in os.environ and os.environ["SKIP_CMAKE"] == "TRUE")
 
+class MockMachines(object):
+
+    """A mock version of the Machines object to simplify testing."""
+
+    def __init__(self, name):
+        """Store the name."""
+        self.name = name
+
+    def get_machine_name(self):
+        """Return the name we were given."""
+        return self.name
+
+    def is_valid_compiler(self, compiler):
+        """Assume all compilers are valid."""
+        return True
+
+    def is_valid_MPIlib(self, mpilib):
+        """Assume all MPILIB settings are valid."""
+        return True
+
 
 def get_macros(macro_maker, build_xml, build_system):
     """Generate build system ("Macros" file) output from config_build XML.
@@ -248,19 +268,19 @@ class TestBasic(unittest.TestCase):
     def test_script_is_callable(self): # pylint: disable=no-self-use
         """The test script can be called on valid output without dying."""
         # This is really more a smoke test of this script than anything else.
-        maker = MacroMaker("SomeOS", "mymachine")
+        maker = MacroMaker("SomeOS", MockMachines("mymachine"))
         test_xml = _wrap_config_build_xml("<compiler><SUPPORTS_CXX>FALSE</SUPPORTS_CXX></compiler>")
         get_macros(maker, test_xml, "Makefile")
 
     def test_script_rejects_bad_xml(self):
         """The macro writer rejects input that's not valid XML."""
-        maker = MacroMaker("SomeOS", "mymachine")
+        maker = MacroMaker("SomeOS", MockMachines("mymachine"))
         with self.assertRaises(ParseError):
             get_macros(maker, "This is not valid XML.", "Makefile")
 
     def test_script_rejects_bad_build_system(self):
         """The macro writer rejects a bad build system string."""
-        maker = MacroMaker("SomeOS", "mymachine")
+        maker = MacroMaker("SomeOS", MockMachines("mymachine"))
         bad_string = "argle-bargle."
         with self.assertRaisesRegexp(
                 SystemExit,
@@ -282,7 +302,7 @@ class TestMakeOutput(unittest.TestCase): # pylint: disable=too-many-public-metho
     test_machine = "mymachine"
 
     def setUp(self):
-        self._maker = MacroMaker(self.test_os, self.test_machine)
+        self._maker = MacroMaker(self.test_os, MockMachines(self.test_machine))
 
     def xml_to_tester(self, xml_string):
         """Helper that directly converts an XML string to a MakefileTester."""

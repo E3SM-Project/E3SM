@@ -13,6 +13,7 @@ from abc import ABCMeta, abstractmethod
 
 from CIME.XML.standard_module_setup import * # pylint: disable=wildcard-import
 from CIME.utils import get_cime_root
+from CIME.XML.machines import Machines
 
 __all__ = ["MacroMaker"]
 
@@ -663,18 +664,18 @@ class MacroConditionTree(object): # pylint: disable=too-many-instance-attributes
         else:
             # If self is not a leaf but other is, it should go in
             # self._branches[None]. The same goes for the case where the
-            # conditions don't match, and self._condition is first
+            # conditions don't match, and self._condition is last
             # alphabetically.
-            if other._is_leaf or self._condition < other._condition:
+            if other._is_leaf or self._condition > other._condition:
                 if None in self._branches:
                     self._branches[None] = self._branches[None].merge(other)
                 else:
                     self._branches[None] = other
                 return self
             else:
-                # If the other condition comes first alphabetically, swap
+                # If the other condition comes last alphabetically, swap
                 # the order.
-                if self._condition > other._condition:
+                if self._condition < other._condition:
                     return other.merge(self)
                 # If neither is a leaf and their conditions match, merge
                 # their sets of branches.
@@ -730,16 +731,18 @@ class CompilerBlock(object):
     matches_machine
     """
 
-    def __init__(self, writer, compiler_elem):
+    def __init__(self, writer, compiler_elem, machobj):
         """Construct a CompilerBlock.
 
         Arguments:
         writer - The Makefile/CMake writer object.
         compiler_elem - An xml.ElementTree.Element corresponding to this
                         <compiler> element.
+        machobj - Machines object for this machine.
         """
         self._writer = writer
         self._compiler_elem = compiler_elem
+        self._machobj = machobj
         # If there's no COMPILER attribute, self._compiler is None.
         self._compiler = compiler_elem.get("COMPILER")
         self._specificity = 0
@@ -829,6 +832,10 @@ class CompilerBlock(object):
         value_lists - A dictionary of PossibleValues, containing the lists
                       of all settings for each variable.
         """
+        # Skip this if the element's MPILIB is not valid.
+        if "MPILIB" in elem.keys() and \
+           not self._machobj.is_valid_MPIlib(elem.get("MPILIB")):
+            return
         setting, depends = self._elem_to_setting(elem)
         if name not in value_lists:
             value_lists[name] = PossibleValues(name, setting,
@@ -853,7 +860,7 @@ class CompilerBlock(object):
             else:
                 self._add_elem_to_lists(elem.tag, elem, value_lists)
 
-    def matches_machine(self, os_, machine):
+    def matches_machine(self, os_):
         """Check whether this block matches a machine/os.
 
         This also sets the specificity of the block, so this must be called
@@ -861,11 +868,11 @@ class CompilerBlock(object):
 
         Arguments:
         os_ - Operating system to match.
-        machine -
         """
         self._specificity = 0
         if "MACH" in self._compiler_elem.keys():
-            if machine == self._compiler_elem.get("MACH"):
+            if self._machobj.get_machine_name() == \
+               self._compiler_elem.get("MACH"):
                 self._specificity += 2
             else:
                 return False
@@ -874,10 +881,11 @@ class CompilerBlock(object):
                 self._specificity += 1
             else:
                 return False
-        # We allow the compiler to be changed after Macros generation,
-        # so it doesn't figure into the decision of which items get
-        # written to Macros.
-        return True
+        # Check if the compiler is valid on this machine.
+        if self._compiler is not None:
+            return self._machobj.is_valid_compiler(self._compiler)
+        else:
+            return True
 
 
 class MacroMaker(object):
@@ -886,7 +894,7 @@ class MacroMaker(object):
 
     Public attributes:
     os - Operating system used in config_build lookup and ranking.
-    machine - Machine used in config_build lookup.
+    machobj - Machines object used in config_build lookup.
     flag_vars - A set of all variables in config_build that contain "flag-
                 like" data (i.e. a space-separated list of arguments).
 
@@ -894,7 +902,7 @@ class MacroMaker(object):
     write_macros
     """
 
-    def __init__(self, os_, machine, schema_path=None):
+    def __init__(self, os_, machobj, schema_path=None):
         """Construct a MacroMaker given machine-specific information.
 
         In the process some information about possible variables is read in
@@ -902,7 +910,7 @@ class MacroMaker(object):
 
         Arguments:
         os_ - Name of a machine's operating system.
-        machine - Name of a machine.
+        machobj - A Machines object for this machine.
         schema_path (optional) - Path to config_build.xsd within CIME.
 
         >>> "CFLAGS" in MacroMaker('FakeOS', 'MyMach').flag_vars
@@ -911,7 +919,7 @@ class MacroMaker(object):
         False
         """
         self.os = os_
-        self.machine = machine
+        self.machobj = machobj
 
         # The schema is used to figure out which variables contain
         # command-line arguments (e.g. compiler flags), since these are
@@ -954,9 +962,9 @@ class MacroMaker(object):
         tree = ET.parse(xml_file)
         value_lists = dict()
         for compiler_elem in tree.findall("compiler"):
-            block = CompilerBlock(writer, compiler_elem)
+            block = CompilerBlock(writer, compiler_elem, self.machobj)
             # If this block matches machine settings, use it.
-            if block.matches_machine(self.os, self.machine):
+            if block.matches_machine(self.os):
                 block.add_settings_to_lists(self.flag_vars, value_lists)
 
         # Now that we've scanned through the input, output the variable

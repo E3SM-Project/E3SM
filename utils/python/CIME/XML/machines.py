@@ -182,12 +182,11 @@ class Machines(GenericXML):
 
         if reqval is None or reqval == "UNSET":
             return supported_values[0]
+
         for val in supported_values:
             if val == reqval:
                 return reqval
-
-        expect(False, "%s value %s not supported for machine %s" %
-               (listname, reqval, self.machine))
+        return None
 
     def get_default_compiler(self):
         """
@@ -215,9 +214,7 @@ class Machines(GenericXML):
         ...
         SystemExit: ERROR: COMPILERS value nag not supported for machine edison
         """
-        if self.get_field_from_list("COMPILERS", reqval=compiler) is not None:
-            return True
-        return False
+        return self.get_field_from_list("COMPILERS", reqval=compiler) is not None
 
     def is_valid_MPIlib(self, mpilib, attributes=None):
         """
@@ -227,9 +224,7 @@ class Machines(GenericXML):
         >>> machobj.is_valid_MPIlib("mpi-serial")
         True
         """
-        if mpilib == "mpi-serial" or self.get_field_from_list("MPILIBS", reqval=mpilib, attributes=attributes) is not None:
-            return True
-        return False
+        return mpilib == "mpi-serial" or self.get_field_from_list("MPILIBS", reqval=mpilib, attributes=attributes) is not None
 
     def has_batch_system(self):
         """
