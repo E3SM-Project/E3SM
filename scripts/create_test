@@ -156,6 +156,10 @@ OR
     parser.add_argument("--xml-testlist",
                         help="Use this testlist to lookup tests")
 
+    parser.add_argument("--config-build", action="store_true",
+                        help="Experimental: used to indicate that the Macros file "
+                        "should be created using config_build rather than config_compilers")
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
@@ -204,7 +208,7 @@ OR
         args.test_root, args.baseline_root, args.clean, args.compare, args.generate, \
         args.baseline_name, args.namelists_only, args.project, args.test_id, args.parallel_jobs, \
         args.xml_machine, args.xml_compiler, args.xml_category, args.xml_testlist, args.walltime, \
-        args.single_submit, args.proc_pool, args.use_existing
+        args.single_submit, args.proc_pool, args.use_existing, args.config_build
 
 ###############################################################################
 def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost_map, wall_time):
@@ -297,7 +301,7 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
                 baseline_root, clean, compare, generate,
                 baseline_name, namelists_only, project, test_id, parallel_jobs,
                 xml_machine, xml_compiler, xml_category, xml_testlist, walltime,
-                single_submit, proc_pool, use_existing):
+                single_submit, proc_pool, use_existing, config_build):
 ###############################################################################
     if testargs and machine_name is None and compiler is None:
         for test in testargs:
@@ -324,7 +328,8 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
                       project=project, parallel_jobs=parallel_jobs,
                       xml_machine=xml_machine, xml_compiler=xml_compiler,
                       xml_category=xml_category, xml_testlist=xml_testlist, walltime=walltime,
-                      proc_pool=proc_pool, use_existing=use_existing)
+                      proc_pool=proc_pool, use_existing=use_existing,
+                      config_build=config_build)
 
     success = impl.system_test()
 
@@ -367,13 +372,14 @@ def _main_func(description):
     testargs, compiler, machine_name, no_run, no_build, no_batch, test_root, baseline_root, clean, \
         compare, generate, baseline_name, namelists_only, project, test_id, parallel_jobs, \
         xml_machine, xml_compiler, xml_category, xml_testlist, walltime, single_submit, proc_pool, \
-        use_existing \
+        use_existing, config_build \
         = parse_command_line(sys.argv, description)
 
     sys.exit(create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, test_root,
                          baseline_root, clean, compare, generate, baseline_name, namelists_only,
                          project, test_id, parallel_jobs, xml_machine, xml_compiler, xml_category,
-                         xml_testlist, walltime, single_submit, proc_pool, use_existing))
+                         xml_testlist, walltime, single_submit, proc_pool, use_existing,
+                         config_build))
 
 ###############################################################################
 

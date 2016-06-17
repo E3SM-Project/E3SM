@@ -44,7 +44,7 @@ class SystemTest(object):
                  project=None, parallel_jobs=None,
                  xml_machine=None, xml_compiler=None, xml_category=None,
                  xml_testlist=None, walltime=None, proc_pool=None,
-                 use_existing=False):
+                 use_existing=False, config_build=False):
     ###########################################################################
         self._cime_root = CIME.utils.get_cime_root()
         self._cime_model = CIME.utils.get_model()
@@ -231,6 +231,9 @@ class SystemTest(object):
                        "Cannot create new case in directory '%s', it already exists."
                        " Pick a different test-id" % self._get_test_dir(test))
 
+        # Experimental macros generation.
+        self._config_build = config_build
+
         # By the end of this constructor, this program should never hard abort,
         # instead, errors will be placed in the TestStatus files for the various
         # tests cases
@@ -389,6 +392,9 @@ class SystemTest(object):
                 if pesize:
                     create_newcase_cmd += " --pecount %s"%pesize.group(1)
 
+        # Experimential macros generation.
+        if self._config_build:
+            create_newcase_cmd += " --config-build"
 
         logger.debug("Calling create_newcase: " + create_newcase_cmd)
         return self._shell_cmd_for_phase(test, create_newcase_cmd, CREATE_NEWCASE_PHASE)

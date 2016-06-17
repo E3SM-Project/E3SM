@@ -32,6 +32,7 @@ from CIME.XML.env_batch             import EnvBatch
 from CIME.XML.generic_xml           import GenericXML
 from CIME.user_mod_support          import apply_user_mods
 from CIME.case_setup import case_setup
+from CIME.macros import MacroMaker
 
 logger = logging.getLogger(__name__)
 
@@ -577,7 +578,7 @@ class Case(object):
         for vid, value in defaults.items():
             self.set_value(vid,value)
 
-    def _create_caseroot_tools(self):
+    def _create_caseroot_tools(self, config_build):
         cime_model = get_model()
         machines_dir = os.path.abspath(self.get_value("MACHDIR"))
         toolsdir = os.path.join(self.get_value("CIMEROOT"),"scripts","Tools")
@@ -620,8 +621,19 @@ class Case(object):
             except Exception as e:
                 logger.warning("FAILED to set up toolfiles: %s %s %s" % (str(e), toolfile, destfile))
 
-        # Copy any system or compiler Depends files to the case
+        # Create Macros file.
         machine = self.get_value("MACH")
+        if config_build:
+            os_ = self.get_value("OS")
+            caseroot = self.get_value("CASEROOT")
+            files = Files()
+            build_file = files.get_value("BUILD_SPEC_FILE")
+            machobj = Machines(machine=machine, files=files)
+            macro_maker = MacroMaker(os_, machobj)
+            with open(os.path.join(caseroot, "Macros"), "w") as macros_file:
+                macro_maker.write_macros('Makefile', build_file, macros_file)
+
+        # Copy any system or compiler Depends files to the case.
         compiler = self.get_value("COMPILER")
         for dep in (machine, compiler):
             dfile = "Depends.%s"%dep
@@ -675,7 +687,7 @@ class Case(object):
                 with open(readme_file, "w") as fd:
                     fd.write(str_to_write)
 
-    def create_caseroot(self, clone=False):
+    def create_caseroot(self, clone=False, config_build=False):
         caseroot = self.get_value("CASEROOT")
         if not os.path.exists(caseroot):
         # Make the case directory
@@ -696,7 +708,7 @@ class Case(object):
                 fd.write(" %s"%arg)
         if not clone:
             self._create_caseroot_sourcemods()
-        self._create_caseroot_tools()
+        self._create_caseroot_tools(config_build)
 
     def apply_user_mods(self, user_mods_dir=None):
         if user_mods_dir is not None:
