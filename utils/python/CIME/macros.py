@@ -573,6 +573,7 @@ class MacroConditionTree(object): # pylint: disable=too-many-instance-attributes
     effect, in preparation for writing out the Macros file itself.
 
     Public methods:
+    merge
     write_out
     """
 
@@ -585,17 +586,24 @@ class MacroConditionTree(object): # pylint: disable=too-many-instance-attributes
         """
         # Search for any conditions controlling the number of settings.
         condition = None
-        for setting in settings:
-            if setting.conditions:
-                condition = setting.conditions.keys()[0]
+        # Prefer the COMPILER attribute as the top level attribute, for
+        # readability of the merged file.
+        if any("COMPILER" in setting.conditions for setting in settings):
+            condition = "COMPILER"
+        else:
+            # To make merging more effective, sort the conditions.
+            all_conditions = []
+            for setting in settings:
+                all_conditions += setting.conditions.keys()
+            if all_conditions:
+                condition = sorted(all_conditions)[0]
         if condition is None:
             # If there are no conditions, we have reached a leaf.
             # We combine whatever settings are left; there should be at
             # most one non-appending setting, or an arbitrary number of
             # appending settings.
             self._is_leaf = True
-            self._name = name
-            self._values = []
+            self._assignments = []
             self._set_up = []
             self._tear_down = []
             self._do_append = True
@@ -607,7 +615,7 @@ class MacroConditionTree(object): # pylint: disable=too-many-instance-attributes
                         "found after the ambiguity check was complete, " \
                         "or there is a mixture of appending and initial " \
                         "settings in the condition tree."
-                self._values.append(setting.value)
+                self._assignments.append((name, setting.value))
                 self._set_up += setting.set_up
                 self._tear_down += setting.tear_down
         else:
@@ -631,6 +639,53 @@ class MacroConditionTree(object): # pylint: disable=too-many-instance-attributes
                             MacroConditionTree(name, partition[cond_val])
             self._branches = branches
 
+    def merge(self, other):
+        """Merge another tree with this one.
+
+        This should be considered destructive to both trees. The only valid
+        value is the one that's returned.
+        """
+        if self._is_leaf:
+            if other._is_leaf:
+                assert self._do_append == other._do_append, \
+                    "Internal error in macros: Tried to merge an " \
+                    "appending tree with a tree containing initial "\
+                    "settings."
+                # If both are leaves, just merge the values.
+                self._assignments += other._assignments
+                self._set_up += other._set_up
+                self._tear_down += other._tear_down
+                return self
+            else:
+                # If other is not a leaf, swap the arguments so that self
+                # is the one that's not a leaf, handled below.
+                return other.merge(self)
+        else:
+            # If self is not a leaf but other is, it should go in
+            # self._branches[None]. The same goes for the case where the
+            # conditions don't match, and self._condition is first
+            # alphabetically.
+            if other._is_leaf or self._condition < other._condition:
+                if None in self._branches:
+                    self._branches[None] = self._branches[None].merge(other)
+                else:
+                    self._branches[None] = other
+                return self
+            else:
+                # If the other condition comes first alphabetically, swap
+                # the order.
+                if self._condition > other._condition:
+                    return other.merge(self)
+                # If neither is a leaf and their conditions match, merge
+                # their sets of branches.
+                for (cond_val, other_branch) in other._branches.items():
+                    if cond_val in self._branches:
+                        self._branches[cond_val] = \
+                            self._branches[cond_val].merge(other_branch)
+                    else:
+                        self._branches[cond_val] = other_branch
+                return self
+
     def write_out(self, writer):
         """Write tree to file.
 
@@ -641,11 +696,11 @@ class MacroConditionTree(object): # pylint: disable=too-many-instance-attributes
         if self._is_leaf:
             for line in self._set_up:
                 writer.write_line(line)
-            for value in self._values:
+            for (name, value) in self._assignments:
                 if self._do_append:
-                    writer.append_variable(self._name, value)
+                    writer.append_variable(name, value)
                 else:
-                    writer.set_variable(self._name, value)
+                    writer.set_variable(name, value)
             for line in self._tear_down:
                 writer.write_line(line)
         else:
@@ -908,30 +963,37 @@ class MacroMaker(object):
         # settings.
         vars_written = set()
         while value_lists:
-            made_progress = False
-            # Note: We can't just iterate over value_lists because we
-            # are removing entries from the dictionary as we go. Hence the
-            # use of the keys method.
-            for var_name in value_lists.keys():
-                # If depends is a subset of vars_written, then all
-                # dependencies have been handled.
-                if value_lists[var_name].depends <= vars_written:
-                    # Note that we're writing this variable.
-                    vars_written.add(var_name)
-                    made_progress = True
-                    # Make the conditional trees and write them out.
-                    normal_tree, append_tree = \
-                                    value_lists[var_name].to_cond_trees()
-                    if normal_tree is not None:
-                        normal_tree.write_out(writer)
-                    if append_tree is not None:
-                        append_tree.write_out(writer)
-                    # Remove this variable from the list and continue.
-                    del value_lists[var_name]
-            # If we loop through all the variables and don't write any
-            # of them, then there is probably a problem with the
-            # depends graph.
-            expect(made_progress,
+            # Variables that are ready to be written.
+            ready_variables = [
+                var_name for var_name in value_lists.keys()
+                if value_lists[var_name].depends <= vars_written
+            ]
+            expect(len(ready_variables) > 0,
                    "The config_build XML has bad <var> references. "
                    "Check for circular references or variables that "
                    "are in a <var> tag but not actually defined.")
+            big_normal_tree = None
+            big_append_tree = None
+            for var_name in ready_variables:
+                # Note that we're writing this variable.
+                vars_written.add(var_name)
+                # Make the conditional trees and write them out.
+                normal_tree, append_tree = \
+                    value_lists[var_name].to_cond_trees()
+                if normal_tree is not None:
+                    if big_normal_tree is None:
+                        big_normal_tree = normal_tree
+                    else:
+                        big_normal_tree = big_normal_tree.merge(normal_tree)
+                if append_tree is not None:
+                    if big_append_tree is None:
+                        big_append_tree = append_tree
+                    else:
+                        big_append_tree = big_append_tree.merge(append_tree)
+                # Remove this variable from the list of variables to handle
+                # next iteration.
+                del value_lists[var_name]
+            if big_normal_tree is not None:
+                big_normal_tree.write_out(writer)
+            if big_append_tree is not None:
+                big_append_tree.write_out(writer)
