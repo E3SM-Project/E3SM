@@ -14,7 +14,7 @@
 #
 #SBATCH --job-name baro
 #SBATCH --account=FY150001
-#SBATCH -N 20
+#SBATCH -N 6
 #SBATCH --time=0:30:00
 #
 #  set paths to source code, build directory and run directory
@@ -53,8 +53,8 @@ endif
 
 
 echo using NCPU=$NCPU   NTHREADS=$OMP_NUM_THREADS
-#set mpirun = "mpirun --ntasks-per-node=36 -np $NCPU"
 set mpirun = "mpirun -np $NCPU"
+#set mpirun = "mpirun -npernode 32 -np $NCPU"
 #set mpirun = "mpirun -loadbalance -np $NCPU"
 #set mpirun = "aprun -n $NCPU -d $OMP_NUM_THREADS "
 
@@ -66,7 +66,7 @@ set u_perturb = 1
 set rotate = 0
 
                   # number of elemnets:  6*ne*ne
-set ne = 30        # horizontal resolution   4,16,30,60,120,240
+set ne = 4        # horizontal resolution   4,16,30,60,120,240
 set qsize = 4     # use 4 tracers for testing
 
 # CAM4
@@ -123,7 +123,7 @@ set name = jw-ne${ne}-nlev${nlev}-qsize${qsize}
 set run = $wdir/$name
 set mesh_file = /dev/null
 set hypervis_scaling = 0
-set hypervis_subcycle=3
+
 
 if ( $ne == 0 ) then
     # CAM defaults
@@ -136,30 +136,26 @@ if ( $ne == 0 ) then
 endif
 
 if ( $ne == 4 ) then
-   set tstep=1800
-   set nu=4.5e17
+   set tstep=900
+   set nu=5e17
+   set nu_div = 12.5e17
+   set rsplit = 2
+   set hypervis_subcycle=2
+endif
+if ( $ne == 11 ) then
+   set tstep=900
+   set nu=2e16
+   set nu_div = 5e16
+   set rsplit = 2
+   set hypervis_subcycle=3
 endif
 if ( $ne == 16 ) then
    set tstep=600
    set nu=7e15
+   set nu_div=17.5e15
+   set rsplit = 3
+   set hypervis_subcycle=3
 endif
-if ( $ne == 30 ) then
-   set tstep=300
-   set nu=1e15
-endif
-if ( $ne == 60 ) then
-   set tstep=150
-   set nu=1e14
-endif
-if ( $ne == 120 ) then
-   set tstep=75
-   set nu=1e13
-endif
-if ( $ne == 240 ) then
-   set tstep=40
-   set nu=1e12
-endif
-
 
 
 # diagnostics printed to stdout
@@ -207,8 +203,9 @@ endif
 #  create a new namelist from original ne16 template:
 sed s/ne=.\*/ne=$ne/ $input/$namelist |\
 sed s/tstep=.\*/tstep=$tstep/ | \
+sed s/rsplit=.\*/rsplit=$rsplit/ | \
 sed s/nu=.\*/nu=$nu/ | \
-sed s/nu_div=.\*/nu_div=$nu/ | \
+sed s/nu_div=.\*/nu_div=$nu_div/ | \
 sed s/nu_p=.\*/nu_p=$nu/ | \
 sed s/nu_q=.\*/nu_q=$nu/ | \
 sed s/NThreads.\*/NThreads=$OMP_NUM_THREADS/ | \
