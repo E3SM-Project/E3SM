@@ -321,7 +321,6 @@ class Machines(GenericXML):
                                            default=arg_node.get("default"))
                 args[arg_node.get("name")] = arg_value
 
-
         executable = self.get_node("executable", root=the_match)
 
         return executable.text, args

@@ -1,8 +1,12 @@
-# Utility functions used in system_test.py
-from XML.standard_module_setup import *
+"""
+Utility functions used in system_test.py
+"""
+
+from CIME.XML.standard_module_setup import *
 from CIME.XML.testlist import Testlist
 from CIME.XML.files import Files
 import CIME.utils
+
 logger = logging.getLogger(__name__)
 
 def get_tests_from_xml(xml_machine=None,xml_category=None,xml_compiler=None, xml_testlist=None,

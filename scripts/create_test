@@ -144,8 +144,9 @@ OR
                         help="The size of the processor pool that create_test can use. Default "
                         "is PES_PER_NODE + 25 percent.")
 
-    parser.add_argument("--walltime", default=None,
-                        help="Set the wallclock limit for all tests in the suite.")
+    parser.add_argument("--walltime", default=os.getenv("CIME_GLOBAL_WALLTIME"),
+                        help="Set the wallclock limit for all tests in the suite. "
+                        "Can use env var CIME_GLOBAL_WALLTIME to set this for all test.")
 
     parser.add_argument("--xml-machine",
                         help="Use this machine key in the lookup in testlist.xml")

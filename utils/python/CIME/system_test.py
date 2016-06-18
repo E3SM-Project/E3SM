@@ -46,8 +46,9 @@ class SystemTest(object):
                  xml_testlist=None, walltime=None, proc_pool=None,
                  use_existing=False):
     ###########################################################################
-        self._cime_root = CIME.utils.get_cime_root()
+        self._cime_root  = CIME.utils.get_cime_root()
         self._cime_model = CIME.utils.get_model()
+
         # needed for perl interface
         os.environ["CIMEROOT"] = self._cime_root
 
@@ -117,15 +118,7 @@ class SystemTest(object):
             test_names = update_acme_tests.get_full_test_names(test_names,
                                                                machine_name, self._compiler)
 
-        if walltime is not None:
-            for test in test_names:
-                if test in self._test_xml:
-                    test_datum = self._test_xml[test]
-                else:
-                    test_datum = {}
-                    self._test_xml[test] = test_datum
-                test_datum["wallclock"] = walltime
-
+        self._walltime = walltime
 
         if parallel_jobs is None:
             self._parallel_jobs = min(len(test_names),
@@ -389,6 +382,8 @@ class SystemTest(object):
                 if pesize:
                     create_newcase_cmd += " --pecount %s"%pesize.group(1)
 
+        if self._walltime is not None:
+            create_newcase_cmd += " --walltime %s" % self._walltime
 
         logger.debug("Calling create_newcase: " + create_newcase_cmd)
         return self._shell_cmd_for_phase(test, create_newcase_cmd, CREATE_NEWCASE_PHASE)
@@ -634,11 +629,6 @@ class SystemTest(object):
     def _run_phase(self, test):
     ###########################################################################
         test_dir = self._get_test_dir(test)
-        # wallclock is an optional field in the version 2.0 testlist.xml file
-        # setting wallclock time close to the expected test time will help queue throughput
-        if test in self._test_xml and "wallclock" in self._test_xml[test]:
-            run_cmd("./xmlchange JOB_WALLCLOCK_TIME=%s" %
-                    self._test_xml[test]["wallclock"], from_dir=test_dir)
         if self._no_batch:
             cmd = "./case.submit --no-batch"
         else:

@@ -38,7 +38,7 @@ class EnvBatch(EnvBase):
 
         return val
 
-    def get_value(self, item, attribute={}, resolved=True, subgroup="case.run"):
+    def get_value(self, item, attribute=None, resolved=True, subgroup="case.run"):
         """
         Must default subgroup to something in order to provide single return value
         """
@@ -65,7 +65,7 @@ class EnvBatch(EnvBase):
                         value = convert_to_type(value, type_str, item)
         return value
 
-    def get_values(self, item, attribute={}, resolved=True, subgroup=None):
+    def get_values(self, item, attribute=None, resolved=True, subgroup=None):
         """Returns the value as a string of the first xml element with item as attribute value.
         <elememt_name attribute='attribute_value>value</element_name>"""
 
@@ -236,7 +236,7 @@ class EnvBatch(EnvBase):
             fd.write(output_text)
         os.chmod(job, os.stat(job).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
-    def set_job_defaults(self, bjobs, pesize=None):
+    def set_job_defaults(self, bjobs, pesize=None, walltime=None):
         if self.batchtype is None:
             self.batchtype = self.get_batch_system_type()
         if self.batchtype == 'none':
@@ -249,7 +249,7 @@ class EnvBatch(EnvBase):
                 task_count = int(task_count)
             queue = self.select_best_queue(task_count)
             self.set_value("JOB_QUEUE", queue, subgroup=job)
-            walltime = self.get_max_walltime(queue)
+            walltime = self.get_max_walltime(queue) if walltime is None else walltime
             # JGF: Shouldn't walltime involve ccsm_estcost?
             # Fall back to default if None
             if walltime is None:

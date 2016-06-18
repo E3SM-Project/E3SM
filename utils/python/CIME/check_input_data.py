@@ -2,7 +2,7 @@
 API for checking input for testcase
 """
 
-from XML.standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, run_cmd, get_model
 from CIME.case import Case
 

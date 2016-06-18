@@ -2,6 +2,7 @@ import argparse, sys, os, re, logging
 
 from CIME.utils  import expect
 logger=logging.getLogger(__name__)
+
 ###############################################################################
 def parse_namelists(namelist_lines, filename):
 ###############################################################################

@@ -152,7 +152,7 @@ class GenericXML(object):
             root = self.root
         self.root.append(node)
 
-    def get_value(self, item, attribute={}, resolved=True, subgroup=None):
+    def get_value(self, item, attribute=None, resolved=True, subgroup=None):
         """
         get_value is expected to be defined by the derived classes, if you get here
         the value was not found in the class.

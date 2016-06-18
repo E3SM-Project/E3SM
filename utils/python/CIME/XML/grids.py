@@ -30,12 +30,12 @@ class Grids(GenericXML):
         atmnlev = None
         lndnlev = None
         #mechanism to specify atm levels
-        levmatch = re.match("([^_]+)z(\d+)(.*)$", name)
+        levmatch = re.match(r"([^_]+)z(\d+)(.*)$", name)
         if  levmatch:
             atmnlev = levmatch.group(2)
             name = levmatch.group(1)+levmatch.group(3)
         #mechanism to specify lnd levels
-        levmatch = re.match("(.*_)([^_]+)z(\d+)(.*)$", name)
+        levmatch = re.match(r"(.*_)([^_]+)z(\d+)(.*)$", name)
         if  levmatch:
             lndnlev = levmatch.group(3)
             name = levmatch.group(1)+levmatch.group(2)+levmatch.group(4)
@@ -150,9 +150,9 @@ class Grids(GenericXML):
                             logger.debug(" %s: %s" %gridmap)
 
         if atmnlev is not None:
-            grids["atm_grid"] += "z"+atmnlev
+            grids[0] += "z"+atmnlev
         if lndnlev is not None:
-            grids["lnd_grid"] += "z"+lndnlev
+            grids[1] += "z"+lndnlev
 
         return gridmaps
 

@@ -2,7 +2,7 @@
 API for preview namelist
 """
 
-from XML.standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, run_cmd
 from CIME.XML.env_mach_specific import EnvMachSpecific
 
@@ -16,13 +16,8 @@ def preview_namelists(case, dryrun=False, casedir=None):
     incroot = case.get_value("INCROOT")
     rundir = case.get_value("RUNDIR")
     caseroot = case.get_value("CASEROOT")
-    cimeroot = case.get_value("CIMEROOT")
     casebuild = case.get_value("CASEBUILD")
     testcase = case.get_value("TESTCASE")
-    compiler = case.get_value("COMPILER")
-    mach = case.get_value("MACH")
-    debug = case.get_value("DEBUG")
-    mpilib = case.get_value("MPILIB")
 
     logger.debug("LID is: '%s'" % os.getenv("LID", ""))
     logger.debug("caseroot is: '%s'" % caseroot)

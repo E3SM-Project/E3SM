@@ -107,6 +107,7 @@ class NCK(SystemTestsCommon):
         #======================================================================
 
         if success:
+            os.remove("%s/%s.exe" % (exeroot, cime_model))
             shutil.copy("%s/%s.exe.NCK2" % (exeroot, cime_model),
                         "%s/%s.exe" % (exeroot, cime_model))
             shutil.copy("LockedFiles/env_build.NCK2.xml", "env_build.xml")

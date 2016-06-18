@@ -36,7 +36,7 @@ class EnvArchive(GenericXML):
             archive = Archive()
             self.root.append(archive.root)
 
-    def get_values(self, item, attribute={}, resolved=True, subgroup=None):
+    def get_values(self, item, attribute=None, resolved=True, subgroup=None):
         """Returns the value as a string of the first xml element with item as attribute value.
         <elememt_name attribute='attribute_value>value</element_name>"""
 
@@ -99,5 +99,5 @@ class EnvArchive(GenericXML):
     def _get_default(self, node=None):
         return None
 
-    def _get_archive():
+    def _get_archive(self):
         pass

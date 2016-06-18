@@ -1,7 +1,7 @@
 """
 functions for building CIME models
 """
-from XML.standard_module_setup  import *
+from CIME.XML.standard_module_setup  import *
 from CIME.case                  import Case
 from CIME.utils                 import expect, run_cmd, get_model, append_status
 from CIME.XML.env_mach_specific import EnvMachSpecific
@@ -23,7 +23,6 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot, complis
 
     logs = []
     overall_smp = os.environ["SMP"]
-    sharedpath = os.environ["SHAREDPATH"]
 
     thread_bad_results = []
     for model, comp, nthrds, ninst, config_dir in complist:
@@ -62,7 +61,7 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot, complis
 
         # build the component library
         t = threading.Thread(target=_build_model_thread,
-            args=(config_dir, model, caseroot, bldroot, libroot, incroot, file_build, 
+            args=(config_dir, model, caseroot, bldroot, libroot, incroot, file_build,
                   thread_bad_results))
         t.start()
 
@@ -80,7 +79,7 @@ def build_model(case, build_threaded, exeroot, clm_config_opts, incroot, complis
     for model, comp, nthrds, ninst, config_dir in complist:
         if comp == "aquap":
             logger.debug("Now build aquap ocn component")
-            _build_model_thread(config_dir, caseroot, bldroot, libroot, incroot, file_build, 
+            _build_model_thread(config_dir, comp, caseroot, bldroot, libroot, incroot, file_build,
                                 thread_bad_results)
 
     expect(not thread_bad_results, "\n".join(thread_bad_results))
@@ -122,8 +121,9 @@ def post_build(case, logs):
 
     for log in logs:
         logger.debug("Copying build log %s to %s"%(log,bldlogdir))
-        with open(log, 'rb') as f_in, gzip.open("%s.gz"%log, 'wb') as f_out:
-            shutil.copyfileobj(f_in, f_out)
+        with open(log, 'rb') as f_in:
+            with gzip.open("%s.gz"%log, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
         if "sharedlibroot" not in log:
             shutil.copy("%s.gz"%log,os.path.join(bldlogdir,"%s.gz"%os.path.basename(log)))
 
@@ -525,7 +525,7 @@ def build_libraries(case, exeroot, caseroot, cimeroot, libroot, mpilib, lid, mac
     return logs
 
 ###############################################################################
-def _build_model_thread(config_dir, compclass, caseroot, bldroot, libroot, incroot, file_build, 
+def _build_model_thread(config_dir, compclass, caseroot, bldroot, libroot, incroot, file_build,
                         thread_bad_results):
 ###############################################################################
 
@@ -550,10 +550,10 @@ def clean(case, cleanlist=None):
         testcase        = case.get_value("TESTCASE")
         # we only want to clean clm here if it is clm4_0 otherwise remove
         # it from the cleanlist
-        if testcase is not None and comp_lnd == "clm" and\
-                clm_config_opts is not None and "lnd" in cleanlist and\
+        if testcase is not None and comp_lnd == "clm" and \
+                clm_config_opts is not None and "lnd" in cleanlist and \
                 "clm4_0" not in clm_config_opts:
-                    cleanlist.remove('lnd')
+            cleanlist.remove('lnd')
 
 
     debug           = case.get_value("DEBUG")
@@ -578,9 +578,9 @@ def clean(case, cleanlist=None):
     run_cmd(cmd)
 
     # unlink Locked files directory
-    file = os.path.join(caseroot,"LockedFiles/env_build.xml")
-    if os.path.isfile(file):
-        os.unlink(file)
+    locked_env_build = os.path.join(caseroot,"LockedFiles/env_build.xml")
+    if os.path.isfile(locked_env_build):
+        os.unlink(locked_env_build)
 
     # reset following values in xml files
     case.set_value("SMP_BUILD",str(0))
