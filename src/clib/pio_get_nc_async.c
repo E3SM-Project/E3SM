@@ -1,18 +1,66 @@
+/**
+ * @file
+ * PIO functions to get data (excluding varm functions).
+ *
+ * @author Ed Hartnett
+ * @date  2016
+ * 
+ * @see http://code.google.com/p/parallelio/
+ */
+
 #include <config.h>
 #include <pio.h>
 #include <pio_internal.h>
 
+/** 
+ * Internal PIO function which provides a type-neutral interface to
+ * nc_get_vars.
+ *
+ * Users should not call this function directly. Instead, call one of
+ * the derived functions, depending on the type of data you are
+ * reading: PIOc_get_vars_text(), PIOc_get_vars_uchar(),
+ * PIOc_get_vars_schar(), PIOc_get_vars_ushort(),
+ * PIOc_get_vars_short(), PIOc_get_vars_uint(), PIOc_get_vars_int(),
+ * PIOc_get_vars_long(), PIOc_get_vars_float(),
+ * PIOc_get_vars_double(), PIOc_get_vars_ulonglong(),
+ * PIOc_get_vars_longlong()
+ *
+ * This routine is called collectively by all tasks in the
+ * communicator ios.union_comm.
+ *
+ * @param ncid identifies the netCDF file
+ * @param varid the variable ID number
+ * @param start an array of start indicies (must have same number of
+ * entries as variable has dimensions). If NULL, indices of 0 will be
+ * used.
+ *
+ * @param count an array of counts (must have same number of entries
+ * as variable has dimensions). If NULL, counts matching the size of
+ * the variable will be used.
+ *
+ * @param stride an array of strides (must have same number of
+ * entries as variable has dimensions). If NULL, strides of 1 will be
+ * used.
+ *
+ * @param xtype the netCDF type of the data being passed in buf. Data
+ * will be automatically covnerted from the type of the variable being
+ * read from to this type.
+ *
+ * @param buf pointer to the data to be written.
+ *
+ * @return PIO_NOERR on success, error code otherwise.
+ */
 int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
 		     const PIO_Offset *stride, nc_type xtype, void *buf)
 {
-    iosystem_desc_t *ios;  /** Pointer to io system information. */
-    file_desc_t *file;     /** Pointer to file information. */
-    int ierr = PIO_NOERR;  /** Return code from function calls. */
-    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
-    int ndims; /** The number of dimensions in the variable. */
-    int *dimids; /** The IDs of the dimensions for this variable. */
-    PIO_Offset typelen; /** Size (in bytes) of the data type of data in buf. */
-    PIO_Offset num_elem = 1; /** Number of data elements in the buffer. */
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
+    file_desc_t *file;     /* Pointer to file information. */
+    int ierr = PIO_NOERR;  /* Return code from function calls. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
+    int ndims; /* The number of dimensions in the variable. */
+    int *dimids; /* The IDs of the dimensions for this variable. */
+    PIO_Offset typelen; /* Size (in bytes) of the data type of data in buf. */
+    PIO_Offset num_elem = 1; /* Number of data elements in the buffer. */
     int bcast = false;
 
     LOG((1, "PIOc_get_vars_tc ncid = %d varid = %d start = %d count = %d "
@@ -283,7 +331,7 @@ int PIOc_get_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Off
     return ierr;
 }
 
-int PIOc_get_vars_text (int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
+int PIOc_get_vars_text(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
 			const PIO_Offset *stride, char *buf)
 {
     return PIOc_get_vars_tc(ncid, varid, start, count, stride, NC_CHAR, buf);
@@ -295,7 +343,7 @@ int PIOc_get_vars_uchar(int ncid, int varid, const PIO_Offset *start,
     return PIOc_get_vars_tc(ncid, varid, start, count, stride, NC_UBYTE, buf);
 }
 
-int PIOc_get_vars_schar (int ncid, int varid, const PIO_Offset *start,
+int PIOc_get_vars_schar(int ncid, int varid, const PIO_Offset *start,
 			 const PIO_Offset *count, const PIO_Offset *stride, signed char *buf)
 {
     return PIOc_get_vars_tc(ncid, varid, start, count, stride, NC_BYTE, buf);
@@ -350,7 +398,7 @@ int PIOc_get_vars_ulonglong(int ncid, int varid, const PIO_Offset *start,
     return PIOc_get_vars_tc(ncid, varid, start, count, stride, NC_UINT64, buf);
 }
 
-int PIOc_get_vars_longlong (int ncid, int varid, const PIO_Offset *start,
+int PIOc_get_vars_longlong(int ncid, int varid, const PIO_Offset *start,
 			    const PIO_Offset *count, const PIO_Offset *stride, long long *buf)
 {
     return PIOc_get_vars_tc(ncid, varid, start, count, stride, NC_UINT64, buf);
@@ -453,7 +501,7 @@ int PIOc_get_var_short(int ncid, int varid, short *buf)
     return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_SHORT, buf);
 }
 
-int PIOc_get_var_uint (int ncid, int varid, unsigned int *buf)
+int PIOc_get_var_uint(int ncid, int varid, unsigned int *buf)
 {
     return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_UINT, buf);
 }
@@ -478,12 +526,12 @@ int PIOc_get_var_double(int ncid, int varid, double *buf)
     return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_DOUBLE, buf);
 }
 
-int PIOc_get_var_ulonglong (int ncid, int varid, unsigned long long *buf)
+int PIOc_get_var_ulonglong(int ncid, int varid, unsigned long long *buf)
 {
     return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_UINT64, buf);
 }
     
-int PIOc_get_var_longlong (int ncid, int varid, long long *buf)
+int PIOc_get_var_longlong(int ncid, int varid, long long *buf)
 {
     return PIOc_get_vars_tc(ncid, varid, NULL, NULL, NULL, NC_INT64, buf);
 }

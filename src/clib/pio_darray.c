@@ -74,9 +74,7 @@ void compute_buffer_init(iosystem_desc_t ios)
 #endif
 }
 
-/**  @ingroup PIO_write_darray
- *
- * Write a single distributed field to output.  This routine is only
+/** Write a single distributed field to output. This routine is only
  * used if aggregation is off.
  *
  * @param[in] file: a pointer to the open file descriptor for the file
@@ -90,6 +88,10 @@ void compute_buffer_init(iosystem_desc_t ios)
  *
  * @param[in] fillvalue: the optional fillvalue to be used for missing
  * data in this buffer
+ *
+ * @return 0 for success, error code otherwise.
+ *
+ * @ingroup PIO_write_darray
  */
 int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 			void *IOBUF, void *fillvalue)
@@ -1088,8 +1090,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid,
     return ierr;
 }
 
-/** @brief Write a distributed array to the output file.
- * @ingroup PIO_write_darray
+/** Write a distributed array to the output file.
  *
  * This routine aggregates output on the compute nodes and only sends
  * it to the IO nodes when the compute buffer is full or when a flush
@@ -1109,6 +1110,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid,
  * missing data.
  *
  * @returns 0 for success, non-zero error code for failure.
+ * @ingroup PIO_write_darray
  */
 #ifdef PIO_WRITE_BUFFERING
 int PIOc_write_darray(const int ncid, const int vid, const int ioid,

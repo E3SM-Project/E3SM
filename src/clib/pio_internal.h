@@ -12,7 +12,8 @@
 
 #include <pio.h>
 
-// It seems that some versions of openmpi fail to define MPI_OFFSET
+/* It seems that some versions of openmpi fail to define
+ * MPI_OFFSET. */
 #ifdef OMPI_OFFSET_DATATYPE
 #ifndef MPI_OFFSET
 #define MPI_OFFSET OMPI_OFFSET_DATATYPE
@@ -45,7 +46,6 @@ void pio_log(int severity, const char *fmt, ...);
 	__typeof__ (b) _b = (b);		\
 	_a < _b ? _a : _b; })
 
-
 #define MAX_GATHER_BLOCK_SIZE 0
 #define PIO_REQUEST_ALLOC_CHUNK 16
 
@@ -56,10 +56,7 @@ extern "C" {
     extern PIO_Offset PIO_BUFFER_SIZE_LIMIT;
     extern bool PIO_Save_Decomps;
 
-
-/**
- ** @brief Used to sort map points in the subset rearranger
- */
+    /** Used to sort map points in the subset rearranger. */
     typedef struct mapsort
     {
 	int rfrom;
@@ -67,17 +64,13 @@ extern "C" {
 	PIO_Offset iomap;
     } mapsort;
 
-/**
- * @brief swapm defaults.
- *
- */
+    /** swapm defaults. */
     typedef struct pio_swapm_defaults
     {
 	int nreqs;
 	bool handshake;
 	bool isend;
     } pio_swapm_defaults;
-
 
     void pio_get_env(void);
     int  pio_add_to_iodesc_list(io_desc_t *iodesc);
@@ -179,7 +172,8 @@ extern "C" {
 
 /** These are the messages that can be sent over the intercomm when
  * async is being used. */
-enum PIO_MSG{
+enum PIO_MSG
+{
     PIO_MSG_OPEN_FILE,
     PIO_MSG_CREATE_FILE,
     PIO_MSG_INQ_ATT,
@@ -387,4 +381,4 @@ enum PIO_MSG{
     PIO_MSG_INQ_TYPE
 };
 
-#endif
+#endif /* __PIO_INTERNAL__ */

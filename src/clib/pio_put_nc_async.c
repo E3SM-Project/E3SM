@@ -1,48 +1,62 @@
+/**
+ * @file
+ * PIO functions to write data. 
+ *
+ * @author Ed Hartnett
+ * @date  2016
+ * @see http://code.google.com/p/parallelio/
+ */
+
 #include <config.h>
 #include <pio.h>
 #include <pio_internal.h>
 
 /**
  * Internal PIO function which provides a type-neutral interface to
- * nc_put_vars
+ * nc_put_vars.
+ *
+ * Users should not call this function directly. Instead, call one of
+ * the derived functions, depending on the type of data you are
+ * writing: PIOc_put_vars_text(), PIOc_put_vars_uchar(),
+ * PIOc_put_vars_schar(), PIOc_put_vars_ushort(),
+ * PIOc_put_vars_short(), PIOc_put_vars_uint(), PIOc_put_vars_int(),
+ * PIOc_put_vars_long(), PIOc_put_vars_float(),
+ * PIOc_put_vars_longlong(), PIOc_put_vars_double(),
+ * PIOc_put_vars_ulonglong().
  *
  * This routine is called collectively by all tasks in the
  * communicator ios.union_comm.
  *
  * @param ncid identifies the netCDF file
  * @param varid the variable ID number
-
- * @param *start an array of start indicies (must have same number of
+ * @param start an array of start indicies (must have same number of
  * entries as variable has dimensions). If NULL, indices of 0 will be
  * used.
- *
- * @param *count an array of counts (must have same number of entries
+ * @param count an array of counts (must have same number of entries
  * as variable has dimensions). If NULL, counts matching the size of
  * the variable will be used.
- *
- * @param *stride an array of strides (must have same number of
+ * @param stride an array of strides (must have same number of
  * entries as variable has dimensions). If NULL, strides of 1 will be
  * used.
- *
  * @param xtype the netCDF type of the data being passed in buf. Data
  * will be automatically covnerted from this type to the type of the
  * variable being written to.
- *
  * @param buf pointer to the data to be written.
  *
  * @return PIO_NOERR on success, error code otherwise.
+ * @private
  */
 int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
 		     const PIO_Offset *stride, nc_type xtype, const void *buf)
 {
-    iosystem_desc_t *ios;  /** Pointer to io system information. */
-    file_desc_t *file;     /** Pointer to file information. */
-    int ierr = PIO_NOERR;  /** Return code from function calls. */
-    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
-    int ndims; /** The number of dimensions in the variable. */
-    int *dimids; /** The IDs of the dimensions for this variable. */
-    PIO_Offset typelen; /** Size (in bytes) of the data type of data in buf. */
-    PIO_Offset num_elem = 1; /** Number of data elements in the buffer. */
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
+    file_desc_t *file;     /* Pointer to file information. */
+    int ierr = PIO_NOERR;  /* Return code from function calls. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
+    int ndims; /* The number of dimensions in the variable. */
+    int *dimids; /* The IDs of the dimensions for this variable. */
+    PIO_Offset typelen; /* Size (in bytes) of the data type of data in buf. */
+    PIO_Offset num_elem = 1; /* Number of data elements in the buffer. */
     char start_present = start ? true : false; /* Is start non-NULL? */
     char count_present = count ? true : false; /* Is count non-NULL? */
     char stride_present = stride ? true : false; /* Is stride non-NULL? */

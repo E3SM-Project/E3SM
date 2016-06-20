@@ -41,33 +41,35 @@
 #define PIO_MAX_VARS NC_MAX_VARS
 
 /**
- * @brief Variable description structure
- *
- * The variable record is the index into the unlimited dimension in the netcdf file
- *  typically this is the time dimension.
- *  ndims is the number of dimensions on the file for this variable 
- *  request is the id of each outstanding pnetcdf request for this variable
- *  nreqs is the number of outstanding pnetcdf requests for this variable 
- *  fillbuf is a memory buffer to hold fill values for this variable (write only)
- *  iobuf is a memory buffer to hold (write only)
+ * Variable description structure.
  */
 typedef struct var_desc_t
 {
-    int record; 
+    /** The unlimited dimension in the netCDF file (typically the time
+     * dimension). */
+    int record;
+
+    /** Number of dimensions for this variable. */
     int ndims;
 
-    int *request; // used for pnetcdf iput calls
-    int nreqs;
-    void *fillbuf;
-    void *iobuf;
+    /** ID of each outstanding pnetcdf request for this variable. */
+    int *request;
 
+    /** Number of requests bending with pnetcdf. */
+    int nreqs;
+
+    /** Buffer that contains the fill value for this variable. */
+    void *fillbuf;
+
+    /** ??? */
+    void *iobuf;
 } var_desc_t;
 
 /**
- * @brief io region structure
+ * IO region structure.
  *
  * Each IO region is a unit of data which can be described using start and count
- * arrays.   Each IO task may in general have multiple io regions per variable.  The 
+ * arrays. Each IO task may in general have multiple io regions per variable.  The 
  * box rearranger will have at most one io region per variable.
  * 
  */
@@ -80,14 +82,14 @@ typedef struct io_region
 } io_region;
  
 /**
- * @brief io descriptor structure
+ * IO descriptor structure.
  *
  * This structure defines the mapping for a given variable between 
  * compute and IO decomposition.   
- * 
  */
 typedef struct io_desc_t
 {
+    /** The ID of this io_desc_t. */
     int ioid;
     int async_id;
     int nrecvs;
@@ -97,7 +99,9 @@ typedef struct io_desc_t
     int rearranger;
     int maxregions;
     bool needsfill;       // Does this decomp leave holes in the field (true) or write everywhere (false)
-    int maxbytes;         // maximum number of bytes of this iodesc before flushing
+
+    /** The maximum number of bytes of this iodesc before flushing. */
+    int maxbytes;        
     MPI_Datatype basetype;
     PIO_Offset llen;
     int maxiobuflen;
@@ -122,19 +126,21 @@ typedef struct io_desc_t
     int max_requests;
   
     MPI_Comm subset_comm;
+
+    /** Pointer to the next io_desc_t in the list. */
     struct io_desc_t *next;
 } io_desc_t;
 
 /**
- * @brief io system descriptor structure
+ * IO system descriptor structure.
  *
- * This structure contains the general IO subsystem data 
- *  and MPI structure
- * 
+ * This structure contains the general IO subsystem data and MPI
+ * structure
  */
 typedef struct iosystem_desc_t 
 {
-    /** The ID of this iosystem_desc_t. */
+    /** The ID of this iosystem_desc_t. This will be obtained by
+     * calling PIOc_Init_Intercomm() or PIOc_Init_Intracomm(). */
     int iosysid;
 
     /** This is an MPI intra communicator that includes all the tasks in
@@ -204,7 +210,8 @@ typedef struct iosystem_desc_t
     /** Controls handling errors. */
     int error_handler;
 
-    /** ??? */
+    /** The rearranger decides which parts of a distributed array are
+     * handled by which IO tasks. */
     int default_rearranger;
 
     /** True if asynchronous interface is in use. */
@@ -221,8 +228,7 @@ typedef struct iosystem_desc_t
 } iosystem_desc_t;
 
 /**
- * @brief multi buffer
- *
+ * multi buffer.
  */
 typedef struct wmulti_buffer
 {
@@ -237,20 +243,35 @@ typedef struct wmulti_buffer
 } wmulti_buffer;
 
 /**
- * @brief io system descriptor structure
+ * File descriptor structure.
  *
  * This structure holds information associated with each open file
- * 
  */
 typedef struct file_desc_t
 {
+    /** The IO system ID used to open this file. */
     iosystem_desc_t *iosystem;
-    PIO_Offset buffsize;
+
+    /** The buffersize does not seem to be used anywhere. */
+    /* PIO_Offset buffsize;*/
+
+    /** The ncid returned for this file by the underlying library
+     * (netcdf or pnetcdf). */
     int fh;
+
+    /** The PIO_TYPE value that was used to open this file. */
     int iotype;
+
+    /** List of variables in this file. */
     struct var_desc_t varlist[PIO_MAX_VARS];
+
+    /** ??? */
     int mode;
+
+    /** ??? */
     struct wmulti_buffer buffer;
+
+    /** Pointer to the next file_desc_t in the list of open files. */
     struct file_desc_t *next;
 
     /** True if this task should participate in IO (only true for one
@@ -259,32 +280,49 @@ typedef struct file_desc_t
 } file_desc_t;
 
 /**
- * @brief These are the supported output formats
+ * These are the supported methods of reading/writing netCDF
+ * files. (Not all methods can be used with all netCDF files.)
  */
-enum PIO_IOTYPE{
-    PIO_IOTYPE_PNETCDF=1,   //< Parallel Netcdf  (parallel)
-    PIO_IOTYPE_NETCDF=2,    //< Netcdf3 Classic format (serial)
-    PIO_IOTYPE_NETCDF4C=3, //<  NetCDF4 (HDF5) compressed format (serial)
-    PIO_IOTYPE_NETCDF4P=4  //<  NetCDF4 (HDF5) parallel 
+enum PIO_IOTYPE
+{
+    /** Parallel Netcdf  (parallel) */
+    PIO_IOTYPE_PNETCDF = 1,
+
+    /** Netcdf3 Classic format (serial) */
+    PIO_IOTYPE_NETCDF = 2,
+
+    /**  NetCDF4 (HDF5) compressed format (serial) */
+    PIO_IOTYPE_NETCDF4C = 3,
+
+    /** NetCDF4 (HDF5) parallel */
+    PIO_IOTYPE_NETCDF4P = 4 
 };
 
 /**
- * @brief These are the supported output data rearrangement methods
- *
+ * These are the supported output data rearrangement methods.
  */
-enum PIO_REARRANGERS{
+enum PIO_REARRANGERS
+{
+    /** Box rearranger. */
     PIO_REARR_BOX = 1,
+
+    /** Subset rearranger. */
     PIO_REARR_SUBSET = 2
 };
 
 /**
- * @brief These are the supported error handlers
- *
+ * These are the supported error handlers.
  */
-enum PIO_ERROR_HANDLERS{
-    PIO_INTERNAL_ERROR=(-51),   //< Errors cause abort
-    PIO_BCAST_ERROR=(-52),      //< Error codes are broadcast to all tasks
-    PIO_RETURN_ERROR=(-53)      //< Errors are returned to caller with no internal action 
+enum PIO_ERROR_HANDLERS
+{
+    /** Errors cause abort. */
+    PIO_INTERNAL_ERROR = (-51),
+
+    /** Error codes are broadcast to all tasks. */
+    PIO_BCAST_ERROR = (-52),
+
+    /** Errors are returned to caller with no internal action. */
+    PIO_RETURN_ERROR = (-53)  
 };
 
 #if defined( _PNETCDF) || defined(_NETCDF)
