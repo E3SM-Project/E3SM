@@ -235,28 +235,40 @@ int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep,
 int PIOc_def_var_chunking(int ncid, int varid, int storage,
 			  const PIO_Offset *chunksizesp) 
 {
-    int ierr;
-    int msg;
-    int mpierr;
-    iosystem_desc_t *ios;
-    file_desc_t *file;
+    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    file_desc_t *file;     /** Pointer to file information. */
+    int ierr = PIO_NOERR;  /** Return code from function calls. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
     char *errstr;
-
     errstr = NULL;
-    ierr = PIO_NOERR;
 
+    /* Find the info about this file. */
     if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
     ios = file->iosystem;
-    msg = PIO_MSG_DEF_VAR_CHUNKING;
 
-    if (ios->async_interface && ! ios->ioproc)
+    /* If async is in use, and this is not an IO task, bcast the parameters. */
+    if (ios->async_interface)
     {
-	if (ios->compmaster) 
-	    mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-	mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
+	if (!ios->ioproc)
+	{
+	    int msg = PIO_MSG_DEF_VAR_CHUNKING;
+	    
+	    if (ios->compmaster) 
+		mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+
+	    if (!mpierr)
+		mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
+	}
+
+        /* Handle MPI errors. */
+        if ((mpierr2 = MPI_Bcast(&mpierr, 1, MPI_INT, ios->comproot, ios->my_comm)))
+            return check_mpi(file, mpierr2, __FILE__, __LINE__);
+	if (mpierr)
+	    return check_mpi(file, mpierr, __FILE__, __LINE__);
     }
 
+    /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
     {
 	switch (file->iotype)
@@ -287,20 +299,12 @@ int PIOc_def_var_chunking(int ncid, int varid, int storage,
 	}
     }
 
-    /* Allocate an error string if needed. */
-    if (ierr != PIO_NOERR)
-    {
-	errstr = (char *) malloc((strlen(__FILE__) + 20)* sizeof(char));
-	sprintf(errstr,"in file %s",__FILE__);
-    }
-
-    /* Check for netCDF error. */
-    ierr = check_netcdf(file, ierr, errstr,__LINE__);
-
-    /* Free the error string if it was allocated. */
-    if (errstr != NULL)
-	free(errstr);
-
+    /* Broadcast and check the return code. */
+    if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
+        return check_mpi(file, mpierr, __FILE__, __LINE__);
+    if (ierr)
+	return check_netcdf(file, ierr, __FILE__, __LINE__);
+    
     return ierr;
 }
 
