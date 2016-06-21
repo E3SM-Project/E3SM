@@ -145,7 +145,6 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
     if (ios->ioproc)
     {
 	io_region *region;
-	int ncid = file->fh;
 	int regioncnt;
 	int rrcnt;
 	void *bufptr;
@@ -226,17 +225,17 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 	    case PIO_IOTYPE_NETCDF4P:
 
 		/* Use collective writes with this variable. */
-		ierr = nc_var_par_access(ncid, vid, NC_COLLECTIVE);
+		ierr = nc_var_par_access(file->fh, vid, NC_COLLECTIVE);
 
 		/* Write the data. */
 		if (iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8)
-		    ierr = nc_put_vara_double(ncid, vid, (size_t *)start, (size_t *)count,
+		    ierr = nc_put_vara_double(file->fh, vid, (size_t *)start, (size_t *)count,
 					      (const double *)bufptr);
 		else if (iodesc->basetype == MPI_INTEGER)
-		    ierr = nc_put_vara_int(ncid, vid, (size_t *)start, (size_t *)count,
+		    ierr = nc_put_vara_int(file->fh, vid, (size_t *)start, (size_t *)count,
 					   (const int *)bufptr);
 		else if (iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4)
-		    ierr = nc_put_vara_float(ncid, vid, (size_t *)start, (size_t *)count,
+		    ierr = nc_put_vara_float(file->fh, vid, (size_t *)start, (size_t *)count,
 					     (const float *)bufptr);
 		else
 		    fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",
@@ -288,11 +287,11 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 			{
 			    /* Write the data. */
 			    if (iodesc->basetype == MPI_INTEGER)
-				ierr = nc_put_vara_int(ncid, vid, tstart, tcount, (const int *)tmp_buf);
+				ierr = nc_put_vara_int(file->fh, vid, tstart, tcount, (const int *)tmp_buf);
 			    else if (iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8)
-				ierr = nc_put_vara_double(ncid, vid, tstart, tcount, (const double *)tmp_buf);
+				ierr = nc_put_vara_double(file->fh, vid, tstart, tcount, (const double *)tmp_buf);
 			    else if (iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4)
-				ierr = nc_put_vara_float(ncid, vid, tstart, tcount, (const float *)tmp_buf);
+				ierr = nc_put_vara_float(file->fh, vid, tstart, tcount, (const float *)tmp_buf);
 			    else
 				fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",
 					(int)iodesc->basetype);
@@ -359,7 +358,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 		if (regioncnt == iodesc->maxregions - 1)
 		{
 		    // printf("%s %d %d %ld %ld\n",__FILE__,__LINE__,ios->io_rank,iodesc->llen, tdsize);
-		    //	   ierr = ncmpi_put_varn_all(ncid, vid, iodesc->maxregions, startlist, countlist,
+		    //	   ierr = ncmpi_put_varn_all(file->fh, vid, iodesc->maxregions, startlist, countlist,
 		    //			     IOBUF, iodesc->llen, iodesc->basetype);
 		    int reqn = 0;
 
@@ -376,7 +375,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 			while(vdesc->request[reqn] != NC_REQ_NULL)
 			    reqn++;
 
-		    ierr = ncmpi_bput_varn(ncid, vid, rrcnt, startlist, countlist,
+		    ierr = ncmpi_bput_varn(file->fh, vid, rrcnt, startlist, countlist,
 					   IOBUF, iodesc->llen, iodesc->basetype, vdesc->request+reqn);
 		    if (vdesc->request[reqn] == NC_REQ_NULL)
 			vdesc->request[reqn] = PIO_REQ_NULL;  //keeps wait calls in sync
@@ -394,6 +393,8 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 	    default:
 		ierr = iotype_error(file->iotype,__FILE__,__LINE__);
 	    }
+
+	    /* Move to the next region. */
 	    if (region)
 		region = region->next;
 	} //    for (regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
@@ -1346,19 +1347,19 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid,
 #else
 
 /** Write a distributed array to the output file.
- *  @ingroup PIO_write_darray
  *
- *  This version of the routine does not buffer, all data is
- *  communicated to the io tasks before the routine returns.
+ * This version of the routine does not buffer, all data is
+ * communicated to the io tasks before the routine returns.
  *
  * @param ncid identifies the netCDF file
- * @param vid
+ * @param vid variable ID
  * @param ioid
- * @param arraylen
- * @param array
- * @param fillvalue
+ * @param arraylen total length of array
+ * @param array pointer to the data to be written
+ * @param fillvalue fill value to be used when writing data
  *
- * @return
+ * @return 0 for success, error code otherwise.
+ * @ingroup PIO_write_darray
  */
 int PIOc_write_darray(const int ncid, const int vid, const int ioid,
 		      const PIO_Offset arraylen, void *array, void *fillvalue)
