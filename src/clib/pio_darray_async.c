@@ -1365,70 +1365,54 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid,
 		      const PIO_Offset arraylen, void *array, void *fillvalue)
 {
     iosystem_desc_t *ios;  /* Pointer to io system information. */
-    file_desc_t *file;
-    io_desc_t *iodesc;
-    void *iobuf;
-    size_t  rlen;
-    int tsize;
-    int ierr;
+    file_desc_t *file;     /* Info about the open file. */
+    io_desc_t *iodesc;     /* Infor about the IO desc? */
+    void *iobuf = NULL;    /* The data buffer. */
+    size_t rlen;
+    int tsize;             /* Size of base MPI type. */
+    int ierr = PIO_NOERR;  /* Return code from netCDF calls. */
     MPI_Datatype vtype;
 
-    ierr = PIO_NOERR;
+    LOG((1, "PIOc_write_darray ncid = %d vid = %d ioid = %d arraylen = %d",
+	 ncid, vid, ioid, arraylen));
 
-
-    file = pio_get_file_from_id(ncid);
-    if (file == NULL)
-    {
-	fprintf(stderr,"File handle not found %d %d\n",ncid,__LINE__);
+    /* Get the file info for this ncid. */
+    if (!(file = pio_get_file_from_id(ncid)))
 	return PIO_EBADID;
-    }
-    iodesc = pio_get_iodesc_from_id(ioid);
-    if (iodesc == NULL)
+    ios = file->iosystem;
+
+    /* Get the iodesc info. */
+    if (!(iodesc = pio_get_iodesc_from_id(ioid)))
     {
 	fprintf(stderr,"iodesc handle not found %d %d\n",ioid,__LINE__);
 	return PIO_EBADID;
     }
-    iobuf = NULL;
-
-    ios = file->iosystem;
 
     rlen = iodesc->llen;
-    if (iodesc->rearranger>0)
+    if (iodesc->rearranger > 0)
     {
-	if (rlen>0)
+	if (rlen > 0)
 	{
+	    /* Get the size of the base type. */
 	    MPI_Type_size(iodesc->basetype, &tsize);
-	    //       iobuf = bget(tsize*rlen);
-	    iobuf = malloc((size_t) tsize*rlen);
-	    if (!iobuf)
+	    
+	    /* Allocate the data buffer. */
+	    if (!(iobuf = malloc((size_t)tsize * rlen)))
 		piomemerror(*ios, rlen * (size_t)tsize, __FILE__, __LINE__);
 	}
-	//    printf(" rlen = %d %ld\n",rlen,iobuf);
-
-	//  }
 
 	ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, 1);
-
-	printf("%s %d ",__FILE__,__LINE__);
-	for (int n=0;n<4;n++)
-	    printf(" %d ",((int *) iobuf)[n]);
-	printf("\n");
-
     }
     else
     {
 	iobuf = array;
     }
-    switch(file->iotype)
-    {
-    case PIO_IOTYPE_PNETCDF:
-    case PIO_IOTYPE_NETCDF:
-    case PIO_IOTYPE_NETCDF4P:
-    case PIO_IOTYPE_NETCDF4C:
-	ierr = pio_write_darray_nc(file, iodesc, vid, iobuf, fillvalue);
-    }
 
-    if (iodesc->rearranger>0 && rlen>0)
+    /* Call the darray_nc function to do the writes. */
+    ierr = pio_write_darray_nc(file, iodesc, vid, iobuf, fillvalue);
+
+    /* Free the buffer if necessary. */
+    if (iodesc->rearranger > 0 && rlen > 0)
 	free(iobuf);
 
     return ierr;
