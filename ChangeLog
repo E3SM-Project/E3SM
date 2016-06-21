@@ -1,0 +1,37 @@
+======================================================================
+
+Originator: fischer-ncar
+Date: 21 June 2016
+Tag: cime4.5.17
+Answer Changes: None
+Tests: 
+Dependencies: None
+
+Brief Summary:
+   Remove ESMF tests and create ChangeLog and ChangeLog_template
+
+User interface changes: none
+
+Modified files: git diff --name-status
+A       ChangeLog
+A       ChangeLog_template
+M       cime_config/cesm/allactive/testlist_allactive.xml
+M       driver_cpl/cime_config/testdefs/testlist_drv.xml
+
+======================================================================
+
+Originator: 
+Date: 
+Tag: cimeX.Y.Z
+Answer Changes: [None, Round Off, Climate Changing]
+Tests: 
+Dependencies:
+
+Brief Summary:
+
+User interface changes: 
+
+Modified files: git diff --name-status
+
+======================================================================
+

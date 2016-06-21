@@ -33,14 +33,8 @@
       <test name="SMS_D">
         <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
       </test>
-      <test name="CME_Ld5">
-        <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
-      </test>
       <test name="ERR">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">edison</machine>
-      </test>
-      <test name="ERS_E_Ld7">
-        <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
       </test>
       <test name="ERS_Ld7">
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">bluewaters</machine>
