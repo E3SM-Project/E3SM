@@ -2318,7 +2318,6 @@ contains
   subroutine cice_run_advection_incremental_remap(&
        domain,      &
        clock,       &
-       dt,          &
        timeLevelIn, &
        updateHaloInitIn,  &
        updateHaloFinalIn)
@@ -2330,9 +2329,6 @@ contains
 
     type (MPAS_Clock_type), intent(in) :: &
          clock     !< Input: clock
-
-    real(kind=RKIND), intent(in) :: &
-         dt        !< Input: time step 
 
     integer, intent(in), optional :: &
          timeLevelIn    !< Input: time level of input fields (1 or 2)
@@ -2349,7 +2345,7 @@ contains
          updateHaloInit,   & ! if true, do initial halo updates for velocity, mass and tracer fields
          updateHaloFinal     ! if true, do final halo updates for mass and tracer fields
 
-    type (mpas_pool_type), pointer :: velocityPool
+    type (mpas_pool_type), pointer :: velocitySolverPool
 
     type(block_type), pointer :: block
 
@@ -2363,6 +2359,10 @@ contains
     type(field1DReal), pointer :: &
          uVelocityField, &
          vVelocityField
+
+    ! dynamics time step
+    real(kind=RKIND), pointer :: &
+         dynamicsTimeStep
 
     ! Set time level
     if (present(timeLevelIn)) then
@@ -2405,9 +2405,9 @@ contains
 
        call mpas_timer_start("incr remap init halo")
        ! velocity
-       call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity_solver', velocityPool)
-       call mpas_pool_get_field(velocityPool, 'uVelocity', uVelocityField)
-       call mpas_pool_get_field(velocityPool, 'vVelocity', vVelocityField)
+       call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity_solver', velocitySolverPool)
+       call mpas_pool_get_field(velocitySolverPool, 'uVelocity', uVelocityField)
+       call mpas_pool_get_field(velocitySolverPool, 'vVelocity', vVelocityField)
        call mpas_dmpar_exch_halo_field(uVelocityField)
        call mpas_dmpar_exch_halo_field(vVelocityField)
 
@@ -2430,13 +2430,17 @@ contains
           write(stderrUnit,*) 'Call incremental_remap_block: block =', block % localBlockID
        endif
 
+       ! get dynamics time step
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_array(velocitySolverPool, "dynamicsTimeStep", dynamicsTimeStep)
+
        ! do IR for this block
        call incremental_remap_block(&
-            domain,     &
-            block,      &      
-            dt,         &
+            domain, &
+            block, &
+            dynamicsTimeStep, &
             tracersHead)
-       
+
        block  => block % next
 
     end do  ! associated(block)

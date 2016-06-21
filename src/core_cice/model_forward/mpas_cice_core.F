@@ -241,24 +241,18 @@ module cice_core
       type (domain_type), intent(inout) :: domain
 
       integer :: itimestep
-      real (kind=RKIND) :: dt
       type (block_type), pointer :: block_ptr
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
       integer :: ierr
       
-      real (kind=RKIND), pointer :: config_dt
       character(len=StrKIND), pointer :: config_restart_timestamp_name
 
       iErr = 0
 
       ! configurations
-      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
       call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
-
-      ! Eventually, dt should be domain specific
-      dt = config_dt
 
       currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
@@ -296,7 +290,7 @@ module cice_core
 
          ! do the time integration
          call mpas_timer_start("time integration")
-         call mpas_timestep(domain, itimestep, dt, timeStamp)
+         call mpas_timestep(domain, itimestep, timeStamp)
          call mpas_timer_stop("time integration")
 
          ! update analysis members
@@ -346,7 +340,7 @@ module cice_core
    !
    !-----------------------------------------------------------------------
 
-   subroutine mpas_timestep(domain, itimestep, dt, timeStamp)
+   subroutine mpas_timestep(domain, itimestep, timeStamp)
    
       use mpas_derived_types
       use cice_time_integration
@@ -356,10 +350,9 @@ module cice_core
    
       type (domain_type), intent(inout) :: domain 
       integer, intent(in) :: itimestep
-      real (kind=RKIND), intent(in) :: dt
       character(len=*), intent(in) :: timeStamp
 
-      call cice_timestep(domain, clock, dt, itimestep)
+      call cice_timestep(domain, clock, itimestep)
 
    end subroutine mpas_timestep
    
