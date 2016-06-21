@@ -14,11 +14,16 @@
 #include <pio.h>
 #include <pio_internal.h>
 
-#define PIO_WRITE_BUFFERING 1
+/* 10MB default limit. */
+PIO_Offset PIO_BUFFER_SIZE_LIMIT = 10485760;
 
-PIO_Offset PIO_BUFFER_SIZE_LIMIT = 10485760; // 10MB default limit
+/* Initial size of compute buffer. */
 bufsize PIO_CNBUFFER_LIMIT = 33554432;
+
+/* Global buffer pool pointer. */
 static void *CN_bpool = NULL;
+
+/* Maximum buffer usage. */
 static PIO_Offset maxusage = 0;
 
 /** Set the pio buffer size limit. This is the size of the data buffer
@@ -1138,7 +1143,6 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid,
  * @returns 0 for success, non-zero error code for failure.
  * @ingroup PIO_write_darray
  */
-#ifdef PIO_WRITE_BUFFERING
 int PIOc_write_darray(const int ncid, const int vid, const int ioid,
 		      const PIO_Offset arraylen, void *array, void *fillvalue)
 {
@@ -1344,88 +1348,16 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid,
 
     return ierr;
 }
-#else
-
-/** Write a distributed array to the output file.
- *
- * This version of the routine does not buffer, all data is
- * communicated to the io tasks before the routine returns.
- *
- * @param ncid identifies the netCDF file
- * @param vid variable ID
- * @param ioid
- * @param arraylen total length of array
- * @param array pointer to the data to be written
- * @param fillvalue fill value to be used when writing data
- *
- * @return 0 for success, error code otherwise.
- * @ingroup PIO_write_darray
- */
-int PIOc_write_darray(const int ncid, const int vid, const int ioid,
-		      const PIO_Offset arraylen, void *array, void *fillvalue)
-{
-    iosystem_desc_t *ios;  /* Pointer to io system information. */
-    file_desc_t *file;     /* Info about the open file. */
-    io_desc_t *iodesc;     /* Infor about the IO desc? */
-    void *iobuf = NULL;    /* The data buffer. */
-    size_t rlen;
-    int tsize;             /* Size of base MPI type. */
-    int ierr = PIO_NOERR;  /* Return code from netCDF calls. */
-    MPI_Datatype vtype;
-
-    LOG((1, "PIOc_write_darray ncid = %d vid = %d ioid = %d arraylen = %d",
-	 ncid, vid, ioid, arraylen));
-
-    /* Get the file info for this ncid. */
-    if (!(file = pio_get_file_from_id(ncid)))
-	return PIO_EBADID;
-    ios = file->iosystem;
-
-    /* Get the iodesc info. */
-    if (!(iodesc = pio_get_iodesc_from_id(ioid)))
-    {
-	fprintf(stderr,"iodesc handle not found %d %d\n",ioid,__LINE__);
-	return PIO_EBADID;
-    }
-
-    rlen = iodesc->llen;
-    if (iodesc->rearranger > 0)
-    {
-	if (rlen > 0)
-	{
-	    /* Get the size of the base type. */
-	    MPI_Type_size(iodesc->basetype, &tsize);
-	    
-	    /* Allocate the data buffer. */
-	    if (!(iobuf = malloc((size_t)tsize * rlen)))
-		piomemerror(*ios, rlen * (size_t)tsize, __FILE__, __LINE__);
-	}
-
-	ierr = rearrange_comp2io(*ios, iodesc, array, iobuf, 1);
-    }
-    else
-    {
-	iobuf = array;
-    }
-
-    /* Call the darray_nc function to do the writes. */
-    ierr = pio_write_darray_nc(file, iodesc, vid, iobuf, fillvalue);
-
-    /* Free the buffer if necessary. */
-    if (iodesc->rearranger > 0 && rlen > 0)
-	free(iobuf);
-
-    return ierr;
-}
-#endif
 
 /** Read an array of data from a file to the (parallel) IO library.
- * @ingroup PIO_read_darray
  *
  * @param file
  * @param iodesc
  * @param vid
  * @param IOBUF
+ *
+ * @return 0 on success, error code otherwise.
+ * @ingroup PIO_read_darray
  */
 int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 		       void *IOBUF)
