@@ -2,24 +2,26 @@
 #include <pio.h>
 #include <pio_internal.h>
 
-/* Open an existing file using pio
- * @public
- * @ingroup PIO_openfile
+/** Open an existing file using PIO library.
  * 
- * @details  Input parameters are read on comp task 0 and ignored elsewhere.
+ * Input parameters are read on comp task 0 and ignored elsewhere.
+ *
  * @param iosysid : A defined pio system descriptor (input)
  * @param ncidp : A pio file descriptor (output)
  * @param iotype : A pio output format (input)
  * @param filename : The filename to open 
  * @param mode : The netcdf mode for the open operation
+ *
+ * @return 0 for success, error code otherwise.
+ * @ingroup PIO_openfile
  */
 int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 		  const char *filename, const int mode)
 {
-    iosystem_desc_t *ios;  /** Pointer to io system information. */
-    file_desc_t *file;     /** Pointer to file information. */
-    int ierr = PIO_NOERR;  /** Return code from function calls. */
-    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
+    file_desc_t *file;     /* Pointer to file information. */
+    int ierr = PIO_NOERR;  /* Return code from function calls. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
 
     LOG((1, "PIOc_openfile iosysid = %d", iosysid));
 
@@ -64,7 +66,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
     file->buffer.frame = NULL;
     file->buffer.fillvalue = NULL;
 
-    /** Set to true if this task should participate in IO (only true for
+    /* Set to true if this task should participate in IO (only true for
      * one task with netcdf serial files. */
     if (file->iotype == PIO_IOTYPE_NETCDF4P || file->iotype == PIO_IOTYPE_PNETCDF ||
 	ios->io_rank == 0)
@@ -193,7 +195,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
     return ierr;
 }
 
-/* Open a new file using pio.  Input parameters are read on comp task
+/** Open a new file using pio.  Input parameters are read on comp task
  * 0 and ignored elsewhere.
  *
  * @public
@@ -209,10 +211,10 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 int PIOc_createfile(const int iosysid, int *ncidp, int *iotype,
 		    const char filename[], const int mode)
 {
-    iosystem_desc_t *ios;  /** Pointer to io system information. */
-    file_desc_t *file;     /** Pointer to file information. */
-    int ierr = PIO_NOERR;  /** Return code from function calls. */
-    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
+    file_desc_t *file;     /* Pointer to file information. */
+    int ierr = PIO_NOERR;  /* Return code from function calls. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
 
     /* User must provide valid input for these parameters. */
     if (!ncidp || !iotype || !filename || strlen(filename) > NC_MAX_NAME)
@@ -253,7 +255,7 @@ int PIOc_createfile(const int iosysid, int *ncidp, int *iotype,
 
     file->mode = mode;
 
-    /** Set to true if this task should participate in IO (only true for
+    /* Set to true if this task should participate in IO (only true for
      * one task with netcdf serial files. */
     if (file->iotype == PIO_IOTYPE_NETCDF4P || file->iotype == PIO_IOTYPE_PNETCDF ||
 	ios->io_rank == 0)
@@ -358,17 +360,17 @@ int PIOc_createfile(const int iosysid, int *ncidp, int *iotype,
     return ierr;
 }
 
-/* Close a file previously opened with PIO.
+/** Close a file previously opened with PIO.
  * @ingroup PIO_closefile
  * 
  * @param ncid: the file pointer 
  */
 int PIOc_closefile(int ncid)
 {
-    iosystem_desc_t *ios;  /** Pointer to io system information. */
-    file_desc_t *file;     /** Pointer to file information. */
-    int ierr = PIO_NOERR;  /** Return code from function calls. */
-    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
+    file_desc_t *file;     /* Pointer to file information. */
+    int ierr = PIO_NOERR;  /* Return code from function calls. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
 
     /* Find the info about this file. */
     if (!(file = pio_get_file_from_id(ncid)))
@@ -446,7 +448,7 @@ int PIOc_closefile(int ncid)
     return ierr;
 }
 
-/* Delete a file.
+/** Delete a file.
  * @ingroup PIO_deletefile
  * 
  * @param iosysid : a pio system handle
@@ -454,10 +456,10 @@ int PIOc_closefile(int ncid)
  */
 int PIOc_deletefile(const int iosysid, const char filename[])
 {
-    iosystem_desc_t *ios;  /** Pointer to io system information. */
-    file_desc_t *file;     /** Pointer to file information. */
-    int ierr = PIO_NOERR;  /** Return code from function calls. */
-    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
+    file_desc_t *file;     /* Pointer to file information. */
+    int ierr = PIO_NOERR;  /* Return code from function calls. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
     int msg = PIO_MSG_DELETE_FILE;
     size_t len;
 
@@ -513,10 +515,10 @@ int PIOc_deletefile(const int iosysid, const char filename[])
  */
 int PIOc_sync(int ncid) 
 {
-    iosystem_desc_t *ios;  /** Pointer to io system information. */
-    file_desc_t *file;     /** Pointer to file information. */
-    int ierr = PIO_NOERR;  /** Return code from function calls. */
-    int mpierr = MPI_SUCCESS, mpierr2;  /** Return code from MPI function codes. */
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
+    file_desc_t *file;     /* Pointer to file information. */
+    int ierr = PIO_NOERR;  /* Return code from function calls. */
+    int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
     wmulti_buffer *wmb, *twmb;
 
     /* Get the file info from the ncid. */
