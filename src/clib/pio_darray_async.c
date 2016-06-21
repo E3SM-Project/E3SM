@@ -34,9 +34,9 @@ PIO_Offset PIOc_set_buffer_size_limit(const PIO_Offset limit)
 {
     PIO_Offset oldsize;
     oldsize = PIO_BUFFER_SIZE_LIMIT;
-    if (limit>0)
+    if (limit > 0)
 	PIO_BUFFER_SIZE_LIMIT = limit;
-    return(oldsize);
+    return oldsize;
 }
 
 /** Initialize the compute buffer to size PIO_CNBUFFER_LIMIT.
@@ -98,17 +98,18 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 {
     iosystem_desc_t *ios;  /* Pointer to io system information. */
     var_desc_t *vdesc;
-    int ndims;
+    int ndims;             /* Number of dimensions according to iodesc. */
     int ierr = PIO_NOERR;  /* Return code from function calls. */
-    int i;
+    int i;                 /* Loop counter. */
     int mpierr = MPI_SUCCESS;  /* Return code from MPI function codes. */
-    int dsize;
-    MPI_Status status;
-    PIO_Offset usage;
-    int fndims;
-    PIO_Offset tdsize = 0;
+    int dsize;             /* Size of the type. */
+    MPI_Status status;     /* Status from MPI_Recv calls. */
+    PIO_Offset usage;      /* Size of current buffer. */
+    int fndims;            /* Number of dims for variable according to netCDF. */
+    PIO_Offset tdsize = 0; /* Total size. */
 
 #ifdef TIMING
+    /* Start timing this function. */
     GPTLstart("PIO:write_darray_nc");
 #endif
 
@@ -121,6 +122,9 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 	return PIO_EBADID;
 
     ndims = iodesc->ndims;
+
+    /* Get the number of dims for this var from netcdf. */
+    ierr = PIOc_inq_varndims(file->fh, vid, &fndims);
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async_interface)
@@ -137,8 +141,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 	}
     }
 
-    ierr = PIOc_inq_varndims(file->fh, vid, &fndims);
-
+    /* If this is an IO task, write the data. */
     if (ios->ioproc)
     {
 	io_region *region;
@@ -147,52 +150,67 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 	int rrcnt;
 	void *bufptr;
 	void *tmp_buf = NULL;
-	int tsize;
-	size_t start[fndims];
-	size_t count[fndims];
-	int buflen, j;
+	int tsize;            /* Type size. */
+	size_t start[fndims]; /* Local start array for this task. */
+	size_t count[fndims]; /* Local count array for this task. */
+	int buflen;
+	int j;                /* Loop counter. */
 
 	PIO_Offset *startlist[iodesc->maxregions];
 	PIO_Offset *countlist[iodesc->maxregions];
+
+	/* Get the type size (again?) */
 	MPI_Type_size(iodesc->basetype, &tsize);
 
 	region = iodesc->firstregion;
 
+	/* If this is a var with an unlimited dimension, and the
+	 * iodesc ndims doesn't contain it, then add it to ndims. */
 	if (vdesc->record >= 0 && ndims < fndims)
 	    ndims++;
 
 #ifdef _PNETCDF
-	/* make sure we have room in the buffer. */
+	/* Make sure we have room in the buffer. */
 	if (file->iotype == PIO_IOTYPE_PNETCDF)
 	    flush_output_buffer(file, false, tsize * (iodesc->maxiobuflen));
 #endif
 
 	rrcnt = 0;
+	/* For each region, figure out start/count arrays. */
 	for (regioncnt = 0; regioncnt < iodesc->maxregions; regioncnt++)
 	{
+	    /* Init arrays to zeros. */
 	    for (i = 0; i < ndims; i++)
 	    {
 		start[i] = 0;
 		count[i] = 0;
 	    }
+	    
 	    if (region)
 	    {
 		bufptr = (void *)((char *)IOBUF + tsize * region->loffset);
-		// this is a record based multidimensional array
 		if (vdesc->record >= 0)
 		{
+		    /* This is a record based multidimensional array. */
+
+		    /* This does not look correct, but will work if
+		     * unlimited dim is dim 0. */
 		    start[0] = vdesc->record;
+
+		    /* Set the local start and count arrays. */
 		    for (i = 1; i < ndims; i++)
 		    {
 			start[i] = region->start[i - 1];
 			count[i] = region->count[i - 1];
 		    }
+
+		    /* If there is data to be written, write one timestep. */
 		    if (count[1] > 0)
 			count[0] = 1;
-		    // Non-time dependent array
 		}
 		else
 		{
+		    /* Array without unlimited dimension. */
 		    for (i = 0; i < ndims; i++)
 		    {
 			start[i] = region->start[i];
@@ -209,6 +227,8 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 
 		/* Use collective writes with this variable. */
 		ierr = nc_var_par_access(ncid, vid, NC_COLLECTIVE);
+
+		/* Write the data. */
 		if (iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8)
 		    ierr = nc_put_vara_double(ncid, vid, (size_t *)start, (size_t *)count,
 					      (const double *)bufptr);
@@ -226,8 +246,13 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 #endif /* _NETCDF4 */
 	    case PIO_IOTYPE_NETCDF:
 	    {
+		/* Find the type size (again?) */
 		mpierr = MPI_Type_size(iodesc->basetype, &dsize);
+		
 		size_t tstart[ndims], tcount[ndims];
+
+		/* The IO master task does all the data writes, but
+		 * sends the data to the other IO tasks (why?). */
 		if (ios->io_rank == 0)
 		{
 		    for (i = 0; i < iodesc->num_aiotasks; i++)
@@ -245,7 +270,8 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 			}
 			else
 			{
-			    mpierr = MPI_Send(&ierr, 1, MPI_INT, i, 0, ios->io_comm);  // handshake - tell the sending task I'm ready
+			    /* Handshake - tell the sending task I'm ready. */
+			    mpierr = MPI_Send(&ierr, 1, MPI_INT, i, 0, ios->io_comm);  
 			    mpierr = MPI_Recv(&buflen, 1, MPI_INT, i, 1, ios->io_comm, &status);
 			    if (buflen > 0)
 			    {
@@ -258,8 +284,9 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 			    }
 			}
 
-			if (buflen>0)
+			if (buflen > 0)
 			{
+			    /* Write the data. */
 			    if (iodesc->basetype == MPI_INTEGER)
 				ierr = nc_put_vara_int(ncid, vid, tstart, tcount, (const int *)tmp_buf);
 			    else if (iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8)
@@ -270,10 +297,12 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 				fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",
 					(int)iodesc->basetype);
 
+			    /* Was there an error from netCDF? */
 			    if (ierr == PIO_EEDGE)
 				for (i = 0; i < ndims; i++)
 				    fprintf(stderr,"dim %d start %ld count %ld\n", i, tstart[i], tcount[i]);
 
+			    /* Free the temporary buffer, if we don't need it any more. */
 			    if (tmp_buf != bufptr)
 				free(tmp_buf);
 			}
@@ -315,13 +344,6 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 		//	 if (dsize==1 && ndims==2)
 		//	 printf("%s %d %d\n",__FILE__,__LINE__,iodesc->basetype);
 
-		/*	 if (regioncnt==0){
-			 for (i=0;i<iodesc->maxregions;i++){
-			 startlist[i] = (PIO_Offset *) calloc(fndims, sizeof(PIO_Offset));
-			 countlist[i] = (PIO_Offset *) calloc(fndims, sizeof(PIO_Offset));
-			 }
-			 }
-		*/
 		if (dsize > 0)
 		{
 		    //	   printf("%s %d %d %d\n",__FILE__,__LINE__,ios->io_rank,dsize);
@@ -377,8 +399,11 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 	} //    for (regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
     } // if (ios->ioproc)
 
+    /* Check the error code returned by netCDF. */
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+    
 #ifdef TIMING
+    /* Stop timing this function. */
     GPTLstop("PIO:write_darray_nc");
 #endif
 
