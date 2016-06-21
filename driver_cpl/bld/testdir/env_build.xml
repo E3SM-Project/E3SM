@@ -1,0 +1,103 @@
+<?xml version="1.0"?> 
+
+<config_definition> 
+
+<header>
+
+    These variables SHOULD NOT be changed once the model has been built.
+    urrently, these variables are not cached.
+    Note1: users SHOULD NOT modify BUILD_COMPETE below
+    this is done automatically by the scripts.
+    </header> 
+
+<groups>
+   <group>build_component_cism</group> 
+   <group>build_component_clm</group> 
+   <group>build_component_mosart</group> 
+   <group>build_def</group> 
+   <group>build_derived</group> 
+   <group>build_grid</group> 
+   <group>build_macros</group> 
+   <group>build_status</group> 
+</groups>
+
+
+  <entry id="CALENDAR"  value="NO_LEAP">
+    <type>char</type> 
+    <valid_values>NO_LEAP,GREGORIAN</valid_values> 
+    <group>build_def</group> 
+    <desc>calendar type></desc> 
+  </entry> 
+
+  <entry id="ATM_GRID"  value="1.9x2.5">
+    <type>char</type> 
+    <group>build_grid</group> 
+    <desc>atmosphere grid - DO NOT EDIT (for experts only)</desc> 
+  </entry> 
+
+  <entry id="GRID"  value="a%1.9x2.5_l%1.9x2.5_oi%gx1v6_r%r05_m%gx1v6_g%gland5UM_w%null">
+    <type>char</type> 
+    <group>build_grid</group> 
+    <desc>Model grid - DO NOT EDIT (for experts only)</desc> 
+  </entry> 
+
+  <entry id="ICE_GRID"  value="gx1v6">
+    <type>char</type> 
+    <group>build_grid</group> 
+    <desc>ice grid (must equal ocn grid) - DO NOT EDIT (for experts only)</desc> 
+  </entry> 
+
+  <entry id="ICE_NCAT"  value="1">
+    <type>integer</type> 
+    <group>build_grid</group> 
+    <desc>number of ice thickness categories - DO NOT EDIT (set by CICE configure)</desc> 
+  </entry> 
+
+  <entry id="LND_GRID"  value="1.9x2.5">
+    <type>char</type> 
+    <group>build_grid</group> 
+    <desc>land grid - DO NOT EDIT (for experts only)</desc> 
+  </entry> 
+
+  <entry id="OCN_GRID"  value="gx1v6">
+    <type>char</type> 
+    <group>build_grid</group> 
+    <desc>ocn grid - DO NOT EDIT (for experts only)</desc> 
+  </entry> 
+
+  <entry id="ROF_GRID"  value="r05">
+    <type>char</type> 
+    <group>build_grid</group> 
+    <desc>river runoff (rof) grid</desc> 
+  </entry> 
+
+  <entry id="WAV_GRID"  value="null">
+    <type>char</type> 
+    <group>build_grid</group> 
+    <desc>wave model (wav) grid</desc> 
+  </entry> 
+
+  <entry id="MPILIB"  value="mpich2">
+    <type>char</type> 
+    <group>build_macros</group> 
+    <desc>mpi library (must match one of the supported libraries) -
+    ignored once Macros has been created
+    Set in /glade/p/work/erik/clm_gswp3drflds/cime/machines/config_machines.xml for each supported machine.
+    Must be explicitly set in env_build.xml for userdefined machine.</desc> 
+  </entry> 
+
+  <entry id="MPILIBS"  value="mpich2,pempi,mpi-serial">
+    <type>char</type> 
+    <group>build_macros</group> 
+    <desc>Supported mpi libraries for target machine - set in config_machines.xml - (DO NOT EDIT)
+      Set in /glade/p/work/erik/clm_gswp3drflds/cime/machines/config_machines.xml for each supported machine.
+      Must be explicitly set in env_build.xml for userdefined machine.</desc> 
+  </entry> 
+
+  <entry id="OS"  value="LINUX">
+    <type>char</type> 
+    <group>build_macros</group> 
+    <desc>Operating system - DO NOT EDIT UNLESS for userdefined machine - ignored once Macros has been created.</desc> 
+  </entry> 
+
+</config_definition> 

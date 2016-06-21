@@ -13,29 +13,31 @@ if ($?COMPARE_BASELINE ) then
   set COMPARE_THROUGHPUT
 endif
 
-#--- clone the main case to create ref1 case
-set CASER0  = ${CASEROOT}
-set CASERR1 = ${CASEROOT}.ref1
+#--- clone the main case to create ref1 case to spinup with
+set CASER0  = ${CASEROOT}.ref1
+set CASERR1 = ${CASEROOT}
 set CASE0   = ${CASE}
 
-cd $CASER0
+cd $CIMEROOT/scripts
+rm -r -f ${CASER0}; ./create_clone -case ${CASER0} -clone ${CASERR1} 
+
+cd $CASERR1
 set STOP_N      = `./xmlquery STOP_N          -value`
 set STOP_OPTION = `./xmlquery STOP_OPTION     -value`
+set EXEROOT = `./xmlquery EXEROOT     -value`
 
 @ stopnf = ${STOP_N}
 @ stopn1 = ${STOP_N} / 2
 @ stopn2 = ${stopnf} - $stopn1
 
-cd $CIMEROOT/scripts
-rm -r -f ${CASERR1}; ./create_clone -case ${CASERR1} -clone ${CASER0} 
 
-cd $CASERR1
+cd $CASER0
 ./xmlchange -file env_build.xml -id EXEROOT        -val ${EXEROOT} || exit -1
 ./xmlchange -file env_build.xml -id BUILD_COMPLETE -val TRUE       || exit -1
 ./case_setup -testmode
 
 #======================================================================
-# (1) Test run: do a spinup run in the main case
+# (1) Test run: do a spinup run in the ref1 case
 #======================================================================
 
 cd $CASER0
@@ -48,8 +50,9 @@ echo " short term archiving is on" >>& $TESTSTATUS_LOG
 set DOUT_S_ROOT          = `./xmlquery DOUT_S_ROOT     -value`
 set DOUTSR0              =  $DOUT_S_ROOT
 set CASE                 = `./xmlquery CASE -value`
-./xmlchange -file env_run.xml -id STOP_N          -val ${stopn1}  || exit -1
-./xmlchange -file env_run.xml CLM_ACCELERATED_SPINUP=on           || exit -1
+set CASESPIN             = $CASE
+./xmlchange -file env_run.xml -id STOP_N    -val ${stopn1} || exit -1
+./xmlchange CLM_ACCELERATED_SPINUP=on                      || exit -1
 
 ./case.run
 if ($status != 0) then
@@ -90,7 +93,7 @@ echo "" >>& $TESTSTATUS_LOG
 $SCRIPTSROOT/Tools/component_compare_move.sh -rundir $RUNDIR -testcase $CASE -suffix "spinup" $add_iop
 
 #======================================================================
-# (2) Test run: do the final non-spinup run in the cloned ref case
+# (2) Test run: do the final non-spinup run in the cloned main case
 #======================================================================
 
 cd ${CASERR1}
@@ -106,13 +109,13 @@ set refdate = `ls -1dt ${DOUTSR0}/rest/*-00000* | head -1 | sed "s/-00000.*//" |
 ln -s ${DOUTSR0}/rest/${refdate}-00000/*${refdate}*  $RUNDIR/.
 
 # set up run
-./xmlchange RUN_TYPE="hybrid"
-./xmlchange GET_REFCASE=FALSE
-./xmlchange RUN_REFCASE=$CASE0
-./xmlchange RUN_REFDATE=${refdate}
-./xmlchange STOP_N=${stopn2} 
-./xmlchange DOUT_S=FALSE
-./xmlchange -file env_run.xml CLM_ACCELERATED_SPINUP=off          || exit -1
+./xmlchange RUN_TYPE="hybrid"          || exit -1
+./xmlchange GET_REFCASE=FALSE          || exit -1
+./xmlchange RUN_REFCASE=${CASESPIN}    || exit -1
+./xmlchange RUN_REFDATE=${refdate}     || exit -1
+./xmlchange STOP_N=${stopn2}           || exit -1
+./xmlchange DOUT_S=FALSE               || exit -1
+./xmlchange CLM_ACCELERATED_SPINUP=on  || exit -1
 
 set CASE = `./xmlquery CASE -value`
 
