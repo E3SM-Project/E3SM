@@ -58,9 +58,6 @@
       </test>
     </grid>
     <grid name="f45_g37_rx1">
-      <test name="CME_Ld3">
-        <machine compiler="intel" testtype="prealpha">yellowstone</machine>
-      </test>
       <test name="ERR">
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="nag" testtype="prealpha">hobart</machine>
@@ -162,9 +159,6 @@
         <machine compiler="intel" testtype="prealpha">edison</machine>
         <machine compiler="intel" testtype="prealpha">yellowstone</machine>
         <machine compiler="pgi" testtype="prealpha">yellowstone</machine>
-      </test>
-      <test name="PET_E_CG">
-        <machine compiler="intel" testtype="prealpha">yellowstone</machine>
       </test>
       <test name="PET_PT_Ld3">
         <machine compiler="pgi" testtype="prebeta">hobart</machine>
