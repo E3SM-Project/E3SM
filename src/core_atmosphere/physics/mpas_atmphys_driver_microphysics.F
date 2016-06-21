@@ -72,6 +72,9 @@
 !>    * Moved the variable relhum from the diag_physics to the diag pool. Changed the argument
 !>      list for the subroutine compute_relhum accordingly.
 !>      Laura D. Fowler (laura@ucar.edu) / 2015-04-22.
+!>    * In subroutine compute_relhum, multiply relhum by 100. so that it has the same unit as in
+!>      the initial conditions.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-06-20.
 
 
  contains
@@ -607,6 +610,7 @@
        if(tempc .le. 0._RKIND) qvs1d(k) = rsif(p1d(k),t1d(k))
        qv1d(k) = qv_p(i,k,j)
        relhum(k,i) = qv1d(k) / qvs1d(k)
+       relhum(k,i) = relhum(k,i) * 100._RKIND
     enddo
 
  enddo
