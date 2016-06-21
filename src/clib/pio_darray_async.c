@@ -1,6 +1,6 @@
 /** @file
  *
- * @brief This file contains the routines that read and write
+ * This file contains the routines that read and write
  * distributed arrays in PIO.
  *
  * When arrays are distributed, each processor holds some of the
@@ -47,7 +47,8 @@ PIO_Offset PIOc_set_buffer_size_limit(const PIO_Offset limit)
 /** Initialize the compute buffer to size PIO_CNBUFFER_LIMIT.
  *
  * This routine initializes the compute buffer pool if the bget memory
- * management is used.
+ * management is used. If malloc is used (that is, PIO_USE_MALLOC is
+ * non zero), this function does nothing.
  *
  * @param ios the iosystem descriptor which will use the new buffer
  */
@@ -82,20 +83,15 @@ void compute_buffer_init(iosystem_desc_t ios)
 /** Write a single distributed field to output. This routine is only
  * used if aggregation is off.
  *
- * @param[in] file: a pointer to the open file descriptor for the file
+ * @param file a pointer to the open file descriptor for the file
  * that will be written to
- *
- * @param[in] iodesc: a pointer to the defined iodescriptor for the buffer
- *
- * @param[in] vid: the variable id to be written
- *
- * @param[in] IOBUF: the buffer to be written from this mpi task
- *
- * @param[in] fillvalue: the optional fillvalue to be used for missing
+ * @param iodesc a pointer to the defined iodescriptor for the buffer
+ * @param vid the variable id to be written
+ * @param IOBUF the buffer to be written from this mpi task
+ * @param fillvalue the optional fillvalue to be used for missing
  * data in this buffer
  *
  * @return 0 for success, error code otherwise.
- *
  * @ingroup PIO_write_darray
  */
 int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
@@ -416,31 +412,41 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
     return ierr;
 }
 
-/** Write a set of one or more aggregated arrays to output file
+/** Write a set of one or more aggregated arrays to output file.
+ *
+ * This routine is used if aggregation is enabled, data is already on
+ * the io-tasks
+ *
+ * @param file a pointer to the open file descriptor for the file
+ * that will be written to
+ * @param nvars the number of variables to be written with this
+ * decomposition
+ * @param vid: an array of the variable ids to be written
+ * @param iodesc_ndims: the number of dimensions explicitly in the
+ * iodesc
+ * @param basetype the basic type of the minimal data unit
+ * @param gsize array of the global dimensions of the field to
+ * be written
+ * @param maxregions max number of blocks to be written from
+ * this iotask
+ * @param firstregion pointer to the first element of a linked
+ * list of region descriptions.
+ * @param llen length of the iobuffer on this task for a single
+ * field
+ * @param maxiobuflen maximum llen participating
+ * @param num_aiotasks actual number of iotasks participating
+ * @param IOBUF the buffer to be written from this mpi task
+ * @param frame the frame or record dimension for each of the nvars
+ * variables in IOBUF
+ *
+ * @return 0 for success, error code otherwise.
  * @ingroup PIO_write_darray
- *
- * This routine is used if aggregation is enabled, data is already on the
- * io-tasks
- *
- * @param[in] file: a pointer to the open file descriptor for the file that will be written to
- * @param[in] nvars: the number of variables to be written with this decomposition
- * @param[in] vid: an array of the variable ids to be written
- * @param[in] iodesc_ndims: the number of dimensions explicitly in the iodesc
- * @param[in] basetype : the basic type of the minimal data unit
- * @param[in] gsize : array of the global dimensions of the field to be written
- * @param[in] maxregions : max number of blocks to be written from this iotask
- * @param[in] firstregion : pointer to the first element of a linked list of region descriptions.
- * @param[in] llen : length of the iobuffer on this task for a single field
- * @param[in] maxiobuflen : maximum llen participating
- * @param[in] num_aiotasks : actual number of iotasks participating
- * @param[in] IOBUF: the buffer to be written from this mpi task
- * @param[in] frame : the frame or record dimension for each of the nvars variables in IOBUF
  */
-int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[],
-			      const int iodesc_ndims, MPI_Datatype basetype, const PIO_Offset gsize[],
+int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int *vid,
+			      const int iodesc_ndims, MPI_Datatype basetype, const PIO_Offset *gsize,
 			      const int maxregions, io_region *firstregion, const PIO_Offset llen,
 			      const int maxiobuflen, const int num_aiotasks,
-			      void *IOBUF, const int frame[])
+			      void *IOBUF, const int *frame)
 {
     iosystem_desc_t *ios;  /* Pointer to io system information. */
     var_desc_t *vdesc;
@@ -692,30 +698,42 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
     return ierr;
 }
 
-/** @brief Write a set of one or more aggregated arrays to output file
- *   @ingroup PIO_write_darray
+/** Write a set of one or more aggregated arrays to output file in
+ * serial mode.
  *
- *   This routine is used if aggregation is enabled, data is already on the
- *   io-tasks
- *   @param[in] file: a pointer to the open file descriptor for the file that will be written to
- *   @param[in] nvars: the number of variables to be written with this decomposition
- *   @param[in] vid: an array of the variable ids to be written
- *   @param[in] iodesc_ndims: the number of dimensions explicitly in the iodesc
- *   @param[in] basetype : the basic type of the minimal data unit
- *   @param[in] gsize : array of the global dimensions of the field to be written
- *   @param[in] maxregions : max number of blocks to be written from this iotask
- *   @param[in] firstregion : pointer to the first element of a linked list of region descriptions.
- *   @param[in] llen : length of the iobuffer on this task for a single field
- *   @param[in] maxiobuflen : maximum llen participating
- *   @param[in] num_aiotasks : actual number of iotasks participating
- *   @param[in] IOBUF: the buffer to be written from this mpi task
- *   @param[in] frame : the frame or record dimension for each of the nvars variables in IOBUF
+ * This routine is used if aggregation is enabled, data is already on the
+ * io-tasks
+ *
+ * @param file: a pointer to the open file descriptor for the file
+ * that will be written to
+ * @param nvars: the number of variables to be written with this
+ * decomposition
+ * @param vid: an array of the variable ids to be written
+ * @param iodesc_ndims: the number of dimensions explicitly in the
+ * iodesc
+ * @param basetype : the basic type of the minimal data unit
+ * @param gsize : array of the global dimensions of the field to be
+ * written
+ * @param maxregions : max number of blocks to be written from this
+ * iotask
+ * @param firstregion : pointer to the first element of a linked
+ * list of region descriptions.
+ * @param llen : length of the iobuffer on this task for a single
+ * field
+ * @param maxiobuflen : maximum llen participating
+ * @param num_aiotasks : actual number of iotasks participating
+ * @param IOBUF: the buffer to be written from this mpi task
+ * @param frame : the frame or record dimension for each of the
+ * nvars variables in IOBUF
+ *
+ * @return 0 for success, error code otherwise.
+ * @ingroup PIO_write_darray
  */
-int pio_write_darray_multi_nc_serial(file_desc_t *file, const int nvars, const int vid[],
-				     const int iodesc_ndims, MPI_Datatype basetype, const PIO_Offset gsize[],
+int pio_write_darray_multi_nc_serial(file_desc_t *file, const int nvars, const int *vid,
+				     const int iodesc_ndims, MPI_Datatype basetype, const PIO_Offset *gsize,
 				     const int maxregions, io_region *firstregion, const PIO_Offset llen,
 				     const int maxiobuflen, const int num_aiotasks,
-				     void *IOBUF, const int frame[])
+				     void *IOBUF, const int *frame)
 {
     iosystem_desc_t *ios;  /* Pointer to io system information. */
     var_desc_t *vdesc;
@@ -926,22 +944,32 @@ int pio_write_darray_multi_nc_serial(file_desc_t *file, const int nvars, const i
     return ierr;
 }
 
-/** Write one or more arrays with the same IO decomposition to the file
- * @ingroup PIO_write_darray
+/** Write one or more arrays with the same IO decomposition to the file.
  *
  * @param ncid identifies the netCDF file
- * @param vid
- * @param ioid
- * @param nvars number of variables
- * @param arraylen
- * @param array
- * @param frame
- * @param fillvalue
+ * @param vid: an array of the variable ids to be written
+ * @param ioid: the I/O description ID as passed back by
+ * PIOc_InitDecomp().
+ * @param nvars the number of variables to be written with this
+ * decomposition
+ * @param arraylen: the length of the array to be written. This
+ * is the length of the distrubited array. That is, the length of
+ * the portion of the data that is on the processor.
+ * @param array: pointer to the data to be written. This is a
+ * pointer to the distributed portion of the array that is on this
+ * processor.
+ * @param frame the frame or record dimension for each of the nvars
+ * variables in IOBUF
+ * @param fillvalue: pointer to the fill value to be used for
+ * missing data.
  * @param flushtodisk
+ *
+ * @return 0 for success, error code otherwise.
+ * @ingroup PIO_write_darray
  */
-int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid,
+int PIOc_write_darray_multi(const int ncid, const int *vid, const int ioid,
 			    const int nvars, const PIO_Offset arraylen,
-			    void *array, const int frame[], void *fillvalue[],
+			    void *array, const int *frame, void **fillvalue,
 			    bool flushtodisk)
 {
     iosystem_desc_t *ios;  /* Pointer to io system information. */
@@ -1127,17 +1155,17 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid,
  * it to the IO nodes when the compute buffer is full or when a flush
  * is triggered.
  *
- * @param[in] ncid: the ncid of the open netCDF file.
- * @param[in] vid: the variable ID returned by PIOc_def_var().
- * @param[in] ioid: the I/O description ID as passed back by
+ * @param ncid: the ncid of the open netCDF file.
+ * @param vid: the variable ID returned by PIOc_def_var().
+ * @param ioid: the I/O description ID as passed back by
  * PIOc_InitDecomp().
- * @param[in] arraylen: the length of the array to be written. This
+ * @param arraylen: the length of the array to be written. This
  * is the length of the distrubited array. That is, the length of
  * the portion of the data that is on the processor.
- * @param[in] array: pointer to the data to be written. This is a
+ * @param array: pointer to the data to be written. This is a
  * pointer to the distributed portion of the array that is on this
  * processor.
- * @param[in] fillvalue: pointer to the fill value to be used for
+ * @param fillvalue: pointer to the fill value to be used for
  * missing data.
  *
  * @returns 0 for success, non-zero error code for failure.
@@ -1351,10 +1379,11 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid,
 
 /** Read an array of data from a file to the (parallel) IO library.
  *
- * @param file
- * @param iodesc
- * @param vid
- * @param IOBUF
+ * @param file a pointer to the open file descriptor for the file
+ * that will be written to
+ * @param iodesc a pointer to the defined iodescriptor for the buffer
+ * @param vid the variable id to be read
+ * @param IOBUF the buffer to be read into from this mpi task
  *
  * @return 0 on success, error code otherwise.
  * @ingroup PIO_read_darray
@@ -1537,9 +1566,10 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 /** Read an array of data from a file to the (serial) IO library.
  *  @ingroup PIO_read_darray
  *
- * @param file
- * @param iodesc
- * @param vid
+ * @param file a pointer to the open file descriptor for the file
+ * that will be written to
+ * @param iodesc a pointer to the defined iodescriptor for the buffer
+ * @param vid the variable id to be read.
  * @param IOBUF
  *
  * @returns
@@ -1756,12 +1786,18 @@ int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc,
  * @ingroup PIO_read_darray
  *
  * @param ncid identifies the netCDF file
- * @param vid
- * @param ioid
- * @param arraylen
- * @param array
+ * @param vid the variable ID to be read
+ * @param ioid: the I/O description ID as passed back by
+ * PIOc_InitDecomp().
+ * @param arraylen: the length of the array to be read. This
+ * is the length of the distrubited array. That is, the length of
+ * the portion of the data that is on the processor.
+ * @param array: pointer to the data to be read. This is a
+ * pointer to the distributed portion of the array that is on this
+ * processor.
  *
- * @return 
+ * @return 0 for success, error code otherwise.
+ * @ingroup PIO_write_darray
  */
 int PIOc_read_darray(const int ncid, const int vid, const int ioid,
 		     const PIO_Offset arraylen, void *array)
@@ -1841,11 +1877,14 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid,
 
 /** Flush the output buffer.
  *
- * @param file
- * @param force
- * @param addsize
+ * @param file a pointer to the open file descriptor for the file
+ * that will be written to
+ * @param force true to force the flushing of the buffer
+ * @param addsize additional size to add to buffer (in bytes)
  *
- * @return
+ * @return 0 for success, error code otherwise.
+ * @private
+ * @ingroup PIO_write_darray
  */
 int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 {
@@ -1965,6 +2004,9 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
  *
  * @param ios the IO system structure
  * @param collective true if collective report is desired
+ *
+ * @private
+ * @ingroup PIO_write_darray
  */
 void cn_buffer_report(iosystem_desc_t ios, bool collective)
 {
@@ -2013,7 +2055,10 @@ void cn_buffer_report(iosystem_desc_t ios, bool collective)
 
 /** Free the buffer pool.
  *
- * @param ios
+ * @param ios the IO system structure
+ *
+ * @private
+ * @ingroup PIO_write_darray
  */
 void free_cn_buffer_pool(iosystem_desc_t ios)
 {
@@ -2030,9 +2075,12 @@ void free_cn_buffer_pool(iosystem_desc_t ios)
 
 /** Flush the buffer. 
  *
- * @param ncid
+ * @param ncid identifies the netCDF file
  * @param wmb
  * @param flushtodisk
+ *
+ * @private
+ * @ingroup PIO_write_darray
  */
 void flush_buffer(int ncid, wmulti_buffer *wmb, bool flushtodisk)
 {
@@ -2057,8 +2105,11 @@ void flush_buffer(int ncid, wmulti_buffer *wmb, bool flushtodisk)
 
 /** Compute the maximum aggregate number of bytes. 
  *
- * @param ios
- * @param iodesc
+ * @param ios the IO system structure
+ * @param iodesc a pointer to the defined iodescriptor for the buffer
+ *
+ * @private
+ * @ingroup PIO_write_darray
  */
 void compute_maxaggregate_bytes(const iosystem_desc_t ios, io_desc_t *iodesc)
 {
