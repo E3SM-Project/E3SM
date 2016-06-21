@@ -7,10 +7,10 @@
  * array. Only by combining the distributed arrays from all processor
  * can the full array be obtained.
  *
- * @author Jim Edwards
- * @bug No Known bugs
+ * @author Jim Edwards, Ed Hartnett
  */
 
+#include <config.h>
 #include <pio.h>
 #include <pio_internal.h>
 
@@ -48,7 +48,7 @@ PIO_Offset PIOc_set_buffer_size_limit(const PIO_Offset limit)
  */
 void compute_buffer_init(iosystem_desc_t ios)
 {
-#ifndef PIO_USE_MALLOC
+#if !PIO_USE_MALLOC
 
     if (!CN_bpool)
     {
@@ -96,12 +96,12 @@ void compute_buffer_init(iosystem_desc_t ios)
 int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 			void *IOBUF, void *fillvalue)
 {
-    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
     var_desc_t *vdesc;
     int ndims;
-    int ierr = PIO_NOERR;  /** Return code from function calls. */
+    int ierr = PIO_NOERR;  /* Return code from function calls. */
     int i;
-    int mpierr = MPI_SUCCESS;  /** Return code from MPI function codes. */
+    int mpierr = MPI_SUCCESS;  /* Return code from MPI function codes. */
     int dsize;
     MPI_Status status;
     PIO_Offset usage;
@@ -411,11 +411,11 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int vid[
 			      const int maxiobuflen, const int num_aiotasks,
 			      void *IOBUF, const int frame[])
 {
-    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
     var_desc_t *vdesc;
     int ierr;
     int i;
-    int mpierr = MPI_SUCCESS;  /** Return code from MPI function codes. */
+    int mpierr = MPI_SUCCESS;  /* Return code from MPI function codes. */
     int dsize;
     MPI_Status status;
     PIO_Offset usage;
@@ -686,11 +686,11 @@ int pio_write_darray_multi_nc_serial(file_desc_t *file, const int nvars, const i
 				     const int maxiobuflen, const int num_aiotasks,
 				     void *IOBUF, const int frame[])
 {
-    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
     var_desc_t *vdesc;
     int ierr;
     int i;
-    int mpierr = MPI_SUCCESS;  /** Return code from MPI function codes. */
+    int mpierr = MPI_SUCCESS;  /* Return code from MPI function codes. */
     int dsize;
     MPI_Status status;
     PIO_Offset usage;
@@ -913,7 +913,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid,
 			    void *array, const int frame[], void *fillvalue[],
 			    bool flushtodisk)
 {
-    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
     file_desc_t *file;
     io_desc_t *iodesc;
 
@@ -1116,7 +1116,7 @@ int PIOc_write_darray_multi(const int ncid, const int vid[], const int ioid,
 int PIOc_write_darray(const int ncid, const int vid, const int ioid,
 		      const PIO_Offset arraylen, void *array, void *fillvalue)
 {
-    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
     file_desc_t *file;
     io_desc_t *iodesc;
     var_desc_t *vdesc;
@@ -1338,7 +1338,7 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid,
 int PIOc_write_darray(const int ncid, const int vid, const int ioid,
 		      const PIO_Offset arraylen, void *array, void *fillvalue)
 {
-    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
     file_desc_t *file;
     io_desc_t *iodesc;
     void *iobuf;
@@ -1421,7 +1421,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
 		       void *IOBUF)
 {
     int ierr=PIO_NOERR;
-    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
     var_desc_t *vdesc;
     int ndims, fndims;
     MPI_Status status;
@@ -1606,7 +1606,7 @@ int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc,
 			      const int vid, void *IOBUF)
 {
     int ierr=PIO_NOERR;
-    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
     var_desc_t *vdesc;
     int ndims, fndims;
     MPI_Status status;
@@ -1824,7 +1824,7 @@ int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc,
 int PIOc_read_darray(const int ncid, const int vid, const int ioid,
 		     const PIO_Offset arraylen, void *array)
 {
-    iosystem_desc_t *ios;  /** Pointer to io system information. */
+    iosystem_desc_t *ios;  /* Pointer to io system information. */
     file_desc_t *file;
     io_desc_t *iodesc;
     void *iobuf=NULL;
@@ -2075,7 +2075,7 @@ void cn_buffer_report(iosystem_desc_t ios, bool collective)
  */
 void free_cn_buffer_pool(iosystem_desc_t ios)
 {
-#ifndef PIO_USE_MALLOC
+#if !PIO_USE_MALLOC
     if (CN_bpool)
     {
 	cn_buffer_report(ios, true);
@@ -2083,7 +2083,7 @@ void free_cn_buffer_pool(iosystem_desc_t ios)
 	//    free(CN_bpool);
 	CN_bpool = NULL;
     }
-#endif
+#endif /* !PIO_USE_MALLOC */
 }
 
 /** Flush the buffer. 
@@ -2113,7 +2113,7 @@ void flush_buffer(int ncid, wmulti_buffer *wmb, bool flushtodisk)
     }
 }
 
-/** Comput the maximum aggregate number of bytes. 
+/** Compute the maximum aggregate number of bytes. 
  *
  * @param ios
  * @param iodesc
