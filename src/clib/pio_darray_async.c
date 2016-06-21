@@ -33,6 +33,7 @@ static PIO_Offset maxusage = 0;
  * the setting is changed.
  *
  * @param limit the size of the buffer on the IO nodes
+ *
  * @return The previous limit setting.
  */
 PIO_Offset PIOc_set_buffer_size_limit(const PIO_Offset limit)
@@ -108,6 +109,8 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
     PIO_Offset usage;      /* Size of current buffer. */
     int fndims;            /* Number of dims for variable according to netCDF. */
     PIO_Offset tdsize = 0; /* Total size. */
+
+    LOG((1, "pio_write_array_nc vid = %d", vid));
 
 #ifdef TIMING
     /* Start timing this function. */
@@ -462,7 +465,9 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int *vid
     int ncid;
     tdsize=0;
     ierr = PIO_NOERR;
+
 #ifdef TIMING
+    /* Start timing this function. */
     GPTLstart("PIO:write_darray_multi_nc");
 #endif
 
@@ -691,7 +696,9 @@ int pio_write_darray_multi_nc(file_desc_t *file, const int nvars, const int *vid
     } // if (ios->ioproc)
 
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+
 #ifdef TIMING
+    /* Stop timing this function. */
     GPTLstop("PIO:write_darray_multi_nc");
 #endif
 
@@ -750,6 +757,7 @@ int pio_write_darray_multi_nc_serial(file_desc_t *file, const int nvars, const i
     tdsize=0;
     ierr = PIO_NOERR;
 #ifdef TIMING
+    /* Start timing this function. */
     GPTLstart("PIO:write_darray_multi_nc_serial");
 #endif
 
@@ -937,7 +945,9 @@ int pio_write_darray_multi_nc_serial(file_desc_t *file, const int nvars, const i
     } // if (ios->ioproc)
 
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+
 #ifdef TIMING
+    /* Stop timing this function. */
     GPTLstop("PIO:write_darray_multi_nc_serial");
 #endif
 
@@ -1399,6 +1409,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
     int i;
 
 #ifdef TIMING
+    /* Start timing this function. */
     GPTLstart("PIO:read_darray_nc");
 #endif
     ios = file->iosystem;
@@ -1556,7 +1567,9 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid,
     }
 
     ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+
 #ifdef TIMING
+    /* Stop timing this function. */
     GPTLstop("PIO:read_darray_nc");
 #endif
 
@@ -1585,6 +1598,7 @@ int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc,
     int i;
 
 #ifdef TIMING
+    /* Start timing this function. */
     GPTLstart("PIO:read_darray_nc_serial");
 #endif
     ios = file->iosystem;
@@ -1775,7 +1789,9 @@ int pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc,
     }
 
     ierr = check_netcdf(file, ierr, __FILE__, __LINE__);
+
 #ifdef TIMING
+    /* Stop timing this function. */
     GPTLstop("PIO:read_darray_nc_serial");
 #endif
 
@@ -1875,7 +1891,8 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid,
 
 }
 
-/** Flush the output buffer.
+/** Flush the output buffer. This is only relevant for files opened
+ * with pnetcdf.
  *
  * @param file a pointer to the open file descriptor for the file
  * that will be written to
@@ -1888,32 +1905,40 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid,
  */
 int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 {
-    var_desc_t *vdesc;
-    int ierr=PIO_NOERR;
+    int ierr = PIO_NOERR;
+
 #ifdef _PNETCDF
+    var_desc_t *vdesc;
     int *status;
     PIO_Offset usage = 0;
+
 #ifdef TIMING
+    /* Start timing this function. */
     GPTLstart("PIO:flush_output_buffer");
 #endif
-    pioassert(file!=NULL,"file pointer not defined",__FILE__,__LINE__);
 
+    pioassert(file != NULL, "file pointer not defined", __FILE__,
+	      __LINE__);
 
+    /* Find out the buffer usage. */
     ierr = ncmpi_inq_buffer_usage(file->fh, &usage);
 
+    /* If we are not forcing a flush, spread the usage to all IO
+     * tasks. */
     if (!force && file->iosystem->io_comm != MPI_COMM_NULL)
     {
 	usage += addsize;
-
 	MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_OFFSET,  MPI_MAX,
 		      file->iosystem->io_comm);
     }
 
+    /* Keep track of the maximum usage. */
     if (usage > maxusage)
-    {
 	maxusage = usage;
-    }
-    if (force || usage>=PIO_BUFFER_SIZE_LIMIT)
+
+    /* If the user forces it, or the buffer has exceeded the size
+     * limit, then flush to disk. */
+    if (force || usage >= PIO_BUFFER_SIZE_LIMIT)
     {
 	int rcnt;
 	bool prev_dist=false;
@@ -1992,11 +2017,13 @@ int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize)
 	}
 
     }
+
 #ifdef TIMING
+    /* Stop timing this function. */
     GPTLstop("PIO:flush_output_buffer");
 #endif
 
-#endif
+#endif /* _PNETCDF */
     return ierr;
 }
 
@@ -2053,7 +2080,8 @@ void cn_buffer_report(iosystem_desc_t ios, bool collective)
     }
 }
 
-/** Free the buffer pool.
+/** Free the buffer pool. If malloc is used (that is, PIO_USE_MALLOC is
+ * non zero), this function does nothing.
  *
  * @param ios the IO system structure
  *

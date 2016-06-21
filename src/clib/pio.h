@@ -46,7 +46,7 @@
 typedef struct var_desc_t
 {
     /** The unlimited dimension in the netCDF file (typically the time
-     * dimension). */
+     * dimension). -1 if there is no unlimited dimension. */
     int record;
 
     /** Number of dimensions for this variable. */
