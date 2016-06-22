@@ -210,9 +210,7 @@ class Machines(GenericXML):
         >>> machobj.is_valid_compiler("cray")
         True
         >>> machobj.is_valid_compiler("nag")
-        Traceback (most recent call last):
-        ...
-        SystemExit: ERROR: COMPILERS value nag not supported for machine edison
+        False
         """
         return self.get_field_from_list("COMPILERS", reqval=compiler) is not None
 
@@ -223,6 +221,8 @@ class Machines(GenericXML):
         >>> machobj = Machines(machine="edison")
         >>> machobj.is_valid_MPIlib("mpi-serial")
         True
+        >>> machobj.is_valid_MPIlib("fake-mpi")
+        False
         """
         return mpilib == "mpi-serial" or self.get_field_from_list("MPILIBS", reqval=mpilib, attributes=attributes) is not None
 

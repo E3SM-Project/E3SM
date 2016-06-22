@@ -37,11 +37,11 @@ class MockMachines(object):
         """Return the name we were given."""
         return self.name
 
-    def is_valid_compiler(self, compiler):
+    def is_valid_compiler(self, _): # pylint:disable=no-self-use
         """Assume all compilers are valid."""
         return True
 
-    def is_valid_MPIlib(self, mpilib):
+    def is_valid_MPIlib(self, _): # pylint:disable=no-self-use
         """Assume all MPILIB settings are valid."""
         return True
 

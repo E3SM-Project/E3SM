@@ -13,7 +13,7 @@ from abc import ABCMeta, abstractmethod
 
 from CIME.XML.standard_module_setup import * # pylint: disable=wildcard-import
 from CIME.utils import get_cime_root
-from CIME.XML.machines import Machines
+from CIME.XML.machines import Machines # pylint: disable=unused-import
 
 __all__ = ["MacroMaker"]
 
@@ -640,6 +640,9 @@ class MacroConditionTree(object): # pylint: disable=too-many-instance-attributes
                             MacroConditionTree(name, partition[cond_val])
             self._branches = branches
 
+    # pylint shouldn't concern itself with the way that we access other, since
+    # it's actually a member of the same class.
+    # pylint:disable=protected-access
     def merge(self, other):
         """Merge another tree with this one.
 
@@ -686,6 +689,7 @@ class MacroConditionTree(object): # pylint: disable=too-many-instance-attributes
                     else:
                         self._branches[cond_val] = other_branch
                 return self
+    # pylint:enable=protected-access
 
     def write_out(self, writer):
         """Write tree to file.
@@ -717,6 +721,17 @@ class MacroConditionTree(object): # pylint: disable=too-many-instance-attributes
                 writer.start_ifeq(env_ref, cond_val)
                 self._branches[cond_val].write_out(writer)
                 writer.end_ifeq()
+
+
+def _merge_optional_trees(tree, big_tree):
+    """Merge two MacroConditionTrees when one or both objects may be `None`."""
+    if tree is not None:
+        if big_tree is None:
+            return tree
+        else:
+            return big_tree.merge(tree)
+    else:
+        return big_tree
 
 
 class CompilerBlock(object):
@@ -959,9 +974,8 @@ class MacroMaker(object):
         # pylint: enable=redefined-variable-type
 
         # Start processing the file.
-        tree = ET.parse(xml_file)
         value_lists = dict()
-        for compiler_elem in tree.findall("compiler"):
+        for compiler_elem in ET.parse(xml_file).findall("compiler"):
             block = CompilerBlock(writer, compiler_elem, self.machobj)
             # If this block matches machine settings, use it.
             if block.matches_machine(self.os):
@@ -988,16 +1002,10 @@ class MacroMaker(object):
                 # Make the conditional trees and write them out.
                 normal_tree, append_tree = \
                     value_lists[var_name].to_cond_trees()
-                if normal_tree is not None:
-                    if big_normal_tree is None:
-                        big_normal_tree = normal_tree
-                    else:
-                        big_normal_tree = big_normal_tree.merge(normal_tree)
-                if append_tree is not None:
-                    if big_append_tree is None:
-                        big_append_tree = append_tree
-                    else:
-                        big_append_tree = big_append_tree.merge(append_tree)
+                big_normal_tree = _merge_optional_trees(normal_tree,
+                                                        big_normal_tree)
+                big_append_tree = _merge_optional_trees(append_tree,
+                                                        big_append_tree)
                 # Remove this variable from the list of variables to handle
                 # next iteration.
                 del value_lists[var_name]
