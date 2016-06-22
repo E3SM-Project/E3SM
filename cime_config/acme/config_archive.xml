@@ -138,16 +138,12 @@
     </rpointer_content>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="dart" compclass="unset"> 
-    <hist_file_extension>\w*True_State\..*\.nc</hist_file_extension>
-    <hist_file_extension>\w*Prior_Diag\..*.nc</hist_file_extension>
-    <hist_file_extension>\w*Posterior_Diag\..*.nc</hist_file_extension>
-    <hist_file_extension>\w*obs_seq\..*.out</hist_file_extension>
-    <hist_file_extension>\w*obs_seq\..*.final</hist_file_extension>
-    <hist_file_extension>\w*obs_seq\..*.perfect</hist_file_extension>
-    <rest_file_extension>cam_\w*p[ro]\w*inflate_restart\w*</rest_file_extension>
-    <rest_file_extension>clm_\w*p[ro]\w*inflate_restart\w*</rest_file_extension>
-    <rest_file_extension>pop_\w*p[ro]\w*inflate_restart\w*</rest_file_extension>
+  <comp_archive_spec compname="dart" compclass="esp"> 
+    <hist_file_extension>True_State.*</hist_file_extension>
+    <hist_file_extension>Prior_Diag.*</hist_file_extension>
+    <hist_file_extension>Posterior_Diag.*</hist_file_extension>
+    <hist_file_extension>obs_seq.*</hist_file_extension>
+    <rest_file_extension>inflate_restart.*</rest_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer_file>rpointer.unset</rpointer_file>
     <rpointer_content >
