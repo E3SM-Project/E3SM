@@ -22,7 +22,7 @@ import operator
 logger = logging.getLogger(__name__)
 
 ###############################################################################
-def parse_command_line(args, description):
+def parse_command_line(args):
 ###############################################################################
     parser = argparse.ArgumentParser(description=__doc__,
                    formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -426,7 +426,7 @@ def diff_tree(atree, btree):
 
 
 def grid_compare():
-    cime2file, cime4file = parse_command_line(sys.argv, description)
+    cime2file, cime4file = parse_command_line(sys.argv)
     
     cime2gridtree = GridTree(cime2file)
     cime4gridtree = GridTree(cime4file)
