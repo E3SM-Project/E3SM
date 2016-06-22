@@ -116,7 +116,7 @@ class GenericXML(object):
         if xpath is None:
             xpath = ".//"+nodename
 
-        if attributes is not None:
+        if attributes:
             # xml.etree has limited support for xpath and does not allow more than
             # one attribute in an xpath query so we query seperately for each attribute
             # and create a result with the intersection of those lists
@@ -137,7 +137,7 @@ class GenericXML(object):
                         return []
 
         else:
-            logger.debug("xpath: %s" , xpath , extra={attributes : None})
+            logger.debug("xpath: %s" , xpath)
             nodes = root.findall(xpath)
 
         logger.debug("Returning %s nodes (%s)" , len(nodes), nodes)

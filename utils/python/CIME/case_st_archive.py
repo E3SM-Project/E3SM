@@ -399,6 +399,9 @@ def case_st_archive(case):
 
     caseroot = case.get_value("CASEROOT")
 
+    logger.info("st_archive starting")
+    # do short-term archiving
+
     append_status("st_archiving starting",
                  caseroot=caseroot, sfile="CaseStatus")
 
@@ -408,12 +411,14 @@ def case_st_archive(case):
 
     append_status("st_archiving completed",
                  caseroot=caseroot, sfile="CaseStatus")
+    logger.info("st_archive completed")
 
     # resubmit case if appropriate
     resubmit = case.get_value("RESUBMIT")
     if resubmit > 0:
         append_status("resubmitting from st_archive",
                       caseroot=caseroot, sfile="CaseStatus")
+        logger.info("resubmitting from st_archive, resubmit=%d"%resubmit)
         submit(case, resubmit=True)
 
     return True

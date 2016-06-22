@@ -4,7 +4,7 @@ API for preview namelist
 
 from XML.standard_module_setup import *
 from CIME.utils import expect, run_cmd
-from CIME.env_module import EnvModule
+from CIME.XML.env_mach_specific import EnvMachSpecific
 
 import glob, shutil
 logger = logging.getLogger(__name__)
@@ -49,8 +49,10 @@ def preview_namelists(case, dryrun=False, casedir=None):
     else:
 
         # Load modules
-        env_module = EnvModule(mach, compiler, cimeroot, caseroot, mpilib, debug)
-        env_module.load_env_for_case()
+        env_module = case._get_env("mach_specific")
+        env_module.load_env_for_case(compiler=case.get_value("COMPILER"),
+                                     debug=case.get_value("DEBUG"),
+                                     mpilib=case.get_value("MPILIB"))
 
         # Make necessary directories
         dirs_to_make = [os.path.join(exeroot, model, "obj") for model in models]

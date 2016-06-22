@@ -243,7 +243,7 @@ class SystemTestsCommon(object):
         compgen += " -testcase_base "+self._case.get_value("CASEBASEID")
         rc, out, err = run_cmd(compgen, ok_to_fail=True)
 
-        append_status(out.replace("compare","compare baseline", 1) + "/n",sfile="TestStatus")
+        append_status(out.replace("compare","compare baseline", 1),sfile="TestStatus")
         if rc != 0:
             append_status("Error in Baseline compare: %s\n%s"%(out,err), sfile="TestStatus.log")
 
@@ -259,9 +259,9 @@ class SystemTestsCommon(object):
             curmem = memlist[-1][1]
             diff = (curmem-blmem)/blmem
             if(diff < 0.1):
-                append_status("PASS: Memory usage baseline compare ",sfile="TestStatus")
+                append_status("PASS  Memory usage baseline compare ",sfile="TestStatus")
             else:
-                append_status("FAIL: Memory usage increase > 10% from baseline",sfile="TestStatus")
+                append_status("FAIL  Memory usage increase > 10% from baseline",sfile="TestStatus")
         # compare throughput to baseline
         current = self._get_throughput(newestcpllogfile)
         baseline = self._get_throughput(baselog)
@@ -269,9 +269,9 @@ class SystemTestsCommon(object):
         if baseline is not None and current is not None:
             diff = (baseline - current)/baseline
             if(diff < 0.25):
-                append_status("PASS: Throughput baseline compare ",sfile="TestStatus")
+                append_status("PASS  Throughput baseline compare ",sfile="TestStatus")
             else:
-                append_status("FAIL: Throughput increase > 25% from baseline",sfile="TestStatus")
+                append_status("FAIL  Throughput increase > 25% from baseline",sfile="TestStatus")
 
 
 

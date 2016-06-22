@@ -244,75 +244,11 @@ class Machines(GenericXML):
         False
         """
         result = False
-        batch_system = self.get_optional_node("batch_system", root=self.machine_node)
+        batch_system = self.get_optional_node("BATCH_SYSTEM", root=self.machine_node)
         if batch_system is not None:
-            result = (batch_system.get("type") != "none")
+            result = (batch_system.text is not None and batch_system.text != "none")
         logger.debug("Machine %s has batch: %s" % (self.machine, result))
         return result
-
-    def get_batch_system_type(self):
-        """
-        Return the batch system used on this machine
-
-        >>> machobj = Machines(machine="edison")
-        >>> machobj.get_batch_system_type()
-        'slurm'
-        """
-        batch_system = self.get_node("batch_system", root=self.machine_node)
-        return batch_system.get("type")
-
-    def get_module_system_type(self):
-        """
-        Return the module system used on this machine
-
-        >>> machobj = Machines()
-        >>> name = machobj.set_machine("edison")
-        >>> machobj.get_module_system_type()
-        'module'
-        """
-        module_system = self.get_node("module_system", root=self.machine_node)
-        return module_system.get("type")
-
-    def get_module_system_init_path(self, lang):
-        init_nodes = self.get_node("init_path", attributes={"lang":lang}, root=self.machine_node)
-        return init_nodes.text
-
-    def get_module_system_cmd_path(self, lang):
-        cmd_nodes = self.get_node("cmd_path", attributes={"lang":lang}, root=self.machine_node)
-        return cmd_nodes.text
-
-    def get_default_queue(self):
-        return self.get_optional_node("queue", attributes={"default" : "true"}, root=self.machine_node)
-
-    def get_all_queues(self):
-        return self.get_nodes("queue", root=self.machine_node)
-
-    def select_best_queue(self, num_pes):
-        # Make sure to check default queue first.
-        all_queues = []
-        all_queues.append( self.get_default_queue())
-        all_queues = all_queues + self.get_all_queues()
-        for queue in all_queues:
-            if queue is not None:
-                jobmin = queue.get("jobmin")
-                jobmax = queue.get("jobmax")
-                # if the fullsum is between the min and max # jobs, then use this queue.
-                if jobmin is not None and jobmax is not None and num_pes >= int(jobmin) and num_pes <= int(jobmax):
-                    return queue.text
-        return None
-
-    def get_max_walltime(self, queue):
-        walltime = None
-        for queue_node in self.get_all_queues():
-            if queue_node.text == queue:
-                walltime = queue_node.get("walltimemax")
-        return walltime
-
-    def get_walltimes(self):
-        return self.get_nodes("walltime", root=self.machine_node)
-
-    def get_default_walltime(self):
-        return self.get_optional_node("walltime", attributes={"default" : "true"}, root=self.machine_node)
 
     def get_suffix(self, suffix_type):
         node = self.get_optional_node("default_run_suffix")
@@ -359,16 +295,6 @@ class Machines(GenericXML):
                 expect(key in attribs, "Unhandled MPI property '%s'" % key)
 
             if all_match:
-                arg_node = self.get_optional_node("arguments", root=mpirun_node)
-                if arg_node is not None:
-                    arg_nodes = self.get_nodes("arg", root=arg_node)
-                    for arg_node in arg_nodes:
-                        arg_value = transform_vars(arg_node.text,
-                                                   case=case,
-                                                   subgroup=job,
-                                                   check_members=check_members,
-                                                   default=arg_node.get("default"))
-                        args[arg_node.get("name")] = arg_value
                 if is_default:
                     if matches > best_num_matched_default:
                         default_match = mpirun_node
@@ -382,6 +308,18 @@ class Machines(GenericXML):
                "Could not find a matching MPI for attributes: %s" % attribs)
 
         the_match = best_match if best_match is not None else default_match
+
+        # Now that we know the best match, compute the arguments
+        arg_node = self.get_optional_node("arguments", root=the_match)
+        if arg_node is not None:
+            arg_nodes = self.get_nodes("arg", root=arg_node)
+            for arg_node in arg_nodes:
+                arg_value = transform_vars(arg_node.text,
+                                           case=case,
+                                           subgroup=job,
+                                           check_members=check_members,
+                                           default=arg_node.get("default"))
+                args[arg_node.get("name")] = arg_value
 
 
         executable = self.get_node("executable", root=the_match)

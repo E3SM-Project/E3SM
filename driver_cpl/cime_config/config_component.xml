@@ -519,6 +519,15 @@
      <desc>The environment variables that will be loaded for this machine</desc>
   </entry>
 
+  <entry id="BATCH_SYSTEM">
+     <type>char</type>
+     <default_value>none</default_value>
+     <valid_values>pbs,lsf,slurm,cobalt,none</valid_values>
+     <group>config_batch</group>
+     <file>env_batch.xml</file>
+     <desc>The batch system type to use for this machine.</desc>
+  </entry>
+
   <entry id="env">
      <type>char</type>
      <default_value>UNSET</default_value>
@@ -555,18 +564,9 @@
     <desc>Perl 5 library directory</desc>
   </entry>
 
-  <entry id="batch_system">
-    <type>char</type>
-    <default_value>none</default_value>
-    <group>config_batch</group>
-    <file>env_batch.xml</file>
-    <desc>The batch system type for this particular machine</desc>
-  </entry>
-
   <entry id="mpirun">
     <type>char</type>
-    valid_values=""
-    <default_value>UNSET</default_value>
+    <default_value></default_value>
     <group>config_batch</group>
     <file>env_case.xml</file>
     <desc>The mpi run command associated with the machine configured batch system</desc>
@@ -596,13 +596,6 @@
     <desc>The module command path for module system defined for this machine</desc>
   </entry>
 
-  <entry id="BATCHREDIRECT">
-    <type>char</type>
-    <default_value></default_value>
-    <group>config_batch</group>
-    <file>env_batch.xml</file>
-    <desc>Batch redirect character</desc>
-  </entry>
 
   <!-- ===================================================================== -->
   <!-- definitions build -->
@@ -625,7 +618,7 @@
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>Case executable root directory.
-    (executable is $EXEROOT/cesm.exe, component libraries are in $EXEROOT/bld)
+    (executable is $EXEROOT/$MODEL.exe, component libraries are in $EXEROOT/bld)
     This is where the model builds its executable and by default runs the executable.
     Note that EXEROOT needs to have enough disk space for the experimental configuration
     requirements. As an example, a model run can produce more than a terabyte of
@@ -1863,23 +1856,6 @@
     <group>run_dout</group>
     <file>env_run.xml</file>
     <desc>Root directory on long term archiving store system for long-term data archives.</desc>
-  </entry>
-
-
-  <entry id="BATCHQUERY">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>config_batch</group>
-    <file>env_batch.xml</file>
-    <desc>command used to query batch system</desc>
-  </entry>
-
-  <entry id="BATCHSUBMIT">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>config_batch</group>
-    <file>env_batch.xml</file>
-    <desc>command used to submit to batch system</desc>
   </entry>
 
   <entry id="MPI_RUN_COMMAND">

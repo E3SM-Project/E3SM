@@ -127,7 +127,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     test_root = os.path.join(scratch_root, "jenkins")
 
     if (use_batch):
-        batch_system = _MACHINE.get_batch_system_type()
+        batch_system = _MACHINE.get_value("BATCH_SYSTEM")
         expect(batch_system is not None, "Bad XML. Batch machine has no batch_system configuration.")
 
     #
