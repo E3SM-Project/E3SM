@@ -33,7 +33,7 @@ class SEQ(SystemTestsCommon):
         if ( os.path.isfile(machpes1) ):
             shutil.copy(machpes1,"env_mach_pes.xml")
         else:
-            logging.warn("Copying env_mach_pes.xml to %s"%(machpes1))
+            logging.info("Copying env_mach_pes.xml to %s"%(machpes1))
             shutil.copy("env_mach_pes.xml", machpes1)
 
         comp_classes = self._case.get_value("COMP_CLASSES").split(',')
@@ -55,7 +55,7 @@ class SEQ(SystemTestsCommon):
                     ntasks = self._case.get_value("NTASKS_%s"%comp)
                     if ntasks > 1:
                         self._case.set_value("NTASKS_%s"%comp, max(1,ntasks-rootpe))
-                        self._case.set_value("ROOTPE_%s"%comp, rootpe+1)
+                        self._case.set_value("ROOTPE_%s"%comp, rootpe)
                         rootpe += 1
         self._case.flush()
         case_setup(self._case, test_mode=True, reset=True)
@@ -64,7 +64,7 @@ class SEQ(SystemTestsCommon):
         shutil.move("%s/%s.exe"%(exeroot,cime_model),
                     "%s/%s.exe.SEQ2"%(exeroot,cime_model))
         machpes2 = os.path.join("LockedFiles","env_mach_pes.SEQ2.xml")
-        logging.warn("Copying env_mach_pes.xml to %s"%(machpes2))
+        logging.info("Copying env_mach_pes.xml to %s"%(machpes2))
         shutil.copy("env_mach_pes.xml", machpes2)
 
     def run(self):
@@ -95,9 +95,10 @@ class SEQ(SystemTestsCommon):
         shutil.copy(os.path.join("LockedFiles", "env_mach_pes.SEQ2.xml"), "env_mach_pes.xml")
         shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles", "env_mach_pes.xml"))
 
-        logger.info("doing a second %d %s test with rootpes set to zero" % (stop_n, stop_option))
+        os.remove("%s/%s.exe"%(exeroot,cime_model))
         shutil.copy("%s/%s.exe.SEQ1"%(exeroot,cime_model),
                     "%s/%s.exe"%(exeroot,cime_model))
+        logger.info("doing a second %d %s test with rootpes set to zero" % (stop_n, stop_option))
         success = SystemTestsCommon._run(self, "seq")
 
         if success:

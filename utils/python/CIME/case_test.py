@@ -19,16 +19,21 @@ def case_test(case, testname=None):
     expect(testname is not None, "testname argument not resolved")
     logging.warn("Running test for %s" % testname)
 
-    test = globals()[testname](case)
+    try:
+        test = globals()[testname](case)
 
-    success = test.run()
+        success = test.run()
 
-    test.report()
+        test.report()
 
-    if case.get_value("GENERATE_BASELINE"):
-        test.generate_baseline()
+        if case.get_value("GENERATE_BASELINE"):
+            test.generate_baseline()
 
-    if case.get_value("COMPARE_BASELINE"):
-        test.compare_baseline()
+        if case.get_value("COMPARE_BASELINE"):
+            test.compare_baseline()
+    except:
+        # An uncaught except MUST cause the test to report FAIL
+        test._runstatus = "FAIL"
+        raise
 
     return success

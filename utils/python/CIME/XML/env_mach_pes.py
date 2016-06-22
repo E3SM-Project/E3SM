@@ -15,7 +15,7 @@ class EnvMachPes(EnvBase):
         """
         EnvBase.__init__(self, case_root, infile)
 
-    def get_value(self, vid, attribute={}, resolved=True, subgroup=None):
+    def get_value(self, vid, attribute=None, resolved=True, subgroup=None):
         value = EnvBase.get_value(self, vid, attribute, resolved, subgroup)
         if "NTASKS" in vid and value < 0:
             value = -1*value*self.get_value("PES_PER_NODE")

@@ -538,61 +538,58 @@ def get_project(machobj=None):
     return None
 
 def setup_standard_logging_options(parser):
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Print extra information")
     parser.add_argument("-d", "--debug", action="store_true",
                         help="Print debug information (very verbose)")
     parser.add_argument("-s", "--silent", action="store_true",
                         help="Print only warnings and error messages")
 
+class _LessThanFilter(logging.Filter):
+    def __init__(self, exclusive_maximum, name=""):
+        super(_LessThanFilter, self).__init__(name)
+        self.max_level = exclusive_maximum
+
+    def filter(self, record):
+        #non-zero return means we log this message
+        return 1 if record.levelno < self.max_level else 0
+
 def handle_standard_logging_options(args):
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'propagate': True,
-        'formatters': {
-            'verbose': {
-                'format': '%(name)-12s %(levelname)-8s %(message)s',
-                },
-            'debug': {
-                'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                },
-            'default':{
-                'format': '%(message)s',
-                },
-            },
-        'handlers': {
-            'console1': {
-                'class': 'logging.StreamHandler',
-                'formatter': 'default',
-                'level' : logging.INFO,
-                },
-            },
-        'root': {
-            'handlers': ['console1'],
-            }
-        }
-    root_logger=logging.getLogger()
-    # DEBUG trumps INFO trumps Silent (WARN)
-    if (args.debug == True):
-        file1 = {
-                'class': 'logging.FileHandler',
-                'mode':'w',
-                'formatter':'debug',
-                'filename' : '%s.log'%os.path.basename(sys.argv[0]),
-                'level' : logging.DEBUG,
-                }
-        LOGGING['handlers']['file1'] = file1
-        LOGGING['root']['handlers'].append('file1')
-        LOGGING['handlers']['console1']['formatter'] = 'debug'
+    """
+    Guide to logging in CIME.
+
+    logger.debug -> Verbose/detailed output, use for debugging, off by default. Goes to a .log file
+    logger.info -> Goes to stdout (and log if --debug). Use for normal program output
+    logger.warning -> Goes to stderr (and log if --debug). Use for minor problems
+    logger.error -> Goes to stderr (and log if --debug)
+    """
+    root_logger = logging.getLogger()
+
+    # Change info to go to stdout. This handle applies to INFO exclusively
+    stdout_stream_handler = logging.StreamHandler(stream=sys.stdout)
+    stdout_stream_handler.setLevel(logging.INFO)
+    stdout_stream_handler.addFilter(_LessThanFilter(logging.WARNING))
+    root_logger.addHandler(stdout_stream_handler)
+
+    # Change warnings and above to go to stderr
+    stderr_stream_handler = logging.StreamHandler(stream=sys.stderr)
+    stderr_stream_handler.setLevel(logging.WARNING)
+    root_logger.addHandler(stderr_stream_handler)
+
+    if args.debug:
+        # Set up log file to catch ALL logging records
+        log_file = "%s.log" % os.path.basename(sys.argv[0])
+
+        debug_log_handler = logging.FileHandler(log_file, mode='w')
+        debug_formatter   = logging.Formatter(fmt='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                                              datefmt='%m-%d %H:%M')
+        debug_log_handler.setFormatter(debug_formatter)
+        debug_log_handler.setLevel(logging.DEBUG)
+        root_logger.addHandler(debug_log_handler)
+
         root_logger.setLevel(logging.DEBUG)
-        logger.warn("Log level set to DEBUG")
-    elif (args.verbose == True):
-        LOGGING['handlers']['console1']['formatter'] = 'verbose'
-        logger.warn("Log level set to VERBOSE")
-    elif (args.silent == True):
+    elif args.silent:
         root_logger.setLevel(logging.WARN)
-    logging.config.dictConfig(LOGGING)
+    else:
+        root_logger.setLevel(logging.INFO)
 
 def get_logging_options():
     """
@@ -601,9 +598,7 @@ def get_logging_options():
     """
     root_logger = logging.getLogger()
 
-    if (root_logger.level == logging.INFO):
-        return "--verbose"
-    elif (root_logger.level == logging.DEBUG):
+    if (root_logger.level == logging.DEBUG):
         return "--debug"
     elif (root_logger.level == logging.WARN):
         return "--silent"
@@ -780,11 +775,14 @@ def transform_vars(text, case=None, subgroup=None, check_members=None, default=N
         whole_match = m.group()
         if check_members is not None and hasattr(check_members, variable.lower()) and getattr(check_members, variable.lower()) is not None:
             repl = getattr(check_members, variable.lower())
+            logger.debug("from check_members: in %s, replacing %s with %s" % (text, whole_match, str(repl)))
             text = text.replace(whole_match, str(repl))
         elif case is not None and case.get_value(variable.upper(), subgroup=subgroup) is not None:
             repl = case.get_value(variable.upper(), subgroup=subgroup)
+            logger.debug("from case: in %s, replacing %s with %s" % (text, whole_match, str(repl)))
             text = text.replace(whole_match, str(repl))
         elif default is not None:
+            logger.debug("from default: in %s, replacing %s with %s" % (text, whole_match, str(default)))
             text = text.replace(whole_match, default)
         else:
             # If no queue exists, then the directive '-q' by itself will cause an error
@@ -799,3 +797,20 @@ def transform_vars(text, case=None, subgroup=None, check_members=None, default=N
 def get_my_queued_jobs():
     # TODO
     return []
+
+def wait_for_unlocked(filepath):
+    locked = True
+    file_object = None
+    while locked:
+        try:
+            buffer_size = 8
+            # Opening file in append mode and read the first 8 characters.
+            file_object = open(filepath, 'a', buffer_size)
+            if file_object:
+                locked = False
+        except IOError, message:
+            locked = True
+            time.sleep(1)
+        finally:
+            if file_object:
+                file_object.close()

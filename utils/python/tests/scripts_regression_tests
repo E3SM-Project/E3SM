@@ -4,6 +4,10 @@ import unittest, sys, os, tempfile, shutil, re, threading, time, signal, glob, t
 
 LIB_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(LIB_DIR)
+# Remove all pyc files to ensure we're testing the right things
+import subprocess
+subprocess.call('/bin/rm $(find . -name "*.pyc")', shell=True, cwd=LIB_DIR)
+
 from CIME.utils import run_cmd
 import CIME.utils, update_acme_tests, wait_for_tests
 import CIME.system_test
@@ -18,7 +22,7 @@ MACHINE     = Machines()
 FAST_ONLY   = False
 NO_BATCH    = False
 
-logging.basicConfig()
+os.environ["CIME_GLOBAL_WALLTIME"] = "0:05:00"
 
 ###############################################################################
 class A_RunUnitTests(unittest.TestCase):
@@ -375,7 +379,6 @@ class TestCreateTestCommon(unittest.TestCase):
         self._machine           = MACHINE.get_machine_name()
         self._baseline_area     = MACHINE.get_value("CCSM_BASELINE")
         self._testroot          = MACHINE.get_value("CESMSCRATCHROOT")
-        self._jenkins_root      = os.path.join(self._testroot, "jenkins")
         self._compiler          = MACHINE.get_default_compiler()
         self._hasbatch          = MACHINE.has_batch_system() and not NO_BATCH
         self._do_teardown       = True # Will never do teardown if test failed
@@ -394,10 +397,9 @@ class TestCreateTestCommon(unittest.TestCase):
         if (os.path.isdir(baselines)):
             files_to_clean.append(baselines)
 
-        for root in [self._testroot, self._jenkins_root]:
-            for test_id in ["master", self._baseline_name]:
-                for leftover in glob.glob(os.path.join(root, "*%s*" % test_id)):
-                    files_to_clean.append(leftover)
+        for test_id in ["master", self._baseline_name]:
+            for leftover in glob.glob(os.path.join(self._testroot, "*%s*" % test_id)):
+                files_to_clean.append(leftover)
 
         do_teardown = self._do_teardown and sys.exc_info() == (None, None, None)
         if (not do_teardown):
@@ -594,9 +596,13 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
         TestCreateTestCommon.setUp(self)
 
-        # Need to run in a subdir in order to not have CTest clash
+        # Need to run in a subdir in order to not have CTest clash. Name it
+        # such that it should be cleaned up by the parent tearDown
         self._testdir = os.path.join(self._testroot, "jenkins_generic_test_subdir_%s" % self._baseline_name)
         os.makedirs(self._testdir)
+
+        # Change root to avoid clashing with other jenkins_generic_jobs
+        self._jenkins_root = os.path.join(self._testdir, "jenkins")
 
     ###########################################################################
     def simple_test(self, expect_works, extra_args, build_name=None):
@@ -608,7 +614,7 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
         if CIME.utils.get_model() == "acme" and build_name is not None:
             extra_args += " -p ACME_test --submit-to-cdash --cdash-build-group=Nightly -c %s" % build_name
 
-        cmd = "%s/jenkins_generic_job %s" % (TOOLS_DIR, extra_args)
+        cmd = "%s/jenkins_generic_job -r %s %s" % (TOOLS_DIR, self._testdir, extra_args)
         stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=self._testdir)
         if (expect_works):
             self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\njenkins_generic_job output:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
@@ -626,8 +632,14 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
     ###########################################################################
     def assert_no_sentinel(self):
     ###########################################################################
-        self.assertFalse(os.path.isfile(os.path.join(self._testroot, "ONGOING_TEST")),
+        self.assertFalse(os.path.isfile(os.path.join(self._testdir, "ONGOING_TEST")),
                          "job did not cleanup successfully")
+
+    ###########################################################################
+    def assert_sentinel(self):
+    ###########################################################################
+        self.assertTrue(os.path.isfile(os.path.join(self._testdir, "ONGOING_TEST")),
+                        "Missing sentinel")
 
     ###########################################################################
     def assert_num_leftovers(self, test_id=None):
@@ -638,16 +650,17 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
             test_id = self._baseline_name
         num_tests_in_tiny = len(update_acme_tests.get_test_suite("acme_test_only_pass"))
 
-        jenkins_dirs = glob.glob("%s/*%s*/" % (self._jenkins_root, test_id))
-        scratch_dirs = glob.glob("%s/*%s*/" % (self._testroot, test_id))
+        jenkins_dirs = glob.glob("%s/*%s*/" % (self._jenkins_root, test_id)) # case dirs
+        scratch_dirs = glob.glob("%s/*%s*/" % (self._testroot, test_id)) # blr/run dirs
 
         self.assertEqual(num_tests_in_tiny, len(jenkins_dirs),
                          msg="Wrong number of leftover directories in %s, expected %d, see %s" % \
                              (self._jenkins_root, num_tests_in_tiny, jenkins_dirs))
 
-        self.assertEqual(num_tests_in_tiny + 1, len(scratch_dirs),
-                         msg="Wrong number of leftover directories in %s, expected %d, see %s" % \
-                             (self._testroot, num_tests_in_tiny, scratch_dirs))
+        # JGF: Can't test this at the moment due to root change flag given to jenkins_generic_job
+        # self.assertEqual(num_tests_in_tiny + 1, len(scratch_dirs),
+        #                  msg="Wrong number of leftover directories in %s, expected %d, see %s" % \
+        #                      (self._testroot, num_tests_in_tiny, scratch_dirs))
 
     ###########################################################################
     def test_jenkins_generic_job(self):
@@ -675,6 +688,8 @@ class TestJenkinsGenericJob(TestCreateTestCommon):
 
         time.sleep(120)
 
+        self.assert_sentinel()
+
         kill_subprocesses(sig=signal.SIGTERM)
 
         run_thread.join(timeout=10)
@@ -689,6 +704,14 @@ class TestBlessTestResults(TestCreateTestCommon):
 ###############################################################################
 
     _test_name = "TESTRUNDIFF_Mmpi-serial.f19_g16_rx1.A"
+
+    ###########################################################################
+    def tearDown(self):
+    ###########################################################################
+        TestCreateTestCommon.tearDown(self)
+
+        if "TESTRUNDIFF_ALTERNATE" in os.environ:
+            del os.environ["TESTRUNDIFF_ALTERNATE"]
 
     ###########################################################################
     def simple_test(self, expect_works, extra_args):
@@ -709,20 +732,16 @@ class TestBlessTestResults(TestCreateTestCommon):
             self.assertEqual(stat, CIME.utils.TESTS_FAILED_ERR_CODE, msg="COMMAND '%s' SHOULD HAVE DETECTED FAILED TESTS\nOutput:\n%s\n\nerrput:\n%ss\n\ncode: %d" % (cmd, output, errput, stat))
 
     ###############################################################################
-    def test_create_test_rebless_namelist(self):
+    def test_bless_test_results(self):
     ###############################################################################
         # Generate some namelist baselines
         self.simple_test(True, "-g -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
-        # Change baseline
-        baseline_area = MACHINE.get_value("CCSM_BASELINE")
-        compiler      = MACHINE.get_default_compiler()
-        baseline_glob = glob.glob(os.path.join(baseline_area, compiler, self._baseline_name, "%s*" % self._test_name))
-        self.assertEqual(len(baseline_glob), 1, msg="Expected one match, got:\n%s" % "\n".join(baseline_glob))
+        # Hist compare should pass
+        self.simple_test(True, "-c -b %s -t %s-%s" % (self._baseline_name, self._baseline_name, CIME.utils.get_utc_timestamp()))
 
-        baseline_dir = baseline_glob[0]
-        os.remove(os.path.join(baseline_dir, "cpl.hi.nc"))
-        shutil.copy(os.path.join(CIME.utils.get_python_libs_root(), "tests", "cpl.hi2.nc.test"), os.path.join(baseline_dir, "cpl.hi.nc"))
+        # Change behavior
+        os.environ["TESTRUNDIFF_ALTERNATE"] = "True"
 
         # Hist compare should now fail
         test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_utc_timestamp())
@@ -814,7 +833,7 @@ class Z_FullSystemTest(TestCreateTestCommon):
         if (FAST_ONLY):
             self.skipTest("Skipping slow test")
 
-        create_test_cmd =  "%s/create_test cime_developer -t %s" % (SCRIPT_DIR, self._baseline_name)
+        create_test_cmd =  "%s/create_test cime_developer --walltime 0:15:00 -t %s" % (SCRIPT_DIR, self._baseline_name)
         if NO_BATCH:
             create_test_cmd += " --no-batch"
 
@@ -868,15 +887,26 @@ class TestCimeCase(TestCreateTestCommon):
 
 def _main_func():
 
-    if ("--fast" in sys.argv):
+    if "--fast" in sys.argv:
         sys.argv.remove("--fast")
         global FAST_ONLY
         FAST_ONLY = True
 
-    if ("--no-batch" in sys.argv):
+    if "--no-batch" in sys.argv:
         sys.argv.remove("--no-batch")
         global NO_BATCH
         NO_BATCH = True
+
+    args = lambda: None # just something to set attrs on
+    for log_param in ["debug", "silent"]:
+        flag = "--%s" % log_param
+        if flag in sys.argv:
+            sys.argv.remove(flag)
+            setattr(args, log_param, True)
+        else:
+            setattr(args, log_param, False)
+
+    CIME.utils.handle_standard_logging_options(args)
 
     unittest.main(verbosity=2)
 

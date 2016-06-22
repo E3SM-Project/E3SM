@@ -12,9 +12,6 @@ if(_CIMEROOT is None):
 _LIB_DIR = os.path.join(_CIMEROOT, "utils", "python")
 sys.path.append(_LIB_DIR)
 
-
 import CIME.utils
 CIME.utils.check_minimum_python_version(2, 7)
 CIME.utils.stop_buffering_output()
-# set up logging to file
-logging.basicConfig(level=logging.INFO)

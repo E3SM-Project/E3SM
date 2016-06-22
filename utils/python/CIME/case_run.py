@@ -22,11 +22,7 @@ def preRunCheck(case):
 
     # Pre run initialization code..
     caseroot = case.get_value("CASEROOT")
-    cimeroot = case.get_value("CIMEROOT")
     din_loc_root = case.get_value("DIN_LOC_ROOT")
-    compiler = case.get_value("COMPILER")
-    debug = case.get_value("DEBUG")
-    mach = case.get_value("MACH")
     batchsubmit = case.get_value("BATCHSUBMIT")
     mpilib = case.get_value("MPILIB")
     rundir = case.get_value("RUNDIR")
@@ -101,7 +97,7 @@ def runModel(case):
     cmd = machine.get_full_mpirun(tm, case, "case.run")
     cmd = case.get_resolved_value(cmd)
 
-    logger.debug("run command is %s " %cmd)
+    logger.info("run command is %s " %cmd)
     rundir = case.get_value("RUNDIR")
     run_cmd(cmd, from_dir=rundir)
     logger.info( "%s MODEL EXECUTION HAS FINISHED" %(time.strftime("%Y-%m-%d %H:%M:%S")))
@@ -131,18 +127,18 @@ def postRunCheck(case, lid):
         append_status(msg, caseroot=caseroot, sfile="CaseStatus")
         expect (False, msg)
     else:
-        if 'SUCCESSFUL TERMINATION' in open(cpl_logfile).read():
-            msg = "Run SUCCESSFUL"
-            append_status(msg, caseroot=caseroot, sfile="CaseStatus" )
-        else:
-            msg = "Model did not complete - see %s \n " %(cpl_logfile)
-            append_status(msg, caseroot=caseroot, sfile="CaseStatus")
-            expect (False, msg)
+        with open(cpl_logfile, 'r') as fd:
+            if 'SUCCESSFUL TERMINATION' in fd.read():
+                msg = "Run SUCCESSFUL"
+                append_status(msg, caseroot=caseroot, sfile="CaseStatus" )
+            else:
+                msg = "Model did not complete - see %s \n " %(cpl_logfile)
+                append_status(msg, caseroot=caseroot, sfile="CaseStatus")
+                expect (False, msg)
 
 ###############################################################################
 def getTimings(case, lid):
 ###############################################################################
-
     check_timing = case.get_value("CHECK_TIMING")
     if check_timing:
         caseroot = case.get_value("CASEROOT")
@@ -165,10 +161,12 @@ def getTimings(case, lid):
         logger.info( "gzipping timing stats.." )
         model = case.get_value("MODEL")
         timingfile = os.path.join(timingDir, model + "_timing_stats." + lid)
-        with open(timingfile, 'rb') as f_in, gzip.open(timingfile + '.gz', 'wb') as f_out:
-            shutil.copyfileobj(f_in, f_out)
+        with open(timingfile, 'rb') as f_in:
+            with gzip.open(timingfile + '.gz', 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
         os.remove(timingfile)
         logger.info("Done with timings")
+
 ###############################################################################
 def saveLogs(case, lid):
 ###############################################################################
@@ -194,11 +192,10 @@ def saveLogs(case, lid):
         for comp in comps:
             logfile = os.path.join(rundir, comp + '.log.' + lid)
             if os.path.isfile(logfile):
-                f_in = open(logfile)
-                f_out = gzip.open(logfile + '.gz', 'wb')
-                f_out.writelines(f_in)
-                f_out.close()
-                f_in.close()
+                with open(logfile, 'r') as f_in:
+                    with gzip.open(logfile + '.gz', 'wb') as f_out:
+                        f_out.writelines(f_in)
+
                 os.remove(logfile)
                 logfile_copy = logfile + '.gz'
                 shutil.copy(logfile_copy,
@@ -265,7 +262,7 @@ def case_run(case):
         saveLogs(case, lid)       # Copy log files back to caseroot
         getTimings(case, lid)     # Run the getTiming script
         if data_assimilation:
-            DoDataAssimilation(case, data_assimilation_script, lid)
+           DoDataAssimilation(case, data_assimilation_script, lid)
 
     resubmitCheck(case)
 

@@ -41,6 +41,9 @@ class TaskMaker(object):
         self._compute_values()
 
     def _compute_values(self):
+        """
+        JGF: This code really needs a refactor/rethink
+        """
         total_tasks = 0
         for ntasks, rootpe, pstrid in zip(self.NTASKS, self.ROOTPE, self.PSTRID):
             tt = rootpe + (ntasks - 1) * pstrid + 1
@@ -71,6 +74,8 @@ class TaskMaker(object):
 
                     maxt[total_tasks] = 0
                     total_tasks -= 1
+
+        logger.info("total tasks is: %s" % total_tasks)
 
         # compute min/max threads over all mpi tasks and sum threads
 	# reset maxt values from zero to one after checking for min values

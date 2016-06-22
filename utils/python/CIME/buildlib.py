@@ -5,7 +5,7 @@ common utilities for buildlib
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, run_cmd, handle_standard_logging_options, setup_standard_logging_options
 from CIME.case  import Case
-import sys, os, argparse
+import sys, os, argparse, doctest
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +24,7 @@ def parse_input(argv):
     parser.add_argument("caseroot", default=os.getcwd(),
                         help="Case directory")
 
+    # JGF: This doesn't appear to be used anywhere
     parser.add_argument("bldroot",
                         help="root for building library")
 

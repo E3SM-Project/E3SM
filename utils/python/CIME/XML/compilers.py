@@ -89,7 +89,7 @@ class Compilers(GenericXML):
             self.os       = os_
             self.mpilib   = mpilib
 
-    def get_value(self, name, resolved=True, subgroup=None):
+    def get_value(self, name, attribute=None, resolved=True, subgroup=None):
         """
         Get Value of fields in the config_compilers.xml file
         """

@@ -17,7 +17,7 @@ class EntryID(GenericXML):
         GenericXML.__init__(self, infile)
         self.groups={}
 
-    def get_default_value(self, node, attributes={}):
+    def get_default_value(self, node, attributes=None):
         """
         Set the value of an entry to the default value for that entry
         """
@@ -36,7 +36,7 @@ class EntryID(GenericXML):
 
         return value
 
-    def set_default_value(self, vid, val, attributes={}):
+    def set_default_value(self, vid, val, attributes=None):
         node = self.get_optional_node("entry", {"id":vid})
         if node is not None:
             default_node = self.get_optional_node("default_value", root=node)
@@ -47,7 +47,7 @@ class EntryID(GenericXML):
 
         return val
 
-    def get_value_match(self, vid, attributes={}):
+    def get_value_match(self, vid, attributes=None):
         # Handle this case:
         # <entry id ...>
         #  <values>
@@ -63,7 +63,7 @@ class EntryID(GenericXML):
             value = self._get_value_match(node, attributes)
         return value
 
-    def _get_value_match(self, node, attributes={}):
+    def _get_value_match(self, node, attributes=None):
         '''
         Note that the component class has a specific version of this function
         '''
@@ -84,7 +84,7 @@ class EntryID(GenericXML):
                 for key,value in valnode.attrib.iteritems():
                     # determine if key is in attributes dictionary
                     match_count = 0
-                    if key in attributes:
+                    if attributes is not None and key in attributes:
                         if re.search(value, attributes[key]):
                             logger.debug("Value %s and key %s match with value %s"%(value, key, attributes[key]))
                             match_count += 1
@@ -176,13 +176,12 @@ class EntryID(GenericXML):
             val = self._set_value(node, value, vid, subgroup, ignore_type)
         return val
 
-    def get_value(self, vid, attribute={}, resolved=True, subgroup=None):
+    def get_value(self, vid, attribute=None, resolved=True, subgroup=None):
         """
         Get a value for entry with id attribute vid.
         or from the values field if the attribute argument is provided
         and matches
         """
-
         logger.debug("Get Value")
         val = None
         node = self.get_optional_node("entry", {"id":vid})
@@ -214,13 +213,11 @@ class EntryID(GenericXML):
             type_str = self._get_type_info(node)
             return convert_to_type(val, type_str, vid)
 
-    def get_values(self, item, attribute={}, resolved=True, subgroup=None): # (self, vid, att, resolved=True , subgroup=None ):
-
+    def get_values(self, item, attribute=None, resolved=True, subgroup=None): # (self, vid, att, resolved=True , subgroup=None ):
         """
         If an entry includes a list of values return a list of dict matching each
         attribute to its associated value and group
         """
-
         logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" ,  self.__class__.__name__ , item, attribute, resolved, subgroup)
 
         nodes   = [] # List of identified xml elements
@@ -292,7 +289,7 @@ class EntryID(GenericXML):
 
         return elements
 
-    def add_elements_by_group(self, srcobj, attributes={}, infile=None):
+    def add_elements_by_group(self, srcobj, attributes=None, infile=None):
         """
         Add elements from srcobj to self under the appropriate
         group element, entries to be added must have a child element
@@ -309,7 +306,7 @@ class EntryID(GenericXML):
         # new entries in self - putting the entries as children of
         # group elements in file $file
         for src_node in nodelist:
-	    node  = deepcopy(src_node)
+            node  = deepcopy(src_node)
             gnode = src_node.find(".//group")
             gname = gnode.text
             if gname is None:

@@ -5,7 +5,7 @@ All interaction with and between the module files in XML/ takes place
 through the Case module.
 """
 from copy   import deepcopy
-import glob, shutil
+import glob, shutil, traceback
 from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, run_cmd, get_cime_root
@@ -105,11 +105,12 @@ class Case(object):
         self.flush()
 
     def _get_env(self, short_name):
-          full_name = "env_%s.xml" % (short_name)
-          for env_file in self._files:
-              if os.path.basename(env_file.filename) == full_name:
-                  return env_file
-          expect(False, "Could not find object for %s in case"%full_name)
+        full_name = "env_%s.xml" % (short_name)
+        for env_file in self._files:
+            if os.path.basename(env_file.filename) == full_name:
+                return env_file
+
+        expect(False, "Could not find object for %s in case"%full_name)
 
     def copy(self, newcasename, newcaseroot, newcimeroot=None, newsrcroot=None):
         newcase = deepcopy(self)
@@ -139,7 +140,7 @@ class Case(object):
 
         self._env_files_that_need_rewrite = set()
 
-    def get_value(self, item, attribute={}, resolved=True, subgroup=None):
+    def get_value(self, item, attribute=None, resolved=True, subgroup=None):
         result = None
         for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
@@ -166,7 +167,7 @@ class Case(object):
         return result
 
 
-    def get_values(self, item=None, attribute={}, resolved=True, subgroup=None):
+    def get_values(self, item=None, attribute=None, resolved=True, subgroup=None):
 
         """
         Return info object for given item, return all info for all item if item is empty.
@@ -243,7 +244,7 @@ class Case(object):
         then that value will be set in the file object and the file
         name is returned
         """
-        result = None;
+        result = None
         for env_file in self._env_entryid_files:
             result = env_file.set_value(item, value, subgroup, ignore_type)
             if (result is not None):
@@ -350,7 +351,7 @@ class Case(object):
         drv_config_file = files.get_value("CONFIG_DRV_FILE")
         drv_comp = Component(drv_config_file)
         for env_file in self._env_entryid_files:
-            nodes = env_file.add_elements_by_group(drv_comp, attributes=attlist);
+            env_file.add_elements_by_group(drv_comp, attributes=attlist)
 
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
@@ -361,17 +362,17 @@ class Case(object):
         for i in xrange(1,len(self._component_classes)):
             comp_class = self._component_classes[i]
             comp_name  = self._components[i-1]
-	    node_name = 'CONFIG_' + comp_class + '_FILE';
+	    node_name = 'CONFIG_' + comp_class + '_FILE'
             comp_config_file = files.get_value(node_name, {"component":comp_name}, resolved=True)
             expect(comp_config_file is not None,"No config file for component %s"%comp_name)
             compobj = Component(comp_config_file)
             for env_file in self._env_entryid_files:
-                env_file.add_elements_by_group(compobj, attributes=attlist);
+                env_file.add_elements_by_group(compobj, attributes=attlist)
             self._component_config_files.append((node_name,comp_config_file))
 
         # Add the group and elements for the config_files.xml
         for env_file in self._env_entryid_files:
-            env_file.add_elements_by_group(files, attlist);
+            env_file.add_elements_by_group(files, attlist)
 
         for key,value in self.lookups.items():
             result = self.set_value(key,value)
@@ -381,7 +382,8 @@ class Case(object):
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
                   user_compset=False, pesfile=None,
-                  user_grid=False, gridfile=None, ninst=1, test=False):
+                  user_grid=False, gridfile=None, ninst=1, test=False,
+                  walltime=None):
 
         #--------------------------------------------
         # compset, pesfile, and compset components
@@ -396,7 +398,7 @@ class Case(object):
         # grid
         #--------------------------------------------
         if user_grid is True and gridfile is not None:
-            self.set_value("GRIDS_SPEC_FILE", gridfile);
+            self.set_value("GRIDS_SPEC_FILE", gridfile)
         grids = Grids(gridfile)
 
         gridinfo = grids.get_grid_info(name=grid_name, compset=self._compsetname)
@@ -413,7 +415,7 @@ class Case(object):
         self.get_compset_var_settings()
 
         # Add the group and elements for the config_files.xml
-        for idx, config_file in enumerate(self._component_config_files):
+        for config_file in self._component_config_files:
             self.set_value(config_file[0],config_file[1])
 
         #--------------------------------------------
@@ -465,10 +467,10 @@ class Case(object):
                     expect(response.startswith("u"), "Aborting by user request")
 
         # the following go into the env_mach_specific file
-        vars = ("module_system", "environment_variables", "mpirun")
+        items = ("module_system", "environment_variables", "mpirun")
         env_mach_specific_obj = self._get_env("mach_specific")
-        for var in vars:
-            nodes = machobj.get_first_child_nodes(var)
+        for item in items:
+            nodes = machobj.get_first_child_nodes(item)
             for node in nodes:
                 env_mach_specific_obj.add_child(node)
 
@@ -528,7 +530,7 @@ class Case(object):
         env_batch = self._get_env("batch")
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
         env_batch.create_job_groups(bjobs)
-        env_batch.set_job_defaults(bjobs, pesize=maxval)
+        env_batch.set_job_defaults(bjobs, pesize=maxval, walltime=walltime)
         self._env_files_that_need_rewrite.add(env_batch)
 
         self.set_value("COMPSET",self._compsetname)
@@ -578,7 +580,6 @@ class Case(object):
             self.set_value(vid,value)
 
     def _create_caseroot_tools(self):
-        cime_model = get_model()
         machines_dir = os.path.abspath(self.get_value("MACHDIR"))
         toolsdir = os.path.join(self.get_value("CIMEROOT"),"scripts","Tools")
         caseroot = self.get_value("CASEROOT")

@@ -387,7 +387,8 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
         test_status_filepath = os.path.join(test_path, TEST_STATUS_FILENAME)
     else:
         test_status_filepath = test_path
-    logging.info("Watching file: '%s'" % test_status_filepath)
+
+    logging.debug("Watching file: '%s'" % test_status_filepath)
 
     while (True):
         if (os.path.exists(test_status_filepath)):
@@ -395,14 +396,14 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
 
             if (test_status == TEST_PENDING_STATUS and (wait and not SIGNAL_RECEIVED)):
                 time.sleep(SLEEP_INTERVAL_SEC)
-                logging.info("Waiting for test to finish")
+                logging.debug("Waiting for test to finish")
             else:
                 results.put( (test_name, test_path, test_status) )
                 break
 
         else:
             if (wait and not SIGNAL_RECEIVED):
-                logging.info("File '%s' does not yet exist" % test_status_filepath)
+                logging.debug("File '%s' does not yet exist" % test_status_filepath)
                 time.sleep(SLEEP_INTERVAL_SEC)
             else:
                 test_name = os.path.abspath(test_status_filepath).split("/")[-2]
@@ -463,12 +464,11 @@ def wait_for_tests(test_paths,
     all_pass = True
     for test_name, test_data in sorted(test_results.iteritems()):
         test_path, test_status = test_data
-        print "Test '%s' finished with status '%s'" % (test_name, test_status)
+        logging.info("Test '%s' finished with status '%s'" % (test_name, test_status))
         logging.info("    Path: %s" % test_path)
         all_pass &= test_status == TEST_PASS_STATUS
 
     if (cdash_build_name):
         create_cdash_xml(test_results, cdash_build_name, cdash_project, cdash_build_group, start_time)
-
 
     return all_pass

@@ -1,7 +1,7 @@
 """
 Base class for CIME system tests
 """
-import shutil, glob, gzip
+import shutil, glob, gzip, time
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_run import EnvRun
 from CIME.utils import run_cmd, append_status
@@ -22,6 +22,7 @@ class SystemTestsCommon(object):
         changed in a previous run of the test.
         """
         self._case = case
+        self._start_time = time.time()
         caseroot = case.get_value("CASEROOT")
         self._caseroot = caseroot
         self._orig_caseroot = caseroot
@@ -64,19 +65,25 @@ class SystemTestsCommon(object):
         self._caseroot = case.get_value("CASEROOT")
 
     def _run(self, suffix="base", coupler_log_path=None, st_archive=False):
-        success = case_run(self._case)
-        if success and st_archive:
-            success = case_st_archive(self._case)
+        try:
+            success = case_run(self._case)
+            if success and st_archive:
+                success = case_st_archive(self._case)
 
-        if success and self._coupler_log_indicates_run_complete(coupler_log_path):
-            if self._runstatus != "FAIL":
-                self._runstatus = "PASS"
-        else:
+            if success and self._coupler_log_indicates_run_complete(coupler_log_path):
+                if self._runstatus != "FAIL":
+                    self._runstatus = "PASS"
+            else:
+                success = False
+                self._runstatus = "FAIL"
+
+            if success and suffix is not None:
+                self._component_compare_move(suffix)
+        except:
+            # An exception must not prevent the TestStatus file from
+            # being marked FAIL
             success = False
             self._runstatus = "FAIL"
-
-        if success and suffix is not None:
-            self._component_compare_move(suffix)
 
         return success
 
@@ -87,8 +94,10 @@ class SystemTestsCommon(object):
                 teststatusfile = f.read()
             li = teststatusfile.rsplit('PEND', 1)
             teststatusfile = self._runstatus.join(li)
+            total_time = int(time.time() - self._start_time)
             with open(test_status, 'w') as f:
                 f.write(teststatusfile)
+                f.write("COMMENT TIME %d\n" % total_time)
 
     def _coupler_log_indicates_run_complete(self, coupler_log_path):
         newestcpllogfile = self._get_latest_cpl_log(coupler_log_path)
@@ -353,8 +362,12 @@ class TESTRUNDIFF(FakeTest):
 """
 echo Insta pass
 echo SUCCESSFUL TERMINATION > %s/cpl.log.$LID
-cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc.base
-""" % (rundir, cimeroot, rundir, case)
+if [ -z "$TESTRUNDIFF_ALTERNATE" ]; then
+  cp %s/utils/python/tests/cpl.hi1.nc.test %s/%s.cpl.hi.0.nc.base
+else
+  cp %s/utils/python/tests/cpl.hi2.nc.test %s/%s.cpl.hi.0.nc.base
+fi
+""" % (rundir, cimeroot, rundir, case, cimeroot, rundir, case)
         self._set_script(script)
         FakeTest.build(self,
                        sharedlib_only=sharedlib_only, model_only=model_only)

@@ -48,6 +48,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     machine = _MACHINE.get_machine_name()
     default_test_suite = _MACHINE.get_value("TESTS")
     default_maintain_baselines = machine in MACHINES_THAT_MAINTAIN_BASELINES
+    default_scratch_root = _MACHINE.get_value("CESMSCRATCHROOT")
 
     CIME.utils.setup_standard_logging_options(parser)
 
@@ -75,6 +76,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-t", "--test-suite", default=default_test_suite,
                         help="Override default acme test suite that will be run")
 
+    parser.add_argument("-r", "--scratch-root", default=default_scratch_root,
+                        help="Override default acme scratch root. Use this to avoid conflicting with other jenkins jobs")
+
     parser.add_argument("--cdash-build-group", default=wait_for_tests.CDASH_DEFAULT_BUILD_GROUP,
                         help="The build group to be used to display results on the CDash dashboard.")
 
@@ -89,7 +93,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     expect(not (args.cdash_project is not wait_for_tests.ACME_MAIN_CDASH and not args.submit_to_cdash),
            "Does not make sense to use --cdash-project without --submit-to-cdash")
 
-    return args.generate_baselines, args.submit_to_cdash, args.no_batch, args.baseline_name, args.cdash_build_name, args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare
+    return args.generate_baselines, args.submit_to_cdash, args.no_batch, args.baseline_name, args.cdash_build_name, args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare, args.scratch_root
 
 ###############################################################################
 def cleanup_queue(set_of_jobs_we_created):
@@ -111,7 +115,8 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
                         baseline_name,
                         arg_cdash_build_name, cdash_project,
                         arg_test_suite,
-                        cdash_build_group, baseline_compare):
+                        cdash_build_group, baseline_compare,
+                        scratch_root):
 ###############################################################################
     """
     Return True if all tests passed
@@ -121,7 +126,6 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
     use_batch = _MACHINE.has_batch_system() and not no_batch
     compiler = _MACHINE.get_default_compiler()
     test_suite = _MACHINE.get_value("TESTS")
-    scratch_root = _MACHINE.get_value("CESMSCRATCHROOT")
     proxy = _MACHINE.get_value("PROXY")
     test_suite = test_suite if arg_test_suite is None else arg_test_suite
     test_root = os.path.join(scratch_root, "jenkins")
@@ -263,10 +267,10 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare = \
+    generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare, scratch_root = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare)
+    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare, scratch_root)
              else CIME.utils.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################

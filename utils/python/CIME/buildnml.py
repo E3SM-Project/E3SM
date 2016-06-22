@@ -7,7 +7,9 @@ These are used by components/<model_type>/<component>/cime_config/buildnml
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, handle_standard_logging_options, setup_standard_logging_options
 from CIME.case import Case
-import sys, os, shutil, glob, argparse
+import sys, os, shutil, glob, argparse, doctest
+
+logger = logging.getLogger(__name__)
 
 ###############################################################################
 def parse_input(argv):
@@ -124,9 +126,9 @@ def build_data_nml(argv, compclass):
             # single-case restart for each instance
             rpointer = "rpointer." + compname
             if (os.path.isfile(os.path.join(rundir,rpointer)) and
-                (not os.path.isfile(os.path.join(rundir,rpointer+inst_string)))):
-                     shutil.copy(os.path.isfile(os.path.join(rundir,rpointer),
-                                                os.path.join(rundir,rpointer+inst_string)))
+                (not os.path.isfile(os.path.join(rundir,rpointer + inst_string)))):
+                shutil.copy(os.path.join(rundir, rpointer),
+                            os.path.join(rundir, rpointer + inst_string))
 
         # create namelist output infile using user_nl_file as input
         user_nl_file = os.path.join(caseroot, "user_nl_" + compname + inst_string)
@@ -184,8 +186,8 @@ def create_namelist_infile(case, user_nl_file, namelist_infile, infile_text=""):
         logger.info("file_infile %s " %infile_text)
 
     for line in lines_input:
-        match1 = re.search("^[\&\/\!]",line)
-        match2 = re.search("\$([\w\_])+",line)
+        match1 = re.search(r"^[\&\/\!]", line)
+        match2 = re.search(r"\$([\w\_])+", line)
 	if match1 is None and match2 is not None:
             line = case.get_resolved_value(line)
         if match1 is None:

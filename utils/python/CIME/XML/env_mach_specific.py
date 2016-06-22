@@ -6,6 +6,8 @@ from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.env_base import EnvBase
 
+import string
+
 logger = logging.getLogger(__name__)
 
 # Is not of type EntryID but can use functions from EntryID (e.g
@@ -21,9 +23,7 @@ class EnvMachSpecific(EnvBase):
         self._cshscript = []
         self._shscript = []
 
-
-
-    def get_values(self, item, attribute={}, resolved=True, subgroup=None):
+    def get_values(self, item, attribute=None, resolved=True, subgroup=None):
         """Returns the value as a string of the first xml element with item as attribute value.
         <element_name attribute='attribute_value>value</element_name>"""
 
