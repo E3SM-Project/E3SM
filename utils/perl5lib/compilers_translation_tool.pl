@@ -4,6 +4,23 @@ use strict;
 use warnings;
 use XML::LibXML;
 
+if ($ARGV[0] =~ '^(-)?-h(elp)?$') {
+    die <<EOF;
+SYNOPSIS
+    compilers_translation_tool.pl INPUT_FILE OUTPUT_FILE
+DESCRIPTION
+    Converts an old-style config_compilers.xml file (INPUT_FILE) to a new-style
+    config_build.xml file (OUTPUT_FILE). The new file should be checked both for
+    the accuracy of comments, and the accuracy of <env>/<var> tags.
+
+    The output file should conform to the config_build schema. This can be
+    confirmed by running:
+
+    xmllint -noout -schema \
+        \$CIME_ROOT/cime_config/xml_schemas/config_build.xsd OUTPUT_FILE
+EOF
+}
+
 my $orig_doc = XML::LibXML->load_xml(location => $ARGV[0]);
 
 my $orig_root = $orig_doc->documentElement();
@@ -96,7 +113,7 @@ foreach my $mpilib_node ( @mpilib_compiler_nodes ) {
             if ($child_node->hasAttribute("MPILIB")) {
                 my $child_mpilib = $child_node->getAttribute("MPILIB");
                 if ($child_mpilib ne $mpilib) {
-                    print STDERR "Warning: removing an element that had MPILIB=$child_mpilib\n";
+                    print STDERR "WARNING: Removing an element that had MPILIB=$child_mpilib\n";
                     print STDERR "This would not be used because the parent had MPILIB=$mpilib\n";
                     $mpilib_node->removeChild($child_node);
                 }
