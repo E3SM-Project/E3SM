@@ -10,8 +10,8 @@ module MultiPhysicsProbVSFM
 
   ! !USES:
   use mpp_varctl                         , only : iulog
-  use mpp_abortutils                         , only : endrun
-  use mpp_shr_log_mod                        , only : errMsg => shr_log_errMsg
+  use mpp_abortutils                     , only : endrun
+  use mpp_shr_log_mod                    , only : errMsg => shr_log_errMsg
   use MultiPhysicsProbBaseType           , only : multiphysicsprob_base_type
   use SystemOfEquationsVSFMType          , only : sysofeqns_vsfm_type
   use SystemOfEquationsBasePointerType   , only : sysofeqns_base_pointer_type
@@ -44,10 +44,16 @@ module MultiPhysicsProbVSFM
      procedure, public :: Restart                => VSFMMPPRestart
      procedure, public :: UpdateSysOfEqnsAuxVars => VSFMMPPUpdateSysOfEqnsAuxVars
      procedure, public :: SetMPIRank             => VSFMMPPSetMPIRank
+     procedure, public :: SetMeshesOfGoveqns     => VSFMMPPSetMeshesOfGoveqns
+     procedure, public :: AddGovEqn              => VSFMMPPAddGovEqn
+     procedure, public :: GovEqnAddCondition     => VSFMMPPGovEqnAddCondition
+     procedure, public :: AllocateAuxVars        => VSFMMPPAllocateAuxVars
+     procedure, public :: SetupProblem           => VSFMMPPSetupProblem
 
   end type mpp_vsfm_type
 
   type(mpp_vsfm_type), public, target :: vsfm_mpp
+  public :: VSFMMPPSetSoils
 
   !------------------------------------------------------------------------
 contains
@@ -68,11 +74,9 @@ contains
 
     call MPPBaseInit(this)
 
-    this%name   = 'Variably-Saturated-Flow-Model'
-    this%id     = MPP_VSFM_SNES_CLM
-    this%nmesh  = 1
+    allocate(this%sysofeqns)
+    call this%sysofeqns%Init()
 
-    nullify(this%sysofeqns)
     allocate(this%sysofeqns_ptr)
     nullify(this%sysofeqns_ptr%ptr)
 
@@ -103,7 +107,7 @@ contains
        xc_col, yc_col, zc_col, z, zi, dz,                         &
        area_col, grid_owner, col_itype,                           &
        watsat, hksat, bsw, sucsat, eff_porosity, zwt,             &
-       vsfm_satfunc_type)
+       vsfm_satfunc_type, density_type)
     !
     ! !DESCRIPTION:
     ! Sets up the Variably Saturated Flow Model (VSFM) - Multi-Phyiscs Problem 
@@ -151,6 +155,7 @@ contains
     PetscReal, intent(in), pointer :: eff_porosity(:,:)
     PetscReal, intent(in), pointer :: zwt(:)
     character(len=32), intent(in)  :: vsfm_satfunc_type
+    PetscInt, intent(in)           :: density_type
     !
     ! !LOCAL VARIABLES:
     PetscInt                       :: soe_type
@@ -192,7 +197,7 @@ contains
     ! Initliaze the VSFM-MPP
     call VSFMMPPInitialize(this, begc, endc, ncols_ghost, &
          zc_col, filter_vsfmc, watsat, hksat, bsw, sucsat, &
-         eff_porosity, zwt, vsfm_satfunc_type)
+         eff_porosity, zwt, vsfm_satfunc_type, density_type)
 
   end subroutine VSFMMPPSetup
 
@@ -210,7 +215,7 @@ contains
     use MultiPhysicsProbConstants        , only : AUXVAR_INTERNAL
     use MultiPhysicsProbConstants        , only : VAR_TEMPERATURE
     use MultiPhysicsProbConstants        , only : MPP_VSFM_SNES_CLM
-    use mpp_abortutils                       , only : endrun
+    use mpp_abortutils                   , only : endrun
     !
     implicit none
     !
@@ -303,12 +308,15 @@ contains
 
     call SNESSetFromOptions(vsfm_soe%snes, ierr); CHKERRQ(ierr)
 
+    ! Get pointers to governing-equations
+    call vsfm_soe%CreateVectorsForGovEqn()
+
   end subroutine VSFMMPPSetupPetscSNESSetup
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPInitialize(vsfm_mpp, begc, endc, ncols_ghost, &
        zc_col, filter_vsfmc, watsat, hksat, bsw, sucsat, eff_porosity, zwt, &
-       vsfm_satfunc_type)
+       vsfm_satfunc_type, density_type)
 
     !
     ! !DESCRIPTION:
@@ -326,7 +334,7 @@ contains
     use MultiPhysicsProbConstants        , only : AUXVAR_INTERNAL
     use MultiPhysicsProbConstants        , only : VAR_TEMPERATURE
     use MultiPhysicsProbConstants        , only : MPP_VSFM_SNES_CLM
-    use mpp_abortutils                       , only : endrun
+    use mpp_abortutils                   , only : endrun
     !
     implicit none
     !
@@ -343,6 +351,7 @@ contains
     PetscReal, intent(in), pointer                    :: eff_porosity(:,:)
     PetscReal, intent(in), pointer                    :: zwt(:)
     character(len=32), intent(in)                     :: vsfm_satfunc_type
+    PetscInt, intent(in)                              :: density_type
     !
     ! !LOCAL VARIABLES:
     PetscInt                                          :: size
@@ -357,7 +366,9 @@ contains
 
     ! Set initial coniditions
     call VSFMMPPSetSoils(vsfm_mpp, begc, endc, ncols_ghost, filter_vsfmc, &
-         watsat, hksat, bsw, sucsat, eff_porosity, vsfm_satfunc_type)
+         watsat, hksat, bsw, sucsat, eff_porosity, vsfm_satfunc_type, &
+         density_type)
+
     call VSFMMPPSetICs(  vsfm_mpp, begc, endc, zc_col, filter_vsfmc, zwt)
 
     ! Get pointers to governing-equations
@@ -423,7 +434,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPSetSoils(vsfm_mpp, begc, endc, ncols_ghost, filter_vsfmc, &
-       watsat, hksat, bsw, sucsat, eff_porosity, vsfm_satfunc_type)
+       watsat, hksat, bsw, sucsat, eff_porosity, vsfm_satfunc_type, density_type)
     !
     ! !DESCRIPTION:
     ! Sets soil properties for VSFM solver
@@ -444,11 +455,12 @@ contains
     PetscReal, intent(in), pointer :: sucsat(:,:)
     PetscReal, intent(in), pointer :: eff_porosity(:,:)
     character(len=32), intent(in)  :: vsfm_satfunc_type
+    PetscInt                       :: density_type
 
     select case(vsfm_mpp%id)
     case (MPP_VSFM_SNES_CLM)
        call VSFMMPPSetSoilsCLM(vsfm_mpp, begc, endc, ncols_ghost, filter_vsfmc, &
-            watsat, hksat, bsw, sucsat, eff_porosity, vsfm_satfunc_type)
+            watsat, hksat, bsw, sucsat, eff_porosity, vsfm_satfunc_type, density_type)
     case default
        write(iulog,*) 'VSFMMPPSetSoils: Unknown mpp_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -458,7 +470,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPSetSoilsCLM(vsfm_mpp, begc, endc, ncols_ghost, filter_vsfmc, &
-       watsat, hksat, bsw, sucsat, eff_porosity, vsfm_satfunc_type)
+       watsat, hksat, bsw, sucsat, eff_porosity, vsfm_satfunc_type, density_type)
     !
     ! !DESCRIPTION:
     ! Sets soil properties for VSFM solver from CLM
@@ -490,6 +502,7 @@ contains
     PetscReal, intent(in), pointer                    :: sucsat(:,:)
     PetscReal, intent(in), pointer                    :: eff_porosity(:,:)
     character(len=32), intent(in)                     :: vsfm_satfunc_type
+    PetscInt                                          :: density_type
     !
     ! !LOCAL VARIABLES:
     class (goveqn_richards_ode_pressure_type),pointer :: goveq_richards_ode_pres
@@ -533,6 +546,8 @@ contains
 
        cur_goveq => cur_goveq%next
     enddo
+
+    call goveq_richards_ode_pres%SetDensityType(density_type)
 
     ! Find the first hydrologically active soil column id
     first_active_hydro_col_id = -1
@@ -954,7 +969,326 @@ contains
     call VecCopy(vsfm_soe%soln, vsfm_soe%soln_prev, ierr); CHKERRQ(ierr)
     call VecCopy(vsfm_soe%soln, vsfm_soe%soln_prev_clm, ierr); CHKERRQ(ierr)
 
+    ! Free up memory
+    deallocate(dms)
+    deallocate(soln_subvecs)
+
   end subroutine VSFMMPPRestart
+
+  !------------------------------------------------------------------------
+  subroutine VSFMMPPSetMeshesOfGoveqns(this)
+    !
+    ! !DESCRIPTION:
+    ! Set association of governing equations and meshes
+    !
+    use GoverningEquationBaseType, only : goveqn_base_type
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(mpp_vsfm_type) :: this
+
+    call this%sysofeqns%SetMeshesOfGoveqns(this%meshes, this%nmesh)
+
+  end subroutine VSFMMPPSetMeshesOfGoveqns
+
+  !------------------------------------------------------------------------
+  subroutine VSFMMPPAddGovEqn(this, geq_type, name)
+    !
+    ! !DESCRIPTION:
+    ! Adds a governing equation to the MPP
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(mpp_vsfm_type) :: this
+    PetscInt             :: geq_type
+    character(len =*)    :: name
+
+    call this%sysofeqns%AddGovEqn(geq_type, name)
+
+  end subroutine VSFMMPPAddGovEqn
+
+
+  !------------------------------------------------------------------------
+  subroutine VSFMMPPGovEqnAddCondition(this, igoveqn, ss_or_bc_type, name, unit, &
+       cond_type, region_type, id_of_other_goveq)
+    !
+    ! !DESCRIPTION:
+    ! Adds a boundary/source-sink condition to a governing equation
+    !
+    use GoverningEquationBaseType, only : goveqn_base_type
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(mpp_vsfm_type)              :: this
+    PetscInt                          :: igoveqn
+    PetscInt                          :: ss_or_bc_type
+    character(len =*)                 :: name
+    character(len =*)                 :: unit
+    PetscInt                          :: cond_type
+    PetscInt                          :: region_type
+    PetscInt, optional                :: id_of_other_goveq
+    !
+    class(goveqn_base_type),pointer   :: cur_goveq
+    class(goveqn_base_type),pointer   :: other_goveq
+    PetscInt                          :: ii
+
+    if (igoveqn > this%sysofeqns%ngoveqns) then
+       write(iulog,*) 'Attempting to add condition for governing equation ' // &
+            'that is not in the list'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    cur_goveq => this%sysofeqns%goveqns
+    do ii = 1, igoveqn-1
+       cur_goveq => cur_goveq%next
+    enddo
+
+    if (.not.present(id_of_other_goveq)) then
+       call cur_goveq%AddCondition(ss_or_bc_type, name, unit, &
+            cond_type, region_type)
+    else
+
+       other_goveq => this%sysofeqns%goveqns
+       do ii = 1,id_of_other_goveq-1
+          other_goveq => other_goveq%next
+       enddo
+
+       call cur_goveq%AddCondition(ss_or_bc_type, name, unit, &
+            cond_type, region_type, id_of_other_goveq, other_goveq%id )
+    endif
+
+  end subroutine VSFMMPPGovEqnAddCondition
+
+  !------------------------------------------------------------------------
+  subroutine VSFMMPPAllocateAuxVars(this)
+    !
+    ! !DESCRIPTION:
+    ! Allocates auxvars for governing equations and system-of-governing-eqns
+    !
+    use SystemOfEquationsBaseType           , only : sysofeqns_base_type
+    use GoverningEquationBaseType           , only : goveqn_base_type
+    use GoveqnRichardsODEPressureType       , only : goveqn_richards_ode_pressure_type
+    use MultiPhysicsProbConstants           , only : COND_BC
+    use MultiPhysicsProbConstants           , only : COND_SS
+    use MultiPhysicsProbConstants           , only : COND_DIRICHLET_FRM_OTR_GOVEQ
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(mpp_vsfm_type)                   :: this
+    !
+    class(sysofeqns_base_type), pointer    :: soe_base
+    class(sysofeqns_vsfm_type), pointer :: soe
+    class(goveqn_base_type), pointer       :: cur_goveq
+    PetscInt                               :: igoveqn
+    PetscInt                               :: num_bc
+    PetscInt                               :: num_ss
+    PetscInt                               :: icond
+    PetscInt                               :: iauxvar
+    PetscInt                               :: iauxvar_beg, iauxvar_end
+    PetscInt                               :: iauxvar_beg_bc, iauxvar_end_bc
+    PetscInt                               :: iauxvar_beg_ss, iauxvar_end_ss
+    PetscInt                               :: count_bc, count_ss
+    PetscInt                               :: offset_bc, offset_ss
+    PetscInt, pointer                      :: ncells_for_bc(:)
+    PetscInt, pointer                      :: ncells_for_ss(:)
+    PetscInt, pointer                      :: offsets_bc(:)
+    PetscInt, pointer                      :: offsets_ss(:)
+
+    soe_base => this%sysofeqns
+
+    select type(soe_base)
+    class is(sysofeqns_vsfm_type)
+       soe => this%sysofeqns
+    class default
+       write(iulog,*) 'Unsupported class type'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end select
+
+    !
+    ! Pass-1: Determine total number of BCs (excluding BCs
+    !         needed for coupling various governing equations)
+    !         and SSs for all governing equations
+    !
+    igoveqn = 0
+    cur_goveq => soe%goveqns
+    do
+       if (.not.associated(cur_goveq)) exit
+
+       select type(cur_goveq)
+       class is (goveqn_richards_ode_pressure_type)
+          call cur_goveq%AllocateAuxVars()
+          call cur_goveq%GetNumCellsInConditions(COND_BC, &
+               COND_DIRICHLET_FRM_OTR_GOVEQ, num_bc, ncells_for_bc)
+          call cur_goveq%GetNumCellsInConditions(COND_SS, -9999, &
+               num_ss, ncells_for_ss)
+
+       end select
+
+       igoveqn = igoveqn + 1
+
+       soe%num_auxvars_in = soe%num_auxvars_in + &
+            cur_goveq%mesh%ncells_all
+
+       do icond = 1, num_bc
+          soe%num_auxvars_bc = soe%num_auxvars_bc + &
+               ncells_for_bc(icond)
+       enddo
+
+       do icond = 1, num_ss
+          soe%num_auxvars_ss = soe%num_auxvars_ss + &
+               ncells_for_ss(icond)
+       enddo
+
+       if (num_bc > 0) deallocate(ncells_for_bc)
+       if (num_ss > 0) deallocate(ncells_for_ss)
+
+       cur_goveq => cur_goveq%next
+    enddo
+
+    ! Allocate memory
+    allocate(soe%aux_vars_in           (soe%num_auxvars_in))
+    allocate(soe%aux_vars_bc           (soe%num_auxvars_bc))
+    allocate(soe%aux_vars_ss           (soe%num_auxvars_ss))
+
+    allocate(soe%soe_auxvars_bc_offset (soe%num_auxvars_bc))
+    allocate(soe%soe_auxvars_ss_offset (soe%num_auxvars_bc))
+    allocate(soe%soe_auxvars_bc_ncells (soe%num_auxvars_bc))
+    allocate(soe%soe_auxvars_ss_ncells (soe%num_auxvars_ss))
+
+    igoveqn        = 0
+    iauxvar_beg    = 0
+    iauxvar_end    = 0
+    iauxvar_beg_bc = 0
+    iauxvar_end_bc = 0
+    iauxvar_beg_ss = 0
+    iauxvar_end_ss = 0
+    count_bc       = 0
+    count_ss       = 0
+    offset_bc      = 0
+    offset_ss      = 0
+
+    !
+    ! Pass-2: Set values for auxvars of SoE
+    !
+    cur_goveq => soe%goveqns
+    do
+       if (.not.associated(cur_goveq)) exit
+
+       select type(cur_goveq)
+       class is (goveqn_richards_ode_pressure_type)
+          call cur_goveq%GetNumCellsInConditions(COND_BC, &
+               COND_DIRICHLET_FRM_OTR_GOVEQ, num_bc, ncells_for_bc)
+          call cur_goveq%GetNumCellsInConditions(COND_SS, -9999, &
+               num_ss, ncells_for_ss)
+
+       end select
+
+       igoveqn = igoveqn + 1
+
+       iauxvar_beg = iauxvar_end + 1
+       iauxvar_end = iauxvar_end + cur_goveq%mesh%ncells_all
+
+       do iauxvar = iauxvar_beg, iauxvar_end
+          call soe%aux_vars_in(iauxvar)%Init()
+
+          soe%aux_vars_in(iauxvar)%is_in     = PETSC_TRUE
+          soe%aux_vars_in(iauxvar)%goveqn_id = igoveqn
+       enddo
+
+       allocate(offsets_bc(num_bc))
+       allocate(offsets_ss(num_ss))
+
+       allocate(soe%soe_auxvars_bc_offset(num_bc))
+       allocate(soe%soe_auxvars_ss_offset(num_ss))
+       allocate(soe%soe_auxvars_bc_ncells(num_bc))
+       allocate(soe%soe_auxvars_ss_ncells(num_ss))
+
+       do icond = 1, num_bc
+          count_bc = count_bc + 1
+
+          soe%soe_auxvars_bc_offset(count_bc) = offset_bc
+          offsets_bc(icond)                   = offset_bc
+          soe%soe_auxvars_bc_ncells(count_bc) = ncells_for_bc(icond)
+          offset_bc                           = offset_bc + ncells_for_bc(icond)
+
+          iauxvar_beg_bc = iauxvar_end_bc + 1
+          iauxvar_end_bc = iauxvar_end_bc + ncells_for_bc(icond)
+
+          do iauxvar = iauxvar_beg_bc, iauxvar_end_bc
+             call soe%aux_vars_bc(iauxvar)%Init()
+
+             soe%aux_vars_bc(iauxvar)%is_ss        = PETSC_FALSE
+             soe%aux_vars_bc(iauxvar)%goveqn_id    = igoveqn
+             soe%aux_vars_bc(iauxvar)%condition_id = icond
+          enddo
+       enddo
+
+       do icond = 1, num_ss
+          count_ss = count_ss + 1
+          soe%soe_auxvars_ss_offset(count_ss) = offset_ss
+          offsets_ss(icond)                   = offset_ss
+          soe%soe_auxvars_ss_ncells(count_ss) = ncells_for_ss(icond)
+          offset_ss                           = offset_ss + ncells_for_ss(icond)
+
+          iauxvar_beg_ss = iauxvar_end_ss + 1
+          iauxvar_end_ss = iauxvar_end_ss + ncells_for_ss(icond)
+
+          do iauxvar = iauxvar_beg_ss, iauxvar_end_ss
+             call soe%aux_vars_ss(iauxvar)%Init()
+
+             soe%aux_vars_ss(iauxvar)%is_ss        = PETSC_TRUE
+             soe%aux_vars_ss(iauxvar)%goveqn_id    = igoveqn
+             soe%aux_vars_ss(iauxvar)%condition_id = icond
+          enddo
+       enddo
+
+       select type(cur_goveq)
+       class is (goveqn_richards_ode_pressure_type)
+          call cur_goveq%SetSOEAuxVarOffsets(num_bc, offsets_bc, num_ss, offsets_ss)
+       end select
+
+       if (num_bc > 0) deallocate(ncells_for_bc)
+       if (num_ss > 0) deallocate(ncells_for_ss)
+
+       deallocate(offsets_bc)
+       deallocate(offsets_ss)
+
+       cur_goveq => cur_goveq%next
+    enddo
+
+  end subroutine VSFMMPPAllocateAuxVars
+
+  !------------------------------------------------------------------------
+  subroutine VSFMMPPSetupProblem(this)
+    !
+    ! !DESCRIPTION:
+    ! Sets up the PETSc related data structure
+    !
+    ! !USES:
+    use MultiPhysicsProbConstants , only : SOE_RE_ODE
+    use MultiPhysicsProbConstants , only : PETSC_SNES
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(mpp_vsfm_type) :: this
+
+    select case(this%solver_type)
+    case (PETSC_SNES)
+      call VSFMMPPSetupPetscSNESSetup(this)
+    case default
+       write(iulog,*) 'VSFMMPPSetup: Unknown this%solver_type'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end select
+
+    this%sysofeqns%solver_type = this%solver_type
+    this%sysofeqns%itype       = SOE_RE_ODE
+
+  end subroutine VSFMMPPSetupProblem
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPClean(this)

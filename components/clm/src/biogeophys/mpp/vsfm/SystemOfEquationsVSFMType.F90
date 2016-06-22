@@ -9,8 +9,8 @@ module SystemOfEquationsVSFMType
   !
   ! !USES:
   use mpp_varctl                     , only : iulog
-  use mpp_abortutils                     , only : endrun
-  use mpp_shr_log_mod                    , only : errMsg => shr_log_errMsg
+  use mpp_abortutils                 , only : endrun
+  use mpp_shr_log_mod                , only : errMsg => shr_log_errMsg
   use SystemOfEquationsVSFMAuxType   , only : sysofeqns_vsfm_auxvar_type
   use SystemOfEquationsBaseType      , only : sysofeqns_base_type
   !
@@ -57,6 +57,8 @@ module SystemOfEquationsVSFMType
      procedure, public :: GetConditionNames      => VSFMSGetConditionNames
      procedure, public :: SetDataFromCLMForGhost => VSFMSOESetDataFromCLMForGhost
      procedure, public :: ComputeLateralFlux     => VSFMComputeLateralFlux
+     procedure, public :: AddGovEqn              => VSFMAddGovEqn
+     procedure, public :: CreateVectorsForGovEqn => VSFMCreateVectorsForGovEqn
   end type sysofeqns_vsfm_type
 
   public :: VSFMSOESetAuxVars
@@ -339,7 +341,7 @@ contains
     ! Allocate memory for aux vars
 
     call goveq_richards_pres%AllocateAuxVars()
-    call goveq_richards_pres%SetDensityType(DENSITY_TGDPB01)
+    !call goveq_richards_pres%SetDensityType(DENSITY_TGDPB01)
 
     vsfm_soe%num_auxvars_in       = goveq_richards_pres%mesh%ncells_all
     vsfm_soe%num_auxvars_in_local = goveq_richards_pres%mesh%ncells_local
@@ -1320,6 +1322,95 @@ contains
     enddo
 
   end subroutine VSFMSGetConditionNames
+
+  !------------------------------------------------------------------------
+  subroutine VSFMAddGovEqn(this, geq_type, name)
+    !
+    ! !DESCRIPTION:
+    ! Adds a governing equation to system-of-equations
+    !
+    ! !USES:
+    use SystemOfEquationsBaseType     , only : SOEBaseInit
+    use GoverningEquationBaseType     , only : goveqn_base_type
+    use MultiPhysicsProbConstants     , only : GE_RE
+    use MultiPhysicsProbConstants     , only : MESH_CLM_SOIL_COL
+    use GoveqnRichardsODEPressureType , only : goveqn_richards_ode_pressure_type
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(sysofeqns_vsfm_type) :: this
+    PetscInt                   :: geq_type
+    character(len=*)           :: name
+    !
+    ! !LOCAL VARIABLES:
+    class (goveqn_richards_ode_pressure_type) , pointer :: goveq_richards
+    class(goveqn_base_type),pointer                     :: cur_goveqn
+    integer                                             :: igoveqn
+
+    cur_goveqn => this%goveqns
+
+    do igoveqn = 1, this%ngoveqns - 1
+       cur_goveqn => cur_goveqn%next
+    enddo
+
+    this%ngoveqns = this%ngoveqns + 1
+
+    select case(geq_type)
+       case (GE_RE)
+
+          allocate(goveq_richards)
+          call goveq_richards%Setup()
+
+          goveq_richards%name        = trim(name)
+          goveq_richards%id_in_list  = this%ngoveqns
+          goveq_richards%mesh_itype  = MESH_CLM_SOIL_COL
+
+          if (this%ngoveqns == 1) then
+             this%goveqns => goveq_richards
+          else
+             cur_goveqn%next => goveq_richards
+          endif
+
+       case default
+          write(iulog,*) 'Unknown governing equation type'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       end select
+
+     end subroutine VSFMAddGovEqn
+
+  !------------------------------------------------------------------------
+  subroutine VSFMCreateVectorsForGovEqn(this)
+    !
+    ! !DESCRIPTION:
+    ! Creates vectors required by each governing equation
+    !
+    ! !USES:
+    use GoverningEquationBaseType     , only : goveqn_base_type
+    use GoveqnRichardsODEPressureType , only : goveqn_richards_ode_pressure_type
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(sysofeqns_vsfm_type)      :: this
+    !
+    class(goveqn_base_type),pointer :: cur_goveq
+
+    cur_goveq => this%goveqns
+    do
+       if (.not.associated(cur_goveq)) exit
+       select type(cur_goveq)
+       class is (goveqn_richards_ode_pressure_type)
+          call cur_goveq%CreateVectors()
+       class default
+          write(iulog,*) 'Unsupported cur_goveq type'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       end select
+       cur_goveq => cur_goveq%next
+    enddo
+
+  end subroutine VSFMCreateVectorsForGovEqn
+
   !------------------------------------------------------------------------
 
 #endif

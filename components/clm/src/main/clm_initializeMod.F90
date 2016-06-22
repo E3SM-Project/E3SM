@@ -931,28 +931,14 @@ contains
     use clm_varctl             , only : finidat
     use shr_infnan_mod         , only : shr_infnan_isnan
     use abortutils             , only : endrun
-    use SoilWaterMovementMod   , only : init_vsfm_condition_ids
-    use clm_varctl             , only : lateral_connectivity
-    use initGridCellsMod       , only : initGhostGridCells
-    use decompMod              , only : get_proc_total_ghosts
     use shr_infnan_mod         , only : isnan => shr_infnan_isnan
-    use domainMod              , only : ldomain
     use clm_varctl             , only : vsfm_lateral_model_type
-    use landunit_varcon        , only : istcrop, istsoil
-    use column_varcon          , only : icol_road_perv
-    use landunit_varcon        , only : max_lunit
-    use clm_varctl             , only : vsfm_satfunc_type
 #ifdef USE_PETSC_LIB
-    use domainLateralMod         , only : ldomain_lateral
-    use UnstructuredGridType     , only : ScatterDataG2L
     use MultiPhysicsProbVSFM     , only : vsfm_mpp
+    use MPPVSFMALM_Initialize    , only : MPPVSFMALM_Init
     use MultiPhysicsProbConstants, only : VAR_MASS
     use MultiPhysicsProbConstants, only : VAR_SOIL_MATRIX_POT
-    use MultiPhysicsProbConstants, only : VAR_PRESSURE
     use MultiPhysicsProbConstants, only : AUXVAR_INTERNAL
-    use MultiPhysicsProbConstants, only : DISCRETIZATION_VERTICAL_ONLY
-    use MultiPhysicsProbConstants, only : DISCRETIZATION_THREE_DIM
-    use MultiPhysicsProbConstants, only : DISCRETIZATION_VERTICAL_WITH_SS
 #endif
     !
     ! !ARGUMENTS
@@ -1008,27 +994,6 @@ contains
     integer              :: npfts_ghost           ! total number of ghost pfts on the processor
     integer              :: nCohorts_ghost        ! total number of ghost cohorts on the processor
 
-    real(r8), pointer    :: clm_watsat(:,:)
-    real(r8), pointer    :: clm_hksat(:,:)
-    real(r8), pointer    :: clm_bsw(:,:)
-    real(r8), pointer    :: clm_sucsat(:,:)
-    real(r8), pointer    :: clm_eff_porosity(:,:)
-    real(r8), pointer    :: clm_zwt(:)
-    real(r8), pointer    :: vsfm_watsat(:,:)
-    real(r8), pointer    :: vsfm_hksat(:,:)
-    real(r8), pointer    :: vsfm_bsw(:,:)
-    real(r8), pointer    :: vsfm_sucsat(:,:)
-    real(r8), pointer    :: vsfm_eff_porosity(:,:)
-    real(r8), pointer    :: vsfm_zwt(:)
-    integer, pointer     :: vsfm_filter(:)
-    real(r8), pointer    :: vsfm_dz(:,:)
-    real(r8), pointer    :: vsfm_zi(:,:)
-    integer, pointer     :: vsfm_col_itype(:)
-    real(r8), pointer    :: vsfm_z(:,:)
-    integer, pointer     :: vsfm_landunit_ind(:,:)
-    integer, pointer     :: vsfm_coli(:)
-    integer, pointer     :: vsfm_colf(:)
-
     character(len=32)    :: subname = 'initialize3'
     !----------------------------------------------------------------------
 
@@ -1046,14 +1011,6 @@ contains
     mflx_snowlyr_col     =>    waterflux_vars%mflx_snowlyr_col    ! Output: [real(r8) (:)   ]  mass flux to top soil layer due to disappearance of snow (kg H2O /s)
     vsfm_soilp_col_1d    =>    waterstate_vars%vsfm_soilp_col_1d  ! Output: [real(r8) (:)   ]  1D soil liquid pressure from VSFM [Pa]
     soilp_col            =>    waterstate_vars%soilp_col          ! Input:  [real(r8) (:)   ]  col soil liquid pressure
-
-    clm_watsat           =>    soilstate_vars%watsat_col           ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
-    clm_hksat            =>    soilstate_vars%hksat_col            ! Input:  [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
-    clm_bsw              =>    soilstate_vars%bsw_col              ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"
-    clm_sucsat           =>    soilstate_vars%sucsat_col           ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)
-    clm_eff_porosity     =>    soilstate_vars%eff_porosity_col     ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice
-
-    clm_zwt              =>    soilhydrology_vars%zwt_col
 
     if (.not.use_vsfm) return
 
@@ -1078,207 +1035,17 @@ contains
 
     nc = 1
 
-    allocate(xc_col            (bounds_proc%begc_all:bounds_proc%endc_all                      ))
-    allocate(yc_col            (bounds_proc%begc_all:bounds_proc%endc_all                      ))
-    allocate(zc_col            (bounds_proc%begc_all:bounds_proc%endc_all                      ))
-    allocate(area_col          (bounds_proc%begc_all:bounds_proc%endc_all                      ))
-    allocate(grid_owner        (bounds_proc%begg_all:bounds_proc%endg_all                      ))
+    call MPPVSFMALM_Init()
 
-    allocate(vsfm_filter       (bounds_proc%begc_all:bounds_proc%endc_all                      ))
-    allocate(vsfm_col_itype    (bounds_proc%begc_all:bounds_proc%endc_all                      ))
-    allocate(vsfm_zwt          (bounds_proc%begc_all:bounds_proc%endc_all                      ))
-    allocate(vsfm_watsat       (bounds_proc%begc_all:bounds_proc%endc_all, nlevgrnd            ))
-    allocate(vsfm_hksat        (bounds_proc%begc_all:bounds_proc%endc_all, nlevgrnd            ))
-    allocate(vsfm_bsw          (bounds_proc%begc_all:bounds_proc%endc_all, nlevgrnd            ))
-    allocate(vsfm_sucsat       (bounds_proc%begc_all:bounds_proc%endc_all, nlevgrnd            ))
-    allocate(vsfm_eff_porosity (bounds_proc%begc_all:bounds_proc%endc_all, nlevgrnd            ))
-    allocate(vsfm_z            (bounds_proc%begc_all:bounds_proc%endc_all, -nlevsno+1:nlevgrnd ))
-    allocate(vsfm_dz           (bounds_proc%begc_all:bounds_proc%endc_all, -nlevsno+1:nlevgrnd ))
-    allocate(vsfm_zi           (bounds_proc%begc_all:bounds_proc%endc_all, -nlevsno+0:nlevgrnd ))
+    ! PreSolve: Allows saturation value to be computed based on ICs and stored
+    !           in GE auxvar
+    call vsfm_mpp%sysofeqns%SetDtime(1.d0)
+    call vsfm_mpp%sysofeqns%PreSolve()
 
-    allocate(vsfm_landunit_ind (1:max_lunit, bounds_proc%begg:bounds_proc%endg))
-    allocate(vsfm_coli(bounds_proc%begl:bounds_proc%endl))
-    allocate(vsfm_colf(bounds_proc%begl:bounds_proc%endl))
+    ! PostSolve: Allows saturation value stored in GE auxvar to be copied into
+    !            SoE auxvar
+    call vsfm_mpp%sysofeqns%PostSolve()
 
-    vsfm_filter       (:)   = 0
-    vsfm_col_itype    (:)   = 0
-    vsfm_zwt          (:)   = 0._r8
-    vsfm_watsat       (:,:) = 0._r8
-    vsfm_hksat        (:,:) = 0._r8
-    vsfm_bsw          (:,:) = 0._r8
-    vsfm_sucsat       (:,:) = 0._r8
-    vsfm_eff_porosity (:,:) = 0._r8
-    vsfm_z            (:,:) = 0._r8
-    vsfm_zi           (:,:) = 0._r8
-    vsfm_dz           (:,:) = 0._r8
-
-    vsfm_landunit_ind (:,:) = 0
-    vsfm_coli         (:)   = 0
-    vsfm_colf         (:)   = 0
-
-    ! Save data to initialize VSFM
-    do c = bounds_proc%begc, bounds_proc%endc
-       l = col%landunit(c)
-
-       if (col%active(c) .and. &
-           (lun%itype(l) == istsoil .or. col%itype(c) == icol_road_perv .or. &
-           lun%itype(l) == istcrop)) then
-
-          vsfm_filter    (c) = 1
-          vsfm_zwt       (c) = clm_zwt(c)
-          vsfm_col_itype (c) = col%itype(c)
-
-          do j = 1 ,nlevgrnd
-             vsfm_watsat(c,j)       = clm_watsat(c,j)
-             vsfm_hksat(c,j)        = clm_hksat(c,j)
-             vsfm_bsw(c,j)          = clm_bsw(c,j)
-             vsfm_sucsat(c,j)       = clm_sucsat(c,j)
-             vsfm_eff_porosity(c,j) = clm_eff_porosity(c,j)
-          enddo
-
-          do j =  -nlevsno+1,nlevgrnd
-             vsfm_dz(c,j) = dz(c,j)
-             vsfm_z(c,j)  = z(c,j)
-          enddo
-
-          do j =  -nlevsno+0,nlevgrnd
-             vsfm_zi(c,j) = zi(c,j)
-          enddo
-
-       endif
-    enddo
-
-    if (lateral_connectivity) then
-
-       call initGhostGridCells()
-
-       call soilstate_vars%InitColdGhost(bounds_proc)
-
-       nblocks    = 4
-       ndata_send = nblocks*ldomain_lateral%ugrid%ngrid_local
-       ndata_recv = nblocks*ldomain_lateral%ugrid%ngrid_ghosted
-
-       allocate(data_send(ndata_send))
-       allocate(data_recv(ndata_recv))
-
-       ! Aggregate the data to send
-       do g = bounds_proc%begg, bounds_proc%endg
-
-          beg_idx = (g-bounds_proc%begg)*nblocks
-
-          if (isnan(ldomain%xCell(g))) then
-             call endrun(msg='ERROR initialize3: xCell = NaN')
-          endif
-          beg_idx = beg_idx + 1;
-          data_send(beg_idx) = ldomain%xCell(g)
-
-          if (isnan(ldomain%yCell(g))) then
-             call endrun(msg='ERROR initialize3: yCell = NaN')
-          endif
-          beg_idx = beg_idx + 1;
-          data_send(beg_idx) = ldomain%yCell(g)
-
-          if (isnan(ldomain%topo(g))) then
-             call endrun(msg='ERROR initialize3: topo = NaN')
-          endif
-          beg_idx = beg_idx + 1;
-          data_send(beg_idx) = ldomain%topo(g)
-
-          beg_idx = beg_idx + 1;
-          data_send(beg_idx) = real(iam)
-
-       enddo
-
-       ! Scatter: Global-to-Local
-       call ScatterDataG2L(ldomain_lateral%ugrid, nblocks, &
-            ndata_send, data_send, ndata_recv, data_recv)
-
-       ! Save data for ghost subgrid category
-       do c = bounds_proc%begc_all, bounds_proc%endc_all
-
-          g       = col%gridcell(c)
-          beg_idx = (g-bounds_proc%begg)*nblocks
-
-          beg_idx = beg_idx + 1; xc_col(c) = data_recv(beg_idx)
-          beg_idx = beg_idx + 1; yc_col(c) = data_recv(beg_idx)
-          beg_idx = beg_idx + 1; zc_col(c) = data_recv(beg_idx)
-          beg_idx = beg_idx + 1; grid_owner(g) = data_recv(beg_idx)
-
-          area_col(c) = ldomain_lateral%ugrid%areaGrid_ghosted(g-bounds_proc%begg + 1)
-
-       enddo
-
-       deallocate(data_send)
-       deallocate(data_recv)
-
-       call get_proc_total_ghosts(ncells_ghost, nlunits_ghost, &
-            ncols_ghost, npfts_ghost, nCohorts_ghost)
-
-       do g = bounds_proc%begg, bounds_proc%endg
-          do l = 1, max_lunit
-             vsfm_landunit_ind(l,g) = grc%landunit_indices(l,g)
-          enddo
-       enddo
-
-       do l = bounds_proc%begl, bounds_proc%endl
-          vsfm_coli(l) = lun%coli(l)
-          vsfm_colf(l) = lun%colf(l)
-       enddo
-
-    else
-
-      xc_col(:)     = 0._r8
-      yc_col(:)     = 0._r8
-      zc_col(:)     = 0._r8
-      grid_owner(:) = 0
-      area_col(:)   = 1._r8
-      ncols_ghost   = 0
-
-    endif
-
-    if (vsfm_lateral_model_type == 'none') then
-       discretization_type = DISCRETIZATION_VERTICAL_ONLY
-
-    else if (vsfm_lateral_model_type == 'source_sink') then
-       discretization_type = DISCRETIZATION_VERTICAL_WITH_SS
-
-    else if (vsfm_lateral_model_type == 'three_dimensional') then
-       discretization_type = DISCRETIZATION_THREE_DIM
-
-    else
-       call endrun(msg='ERROR clm_initializeMod: ' // &
-            'Unknown vsfm_lateral_model_type = ' // trim(vsfm_lateral_model_type) // &
-            errMsg(__FILE__, __LINE__))
-    endif
-
-    ! Allocate memory and setup data structure for VSFM-MPP
-    call vsfm_mpp%Setup(bounds_proc%begg,            &
-                        bounds_proc%endg,            &
-                        bounds_proc%begc,            &
-                        bounds_proc%endc,            &
-                        iam,                         &
-                        ldomain_lateral%ugrid,       &
-                        vsfm_landunit_ind,           &
-                        vsfm_coli,                   &
-                        vsfm_colf,                   &
-                        discretization_type,         &
-                        ncols_ghost,                 &
-                        vsfm_filter,                 &
-                        xc_col, yc_col, zc_col,      &
-                        vsfm_z,                      &
-                        vsfm_zi, vsfm_dz,            &
-                        area_col, grid_owner,        &
-                        vsfm_col_itype,              &
-                        vsfm_watsat, vsfm_hksat,     &
-                        vsfm_bsw, vsfm_sucsat,       &
-                        vsfm_eff_porosity,           &
-                        vsfm_zwt,                    &
-                        vsfm_satfunc_type            &
-                        )
-
-    ! Determing the source-sinks IDs of VSFM to map forcing data from
-    ! CLM to VSFM.
-    call init_vsfm_condition_ids()
 
     restart_vsfm = .false.
 
@@ -1336,7 +1103,6 @@ contains
        mflx_snowlyr_col_1d(:) = 0._r8
     end if
 
-
     ! Get total mass
     soe_auxvar_id = 1;
     call vsfm_mpp%sysofeqns%GetDataForCLM(AUXVAR_INTERNAL,   &
@@ -1385,27 +1151,7 @@ contains
           zwt(c) = (0._r8 - smp_l(c,jwt))/(smp_l(c,jwt) - &
                    smp_l(c,jwt+1))*(z_dn - z_up) + z_dn
         endif
-    end do
-
-    ! Free up memory
-    deallocate(xc_col            )
-    deallocate(yc_col            )
-    deallocate(zc_col            )
-    deallocate(area_col          )
-    deallocate(grid_owner        )
-    deallocate(vsfm_filter       )
-    deallocate(vsfm_zwt          )
-    deallocate(vsfm_watsat       )
-    deallocate(vsfm_hksat        )
-    deallocate(vsfm_bsw          )
-    deallocate(vsfm_sucsat       )
-    deallocate(vsfm_eff_porosity )
-    deallocate(vsfm_col_itype    )
-    deallocate(vsfm_zi           )
-    deallocate(vsfm_dz           )
-    deallocate(vsfm_landunit_ind )
-    deallocate(vsfm_coli         )
-    deallocate(vsfm_colf         )
+     end do
 
 #else
 

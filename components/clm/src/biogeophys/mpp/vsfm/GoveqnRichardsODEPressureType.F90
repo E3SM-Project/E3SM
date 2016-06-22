@@ -36,7 +36,11 @@ module GoveqnRichardsODEPressureType
      type (rich_ode_pres_auxvar_type) , pointer :: aux_vars_in(:)   ! Internal state.
      type (rich_ode_pres_auxvar_type) , pointer :: aux_vars_bc(:)   ! Boundary conditions.
      type (rich_ode_pres_auxvar_type) , pointer :: aux_vars_ss(:)   ! Source-sink.
-  contains
+
+     PetscInt, pointer                             :: soe_auxvars_bc_offset (:) ! SoE auxvar offset corresponding to BCs
+     PetscInt, pointer                             :: soe_auxvars_ss_offset (:) ! SoE auxvar offset corresponding to SSs
+
+   contains
      procedure, public :: AllocateAuxVars           => RichardsODEPressureAllocateAuxVars
      procedure, public :: SetDensityType            => RichardsODEPressureSetDensityType
      procedure, public :: Setup                     => RichardsODESetup
@@ -59,6 +63,10 @@ module GoveqnRichardsODEPressureType
      procedure, public :: NumConditions             => RichardsODEPressureNumConditions
      procedure, public :: NumCellsInConditions      => RichardsODEPressureNumCellsInConditions
      procedure, public :: GetConditionNames         => RichardsODEPressureGetConditionNames
+     procedure, public :: GetNumConditions          => RichardsODEPressureGetNumConditions
+     procedure, public :: GetNumCellsInConditions   => RichardsODEPressureGetNumCellsInConditions
+     procedure, public :: SetSOEAuxVarOffsets       => RichardsODEPressureSetSOEAuxVarOffsets
+     procedure, public :: CreateVectors             => RichardsODEPressureCreateVectors
 
      procedure, public :: ComputeLateralFlux        => RichardsODEComputeLateralFlux
   end type
@@ -88,6 +96,9 @@ contains
     this%id           = GE_RE
     this%mesh_itype   = MESH_CLM_SOIL_COL
 
+    nullify(this%soe_auxvars_bc_offset)
+    nullify(this%soe_auxvars_ss_offset)
+
   end subroutine RichardsODESetup
 
   !------------------------------------------------------------------------
@@ -113,6 +124,7 @@ contains
     PetscInt                                 :: ncells_cond
     PetscInt                                 :: sum_conn
     PetscInt                                 :: icond
+    PetscInt                                 :: ncond
 
     ! Allocate memory and initialize aux vars: For internal connections
     allocate(this%aux_vars_in(this%mesh%ncells_all))
@@ -136,10 +148,12 @@ contains
 
     ! Allocate memory and initialize aux vars: For boundary connections
     ncells_cond = 0
+    ncond       = 0
     cur_cond => this%boundary_conditions%first
     do
        if (.not.associated(cur_cond)) exit
        ncells_cond = ncells_cond + cur_cond%ncells
+       ncond       = ncond + 1
        cur_cond => cur_cond%next
     enddo
     allocate(this%aux_vars_bc(ncells_cond))
@@ -150,19 +164,25 @@ contains
     enddo
     this%boundary_flux(:) = 0.d0
     this%bnd_mass_exc(:) = 0.d0
+    allocate(this%soe_auxvars_bc_offset(ncond))
+    this%soe_auxvars_bc_offset(:) = -1
 
     ! Allocate memory and initialize aux vars: For source sink connections
     ncells_cond = 0
+    ncond       = 0
     cur_cond => this%source_sinks%first
     do
        if (.not.associated(cur_cond)) exit
        ncells_cond = ncells_cond + cur_cond%ncells
+       ncond       = ncond + 1
        cur_cond => cur_cond%next
     enddo
     allocate(this%aux_vars_ss(ncells_cond))
     do icond = 1,ncells_cond
        call this%aux_vars_ss(icond)%Init()
     enddo
+    allocate(this%soe_auxvars_ss_offset(ncond))
+    this%soe_auxvars_ss_offset(:) = -1
 
   end subroutine RichardsODEPressureAllocateAuxVars
 
@@ -1962,6 +1982,193 @@ contains
   end subroutine RichardsODEPressurePreStepDT
 
   !------------------------------------------------------------------------
+  subroutine RichardsODEPressureGetNumConditions(this, cond_type, &
+              cond_type_to_exclude, num_conds)
+    !
+    ! !DESCRIPTION:
+    ! Returns the total number of conditions
+    !
+    ! !USES:
+    use ConditionType             , only : condition_type
+    use MultiPhysicsProbConstants , only : COND_BC
+    use MultiPhysicsProbConstants , only : COND_SS
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(goveqn_richards_ode_pressure_type) :: this
+    PetscInt                                 :: cond_type
+    PetscInt                                 :: cond_type_to_exclude
+    PetscInt, intent(out)                    :: num_conds
+    !
+    type(condition_type),pointer             :: cur_cond
+    character(len=256)                       :: string
+
+    ! Choose the condition type
+    select case (cond_type)
+    case (COND_BC)
+       cur_cond => this%boundary_conditions%first
+    case (COND_SS)
+      cur_cond => this%source_sinks%first
+    case default
+       write(string,*) cond_type
+       write(iulog,*) 'ERROR: Unknown cond_type = ' // trim(string)
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end select
+
+    num_conds = 0
+    do
+       if (.not.associated(cur_cond)) exit
+       if (cur_cond%itype /= cond_type_to_exclude) then
+          num_conds = num_conds + 1
+       endif
+       cur_cond => cur_cond%next
+    enddo
+
+  end subroutine RichardsODEPressureGetNumConditions
+
+  !------------------------------------------------------------------------
+  subroutine RichardsODEPressureGetNumCellsInConditions(this, cond_type, &
+                cond_type_to_exclude, num_conds, ncells_for_conds)
+    !
+    ! !DESCRIPTION:
+    ! Returns the total number of conditions (eg. boundary condition or
+    ! source-sink) and number of control volumes associated with each condition
+    !
+    ! !USES:
+    use ConditionType             , only : condition_type
+    use MultiPhysicsProbConstants , only : COND_BC
+    use MultiPhysicsProbConstants , only : COND_SS
+    use MultiPhysicsProbConstants , only : COND_NULL
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(goveqn_richards_ode_pressure_type) :: this
+    PetscInt, intent(in)                     :: cond_type
+    PetscInt, intent(in)                     :: cond_type_to_exclude
+    PetscInt, intent(out)                    :: num_conds
+    PetscInt, intent(out), pointer           :: ncells_for_conds(:)
+    !
+    type(condition_type),pointer             :: cur_cond
+    character(len=256)                       :: string
+
+    ! Find number of BCs
+    call this%GetNumConditions(cond_type, COND_NULL, num_conds)
+
+    if (num_conds == 0) then
+       nullify(ncells_for_conds)
+       return
+    endif
+
+    allocate(ncells_for_conds(num_conds))
+
+    ! Choose the condition type
+    select case (cond_type)
+    case (COND_BC)
+       cur_cond => this%boundary_conditions%first
+    case (COND_SS)
+      cur_cond => this%source_sinks%first
+    case default
+       write(string,*) cond_type
+       write(iulog,*) 'ERROR: Unknown cond_type = ' // trim(string)
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end select
+
+    num_conds = 0
+    do
+       if (.not.associated(cur_cond)) exit
+       if (cur_cond%itype /= cond_type_to_exclude) then
+          num_conds = num_conds + 1
+          ncells_for_conds(num_conds) = cur_cond%ncells
+       endif
+       cur_cond => cur_cond%next
+    enddo
+
+  end subroutine RichardsODEPressureGetNumCellsInConditions
+
+  !------------------------------------------------------------------------
+  subroutine RichardsODEPressureSetSOEAuxVarOffsets(this, &
+       bc_offset_count, bc_offsets, &
+       ss_offset_count, ss_offsets)
+    !
+    ! !DESCRIPTION:
+    ! For auxvars corresponding to boundary and source-sink condition, set
+    ! offsets corresponding to auxvars of SoE.
+    !
+    ! !USES:
+    use ConditionType             , only : condition_type
+    use MultiPhysicsProbConstants , only : COND_DIRICHLET_FRM_OTR_GOVEQ
+    use MultiPhysicsProbConstants , only : COND_BC
+    use MultiPhysicsProbConstants , only : COND_SS
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(goveqn_richards_ode_pressure_type) :: this
+    PetscInt                                 :: bc_offset_count
+    PetscInt, pointer                        :: bc_offsets(:)
+    PetscInt                                 :: ss_offset_count
+    PetscInt, pointer                        :: ss_offsets(:)
+    !
+    ! !LOCAL VARIABLES
+    type(condition_type),pointer             :: cur_cond
+    PetscInt                                 :: cond_count
+
+    call this%GetNumConditions(COND_BC, -1, cond_count)
+    if (bc_offset_count > cond_count) then
+       write(iulog,*) 'ERROR: bc_offset_count > cond_count'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    call this%GetNumConditions(COND_SS, -1, cond_count)
+    if (ss_offset_count > cond_count) then
+       write(iulog,*) 'ERROR: ss_offset_count > cond_count'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    allocate(this%soe_auxvars_bc_offset(bc_offset_count))
+    cond_count = 0
+    cur_cond => this%boundary_conditions%first
+    do
+       if (.not.associated(cur_cond)) exit
+       cond_count = cond_count + 1
+       if (cur_cond%itype /= COND_DIRICHLET_FRM_OTR_GOVEQ) then
+          this%soe_auxvars_bc_offset(cond_count) = bc_offsets(cond_count)
+       endif
+       cur_cond => cur_cond%next
+    enddo
+
+    allocate(this%soe_auxvars_ss_offset(ss_offset_count))
+    cond_count = 0
+    cur_cond => this%source_sinks%first
+    do
+       if (.not.associated(cur_cond)) exit
+       cond_count = cond_count + 1
+       this%soe_auxvars_ss_offset(cond_count) = ss_offsets(cond_count)
+       cur_cond => cur_cond%next
+    enddo
+
+  end subroutine RichardsODEPressureSetSOEAuxVarOffsets
+
+  !------------------------------------------------------------------------
+  subroutine RichardsODEPressureCreateVectors(this)
+    !
+    ! !DESCRIPTION:
+    ! Creates required PETSc vectors.
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(goveqn_richards_ode_pressure_type) :: this
+    !
+    PetscErrorCode                  :: ierr
+
+    call VecCreateSeq(PETSC_COMM_SELF, this%mesh%ncells_local, &
+            this%accum_prev, ierr)
+       CHKERRQ(ierr)
+
+     end subroutine RichardsODEPressureCreateVectors
 
 #endif
 
