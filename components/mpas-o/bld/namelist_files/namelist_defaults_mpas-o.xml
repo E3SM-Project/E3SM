@@ -110,7 +110,12 @@
 <config_Leith_visc2_max>2.5e3</config_Leith_visc2_max>
 
 <!-- mesoscale_eddy_parameterization -->
-<config_use_standardGM>.true.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oQU240">.true.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oQU120">.true.</config_use_standardGM>
+<config_use_standardGM ocn_grid="mpas120">.true.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oEC60to30">.true.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oRRS30to10">.true.</config_use_standardGM>
+<config_use_standardGM ocn_grid="oRRS15to5">.false.</config_use_standardGM>
 <config_use_Redi_surface_layer_tapering>.false.</config_use_Redi_surface_layer_tapering>
 <config_Redi_surface_layer_tapering_extent>0.0</config_Redi_surface_layer_tapering_extent>
 <config_use_Redi_bottom_layer_tapering>.false.</config_use_Redi_bottom_layer_tapering>
@@ -883,7 +888,7 @@
 <config_AM_timeSeriesStats_duration_intervals>'repeat_interval'</config_AM_timeSeriesStats_duration_intervals>
 <config_AM_timeSeriesStats_repeat_intervals>'reset_interval'</config_AM_timeSeriesStats_repeat_intervals>
 <config_AM_timeSeriesStats_reset_intervals>'00-01-00_00:00:00'</config_AM_timeSeriesStats_reset_intervals>
-<config_AM_timeSeriesStats_backward_output_offset>'00-00-00_00:00:00'</config_AM_timeSeriesStats_backward_output_offset>
+<config_AM_timeSeriesStats_backward_output_offset>'0000-01-00_00:00:00'</config_AM_timeSeriesStats_backward_output_offset>
 
 <!-- AM_pointwiseStats -->
 <config_AM_pointwiseStats_enable>.false.</config_AM_pointwiseStats_enable>
