@@ -1538,6 +1538,8 @@ contains
 ! !DESCRIPTION:
 ! Initialize pft energy flux variables
 !
+! !USES:
+    use clm_varcon, only : spval
 ! !ARGUMENTS:
     implicit none
     integer, intent(in) :: beg, end
@@ -1653,9 +1655,9 @@ contains
     pef%eflx_sh_veg(beg:end) = nan
     pef%eflx_lh_vege(beg:end) = nan
     pef%eflx_lh_vegt(beg:end) = nan
-    pef%eflx_wasteheat_pft(beg:end) = nan
-    pef%eflx_heat_from_ac_pft(beg:end) = nan
-    pef%eflx_traffic_pft(beg:end) = nan
+    pef%eflx_wasteheat_pft(beg:end) = spval
+    pef%eflx_heat_from_ac_pft(beg:end) = spval
+    pef%eflx_traffic_pft(beg:end) = spval
     pef%eflx_anthro(beg:end) = nan
     pef%cgrnd(beg:end) = nan
     pef%cgrndl(beg:end) = nan
@@ -3845,6 +3847,8 @@ contains
 ! !DESCRIPTION: 
 ! Initialize landunit energy flux variables
 !
+! !USES:
+    use clm_varcon, only : spval
 ! !ARGUMENTS:
     implicit none
     integer, intent(in) :: beg, end 
@@ -3861,10 +3865,10 @@ contains
     allocate(lef%eflx_wasteheat(beg:end))
     allocate(lef%eflx_heat_from_ac(beg:end))
 
-    lef%eflx_traffic(beg:end) = nan
+    lef%eflx_traffic(beg:end) = spval
     lef%eflx_traffic_factor(beg:end) = nan
-    lef%eflx_wasteheat(beg:end) = nan
-    lef%eflx_heat_from_ac(beg:end) = nan
+    lef%eflx_wasteheat(beg:end) = spval
+    lef%eflx_heat_from_ac(beg:end) = spval
 
   end subroutine init_landunit_eflux_type
 

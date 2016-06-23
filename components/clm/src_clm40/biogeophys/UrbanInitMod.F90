@@ -280,9 +280,9 @@ contains
              end if
           end if
        else
-          eflx_traffic_factor(l) = spval
-          t_building_max(l) = spval
-          t_building_min(l) = spval
+          eflx_traffic_factor(l) = 0.0_r8
+          t_building_max(l) = 0.0_r8
+          t_building_min(l) = 0.0_r8
        end if
     end do
 
@@ -419,9 +419,9 @@ contains
              qaf(l) = 1.e-4_r8
           end if
        else
-          t_building(l)     = spval
-          eflx_traffic(l)   = spval
-          eflx_wasteheat(l) = spval
+          t_building(l)     = 0.0_r8
+          eflx_traffic(l)   = 0.0_r8
+          eflx_wasteheat(l) = 0.0_r8
        end if
     end do
 
@@ -440,31 +440,35 @@ contains
              qcharge(c) = spval
           end if
        else
-          eflx_building_heat(c) = spval
-          eflx_urban_ac(c) = spval
-          eflx_urban_heat(c) = spval
-          t_grnd_u(c) = spval
-          qflx_runoff_u(c) = spval
-          eflx_snomelt_u(c) = spval
+          eflx_building_heat(c) = 0._r8
+          eflx_urban_ac(c) = 0._r8
+          eflx_urban_heat(c) = 0.0_r8
+          t_grnd_u(c) = 0.0_r8
+          qflx_runoff_u(c) = 0.0_r8
+          eflx_snomelt_u(c) = 0.0_r8
        end if
     end do
 
     do p = begp, endp 
        l = plandunit(p)
        if (ltype(l) /= isturb) then 
-          t_ref2m_u(p)     = spval
-          t_ref2m_min_u(p) = spval
-          t_ref2m_max_u(p) = spval
-          rh_ref2m_u(p)     = spval
-          eflx_wasteheat_pft(p) = spval
-          eflx_heat_from_ac_pft(p) = spval
-          eflx_traffic_pft(p) = spval
-          eflx_anthro(p)    = spval
-          fsa_u(p)            = spval 
-          eflx_lwrad_net_u(p) = spval
-          eflx_lh_tot_u(p)    = spval
-          eflx_sh_tot_u(p)    = spval
-          eflx_soil_grnd_u(p) = spval
+          t_ref2m_u(p)     = 0.0_r8
+          t_ref2m_min_u(p) = 0.0_r8
+          t_ref2m_max_u(p) = 0.0_r8
+          rh_ref2m_u(p)     = 0.0_r8
+          eflx_wasteheat_pft(p) = 0.0_r8
+          eflx_heat_from_ac_pft(p) = 0.0_r8
+          eflx_traffic_pft(p) = 0.0_r8
+          eflx_anthro(p)    = 0.0_r8
+          fsa_u(p)            = 0.0_r8
+          eflx_lwrad_net_u(p) = 0.0_r8
+          eflx_lh_tot_u(p)    = 0.0_r8
+          eflx_sh_tot_u(p)    = 0.0_r8
+          eflx_soil_grnd_u(p) = 0.0_r8
+       else
+          eflx_wasteheat_pft(p)    = 0.0_r8
+          eflx_heat_from_ac_pft(p) = 0.0_r8
+          eflx_traffic_pft(p)      = 0.0_r8
        end if
     end do
     
