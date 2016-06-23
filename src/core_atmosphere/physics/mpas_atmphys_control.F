@@ -64,11 +64,10 @@
 
 
 !=================================================================================================================
- subroutine physics_namelist_check(mesh,configs)
+ subroutine physics_namelist_check(configs)
 !=================================================================================================================
 
 !input arguments:
- type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: configs
 
 !local pointers:

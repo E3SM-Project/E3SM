@@ -355,10 +355,6 @@ module atm_core
                            )
    
 #ifdef DO_PHYSICS
-      !check that all the physics options are correctly defined and that at least one physics
-      !parameterization is called (using the logical moist_physics):
-      call physics_namelist_check(mesh, block % configs)
-
       !proceed with initialization of physics parameterization if moist_physics is set to true:
       call mpas_pool_get_subpool(block % structs, 'sfc_input', sfc_input)
 
