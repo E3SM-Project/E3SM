@@ -95,10 +95,6 @@ def parse_command_line(args, cimeroot):
                         help="Used to indicate that create_newcase was called from create_test"
                         "- do not use otherwise")
 
-    parser.add_argument("--config-build", action="store_true",
-                        help="Experimental: used to indicate that the Macros file "
-                        "should be created using config_build rather than config_compilers")
-
     args = parser.parse_args()
 
     CIME.utils.handle_standard_logging_options(args)
@@ -127,8 +123,7 @@ def parse_command_line(args, cimeroot):
     return args.case, args.compset, args.res, args.mach, args.compiler,\
         args.mpilib, args.project, args.pecount, \
         args.mach_dir, args.user_mods_dir, args.user_compset, args.pesfile, \
-        args.user_grid, args.gridfile, args.srcroot, args.test, args.ninst, \
-        args.config_build
+        args.user_grid, args.gridfile, args.srcroot, args.test, args.ninst
 
 ###############################################################################
 def _main_func():
@@ -138,8 +133,7 @@ def _main_func():
     case, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
         machine_dir, user_mods_dir, user_compset, pesfile, \
-        user_grid, gridfile, srcroot, test, ninst, \
-        config_build \
+        user_grid, gridfile, srcroot, test, ninst \
         = parse_command_line(sys.argv, cimeroot)
 
     caseroot = os.path.abspath(case)
@@ -164,7 +158,7 @@ def _main_func():
                       user_compset=user_compset, pesfile=pesfile,
                       user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test)
 
-    caseobj.create_caseroot(config_build=config_build)
+    caseobj.create_caseroot()
 
     # Write out the case files
     caseobj.flush(flushall=True)

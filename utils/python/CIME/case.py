@@ -5,7 +5,7 @@ All interaction with and between the module files in XML/ takes place
 through the Case module.
 """
 from copy   import deepcopy
-import glob, shutil
+import glob, os, shutil
 from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, run_cmd, get_cime_root
@@ -578,7 +578,7 @@ class Case(object):
         for vid, value in defaults.items():
             self.set_value(vid,value)
 
-    def _create_caseroot_tools(self, config_build):
+    def _create_caseroot_tools(self):
         cime_model = get_model()
         machines_dir = os.path.abspath(self.get_value("MACHDIR"))
         toolsdir = os.path.join(self.get_value("CIMEROOT"),"scripts","Tools")
@@ -623,7 +623,7 @@ class Case(object):
 
         # Create Macros file.
         machine = self.get_value("MACH")
-        if config_build:
+        if os.getenv("CIME_USE_CONFIG_BUILD") == "TRUE":
             os_ = self.get_value("OS")
             caseroot = self.get_value("CASEROOT")
             files = Files()
@@ -687,7 +687,7 @@ class Case(object):
                 with open(readme_file, "w") as fd:
                     fd.write(str_to_write)
 
-    def create_caseroot(self, clone=False, config_build=False):
+    def create_caseroot(self, clone=False):
         caseroot = self.get_value("CASEROOT")
         if not os.path.exists(caseroot):
         # Make the case directory
@@ -708,7 +708,7 @@ class Case(object):
                 fd.write(" %s"%arg)
         if not clone:
             self._create_caseroot_sourcemods()
-        self._create_caseroot_tools(config_build)
+        self._create_caseroot_tools()
 
     def apply_user_mods(self, user_mods_dir=None):
         if user_mods_dir is not None:
