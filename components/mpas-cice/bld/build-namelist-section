@@ -52,6 +52,14 @@ add_default($nl, 'config_do_restart_zsalinity');
 add_default($nl, 'config_do_restart_bgc');
 
 ##############################
+# Namelist group: dimensions #
+##############################
+
+add_default($nl, 'config_nCategories');
+add_default($nl, 'config_nIceLayers');
+add_default($nl, 'config_nSnowLayers');
+
+##############################
 # Namelist group: initialize #
 ##############################
 
@@ -64,6 +72,7 @@ add_default($nl, 'config_initial_latitude_south');
 add_default($nl, 'config_initial_velocity_type');
 add_default($nl, 'config_initial_uvelocity');
 add_default($nl, 'config_initial_vvelocity');
+add_default($nl, 'config_calculate_coriolis');
 
 ################################
 # Namelist group: use_sections #

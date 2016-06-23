@@ -36,6 +36,11 @@
 <config_do_restart_zsalinity>false</config_do_restart_zsalinity>
 <config_do_restart_bgc>false</config_do_restart_bgc>
 
+<!-- dimensions -->
+<config_nCategories>5</config_nCategories>
+<config_nIceLayers>7</config_nIceLayers>
+<config_nSnowLayers>1</config_nSnowLayers>
+
 <!-- initialize -->
 <config_initial_condition_type>'cice_default'</config_initial_condition_type>
 <config_initial_ice_area>1.0</config_initial_ice_area>
@@ -46,6 +51,7 @@
 <config_initial_velocity_type>'uniform'</config_initial_velocity_type>
 <config_initial_uvelocity>0.0</config_initial_uvelocity>
 <config_initial_vvelocity>0.0</config_initial_vvelocity>
+<config_calculate_coriolis>true</config_calculate_coriolis>
 
 <!-- use_sections -->
 <config_use_velocity_solver>true</config_use_velocity_solver>
