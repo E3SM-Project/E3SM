@@ -1262,5 +1262,6 @@
           </mpirun>
         </batch_system>
 </machine>
+
 <default_run_suffix>$config{'EXEROOT'}/cesm.exe >> cesm.log.$LID 2>&amp;1</default_run_suffix>
 </config_machines>
