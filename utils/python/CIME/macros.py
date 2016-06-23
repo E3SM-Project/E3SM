@@ -1,327 +1,76 @@
 """
 Classes used to build the CIME Macros file.
 
-The main "public" class here is MacroMaker. Other classes are mainly for
-internal use, though the various "MacroWriter" classes might be useful
-elsewhere one day.
+The main "public" class here is MacroMaker. It is initialized with machine-
+specific information, and its write_macros method is the driver for translating
+the config_build.xml file into a Makefile or CMake-format Macros file.
+
+For developers, here's the role of the other classes in the process:
+
+- A CompilerBlock is responsible for translating the XML code in a <compiler>
+  tag into Python data structures.
+
+- A PossibleValues object keeps track of all the settings that could affect a
+  particular variable, and is the main way that these settings are stored.
+
+- A MacroConditionTree is the structure that is responsible for writing out the
+  settings. While the PossibleValues objects are organized by variable name, the
+  MacroConditionTree is organized by conditional blocks, and thus roughly
+  plays the role of a syntax tree corresponding to the Makefile/CMake output.
+
+In more detail:
+
+- MacroMaker.write_macros immediately creates a MakeMacroWriter or
+  CMakeMacroWriter to translate strings for the build system.
+
+- It also creates value_lists, a dictionary of PossibleValues objects, with
+  variable names as the keys. Each variable has a single PossibleValues object
+  associated with it.
+
+- For each <compiler> element, MacroMaker.write_macros creates a CompilerBlock
+  instance. This object is responsible for translating the XML in its block, in
+  order to populate the PossibleValues instances. This includes handling the
+  <var>/<env>/<shell> tags, and keeping track of dependencies induced by one
+  variable referencing another's value.
+
+- The PossibleValues object holds the information about how one variable can be
+  set, based on various build options. It has two main roles:
+   1. As we iterate through the XML input file, each setting is added to the
+      relevant PossibleValues object. The PossibleValues object contains lists
+      of settings sorted by how machine-specific those settings are.
+   2. The PossibleValues object iterates through the list of settings to check
+      for ambiguities. E.g. if there is a setting for DEBUG=TRUE, and another
+      setting for MPILIB=mpi-serial, it is ambiguous in the case where both
+      conditions hold.
+
+- A ValueSetting object is a simple struct that a setting from the XML file is
+  translated to. The lists in the PossibleValues class contain these objects.
+
+- Once the XML has all been read in and the PossibleValues objects are
+  populated, the dependencies among variables are checked in
+  MacroMaker.write_macros. For each variable, if all its dependencies have been
+  handled, it is converted to a MacroConditionTree merged with all other trees
+  for variables that are ready, and written out. Then we loop through the
+  variable list again to check for variables whose dependencies are all handled.
+
+- The MacroConditionTree acts as a primitive syntax tree. Its __init__ method
+  reorganizes the data into conditional blocks, and its write_out method writes
+  uses the MakeMacroWriter/CMakeMacroWrite object to write to the Macros file.
+  MacroConditionTree objects can be merged to reduce the length of the output.
 """
 
 # These don't seem to be particularly useful checks.
 # pylint: disable=invalid-name,too-few-public-methods,unused-wildcard-import
+# pylint: disable=wildcard-import
 
-from abc import ABCMeta, abstractmethod
-
-from CIME.XML.standard_module_setup import * # pylint: disable=wildcard-import
+from CIME.macros_writers import *
 from CIME.utils import get_cime_root
 from CIME.XML.machines import Machines # pylint: disable=unused-import
+from CIME.XML.standard_module_setup import *
 
 __all__ = ["MacroMaker"]
 
 logger = logging.getLogger(__name__)
-
-class MacroWriterBase(object):
-
-    """Abstract base class for macro file writers.
-
-    Public attributes:
-    indent_increment - Number of spaces to indent if blocks (does not apply
-                       to format-specific indentation, e.g. cases where
-                       Makefiles must use tabs).
-    output - File-like object that output is written to.
-
-    Public methods:
-    indent
-    indent_left
-    indent_right
-    write_line
-    environment_variable_string
-    shell_command_string
-    variable_string
-    set_variable
-    append_variable
-    start_ifeq
-    end_ifeq
-    """
-
-    __metaclass__ = ABCMeta
-
-    indent_increment = 2
-
-    def __init__(self, output):
-        """Initialize a macro writer.
-
-        Arguments:
-        output - File-like object (probably an io.TextIOWrapper), which
-                 will be written to.
-        """
-        self.output = output
-        self._indent_num = 0
-
-    def indent(self):
-        """Return an appropriate number of spaces for the indent."""
-        return ' ' * self._indent_num
-
-    def indent_left(self):
-        """Decrease the amount of line indent."""
-        self._indent_num -= 2
-
-    def indent_right(self):
-        """Increase the amount of line indent."""
-        self._indent_num += 2
-
-    def write_line(self, line):
-        """Write a single line of output, appropriately indented.
-
-        A trailing newline is added, whether or not the input has one.
-        """
-        self.output.write(unicode(self.indent() + line + "\n"))
-
-    @abstractmethod
-    def environment_variable_string(self, name):
-        """Return an environment variable reference."""
-        pass
-
-    @abstractmethod
-    def shell_command_strings(self, command):
-        """Return strings used to get the output of a shell command.
-
-        Implementations should return a tuple of three strings:
-        1. A line that is needed to get the output of the command (or None,
-           if a command can be run inline).
-        2. A string that can be used within a line to refer to the output.
-        3. A line that does any cleanup of temporary variables (or None, if
-           no cleanup is necessary).
-
-        Example usage:
-
-        # Get strings and write initial command.
-        (pre, var, post) = writer.shell_command_strings(command)
-        if pre is not None:
-            writer.write(pre)
-
-        # Use the variable to write an if block.
-        writer.start_ifeq(var, "TRUE")
-        writer.set_variable("foo", "bar")
-        writer.end_ifeq()
-
-        # Cleanup
-        if post is not None:
-            writer.write(post)
-        """
-        pass
-
-    @abstractmethod
-    def variable_string(self, name):
-        """Return a string to refer to a variable with the given name."""
-        pass
-
-    @abstractmethod
-    def set_variable(self, name, value):
-        """Write out a statement setting a variable to some value."""
-        pass
-
-    def append_variable(self, name, value):
-        """Write out a statement appending a value to a string variable."""
-        var_string = self.variable_string(name)
-        self.set_variable(name, var_string + " " + value)
-
-    @abstractmethod
-    def start_ifeq(self, left, right):
-        """Write out a statement to start a conditional block.
-
-        The arguments to this method are compared, and the block is entered
-        only if they are equal.
-        """
-        pass
-
-    @abstractmethod
-    def end_ifeq(self):
-        """Write out a statement to end a block started with start_ifeq."""
-        pass
-
-
-class MakeMacroWriter(MacroWriterBase):
-
-    """Macro writer for the Makefile format.
-
-    For details on the provided methods, see MacroWriterBase, which this
-    class inherits from.
-    """
-
-    def environment_variable_string(self, name):
-        """Return an environment variable reference.
-
-        >>> import io
-        >>> s = io.StringIO()
-        >>> MakeMacroWriter(s).environment_variable_string("foo")
-        '$(foo)'
-        """
-        return "$(" + name + ")"
-
-    def shell_command_strings(self, command):
-        """Return strings used to get the output of a shell command.
-
-        >>> import io
-        >>> s = io.StringIO()
-        >>> MakeMacroWriter(s).shell_command_strings("echo bar")
-        (None, '$(shell echo bar)', None)
-        """
-        return (None, "$(shell " + command + ")", None)
-
-    def variable_string(self, name):
-        """Return a string to refer to a variable with the given name.
-
-        >>> import io
-        >>> s = io.StringIO()
-        >>> MakeMacroWriter(s).variable_string("foo")
-        '$(foo)'
-        """
-        return "$(" + name + ")"
-
-    def set_variable(self, name, value):
-        """Write out a statement setting a variable to some value.
-
-        >>> import io
-        >>> s = io.StringIO()
-        >>> MakeMacroWriter(s).set_variable("foo", "bar")
-        >>> s.getvalue()
-        u'foo := bar\\n'
-        """
-        # Note that ":=" is used so that we can control the behavior for
-        # both Makefile and CMake variables similarly.
-        self.write_line(name + " := " + value)
-
-    def start_ifeq(self, left, right):
-        """Write out a statement to start a conditional block.
-
-        >>> import io
-        >>> s = io.StringIO()
-        >>> MakeMacroWriter(s).start_ifeq("foo", "bar")
-        >>> s.getvalue()
-        u'ifeq (foo,bar)\\n'
-        """
-        self.write_line("ifeq (" + left + "," + right + ")")
-        self.indent_right()
-
-    def end_ifeq(self):
-        """Write out a statement to end a block started with start_ifeq.
-
-        >>> import io
-        >>> s = io.StringIO()
-        >>> writer = MakeMacroWriter(s)
-        >>> writer.start_ifeq("foo", "bar")
-        >>> writer.set_variable("foo2", "bar2")
-        >>> writer.end_ifeq()
-        >>> s.getvalue()
-        u'ifeq (foo,bar)\\n  foo2 := bar2\\nendif\\n'
-        """
-        self.indent_left()
-        self.write_line("endif")
-
-
-class CMakeMacroWriter(MacroWriterBase):
-
-    """Macro writer for the CMake format.
-
-    For details on the provided methods, see MacroWriterBase, which this
-    class inherits from.
-    """
-
-    def __init__(self, output):
-        """Initialize a CMake macro writer.
-
-        Arguments:
-        output - File-like object (probably an io.TextIOWrapper), which
-                 will be written to.
-        """
-        super(CMakeMacroWriter, self).__init__(output)
-        # This counter is for avoiding name conflicts in temporary
-        # variables used for shell commands.
-        self._var_num = 0
-
-    def environment_variable_string(self, name):
-        """Return an environment variable reference.
-
-        >>> import io
-        >>> s = io.StringIO()
-        >>> CMakeMacroWriter(s).environment_variable_string("foo")
-        '$ENV{foo}'
-        """
-        return "$ENV{" + name + "}"
-
-    def shell_command_strings(self, command):
-        # pylint: disable=line-too-long
-        """Return strings used to get the output of a shell command.
-
-        >>> import io
-        >>> s = io.StringIO()
-        >>> set_up, inline, tear_down = CMakeMacroWriter(s).shell_command_strings("echo bar")
-        >>> set_up
-        'execute_process(COMMAND echo bar OUTPUT_VARIABLE CIME_TEMP_SHELL0 OUTPUT_STRIP_TRAILING_WHITESPACE)'
-        >>> inline
-        '${CIME_TEMP_SHELL0}'
-        >>> tear_down
-        'unset(CIME_TEMP_SHELL0)'
-        """
-        # pylint: enable=line-too-long
-        # Create a unique variable name, then increment variable number
-        # counter so that we get a different value next time.
-        var_name = "CIME_TEMP_SHELL" + str(self._var_num)
-        self._var_num += 1
-        set_up = "execute_process(COMMAND " + command + \
-                 " OUTPUT_VARIABLE " + var_name + \
-                 " OUTPUT_STRIP_TRAILING_WHITESPACE)"
-        tear_down = "unset(" + var_name + ")"
-        return (set_up, "${" + var_name + "}", tear_down)
-
-    def variable_string(self, name):
-        """Return a string to refer to a variable with the given name.
-
-        >>> import io
-        >>> s = io.StringIO()
-        >>> CMakeMacroWriter(s).variable_string("foo")
-        '${CIME_foo}'
-        """
-        return "${CIME_" + name + "}"
-
-    def set_variable(self, name, value):
-        """Write out a statement setting a variable to some value.
-
-        >>> import io
-        >>> s = io.StringIO()
-        >>> CMakeMacroWriter(s).set_variable("foo", "bar")
-        >>> s.getvalue()
-        u'set(CIME_foo "bar")\\n'
-        """
-        self.write_line("set(CIME_" + name + ' "' + value + '")')
-
-    def start_ifeq(self, left, right):
-        """Write out a statement to start a conditional block.
-
-        >>> import io
-        >>> s = io.StringIO()
-        >>> CMakeMacroWriter(s).start_ifeq("foo", "bar")
-        >>> s.getvalue()
-        u'if("foo" STREQUAL "bar")\\n'
-        """
-        self.write_line('if("' + left + '" STREQUAL "' + right + '")')
-        self.indent_right()
-
-    def end_ifeq(self):
-        """Write out a statement to end a block started with start_ifeq.
-
-        >>> import io
-        >>> s = io.StringIO()
-        >>> writer = CMakeMacroWriter(s)
-        >>> writer.start_ifeq("foo", "bar")
-        >>> writer.set_variable("foo2", "bar2")
-        >>> writer.end_ifeq()
-        >>> s.getvalue()
-        u'if("foo" STREQUAL "bar")\\n  set(CIME_foo2 "bar2")\\nendif()\\n'
-        """
-        self.indent_left()
-        self.write_line("endif()")
-
 
 class ValueSetting(object):
 
@@ -832,8 +581,7 @@ class CompilerBlock(object):
         depends = set()
         value_text = self._handle_references(elem, set_up,
                                              tear_down, depends)
-        # Create the setting object and add it to one of our
-        # PossibleValues in value_lists.
+        # Create the setting object.
         setting = ValueSetting(value_text, elem.tag == "append",
                                conditions, set_up, tear_down)
         return (setting, depends)
