@@ -1446,9 +1446,10 @@
                 <!-- rucuten   : tendency of zonal wind due to cumulus convection                              (m/s-1) -->
                 <!-- rvcuten   : tendency of meridional wind due to cumulus convection                         (m/s-1) -->
                 <!-- rqvdynten : tendency of water vapor due to horizontal and vertical advections         (kg/kg/s-1) -->
-                <var name="rqvdynten"   type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rucuten"     type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rvcuten"     type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rqvdynten"    type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rucuten"      type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rvcuten"      type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rucuten_Edge" type="real"     dimensions="nVertLevels nEdges Time"/>
 
 
                 <!-- ================================================================================================== -->
@@ -1461,12 +1462,13 @@
                 <!-- rqcblten  : tendency of cloud water mixing ratio due to pbl processes                 (kg/kg s-1)  -->
                 <!-- rqiblten  : tendency of cloud ice mixing ratio due to pbl processes                   (kg/kg s-1)  -->
 
-                <var name="rublten"     type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rvblten"     type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rthblten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqvblten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqcblten"    type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="rqiblten"    type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rublten"      type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rvblten"      type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rublten_Edge" type="real"     dimensions="nVertLevels nEdges Time"/>
+                <var name="rthblten"     type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rqvblten"     type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rqcblten"     type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rqiblten"     type="real"     dimensions="nVertLevels nCells Time"/>
 
 
                 <!-- ================================================================================================== -->

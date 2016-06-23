@@ -83,7 +83,7 @@
  real(kind=RKIND),dimension(:,:),pointer:: tend_qv,tend_qc,tend_qr,tend_qi,tend_qs,tend_qg
 
  real(kind=RKIND):: tem
- real(kind=RKIND),dimension(:,:),allocatable:: rublten_Edge,rucuten_Edge
+ real(kind=RKIND),dimension(:,:),pointer:: rublten_Edge,rucuten_Edge
 
  character(len=StrKIND), pointer :: config_pbl_scheme, config_convection_scheme, &
                                     config_radt_lw_scheme, config_radt_sw_scheme
@@ -119,6 +119,7 @@
 
  call mpas_pool_get_array(tend_physics, 'rublten', rublten)
  call mpas_pool_get_array(tend_physics, 'rvblten', rvblten)
+ call mpas_pool_get_array(tend_physics, 'rublten_Edge', rublten_Edge)
  call mpas_pool_get_array(tend_physics, 'rthblten', rthblten)
  call mpas_pool_get_array(tend_physics, 'rqvblten', rqvblten)
  call mpas_pool_get_array(tend_physics, 'rqcblten', rqcblten)
@@ -126,6 +127,7 @@
 
  call mpas_pool_get_array(tend_physics, 'rucuten', rucuten)
  call mpas_pool_get_array(tend_physics, 'rvcuten', rvcuten)
+ call mpas_pool_get_array(tend_physics, 'rucuten_Edge', rucuten_Edge)
  call mpas_pool_get_array(tend_physics, 'rthcuten', rthcuten)
  call mpas_pool_get_array(tend_physics, 'rqvcuten', rqvcuten)
  call mpas_pool_get_array(tend_physics, 'rqccuten', rqccuten)
@@ -159,16 +161,16 @@
  tend_qg = 0._RKIND
 
 !add coupled tendencies due to PBL processes:
- if(config_pbl_scheme .ne. 'off') then
-    allocate(rublten_Edge(nVertLevels,nEdges))
-    rublten_Edge(:,:) = 0.
-    call tend_toEdges(block,mesh,rublten,rvblten,rublten_Edge)
+ if (config_pbl_scheme .ne. 'off') then
+    if (rk_step == 1) then
+       rublten_Edge(:,:) = 0.
+       call tend_toEdges(block,mesh,rublten,rvblten,rublten_Edge)
+    end if
     do i = 1, nEdgesSolve
     do k  = 1, nVertLevels
        tend_u(k,i)=tend_u(k,i)+rublten_Edge(k,i)*mass_edge(k,i)
     enddo
     enddo
-    deallocate(rublten_Edge)
 
     do i = 1, nCellsSolve
     do k = 1, nVertLevels
@@ -181,18 +183,18 @@
  endif
 
 !add coupled tendencies due to convection:
- if(config_convection_scheme .ne. 'off') then
+ if (config_convection_scheme .ne. 'off') then
 
-    if(config_convection_scheme .eq. 'tiedtke') then
-       allocate(rucuten_Edge(nVertLevels,nEdges))
-       rucuten_Edge(:,:) = 0.
-       call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)
+    if (config_convection_scheme .eq. 'tiedtke') then
+       if (rk_step == 1) then
+          rucuten_Edge(:,:) = 0.
+          call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)
+       end if
        do i = 1, nEdgesSolve
        do k  = 1, nVertLevels
           tend_u(k,i)=tend_u(k,i)+rucuten_Edge(k,i)*mass_edge(k,i)
        enddo
        enddo
-       deallocate(rucuten_Edge)
     endif
 
     do i = 1, nCellsSolve
