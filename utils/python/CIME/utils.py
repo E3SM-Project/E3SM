@@ -420,8 +420,7 @@ def stop_buffering_output():
     """
     All stdout, stderr will not be buffered after this is called.
     """
-    sys.stdout.flush()
-    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+    os.environ['PYTHONUNBUFFERED'] = '1'
 
 def start_buffering_output():
     """
