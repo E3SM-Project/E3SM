@@ -302,9 +302,9 @@ module atm_time_integration
 
          block => block % next
       end do
+      call mpas_timer_stop('atm_rk_integration_setup')
 
       call mpas_timer_start('atm_compute_moist_coefficients')
-
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', state)
@@ -331,10 +331,7 @@ module atm_time_integration
 
          block => block % next
       end do
-
       call mpas_timer_stop('atm_compute_moist_coefficients')
-
-      call mpas_timer_stop('atm_rk_integration_setup')
 
       DYNAMICS_SUBSTEPS : do dynamics_substep = 1, dynamics_split
 
