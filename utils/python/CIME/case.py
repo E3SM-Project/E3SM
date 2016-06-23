@@ -5,7 +5,7 @@ All interaction with and between the module files in XML/ takes place
 through the Case module.
 """
 from copy   import deepcopy
-import glob, shutil, traceback
+import glob, os, shutil, traceback
 from CIME.XML.standard_module_setup import *
 
 from CIME.utils                     import expect, run_cmd, get_cime_root
@@ -32,6 +32,7 @@ from CIME.XML.env_batch             import EnvBatch
 from CIME.XML.generic_xml           import GenericXML
 from CIME.user_mod_support          import apply_user_mods
 from CIME.case_setup import case_setup
+from CIME.macros import MacroMaker
 
 logger = logging.getLogger(__name__)
 
@@ -621,8 +622,19 @@ class Case(object):
             except Exception as e:
                 logger.warning("FAILED to set up toolfiles: %s %s %s" % (str(e), toolfile, destfile))
 
-        # Copy any system or compiler Depends files to the case
+        # Create Macros file.
         machine = self.get_value("MACH")
+        if os.getenv("CIME_USE_CONFIG_BUILD") == "TRUE":
+            os_ = self.get_value("OS")
+            caseroot = self.get_value("CASEROOT")
+            files = Files()
+            build_file = files.get_value("BUILD_SPEC_FILE")
+            machobj = Machines(machine=machine, files=files)
+            macro_maker = MacroMaker(os_, machobj)
+            with open(os.path.join(caseroot, "Macros"), "w") as macros_file:
+                macro_maker.write_macros('Makefile', build_file, macros_file)
+
+        # Copy any system or compiler Depends files to the case.
         compiler = self.get_value("COMPILER")
         for dep in (machine, compiler):
             dfile = "Depends.%s"%dep

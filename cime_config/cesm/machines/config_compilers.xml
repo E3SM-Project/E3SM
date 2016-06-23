@@ -337,7 +337,6 @@ for mct, etc.
 <compiler COMPILER="gnu">
   <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
-  <CFLAGS> -std=gnu99 </CFLAGS>
   <ADD_CFLAGS compile_threaded="true"> -fopenmp </ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true"> -fopenmp </ADD_FFLAGS>
   <ADD_LDFLAGS compile_threaded="true"> -fopenmp </ADD_LDFLAGS>
