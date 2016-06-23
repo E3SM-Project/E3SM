@@ -335,6 +335,7 @@ module atm_time_integration
 
       DYNAMICS_SUBSTEPS : do dynamics_substep = 1, dynamics_split
 
+            call mpas_timer_start('atm_compute_vert_imp_coefs')
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
@@ -356,6 +357,7 @@ module atm_time_integration
 !$OMP END PARALLEL DO
                block => block % next
             end do
+            call mpas_timer_stop('atm_compute_vert_imp_coefs')
 
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
@@ -414,6 +416,7 @@ MPAS_GPTL_STOP('dyn_tend')
             call mpas_timer_stop('atm_compute_dyn_tend')
 
 #ifdef DO_PHYSICS
+            call mpas_timer_start('physics_addtend')
             block => domain % blocklist
             do while (associated(block))
                call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
@@ -431,6 +434,7 @@ MPAS_GPTL_STOP('dyn_tend')
                                    rk_step )
                block => block % next
             end do
+            call mpas_timer_stop('physics_addtend')
 #endif
 
             !***********************************
