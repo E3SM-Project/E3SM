@@ -104,9 +104,9 @@ class EnvBatch(EnvBase):
                     
                     # determine group
                     if (root.tag == "job") :
-                        group_name = r.get('name') 
+                        group_name = root.get('name') 
                     else:
-                        group_name = r.get('id')
+                        group_name = root.get('id')
 
                     val             = node.get('value')
                     attribute_type  = self._get_type(node)
