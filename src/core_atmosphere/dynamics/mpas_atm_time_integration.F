@@ -431,7 +431,8 @@ MPAS_GPTL_STOP('dyn_tend')
                                       tend, &
                               tend_physics, &
                            block % configs, &
-                                   rk_step )
+                                   rk_step, &
+                          dynamics_substep  )
                block => block % next
             end do
             call mpas_timer_stop('physics_addtend')

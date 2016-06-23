@@ -44,7 +44,7 @@
 
  
 !==================================================================================================
- subroutine physics_addtend(block, mesh, state, diag, tend, tend_physics, configs, rk_step)
+ subroutine physics_addtend(block, mesh, state, diag, tend, tend_physics, configs, rk_step, dynamics_substep)
 !==================================================================================================
 
 !input variables:
@@ -56,6 +56,7 @@
  type(mpas_pool_type),intent(inout):: tend_physics
  type(mpas_pool_type),intent(in):: configs
  integer, intent(in):: rk_step
+ integer, intent(in):: dynamics_substep
 
 !inout variables:
 !----------------
@@ -162,7 +163,7 @@
 
 !add coupled tendencies due to PBL processes:
  if (config_pbl_scheme .ne. 'off') then
-    if (rk_step == 1) then
+    if (rk_step == 1 .and. dynamics_substep == 1) then
        rublten_Edge(:,:) = 0.
        call tend_toEdges(block,mesh,rublten,rvblten,rublten_Edge)
     end if
@@ -186,7 +187,7 @@
  if (config_convection_scheme .ne. 'off') then
 
     if (config_convection_scheme .eq. 'tiedtke') then
-       if (rk_step == 1) then
+       if (rk_step == 1 .and. dynamics_substep == 1) then
           rucuten_Edge(:,:) = 0.
           call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)
        end if
