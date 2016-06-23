@@ -90,7 +90,7 @@ Each grid is associated with five names
 <GRID sname="ne60np4_gx1v6"              alias="ne60_g16"     >a%ne60np4_l%ne60np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</GRID>
 <GRID sname="ne120np4_gx1v6"             alias="ne120_g16"    >a%ne120np4_l%ne120np4_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</GRID>
 <GRID sname="ne120np4_tx0.1v2"           alias="ne120_t12"    >a%ne120np4_l%ne120np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</GRID>
-<GRID sname="ne120np4_oRRS15to5"         alias="ne120_oRRS15"  >a%ne120np4_l%ne120np4_oi%oRRS15to5_r%r05_m%oRRS15to5_g%null_w%null</GRID>
+<GRID sname="ne120np4_oRRS15to5"         alias="ne120_oRRS15"  >a%ne120np4_l%ne120np4_oi%oRRS15to5_r%r0125_m%oRRS15to5_g%null_w%null</GRID>
 <GRID sname="ne240np4_0.23x0.31_gx1v6"   alias="ne240_f02_g16" support_level="For testing high resolution tri-grid" >a%ne240np4_l%0.23x0.31_oi%gx1v6_r%r05_m%gx1v6_g%null_w%null</GRID>
 <GRID sname="ne240np4_tx0.1v2"           alias="ne240_t12"    >a%ne240np4_l%ne240np4_oi%tx0.1v2_r%r05_m%tx0.1v2_g%null_w%null</GRID>
 
@@ -1497,6 +1497,11 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <ROF2LND_FMAPNAME>lnd/clm2/mappingdata/maps/ne240np4/map_0.1x0.1_nomask_to_ne240np4_nomask_aave_da_c120706.nc</ROF2LND_FMAPNAME>
 </gridmap>
 
+<gridmap lnd_grid="ne120np4" rof_grid="r0125">
+  <LND2ROF_FMAPNAME>lnd/clm2/mappingdata/maps/ne120np4/map_ne120np4_to_0.125_nomask_aave.160613.nc</LND2ROF_FMAPNAME>
+  <ROF2LND_FMAPNAME>lnd/clm2/mappingdata/maps/ne120np4/map_0.125_to_ne120np4_nomask_aave.160613.nc</ROF2LND_FMAPNAME>
+</gridmap>
+
 <gridmap lnd_grid="360x720cru" rof_grid="r05">
   <LND2ROF_FMAPNAME>lnd/clm2/mappingdata/maps/0.5x0.5/map_360x720_nomask_to_0.5x0.5_nomask_aave_da_c130103.nc</LND2ROF_FMAPNAME>
   <ROF2LND_FMAPNAME>lnd/clm2/mappingdata/maps/360x720/map_0.5x0.5_nomask_to_360x720_nomask_aave_da_c120830.nc</ROF2LND_FMAPNAME>
@@ -1581,6 +1586,9 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 <gridmap rof_grid="r05" ocn_grid="oRRS15to5" >
   <ROF2OCN_FMAPNAME>cpl/cpl6/map_r05_to_oRRS15to5_nn.160318.nc</ROF2OCN_FMAPNAME>
 </gridmap>
+<gridmap rof_grid="r0125" ocn_grid="oRRS15to5" >
+  <ROF2OCN_FMAPNAME>cpl/cpl6/map_r0125_to_oRRS15to5_nn.160614.nc</ROF2OCN_FMAPNAME>
+</gridmap>
 <XROF_FLOOD_MODE lnd_grid="1.9x2.5" rof_grid="r05" ocn_grid="gx1v6" >ACTIVE</XROF_FLOOD_MODE>
 
 <gridmap rof_grid="rx1" ocn_grid="gx3v7" >
@@ -1641,6 +1649,9 @@ do not use scientific experiments; use the T62_g16 resolution instead:
 </gridmap>
 <gridmap rof_grid="r05" ocn_grid="oRRS15to5" >
   <ROF2OCN_RMAPNAME >cpl/cpl6/map_r05_to_oRRS15to5_nn.160318.nc</ROF2OCN_RMAPNAME>
+</gridmap>
+<gridmap rof_grid="r0125" ocn_grid="oRRS15to5" >
+  <ROF2OCN_RMAPNAME >cpl/cpl6/map_r0125_to_oRRS15to5_nn.160614.nc</ROF2OCN_RMAPNAME>
 </gridmap>
 
 <gridmap rof_grid="r01" ocn_grid="gx1v6" >
