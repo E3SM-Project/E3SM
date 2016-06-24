@@ -8,7 +8,7 @@ from copy   import deepcopy
 import glob, os, shutil, traceback
 from CIME.XML.standard_module_setup import *
 
-from CIME.utils                     import expect, run_cmd, get_cime_root
+from CIME.utils                     import expect, get_cime_root
 from CIME.utils                     import convert_to_type, get_model, get_project
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -101,6 +101,7 @@ class Case(object):
         self._gridfile = None
         self._components = []
         self._component_config_files = []
+        self._component_classes = []
 
     def __del__(self):
         self.flush()
@@ -177,8 +178,7 @@ class Case(object):
         # Empty result list
         results = []
 
-
-        for env_file in self._files:
+        for env_file in self._env_entryid_files:
             # Wait and resolve in self rather than in env_file
             logger.debug("Searching in %s" , env_file.__class__.__name__)
             result = None
@@ -313,7 +313,7 @@ class Case(object):
 
 
     def get_compset_components(self):
-        # If are doing a create_clone then, self._compsetname is not set yet
+        #If are doing a create_clone then, self._compsetname is not set yet
         components = []
         compset = self.get_value("COMPSET")
         if compset is None:
@@ -379,6 +379,30 @@ class Case(object):
             result = self.set_value(key,value)
             if result is not None:
                 del self.lookups[key]
+
+    def get_components(self):
+        """
+        return dictionary of the form [component_class:component],
+        e.g. [atm:cam], for all compset components
+        """
+
+        files = Files()
+        drv_comp = Component(files.get_value("CONFIG_DRV_FILE"))
+
+        # Determine list of component classes that this coupler/driver knows how
+        # to deal with. This list follows the same order as compset longnames follow.
+        component_classes = drv_comp.get_valid_model_components()
+        components = self.get_compset_components()
+
+        # Note that component classes can have a bigger range than
+        # compents since stub esp (sesp) is an optional component - so
+        # need to take the min of the two below
+        comp_dict = {}
+        for i in xrange(0,len(components)):
+            comp_name  = components[i]
+            comp_class = component_classes[i+1]
+            comp_dict[comp_class] = comp_name
+        return comp_dict
 
     def configure(self, compset_name, grid_name, machine_name=None,
                   project=None, pecount=None, compiler=None, mpilib=None,
@@ -606,7 +630,6 @@ class Case(object):
         # set up utility files in caseroot/Tools/
         toolfiles = (os.path.join(toolsdir, "check_lockedfiles"),
                      os.path.join(toolsdir, "lt_archive.sh"),
-                     os.path.join(toolsdir, "st_archive"),
                      os.path.join(toolsdir, "getTiming"),
                      os.path.join(toolsdir, "compare_namelists.pl"),
                      os.path.join(machines_dir,"taskmaker.pl"),
@@ -691,7 +714,7 @@ class Case(object):
     def create_caseroot(self, clone=False):
         caseroot = self.get_value("CASEROOT")
         if not os.path.exists(caseroot):
-        # Make the case directory
+            # Make the case directory
             logger.info(" Creating Case directory %s" %caseroot)
             os.makedirs(caseroot)
         os.chdir(caseroot)

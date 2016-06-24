@@ -103,7 +103,7 @@ class ERI(SystemTestsCommon):
                     fd.write("inithist = 'ENDOFRUN'\n")
 
         success = self._run(suffix=None,
-                            coupler_log_path=os.path.join(dout_sr1, "cpl", "logs"),
+                            coupler_log_path=os.path.join(dout_sr1, "logs"),
                             st_archive=True)
         if not success:
             return False
@@ -152,7 +152,7 @@ class ERI(SystemTestsCommon):
         # run ref2 case (all component history files will go to short term archiving)
 
         success = self._run(suffix=None,
-                            coupler_log_path=os.path.join(dout_sr2, "cpl", "logs"),
+                            coupler_log_path=os.path.join(dout_sr2, "logs"),
                             st_archive=True)
         if not success:
             return False

@@ -61,6 +61,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def _main_func(description):
 ###############################################################################
+
     if ("--test" in sys.argv):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
