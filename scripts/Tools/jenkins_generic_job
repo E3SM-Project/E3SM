@@ -12,7 +12,7 @@ import wait_for_tests
 from CIME.utils import expect
 from CIME.XML.machines import Machines
 
-import argparse, sys, os, shutil, glob, doctest, time, signal
+import argparse, sys, os, shutil, glob, doctest, signal
 
 SENTINEL_FILE = "ONGOING_TEST"
 
@@ -82,6 +82,10 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("--cdash-build-group", default=wait_for_tests.CDASH_DEFAULT_BUILD_GROUP,
                         help="The build group to be used to display results on the CDash dashboard.")
 
+    parser.add_argument("-j", "--parallel-jobs", type=int, default=None,
+                        help="Number of tasks create_test should perform simultaneously. Default "
+                        "will be min(num_cores, num_tests).")
+
     args = parser.parse_args(args[1:])
 
     CIME.utils.handle_standard_logging_options(args)
@@ -93,7 +97,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     expect(not (args.cdash_project is not wait_for_tests.ACME_MAIN_CDASH and not args.submit_to_cdash),
            "Does not make sense to use --cdash-project without --submit-to-cdash")
 
-    return args.generate_baselines, args.submit_to_cdash, args.no_batch, args.baseline_name, args.cdash_build_name, args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare, args.scratch_root
+    return args.generate_baselines, args.submit_to_cdash, args.no_batch, args.baseline_name, args.cdash_build_name, args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare, args.scratch_root, args.parallel_jobs
 
 ###############################################################################
 def cleanup_queue(set_of_jobs_we_created):
@@ -116,7 +120,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
                         arg_cdash_build_name, cdash_project,
                         arg_test_suite,
                         cdash_build_group, baseline_compare,
-                        scratch_root):
+                        scratch_root, parallel_jobs):
 ###############################################################################
     """
     Return True if all tests passed
@@ -211,10 +215,11 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
             baseline_args = "-c -b %s" % baseline_name
 
         batch_args = "--no-batch" if no_batch else ""
+        pjob_arg = "" if parallel_jobs is None else "-j %d" % parallel_jobs
 
         test_id = "%s_%s" % (test_id_root, CIME.utils.get_utc_timestamp())
-        create_test_cmd = "./create_test %s --test-root %s -t %s %s %s" % \
-                          (test_suite, test_root, test_id, baseline_args, batch_args)
+        create_test_cmd = "./create_test %s --test-root %s -t %s %s %s %s" % \
+                          (test_suite, test_root, test_id, baseline_args, batch_args, pjob_arg)
 
         if (not wait_for_tests.SIGNAL_RECEIVED):
             create_test_stat = CIME.utils.run_cmd(create_test_cmd, from_dir=CIME.utils.get_scripts_root(),
@@ -249,8 +254,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
                                                      False, # don't ignore namelist diffs
                                                      cdash_build_name,
                                                      cdash_project,
-                                                     cdash_build_group,
-                                                     start_time)
+                                                     cdash_build_group)
         if (not tests_passed and use_batch and wait_for_tests.SIGNAL_RECEIVED):
             # Cleanup
             cleanup_queue(our_jobs)
@@ -267,10 +271,10 @@ def _main_func(description):
         test_results = doctest.testmod(verbose=True)
         sys.exit(1 if test_results.failed > 0 else 0)
 
-    generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare, scratch_root = \
+    generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare, scratch_root, parallel_jobs = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare, scratch_root)
+    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch, cdash_build_name, cdash_project, baseline_branch, test_suite, cdash_build_group, no_baseline_compare, scratch_root, parallel_jobs)
              else CIME.utils.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################
