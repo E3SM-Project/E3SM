@@ -311,7 +311,7 @@ class Case(object):
 
 
     def get_compset_components(self):
-        # If are doing a create_clone then, self._compsetname is not set yet
+        #If are doing a create_clone then, self._compsetname is not set yet
         components = []
         compset = self.get_value("COMPSET")
         if compset is None:
@@ -379,8 +379,11 @@ class Case(object):
                 del self.lookups[key]
 
     def get_components(self):
-        # return dictionary of the form [component_class:component],
-        # e.g. [atm:cam], for all compset components
+        """
+        return dictionary of the form [component_class:component],
+        e.g. [atm:cam], for all compset components
+        """
+
         files = Files()
         drv_comp = Component(files.get_value("CONFIG_DRV_FILE"))
 
