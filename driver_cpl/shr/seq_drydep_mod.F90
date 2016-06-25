@@ -36,7 +36,7 @@ module seq_drydep_mod
   ! !PRIVATE ARRAY SIZES
 
   integer, private, parameter :: maxspc = 100              ! Maximum number of species
-  integer, public,  parameter :: n_species_table = 68      ! Number of species to work with
+  integer, public,  parameter :: n_species_table = 77      ! Number of species to work with
   integer, private, parameter :: NSeas = 5                 ! Number of seasons
   integer, private, parameter :: NLUse = 11                ! Number of land-use types
 
@@ -292,10 +292,18 @@ module seq_drydep_mod
              ,0.1_r8    &
              ,0.1_r8    &
              ,0.1_r8    &
-            /)
-!EOP
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+             ,0.1_r8    &
+            /) 
 
-! PRIVATE DATA:
+  ! PRIVATE DATA:
 
   Interface seq_drydep_setHCoeff                      ! overload subroutine
      Module Procedure set_hcoeff_scalar
@@ -376,8 +384,17 @@ module seq_drydep_mod
                            ,'SOAGbg2 '                       &
                            ,'SOAGbg3 '                       &
                            ,'SOAGbg4 '                       &
+                           ,'SOAG0   '                       &
+                           ,'SOAG1   '                       &
+                           ,'SOAG2   '                       &
+                           ,'SOAG3   '                       &
+                           ,'SOAG4   '                       &
+                           ,'IVOC    '                       &
+                           ,'SVOC    '                       &
                            ,'IVOCbb  '                       &
                            ,'IVOCff  '                       &
+                           ,'SVOCbb  '                       &
+                           ,'SVOCff  '                       &
                            /)
 
   !--- data for effective Henry's Law coefficient ---
@@ -448,6 +465,15 @@ module seq_drydep_mod
              ,3.2e+09_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,6.3e+08_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,3.2e+07_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,4.0e+11_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,3.2e+10_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,1.6e+09_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,3.2e+08_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,1.6e+07_r8,     0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,1.e+03_r8,      0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,1.e+03_r8,      0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,1.e+03_r8,      0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
+             ,1.e+03_r8,      0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,1.e+03_r8,      0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
              ,1.e+03_r8,      0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
             /)
@@ -467,8 +493,10 @@ module seq_drydep_mod
           119.074341_r8, 162.117935_r8, 100.112999_r8, 27.0256_r8   , 41.0524_r8   , &
           64.064800_r8,  250._r8,       250._r8,       250._r8,       250._r8,       &
           250._r8,       250._r8,       250._r8,       250._r8,       250._r8,       &
-          250._r8,       170.3_r8,      170.3_r8 /)
-
+          250._r8,       250._r8,       250._r8,       250._r8,       250._r8,       &
+          250._r8,       170.3_r8,      170.3_r8,      170.3_r8,       170.3_r8,     &
+          170.3_r8,      170.3_r8  /)
+ 
 
 !===============================================================================
 CONTAINS

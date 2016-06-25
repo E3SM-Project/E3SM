@@ -436,7 +436,7 @@ id="flux_epbal"
 type="char*8"
 category="control"
 group="seq_infodata_inparm"
-valid_values="off,on">
+valid_values="off,ocn">
 Only used for C,G compsets: if ocn, ocn provides EP balance factor for precip
 default: off
 </entry>

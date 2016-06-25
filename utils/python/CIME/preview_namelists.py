@@ -61,10 +61,6 @@ def preview_namelists(case, dryrun=False, casedir=None):
                 except OSError as e:
                     expect(False, "Could not make directory '%s', error: %s" % (dir_to_make, e))
 
-    # Remove the drv_flds_in file if it exists
-    if ( os.path.isfile(os.path.join(rundir,"drv_flds_in"))):
-        os.remove(os.path.join(rundir,"drv_flds_in"))
-
     # Create namelists
     for model in models:
         model_str = "drv" if model == "cpl" else model
