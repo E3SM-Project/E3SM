@@ -1,0 +1,36 @@
+<?xml version="1.0"?> 
+
+<config_definition> 
+
+<header>
+
+    These variables CANNOT BE CHANGED once a case has been created.
+    Invoke create_newcase again if a different grid or component
+    combination is required.
+    </header>
+
+
+<groups>
+   <group>case_comp</group> 
+   <group>case_cost</group> 
+   <group>case_def</group> 
+   <group>case_der</group> 
+   <group>case_desc</group> 
+   <group>case_last</group> 
+   <group>config_batch</group> 
+   <group>run_machine</group> 
+</groups>
+
+  <entry id="CASE"  value="testdir">
+    <type>char*256</type> 
+    <group>case_def</group> 
+    <desc>case name</desc> 
+  </entry> 
+
+  <entry id="USER"  value="erik">
+    <type>char</type> 
+    <group>case_desc</group> 
+    <desc>case user name</desc> 
+  </entry> 
+
+</config_definition> 
