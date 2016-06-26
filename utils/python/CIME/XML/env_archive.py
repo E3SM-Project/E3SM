@@ -17,18 +17,21 @@ class EnvArchive(GenericXML):
         """
         logger.debug("Case_root = %s" , case_root)
 
+
         # Check/Build path to env_archive.xml
         if case_root is None:
             case_root = os.getcwd()
+
         if os.path.isabs(infile):
             fullpath = infile
         else:
             fullpath = os.path.join(case_root, infile)
 
         # Initialize self
+        # If env_archive.xml file does not exists in case directory read default from config
         GenericXML.__init__(self, fullpath)
 
-        # If env_archive.xml file does not exists in case directory read default from config
+        # The following creates the CASEROOT/env_archive.xml contents in self.root
         if not os.path.isfile(fullpath):
             headerobj = Headers()
             headernode = headerobj.get_header_node(os.path.basename(fullpath))
@@ -36,68 +39,37 @@ class EnvArchive(GenericXML):
             archive = Archive()
             self.root.append(archive.root)
 
-    def get_values(self, item, attribute=None, resolved=True, subgroup=None):
-        """Returns the value as a string of the first xml element with item as attribute value.
-        <elememt_name attribute='attribute_value>value</element_name>"""
+    def get_entries(self):
+        return self.get_nodes('comp_archive_spec')
 
-        logger.debug("(get_values) Input values: %s , %s , %s , %s , %s" , self.__class__.__name__, item, attribute, resolved, subgroup)
+    def get_entry_info(self, archive_entry):
+        compname = archive_entry.attrib['compname']
+        compclass = archive_entry.attrib['compclass']
+        return compname,compclass
 
-        nodes   = [] # List of identified xml elements
-        results = [] # List of identified parameters
+    def get_entry_value(self, name, archive_entry):
+        node = self.get_optional_node(name, root=archive_entry)
+        return node.text
 
-        # Find all nodes with attribute name and attribute value item
-        # xpath .//*[name='item']
-        if item :
-            logger.debug("Searching for %s" , item )
-            nodes = self.get_nodes("*",{"name" : item})
-        else :
-            # Return all nodes
-            logger.debug("Retrieving all parameter")
-            nodes = self.get_nodes("comp_archive_spec")
-
-        logger.debug("Number found %s" , nodes.__len__())
-        # Return value for first occurence of node with attribute value = item
+    def get_rest_file_extensions(self, archive_entry):
+        file_extensions = []
+        nodes = self.get_nodes('rest_file_extension', root=archive_entry)
         for node in nodes:
-            logger.debug("Checking node %s" , node.tag )
-            group   = node.attrib['name']
-            rootdir = node.find('./rootdir').text
+            file_extensions.append(node.text)
+        return file_extensions
 
-            for file_ in node.findall('./files/file_extension') :
+    def get_hist_file_extensions(self, archive_entry):
+        file_extensions = []
+        nodes = self.get_nodes('hist_file_extension', root=archive_entry)
+        for node in nodes:
+            file_extensions.append(node.text)
+        return file_extensions
 
-                keep    = file_.find('./keep_last_in_rundir')
-
-                val     = keep.text
-                attr    = rootdir + "/" + file_.find('./subdir').text + "/" + file_.get('regex_suffix')
-                t       = self._get_type(node)
-                desc    = self._get_description(keep)
-                #default = super(EnvBase , self).get_default(node)
-                default = self._get_default(keep)
-                filename = self.filename
-
-                v = { 'group' : group , 'attribute' : attr , 'value' : val , 'type' : t , 'description' : desc , 'default' : default , 'file' : filename}
-                results.append(v)
-
-        return results
-
-    def _get_type(self, node=None) :
-        return None
-
-    def _get_description(self, node=None):
-
-        description = None
-
-        if node.tag == "keep_last_in_rundir" :
-            if node.get('description') :
-                description = node.get('description')
-            elif node.find('./description') :
-                description = node.find('./description').text
-            else:
-                description = "Keep last in rundir"
-
-        return description
-
-    def _get_default(self, node=None):
-        return None
-
-    def _get_archive(self):
-        pass
+    def get_rpointer_contents(self, archive_entry):
+        rpointer_items = []
+        rpointer_nodes = self.get_nodes('rpointer', root=archive_entry)
+        for rpointer_node in rpointer_nodes:
+            file_node = self.get_node('rpointer_file', root=rpointer_node)
+            content_node = self.get_node('rpointer_content', root=rpointer_node)
+            rpointer_items.append([file_node.text,content_node.text])
+        return rpointer_items

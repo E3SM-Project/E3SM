@@ -163,7 +163,7 @@ for mct, etc.
   <FREEFLAGS> -Mfree </FREEFLAGS>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
 
-  <FFLAGS>  -i4 -gopt  -time -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
+  <FFLAGS>  -i4 -gopt  -time -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
   <FFLAGS_NOOPT> -O0 -g -Ktrap=fp -Mbounds -Kieee  </FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="false"> </ADD_FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="true"> -mp </ADD_FFLAGS_NOOPT>
@@ -238,7 +238,7 @@ for mct, etc.
   <FREEFLAGS> -Mfree </FREEFLAGS>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
 
-  <FFLAGS>  -i4 -Mlist  -time -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
+  <FFLAGS>  -i4 -Mlist  -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </FFLAGS>
   <ADD_FFLAGS MODEL="cam"> -acc -ta=tesla,pin,cuda7.0,cc35,ptxinfo -Minfo=accel -DUSE_OPENACC=1 </ADD_FFLAGS>
   <FFLAGS_NOOPT> -O0 -g -Ktrap=fp -Mbounds -Kieee  </FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT compile_threaded="false"> </ADD_FFLAGS_NOOPT>
@@ -564,7 +564,7 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="intel" MACH="corip1">
-  <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 -no-opt-dynamic-align </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
@@ -579,6 +579,7 @@ for mct, etc.
 
 <compiler COMPILER="intel" MACH="eos">
   <ADD_FFLAGS DEBUG="FALSE"> -O2  </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
   <ADD_CFLAGS DEBUG="FALSE"> -O2  </ADD_CFLAGS>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <ADD_SLIBS> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </ADD_SLIBS>
@@ -665,6 +666,33 @@ for mct, etc.
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <ADD_SLIBS> $(shell $(NETCDF_PATH)/bin/nf-config --flibs) -lblas </ADD_SLIBS>
+  <ADD_CPPFLAGS> -DHAVE_COMM_F2C </ADD_CPPFLAGS>
+</compiler>
+
+<compiler COMPILER="pgi" MACH="sierra">
+  <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
+  <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
+  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
+  <ADD_CPPDEFS> -DNO_SHR_VMATH -DCNL </ADD_CPPDEFS>
+  <ADD_SLIBS>$(shell /usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs)</ADD_SLIBS>
+  <ADD_LDFLAGS> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib -llapack -lblas</ADD_LDFLAGS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="sierra">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <NETCDF_PATH>/usr/local/tools/netcdf-intel-4.1.3</NETCDF_PATH>
+  <PNETCDF_PATH>/usr/local/tools/parallel-netcdf-intel-1.6.1</PNETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <MPI_PATH>/usr/local/tools/mvapich2-intel-2.1/</MPI_PATH>
+  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
+  <ADD_CPPDEFS> -DNO_SHR_VMATH -DCNL </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </ADD_FFLAGS>
+  <ADD_SLIBS>$(shell /usr/local/tools/netcdf-intel-4.1.3/bin/nc-config --flibs)</ADD_SLIBS>
+  <ADD_LDFLAGS> -llapack -lblas</ADD_LDFLAGS>
+</compiler>
+<compiler>
+  <ADD_CPPDEFS MODEL="pop"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
 </compiler>
 
 <compiler MACH="oic2" COMPILER="gnu">
@@ -886,7 +914,7 @@ for mct, etc.
 <compiler COMPILER="gnu" MACH="blues">
   <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
   <NETCDF_PATH>$(NETCDFROOT)</NETCDF_PATH>
-  <MPI_PATH MPILIB="mvapich">/soft/mvapich2/2.2b_psm/gnu-5.2/</MPI_PATH>
+  <MPI_PATH MPILIB="mvapich">/blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/mvapich2-2.2b-sdh7nhddicl4sh5mgxjyzxtxox3ajqey</MPI_PATH>
   <MPI_LIB_NAME MPILIB="mvapich">mpi</MPI_LIB_NAME>
   <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nc-config --flibs) -llapack -lblas</ADD_SLIBS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>

@@ -55,117 +55,116 @@
 -->
 
 <machine MACH="edison">
-    <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is SLURM</DESC>
-    <NODENAME_REGEX>edison</NODENAME_REGEX>
-    <TESTS>acme_developer</TESTS>
-    <COMPILERS>intel,gnu,cray</COMPILERS>
-    <MPILIBS>mpt,mpi-serial</MPILIBS>
-    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
-    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
-    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
-    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
-    <OS>CNL</OS>
-    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>cseg</SUPPORTED_BY>
-    <GMAKE_J>8</GMAKE_J>
-    <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
-    <PES_PER_NODE>24</PES_PER_NODE>
-    <CESMSCRATCHROOT>$ENV{SCRATCH}/acme_scratch</CESMSCRATCHROOT>
-    <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <CCSM_BASELINE>/project/projectdirs/acme/baselines</CCSM_BASELINE>
-    <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.edison/cprnc</CCSM_CPRNC>
-    <mpirun mpilib="default">
-      <executable>srun</executable>
-      <arguments>
-	<arg name="label"> --label</arg>
-	<arg name="num_tasks" > -n {{ num_tasks }}</arg>
+  <DESC>NERSC XC30, os is CNL, 24 pes/node, batch system is SLURM</DESC>
+  <NODENAME_REGEX>edison</NODENAME_REGEX>
+  <TESTS>acme_developer</TESTS>
+  <COMPILERS>intel,gnu,cray</COMPILERS>
+  <MPILIBS>mpt,mpi-serial</MPILIBS>
+  <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+  <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+  <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+  <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+  <OS>CNL</OS>
+  <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+  <SUPPORTED_BY>cseg</SUPPORTED_BY>
+  <GMAKE_J>8</GMAKE_J>
+  <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
+  <PES_PER_NODE>24</PES_PER_NODE>
+  <CESMSCRATCHROOT>$ENV{SCRATCH}/acme_scratch</CESMSCRATCHROOT>
+  <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
+  <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+  <CCSM_BASELINE>/project/projectdirs/acme/baselines</CCSM_BASELINE>
+  <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.edison/cprnc</CCSM_CPRNC>
+  <mpirun mpilib="default">
+    <executable>srun</executable>
+    <arguments>
+      <arg name="label"> --label</arg>
+      <arg name="num_tasks" > -n {{ num_tasks }}</arg>
+      <arg name="thread_count" > -c {{ thread_count }}</arg>
 
-     	<arg name="thread_count" > -c {{ thread_count }}</arg>
+    </arguments>
+  </mpirun>
+  <module_system type="module">
+    <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+    <init_path lang="python">/opt/modules/default/init/python.py</init_path>
+    <init_path lang="sh">/opt/modules/default/init/sh</init_path>
+    <init_path lang="csh">/opt/modules/default/init/csh</init_path>
+    <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+    <cmd_path lang="python">/opt/modules/default/bin/modulecmd python</cmd_path>
+    <cmd_path lang="sh">module</cmd_path>
+    <cmd_path lang="csh">module</cmd_path>
+    <modules>
+      <command name="rm">PrgEnv-intel</command>
+      <command name="rm">PrgEnv-cray</command>
+      <command name="rm">PrgEnv-gnu</command>
+      <command name="rm">intel</command>
+      <command name="rm">cce</command>
+      <command name="rm">cray-parallel-netcdf</command>
+      <command name="rm">cray-parallel-hdf5</command>
+      <command name="rm">pmi</command>
+      <command name="rm">cray-libsci</command>
+      <command name="rm">cray-mpich2</command>
+      <command name="rm">cray-mpich</command>
+      <command name="rm">cray-netcdf</command>
+      <command name="rm">cray-hdf5</command>
+      <command name="rm">cray-netcdf-hdf5parallel</command>
+      <command name="rm">craype-sandybridge</command>
+      <command name="rm">craype-ivybridge</command>
+      <command name="rm">craype</command>
+    </modules>
 
-      </arguments>
-    </mpirun>
-    <module_system type="module">
-      <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
-      <init_path lang="python">/opt/modules/default/init/python.py</init_path>
-      <init_path lang="sh">/opt/modules/default/init/sh</init_path>
-      <init_path lang="csh">/opt/modules/default/init/csh</init_path>
-      <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
-      <cmd_path lang="python">/opt/modules/default/bin/modulecmd python</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <modules>
-	<command name="rm">PrgEnv-intel</command>
-	<command name="rm">PrgEnv-cray</command>
-	<command name="rm">PrgEnv-gnu</command>
-	<command name="rm">intel</command>
-	<command name="rm">cce</command>
-	<command name="rm">cray-parallel-netcdf</command>
-	<command name="rm">cray-parallel-hdf5</command>
-	<command name="rm">pmi</command>
-	<command name="rm">cray-libsci</command>
-	<command name="rm">cray-mpich2</command>
-	<command name="rm">cray-mpich</command>
-	<command name="rm">cray-netcdf</command>
-	<command name="rm">cray-hdf5</command>
-	<command name="rm">cray-netcdf-hdf5parallel</command>
-	<command name="rm">craype-sandybridge</command>
-	<command name="rm">craype-ivybridge</command>
-	<command name="rm">craype</command>
-      </modules>
+    <modules compiler="intel">
+      <command name="load">PrgEnv-intel</command>
+      <command name="switch">intel intel/16.0.0.109</command>
+      <command name="rm">cray-libsci</command>
+      <command name="use">/global/project/projectdirs/ccsm1/modulefiles/edison</command>
+    </modules>
+    <modules compiler="intel" mpilib="!mpi-serial" >
+      <command name="load">esmf/6.3.0rp1-defio-intel15.0-mpi-O</command>
+    </modules>
+    <modules compiler="intel" mpilib="mpi-serial" >
+      <command name="load">esmf/6.3.0rp1-defio-intel15.0-mpiuni-O</command>
+    </modules>
+    <modules compiler="cray">
+      <command name="load">PrgEnv-cray</command>
+      <command name="switch">cce cce/8.4.3</command>
+    </modules>
+    <modules compiler="gnu">
+      <command name="load">PrgEnv-gnu</command>
+      <command name="switch">gcc gcc/5.2.0</command>
+    </modules>
+    <modules>
+      <command name="load">papi/5.4.1.3</command>
+      <command name="swap">craype craype/2.5.1</command>
+      <command name="load">craype-ivybridge</command>
+    </modules>
+    <modules compiler="!intel">
+      <command name="switch">cray-libsci/13.3.0</command>
+    </modules>
+    <modules>
+      <command name="load">cray-mpich/7.3.1</command>
+      <!--	<command name="load">pmi/5.0.6-1.0000.10439.140.2.ari</command> -->
+    </modules>
+    <modules mpilib="mpi-serial">
+      <command name="load">cray-hdf5/1.8.16</command>
+      <command name="load">cray-netcdf/4.3.3.1</command>
+    </modules>
+    <modules mpilib="!mpi-serial">
+      <command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
+      <command name="load">cray-hdf5-parallel/1.8.16</command>
+      <command name="load">cray-parallel-netcdf/1.6.1</command>
+    </modules>
+    <modules>
+      <command name="load">perl/5.20.0</command>
+      <command name="load">cmake/3.0.0</command>
+    </modules>
+  </module_system>
 
-      <modules compiler="intel">
-	<command name="load">PrgEnv-intel</command>
-	<command name="switch">intel intel/16.0.0.109</command>
-	<command name="rm">cray-libsci</command>
-	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/edison</command>
-      </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" >
-	<command name="load">esmf/6.3.0rp1-defio-intel15.0-mpi-O</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial" >
-        <command name="load">esmf/6.3.0rp1-defio-intel15.0-mpiuni-O</command>
-      </modules>
-      <modules compiler="cray">
-	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.4.3</command>
-      </modules>
-      <modules compiler="gnu">
-	<command name="load">PrgEnv-gnu</command>
-	<command name="switch">gcc gcc/5.2.0</command>
-      </modules>
-      <modules>
-	<command name="load">papi/5.4.1.3</command>
-	<command name="swap">craype craype/2.5.1</command>
-	<command name="load">craype-ivybridge</command>
-      </modules>
-      <modules compiler="!intel">
-	<command name="switch">cray-libsci/13.3.0</command>
-      </modules>
-      <modules>
-	<command name="load">cray-mpich/7.3.1</command>
-<!--	<command name="load">pmi/5.0.6-1.0000.10439.140.2.ari</command> -->
-      </modules>
-      <modules mpilib="mpi-serial">
-	<command name="load">cray-hdf5/1.8.16</command>
-	<command name="load">cray-netcdf/4.3.3.1</command>
-      </modules>
-      <modules mpilib="!mpi-serial">
-	<command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
-	<command name="load">cray-hdf5-parallel/1.8.16</command>
-	<command name="load">cray-parallel-netcdf/1.6.1</command>
-      </modules>
-      <modules>
-	<command name="load">perl/5.20.0</command>
-	<command name="load">cmake/3.0.0</command>
-      </modules>
-    </module_system>
+  <environment_variables>
+    <env name="OMP_STACKSIZE">64M</env>
+  </environment_variables>
 
-    <environment_variables>
-      <env name="OMP_STACKSIZE">64M</env>
-    </environment_variables>
-
-  </machine>
+</machine>
 
 <machine MACH="corip1">
     <DESC>NERSC XC40 Haswell, os is CNL, 32 pes/node, batch system is SLURM</DESC>
@@ -187,7 +186,7 @@
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>acme</SUPPORTED_BY>
     <GMAKE_J>8</GMAKE_J>
-    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>32</PES_PER_NODE>
     <PROJECT>acme</PROJECT>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
@@ -525,10 +524,10 @@
 <machine MACH="blues">
          <DESC>ANL/LCRC Linux Cluster</DESC>
          <NODENAME_REGEX>(blogin|^b\d)</NODENAME_REGEX>
-         <TESTS>acme_integration,acme_developer</TESTS>
-         <COMPILERS>gnu,intel</COMPILERS>
-         <MPILIBS>mvapich</MPILIBS>
-         <CESMSCRATCHROOT>/lcrc/project/ACME/$USER/acme_scratch</CESMSCRATCHROOT>
+         <TESTS>acme_integration</TESTS>
+         <COMPILERS>gnu,pgi,intel,nag</COMPILERS>
+         <MPILIBS>mvapich,mpich,openmpi,mpi-serial</MPILIBS>
+         <CESMSCRATCHROOT>/lcrc/project/$PROJECT/$USER/acme_scratch</CESMSCRATCHROOT>
 	 <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
 	 <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
          <DIN_LOC_ROOT>/home/ccsm-data/inputdata</DIN_LOC_ROOT>
@@ -630,7 +629,7 @@
                <arg name="num_tasks"> -n {{ num_tasks }}</arg>
                <arg name="locargs">  $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
-               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=32M</arg>
+               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
                <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
                <arg name="colon">:</arg>
              </arguments>
@@ -658,6 +657,46 @@
     <GMAKE_J>20</GMAKE_J>
     <MAX_TASKS_PER_NODE>20</MAX_TASKS_PER_NODE>
     <PES_PER_NODE>2</PES_PER_NODE>
+</machine>
+
+<machine MACH="sierra">
+         <DESC>LLNL Linux Cluster, Linux (pgi), 12 pes/node, batch system is Moab</DESC>
+         <COMPILERS>intel, pgi</COMPILERS>
+         <MPILIBS>mpich,mpi-serial</MPILIBS>
+         <RUNDIR>/p/lscratche/$CCSMUSER/ACME/$CASE/run</RUNDIR>
+         <EXEROOT>/p/lscratche/$CCSMUSER/$CASE/bld</EXEROOT>
+         <CESMSCRATCHROOT>/p/lscratche/$USER</CESMSCRATCHROOT>
+         <DIN_LOC_ROOT>/p/lscratchd/ma21/ccsm3data/inputdata</DIN_LOC_ROOT>
+         <DIN_LOC_ROOT_CLMFORC>/p/lscratchd/ma21/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+         <DOUT_S_ROOT>/p/lscratche/$CCSMUSER/archive/$CASE</DOUT_S_ROOT>
+         <DOUT_L_HTAR>FALSE</DOUT_L_HTAR>
+         <DOUT_L_MSROOT>UNSET</DOUT_L_MSROOT>
+         <CCSM_BASELINE>/p/lscratchd/$CCSMUSER/ccsm_baselines</CCSM_BASELINE>
+         <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
+         <OS>LINUX</OS>
+         <BATCHQUERY>mshow</BATCHQUERY>
+         <BATCHSUBMIT>msub</BATCHSUBMIT>
+	 <BATCHREDIRECT></BATCHREDIRECT>
+         <SUPPORTED_BY>wlin -at- bnl.gov</SUPPORTED_BY>
+         <GMAKE_J>8</GMAKE_J>
+         <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
+	 <batch_system type="sierra_slurm" version="x.y">
+	   <queues>
+	     <queue jobmin="1" jobmax="9999" default="true">pbatch</queue>
+	   </queues>
+	   <walltimes>
+	     <walltime default="true">walltime=01:00:00</walltime>
+	   </walltimes>
+	 </batch_system>
+	 <mpirun mpilib="mpich">
+	   <executable>srun</executable>
+	   <arguments>
+	     <arg name="num_nodes"> -N {{ num_nodes }}</arg>
+	   </arguments>
+	 </mpirun>
+	 <mpirun mpilib="mpi-serial">
+           <executable></executable>
+	 </mpirun>
 </machine>
 
 <machine MACH="mira">
@@ -694,7 +733,7 @@
                <arg name="num_tasks"> -n {{ num_tasks }}</arg>
                <arg name="locargs">  $LOCARGS</arg>
                <arg name="bg_threadlayout"> --envs BG_THREADLAYOUT=1</arg>
-               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=32M</arg>
+               <arg name="omp_stacksize"> --envs OMP_STACKSIZE=64M</arg>
                <arg name="thread_count"> --envs OMP_NUM_THREADS={{ thread_count }}</arg>
                <arg name="colon">:</arg>
              </arguments>
