@@ -3378,7 +3378,7 @@
   <entry id="TIMER_LEVEL" 
 	 type="integer"
 	 valid_values=""
-	 value="12" 
+	 value="20" 
 	 group="run_flags"
 	 sdesc="timer output depth"
 	 ></entry>
