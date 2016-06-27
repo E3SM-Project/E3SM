@@ -1,0 +1,15 @@
+This test case is set up to create the domains for the MISMIP3D test case, but the
+tests themselves must be manually run.
+
+There are two domain sizes:
+minimal_width - this is only 3 cells wide laterally, and it useful for long spinups
+full_width - this is the full width laterally, and is needed for the perturbation experiments
+
+Running the setup scripts would create the domains for the size selected.  Note the highest
+resolutions of the full_width size must be generated manually because they take non-trivial
+amounts of time/memory to complete.  Still, the setup script organizes the tools needed, making
+this fairly straightforward.
+
+After running the desired resolution Stnd experiment to steady state, setting up and running the
+perturbation experiments must be done manually.  See the other README file in this directory
+for instructions.
