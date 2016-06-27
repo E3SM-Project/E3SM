@@ -223,7 +223,7 @@ def _archive_restarts(case, archive, archive_entry,
     for suffix in archive.get_rest_file_extensions(archive_entry):
         for i in range(ninst):
             restfiles = ""
-            pattern = compname
+            pattern = "\." + compname + "\d*" + "\."
             if pattern != "dart":
                 pfile = re.compile(pattern)
                 files = [f for f in os.listdir(rundir) if pfile.search(f)]
