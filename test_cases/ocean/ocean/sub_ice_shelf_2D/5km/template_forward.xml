@@ -10,6 +10,7 @@
 		<option name="config_bottom_drag_coeff">1.0e-3</option>
 		<option name="config_eos_type">'jm'</option>
 		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
+		<option name="config_land_ice_flux_mode">'standalone'</option>
 	</namelist>
 
 	<streams>
@@ -32,6 +33,12 @@
 				<member name="layerThickness" type="var"/>
 				<member name="ssh" type="var"/>
 				<member name="seaSurfacePressure" type="var"/>
+				<member name="landIceFraction" type="var"/>
+				<member name="landIceFreshwaterFlux" type="var"/>
+				<member name="landIceHeatFlux" type="var"/>
+				<member name="landIceFrictionVelocity" type="var"/>
+				<member name="landIceInterfaceTracers" type="var_array"/>
+				<member name="landIceBoundaryLayerTracers" type="var_array"/>
 			</add_contents>
 		</stream>
 	</streams>
