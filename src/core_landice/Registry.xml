@@ -995,6 +995,8 @@ is the value of that variable from the *previous* time level!
 
 <!-- ======================================================================= -->
 
+#include "subglacial_hydro/Registry_subglacial_hydro.xml"
+
 #include "analysis_members/Registry_analysis_members.xml"
 
 </registry>
