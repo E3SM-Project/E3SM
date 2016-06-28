@@ -38,17 +38,18 @@ module MultiPhysicsProbVSFM
      class(sysofeqns_vsfm_type),pointer          :: sysofeqns
      type(sysofeqns_base_pointer_type), pointer  :: sysofeqns_ptr
    contains
-     procedure, public :: Init                   => VSFMMPPInit
-     procedure, public :: Clean                  => VSFMMPPClean
-     procedure, public :: Setup                  => VSFMMPPSetup
-     procedure, public :: Restart                => VSFMMPPRestart
-     procedure, public :: UpdateSysOfEqnsAuxVars => VSFMMPPUpdateSysOfEqnsAuxVars
-     procedure, public :: SetMPIRank             => VSFMMPPSetMPIRank
-     procedure, public :: SetMeshesOfGoveqns     => VSFMMPPSetMeshesOfGoveqns
-     procedure, public :: AddGovEqn              => VSFMMPPAddGovEqn
-     procedure, public :: GovEqnAddCondition     => VSFMMPPGovEqnAddCondition
-     procedure, public :: AllocateAuxVars        => VSFMMPPAllocateAuxVars
-     procedure, public :: SetupProblem           => VSFMMPPSetupProblem
+     procedure, public :: Init                         => VSFMMPPInit
+     procedure, public :: Clean                        => VSFMMPPClean
+     procedure, public :: Setup                        => VSFMMPPSetup
+     procedure, public :: Restart                      => VSFMMPPRestart
+     procedure, public :: UpdateSysOfEqnsAuxVars       => VSFMMPPUpdateSysOfEqnsAuxVars
+     procedure, public :: SetMPIRank                   => VSFMMPPSetMPIRank
+     procedure, public :: SetMeshesOfGoveqns           => VSFMMPPSetMeshesOfGoveqns
+     procedure, public :: AddGovEqn                    => VSFMMPPAddGovEqn
+     procedure, public :: GovEqnAddCondition           => VSFMMPPGovEqnAddCondition
+     procedure, public :: AllocateAuxVars              => VSFMMPPAllocateAuxVars
+     procedure, public :: SetupProblem                 => VSFMMPPSetupProblem
+     procedure, public :: GovEqnUpdateConditionConnSet => VSFMMPPGovEqnUpdateConditionConnSet
 
   end type mpp_vsfm_type
 
@@ -106,8 +107,8 @@ contains
        discretization_type, ncols_ghost, filter_vsfmc,            &
        xc_col, yc_col, zc_col, z, zi, dz,                         &
        area_col, grid_owner, col_itype,                           &
-       watsat, hksat, bsw, sucsat, eff_porosity, zwt,             &
-       vsfm_satfunc_type, density_type)
+       watsat, hksat, bsw, sucsat, eff_porosity, residual_sat,    &
+       zwt, vsfm_satfunc_type, density_type)
     !
     ! !DESCRIPTION:
     ! Sets up the Variably Saturated Flow Model (VSFM) - Multi-Phyiscs Problem 
@@ -153,6 +154,7 @@ contains
     PetscReal, intent(in), pointer :: bsw(:,:)
     PetscReal, intent(in), pointer :: sucsat(:,:)
     PetscReal, intent(in), pointer :: eff_porosity(:,:)
+    PetscReal, intent(in), pointer :: residual_sat(:,:)
     PetscReal, intent(in), pointer :: zwt(:)
     character(len=32), intent(in)  :: vsfm_satfunc_type
     PetscInt, intent(in)           :: density_type
@@ -197,7 +199,7 @@ contains
     ! Initliaze the VSFM-MPP
     call VSFMMPPInitialize(this, begc, endc, ncols_ghost, &
          zc_col, filter_vsfmc, watsat, hksat, bsw, sucsat, &
-         eff_porosity, zwt, vsfm_satfunc_type, density_type)
+         eff_porosity, residual_sat, zwt, vsfm_satfunc_type, density_type)
 
   end subroutine VSFMMPPSetup
 
@@ -315,8 +317,8 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPInitialize(vsfm_mpp, begc, endc, ncols_ghost, &
-       zc_col, filter_vsfmc, watsat, hksat, bsw, sucsat, eff_porosity, zwt, &
-       vsfm_satfunc_type, density_type)
+       zc_col, filter_vsfmc, watsat, hksat, bsw, sucsat, eff_porosity, &
+       residual_sat, zwt, vsfm_satfunc_type, density_type)
 
     !
     ! !DESCRIPTION:
@@ -349,6 +351,7 @@ contains
     PetscReal, intent(in), pointer                    :: bsw(:,:)
     PetscReal, intent(in), pointer                    :: sucsat(:,:)
     PetscReal, intent(in), pointer                    :: eff_porosity(:,:)
+    PetscReal, intent(in), pointer                    :: residual_sat(:,:)
     PetscReal, intent(in), pointer                    :: zwt(:)
     character(len=32), intent(in)                     :: vsfm_satfunc_type
     PetscInt, intent(in)                              :: density_type
@@ -366,8 +369,8 @@ contains
 
     ! Set initial coniditions
     call VSFMMPPSetSoils(vsfm_mpp, begc, endc, ncols_ghost, filter_vsfmc, &
-         watsat, hksat, bsw, sucsat, eff_porosity, vsfm_satfunc_type, &
-         density_type)
+         watsat, hksat, bsw, sucsat, eff_porosity, residual_sat,          &
+         vsfm_satfunc_type, density_type)
 
     call VSFMMPPSetICs(  vsfm_mpp, begc, endc, zc_col, filter_vsfmc, zwt)
 
@@ -434,7 +437,8 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPSetSoils(vsfm_mpp, begc, endc, ncols_ghost, filter_vsfmc, &
-       watsat, hksat, bsw, sucsat, eff_porosity, vsfm_satfunc_type, density_type)
+       watsat, hksat, bsw, sucsat, eff_porosity, residual_sat, &
+       vsfm_satfunc_type, density_type)
     !
     ! !DESCRIPTION:
     ! Sets soil properties for VSFM solver
@@ -454,13 +458,15 @@ contains
     PetscReal, intent(in), pointer :: bsw(:,:)
     PetscReal, intent(in), pointer :: sucsat(:,:)
     PetscReal, intent(in), pointer :: eff_porosity(:,:)
+    PetscReal, intent(in), pointer :: residual_sat(:,:)
     character(len=32), intent(in)  :: vsfm_satfunc_type
     PetscInt                       :: density_type
 
     select case(vsfm_mpp%id)
     case (MPP_VSFM_SNES_CLM)
        call VSFMMPPSetSoilsCLM(vsfm_mpp, begc, endc, ncols_ghost, filter_vsfmc, &
-            watsat, hksat, bsw, sucsat, eff_porosity, vsfm_satfunc_type, density_type)
+            watsat, hksat, bsw, sucsat, eff_porosity, residual_sat, &
+            vsfm_satfunc_type, density_type)
     case default
        write(iulog,*) 'VSFMMPPSetSoils: Unknown mpp_type'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -470,7 +476,8 @@ contains
 
   !------------------------------------------------------------------------
   subroutine VSFMMPPSetSoilsCLM(vsfm_mpp, begc, endc, ncols_ghost, filter_vsfmc, &
-       watsat, hksat, bsw, sucsat, eff_porosity, vsfm_satfunc_type, density_type)
+       watsat, hksat, bsw, sucsat, eff_porosity, residual_sat,                   &
+       vsfm_satfunc_type, density_type)
     !
     ! !DESCRIPTION:
     ! Sets soil properties for VSFM solver from CLM
@@ -501,6 +508,7 @@ contains
     PetscReal, intent(in), pointer                    :: bsw(:,:)
     PetscReal, intent(in), pointer                    :: sucsat(:,:)
     PetscReal, intent(in), pointer                    :: eff_porosity(:,:)
+    PetscReal, intent(in), pointer                    :: residual_sat(:,:)
     character(len=32), intent(in)                     :: vsfm_satfunc_type
     PetscInt                                          :: density_type
     !
@@ -597,7 +605,7 @@ contains
              ! lambda = 1/bsw
              lambda = 1.d0/bsw(col_id,j)
 
-             sat_res = 0.d0
+             sat_res = residual_sat(col_id,j)
              por = watsat(col_id,j)
 
              ode_aux_vars_in(icell)%perm(1:3) = perm
@@ -655,6 +663,9 @@ contains
              ode_aux_vars_bc(sum_conn)%porParams     = ode_aux_vars_in(ghosted_id)%porParams
 
              ode_aux_vars_bc(sum_conn)%pressure_prev = 3.5355d3
+
+             call ode_aux_vars_bc(sum_conn)%satParams%Copy(ode_aux_vars_in(ghosted_id)%satParams)
+
           enddo
           cur_cond => cur_cond%next
        enddo
@@ -1063,6 +1074,54 @@ contains
   end subroutine VSFMMPPGovEqnAddCondition
 
   !------------------------------------------------------------------------
+  subroutine VSFMMPPGovEqnUpdateConditionConnSet(this, igoveqn, icond, &
+       ss_or_bc_type, nconn,  conn_id_up, conn_id_dn, &
+       conn_dist_up, conn_dist_dn,  conn_unitvec, conn_area)
+    !
+    ! !DESCRIPTION:
+    ! For a given governing equation, updates connection set of a
+    ! boundary/source-sink condition
+    !
+    use GoverningEquationBaseType, only : goveqn_base_type
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(mpp_vsfm_type)            :: this
+    PetscInt                        :: igoveqn
+    PetscInt                        :: icond
+    PetscInt                        :: ss_or_bc_type
+    PetscInt                        :: nconn
+    PetscInt, pointer               :: conn_id_up(:)   !
+    PetscInt, pointer               :: conn_id_dn(:)   !
+    PetscReal, pointer              :: conn_dist_up(:) !
+    PetscReal, pointer              :: conn_dist_dn(:) !
+    PetscReal, pointer              :: conn_area(:)    !
+    PetscReal, pointer              :: conn_type(:)    !
+    PetscReal, pointer              :: conn_unitvec(:,:)
+    !
+    class(goveqn_base_type),pointer :: cur_goveq
+    class(goveqn_base_type),pointer :: other_goveq
+    PetscInt                        :: ii
+
+    if (igoveqn > this%sysofeqns%ngoveqns) then
+       write(iulog,*) 'Attempting to add condition for governing equation ' // &
+            'that is not in the list'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+
+    cur_goveq => this%sysofeqns%goveqns
+    do ii = 1, igoveqn-1
+       cur_goveq => cur_goveq%next
+    enddo
+
+    call cur_goveq%UpdateConditionConnSet(icond, ss_or_bc_type, nconn, &
+         conn_id_up, conn_id_dn, conn_dist_up, conn_dist_dn,    &
+         conn_unitvec, conn_area)
+
+  end subroutine VSFMMPPGovEqnUpdateConditionConnSet
+
+  !------------------------------------------------------------------------
   subroutine VSFMMPPAllocateAuxVars(this)
     !
     ! !DESCRIPTION:
@@ -1221,7 +1280,7 @@ contains
           do iauxvar = iauxvar_beg_bc, iauxvar_end_bc
              call soe%aux_vars_bc(iauxvar)%Init()
 
-             soe%aux_vars_bc(iauxvar)%is_ss        = PETSC_FALSE
+             soe%aux_vars_bc(iauxvar)%is_bc        = PETSC_TRUE
              soe%aux_vars_bc(iauxvar)%goveqn_id    = igoveqn
              soe%aux_vars_bc(iauxvar)%condition_id = icond
           enddo

@@ -651,8 +651,11 @@ contains
           case (COND_DIRICHLET, COND_MASS_RATE, COND_MASS_FLUX)
              this%aux_vars_bc(sum_conn)%condition_value =  &
                   soe_avars(iconn + iauxvar_off)%condition_value
-          case (COND_DIRICHLET_FRM_OTR_GOVEQ, COND_SEEPAGE_BC)
+          case (COND_DIRICHLET_FRM_OTR_GOVEQ)
              ! Do nothing
+          case (COND_SEEPAGE_BC)
+             ge_avars(sum_conn)%condition_value = &
+                  soe_avars(iconn + iauxvar_off)%condition_value
           case default
              write(string,*) cur_cond%itype
              write(iulog,*) 'Unknown cur_cond%itype = ' // trim(string)
@@ -1078,7 +1081,8 @@ contains
           sum_conn = sum_conn + 1
           select case(cur_cond%itype)
           case (COND_DIRICHLET, COND_SEEPAGE_BC)
-             this%aux_vars_bc(sum_conn)%pressure = cur_cond%value(iconn)
+             this%aux_vars_bc(sum_conn)%pressure = &
+                  this%aux_vars_bc(sum_conn)%condition_value
           case (COND_MASS_RATE, COND_MASS_FLUX)
              ghosted_id = cur_conn_set%id_dn(iconn)
              this%aux_vars_bc(sum_conn)%pressure =  &

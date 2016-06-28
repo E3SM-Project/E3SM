@@ -907,6 +907,7 @@ contains
     real(r8), pointer    :: vsfm_bsw(:,:)
     real(r8), pointer    :: vsfm_sucsat(:,:)
     real(r8), pointer    :: vsfm_eff_porosity(:,:)
+    real(r8), pointer    :: vsfm_residual_sat(:,:)
     integer, pointer     :: vsfm_filter(:)
     !
     type(bounds_type)    :: bounds_proc
@@ -938,6 +939,7 @@ contains
     allocate(vsfm_bsw          (bounds_proc%begc_all:bounds_proc%endc_all, nlevgrnd ))
     allocate(vsfm_sucsat       (bounds_proc%begc_all:bounds_proc%endc_all, nlevgrnd ))
     allocate(vsfm_eff_porosity (bounds_proc%begc_all:bounds_proc%endc_all, nlevgrnd ))
+    allocate(vsfm_residual_sat (bounds_proc%begc_all:bounds_proc%endc_all, nlevgrnd ))
 
     ! Initialize
     vsfm_filter       (:)   = 0
@@ -945,6 +947,7 @@ contains
     vsfm_hksat        (:,:) = 0._r8
     vsfm_bsw          (:,:) = 0._r8
     vsfm_sucsat       (:,:) = 0._r8
+    vsfm_residual_sat (:,:) = 0._r8
 
     ! Save data to initialize VSFM
     do c = bounds_proc%begc, bounds_proc%endc
@@ -970,7 +973,7 @@ contains
     call VSFMMPPSetSoils(vsfm_mpp, bounds_proc%begc, bounds_proc%endc, &
          ncols_ghost, vsfm_filter, &
          vsfm_watsat, vsfm_hksat, vsfm_bsw, vsfm_sucsat, vsfm_eff_porosity, &
-         vsfm_satfunc_type, DENSITY_TGDPB01)
+         vsfm_residual_sat, vsfm_satfunc_type, DENSITY_TGDPB01)
 
     ! Free up memory
     deallocate(vsfm_filter       )
@@ -979,6 +982,7 @@ contains
     deallocate(vsfm_bsw          )
     deallocate(vsfm_sucsat       )
     deallocate(vsfm_eff_porosity )
+    deallocate(vsfm_residual_sat )
 
   end subroutine set_material_properties
 

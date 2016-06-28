@@ -71,6 +71,7 @@ module GoverningEquationBaseType
      procedure, public :: SetDtime                => GoveqnBaseSetDtime
      procedure, public :: GetNumConditions        => GoveqnBaseGetNumConditions
      procedure, public :: AddCondition            => GoveqnBaseAddCondition
+     procedure, public :: UpdateConditionConnSet  => GoveqnBaseUpdateConditionConnSet
   end type goveqn_base_type
   !------------------------------------------------------------------------
 
@@ -644,6 +645,108 @@ contains
     end select
 
   end subroutine GoveqnBaseAddCondition
+
+  !------------------------------------------------------------------------
+  subroutine GoveqnBaseUpdateConditionConnSet(this, icond, &
+       ss_or_bc_type, nconn,  conn_id_up, conn_id_dn, &
+       conn_dist_up, conn_dist_dn,  conn_unitvec, conn_area)
+    !
+    ! !DESCRIPTION:
+    ! Updates connection of a source-sink/boundary condition
+    !
+    ! !USES:
+    use ConditionType             , only : condition_type
+    use ConditionType             , only : ConditionListAddCondition
+    use ConditionType             , only : ConditionNew
+    use MultiPhysicsProbConstants , only : COND_BC
+    use MultiPhysicsProbConstants , only : COND_SS
+    use ConnectionSetType         , only : ConnectionSetNew
+    use ConnectionSetType         , only : ConnectionSetDestroy
+    !
+    implicit none
+    !
+    ! !ARGUMENTS
+    class(goveqn_base_type)       :: this
+    PetscInt                      :: icond
+    PetscInt                      :: ss_or_bc_type
+    PetscInt                      :: nconn
+    PetscInt, pointer             :: conn_id_up(:)   !
+    PetscInt, pointer             :: conn_id_dn(:)   !
+    PetscReal, pointer            :: conn_dist_up(:) !
+    PetscReal, pointer            :: conn_dist_dn(:) !
+    PetscReal, pointer            :: conn_area(:)    !
+    PetscReal, pointer            :: conn_type(:)    !
+    PetscReal, pointer            :: conn_unitvec(:,:)
+    !
+    type(condition_type), pointer :: cond
+    PetscInt                      :: iconn, ii
+    PetscInt                      :: num_conditions
+
+
+    num_conditions = 0
+    select case (ss_or_bc_type)
+    case (COND_BC)
+
+       cond => this%boundary_conditions%first
+       do
+          if (.not.associated(cond)) exit
+          num_conditions = num_conditions + 1
+          cond => cond%next
+       enddo
+
+       if (icond > num_conditions) then
+          write(iulog,*),'Could not find the BC whose ' // &
+               'connection set needs to be updated.'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       endif
+
+       cond => this%boundary_conditions%first
+       do ii = 1,icond-1
+          cond => cond%next
+       enddo
+
+    case (COND_SS)
+       cond => this%source_sinks%first
+       do
+          if (.not.associated(cond)) exit
+          num_conditions = num_conditions + 1
+          cond => cond%next
+       enddo
+
+       if (icond > num_conditions) then
+          write(iulog,*),'Could not find the SS whose ' // &
+               'connection set needs to be updated.'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       endif
+
+       cond => this%source_sinks%first
+       do ii = 1,icond-1
+          cond => cond%next
+       enddo
+
+    case default
+       write(iulog,*) 'Unknown condition type'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+
+    end select
+
+    call ConnectionSetDestroy(cond%conn_set)
+
+    allocate(cond%conn_set)
+    cond%conn_set => ConnectionSetNew(nconn)
+
+    do iconn = 1, nconn
+       cond%conn_set%id_up(iconn)               = conn_id_up(iconn)
+       cond%conn_set%id_dn(iconn)               = conn_id_dn(iconn)
+       cond%conn_set%area(iconn)                = conn_area(iconn)
+       cond%conn_set%dist_up(iconn)             = conn_dist_up(iconn)
+       cond%conn_set%dist_dn(iconn)             = conn_dist_dn(iconn)
+       cond%conn_set%dist_unitvec(iconn)%arr(1) = conn_unitvec(iconn,1)
+       cond%conn_set%dist_unitvec(iconn)%arr(2) = conn_unitvec(iconn,2)
+       cond%conn_set%dist_unitvec(iconn)%arr(3) = conn_unitvec(iconn,3)
+    enddo
+
+  end subroutine GoveqnBaseUpdateConditionConnSet
 
 #endif
 
