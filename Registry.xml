@@ -1958,7 +1958,7 @@
 		<var name="daysSinceStartOfSim" type="real" dimensions="Time" units="days"
 			 description="Time since simulationStartTime, for plotting"
 		/>
-		<var_array name="tracersSurfaceValue" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
+		<var_array name="tracersSurfaceValue" type="real" dimensions="nCells Time">
 			<var name="temperatureSurfaceValue" array_group="surfaceValues" units="degrees Celsius" name_in_code="temperatureSurfaceValue"
 				description="potential temperature extrapolated to ocean surface"
 			/>
