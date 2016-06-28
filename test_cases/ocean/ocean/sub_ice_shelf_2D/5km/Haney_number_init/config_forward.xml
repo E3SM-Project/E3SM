@@ -18,19 +18,6 @@
 		<stream name="globalStatsOutput">
 			<attribute name="output_interval">0000_00:00:01</attribute>
 		</stream>
-		<stream name="forcing_data">
-			<attribute name="filename_template">forcing_data.nc</attribute>
-			<attribute name="input_interval">initial_only</attribute>
-			<attribute name="type">input</attribute>
-			<attribute name="name">forcing_data</attribute>
-			<add_contents>
-				<member name="windStressZonal" type="var"/>
-				<member name="windStressMeridional" type="var"/>
-				<member name="landIceFraction" type="var"/>
-				<member name="landIceSurfaceTemperature" type="var"/>
-				<member name="seaSurfacePressure" type="var"/>
-			</add_contents>
-		</stream>
 	</streams>
 
 	<run_script name="run.py">
