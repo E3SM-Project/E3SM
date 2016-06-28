@@ -13,10 +13,13 @@ shared:
 analysis_members: shared
 	(cd analysis_members; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(SHARED_INCLUDES)")
 
+subglacial_hydro: shared
+	(cd subglacial_hydro; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(SHARED_INCLUDES)")
+
 mode_forward: shared analysis_members
 	(cd mode_forward; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(SHARED_INCLUDES)")
 
-core_landice: mode_forward shared analysis_members
+core_landice: mode_forward shared analysis_members subglacial_hydro
 	ar -ru libdycore.a `find . -type f -name "*.o"`
 
 core_input_gen:
