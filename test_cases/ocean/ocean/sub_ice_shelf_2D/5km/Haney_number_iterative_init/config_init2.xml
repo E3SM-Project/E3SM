@@ -7,12 +7,14 @@
 	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="init">
-		<template file="template_init.xml" path_base="script_test_dir"/>
+		<template file="template_init.xml" path_base="script_resolution_dir"/>
 		<option name="config_write_cull_cell_mask">.false.</option>
+		<option name="config_use_rx1_constraint">.true.</option>
+		<option name="config_rx1_max">5.0</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
-		<template file="template_init.xml" path_base="script_test_dir"/>
+		<template file="template_init.xml" path_base="script_resolution_dir"/>
 	</streams>
 
 	<run_script name="run.py">
