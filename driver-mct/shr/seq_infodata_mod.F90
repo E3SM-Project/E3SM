@@ -230,12 +230,18 @@ MODULE seq_infodata_mod
    ! --- public interfaces --------------------------------------------------------
    interface seq_infodata_GetData
      module procedure seq_infodata_GetData_explicit
+#ifndef CPRPGI
      module procedure seq_infodata_GetData_bytype
+#endif
+! ^ ifndef CPRPGI
    end interface
 
    interface seq_infodata_PutData
      module procedure seq_infodata_PutData_explicit
+#ifndef CPRPGI
      module procedure seq_infodata_PutData_bytype
+#endif
+! ^ ifndef CPRPGI
    end interface
 
    ! --- Private local data -------------------------------------------------------
@@ -1217,6 +1223,7 @@ SUBROUTINE seq_infodata_GetData_explicit( infodata, case_name, case_desc, timing
 
 END SUBROUTINE seq_infodata_GetData_explicit
 
+#ifndef CPRPGI
 !===============================================================================
 ! !IROUTINE: seq_infodata_GetData_bytype -- Get values from infodata object
 !
@@ -1310,6 +1317,8 @@ SUBROUTINE seq_infodata_GetData_bytype( component_firstletter, infodata,      &
        call shr_sys_abort( subname//": unknown component-type first letter,'"//component_firstletter//"', aborting")
     end if
   END SUBROUTINE seq_infodata_GetData_bytype
+#endif
+! ^ ifndef CPRPGI
 
 !===============================================================================
 ! !IROUTINE: seq_infodata_PutData_explicit -- Put values into infodata object
@@ -1678,6 +1687,7 @@ SUBROUTINE seq_infodata_PutData_explicit( infodata, case_name, case_desc, timing
 
 END SUBROUTINE seq_infodata_PutData_explicit
 
+#ifndef CPRPGI
 !===============================================================================
 ! !IROUTINE: seq_infodata_PutData_bytype -- Put values into infodata object
 !
@@ -1763,6 +1773,8 @@ SUBROUTINE seq_infodata_PutData_bytype( component_firstletter, infodata,      &
     end if
 
 END SUBROUTINE seq_infodata_PutData_bytype
+#endif
+! ^ ifndef CPRPGI
 
 !===============================================================================
 !BOP ===========================================================================

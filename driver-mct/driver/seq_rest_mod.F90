@@ -183,7 +183,7 @@ contains
         ocn_present=ocn_present,        &
         glc_present=glc_present,        &
         wav_present=wav_present,        &
-        esp_present=wav_present,        &
+        esp_present=esp_present,        &
         atm_prognostic=atm_prognostic,      &
         lnd_prognostic=lnd_prognostic,      &
         ice_prognostic=ice_prognostic,      &

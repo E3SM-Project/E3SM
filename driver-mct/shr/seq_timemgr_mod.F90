@@ -143,6 +143,16 @@ module seq_timemgr_mod
       seq_timemgr_optIfdays0        = "ifdays0"   , &
       seq_timemgr_optEnd            = "end"     
 
+   integer(SHR_KIND_IN),private,parameter :: &
+      seq_timemgr_nclock_drv  = 1, &
+      seq_timemgr_nclock_atm  = 2, &
+      seq_timemgr_nclock_lnd  = 3, &
+      seq_timemgr_nclock_ocn  = 4, &
+      seq_timemgr_nclock_ice  = 5, &
+      seq_timemgr_nclock_glc  = 6, &
+      seq_timemgr_nclock_wav  = 7, &
+      seq_timemgr_nclock_rof  = 8, &
+      seq_timemgr_nclock_esp  = 9
    integer(SHR_KIND_IN),private,parameter :: max_clocks = 9
    character(len=*),public,parameter :: &
       seq_timemgr_clock_drv  = 'seq_timemgr_clock_drv' , & 
@@ -154,21 +164,29 @@ module seq_timemgr_mod
       seq_timemgr_clock_wav  = 'seq_timemgr_clock_wav' , &
       seq_timemgr_clock_rof  = 'seq_timemgr_clock_rof' , &
       seq_timemgr_clock_esp  = 'seq_timemgr_clock_esp' 
-   integer(SHR_KIND_IN),private,parameter :: &
-      seq_timemgr_nclock_drv  = 1, &
-      seq_timemgr_nclock_atm  = 2, &
-      seq_timemgr_nclock_lnd  = 3, &
-      seq_timemgr_nclock_ocn  = 4, &
-      seq_timemgr_nclock_ice  = 5, &
-      seq_timemgr_nclock_glc  = 6, &
-      seq_timemgr_nclock_wav  = 7, &
-      seq_timemgr_nclock_rof  = 8, &
-      seq_timemgr_nclock_esp  = 9
    character(len=8),private,parameter :: seq_timemgr_clocks(max_clocks) = &
       (/'drv     ','atm     ','lnd     ','ocn     ', &
         'ice     ','glc     ','wav     ','rof     ','esp     '/)
 
-   integer(SHR_KIND_IN),private,parameter :: max_alarms = 16
+   integer(SHR_KIND_IN),private,parameter :: &
+      seq_timemgr_nalarm_restart = 1, &
+      seq_timemgr_nalarm_run     = 2, &
+      seq_timemgr_nalarm_stop    = 3, &
+      seq_timemgr_nalarm_datestop= 4, &
+      seq_timemgr_nalarm_history = 5, &
+      seq_timemgr_nalarm_atmrun  = 6, &
+      seq_timemgr_nalarm_lndrun  = 7, &
+      seq_timemgr_nalarm_ocnrun  = 8, &
+      seq_timemgr_nalarm_icerun  = 9, &
+      seq_timemgr_nalarm_glcrun  =10, &
+      seq_timemgr_nalarm_ocnnext =11, &
+      seq_timemgr_nalarm_tprof   =12, &
+      seq_timemgr_nalarm_histavg =13, &
+      seq_timemgr_nalarm_rofrun  =14, &
+      seq_timemgr_nalarm_wavrun  =15, &
+      seq_timemgr_nalarm_esprun  =16, &
+      seq_timemgr_nalarm_barrier =17, &
+      max_alarms = seq_timemgr_nalarm_barrier
    character(len=*),public,parameter :: &
       seq_timemgr_alarm_restart = 'seq_timemgr_alarm_restart ', &
       seq_timemgr_alarm_run     = 'seq_timemgr_alarm_run     ', &
@@ -187,24 +205,6 @@ module seq_timemgr_mod
       seq_timemgr_alarm_wavrun  = 'seq_timemgr_alarm_wavrun  ', &
       seq_timemgr_alarm_esprun  = 'seq_timemgr_alarm_esprun  ', &
       seq_timemgr_alarm_barrier = 'seq_timemgr_alarm_barrier '
-   integer(SHR_KIND_IN),private,parameter :: &
-      seq_timemgr_nalarm_restart = 1, &
-      seq_timemgr_nalarm_run     = 2, &
-      seq_timemgr_nalarm_stop    = 3, &
-      seq_timemgr_nalarm_datestop= 4, &
-      seq_timemgr_nalarm_history = 5, &
-      seq_timemgr_nalarm_atmrun  = 6, &
-      seq_timemgr_nalarm_lndrun  = 7, &
-      seq_timemgr_nalarm_ocnrun  = 8, &
-      seq_timemgr_nalarm_icerun  = 9, &
-      seq_timemgr_nalarm_glcrun  =10, &
-      seq_timemgr_nalarm_ocnnext =11, &
-      seq_timemgr_nalarm_tprof   =12, &
-      seq_timemgr_nalarm_histavg =13, &
-      seq_timemgr_nalarm_rofrun  =14, &
-      seq_timemgr_nalarm_wavrun  =15, &
-      seq_timemgr_nalarm_esprun  =16, &
-      seq_timemgr_nalarm_barrier =17
 
    type EClock_pointer     ! needed for array of pointers
       type(ESMF_Clock),pointer :: EClock => null()
@@ -812,6 +812,7 @@ subroutine seq_timemgr_clockInit(SyncClock, nmlfile, restart, restart_file, pioi
     offset(seq_timemgr_nclock_ice) = ice_cpl_offset
     offset(seq_timemgr_nclock_glc) = glc_cpl_offset
     offset(seq_timemgr_nclock_rof) = rof_cpl_offset
+    offset(seq_timemgr_nclock_wav) = wav_cpl_offset
     offset(seq_timemgr_nclock_esp) = esp_cpl_offset
 
     do n = 1,max_clocks
