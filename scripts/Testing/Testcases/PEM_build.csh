@@ -34,6 +34,7 @@ set NTASKS_WAV  = `./xmlquery NTASKS_WAV	-value`
 set NTASKS_OCN  = `./xmlquery NTASKS_OCN	-value`
 set NTASKS_ICE  = `./xmlquery NTASKS_ICE	-value`
 set NTASKS_GLC  = `./xmlquery NTASKS_GLC	-value`
+set NTASKS_ESP  = `./xmlquery NTASKS_ESP	-value`
 set NTASKS_CPL  = `./xmlquery NTASKS_CPL	-value`
 
 if ( $NTASKS_ATM > 1 ) then
@@ -63,6 +64,10 @@ endif
 if ( $NTASKS_GLC > 1 ) then
   @ ntask = $NTASKS_GLC / 2
   ./xmlchange -file env_mach_pes.xml -id NTASKS_GLC  -val $ntask
+endif
+if ( $NTASKS_ESP > 1 ) then
+  @ ntask = $NTASKS_ESP / 2
+  ./xmlchange -file env_mach_pes.xml -id NTASKS_ESP  -val $ntask
 endif
 if ( $NTASKS_CPL > 1 ) then
   @ ntask = $NTASKS_CPL / 2

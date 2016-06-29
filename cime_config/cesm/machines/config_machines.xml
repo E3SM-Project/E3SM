@@ -601,7 +601,7 @@
       
       <modules compiler="intel">
 	<command name="load">PrgEnv-intel</command>
-	<command name="switch">intel intel/2016.0.109</command>
+	<command name="switch">intel intel/16.0.2.181</command>
 	<command name="rm">cray-libsci</command>
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/cori</command>
       </modules>

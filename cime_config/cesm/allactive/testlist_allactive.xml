@@ -4,17 +4,40 @@
     <grid name="f09_g16">
       <test name="ERI">
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">bluewaters</machine>
-        <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">edison</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/cesm2dev01">edison</machine>
       </test>
       <test name="PFS">
         <machine compiler="pgi " testtype="prebeta" testmods="allactive/default">bluewaters</machine>
         <machine compiler="intel" testtype="prealpha" testmods="allactive/default">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta" testmods="allactive/default">yellowstone</machine>
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/cesm2dev01">yellowstone</machine>
+      </test>
+      <test name="NOC">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
+      </test>
+      <test name="ERS">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/cesm2dev01io">yellowstone</machine>
+      </test>
+      <test name="SMS_Ld7">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/cesm2dev01io">yellowstone</machine>
+      </test>
+    </grid>
+    <grid name="f45_g37">
+      <test name="PEA_P1">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">hobart</machine>
+        <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">hobart</machine>
       </test>
     </grid>
     <grid name="f19_g16">
+      <test name="SMS_D">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
+      </test>
       <test name="CME_Ld5">
         <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
+      </test>
+      <test name="ERR">
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">edison</machine>
       </test>
       <test name="ERS_E_Ld7">
         <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
@@ -23,11 +46,12 @@
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">bluewaters</machine>
         <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
       </test>
-      <test name="ERR">
-        <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">edison</machine>
-      </test>
       <test name="PET_PT">
         <machine compiler="gnu" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
+      </test>
+      <test name="ERR_N3">
+        <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">edison</machine>
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
       </test>
     </grid>
     <grid name="ne120_g16">
@@ -103,51 +127,16 @@
       </test>
     </grid>
   </compset>
-  <compset name="B1850R">
-    <grid name="f09_g16">
-      <test name="NOC">
-        <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
-        <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
-      </test>
-    </grid>
-    <grid name="f19_g16">
-      <test name="ERR_N3">
-        <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">edison</machine>
-        <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
-      </test>
-    </grid>
-    <grid name="f45_g37">
-      <test name="PEA_P1">
-        <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">hobart</machine>
-        <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">hobart</machine>
-      </test>
-    </grid>
-  </compset>
-  <compset name="B1850RG">
-    <grid name="f09_g16">
-      <test name="ERS">
-        <machine compiler="intel" testtype="prealpha" testmods="allactive/cesm2dev01io">yellowstone</machine>
-      </test>
-      <test name="PFS">
-        <machine compiler="intel" testtype="prealpha" testmods="allactive/cesm2dev01">yellowstone</machine>
-      </test>
-      <test name="SMS_Ld7">
-        <machine compiler="intel" testtype="prealpha" testmods="allactive/cesm2dev01io">yellowstone</machine>
-      </test>
-    </grid>
-  </compset>
-  <compset name="B1850RW">
-    <grid name="f19_g16">
-      <test name="ERS">
-        <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
-      </test>
-    </grid>
-  </compset>
   <compset name="B1850W">
     <grid name="f09_g16">
       <test name="ERS">
         <machine compiler="pgi" testtype="prealpha" testmods="allactive/defaultio">bluewaters</machine>
         <machine compiler="cray" testtype="prealpha" testmods="allactive/defaultio">edison</machine>
+        <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
+      </test>
+    </grid>
+    <grid name="f19_g16">
+      <test name="ERS">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
       </test>
     </grid>
@@ -159,13 +148,6 @@
       </test>
     </grid>
   </compset>
-  <compset name="BC4SSOAL40SPR">
-    <grid name="f19_g16">
-      <test name="ERS_Ld7">
-        <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
-      </test>
-    </grid>
-  </compset>
   <compset name="BC4TMOZL40SPR">
     <grid name="f45_g37">
       <test name="ERS_Ld7">
@@ -173,19 +155,11 @@
       </test>
     </grid>
   </compset>
-  <compset name="BC4WCMAL40SPR">
+  <compset name="B1850Cw">
     <grid name="f19_g16">
-      <test name="ERS_Ld7">
+      <test name="ERS_Ld3">
         <machine compiler="gnu" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
         <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
-      </test>
-    </grid>
-  </compset>
-  <compset name="BC4WTSML40SPR">
-    <grid name="f19_g16">
-      <test name="ERS_Ld7">
-        <machine compiler="pgi" testtype="prealpha" testmods="allactive/defaultio">yellowstone</machine>
-        <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
       </test>
     </grid>
   </compset>
@@ -272,6 +246,13 @@
     <grid name="f19_g16">
       <test name="ERS_Ld5">
         <machine compiler="intel" testtype="prebeta" testmods="cice/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
+  <compset name="J1850G2">
+    <grid name="f09_g16_gl4">
+      <test name="SMS_Ld5">
+        <machine compiler="gnu" testtype="prebeta" testmods="allactive/cism/test_coupling">yellowstone</machine>
       </test>
     </grid>
   </compset>
