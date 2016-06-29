@@ -214,6 +214,15 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
     pio_isend  = IOsystem%rearr_opts%comm_fc_opts%enable_isend
     pio_maxreq = IOsystem%rearr_opts%comm_fc_opts%max_pend_req
 
+    if (pio_maxreq <= 0) then
+      ! small multiple of IOsystem%num_iotasks has proven to perform
+      ! well empirically, and we do not want to allow maximum for 
+      ! very large process count runs. Can improve this by 
+      ! communicating between iotasks first, and then non-iotasks 
+      ! to iotasks (TO DO).
+      pio_maxreq = max(2*IOsystem%num_iotasks,DEF_P2P_MAXREQ)
+    endif
+
     ! The rearranger options passed to this function overrides
     ! both the default and the options in IODESC
     if ( present(fc_options) ) then
@@ -510,9 +519,18 @@ subroutine box_rearrange_io2comp_{TYPE} (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
   endif
 
   if (pio_option == FLOW_CONTROL) then
-    pio_hs     = IOsystem%rearr_opts%comm_fc_opts%enable_hs
-    pio_isend  = IOsystem%rearr_opts%comm_fc_opts%enable_isend
+!tempfix    pio_hs     = IOsystem%rearr_opts%comm_fc_opts%enable_hs
+!tempfix    pio_isend  = IOsystem%rearr_opts%comm_fc_opts%enable_isend
     pio_maxreq = IOsystem%rearr_opts%comm_fc_opts%max_pend_req
+
+!tempfix++
+    ! handshaking is a very bad idea for large process counts and for
+    ! io2comp (but important for comp2io). Until logic has been rewritten
+    ! allow setting protocols for comp2io and io2comp, disabling 
+    ! handshaking for io2comp
+    pio_hs     = .false.
+    pio_isend  = .true.
+!tempfix--
 
     ! The rearranger options passed to this function overrides
     ! both the default and the options in IODESC
