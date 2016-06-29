@@ -459,7 +459,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                            tBulk, tSkin, tSkin_day, tSkin_night,           &
                            cSkin, cSkin_night, secs ,dt,                   &
                            duu10n,  ustar_sv   ,re_sv ,ssq_sv,             &
-                           missval    )
+                           missval, cold_start    )
 ! !USES:
 
    use water_isotopes, only: wiso_flxoce !subroutine used to calculate water isotope fluxes.
@@ -523,8 +523,9 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8),intent(out)   :: cSkin_night (nMax) ! NEW
    integer(IN),intent(in) :: secs               ! NEW  elsapsed seconds in day (GMT)
    integer(IN),intent(in) :: dt                 ! NEW
+   logical ,intent(in)    :: cold_start         ! cold start flag
 
-   real(R8),intent(in) ,optional :: missval        ! masked value
+   real(R8),intent(in) ,optional :: missval     ! masked value
 
    !--- output arguments -------------------------------
    real(R8),intent(out)  ::  sen  (nMax) ! heat flux: sensible    (W/m^2)
@@ -652,7 +653,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    real(R8)    :: phid   
    real(R8)    :: spval
 
-
    !--- local functions --------------------------------
    real(R8)    :: qsat   ! function: the saturation humididty of air (kg/m^3)
    real(R8)    :: cdn    ! function: neutral drag coeff at 10m
@@ -720,9 +720,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
          ! use swpen and ocnsal from input argument
       endif
  
-!     tcraig, dec 2013, this should only occur on a cold startup.
-      if (nint(minval(nInc(:))) == 0 .and. &
-          nint(maxval(nInc(:))) == 0 ) then
+       if (cold_start) then
 !         if (s_loglev > 0) then
             write(s_logunit,F00) "Initialize diurnal cycle fields"
 !         end if
@@ -855,6 +853,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                Qdel   = Qnsol + Qsol * &
                   (0.137_R8 + 11.0_R8*Dcool - 6.6e-5/Dcool *(1.0_R8 - exp((-1.0_R8*Dcool)/8.0e-4)))
                Hb = (Qdel/rcpocn)+(Fd*betaS/alphaT)
+               Hb = min(Hb , 0.0_R8)
                lambdaV = lambdaC*(1.0_R8 + ( (0.0_R8-Hb)*16.0_R8*molvisc(tBulk(n))* &
                     shr_const_g*alphaT*molPr(tBulk(n))**2/ustarw**4)**0.75)**(-1/3)
                cSkin(n) =  MIN(0.0_R8, lambdaV * molPr(tBulk(n)) * Qdel / ustarw / rcpocn )   
