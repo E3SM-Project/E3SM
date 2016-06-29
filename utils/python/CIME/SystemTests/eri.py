@@ -197,7 +197,8 @@ class ERI(SystemTestsCommon):
 
         # the following lines creates the initial component history files for the restart test
         for item in glob.glob("%s/*/hist/*nc" % dout_sr2):
-            newfile = "%s:t" % item.replace(".ref2", "")
+            newfile = "%s" % item.replace(".ref2", "")
+            newfile = os.path.basename(newfile)
             os.symlink(item, os.path.join(rundir, newfile))
 
         self._component_compare_move("hybrid")
