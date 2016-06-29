@@ -1135,7 +1135,8 @@ contains
                 end if
                 ! relax toward bottomDepth with increasing strength with each iteration
                 if(moveInterface) then
-                  zInterface(k+1,iCell) = (1.0 - weight)*zInterface(k+1,iCell) + weight*(-bottomDepth(iCell))
+                  zInterface(k+1,iCell) = min((1.0 - weight)*zInterface(k+1,iCell) + weight*(-bottomDepth(iCell)), &
+                                              zInterface(k,iCell) - config_rx1_min_layer_thickness)
                   maxLevelCell(iCell) = k
                 end if
               end do
@@ -1233,7 +1234,7 @@ contains
             if(maxLevelCell(iCell) <= 0) cycle
             do k = 1, maxLevelCell(iCell)
               localStretchMax = max(localStretchMax, verticalStretch(k,iCell))
-              localStretchMin = min(localStretchMax, verticalStretch(k,iCell))
+              localStretchMin = min(localStretchMin, verticalStretch(k,iCell))
             end do
           end do
 
@@ -1271,6 +1272,8 @@ contains
         call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid, 1)
         call mpas_pool_get_array(scratchPool, 'zInterfaceScratch', zInterface)
         call mpas_pool_get_array(diagnosticsPool, 'rx1InitSmoothingMask', smoothingMask, 1)
+        call mpas_pool_get_array(diagnosticsPool, 'verticalStretch', verticalStretch, 1)
+        call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
 
         ! compute zMid, layerThickness and restingThickness
         do iCell = 1, nCells
@@ -1302,6 +1305,7 @@ contains
 
           zMid(:,iCell) = 0.5_RKIND*(zInterface(1:nVertLevels,iCell) + zInterface(2:nVertLevels+1,iCell))
           layerThickness(:,iCell) = zInterface(1:nVertLevels,iCell) - zInterface(2:nVertLevels+1,iCell)
+          verticalStretch(:,iCell) = layerThickness(:,iCell)/refLayerThickness(:)
 
           !restingThickness can be computed by "undoing" the z* stretch
           stretch = (ssh(iCell) + bottomDepth(iCell))/bottomDepth(iCell)
