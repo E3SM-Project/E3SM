@@ -239,7 +239,7 @@ class SystemTestsCommon(object):
         basecmp_dir = os.path.join(baselineroot, self._case.get_value("BASECMP_CASE"))
         for bdir in (baselineroot, basecmp_dir):
             if not os.path.isdir(bdir):
-                append_status("GFAIL %s baseline\n",self._case.get_value("CASEBASEID"),
+                append_status("GFAIL %s baseline\n"%self._case.get_value("CASEBASEID"),
                              sfile="TestStatus")
                 append_status("ERROR %s does not exist"%bdir, sfile="TestStatus.log")
                 return -1
