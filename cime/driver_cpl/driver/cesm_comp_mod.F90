@@ -406,6 +406,7 @@ module cesm_comp_mod
    logical  :: reprosum_recompute     ! setup reprosum, recompute if tolerance exceeded
 
    logical  :: output_perf = .false.  ! require timing data output for this pe
+   logical  :: in_first_day = .true. ! currently simulating first day
 
    !--- history & budgets ---
    logical :: do_budgets              ! heat/water budgets on
@@ -1185,13 +1186,35 @@ subroutine cesm_init()
 
    call t_startf('comp_init_cx_all')
    call t_adj_detailf(+2)
+
+   call t_startf('comp_init_ccx_atm')
    call component_init_cx(atm, infodata)
+   call t_stopf('comp_init_ccx_atm')
+
+   call t_startf('comp_init_ccx_lnd')
    call component_init_cx(lnd, infodata)
+   call t_stopf('comp_init_ccx_lnd')
+
+   call t_startf('comp_init_ccx_rof')
    call component_init_cx(rof, infodata)
+   call t_stopf('comp_init_ccx_rof')
+
+   call t_startf('comp_init_ccx_ocn')
    call component_init_cx(ocn, infodata)
+   call t_stopf('comp_init_ccx_ocn')
+
+   call t_startf('comp_init_ccx_ice')
    call component_init_cx(ice, infodata)
+   call t_stopf('comp_init_ccx_ice')
+
+   call t_startf('comp_init_ccx_glc')
    call component_init_cx(glc, infodata)
+   call t_stopf('comp_init_ccx_glc')
+
+   call t_startf('comp_init_ccx_wav')
    call component_init_cx(wav, infodata)
+   call t_stopf('comp_init_ccx_wav')
+
    call t_adj_detailf(-2)
    call t_stopf('comp_init_cx_all')
 
@@ -3695,7 +3718,12 @@ end subroutine cesm_init
 
       ! --- Write out performance data 
       call t_startf  ('CPL:TPROF_WRITE')
-      if (tprof_alarm) then
+      if ((tprof_alarm) .or. ((tod == 0) .and. in_first_day)) then
+
+         if ((tod == 0) .and. in_first_day) then
+           in_first_day = .false.
+         endif
+
          call t_adj_detailf(+1)
 
          call t_startf("sync1_tprof")
