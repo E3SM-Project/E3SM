@@ -1653,7 +1653,7 @@ contains
 
     call t_startf('mosartr_subcycling')
 
-    if (first_call) then
+    if (first_call .and. masterproc) then
        do nt = 1,nt_rtm
           write(iulog,'(2a,i6,l4)') trim(subname),' euler_calc for nt = ',nt,TUnit%euler_calc(nt)
        enddo
