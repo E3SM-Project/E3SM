@@ -117,6 +117,7 @@
 				<member name="globalRx1Max" type="var"/>
 				<member name="density" type="var"/>
 				<member name="rx1InitSmoothingMask" type="var"/>
+				<member name="verticalStretch" type="var"/>
 			</add_contents>
 		</stream>
 		<stream name="forcing_data_init">
