@@ -428,6 +428,11 @@ do not use scientific experiments; use the T62_g16 resolution instead:
   <desc>r05 is 1/2 degree river routing grid:</desc>
 </gridhorz>
 
+<gridhorz name="r0125">
+  <nx>2880</nx> <ny>1440</ny>  
+  <desc>r0125 is 1/8 degree river routing grid:</desc>
+</gridhorz>
+
 <gridhorz name="r01">
   <support_level>For experimental use by high resolution grids</support_level>
   <nx>3600</nx> <ny>1800</ny> 
