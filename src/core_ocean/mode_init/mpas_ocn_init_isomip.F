@@ -133,7 +133,7 @@ contains
                                                   vertCoordMovementWeights, bottomDepth, &
                                                   fCell, fEdge, fVertex, dcEdge, &
                                                   refSSH, landIceFraction, landIceSurfaceTemperature, &
-                                                  effectiveDensity
+                                                  effectiveDensity, refLayerThickness, refZMid
       !real (kind=RKIND), dimension(:), pointer :: temperatureRestore, salinityRestore, maskRestore
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness, zMid
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
@@ -283,6 +283,9 @@ contains
         call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
 
         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+        call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
+        call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
+ 
 
         call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceRestoringFields', tracersSurfaceRestoringFieldsPool)
         call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', &
@@ -311,6 +314,11 @@ contains
         do k = 2, nVertLevels
             refBottomDepth(k) = refBottomDepth(k-1) + columnThicknessFraction(k)*abs(config_isomip_bottom_depth)
         end do
+
+        ! Compute refLayerThickness and refZMid
+        call ocn_compute_layerThickness_zMid_from_bottomDepth(refLayerThickness,refZMid, &
+             refBottomDepth,refBottomDepth(nVertLevels), &
+             nVertLevels,nVertLevels,iErr)
 
         fCell(:) = config_isomip_coriolis_parameter
         fEdge(:) = config_isomip_coriolis_parameter
