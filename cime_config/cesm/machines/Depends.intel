@@ -4,8 +4,7 @@ prim_advection_mod.o \
 edge_mod.o \
 derivative_mod.o \
 bndry_mod.o \
-prim_advance_mod.o \
-uwshcu.o
+prim_advance_mod.o 
 
 # CLM's SatellitePhenologyMod is compiled incorrectly with intel 15.0.0 at -O2
 REDUCED_OPT_OBJS=\

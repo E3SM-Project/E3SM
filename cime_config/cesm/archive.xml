@@ -100,6 +100,10 @@
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
+      <file_extension regex_suffix=".rs1\..*">
+	<subdir>rest</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
       <file_extension regex_suffix=".h\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
@@ -185,6 +189,10 @@
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix=".rs\..*">
+	<subdir>rest</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
+      <file_extension regex_suffix=".rs1\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -298,6 +306,10 @@
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
+      <file_extension regex_suffix=".rs1\..*">
+	<subdir>rest</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
       <file_extension regex_suffix=".h\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
@@ -335,6 +347,10 @@
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix=".rs\..*">
+	<subdir>rest</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
+      <file_extension regex_suffix=".rs1\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
@@ -426,6 +442,10 @@
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
+      <file_extension regex_suffix=".rs1\..*">
+	<subdir>rest</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
       <file_extension regex_suffix=".h\..*">      
 	<subdir>hist</subdir> 
 	<keep_last_in_rundir>false</keep_last_in_rundir>
@@ -489,6 +509,10 @@
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
       <file_extension regex_suffix=".rs\..*">
+	<subdir>rest</subdir> 
+	<keep_last_in_rundir>true</keep_last_in_rundir>
+      </file_extension>
+      <file_extension regex_suffix=".rs1\..*">
 	<subdir>rest</subdir> 
 	<keep_last_in_rundir>true</keep_last_in_rundir>
       </file_extension>
