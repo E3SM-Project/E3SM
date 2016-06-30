@@ -412,12 +412,6 @@
     psfc_p(i,j) = surface_pressure(i)
  enddo
  enddo
- write(0,*)
- write(0,*) '--- surface pressure:'
- j=1
- do i = 1,100
-    write(0,202) j,i,psfc_p(i,j),pres2_p(i,1,j),psfc_p(i,j)-pres2_p(i,1,j)
- enddo
 
 !calculation of the hydrostatic pressure:
  do j = jts,jte
