@@ -161,7 +161,7 @@ contains
               write(stderrUnit,*) 'ERROR: you have specified bulk_forcing off with shortwave absorption on'
               write(stderrUnit,*) 'either set config_sw_absorption_type to none or enable activeTracers_surface_bulk_forcing'
               err = 1
-         endif 
+         endif
          return
       endif
 
