@@ -105,7 +105,7 @@ module ocn_init_sub_ice_shelf_2D
      integer, dimension(:), pointer :: maxLevelCell, modifySSHMask
      real (kind=RKIND), dimension(:), pointer :: xCell, yCell,refBottomDepth, refZMid, &
           vertCoordMovementWeights, bottomDepth, &
-          fCell, fEdge, fVertex, dcEdge
+          fCell, fEdge, fVertex, dcEdge, refLayerThickness
      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
      ! Define local interfaceLocations variable
@@ -212,6 +212,7 @@ module ocn_init_sub_ice_shelf_2D
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
+        call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
 
         call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
         call mpas_pool_get_array(diagnosticsPool, 'refSSH', refSSH)
@@ -223,8 +224,12 @@ module ocn_init_sub_ice_shelf_2D
         ! Set refBottomDepth and refZMid
         do k = 1, nVertLevels
            refBottomDepth(k) = config_sub_ice_shelf_2D_bottom_depth * interfaceLocations(k+1)
-           refZMid(k) = - 0.5_RKIND * (interfaceLocations(k+1) + interfaceLocations(k)) * config_sub_ice_shelf_2D_bottom_depth
         end do
+
+        ! Compute refLayerThickness and refZMid
+        call ocn_compute_layerThickness_zMid_from_bottomDepth(refLayerThickness,refZMid, &
+             refBottomDepth,refBottomDepth(nVertLevels), &
+             nVertLevels,nVertLevels,iErr)
 
         ! Set vertCoordMovementWeights
         vertCoordMovementWeights(:) = 1.0_RKIND
