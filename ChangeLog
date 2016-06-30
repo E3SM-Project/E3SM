@@ -1,0 +1,51 @@
+======================================================================
+
+Originator: cacraigucar
+Date: June 30, 2016
+Tag: geotrace_cime_n19_cime4.5.17
+Answer Changes: None
+Tests: Ran with CAM tag geotrace3_cac_n59_cam5_4_57
+Dependencies: None
+
+Brief Summary:
+   Update geotrace branch to cime4.5.17
+
+User interface changes: none
+
+======================================================================
+
+Originator: fischer-ncar
+Date: 21 June 2016
+Tag: cime4.5.17
+Answer Changes: None
+Tests: 
+Dependencies: None
+
+Brief Summary:
+   PR # 457: Remove ESMF tests and create ChangeLog and ChangeLog_template
+
+User interface changes: none
+
+Modified files: git diff --name-status
+A       ChangeLog
+A       ChangeLog_template
+M       cime_config/cesm/allactive/testlist_allactive.xml
+M       driver_cpl/cime_config/testdefs/testlist_drv.xml
+
+======================================================================
+
+Originator: 
+Date: 
+Tag: cimeX.Y.Z
+Answer Changes: [None, Round Off, Climate Changing]
+Tests: 
+Dependencies:
+
+Brief Summary:
+
+User interface changes: 
+
+Modified files: git diff --name-status
+
+======================================================================
+

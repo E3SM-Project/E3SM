@@ -206,7 +206,17 @@
   </test>
 
   <test NAME="SSP">
-    <DESC>smoke CLM spinup test (only valid for CLM compsets with CLM45 and CN or BGC)</DESC>
+    <DESC>smoke CLM spinup test (only valid for CLM45 or CLM50 compsets)</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <CCSM_TCOST>-1</CCSM_TCOST>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <RUN_TYPE>startup</RUN_TYPE>
+    <STOP_N>4</STOP_N>
+    <DOUT_S>FALSE</DOUT_S> 
+  </test>
+
+  <test NAME="SPL">
+    <DESC>smoke CLM spinup test (only valid for CLM45 or CLM50 compsets)</DESC>
     <INFO_DBUG>1</INFO_DBUG>
     <CCSM_TCOST>-1</CCSM_TCOST>
     <STOP_OPTION>ndays</STOP_OPTION>

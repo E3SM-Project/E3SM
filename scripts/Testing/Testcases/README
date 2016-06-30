@@ -137,11 +137,11 @@ OCP    pop performance test
     SPINUP tests
 ======================================================================
 
-SSP    smoke CLM spinup test (only valid for CLM compsets with CLM45 and CN or BGC)  (TODO - change to SPL)
-       do an initial spin test (setting CLM_BLDNML_OTPS to -bgc_spinup_on)
+SSP    smoke CLM spinup test (only valid for CLM compsets with CLM45)  (TODO - change to SPL)
+       do an initial spin test (setting CLM_ACCELERATED_SPINUP to on)
          write restarts at the end of the run
          short term archiving is on
-       do a hybrid non-spinup run run from the restart files generated in the first phase
+       do a hybrid non-spinup simulation run from the restart files generated in the first phase
 
 SPO    smoke spinup-ocean test
 
