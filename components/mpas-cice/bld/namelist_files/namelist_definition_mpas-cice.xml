@@ -214,6 +214,33 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- dimensions -->
+
+<entry id="config_nCategories" type="integer"
+	category="dimensions" group="dimensions">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_nIceLayers" type="integer"
+	category="dimensions" group="dimensions">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_nSnowLayers" type="integer"
+	category="dimensions" group="dimensions">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- initialize -->
 
 <entry id="config_initial_condition_type" type="char*1024"
@@ -281,6 +308,14 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_initial_vvelocity" type="real"
+	category="initialize" group="initialize">
+MISSING DESCRIPTION
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_calculate_coriolis" type="logical"
 	category="initialize" group="initialize">
 MISSING DESCRIPTION
 

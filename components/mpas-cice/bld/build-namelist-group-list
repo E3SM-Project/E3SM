@@ -2,6 +2,7 @@ my @groups = qw(cice_model
                 io
                 decomposition
                 restart
+                dimensions
                 initialize
                 use_sections
                 forcing

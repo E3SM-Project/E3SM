@@ -720,7 +720,6 @@ contains
       integer :: shrloglev, shrlogunit
 
 ! Variable related to MPAS-CICE
-      real (kind=RKIND) :: dt
       type (block_type), pointer :: block
       type (MPAS_Pool_type), pointer :: &
             shortwave
@@ -783,7 +782,6 @@ contains
      currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
 
      timeStep = mpas_get_clock_timestep(domain % clock, ierr=ierr)
-     call mpas_get_timeInterval(timeStep, dt=dt)
      call mpas_reset_clock_alarm(domain % clock, coupleAlarmID, ierr=ierr)
 
      itimestep = 0  ! We may want to initialize this in init and make it a module, save variable
@@ -814,7 +812,7 @@ contains
 
         write(stderrUnit,*) '   Starting forward update'
         call mpas_timer_start("time integration", .false.)
-        call cice_timestep(domain, domain % clock, dt, itimestep)
+        call cice_timestep(domain, domain % clock, itimestep)
         call mpas_timer_stop("time integration")
         write(stderrUnit,*) '   Finished forward update'
 

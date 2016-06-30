@@ -9,6 +9,8 @@
 <config_dt ice_grid="oQU120">3600.0</config_dt>
 <config_dt ice_grid="mpas120">3600.0</config_dt>
 <config_dt ice_grid="oEC60to30">1800.0</config_dt>
+<config_dt ice_grid="oRRS30to10">900.0</config_dt>
+<config_dt ice_grid="oRRS15to5">900.0</config_dt>
 <config_calendar_type>'gregorian_noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
@@ -34,6 +36,11 @@
 <config_do_restart_zsalinity>false</config_do_restart_zsalinity>
 <config_do_restart_bgc>false</config_do_restart_bgc>
 
+<!-- dimensions -->
+<config_nCategories>5</config_nCategories>
+<config_nIceLayers>7</config_nIceLayers>
+<config_nSnowLayers>1</config_nSnowLayers>
+
 <!-- initialize -->
 <config_initial_condition_type>'cice_default'</config_initial_condition_type>
 <config_initial_ice_area>1.0</config_initial_ice_area>
@@ -44,6 +51,7 @@
 <config_initial_velocity_type>'uniform'</config_initial_velocity_type>
 <config_initial_uvelocity>0.0</config_initial_uvelocity>
 <config_initial_vvelocity>0.0</config_initial_vvelocity>
+<config_calculate_coriolis>true</config_calculate_coriolis>
 
 <!-- use_sections -->
 <config_use_velocity_solver>true</config_use_velocity_solver>
@@ -69,7 +77,12 @@
 <config_use_test_ice_shelf>false</config_use_test_ice_shelf>
 
 <!-- velocity_solver -->
-<config_dynamics_subcycle_number>1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="oQU240">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="oQU120">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="mpas120">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="oEC60to30">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="oRRS30to10">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="oRRS15to5">2</config_dynamics_subcycle_number>
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
