@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_driver_radiation_lw
  use mpas_kind_types
  use mpas_pool_routines
@@ -73,19 +73,21 @@
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
 !>    * modified sourcecode to use pools.
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!>    * cleaned-up the call to rrtmg_lwrad after cleaning up subroutine rrtmg_lwrad in module_ra_rrtmg_lw.F.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-06-30.
 
 
  contains
 
 
-!==================================================================================================
+!=================================================================================================================
  subroutine allocate_radiation_lw(xtime_s)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  real(kind=RKIND),intent(in):: xtime_s
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  if(.not.allocated(f_ice)        ) allocate(f_ice(ims:ime,kms:kme,jms:jme)        )
  if(.not.allocated(f_rain)       ) allocate(f_rain(ims:ime,kms:kme,jms:jme)       )
@@ -169,9 +171,9 @@
 
  end subroutine allocate_radiation_lw
 
-!==================================================================================================
+!=================================================================================================================
  subroutine deallocate_radiation_lw
-!==================================================================================================
+!=================================================================================================================
 
  if(allocated(f_ice)        ) deallocate(f_ice        )
  if(allocated(f_rain)       ) deallocate(f_rain       )
@@ -242,10 +244,9 @@
 
  end subroutine deallocate_radiation_lw
 
-!==================================================================================================
- subroutine radiation_lw_from_MPAS(xtime_s,configs,mesh,state,time_lev,diag_physics,atm_input, &
-                                   sfc_input)
-!==================================================================================================
+!=================================================================================================================
+ subroutine radiation_lw_from_MPAS(xtime_s,configs,mesh,state,time_lev,diag_physics,atm_input,sfc_input)
+!=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
@@ -274,7 +275,7 @@
  integer:: ncols,nlevs
  real(kind=RKIND),dimension(:,:),allocatable:: p2d,o32d
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
 
@@ -511,9 +512,9 @@
 
  end subroutine radiation_lw_from_MPAS
 
-!==================================================================================================
+!=================================================================================================================
  subroutine radiation_lw_to_MPAS(diag_physics,tend_physics)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -528,7 +529,7 @@
  integer:: nlay,pcols
  real(kind=RKIND),dimension(:,:),allocatable:: p1d
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_array(diag_physics,'glw'   ,glw   )
  call mpas_pool_get_array(diag_physics,'lwcf'  ,lwcf  )
@@ -568,9 +569,9 @@
 
  end subroutine radiation_lw_to_MPAS
 
-!==================================================================================================
+!=================================================================================================================
  subroutine radiation_camlw_to_MPAS(diag_physics)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -579,7 +580,7 @@
  real(kind=RKIND),dimension(:,:),pointer  :: emstot
  real(kind=RKIND),dimension(:,:,:),pointer:: absnxt,abstot
 
-!---------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_array(diag_physics,'absnxt',absnxt)
  call mpas_pool_get_array(diag_physics,'abstot',abstot)
@@ -610,9 +611,9 @@
 
  end subroutine radiation_camlw_to_MPAS
 
-!==================================================================================================
+!=================================================================================================================
  subroutine init_radiation_lw(dminfo,mesh,atm_input,diag,state,time_lev)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
@@ -625,7 +626,7 @@
  type(mpas_pool_type),intent(inout),optional:: atm_input
  type(mpas_pool_type),intent(inout),optional:: state
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
 ! write(0,*)
 ! write(0,*) '--- enter radiation_lw initialization:'
@@ -648,10 +649,10 @@
 
  end subroutine init_radiation_lw
 
-!==================================================================================================
+!=================================================================================================================
  subroutine driver_radiation_lw(xtime_s,configs,mesh,state,time_lev,diag_physics,atm_input, &
                                 sfc_input,tend_physics)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
@@ -674,7 +675,7 @@
  integer:: o3input
  real(kind=RKIND):: radt,xtime_m
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
  call mpas_timer_start("radiation_lw")
 ! write(0,100)
 
@@ -691,32 +692,27 @@
  radiation_lw_select: select case (trim(radt_lw_scheme))
 
     case ("rrtmg_lw")
-!       write(0,*) '--- enter subroutine rrtmg_lwrad:'
+!      write(0,*) '--- enter subroutine rrtmg_lwrad:'
        o3input = 0
        if(config_o3climatology) o3input = 2
 
        call rrtmg_lwrad( &
-             p3d        = pres_hyd_p   , p8w        = pres2_hyd_p , pi3d       = pi_p          ,&
-             t3d        = t_p          , t8w        = t2_p        , rho3d      = rho_p         ,&
-             rthratenlw = rthratenlw_p , lwupt      = lwupt_p     , lwuptc     = lwuptc_p      ,&
-             lwdnt      = lwdnt_p      , lwdntc     = lwdntc_p    , lwupb      = lwupb_p       ,&
-             lwupbc     = lwupbc_p     , lwdnb      = lwdnb_p     , lwdnbc     = lwdnbc_p      ,&
-             lwcf       = lwcf_p       , glw        = glw_p       , olr        = olrtoa_p      ,&
-             emiss      = sfc_emiss_p  , tsk        = tsk_p       , dz8w       = dz_p          ,&
-             cldfra3d   = cldfrac_p    , r          = R_d         , g          = gravity       ,&
-             icloud     = icloud       , warm_rain  = warm_rain   , f_ice_phy  = f_ice         ,&
-             f_rain_phy = f_rain       , xland      = xland_p     , xice       = xice_p        ,&
-             snow       = snow_p       , qv3d       = qv_p        , qc3d       = qc_p          ,&
-             qr3d       = qr_p         , qi3d       = qi_p        , qs3d       = qs_p          ,&
-             qg3d       = qg_p         , f_qv       = f_qv        , f_qc       = f_qc          ,& 
-             f_qr       = f_qr         , f_qi       = f_qi        , f_qs       = f_qs          ,&
-             f_qg       = f_qg         , o3input    = o3input     , noznlevels = num_oznlevels ,&
-             pin        = pin_p        , o3clim     = o3clim_p    ,                             &
-             ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,&
-             ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,&
-             its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte  &
+            p3d        = pres_hyd_p   , p8w        = pres2_hyd_p   , pi3d       = pi_p          , &
+            t3d        = t_p          , t8w        = t2_p          , dz8w       = dz_p          , &
+            qv3d       = qv_p         , qc3d       = qc_p          , qr3d       = qr_p          , &
+            qi3d       = qi_p         , qs3d       = qs_p          , qg3d       = qg_p          , &
+            cldfra3d   = cldfrac_p    , tsk        = tsk_p         , emiss      = sfc_emiss_p   , &
+            xland      = xland_p      , xice       = xice_p        , snow       = snow_p        , &
+            icloud     = icloud       , o3input    = o3input       , noznlevels = num_oznlevels , &
+            pin        = pin_p        , o3clim     = o3clim_p      , glw        = glw_p         , &
+            olr        = olrtoa_p     , lwcf       = lwcf_p        , rthratenlw = rthratenlw_p  , &
+            lwupt      = lwupt_p      , lwuptc     = lwuptc_p      , lwdnt      = lwdnt_p       , &
+            lwdntc     = lwdntc_p     , lwupb      = lwupb_p       , lwupbc     = lwupbc_p      , &
+            lwdnb      = lwdnb_p      , lwdnbc     = lwdnbc_p      ,                              &
+            ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,               &
+            ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,               &
+            its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte                 &
                        )
-!       write(0,*) '--- exit subroutine rrtmg_lwrad'
 
     case ("cam_lw")
        xtime_m = xtime_s/60.
@@ -728,7 +724,7 @@
        radt = dt_radtlw/60.
 
        call mpas_timer_start("camrad")
-!       write(0,*) '--- enter subroutine camrad_lw: doabsems=',doabsems
+!      write(0,*) '--- enter subroutine camrad_lw: doabsems=',doabsems
        call camrad( dolw = .true. , dosw = .false. ,                                         &
                 p_phy         = pres_hyd_p    , p8w           = pres2_hyd_p   ,              &
                 pi_phy        = pi_p          , t_phy         = t_p           ,              &
@@ -793,6 +789,6 @@
 
  end subroutine driver_radiation_lw
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_driver_radiation_lw
-!==================================================================================================
+!=================================================================================================================
