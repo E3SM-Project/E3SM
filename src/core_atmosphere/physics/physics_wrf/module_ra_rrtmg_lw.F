@@ -11318,7 +11318,9 @@ use mpas_atmphys_o3climatology,only: vinterp_ozn
 !>      with if (specparm1 .lt. 0.125_rb) then, in accordance with the bug fix made in WRF
 !>      revision 3.7.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2015-05-04.
-
+!>    * at the bottom of subroutine rrtmg_lwrad, changed the definition of the arrays lwupt,lwuptc,
+!>      lwdnt,and lwdntc so that they are now defined at the top-of-the-atmosphere.
+!>      Laura D. Fowler (laura@ucar.edu / 2016-06-23).
 !MPAS specific end.
 
 #else
@@ -11888,8 +11890,8 @@ CONTAINS
 !coordinate system. Therefore, we define nlayers for each individual column:
           nlayers = kte + nint(pw1d(kte+1)/deltap)
           mpas_nlay(i,j) = nlayers-kte
-!         write(0,101) j,i,kme,kte,nlayers,mpas_nlay(i,j),pw1d(kte+1)
-!         101 format(6i9,1x,f9.4)
+!         write(0,101) j,i,kme,kte,nlayers,mpas_nlay(i,j),pw1d(kte+1),pw1d(kte+1)-mpas_nlay(i,j)*deltap
+!         101 format(6i9,3(1x,f9.4))
           if(.not.allocated(o3mmr)   ) allocate(o3mmr(kts:nlayers)     )
           if(.not.allocated(varint)  ) allocate(varint(kts:nlayers+1)  )
           if(.not.allocated(plev)    ) allocate(plev(1,kts:nlayers+1)  )
@@ -12003,6 +12005,14 @@ CONTAINS
           plev(ncol,L+1) = plev(ncol,L) - deltap
           play(ncol,L) = 0.5*(plev(ncol,L) + plev(ncol,L+1))
        enddo          
+
+! Check that the pressure at the top of the atmosphere is negative. If negative, set it to zero
+! prior to the calculation of temperatures (tlev and tlay):.
+! Laura D. Fowler (laura@ucar.edu / 2016-06-23).
+       if(plev(ncol,nlayers+1) < 0.0) then
+          plev(ncol,nlayers+1) = 0.0
+          play(ncol,nlayers) = 0.5*(plev(ncol,nlayers) + plev(ncol,nlayers+1))
+       endif
 
        ! Add zero as top level.  This gets the temperature max at the
        ! stratopause, reducing the downward flux errors in the top 
@@ -12366,6 +12376,25 @@ CONTAINS
          olr(i,j) = uflx(1,nlayers+1)
          lwcf(i,j) = uflxc(1,nlayers+1) - uflx(1,nlayers+1)
 
+! For MPAS, changed the definition of lwupt, lwuptc, lwdnt, and lwdntc to avoid out of bound values
+! for uflx, uflxc, dflx, and dflxc; otherwise, when nlayers is equal to kte, uflx, uflxc, dflx, and
+! dflxc are out of bound for kte+2 since uflx, uflxc, dflx, and dflxc are dimensioned as nlayers+1.
+! Here, lwup, lwuptc, lwdnt, and lwdntc are defined at the top of the atmosphere.
+! Laura D. Fowler (laura@ucar.edu / 2016-06-23).
+#if defined(mpas)
+         if (present(lwupt)) then
+! Output up and down toa fluxes for total and clear sky
+            lwupt(i,j)     = uflx(1,nlayers+1)
+            lwuptc(i,j)    = uflxc(1,nlayers+1)
+            lwdnt(i,j)     = dflx(1,nlayers+1)
+            lwdntc(i,j)    = dflxc(1,nlayers+1)
+! Output up and down surface fluxes for total and clear sky
+            lwupb(i,j)     = uflx(1,1)
+            lwupbc(i,j)    = uflxc(1,1)
+            lwdnb(i,j)     = dflx(1,1)
+            lwdnbc(i,j)    = dflxc(1,1)
+         endif
+#else
          if (present(lwupt)) then 
 ! Output up and down toa fluxes for total and clear sky
             lwupt(i,j)     = uflx(1,kte+2)
@@ -12378,6 +12407,7 @@ CONTAINS
             lwdnb(i,j)     = dflx(1,1)
             lwdnbc(i,j)    = dflxc(1,1)
          endif
+#endif
 
 ! Output up and down layer fluxes for total and clear sky.
 ! Vertical ordering is from bottom to top in units of W m-2. 
@@ -12398,7 +12428,7 @@ CONTAINS
          enddo
 
 !
-#if defined(mpas) || defined(hydrostatic_core)
+#if defined(mpas)
 !MPAS specific (Laura D. Fowler - 2013-04-11): deallocate all local arrays.
 !coordinate system. Therefore, we define nlayers for each individual column:
           if(allocated(o3mmr)   ) deallocate(o3mmr   )
