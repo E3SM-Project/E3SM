@@ -46,37 +46,42 @@
   </compset>
 
   <compset>
-    <alias>B1850RG</alias>
+    <alias>B1850RGWs</alias>
     <lname>1850_CAM55_CLM50%BGC_CICE_POP2%ECO_RTM_CISM1%NOEVOLVE_SWAV_BGC%BDRD</lname>
   </compset>
 
   <compset>
-    <alias>B1850RW</alias>
+    <alias>B1850RWd</alias>
     <lname>1850_CAM55_CLM50%BGC_CICE_POP2%ECO_RTM_SGLC_DWAV_BGC%BDRD</lname>
   </compset>
 
   <compset>
-    <alias>B1850GW</alias>
+    <alias>B1850GWd</alias>
     <lname>1850_CAM55_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM1%NOEVOLVE_DWAV_BGC%BDRD</lname>
   </compset>
 
   <compset>
-    <alias>B1850W</alias>
+    <alias>B1850Wd</alias>
     <lname>1850_CAM55_CLM50%BGC_CICE_POP2%ECO_MOSART_SGLC_DWAV_BGC%BDRD</lname>
   </compset>
 
   <compset>
-    <alias>B1850</alias>
+    <alias>B1850Ws</alias>
     <lname>1850_CAM55_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM1%NOEVOLVE_SWAV_BGC%BDRD</lname>
   </compset>
 
   <compset>
-    <alias>B1850R</alias>
+    <alias>B1850</alias>
+    <lname>1850_CAM55_CLM50%BGC_CICE_POP2%ECO_MOSART_CISM1%NOEVOLVE_WW3_BGC%BDRD</lname>
+  </compset>
+
+  <compset>
+    <alias>B1850RWs</alias>
     <lname>1850_CAM55_CLM50%BGC_CICE_POP2%ECO_RTM_SGLC_SWAV_BGC%BDRD</lname>
   </compset>
 
   <compset>
-    <alias>B1850Cw</alias>  
+    <alias>B1850CwWs</alias>  
     <lname>1850_CAM55%WTSM_CLM50%BGC_CICE_POP2%ECO_MOSART_SGLC_SWAV</lname>
   </compset>
 
@@ -173,23 +178,43 @@
   </compset>
 
   <compset>
-    <alias>BHISTC5L40CNR</alias>
+    <alias>BHISTC5L40CNRWs</alias>
     <lname>HIST_CAM5_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>BHISTC5L45BGCR</alias>
+    <alias>BHISTC5L40CNR</alias>
+    <lname>HIST_CAM5_CLM40%CN_CICE_POP2_RTM_SGLC_WW3</lname>
+  </compset>
+
+  <compset>
+    <alias>BHISTC5L45BGCRWs</alias>
     <lname>HIST_CAM5_CLM45%BGC_CICE_POP2_RTM_SGLC_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>BHISTC5L45BGC</alias>
+    <alias>BHISTC5L45BGCR</alias>
+    <lname>HIST_CAM5_CLM45%BGC_CICE_POP2_RTM_SGLC_WW3</lname>
+  </compset>
+
+  <compset>
+    <alias>BHISTC5L45BGCWs</alias>
     <lname>HIST_CAM5_CLM45%BGC_CICE_POP2_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>BHISTC4FCHML40CNR</alias>
+    <alias>BHISTC5L45BGC</alias>
+    <lname>HIST_CAM5_CLM45%BGC_CICE_POP2_MOSART_SGLC_WW3</lname>
+  </compset>
+
+  <compset>
+    <alias>BHISTC4FCHML40CNRWs</alias>
     <lname>HIST_CAM4%FCHM_CLM40%CN_CICE_POP2_RTM_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>BHISTC4FCHML40CNR</alias>
+    <lname>HIST_CAM4%FCHM_CLM40%CN_CICE_POP2_RTM_SGLC_WW3</lname>
   </compset>
 
   <compset>
