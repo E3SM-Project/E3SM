@@ -813,3 +813,16 @@ def wait_for_unlocked(filepath):
         finally:
             if file_object:
                 file_object.close()
+
+def get_build_threaded(case):
+    """Returns True if current settings require a threaded build/run."""
+    force_threaded = case.get_value("BUILD_THREADED")
+    if force_threaded:
+        return True
+    comp_classes = case.get_value("COMP_CLASSES").split(',')
+    for comp_class in comp_classes:
+        if comp_class == "DRV":
+            comp_class = "CPL"
+        if case.get_value("NTHRDS_%s"%comp_class) > 1:
+            return True
+    return False
