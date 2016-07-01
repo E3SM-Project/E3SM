@@ -539,24 +539,20 @@ MPAS_GPTL_STOP('dyn_tend')
 #endif
 
             if (weight_iau >= 1.e-12) then      ! HA (June-16-2016)
-  
-! FIXME: should I go with if(config_IAU_option >=1), instead? 
-! But for the free run, weight_iau will be zero even with the IAU option on.
-               
                if (debug) write(0,*) ' add incremental analysis forcing to tendencies '
                block => domain % blocklist
-
+ 
                do while (associated(block))
-               call mpas_pool_get_subpool(block % structs, 'state', state)
-               call mpas_pool_get_subpool(block % structs, 'diag', diag)
-               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
-               call mpas_pool_get_subpool(block % structs, 'tend', tend)
-               call mpas_pool_get_subpool(block % structs, 'tend_iau', tend_iau)
+                  call mpas_pool_get_subpool(block % structs, 'state', state)
+                  call mpas_pool_get_subpool(block % structs, 'diag', diag)
+                  call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+                  call mpas_pool_get_subpool(block % structs, 'tend', tend)
+                  call mpas_pool_get_subpool(block % structs, 'tend_iau', tend_iau)
 
-               call atm_add_tend_anal_incr ( tend, tend_iau, state, diag, mesh, weight_iau )
+                  call atm_add_tend_anal_incr ( tend, tend_iau, state, diag, mesh, weight_iau, dt )
 
-               block => block % next
-               end do
+                  block => block % next
+              end do
             end if
 
             !***********************************

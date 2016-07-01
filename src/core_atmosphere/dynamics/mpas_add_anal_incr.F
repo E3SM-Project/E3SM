@@ -22,6 +22,7 @@
       real (kind=RKIND), intent(out) :: wgt_iau
       
       integer :: nsteps_iau       ! Total number of time steps where the IAU forcing is applied.
+      logical, parameter :: debug = .true.
       
 !      type (mpas_pool_type), intent(in) :: configs
 !      type (MPAS_Time_type) :: startTime, stopTime      ! for the entire model integration period
@@ -50,44 +51,21 @@
 
       if(iopt == 1) then   ! HA: We should be able to expand this for more options later on.
             
-         nsteps_iau = time_window_sec / dt + 1    ! FIXME: Do I need to apply an intrinsic function (INT) to convert real to integer? 
+         nsteps_iau = nint(time_window_sec / dt)
+         !if(debug) write(0,*) 'atm_compute_iau_coef: nsteps_iau =',nsteps_iau
       
          if(itimestep <= nsteps_iau) then
-            wgt_iau = 1./nsteps_iau                ! FIXME: Do I need to do FLOAT(nsteps_iau) here?
+            !wgt_iau = 1./nsteps_iau     
+            wgt_iau = dt / time_window_sec
+            if(debug) write(0,*) 'atm_compute_iau_coef: wgt_iau =', wgt_iau
          end if
       
       end if  
 
-
-!     FIXME: For now, the IAU forcing is applied from the initial time. If the start of the IAU window might be different,
-!     I may need to introduce a new namelist parameter as config_IAU_start_time or something and figure out the time info.
-!      
-!      call mpas_set_time(startTime,  dateTimeString=config_start_time, ierr=local_err)
-!      call mpas_set_time(time_begin, dateTimeString=config_start_time, ierr=local_err)
-!      
-!      if (trim(config_run_duration) /= "none") then
-!         call mpas_set_timeInterval(runDuration, timeString=config_run_duration, ierr=local_err)
-!
-!         if (trim(config_stop_time) /= "none") then
-!            call mpas_set_time(stopTime, dateTimeString=config_stop_time, ierr=local_err)
-!            if(startTime + runduration /= stopTime) then
-!               write(0,*) 'Warning: config_run_duration and config_stop_time are inconsitent: using config_run_duration.'
-!            end if
-!         end if
-!      else if (trim(config_stop_time) /= "none") then
-!         call mpas_set_time(stopTime, dateTimeString=config_stop_time, ierr=local_err)
-!         runDuration = stopTime - startTime
-!      else
-!          write(0,*) 'Error: Neither config_run_duration nor config_stop_time were specified.'
-!          ierr = 1
-!      end if
-!       
-!      call mpas_get_timeInterval(runDuration, dt=runtime_window)
-
       end subroutine atm_compute_iau_coef
       
 !==================================================================================================
- subroutine atm_add_tend_anal_incr (tend, tend_iau, state, diag, mesh, wgt_iau)
+ subroutine atm_add_tend_anal_incr (tend, tend_iau, state, diag, mesh, wgt_iau, dt)
 !==================================================================================================
       
       implicit none
@@ -98,13 +76,14 @@
       type (mpas_pool_type), intent(in) :: diag
       type (mpas_pool_type), intent(in) :: mesh
       real (kind=RKIND),     intent(in) :: wgt_iau
+      real (kind=RKIND),     intent(in) :: dt
       
       integer :: iEdge, iCell, i, j, k, n
       integer, pointer :: nCells, nEdges, nCellsSolve, nEdgesSolve, nVertLevels
       integer, pointer:: index_qv, index_qc, index_qr, index_qi, index_qs, index_qg
       
       real (kind=RKIND), dimension(:,:), pointer :: rho_edge, rho_zz, theta_m, theta, u, qv, zz, &
-                                                    tend_u, tend_rho, tend_theta, tend_th, &
+                                                    tend_u, tend_rho, tend_theta, tend_th, tend_w, &
 						    tend_qv, tend_qc, tend_qr, tend_qi, tend_qs, tend_qg
       real(kind=RKIND),dimension(:,:,:), pointer :: scalars, tend_scalars									   
       real(kind=RKIND),dimension(:,:), pointer:: u_amb, theta_amb, rho_amb, &
@@ -132,6 +111,7 @@
       qv => scalars(index_qv,:,:)
 
       call mpas_pool_get_array(tend, 'u', tend_u)
+      !call mpas_pool_get_array(tend, 'w', tend_w)
       call mpas_pool_get_array(tend, 'rho_zz',  tend_rho)
       call mpas_pool_get_array(tend, 'theta_m', tend_theta)
       call mpas_pool_get_array(tend, 'scalars_tend', tend_scalars)
@@ -145,6 +125,7 @@
       call mpas_pool_get_array(tend_iau, 'theta', theta_amb)
       call mpas_pool_get_array(tend_iau, 'rho',     rho_amb)
       call mpas_pool_get_array(tend_iau, 'u',         u_amb)
+      !call mpas_pool_get_array(tend_iau, 'w',         w_amb)
       call mpas_pool_get_array(tend_iau, 'qv',       qv_amb)
       call mpas_pool_get_array(tend_iau, 'qc',       qc_amb)
       call mpas_pool_get_array(tend_iau, 'qr',       qr_amb)
@@ -158,30 +139,39 @@
 !     initialize the tendency for potential temperature
       tend_th = 0._RKIND
       
+      write(0,*) 'atm_add_tend_anal_incr: wgt_iau =',wgt_iau
+
 !     add coupled tendencies for u on edges
       do i = 1, nEdgesSolve
          do k = 1, nVertLevels
-            tend_u(k,i) = tend_u(k,i) + wgt_iau * u_amb(k,i) * rho_edge(k,i)
+            tend_u(k,i) = tend_u(k,i) + wgt_iau * rho_edge(k,i) * u_amb(k,i)/dt
          enddo
       enddo
 
 !     add tendencies for rho_zz (instead of rho)
       do i = 1, nCellsSolve
          do k = 1, nVertLevels
-            tend_rho(k,i) = tend_rho(k,i) + wgt_iau * rho_amb(k,i)/zz(k,i)
+            tend_rho(k,i) = tend_rho(k,i) + wgt_iau * rho_amb(k,i)/zz(k,i)/dt
          enddo
       enddo
+      
+!     add tendencies for w (tend_w = 0 at k=1 and k=nVertLevelsP1) - Not tested yet
+!      do i = 1, nCellsSolve
+!         do k = 2, nVertLevels
+!            tend_w(k,i) = tend_w(k,i) + wgt_iau * w_amb(k,i)*rho_zz(k,i)/dt
+!         enddo
+!      enddo
       
 !     add coupled tendencies for other state variables on cell centers
       do i = 1, nCellsSolve
          do k = 1, nVertLevels
-            tend_th(k,i)  = tend_th(k,i)  + wgt_iau * theta_amb(k,i)*rho_zz(k,i)
-            tend_qv(k,i)  = tend_qv(k,i)  + wgt_iau *    qv_amb(k,i)*rho_zz(k,i)
-            tend_qc(k,i)  = tend_qc(k,i)  + wgt_iau *    qc_amb(k,i)*rho_zz(k,i)
-            tend_qr(k,i)  = tend_qr(k,i)  + wgt_iau *    qr_amb(k,i)*rho_zz(k,i)
-            tend_qi(k,i)  = tend_qi(k,i)  + wgt_iau *    qi_amb(k,i)*rho_zz(k,i)
-            tend_qs(k,i)  = tend_qs(k,i)  + wgt_iau *    qs_amb(k,i)*rho_zz(k,i)
-            tend_qg(k,i)  = tend_qg(k,i)  + wgt_iau *    qg_amb(k,i)*rho_zz(k,i)
+            tend_th(k,i) = tend_th(k,i) + wgt_iau * theta_amb(k,i)*rho_zz(k,i)/dt
+            tend_qv(k,i) = tend_qv(k,i) + wgt_iau *    qv_amb(k,i)*rho_zz(k,i)/dt
+            tend_qc(k,i) = tend_qc(k,i) + wgt_iau *    qc_amb(k,i)*rho_zz(k,i)/dt
+            tend_qr(k,i) = tend_qr(k,i) + wgt_iau *    qr_amb(k,i)*rho_zz(k,i)/dt
+            tend_qi(k,i) = tend_qi(k,i) + wgt_iau *    qi_amb(k,i)*rho_zz(k,i)/dt
+            tend_qs(k,i) = tend_qs(k,i) + wgt_iau *    qs_amb(k,i)*rho_zz(k,i)/dt
+            tend_qg(k,i) = tend_qg(k,i) + wgt_iau *    qg_amb(k,i)*rho_zz(k,i)/dt
          enddo
       enddo
 

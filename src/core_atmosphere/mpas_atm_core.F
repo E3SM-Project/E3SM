@@ -122,7 +122,7 @@ module atm_core
       
       call mpas_pool_get_config(domain % blocklist % configs, 'config_IAU_option', iopt)    ! HA
       if(iopt >= 1) then
-         call MPAS_stream_mgr_read(domain % streamManager, streamID='iau', ierr=ierr)
+         call MPAS_stream_mgr_read(domain % streamManager, streamID='iau', whence=MPAS_STREAM_NEAREST, ierr=ierr)
          if (ierr /= MPAS_STREAM_MGR_NOERR) then
             write(0,*) ' '
             write(0,*) '********************************************************************************'

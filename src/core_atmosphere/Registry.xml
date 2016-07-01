@@ -1028,7 +1028,7 @@
 	        <stream name="iau" 
                         type="input" 
                         filename_template="x1.40962.AmB.$Y-$M-$D_$h.$m.$s.nc" 
-                        input_interval="none"
+                        input_interval="initial_only"
                         filename_interval="none"
                         runtime_format="separate_file">
 
