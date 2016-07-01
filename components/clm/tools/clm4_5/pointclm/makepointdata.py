@@ -2,47 +2,7 @@
 import os, sys, csv, time, math
 from optparse import OptionParser
 import numpy
-
-def getvar(fname, varname):
-    usescipy = False
-    try:
-    	import Scientific.IO.NetCDF as netcdf
-    except ImportError:
-        import scipy
-        from scipy.io import netcdf
-        usescipy = True
-    if (usescipy):
-        nffile = netcdf.netcdf_file(fname,"r")
-        var = nffile.variables[varname]
-        varvals = var[:].copy()    #works for vector only?
-        nffile.close()
-    else:    
-    	nffile = netcdf.NetCDFFile(fname,"r")
-    	var = nffile.variables[varname]
-    	varvals = var.getValue()
-    	nffile.close()
-    return varvals
-
-def putvar(fname, varname, varvals):
-    usescipy = False
-    try:
-        import Scientific.IO.NetCDF as netcdf
-    except ImportError:
-        import scipy
-        from scipy.io import netcdf
-        usescipy = True
-    if (usescipy):
-        nffile = netcdf.netcdf_file(fname,"a")
-        var = nffile.variables[varname]
-        var[:] = varvals[:]
-        nffile.close()
-    else:
-        nffile = netcdf.NetCDFFile(fname,"a")
-        var = nffile.variables[varname]
-        var.assignValue(varvals)
-        nffile.close()
-    ierr = 0
-    return ierr
+import netcdf_functions as nffun
 
 print('\n')
 print('Makepointdata.py version 0.2')
@@ -87,11 +47,11 @@ parser.add_option("--ypts", dest="ypts", default=1, \
 
 
 csmdir=os.path.abspath(options.csmdir)
-options.ccsm_input = os.path.abspath(options.ccsm_input)
+ccsm_input = os.path.abspath(options.ccsm_input)
 
 #------------------- get site information ----------------------------------
 
-os.chdir(options.ccsm_input+'/lnd/clm2/PTCLM/')
+os.chdir(ccsm_input+'/lnd/clm2/PTCLM/')
 AFdatareader = csv.reader(open(options.sitegroup+'_sitedata.txt',"rb"))
 for row in AFdatareader:
     if row[0] == options.site:
@@ -116,9 +76,9 @@ for row in AFdatareader:
            #lon=lon-resx/2
         if (options.makemet):
             print(" Making meteorological data for site")
-            metcmd = 'python '+csmdir+'/cime/scripts-acme/makemetdata.py' \
+            metcmd = 'python '+csmdir+'/components/clm/tools/clm4_5/pointclm/makemetdata.py' \
                           +' --site '+options.site+' --lat '+row[4]+' --lon '+ \
-                          row[3]+' --ccsm_input '+options.ccsm_input+ \
+                          row[3]+' --ccsm_input '+ccsm_input+ \
                           ' --startyear '+row[6]+' --endyear '+row[7]+' --numxpts '+ \
                           str(numxpts)+' --numypts '+str(numypts)
             if (options.metdir != 'none'):
@@ -143,10 +103,10 @@ ygrid_T62     = int((lat+90)/1.9)
 #---------------------Create domain data --------------------------------------------------
 
 print('Creating domain data')
-os.system('mkdir -p '+options.csmdir+'/cime/scripts-acme/pointclm/temp')
-domainfile_orig = options.ccsm_input+'/atm/datm7/domain.clm/' \
+os.system('mkdir -p '+csmdir+'/components/clm/tools/clm4_5/pointclm/temp')
+domainfile_orig = ccsm_input+'/atm/datm7/domain.clm/' \
     +'domain.360x720_ORCHIDEE0to360.100409.nc'
-domainfile_new = options.csmdir+'/cime/scripts-acme/pointclm/temp/' \
+domainfile_new = csmdir+'/components/clm/tools/clm4_5/pointclm/temp/' \
     +'domain.lnd.'+str(numxpts)+'x'+str(numypts)+'pt_'+options.site+'_navy.nc'
 if (os.path.isfile(domainfile_new)):
     print('Warning:  Removing existing domain file')
@@ -155,13 +115,13 @@ os.system('ncks -d ni,'+str(xgrid)+','+str(xgrid+numxpts-1)+' -d nj,'+str(ygrid)
           ','+str(ygrid+numypts-1)+' '+domainfile_orig+' '+domainfile_new)
 #domainfile_new_nc = NetCDF.NetCDFFile(domainfile_new, "a")
 
-frac = getvar(domainfile_new, 'frac')
-mask = getvar(domainfile_new, 'mask')
-xc = getvar(domainfile_new, 'xc')
-yc = getvar(domainfile_new, 'yc')
-xv = getvar(domainfile_new, 'xv')
-yv = getvar(domainfile_new, 'yv')
-area = getvar(domainfile_new, 'area')
+frac = nffun.getvar(domainfile_new, 'frac')
+mask = nffun.getvar(domainfile_new, 'mask')
+xc = nffun.getvar(domainfile_new, 'xc')
+yc = nffun.getvar(domainfile_new, 'yc')
+xv = nffun.getvar(domainfile_new, 'xv')
+yv = nffun.getvar(domainfile_new, 'yv')
+area = nffun.getvar(domainfile_new, 'area')
 
 for i in range(0,numxpts):
     for j in range(0,numypts):
@@ -180,68 +140,68 @@ for i in range(0,numxpts):
         yv[j][i][3] = lat+resy/2+j*resy
         area[j][i] = resx*resy*math.pi/180*math.pi/180
 
-ierr = putvar(domainfile_new, 'frac', frac)
-ierr = putvar(domainfile_new, 'mask', mask)
-ierr = putvar(domainfile_new, 'xc', xc)
-ierr = putvar(domainfile_new, 'yc', yc)
-ierr = putvar(domainfile_new, 'xv', xv)
-ierr = putvar(domainfile_new, 'yv', yv)
-ierr = putvar(domainfile_new, 'area', area)
+ierr = nffun.putvar(domainfile_new, 'frac', frac)
+ierr = nffun.putvar(domainfile_new, 'mask', mask)
+ierr = nffun.putvar(domainfile_new, 'xc', xc)
+ierr = nffun.putvar(domainfile_new, 'yc', yc)
+ierr = nffun.putvar(domainfile_new, 'xv', xv)
+ierr = nffun.putvar(domainfile_new, 'yv', yv)
+ierr = nffun.putvar(domainfile_new, 'area', area)
 
-#os.system('cp '+options.ccsm_input+'/share/domains/domain.clm/domain.lnd.'+str(numxpts)+'x'+str(numypts)+ \
-#              'pt_'+options.site+'_navy.nc '+options.ccsm_input+'/atm/datm7/domain.clm')
+#os.system('cp 'ccsm_input+'/share/domains/domain.clm/domain.lnd.'+str(numxpts)+'x'+str(numypts)+ \
+#              'pt_'+options.site+'_navy.nc '+ccsm_input+'/atm/datm7/domain.clm')
 
 #-------------------- create surface data ----------------------------------
 print('Creating surface data')
 mysimyr=1850
 if (options.compset == 'I2000CN'):
     mysimyr=2000
-#surffile_orig = options.ccsm_input+'/lnd/clm2/surfdata/' \
+#surffile_orig = ccsm_input+'/lnd/clm2/surfdata/' \
 #    +'surfdata_0.5x0.5_simyr1850.nc'
 if (options.clm40):
-    surffile_orig = options.ccsm_input+'/lnd/clm2/surfdata/surfdata_360x720_nourb_simyr1850_c120717.nc'
-    surffile_new  = options.csmdir+'/cime/scripts-acme/pointclm/temp/surfdata_'+str(numxpts)+'x' \
+    surffile_orig = ccsm_input+'/lnd/clm2/surfdata/surfdata_360x720_nourb_simyr1850_c120717.nc'
+    surffile_new  = csmdir+'/components/clm/tools/clm4_5/pointclm/temp/surfdata_'+str(numxpts)+'x' \
                     +str(numypts)+'pt_'+options.mycase+'_simyr'+str(mysimyr)+'.nc'
 else:
-    #surffile_orig = options.ccsm_input+'/lnd/clm2/surfdata_map/surfdata_360x720cru_simyr1850_c130415.nc'
-    surffile_orig = options.ccsm_input+'/lnd/clm2/surfdata_map/surfdata_360x720cru_simyr1850_c130927.nc'
-    surffile_new =  options.csmdir+'/cime/scripts-acme/pointclm/temp/surfdata_'+str(numxpts)+'x'+str(numypts)+'pt_'+ \
+    #surffile_orig = ccsm_input+'/lnd/clm2/surfdata_map/surfdata_360x720cru_simyr1850_c130415.nc'
+    surffile_orig = ccsm_input+'/lnd/clm2/surfdata_map/surfdata_360x720cru_simyr1850_c150626.nc'
+    surffile_new =  csmdir+'/components/clm/tools/clm4_5/pointclm/temp/surfdata_'+str(numxpts)+'x'+str(numypts)+'pt_'+ \
                     options.mycase+'_simyr'+str(mysimyr)+'.nc'
 
 print(surffile_orig)
 if (os.path.isfile(surffile_new)):
     print('Warning:  Removing existing surface file')
     os.system('rm -rf '+surffile_new)
-print('ncks -d lsmlon,'+str(xgrid)+','+str(xgrid+numxpts-1)+' -d lsmlat,'+str(ygrid)+ \
+print('ncks --fix_rec_dmn time -d lsmlon,'+str(xgrid)+','+str(xgrid+numxpts-1)+' -d lsmlat,'+str(ygrid)+ \
           ','+str(ygrid+numypts-1)+' '+surffile_orig+' '+surffile_new)
-os.system('ncks -d lsmlon,'+str(xgrid)+','+str(xgrid+numxpts-1)+' -d lsmlat,'+str(ygrid)+ \
+os.system('ncks --fix_rec_dmn time -d lsmlon,'+str(xgrid)+','+str(xgrid+numxpts-1)+' -d lsmlat,'+str(ygrid)+ \
           ','+str(ygrid+numypts-1)+' '+surffile_orig+' '+surffile_new)
     
 #surffile_new_nc = NetCDF.NetCDFFile(surffile_new, "a")
 #if (options.clm40 == False):
 
-landfrac_pft = getvar(surffile_new, 'LANDFRAC_PFT')
-pftdata_mask = getvar(surffile_new, 'PFTDATA_MASK')
-longxy       = getvar(surffile_new, 'LONGXY')
-latixy       = getvar(surffile_new, 'LATIXY')
-area         = getvar(surffile_new, 'AREA')
-pct_wetland  = getvar(surffile_new, 'PCT_WETLAND')
-pct_lake     = getvar(surffile_new, 'PCT_LAKE')
-pct_glacier  = getvar(surffile_new, 'PCT_GLACIER')
-pct_urban    = getvar(surffile_new, 'PCT_URBAN')
+landfrac_pft = nffun.getvar(surffile_new, 'LANDFRAC_PFT')
+pftdata_mask = nffun.getvar(surffile_new, 'PFTDATA_MASK')
+longxy       = nffun.getvar(surffile_new, 'LONGXY')
+latixy       = nffun.getvar(surffile_new, 'LATIXY')
+area         = nffun.getvar(surffile_new, 'AREA')
+pct_wetland  = nffun.getvar(surffile_new, 'PCT_WETLAND')
+pct_lake     = nffun.getvar(surffile_new, 'PCT_LAKE')
+pct_glacier  = nffun.getvar(surffile_new, 'PCT_GLACIER')
+pct_urban    = nffun.getvar(surffile_new, 'PCT_URBAN')
 
 #input from site-specific information
-soil_color   = getvar(surffile_new, 'SOIL_COLOR')
-pct_sand     = getvar(surffile_new, 'PCT_SAND')
-pct_clay     = getvar(surffile_new, 'PCT_CLAY')
-organic      = getvar(surffile_new, 'ORGANIC')
-fmax         = getvar(surffile_new, 'FMAX')
-pct_nat_veg  = getvar(surffile_new, 'PCT_NATVEG')
-pct_pft      = getvar(surffile_new, 'PCT_NAT_PFT') 
-monthly_lai  = getvar(surffile_new, 'MONTHLY_LAI')
-monthly_sai  = getvar(surffile_new, 'MONTHLY_SAI')
-monthly_height_top = getvar(surffile_new, 'MONTHLY_HEIGHT_TOP')
-monthly_height_bot = getvar(surffile_new, 'MONTHLY_HEIGHT_BOT')
+soil_color   = nffun.getvar(surffile_new, 'SOIL_COLOR')
+pct_sand     = nffun.getvar(surffile_new, 'PCT_SAND')
+pct_clay     = nffun.getvar(surffile_new, 'PCT_CLAY')
+organic      = nffun.getvar(surffile_new, 'ORGANIC')
+fmax         = nffun.getvar(surffile_new, 'FMAX')
+pct_nat_veg  = nffun.getvar(surffile_new, 'PCT_NATVEG')
+pct_pft      = nffun.getvar(surffile_new, 'PCT_NAT_PFT') 
+monthly_lai  = nffun.getvar(surffile_new, 'MONTHLY_LAI')
+monthly_sai  = nffun.getvar(surffile_new, 'MONTHLY_SAI')
+monthly_height_top = nffun.getvar(surffile_new, 'MONTHLY_HEIGHT_TOP')
+monthly_height_bot = nffun.getvar(surffile_new, 'MONTHLY_HEIGHT_BOT')
 
 npft = 17
 
@@ -339,28 +299,28 @@ for i in range(0,numxpts):
                 monthly_height_bot[t][p][j][i] = monthly_height_bot[t][p][0][0]
 
 #if (options.clm40 == False):
-ierr = putvar(surffile_new, 'LANDFRAC_PFT', landfrac_pft)
-ierr = putvar(surffile_new, 'PFTDATA_MASK', pftdata_mask)
-ierr = putvar(surffile_new, 'LONGXY', longxy)
-ierr = putvar(surffile_new, 'LATIXY', latixy)
-ierr = putvar(surffile_new, 'AREA', area)
-ierr = putvar(surffile_new, 'PCT_WETLAND', pct_wetland)
-ierr = putvar(surffile_new, 'PCT_LAKE', pct_lake)
-ierr = putvar(surffile_new, 'PCT_GLACIER',pct_glacier)
-ierr = putvar(surffile_new, 'PCT_URBAN', pct_urban)
-ierr = putvar(surffile_new, 'SOIL_COLOR', soil_color)
-ierr = putvar(surffile_new, 'FMAX', fmax)
-ierr = putvar(surffile_new, 'ORGANIC', organic)
-ierr = putvar(surffile_new, 'PCT_SAND', pct_sand)
-ierr = putvar(surffile_new, 'PCT_CLAY', pct_clay)
-ierr = putvar(surffile_new, 'PCT_NATVEG', pct_nat_veg)
-ierr = putvar(surffile_new, 'PCT_NAT_PFT', pct_pft)
-ierr = putvar(surffile_new, 'MONTHLY_HEIGHT_TOP', monthly_height_top)
-ierr = putvar(surffile_new, 'MONTHLY_HEIGHT_BOT', monthly_height_bot)
-ierr = putvar(surffile_new, 'MONTHLY_LAI', monthly_lai)
+ierr = nffun.putvar(surffile_new, 'LANDFRAC_PFT', landfrac_pft)
+ierr = nffun.putvar(surffile_new, 'PFTDATA_MASK', pftdata_mask)
+ierr = nffun.putvar(surffile_new, 'LONGXY', longxy)
+ierr = nffun.putvar(surffile_new, 'LATIXY', latixy)
+ierr = nffun.putvar(surffile_new, 'AREA', area)
+ierr = nffun.putvar(surffile_new, 'PCT_WETLAND', pct_wetland)
+ierr = nffun.putvar(surffile_new, 'PCT_LAKE', pct_lake)
+ierr = nffun.putvar(surffile_new, 'PCT_GLACIER',pct_glacier)
+ierr = nffun.putvar(surffile_new, 'PCT_URBAN', pct_urban)
+ierr = nffun.putvar(surffile_new, 'SOIL_COLOR', soil_color)
+ierr = nffun.putvar(surffile_new, 'FMAX', fmax)
+ierr = nffun.putvar(surffile_new, 'ORGANIC', organic)
+ierr = nffun.putvar(surffile_new, 'PCT_SAND', pct_sand)
+ierr = nffun.putvar(surffile_new, 'PCT_CLAY', pct_clay)
+ierr = nffun.putvar(surffile_new, 'PCT_NATVEG', pct_nat_veg)
+ierr = nffun.putvar(surffile_new, 'PCT_NAT_PFT', pct_pft)
+ierr = nffun.putvar(surffile_new, 'MONTHLY_HEIGHT_TOP', monthly_height_top)
+ierr = nffun.putvar(surffile_new, 'MONTHLY_HEIGHT_BOT', monthly_height_bot)
+ierr = nffun.putvar(surffile_new, 'MONTHLY_LAI', monthly_lai)
 
-#os.system('cp '+options.ccsm_input+'/lnd/clm2/surfdata_map/surfdata_'+str(numxpts)+'x'+ \
-#              str(numypts)+'pt_'+options.mycase+'_simyr'+str(mysimyr)+'.nc '+options.ccsm_input+ \
+#os.system('cp '+ccsm_input+'/lnd/clm2/surfdata_map/surfdata_'+str(numxpts)+'x'+ \
+#              str(numypts)+'pt_'+options.mycase+'_simyr'+str(mysimyr)+'.nc '+ccsm_input+ \
 #              '/lnd/clm2/surfdata')
 
 #-------------------- create pftdyn surface data ----------------------------------
@@ -370,49 +330,49 @@ if ('20TR' in options.compset):
     print('Creating dynpft data')
 
 
-    #pftdyn_orig = options.ccsm_input+'/lnd/clm2/surfdata/' \
+    #pftdyn_orig = ccsm_input+'/lnd/clm2/surfdata/' \
     #  +'surfdata.pftdyn_0.5x0.5_simyr1850-2010_ACME.nc'
-    pftdyn_orig = options.ccsm_input+'/lnd/clm2/surfdata_map/' \
+    pftdyn_orig = ccsm_input+'/lnd/clm2/surfdata_map/' \
        +'landuse.timeseries_360x720cru_rcp4.5_simyr1850-2100_c141219.nc'
 
     print 'using '+surffile_new+' for 1850 information'
     if (options.clm40):
-        pftdyn_new = options.csmdir+'/cime/scripts-acme/pointclm/temp/' \
+        pftdyn_new = csmdir+'/components/clm/tools/clm4_5/pointclm/temp/' \
           +'surfdata.pftdyn_'+str(numxpts)+'x'+str(numypts)+'pt_'+options.mycase+'.nc'
     else:
-        pftdyn_new = options.csmdir+'/cime/scripts-acme/pointclm/temp/' \
+        pftdyn_new = csmdir+'/components/clm/tools/clm4_5/pointclm/temp/' \
           +'surfdata.pftdyn_'+str(numxpts)+'x'+str(numypts)+'pt_'+options.mycase+'.nc'
         
     print pftdyn_new
     if (os.path.isfile(pftdyn_new)):
         print('Warning:  Removing existing pftdyn file')
         os.system('rm -rf '+pftdyn_new)
-    os.system('ncks -d lsmlon,'+str(xgrid)+','+str(xgrid+numxpts-1)+' -d lsmlat,'+str(ygrid)+ \
+    os.system('ncks --fix_rec_dmn time -d lsmlon,'+str(xgrid)+','+str(xgrid+numxpts-1)+' -d lsmlat,'+str(ygrid)+ \
                   ','+str(ygrid+numypts-1)+' '+pftdyn_orig+' '+pftdyn_new)
-    print('ncks -d lsmlon,'+str(xgrid)+','+str(xgrid+numxpts-1)+' -d lsmlat,'+str(ygrid)+ \
+    print('ncks --fix_rec_dmn time -d lsmlon,'+str(xgrid)+','+str(xgrid+numxpts-1)+' -d lsmlat,'+str(ygrid)+ \
                   ','+str(ygrid+numypts-1)+' '+pftdyn_orig+' '+pftdyn_new)
     #pftdyn_new_nc = NetCDF.NetCDFFile(pftdyn_new, "a")
-    landfrac     = getvar(pftdyn_new, 'LANDFRAC_PFT')
-    pftdata_mask = getvar(pftdyn_new, 'PFTDATA_MASK')
-    longxy       = getvar(pftdyn_new, 'LONGXY')
-    latixy       = getvar(pftdyn_new, 'LATIXY')
-    area         = getvar(pftdyn_new, 'AREA')
-    #pct_wetland  = getvar(pftdyn_new, 'PCT_WETLAND')
-    #pct_lake     = getvar(pftdyn_new, 'PCT_LAKE')
-    #pct_glacier  = getvar(pftdyn_new, 'PCT_GLACIER')
-    #pct_urban    = getvar(pftdyn_new, 'PCT_URBAN')
-    pct_pft      = getvar(pftdyn_new, 'PCT_NAT_PFT')
-    #pct_lake_1850    = getvar(surffile_new, 'PCT_LAKE')
-    #pct_glacier_1850 = getvar(surffile_new, 'PCT_GLACIER')
-    #pct_wetland_1850 = getvar(surffile_new, 'PCT_WETLAND')
-    #pct_urban_1850   = getvar(surffile_new, 'PCT_URBAN')
-    pct_pft_1850     = getvar(surffile_new, 'PCT_NAT_PFT')
-    grazing      = getvar(pftdyn_new, 'GRAZING')
-    harvest_sh1  = getvar(pftdyn_new, 'HARVEST_SH1')
-    harvest_sh2  = getvar(pftdyn_new, 'HARVEST_SH2')
-    harvest_sh3  = getvar(pftdyn_new, 'HARVEST_SH3')
-    harvest_vh1  = getvar(pftdyn_new, 'HARVEST_VH1')
-    harvest_vh2  = getvar(pftdyn_new, 'HARVEST_VH2')
+    landfrac     = nffun.getvar(pftdyn_new, 'LANDFRAC_PFT')
+    pftdata_mask = nffun.getvar(pftdyn_new, 'PFTDATA_MASK')
+    longxy       = nffun.getvar(pftdyn_new, 'LONGXY')
+    latixy       = nffun.getvar(pftdyn_new, 'LATIXY')
+    area         = nffun.getvar(pftdyn_new, 'AREA')
+    #pct_wetland  = nffun.getvar(pftdyn_new, 'PCT_WETLAND')
+    #pct_lake     = nffun.getvar(pftdyn_new, 'PCT_LAKE')
+    #pct_glacier  = nffun.getvar(pftdyn_new, 'PCT_GLACIER')
+    #pct_urban    = nffun.getvar(pftdyn_new, 'PCT_URBAN')
+    pct_pft      = nffun.getvar(pftdyn_new, 'PCT_NAT_PFT')
+    #pct_lake_1850    = nffun.getvar(surffile_new, 'PCT_LAKE')
+    #pct_glacier_1850 = nffun.getvar(surffile_new, 'PCT_GLACIER')
+    #pct_wetland_1850 = nffun.getvar(surffile_new, 'PCT_WETLAND')
+    #pct_urban_1850   = nffun.getvar(surffile_new, 'PCT_URBAN')
+    pct_pft_1850     = nffun.getvar(surffile_new, 'PCT_NAT_PFT')
+    grazing      = nffun.getvar(pftdyn_new, 'GRAZING')
+    harvest_sh1  = nffun.getvar(pftdyn_new, 'HARVEST_SH1')
+    harvest_sh2  = nffun.getvar(pftdyn_new, 'HARVEST_SH2')
+    harvest_sh3  = nffun.getvar(pftdyn_new, 'HARVEST_SH3')
+    harvest_vh1  = nffun.getvar(pftdyn_new, 'HARVEST_VH1')
+    harvest_vh2  = nffun.getvar(pftdyn_new, 'HARVEST_VH2')
 
     npft = 17
 
@@ -532,20 +492,20 @@ if ('20TR' in options.compset):
                     grazing[t][j][i] = grazing[t][0][0]
 
 
-    ierr = putvar(pftdyn_new, 'LANDFRAC_PFT', landfrac)
-    ierr = putvar(pftdyn_new, 'PFTDATA_MASK', pftdata_mask)
-    ierr = putvar(pftdyn_new, 'LONGXY', longxy)
-    ierr = putvar(pftdyn_new, 'LATIXY', latixy)
-    ierr = putvar(pftdyn_new, 'AREA', area)
-    #ierr = putvar(pftdyn_new, 'PCT_WETLAND', pct_wetland)
-    #ierr = putvar(pftdyn_new, 'PCT_LAKE', pct_lake)
-    #ierr = putvar(pftdyn_new, 'PCT_GLACIER', pct_glacier)
-    #ierr = putvar(pftdyn_new, 'PCT_URBAN', pct_urban)
-    ierr = putvar(pftdyn_new, 'PCT_NAT_PFT', pct_pft)
-    ierr = putvar(pftdyn_new, 'GRAZING', grazing)
-    ierr = putvar(pftdyn_new, 'HARVEST_SH1', harvest_sh1)
-    ierr = putvar(pftdyn_new, 'HARVEST_SH2', harvest_sh2)
-    ierr = putvar(pftdyn_new, 'HARVEST_SH3', harvest_sh3)
-    ierr = putvar(pftdyn_new, 'HARVEST_VH1', harvest_vh1)
-    ierr = putvar(pftdyn_new, 'HARVEST_VH2', harvest_vh2)
+    ierr = nffun.putvar(pftdyn_new, 'LANDFRAC_PFT', landfrac)
+    ierr = nffun.putvar(pftdyn_new, 'PFTDATA_MASK', pftdata_mask)
+    ierr = nffun.putvar(pftdyn_new, 'LONGXY', longxy)
+    ierr = nffun.putvar(pftdyn_new, 'LATIXY', latixy)
+    ierr = nffun.putvar(pftdyn_new, 'AREA', area)
+    #ierr = nffun.putvar(pftdyn_new, 'PCT_WETLAND', pct_wetland)
+    #ierr = nffun.putvar(pftdyn_new, 'PCT_LAKE', pct_lake)
+    #ierr = nffun.putvar(pftdyn_new, 'PCT_GLACIER', pct_glacier)
+    #ierr = nffun.putvar(pftdyn_new, 'PCT_URBAN', pct_urban)
+    ierr = nffun.putvar(pftdyn_new, 'PCT_NAT_PFT', pct_pft)
+    ierr = nffun.putvar(pftdyn_new, 'GRAZING', grazing)
+    ierr = nffun.putvar(pftdyn_new, 'HARVEST_SH1', harvest_sh1)
+    ierr = nffun.putvar(pftdyn_new, 'HARVEST_SH2', harvest_sh2)
+    ierr = nffun.putvar(pftdyn_new, 'HARVEST_SH3', harvest_sh3)
+    ierr = nffun.putvar(pftdyn_new, 'HARVEST_VH1', harvest_vh1)
+    ierr = nffun.putvar(pftdyn_new, 'HARVEST_VH2', harvest_vh2)
 
