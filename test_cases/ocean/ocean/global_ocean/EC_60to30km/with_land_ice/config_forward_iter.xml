@@ -2,15 +2,19 @@
 <config case="forward_iter">
 	<add_link source="../init_step2/" dest="ic"/>
 
+	<add_executable source="model" dest="ocean_model"/>
 	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="template_forward.xml" path_base="script_resolution_dir"/>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<option name="config_Rayleigh_friction">.true.</option>
+		<option name="config_Rayleigh_damping_coeff">1.0e-4</option>
 		<option name="config_pressure_gradient_type">'Jacobian_from_TS'</option>
 		<option name="config_check_ssh_consistency">.false.</option>
 		<option name="config_block_decomp_file_prefix">'ic/graph.info.part.'</option>
+		<option name="config_dt">'00:20:00'</option>
 		<option name="config_run_duration">'0000_04:00:00'</option>
 		<option name="config_write_output_on_startup">.false.</option>
 	</namelist>
@@ -47,8 +51,8 @@
 
 	<run_script name="run.py">
 		<step executable="./metis">
-			<argument flag="ic/graph.info">4</argument>
+			<argument flag="ic/graph.info">120</argument>
 		</step>
-		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<model_run procs="120" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>
 </config>
