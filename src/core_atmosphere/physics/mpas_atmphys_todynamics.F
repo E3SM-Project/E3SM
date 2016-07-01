@@ -217,21 +217,6 @@
     call mpas_pool_get_array(tend_physics,'rqccuten',rqccuten)
     call mpas_pool_get_array(tend_physics,'rqicuten',rqicuten)
 
-    if(config_convection_scheme .eq. 'tiedtke') then
-       allocate(rucuten_Edge(nVertLevels,nEdges))
-       rucuten_Edge(:,:) = 0.
-       call tend_toEdges(block,mesh,rucuten,rvcuten,rucuten_Edge)
-       
-       tend_u_phys(1:nVertLevels,1:nEdges) = tend_u_phys(1:nVertLevels,1:nEdges)+rucuten_Edge(1:nVertLevels,1:nEdges)
-       
-       do i = 1, nEdgesSolve
-       do k  = 1, nVertLevels
-          tend_u(k,i)=tend_u(k,i)+rucuten_Edge(k,i)*mass_edge(k,i)
-       enddo
-       enddo
-       deallocate(rucuten_Edge)
-    endif
-
     do i = 1, nCellsSolve
     do k = 1, nVertLevels
        tend_th(k,i) = tend_th(k,i) + rthcuten(k,i)*mass(k,i)
