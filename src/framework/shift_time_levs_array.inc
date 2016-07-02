@@ -5,36 +5,40 @@
       !    of field pointers; these pointers exist in the field types as 'next' pointers
       !!!!!!!!!!!!!!!!!!!!!!!
 
+      threadNum = mpas_threading_get_thread_num()
+
   
       nlevs = size(fldarr)       
       allocate(fldarr_ptr(nlevs))
 
-      !
-      ! Initialize pointers to first block of all time levels
-      !
-      do i=1,nlevs
-         fldarr_ptr(i) % next => fldarr(i)
-      end do
-
-
-      !
-      ! Loop over all blocks
-      !
-      do while (associated(fldarr_ptr(1) % next))
-
+      if ( threadNum == 0 ) then
          !
-         ! Shift time levels for this block
+         ! Initialize pointers to first block of all time levels
          !
-         arr_ptr => fldarr_ptr(1) % next % array
-         do i=1,nlevs-1
-            fldarr_ptr(i) % next % array => fldarr_ptr(i+1) % next % array
-         end do
-         fldarr_ptr(nlevs) % next % array => arr_ptr
-
-         ! Advance pointers to next block
          do i=1,nlevs
-            fldarr_ptr(i) % next => fldarr_ptr(i) % next % next
+            fldarr_ptr(i) % next => fldarr(i)
          end do
-      end do
 
-      deallocate(fldarr_ptr)
+
+         !
+         ! Loop over all blocks
+         !
+         do while (associated(fldarr_ptr(1) % next))
+
+            !
+            ! Shift time levels for this block
+            !
+            arr_ptr => fldarr_ptr(1) % next % array
+            do i=1,nlevs-1
+               fldarr_ptr(i) % next % array => fldarr_ptr(i+1) % next % array
+            end do
+            fldarr_ptr(nlevs) % next % array => arr_ptr
+
+            ! Advance pointers to next block
+            do i=1,nlevs
+               fldarr_ptr(i) % next => fldarr_ptr(i) % next % next
+            end do
+         end do
+
+         deallocate(fldarr_ptr)
+      end if

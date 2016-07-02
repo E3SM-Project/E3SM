@@ -16,7 +16,6 @@ module init_atm_core
       use mpas_derived_types
       use mpas_stream_manager
       use mpas_io_streams, only : MPAS_STREAM_NEAREST
-      use mpas_configure
       use init_atm_cases
    
       implicit none

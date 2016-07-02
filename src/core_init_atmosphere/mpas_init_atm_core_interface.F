@@ -7,6 +7,7 @@
 !
 module init_atm_core_interface
 
+   use mpas_attlist
 
    contains
 
@@ -42,6 +43,7 @@ module init_atm_core_interface
       core % get_mesh_stream => init_atm_get_mesh_stream
       core % setup_immutable_streams => init_atm_setup_immutable_streams
       core % setup_derived_dimensions => init_atm_setup_derived_dimensions
+      core % setup_decomposed_dimensions => init_atm_setup_decomposed_dimensions
       core % setup_block => init_atm_setup_block
       core % setup_namelist => init_atm_setup_namelists
 
@@ -92,9 +94,9 @@ module init_atm_core_interface
    !>  not allocated until after this routine has been called.
    !
    !-----------------------------------------------------------------------
-   function init_atm_setup_packages(configs, packages) result(ierr)
+   function init_atm_setup_packages(configs, packages, iocontext) result(ierr)
 
-      use mpas_derived_types, only : mpas_pool_type
+      use mpas_derived_types, only : mpas_pool_type, mpas_io_context_type
       use mpas_pool_routines, only : mpas_pool_get_config, mpas_pool_get_package
       use mpas_io_units, only : stderrUnit
 
@@ -102,6 +104,7 @@ module init_atm_core_interface
 
       type (mpas_pool_type), intent(inout) :: configs
       type (mpas_pool_type), intent(inout) :: packages
+      type (mpas_io_context_type), intent(inout) :: iocontext
       integer :: ierr
 
       logical, pointer :: initial_conds, sfc_update, vertical_stage_in, vertical_stage_out, met_stage_in, met_stage_out
@@ -160,6 +163,11 @@ module init_atm_core_interface
          vertical_stage_out = (config_vertical_grid .and. .not.  config_met_interp)
          met_stage_in = (config_met_interp .and. .not. config_vertical_grid)
          met_stage_out = config_met_interp
+      else if (config_init_case == 8) then
+         vertical_stage_in = .true.
+         vertical_stage_out = .false.
+         met_stage_in = .false.
+         met_stage_out = .false.
       else
          vertical_stage_in = .false.
          vertical_stage_out = .false.

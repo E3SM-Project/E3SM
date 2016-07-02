@@ -7,6 +7,7 @@
 !
 module atm_core_interface
 
+   use mpas_attlist
 
    contains
 
@@ -42,6 +43,7 @@ module atm_core_interface
       core % get_mesh_stream => atm_get_mesh_stream
       core % setup_immutable_streams => atm_setup_immutable_streams
       core % setup_derived_dimensions => atm_setup_derived_dimensions
+      core % setup_decomposed_dimensions => atm_setup_decomposed_dimensions
       core % setup_block => atm_setup_block
       core % setup_namelist => atm_setup_namelists
 
@@ -92,18 +94,34 @@ module atm_core_interface
    !>  not allocated until after this routine has been called.
    !
    !-----------------------------------------------------------------------
-   function atm_setup_packages(configs, packages) result(ierr)
+   function atm_setup_packages(configs, packages, iocontext) result(ierr)
 
-      use mpas_derived_types, only : mpas_pool_type
+      use mpas_dmpar
+      use mpas_derived_types, only : mpas_pool_type, mpas_io_context_type
       use mpas_pool_routines, only : mpas_pool_get_config, mpas_pool_get_package
+
+      use mpas_atmphys_control
+      use mpas_atmphys_packages
 
       implicit none
 
       type (mpas_pool_type), intent(inout) :: configs
       type (mpas_pool_type), intent(inout) :: packages
+      type (mpas_io_context_type), intent(inout) :: iocontext
       integer :: ierr
 
       ierr = 0
+
+#ifdef DO_PHYSICS
+      !check that all the physics options are correctly defined and that at
+      !least one physics parameterization is called (using the logical moist_physics):
+      call physics_namelist_check(configs)
+
+      ierr = atmphys_setup_packages(configs,packages,iocontext)
+      if(ierr /= 0) then
+         call mpas_dmpar_global_abort('ERROR: Package setup failed for atmphys in core_atmosphere')
+      endif
+#endif
 
    end function atm_setup_packages
 

@@ -23,6 +23,7 @@
 MODULE module_mp_radar
 
 #if defined(mpas)
+      USE mpas_atmphys_functions
       USE mpas_atmphys_utilities
 #else
       USE module_wrf_error
@@ -35,9 +36,13 @@ MODULE module_mp_radar
       PRIVATE :: m_complex_maxwellgarnett
       PRIVATE :: get_m_mix_nested
       PRIVATE :: get_m_mix
+#if defined(mpas)
+      PUBLIC  :: WGAMMA
+      PUBLIC  :: GAMMLN
+#else
       PRIVATE :: WGAMMA
       PRIVATE :: GAMMLN
-
+#endif
 
       INTEGER, PARAMETER, PUBLIC:: nrbins = 50
       DOUBLE PRECISION, DIMENSION(nrbins+1), PUBLIC:: xxDx
@@ -644,41 +649,6 @@ CONTAINS
        (1.0d0-vol2-vol3+vol2*beta2+vol3*beta3))
 
       END FUNCTION m_complex_maxwellgarnett
-
-!+---+-----------------------------------------------------------------+
-      REAL FUNCTION GAMMLN(XX)
-!     --- RETURNS THE VALUE LN(GAMMA(XX)) FOR XX > 0.
-      IMPLICIT NONE
-      REAL, INTENT(IN):: XX
-      DOUBLE PRECISION, PARAMETER:: STP = 2.5066282746310005D0
-      DOUBLE PRECISION, DIMENSION(6), PARAMETER:: &
-               COF = (/76.18009172947146D0, -86.50532032941677D0, &
-                       24.01409824083091D0, -1.231739572450155D0, &
-                      .1208650973866179D-2, -.5395239384953D-5/)
-      DOUBLE PRECISION:: SER,TMP,X,Y
-      INTEGER:: J
-
-      X=XX
-      Y=X
-      TMP=X+5.5D0
-      TMP=(X+0.5D0)*LOG(TMP)-TMP
-      SER=1.000000000190015D0
-      DO 11 J=1,6
-        Y=Y+1.D0
-        SER=SER+COF(J)/Y
-11    CONTINUE
-      GAMMLN=TMP+LOG(STP*SER/X)
-      END FUNCTION GAMMLN
-!  (C) Copr. 1986-92 Numerical Recipes Software 2.02
-!+---+-----------------------------------------------------------------+
-      REAL FUNCTION WGAMMA(y)
-
-      IMPLICIT NONE
-      REAL, INTENT(IN):: y
-
-      WGAMMA = EXP(GAMMLN(y))
-
-      END FUNCTION WGAMMA
 
 !+---+-----------------------------------------------------------------+
 END MODULE module_mp_radar

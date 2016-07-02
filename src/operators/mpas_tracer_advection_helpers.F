@@ -21,7 +21,6 @@ module mpas_tracer_advection_helpers
    use mpas_kind_types
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_configure
    use mpas_sort
    use mpas_geometry_utils
    use mpas_io_units

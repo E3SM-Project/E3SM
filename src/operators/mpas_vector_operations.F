@@ -49,7 +49,10 @@ module mpas_vector_operations
              mpas_vector_R3Cell_to_normalVectorEdge, &
              mpas_vector_R3_to_LonLatR, &
              mpas_vector_LonLatR_to_R3, &
-             mpas_zonal_meridional_vectors
+             mpas_zonal_meridional_vectors, &
+             mpas_fix_periodicity, &
+             mpas_unit_test_fix_periodicity
+
 
    !--------------------------------------------------------------------
    !
@@ -147,7 +150,7 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          edgeTangentVectors   !< Input: unit vector tangent to an edge
 
-      logical, intent(in) :: & 
+      logical, intent(in) :: &
          includeHalo !< Input: If true, halo cells and edges are included in computation
 
       !-----------------------------------------------------------------
@@ -178,7 +181,7 @@ contains
 
       if (includeHalo) then
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdgesCompute)
-      else 
+      else
          call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesCompute)
       endif
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -193,7 +196,7 @@ contains
          do k=1,nVertLevels
 
            ! average neighboring cell-centered vectors to the edge
-           vectorR3Edge(:) = 0.5*(vectorR3Cell(:,k,cell1) + vectorR3Cell(:,k,cell2))
+           vectorR3Edge(:) = 0.5_RKIND*(vectorR3Cell(:,k,cell1) + vectorR3Cell(:,k,cell2))
 
            ! normal component at edge: take dot products with unit vectors at edge
            normalVectorEdge(k,iEdge) = sum(vectorR3Edge(:)*edgeNormalVectors(:,iEdge))
@@ -274,7 +277,7 @@ contains
          do k=1,nVertLevels
 
            ! average neighboring cell-centered vectors to the edge
-           vectorR3Edge(:) = 0.5*(vectorR3Cell(:,k,cell1) + vectorR3Cell(:,k,cell2))
+           vectorR3Edge(:) = 0.5_RKIND*(vectorR3Cell(:,k,cell1) + vectorR3Cell(:,k,cell2))
 
            ! normal component at edge: take dot products with unit vectors at edge
            normalVectorEdge(k,iEdge) = sum(vectorR3Edge(:)*edgeNormalVectors(:,iEdge))
@@ -442,7 +445,7 @@ contains
 !> \author  Mark Petersen
 !> \date    1 May 2013
 !> \details
-!>  Given a latitude and longitude location, compute unit vectors pointing 
+!>  Given a latitude and longitude location, compute unit vectors pointing
 !>  in the zonal, meridional, and vertical directions.
 !
 !-----------------------------------------------------------------------
@@ -525,7 +528,7 @@ contains
       real (kind=RKIND), intent(in) :: &
          lon, &!< Input: longitude, in radians, ranging [0,2*pi]
          lat   !< Input: latitude,  in radians, ranging [-pi,pi]
- 
+
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -552,7 +555,7 @@ contains
       rotationMatrix(:,2) = meridionalUnitVector
       rotationMatrix(:,3) = verticalUnitVector
 
-      vectorLonLatR = 0.0
+      vectorLonLatR = 0.0_RKIND
       do i=1,3
          do j=1,3
             ! xi = R^T x
@@ -590,7 +593,7 @@ contains
       real (kind=RKIND), intent(in) :: &
          lon, &!< Input: longitude, in radians, ranging [0,2*pi]
          lat   !< Input: latitude,  in radians, ranging [-pi,pi]
- 
+
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -617,7 +620,7 @@ contains
       rotationMatrix(:,2) = meridionalUnitVector
       rotationMatrix(:,3) = verticalUnitVector
 
-      vectorR3 = 0.0
+      vectorR3 = 0.0_RKIND
       do i=1,3
          do j=1,3
             vectorR3(i) = vectorR3(i) + rotationMatrix(i,j)*vectorLonLatR(j)
@@ -659,7 +662,12 @@ contains
     real(kind=RKIND), dimension(:,:,:), pointer :: cellTangentPlane
     real(kind=RKIND), dimension(3) :: xHatPlane, yHatPlane, rHat
     real(kind=RKIND) :: normalDotRHat
-    logical, pointer :: on_a_sphere
+    logical, pointer :: on_a_sphere, is_periodic
+    real(kind=RKIND), pointer :: x_period, y_period
+
+    call mpas_pool_get_config(meshPool, 'is_periodic', is_periodic)
+    call mpas_pool_get_config(meshPool, 'x_period', x_period)
+    call mpas_pool_get_config(meshPool, 'y_period', y_period)
 
     call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
 
@@ -705,24 +713,42 @@ contains
 
       if (cell1 == nCells+1) then ! this is a boundary edge
         ! the normal points from the cell location to the edge location
-        edgeNormalVectors(1,iEdge) = xEdge(iEdge) - xCell(cell2)
-        edgeNormalVectors(2,iEdge) = yEdge(iEdge) - yCell(cell2)
-        edgeNormalVectors(3,iEdge) = zEdge(iEdge) - zCell(cell2)
+        if (is_periodic) then
+          edgeNormalVectors(1,iEdge) = mpas_fix_periodicity(xEdge(iEdge), xCell(cell2), x_period) - xCell(cell2)
+          edgeNormalVectors(2,iEdge) = mpas_fix_periodicity(yEdge(iEdge), yCell(cell2), y_period) - yCell(cell2)
+          edgeNormalVectors(3,iEdge) = zEdge(iEdge) - zCell(cell2)
+        else
+          edgeNormalVectors(1,iEdge) = xEdge(iEdge) - xCell(cell2)
+          edgeNormalVectors(2,iEdge) = yEdge(iEdge) - yCell(cell2)
+          edgeNormalVectors(3,iEdge) = zEdge(iEdge) - zCell(cell2)
+        end if
 
-      elseif (cell2 == nCells+1) then ! this is a boundary edge
+      else if (cell2 == nCells+1) then ! this is a boundary edge
         ! the normal points from the cell location to the edge location
-        edgeNormalVectors(1,iEdge) = xEdge(iEdge) - xCell(cell1)
-        edgeNormalVectors(2,iEdge) = yEdge(iEdge) - yCell(cell1)
-        edgeNormalVectors(3,iEdge) = zEdge(iEdge) - zCell(cell1)
+        if (is_periodic) then
+          edgeNormalVectors(1,iEdge) = mpas_fix_periodicity(xEdge(iEdge), xCell(cell1), x_period) - xCell(cell1)
+          edgeNormalVectors(2,iEdge) = mpas_fix_periodicity(yEdge(iEdge), yCell(cell1), y_period) - yCell(cell1)
+          edgeNormalVectors(3,iEdge) = zEdge(iEdge) - zCell(cell1)
+        else
+          edgeNormalVectors(1,iEdge) = xEdge(iEdge) - xCell(cell1)
+          edgeNormalVectors(2,iEdge) = yEdge(iEdge) - yCell(cell1)
+          edgeNormalVectors(3,iEdge) = zEdge(iEdge) - zCell(cell1)
+        end if
 
       else ! this is not a boundary cell
         ! the normal points from the cell 1 to cell2
         ! mrp problem: on periodic domains, vectors on edges of domain point the wrong way.
-        edgeNormalVectors(1,iEdge) = xCell(cell2) - xCell(cell1)
-        edgeNormalVectors(2,iEdge) = yCell(cell2) - yCell(cell1)
-        edgeNormalVectors(3,iEdge) = zCell(cell2) - zCell(cell1)
+        if (is_periodic) then
+          edgeNormalVectors(1,iEdge) = mpas_fix_periodicity(xCell(cell2), xCell(cell1), x_period) - xCell(cell1)
+          edgeNormalVectors(2,iEdge) = mpas_fix_periodicity(yCell(cell2), yCell(cell1), y_period) - yCell(cell1)
+          edgeNormalVectors(3,iEdge) = zCell(cell2) - zCell(cell1)
+        else
+          edgeNormalVectors(1,iEdge) = xCell(cell2) - xCell(cell1)
+          edgeNormalVectors(2,iEdge) = yCell(cell2) - yCell(cell1)
+          edgeNormalVectors(3,iEdge) = zCell(cell2) - zCell(cell1)
+        end if
 
-      endif
+      end if
       call mpas_unit_vec_in_r3(edgeNormalVectors(:,iEdge))
     end do
 
@@ -783,6 +809,13 @@ contains
       integer, dimension(:,:), pointer :: verticesOnEdge
       real(kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
 
+      logical, pointer :: is_periodic
+      real(kind=RKIND), pointer :: x_period, y_period
+
+      call mpas_pool_get_config(meshPool, 'is_periodic', is_periodic)
+      call mpas_pool_get_config(meshPool, 'x_period', x_period)
+      call mpas_pool_get_config(meshPool, 'y_period', y_period)
+
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
       call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
@@ -790,17 +823,125 @@ contains
       call mpas_pool_get_array(meshPool, 'zVertex', zVertex)
 
       do iEdge = 1,nEdges
-         vertex1 = verticesOnEdge(1,iEdge) 
-         vertex2 = verticesOnEdge(2,iEdge) 
+         vertex1 = verticesOnEdge(1,iEdge)
+         vertex2 = verticesOnEdge(2,iEdge)
          ! the tangent vector points from the vertex 1 to vertex 2
-         edgeTangentVectors(1,iEdge) = xVertex(vertex2) - xVertex(vertex1)
-         edgeTangentVectors(2,iEdge) = yVertex(vertex2) - yVertex(vertex1)
-         edgeTangentVectors(3,iEdge) = zVertex(vertex2) - zVertex(vertex1)
+         if (is_periodic) then
+           edgeTangentVectors(1,iEdge) = mpas_fix_periodicity(xVertex(vertex2), xVertex(vertex1), x_period) - xVertex(vertex1)
+           edgeTangentVectors(2,iEdge) = mpas_fix_periodicity(yVertex(vertex2), yVertex(vertex1), y_period) - yVertex(vertex1)
+           edgeTangentVectors(3,iEdge) = zVertex(vertex2) - zVertex(vertex1)
+         else
+           edgeTangentVectors(1,iEdge) = xVertex(vertex2) - xVertex(vertex1)
+           edgeTangentVectors(2,iEdge) = yVertex(vertex2) - yVertex(vertex1)
+           edgeTangentVectors(3,iEdge) = zVertex(vertex2) - zVertex(vertex1)
+         end if
          call mpas_unit_vec_in_r3(edgeTangentVectors(:,iEdge))
       end do
 
   end subroutine mpas_initialize_tangent_vectors!}}}
 
+!***********************************************************************
+!
+!  subroutine mpas_fix_periodicity
+!
+!> \brief   Fixes periodicity of point pxi relative to a point xci and xiRef periodicity.
+!> \author  Phillip Wolfram & Doug Jacobsen
+!> \date    06/29/2015
+!> \details
+!>  This routine recomputes the location of a point pxi relative to a
+!>  point xci with xiRef periodicity. The calculation ensures that the recomputed
+!>  point and xci are spatially nearby, permitting reasonable calculation of
+!>  relative geometry.  This function operates only on a single dimension "i" for
+!>  a point pxi relative to a specific location xci for dimension xiRef
+!>  in the periodic direction.  Note, pxi can only be adjusted by at most
+!>  a single period, e.g., pxi = 260 + 360 = 620, xci = 0, and xiRef = 360
+!>  returns 260, not -100.
+!-----------------------------------------------------------------------
+    real(KIND=RKIND) function mpas_fix_periodicity(pxi, xci, xiRef) !{{{
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), intent(in) :: pxi, xci, xiRef
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      ! real (kind=RKIND), intent(out) :: mpas_fix_periodicity
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND) :: dist
+
+      dist = pxi - xci
+
+      if (abs(dist) > xiRef * 0.5_RKIND) then
+        mpas_fix_periodicity = pxi - (dist/abs(dist)) * xiRef
+      else
+        mpas_fix_periodicity = pxi
+      end if
+
+    end function mpas_fix_periodicity !}}}
+
+!***********************************************************************
+!
+!  subroutine mpas_unit_test_fix_periodicity
+!
+!> \brief   Simple unit test for testing the mpas_fix_periodicity routine.
+!> \author  Phillip Wolfram
+!> \date    06/29/2015
+!> \details
+!>  This routine tests the mpas_fix_periodicity routine.
+!-----------------------------------------------------------------------
+   subroutine mpas_unit_test_fix_periodicity(ierr)!{{{
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: ierr
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND) :: x1, x2, xc, xLen, xnew
+      real (kind=RKIND) :: eps = 1.0e-12_RKIND
+
+      ierr = 0
+
+      xLen = 2_RKIND*pii
+      x1 = pii
+      x2 = 3_RKIND*pii
+      xc = pii
+
+      xnew = mpas_fix_periodicity(x1, xc, xLen)
+      if (abs(xnew - pii ) > eps) then
+         write(stderrUnit,*) "Error in mpas_unit_test_fix_periodicity: ", &
+           "x1's periodicity fix has error greater than tolerance -- FAILED."
+         ierr = 1
+      else
+         write(stderrUnit,*) 'mpas_unit_test_fix_periodicity: x1 test - SUCCESS'
+      endif
+
+      xnew = mpas_fix_periodicity(x2, xc, xLen)
+      if (abs(xnew - pii ) > eps) then
+         write(stderrUnit,*) "Error in mpas_unit_test_fix_periodicity: ", &
+           "x2's periodicity fix has error greater than tolerance -- FAILED."
+         ierr = 1
+      else
+         write(stderrUnit,*) 'mpas_unit_test_fix_periodicity: x2 test - SUCCESS'
+      endif
+
+   end subroutine mpas_unit_test_fix_periodicity!}}}
 
 end module mpas_vector_operations
 

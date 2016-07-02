@@ -190,7 +190,8 @@ CONTAINS
       REAL,     INTENT(IN   )               ::   CP,G,ROVCP,R,XLV,DX
  
       REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme )              , &
-                INTENT(OUT)     ::              ck,cka,cd,cda,ustm
+                INTENT(OUT)     ::              ck,cka,cd,cda !,ustm
+      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: ustm          
 
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     ISFTCFLX, IZ0TLND
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     SCM_FORCE_FLUX

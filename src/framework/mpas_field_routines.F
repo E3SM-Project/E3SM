@@ -14,12 +14,15 @@
 !> \date    03/10/2015
 !> \details 
 !> This module defines routines related to MPAS field types (defined in mpas_data_types).
+!> All routines defined in this module are non-blocking for threads.
 !
 !-----------------------------------------------------------------------
 module mpas_field_routines
 
    use mpas_kind_types
    use mpas_derived_types
+   use mpas_threading
+   use mpas_attlist
 
    interface mpas_allocate_mold
       module procedure mpas_allocate_mold_1dreal
@@ -123,6 +126,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical flag that determines if a single block should be allocated or all blocks.
        logical :: single_block
        type (field1dInteger), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -134,17 +138,23 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not. single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-             if(.not.associated(f_cursor % array)) then
-                allocate(f_cursor % array(f_cursor % dimSizes(1)))
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not. single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+                if(.not.associated(f_cursor % array)) then
+                   allocate(f_cursor % array(f_cursor % dimSizes(1)))
+                   f_cursor % array(:) = f_cursor % defaultValue
+                end if
+                f_cursor => f_cursor % next
+             end do
+          else
+             if(.not.associated(f % array)) then
+               allocate(f % array(f % dimSizes(1)))
+               f % array(:) = f % defaultValue
              end if
-             f_cursor => f_cursor % next
-          end do
-       else
-          if(.not.associated(f % array)) then
-            allocate(f % array(f % dimSizes(1)))
           end if
        end if
 
@@ -167,6 +177,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical flag that determines if a single block should be allocated, or all blocks.
        logical :: single_block
        type (field2dInteger), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -178,17 +189,23 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not. single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-             if(.not.associated(f_cursor % array)) then
-                allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2)))
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not. single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+                if(.not.associated(f_cursor % array)) then
+                   allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2)))
+                   f_cursor % array(:, :) = f_cursor % defaultValue
+                end if
+                f_cursor => f_cursor % next
+             end do
+          else
+             if(.not.associated(f % array)) then
+               allocate(f % array(f % dimSizes(1), f % dimSizes(2)))
+               f % array(:, :) = f % defaultValue
              end if
-             f_cursor => f_cursor % next
-          end do
-       else
-          if(.not.associated(f % array)) then
-            allocate(f % array(f % dimSizes(1), f % dimSizes(2)))
           end if
        end if
 
@@ -211,6 +228,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical flag that determines if a single block should be allocated, or all blocks.
        logical :: single_block
        type (field3dInteger), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -222,17 +240,23 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not. single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-             if(.not.associated(f_cursor % array)) then
-                allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3)))
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not. single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+                if(.not.associated(f_cursor % array)) then
+                   allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3)))
+                   f_cursor % array(:, :, :) = f_cursor % defaultValue
+                end if
+                f_cursor => f_cursor % next
+             end do
+          else
+             if(.not.associated(f % array)) then
+               allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3)))
+               f % array(:, :, :) = f % defaultValue
              end if
-             f_cursor => f_cursor % next
-          end do
-       else
-          if(.not.associated(f % array)) then
-            allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3)))
           end if
        end if
 
@@ -255,6 +279,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical flag that determines if a single block should be allocated, or all blocks.
        logical :: single_block
        type (field1dReal), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -266,17 +291,23 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not. single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-             if(.not.associated(f_cursor % array)) then
-                allocate(f_cursor % array(f_cursor % dimSizes(1)))
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not. single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+                if(.not.associated(f_cursor % array)) then
+                   allocate(f_cursor % array(f_cursor % dimSizes(1)))
+                   f_cursor % array(:) = f_cursor % defaultValue
+                end if
+                f_cursor => f_cursor % next
+             end do
+          else
+             if(.not.associated(f % array)) then
+               allocate(f % array(f % dimSizes(1)))
+               f % array(:) = f % defaultValue
              end if
-             f_cursor => f_cursor % next
-          end do
-       else
-          if(.not.associated(f % array)) then
-            allocate(f % array(f % dimSizes(1)))
           end if
        end if
 
@@ -299,6 +330,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical flag that determines if a single block should be allocated, or all blocks.
        logical :: single_block
        type (field2dReal), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -310,17 +342,23 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not. single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-             if(.not.associated(f_cursor % array)) then
-                allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2)))
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not. single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+                if(.not.associated(f_cursor % array)) then
+                   allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2)))
+                   f_cursor % array(:, :) = f_cursor % defaultValue
+                end if
+                f_cursor => f_cursor % next
+             end do
+          else
+             if(.not.associated(f % array)) then
+               allocate(f % array(f % dimSizes(1), f % dimSizes(2)))
+               f % array(:, :) = f % defaultValue
              end if
-             f_cursor => f_cursor % next
-          end do
-       else
-          if(.not.associated(f % array)) then
-            allocate(f % array(f % dimSizes(1), f % dimSizes(2)))
           end if
        end if
 
@@ -343,6 +381,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical flag that determines if a single block should be allocated, or all blocks.
        logical :: single_block
        type (field3dReal), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -354,17 +393,23 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not. single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-             if(.not.associated(f_cursor % array)) then
-                allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3)))
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not. single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+                if(.not.associated(f_cursor % array)) then
+                   allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3)))
+                   f_cursor % array(:, :, :) = f_cursor % defaultValue
+                end if
+                f_cursor => f_cursor % next
+             end do
+          else
+             if(.not.associated(f % array)) then
+               allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3)))
+               f % array(:, :, :) = f % defaultValue
              end if
-             f_cursor => f_cursor % next
-          end do
-       else
-          if(.not.associated(f % array)) then
-            allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3)))
           end if
        end if
 
@@ -387,6 +432,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical flag that determines if a single block should be allocated, or all blocks.
        logical :: single_block
        type (field4dReal), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -398,17 +444,23 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not. single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-             if(.not.associated(f_cursor % array)) then
-                allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3), f_cursor % dimSizes(4)))
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not. single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+                if(.not.associated(f_cursor % array)) then
+                   allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3), f_cursor % dimSizes(4)))
+                   f_cursor % array(:, :, :, :) = f_cursor % defaultValue
+                end if
+                f_cursor => f_cursor % next
+             end do
+          else
+             if(.not.associated(f % array)) then
+               allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3), f % dimSizes(4)))
+               f % array(:, :, :, :) = f % defaultValue
              end if
-             f_cursor => f_cursor % next
-          end do
-       else
-          if(.not.associated(f % array)) then
-            allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3), f % dimSizes(4)))
           end if
        end if
 
@@ -431,6 +483,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical flag that determines if a single block should be allocated, or all blocks.
        logical :: single_block
        type (field5dReal), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -442,17 +495,23 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not. single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-             if(.not.associated(f_cursor % array)) then
-                allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3), f_cursor % dimSizes(4), f_cursor % dimSizes(5)))
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not. single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+                if(.not.associated(f_cursor % array)) then
+                   allocate(f_cursor % array(f_cursor % dimSizes(1), f_cursor % dimSizes(2), f_cursor % dimSizes(3), f_cursor % dimSizes(4), f_cursor % dimSizes(5)))
+                   f_cursor % array(:, :, :, :, :) = f_cursor % defaultValue
+                end if
+                f_cursor => f_cursor % next
+             end do
+          else
+             if(.not.associated(f % array)) then
+               allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3), f % dimSizes(4), f % dimSizes(5)))
+               f % array(:, :, :, :, :) = f % defaultValue
              end if
-             f_cursor => f_cursor % next
-          end do
-       else
-          if(.not.associated(f % array)) then
-            allocate(f % array(f % dimSizes(1), f % dimSizes(2), f % dimSizes(3), f % dimSizes(4), f % dimSizes(5)))
           end if
        end if
 
@@ -475,6 +534,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical flag that determines if a single block should be allocated, or all blocks.
        logical :: single_block
        type (field1dChar), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -486,17 +546,23 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not. single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-             if(.not.associated(f_cursor % array)) then
-                allocate(f_cursor % array(f_cursor % dimSizes(1)))
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not. single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+                if(.not.associated(f_cursor % array)) then
+                   allocate(f_cursor % array(f_cursor % dimSizes(1)))
+                   f_cursor % array(:) = f_cursor % defaultValue
+                end if
+                f_cursor => f_cursor % next
+             end do
+          else
+             if(.not.associated(f % array)) then
+               allocate(f % array(f % dimSizes(1)))
+               f % array(:) = f % defaultValue
              end if
-             f_cursor => f_cursor % next
-          end do
-       else
-          if(.not.associated(f % array)) then
-            allocate(f % array(f % dimSizes(1)))
           end if
        end if
 
@@ -519,6 +585,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical that determines if a single block should be deallocated, or all blocks.
        logical :: single_block
        type (field1dInteger), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -530,18 +597,22 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not.single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-            if(associated(f_cursor % array)) then
-              deallocate(f_cursor % array)
-            end if
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not.single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+               if(associated(f_cursor % array)) then
+                 deallocate(f_cursor % array)
+               end if
    
-            f_cursor => f_cursor % next
-          end do
-       else
-          if(associated(f % array)) then
-             deallocate(f % array)
+               f_cursor => f_cursor % next
+             end do
+          else
+             if(associated(f % array)) then
+                deallocate(f % array)
+             end if
           end if
        end if
 
@@ -564,6 +635,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical that determines if a single block should be deallocated, or all blocks.
        logical :: single_block
        type (field2dInteger), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -575,18 +647,22 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not.single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-            if(associated(f_cursor % array)) then
-              deallocate(f_cursor % array)
-            end if
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not.single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+               if(associated(f_cursor % array)) then
+                 deallocate(f_cursor % array)
+               end if
    
-            f_cursor => f_cursor % next
-          end do
-       else
-          if(associated(f % array)) then
-             deallocate(f % array)
+               f_cursor => f_cursor % next
+             end do
+          else
+             if(associated(f % array)) then
+                deallocate(f % array)
+             end if
           end if
        end if
 
@@ -609,6 +685,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical that determines if a single block should be deallocated, or all blocks.
        logical :: single_block
        type (field3dInteger), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -620,18 +697,22 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not.single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-            if(associated(f_cursor % array)) then
-              deallocate(f_cursor % array)
-            end if
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not.single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+               if(associated(f_cursor % array)) then
+                 deallocate(f_cursor % array)
+               end if
    
-            f_cursor => f_cursor % next
-          end do
-       else
-          if(associated(f % array)) then
-             deallocate(f % array)
+               f_cursor => f_cursor % next
+             end do
+          else
+             if(associated(f % array)) then
+                deallocate(f % array)
+             end if
           end if
        end if
 
@@ -654,6 +735,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical that determines if a single block should be deallocated, or all blocks.
        logical :: single_block
        type (field1dReal), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -665,18 +747,22 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not.single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-            if(associated(f_cursor % array)) then
-              deallocate(f_cursor % array)
-            end if
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not.single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+               if(associated(f_cursor % array)) then
+                 deallocate(f_cursor % array)
+               end if
    
-            f_cursor => f_cursor % next
-          end do
-       else
-          if(associated(f % array)) then
-             deallocate(f % array)
+               f_cursor => f_cursor % next
+             end do
+          else
+             if(associated(f % array)) then
+                deallocate(f % array)
+             end if
           end if
        end if
 
@@ -699,6 +785,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical that determines if a single block should be deallocated, or all blocks.
        logical :: single_block
        type (field2dReal), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -710,18 +797,22 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not.single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-            if(associated(f_cursor % array)) then
-              deallocate(f_cursor % array)
-            end if
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not.single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+               if(associated(f_cursor % array)) then
+                 deallocate(f_cursor % array)
+               end if
    
-            f_cursor => f_cursor % next
-          end do
-       else
-          if(associated(f % array)) then
-             deallocate(f % array)
+               f_cursor => f_cursor % next
+             end do
+          else
+             if(associated(f % array)) then
+                deallocate(f % array)
+             end if
           end if
        end if
 
@@ -744,6 +835,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical that determines if a single block should be deallocated, or all blocks.
        logical :: single_block
        type (field3dReal), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -755,18 +847,22 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not.single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-            if(associated(f_cursor % array)) then
-              deallocate(f_cursor % array)
-            end if
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not.single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+               if(associated(f_cursor % array)) then
+                 deallocate(f_cursor % array)
+               end if
    
-            f_cursor => f_cursor % next
-          end do
-       else
-          if(associated(f % array)) then
-             deallocate(f % array)
+               f_cursor => f_cursor % next
+             end do
+          else
+             if(associated(f % array)) then
+                deallocate(f % array)
+             end if
           end if
        end if
 
@@ -789,6 +885,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical that determines if a single block should be deallocated, or all blocks.
        logical :: single_block
        type (field4dReal), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -800,18 +897,22 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not.single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-            if(associated(f_cursor % array)) then
-              deallocate(f_cursor % array)
-            end if
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not.single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+               if(associated(f_cursor % array)) then
+                 deallocate(f_cursor % array)
+               end if
    
-            f_cursor => f_cursor % next
-          end do
-       else
-          if(associated(f % array)) then
-             deallocate(f % array)
+               f_cursor => f_cursor % next
+             end do
+          else
+             if(associated(f % array)) then
+                deallocate(f % array)
+             end if
           end if
        end if
 
@@ -834,6 +935,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical that determines if a single block should be deallocated, or all blocks.
        logical :: single_block
        type (field5dReal), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -845,18 +947,22 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not.single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-            if(associated(f_cursor % array)) then
-              deallocate(f_cursor % array)
-            end if
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not.single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+               if(associated(f_cursor % array)) then
+                 deallocate(f_cursor % array)
+               end if
    
-            f_cursor => f_cursor % next
-          end do
-       else
-          if(associated(f % array)) then
-             deallocate(f % array)
+               f_cursor => f_cursor % next
+             end do
+          else
+             if(associated(f % array)) then
+                deallocate(f % array)
+             end if
           end if
        end if
 
@@ -879,6 +985,7 @@ module mpas_field_routines
        logical, intent(in), optional :: single_block_in !< Input: Logical that determines if a single block should be deallocated, or all blocks.
        logical :: single_block
        type (field1dChar), pointer :: f_cursor
+       integer :: threadNum
 
        if(f % isPersistent) then
           return
@@ -890,18 +997,22 @@ module mpas_field_routines
           single_block = .false.
        end if
 
-       if(.not.single_block) then
-          f_cursor => f
-          do while(associated(f_cursor))
-            if(associated(f_cursor % array)) then
-              deallocate(f_cursor % array)
-            end if
+       threadNum = mpas_threading_get_thread_num()
+
+       if ( threadNum == 0 ) then
+          if(.not.single_block) then
+             f_cursor => f
+             do while(associated(f_cursor))
+               if(associated(f_cursor % array)) then
+                 deallocate(f_cursor % array)
+               end if
    
-            f_cursor => f_cursor % next
-          end do
-       else
-          if(associated(f % array)) then
-             deallocate(f % array)
+               f_cursor => f_cursor % next
+             end do
+          else
+             if(associated(f % array)) then
+                deallocate(f % array)
+             end if
           end if
        end if
 
@@ -922,19 +1033,32 @@ module mpas_field_routines
    subroutine mpas_deallocate_field0d_logical(f)!{{{
        type (field0dLogical), pointer :: f !< Input: Field to deallocate
        type (field0dLogical), pointer :: f_cursor
+       integer :: threadNum
+       integer :: i, iErr
 
-       f_cursor => f
+       threadNum = mpas_threading_get_thread_num()
+   
+       if ( threadNum == 0 ) then
+          f_cursor => f
+   
+          do while(associated(f_cursor))
+            if(associated(f % next)) then
+              f => f % next
+            else
+              nullify(f)
+            end if
+   
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
 
-       do while(associated(f_cursor))
-         if(associated(f % next)) then
-           f => f % next
-         else
-           nullify(f)
-         end if
-
-         deallocate(f_cursor)
-         f_cursor => f
-       end do
+            deallocate(f_cursor)
+            f_cursor => f
+          end do
+       end if
 
    end subroutine mpas_deallocate_field0d_logical!}}}
 
@@ -953,19 +1077,32 @@ module mpas_field_routines
    subroutine mpas_deallocate_field0d_integer(f)!{{{
        type (field0dInteger), pointer :: f !< Input: Field to deallocate
        type (field0dInteger), pointer :: f_cursor
+       integer :: threadNum
+       integer :: i, iErr
 
-       f_cursor => f
+       threadNum = mpas_threading_get_thread_num()
+   
+       if ( threadNum == 0 ) then
+          f_cursor => f
+   
+          do while(associated(f_cursor))
+            if(associated(f % next)) then
+              f => f % next
+            else
+              nullify(f)
+            end if
+   
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
 
-       do while(associated(f_cursor))
-         if(associated(f % next)) then
-           f => f % next
-         else
-           nullify(f)
-         end if
-
-         deallocate(f_cursor)
-         f_cursor => f
-       end do
+            deallocate(f_cursor)
+            f_cursor => f
+          end do
+       end if
 
    end subroutine mpas_deallocate_field0d_integer!}}}
 
@@ -984,23 +1121,36 @@ module mpas_field_routines
    subroutine mpas_deallocate_field1d_integer(f)!{{{
        type (field1dInteger), pointer :: f !< Input: Field to deallocate
        type (field1dInteger), pointer :: f_cursor
+       integer :: threadNum
+       integer :: i, iErr
 
-       f_cursor => f
-       do while(associated(f_cursor))
-         if(associated(f % next)) then
-           f => f % next
-         else
-           nullify(f)
-         end if
+       threadNum = mpas_threading_get_thread_num()
 
-         if(associated(f_cursor % array)) then
-           deallocate(f_cursor % array)
-         end if
+       if ( threadNum == 0 ) then
+          f_cursor => f
+          do while(associated(f_cursor))
+            if(associated(f % next)) then
+              f => f % next
+            else
+              nullify(f)
+            end if
+   
+            if(associated(f_cursor % array)) then
+              deallocate(f_cursor % array)
+            end if
+   
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
 
-         deallocate(f_cursor)
-
-         f_cursor => f
-       end do
+            deallocate(f_cursor)
+   
+            f_cursor => f
+          end do
+       end if
 
    end subroutine mpas_deallocate_field1d_integer!}}}
 
@@ -1019,23 +1169,36 @@ module mpas_field_routines
    subroutine mpas_deallocate_field2d_integer(f)!{{{
        type (field2dInteger), pointer :: f !< Input: Field to deallocate
        type (field2dInteger), pointer :: f_cursor
+       integer :: threadNum
+       integer :: i, iErr
 
-       f_cursor => f
-       do while(associated(f_cursor))
-         if(associated(f % next)) then
-           f => f % next
-         else
-           nullify(f)
-         end if
+       threadNum = mpas_threading_get_thread_num()
 
-         if(associated(f_cursor % array)) then
-           deallocate(f_cursor % array)
-         end if
+       if ( threadNum == 0 ) then
+          f_cursor => f
+          do while(associated(f_cursor))
+            if(associated(f % next)) then
+              f => f % next
+            else
+              nullify(f)
+            end if
+   
+            if(associated(f_cursor % array)) then
+              deallocate(f_cursor % array)
+            end if
+   
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
 
-         deallocate(f_cursor)
-
-         f_cursor => f
-       end do
+            deallocate(f_cursor)
+   
+            f_cursor => f
+          end do
+       end if
 
    end subroutine mpas_deallocate_field2d_integer!}}}
 
@@ -1054,23 +1217,36 @@ module mpas_field_routines
    subroutine mpas_deallocate_field3d_integer(f)!{{{
        type (field3dInteger), pointer :: f !< Input: Field to deallocate
        type (field3dInteger), pointer :: f_cursor
+       integer :: threadNum
+       integer :: i, iErr
 
-       f_cursor => f
-       do while(associated(f_cursor))
-         if(associated(f % next)) then
-           f => f % next
-         else
-           nullify(f)
-         end if
+       threadNum = mpas_threading_get_thread_num()
 
-         if(associated(f_cursor % array)) then
-           deallocate(f_cursor % array)
-         end if
+       if ( threadNum == 0 ) then
+          f_cursor => f
+          do while(associated(f_cursor))
+            if(associated(f % next)) then
+              f => f % next
+            else
+              nullify(f)
+            end if
+   
+            if(associated(f_cursor % array)) then
+              deallocate(f_cursor % array)
+            end if
+   
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
 
-         deallocate(f_cursor)
-
-         f_cursor => f
-       end do
+            deallocate(f_cursor)
+   
+            f_cursor => f
+          end do
+       end if
 
    end subroutine mpas_deallocate_field3d_integer!}}}
 
@@ -1089,20 +1265,33 @@ module mpas_field_routines
    subroutine mpas_deallocate_field0d_real(f)!{{{
        type (field0dReal), pointer :: f !< Input: Field to deallocate
        type (field0dReal), pointer :: f_cursor
+       integer :: threadNum
+       integer :: i, iErr
+
+       threadNum = mpas_threading_get_thread_num()
 
        f_cursor => f
 
-       do while(associated(f_cursor))
-         if(associated(f % next)) then
-           f => f % next
-         else
-           nullify(f)
-         end if
+       if ( threadNum == 0 ) then
+          do while(associated(f_cursor))
+            if(associated(f % next)) then
+              f => f % next
+            else
+              nullify(f)
+            end if
+   
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
 
-         deallocate(f_cursor)
-
-         f_cursor => f
-       end do
+            deallocate(f_cursor)
+   
+            f_cursor => f
+          end do
+       end if
 
    end subroutine mpas_deallocate_field0d_real!}}}
 
@@ -1121,23 +1310,36 @@ module mpas_field_routines
    subroutine mpas_deallocate_field1d_real(f)!{{{
        type (field1dReal), pointer :: f !< Input: Field to deallocate
        type (field1dReal), pointer :: f_cursor
+       integer :: threadNum
+       integer :: i, iErr
 
-       f_cursor => f
-       do while(associated(f_cursor))
-         if(associated(f % next)) then
-           f => f % next
-         else
-           nullify(f)
-         end if
+       threadNum = mpas_threading_get_thread_num()
 
-         if(associated(f_cursor % array)) then
-           deallocate(f_cursor % array)
-         end if
+       if ( threadNum == 0 ) then
+          f_cursor => f
+          do while(associated(f_cursor))
+            if(associated(f % next)) then
+              f => f % next
+            else
+              nullify(f)
+            end if
 
-         deallocate(f_cursor)
+            if(associated(f_cursor % array)) then
+              deallocate(f_cursor % array)
+            end if
 
-         f_cursor => f
-       end do
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
+
+            deallocate(f_cursor)
+
+            f_cursor => f
+          end do
+       end if
 
    end subroutine mpas_deallocate_field1d_real!}}}
 
@@ -1152,27 +1354,40 @@ module mpas_field_routines
 !> \details 
 !> This routine deallocates a 2D real field.
 !
-
+!-----------------------------------------------------------------------
    subroutine mpas_deallocate_field2d_real(f)!{{{
        type (field2dReal), pointer :: f !< Input: Field to deallocate
        type (field2dReal), pointer :: f_cursor
+       integer :: threadNum
+       integer :: i, iErr
 
-       f_cursor => f
-       do while(associated(f_cursor))
-         if(associated(f % next)) then
-           f => f % next
-         else
-           nullify(f)
-         end if
+       threadNum = mpas_threading_get_thread_num()
 
-         if(associated(f_cursor % array)) then
-           deallocate(f_cursor % array)
-         end if
+       if ( threadNum == 0 ) then
+          f_cursor => f
+          do while(associated(f_cursor))
+            if(associated(f % next)) then
+              f => f % next
+            else
+              nullify(f)
+            end if
 
-         deallocate(f_cursor)
+            if(associated(f_cursor % array)) then
+              deallocate(f_cursor % array)
+            end if
 
-         f_cursor => f
-       end do
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
+
+            deallocate(f_cursor)
+
+            f_cursor => f
+          end do
+       end if
 
    end subroutine mpas_deallocate_field2d_real!}}}
 
@@ -1191,23 +1406,36 @@ module mpas_field_routines
    subroutine mpas_deallocate_field3d_real(f)!{{{
        type (field3dReal), pointer :: f !< Input: Field to deallocate
        type (field3dReal), pointer :: f_cursor
+       integer :: threadNum
+       integer :: i, iErr
 
-       f_cursor => f
-       do while(associated(f_cursor))
-         if(associated(f % next)) then
-           f => f % next
-         else
-           nullify(f)
-         end if
+       threadNum = mpas_threading_get_thread_num()
 
-         if(associated(f_cursor % array)) then
-           deallocate(f_cursor % array)
-         end if
+       if ( threadNum == 0 ) then
+          f_cursor => f
+          do while(associated(f_cursor))
+            if(associated(f % next)) then
+              f => f % next
+            else
+              nullify(f)
+            end if
 
-         deallocate(f_cursor)
+            if(associated(f_cursor % array)) then
+              deallocate(f_cursor % array)
+            end if
 
-         f_cursor => f
-       end do
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
+
+            deallocate(f_cursor)
+
+            f_cursor => f
+          end do
+       end if
 
    end subroutine mpas_deallocate_field3d_real!}}}
 
@@ -1226,23 +1454,36 @@ module mpas_field_routines
    subroutine mpas_deallocate_field4d_real(f)!{{{
        type (field4dReal), pointer :: f !< Input: Field to deallocate
        type (field4dReal), pointer :: f_cursor
+       integer :: threadNum
+       integer :: i, iErr
 
-       f_cursor => f
-       do while(associated(f_cursor))
-         if(associated(f % next)) then
-           f => f % next
-         else
-           nullify(f)
-         end if
+       threadNum = mpas_threading_get_thread_num()
 
-         if(associated(f_cursor % array)) then
-           deallocate(f_cursor % array)
-         end if
+       if ( threadNum == 0 ) then
+          f_cursor => f
+          do while(associated(f_cursor))
+            if(associated(f % next)) then
+              f => f % next
+            else
+              nullify(f)
+            end if
 
-         deallocate(f_cursor)
+            if(associated(f_cursor % array)) then
+              deallocate(f_cursor % array)
+            end if
 
-         f_cursor => f
-       end do
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
+
+            deallocate(f_cursor)
+
+            f_cursor => f
+          end do
+       end if
 
    end subroutine mpas_deallocate_field4d_real!}}}
 
@@ -1261,23 +1502,36 @@ module mpas_field_routines
    subroutine mpas_deallocate_field5d_real(f)!{{{
        type (field5dReal), pointer :: f !< Input: Field to deallocate
        type (field5dReal), pointer :: f_cursor
+       integer :: threadNum
+       integer :: i, iErr
 
-       f_cursor => f
-       do while(associated(f_cursor))
-         if(associated(f % next)) then
-           f => f % next
-         else
-           nullify(f)
-         end if
+       threadNum = mpas_threading_get_thread_num()
 
-         if(associated(f_cursor % array)) then
-           deallocate(f_cursor % array)
-         end if
+       if ( threadNum == 0 ) then
+          f_cursor => f
+          do while(associated(f_cursor))
+            if(associated(f % next)) then
+              f => f % next
+            else
+              nullify(f)
+            end if
 
-         deallocate(f_cursor)
+            if(associated(f_cursor % array)) then
+              deallocate(f_cursor % array)
+            end if
 
-         f_cursor => f
-       end do
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
+
+            deallocate(f_cursor)
+
+            f_cursor => f
+          end do
+       end if
 
    end subroutine mpas_deallocate_field5d_real!}}}
 
@@ -1296,19 +1550,32 @@ module mpas_field_routines
    subroutine mpas_deallocate_field0d_char(f)!{{{
        type (field0dChar), pointer :: f !< Input: Field to deallocate
        type (field0dChar), pointer :: f_cursor
+       integer :: threadNum
+       integer :: i, iErr
 
-       f_cursor => f
+       threadNum = mpas_threading_get_thread_num()
 
-       do while(associated(f_cursor))
-         if(associated(f % next)) then
-           f => f % next
-         else
-           nullify(f)
-         end if
+       if ( threadNum == 0 ) then
+          f_cursor => f
 
-         deallocate(f_cursor)
-         f_cursor => f
-       end do
+          do while(associated(f_cursor))
+            if(associated(f % next)) then
+              f => f % next
+            else
+              nullify(f)
+            end if
+
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
+
+            deallocate(f_cursor)
+            f_cursor => f
+          end do
+       end if
 
    end subroutine mpas_deallocate_field0d_char!}}}
 
@@ -1327,23 +1594,36 @@ module mpas_field_routines
    subroutine mpas_deallocate_field1d_char(f)!{{{
        type (field1dChar), pointer :: f !< Input: Field to deallocate
        type (field1dChar), pointer :: f_cursor
+       integer :: threadNum
+       integer :: i, iErr
 
-       f_cursor => f
-       do while(associated(f_cursor))
-         if(associated(f % next)) then
-           f => f % next
-         else
-           nullify(f)
-         end if
+       threadNum = mpas_threading_get_thread_num()
 
-         if(associated(f_cursor % array)) then
-           deallocate(f_cursor % array)
-         end if
+       if ( threadNum == 0 ) then
+          f_cursor => f
+          do while(associated(f_cursor))
+            if(associated(f % next)) then
+              f => f % next
+            else
+              nullify(f)
+            end if
 
-         deallocate(f_cursor)
+            if(associated(f_cursor % array)) then
+              deallocate(f_cursor % array)
+            end if
 
-         f_cursor => f
-       end do
+            if ( associated(f_cursor % attLists) ) then
+               do i = 1, size(f_cursor % attLists, dim=1)
+                  call mpas_deallocate_attlist(f_cursor % attLists(i) % attList, iErr)
+               end do
+               deallocate(f_cursor % attLists)
+            end if
+
+            deallocate(f_cursor)
+
+            f_cursor => f
+          end do
+       end if
 
    end subroutine mpas_deallocate_field1d_char!}}}
 
@@ -1368,8 +1648,13 @@ module mpas_field_routines
 
       real(kind=RKIND), dimension(:), pointer :: dst
       real(kind=RKIND), dimension(:), intent(in) :: src
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
   
-      allocate(dst(size(src)))
+      if ( threadNum == 0 ) then
+         allocate(dst(size(src)))
+      end if
 
    end subroutine mpas_allocate_mold_1dreal!}}}
 
@@ -1396,10 +1681,15 @@ module mpas_field_routines
       real(kind=RKIND), dimension(:,:), intent(in) :: src
   
       integer, dimension(2) :: dims
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
 
       dims = shape(src)
 
-      allocate(dst(dims(1),dims(2)))
+      if ( threadNum == 0 ) then
+         allocate(dst(dims(1),dims(2)))
+      end if
 
    end subroutine mpas_allocate_mold_2dreal!}}}
 
@@ -1426,10 +1716,15 @@ module mpas_field_routines
       real(kind=RKIND), dimension(:,:,:), intent(in) :: src
   
       integer, dimension(3) :: dims
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
 
       dims = shape(src)
 
-      allocate(dst(dims(1),dims(2),dims(3)))
+      if ( threadNum == 0 ) then
+         allocate(dst(dims(1),dims(2),dims(3)))
+      end if
 
    end subroutine mpas_allocate_mold_3dreal!}}}
 
@@ -1456,10 +1751,15 @@ module mpas_field_routines
       real(kind=RKIND), dimension(:,:,:,:), intent(in) :: src
   
       integer, dimension(4) :: dims
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
 
       dims = shape(src)
 
-      allocate(dst(dims(1),dims(2),dims(3),dims(4)))
+      if ( threadNum == 0 ) then
+         allocate(dst(dims(1),dims(2),dims(3),dims(4)))
+      end if
 
    end subroutine mpas_allocate_mold_4dreal!}}}
 
@@ -1486,10 +1786,15 @@ module mpas_field_routines
       real(kind=RKIND), dimension(:,:,:,:,:), intent(in) :: src
   
       integer, dimension(5) :: dims
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
 
       dims = shape(src)
 
-      allocate(dst(dims(1),dims(2),dims(3),dims(4),dims(5)))
+      if ( threadNum == 0 ) then
+         allocate(dst(dims(1),dims(2),dims(3),dims(4),dims(5)))
+      end if
 
    end subroutine mpas_allocate_mold_5dreal!}}}
 
@@ -1514,8 +1819,13 @@ module mpas_field_routines
 
       integer, dimension(:), pointer :: dst
       integer, dimension(:), intent(in) :: src
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
   
-      allocate(dst(size(src)))
+      if ( threadNum == 0 ) then
+         allocate(dst(size(src)))
+      end if
 
    end subroutine mpas_allocate_mold_1dinteger!}}}
 
@@ -1542,10 +1852,15 @@ module mpas_field_routines
       integer, dimension(:,:), intent(in) :: src
   
       integer, dimension(2) :: dims
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
 
       dims = shape(src)
 
-      allocate(dst(dims(1),dims(2)))
+      if ( threadNum == 0 ) then
+         allocate(dst(dims(1),dims(2)))
+      end if
 
    end subroutine mpas_allocate_mold_2dinteger!}}}
 
@@ -1572,10 +1887,15 @@ module mpas_field_routines
       integer, dimension(:,:,:), intent(in) :: src
   
       integer, dimension(3) :: dims
+      integer :: threadNum
+
+      threadNum = mpas_threading_get_thread_num()
 
       dims = shape(src)
 
-      allocate(dst(dims(1),dims(2),dims(3)))
+      if ( threadNum == 0 ) then
+         allocate(dst(dims(1),dims(2),dims(3)))
+      end if
 
    end subroutine mpas_allocate_mold_3dinteger!}}}
 
@@ -1600,11 +1920,15 @@ module mpas_field_routines
 
       character(len=StrKIND), dimension(:), pointer :: dst
       character(len=StrKIND), dimension(:), intent(in) :: src
-  
-      allocate(dst(size(src)))
+      integer :: threadNum
 
-   end subroutine mpas_allocate_mold_1dchar
-!}}}
+      threadNum = mpas_threading_get_thread_num()
+  
+      if ( threadNum == 0 ) then
+         allocate(dst(size(src)))
+      end if
+
+   end subroutine mpas_allocate_mold_1dchar!}}}
 
 !***********************************************************************
 !
@@ -1627,6 +1951,7 @@ module mpas_field_routines
 
       type (field0DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
+      integer :: threadNum
 
 #include "duplicate_field_scalar.inc"
 
@@ -1654,6 +1979,7 @@ module mpas_field_routines
 
       type (field1DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
+      integer :: threadNum
 
 #include "duplicate_field_array.inc"
 
@@ -1681,6 +2007,7 @@ module mpas_field_routines
 
       type (field2DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
+      integer :: threadNum
 
 #include "duplicate_field_array.inc"
 
@@ -1708,6 +2035,7 @@ module mpas_field_routines
 
       type (field3DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
+      integer :: threadNum
 
 #include "duplicate_field_array.inc"
 
@@ -1735,6 +2063,7 @@ module mpas_field_routines
 
       type (field4DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
+      integer :: threadNum
 
 #include "duplicate_field_array.inc"
 
@@ -1762,6 +2091,7 @@ module mpas_field_routines
 
       type (field5DReal), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
+      integer :: threadNum
 
 #include "duplicate_field_array.inc"
 
@@ -1789,6 +2119,7 @@ module mpas_field_routines
 
       type (field0DInteger), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
+      integer :: threadNum
 
 #include "duplicate_field_scalar.inc"
 
@@ -1816,6 +2147,7 @@ module mpas_field_routines
 
       type (field1DInteger), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
+      integer :: threadNum
 
 #include "duplicate_field_array.inc"
 
@@ -1843,6 +2175,7 @@ module mpas_field_routines
 
       type (field2DInteger), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
+      integer :: threadNum
 
 #include "duplicate_field_array.inc"
 
@@ -1870,6 +2203,7 @@ module mpas_field_routines
 
       type (field3DInteger), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
+      integer :: threadNum
 
 #include "duplicate_field_array.inc"
 
@@ -1897,6 +2231,7 @@ module mpas_field_routines
 
       type (field0DChar), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
+      integer :: threadNum
 
 #include "duplicate_field_scalar.inc"
 
@@ -1924,6 +2259,7 @@ module mpas_field_routines
 
       type (field1DChar), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
+      integer :: threadNum
 
 #include "duplicate_field_array.inc"
 
@@ -1951,6 +2287,7 @@ module mpas_field_routines
 
       type (field0DLogical), pointer :: src_cursor, dst_cursor
       logical :: local_copy_only
+      integer :: threadNum
 
 #include "duplicate_field_scalar.inc"
 
@@ -1977,7 +2314,7 @@ module mpas_field_routines
 
       type (field0DReal), dimension(:), pointer :: fldarr
 
-      integer :: i, nlevs
+      integer :: i, nlevs, threadNum
       type (field0DReal), dimension(:), pointer :: fldarr_ptr
       real(kind=RKIND) :: scalar
       
@@ -2006,7 +2343,7 @@ module mpas_field_routines
 
       type (field1DReal), dimension(:), pointer :: fldarr
 
-      integer :: i, nlevs
+      integer :: i, nlevs, threadNum
       type (field1DReal), dimension(:), pointer :: fldarr_ptr
       real(kind=RKIND), dimension(:), pointer :: arr_ptr
       
@@ -2035,7 +2372,7 @@ module mpas_field_routines
 
       type (field2DReal), dimension(:), pointer :: fldarr
 
-      integer :: i, nlevs
+      integer :: i, nlevs, threadNum
       type (field2DReal), dimension(:), pointer :: fldarr_ptr
       real(kind=RKIND), dimension(:,:), pointer :: arr_ptr
       
@@ -2064,7 +2401,7 @@ module mpas_field_routines
 
       type (field3DReal), dimension(:), pointer :: fldarr
 
-      integer :: i, nlevs
+      integer :: i, nlevs, threadNum
       type (field3DReal), dimension(:), pointer :: fldarr_ptr
       real(kind=RKIND), dimension(:,:,:), pointer :: arr_ptr
       
@@ -2093,7 +2430,7 @@ module mpas_field_routines
 
       type (field4DReal), dimension(:), pointer :: fldarr
 
-      integer :: i, nlevs
+      integer :: i, nlevs, threadNum
       type (field4DReal), dimension(:), pointer :: fldarr_ptr
       real(kind=RKIND), dimension(:,:,:,:), pointer :: arr_ptr
       
@@ -2122,7 +2459,7 @@ module mpas_field_routines
 
       type (field5DReal), dimension(:), pointer :: fldarr
 
-      integer :: i, nlevs
+      integer :: i, nlevs, threadNum
       type (field5DReal), dimension(:), pointer :: fldarr_ptr
       real(kind=RKIND), dimension(:,:,:,:,:), pointer :: arr_ptr
       
@@ -2151,7 +2488,7 @@ module mpas_field_routines
 
       type (field0DInteger), dimension(:), pointer :: fldarr
 
-      integer :: i, nlevs
+      integer :: i, nlevs, threadNum
       type (field0DInteger), dimension(:), pointer :: fldarr_ptr
       integer :: scalar
       
@@ -2180,7 +2517,7 @@ module mpas_field_routines
 
       type (field1DInteger), dimension(:), pointer :: fldarr
 
-      integer :: i, nlevs
+      integer :: i, nlevs, threadNum
       type (field1DInteger), dimension(:), pointer :: fldarr_ptr
       integer, dimension(:), pointer :: arr_ptr
       
@@ -2209,7 +2546,7 @@ module mpas_field_routines
 
       type (field2DInteger), dimension(:), pointer :: fldarr
 
-      integer :: i, nlevs
+      integer :: i, nlevs, threadNum
       type (field2DInteger), dimension(:), pointer :: fldarr_ptr
       integer, dimension(:,:), pointer :: arr_ptr
       
@@ -2238,7 +2575,7 @@ module mpas_field_routines
 
       type (field3DInteger), dimension(:), pointer :: fldarr
 
-      integer :: i, nlevs
+      integer :: i, nlevs, threadNum
       type (field3DInteger), dimension(:), pointer :: fldarr_ptr
       integer, dimension(:,:,:), pointer :: arr_ptr
       
@@ -2267,7 +2604,7 @@ module mpas_field_routines
 
       type (field0DChar), dimension(:), pointer :: fldarr
 
-      integer :: i, nlevs
+      integer :: i, nlevs, threadNum
       type (field0DChar), dimension(:), pointer :: fldarr_ptr
       character (len=StrKIND) :: scalar
       
@@ -2296,7 +2633,7 @@ module mpas_field_routines
 
       type (field1DChar), dimension(:), pointer :: fldarr
 
-      integer :: i, nlevs
+      integer :: i, nlevs, threadNum
       type (field1DChar), dimension(:), pointer :: fldarr_ptr
       character (len=StrKIND), dimension(:), pointer :: arr_ptr
       
@@ -2325,7 +2662,7 @@ module mpas_field_routines
 
       type (field0DLogical), dimension(:), pointer :: fldarr
 
-      integer :: i, nlevs
+      integer :: i, nlevs, threadNum
       type (field0DLogical), dimension(:), pointer :: fldarr_ptr
       logical :: scalar
       

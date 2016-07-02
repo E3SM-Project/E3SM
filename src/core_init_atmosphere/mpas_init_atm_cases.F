@@ -12,13 +12,16 @@ module init_atm_cases
    use mpas_pool_routines
    use mpas_constants
    use mpas_dmpar
+   use mpas_sort
    use atm_advection
-   use mpas_atmphys_initialize_real
    use mpas_RBF_interpolation
    use mpas_vector_reconstruction
    use mpas_timer
    use mpas_init_atm_static
    use mpas_init_atm_surface
+   use mpas_atmphys_constants, only: svpt0,svp1,svp2,svp3
+   use mpas_atmphys_functions
+   use mpas_atmphys_initialize_real
 
    ! Added only clause to keep xlf90 from getting confused from the overloaded abs intrinsic in mpas_timekeeping
    use mpas_timekeeping !, only: MPAS_Time_type, MPAS_TimeInterval_type, MPAS_Clock_type, &
@@ -191,13 +194,13 @@ module init_atm_cases
                !     detected when performing the static_interp step.
                !  
                if (domain % dminfo % nprocs > 1) then
-                  write(0,*) ' '
-                  write(0,*) '****************************************************************'
-                  write(0,*) 'Error: Interpolation of static fields does not work in parallel.'
-                  write(0,*) 'Please run the static_interp step using only a single MPI task.'
-                  write(0,*) '****************************************************************'
-                  write(0,*) ' '
-                  call mpas_dmpar_abort(domain % dminfo)
+                 write(0,*) ' '
+                 write(0,*) '****************************************************************'
+                 write(0,*) 'Error: Interpolation of static fields does not work in parallel.'
+                 write(0,*) 'Please run the static_interp step using only a single MPI task.'
+                 write(0,*) '****************************************************************'
+                 write(0,*) ' '
+                 call mpas_dmpar_abort(domain % dminfo)
                end if
 
                call init_atm_static(mesh, block_ptr % dimensions, block_ptr % configs)
@@ -298,7 +301,7 @@ module init_atm_cases
 
       real (kind=RKIND), dimension(:), pointer :: rdzw, dzu, rdzu, fzm, fzp
       real (kind=RKIND), dimension(:), pointer :: surface_pressure
-      real (kind=RKIND), dimension(:,:), pointer :: zgrid, zx, zz, hx
+      real (kind=RKIND), dimension(:,:), pointer :: zgrid, zxu, zz, hx
       real (kind=RKIND), dimension(:,:), pointer :: pressure, ppb, pb, rho_zz, rb, rr, tb, rtb, p, pp, dss, t, rt
       real (kind=RKIND), dimension(:,:), pointer :: u, ru, w, rw, v
       real (kind=RKIND), dimension(:,:), pointer :: rho, theta
@@ -438,7 +441,7 @@ module init_atm_cases
       call mpas_pool_get_array(mesh, 'rdzu', rdzu)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
       call mpas_pool_get_array(mesh, 'fzp', fzp)
-      call mpas_pool_get_array(mesh, 'zx', zx)
+      call mpas_pool_get_array(mesh, 'zxu', zxu)
       call mpas_pool_get_array(mesh, 'zz', zz)
       call mpas_pool_get_array(mesh, 'hx', hx)
       call mpas_pool_get_array(mesh, 'dss', dss)
@@ -595,8 +598,8 @@ module init_atm_cases
       do i=1, nEdges
         iCell1 = cellsOnEdge(1,i)
         iCell2 = cellsOnEdge(2,i)
-        do k=1,nz
-          zx (k,i) = (zgrid(k,iCell2)-zgrid(k,iCell1)) / dcEdge(i)
+        do k=1,nz1
+          zxu (k,i) = 0.5 * (zgrid(k,iCell2)-zgrid(k,iCell1) + zgrid(k+1,iCell2)-zgrid(k+1,iCell1)) / dcEdge(i)
         end do
       end do
       do i=1, nCells
@@ -1232,7 +1235,7 @@ module init_atm_cases
       integer, intent(in) :: test_case
 
       real (kind=RKIND), dimension(:), pointer :: rdzw, dzu, rdzu, fzm, fzp
-      real (kind=RKIND), dimension(:,:), pointer :: zgrid, zx, zz, hx, cqw
+      real (kind=RKIND), dimension(:,:), pointer :: zgrid, zxu, zz, hx, cqw
       real (kind=RKIND), dimension(:,:), pointer :: ppb, pb, rho_zz, rb, rr, tb, rtb, p, pp, dss, t, rt, u, ru
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
       real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3
@@ -1337,7 +1340,7 @@ module init_atm_cases
       call mpas_pool_get_array(mesh, 'rdzu', rdzu)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
       call mpas_pool_get_array(mesh, 'fzp', fzp)
-      call mpas_pool_get_array(mesh, 'zx', zx)
+      call mpas_pool_get_array(mesh, 'zxu', zxu)
       call mpas_pool_get_array(mesh, 'zz', zz)
       call mpas_pool_get_array(mesh, 'hx', hx)
       call mpas_pool_get_array(mesh, 'dss', dss)
@@ -1477,8 +1480,8 @@ module init_atm_cases
       do i=1, nEdges
         iCell1 = cellsOnEdge(1,i)
         iCell2 = cellsOnEdge(2,i)
-        do k=1,nz
-          zx (k,i) = (zgrid(k,iCell2)-zgrid(k,iCell1)) / dcEdge(i)
+        do k=1,nz1
+          zxu (k,i) = 0.5 * (zgrid(k,iCell2)-zgrid(k,iCell1) + zgrid(k+1,iCell2)-zgrid(k+1,iCell1)) / dcEdge(i)
         end do
       end do
       do i=1, nCells
@@ -1820,7 +1823,7 @@ module init_atm_cases
       real (kind=RKIND), parameter :: t0=288., hm=250.
 
       real (kind=RKIND), dimension(:), pointer :: rdzw, dzu, rdzu, fzm, fzp
-      real (kind=RKIND), dimension(:,:), pointer :: zgrid, zx, zz, hx, cqw
+      real (kind=RKIND), dimension(:,:), pointer :: zgrid, zxu, zz, hx, cqw
       real (kind=RKIND), dimension(:,:), pointer :: ppb, pb, rho_zz, rb, rr, tb, rtb, p, pp, dss, t, rt, u, ru 
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars, deriv_two, zb, zb3
 
@@ -1941,7 +1944,7 @@ module init_atm_cases
       call mpas_pool_get_array(mesh, 'rdzu', rdzu)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
       call mpas_pool_get_array(mesh, 'fzp', fzp)
-      call mpas_pool_get_array(mesh, 'zx', zx)
+      call mpas_pool_get_array(mesh, 'zxu', zxu)
       call mpas_pool_get_array(mesh, 'zz', zz)
       call mpas_pool_get_array(mesh, 'hx', hx)
       call mpas_pool_get_array(mesh, 'dss', dss)
@@ -2121,8 +2124,8 @@ module init_atm_cases
       do i=1, nEdges
         iCell1 = cellsOnEdge(1,i)
         iCell2 = cellsOnEdge(2,i)
-        do k=1,nz
-          zx (k,i) = (zgrid(k,iCell2)-zgrid(k,iCell1)) / dcEdge(i)
+        do k=1,nz1
+          zxu (k,i) = 0.5 * (zgrid(k,iCell2)-zgrid(k,iCell1) + zgrid(k+1,iCell2)-zgrid(k+1,iCell1)) / dcEdge(i)
         end do
       end do
       do i=1, nCells
@@ -2476,7 +2479,7 @@ module init_atm_cases
 
       real (kind=RKIND), dimension(:), pointer :: rdzw, dzu, rdzu, fzm, fzp
       real (kind=RKIND), dimension(:), pointer :: vert_level, latPoints, lonPoints, ter
-      real (kind=RKIND), dimension(:,:), pointer :: zgrid, zx, zz, hx
+      real (kind=RKIND), dimension(:,:), pointer :: zgrid, zxu, zz, hx
       real (kind=RKIND), dimension(:,:), pointer :: pressure, ppb, pb, rho_zz, rb, rr, tb, rtb, p, pp, dss, t, rt
       real (kind=RKIND), dimension(:), pointer :: surface_pressure
       real (kind=RKIND), dimension(:), pointer :: destField1d
@@ -2563,6 +2566,9 @@ module init_atm_cases
       real (kind=RKIND) :: z_edge, z_edge3, d2fdx2_cell1, d2fdx2_cell2
       real (kind=RKIND) :: alt, als, zetal, zl
 
+      !  calculation of the water vapor mixing ratio:
+      real (kind=RKIND) :: sh_max,sh_min,global_sh_max,global_sh_min
+
       character (len=StrKIND), pointer :: config_met_prefix
       character (len=StrKIND), pointer :: config_start_time
       logical, pointer :: config_met_interp
@@ -2572,6 +2578,7 @@ module init_atm_cases
       real (kind=RKIND), pointer :: config_dzmin
       real (kind=RKIND), pointer :: config_ztop
       logical, pointer :: config_tc_vertical_grid
+      logical, pointer :: config_qv_vertical_grid
       integer, pointer :: config_nfglevels
       integer, pointer :: config_nfgsoillevels
       logical, pointer :: config_smooth_surfaces
@@ -2595,7 +2602,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(:,:), pointer :: theta
       real (kind=RKIND), dimension(:,:), pointer :: rho
       real (kind=RKIND), dimension(:,:), pointer :: relhum
-      real (kind=RKIND), dimension(:,:), pointer :: sp
+      real (kind=RKIND), dimension(:,:), pointer :: spechum
       real (kind=RKIND), dimension(:,:), pointer :: ru
       real (kind=RKIND), dimension(:,:), pointer :: rw
       real (kind=RKIND), dimension(:), pointer :: precipw
@@ -2617,7 +2624,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(:,:), pointer :: z_fg
       real (kind=RKIND), dimension(:,:), pointer :: t_fg
       real (kind=RKIND), dimension(:,:), pointer :: rh_fg
-      real (kind=RKIND), dimension(:,:), pointer :: sp_fg
+      real (kind=RKIND), dimension(:,:), pointer :: sh_fg
       real (kind=RKIND), dimension(:,:), pointer :: gfs_z
       real (kind=RKIND), dimension(:,:), pointer :: p_fg
       real (kind=RKIND), dimension(:,:), pointer :: st_fg
@@ -2633,6 +2640,7 @@ module init_atm_cases
       call mpas_pool_get_config(configs, 'config_dzmin', config_dzmin)
       call mpas_pool_get_config(configs, 'config_ztop', config_ztop)
       call mpas_pool_get_config(configs, 'config_tc_vertical_grid', config_tc_vertical_grid)
+      call mpas_pool_get_config(configs, 'config_qv_vertical_grid', config_qv_vertical_grid)
       call mpas_pool_get_config(configs, 'config_nfglevels', config_nfglevels)
       call mpas_pool_get_config(configs, 'config_nfgsoillevels', config_nfgsoillevels)
       call mpas_pool_get_config(configs, 'config_smooth_surfaces', config_smooth_surfaces)
@@ -2664,7 +2672,7 @@ module init_atm_cases
       call mpas_pool_get_array(mesh, 'rdzu', rdzu)
       call mpas_pool_get_array(mesh, 'fzm', fzm)
       call mpas_pool_get_array(mesh, 'fzp', fzp)
-      call mpas_pool_get_array(mesh, 'zx', zx)
+      call mpas_pool_get_array(mesh, 'zxu', zxu)
       call mpas_pool_get_array(mesh, 'zz', zz)
       call mpas_pool_get_array(mesh, 'hx', hx)
       call mpas_pool_get_array(mesh, 'ter', ter)
@@ -2680,7 +2688,7 @@ module init_atm_cases
       call mpas_pool_get_array(diag, 'pressure', pressure)
       call mpas_pool_get_array(diag, 'surface_pressure', surface_pressure)
       call mpas_pool_get_array(diag, 'relhum', relhum)
-      call mpas_pool_get_array(diag, 'sp', sp)
+      call mpas_pool_get_array(diag, 'spechum', spechum)
       call mpas_pool_get_array(diag, 'ru', ru)
       call mpas_pool_get_array(diag, 'rw', rw)
 
@@ -2728,7 +2736,7 @@ module init_atm_cases
       call mpas_pool_get_array(fg, 'z', z_fg)
       call mpas_pool_get_array(fg, 't', t_fg)
       call mpas_pool_get_array(fg, 'rh', rh_fg)
-      call mpas_pool_get_array(fg, 'sp', sp_fg)
+      call mpas_pool_get_array(fg, 'sh', sh_fg)
       call mpas_pool_get_array(fg, 'gfs_z', gfs_z)
       call mpas_pool_get_array(fg, 'p', p_fg)
 
@@ -2908,20 +2916,26 @@ write(0,*) 'USING ECMWF TERRAIN...'
          zt = config_ztop
          dz = zt/float(nz1)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! 2014 TC experiments
-! When switching between 41 and 55 levels in the namelist, also
-!    comment/uncomment the appropriate section of code below...
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-! ww: for 41 level fit
-!         als   =  .075
-!         alt   = 1.23
-!         zetal =  .31
-! ww: for 55 level fit
-         als   =  .075
-         alt   = 1.7
-         zetal =  .75
+!... Laura D. Fowler: change the values als,alt,and zetal valid for nVertLevels=41 to values
+!    needed for nVertLevels equal or greater than 55.
+         if(nVertLevels .ge. 55) then
+            als   =  .075  ! 55 levels.
+            alt   = 1.70   ! 55 levels.
+            zetal =  .75   ! 55 levels.
+         else
+            als   =  .075  ! 41 levels.
+            alt   = 1.23   ! 41 levels.
+            zetal =  .31   ! 41 levels.
+         endif
+         write(0,*)
+         write(0,*) '--- config_tc_vertical_grid = ', config_tc_vertical_grid
+         write(0,*) '--- als   = ', als
+         write(0,*) '--- alt   = ', alt
+         write(0,*) '--- zetal = ',zetal
+         if(nVertLevels /= 55 .or. nVertLevels /= 41) &
+            write(0,*) '--- Note that als,alt,and zetal have not been tested for nVertLevels equal ',nVertLevels
+         write(0,*)
+!... end Laura D. Fowler / 2016-04-12.
 
          do k=1,nz
             zl = 1.-alt*(1.-zetal)
@@ -3019,6 +3033,7 @@ write(0,*) 'USING ECMWF TERRAIN...'
 !      cf2 = d1*d3*(d1-d3)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
 !      cf3 = d1*d2*(d2-d1)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
 
+
       write(0,*) ' cf1, cf2, cf3 = ',cf1,cf2,cf3
 
 !     Smoothing algorithm for coordinate surfaces 
@@ -3075,6 +3090,7 @@ write(0,*) 'USING ECMWF TERRAIN...'
                tempField % recvList => parinfo % cellsToRecv
                tempField % copyList => parinfo % cellsToCopy
                tempField % array => hs
+               tempField % isActive = .true.
                tempField % prev => null()
                tempField % next => null()
 
@@ -3125,8 +3141,8 @@ write(0,*) 'USING ECMWF TERRAIN...'
       do i=1, nEdges
          iCell1 = cellsOnEdge(1,i)
          iCell2 = cellsOnEdge(2,i)
-         do k=1,nz
-            zx (k,i) = (zgrid(k,iCell2)-zgrid(k,iCell1)) / dcEdge(i)
+         do k=1,nz1
+            zxu (k,i) = 0.5 * (zgrid(k,iCell2)-zgrid(k,iCell1) + zgrid(k+1,iCell2)-zgrid(k+1,iCell1)) / dcEdge(i)
          end do
       end do
       do i=1, nCells
@@ -3416,7 +3432,7 @@ write(0,*) 'Interpolating SPECHUMD at ', k, vert_level(k)
                nInterpPoints = nCells
                latPoints => latCell
                lonPoints => lonCell
-               call mpas_pool_get_array(fg, 'sp', destField2d)
+               call mpas_pool_get_array(fg, 'sh', destField2d)
                ndims = 2
             else if (index(field % field, 'GHT') /= 0) then
 write(0,*) 'Interpolating GHT at ', k, vert_level(k)
@@ -4273,120 +4289,85 @@ write(0,*) 'PROCESSING OMLD'
 
          ! T
          sorted_arr(:,:) = -999.0
-         do k=1,nfglevels_actual
+         do k = 1, nfglevels_actual
             sorted_arr(1,k) = z_fg(k,iCell)
-!NOSFC            if (vert_level(k) == 200100.0) sorted_arr(1,k) = fg % soilz % array(iCell)
             if (vert_level(k) == 200100.0) sorted_arr(1,k) = 99999.0
             sorted_arr(2,k) = t_fg(k,iCell)
          end do
          call mpas_quicksort(nfglevels_actual, sorted_arr)
-         do k=1,nVertLevels
+         do k = 1, nVertLevels
             target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
-!           t(k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1)
             t(k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
-                                      sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
-!                                     sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=2)
+                                  sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
          end do
 
 
          ! RH
          sorted_arr(:,:) = -999.0
-         do k=1,nfglevels_actual
+         relhum(:,iCell) = 0._RKIND
+         do k = 1, nfglevels_actual
             sorted_arr(1,k) = z_fg(k,iCell)
-!NOSFC            if (vert_level(k) == 200100.0) sorted_arr(1,k) = fg % soilz % array(iCell)
             if (vert_level(k) == 200100.0) sorted_arr(1,k) = 99999.0
             sorted_arr(2,k) = rh_fg(k,iCell)
          end do
          call mpas_quicksort(nfglevels_actual, sorted_arr)
-         do k=nVertLevels,1,-1
+         do k = nVertLevels, 1, -1
             target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
-!           scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=0)
-            scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
-                                                       sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
-            if (target_z < z_fg(1,iCell)) scalars(index_qv,k,iCell) = scalars(index_qv,k+1,iCell) 
-            relhum(k,iCell) = scalars(index_qv,k,iCell)*0.01
+            relhum(k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
+                                       sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=0)
+            if (target_z < z_fg(1,iCell) .and. k < nVertLevels) relhum(k,iCell) = relhum(k+1,iCell)
          end do
 
-         ! SPECHUMD: from native GFS data
+
+         ! SPECHUM: if first-guess values are negative, set those values to zero before
+         ! vertical interpolation.
          sorted_arr(:,:) = -999.0
-         do k=1,nfglevels_actual
+         spechum(:,iCell) = 0._RKIND
+         do k = 1, nfglevels_actual
             sorted_arr(1,k) = z_fg(k,iCell)
-!NOSFC            if (vert_level(k) == 200100.0) sorted_arr(1,k) = fg % soilz % array(iCell)
             if (vert_level(k) == 200100.0) sorted_arr(1,k) = 99999.0
-            sorted_arr(2,k) = sp_fg(k,iCell)
+            sorted_arr(2,k) = max(0._RKIND,sh_fg(k,iCell))
          end do
          call mpas_quicksort(nfglevels_actual, sorted_arr)
-!        do k=1,nVertLevels
-!           target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
-!!          scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=0)
-!           scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
-!                                                      sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
-!           rh(k,iCell) = scalars(index_qv,k,iCell)
-!        end do
-! enforce constant sp if mpas level is below bottom gfs level
-         do k=nVertLevels,1,-1
+         do k = nVertLevels, 1, -1
             target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
-!           scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=0)
-            scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
-                                                        sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
-            if(target_z .lt. z_fg(1,iCell)) scalars(index_qv,k,iCell) = scalars(index_qv,k+1,iCell)
-            sp(k,iCell) = scalars(index_qv,k,iCell)
+            spechum(k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
+                                        sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=0)
+            if (target_z < z_fg(1,iCell) .and. k < nVertLevels) spechum(k,iCell) = spechum(k+1,iCell)
          end do
-!write(0,*) 'Vertically Interpolating SP'
 
 
          ! GHT
          sorted_arr(:,:) = -999.0
-         do k=1,nfglevels_actual
+         do k = 1, nfglevels_actual
             sorted_arr(1,k) = z_fg(k,iCell)
-!NOSFC            if (vert_level(k) == 200100.0) sorted_arr(1,k) = fg % soilz % array(iCell)
             if (vert_level(k) == 200100.0) sorted_arr(1,k) = 99999.0
             sorted_arr(2,k) = z_fg(k,iCell)
          end do
          call mpas_quicksort(nfglevels_actual, sorted_arr)
-         do k=1,nVertLevels
+         do k = 1, nVertLevels
             target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
-!           gfs_z(k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1)
-            gfs_z(k,iCell) = vertical_interp(target_z, nfglevels_actual-1, sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
+            gfs_z(k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
+                                      sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
          end do
 
 
          ! PRESSURE
          sorted_arr(:,:) = -999.0
-         do k=1,nfglevels_actual
+         do k = 1, nfglevels_actual
             sorted_arr(1,k) = z_fg(k,iCell)
             if (vert_level(k) == 200100.0) then 
-!NOSFC               sorted_arr(1,k) = fg % soilz % array(iCell)
                sorted_arr(1,k) = 99999.0
                sfc_k = k
             end if
             sorted_arr(2,k) = log(p_fg(k,iCell))
          end do
          call mpas_quicksort(nfglevels_actual, sorted_arr)
-         do k=1,nVertLevels
+         do k = 1, nVertLevels
             target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
-!           pressure(k,iCell) = exp(vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1))
             pressure(k,iCell) = exp(vertical_interp(target_z, nfglevels_actual-1, &
-                                         sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1))
+                                    sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1))
          end do
-
-
-         ! PRESSURE
-!         sorted_arr(:,:) = -999.0
-!         do k=1,nfglevels_actual
-!            sorted_arr(1,k) = z_fg(k,iCell)
-!            if (vert_level(k) == 200100.0) then 
-!!NOSFC               sorted_arr(1,k) = fg % soilz % array(iCell)
-!               sorted_arr(1,k) = 99999.0
-!               sfc_k = k
-!            end if
-!            sorted_arr(2,k) = log(p_fg(k,iCell))
-!         end do
-!         call mpas_quicksort(nfglevels_actual, sorted_arr)
-!         do k=1,nVertLevels+1
-!            target_z = zgrid(k,iCell)
-!            gfs_p(k,iCell) = exp(vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1))
-!         end do
 
       end do
 
@@ -4452,10 +4433,51 @@ write(0,*) 'PROCESSING OMLD'
       deallocate(sorted_arr)
 
 
+      ! Diagnose the water vapor mixing ratios:
+      global_sh_min = 0._RKIND
+      global_sh_max = 0._RKIND
+      if(config_qv_vertical_grid) then
+         sh_min = 0._RKIND
+         sh_max = 0._RKIND
+         do iCell = 1, nCells
+            do k = 1, nVertLevels
+               sh_min = min(sh_min,spechum(k,iCell))
+               sh_max = max(sh_max,spechum(k,iCell))
+            enddo
+         enddo
+         call mpas_dmpar_min_real(dminfo,sh_min,global_sh_min)
+         call mpas_dmpar_max_real(dminfo,sh_max,global_sh_max)
+      endif
+      write(0,*)
+      write(0,*) '--- config_qv_vertical_grid = ', config_qv_vertical_grid
+      write(0,*) '--- global_sh_min = ', global_sh_min
+      write(0,*) '--- global_sh_max = ', global_sh_max
+      write(0,*)
+
+      if(.not. config_qv_vertical_grid .or. (global_sh_min==0._RKIND .and. global_sh_max==0._RKIND)) then
+         !--- calculate the saturation mixing ratio and interpolated first-guess relative humidity:
+         do k = 1, nVertLevels
+            do iCell = 1, nCells
+!              es = svp1*10.*exp(svp2*(t(k,iCell)-svpt0)/(t(k,iCell)-svp3))
+!              es = min(es,0.99*0.01*pressure(k,iCell))
+!              rs = 0.622*es*100. / (pressure(k,iCell)-es*100.)
+               rs = rslf(pressure(k,iCell),t(k,iCell))
+               if(t(k,iCell) .lt. svpt0) rs = rsif(pressure(k,iCell),t(k,iCell))
+               scalars(index_qv,k,iCell) = 0.01_RKIND*rs*relhum(k,iCell)
+             enddo
+         enddo
+      else
+         !--- use the interpolated first-guess specific humidity:
+         do k = 1, nVertLevels
+            do iCell = 1, nCells
+               scalars(index_qv,k,iCell) = spechum(k,iCell)/(1._RKIND-spechum(k,iCell))
+            enddo
+         enddo
+      endif
 
       !
-      ! Diagnose fields needed in initial conditions file (u, w, rho, theta, scalars)
-      ! NB: At this point, "rho_zz" is simple dry density, and "theta_m" is regular temperature
+      ! Diagnose fields needed in initial conditions file (u, w, rho, theta)
+      ! NB: At this point, "rho_zz" is simple dry density, and "theta_m" is regular potential temperature
       !
       do iCell=1,nCells
 

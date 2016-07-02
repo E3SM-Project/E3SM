@@ -1,0 +1,10 @@
+<driver_script name="run_test.py">
+	<case name="test">
+		<step executable="./run.py"/>
+	</case>
+	<validation>
+		<compare_timers rundir1="test">
+			<timer name="total time"/>
+		</compare_timers>
+	</validation>
+</driver_script>

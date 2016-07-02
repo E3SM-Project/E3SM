@@ -28,8 +28,6 @@ module ocn_diagnostics_routines
    private
    save
 
-   type (timer_node), pointer :: diagEOSTimer
-
    !--------------------------------------------------------------------
    !
    ! Public parameters

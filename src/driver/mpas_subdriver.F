@@ -48,8 +48,13 @@ module mpas_subdriver
       use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
       use mpas_timekeeping, only : mpas_get_clock_time, mpas_get_time
       use mpas_bootstrapping, only : mpas_bootstrap_framework_phase1, mpas_bootstrap_framework_phase2
+      use mpas_threading2, only : mpas_threading_init
  
       implicit none
+
+#ifdef _GPTL
+      include 'gptl.inc'
+#endif
 
       integer :: iArg, nArgs
       logical :: readNamelistArg, readStreamsArg
@@ -103,6 +108,12 @@ module mpas_subdriver
 
       readNamelistArg = .false.
       readStreamsArg = .false.
+
+#ifdef _GPTL
+      ierr = gptlsetoption(gptlabort_on_error, 1)
+      ierr = gptlsetutr(gptlnanotime)
+      ierr = gptlinitialize()
+#endif
 
       nArgs = command_argument_count()
       iArg = 1
@@ -202,7 +213,7 @@ module mpas_subdriver
          call mpas_dmpar_global_abort('ERROR: Package definition failed for core ' // trim(domain_ptr % core % coreName))
       end if
 
-      ierr = domain_ptr % core % setup_packages(domain_ptr % configs, domain_ptr % packages)
+      ierr = domain_ptr % core % setup_packages(domain_ptr % configs, domain_ptr % packages, domain_ptr % iocontext)
       if ( ierr /= 0 ) then
          call mpas_dmpar_global_abort('ERROR: Package setup failed for core ' // trim(domain_ptr % core % coreName))
       end if
@@ -280,7 +291,8 @@ module mpas_subdriver
       !
       ! Set up run-time streams
       !
-      call MPAS_stream_mgr_init(domain_ptr % streamManager, domain_ptr % clock, domain_ptr % blocklist % allFields, domain_ptr % packages, domain_ptr % blocklist % allStructs)
+      call MPAS_stream_mgr_init(domain_ptr % streamManager, domain_ptr % ioContext, domain_ptr % clock, &
+                                domain_ptr % blocklist % allFields, domain_ptr % packages, domain_ptr % blocklist % allStructs)
 
       call add_stream_attributes(domain_ptr)
 
@@ -299,6 +311,14 @@ module mpas_subdriver
       ! Finalize the setup of blocks and fields
       !
       call mpas_bootstrap_framework_phase2(domain_ptr)
+
+      !
+      ! Setup threading
+      !
+      call mpas_threading_init(domain_ptr % blocklist, ierr)
+      if ( ierr /= 0 ) then
+         call mpas_dmpar_global_abort('ERROR: Threading setup failed for core '//trim(domain_ptr % core % coreName))
+      end if
 
       !
       ! Initialize core
@@ -330,8 +350,13 @@ module mpas_subdriver
    subroutine mpas_finalize()
 
       use mpas_stream_manager, only : MPAS_stream_mgr_finalize
+      use mpas_threading2, only : mpas_threading_finalize
    
       implicit none
+
+#ifdef _GPTL
+      include 'gptl.inc'
+#endif
 
       integer :: iErr
 
@@ -345,7 +370,9 @@ module mpas_subdriver
       end if
 
       call mpas_timer_stop('total time')
+      call mpas_timer_write_header()
       call mpas_timer_write()
+      call mpas_timer_finalize(domain_ptr)
 
 
       !
@@ -353,10 +380,20 @@ module mpas_subdriver
       !
       call MPAS_stream_mgr_finalize(domain_ptr % streamManager)
 
+      !
+      ! Finalize threading
+      !
+      call mpas_threading_finalize(domain_ptr % blocklist)
+
       call mpas_framework_finalize(domain_ptr % dminfo, domain_ptr)
 
       deallocate(corelist % domainlist)
       deallocate(corelist)
+
+#ifdef _GPTL
+      ierr = gptlpr(domain_ptr % dminfo % my_proc_id)
+      ierr = gptlfinalize()
+#endif
 
    end subroutine mpas_finalize
 
@@ -400,6 +437,9 @@ module mpas_subdriver
 
       call MPAS_stream_mgr_add_att(domain % streamManager, 'on_a_sphere', domain % on_a_sphere)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'is_periodic', domain % is_periodic)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'x_period', domain % x_period)
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'y_period', domain % y_period)
       ! DWJ 10/01/2014: Eventually add the real history attribute, for now (due to length restrictions)
       ! add a shortened version.
 !     call MPAS_stream_mgr_add_att(domain % streamManager, 'history', domain % history)

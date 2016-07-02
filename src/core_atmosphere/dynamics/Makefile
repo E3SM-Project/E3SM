@@ -1,10 +1,10 @@
 .SUFFIXES: .F .o
 
-OBJS = mpas_atm_time_integration.o
+OBJS = mpas_atm_time_integration.o mpas_atm_dimensions.o
 
 all: $(OBJS)
 
-mpas_atm_time_integration.o: 
+mpas_atm_time_integration.o: mpas_atm_dimensions.o
 
 
 clean:

@@ -7,41 +7,48 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_TEMPLATE
+!  ocn_TEM_PLATE
 !
-!> \brief MPAS ocean analysis core member: TEMPLATE
+!> \brief MPAS ocean analysis mode member: TEM_PLATE
 !> \author FILL_IN_AUTHOR
 !> \date   FILL_IN_DATE
 !> \details
-!>  MPAS ocean analysis core member: TEMPLATE
+!>  MPAS ocean analysis mode member: TEM_PLATE
 !>  In order to add a new analysis member, do the following:
 !>  1. Copy these to your new analysis member name:
 !>     cp mpas_ocn_TEMPLATE.F mpas_ocn_your_new_name.F
 !>     cp Registry_ocn_TEMPLATE.xml Registry_ocn_your_new_name.xml
-!>  
+!>
 !>  2. In those two new files, replace the following text:
-!>     TEMPLATE, amTemplate, FILL_IN_AUTHOR, FILL_IN_DATE
-!>     Note TEMPLATE uses underscores, like global_stats, while
-!>     amTemplate uses caps, e.g. amGlobalStats.
+!>     tempLate, TEM_PLATE, FILL_IN_AUTHOR, FILL_IN_DATE
+!>     Typically tempLate uses camel case (variable names), like yourNewName,
+!>     while TEM_PLATE uses underscores (subroutine names), like your_new_name.
+!>     note: do not replace 'filename_template' in Registry_ocn_yourNewName.xml
 !>  
 !>  3. Add a #include line for your registry to
 !>     Registry_analysis_members.xml
-!>  
-!>  4. In mpas_ocn_analysis_driver.F, add calls for your analysis member
-!>     by copying lines with TEMPLATE.
+!>
+!>  4. In mpas_ocn_analysis_driver.F, add a use statement for your new analysis member.
+!>     In addition, add lines for your analysis member, and replace TEM_PLATE
+!>     and temPlate as described in step 2. There should be 5 places that need additions:
+!>      - Adding the analysis member name to the analysis member list
+!>      - Adding an init if test can subroutine call
+!>      - Adding a compute if test can subroutine call
+!>      - Adding a restart if test can subroutine call
+!>      - Adding a finalize if test can subroutine call
 !>  
 !>  5. In src/core_ocean/analysis_members/Makefile, add your
-!>     new analysis member everywhere you see
-!>     mpas_ocn_global_stats.o
-!>  
-!
+!>     new analysis member to the list of members. See another analysis member
+!>     in that file for an example. 
+!>     NOTE: If your analysis member depends on other files, add a dependency
+!>           line for the member and list them there. See okubo weiss for an example.
+!>
 !-----------------------------------------------------------------------
 
-module ocn_TEMPLATE
+module ocn_TEM_PLATE
 
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
@@ -65,12 +72,10 @@ module ocn_TEMPLATE
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_setup_packages_TEMPLATE, &
-             ocn_init_TEMPLATE, &
-             ocn_init_alarms_TEMPLATE, &
-             ocn_compute_TEMPLATE, &
-             ocn_restart_TEMPLATE, &
-             ocn_finalize_TEMPLATE
+   public :: ocn_init_TEM_PLATE, &
+             ocn_compute_TEM_PLATE, &
+             ocn_restart_TEM_PLATE, &
+             ocn_finalize_TEM_PLATE
 
    !--------------------------------------------------------------------
    !
@@ -78,80 +83,24 @@ module ocn_TEMPLATE
    !
    !--------------------------------------------------------------------
 
-   type (timer_node), pointer :: amTemplateTimer
-
 !***********************************************************************
 
 contains
 
 !***********************************************************************
 !
-!  routine ocn_setup_packages_TEMPLATE
-!
-!> \brief   Set up packages for MPAS-Ocean analysis member
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details 
-!>  This routine is intended to configure the packages for this MPAS
-!>   ocean analysis member
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_setup_packages_TEMPLATE(configPool, packagePool, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: configPool
-      type (mpas_pool_type), intent(in) :: packagePool
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-      logical, pointer :: amTemplateActive
-
-      err = 0
-
-      call mpas_pool_get_package(packagePool, 'amTemplateActive', amTemplateActive)
-
-      ! turn on package for this analysis member
-      amTemplateActive = .true.
-
-   end subroutine ocn_setup_packages_TEMPLATE!}}}
-
-
-!***********************************************************************
-!
-!  routine ocn_init_TEMPLATE
+!  routine ocn_init_TEM_PLATE
 !
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
-!> \details 
-!>  This routine conducts all initializations required for the 
+!> \details
+!>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_TEMPLATE(domain, err)!{{{
+   subroutine ocn_init_TEM_PLATE(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -183,93 +132,22 @@ contains
 
       err = 0
 
-   end subroutine ocn_init_TEMPLATE!}}}
+   end subroutine ocn_init_TEM_PLATE!}}}
 
 !***********************************************************************
 !
-!  routine ocn_init_alarms_TEMPLATE
-!
-!> \brief   Initialize alarms for MPAS-Ocean analysis member
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details 
-!>  This routine conducts all alarm initializations required for the 
-!>  MPAS-Ocean analysis member.
-!
-!-----------------------------------------------------------------------
-
-   subroutine ocn_init_alarms_TEMPLATE(clock, startTime, computeAlarmID, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(in) :: computeAlarmID
-      type (MPAS_Time_Type), intent(in) :: startTime
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      type (MPAS_Clock_type), intent(inout) :: clock
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      integer :: ierr
-      character(len=StrKIND) :: compute_interval
-      type (MPAS_Time_Type) :: alarmStartTime
-      type (MPAS_TimeInterval_type) :: alarmTimeStep
-
-      character (len=StrKIND), pointer :: config_TEMPLATE_compute_interval, config_output_interval
-
-      err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_TEMPLATE_compute_interval', config_TEMPLATE_compute_interval)
-      call mpas_pool_get_config(ocnConfigs, 'config_output_interval', config_output_interval)
-
-      ! set compute alarm for this analysis member
-      if (config_TEMPLATE_compute_interval=='same_as_output') then
-         compute_interval = config_output_interval
-      else
-         compute_interval = config_TEMPLATE_compute_interval
-      endif
-
-      call mpas_set_timeInterval(alarmTimeStep, timeString=compute_interval, ierr=ierr)
-      alarmStartTime = startTime + alarmTimeStep
-      call mpas_add_clock_alarm(clock, computeAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
-
-   end subroutine ocn_init_alarms_TEMPLATE!}}}
-
-!***********************************************************************
-!
-!  routine ocn_compute_TEMPLATE
+!  routine ocn_compute_TEM_PLATE
 !
 !> \brief   Compute MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
-!> \details 
+!> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_compute_TEMPLATE(domain, timeLevel, err)!{{{
+   subroutine ocn_compute_TEM_PLATE(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -301,14 +179,14 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: amTemplatePool
+      type (mpas_pool_type), pointer :: temPlateAMPool
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
-      type (mpas_pool_type), pointer :: amTemplate
+      type (mpas_pool_type), pointer :: temPlateAM
 
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_tracers
@@ -321,15 +199,13 @@ contains
 
       dminfo = domain % dminfo
 
-      call mpas_timer_start("compute_TEMPLATE", .false., amTemplateTimer)
-
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
-         call mpas_pool_get_subpool(block % structs, 'amTemplate', amTemplatePool)
+         call mpas_pool_get_subpool(block % structs, 'temPlateAM', temPlateAMPool)
 
          ! Here are some example variables which may be needed for your analysis member
          call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
@@ -346,7 +222,7 @@ contains
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
          call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
 
-         ! Computations which are functions of nCells, nEdges, or nVertices 
+         ! Computations which are functions of nCells, nEdges, or nVertices
          ! must be placed within this block loop
          ! Here are some example loops
          do iCell = 1,nCellsSolve
@@ -366,36 +242,34 @@ contains
 !      call mpas_dmpar_min_real_array(dminfo, nMins, mins(1:nMins), reductions(1:nMins))
 !      call mpas_dmpar_max_real_array(dminfo, nMaxes, maxes(1:nMaxes), reductions(1:nMaxes))
 
-      ! Even though some variables do not include an index that is decomposed amongst 
+      ! Even though some variables do not include an index that is decomposed amongst
       ! domain partitions, we assign them within a block loop so that all blocks have the
       ! correct values for writing output.
       block => domain % blocklist
       do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'amTemplate', amTemplatePool)
+         call mpas_pool_get_subpool(block % structs, 'temPlateAM', temPlateAMPool)
 
-         ! assignment of final amTemplate variables could occur here.
+         ! assignment of final temPlateAM variables could occur here.
 
          block => block % next
       end do
 
-      call mpas_timer_stop("TEMPLATE", amTemplateTimer)
-
-   end subroutine ocn_compute_TEMPLATE!}}}
+   end subroutine ocn_compute_TEM_PLATE!}}}
 
 !***********************************************************************
 !
-!  routine ocn_restart_TEMPLATE
+!  routine ocn_restart_TEM_PLATE
 !
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
-!> \details 
+!> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_restart_TEMPLATE(domain, err)!{{{
+   subroutine ocn_restart_TEM_PLATE(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -427,22 +301,22 @@ contains
 
       err = 0
 
-   end subroutine ocn_restart_TEMPLATE!}}}
+   end subroutine ocn_restart_TEM_PLATE!}}}
 
 !***********************************************************************
 !
-!  routine ocn_finalize_TEMPLATE
+!  routine ocn_finalize_TEM_PLATE
 !
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
 !> \date    FILL_IN_DATE
-!> \details 
+!> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_finalize_TEMPLATE(domain, err)!{{{
+   subroutine ocn_finalize_TEM_PLATE(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -474,8 +348,8 @@ contains
 
       err = 0
 
-   end subroutine ocn_finalize_TEMPLATE!}}}
+   end subroutine ocn_finalize_TEM_PLATE!}}}
 
-end module ocn_TEMPLATE
+end module ocn_TEM_PLATE
 
 ! vim: foldmethod=marker

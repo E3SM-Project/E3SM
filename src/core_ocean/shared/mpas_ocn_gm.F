@@ -9,7 +9,6 @@ module ocn_gm
 
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_configure
    use mpas_timer
    use mpas_constants
    
@@ -47,7 +46,7 @@ module ocn_gm
    logical, pointer :: config_use_standardGM
    logical, pointer :: config_disable_redi_k33
 
-   real, parameter :: epsGM = 1.0e-12
+   real (kind=RKIND), parameter :: epsGM = 1.0e-12
 
 !***********************************************************************
 
@@ -186,12 +185,12 @@ contains
       gradZMidEdge(:,:) = huge(0D0)
       gradZMidTopOfEdge(:,:) = huge(0D0)
 
-      relativeSlopeTopOfEdge(:,:) = 0.0
-      relativeSlopeTopOfCell(:,:) = 0.0
-      relativeSlopeTapering(:,:) = 0.0
-      relativeSlopeTaperingCell(:,:) = 0.0
-      k33(:,:) = 0.0
-      normalGMBolusVelocity(:,:) = 0.0
+      relativeSlopeTopOfEdge(:,:) = 0.0_RKIND
+      relativeSlopeTopOfCell(:,:) = 0.0_RKIND
+      relativeSlopeTapering(:,:) = 0.0_RKIND
+      relativeSlopeTaperingCell(:,:) = 0.0_RKIND
+      k33(:,:) = 0.0_RKIND
+      normalGMBolusVelocity(:,:) = 0.0_RKIND
       
       !--------------------------------------------------------------------
       !
@@ -212,8 +211,8 @@ contains
          ! Approximation of dDensityDzTopOfCell on the top and bottom interfaces through the idea of having
          ! ghost cells above the top and below the bottom layers of the same depths and density.
          ! Essentially, this enforces the boundary condition (d density)/dz = 0 at the top and bottom.
-         dDensityDzTopOfCell(1,iCell) = 0.0
-         dDensityDzTopOfCell(maxLevelCell(iCell)+1,iCell) = 0.0
+         dDensityDzTopOfCell(1,iCell) = 0.0_RKIND
+         dDensityDzTopOfCell(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
       end do
 
       ! Interpolate dDensityDzTopOfCell to edge and layer interface
@@ -221,7 +220,7 @@ contains
          do k = 1, maxLevelEdgeTop(iEdge)+1
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
-            dDensityDzTopOfEdge(k,iEdge) = 0.5 * (dDensityDzTopOfCell(k,cell1) + dDensityDzTopOfCell(k,cell2))
+            dDensityDzTopOfEdge(k,iEdge) = 0.5_RKIND * (dDensityDzTopOfCell(k,cell1) + dDensityDzTopOfCell(k,cell2))
          end do
       end do
 
@@ -290,7 +289,7 @@ contains
 
       ! Compute relativeSlopeTopOfEdge at edge and layer interface
       ! set relativeSlopeTopOfEdge to zero for horizontal land/water edges.
-      relativeSlopeTopOfEdge = 0.0
+      relativeSlopeTopOfEdge = 0.0_RKIND
       do iEdge = 1, nEdges
 
          ! Beside a full land cell (e.g. missing cell) maxLevelEdgeTop=0, so relativeSlopeTopOfEdge at that edge will remain zero.
@@ -309,22 +308,22 @@ contains
 
       ! slope can be unbounded in regions of neutral stability, reset to the large, but bounded, value
       ! values is hardwrite to 1.0, this is equivalent to a slope of 45 degrees
-      where(relativeSlopeTopOfEdge < -1.0) relativeSlopeTopOfEdge = -1.0 
-      where(relativeSlopeTopOfEdge >  1.0) relativeSlopeTopOfEdge =  1.0
+      where(relativeSlopeTopOfEdge < -1.0_RKIND) relativeSlopeTopOfEdge = -1.0_RKIND 
+      where(relativeSlopeTopOfEdge >  1.0_RKIND) relativeSlopeTopOfEdge =  1.0_RKIND
 
       ! average relative slope to cell centers
       ! do this by computing (relative slope)^2, then taking sqrt
-      areaCellSum = 1.0e-34
+      areaCellSum = 1.0e-34_RKIND
       do iEdge = 1, nEdges
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)
         ! contribution of cell area from this edge:
-        areaEdge = 0.25 * dcEdge(iEdge) * dvEdge(iEdge)
+        areaEdge = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
 
         do k = 1, maxLevelEdgeTop(iEdge)
 
            ! only one component is summed (thus the weighting by a factor of 2.0)
-           rtmp = 2.0 * areaEdge * relativeSlopeTopOfEdge(k,iEdge)**2 
+           rtmp = 2.0_RKIND * areaEdge * relativeSlopeTopOfEdge(k,iEdge)**2 
            relativeSlopeTopOfCell(k,cell1) = relativeSlopeTopOfCell(k,cell1) + rtmp 
            relativeSlopeTopOfCell(k,cell2) = relativeSlopeTopOfCell(k,cell2) + rtmp 
 
@@ -341,10 +340,10 @@ contains
 
       ! Compute tapering function
       ! Compute k33 at cell center and layer interface
-      k33(:,:) = 0.0
+      k33(:,:) = 0.0_RKIND
       do iCell=1,nCells
         do k = 2, maxLevelCell(iCell)
-          relativeSlopeTaperingCell(k,iCell) = min(1.0, config_max_relative_slope**2 / (relativeSlopeTopOfCell(k,iCell)**2+epsGM))
+          relativeSlopeTaperingCell(k,iCell) = min(1.0_RKIND, config_max_relative_slope**2 / (relativeSlopeTopOfCell(k,iCell)**2+epsGM))
           k33(k,iCell) = relativeSlopeTaperingCell(k,iCell) * (relativeSlopeTopOfCell(k,iCell))**2
         end do
       end do
@@ -354,7 +353,7 @@ contains
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)
         do k = 2, maxLevelEdgeTop(iEdge)
-          relativeSlopeTapering(k,iEdge) = 0.5 * (relativeSlopeTaperingCell(k,cell1) + relativeSlopeTaperingCell(k,cell2))
+          relativeSlopeTapering(k,iEdge) = 0.5_RKIND * (relativeSlopeTaperingCell(k,cell1) + relativeSlopeTaperingCell(k,cell2))
         enddo
       enddo
 
@@ -363,7 +362,7 @@ contains
       k33 = config_Redi_kappa * k33
 
       ! allow disabling of K33 for testing
-      if(config_disable_redi_k33) k33=0.0
+      if(config_disable_redi_k33) k33=0.0_RKIND
 
       !--------------------------------------------------------------------
       !
@@ -371,7 +370,7 @@ contains
       !
       !--------------------------------------------------------------------
 
-      gmStreamFuncTopOfEdge(:,:) = 0.0
+      gmStreamFuncTopOfEdge(:,:) = 0.0_RKIND
       c = config_gravWaveSpeed_trunc**2
       do iEdge = 1, nEdges
 
@@ -382,28 +381,28 @@ contains
          if (maxLevelEdgeTop(iEdge) .GE. 3) then
             ! First row
             k = 2       
-            BruntVaisalaFreqTopEdge = 0.5 * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
-            BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0)
-            tridiagB(k-1) = - 2.*config_gravWaveSpeed_trunc**2/(layerThicknessEdge(k-1,iEdge)*layerThicknessEdge(k,iEdge)) - BruntVaisalaFreqTopEdge
-            tridiagC(k-1) = 2.*config_gravWaveSpeed_trunc**2/layerThicknessEdge(k,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
+            BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
+            BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
+            tridiagB(k-1) = - 2.0_RKIND * config_gravWaveSpeed_trunc**2/(layerThicknessEdge(k-1,iEdge)*layerThicknessEdge(k,iEdge)) - BruntVaisalaFreqTopEdge
+            tridiagC(k-1) = 2.0_RKIND * config_gravWaveSpeed_trunc**2/layerThicknessEdge(k,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
             rightHandSide(k-1) = config_standardGM_tracer_kappa * gravity / config_density0 * gradDensityConstZTopOfEdge(k,iEdge)
 
             ! Second to next to the last rows
-            do k = 3, maxLevelEdgeTop(iEdge)-1        
-               BruntVaisalaFreqTopEdge = 0.5 * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
-               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0)
-               tridiagA(k-2) = 2.*config_gravWaveSpeed_trunc**2/layerThicknessEdge(k-1,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
-               tridiagB(k-1) = - 2.*config_gravWaveSpeed_trunc**2/(layerThicknessEdge(k-1,iEdge)*layerThicknessEdge(k,iEdge)) - BruntVaisalaFreqTopEdge
-               tridiagC(k-1) = 2.*config_gravWaveSpeed_trunc**2/layerThicknessEdge(k,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
+            do k = 3, maxLevelEdgeTop(iEdge)-1
+               BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
+               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
+               tridiagA(k-2) = 2.0_RKIND * config_gravWaveSpeed_trunc**2/layerThicknessEdge(k-1,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
+               tridiagB(k-1) = - 2.0_RKIND * config_gravWaveSpeed_trunc**2/(layerThicknessEdge(k-1,iEdge)*layerThicknessEdge(k,iEdge)) - BruntVaisalaFreqTopEdge
+               tridiagC(k-1) = 2.0_RKIND * config_gravWaveSpeed_trunc**2/layerThicknessEdge(k,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
                rightHandSide(k-1) = config_standardGM_tracer_kappa * gravity / config_density0 * gradDensityConstZTopOfEdge(k,iEdge)
             end do
 
             ! Last row
             k = maxLevelEdgeTop(iEdge)                
-            BruntVaisalaFreqTopEdge = 0.5 * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
-            BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0)
-            tridiagA(k-2) = 2.*config_gravWaveSpeed_trunc**2/layerThicknessEdge(k-1,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
-            tridiagB(k-1) = - 2.0*config_gravWaveSpeed_trunc**2/(layerThicknessEdge(k-1,iEdge)*layerThicknessEdge(k,iEdge)) - BruntVaisalaFreqTopEdge
+            BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
+            BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
+            tridiagA(k-2) = 2.0_RKIND * config_gravWaveSpeed_trunc**2/layerThicknessEdge(k-1,iEdge)/(layerThicknessEdge(k-1,iEdge)+layerThicknessEdge(k,iEdge))
+            tridiagB(k-1) = - 2.0_RKIND * config_gravWaveSpeed_trunc**2/(layerThicknessEdge(k-1,iEdge)*layerThicknessEdge(k,iEdge)) - BruntVaisalaFreqTopEdge
             rightHandSide(k-1) = config_standardGM_tracer_kappa * gravity / config_density0 * gradDensityConstZTopOfEdge(k,iEdge)
 
             ! Total number of rows
@@ -423,14 +422,14 @@ contains
       end do
 
       ! Interpolate gmStreamFuncTopOfEdge to cell centers for visualization
-      gmStreamFuncTopOfCell(:,:) = 0.0
+      gmStreamFuncTopOfCell(:,:) = 0.0_RKIND
       do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
-         areaEdge = 0.25 * dcEdge(iEdge) * dvEdge(iEdge)
+         areaEdge = 0.25_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
 
          do k = 1, maxLevelEdgeTop(iEdge)
-            rtmp = 0.5 * ( gmStreamFuncTopOfEdge(k,iEdge) + gmStreamFuncTopOfEdge(k+1,iEdge) ) * areaEdge
+            rtmp = 0.5_RKIND * ( gmStreamFuncTopOfEdge(k,iEdge) + gmStreamFuncTopOfEdge(k+1,iEdge) ) * areaEdge
             gmStreamFuncTopOfCell(k,cell1) = gmStreamFuncTopOfCell(k,cell1) + rtmp
             gmStreamFuncTopOfCell(k,cell2) = gmStreamFuncTopOfCell(k,cell2) + rtmp
          end do

@@ -32,6 +32,7 @@
         integer :: numStreams = 0
         integer :: errorLevel
 
+        type (MPAS_IO_context_type), pointer :: ioContext
         type (MPAS_Clock_type), pointer :: streamClock
         type (MPAS_Pool_type), pointer :: allFields
         type (MPAS_Pool_type), pointer :: allPackages

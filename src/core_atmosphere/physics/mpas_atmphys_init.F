@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_init
  use mpas_kind_types
  use mpas_derived_types
@@ -26,47 +26,51 @@
  private
  public:: physics_init
 
-!>\brief MPAS main initialization subroutine for all physics parameterizations.
-!>\author Laura D. Fowler (send comments to laura@ucar.edu).
-!>\date 2013-05-01.
-!>
-!>\details
-!>
-!> subroutines in mpas_atmphys_init:
-!> ---------------------------------
-!> physics_init    : call initialization of individual physics parameterizations.
-!> init_dir_forphys: needed for initialization of "reconstruct" subroutines.
-!> r3_normalize    : needed for initialization of "reconstruct" subroutines.
-!>
-!> add-ons and modifications to sourcecode:
-!> ----------------------------------------
-!>    * added structure diag in calls to subroutine init_radiation_lw and init_radiation_sw.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-01.
-!>    * added call to subroutine init_o3climatology. reads monthly-mean climatological ozone data
-!>      and interpolates ozone data to the MPAS grid.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-07-03.
-!>    * added the calculation of the mean distance between cell centers.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-22.
-!>    * added initialization of variable xicem.
-!>      Laura D. Fowler (laura@ucar.edu) / 2013-08-24.
-!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
-!>    * modified sourcecode to use pools.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
-!>    * added initialization of the accumulated surface pressure. Added initialization of the 
-!>      tendency and accumulated tendency of the surface pressure.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
-!>    * renamed config_conv_deep_scheme to config_convection_scheme.
-!>      Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+! MPAS main initialization subroutine for all physics parameterizations.
+! Laura D. Fowler (send comments to laura@ucar.edu).
+! 2013-05-01.
+!
+! subroutines in mpas_atmphys_init:
+! ---------------------------------
+! physics_init    : call initialization of individual physics parameterizations.
+! init_dir_forphys: needed for initialization of "reconstruct" subroutines.
+! r3_normalize    : needed for initialization of "reconstruct" subroutines.
+!
+! add-ons and modifications to sourcecode:
+! ----------------------------------------
+! * added structure diag in calls to subroutine init_radiation_lw and init_radiation_sw.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-07-01.
+! * added call to subroutine init_o3climatology. reads monthly-mean climatological ozone data and interpolates
+!   ozone data to the MPAS grid.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-07-03.
+! * added the calculation of the mean distance between cell centers.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-08-22.
+! * added initialization of variable xicem.
+!   Laura D. Fowler (laura@ucar.edu) / 2013-08-24.
+! * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
+! * modified sourcecode to use pools.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+! * added initialization of the accumulated surface pressure. Added initialization of the tendency and the
+!   accumulated tendency of the surface pressure.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+! * renamed config_conv_deep_scheme to config_convection_scheme.
+!   Laura D. Fowler (laura@ucar.edu) / 2014-09-18.
+! * changed the argument list in the call to subroutine microphysics_init, needed to include the Thompson
+!   parameterization of cloud microphysics.
+!   Laura D. Fowler (laura@ucar.edu) / 2015-03-28.
+! * modified the initialization of i_rainc and i_rainnc, now that the convection and cloud microphysics
+!   parameterizations are in "packages."
+!   Laura D. Fowler (laura@ucar.edu) / 2106-04-13.
 
 
  contains
 
 
-!==================================================================================================
+!=================================================================================================================
  subroutine physics_init(dminfo,clock,configs,mesh,diag,tend,state,time_lev,diag_physics, &
                          atm_input,sfc_input)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
@@ -131,7 +135,7 @@
  integer:: ierr,julday 
  integer:: iCell,iLag,iEdge,nEdges_m
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 ! write(0,*)
 ! write(0,*) '--- enter subroutine physics_init:'
 
@@ -152,8 +156,6 @@
  call mpas_pool_get_array(mesh,'dcEdge'      ,dcEdge      )
 
  call mpas_pool_get_array(diag_physics,'dcEdge_m'    ,dcEdge_m    )
- call mpas_pool_get_array(diag_physics,'i_rainc'     ,i_rainc     )
- call mpas_pool_get_array(diag_physics,'i_rainnc'    ,i_rainnc    )
 
  call mpas_pool_get_array(diag_physics,'i_acswdnb'   ,i_acswdnb   )
  call mpas_pool_get_array(diag_physics,'i_acswdnbc'  ,i_acswdnbc  )
@@ -238,9 +240,15 @@
 !initialization of counters i_rainc and i_rainnc. i_rainc and i_rainnc track the number of
 !times the accumulated convective (rainc) and grid-scale (rainnc) rain exceed the prescribed
 !threshold value:
- if(.not. config_do_restart) then
+ if(.not. config_do_restart .and. config_convection_scheme.ne.'off') then
+    call mpas_pool_get_array(diag_physics,'i_rainc',i_rainc)
     do iCell = 1, nCellsSolve
        i_rainc(iCell)  = 0
+    enddo
+ endif
+ if(.not. config_do_restart .and. config_microp_scheme.ne.'off') then
+    call mpas_pool_get_array(diag_physics,'i_rainnc',i_rainnc)
+    do iCell = 1, nCellsSolve
        i_rainnc(iCell) = 0
     enddo
  endif
@@ -360,7 +368,8 @@
     call init_convection(mesh,configs,diag_physics)
 
 !initialization of cloud microphysics processes:
- if(config_microp_scheme .ne. 'off') call microphysics_init
+ if(config_microp_scheme .ne. 'off') &
+    call microphysics_init(dminfo,mesh,state,time_lev,sfc_input,diag_physics)
 
 !initialization of surface layer processes:
  if(config_sfclayer_scheme .ne. 'off') call init_sfclayer
@@ -404,9 +413,9 @@
 
  end subroutine physics_init
 
-!==================================================================================================
+!=================================================================================================================
  subroutine init_dirs_forphys(mesh)
-!==================================================================================================
+!=================================================================================================================
 
 !inout arguments:
 !----------------
@@ -420,7 +429,7 @@
 !local variables:
  integer:: iCell
 
-!---------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_dimension(mesh,'nCells',nCells)
 
@@ -446,15 +455,15 @@
 
  end subroutine init_dirs_forphys
 
-!==================================================================================================
+!=================================================================================================================
  subroutine r3_normalize(ax, ay, az)
-!==================================================================================================
+!=================================================================================================================
 !normalizes the vector (ax, ay, az)
 
  real (kind=RKIND), intent(inout) :: ax, ay, az
  real (kind=RKIND) :: mi
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  mi = 1.0 / sqrt(ax**2 + ay**2 + az**2)
  ax = ax * mi
@@ -463,6 +472,6 @@
 
  end subroutine r3_normalize
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_init
-!==================================================================================================
+!=================================================================================================================

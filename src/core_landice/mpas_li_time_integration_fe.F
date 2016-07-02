@@ -23,12 +23,10 @@ module li_time_integration_fe
 
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_configure
    use mpas_constants
    use mpas_dmpar
    use mpas_timer
    use mpas_vector_reconstruction
-   use mpas_configure
    use li_velocity, only: li_velocity_solve
    use li_tendency
    use li_diagnostic_vars
@@ -194,7 +192,6 @@ module li_time_integration_fe
       type (mpas_pool_type), pointer :: tendPool
 
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness_tend
-      type (field2DReal), pointer :: layerThickness_tend_field
       integer :: allowableDtProcNumber, allowableDtMinProcNumber
       real (kind=RKIND) :: allowableDt, allowableDtMin
       logical, pointer :: config_print_thickness_advection_info
@@ -230,9 +227,7 @@ module li_time_integration_fe
       ! Now that we have exited the block loop, do any needed halo updates.
       ! update halos on thickness tend
       call mpas_timer_start("halo updates")
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
-      call mpas_pool_get_field(tendPool, 'layerThickness', layerThickness_tend_field)
-      call mpas_dmpar_exch_halo_field(layerThickness_tend_field)
+      call mpas_dmpar_field_halo_exch(domain, 'tend_layerThickness')
       call mpas_timer_stop("halo updates")
 
       ! If we are printing advection debug information, 
@@ -291,9 +286,7 @@ module li_time_integration_fe
 !!!      case ('None')  !===================================================
 !!!          ! Do nothing - no need to waste time doing a halo update if not advecting tracers!  The tendency will be 0 everywhere
 !!!      case default
-!!!          call mpas_dmpar_exch_halo_field3d_real(dminfo, tracer_tendency, &
-!!!                                         size(tracer_tendency,dim=1), mesh % nVertLevels, mesh % nCells, &
-!!!                                         domain % blocklist % parinfo % cellsToSend, domain % blocklist % parinfo % cellsToRecv)
+!!!          call mpas_dmpar_field_halo_exch(domain, 'tendTracers')
 !!!      end select
 
 

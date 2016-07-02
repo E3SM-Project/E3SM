@@ -63,6 +63,7 @@
                 <nml_option name="config_dzmin"                 type="real"          default_value="0.3"/>
                 <nml_option name="config_nsm"                   type="integer"       default_value="30"/>
                 <nml_option name="config_tc_vertical_grid"      type="logical"       default_value="true"/>
+                <nml_option name="config_qv_vertical_grid"      type="logical"       default_value="false"/>
         </nml_record>
 
         <nml_record name="preproc_stages" in_defaults="true">
@@ -189,7 +190,7 @@
                         <var name="rdzu" packages="met_stage_in"/>
                         <var name="fzm" packages="met_stage_in"/>
                         <var name="fzp" packages="met_stage_in"/>
-                        <var name="zx" packages="met_stage_in"/>
+                        <var name="zxu" packages="met_stage_in"/>
                         <var name="zz" packages="met_stage_in"/>
                         <var name="zb" packages="met_stage_in"/>
                         <var name="zb3" packages="met_stage_in"/>
@@ -283,7 +284,7 @@
                         <var name="rdzu" packages="vertical_stage_out;met_stage_out"/>
                         <var name="fzm" packages="vertical_stage_out;met_stage_out"/>
                         <var name="fzp" packages="vertical_stage_out;met_stage_out"/>
-                        <var name="zx" packages="vertical_stage_out;met_stage_out"/>
+                        <var name="zxu" packages="vertical_stage_out;met_stage_out"/>
                         <var name="zz" packages="vertical_stage_out;met_stage_out"/>
                         <var name="zb" packages="vertical_stage_out;met_stage_out"/>
                         <var name="zb3" packages="vertical_stage_out;met_stage_out"/>
@@ -300,6 +301,7 @@
                         <var name="p_fg" packages="met_stage_out"/>
                         <var name="z_fg" packages="met_stage_out"/>
                         <var name="rh_fg" packages="met_stage_out"/>
+                        <var name="sh_fg" packages="met_stage_out"/>
                         <var name="soilz_fg" packages="met_stage_out"/>
                         <var name="dz_fg" packages="met_stage_out"/>
                         <var name="dzs_fg" packages="met_stage_out"/>
@@ -328,6 +330,7 @@
                         <var name="theta" packages="met_stage_out"/>
                         <var name="v" packages="met_stage_out"/>
                         <var name="relhum" packages="met_stage_out"/>
+                        <var name="spechum" packages="met_stage_out"/>
                         <var name="uReconstructX" packages="met_stage_out"/>
                         <var name="uReconstructY" packages="met_stage_out"/>
                         <var name="uReconstructZ" packages="met_stage_out"/>
@@ -450,8 +453,8 @@
                 <var name="rdzu"                       type="real"     dimensions="nVertLevels"/>
                 <var name="fzm"                        type="real"     dimensions="nVertLevels"/>
                 <var name="fzp"                        type="real"     dimensions="nVertLevels"/>
-                <var name="zx"                         type="real"     dimensions="nVertLevelsP1 nEdges"/>
-                <var name="zz"                         type="real"     dimensions="nVertLevelsP1 nCells"/>
+                <var name="zxu"                        type="real"     dimensions="nVertLevels nEdges"/>
+                <var name="zz"                         type="real"     dimensions="nVertLevels nCells"/>
                 <var name="zb"                         type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
                 <var name="zb3"                        type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
 
@@ -500,7 +503,7 @@
                 <var name="p_fg"       name_in_code="p"       type="real"     dimensions="nFGLevels nCells Time"/>
                 <var name="z_fg"       name_in_code="z"       type="real"     dimensions="nFGLevels nCells Time"/>
                 <var name="rh_fg"      name_in_code="rh"      type="real"     dimensions="nFGLevels nCells Time"/>
-                <var name="sp_fg"      name_in_code="sp"      type="real"     dimensions="nFGLevels nCells Time"/>
+                <var name="sh_fg"      name_in_code="sh"      type="real"     dimensions="nFGLevels nCells Time"/>
                 <var name="soilz_fg"   name_in_code="soilz"   type="real"     dimensions="nCells Time"/>
                 <var name="psfc_fg"    name_in_code="psfc"    type="real"     dimensions="nCells Time"/>
                 <var name="pmsl_fg"    name_in_code="pmsl"    type="real"     dimensions="nCells Time"/>
@@ -545,7 +548,7 @@
                 <var name="theta"                             type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="v"                                 type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="relhum"                            type="real"     dimensions="nVertLevels nCells Time"/>
-                <var name="sp"                                type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="spechum"                           type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructX"                     type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructY"                     type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="uReconstructZ"                     type="real"     dimensions="nVertLevels nCells Time"/>

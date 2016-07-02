@@ -21,11 +21,13 @@
    end interface
 
    abstract interface
-      function mpas_setup_packages_function(configs, packages) result(iErr)
+      function mpas_setup_packages_function(configs, packages, iocontext) result(iErr)
          import mpas_pool_type
+		 import mpas_io_context_type
 
          type (mpas_pool_type), intent(inout) :: configs
          type (mpas_pool_type), intent(inout) :: packages
+         type (mpas_io_context_type), intent(inout) :: iocontext
          integer :: iErr
       end function mpas_setup_packages_function
    end interface
@@ -80,16 +82,30 @@
    end interface
 
    abstract interface
-      function mpas_setup_setup_derived_dimensions_function(readDimensions, dimensionPool, configPool) result(iErr)
+      function mpas_setup_derived_dimensions_function(readDimensions, dimensionPool, configPool) result(iErr)
          import mpas_pool_type
 
          type (mpas_pool_type), intent(inout) :: readDimensions
          type (mpas_pool_type), intent(inout) :: dimensionPool
          type (mpas_pool_type), intent(inout) :: configPool
          integer :: iErr
-      end function mpas_setup_setup_derived_dimensions_function
+      end function mpas_setup_derived_dimensions_function
    end interface
 
+   abstract interface
+      function mpas_setup_decomposed_dimensions_function(block, streamManager, readDimensions, dimensionPool, totalBlocks) result(iErr)
+		 import block_type
+		 import mpas_streamManager_type
+         import mpas_pool_type
+
+		 type (block_type), intent(inout) :: block
+		 type (mpas_streamManager_type), intent(inout) :: streamManager
+         type (mpas_pool_type), intent(inout) :: readDimensions
+         type (mpas_pool_type), intent(inout) :: dimensionPool
+		 integer, intent(in) :: totalBlocks
+         integer :: iErr
+      end function mpas_setup_decomposed_dimensions_function
+   end interface
 
    abstract interface
       function mpas_core_init_function(domain, timeStamp) result(iErr)
@@ -142,7 +158,8 @@
       procedure (mpas_setup_clock_function), pointer, nopass :: setup_clock => null()
       procedure (mpas_setup_block_function), pointer, nopass :: setup_block => null()
       procedure (mpas_setup_immutable_streams_function), pointer, nopass :: setup_immutable_streams => null()
-      procedure (mpas_setup_setup_derived_dimensions_function), pointer, nopass :: setup_derived_dimensions => null()
+      procedure (mpas_setup_derived_dimensions_function), pointer, nopass :: setup_derived_dimensions => null()
+      procedure (mpas_setup_decomposed_dimensions_function), pointer, nopass :: setup_decomposed_dimensions => null()
 
       ! core_type is a linked list
       type (core_type), pointer :: next => null()
