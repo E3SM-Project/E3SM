@@ -82,7 +82,8 @@
       integer, pointer :: nCells, nEdges, nCellsSolve, nEdgesSolve, nVertLevels
       integer, pointer:: index_qv, index_qc, index_qr, index_qi, index_qs, index_qg
       
-      real (kind=RKIND), dimension(:,:), pointer :: rho_edge, rho_zz, theta_m, theta, u, qv, zz, &
+      real (kind=RKIND), dimension(:,:), pointer :: rho_edge, rho_zz, theta_m, theta, u, zz, &
+                                                    qv, qc, qr, qi, qs, qg, &
                                                     tend_u, tend_rho, tend_theta, tend_th, tend_w, &
 						    tend_qv, tend_qc, tend_qr, tend_qi, tend_qs, tend_qg
       real(kind=RKIND),dimension(:,:,:), pointer :: scalars, tend_scalars									   
@@ -99,7 +100,7 @@
       
       call mpas_pool_get_array(state, 'theta_m', theta_m, 1)
       call mpas_pool_get_array(state, 'scalars', scalars, 1)
-      call mpas_pool_get_array(state, 'rho_zz',   rho_zz, 2)   ! FIXME: what does 2 mean here?
+      call mpas_pool_get_array(state, 'rho_zz',   rho_zz, 2) 
       call mpas_pool_get_array(diag , 'rho_edge', rho_edge)
       
       call mpas_pool_get_dimension(state, 'index_qv', index_qv)
@@ -109,9 +110,16 @@
       call mpas_pool_get_dimension(state, 'index_qs', index_qs)
       call mpas_pool_get_dimension(state, 'index_qg', index_qg)
       qv => scalars(index_qv,:,:)
+      qc => scalars(index_qc,:,:)
+      qr => scalars(index_qr,:,:)
+      qi => scalars(index_qi,:,:)
+      qs => scalars(index_qs,:,:)
+      qg => scalars(index_qg,:,:)
+
+      ! Joe did not recommend to add w tendecies in IAU.
+      !call mpas_pool_get_array(tend, 'w', tend_w)       
 
       call mpas_pool_get_array(tend, 'u', tend_u)
-      !call mpas_pool_get_array(tend, 'w', tend_w)
       call mpas_pool_get_array(tend, 'rho_zz',  tend_rho)
       call mpas_pool_get_array(tend, 'theta_m', tend_theta)
       call mpas_pool_get_array(tend, 'scalars_tend', tend_scalars)
@@ -162,16 +170,22 @@
 !         enddo
 !      enddo
       
+      do i = 1, nCellsSolve
+         do k = 1, nVertLevels
+            theta(k,i) = theta_m(k,i) / (1._RKIND + rvord * qv(k,i))
+         enddo
+      enddo
+
 !     add coupled tendencies for other state variables on cell centers
       do i = 1, nCellsSolve
          do k = 1, nVertLevels
-            tend_th(k,i) = tend_th(k,i) + wgt_iau * theta_amb(k,i)*rho_zz(k,i)/dt
-            tend_qv(k,i) = tend_qv(k,i) + wgt_iau *    qv_amb(k,i)*rho_zz(k,i)/dt
-            tend_qc(k,i) = tend_qc(k,i) + wgt_iau *    qc_amb(k,i)*rho_zz(k,i)/dt
-            tend_qr(k,i) = tend_qr(k,i) + wgt_iau *    qr_amb(k,i)*rho_zz(k,i)/dt
-            tend_qi(k,i) = tend_qi(k,i) + wgt_iau *    qi_amb(k,i)*rho_zz(k,i)/dt
-            tend_qs(k,i) = tend_qs(k,i) + wgt_iau *    qs_amb(k,i)*rho_zz(k,i)/dt
-            tend_qg(k,i) = tend_qg(k,i) + wgt_iau *    qg_amb(k,i)*rho_zz(k,i)/dt
+            tend_th(k,i) = tend_th(k,i) + wgt_iau * (theta_amb(k,i)*rho_zz(k,i) + theta(k,i)*rho_amb(k,i)/zz(k,i))/dt
+            tend_qv(k,i) = tend_qv(k,i) + wgt_iau * (   qv_amb(k,i)*rho_zz(k,i) +    qv(k,i)*rho_amb(k,i)/zz(k,i))/dt
+            tend_qc(k,i) = tend_qc(k,i) + wgt_iau * (   qc_amb(k,i)*rho_zz(k,i) +    qc(k,i)*rho_amb(k,i)/zz(k,i))/dt
+            tend_qr(k,i) = tend_qr(k,i) + wgt_iau * (   qr_amb(k,i)*rho_zz(k,i) +    qr(k,i)*rho_amb(k,i)/zz(k,i))/dt
+            tend_qi(k,i) = tend_qi(k,i) + wgt_iau * (   qi_amb(k,i)*rho_zz(k,i) +    qi(k,i)*rho_amb(k,i)/zz(k,i))/dt
+            tend_qs(k,i) = tend_qs(k,i) + wgt_iau * (   qs_amb(k,i)*rho_zz(k,i) +    qs(k,i)*rho_amb(k,i)/zz(k,i))/dt
+            tend_qg(k,i) = tend_qg(k,i) + wgt_iau * (   qg_amb(k,i)*rho_zz(k,i) +    qg(k,i)*rho_amb(k,i)/zz(k,i))/dt
          enddo
       enddo
 
@@ -179,7 +193,6 @@
       !tendency for the modified potential temperature
       do i = 1, nCellsSolve
          do k = 1, nVertLevels
-            theta(k,i) = theta_m(k,i) / (1._RKIND + rvord * qv(k,i))
             tend_th(k,i) = (1. + rvord * qv(k,i))   * tend_th(k,i) &
                                + rvord * theta(k,i) * tend_qv(k,i)
             tend_theta(k,i) = tend_theta(k,i) + tend_th(k,i)
