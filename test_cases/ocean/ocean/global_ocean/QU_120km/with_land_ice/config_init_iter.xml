@@ -2,6 +2,7 @@
 <config case="init_iter">
 	<add_link source="../init_step1/culled_mesh_final.nc" dest="mesh.nc"/>
 	<add_link source="../init_step1/culled_graph.info" dest="graph.info"/>
+	<add_link source="../init_step1/critical_passages_mask_final.nc" dest="critical_passages.nc"/>
 
 	<add_link source="../init_step2/temperature.nc" dest="temperature.nc"/>
 	<add_link source="../init_step2/salinity.nc" dest="salinity.nc"/>
