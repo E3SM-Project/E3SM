@@ -125,7 +125,6 @@ class PEM(SystemTestsCommon):
 
         return SystemTestsCommon._run(self, "modpes")
 
-        # Compare restart file
         if success:
             return self._component_compare_test("base", "modpes")
         else:
