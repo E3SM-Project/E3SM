@@ -9623,7 +9623,7 @@ MODULE module_ra_rrtmg_sw
 
 #if defined(mpas)
 !MPAS specific (Laura D. Fowler):
-use mpas_atmphys_constants,only: cp
+use mpas_atmphys_constants,only: cp,g=>gravity
 use mpas_atmphys_o3climatology,only: vinterp_ozn
 
 !> add-ons and modifications to sourcecode:
@@ -9632,10 +9632,16 @@ use mpas_atmphys_o3climatology,only: vinterp_ozn
 !>     of time-varying trace gases: added option to use the ozone climatology
 !>     from the CAM radiation codes.
 !>     Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-08.
+!>   * cleaned-up the subroutine rrtmg_swrad in preparation for the implementation of the calculation of the
+!>     cloud optical properties when the effective radii for cloud water, cloud ice, and snow are provided by
+!>     the cloud microphysics schemes (note that for now, only the Thompson cloud microphysics scheme has the
+!>     option to calculate cloud radii). With the -g option, results are exactly the same as the original
+!>     subroutine.
+!>     Laura D. Fowler (laura D. Fowler / 2016-07-05).
 !MPAS specfic end.
 
 #else
-use module_model_constants, only : cp
+use module_model_constants,only : cp
 USE module_wrf_error
 !USE module_dm
 #endif
@@ -9651,1022 +9657,472 @@ use module_ra_rrtmg_lw, only : inirad, o3data, relcalc, reicalc
 
 CONTAINS
 
-!------------------------------------------------------------------
-   SUBROUTINE RRTMG_SWRAD(                                        &
-                       rthratensw,                                &
-                       swupt, swuptc, swdnt, swdntc,              &
-                       swupb, swupbc, swdnb, swdnbc,              &
-!                      swupflx, swupflxc, swdnflx, swdnflxc,      &
-                       swcf, gsw,                                 &
-                       xtime, gmt, xlat, xlong,                   &
-                       radt, degrad, declin,                      &
-                       coszr, julday, solcon,                     &
-                       albedo, t3d, t8w, tsk,                     &
-                       p3d, p8w, pi3d, rho3d,                     &
-                       dz8w, cldfra3d, r, g,                      &
-                       icloud, warm_rain,                         &
-                       f_ice_phy, f_rain_phy,                     &
-                       xland, xice, snow,                         &
-                       qv3d, qc3d, qr3d,                          &
-                       qi3d, qs3d, qg3d,                          &
-                       o3input, o33d,                             &
-                       alswvisdir, alswvisdif,                    &  !Zhenxin ssib alb comp (06/20/2011)
-                       alswnirdir, alswnirdif,                    &  !Zhenxin ssib alb comp (06/20/2011)
-                       swvisdir, swvisdif,                        &  !Zhenxin ssib swr comp (06/20/2011)
-                       swnirdir, swnirdif,                        &  !Zhenxin ssib swi comp (06/20/2011)
-                       sf_surface_physics,                        &  !Zhenxin
-                       f_qv, f_qc, f_qr, f_qi, f_qs, f_qg,        &
-                       tauaer300,tauaer400,tauaer600,tauaer999,   & ! czhao 
-                       gaer300,gaer400,gaer600,gaer999,           & ! czhao 
-                       waer300,waer400,waer600,waer999,           & ! czhao 
-                       aer_ra_feedback,                           &
-!jdfcz                 progn,prescribe,                           &
-                       progn,                                     &
-                       qndrop3d,f_qndrop,                         & !czhao
-                       ids,ide, jds,jde, kds,kde,                 & 
-                       ims,ime, jms,jme, kms,kme,                 &
-                       its,ite, jts,jte, kts,kte,                 &
-                       swupflx, swupflxc, swdnflx, swdnflxc       &
-#if defined(mpas)
-                      ,noznlevels,pin,o3clim                      &
-#endif
-                                                                  )
-!------------------------------------------------------------------
-   IMPLICIT NONE
-!------------------------------------------------------------------
-   LOGICAL, INTENT(IN )      ::        warm_rain
-!
-   INTEGER, INTENT(IN )      ::        ids,ide, jds,jde, kds,kde, &
-                                       ims,ime, jms,jme, kms,kme, &
-                                       its,ite, jts,jte, kts,kte
+!=================================================================================================================
+ subroutine rrtmg_swrad( &
+                       p3d,p8w,pi3d,t3d,t8w,dz8w,qv3d,qc3d,qr3d,       &
+                       qi3d,qs3d,qg3d,cldfra3d,o33d,tsk,albedo,        &
+                       xland,xice,snow,coszr,xtime,gmt,julday,radt,    &
+                       degrad,declin,solcon,xlat,xlong,icloud,o3input, &
+                       noznlevels,pin,o3clim,gsw,swcf,rthratensw,      &
+                       swupt, swuptc, swdnt, swdntc,                   &
+                       swupb, swupbc, swdnb, swdnbc,                   &
+                       swupflx, swupflxc, swdnflx, swdnflxc,           &
+                       ids,ide, jds,jde, kds,kde,                      & 
+                       ims,ime, jms,jme, kms,kme,                      &
+                       its,ite, jts,jte, kts,kte                       &
+                       )
 
-   INTEGER, INTENT(IN )      ::        ICLOUD
-!
-   REAL, DIMENSION( ims:ime, kms:kme, jms:jme )                 , &
-         INTENT(IN   ) ::                                   dz8w, &
-                                                             t3d, &
-                                                             t8w, &
-                                                             p3d, &
-                                                             p8w, &
-                                                            pi3d, &
-                                                           rho3d
+ implicit none
 
-   REAL, DIMENSION( ims:ime, kms:kme, jms:jme )                 , &
-         INTENT(INOUT)  ::                            RTHRATENSW
+!=================================================================================================================
 
-   REAL, DIMENSION( ims:ime, jms:jme )                          , &
-         INTENT(INOUT)  ::                                   GSW, &
-                                                            SWCF, &
-                                                           COSZR
+!--- input arguments:
+ integer,intent(in):: ids,ide, jds,jde, kds,kde, &
+                      ims,ime, jms,jme, kms,kme, &
+                      its,ite, jts,jte, kts,kte
+ integer,intent(in):: icloud
+ integer,intent(in):: julday
+ integer,intent(in),optional:: o3input
 
-   INTEGER, INTENT(IN  )     ::                           JULDAY
-   REAL, INTENT(IN    )      ::                      RADT,DEGRAD, &
-                                         XTIME,DECLIN,SOLCON,GMT
+ real,intent(in):: radt,degrad,xtime,declin,solcon,gmt
+ real,intent(in),dimension(ims:ime,jms:jme):: xlat,xlong
+ real,intent(in),dimension(ims:ime,jms:jme):: albedo,tsk,snow,xice,xland
+ real,intent(in),dimension(ims:ime,kms:kme,jms:jme):: t3d,p3d,pi3d
+ real,intent(in),dimension(ims:ime,kms:kme,jms:jme):: dz8w,p8w,t8w
 
-   REAL, DIMENSION( ims:ime, jms:jme )                          , &
-         INTENT(IN   )  ::                                  XLAT, &
-                                                           XLONG, &
-                                                           XLAND, &
-                                                            XICE, &
-                                                            SNOW, &
-                                                             TSK, &
-                                                          ALBEDO
-!
-!!! -------------------  Zhenxin (2011-06/20) ------------------
-   REAL, DIMENSION( ims:ime, jms:jme )                         , &
-         OPTIONAL                                               , &
-         INTENT(IN)     ::                            ALSWVISDIR, &     ! ssib albedo of sw and lw
-                                                      ALSWVISDIF, &
-                                                      ALSWNIRDIR, &
-                                                      ALSWNIRDIF
+ real,intent(in),dimension(ims:ime,kms:kme,jms:jme),optional:: &
+    cldfra3d,qv3d,qc3d,qr3d,qi3d,qs3d,qg3d,o33d
 
-   REAL, DIMENSION( ims:ime, jms:jme )                         , &
-         OPTIONAL                                               , &
-         INTENT(OUT)    ::                              SWVISDIR, &
-                                                        SWVISDIF, &
-                                                        SWNIRDIR, &
-                                                        SWNIRDIF        ! ssib sw dir and diff rad
-   INTEGER, INTENT(IN) :: sf_surface_physics                            ! ssib para
-
-!  ----------------------- end Zhenxin --------------------------
-!
-   REAL, INTENT(IN  )   ::                                   R,G
-!
-! Optional
-!
-   REAL, DIMENSION( ims:ime, kms:kme, jms:jme )                 , &
-         OPTIONAL                                               , &
-         INTENT(IN   ) ::                                         &
-                                                        CLDFRA3D, &
-                                                            QV3D, &
-                                                            QC3D, &
-                                                            QR3D, &
-                                                            QI3D, &
-                                                            QS3D, &
-                                                            QG3D, &
-                                                        QNDROP3D
-
-   real pi,third,relconst,lwpmin,rhoh2o
-
-   REAL, DIMENSION( ims:ime, kms:kme, jms:jme )                 , &
-         OPTIONAL                                               , &
-         INTENT(IN   ) ::                                         &
-                                                       F_ICE_PHY, &
-                                                      F_RAIN_PHY
-
-   LOGICAL, OPTIONAL, INTENT(IN)   ::                             &
-                                F_QV,F_QC,F_QR,F_QI,F_QS,F_QG,F_QNDROP
-
-! Optional
-   REAL, DIMENSION( ims:ime, kms:kme, jms:jme ), OPTIONAL ,       &
-         INTENT(IN    ) :: tauaer300,tauaer400,tauaer600,tauaer999, & ! czhao 
-                                 gaer300,gaer400,gaer600,gaer999, & ! czhao 
-                                 waer300,waer400,waer600,waer999    ! czhao 
-
-   INTEGER,    INTENT(IN  ), OPTIONAL   ::       aer_ra_feedback
-!jdfcz   INTEGER,    INTENT(IN  ), OPTIONAL   ::       progn,prescribe
-   INTEGER,    INTENT(IN  ), OPTIONAL   ::       progn
-!  Ozone
-   REAL, DIMENSION( ims:ime, kms:kme, jms:jme )                 , &
-         OPTIONAL                                               , &
-         INTENT(IN   ) :: O33D
-   INTEGER, OPTIONAL, INTENT(IN ) :: o3input
-
-#if defined(mpas)
-!MPAS specific (Laura D. Fowler. 2013-05-14): Added the CAM ozone climatology.
-!input arguments:
+!--- additional input arguments to use the CAM ozone climatology:
  integer,intent(in):: noznlevels
  real,intent(in),dimension(1:noznlevels),optional:: pin
  real,intent(in),dimension(ims:ime,1:noznlevels,jms:jme),optional:: o3clim
-!local variables:
-  real,dimension(1:noznlevels):: o3clim1d
-#endif
 
-      !wavelength corresponding to wavenum1 and wavenum2 (cm-1)
-      real, save :: wavemin(nbndsw) ! Min wavelength (um) of 14 intervals
-      data wavemin /3.077,2.500,2.150,1.942,1.626,1.299, &
-      1.242,0.778,0.625,0.442,0.345,0.263,0.200,3.846/
-      real, save :: wavemax(nbndsw) ! Max wavelength (um) of interval
-      data wavemax/3.846,3.077,2.500,2.150,1.942,1.626, &
-      1.299,1.242,0.778,0.625,0.442,0.345,0.263,12.195/
-      real wavemid(nbndsw) ! Mid wavelength (um) of interval
-      real, parameter :: thresh=1.e-9
-      real ang,slope
-      character(len=200) :: msg
+!--- inout arguments:
+ real,intent(inout),dimension(ims:ime,jms:jme):: coszr,gsw,swcf
+ real,intent(inout),dimension(ims:ime,jms:jme),optional:: &
+    swupt,swuptc,swdnt,swdntc,swupb,swupbc,swdnb,swdnbc
 
-! Top of atmosphere and surface shortwave fluxes (W m-2)
-   REAL, DIMENSION( ims:ime, jms:jme ),                           &
-         OPTIONAL, INTENT(INOUT) ::                               &
-                                       SWUPT,SWUPTC,SWDNT,SWDNTC, &
-                                       SWUPB,SWUPBC,SWDNB,SWDNBC
+ real,intent(inout),dimension(ims:ime,kms:kme,jms:jme):: rthratensw
 
-! Layer shortwave fluxes (including extra layer above model top)
-! Vertical ordering is from bottom to top (W m-2)
-   REAL, DIMENSION( ims:ime, kms:kme+2, jms:jme ),                &
-         OPTIONAL, INTENT(OUT) ::                                 &
-                               SWUPFLX,SWUPFLXC,SWDNFLX,SWDNFLXC
+!--- output arguments:
+  real,intent(out),dimension(ims:ime,kms:kme+2,jms:jme ),optional:: &
+     swupflx,swupflxc,swdnflx,swdnflxc
 
-!  LOCAL VARS
- 
-   REAL, DIMENSION( kts:kte+1 ) ::                          Pw1D, &
-                                                            Tw1D
+!local variables and arrays:
+ logical:: dorrsw
 
-   REAL, DIMENSION( kts:kte ) ::                          TTEN1D, &
-                                                        CLDFRA1D, &
-                                                            DZ1D, &
-                                                             P1D, &
-                                                             T1D, &
-                                                            QV1D, &
-                                                            QC1D, &
-                                                            QR1D, &
-                                                            QI1D, &
-                                                            QS1D, &
-                                                            QG1D, &
-                                                            O31D, &
-                                                          qndrop1d 
+ integer:: na,nb,ncol,nlay,icld,inflgsw,iceflgsw,liqflgsw
+ integer:: dyofyr
+ integer:: iplon,irng,permuteseed
+ integer:: pcols,pver
+ integer:: i,j,k,n
 
-! Added local arrays for RRTMG
-    integer ::                                              ncol, &
-                                                            nlay, &
-                                                            icld, &
-                                                         inflgsw, &
-                                                        iceflgsw, &
-                                                        liqflgsw
-! Dimension with extra layer from model top to TOA
-    real, dimension( 1, kts:kte+2 )  ::                     plev, &
-                                                            tlev
-    real, dimension( 1, kts:kte+1 )  ::                     play, &
-                                                            tlay, &
-                                                          h2ovmr, &
-                                                           o3vmr, &
-                                                          co2vmr, &
-                                                           o2vmr, &
-                                                          ch4vmr, &
-                                                          n2ovmr
-    real, dimension( kts:kte+1 )  ::                       o3mmr
-! Surface albedo (for UV/visible and near-IR spectral regions,
-! and for direct and diffuse radiation)
-    real, dimension( 1 )  ::                               asdir, &
-                                                           asdif, &
-                                                           aldir, &
-                                                           aldif
-! Dimension with extra layer from model top to TOA,
-! though no clouds are allowed in extra layer
-    real, dimension( 1, kts:kte+1 )  ::                   clwpth, &
-                                                          ciwpth, &
-                                                             rel, &
-                                                             rei, &
-                                                         cldfrac, &
-                                                         relqmcl, &
-                                                         reicmcl
-    real, dimension( nbndsw, 1, kts:kte+1 )  ::           taucld, &
-                                                          ssacld, &
-                                                          asmcld, &
-                                                          fsfcld
-    real, dimension( ngptsw, 1, kts:kte+1 )  ::          cldfmcl, &
-                                                         clwpmcl, &
-                                                         ciwpmcl, &
-                                                         taucmcl, &
-                                                         ssacmcl, &
-                                                         asmcmcl, &
-                                                         fsfcmcl
-    real, dimension( 1, kts:kte+1, nbndsw )  ::           tauaer, &
-                                                          ssaaer, &
-                                                          asmaer
-    real, dimension( 1, kts:kte+1, naerec )  ::            ecaer
+ real:: coszrs,xt24,tloctm,hrang,xxlat,adjes,scon
+ real:: ro,dz
+ real:: gliqwp,gicewp,gravmks
+ real,dimension(1):: tsfc,landfrac,landm,snowh,icefrac
+ real,dimension(1):: asdir,asdif,aldir,aldif,coszen
+ real,dimension(1,1:kte-kts+1):: pdel,cicewp,cliqwp,reliq,reice
+ real,dimension(kts:kte):: &
+    tten1d,cldfra1d,dz1d,p1d,t1d,qv1d,qc1d,qr1d,qi1d,qs1d,qg1d,o31d
+ real,dimension(kts:kte+1):: pw1d,tw1d
+ real,dimension(kts:kte+1):: o3mmr
 
-! Output arrays contain extra layer from model top to TOA
-    real, dimension( 1, kts:kte+2 )  ::                   swuflx, &
-                                                          swdflx, &
-                                                         swuflxc, &
-                                                         swdflxc, &
-                                                       sibvisdir, &  ! Zhenxin 2011-06-20
-                                                       sibvisdif, &
-                                                       sibnirdir, &
-                                                       sibnirdif     ! Zhenxin 2011-06-20
-    real, dimension( 1, kts:kte+1 )  ::                     swhr, &
-                                                           swhrc
+!--- additional local variables and arrays needed to include additional layers between the model top
+!    and the top of the atmosphere:
+ real,dimension(1,kts:kte+1):: play,tlay,h2ovmr,o3vmr,co2vmr,o2vmr,ch4vmr,n2ovmr
+ real,dimension(1,kts:kte+1):: clwpth,ciwpth,rel,rei,cldfrac,relqmcl,reicmcl
+ real,dimension(1,kts:kte+1):: swhr,swhrc
 
-    real, dimension ( 1 ) ::                                tsfc, &
-                                                              ps, &
-                                                          coszen
-    real ::                                                   ro, &
-                                                              dz, &
-                                                           adjes, &
-                                                            scon
-    integer ::                                            dyofyr
+ real,dimension(1,kts:kte+2):: plev,tlev
+ real,dimension(1,kts:kte+2):: swuflx,swdflx,swuflxc,swdflxc
+ real,dimension(1,kts:kte+2):: sibvisdir,sibvisdif,sibnirdir,sibnirdif
 
-! Set trace gas volume mixing ratios, 2005 values, IPCC (2007)
-! carbon dioxide (379 ppmv)
-    real :: co2
-    data co2 / 379.e-6 / 
-! methane (1774 ppbv)
-    real :: ch4
-    data ch4 / 1774.e-9 / 
-! nitrous oxide (319 ppbv)
-    real :: n2o
-    data n2o / 319.e-9 / 
-! Set oxygen volume mixing ratio (for o2mmr=0.23143)
-    real :: o2
-    data o2 / 0.209488 /
+ real,dimension(1,kts:kte+1,nbndsw):: tauaer,ssaaer,asmaer
+ real,dimension(1,kts:kte+1,naerec):: ecaer
 
-    integer :: iplon, irng, permuteseed
-    integer :: nb
+ real,dimension(nbndsw,1,kts:kte+1):: taucld,ssacld,asmcld,fsfcld
+ real,dimension(ngptsw,1,kts:kte+1):: cldfmcl,clwpmcl,ciwpmcl,taucmcl,ssacmcl,asmcmcl,fsfcmcl
 
-! For old lw cloud property specification
-! Cloud and precipitation absorption coefficients
-!    real :: abcw,abice,abrn,absn
-!    data abcw /0.144/
-!    data abice /0.0735/
-!    data abrn /0.330e-3/
-!    data absn /2.34e-3/
+!--- additional local variables and arrays needed for the CAM ozone climatologyL
+ real,dimension(1:noznlevels):: o3clim1d
 
-! Molecular weights and ratios for converting mmr to vmr units
-!    real :: amd       ! Effective molecular weight of dry air (g/mol)  
-!    real :: amw       ! Molecular weight of water vapor (g/mol)        
-!    real :: amo       ! Molecular weight of ozone (g/mol)              
-!    real :: amo2      ! Molecular weight of oxygen (g/mol)              
+!--- set trace gas volume mixing ratios, 2005 values, IPCC (2007):
+!carbon dioxide (379 ppmv)
+ real :: co2
+ data co2 / 379.e-6 / 
+!methane (1774 ppbv)
+ real :: ch4
+ data ch4 / 1774.e-9 / 
+!nitrous oxide (319 ppbv)
+ real :: n2o
+ data n2o / 319.e-9 / 
+
+!--- set oxygen volume mixing ratio (for o2mmr=0.23143):
+ real :: o2
+ data o2 / 0.209488 /
+
+!--- molecular weights and ratios for converting mmr to vmr units
+! real :: amd       ! Effective molecular weight of dry air (g/mol)  
+! real :: amw       ! Molecular weight of water vapor (g/mol)        
+! real :: amo       ! Molecular weight of ozone (g/mol)              
+! real :: amo2      ! Molecular weight of oxygen (g/mol)              
 ! Atomic weights for conversion from mass to volume mixing ratios                
-!    data amd   /  28.9660   /                                                  
-!    data amw   /  18.0160   /                                                  
-!    data amo   /  47.9998   /                                                  
-!    data amo2  /  31.9999   /
+! data amd   /  28.9660   /                                                  
+! data amw   /  18.0160   /                                                  
+! data amo   /  47.9998   /                                                  
+! data amo2  /  31.9999   /
                                                                                  
-    real :: amdw     ! Molecular weight of dry air / water vapor  
-    real :: amdo     ! Molecular weight of dry air / ozone
-    real :: amdo2    ! Molecular weight of dry air / oxygen
-    data amdw /  1.607793 /                                                    
-    data amdo /  0.603461 /
-    data amdo2 / 0.905190 /
-    
-!!
-    real, dimension(1, 1:kte-kts+1 )  :: pdel          ! Layer pressure thickness (mb)
+  real :: amdw     ! Molecular weight of dry air / water vapor  
+  real :: amdo     ! Molecular weight of dry air / ozone
+  real :: amdo2    ! Molecular weight of dry air / oxygen
+  data amdw /  1.607793 /                                                    
+  data amdo /  0.603461 /
+  data amdo2 / 0.905190 /
 
-    real, dimension(1, 1:kte-kts+1) ::   cicewp, &     ! in-cloud cloud ice water path
-                                         cliqwp, &     ! in-cloud cloud liquid water path
-                                          reliq, &     ! effective drop radius (microns)
-                                          reice        ! ice effective drop size (microns)
-    real :: gliqwp, gicewp, gravmks
+!-----------------------------------------------------------------------------------------------------------------
 
-!
-!    REAL   ::  TSFC,GLW0,OLR0,EMISS0,FP
-    REAL   ::  FP
+!--- all fields are ordered vertically from bottom to top (pressures are in mb):
+ ncol = 1
 
-!    real, dimension(1:ite-its+1 )          ::   clat     ! latitude in radians for columns
-    real :: coszrs                      ! Cosine of solar zenith angle for present latitude 
-    logical :: dorrsw                   ! Flag to allow shortwave calculation
+!--- initialize option for the calculation of the cloud optical properties:
+ icld     = 2 ! with clouds using maximum/random cloud overlap in subroutine mcica_subcol_lw. 
+ inflgsw  = 2
+ iceflgsw = 3
+ liqflgsw = 1
 
-    real, dimension (1) :: landfrac, landm, snowh, icefrac
+!--- latitude loop:
+ j_loop: do j = jts,jte
 
-    integer :: pcols, pver
+!--- longitude loop:
+    i_loop: do i = its,ite
 
-    REAL :: XT24, TLOCTM, HRANG, XXLAT
+       !--- calculate the cosine of the solar zenith angle at the current time step to determine if the sun is
+       !    above or below the horizon (xt24 is the fractional part of simulation days plus half of radt in 
+       !    units of minutes, julian is in days, and radt is in minutes). do not call rrtmg_sw is night-time:
+       dorrsw = .true.
+       xt24 = mod(xtime+radt*0.5,1440.)
+       tloctm = gmt + xt24/60. + xlong(i,j)/15.
+       hrang = 15. * (tloctm-12.) * degrad
+       xxlat = xlat(i,j) * degrad
+       coszrs = sin(xxlat) * sin(declin) + cos(xxlat) * cos(declin) * cos(hrang)
+       coszr(i,j) = coszrs
 
-    INTEGER :: i,j,K, na
-    LOGICAL :: predicate
+       if (coszrs.le.0.0) dorrsw = .false.
+       
+       if(dorrsw) then
 
-!------------------------------------------------------------------
-#ifdef WRF_CHEM
-      IF ( aer_ra_feedback == 1) then
-      IF ( .NOT. &
-      ( PRESENT(tauaer300) .AND. &
-        PRESENT(tauaer400) .AND. &
-        PRESENT(tauaer600) .AND. &
-        PRESENT(tauaer999) .AND. &
-        PRESENT(gaer300) .AND. &
-        PRESENT(gaer400) .AND. &
-        PRESENT(gaer600) .AND. &
-        PRESENT(gaer999) .AND. &
-        PRESENT(waer300) .AND. &
-        PRESENT(waer400) .AND. &
-        PRESENT(waer600) .AND. &
-        PRESENT(waer999) ) ) THEN
-      CALL wrf_error_fatal  &
-      ('Warning: missing fields required for aerosol radiation' )
-      ENDIF
-      ENDIF
-#endif
-
-!-----CALCULATE SHORT WAVE RADIATION
-!                                                              
-! All fields are ordered vertically from bottom to top
-! Pressures are in mb
-
-! latitude loop
-  j_loop: do j = jts,jte
-
-! longitude loop
-     i_loop: do i = its,ite
-
-!
-! Do shortwave by default, deactivate below if sun below horizon
-         dorrsw = .true.
-
-! Cosine solar zenith angle for current time step
-!
-! xt24 is the fractional part of simulation days plus half of radt expressed in 
-! units of minutes
-! julian is in days
-! radt is in minutes
-         xt24 = mod(xtime+radt*0.5,1440.)
-         tloctm = gmt + xt24/60. + xlong(i,j)/15.
-         hrang = 15. * (tloctm-12.) * degrad
-         xxlat = xlat(i,j) * degrad
-!         clat(i) = xxlat
-         coszrs = sin(xxlat) * sin(declin) + cos(xxlat) * cos(declin) * cos(hrang)
-         coszr(i,j) = coszrs
-
-! Set flag to prevent shortwave calculation when sun below horizon
-         if (coszrs.le.0.0) dorrsw = .false.
-! Perform shortwave calculation if sun above horizon
-         if (dorrsw) then
-
-         do k=kts,kte+1
-            Pw1D(K) = p8w(I,K,J)/100.
-            Tw1D(K) = t8w(I,K,J)
-         enddo
-
-         DO K=kts,kte
-            QV1D(K)=0.
-            QC1D(K)=0.
-            QR1D(K)=0.
-            QI1D(K)=0.
-            QS1D(K)=0.
-            CLDFRA1D(k)=0.
-            QNDROP1D(k)=0.
-         ENDDO
-
-         DO K=kts,kte
-            QV1D(K)=QV3D(I,K,J)
-            QV1D(K)=max(0.,QV1D(K))
-            IF ( PRESENT( O33D ) ) THEN
-            O31D(K)=O33D(I,K,J)
-            ENDIF
-         ENDDO
-
-         DO K=kts,kte
-            TTEN1D(K)=0.
-            T1D(K)=t3d(I,K,J)
-            P1D(K)=p3d(I,K,J)/100.
-            DZ1D(K)=dz8w(I,K,J)
-         ENDDO
-
-! moist variables
-
-         IF (ICLOUD .ne. 0) THEN
-            IF ( PRESENT( CLDFRA3D ) ) THEN
-              DO K=kts,kte
-                 CLDFRA1D(k)=CLDFRA3D(I,K,J)
-              ENDDO
-            ENDIF
-
-            IF (PRESENT(F_QC) .AND. PRESENT(QC3D)) THEN
-              IF ( F_QC) THEN
-                 DO K=kts,kte
-                    QC1D(K)=QC3D(I,K,J)
-                    QC1D(K)=max(0.,QC1D(K))
-                 ENDDO
-              ENDIF
-            ENDIF
-
-            IF (PRESENT(F_QR) .AND. PRESENT(QR3D)) THEN
-              IF ( F_QR) THEN
-                 DO K=kts,kte
-                    QR1D(K)=QR3D(I,K,J)
-                    QR1D(K)=max(0.,QR1D(K))
-                 ENDDO
-              ENDIF
-            ENDIF
-
-            IF ( PRESENT(F_QNDROP).AND.PRESENT(QNDROP3D)) THEN
-             IF (F_QNDROP) THEN
-              DO K=kts,kte
-               qndrop1d(K)=qndrop3d(I,K,J)
-              ENDDO
-             ENDIF
-            ENDIF
-
-! This logic is tortured because cannot test F_QI unless
-! it is present, and order of evaluation of expressions
-! is not specified in Fortran
-
-            IF ( PRESENT ( F_QI ) ) THEN
-              predicate = F_QI
-            ELSE
-              predicate = .FALSE.
-            ENDIF
-
-! For MP option 3
-            IF (.NOT. predicate .and. .not. warm_rain) THEN
-               DO K=kts,kte
-                  IF (T1D(K) .lt. 273.15) THEN
-                  QI1D(K)=QC1D(K)
-                  QS1D(K)=QR1D(K)
-                  QC1D(K)=0.
-                  QR1D(K)=0.
-                  ENDIF
-               ENDDO
-            ENDIF
-
-            IF (PRESENT(F_QI) .AND. PRESENT(QI3D)) THEN
-               IF (F_QI) THEN
-                  DO K=kts,kte
-                     QI1D(K)=QI3D(I,K,J)
-                     QI1D(K)=max(0.,QI1D(K))
-                  ENDDO
-               ENDIF
-            ENDIF
-
-            IF (PRESENT(F_QS) .AND. PRESENT(QS3D)) THEN
-               IF (F_QS) THEN
-                  DO K=kts,kte
-                     QS1D(K)=QS3D(I,K,J)
-                     QS1D(K)=max(0.,QS1D(K))
-                  ENDDO
-               ENDIF
-            ENDIF
-
-            IF (PRESENT(F_QG) .AND. PRESENT(QG3D)) THEN
-               IF (F_QG) THEN
-                  DO K=kts,kte
-                     QG1D(K)=QG3D(I,K,J)
-                     QG1D(K)=max(0.,QG1D(K))
-                  ENDDO
-               ENDIF
-            ENDIF
-
-! mji - For MP option 5
-            IF ( PRESENT(F_QI) .and. PRESENT(F_QC) .and. PRESENT(F_QS) .and. PRESENT(F_ICE_PHY) ) THEN
-               IF ( F_QC .and. .not. F_QI .and. F_QS ) THEN
-                  DO K=kts,kte
-                     qi1d(k) = qs3d(i,k,j)
-                     qc1d(k) = qc3d(i,k,j)
-                     qi1d(k) = max(0.,qi1d(k))
-                     qc1d(k) = max(0.,qc1d(k))
-                  ENDDO
-               ENDIF
-            ENDIF
-
-         ENDIF
-
-!         EMISS0=EMISS(I,J)
-!         GLW0=0. 
-!         OLR0=0. 
-!         TSFC=TSK(I,J)
-         DO K=kts,kte
-            QV1D(K)=AMAX1(QV1D(K),1.E-12) 
-         ENDDO
-
-! Set up input for shortwave
-         ncol = 1
-! Add extra layer from top of model to top of atmosphere
-         nlay = (kte - kts + 1) + 1
-
-! Select cloud liquid and ice optics parameterization options
-! For passing in cloud optical properties directly:
-!         icld = 2
-!         inflgsw = 0
-!         iceflgsw = 0
-!         liqflgsw = 0
-! For passing in cloud physical properties; cloud optics parameterized in RRTMG:
-         icld = 2
-         inflgsw = 2
-         iceflgsw = 3
-         liqflgsw = 1
-
-! Set cosine of solar zenith angle
-         coszen(ncol) = coszrs
-! Set solar constant
-         scon = solcon
-! For Earth/Sun distance adjustment in RRTMG
-!         dyofyr = julday
-!         adjes = 0.0 
-! For WRF, solar constant is already provided with eccentricity adjustment,
-! so do not do this in RRTMG
-         dyofyr = 0
-         adjes = 1.0 
-
-! Layer indexing goes bottom to top here for all fields.
-! Water vapor and ozone are converted from mmr to vmr. 
-! Pressures are in units of mb here. 
-         plev(ncol,1) = pw1d(1)
-         tlev(ncol,1) = tw1d(1)
-         tsfc(ncol) = tsk(i,j)
-         do k = kts, kte
-            play(ncol,k) = p1d(k)
-            plev(ncol,k+1) = pw1d(k+1)
-            pdel(ncol,k) = plev(ncol,k) - plev(ncol,k+1)
-            tlay(ncol,k) = t1d(k)
-            tlev(ncol,k+1) = tw1d(k+1)
-            h2ovmr(ncol,k) = qv1d(k) * amdw
-            co2vmr(ncol,k) = co2
-            o2vmr(ncol,k) = o2
-            ch4vmr(ncol,k) = ch4
-            n2ovmr(ncol,k) = n2o
-         enddo
-
-!  Define profile values for extra layer from model top to top of atmosphere. 
-!  The top layer temperature for all gridpoints is set to the top layer-1 
-!  temperature plus a constant (0 K) that represents an isothermal layer    
-!  above ptop.  Top layer interface temperatures are linearly interpolated 
-!  from the layer temperatures.  
-
-         play(ncol,kte+1) = 0.5 * plev(ncol,kte+1)
-         tlay(ncol,kte+1) = tlev(ncol,kte+1) + 0.0
-         plev(ncol,kte+2) = 1.0e-5
-         tlev(ncol,kte+2) = tlev(ncol,kte+1) + 0.0
-         tlev(ncol,kte+2) = tlev(ncol,kte+1) + 0.0
-         h2ovmr(ncol,kte+1) = h2ovmr(ncol,kte) 
-         co2vmr(ncol,kte+1) = co2vmr(ncol,kte) 
-         o2vmr(ncol,kte+1) = o2vmr(ncol,kte) 
-         ch4vmr(ncol,kte+1) = ch4vmr(ncol,kte) 
-         n2ovmr(ncol,kte+1) = n2ovmr(ncol,kte) 
-
-! Get ozone profile including amount in extra layer above model top
-         call inirad (o3mmr,plev,kts,kte)
-
-#if defined(mpas)
-! Laura D. Fowler (2013-07-08): Added the option to use the ozone climatology from the
-! CAM radiation codes, instead of the annual mean ozone in subroutine o3dat. As output
-! to the subroutine vinterp_ozn, the unit of o3mmr is actually "volume mixing ratio".
-         if(o3input .eq. 2) then 
-            do k = 1, noznlevels
-               o3clim1d(k) = o3clim(i,k,j)
-            enddo
-            call vinterp_ozn(1,ncol,ncol,kte+1,play,pin,noznlevels,o3clim1d,o3mmr)
-            do k = kts,kte+1
-               o3vmr(ncol,k) = o3mmr(k)
-            enddo
-         else
-            do k = kts,kte+1
-               o3vmr(ncol,k) = o3mmr(k) * amdo
-            enddo
-         endif   
-#else
+          !--- INITIALIZE COLUMN SOUNDING (the call to the short wave radiation code is done one column
+          !     at a time):
           do k = kts, kte+1
-             o3vmr(ncol,k) = o3mmr(k) * amdo
-             IF ( PRESENT( O33D ) ) THEN
-             if(o3input .eq. 2)then
-                if(k.le.kte)then
-                  o3vmr(ncol,k) = o31d(k)
-                else
-! apply shifted climatology profile above model top
-                  o3vmr(ncol,k) = o31d(kte) - o3mmr(kte)*amdo + o3mmr(k)*amdo
-                  if(o3vmr(ncol,k) .le. 0.)o3vmr(ncol,k) = o3mmr(k)*amdo
-                endif
-             endif
-             ENDIF
+             pw1d(k) = p8w(i,k,j) / 100.
+             tw1d(k) = t8w(i,k,j)
           enddo
-#endif
+
+          do k = kts, kte
+             p1d(k)      = p3d(i,k,j) / 100.
+             dz1d(k)     = dz8w(i,k,j)
+             t1d(k)      = t3d(i,k,j)
+             qv1d(k)     = amax1(qv3d(i,k,j),1.e-12)
+             o31d(k)     = 0.
+             qc1d(k)     = 0.
+             qr1d(k)     = 0.
+             qi1d(k)     = 0.
+             qs1d(k)     = 0.
+             qg1d(k)     = 0.
+             cldfra1d(k) = 0.
+             if(present(o33d)) o31d(k) = o33d(i,k,j)
+          enddo
+
+          !--- initialize the local arrays containing the different cloud water and ice condenstates:
+          if(icloud .gt. 0) then
+             do k = kts,kte
+                if(present(qc3d)) qc1d(k) = amax1(qc3d(i,k,j),0.)
+                if(present(qr3d)) qr1d(k) = amax1(qr3d(i,k,j),0.)
+                if(present(qi3d)) qi1d(k) = amax1(qi3d(i,k,j),0.)
+                if(present(qs3d)) qs1d(k) = amax1(qs3d(i,k,j),0.)
+                if((present(qc3d) .or. present(qi3d) .or. present(qs3d)) .and. present(cldfra3d)) &
+                   cldfra1d(k) = cldfra3d(i,k,j)
+             enddo
+          endif
+
+          !--- initialize the local radiative heating rate:
+          do k = kts, kte
+             tten1d(k) = 0.
+          enddo
+
+          !--- add extra layer to include absorption between the top of the model and the top of the atmosphere:
+          nlay = (kte-kts+1) + 1
+
+          !--- initialize local arrays called in the calculation of the cloud optical properties and radiative
+          !    fluxes:
+          do n = 1, ncol
+             do k = 1, nlay
+                clwpth(n,k)  = 0.
+                ciwpth(n,k)  = 0.
+                rel(n,k)     = 0.
+                rei(n,k)     = 0.
+                cldfrac(n,k) = 0.
+                relqmcl(n,k) = 0.
+                reicmcl(n,k) = 0.
+                swuflx(n,k)  = 0.
+                swuflxc(n,k) = 0.
+                swdflx(n,k)  = 0.
+                swdflxc(n,k) = 0.
+                swhr(n,k)    = 0.
+                swhrc(n,k)   = 0.
+                taucld(1:nbndsw,n,k)  = 0.
+                tauaer(n,k,1:nbndsw)  = 0.
+                ssaaer(n,k,1:nbndsw)  = 0.
+                asmaer(n,k,1:nbndsw)  = 0.
+                ecaer(n,k,1:naerec)   = 0.
+                cldfmcl(1:ngptsw,n,k) = 0.
+                clwpmcl(1:ngptsw,n,k) = 0.
+                ciwpmcl(1:ngptsw,n,k) = 0.
+                taucmcl(1:ngptsw,n,k) = 0.
+             enddo
+             swuflx(n,nlay+1)  = 0.
+             swuflxc(n,nlay+1) = 0.
+             swdflx(n,nlay+1)  = 0.
+             swdflxc(n,nlay+1) = 0.
+          enddo
+
+          !--- fill local arrays with input sounding. convert water vapor mass mixing ratio to
+          !    volume mixing ratio:
+          plev(ncol,1) = pw1d(1)
+          tlev(ncol,1) = tw1d(1)
+          tsfc(ncol)   = tsk(i,j)
+          do k = kts, kte
+             plev(ncol,k+1)   = pw1d(k+1)
+             tlev(ncol,k+1)   = tw1d(k+1)
+             play(ncol,k)     = p1d(k)
+             pdel(ncol,k)     = plev(ncol,k) - plev(ncol,k+1)
+             tlay(ncol,k)     = t1d(k)
+             h2ovmr(ncol,k)   = qv1d(k) * amdw
+             co2vmr(ncol,k)   = co2
+             o2vmr(ncol,k)    = o2
+             ch4vmr(ncol,k)   = ch4
+             n2ovmr(ncol,k)   = n2o
+          enddo
+          plev(ncol,kte+2)   = 1.0e-5
+          tlev(ncol,kte+2)   = tlev(ncol,kte+1) + 0.0
+          play(ncol,kte+1)   = 0.5 * plev(ncol,kte+1)
+          tlay(ncol,kte+1)   = tlev(ncol,kte+1) + 0.0
+          h2ovmr(ncol,kte+1) = h2ovmr(ncol,kte) 
+          co2vmr(ncol,kte+1) = co2vmr(ncol,kte) 
+          o2vmr(ncol,kte+1)  = o2vmr(ncol,kte) 
+          ch4vmr(ncol,kte+1) = ch4vmr(ncol,kte) 
+          n2ovmr(ncol,kte+1) = n2ovmr(ncol,kte) 
+
+          !--- initialize the ozone voume mixing ratio:
+          call inirad(o3mmr,plev,kts,kte)
+          if(o3input .eq. 2) then
+             do k = 1, noznlevels
+                o3clim1d(k) = o3clim(i,k,j)
+             enddo
+             call vinterp_ozn(1,ncol,ncol,kte+1,play,pin,noznlevels,o3clim1d,o3mmr)
+             do k = kts,kte+1
+                o3vmr(ncol,k) = o3mmr(k)
+             enddo
+          else
+             do k = kts,kte+1
+                o3vmr(ncol,k) = o3mmr(k)*amdo
+             enddo
+          endif
+
+          !--- initialize the surface albedo:
+          asdir(ncol) = albedo(i,j)
+          asdif(ncol) = albedo(i,j)
+          aldir(ncol) = albedo(i,j)
+          aldif(ncol) = albedo(i,j)
+
+          !--- set solar constant:
+          scon = solcon
+          !--- set cosine of solar zenith angle:
+          coszen(ncol) = coszrs
+          !--- in MPAS, the solar constant is already provided with eccentricity adjustment, so do not do
+          !    this here:
+          dyofyr = 0
+          adjes  = 1.0 
 
 
-! Set surface albedo for direct and diffuse radiation in UV/visible and
-! near-IR spectral regions
-! -------------- Zhenxin 2011-06-20 ----------- !
 
-! ------- 1.  Commented by Zhenxin 2011-06-20 for SSiB coupling modified ---- !
-!         asdir(ncol) = albedo(i,j)
-!         asdif(ncol) = albedo(i,j)
-!         aldir(ncol) = albedo(i,j)
-!         aldif(ncol) = albedo(i,j)
-! -------    End of Comments    ------ !
+          !--- CALCULATE CLOUD OPTICAL PROPERTIES:
+          if(inflgsw .gt. 0) then 
 
-! ------- 2. New Addiation  ------ !
-    IF ( sf_surface_physics .eq. 8 .AND. XLAND(i,j) .LT. 1.5) THEN
-         asdir(ncol) = ALSWVISDIR(I,J)
-         asdif(ncol) = ALSWVISDIF(I,J)
-         aldir(ncol) = ALSWNIRDIR(I,J)
-         aldif(ncol) = ALSWNIRDIF(I,J)
-    ELSE
-         asdir(ncol) = albedo(i,j)
-         asdif(ncol) = albedo(i,j)
-         aldir(ncol) = albedo(i,j)
-         aldif(ncol) = albedo(i,j)
-    ENDIF
+             do k = kts, kte
+                cldfrac(ncol,k) = cldfra1d(k)
+             enddo
 
-! ---------- End of Addiation ------!
-! ----------  End of fds_Zhenxin 2011-06-20   --------------!
+             !--- zero out cloud optical properties here (not used when passing physical properties to rrtmg_sw):
+             do k = kts, kte
+                do nb = 1, nbndsw
+                   taucld(nb,ncol,k) = 0.0
+                   ssacld(nb,ncol,k) = 1.0
+                   asmcld(nb,ncol,k) = 0.0
+                   fsfcld(nb,ncol,k) = 0.0
+                enddo
+             enddo
 
-! Define cloud optical properties for radiation (inflgsw = 0)
-! This option is not currently active
-! Cloud and precipitation paths in g/m2 
-! qi=0 if no ice phase
-! qs=0 if no ice phase
-         if (inflgsw .eq. 0) then
+             !---  calculate the effective radius for cloud water in layers below the model top. we added the
+             !     dimensions pcols, pver so that the calls to subroutines relcalc and reicalc remain the same
+             !     as in WRF although the two dimensions are duplicate and not needed inside the subroutines:
+             pcols = ncol
+             pver  = kte - kts + 1
+             gravmks = g
+             landfrac(ncol) = 2.-xland(i,j)
+             landm(ncol)    = landfrac(ncol)
+             snowh(ncol)    = 0.001*snow(i,j)
+             icefrac(ncol)  = xice(i,j)
 
-! Set cloud fraction and cloud optical properties here; not yet active
-            do k = kts, kte
-               cldfrac(ncol,k) = cldfra1d(k)
-               do nb = 1, nbndsw
-                  taucld(nb,ncol,k) = 0.0
-                  ssacld(nb,ncol,k) = 1.0
-                  asmcld(nb,ncol,k) = 0.0
-                  fsfcld(nb,ncol,k) = 0.0
-               enddo
-            enddo
+             call relcalc(ncol,pcols,pver,tlay,landfrac,landm,icefrac,reliq,snowh)
 
-! Zero out cloud physical property arrays; not used when passing optical properties
-! into radiation
-            do k = kts, kte
-               clwpth(ncol,k) = 0.0
-               ciwpth(ncol,k) = 0.0
-               rel(ncol,k) = 10.0
-               rei(ncol,k) = 10.
-            enddo
-         endif
+             !--- calculate the effective radius for cloud ice in layers below the model top, following
+             !    Kristjansson and Mitchell. limit upper bound of reice for Fu ice parameterization and
+             !    convert effective radius to generalized effective size (*1.0315; Fu, 1996):
 
-! Define cloud physical properties for radiation (inflgsw = 1 or 2)
-! Cloud fraction
-! Set cloud arrays if passing cloud physical properties into radiation
-         if (inflgsw .gt. 0) then 
-            do k = kts, kte
-               cldfrac(ncol,k) = cldfra1d(k)
-            enddo
+             call reicalc(ncol,pcols,pver,tlay,reice)
 
-! Compute cloud water/ice paths and particle sizes for input to radiation (CAM method)
-            pcols = ncol
-            pver = kte - kts + 1
-            gravmks = g
-            landfrac(ncol) = 2.-XLAND(I,J)
-            landm(ncol) = landfrac(ncol)
-            snowh(ncol) = 0.001*SNOW(I,J)
-            icefrac(ncol) = XICE(I,J)
+             if(iceflgsw .eq. 3) then
+                do k = kts, kte
+                   reice(ncol,k) = reice(ncol,k) * 1.0315
+                   reice(ncol,k) = min(140.0,reice(ncol,k))
+                enddo
+             endif
 
-! From module_ra_cam: Convert liquid and ice mixing ratios to water paths;
-! pdel is in mb here; convert back to Pa (*100.)
-! Water paths are in units of g/m2
-! snow added as ice cloud (JD 091022)
-            do k = kts, kte
-               gicewp = (qi1d(k)+qs1d(k)) * pdel(ncol,k)*100.0 / gravmks * 1000.0     ! Grid box ice water path.
-               gliqwp = qc1d(k) * pdel(ncol,k)*100.0 / gravmks * 1000.0     ! Grid box liquid water path.
-               cicewp(ncol,k) = gicewp / max(0.01,cldfrac(ncol,k))               ! In-cloud ice water path.
-               cliqwp(ncol,k) = gliqwp / max(0.01,cldfrac(ncol,k))               ! In-cloud liquid water path.
-            end do
+             ! From module_ra_cam: Convert liquid and ice mixing ratios to water paths;
+             ! pdel is in mb here; convert back to Pa (*100.)
+             ! Water paths are in units of g/m2
+             ! snow added as ice cloud (JD 091022)
+             do k = kts, kte
+                gicewp = (qi1d(k)+qs1d(k)) * pdel(ncol,k)*100.0 / gravmks * 1000.0     ! Grid box ice water path.
+                gliqwp = qc1d(k) * pdel(ncol,k)*100.0 / gravmks * 1000.0     ! Grid box liquid water path.
+                cicewp(ncol,k) = gicewp / max(0.01,cldfrac(ncol,k))               ! In-cloud ice water path.
+                cliqwp(ncol,k) = gliqwp / max(0.01,cldfrac(ncol,k))               ! In-cloud liquid water path.
+             enddo
 
-!link the aerosol feedback to cloud  -czhao
-  if( PRESENT( progn ) ) then
-    if (progn == 1) then
-!jdfcz     if(prescribe==0) then
+             ! Set cloud physical property arrays
+             do k = kts, kte
+                clwpth(ncol,k) = cliqwp(ncol,k)
+                ciwpth(ncol,k) = cicewp(ncol,k)
+                rel(ncol,k) = reliq(ncol,k)
+                rei(ncol,k) = reice(ncol,k)
+             enddo
 
-      pi = 4.*atan(1.0)
-      third=1./3.
-      rhoh2o=1.e3
-      relconst=3/(4.*pi*rhoh2o)
-!     minimun liquid water path to calculate rel
-!     corresponds to optical depth of 1.e-3 for radius 4 microns.
-      lwpmin=3.e-5
-      do k = kts, kte
-         reliq(ncol,k) = 10.
-         if( PRESENT( F_QNDROP ) ) then
-            if( F_QNDROP ) then
-              if ( qc1d(k)*pdel(ncol,k).gt.lwpmin.and. &
-                   qndrop1d(k).gt.1000. ) then
-               reliq(ncol,k)=(relconst*qc1d(k)/qndrop1d(k))**third ! effective radius in m
-!           apply scaling from Martin et al., JAS 51, 1830.
-               reliq(ncol,k)=1.1*reliq(ncol,k)
-               reliq(ncol,k)=reliq(ncol,k)*1.e6 ! convert from m to microns
-               reliq(ncol,k)=max(reliq(ncol,k),4.)
-               reliq(ncol,k)=min(reliq(ncol,k),20.)
-              end if
-            end if
-         end if
-      end do
-!jdfcz     else ! prescribe 
-! following Kiehl
-      call relcalc(ncol, pcols, pver, tlay, landfrac, landm, icefrac, reliq, snowh)
-!      write(0,*) 'sw prescribe aerosol',maxval(qndrop3d)
-!jdfcz     endif
-    else  ! progn   
-      call relcalc(ncol, pcols, pver, tlay, landfrac, landm, icefrac, reliq, snowh)
-    endif
-  else   !progn 
-      call relcalc(ncol, pcols, pver, tlay, landfrac, landm, icefrac, reliq, snowh)
-  endif
+             ! No clouds are allowed in the extra layer from model top to TOA
+             clwpth(ncol,kte+1) = 0.
+             ciwpth(ncol,kte+1) = 0.
+             rel(ncol,kte+1) = 10.
+             rei(ncol,kte+1) = 10.
+             cldfrac(ncol,kte+1) = 0.
+             do nb = 1, nbndsw
+                taucld(nb,ncol,kte+1) = 0.
+                ssacld(nb,ncol,kte+1) = 1.
+                asmcld(nb,ncol,kte+1) = 0.
+                fsfcld(nb,ncol,kte+1) = 0.
+             enddo
 
-! following Kristjansson and Mitchell
-      call reicalc(ncol, pcols, pver, tlay, reice)
+          endif
 
-#if 0
-      if (i==80.and.j==30) then
-#if defined( DM_PARALLEL ) && ! defined( STUBMPI) 
-      if( PRESENT( progn ) ) write(0,*) 'aerosol indirect',progn
-      write(0,*)'sw water eff radius',reliq(ncol,10),reliq(ncol,20),reliq(ncol,25)
-      write(0,*)'sw ice eff radius',reice(ncol,10),reice(ncol,20),reice(ncol,25)
-#endif
-      endif
-#endif
+          !--- sub-column generator for McICA:
+          iplon = 1
+          irng  = 0
+          permuteseed = 1
 
-! Limit upper bound of reice for Fu ice parameterization and convert
-! from effective radius to generalized effective size (*1.0315; Fu, 1996)
-            if (iceflgsw .eq. 3) then
-               do k = kts, kte
-                  reice(ncol,k) = reice(ncol,k) * 1.0315
-                  reice(ncol,k) = min(140.0,reice(ncol,k))
-               end do
-            endif
+          call mcica_subcol_sw &
+                     (iplon   , ncol    , nlay    , icld    , permuteseed , irng    , play    , &
+                      cldfrac , ciwpth  , clwpth  , rei     , rel         , taucld  , ssacld  , &
+                      asmcld  , fsfcld  , cldfmcl , ciwpmcl , clwpmcl     , reicmcl , relqmcl , &
+                      taucmcl , ssacmcl , asmcmcl , fsfcmcl)
 
-! Set cloud physical property arrays
-            do k = kts, kte
-               clwpth(ncol,k) = cliqwp(ncol,k)
-               ciwpth(ncol,k) = cicewp(ncol,k)
-               rel(ncol,k) = reliq(ncol,k)
-               rei(ncol,k) = reice(ncol,k)
-            enddo
+          !--- initialization of aerosol optical properties:
+          do nb = 1, nbndsw
+             do k = kts, kte+1
+                tauaer(ncol,k,nb) = 0.
+                ssaaer(ncol,k,nb) = 1.
+                asmaer(ncol,k,nb) = 0.
+             enddo
+          enddo
 
-! Zero out cloud optical properties here, calculated in radiation 
-            do k = kts, kte
-               do nb = 1, nbndsw
-                  taucld(nb,ncol,k) = 0.0
-                  ssacld(nb,ncol,k) = 1.0
-                  asmcld(nb,ncol,k) = 0.0
-                  fsfcld(nb,ncol,k) = 0.0
-               enddo
-            enddo
-         endif
-
-! No clouds are allowed in the extra layer from model top to TOA
-         clwpth(ncol,kte+1) = 0.
-         ciwpth(ncol,kte+1) = 0.
-         rel(ncol,kte+1) = 10.
-         rei(ncol,kte+1) = 10.
-         cldfrac(ncol,kte+1) = 0.
-         do nb = 1, nbndsw
-            taucld(nb,ncol,kte+1) = 0.
-            ssacld(nb,ncol,kte+1) = 1.
-            asmcld(nb,ncol,kte+1) = 0.
-            fsfcld(nb,ncol,kte+1) = 0.
-         enddo
-
-         iplon = 1
-         irng = 0
-         permuteseed = 1
-
-! Sub-column generator for McICA
-
-         call mcica_subcol_sw(iplon, ncol, nlay, icld, permuteseed, irng, play, &
-                       cldfrac, ciwpth, clwpth, rei, rel, taucld, ssacld, asmcld, fsfcld, &
-                       cldfmcl, ciwpmcl, clwpmcl, reicmcl, relqmcl, &
-                       taucmcl, ssacmcl, asmcmcl, fsfcmcl)
-
-!--------------------------------------------------------------------------
-! Aerosol optical depth, single scattering albedo and asymmetry parameter -czhao 03/2010
-!--------------------------------------------------------------------------
-! by layer for each RRTMG shortwave band
-! No aerosols in top layer above model top (kte+1).
-!cz        do nb = 1, nbndsw
-!cz           do k = kts, kte+1
-!cz              tauaer(ncol,k,nb) = 0.
-!cz              ssaaer(ncol,k,nb) = 1.
-!cz              asmaer(ncol,k,nb) = 0.
-!cz           enddo
-!cz        enddo
-
-! ... Aerosol effects. Added aerosol feedbacks from Chem , 03/2010 -czhao
-!
-      do nb = 1, nbndsw
-      do k = kts,kte+1
-         tauaer(ncol,k,nb) = 0.
-         ssaaer(ncol,k,nb) = 1.
-         asmaer(ncol,k,nb) = 0.
-      end do
-      end do
-
-#ifdef WRF_CHEM
-   IF ( AER_RA_FEEDBACK == 1) then
-      do nb = 1, nbndsw
-         wavemid(nb)=0.5*(wavemin(nb)+wavemax(nb))  ! um
-      do k = kts,kte      !wig
-
-! convert optical properties at 300,400,600, and 999 to conform to the band wavelengths
-! tauaer - use angstrom exponent
-        if(tauaer300(i,k,j).gt.thresh .and. tauaer999(i,k,j).gt.thresh) then
-           ang=alog(tauaer300(i,k,j)/tauaer999(i,k,j))/alog(999./300.)
-           tauaer(ncol,k,nb)=tauaer400(i,k,j)*(0.4/wavemid(nb))**ang
-           !tauaer(ncol,k,nb)=tauaer600(i,k,j)*(0.6/wavemid(nb))**ang 
-           if (i==30.and.j==49.and.k==2.and.nb==12) then
-            write(0,*) 'TAU from 600 vs 400 in RRTMG',tauaer600(i,k,j),tauaer400(i,k,j)
-            print*, 'TAU from 600 vs 400 in RRTMG',tauaer600(i,k,j),tauaer400(i,k,j)
-            write(0,*) tauaer600(i,k,j)*(0.6/wavemid(nb))**ang,tauaer400(i,k,j)*(0.4/wavemid(nb))**ang
-            print*, tauaer600(i,k,j)*(0.6/wavemid(nb))**ang,tauaer400(i,k,j)*(0.4/wavemid(nb))**ang
-           endif
-! ssa - linear interpolation; extrapolation
-           slope=(waer600(i,k,j)-waer400(i,k,j))/.2
-           ssaaer(ncol,k,nb) = slope*(wavemid(nb)-.6)+waer600(i,k,j)
-           if(ssaaer(ncol,k,nb).lt.0.4) ssaaer(ncol,k,nb)=0.4
-           if(ssaaer(ncol,k,nb).ge.1.0) ssaaer(ncol,k,nb)=1.0
-! g - linear interpolation;extrapolation
-           slope=(gaer600(i,k,j)-gaer400(i,k,j))/.2
-           asmaer(ncol,k,nb) = slope*(wavemid(nb)-.6)+gaer600(i,k,j) ! notice reversed varaibles
-           if(asmaer(ncol,k,nb).lt.0.5) asmaer(ncol,k,nb)=0.5
-           if(asmaer(ncol,k,nb).ge.1.0) asmaer(ncol,k,nb)=1.0
-        endif
-      end do ! k
-      end do ! nb
-
-!wig beg
-      do nb = 1, nbndsw
-         slope = 0.  !use slope as a sum holder
-         do k = kts,kte
-            slope = slope + tauaer(ncol,k,nb)
-         end do
-         if( slope < 0. ) then
-            write(msg,'("ERROR: Negative total optical depth of ",f8.2," at point i,j,nb=",3i5)') slope,i,j,nb
-            call wrf_error_fatal(msg)
-         else if( slope > 6. ) then
-            call wrf_message("-------------------------")
-            write(msg,'("WARNING: Large total sw optical depth of ",f8.2," at point i,j,nb=",3i5)') slope,i,j,nb
-            call wrf_message(msg)
-
-            call wrf_message("Diagnostics 1: k, tauaer300, tauaer400, tauaer600, tauaer999, tauaer")
-            do k=kts,kte
-               write(msg,'(i4,5f8.2)') k, tauaer300(i,k,j), tauaer400(i,k,j), &
-                    tauaer600(i,k,j), tauaer999(i,k,j),tauaer(ncol,k,nb)
-               call wrf_message(msg)
-               !czhao set an up-limit here to avoid segmentation fault 
-               !from extreme AOD
-               tauaer(ncol,k,nb)=tauaer(ncol,k,nb)*6.0/slope 
-            end do
-
-            call wrf_message("Diagnostics 2: k, gaer300, gaer400, gaer600, gaer999")
-            do k=kts,kte
-               write(msg,'(i4,4f8.2)') k, gaer300(i,k,j), gaer400(i,k,j), &
-                    gaer600(i,k,j), gaer999(i,k,j)
-               call wrf_message(msg)
-            end do
-
-            call wrf_message("Diagnostics 3: k, waer300, waer400, waer600, waer999")
-            do k=kts,kte
-               write(msg,'(i4,4f8.2)') k, waer300(i,k,j), waer400(i,k,j), &
-                    waer600(i,k,j), waer999(i,k,j)
-               call wrf_message(msg)
-            end do
-
-            call wrf_message("Diagnostics 4: k, ssaal, asyal, taual")
-            do k=kts-1,kte
-               write(msg,'(i4,3f8.2)') k, ssaaer(i,k,nb), asmaer(i,k,nb), tauaer(i,k,nb)
-               call wrf_message(msg)
-            end do
-            call wrf_message("-------------------------")
-         endif
-      enddo  ! nb
-      endif  ! aer_ra_feedback
-#endif
+          do na = 1, naerec
+             do k = kts, kte+1
+                ecaer(ncol,k,na) = 0.
+             enddo
+          enddo
 
 
-! Zero array for input of aerosol optical thickness for use with
-! ECMWF aerosol types (not used)
-         do na = 1, naerec
-            do k = kts, kte+1
-               ecaer(ncol,k,na) = 0.
-            enddo
-         enddo
 
-! Call RRTMG shortwave radiation model
-
-         call rrtmg_sw &
-            (ncol    ,nlay    ,icld    , &
-             play    ,plev    ,tlay    ,tlev    ,tsfc   , &
-             h2ovmr , o3vmr   ,co2vmr  ,ch4vmr  ,n2ovmr ,o2vmr , &
-             asdir   ,asdif   ,aldir   ,aldif   , &
-             coszen  ,adjes   ,dyofyr  ,scon    , &
-             inflgsw ,iceflgsw,liqflgsw,cldfmcl , &
-             taucmcl ,ssacmcl ,asmcmcl ,fsfcmcl , &
-             ciwpmcl ,clwpmcl ,reicmcl ,relqmcl , &
-             tauaer  ,ssaaer  ,asmaer  ,ecaer   , &
-             swuflx  ,swdflx  ,swhr    ,swuflxc ,swdflxc ,swhrc, &
-! -----          Zhenxin added for ssib coupiling 2011-06-20 --------!
-             sibvisdir, sibvisdif, sibnirdir, sibnirdif          &
-                                                        )
-! --------------------   End of addiation by Zhenxin 2011-06-20 ------!
-
-! Output net absorbed shortwave surface flux and shortwave cloud forcing
-! at the top of atmosphere (W/m2)
-         gsw(i,j) = swdflx(1,1) - swuflx(1,1)
-         swcf(i,j) = (swdflx(1,kte+2) - swuflx(1,kte+2)) - (swdflxc(1,kte+2) - swuflxc(1,kte+2))
-
-         if (present(swupt)) then 
-! Output up and down toa fluxes for total and clear sky
-            swupt(i,j)     = swuflx(1,kte+2)
-            swuptc(i,j)    = swuflxc(1,kte+2)
-            swdnt(i,j)     = swdflx(1,kte+2)
-            swdntc(i,j)    = swdflxc(1,kte+2)
-! Output up and down surface fluxes for total and clear sky
-            swupb(i,j)     = swuflx(1,1)
-            swupbc(i,j)    = swuflxc(1,1)
-            swdnb(i,j)     = swdflx(1,1)
-! Added by Zhenxin for 4 compenants of swdown radiation
-            swvisdir(i,j)  = sibvisdir(1,1)
-            swvisdif(i,j)  = sibvisdif(1,1)
-            swnirdir(i,j)  = sibnirdir(1,1)
-            swnirdif(i,j)  = sibnirdif(1,1)
-!  Ended, Zhenxin (2011/06/20)
-            swdnbc(i,j)    = swdflxc(1,1)
-         endif
-
-! Output up and down layer fluxes for total and clear sky.
-! Vertical ordering is from bottom to top in units of W m-2. 
-         if ( present (swupflx) ) then
-         do k=kts,kte+2
-            swupflx(i,k,j)  = swuflx(1,k)
-            swupflxc(i,k,j) = swuflxc(1,k)
-            swdnflx(i,k,j)  = swdflx(1,k)
-            swdnflxc(i,k,j) = swdflxc(1,k)
-         enddo
-         endif
-
-! Output heating rate tendency; convert heating rate from K/d to K/s
-! Heating rate arrays are ordered vertically from bottom to top here. 
-         do k=kts,kte 
-            tten1d(k) = swhr(ncol,k)/86400.
-            rthratensw(i,k,j) = tten1d(k)/pi3d(i,k,j)
-         enddo
-      else
-         if (present(swupt)) then 
-! Output up and down toa fluxes for total and clear sky
-            swupt(i,j)     = 0.
-            swuptc(i,j)    = 0.
-            swdnt(i,j)     = 0.
-            swdntc(i,j)    = 0.
-! Output up and down surface fluxes for total and clear sky
-            swupb(i,j)     = 0.
-            swupbc(i,j)    = 0.
-            swdnb(i,j)     = 0.
-            swdnbc(i,j)    = 0.
-            swvisdir(i,j)  = 0.  ! Add by Zhenxin (2011/06/20)
-            swvisdif(i,j)  = 0.
-            swnirdir(i,j)  = 0.
-            swnirdif(i,j)  = 0.  ! Add by Zhenxin (2011/06/20)
-         endif
-
-      endif
-!
-      end do i_loop
-   end do j_loop                                           
+          !--- CALL TO THE RRTMG SHORT WAVE RADIATION MODEL:
+          call rrtmg_sw &
+                     (ncol      , nlay      , icld      , play      , plev    , tlay     , &
+                      tlev      , tsfc      , h2ovmr    , o3vmr     , co2vmr  , ch4vmr   , &
+                      n2ovmr    , o2vmr     , asdir     , asdif     , aldir   , aldif    , &
+                      coszen    , adjes     , dyofyr    , scon      , inflgsw , iceflgsw , &
+                      liqflgsw  , cldfmcl   , taucmcl   , ssacmcl   , asmcmcl , fsfcmcl  , &
+                      ciwpmcl   , clwpmcl   , reicmcl   , relqmcl   , tauaer  , ssaaer   , &
+                      asmaer    , ecaer     , swuflx    , swdflx    , swhr    , swuflxc  , &
+                      swdflxc   , swhrc     ,                                              &
+                      sibvisdir , sibvisdif , sibnirdir , sibnirdif) !added for ssib coupling.
 
 
-!-------------------------------------------------------------------
 
-   END SUBROUTINE RRTMG_SWRAD
+          !--- OUTPUTS:
+          gsw(i,j)  = swdflx(1,1) - swuflx(1,1)
+          swcf(i,j) = (swdflx(1,kte+2)-swuflx(1,kte+2)) - (swdflxc(1,kte+2)-swuflxc(1,kte+2))
+
+          if(present(swupt)) then 
+             !output up and down toa fluxes for total and clear sky:
+             swupt(i,j)  = swuflx(1,kte+2)
+             swuptc(i,j) = swuflxc(1,kte+2)
+             swdnt(i,j)  = swdflx(1,kte+2)
+             swdntc(i,j) = swdflxc(1,kte+2)
+             !output up and down surface fluxes for total and clear sky:
+             swupb(i,j)  = swuflx(1,1)
+             swupbc(i,j) = swuflxc(1,1)
+             swdnb(i,j)  = swdflx(1,1)
+             swdnbc(i,j) = swdflxc(1,1)
+          endif
+
+          if(present (swupflx)) then
+             do k = kts, kte+2
+                swupflx(i,k,j)  = swuflx(1,k)
+                swupflxc(i,k,j) = swuflxc(1,k)
+                swdnflx(i,k,j)  = swdflx(1,k)
+                swdnflxc(i,k,j) = swdflxc(1,k)
+             enddo
+          endif
+
+          !--- output heating rate tendency; convert heating rate from K/d to K/s:
+          do k = kts, kte 
+             tten1d(k) = swhr(ncol,k)/86400.
+             rthratensw(i,k,j) = tten1d(k)/pi3d(i,k,j)
+          enddo
+
+       else
+
+          if(present(swupt)) then 
+             !output up and down toa fluxes for total and clear sky:
+             swupt(i,j)     = 0.
+             swuptc(i,j)    = 0.
+             swdnt(i,j)     = 0.
+             swdntc(i,j)    = 0.
+             !output up and down surface fluxes for total and clear sky:
+             swupb(i,j)     = 0.
+             swupbc(i,j)    = 0.
+             swdnb(i,j)     = 0.
+             swdnbc(i,j)    = 0.
+          endif
+
+       endif
+
+    end do i_loop !end longitude loop.
+
+ end do j_loop !end latitude loop.                                           
+
+ end subroutine rrtmg_swrad
+
+!-----------------------------------------------------------------------------------------------------------------
 
 !ldf (2013-03-11): This section of the module is moved to module_physics_rrtmg_swinit.F in
 !./../core_physics to accomodate differences in the mpi calls between WRF and MPAS.I thought

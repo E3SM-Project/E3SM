@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!==================================================================================================
+!=================================================================================================================
  module mpas_atmphys_driver_radiation_sw
  use mpas_kind_types
  use mpas_derived_types
@@ -71,19 +71,21 @@
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-04-22.
 !>    * modified sourcecode to use pools.
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
+!>    * cleaned-up the call to rrtmg_swrad after cleaning up subroutine rrtmg_swrad in module_ra_rrtmg_sw.F.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-07-05.
 
 
  contains
 
 
-!==================================================================================================
+!=================================================================================================================
  subroutine allocate_radiation_sw(xtime_s)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  real(kind=RKIND),intent(in):: xtime_s
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  if(.not.allocated(f_ice)        ) allocate(f_ice(ims:ime,kms:kme,jms:jme)        )
  if(.not.allocated(f_rain)       ) allocate(f_rain(ims:ime,kms:kme,jms:jme)       )
@@ -179,9 +181,9 @@
 
  end subroutine allocate_radiation_sw
 
-!==================================================================================================
+!=================================================================================================================
  subroutine deallocate_radiation_sw
-!==================================================================================================
+!=================================================================================================================
 
  if(allocated(f_ice)        ) deallocate(f_ice        )
  if(allocated(f_rain)       ) deallocate(f_rain       )
@@ -259,10 +261,10 @@
 
  end subroutine deallocate_radiation_sw
 
-!==================================================================================================
+!=================================================================================================================
  subroutine radiation_sw_from_MPAS(configs,mesh,state,time_lev,diag_physics,atm_input, &
                                    sfc_input,xtime_s)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(in):: mesh
@@ -285,7 +287,7 @@
  real(kind=RKIND),dimension(:,:),pointer  :: cldfrac,m_hybi,o3clim
  real(kind=RKIND),dimension(:,:,:),pointer:: aerosols,ozmixm
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
 
@@ -494,9 +496,9 @@
 
  end subroutine radiation_sw_from_MPAS
 
-!==================================================================================================
+!=================================================================================================================
  subroutine radiation_sw_to_MPAS(diag_physics,tend_physics)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -508,7 +510,7 @@
 !real(kind=RKIND),dimension(:,:),pointer:: swdnflx,swdnflxc,swupflx,swupflxc
  real(kind=RKIND),dimension(:,:),pointer:: rthratensw
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_array(diag_physics,'coszr'     ,coszr     )
  call mpas_pool_get_array(diag_physics,'gsw'       ,gsw       )
@@ -562,9 +564,9 @@
 
  end subroutine radiation_sw_to_MPAS
 
-!==================================================================================================
+!=================================================================================================================
  subroutine init_radiation_sw(dminfo,mesh,atm_input,diag,state,time_lev)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  type(dm_info), intent(in):: dminfo
@@ -577,7 +579,7 @@
  type(mpas_pool_type),intent(inout),optional:: atm_input
  type(mpas_pool_type),intent(inout),optional:: state
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 ! write(0,*)
 ! write(0,*) '--- enter radiation_sw initialization:'
 
@@ -602,10 +604,10 @@
 
  end subroutine init_radiation_sw
 
-!==================================================================================================
+!=================================================================================================================
  subroutine driver_radiation_sw(itimestep,configs,mesh,state,time_lev,diag_physics,atm_input, &
                                 sfc_input,tend_physics,xtime_s)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
  integer,intent(in):: itimestep
@@ -630,7 +632,7 @@
  integer:: o3input
  real(kind=RKIND):: radt,xtime_m
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 ! write(0,100) itimestep
 
  call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
@@ -664,43 +666,34 @@
 
     case ("rrtmg_sw")
 
-!       write(0,*) '--- enter subroutine rrtmg_swrad:'
+!      write(0,*) '--- enter subroutine rrtmg_swrad:'
        o3input = 0
        if(config_o3climatology) o3input = 2
 
        call rrtmg_swrad( &
-              p3d        = pres_hyd_p   , p8w        = pres2_hyd_p   , pi3d       = pi_p          ,&
-              t3d        = t_p          , t8w        = t2_p          , rho3d      = rho_p         ,&
-              rthratensw = rthratensw_p , swupt      = swupt_p       , swuptc     = swuptc_p      ,&
-              swdnt      = swdnt_p      , swdntc     = swdntc_p      , swupb      = swupb_p       ,&
-              swupbc     = swupbc_p     , swdnb      = swdnb_p       , swdnbc     = swdnbc_p      ,&
-              swcf       = swcf_p       , gsw        = gsw_p         , xtime      = xtime_m       ,&
-              gmt        = gmt          , xlat       = xlat_p        , xlong      = xlon_p        ,&
-              radt       = radt         , degrad     = degrad        , declin     = declin        ,&
-              coszr      = coszr_p      , julday     = julday        , solcon     = solcon        ,&
-              albedo     = sfc_albedo_p , tsk        = tsk_p         , dz8w       = dz_p          ,&
-              cldfra3d   = cldfrac_p    , r          = R_d           , g          = gravity       ,&
-              icloud     = icloud       , warm_rain  = warm_rain     , f_ice_phy  = f_ice         ,&
-              f_rain_phy = f_rain       , xland      = xland_p       , xice       = xice_p        ,&
-              snow       = snow_p       , qv3d       = qv_p          , qc3d       = qc_p          ,&
-              qr3d       = qr_p         , qi3d       = qi_p          , qs3d       = qs_p          ,&
-              qg3d       = qg_p         , f_qv       = f_qv          , f_qc       = f_qc          ,&
-              f_qr       = f_qr         , f_qi       = f_qi          , f_qs       = f_qs          ,&
-              f_qg       = f_qg         , alswvisdir = alswvisdir_p  , alswvisdif = alswvisdif_p  ,&
-              alswnirdir = alswnirdir_p , alswnirdif = alswnirdif_p  , swvisdir   = swvisdir_p    ,&
-              swvisdif   = swvisdif_p   , swnirdir   = swnirdir_p    , swnirdif   = swnirdif_p    ,&
-              o3input    = o3input      , noznlevels = num_oznlevels , pin        = pin_p         ,& 
-              o3clim     = o3clim_p     , sf_surface_physics = sf_surface_physics                 ,&
-              !end optional arguments.
-              ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,&
-              ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,&
-              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte  &
+              p3d        = pres_hyd_p    , p8w    = pres2_hyd_p , pi3d       = pi_p         , &
+              t3d        = t_p           , t8w    = t2_p        , dz8w       = dz_p         , &
+              qv3d       = qv_p          , qc3d   = qc_p        , qr3d       = qr_p         , &
+              qi3d       = qi_p          , qs3d   = qs_p        , qg3d       = qg_p         , &
+              cldfra3d   = cldfrac_p     , tsk    = tsk_p       , albedo     = sfc_albedo_p , &
+              xland      = xland_p       , xice   = xice_p      , snow       = snow_p       , &
+              coszr      = coszr_p       , xtime  = xtime_m     , gmt        = gmt          , &
+              julday     = julday        , radt   = radt        , degrad     = degrad       , &
+              declin     = declin        , solcon = solcon      , xlat       = xlat_p       , &
+              xlong      = xlon_p        , icloud = icloud      , o3input    = o3input      , &
+              noznlevels = num_oznlevels , pin    = pin_p       , o3clim     = o3clim_p     , &
+              gsw        = gsw_p         , swcf   = swcf_p      , rthratensw = rthratensw_p , &
+              swupt      = swupt_p       , swuptc = swuptc_p    , swdnt      = swdnt_p      , &
+              swdntc     = swdntc_p      , swupb  = swupb_p     , swupbc     = swupbc_p     , &
+              swdnb      = swdnb_p       , swdnbc = swdnbc_p    ,                             &
+              ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,         &
+              ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,         &
+              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte           &
                        )
-!       write(0,*) '--- exit subroutine rrtmg_swrad'
 
     case ("cam_sw")
 
-!       write(0,*) '--- enter subroutine camrad_sw:'
+!      write(0,*) '--- enter subroutine camrad_sw:'
        call camrad( dolw = .false. , dosw = .true. ,                                         &
                 p_phy         = pres_hyd_p    , p8w           = pres2_hyd_p   ,              &
                 pi_phy        = pi_p          , t_phy         = t_p           ,              &
@@ -764,9 +757,9 @@
 
  end subroutine driver_radiation_sw
 
-!==================================================================================================
+!=================================================================================================================
  subroutine radconst(declin,solcon,julian,degrad,dpd)
-!==================================================================================================
+!=================================================================================================================
 
 !input arguments:
 !integer,intent(in):: julian
@@ -779,7 +772,7 @@
 !local variables:
  real(kind=RKIND):: obecl,sinob,sxlong,arg,decdeg,djul,rjul,eccfac
 
-!--------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------
 
    declin=0.
    solcon=0.
@@ -808,6 +801,6 @@
 
  end subroutine radconst
 
-!==================================================================================================
+!=================================================================================================================
  end module mpas_atmphys_driver_radiation_sw
-!==================================================================================================
+!=================================================================================================================
