@@ -710,7 +710,7 @@
 !         rthdynten_p(i,k,j)   = (rthdynten(k,i)+rthblten(k,i)+rthratensw(k,i)+rthratenlw(k,i))*pi_p(i,k,j)
        enddo
        enddo
-       if(j.eq.jts) write(0,*) 'pi_p = ',pi_p(its,35,j), pi_p(ite,35,j)
+!       if(j.eq.jts) write(0,*) 'pi_p = ',pi_p(its,35,j), pi_p(ite,35,j)
        enddo
  
     case default
