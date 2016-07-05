@@ -12,7 +12,7 @@ import wait_for_tests
 from CIME.utils import expect
 from CIME.XML.machines import Machines
 
-import argparse, sys, os, shutil, glob, doctest, signal
+import argparse, sys, os, shutil, glob, doctest, signal, time
 
 SENTINEL_FILE = "ONGOING_TEST"
 

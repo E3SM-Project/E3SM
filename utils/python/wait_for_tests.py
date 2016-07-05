@@ -271,7 +271,7 @@ NightlyStartTime: %s UTC
     CIME.utils.run_cmd("ctest -VV -D NightlySubmit", verbose=True)
 
 ###############################################################################
-def reduce_stati(stati, check_throughput=False, check_memory=False, ignore_namelists=False):
+def reduce_stati(stati, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False):
 ###############################################################################
     """
     Given a collection of stati for a test, produce a single result. Preference
@@ -279,7 +279,11 @@ def reduce_stati(stati, check_throughput=False, check_memory=False, ignore_namel
     that hasn't finished. Namelist diffs are given the lowest precedence.
     """
     rv = TEST_PASS_STATUS
+    run_phase_found = False
     for phase, status in stati.iteritems():
+        if phase == RUN_PHASE:
+            run_phase_found = True
+
         if (status == TEST_PENDING_STATUS):
             return status
 
@@ -298,6 +302,11 @@ def reduce_stati(stati, check_throughput=False, check_memory=False, ignore_namel
 
             else:
                 rv = status
+
+    # The test did not fail but the RUN phase was not found, so if the user requested
+    # that we wait for the RUN phase, then the test must still be considered pending.
+    if rv != TEST_FAIL_STATUS and not run_phase_found and wait_for_run:
+        rv = TEST_PENDING_STATUS
 
     return rv
 
@@ -345,7 +354,7 @@ def parse_test_status_file(file_name):
         return parse_test_status(fd.read())
 
 ###############################################################################
-def interpret_status(file_contents, check_throughput=False, check_memory=False, ignore_namelists=False):
+def interpret_status(file_contents, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False):
 ###############################################################################
     r"""
     >>> interpret_status('PASS testname RUN')
@@ -366,25 +375,26 @@ def interpret_status(file_contents, check_throughput=False, check_memory=False, 
     ('testname', 'FAIL')
     >>> interpret_status('PASS testname RUN\nNLFAIL testname nlcomp', ignore_namelists=True)
     ('testname', 'PASS')
-    >>> interpret_status('PASS testname compare\nNLFAIL testname nlcomp\nFAIL testname compare')
+    >>> interpret_status('PASS testname compare\nNLFAIL testname nlcomp\nFAIL testname compare\nPASS testname RUN')
     ('testname', 'DIFF')
+    >>> interpret_status('PASS testname MODEL_BUILD')
+    ('testname', 'PASS')
+    >>> interpret_status('PASS testname MODEL_BUILD', wait_for_run=True)
+    ('testname', 'PEND')
     """
     statuses, test_name = parse_test_status(file_contents)
-    reduced_status = reduce_stati(statuses, check_throughput, check_memory, ignore_namelists)
-
-    if (RUN_PHASE not in statuses.keys() and reduced_status != TEST_FAIL_STATUS):
-        logging.warning("Very odd: Waiting for test '%s' that has no run phase but did not fail?!?!" % test_name)
+    reduced_status = reduce_stati(statuses, wait_for_run, check_throughput, check_memory, ignore_namelists)
 
     return test_name, reduced_status
 
 ###############################################################################
-def interpret_status_file(file_name, check_throughput=False, check_memory=False, ignore_namelists=False):
+def interpret_status_file(file_name, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False):
 ###############################################################################
     with open(file_name, "r") as fd:
-        return interpret_status(fd.read(), check_throughput, check_memory, ignore_namelists)
+        return interpret_status(fd.read(), wait_for_run, check_throughput, check_memory, ignore_namelists)
 
 ###############################################################################
-def wait_for_test(test_path, results, wait, check_throughput, check_memory, ignore_namelists):
+def wait_for_test(test_path, results, wait, wait_for_run, check_throughput, check_memory, ignore_namelists):
 ###############################################################################
     if (os.path.isdir(test_path)):
         test_status_filepath = os.path.join(test_path, TEST_STATUS_FILENAME)
@@ -395,7 +405,7 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
 
     while (True):
         if (os.path.exists(test_status_filepath)):
-            test_name, test_status = interpret_status_file(test_status_filepath, check_throughput, check_memory, ignore_namelists)
+            test_name, test_status = interpret_status_file(test_status_filepath, wait_for_run, check_throughput, check_memory, ignore_namelists)
 
             if (test_status == TEST_PENDING_STATUS and (wait and not SIGNAL_RECEIVED)):
                 time.sleep(SLEEP_INTERVAL_SEC)
@@ -414,12 +424,12 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
                 break
 
 ###############################################################################
-def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check_memory=False, ignore_namelists=False):
+def wait_for_tests_impl(test_paths, no_wait=False, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False):
 ###############################################################################
     results = Queue.Queue()
 
     for test_path in test_paths:
-        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, check_throughput, check_memory, ignore_namelists))
+        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, wait_for_run, check_throughput, check_memory, ignore_namelists))
         t.daemon = True
         t.start()
 
@@ -450,6 +460,7 @@ def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check
 ###############################################################################
 def wait_for_tests(test_paths,
                    no_wait=False,
+                   wait_for_run=False,
                    check_throughput=False,
                    check_memory=False,
                    ignore_namelists=False,
@@ -461,7 +472,7 @@ def wait_for_tests(test_paths,
     # is terminated
     set_up_signal_handlers()
 
-    test_results = wait_for_tests_impl(test_paths, no_wait, check_throughput, check_memory, ignore_namelists)
+    test_results = wait_for_tests_impl(test_paths, no_wait, wait_for_run, check_throughput, check_memory, ignore_namelists)
 
     all_pass = True
     for test_name, test_data in sorted(test_results.iteritems()):
