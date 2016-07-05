@@ -3,7 +3,7 @@ Encapsulate the importing of python utils and logging setup, things
 that every script should do.
 """
 
-import sys, os, logging, doctest, argparse, logging.config, time
+import sys, os, logging, doctest, argparse
 import __main__ as main
 _CIMEROOT = os.environ.get("CIMEROOT")
 if(_CIMEROOT is None):

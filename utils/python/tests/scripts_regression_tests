@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import io, glob, logging, os, re, shutil, signal, subprocess, sys, tempfile, \
+import io, glob, logging, os, re, shutil, signal, sys, tempfile, \
     threading, time, traceback, unittest
 
 from xml.etree.ElementTree import ParseError
@@ -886,6 +886,34 @@ class TestCimeCase(TestCreateTestCommon):
         build_complete = run_cmd("./xmlquery BUILD_COMPLETE -value", from_dir=casedir)
         self.assertTrue(build_complete,
                         msg="Build complete had wrong value '%s'" % build_complete)
+
+        # Test some test properties
+        self.assertEqual(case.get_value("TESTCASE"), "TESTRUNPASS")
+        self.assertEqual(case.get_value("MPILIB"), "mpi-serial")
+
+        # Serial cases should not be using pnetcdf
+        self.assertEqual(case.get_value("PIO_TYPENAME"), "netcdf")
+
+###############################################################################
+class TestSingleSubmit(TestCreateTestCommon):
+###############################################################################
+
+    ###########################################################################
+    def test_single_submit(self):
+    ###########################################################################
+        # Skip unless on a batch system and users did not select no-batch
+        if (not self._hasbatch):
+            self.skipTest("Skipping single submit. Not valid without batch")
+
+        # Keep small enough for now that we don't have to worry about load balancing
+        stat, output, errput = run_cmd("unset CIME_GLOBAL_WALLTIME && %s/create_test SMS_Ln9_P8.f45_g37_rx1.A SMS_Ln9_P8.f19_g16_rx1.A  -t %s --single-submit" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True)
+        self.assertEqual(stat, 0,
+                         msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
+
+        stat, output, errput = run_cmd("%s/wait_for_tests *%s*/TestStatus -r" % (TOOLS_DIR, self._baseline_name),
+                                       ok_to_fail=True, from_dir=self._testroot)
+        self.assertEqual(stat, 0,
+                         msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 ###############################################################################
 

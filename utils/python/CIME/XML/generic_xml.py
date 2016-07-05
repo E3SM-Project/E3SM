@@ -126,7 +126,12 @@ class GenericXML(object):
                     expect(isinstance(value, str), " Bad value passed for key %s"%key)
                     xpath = ".//%s[@%s=\'%s\']" % (nodename, key, value)
                     logger.debug("xpath is %s"%xpath)
-                    newnodes = root.findall(xpath)
+
+                    try:
+                        newnodes = root.findall(xpath)
+                    except Exception as e:
+                        expect(False, "Bad xpath search term '%s', error: %s" % (xpath, e))
+
                     if not nodes:
                         nodes = newnodes
                     else:

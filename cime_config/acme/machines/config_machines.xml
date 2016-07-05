@@ -458,10 +458,11 @@
   <PROJECT>fy150001</PROJECT>
 
   <mpirun mpilib="default">
-    <executable>mpirun</executable>
+    <executable>mpiexec</executable>
     <arguments>
-      <arg name="num_tasks"> -np {{ num_tasks }}</arg>
-      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+      <arg name="bind"> --bind-to-core</arg>
+      <arg name="num_tasks"> --n {{ num_tasks }}</arg>
+      <arg name="tasks_per_node"> --npernode {{ tasks_per_node }}</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="mpi-serial">

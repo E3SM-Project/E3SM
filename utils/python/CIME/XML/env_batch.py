@@ -266,7 +266,7 @@ class EnvBatch(EnvBase):
             self.set_value( "JOB_WALLCLOCK_TIME", walltime , subgroup=job)
             logger.info("Job %s queue %s walltime %s"%(job, queue, walltime))
 
-    def get_batch_directives(self, case, job):
+    def get_batch_directives(self, case, job, raw=False):
         """
         """
         result = []
@@ -280,7 +280,8 @@ class EnvBatch(EnvBase):
                 for node in nodes:
                     directive = self.get_resolved_value("" if node.text is None else node.text)
                     default = node.get("default")
-                    directive = transform_vars(directive, case=case, subgroup=job, default=default, check_members=self)
+                    if not raw:
+                        directive = transform_vars(directive, case=case, subgroup=job, default=default, check_members=self)
                     result.append("%s %s" % (directive_prefix, directive))
 
         return "\n".join(result)
@@ -417,7 +418,6 @@ class EnvBatch(EnvBase):
 
     def set_batch_system_type(self, batchtype):
         self.batchtype = batchtype
-
 
     def get_job_id(self, output):
         jobid_pattern = self.get_value("jobid_pattern", subgroup=None)
