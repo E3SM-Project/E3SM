@@ -127,7 +127,7 @@ module li_mask
 !! SFP: the 1d versions below have not been tested yet - activate and use at your own risk! 
 !! Also check the corresponding function below.
    interface li_mask_is_grounded_ice_int
-!      module procedure li_mask_is_grounded_ice_intout_1d
+      module procedure li_mask_is_grounded_ice_intout_1d
       module procedure li_mask_is_grounded_ice_intout_0d
    end interface
 
@@ -784,17 +784,16 @@ contains
                                 .and. (li_mask_is_ice(mask)) )
    end function li_mask_is_grounded_ice_logout_0d
 
-!! SFP: has not been tested yet - activate and use at your own risk! Also check the corresponding interface at top.
-!   function li_mask_is_grounded_ice_intout_1d(mask)
-!      integer, dimension(:), intent(in) :: mask
-!      integer, dimension(size(mask)) :: li_mask_is_grounded_ice_intout_1d
-!
-!      where( li_mask_is_ice(mask) )
-!        li_mask_is_grounded_ice_intout_1d = int(mask*0 + 1) - ( iand(mask, li_mask_ValueFloating) / li_mask_ValueFloating ) 
-!      elsewhere
-!        li_mask_is_grounded_ice_intout_1d = 0
-!      endwhere
-!   end function li_mask_is_grounded_ice_intout_1d
+   function li_mask_is_grounded_ice_intout_1d(mask)
+      integer, dimension(:), intent(in) :: mask
+      integer, dimension(size(mask)) :: li_mask_is_grounded_ice_intout_1d
+
+      where( li_mask_is_ice(mask) )
+        li_mask_is_grounded_ice_intout_1d = int(mask*0 + 1) - ( iand(mask, li_mask_ValueFloating) / li_mask_ValueFloating )
+      elsewhere
+        li_mask_is_grounded_ice_intout_1d = 0
+      endwhere
+   end function li_mask_is_grounded_ice_intout_1d
 
    function li_mask_is_grounded_ice_intout_0d(mask)
       integer, intent(in) :: mask
