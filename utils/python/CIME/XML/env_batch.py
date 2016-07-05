@@ -24,14 +24,12 @@ class EnvBatch(EnvBase):
 
     def set_value(self, item, value, subgroup=None, ignore_type=False):
         val = None
-        logger.info("Item %s value %s"%(item,value))
         if item == "JOB_WALLCLOCK_TIME":
             # Most systems use %H:%M:%S format for wallclock but LSF
             # uses %H:%M this code corrects the value passed in to be
             # the correct format - if we find we have more exceptions
             # than this we may need to generalize this further
             walltime_format = self.get_value("walltime_format", subgroup=None)
-            logger.info("Walltime_format is %s"%walltime_format)
             if walltime_format is not None and walltime_format.count(":") != value.count(":"):
                 t = time.strptime(value,"%H:%M:%S")
                 value = time.strftime(walltime_format, t)
