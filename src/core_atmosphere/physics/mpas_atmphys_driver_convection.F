@@ -676,14 +676,20 @@
        enddo
 
     case ("cu_tiedtke")
+       call mpas_pool_get_array(mesh,'areaCell',areaCell)
+
+       call mpas_pool_get_array(diag_physics,'dcEdge_m',dcEdge_m)
        call mpas_pool_get_array(sfc_input,'xland',xland)
        call mpas_pool_get_array(diag_physics,'hfx',hfx)
        call mpas_pool_get_array(diag_physics,'qfx',qfx)
 
        call mpas_pool_get_array(tend_physics,'rqvblten' ,rqvblten )
+       call mpas_pool_get_array(tend_physics,'rthblten'  ,rthblten  )
        call mpas_pool_get_array(tend_physics,'rqvdynten',rqvdynten)
        call mpas_pool_get_array(tend_physics,'rucuten'  ,rucuten  )
        call mpas_pool_get_array(tend_physics,'rvcuten'  ,rvcuten  )
+       call mpas_pool_get_array(tend_physics,'rthratenlw',rthratenlw)
+       call mpas_pool_get_array(tend_physics,'rthratensw',rthratensw)
 
        do j = jts,jte
        do i = its,ite
