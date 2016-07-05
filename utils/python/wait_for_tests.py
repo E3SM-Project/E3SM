@@ -13,7 +13,6 @@ TEST_PASS_STATUS          = "PASS"
 TEST_FAIL_STATUS          = "FAIL"
 TEST_DIFF_STATUS          = "DIFF"
 NAMELIST_FAIL_STATUS      = "NLFAIL"
-BASELINE_MISSING_STATUS   = "BFAIL"
 COMMENT_STATUS            = "COMMENT"
 SLEEP_INTERVAL_SEC        = .1
 THROUGHPUT_TEST_STR       = "tputcomp"
@@ -323,8 +322,7 @@ def parse_test_status(file_contents):
                 expect(test_name == curr_test_name, "inconsistent test name in parse_test_status: '%s' != '%s'"%(test_name, curr_test_name))
 
             expect(status in [TEST_PENDING_STATUS ,TEST_PASS_STATUS,
-                              TEST_FAIL_STATUS, TEST_DIFF_STATUS, NAMELIST_FAIL_STATUS,
-                              BASELINE_MISSING_STATUS],
+                              TEST_FAIL_STATUS, TEST_DIFF_STATUS, NAMELIST_FAIL_STATUS],
                    "Unexpected status '%s' in parse_test_status" % status)
             expect(phase in ["INIT","CREATE_NEWCASE","XML","SETUP","SHAREDLIB_BUILD",
                              "nlcomp","MODEL_BUILD", "compare", "generate",
