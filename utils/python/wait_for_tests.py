@@ -321,11 +321,12 @@ def parse_test_status(file_contents):
             else:
                 expect(test_name == curr_test_name, "inconsistent test name in parse_test_status: '%s' != '%s'"%(test_name, curr_test_name))
 
-            expect(status in [TEST_PENDING_STATUS ,TEST_PASS_STATUS, \
+            expect(status in [TEST_PENDING_STATUS ,TEST_PASS_STATUS,
                               TEST_FAIL_STATUS, TEST_DIFF_STATUS, NAMELIST_FAIL_STATUS],
                    "Unexpected status '%s' in parse_test_status" % status)
             expect(phase in ["INIT","CREATE_NEWCASE","XML","SETUP","SHAREDLIB_BUILD",
-                             "tputcomp","nlcomp","MODEL_BUILD", "compare", "generate", "memleak", "RUN"],
+                             "nlcomp","MODEL_BUILD", "compare", "generate",
+                             "memleak", "RUN", MEMORY_TEST_STR, THROUGHPUT_TEST_STR],
                    "phase '%s' not expected in parse_test_status" % phase)
 
             if (phase in rv):

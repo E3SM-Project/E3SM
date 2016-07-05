@@ -239,8 +239,8 @@ class SystemTestsCommon(object):
         basecmp_dir = os.path.join(baselineroot, self._case.get_value("BASECMP_CASE"))
         for bdir in (baselineroot, basecmp_dir):
             if not os.path.isdir(bdir):
-                append_status("GFAIL %s baseline\n"%self._case.get_value("CASEBASEID"),
-                             sfile="TestStatus")
+                append_status("FAIL %s compare\n"%self._case.get_value("CASEBASEID"),
+                              sfile="TestStatus")
                 append_status("ERROR %s does not exist"%bdir, sfile="TestStatus.log")
                 return -1
         compgen = os.path.join(self._case.get_value("SCRIPTSROOT"),"Tools",
@@ -268,9 +268,13 @@ class SystemTestsCommon(object):
             curmem = memlist[-1][1]
             diff = (curmem-blmem)/blmem
             if(diff < 0.1):
-                append_status("PASS  Memory usage baseline compare ",sfile="TestStatus")
+                append_status("PASS %s memcomp\n"%self._case.get_value("CASEBASEID"),
+                              sfile="TestStatus")
             else:
-                append_status("FAIL  Memory usage increase > 10% from baseline",sfile="TestStatus")
+                append_status("FAIL %s memcomp\n"%self._case.get_value("CASEBASEID"),
+                              sfile="TestStatus")
+                append_status("Error in memory compare: Memory usage increase > 10% from baseline",
+                              sfile="TestStatus.log")
         # compare throughput to baseline
         current = self._get_throughput(newestcpllogfile)
         baseline = self._get_throughput(baselog)
@@ -278,11 +282,13 @@ class SystemTestsCommon(object):
         if baseline is not None and current is not None:
             diff = (baseline - current)/baseline
             if(diff < 0.25):
-                append_status("PASS  Throughput baseline compare ",sfile="TestStatus")
+                append_status("PASS %s tputcomp\n"%self._case.get_value("CASEBASEID"),
+                              sfile="TestStatus")
             else:
-                append_status("FAIL  Throughput increase > 25% from baseline",sfile="TestStatus")
-
-
+                append_status("FAIL %s tputcomp\n"%self._case.get_value("CASEBASEID"),
+                              sfile="TestStatus")
+                append_status("Error in throughput compare: Computation time increase > 25% from baseline",
+                              sfile="TestStatus.log")
 
     def generate_baseline(self):
         """
@@ -297,7 +303,7 @@ class SystemTestsCommon(object):
         basegen_dir = os.path.join(baselineroot, self._case.get_value("BASEGEN_CASE"))
         for bdir in (baselineroot, basegen_dir):
             if not os.path.isdir(bdir):
-                append_status("GFAIL %s baseline\n" % self._case.get_value("CASEBASEID"),
+                append_status("FAIL %s generate\n" % self._case.get_value("CASEBASEID"),
                              sfile="TestStatus")
                 append_status("ERROR %s does not exist" % bdir, sfile="TestStatus.log")
                 return -1
