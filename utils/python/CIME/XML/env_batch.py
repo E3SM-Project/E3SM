@@ -2,6 +2,7 @@
 Interface to the env_batch.xml file.  This class inherits from EnvBase
 """
 import stat
+import time
 from CIME.XML.standard_module_setup import *
 from CIME.task_maker import TaskMaker
 from CIME.utils import convert_to_type
@@ -23,6 +24,16 @@ class EnvBatch(EnvBase):
 
     def set_value(self, item, value, subgroup=None, ignore_type=False):
         val = None
+        if item == "JOB_WALLCLOCK_TIME":
+            # Most systems use %H:%M:%S format for wallclock but LSF
+            # uses %H:%M this code corrects the value passed in to be
+            # the correct format - if we find we have more exceptions
+            # than this we may need to generalize this further
+            walltime_format = self.get_value("walltime_format", subgroup=None)
+            if walltime_format is not None and walltime_format.count(":") != value.count(":"):
+                t = time.strptime(value,"%H:%M:%S")
+                value = time.strftime(walltime_format, t)
+
         # allow the user to set all instances of item if subgroup is not provided
         if subgroup is None:
             nodes = self.get_nodes("entry", {"id":item})
@@ -250,8 +261,6 @@ class EnvBatch(EnvBase):
             queue = self.select_best_queue(task_count)
             self.set_value("JOB_QUEUE", queue, subgroup=job)
             walltime = self.get_max_walltime(queue) if walltime is None else walltime
-            # JGF: Shouldn't walltime involve ccsm_estcost?
-            # Fall back to default if None
             if walltime is None:
                 walltime = self.get_default_walltime()
             self.set_value( "JOB_WALLCLOCK_TIME", walltime , subgroup=job)
