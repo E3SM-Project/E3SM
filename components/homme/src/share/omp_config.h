@@ -5,7 +5,7 @@
 #define OMP_SIMD !$omp simd
 
 #else
-/* older OpenMP versions */
+
 #define OMP_SIMD !dir$ simd
 #endif
 
