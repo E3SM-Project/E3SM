@@ -431,7 +431,7 @@ contains
 #if defined(mpas)
       do i=its,ite
          dx(i)   = dxCell(i,j)
-         if (i.eq.its) write(0,201) j,i,dx(i)
+!         if (i.eq.its) write(0,201) j,i,dx(i)
       enddo
   201 format(i3,i8,1x,e15.8)
 #endif
