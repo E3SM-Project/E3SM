@@ -2918,7 +2918,7 @@ write(0,*) 'USING ECMWF TERRAIN...'
 
 !... Laura D. Fowler: change the values als,alt,and zetal valid for nVertLevels=41 to values
 !    needed for nVertLevels equal or greater than 55.
-         if(nVertLevels .ge. 55) then
+         if (nVertLevels >= 55) then
             als   =  .075  ! 55 levels.
             alt   = 1.70   ! 55 levels.
             zetal =  .75   ! 55 levels.
@@ -2932,9 +2932,13 @@ write(0,*) 'USING ECMWF TERRAIN...'
          write(0,*) '--- als   = ', als
          write(0,*) '--- alt   = ', alt
          write(0,*) '--- zetal = ',zetal
-         if(nVertLevels /= 55 .or. nVertLevels /= 41) &
-            write(0,*) '--- Note that als,alt,and zetal have not been tested for nVertLevels equal ',nVertLevels
-         write(0,*)
+         if (nVertLevels /= 55 .and. nVertLevels /= 41) then
+            write(0,*) '********************************************************************************'
+            write(0,*) '* Note: als, alt, and zetal have not been tested for nVertLevels equal ', nVertLevels
+            write(0,*) '*       The values of these parameters have only been tested with 41 and 55 layers'
+            write(0,*) '********************************************************************************'
+         end if
+         write(0,*) ' '
 !... end Laura D. Fowler / 2016-04-12.
 
          do k=1,nz
