@@ -138,8 +138,6 @@
  call mpas_pool_get_array(tend_physics, 'rthratenlw', rthratenlw)
  call mpas_pool_get_array(tend_physics, 'rthratensw', rthratensw)
 
- call mpas_pool_get_array(tend_physics, 'rthdynten' , rthdynten)
-
  call mpas_pool_get_array(tend,'u'           , tend_u         )
  call mpas_pool_get_array(tend,'theta_m'     , tend_theta     )
  call mpas_pool_get_array(tend,'theta_euler' ,tend_theta_euler)
@@ -166,13 +164,16 @@
 !save the tendency of the modified potential temperature due to horizontal and vertical advections,
 !and mixing before adding tendencies due to physics processes (PBL,convection,radiation) for use in
 !the Grell-GF and new Tiedtke parameterization of convection:
- do i = 1, nCellsSolve
- do k = 1, nVertLevels
-    coeff = 1._RKIND/(1._RKIND + R_v/R_d*qv(k,i))
-    rthdynten(k,i) = coeff*tend_rtheta_adv(k,i)/mass(k,i)
- enddo
- enddo
- write(0,*) '--- end calculate rthdynten:'
+ if(config_convection_scheme .eq. 'cu_grell_freitas') then
+    call mpas_pool_get_array(tend_physics, 'rthdynten' , rthdynten)
+    do i = 1, nCellsSolve
+    do k = 1, nVertLevels
+       coeff = 1._RKIND/(1._RKIND + R_v/R_d*qv(k,i))
+       rthdynten(k,i) = coeff*tend_rtheta_adv(k,i)/mass(k,i)
+    enddo
+    enddo
+    write(0,*) '--- end calculate rthdynten:'
+ end if
 !do i = 200,200
 !do k = 1, nVertLevels
 !   write(0,201) i,k,mass(k,i),tend_theta(k,i),tend_diabatic(k,i),rthdynten(k,i)
