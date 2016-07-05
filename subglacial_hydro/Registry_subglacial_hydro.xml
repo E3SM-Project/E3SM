@@ -31,6 +31,10 @@
 		            description="background till drainage rate"
 		            possible_values="positive real number"
 		/>
+		<nml_option name="config_SGH_advection" type="character" default_value="fo" units="none"
+		            description="Advection method for SGH.  'fo'=First order upwind; 'fct'=Flux corrected transport.  FCT currently not enabled."
+		            possible_values="'fo','fct'"
+		/>
 	</nml_record>
 
 <!-- ======================================================================= -->
@@ -69,7 +73,7 @@
                 <var name="hydropotential" type="real" dimensions="nCells Time" units="Pa"
 		     description="subglacial hydropotential" />
                 <var name="waterFlux" type="real" dimensions="nEdges Time" units="?"
-		     description="subglacial water flux" />
+		     description="advective subglacial water flux" />
                 <var name="waterVelocity" type="real" dimensions="nEdges Time" units="m s^-1"
 		     description="subglacial water velocity" />
                 <var name="effectiveConduc" type="real" dimensions="nCells Time" units="?"
@@ -78,6 +82,8 @@
 		     description="effective Darcy hydraulic conductivity on edges" />
                 <var name="waterThicknessEdge" type="real" dimensions="nEdges Time" units="m"
 		     description="water layer thickness on edges" />
+                <var name="waterThicknessEdgeUpwind" type="real" dimensions="nEdges Time" units="m"
+		     description="water layer thickness on edges, upwind" />
                 <var name="diffusivity" type="real" dimensions="nEdges Time" units="?"
 		     description="effective Darcy hydraulic conductivity" />
                 <var name="hydropotentialBase" type="real" dimensions="nCells Time" units="Pa"

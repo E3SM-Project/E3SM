@@ -92,6 +92,9 @@ module li_SGH_driver
       logical, pointer :: config_subglacial_hydro
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: hydroPool
+      real (kind=RKIND), pointer :: deltat
+      real (kind=RKIND), pointer :: deltatSGH
       integer :: err_tmp
 
       err = 0
@@ -99,26 +102,20 @@ module li_SGH_driver
 
       call mpas_pool_get_config(liConfigs, 'config_subglacial_hydro', config_subglacial_hydro)
       if (.not. config_subglacial_hydro) then
+         ! If SGH is not active, skip everything
          return
       endif
 
 !      call mpas_pool_get_config(liConfigs, 'config_time_integration', config_time_integration)
       block => domain % blocklist
       do while (associated(block))
-!         ! Assign the time stamp for this time step
-!         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-!         call mpas_pool_get_array(meshPool, 'xtime', xtime)
-!         xtime = timeStamp
-!
-!         call mpas_pool_get_array(meshPool, 'deltat', deltat_output)
-!         deltat_output = dtSeconds
-!
-!         ! compute time since start of simulation, in days
-!         call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
-!         call mpas_pool_get_array(meshPool, 'daysSinceStart',daysSinceStart)
-!         call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
-!         call mpas_get_timeInterval(currTime - simulationStartTime_timeType, dt=daysSinceStart)
-!         daysSinceStart = daysSinceStart / seconds_per_day
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+         call mpas_pool_get_array(meshPool, 'deltat', deltat)
+         call mpas_pool_get_array(meshPool, 'deltatSGH', deltatSGH)
+
+         ! For now, force hydro dt to be master dt
+         deltatSGH = deltat
 
          block => block % next
       end do
@@ -170,13 +167,25 @@ module li_SGH_driver
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: hydroPool
+      type (mpas_pool_type), pointer :: meshPool
       real (kind=RKIND), dimension(:), pointer :: Wtill
       real (kind=RKIND), dimension(:), pointer :: meltInput
+      real (kind=RKIND), dimension(:), pointer :: divergence
+      real (kind=RKIND), dimension(:), pointer :: diffusivity
+      real (kind=RKIND), dimension(:), pointer :: waterFlux
+      real (kind=RKIND), dimension(:), pointer :: waterThickness
+      real (kind=RKIND), dimension(:), pointer :: dcEdge
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, dimension(:,:), pointer :: edgeSignOnCell
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), pointer :: deltatSGH
       real (kind=RKIND), pointer :: deltat
       real (kind=RKIND), pointer :: rhow
       real (kind=RKIND), pointer :: Cd
+      integer, pointer :: nCellsSolve
+      integer :: iCell, cell1, cell2, iEdge, iEdgeOnCell
       integer :: err_tmp
 
 
@@ -228,7 +237,7 @@ module li_SGH_driver
       ! Update halos on edge quantities
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'diffusivity')
-      call mpas_dmpar_field_halo_exch(domain, 'waterThicknessEdge')
+      call mpas_dmpar_field_halo_exch(domain, 'waterFlux')
       ! intermediate fields will be out of date, but will be correct in output files
       call mpas_timer_stop("halo updates")
 
@@ -241,12 +250,55 @@ module li_SGH_driver
       ! =============
       ! Compute advective fluxes
       ! =============
-      !call calc_advective(waterFlux, waterVelo, effectiveConducEdge, dcEdge, dvEdge, hydropotentialBase)
+      block => domain % blocklist
+      do while (associated(block))
+
+         !call calc_advective(waterFlux, waterVelo, effectiveConducEdge, dcEdge, dvEdge, hydropotentialBase)
+         err = ior(err, err_tmp)
+
+         block => block % next
+      end do
 
       ! =============
       ! Compute flux divergence
       ! =============
       !call calc_flux_div(divergence, waterFlux, diffusivity, dcEdge)
+
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+         call mpas_pool_get_array(hydroPool, 'divergence', divergence)
+         call mpas_pool_get_array(hydroPool, 'diffusivity', diffusivity)
+         call mpas_pool_get_array(hydroPool, 'waterFlux', waterFlux)
+         call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
+         call mpas_pool_get_dimension(meshPool, 'nCellssSolve', nCellsSolve)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+         call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+         call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+
+         divergence(:) = 0.0_RKIND  ! zero div before starting
+         ! loop over locally owned cells
+         do iCell = 1, nCellsSolve
+            ! compute fluxes for each edge of the cell
+            do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(iEdgeOnCell, iCell)
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               ! add on advective flux
+               divergence(iCell) = divergence(iCell) + waterFlux(iEdge)
+               ! add on diffusive flux
+               divergence(iCell) = divergence(iCell) + diffusivity(iEdge) * &
+                 (waterThickness(cell1) * edgeSignOnCell(iEdge, iCell) - &
+                  waterThickness(cell2) * edgeSignOnCell(iEdge, iCell)) / dcEdge(iEdge)
+            end do ! edges
+         end do ! cells
+
+         block => block % next
+      end do
+
 
       ! =============
       ! Calculate pressure field
@@ -391,6 +443,7 @@ module li_SGH_driver
       real (kind=RKIND), dimension(:), pointer :: waterPressure
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBase
       real (kind=RKIND), dimension(:), pointer :: waterThicknessEdge
+      real (kind=RKIND), dimension(:), pointer :: waterThicknessEdgeUpwind
       real (kind=RKIND), dimension(:), pointer :: waterThickness
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeNormal
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeTangent
@@ -398,7 +451,9 @@ module li_SGH_driver
       real (kind=RKIND), dimension(:), pointer :: effectiveConducEdge
       real (kind=RKIND), dimension(:), pointer :: diffusivity
       real (kind=RKIND), dimension(:), pointer :: dcEdge
+      real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: waterVelocity
+      real (kind=RKIND), dimension(:), pointer :: waterFlux
       real (kind=RKIND), dimension(:,:), pointer :: cellsOnEdge
       real (kind=RKIND), pointer :: rhow, gravity
       real (kind=RKIND), pointer :: alpha, beta
@@ -406,6 +461,7 @@ module li_SGH_driver
       character (len=StrKIND), pointer :: config_SGH_tangent_slope_calculation
       integer, pointer :: nEdgesSolve
       integer :: iEdge, cell1, cell2
+      real (kind=RKIND) :: velSign
       integer :: err_tmp
 
       err = 0
@@ -429,13 +485,16 @@ module li_SGH_driver
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'waterPressure', waterPressure)
       call mpas_pool_get_array(hydroPool, 'waterThicknessEdge', waterThicknessEdge)
+      call mpas_pool_get_array(hydroPool, 'waterThicknessEdgeUpwind', waterThicknessEdgeUpwind)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeNormal', hydropotentialBaseSlopeNormal)
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeTangent', hydropotentialBaseSlopeTangent)
       call mpas_pool_get_array(hydroPool, 'gradMagPhiEdge', gradMagPhiEdge)
       call mpas_pool_get_array(hydroPool, 'effectiveConducEdge', effectiveConducEdge)
       call mpas_pool_get_array(hydroPool, 'diffusivity', diffusivity)
       call mpas_pool_get_array(hydroPool, 'waterVelocity', waterVelocity)
+      call mpas_pool_get_array(hydroPool, 'waterFlux', waterFlux)
 
 
       ! This is the hydropotential without the water thickness piece
@@ -485,10 +544,137 @@ module li_SGH_driver
          cell2 = cellsOnEdge(iEdge, 2)
          waterVelocity(iEdge) = -1.0_RKIND / dcEdge(iEdge) * effectiveConducEdge(iEdge) * &
              (hydropotentialBase(cell1) - hydropotentialBase(cell2))
-
+         velSign = sign(1.0_RKIND, waterVelocity(iEdge))
+         waterThicknessEdgeUpwind(iEdge) = max(velSign * waterThickness(cell1),   &
+                     velSign * (-1.0_RKIND) * waterThickness(cell2))
+         waterFlux(iEdge) = waterVelocity(iEdge) * dvEdge(iEdge) * waterThicknessEdgeUpwind(iEdge)
       end do
 
-
+   !--------------------------------------------------------------------
    end subroutine calc_edge_quantities
+
+
+
+
+!***********************************************************************
+!
+!  routine calc_advective_flux
+!
+!> \brief   Calculate SGH advective fluxes
+!> \author  Matt Hoffman
+!> \date    5 July 2016
+!> \details
+!>  This routine calculates needed SGH advective fluxes
+!-----------------------------------------------------------------------
+!     subroutine calc_advective_flux(block, err)
+!  
+!        !-----------------------------------------------------------------
+!        ! input variables
+!        !-----------------------------------------------------------------
+!  
+!        !-----------------------------------------------------------------
+!        ! input/output variables
+!        !-----------------------------------------------------------------
+!        type (block_type), pointer :: block    !< Input/Output: block object
+!  
+!        !-----------------------------------------------------------------
+!        ! output variables
+!        !-----------------------------------------------------------------
+!        integer, intent(out) :: err !< Output: error flag
+!  
+!        !-----------------------------------------------------------------
+!        ! local variables
+!        !-----------------------------------------------------------------
+!        ! Pools pointers
+!        type (mpas_pool_type), pointer :: meshPool
+!        type (mpas_pool_type), pointer :: geometryPool
+!        type (mpas_pool_type), pointer :: hydroPool
+!        real (kind=RKIND), dimension(:), pointer :: bedTopography
+!        real (kind=RKIND), dimension(:), pointer :: waterPressure
+!        real (kind=RKIND), dimension(:), pointer :: hydropotentialBase
+!        real (kind=RKIND), dimension(:), pointer :: waterThicknessEdge
+!        real (kind=RKIND), dimension(:), pointer :: waterThickness
+!        real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeNormal
+!        real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeTangent
+!        real (kind=RKIND), dimension(:), pointer :: gradMagPhiEdge
+!        real (kind=RKIND), dimension(:), pointer :: effectiveConducEdge
+!        real (kind=RKIND), dimension(:), pointer :: diffusivity
+!        real (kind=RKIND), dimension(:), pointer :: dcEdge
+!        real (kind=RKIND), dimension(:), pointer :: waterVelocity
+!        real (kind=RKIND), dimension(:,:), pointer :: cellsOnEdge
+!        real (kind=RKIND), pointer :: rhow, gravity
+!        real (kind=RKIND), pointer :: alpha, beta
+!        real (kind=RKIND), pointer :: conduc_coeff
+!        character (len=StrKIND), pointer :: config_SGH_tangent_slope_calculation
+!        integer, pointer :: nEdgesSolve
+!        integer :: iEdge, cell1, cell2
+!        integer :: err_tmp
+!  
+!        err = 0
+!        err_tmp = 0
+!  
+!  
+!        ! Get pools things
+!        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+!        call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+!        call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+!  
+!        call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+!  
+!        call mpas_pool_get_config(liConfigs, 'config_water_density', rhow)
+!        call mpas_pool_get_config(liConfigs, 'config_SGH_alpha', alpha)
+!        call mpas_pool_get_config(liConfigs, 'config_SGH_beta', beta)
+!        call mpas_pool_get_config(liConfigs, 'config_SGH_conduc_coeff', conduc_coeff)
+!        call mpas_pool_get_config(liConfigs, 'config_SGH_tangent_slope_calculation', config_SGH_tangent_slope_calculation)
+!  
+!        call mpas_pool_get_array(hydroPool, 'hydropotentialBase', hydropotentialBase)
+!        call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+!        call mpas_pool_get_array(geometryPool, 'waterPressure', waterPressure)
+!        call mpas_pool_get_array(hydroPool, 'waterThicknessEdge', waterThicknessEdge)
+!        call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeNormal', hydropotentialBaseSlopeNormal)
+!        call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+!        call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeTangent', hydropotentialBaseSlopeTangent)
+!        call mpas_pool_get_array(hydroPool, 'gradMagPhiEdge', gradMagPhiEdge)
+!        call mpas_pool_get_array(hydroPool, 'effectiveConducEdge', effectiveConducEdge)
+!        call mpas_pool_get_array(hydroPool, 'diffusivity', diffusivity)
+!        call mpas_pool_get_array(hydroPool, 'waterVelocity', waterVelocity)
+!  
+!  
+!        !-------------
+!        select case (trim(config_SGH_advection))
+!        !-------------
+!        case ("fo")
+!  
+!           ! Note: This loop structure (nCells loop outside nEdgesOnCell loop) results in double calculation of fluxes
+!           !       across each edge. But upwind advection is cheap, so the extra cost is minimal.
+!  
+!           ! loop over locally owned cells
+!           do iCell = 1, nCellsSolve
+!              ! compute fluxes for each edge of the cell
+!              do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+!  
+!                 iEdge = edgesOnCell(iEdgeOnCell, iCell)
+!                 cell1 = cellsOnEdge(1,iEdge)
+!                 cell2 = cellsOnEdge(2,iEdge)
+!  
+!                 waterFlux = waterVelocity(iEdge) * dvEdge(iEdge) * waterThicknessEdgeUpwind(iEdge)
+!              end do ! edges
+!           end do ! cells
+!  
+!        !-------------
+!        case ("fct")
+!           write (stdErrUnit,*) 'Error: Invalid value for config_SGH_advection.'
+!           err = 1
+!  
+!        !-------------
+!        case default
+!           write (stdErrUnit,*) 'Error: Invalid value for config_SGH_advection.'
+!           err = 1
+!        !-------------
+!        end select
+!        !-------------
+!  
+!     !--------------------------------------------------------------------
+!     end subroutine calc_advective_flux
 
 end module li_SGH_driver
