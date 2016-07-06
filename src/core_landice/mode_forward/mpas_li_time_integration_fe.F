@@ -75,6 +75,8 @@ module li_time_integration_fe
 !-----------------------------------------------------------------------
    subroutine li_time_integrator_forwardeuler(domain, deltat, err)
 
+      use li_subglacial_hydro
+
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -111,6 +113,13 @@ module li_time_integration_fe
 
 !!!      procVertexMaskChanged = 0
 
+! === Update subglacial hydrology  ===========
+! It's not clear where the best place to call this should be, so putting it first for now
+      call mpas_timer_start("subglacial hydro")
+      call li_SGH_solve(domain, err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_timer_stop("subglacial hydro")
+
 ! === Prepare for advection (including CFL checks) ===========
 
       call mpas_timer_start("advection prep")
@@ -130,7 +139,7 @@ module li_time_integration_fe
       err = ior(err, err_tmp)
       call mpas_timer_stop("advect thickness and tracers")
 
-! === Calve ice ========================                                                                                                                                             
+! === Calve ice ========================
       call mpas_timer_start("calve_ice")
 
       if (config_restore_calving_front) then

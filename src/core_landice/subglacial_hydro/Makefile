@@ -1,13 +1,11 @@
 .SUFFIXES: .F .c .o
 
-OBJS = mpas_li_SGH_driver.o \
-       mpas_li_subglacial_hydro.o
+OBJS = mpas_li_subglacial_hydro.o
 
 all: $(OBJS)
 
-mpas_li_SGH_driver.o: 
+mpas_li_subglacial_hydro.o:
 
-mpas_li_subglacial_hydro.o: 
 
 clean:
 	$(RM) *.o *.i *.mod *.f90
