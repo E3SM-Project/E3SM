@@ -1,5 +1,22 @@
 ======================================================================
 
+Originator: fischer-ncar, Brain Kauffman 
+Date: 6 July 2016
+Tag: cime4.5.20
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary: Updates to config_files.xml and config_grids.xml to support mpas-o
+
+User interface changes: 
+
+Modified files: git diff --name-status
+M       cime_config/cesm/config_files.xml
+M       cime_config/cesm/config_grids.xml
+
+======================================================================
+
 Originator: apcraig
 Date: 6 July 2016
 Tag: cime4.5.19

@@ -301,6 +301,12 @@
       <lname>a%T62_l%T62_oi%mpas120_r%rx1_m%mpas120_g%null_w%null</lname>
     </grid>
 
+    <grid compset="(DATM|XATM|SATM)">
+      <sname>T62_oQU120</sname>
+      <alias>T62_oQU120</alias>
+      <lname>a%T62_l%T62_oi%oQU120_r%rx1_m%oQU120_g%null_w%null</lname>
+    </grid>
+
     <grid compset="(DATM|XATM|SATM).+(DWAV|WW3)">
       <sname>T62_mpas120</sname>
       <alias>T62_m120</alias>
@@ -1493,6 +1499,7 @@
       <file lnd_mask="tx1v1">domain.lnd.T62_tx1v1.090122.nc</file>
       <file lnd_mask="tx0.1v2">domain.lnd.T62_tx0.1v2_090623.nc</file>
       <file lnd_mask="mpas120">domain.lnd.T62_mpas120.121116.nc</file>
+      <file lnd_mask="oQU120">domain.lnd.T62_oQU120.160325.nc</file>
       <desc>T62 is Gaussian grid:</desc>
     </domain>
 
@@ -1579,7 +1586,7 @@
 
     <domain name="mpas120">
       <nx>28574</nx>  <ny>1</ny>
-      <file  mask="mpas120">domain.ocn.mpas120.121116.nc</file>
+      <file ocn_mask="mpas120">domain.ocn.mpas120.121116.nc</file>
       <desc>mpas120 is a MPAS ocean grid that is roughly 1 degree resolution:</desc>
       <support>Experimental, under development</support>
     </domain>
@@ -1610,6 +1617,13 @@
     <domain name="mp120r10v1">
       <nx>139734</nx> <ny>1</ny>
       <desc>mp120r10v1 is a MPAS grid:</desc>
+      <support>Experimental, under development</support>
+    </domain>
+
+    <domain name="oQU120">
+      <nx>28574</nx>  <ny>1</ny>  
+      <file ocn_mask="oQU120">domain.ocn.oQU120.160325.nc</file>
+      <desc>oQU120 is a MPAS ocean grid that is roughly 1 degree resolution:</desc>
       <support>Experimental, under development</support>
     </domain>
 
@@ -1852,6 +1866,14 @@
       <OCN2ATM_SMAPNAME>cpl/gridmaps/mpas120/map_mpas120_TO_T62_aave.121116.nc</OCN2ATM_SMAPNAME>
     </gridmap>
 
+    <gridmap atm_grid="T62" ocn_grid="oQU120">
+      <ATM2OCN_FMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU120_aave.151209.nc</ATM2OCN_FMAPNAME>
+      <ATM2OCN_SMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU120_aave.151209.nc</ATM2OCN_SMAPNAME>
+      <ATM2OCN_VMAPNAME>cpl/gridmaps/T62/map_T62_TO_oQU120_aave.151209.nc</ATM2OCN_VMAPNAME>
+      <OCN2ATM_FMAPNAME>cpl/gridmaps/oQU120/map_oQU120_TO_T62_aave.151209.nc</OCN2ATM_FMAPNAME>
+      <OCN2ATM_SMAPNAME>cpl/gridmaps/oQU120/map_oQU120_TO_T62_aave.151209.nc</OCN2ATM_SMAPNAME>
+    </gridmap>
+
     <gridmap atm_grid="T31" ocn_grid="gx3v7">
       <!-- alias is used for gridname -->
       <ATM2OCN_FMAPNAME>cpl/cpl6/map_T31_to_gx3v7_aave_da_090903.nc</ATM2OCN_FMAPNAME>
@@ -2052,6 +2074,9 @@
     </gridmap>
     <gridmap rof_grid="rx1" ocn_grid="tx0.1v2" >
       <ROF2OCN_RMAPNAME >cpl/cpl6/map_rx1_to_tx0.1v2_e1000r200_090624.nc</ROF2OCN_RMAPNAME>
+    </gridmap>
+    <gridmap rof_grid="rx1" ocn_grid="oQU120" >
+      <ROF2OCN_RMAPNAME >cpl/gridmaps/rx1/map_rx1_to_oQU120_nn.160527.nc</ROF2OCN_RMAPNAME>
     </gridmap>
 
     <gridmap rof_grid="r05" ocn_grid="gx3v7" >
