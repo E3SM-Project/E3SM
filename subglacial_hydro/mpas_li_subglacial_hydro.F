@@ -178,6 +178,8 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: waterThickness
       real (kind=RKIND), dimension(:), pointer :: waterThicknessOld
       real (kind=RKIND), dimension(:), pointer :: dcEdge
+      real (kind=RKIND), dimension(:), pointer :: dvEdge
+      real (kind=RKIND), dimension(:), pointer :: areaCell
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge
@@ -188,7 +190,8 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: Cd
       real (kind=RKIND), pointer :: tillMax
       integer, pointer :: nCellsSolve
-      integer :: iCell, cell1, cell2, iEdge, iEdgeOnCell
+      integer :: iCell, iEdge, iEdgeOnCell
+      integer :: cell1, cell2
       integer :: err_tmp
 
 
@@ -283,6 +286,8 @@ module li_subglacial_hydro
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
@@ -293,17 +298,17 @@ module li_subglacial_hydro
             ! compute fluxes for each edge of the cell
             do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(iEdgeOnCell, iCell)
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
+               cell1 = cellsOnEdge(1, iEdge)
+               cell2 = cellsOnEdge(2, iEdge)
                ! add on advective flux
                divergence(iCell) = divergence(iCell) + waterFlux(iEdge)
                ! add on diffusive flux
-               divergence(iCell) = divergence(iCell) - diffusivity(iEdge) * &
-                 (waterThickness(cell1) * edgeSignOnCell(iEdgeOnCell, iCell) + &
-                  waterThickness(cell2) * edgeSignOnCell(iEdgeOnCell, iCell)) / dcEdge(iEdge)
+               divergence(iCell) = divergence(iCell) + diffusivity(iEdge) * &
+                 (waterThickness(cell1) * edgeSignOnCell(iEdgeOnCell, iCell) - &
+                  waterThickness(cell2) * edgeSignOnCell(iEdgeOnCell, iCell)) / dcEdge(iEdge) * dvEdge(iEdge)
             end do ! edges
          end do ! cells
-
+         divergence(1:nCellsSolve) = divergence(1:nCellsSolve) / areaCell(1:nCellsSolve)
          block => block % next
       end do
 
