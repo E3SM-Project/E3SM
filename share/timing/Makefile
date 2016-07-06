@@ -28,7 +28,7 @@ endif
 # So be careful if moving this either earlier or later in the makefile!!!
 include $(MACFILE)
 ifdef GPTL_CPPDEFS
-  CPPDEFS+=$(GPTL_CPPDEFS)
+  CPPDEFS+=$(GPTL_CPPDEFS)  -D$(OS) -DCPR$(shell echo $(COMPILER) | tr a-z A-z)
 endif
 INCLDIR += -I$(GPTL_DIR)
 
