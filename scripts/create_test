@@ -279,8 +279,6 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
             wall_time = wall_time_max
             wall_time_bab = convert_to_babylonian_time(wall_time)
 
-    logger.debug("HERE directives = %s"%directives)
-
     job_id = "create_test_single_submit_%s" % test_id
     directives = directives.replace("{{ job_id }}", job_id)
     directives = directives.replace("{{ num_nodes }}", str(num_nodes))
@@ -293,9 +291,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     directives = directives.replace("{{ job_queue }}", queue)
     if project is not None:
         directives = directives.replace("{{ project }}", project)
-
-    
-
+        
     expect("{{" not in directives, "Could not resolve all items in directives:\n%s" % directives)
 
     #
@@ -335,8 +331,6 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
                 else:
                     logger.info("Switch compiler %s to %s"%(compiler, testsplit[5]))
                     compiler = testsplit[5]
-#                    expect(compiler == testsplit[5],
-#                           "ambiguity in compiler, please use the --compiler option")
 
     impl = SystemTest(testargs,
                       no_run=no_run, no_build=no_build, no_batch=no_batch,

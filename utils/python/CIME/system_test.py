@@ -348,9 +348,6 @@ class SystemTest(object):
 
         _, case_opts, grid, compset,\
             machine, compiler, test_mods = CIME.utils.parse_test_name(test)
-#        if compiler != self._compiler:
-#            raise StandardError("Test '%s' has compiler that does"
-#                                " not match instance compliler '%s'" % (test, self._compiler))
 
         create_newcase_cmd = "%s --case %s --res %s --mach %s --compiler %s --compset %s"\
                                " --project %s --test"%\
