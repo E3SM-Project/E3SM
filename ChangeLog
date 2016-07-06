@@ -1,5 +1,60 @@
 ======================================================================
 
+Originator: fischer-ncar, Brain Kauffman 
+Date: 6 July 2016
+Tag: cime4.5.20
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary: Updates to config_files.xml and config_grids.xml to support mpas-o
+
+User interface changes: 
+
+Modified files: git diff --name-status
+M       cime_config/cesm/config_files.xml
+M       cime_config/cesm/config_grids.xml
+
+======================================================================
+
+Originator: apcraig
+Date: 6 July 2016
+Tag: cime4.5.19
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary: Addition of ice to ocean coupling fields Fioi_bcphi, 
+               Fioi_bcpho, Fioi_flxdst
+
+User interface changes: 
+
+Modified files: git diff --name-status
+M       driver_cpl/shr/seq_flds_mod.F90
+
+======================================================================
+
+Originator: fischer-ncar, jtruesdal 
+Date: 6 July 2016 
+Tag: cime4.5.18
+Answer Changes: Answer changes for compset with WaveWatch turned on.
+                All others are bit-for-bit.
+Tests: Namelist test ran on yellowstone, WAV_GRID manually looked at.
+Dependencies:
+
+Brief Summary: Add support to run WaveWatch.  Allactive    
+               compset not being tested were removed.
+
+User interface changes: 
+
+Modified files: git diff --name-status
+M       cime_config/cesm/allactive/config_compsets.xml
+M       cime_config/cesm/allactive/config_pes.xml
+M       cime_config/cesm/allactive/testlist_allactive.xml
+M       cime_config/cesm/config_grids.xml
+
+======================================================================
+
 Originator: fischer-ncar
 Date: 21 June 2016
 Tag: cime4.5.17
