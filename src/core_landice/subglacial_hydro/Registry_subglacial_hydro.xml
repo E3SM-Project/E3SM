@@ -27,9 +27,9 @@
 		            description="conductivity coefficient"
 		            possible_values="positive real number"
 		/>
-		<nml_option name="config_SGH_till_drainage" type="real" default_value="0.001" units="m s^-1"
+		<nml_option name="config_SGH_till_drainage" type="real" default_value="3.1709792e-11" units="m s^-1"
 		            description="background till drainage rate"
-		            possible_values="positive real number"
+                            possible_values="positive real number.  Default value is 0.001 m/yr"
 		/>
 		<nml_option name="config_SGH_advection" type="character" default_value="fo" units="none"
 		            description="Advection method for SGH.  'fo'=First order upwind; 'fct'=Flux corrected transport.  FCT currently not enabled."
