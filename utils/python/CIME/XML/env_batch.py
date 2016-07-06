@@ -289,6 +289,8 @@ class EnvBatch(EnvBase):
                     default = node.get("default")
                     if not raw:
                         directive = transform_vars(directive, case=case, subgroup=job, default=default, check_members=self)
+                    elif default is not None:
+                        directive = transform_vars(directive, case=case, subgroup=job, default=default)
                     result.append("%s %s" % (directive_prefix, directive))
 
         return "\n".join(result)
