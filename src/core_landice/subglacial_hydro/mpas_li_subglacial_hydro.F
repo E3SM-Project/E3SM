@@ -30,6 +30,7 @@ module li_subglacial_hydro
    use mpas_timer
    use li_setup
    use li_constants
+   use li_mask
 
    implicit none
    private
@@ -145,8 +146,6 @@ module li_subglacial_hydro
 !>  for the current ISM time step.
 !-----------------------------------------------------------------------
    subroutine li_SGH_solve(domain, err)
-
-      use li_mask
 
       !-----------------------------------------------------------------
       ! input variables
@@ -299,8 +298,8 @@ module li_subglacial_hydro
                ! add on advective flux
                divergence(iCell) = divergence(iCell) + waterFlux(iEdge)
                ! add on diffusive flux
-               divergence(iCell) = divergence(iCell) + diffusivity(iEdge) * &
-                 (waterThickness(cell1) * edgeSignOnCell(iEdgeOnCell, iCell) - &
+               divergence(iCell) = divergence(iCell) - diffusivity(iEdge) * &
+                 (waterThickness(cell1) * edgeSignOnCell(iEdgeOnCell, iCell) + &
                   waterThickness(cell2) * edgeSignOnCell(iEdgeOnCell, iCell)) / dcEdge(iEdge)
             end do ! edges
          end do ! cells
@@ -327,6 +326,7 @@ module li_subglacial_hydro
       ! =============
       block => domain % blocklist
       do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
          call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
          call mpas_pool_get_array(hydroPool, 'waterThicknessOld', waterThicknessOld)
@@ -335,10 +335,13 @@ module li_subglacial_hydro
          call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
          call mpas_pool_get_array(hydroPool, 'meltInput', meltInput)
          call mpas_pool_get_array(hydroPool, 'divergence', divergence)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
          waterThicknessOld = waterThickness
          waterThickness = waterThicknessOld + deltatSGH * (meltInput / rho_water - divergence  &
              - (Wtill - WtillOld) / deltatSGH)
+         waterThickness = waterThickness * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations
+         waterThickness = max(0.0_RKIND, waterThickness)
 
          block => block % next
       end do
@@ -762,6 +765,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: thickness
+      integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), pointer :: deltatSGH
       real (kind=RKIND), pointer :: bedRough, bedRoughMax
       real (kind=RKIND), pointer :: rhoi
@@ -804,6 +808,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
       openingRate(:) = bedRough * basalSpeed(:) * (bedRoughMax - waterThickness(:))
       openingRate = max(0.0_RKIND, openingRate)
@@ -813,11 +818,18 @@ module li_subglacial_hydro
       zeroOrderSum = closingRate - openingRate + meltInput / rho_water - (Wtill - WtillOld) / deltatSGH
 
       waterPressureOld = waterPressure
-      waterPressure = (zeroOrderSum - divergence) * rho_water * gravity * deltatSGH / porosity + waterPressureOld
-      waterPressure = max(0.0_RKIND, waterPressure)
-      waterPressure = min(waterPressure, rho_water * gravity * bedTopography + rhoi * gravity * thickness)
 
-      effectivePressure = rho_water * gravity * bedTopography + rhoi * gravity * thickness - waterPressure
+      where (li_mask_is_floating_ice(cellMask))
+         waterPressure = rhoi * gravity * thickness
+      elsewhere (.not. li_mask_is_ice(cellMask))
+         waterPressure = 0.0_RKIND
+      elsewhere
+         waterPressure = (zeroOrderSum - divergence) * rho_water * gravity * deltatSGH / porosity + waterPressureOld
+      end where
+      waterPressure = max(0.0_RKIND, waterPressure)
+      waterPressure = min(waterPressure, rhoi * gravity * thickness)
+
+      effectivePressure = rhoi * gravity * thickness - waterPressure
 
    !--------------------------------------------------------------------
    end subroutine calc_pressure
