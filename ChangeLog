@@ -1,8 +1,25 @@
 ======================================================================
 
+Originator: apcraig
+Date: 6 July 2016
+Tag: cime4.5.19
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary: Addition of ice to ocean coupling fields Fioi_bcphi, 
+               Fioi_bcpho, Fioi_flxdst
+
+User interface changes: 
+
+Modified files: git diff --name-status
+M       driver_cpl/shr/seq_flds_mod.F90
+
+======================================================================
+
 Originator: fischer-ncar, jtruesdal 
 Date: 6 July 2016 
-Tag: cime4.5.17
+Tag: cime4.5.18
 Answer Changes: Answer changes for compset with WaveWatch turned on.
                 All others are bit-for-bit.
 Tests: Namelist test ran on yellowstone, WAV_GRID manually looked at.
