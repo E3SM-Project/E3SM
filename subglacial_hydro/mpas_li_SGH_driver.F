@@ -26,6 +26,7 @@ module li_SGH_driver
    use mpas_constants
    use mpas_dmpar
    use mpas_timekeeping
+   use mpas_constants, only: gravity
    use li_setup
    use li_constants
 
@@ -168,12 +169,13 @@ module li_SGH_driver
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: hydroPool
       type (mpas_pool_type), pointer :: meshPool
-      real (kind=RKIND), dimension(:), pointer :: Wtill
+      real (kind=RKIND), dimension(:), pointer :: Wtill, WtillOld
       real (kind=RKIND), dimension(:), pointer :: meltInput
       real (kind=RKIND), dimension(:), pointer :: divergence
       real (kind=RKIND), dimension(:), pointer :: diffusivity
       real (kind=RKIND), dimension(:), pointer :: waterFlux
       real (kind=RKIND), dimension(:), pointer :: waterThickness
+      real (kind=RKIND), dimension(:), pointer :: waterThicknessOld
       real (kind=RKIND), dimension(:), pointer :: dcEdge
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell
@@ -184,6 +186,7 @@ module li_SGH_driver
       real (kind=RKIND), pointer :: deltat
       real (kind=RKIND), pointer :: rhow
       real (kind=RKIND), pointer :: Cd
+      real (kind=RKIND), pointer :: tillMax
       integer, pointer :: nCellsSolve
       integer :: iCell, cell1, cell2, iEdge, iEdgeOnCell
       integer :: err_tmp
@@ -201,6 +204,7 @@ module li_SGH_driver
 
       call mpas_pool_get_config(liConfigs, 'config_water_density', rhow)
       call mpas_pool_get_config(liConfigs, 'config_SGH_till_drainage', Cd)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_till_max', tillMax)
 
       ! =============
       ! Update till water layer thickness
@@ -212,12 +216,16 @@ module li_SGH_driver
          call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
 
          call mpas_pool_get_array(hydroPool, 'tillWaterThickness', Wtill)
+         call mpas_pool_get_array(hydroPool, 'tillWaterThicknessOld', WtillOld)
          call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
          call mpas_pool_get_array(hydroPool, 'meltInput', meltInput)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
+         WtillOld = Wtill
          Wtill = Wtill + deltatSGH * (meltInput / rhow - Cd)
          Wtill = Wtill * li_mask_is_grounded_ice_int(cellMask)  ! zero Wtill in non-grounded locations
+         Wtill = min(Wtill, tillmax)
+         Wtill = max(0.0_RKIND, Wtill)
 
          block => block % next
       end do
@@ -303,11 +311,37 @@ module li_SGH_driver
       ! =============
       ! Calculate pressure field
       ! =============
-      !call calc_pressure()
+      block => domain % blocklist
+      do while (associated(block))
+
+         call calc_pressure(block, err_tmp)
+         err = ior(err, err_tmp)
+
+         block => block % next
+      end do
+
 
       ! =============
       ! Update water layer thickness
       ! =============
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+         call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
+         call mpas_pool_get_array(hydroPool, 'waterThicknessOld', waterThicknessOld)
+         call mpas_pool_get_array(hydroPool, 'tillWaterThickness', Wtill)
+         call mpas_pool_get_array(hydroPool, 'tillWaterThicknessOld', WtillOld)
+         call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
+         call mpas_pool_get_array(hydroPool, 'meltInput', meltInput)
+         call mpas_pool_get_array(hydroPool, 'divergence', divergence)
+
+         waterThicknessOld = waterThickness
+         waterThickness = waterThicknessOld + deltatSGH * (meltInput / rhow - divergence  &
+             - (Wtill - WtillOld) / deltatSGH)
+
+         block => block % next
+      end do
+
 
       ! =============
       ! Update model time
@@ -455,7 +489,7 @@ module li_SGH_driver
       real (kind=RKIND), dimension(:), pointer :: waterVelocity
       real (kind=RKIND), dimension(:), pointer :: waterFlux
       real (kind=RKIND), dimension(:,:), pointer :: cellsOnEdge
-      real (kind=RKIND), pointer :: rhow, gravity
+      real (kind=RKIND), pointer :: rhow
       real (kind=RKIND), pointer :: alpha, beta
       real (kind=RKIND), pointer :: conduc_coeff
       character (len=StrKIND), pointer :: config_SGH_tangent_slope_calculation
@@ -483,7 +517,7 @@ module li_SGH_driver
 
       call mpas_pool_get_array(hydroPool, 'hydropotentialBase', hydropotentialBase)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-      call mpas_pool_get_array(geometryPool, 'waterPressure', waterPressure)
+      call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
       call mpas_pool_get_array(hydroPool, 'waterThicknessEdge', waterThicknessEdge)
       call mpas_pool_get_array(hydroPool, 'waterThicknessEdgeUpwind', waterThicknessEdgeUpwind)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeNormal', hydropotentialBaseSlopeNormal)
@@ -676,5 +710,118 @@ module li_SGH_driver
 !  
 !     !--------------------------------------------------------------------
 !     end subroutine calc_advective_flux
+
+
+
+!***********************************************************************
+!
+!  routine calc_pressure
+!
+!> \brief   Calculate SGH water pressure
+!> \author  Matt Hoffman
+!> \date    5 July 2016
+!> \details
+!>  This routine calculates SGH water pressure
+!-----------------------------------------------------------------------
+   subroutine calc_pressure(block, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (block_type), pointer :: block    !< Input/Output: block object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      ! Pools pointers
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: hydroPool
+      type (mpas_pool_type), pointer :: velocityPool
+!      real (kind=RKIND), dimension(:), pointer :: bedTopography
+      real (kind=RKIND), dimension(:), pointer :: waterPressure
+      real (kind=RKIND), dimension(:), pointer :: waterPressureOld
+      real (kind=RKIND), dimension(:), pointer :: waterThickness
+      real (kind=RKIND), dimension(:), pointer :: effectivePressure
+      real (kind=RKIND), dimension(:), pointer :: zeroOrderSum
+      real (kind=RKIND), dimension(:), pointer :: closingRate
+      real (kind=RKIND), dimension(:), pointer :: openingRate
+      real (kind=RKIND), dimension(:), pointer :: meltInput
+      real (kind=RKIND), dimension(:), pointer :: Wtill, WtillOld
+      real (kind=RKIND), dimension(:), pointer :: divergence
+      real (kind=RKIND), dimension(:), pointer :: basalSpeed
+      real (kind=RKIND), dimension(:,:), pointer :: flowParamA
+      real (kind=RKIND), dimension(:), pointer :: bedTopography
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), pointer :: deltatSGH
+      real (kind=RKIND), pointer :: bedRough, bedRoughMax
+      real (kind=RKIND), pointer :: rhow, rhoi
+      real (kind=RKIND), pointer :: creepCoeff
+      real (kind=RKIND), pointer :: porosity
+      integer, pointer :: nVertLevels
+      integer :: err_tmp
+
+      err = 0
+      err_tmp = 0
+
+
+      ! Get pools things
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+
+      call mpas_pool_get_config(liConfigs, 'config_water_density', rhow)
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_bed_roughness', bedRough)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_bed_roughness_max', bedRoughMax)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_creep_coefficient', creepCoeff)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_englacial_porosity', porosity)
+
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+      call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
+      call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
+      call mpas_pool_get_array(hydroPool, 'waterPressureOld', waterPressureOld)
+      call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
+      call mpas_pool_get_array(hydroPool, 'zeroOrderSum', zeroOrderSum)
+      call mpas_pool_get_array(hydroPool, 'closingRate', closingRate)
+      call mpas_pool_get_array(hydroPool, 'openingRate', openingRate)
+      call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
+      call mpas_pool_get_array(hydroPool, 'meltInput', meltInput)
+      call mpas_pool_get_array(hydroPool, 'tillWaterThickness', Wtill)
+      call mpas_pool_get_array(hydroPool, 'tillWaterThicknessOld', WtillOld)
+      call mpas_pool_get_array(hydroPool, 'divergence', divergence)
+      call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
+      call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+
+      openingRate(:) = bedRough * basalSpeed(:) * (bedRoughMax - waterThickness(:))
+      openingRate = max(0.0_RKIND, openingRate)
+
+      closingRate(:) = creepCoeff * flowParamA(nVertLevels, :) * effectivePressure(:)**3 * waterThickness(:)
+
+      zeroOrderSum = closingRate - openingRate + meltInput / rhow - (Wtill - WtillOld) / deltatSGH
+
+      waterPressureOld = waterPressure
+      waterPressure = (zeroOrderSum - divergence) * rhow * gravity * deltatSGH / porosity + waterPressureOld
+      waterPressure = max(0.0_RKIND, waterPressure)
+      waterPressure = min(waterPressure, rhow * gravity * bedTopography + rhoi * gravity * thickness)
+
+      effectivePressure = rhow * gravity * bedTopography + rhoi * gravity * thickness - waterPressure
+
+   !--------------------------------------------------------------------
+   end subroutine calc_pressure
+
 
 end module li_SGH_driver

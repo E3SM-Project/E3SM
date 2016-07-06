@@ -8,7 +8,7 @@
 		            description="activate subglacial hydrology model"
 		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_SGH_tangent_slope_calculation" type="character" default_value="from_vertex_barycentric" units="unitless"
+		<nml_option name="config_SGH_tangent_slope_calculation" type="character" default_value="from_normal_slope" units="unitless"
 		            description="Selection of the method for calculating the tangent component of surface slope at edges needed by the SIA velocity solver.
 'from_vertex_barycentric' interpolates upperSurface values from cell centers to vertices using the barycentric interpolation routine in operators (mpas_cells_to_points_using_baryweights) and then calculates the slope between vertices.  It works for obtuse triangles, but will not work correctly across the edges of periodic meshes.
 'from_vertex_barycentric_kiteareas' interpolates upperSurface values from cell centers to vertices using barycentric interpolation based on kiterea values and then calculates the slope between vertices.  It will work across the edges of periodic meshes, but will not work correctly for obtuse triangles.
@@ -35,6 +35,26 @@
 		            description="Advection method for SGH.  'fo'=First order upwind; 'fct'=Flux corrected transport.  FCT currently not enabled."
 		            possible_values="'fo','fct'"
 		/>
+		<nml_option name="config_SGH_bed_roughness" type="real" default_value="0.5" units="m^-1"
+		            description="cavitation coefficient"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_bed_roughness_max" type="real" default_value="0.1" units="m"
+		            description="bed roughness scale"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_creep_coefficient" type="real" default_value="0.04" units="none"
+		            description="creep closure coefficient"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_englacial_porosity" type="real" default_value="0.01" units="none"
+		            description="notional englacial porosity"
+		            possible_values="positive real number"
+		/>
+		<nml_option name="config_SGH_till_max" type="real" default_value="2.0" units="m"
+		            description="maximum water thickness in till"
+		            possible_values="positive real number"
+		/>
 	</nml_record>
 
 <!-- ======================================================================= -->
@@ -60,16 +80,20 @@
 		     description="water layer thickness in subglacial system" />
 		<var name="tillWaterThickness" type="real" dimensions="nCells Time" units="m"
 		     description="water layer thickness in subglacial till" />
-		<var name="waterPressure" type="real" dimensions="nCells Time" units="m"
+		<var name="tillWaterThicknessOld" type="real" dimensions="nCells Time" units="m"
+		     description="water layer thickness in subglacial till from previous time step" />
+		<var name="waterPressure" type="real" dimensions="nCells Time" units="Pa"
 		     description="pressure in subglacial system" />
+		<var name="waterPressureOld" type="real" dimensions="nCells Time" units="Pa"
+		     description="pressure in subglacial system from previous time step" />
                 <!-- inputs -->
 		<var name="meltInput" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
 		     description="meltwater input" />
 		<var name="frictionAngle" type="real" dimensions="nCells Time" units="None"
 		     description="till friction angle" />
                 <!-- convenience variables -->
-                <var name="basalFlwa" type="real" dimensions="nCells Time" units="Pa^-3 s^-1"
-		     description="basal ice softness" />
+		<var name="effectivePressure" type="real" dimensions="nCells Time" units="Pa"
+		     description="effective ice pressure in subglacial system" />
                 <var name="hydropotential" type="real" dimensions="nCells Time" units="Pa"
 		     description="subglacial hydropotential" />
                 <var name="waterFlux" type="real" dimensions="nEdges Time" units="?"
