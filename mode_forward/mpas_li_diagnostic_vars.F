@@ -446,6 +446,7 @@ contains
       character (len=StrKIND), pointer :: config_velocity_solver, config_sia_tangent_slope_calculation
       character (len=StrKIND), pointer :: config_thickness_advection, config_tracer_advection
       logical, pointer :: config_adaptive_timestep_include_DCFL
+      logical, pointer :: config_SGH
       ! truly local variables
       real (kind=RKIND) :: thisThk
       integer :: iCell, iLevel, iEdge, cell1, cell2
@@ -510,6 +511,7 @@ contains
           call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
           call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
           call mpas_pool_get_config(liConfigs, 'config_tracer_advection', config_tracer_advection)
+          call mpas_pool_get_config(liConfigs, 'config_SGH', config_SGH)
 
           call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
 
@@ -575,6 +577,15 @@ contains
              end do  ! edges
           endif
 
+          ! flowParamA only needed by the SIA solver or hydro model
+          if (trim(config_velocity_solver) == 'sia' .or. config_SGH) then
+             call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
+
+             ! Calculate flowA
+             call calculate_flowParamA(meshPool, temperature(:,:), thickness, flowParamA, err_tmp)
+             err = ior(err, err_tmp)
+          endif
+
           ! The remaining calculations are only needed by the SIA solver
           if (trim(config_velocity_solver) == 'sia') then
              call mpas_pool_get_config(liConfigs, 'config_sia_tangent_slope_calculation', config_sia_tangent_slope_calculation)
@@ -585,11 +596,6 @@ contains
              call mpas_pool_get_array(geometryPool, 'upperSurfaceVertex', upperSurfaceVertex)
              call mpas_pool_get_array(meshPool, 'baryCellsOnVertex', baryCellsOnVertex)
              call mpas_pool_get_array(meshPool, 'baryWeightsOnVertex', baryWeightsOnVertex)
-             call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
-
-             ! Calculate flowA
-             call calculate_flowParamA(meshPool, temperature(:,:), thickness, flowParamA, err_tmp)
-             err = ior(err, err_tmp)
 
              ! Calculate upperSurfaceVertex if needed
              select case (trim(config_sia_tangent_slope_calculation))
