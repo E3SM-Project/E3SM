@@ -63,6 +63,7 @@ module li_core
       use li_thermal
       use li_setup
       use li_constants
+      use li_subglacial_hydro
 !!!      use mpas_tracer_advection
 !!!      use li_global_diagnostics
    
@@ -219,6 +220,10 @@ module li_core
       ! initialize thermal solver
       ! Note: This subroutine includes a loop over blocks
       call li_thermal_init(domain, err_tmp)
+      err = ior(err, err_tmp)
+
+      ! Initialize subglacial hydrology solver
+      call li_SGH_init(domain, err_tmp)
       err = ior(err, err_tmp)
 
       ! initialize analysis driver
@@ -454,6 +459,7 @@ module li_core
       use mpas_derived_types
       use mpas_decomp
       use li_velocity, only: li_velocity_finalize
+      use li_subglacial_hydro, only: li_SGH_finalize
    
       implicit none
 
@@ -489,7 +495,12 @@ module li_core
       err_tmp = 0
       globalErr = 0
 
+      ! velocity finalize
       call li_velocity_finalize(domain, err_tmp)
+      err = ior(err, err_tmp)
+
+      ! subglacial hydro finalize
+      call li_SGH_finalize(domain, err_tmp)
       err = ior(err, err_tmp)
 
       ! call finalize subroutine in analysis driver 

@@ -424,6 +424,7 @@
 			<var name="dirichletVelocityMask" packages="higherOrderVelocity"/>
                         <var name="uReconstructX" packages="higherOrderVelocity"/>
 			<var name="uReconstructY" packages="higherOrderVelocity"/>
+			<var name="meltInput" packages="hydro"/>
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
