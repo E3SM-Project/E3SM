@@ -283,6 +283,9 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     directives = directives.replace("{{ job_id }}", job_id)
     directives = directives.replace("{{ num_nodes }}", str(num_nodes))
     directives = directives.replace("{{ tasks_per_node }}", str(tasks_per_node))
+    directives = directives.replace("{{ ptile }}", str(tasks_per_node))
+    directives = directives.replace("{{ totaltasks }}", str(tasks_per_node * num_nodes))
+
     directives = directives.replace("{{ output_error_path }}", "create_test_single_submit_%s.err" % test_id)
     directives = directives.replace("{{ job_wallclock_time }}", wall_time_bab)
     directives = directives.replace("{{ job_queue }}", queue)
@@ -319,13 +322,15 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
                     machine_name = testsplit[4]
                 else:
                     expect(machine_name == testsplit[4],
-                           "abiguity in machine, please use the --machine option")
+                           "ambiguity in machine, please use the --machine option")
             if testsplit[5] is not None:
                 if compiler is None:
                     compiler = testsplit[5]
                 else:
-                    expect(compiler == testsplit[5],
-                           "abiguity in compiler, please use the --compiler option")
+                    logger.info("Switch compiler %s to %s"%(compiler, testsplit[5]))
+                    compiler = testsplit[5]
+#                    expect(compiler == testsplit[5],
+#                           "ambiguity in compiler, please use the --compiler option")
 
     impl = SystemTest(testargs,
                       no_run=no_run, no_build=no_build, no_batch=no_batch,

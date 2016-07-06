@@ -27,8 +27,8 @@ def expect(condition, error_msg, exc_type=SystemExit):
     """
     if (not condition):
         # Uncomment these to bring up a debugger when an expect fails
-        #import pdb
-        #pdb.set_trace()
+        import pdb
+        pdb.set_trace()
         raise exc_type("ERROR: %s" % error_msg)
 
 # Should only be called from get_cime_config()
@@ -307,7 +307,7 @@ def get_full_test_name(partial_test, grid=None, compset=None, machine=None, comp
         (partial_grid, grid, "grid"),
         (partial_compset, compset, "compset"),
         (partial_machine, machine, "machine"),
-        (partial_compiler, compiler, "compiler"),
+#        (partial_compiler, compiler, "compiler"),
         ]
 
     result = partial_test

@@ -91,8 +91,8 @@
       <directive                       > -R "span[ptile={{ ptile }}]"</directive>
       <directive                       > -N  </directive>
       <directive default="poe"         > -a {{ poe }} </directive>
-      <directive default="cesm.stdout" > -o {{ cesm_stdout }}.%J  </directive>
-      <directive default="cesm.stderr" > -e {{ cesm_stderr }}.%J  </directive>
+      <directive default="cesm.stdout" > -o {{ output_error_path }}.%J  </directive>
+      <directive default="cesm.stderr" > -e {{ output_error_path }}.%J  </directive>
       <directive                       > -J {{ job_id }} </directive>
     </directives>
   </batch_system>
