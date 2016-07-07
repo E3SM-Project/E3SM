@@ -291,7 +291,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     directives = directives.replace("{{ job_queue }}", queue)
     if project is not None:
         directives = directives.replace("{{ project }}", project)
-        
+
     expect("{{" not in directives, "Could not resolve all items in directives:\n%s" % directives)
 
     #

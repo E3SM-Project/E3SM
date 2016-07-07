@@ -1337,7 +1337,6 @@
       <env name="MP_MPILIB">$MPILIB</env>
       <env name="MP_STDOUTMODE">unordered</env>
       <env name="MP_RC_USE_LMC">yes</env>
-      <env name="MP_COMPILER">$COMPILER</env>
     </environment_variables>
     <environment_variables debug="true">
       <env name="MP_EAGER_LIMIT">0</env>

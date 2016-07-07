@@ -382,7 +382,7 @@ class SystemTest(object):
 
         if self._walltime is not None:
             create_newcase_cmd += " --walltime %s" % self._walltime
-        elif self._test_xml[test]['wallclock'] is not None:
+        elif test in self._test_xml and "wallclock" in self._test_xml[test]:
             create_newcase_cmd += " --walltime %s" % self._test_xml[test]['wallclock']
 
         logger.debug("Calling create_newcase: " + create_newcase_cmd)
