@@ -966,48 +966,42 @@ class XMLQUERY(unittest.TestCase):
         # Test command line options
         
         options = [ 
-            [] , 
-            ['--listall'] , 
-            ['--listall' , '--valonly'] , 
-            ['-caseroot' , testdir , '-valonly' ,
-             '-subgroup' , 'case.run' , '-value' ,  'JOB_QUEUE' ] ,
+            '' , 
+            '--listall' , 
+            '--listall --valonly' , 
+            "-caseroot " + testdir +" -valonly -subgroup case.run -value JOB_QUEUE" ,
         ]
         
         for opt in options :
             
-            out = ''
-            call = [xmlquery] + opt
-            out = subprocess.check_output(call , cwd=testdir )
-        
-            self.assertTrue(len(out) , msg="output exists for:\n " + xmlquery + " " + " ".join(opt) + '\n' + out + 'END' )
+	    cmd = xmlquery + ' ' + opt # .join(opt)
+            stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=testdir)
+            self.assertTrue(len(output) , msg="no output for: " + cmd )
     
     def test_subgroup(self):
         
         # Set script and script path    
-        TOOLS_DIR = SCRIPT_DIR + "/Tools"
-        xmlquery = TOOLS_DIR + "/xmlquery"
+        xmlquery = "./xmlquery"
         testdir  = self._testdirs[0]
     
         options = [
-            ['-caseroot' , testdir , '-valonly' ,
-             '-value' ,  'JOB_QUEUE' ] ,
-            ['-caseroot' , testdir , '-valonly' ,
-             '-subgroup' , 'case.run' , '-value' ,  'JOB_QUEUE' ] ,
+            '-caseroot ' + testdir + ' -valonly -value JOB_QUEUE'  ,
+            '-caseroot ' + testdir + ' -valonly -subgroup case.run -value JOB_QUEUE' ,
          ]
         
         # Get value and group information
         base_out = ''
-        call     = [xmlquery] + options[0]
-        base_out = subprocess.check_output(call)
-        
+        cmd     = xmlquery + " " + options[0]
+        stat, base_out, errput = run_cmd(cmd, ok_to_fail=True, from_dir=testdir)
+
         group_out = ''
-        call      = [xmlquery] + options[1]
-        group_out = subprocess.check_output(call)
-        
+        cmd      = xmlquery + " " + options[1]
+        stat, group_out, errput = run_cmd(cmd , ok_to_fail=True, from_dir=testdir)
+
         searchObj = re.search( r'(.*)(case.run:JOB_QUEUE)\t*(.*)', base_out)
         
         # Test group option     
-        self.assertTrue(len(base_out))
+        self.assertTrue(len(base_out) , msg="no output for " + cmd + "\n" + errput )
         self.assertEqual(searchObj.group() , group_out)        
             
 
