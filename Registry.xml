@@ -425,6 +425,7 @@
                         <var name="uReconstructX" packages="higherOrderVelocity"/>
 			<var name="uReconstructY" packages="higherOrderVelocity"/>
 			<var name="meltInput" packages="hydro"/>
+			<var name="waterThickness" packages="hydro"/>
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
