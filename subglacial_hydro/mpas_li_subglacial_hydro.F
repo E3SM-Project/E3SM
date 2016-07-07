@@ -291,7 +291,7 @@ module li_subglacial_hydro
                cell1 = cellsOnEdge(1, iEdge)
                cell2 = cellsOnEdge(2, iEdge)
                ! add on advective flux
-               divergence(iCell) = divergence(iCell) + waterFlux(iEdge) * edgeSignOnCell(iEdgeOnCell, iCell)
+               divergence(iCell) = divergence(iCell) - waterFlux(iEdge) * edgeSignOnCell(iEdgeOnCell, iCell)
                ! add on diffusive flux
                divergence(iCell) = divergence(iCell) + diffusivity(iEdge) * &
                  (waterThickness(cell1) * edgeSignOnCell(iEdgeOnCell, iCell) - &
@@ -337,6 +337,7 @@ module li_subglacial_hydro
              - (Wtill - WtillOld) / deltatSGH)
          waterThickness = waterThickness * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations
          waterThickness = max(0.0_RKIND, waterThickness)
+         divergence = divergence * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations for more convenient viz
 
          block => block % next
       end do
@@ -585,7 +586,7 @@ module li_subglacial_hydro
       do iEdge = 1, nEdgesSolve
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
-         waterVelocity(iEdge) = -1.0_RKIND / dcEdge(iEdge) * effectiveConducEdge(iEdge) * &
+         waterVelocity(iEdge) = 1.0_RKIND / dcEdge(iEdge) * effectiveConducEdge(iEdge) * &
              (hydropotentialBase(cell1) - hydropotentialBase(cell2))
          velSign = sign(1.0_RKIND, waterVelocity(iEdge))
          waterThicknessEdgeUpwind(iEdge) = max(velSign * waterThickness(cell1),   &
