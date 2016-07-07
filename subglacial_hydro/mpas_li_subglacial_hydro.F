@@ -301,7 +301,7 @@ module li_subglacial_hydro
                cell1 = cellsOnEdge(1, iEdge)
                cell2 = cellsOnEdge(2, iEdge)
                ! add on advective flux
-               divergence(iCell) = divergence(iCell) + waterFlux(iEdge)
+               divergence(iCell) = divergence(iCell) + waterFlux(iEdge) * edgeSignOnCell(iEdgeOnCell, iCell)
                ! add on diffusive flux
                divergence(iCell) = divergence(iCell) + diffusivity(iEdge) * &
                  (waterThickness(cell1) * edgeSignOnCell(iEdgeOnCell, iCell) - &
