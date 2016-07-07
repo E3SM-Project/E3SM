@@ -102,6 +102,10 @@
 		     description="advective subglacial water flux" />
                 <var name="waterVelocity" type="real" dimensions="nEdges Time" units="m s^-1"
 		     description="subglacial water velocity" />
+                <var name="waterVelocityCellX" type="real" dimensions="nCells Time" units="m s^-1"
+		     description="subglacial water velocity reconstructed on cell centers, x-component" />
+                <var name="waterVelocityCellY" type="real" dimensions="nCells Time" units="m s^-1"
+		     description="subglacial water velocity reconstructed on cell centers, y-component" />
                 <var name="effectiveConduc" type="real" dimensions="nCells Time" units="?"
 		     description="effective Darcy hydraulic conductivity" />
                 <var name="effectiveConducEdge" type="real" dimensions="nEdges Time" units="?"
@@ -110,7 +114,7 @@
 		     description="water layer thickness on edges" />
                 <var name="waterThicknessEdgeUpwind" type="real" dimensions="nEdges Time" units="m"
 		     description="water layer thickness on edges, upwind" />
-                <var name="diffusivity" type="real" dimensions="nEdges Time" units="?"
+                <var name="diffusivity" type="real" dimensions="nEdges Time" units="m^2 s^-1"
 		     description="effective Darcy hydraulic conductivity" />
                 <var name="hydropotentialBase" type="real" dimensions="nCells Time" units="Pa"
 		     description="hydropotential without water thickness contribution" />
