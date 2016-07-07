@@ -940,7 +940,14 @@ class XMLQUERY(unittest.TestCase):
         
         
     def tearDown(self):
-        pass
+        do_teardown = len(self._do_teardown) > 0 and sys.exc_info() == (None, None, None)
+
+        for tfile in self._testdirs:
+            if tfile not in self._do_teardown:
+                print "Detected failed test or user request no teardown"
+                print "Leaving case directory : %s"%tfile
+            elif do_teardown:
+                shutil.rmtree(tfile)
         
         
     def test_XMLQUERY(self):
