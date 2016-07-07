@@ -800,6 +800,7 @@ module li_core
       !        (since x_period and y_period are not set properly).
       if ( (trim(config_velocity_solver) == 'sia') .or.    &
            (trim(config_velocity_solver) == 'simple') .or.    &
+           (trim(config_velocity_solver) == 'none') .or.    &
            config_do_velocity_reconstruction_for_external_dycore .or.   &
            config_adaptive_timestep_include_DCFL) then
          call mpas_rbf_interp_initialize(meshPool)
