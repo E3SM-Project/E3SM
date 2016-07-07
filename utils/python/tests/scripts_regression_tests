@@ -904,6 +904,8 @@ class TestSingleSubmit(TestCreateTestCommon):
         # Skip unless on a batch system and users did not select no-batch
         if (not self._hasbatch):
             self.skipTest("Skipping single submit. Not valid without batch")
+        if (self._machine in ("yellowstone")):
+            self.skipTest("Skipping single submit. Not valid on %s"%self._machine)
 
         # Keep small enough for now that we don't have to worry about load balancing
         stat, output, errput = run_cmd("unset CIME_GLOBAL_WALLTIME && %s/create_test SMS_Ln9_P4.f45_g37_rx1.A SMS_Ln9_P4.f19_g16.X  -t %s --single-submit" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True)
