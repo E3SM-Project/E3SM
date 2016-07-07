@@ -926,7 +926,6 @@ class XMLQUERY(unittest.TestCase):
         self._testdirs = []
         self._do_teardown = []
         
-        logger.debug(self)
         
         testdir = os.path.join(self._testroot, 'scripts_regression_tests.testscripts')
         machine = 'edison'
@@ -947,16 +946,15 @@ class XMLQUERY(unittest.TestCase):
     def test_XMLQUERY(self):
      
         # Set script and script path    
-        TOOLS_DIR = SCRIPT_DIR + "/Tools"
-        xmlquery = TOOLS_DIR + "/xmlquery"
+	TOOLS_DIR = SCRIPT_DIR + "/Tools"        
+	xmlquery = "./xmlquery"
         testdir  = self._testdirs[0]
         
-        logger.debug( "Testing %s" , xmlquery )
         
         # Check for environment 
         self.assertTrue(os.path.isdir(SCRIPT_DIR))
         self.assertTrue(os.path.isdir(TOOLS_DIR))
-        self.assertTrue(os.path.isfile(xmlquery) )
+        self.assertTrue(os.path.isfile(testdir + "/" + xmlquery) )
         
         # Test command line options
         
@@ -972,10 +970,8 @@ class XMLQUERY(unittest.TestCase):
             
             out = ''
             call = [xmlquery] + opt
-            out = subprocess.check_output(call)
+            out = subprocess.check_output(call , cwd=testdir )
         
-            logger.debug("Output for %s : %s" , " ".join(opt) , out)
-            
             self.assertTrue(len(out) , msg="output exists for:\n " + xmlquery + " " + " ".join(opt) + '\n' + out + 'END' )
     
     def test_subgroup(self):
@@ -985,8 +981,6 @@ class XMLQUERY(unittest.TestCase):
         xmlquery = TOOLS_DIR + "/xmlquery"
         testdir  = self._testdirs[0]
     
-        logger.debug( "Testing subgroup %s" , xmlquery )
-        
         options = [
             ['-caseroot' , testdir , '-valonly' ,
              '-value' ,  'JOB_QUEUE' ] ,
@@ -1005,10 +999,6 @@ class XMLQUERY(unittest.TestCase):
         
         searchObj = re.search( r'(.*)(case.run:JOB_QUEUE)\t*(.*)', base_out)
         
-        if not searchObj:
-           logger.debug("No match for regexp: %s" , base_out )     
-           
-    
         # Test group option     
         self.assertTrue(len(base_out))
         self.assertEqual(searchObj.group() , group_out)        
