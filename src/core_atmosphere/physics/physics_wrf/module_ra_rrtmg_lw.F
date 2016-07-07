@@ -11398,16 +11398,20 @@ use mpas_atmphys_o3climatology,only: vinterp_ozn
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2015-05-04.
 !>    * at the bottom of subroutine rrtmg_lwrad, changed the definition of the arrays lwupt,lwuptc,
 !>      lwdnt,and lwdntc so that they are now defined at the top-of-the-atmosphere.
-!>      Laura D. Fowler (laura@ucar.edu / 2016-06-23).
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-06-23.
 !>    * cleaned-up the subroutine rrtmg_lwrad in preparation for the implementation of the calculation of the
 !>      cloud optical properties when the effective radii for cloud water, cloud ice, and snow are provided by
 !>      the cloud microphysics schemes (note that for now, only the Thompson cloud microphysics scheme has the
 !>      option to calculate cloud radii). With the -g option, results are exactly the same as the original
 !>      subroutine.
-!>      Laura D. Fowler (laura@ucar.edu / 2016-06-30).
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-06-30.
 !>    * updated module_ra_rrtmg_lw.F using module_ra_rrtmg_lw.F from WRF version 3.8, namely to update the
 !>      calculation of the cloud optical properties to include the radiative effect of snow.
 !>      Laura D. Fowler (laura@ucar.edu / 2016-07-05).
+!>    * added the effective radii for cloud water, cloud ice, and snow calculated in the Thompson cloud
+!>      microphysics scheme as inputs to the subroutine rrtmg_lwrad. revised the initialization of arrays rel,
+!>      rei, and res, accordingly.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-07-07.
 !MPAS specific end.
 
 #else
@@ -11458,6 +11462,8 @@ CONTAINS
                        qi3d,qs3d,qg3d,cldfra3d,o33d,tsk,emiss,    &
                        xland,xice,snow,icloud,o3input,noznlevels, &
                        pin,o3clim,glw,olr,lwcf,rthratenlw,        &
+                       has_reqc,has_reqi,has_reqs,re_cloud,       &
+                       re_ice,re_snow,                            &
                        lwupt,lwuptc,lwdnt,lwdntc,                 &
                        lwupb,lwupbc,lwdnb,lwdnbc,                 &
                        lwupflx, lwupflxc, lwdnflx, lwdnflxc,      &
@@ -11474,13 +11480,14 @@ CONTAINS
  integer,intent(in):: ids,ide, jds,jde, kds,kde, &
                       ims,ime, jms,jme, kms,kme, &
                       its,ite, jts,jte, kts,kte
- integer,intent(in):: icloud
+ integer,intent(in):: icloud,has_reqc,has_reqi,has_reqs
  integer,intent(in),optional:: o3input
 
  real,intent(in),dimension(ims:ime,jms:jme):: emiss,tsk,snow,xice,xland
  real,intent(in),dimension(ims:ime,kms:kme,jms:jme):: t3d,p3d,pi3d
  real,intent(in),dimension(ims:ime,kms:kme,jms:jme):: dz8w,p8w,t8w
 
+ real,intent(in),dimension(ims:ime,kms:kme,jms:jme):: re_cloud,re_ice,re_snow
  real,intent(in),dimension(ims:ime,kms:kme,jms:jme),optional:: &
     cldfra3d,qv3d,qc3d,qr3d,qi3d,qs3d,qg3d,o33d
 
@@ -11504,12 +11511,15 @@ CONTAINS
  integer:: nb,ncol,nlay,icld,inflglw,iceflglw,liqflglw
  integer:: iplon,irng,permuteseed
  integer:: pcols,pver
+ integer:: idx_rei
  integer:: i,j,k,kk,n
  
  real:: ro,dz
- real:: gliqwp,gicewp,gravmks
+ real:: corr
+ real:: gliqwp,gicewp,gsnowp,gravmks
+ real:: snow_mass_factor
  real,dimension(1):: tsfc,landfrac,landm,snowh,icefrac
- real,dimension(1,1:kte-kts+1):: pdel,cicewp,cliqwp,reliq,reice
+ real,dimension(1,1:kte-kts+1):: pdel,cliqwp,cicewp,csnowp,reliq,reice,resnow
  real,dimension(1,nbndlw):: emis
 
  real,dimension(kts:kte):: &
@@ -11721,6 +11731,15 @@ CONTAINS
        !--- initialize local arrays called in the calculation of the cloud optical properties and radiative
        !    fluxes:
        do n = 1, ncol
+          do k = kts, kte
+             reliq(ncol,k)  = 10.
+             reice(ncol,k)  = 10.
+             resnow(ncol,k) = 10.
+             cliqwp(ncol,k) = 0.
+             cicewp(ncol,k) = 0.
+             csnowp(ncol,k) = 0.
+          enddo
+
           do k = 1, nlayers
              clwpth(n,k)  = 0.
              ciwpth(n,k)  = 0.
@@ -11870,54 +11889,133 @@ CONTAINS
              enddo
           enddo
 
-          !---  calculate the effective radius for cloud water in layers below the model top. we added the
-          !     dimensions pcols, pver so that the calls to subroutines relcalc and reicalc remain the same
-          !     as in WRF although the two dimensions are duplicate and not needed inside the subroutines:
           pcols = ncol
           pver  = kte - kts + 1
           gravmks = g
-          landfrac(ncol) = 2.-xland(i,j)
-          landm(ncol)    = landfrac(ncol)
-          snowh(ncol)    = 0.001*snow(i,j)
-          icefrac(ncol)  = xice(i,j)
 
-          call relcalc(ncol,pcols,pver,tlay,landfrac,landm,icefrac,reliq,snowh)
-
-          !--- calculate the effective radius for cloud ice in layers below the model top, following
-          !    Kristjansson and Mitchell. limit upper bound of reice for Fu ice parameterization and
-          !    convert effective radius to generalized effective size (*1.0315; Fu, 1996):
-
-          call reicalc(ncol,pcols,pver,tlay,reice)
-
-          if(iceflglw .eq. 3) then
+          if(has_reqc .ne. 0) then
+             !--- fill the effective radius for cloud water with that calculated in the Thompson cloud
+             !    microphysics parameterization:
+             inflglw = 3
              do k = kts, kte
-                reice(ncol,k) = reice(ncol,k) * 1.0315
-                reice(ncol,k) = min(140.0,reice(ncol,k))
+                reliq(ncol,k) = max(2.5,re_cloud(i,k,j)*1.e6)
+                if(reliq(ncol,k).le.2.5 .and. cldfrac(ncol,k).gt.0. .and. &
+                   (xland(i,j)-1.5).gt.0.) then        !--- ocean.
+                   reliq(ncol,k) = 10.5
+                elseif(reliq(ncol,k).le.2.5 .and. cldfrac(ncol,k).gt.0. .and. &
+                   (xland(i,j)-1.5).lt.0.) then        !--- land.
+                   reliq(ncol,k) = 7.5
+                endif
+             enddo
+
+          else
+
+             !---  calculate the effective radius for cloud water in layers below the model top. we added the
+             !     dimensions pcols, pver so that the calls to subroutines relcalc and reicalc remain the same
+             !     as in WRF although the two dimensions are duplicate and not needed inside the subroutines:
+             landfrac(ncol) = 2.-xland(i,j)
+             landm(ncol)    = landfrac(ncol)
+             snowh(ncol)    = 0.001*snow(i,j)
+             icefrac(ncol)  = xice(i,j)
+
+             call relcalc(ncol,pcols,pver,tlay,landfrac,landm,icefrac,reliq,snowh)
+          endif
+
+          if(has_reqi .ne. 0) then
+             !--- fill the effective radius for cloud ice with that calculated in the Thompson cloud
+             !    microphysics parameterization:
+             inflglw  = 4
+             iceflglw = 4
+             do k = kts, kte
+                reice(ncol,k) = max(5.,re_ice(i,k,j)*1.e6)
+                if(reice(ncol,k).le.5. .and. cldfrac(ncol,k).gt.0.) then
+                   idx_rei = int(t3d(i,k,j)-179.)
+                   idx_rei = min(max(idx_rei,1),75)
+                   corr = t3d(i,k,j) - int(t3d(i,k,j))
+                   reice(ncol,k) = retab(idx_rei)*(1.-corr) + retab(idx_rei+1)*corr
+                   reice(ncol,k) = max(reice(ncol,k),5.0)
+                endif
+             enddo
+
+          else
+
+             !--- calculate the effective radius for cloud ice in layers below the model top, following
+             !    Kristjansson and Mitchell. limit upper bound of reice for Fu ice parameterization and
+             !    convert effective radius to generalized effective size (*1.0315; Fu, 1996):
+
+             call reicalc(ncol,pcols,pver,tlay,reice)
+
+             if(iceflglw .eq. 3) then
+                do k = kts, kte
+                   reice(ncol,k) = reice(ncol,k) * 1.0315
+                   reice(ncol,k) = min(140.0,reice(ncol,k))
+                enddo
+             endif
+          endif
+
+          if(has_reqs .ne. 0) then
+             !--- fill the effective radius for snow with that calculated in the Thompson cloud
+             !    microphysics parameterization:
+             inflglw  = 5
+             iceflglw = 5
+             do k = kts, kte
+                resnow(ncol,k) = max(10.,re_snow(i,k,j)*1.e6)
+             enddo
+          else
+             do k = kts, kte
+                resnow(ncol,k) = 10.
              enddo
           endif
 
-          !--- calculate the cloud liquid and ice paths in units of g/m2 below the mode top. snow is added
-          !    as ice cloud: 
+          !--- calculate the cloud liquid water path in units of g/m2 below the model top:
           do k = kts, kte
-             gicewp = (qi1d(k)+qs1d(k)) * pdel(ncol,k)*100.0 / gravmks * 1000.0 ! grid box ice water path.
-             gliqwp = qc1d(k) * pdel(ncol,k)*100.0 / gravmks * 1000.0           ! grid box liquid water path.
-             cicewp(ncol,k) = gicewp / max(0.01,cldfrac(ncol,k))                ! in-cloud ice water path.
-             cliqwp(ncol,k) = gliqwp / max(0.01,cldfrac(ncol,k))                ! in-cloud liquid water path.
+             gliqwp = qc1d(k) * pdel(ncol,k)*100.0 / gravmks * 1000.0              !grid box liquid water path.
+             cliqwp(ncol,k) = gliqwp / max(0.01,cldfrac(ncol,k))                   !in-cloud liquid water path.
           enddo
+
+          !--- calculate the cloud ice path in units of g/m2 below the model top:
+          if(iceflglw .eq. 3)then
+             do k = kts, kte
+                gicewp = (qi1d(k)+qs1d(k)) * pdel(ncol,k)*100.0 / gravmks * 1000.0 !grid box ice water path.
+                cicewp(ncol,k) = gicewp / max(0.01,cldfrac(ncol,k))                !in-cloud ice water path.
+             enddo
+          elseif(iceflglw .ge. 4) then
+             do k = kts, kte
+                gicewp = qi1d(k) * pdel(ncol,k)*100.0 / gravmks * 1000.0           !grid box ice water path.
+                cicewp(ncol,k) = gicewp / max(0.01,cldfrac(ncol,k))                !in-cloud ice water path.
+             enddo
+          endif
+
+          !--- calculate the snow path in units of g/m2 below the model top:
+          if(iceflglw.eq.5)then
+              do k = kts, kte
+                 snow_mass_factor = 1.0
+                 if(resnow(ncol,k) .gt. 130.)then
+                    snow_mass_factor = (130.0/resnow(ncol,k))*(130.0/resnow(ncol,k))
+                    resnow(ncol,k)   = 130.0
+                 endif
+                 gsnowp = qs1d(k) * pdel(ncol,k)*100.0 / gravmks * 1000.0           ! grid box snow path.
+                 csnowp(ncol,k) = snow_mass_factor * gsnowp / max(0.01,cldfrac(ncol,k))
+              enddo
+           endif
 
           !--- set the cloud physical property between the model top and the top of the atmosphere. do not allow
           !    clouds between the model top and the top of the atmosphere: 
           do k = kts, kte
              clwpth(ncol,k) = cliqwp(ncol,k)
              ciwpth(ncol,k) = cicewp(ncol,k)
+             cswpth(ncol,k) = csnowp(ncol,k)
              rel(ncol,k) = reliq(ncol,k)
              rei(ncol,k) = reice(ncol,k)
+             res(ncol,k) = resnow(ncol,k)
           enddo
           do k = kte+1, nlayers
-             clwpth(ncol,k) = 0.
-             ciwpth(ncol,k) = 0.
-             rel(ncol,k)    = 10.
-             rei(ncol,k)    = 10.
+             clwpth(ncol,k)  = 0.
+             ciwpth(ncol,k)  = 0.
+             cswpth(ncol,k)  = 0.
+             rel(ncol,k)     = 10.
+             rei(ncol,k)     = 10.
+             res(ncol,k)     = 10.
              cldfrac(ncol,k) = 0.
              do nb = 1, nbndlw
                 taucld(nb,ncol,k) = 0.

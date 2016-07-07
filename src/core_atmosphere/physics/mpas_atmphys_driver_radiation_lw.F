@@ -75,6 +75,9 @@
 !>      Laura D. Fowler (laura@ucar.edu) / 2014-05-15.
 !>    * cleaned-up the call to rrtmg_lwrad after cleaning up subroutine rrtmg_lwrad in module_ra_rrtmg_lw.F.
 !>      Laura D. Fowler (laura@ucar.edu) / 2016-06-30.
+!>    * added the cloud radii for cloud water, cloud ice, and snow calculated in the Thompson cloud microphysics
+!>      scheme in the call to subroutine rrtmg_lwrad.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-07-07.
 
 
  contains
@@ -115,6 +118,11 @@
  radiation_lw_select: select case (trim(radt_lw_scheme))
 
     case("rrtmg_lw")
+
+       if(.not.allocated(recloud_p)    ) allocate(recloud_p(ims:ime,kms:kme,jms:jme)       )
+       if(.not.allocated(reice_p)      ) allocate(reice_p(ims:ime,kms:kme,jms:jme)         )
+       if(.not.allocated(resnow_p)     ) allocate(resnow_p(ims:ime,kms:kme,jms:jme)        )
+
        if(.not.allocated(lwdnflx_p)    ) allocate(lwdnflx_p(ims:ime,kms:kme+1,jms:jme)     )
        if(.not.allocated(lwdnflxc_p)   ) allocate(lwdnflxc_p(ims:ime,kms:kme+1,jms:jme)    )
        if(.not.allocated(lwupflx_p)    ) allocate(lwupflx_p(ims:ime,kms:kme+1,jms:jme)     )
@@ -199,6 +207,10 @@
  radiation_lw_select: select case (trim(radt_lw_scheme))
 
     case("rrtmg_lw")
+       if(allocated(recloud_p)    ) deallocate(recloud_p    )
+       if(allocated(reice_p)      ) deallocate(reice_p      )
+       if(allocated(resnow_p)     ) deallocate(resnow_p     )
+
        if(allocated(lwdnflx_p)    ) deallocate(lwdnflx_p    )
        if(allocated(lwdnflxc_p)   ) deallocate(lwdnflxc_p   )
        if(allocated(lwupflx_p)    ) deallocate(lwupflx_p    )
@@ -269,6 +281,7 @@
  real(kind=RKIND),dimension(:),pointer    :: m_ps,pin
  real(kind=RKIND),dimension(:),pointer    :: sfc_albedo,sfc_emiss
  real(kind=RKIND),dimension(:,:),pointer  :: cldfrac,m_hybi,o3clim,o3vmr
+ real(kind=RKIND),dimension(:,:),pointer  :: re_cloud,re_ice,re_snow
  real(kind=RKIND),dimension(:,:,:),pointer:: aerosols,ozmixm
 
 !local variables and arrays:
@@ -352,6 +365,20 @@
  radiation_lw_select: select case (trim(radt_lw_scheme))
 
     case("rrtmg_lw")
+       call mpas_pool_get_array(diag_physics,'re_cloud',re_cloud)
+       call mpas_pool_get_array(diag_physics,'re_ice'  ,re_ice  )
+       call mpas_pool_get_array(diag_physics,'re_snow' ,re_snow )
+
+       do j = jts,jte
+       do k = kts,kte
+       do i = its,ite
+          recloud_p(i,k,j) = re_cloud(k,i)
+          reice_p(i,k,j)   = re_ice(k,i)
+          resnow_p(i,k,j)  = re_snow(k,i)
+       enddo
+       enddo
+       enddo
+
        do j = jts,jte
        do k = kts,kte+2
        do i = its,ite
@@ -706,6 +733,8 @@
             icloud     = icloud       , o3input    = o3input       , noznlevels = num_oznlevels , &
             pin        = pin_p        , o3clim     = o3clim_p      , glw        = glw_p         , &
             olr        = olrtoa_p     , lwcf       = lwcf_p        , rthratenlw = rthratenlw_p  , &
+            has_reqc   = has_reqc     , has_reqi   = has_reqi      , has_reqs   = has_reqs      , &
+            re_cloud   = recloud_p    , re_ice     = reice_p       , re_snow    = resnow_p      , &
             lwupt      = lwupt_p      , lwuptc     = lwuptc_p      , lwdnt      = lwdnt_p       , &
             lwdntc     = lwdntc_p     , lwupb      = lwupb_p       , lwupbc     = lwupbc_p      , &
             lwdnb      = lwdnb_p      , lwdnbc     = lwdnbc_p      ,                              &
