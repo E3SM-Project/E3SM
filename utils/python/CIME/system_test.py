@@ -111,6 +111,7 @@ class SystemTest(object):
                                                            xml_compiler, xml_testlist,
                                                            machine_name, compiler)
             test_names = [item["name"] for item in test_data]
+            logger.info("Testnames: %s"%test_names)
             for test_datum in test_data:
                 self._test_xml[test_datum["name"]] = test_datum
         else:
@@ -381,6 +382,8 @@ class SystemTest(object):
 
         if self._walltime is not None:
             create_newcase_cmd += " --walltime %s" % self._walltime
+        elif self._test_xml[test]['wallclock'] is not None:
+            create_newcase_cmd += " --walltime %s" % self._test_xml[test]['wallclock']
 
         logger.debug("Calling create_newcase: " + create_newcase_cmd)
         return self._shell_cmd_for_phase(test, create_newcase_cmd, CREATE_NEWCASE_PHASE)

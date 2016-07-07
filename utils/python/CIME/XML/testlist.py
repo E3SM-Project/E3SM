@@ -64,16 +64,16 @@ class Testlist(GenericXML):
 
         for tnode in testnodes:
             machnodes = self.get_nodes("machine",machatts,root=tnode)
-            thistest = {}
-
             if machnodes:
+                thistnode = {}
                 for key, value in tnode.items():
                     if key == "name":
-                        thistest["testname"] = value
+                        thistnode["testname"] = value
                     else:
-                        thistest[key] = value
+                        thistnode[key] = value
 
                 for mach in machnodes:
+                    thistest = dict(thistnode)
                     for key, value in mach.items():
                         if key == "name":
                             thistest["machine"] = value

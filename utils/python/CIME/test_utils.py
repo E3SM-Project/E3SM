@@ -42,7 +42,7 @@ def get_tests_from_xml(xml_machine=None,xml_category=None,xml_compiler=None, xml
                 thismach = test["machine"]
             if(compiler is None):
                 thiscompiler = test["compiler"]
-            test["name"] = CIME.utils.get_full_test_name(test["testname"], grid=test["grid"], compset=test["compset"], 
+            test["name"] = CIME.utils.get_full_test_name(test["testname"], grid=test["grid"], compset=test["compset"],
                                                          machine=thismach, compiler=thiscompiler,
                                                          testmod=None if "testmods" not in test else test["testmods"])
             logger.debug("Adding test %s with compiler %s"%(test["name"], test["compiler"]))
