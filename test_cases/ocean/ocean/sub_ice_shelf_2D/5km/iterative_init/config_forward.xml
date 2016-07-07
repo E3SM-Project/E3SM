@@ -12,6 +12,7 @@
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
 		<template file="template_iter_forward.xml" path_base="script_resolution_dir"/>
+		<template file="land_ice_fluxes.xml" path_base="script_core_dir" path="templates/streams"/>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<stream name="globalStatsOutput">
 			<attribute name="output_interval">0000_00:00:01</attribute>
