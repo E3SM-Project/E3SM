@@ -235,7 +235,7 @@ module li_subglacial_hydro
 
 
       ! =============
-      ! Calculate edge quantities
+      ! Calculate edge quantities and advective fluxes
       ! =============
       block => domain % blocklist
       do while (associated(block))
@@ -256,19 +256,9 @@ module li_subglacial_hydro
       ! =============
       ! Calculate time step if being adaptive, otherwise check for CFL
       ! =============
-      !call check_time_step()
+      call check_timestep(domain, err_tmp)
+      err = ior(err, err_tmp)
 
-      ! =============
-      ! Compute advective fluxes
-      ! =============
-      block => domain % blocklist
-      do while (associated(block))
-
-         !call calc_advective(waterFlux, waterVelo, effectiveConducEdge, dcEdge, dvEdge, hydropotentialBase)
-         err = ior(err, err_tmp)
-
-         block => block % next
-      end do
 
       ! =============
       ! Compute flux divergence
@@ -468,7 +458,7 @@ module li_subglacial_hydro
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
-      type (block_type), pointer :: block    !< Input/Output: block object
+      type (block_type), intent(inout) :: block    !< Input/Output: block object
 
       !-----------------------------------------------------------------
       ! output variables
@@ -601,123 +591,119 @@ module li_subglacial_hydro
 
 !***********************************************************************
 !
-!  routine calc_advective_flux
+!  routine check_timestep
 !
-!> \brief   Calculate SGH advective fluxes
+!> \brief   Calculate SGH timesteps and check current timestep
 !> \author  Matt Hoffman
-!> \date    5 July 2016
+!> \date    7 July 2016
 !> \details
-!>  This routine calculates needed SGH advective fluxes
+!>  This routine calculates the three timesteps associated with the
+!>  SGH solver and compares them to the current model timestep.
 !-----------------------------------------------------------------------
-!     subroutine calc_advective_flux(block, err)
-!  
-!        !-----------------------------------------------------------------
-!        ! input variables
-!        !-----------------------------------------------------------------
-!  
-!        !-----------------------------------------------------------------
-!        ! input/output variables
-!        !-----------------------------------------------------------------
-!        type (block_type), pointer :: block    !< Input/Output: block object
-!  
-!        !-----------------------------------------------------------------
-!        ! output variables
-!        !-----------------------------------------------------------------
-!        integer, intent(out) :: err !< Output: error flag
-!  
-!        !-----------------------------------------------------------------
-!        ! local variables
-!        !-----------------------------------------------------------------
-!        ! Pools pointers
-!        type (mpas_pool_type), pointer :: meshPool
+   subroutine check_timestep(domain, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: domain    !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      ! Pools pointers
+      type (mpas_pool_type), pointer :: meshPool
 !        type (mpas_pool_type), pointer :: geometryPool
-!        type (mpas_pool_type), pointer :: hydroPool
-!        real (kind=RKIND), dimension(:), pointer :: bedTopography
-!        real (kind=RKIND), dimension(:), pointer :: waterPressure
-!        real (kind=RKIND), dimension(:), pointer :: hydropotentialBase
-!        real (kind=RKIND), dimension(:), pointer :: waterThicknessEdge
-!        real (kind=RKIND), dimension(:), pointer :: waterThickness
-!        real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeNormal
-!        real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeTangent
-!        real (kind=RKIND), dimension(:), pointer :: gradMagPhiEdge
-!        real (kind=RKIND), dimension(:), pointer :: effectiveConducEdge
-!        real (kind=RKIND), dimension(:), pointer :: diffusivity
-!        real (kind=RKIND), dimension(:), pointer :: dcEdge
-!        real (kind=RKIND), dimension(:), pointer :: waterVelocity
-!        real (kind=RKIND), dimension(:,:), pointer :: cellsOnEdge
-!        real (kind=RKIND), pointer :: gravity
-!        real (kind=RKIND), pointer :: alpha, beta
-!        real (kind=RKIND), pointer :: conduc_coeff
-!        character (len=StrKIND), pointer :: config_SGH_tangent_slope_calculation
-!        integer, pointer :: nEdgesSolve
-!        integer :: iEdge, cell1, cell2
-!        integer :: err_tmp
-!  
-!        err = 0
-!        err_tmp = 0
-!  
-!  
-!        ! Get pools things
-!        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-!        call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
-!        call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-!  
-!        call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
-!  
-!        call mpas_pool_get_config(liConfigs, 'config_SGH_alpha', alpha)
-!        call mpas_pool_get_config(liConfigs, 'config_SGH_beta', beta)
-!        call mpas_pool_get_config(liConfigs, 'config_SGH_conduc_coeff', conduc_coeff)
-!        call mpas_pool_get_config(liConfigs, 'config_SGH_tangent_slope_calculation', config_SGH_tangent_slope_calculation)
-!  
-!        call mpas_pool_get_array(hydroPool, 'hydropotentialBase', hydropotentialBase)
-!        call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-!        call mpas_pool_get_array(geometryPool, 'waterPressure', waterPressure)
-!        call mpas_pool_get_array(hydroPool, 'waterThicknessEdge', waterThicknessEdge)
-!        call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeNormal', hydropotentialBaseSlopeNormal)
-!        call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-!        call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeTangent', hydropotentialBaseSlopeTangent)
-!        call mpas_pool_get_array(hydroPool, 'gradMagPhiEdge', gradMagPhiEdge)
-!        call mpas_pool_get_array(hydroPool, 'effectiveConducEdge', effectiveConducEdge)
-!        call mpas_pool_get_array(hydroPool, 'diffusivity', diffusivity)
-!        call mpas_pool_get_array(hydroPool, 'waterVelocity', waterVelocity)
-!  
-!  
-!        !-------------
-!        select case (trim(config_SGH_advection))
-!        !-------------
-!        case ("fo")
-!  
-!           ! Note: This loop structure (nCells loop outside nEdgesOnCell loop) results in double calculation of fluxes
-!           !       across each edge. But upwind advection is cheap, so the extra cost is minimal.
-!  
-!           ! loop over locally owned cells
-!           do iCell = 1, nCellsSolve
-!              ! compute fluxes for each edge of the cell
-!              do iEdgeOnCell = 1, nEdgesOnCell(iCell)
-!  
-!                 iEdge = edgesOnCell(iEdgeOnCell, iCell)
-!                 cell1 = cellsOnEdge(1,iEdge)
-!                 cell2 = cellsOnEdge(2,iEdge)
-!  
-!                 waterFlux = waterVelocity(iEdge) * dvEdge(iEdge) * waterThicknessEdgeUpwind(iEdge)
-!              end do ! edges
-!           end do ! cells
-!  
-!        !-------------
-!        case ("fct")
-!           write (stdErrUnit,*) 'Error: Invalid value for config_SGH_advection.'
-!           err = 1
-!  
-!        !-------------
-!        case default
-!           write (stdErrUnit,*) 'Error: Invalid value for config_SGH_advection.'
-!           err = 1
-!        !-------------
-!        end select
-!        !-------------
-!  
-!     !--------------------------------------------------------------------
-!     end subroutine calc_advective_flux
+      type (mpas_pool_type), pointer :: hydroPool
+      real (kind=RKIND), dimension(:), pointer :: waterVelocity
+      real (kind=RKIND), dimension(:), pointer :: diffusivity
+      real (kind=RKIND), dimension(:), pointer :: dcEdge
+      real (kind=RKIND), pointer :: deltatSGH
+      real (kind=RKIND), pointer :: deltatSGHadvec
+      real (kind=RKIND), pointer :: deltatSGHdiffu
+      real (kind=RKIND), pointer :: deltatSGHpressure
+      real (kind=RKIND), pointer :: porosity
+      type (block_type), pointer :: block
+      integer, pointer :: nEdgesSolve
+      real (kind=RKIND) :: dtSGHadvecBlock, dtSGHadvecProc
+      real (kind=RKIND) :: dtSGHdiffuBlock, dtSGHdiffuProc
+      real (kind=RKIND) :: dtSGHpressureBlock, dtSGHpressureProc
+      integer :: err_tmp
+      real(kind=RKIND) :: bigNumber
+      parameter (bigNumber = 1.0e36_RKIND)
+
+      err = 0
+      err_tmp = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_SGH_englacial_porosity', porosity)
+
+      dtSGHadvecProc = bigNumber
+      dtSGHdiffuProc = bigNumber
+      dtSGHpressureProc = bigNumber
+
+      block => domain % blocklist
+      do while (associated(block))
+
+         ! Get pools things
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
+
+         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+
+         call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
+         call mpas_pool_get_array(hydroPool, 'deltatSGHadvec', deltatSGHadvec)
+         call mpas_pool_get_array(hydroPool, 'deltatSGHdiffu', deltatSGHdiffu)
+         call mpas_pool_get_array(hydroPool, 'deltatSGHpressure', deltatSGHpressure)
+         call mpas_pool_get_array(hydroPool, 'waterVelocity', waterVelocity)
+         call mpas_pool_get_array(hydroPool, 'diffusivity', diffusivity)
+         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+
+         ! Calculate advective CFL-limited time step
+         dtSGHadvecBlock = 0.5_RKIND * minval(dcEdge(1:nEdgesSolve) / (abs(waterVelocity(1:nEdgesSolve)) + 1.0e-12_RKIND))  ! regularize
+         dtSGHadvecProc = min(dtSGHadvecProc, dtSGHadvecBlock)
+
+         ! Calculate diffusive CFL-limited time step
+         dtSGHdiffuBlock = 0.25_RKIND * minval(dcEdge(1:nEdgesSolve)**2 / (diffusivity(1:nEdgesSolve) + 1.0e-12_RKIND))
+         dtSGHdiffuProc = min(dtSGHdiffuProc, dtSGHdiffuBlock)
+
+         ! Calculate pressure limited time step
+         dtSGHpressureBlock = 1.0_RKIND * minval(porosity * dcEdge(1:nEdgesSolve)**2 &
+                   / (2.0_RKIND * diffusivity(1:nEdgesSolve) + 1.0e-12_RKIND))
+         dtSGHpressureProc = min(dtSGHpressureProc, dtSGHpressureBlock)
+
+         block => block % next
+      end do
+
+      call mpas_dmpar_min_real(domain % dminfo, dtSGHadvecProc, deltatSGHadvec)
+      call mpas_dmpar_min_real(domain % dminfo, dtSGHdiffuProc, deltatSGHdiffu)
+      call mpas_dmpar_min_real(domain % dminfo, dtSGHpressureProc, deltatSGHpressure)
+
+      ! optional: always write out for debugging
+      write(stdErrUnit,*) "deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure:", deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure
+
+      ! compare timesteps
+      if (deltatSGH > deltatSGHadvec) then
+         write(stdErrUnit,*) "WARNING: deltatSGH > deltatSGHadvec  ", deltatSGH, deltatSGHadvec
+      endif
+      if (deltatSGH > deltatSGHdiffu) then
+         write(stdErrUnit,*) "WARNING: deltatSGH > deltatSGHdiffu  ", deltatSGH, deltatSGHdiffu
+      endif
+      if (deltatSGH > deltatSGHpressure) then
+         write(stdErrUnit,*) "WARNING: deltatSGH > deltatSGHpressure  ", deltatSGH, deltatSGHpressure
+      endif
+
+
+   !--------------------------------------------------------------------
+   end subroutine check_timestep
+
 
 
 
@@ -740,7 +726,7 @@ module li_subglacial_hydro
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
-      type (block_type), pointer :: block    !< Input/Output: block object
+      type (block_type), intent(inout) :: block    !< Input/Output: block object
 
       !-----------------------------------------------------------------
       ! output variables
