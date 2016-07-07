@@ -329,8 +329,8 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
                 if compiler is None:
                     compiler = testsplit[5]
                 else:
-                    logger.info("Switch compiler %s to %s"%(compiler, testsplit[5]))
-                    compiler = testsplit[5]
+                    expect(compiler == testsplit[5],
+                           "ambiguity in compiler, please use the --compiler option")
 
     impl = SystemTest(testargs,
                       no_run=no_run, no_build=no_build, no_batch=no_batch,
