@@ -32,9 +32,6 @@ SYNOPSIS
      build-namelist [options]
 OPTIONS
      -infile "filepath"    Specify a file containing namelists to read values from.
-     -namelist "namelist"  Specify namelist settings directly on the commandline by supplying
-                           a string containing FORTRAN namelist syntax, e.g.,
-                              -namelist "&drv_nml dt=1800 /"
      -help [or -h]         Print usage to STDOUT.
      -silent               Turn on silent mode
      -verbose              Turn on verbose echoing of informational messages.
@@ -46,13 +43,11 @@ OPTIONS
      -atm_grid             ATM_GRID variable
      -lnd_grid             LND_GRID variable
      -ocn_grid             OCN_GRID variable
-     -pio_version       PIO_VERSION (1 or 2)
+     -pio_version          PIO_VERSION (1 or 2)
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
-      1. namelist values set by specific command-line options, i.e. (none right now)
-      2. values set on the command-line using the -namelist option,
-      3. values read from the file specified by -infile,
-      4. values from the namelist defaults file - or values specifically set in build-namelist
+      1. values read from the file specified by -infile,
+      2. values from the namelist defaults file 
 EOF
 }
 
@@ -92,7 +87,6 @@ my %opts = ( help        => 0,
 GetOptions(
     "h|help"        => \$opts{'help'},
     "infile=s"      => \$opts{'infile'},
-    "namelist=s"    => \$opts{'namelist'},
     "s|silent"      => \$opts{'silent'},
     "v|verbose"     => \$opts{'verbose'},
     "caseroot=s"    => \$opts{'caseroot'},
@@ -255,25 +249,6 @@ my $nl = Build::Namelist->new();
 # Process the user input in order of precedence.  At each point we'll only add new
 # values to the namelist and not overwrite previously specified specified values which
 # have higher precedence.
-
-# Process the commandline args that provide specific namelist values.
-
-# Process the -namelist arg.
-if (defined $opts{'namelist'}) {
-    # Parse commandline namelist
-    my $nl_arg = Build::Namelist->new($opts{'namelist'});
-
-    # Validate input namelist -- trap exceptions
-    my $nl_arg_valid;
-    eval { $nl_arg_valid = $definition->validate($nl_arg); };
-    if ($@) {
-	die "$ProgName - ERROR: Invalid namelist variable in commandline arg '-namelist'.\n $@";
-    }
-
-    # Merge input values into namelist.  Previously specified values have higher precedence
-    # and are not overwritten.
-    $nl->merge_nl($nl_arg_valid);
-}
 
 # Process the -infile arg.
 if (defined $opts{'infile'}) {

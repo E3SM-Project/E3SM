@@ -89,7 +89,7 @@ class Compilers(GenericXML):
             self.os       = os_
             self.mpilib   = mpilib
 
-    def get_value(self, name, resolved=True, subgroup=None):
+    def get_value(self, name, attribute=None, resolved=True, subgroup=None):
         """
         Get Value of fields in the config_compilers.xml file
         """
@@ -129,10 +129,6 @@ class Compilers(GenericXML):
             _add_to_macros(compiler_node, macros)
 
             compcpp = self.compiler.upper()
-        if "ADD_CPPDEFS" in macros:
-            macros["ADD_CPPDEFS"] += " -D%s -DCPR%s " % (self.os, compcpp)
-        else:
-            macros["ADD_CPPDEFS"] = " -D%s -DCPR%s " % (self.os, compcpp)
 
         # A few things can be used from environ if not in XML
         for item in ["MPI_PATH", "NETCDF_PATH"]:

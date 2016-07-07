@@ -8,7 +8,7 @@ import shutil, glob, tempfile
 
 logger = logging.getLogger(__name__)
 
-def apply_user_mods(caseroot, user_mods_path, ninst={}):
+def apply_user_mods(caseroot, user_mods_path, ninst=None):
     '''
     Recursivlely apply user_mods to caseroot
     '''
@@ -19,8 +19,8 @@ def apply_user_mods(caseroot, user_mods_path, ninst={}):
                 contents = fd.read()
             case_user_nl = user_nl.replace(include_dir, caseroot)
             comp = case_user_nl.split('_')[-1]
-            if comp in ninst.keys():
-                for comp_inst in xrange(1,ninst[comp]):
+            if ninst is not None and comp in ninst.keys():
+                for comp_inst in xrange(1, ninst[comp]):
                     case_user_nl_inst = case_user_nl + "_%4.4d"%comp_inst
                     logger.info("Appending file %s"%case_user_nl_inst)
                     with open(case_user_nl_inst, "a") as fd:
@@ -29,7 +29,7 @@ def apply_user_mods(caseroot, user_mods_path, ninst={}):
                 logger.info("Appending file %s"%case_user_nl)
                 with open(case_user_nl, "a") as fd:
                     fd.write(contents)
-        for root, dirs, files in os.walk(include_dir,followlinks=True,topdown=False):
+        for root, _, files in os.walk(include_dir,followlinks=True,topdown=False):
             if "src" in os.path.basename(root):
                 for sfile in files:
                     source_mods = os.path.join(root,sfile)
@@ -52,11 +52,11 @@ def apply_user_mods(caseroot, user_mods_path, ninst={}):
                 new_shell_commands = fd.read().replace("xmlchange","xmlchange --force")
             with open(case_shell_commands, "a") as fd:
                 fd.write(new_shell_commands)
-        if case_shell_commands is not None:
-            os.chmod(case_shell_commands, 0777)
-            run_cmd(case_shell_commands)
+    if case_shell_commands is not None:
+        os.chmod(case_shell_commands, 0777)
+        run_cmd(case_shell_commands)
 
-def build_include_dirs_list(user_mods_path, include_dirs=[]):
+def build_include_dirs_list(user_mods_path, include_dirs=None):
     '''
     If user_mods_path has a file "include_user_mods" read that
     file and add directories to the include_dirs, recursively check
@@ -66,13 +66,14 @@ def build_include_dirs_list(user_mods_path, include_dirs=[]):
     expect(os.path.isabs(user_mods_path),
            "Expected full directory path, got '%s'"%user_mods_path)
     logger.info("Adding user mods directory %s"%user_mods_path)
+    include_dirs = [] if include_dirs is None else include_dirs
     include_dirs.append(os.path.normpath(user_mods_path))
     include_file = os.path.join(include_dirs[-1],"include_user_mods")
     if os.path.isfile(include_file):
         with open(include_file, "r") as fd:
             for newpath in fd:
                 newpath = newpath.rstrip()
-                if not newpath.startswith("#"):
+                if len(newpath) > 0 and not newpath.startswith("#"):
                     if not os.path.isabs(newpath):
                         newpath = os.path.join(user_mods_path, newpath)
                     if os.path.isabs(newpath):

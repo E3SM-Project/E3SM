@@ -3774,6 +3774,7 @@ end subroutine cesm_init
                                ' :stop at ',force_stop_ymd
          endif
       endif
+#ifndef CPL_BYPASS
       if (tod == 0 .or. info_debug > 1) then
          !! Report on memory usage
          !! For now, just look at the first instance of each component
@@ -3785,13 +3786,13 @@ end subroutine cesm_init
               glc(ens1)%iamroot_compid .or. &
               wav(ens1)%iamroot_compid) then
             call shr_mem_getusage(msize,mrss)
-#ifndef CPL_BYPASS
+
             write(logunit,105) ' memory_write: model date = ',ymd,tod, &
                  ' memory = ',mrss,' MB (highwater)    ',msize,' MB (usage)', &
                  '  (pe=',iam_GLOID,' comps=',trim(complist)//')'
-#endif
          endif
       endif
+#endif
       if (info_debug > 1) then
          if (iamroot_CPLID) then
             call seq_infodata_GetData(infodata,nextsw_cday=nextsw_cday)
@@ -3806,6 +3807,8 @@ end subroutine cesm_init
       ! --- Write out performance data
       call t_startf  ('CPL:TPROF_WRITE')
       if (tprof_alarm) then
+         call t_adj_detailf(+1)
+
          call t_startf("sync1_tprof")
          call mpi_barrier(mpicom_GLOID,ierr)
          call t_stopf("sync1_tprof")
@@ -3822,6 +3825,8 @@ end subroutine cesm_init
          call t_startf("sync2_tprof")
          call mpi_barrier(mpicom_GLOID,ierr)
          call t_stopf("sync2_tprof")
+
+         call t_adj_detailf(-1)
       endif
       call t_stopf  ('CPL:TPROF_WRITE')
 
@@ -3861,6 +3866,10 @@ end subroutine cesm_init
 
    call t_barrierf ('CPL:FINAL_BARRIER', mpicom_GLOID)
    call t_startf ('CPL:FINAL')
+   call t_adj_detailf(+1)
+
+   call t_startf('cesm_final')
+   call t_adj_detailf(+1)
 
    call seq_timemgr_EClockGetData( EClock_d, stepno=endstep)
    call shr_mem_getusage(msize,mrss)
@@ -3916,13 +3925,25 @@ end subroutine cesm_init
       close(logunit)
    endif
 
+   call t_adj_detailf(-1)
+   call t_stopf('cesm_final')
+
+   call t_startf("final:sync1_tprof")
+   call mpi_barrier(mpicom_GLOID,ierr)
+   call t_stopf("final:sync1_tprof")
+
+   call t_adj_detailf(-1)
    call t_stopf  ('CPL:FINAL')
+
+   call t_set_prefixf("final:")
    if (output_perf) then
       call t_prf(trim(timing_dir)//'/model_timing', mpicom=mpicom_GLOID, &
                  output_thispe=output_perf)
    else
       call t_prf(trim(timing_dir)//'/model_timing', mpicom=mpicom_GLOID)
    endif
+   call t_unset_prefixf()
+
    call t_finalizef()
 
 end subroutine cesm_final

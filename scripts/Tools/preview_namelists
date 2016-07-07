@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 """
 preview_namelists runs the buildnml script for each case component
@@ -9,6 +9,7 @@ copies those files to the CaseDocs subdirectory for inspection
 from standard_script_setup import *
 
 from CIME.preview_namelists import preview_namelists
+from CIME.case              import Case
 
 import argparse, doctest
 
@@ -54,8 +55,8 @@ def _main_func(description):
         sys.exit(1 if test_results.failed > 0 else 0)
 
     caseroot, dryrun = parse_command_line(sys.argv, description)
-
-    preview_namelists(dryrun=False, casedir=caseroot)
+    case = Case(caseroot)
+    preview_namelists(case, dryrun=False)
 
 if (__name__ == "__main__"):
     _main_func(__doc__)

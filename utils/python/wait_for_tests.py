@@ -59,7 +59,7 @@ def get_test_output(test_path):
         return ""
 
 ###############################################################################
-def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, start_time, hostname):
+def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname):
 ###############################################################################
     git_commit = CIME.utils.get_current_commit(repo=CIME.utils.get_cime_root())
 
@@ -67,20 +67,25 @@ def create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time
 
     site_elem = xmlet.Element("Site")
 
+    if ("JENKINS_START_TIME" in os.environ):
+        time_info_str = "Total testing time: %d seconds" % (current_time - int(os.environ["JENKINS_START_TIME"]))
+    else:
+        time_info_str = ""
+
     site_elem.attrib["BuildName"] = cdash_build_name
     site_elem.attrib["BuildStamp"] = "%s-%s" % (utc_time, cdash_build_group)
     site_elem.attrib["Name"] = hostname
     site_elem.attrib["OSName"] = "Linux"
     site_elem.attrib["Hostname"] = hostname
-    site_elem.attrib["OSVersion"] = "Commit: %s, Total testing time: %d seconds" % (git_commit, time.time() - start_time)
+    site_elem.attrib["OSVersion"] = "Commit: %s%s" % (git_commit, time_info_str)
 
     testing_elem = xmlet.SubElement(site_elem, "Testing")
 
     start_date_time_elem = xmlet.SubElement(testing_elem, "StartDateTime")
-    start_date_time_elem.text = time.ctime(start_time)
+    start_date_time_elem.text = time.ctime(current_time)
 
     start_test_time_elem = xmlet.SubElement(testing_elem, "StartTestTime")
-    start_test_time_elem.text = str(int(start_time))
+    start_test_time_elem.text = str(int(current_time))
 
     test_list_elem = xmlet.SubElement(testing_elem, "TestList")
     for test_name in sorted(results):
@@ -203,18 +208,16 @@ r"""<?xml version="1.0" encoding="UTF-8"?>
             shutil.rmtree(log_dir)
 
 ###############################################################################
-def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group, start_time):
+def create_cdash_xml(results, cdash_build_name, cdash_project, cdash_build_group):
 ###############################################################################
 
     #
     # Create dart config file
     #
 
-    if (start_time is None):
-        logging.warning("No valid start_time provided, using current time instead")
-        start_time = time.time()
+    current_time = time.time()
 
-    utc_time_tuple = time.gmtime(start_time)
+    utc_time_tuple = time.gmtime(current_time)
     cdash_timestamp = time.strftime("%H:%M:%S", utc_time_tuple)
 
     hostname = Machines().get_machine_name()
@@ -261,14 +264,14 @@ NightlyStartTime: %s UTC
     with open("Testing/TAG", "w") as tag_fd:
         tag_fd.write("%s\n%s\n" % (utc_time, cdash_build_group))
 
-    create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, start_time, hostname)
+    create_cdash_test_xml(results, cdash_build_name, cdash_build_group, utc_time, current_time, hostname)
 
     create_cdash_upload_xml(results, cdash_build_name, cdash_build_group, utc_time, hostname)
 
     CIME.utils.run_cmd("ctest -VV -D NightlySubmit", verbose=True)
 
 ###############################################################################
-def reduce_stati(stati, check_throughput=False, check_memory=False, ignore_namelists=False):
+def reduce_stati(stati, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False):
 ###############################################################################
     """
     Given a collection of stati for a test, produce a single result. Preference
@@ -276,7 +279,11 @@ def reduce_stati(stati, check_throughput=False, check_memory=False, ignore_namel
     that hasn't finished. Namelist diffs are given the lowest precedence.
     """
     rv = TEST_PASS_STATUS
+    run_phase_found = False
     for phase, status in stati.iteritems():
+        if phase == RUN_PHASE:
+            run_phase_found = True
+
         if (status == TEST_PENDING_STATUS):
             return status
 
@@ -296,6 +303,11 @@ def reduce_stati(stati, check_throughput=False, check_memory=False, ignore_namel
             else:
                 rv = status
 
+    # The test did not fail but the RUN phase was not found, so if the user requested
+    # that we wait for the RUN phase, then the test must still be considered pending.
+    if rv != TEST_FAIL_STATUS and not run_phase_found and wait_for_run:
+        rv = TEST_PENDING_STATUS
+
     return rv
 
 ###############################################################################
@@ -307,12 +319,25 @@ def parse_test_status(file_contents):
     rv = OrderedDict()
     test_name = None
     for line in file_contents.splitlines():
-        if (line.strip().startswith(COMMENT_STATUS)):
-            pass # skip comments
-        elif (len(line.split()) == 3):
-            status, curr_test_name, phase = line.split()
+        line = line.strip()
+        tokens = line.split()
+        if line == "" or line.startswith(COMMENT_STATUS):
+            pass # skip comments and blank lines
+        elif len(tokens) >= 3:
+            status, curr_test_name, phase = tokens[:3]
             if (test_name is None):
                 test_name = curr_test_name
+            else:
+                expect(test_name == curr_test_name, "inconsistent test name in parse_test_status: '%s' != '%s'"%(test_name, curr_test_name))
+
+            expect(status in [TEST_PENDING_STATUS ,TEST_PASS_STATUS,
+                              TEST_FAIL_STATUS, TEST_DIFF_STATUS, NAMELIST_FAIL_STATUS],
+                   "Unexpected status '%s' in parse_test_status" % status)
+            expect(phase in ["INIT","CREATE_NEWCASE","XML","SETUP","SHAREDLIB_BUILD",
+                             "nlcomp","MODEL_BUILD", "compare", "generate",
+                             "memleak", "RUN", MEMORY_TEST_STR, THROUGHPUT_TEST_STR],
+                   "phase '%s' not expected in parse_test_status" % phase)
+
             if (phase in rv):
                 # Phase names don't matter here, just need something unique
                 rv[phase] = reduce_stati({"%s_" % phase : status, phase : rv[phase]})
@@ -330,16 +355,16 @@ def parse_test_status_file(file_name):
         return parse_test_status(fd.read())
 
 ###############################################################################
-def interpret_status(file_contents, check_throughput=False, check_memory=False, ignore_namelists=False):
+def interpret_status(file_contents, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False):
 ###############################################################################
     r"""
     >>> interpret_status('PASS testname RUN')
     ('testname', 'PASS')
-    >>> interpret_status('PASS testname BUILD\nPEND testname RUN')
+    >>> interpret_status('PASS testname SHAREDLIB_BUILD\nPEND testname RUN')
     ('testname', 'PEND')
-    >>> interpret_status('FAIL testname BUILD\nPEND testname RUN')
+    >>> interpret_status('FAIL testname MODEL_BUILD\nPEND testname RUN')
     ('testname', 'PEND')
-    >>> interpret_status('PASS testname BUILD\nPASS testname RUN')
+    >>> interpret_status('PASS testname MODEL_BUILD\nPASS testname RUN')
     ('testname', 'PASS')
     >>> interpret_status('PASS testname RUN\nFAIL testname tputcomp')
     ('testname', 'PASS')
@@ -351,46 +376,48 @@ def interpret_status(file_contents, check_throughput=False, check_memory=False, 
     ('testname', 'FAIL')
     >>> interpret_status('PASS testname RUN\nNLFAIL testname nlcomp', ignore_namelists=True)
     ('testname', 'PASS')
-    >>> interpret_status('PASS testname compare\nNLFAIL testname nlcomp\nFAIL testname compare')
+    >>> interpret_status('PASS testname compare\nNLFAIL testname nlcomp\nFAIL testname compare\nPASS testname RUN')
     ('testname', 'DIFF')
+    >>> interpret_status('PASS testname MODEL_BUILD')
+    ('testname', 'PASS')
+    >>> interpret_status('PASS testname MODEL_BUILD', wait_for_run=True)
+    ('testname', 'PEND')
     """
     statuses, test_name = parse_test_status(file_contents)
-    reduced_status = reduce_stati(statuses, check_throughput, check_memory, ignore_namelists)
-
-    if (RUN_PHASE not in statuses.keys() and reduced_status != TEST_FAIL_STATUS):
-        logging.warning("Very odd: Waiting for test '%s' that has no run phase but did not fail?!?!" % test_name)
+    reduced_status = reduce_stati(statuses, wait_for_run, check_throughput, check_memory, ignore_namelists)
 
     return test_name, reduced_status
 
 ###############################################################################
-def interpret_status_file(file_name, check_throughput=False, check_memory=False, ignore_namelists=False):
+def interpret_status_file(file_name, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False):
 ###############################################################################
     with open(file_name, "r") as fd:
-        return interpret_status(fd.read(), check_throughput, check_memory, ignore_namelists)
+        return interpret_status(fd.read(), wait_for_run, check_throughput, check_memory, ignore_namelists)
 
 ###############################################################################
-def wait_for_test(test_path, results, wait, check_throughput, check_memory, ignore_namelists):
+def wait_for_test(test_path, results, wait, wait_for_run, check_throughput, check_memory, ignore_namelists):
 ###############################################################################
     if (os.path.isdir(test_path)):
         test_status_filepath = os.path.join(test_path, TEST_STATUS_FILENAME)
     else:
         test_status_filepath = test_path
-    logging.info("Watching file: '%s'" % test_status_filepath)
+
+    logging.debug("Watching file: '%s'" % test_status_filepath)
 
     while (True):
         if (os.path.exists(test_status_filepath)):
-            test_name, test_status = interpret_status_file(test_status_filepath, check_throughput, check_memory, ignore_namelists)
+            test_name, test_status = interpret_status_file(test_status_filepath, wait_for_run, check_throughput, check_memory, ignore_namelists)
 
             if (test_status == TEST_PENDING_STATUS and (wait and not SIGNAL_RECEIVED)):
                 time.sleep(SLEEP_INTERVAL_SEC)
-                logging.info("Waiting for test to finish")
+                logging.debug("Waiting for test to finish")
             else:
                 results.put( (test_name, test_path, test_status) )
                 break
 
         else:
             if (wait and not SIGNAL_RECEIVED):
-                logging.info("File '%s' does not yet exist" % test_status_filepath)
+                logging.debug("File '%s' does not yet exist" % test_status_filepath)
                 time.sleep(SLEEP_INTERVAL_SEC)
             else:
                 test_name = os.path.abspath(test_status_filepath).split("/")[-2]
@@ -398,12 +425,12 @@ def wait_for_test(test_path, results, wait, check_throughput, check_memory, igno
                 break
 
 ###############################################################################
-def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check_memory=False, ignore_namelists=False):
+def wait_for_tests_impl(test_paths, no_wait=False, wait_for_run=False, check_throughput=False, check_memory=False, ignore_namelists=False):
 ###############################################################################
     results = Queue.Queue()
 
     for test_path in test_paths:
-        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, check_throughput, check_memory, ignore_namelists))
+        t = threading.Thread(target=wait_for_test, args=(test_path, results, not no_wait, wait_for_run, check_throughput, check_memory, ignore_namelists))
         t.daemon = True
         t.start()
 
@@ -434,29 +461,28 @@ def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check
 ###############################################################################
 def wait_for_tests(test_paths,
                    no_wait=False,
+                   wait_for_run=False,
                    check_throughput=False,
                    check_memory=False,
                    ignore_namelists=False,
                    cdash_build_name=None,
                    cdash_project=ACME_MAIN_CDASH,
-                   cdash_build_group=CDASH_DEFAULT_BUILD_GROUP,
-                   start_time=None):
+                   cdash_build_group=CDASH_DEFAULT_BUILD_GROUP):
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated
     set_up_signal_handlers()
 
-    test_results = wait_for_tests_impl(test_paths, no_wait, check_throughput, check_memory, ignore_namelists)
+    test_results = wait_for_tests_impl(test_paths, no_wait, wait_for_run, check_throughput, check_memory, ignore_namelists)
 
     all_pass = True
     for test_name, test_data in sorted(test_results.iteritems()):
         test_path, test_status = test_data
-        print "Test '%s' finished with status '%s'" % (test_name, test_status)
+        logging.info("Test '%s' finished with status '%s'" % (test_name, test_status))
         logging.info("    Path: %s" % test_path)
         all_pass &= test_status == TEST_PASS_STATUS
 
     if (cdash_build_name):
-        create_cdash_xml(test_results, cdash_build_name, cdash_project, cdash_build_group, start_time)
-
+        create_cdash_xml(test_results, cdash_build_name, cdash_project, cdash_build_group)
 
     return all_pass

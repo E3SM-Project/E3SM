@@ -1,7 +1,7 @@
 """
 Class for config_pio files .  This class inherits from EntryID.py
 """
-from standard_module_setup import *
+from CIME.XML.standard_module_setup import *
 
 from CIME.XML.entry_id import EntryID
 from CIME.XML.files import Files
@@ -17,13 +17,21 @@ class PIO(EntryID):
 
         EntryID.__init__(self, infile)
 
-    def get_defaults(self, grid=None, compset=None, mach=None, compiler=None):
+    def get_defaults(self, grid=None, compset=None, mach=None, compiler=None, mpilib=None):
         # should we have a env_pio file
         defaults = {}
+
+        # Load args into attribute dict
+        attributes = {}
+        for attrib in ["grid", "compset", "mach", "compiler", "mpilib"]:
+            if locals()[attrib] is not None:
+                attributes[attrib] = locals()[attrib]
+
+        # Find defauts
         for node in self.get_nodes("entry"):
-            attributes = {"grid":grid,"compset":compset,"mach":mach,"compiler":compiler}
             value = self.get_default_value(node, attributes)
             if value:
                 defaults[node.get("id")] = value
+
         return defaults
 

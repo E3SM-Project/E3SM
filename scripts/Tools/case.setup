@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 """
 case.setup - create the $caseroot/case.run script and user_nl_xxx component namelist mod files
@@ -7,6 +7,7 @@ case.setup - create the $caseroot/case.run script and user_nl_xxx component name
 from standard_script_setup import *
 
 from CIME.case_setup import case_setup
+from CIME.case       import Case
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -57,8 +58,9 @@ def _main_func(description):
         sys.exit(1 if test_results.failed > 0 else 0)
 
     caseroot, clean, test_mode, reset = parse_command_line(sys.argv, description)
+    case = Case(caseroot)
 
-    case_setup(caseroot, clean, test_mode, reset)
+    case_setup(case, clean, test_mode, reset)
 
 if __name__ == "__main__":
     _main_func(__doc__)

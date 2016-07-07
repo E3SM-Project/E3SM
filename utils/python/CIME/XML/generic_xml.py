@@ -116,7 +116,7 @@ class GenericXML(object):
         if xpath is None:
             xpath = ".//"+nodename
 
-        if attributes is not None:
+        if attributes:
             # xml.etree has limited support for xpath and does not allow more than
             # one attribute in an xpath query so we query seperately for each attribute
             # and create a result with the intersection of those lists
@@ -126,7 +126,12 @@ class GenericXML(object):
                     expect(isinstance(value, str), " Bad value passed for key %s"%key)
                     xpath = ".//%s[@%s=\'%s\']" % (nodename, key, value)
                     logger.debug("xpath is %s"%xpath)
-                    newnodes = root.findall(xpath)
+
+                    try:
+                        newnodes = root.findall(xpath)
+                    except Exception as e:
+                        expect(False, "Bad xpath search term '%s', error: %s" % (xpath, e))
+
                     if not nodes:
                         nodes = newnodes
                     else:
@@ -137,7 +142,7 @@ class GenericXML(object):
                         return []
 
         else:
-            logger.debug("xpath: %s" , xpath , extra={attributes : None})
+            logger.debug("xpath: %s" , xpath)
             nodes = root.findall(xpath)
 
         logger.debug("Returning %s nodes (%s)" , len(nodes), nodes)
@@ -152,7 +157,7 @@ class GenericXML(object):
             root = self.root
         self.root.append(node)
 
-    def get_value(self, item, attribute={}, resolved=True, subgroup=None):
+    def get_value(self, item, attribute=None, resolved=True, subgroup=None):
         """
         get_value is expected to be defined by the derived classes, if you get here
         the value was not found in the class.

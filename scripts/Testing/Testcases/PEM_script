@@ -5,17 +5,23 @@
 
 cd $CASEROOT
 
+# turn on memory leak check - if comparing with baseline also
+# compare memory highwater mark from baseline
+set DETECT_MEMORY_LEAK
+if ($?COMPARE_BASELINE ) then
+  set COMPARE_MEMORY
+  set COMPARE_THROUGHPUT
+endif
+
 # Reset beginning test settings
-if ( -e env_mach_pes.xml.1 )  then
-  cp -f env_mach_pes.xml.1   env_mach_pes.xml
-  cp -f env_mach_pes.xml.1   LockedFiles/env_mach_pes.xml
-  rm    $EXEROOT/${CIME_MODEL}.exe >& /dev/null
-  cp -f $EXEROOT/${CIME_MODEL}.exe.1 $EXEROOT/${CIME_MODEL}.exe || exit -9
-  cp -f env_build.xml.1      env_build.xml
-  cp -f env_build.xml.1      LockedFiles/env_build.xml
+if ( -e LockedFiles/env_mach_pes.PEM1.xml )  then
+  cp -f LockedFiles/env_mach_pes.PEM1.xml   env_mach_pes.xml
+  cp -f env_mach_pes.xml   LockedFiles/env_mach_pes.xml
+  cp -f LockedFiles/env_build.PEM1.xml      env_build.xml
+  cp -f env_build.xml      LockedFiles/env_build.xml
 else
-  echo " ERROR: env_mach_pes.xml.1 does not exist"
-  echo "   this would been produced in the build - must run case.test_build"
+  echo " ERROR: LockedFiles/env_mach_pes.ERP1.xml does not exist"
+  echo "   this would been produced in the build - must run case.build"
   exit -1
 endif
 

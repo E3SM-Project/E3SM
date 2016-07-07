@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 """
 Script to run CIME tests.
@@ -15,8 +15,11 @@ from CIME.system_test import SystemTest, RUN_PHASE
 from CIME.utils import expect, convert_to_seconds, compute_total_time, convert_to_babylonian_time, run_cmd
 from CIME.XML.machines import Machines
 from CIME.XML.batch import Batch
+from CIME.case import Case
 
-import argparse, doctest, tempfile, math
+import argparse, math, glob
+
+logger = logging.getLogger(__name__)
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -144,8 +147,9 @@ OR
                         help="The size of the processor pool that create_test can use. Default "
                         "is PES_PER_NODE + 25 percent.")
 
-    parser.add_argument("--walltime", default=None,
-                        help="Set the wallclock limit for all tests in the suite.")
+    parser.add_argument("--walltime", default=os.getenv("CIME_GLOBAL_WALLTIME"),
+                        help="Set the wallclock limit for all tests in the suite. "
+                        "Can use env var CIME_GLOBAL_WALLTIME to set this for all test.")
 
     parser.add_argument("--xml-machine",
                         help="Use this machine key in the lookup in testlist.xml")
@@ -207,16 +211,15 @@ OR
         args.single_submit, args.proc_pool, args.use_existing
 
 ###############################################################################
-def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost_map, wall_time):
+def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost_map, wall_time, test_root):
 ###############################################################################
     mach = Machines(machine=machine_name)
     expect(mach.has_batch_system(), "Single submit does not make sense on non-batch machine '%s'" % mach.get_machine_name())
 
     machine_name = mach.get_machine_name()
-    batch = Batch(batch_system=mach.get_batch_system_type(), machine=machine_name)
 
     if project is None:
-        project = CIME.utils.get_project()
+        project = CIME.utils.get_project(mach)
         if project is None:
             project = mach.get_value("PROJECT")
 
@@ -247,11 +250,18 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
 
     #
     # Resolve batch directives manually. There is currently no other way
-    # to do this without making a Case object.
+    # to do this without making a Case object. Make a throwaway case object
+    # to help us here.
     #
-    directives = "\n".join(batch.get_batch_directives())
-    submit_cmd = mach.get_value("BATCHSUBMIT")
-    submit_args = " ".join(batch.get_submit_args())
+    testcase_dirs = glob.glob("%s/*%s*/TestStatus" % (test_root, test_id))
+    expect(testcase_dirs, "No test case dirs found!?")
+    first_case = os.path.abspath(os.path.dirname(testcase_dirs[0]))
+    case = Case(first_case)
+    env_batch = env_batch = case._get_env("batch")
+
+    directives  = env_batch.get_batch_directives(case, "case.run", raw=True)
+    submit_cmd  = env_batch.get_value("batch_submit", subgroup=None)
+    submit_args = env_batch.get_submit_args(case, "case.run")
 
     tasks_per_node = int(mach.get_value("PES_PER_NODE"))
     num_nodes = int(math.ceil(float(proc_pool) / tasks_per_node))
@@ -261,22 +271,24 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     else:
         wall_time_bab = wall_time
 
-    queue = mach.select_best_queue(proc_pool)
-    wall_time_max_bab = mach.get_max_walltime(queue)
+    queue = env_batch.select_best_queue(proc_pool)
+    wall_time_max_bab = env_batch.get_max_walltime(queue)
     if wall_time_max_bab is not None:
         wall_time_max = convert_to_seconds(wall_time_max_bab)
         if wall_time_max < wall_time:
             wall_time = wall_time_max
             wall_time_bab = convert_to_babylonian_time(wall_time)
 
-    directives = directives.replace("{{ job_id }}", "create_test_single_submit_%s" % test_id)
+    job_id = "create_test_single_submit_%s" % test_id
+    directives = directives.replace("{{ job_id }}", job_id)
     directives = directives.replace("{{ num_nodes }}", str(num_nodes))
     directives = directives.replace("{{ tasks_per_node }}", str(tasks_per_node))
     directives = directives.replace("{{ output_error_path }}", "create_test_single_submit_%s.err" % test_id)
-    directives = directives.replace("{{ output_error_path }}", "create_test_single_submit_%s.err" % test_id)
-    directives = directives.replace("{{ wall_time }}", wall_time_bab)
-    directives = directives.replace("{{ queue }}", queue)
+    directives = directives.replace("{{ job_wallclock_time }}", wall_time_bab)
+    directives = directives.replace("{{ job_queue }}", queue)
     directives = directives.replace("{{ project }}", project)
+
+    expect("{{" not in directives, "Could not resolve all items in directives:\n%s" % directives)
 
     #
     # Make simple submit script and submit
@@ -285,11 +297,12 @@ def single_submit_impl(machine_name, test_id, proc_pool, project, args, job_cost
     script = "#! /bin/bash\n"
     script += "\n%s" % directives
     script += "\n"
-    script += "create_test %s\n" % " ".join(new_args)
+    script += "%s %s\n" % (__file__, " ".join(new_args))
 
     submit_cmd = "%s %s" % (submit_cmd, submit_args)
+    logger.info("Script:\n%s" % script)
 
-    run_cmd(submit_cmd, input_str=script, arg_stdout=None, arg_stderr=None)
+    run_cmd(submit_cmd, input_str=script, arg_stdout=None, arg_stderr=None, verbose=True)
 
 ###############################################################################
 def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, test_root,
@@ -328,30 +341,26 @@ def create_test(testargs, compiler, machine_name, no_run, no_build, no_batch, te
     success = impl.system_test()
 
     if single_submit:
+        # Get real test root
+        test_root = impl._test_root
+
         job_cost_map = {}
         largest_case = 0
         for test in impl._tests:
             test_dir = impl._get_test_dir(test)
             procs_needed = impl._get_procs_needed(test, RUN_PHASE)
-            # Restore once we have new xmlquery
-            #time_needed = convert_to_seconds(run_cmd("./xmlquery JOB_WALLCLOCK_TIME -value", from_dir=test_dir))
-            stat, output, errput = run_cmd("grep JOB_WALLCLOCK_TIME env_batch.xml | grep :", from_dir=test_dir, ok_to_fail=True)
-            if stat == 0:
-                time_needed = output.split('value="')[1].replace('">', "")
-                time_needed = convert_to_seconds(time_needed)
-            else:
-                time_needed = 60 # HACK
-
+            time_needed = convert_to_seconds(run_cmd("./xmlquery JOB_WALLCLOCK_TIME -value", from_dir=test_dir))
             job_cost_map[test] = (procs_needed, time_needed)
             if procs_needed > largest_case:
                 largest_case = procs_needed
 
         if proc_pool is None:
-            # Based on size of created jobs, choose a reasonable proc_pool
+            # Based on size of created jobs, choose a reasonable proc_pool. May need to put
+            # more thought into this.
             proc_pool = 2 * largest_case
 
         # Create submit script
-        single_submit_impl(machine_name, test_id, proc_pool, project, sys.argv[1:], job_cost_map, walltime)
+        single_submit_impl(machine_name, test_id, proc_pool, project, sys.argv[1:], job_cost_map, walltime, test_root)
 
     return 0 if success else CIME.utils.TESTS_FAILED_ERR_CODE
 

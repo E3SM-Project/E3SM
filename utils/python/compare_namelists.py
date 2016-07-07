@@ -2,6 +2,7 @@ import argparse, sys, os, re, logging
 
 from CIME.utils  import expect
 logger=logging.getLogger(__name__)
+
 ###############################################################################
 def parse_namelists(namelist_lines, filename):
 ###############################################################################
@@ -210,14 +211,15 @@ def normalize_string_value(name, value, case):
         return value
 
 ###############################################################################
-def compare_values(namelist, name, gold_value, comp_value, case):
+def compare_values(name, gold_value, comp_value, case, do_print=False):
 ###############################################################################
     """
     Compare values for a specific variable in a namelist.
     """
     if (type(gold_value) != type(comp_value)):
-        print "In namelist '%s', variable '%s' did not have expected type '%s', instead is type '%s'" % \
-            (namelist, name, type(gold_value), type(comp_value))
+        if do_print:
+            print "  variable '%s' did not have expected type '%s', instead is type '%s'" % \
+                (name, type(gold_value), type(comp_value))
         return False
 
     rv = True
@@ -225,28 +227,38 @@ def compare_values(namelist, name, gold_value, comp_value, case):
         # Note, list values remain order sensitive
         for idx, gold_value_list_item in enumerate(gold_value):
             if (idx < len(comp_value)):
-                rv &= compare_values(namelist, "%s list item %d" % (name, idx), gold_value_list_item, comp_value[idx], case)
+                rv &= compare_values("%s list item %d" % (name, idx),
+                                     gold_value_list_item, comp_value[idx], case,
+                                     do_print)
             else:
                 rv = False
-                print "In namelist '%s', list variable '%s' missing value %s" % (namelist, name, gold_value_list_item)
+                if do_print:
+                    print "  list variable '%s' missing value %s" % (name, gold_value_list_item)
 
         if (len(comp_value) > len(gold_value)):
             for comp_value_list_item in comp_value[len(gold_value):]:
                 rv = False
-                print "In namelist '%s', list variable '%s' has extra value %s" % (namelist, name, comp_value_list_item)
+                if do_print:
+                    print "  list variable '%s' has extra value %s" % (name, comp_value_list_item)
 
     elif (type(gold_value) is dict):
         for key, gold_value_dict_item in gold_value.iteritems():
             if (key in comp_value):
-                rv &= compare_values(namelist, "%s dict item %s" % (name, key), gold_value_dict_item, comp_value[key], case)
+                rv &= compare_values("%s dict item %s" % (name, key),
+                                     gold_value_dict_item, comp_value[key], case,
+                                     do_print)
             else:
                 rv = False
-                print "In namelist '%s', dict variable '%s' missing key %s" % (namelist, name, key)
+                if do_print:
+                    print "  dict variable '%s' missing key %s with value %s" \
+                        % (name, key, gold_value_dict_item)
 
         for key in comp_value:
             if (key not in gold_value):
                 rv = False
-                print "In namelist '%s', dict variable '%s' has extra key %s" % (namelist, name, key)
+                if do_print:
+                    print "  dict variable '%s' has extra key %s with value %s" \
+                        % (name, key, comp_value[key])
 
     else:
         expect(type(gold_value) is str, "Unexpected type found: '%s'" % type(gold_value))
@@ -255,8 +267,9 @@ def compare_values(namelist, name, gold_value, comp_value, case):
 
         if (norm_gold_value != norm_comp_value):
             rv = False
-            print "In namelist '%s', '%s' has inequivalent values %s != %s" % (namelist, name, gold_value, comp_value)
-            print "  NORMALIZED: %s != %s" % (norm_gold_value, norm_comp_value)
+            if do_print:
+                print "  BASE: %s = %s" % (name, norm_gold_value)
+                print "  COMP: %s = %s" % (name, norm_comp_value)
 
     return rv
 
@@ -293,6 +306,9 @@ def compare_namelists(gold_namelists, comp_namelists, case):
     ...   val22 = 'foo', 'bar', 'baz'
     ...   val23 = 'baz'
     ...   val24 = '1 -> 2', '2 -> 3', '3 -> 4'
+    ... /
+    ... &nml3
+    ...   val3 = .false.
     ... /'''
     >>> teststr2 = '''&nml01
     ...   val11 = 'foo'
@@ -302,18 +318,22 @@ def compare_namelists(gold_namelists, comp_namelists, case):
     ...   val22 = 'foo', 'bar0', 'baz'
     ...   val230 = 'baz'
     ...   val24 = '1 -> 20', '2 -> 3', '30 -> 4'
+    ... /
+    ... &nml3
+    ...   val3 = .false.
     ... /'''
     >>> compare_namelists(parse_namelists(teststr1.splitlines(), 'foo'), parse_namelists(teststr2.splitlines(), 'bar'), None)
-    In namelist 'nml2', 'val22 list item 1' has inequivalent values 'bar' != 'bar0'
-      NORMALIZED: 'bar' != 'bar0'
-    In namelist 'nml2', missing variable: 'val23'
-    In namelist 'nml2', 'val21' has inequivalent values 'foo' != 'foo0'
-      NORMALIZED: 'foo' != 'foo0'
-    In namelist 'nml2', 'val24 dict item 1' has inequivalent values 2 != 20
-      NORMALIZED: 2 != 20
-    In namelist 'nml2', dict variable 'val24' missing key 3
-    In namelist 'nml2', dict variable 'val24' has extra key 30
-    In namelist 'nml2', found extra variable: 'val230'
+    Differences in namelist 'nml2':
+      BASE: val21 = 'foo'
+      COMP: val21 = 'foo0'
+      BASE: val22 list item 1 = 'bar'
+      COMP: val22 list item 1 = 'bar0'
+      missing variable: 'val23'
+      BASE: val24 dict item 1 = 2
+      COMP: val24 dict item 1 = 20
+      dict variable 'val24' missing key 3 with value 4
+      dict variable 'val24' has extra key 30 with value 4
+      found extra variable: 'val230'
     Missing namelist: nml1
     Found extra namelist: nml01
     False
@@ -371,29 +391,64 @@ def compare_namelists(gold_namelists, comp_namelists, case):
     """
     rv = True
 
+    # We want to keep lists of differences and print results in a second pass,
+    # in order to ensure that the order is not scrambled when we change Python
+    # versions and/or parse_namelists implementation details.
+    # (Would using an ordered dict in parse_namelists be easier?)
+    different_namelists = []
+    missing_namelists = []
     for namelist, gold_names in gold_namelists.iteritems():
         if (namelist not in comp_namelists):
             rv = False
-            print "Missing namelist:", namelist
+            missing_namelists.append(namelist)
         else:
             comp_names = comp_namelists[namelist]
+            namelists_equal = True
             for name, gold_value in gold_names.iteritems():
                 if (name not in comp_names):
-                    print "In namelist '%s', missing variable: '%s'" % (namelist, name)
-                    rv = False
+                    namelists_equal = False
+                    break
                 else:
                     comp_value = comp_names[name]
-                    rv &= compare_values(namelist, name, gold_value, comp_value, case)
+                    if not compare_values(name, gold_value, comp_value, case):
+                        namelists_equal = False
+                        break
 
             for name in comp_names:
                 if (name not in gold_names):
-                    rv = False
-                    print "In namelist '%s', found extra variable: '%s'" % (namelist, name)
+                    namelists_equal = False
+                    break
 
+            if not namelists_equal:
+                different_namelists.append(namelist)
+                rv = False
+
+    for namelist in sorted(different_namelists):
+        print "Differences in namelist '%s':" % namelist
+        gold_names = gold_namelists[namelist]
+        comp_names = comp_namelists[namelist]
+        for name in sorted(gold_names.keys()):
+            if (name not in comp_names):
+                print "  missing variable: '%s'" % name
+            else:
+                gold_value = gold_names[name]
+                comp_value = comp_names[name]
+                compare_values(name, gold_value, comp_value, case, do_print=True)
+        for name in sorted(comp_names.keys()):
+            if name not in gold_names:
+                print "  found extra variable: '%s'" % name
+
+    for namelist in sorted(missing_namelists):
+        print "Missing namelist:", namelist
+
+    extra_namelists = []
     for namelist in comp_namelists:
         if (namelist not in gold_namelists):
             rv = False
-            print "Found extra namelist:", namelist
+            extra_namelists.append(namelist)
+
+    for namelist in sorted(extra_namelists):
+        print "Found extra namelist:", namelist
 
     return rv
 

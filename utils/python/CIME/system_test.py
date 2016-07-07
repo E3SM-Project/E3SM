@@ -24,7 +24,6 @@ XML_PHASE             = "XML"
 SETUP_PHASE           = "SETUP"
 SHAREDLIB_BUILD_PHASE = "SHAREDLIB_BUILD"
 MODEL_BUILD_PHASE     = "MODEL_BUILD"
-TEST_STATUS_PHASE     = "TEST_STATUS"
 PHASES = [INITIAL_PHASE, CREATE_NEWCASE_PHASE, XML_PHASE, SETUP_PHASE,
           NAMELIST_PHASE, SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE, RUN_PHASE] # Order matters
 CONTINUE = [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS]
@@ -47,8 +46,9 @@ class SystemTest(object):
                  xml_testlist=None, walltime=None, proc_pool=None,
                  use_existing=False):
     ###########################################################################
-        self._cime_root = CIME.utils.get_cime_root()
+        self._cime_root  = CIME.utils.get_cime_root()
         self._cime_model = CIME.utils.get_model()
+
         # needed for perl interface
         os.environ["CIMEROOT"] = self._cime_root
 
@@ -118,15 +118,7 @@ class SystemTest(object):
             test_names = update_acme_tests.get_full_test_names(test_names,
                                                                machine_name, self._compiler)
 
-        if walltime is not None:
-            for test in test_names:
-                if test in self._test_xml:
-                    test_datum = self._test_xml[test]
-                else:
-                    test_datum = {}
-                    self._test_xml[test] = test_datum
-                test_datum["wallclock"] = walltime
-
+        self._walltime = walltime
 
         if parallel_jobs is None:
             self._parallel_jobs = min(len(test_names),
@@ -147,12 +139,16 @@ class SystemTest(object):
                 if generate is not None and isinstance(generate, str):
                     self._baseline_gen_name = generate
                     self._generate = True
-                branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
-                expect(branch_name is not None,
-                       "Could not determine baseline name from branch, please use -b option")
+
                 if self._compare and self._baseline_cmp_name is None:
+                    branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
+                    expect(branch_name is not None,
+                           "Could not determine baseline name from branch, please use -b option")
                     self._baseline_cmp_name = os.path.join(self._compiler, branch_name)
                 if self._generate and self._baseline_gen_name is None:
+                    branch_name = CIME.utils.get_current_branch(repo=self._cime_root)
+                    expect(branch_name is not None,
+                           "Could not determine baseline name from branch, please use -b option")
                     self._baseline_gen_name = os.path.join(self._compiler, branch_name)
             else:
                 if compare:
@@ -382,6 +378,12 @@ class SystemTest(object):
                     ninst = case_opt[1:]
                     create_newcase_cmd += " --ninst %s" %ninst
                     logger.debug (" NINST set to %s" % ninst)
+                pesize = re.match('P([SMLX][12]?)', case_opt)
+                if pesize:
+                    create_newcase_cmd += " --pecount %s"%pesize.group(1)
+
+        if self._walltime is not None:
+            create_newcase_cmd += " --walltime %s" % self._walltime
 
         logger.debug("Calling create_newcase: " + create_newcase_cmd)
         return self._shell_cmd_for_phase(test, create_newcase_cmd, CREATE_NEWCASE_PHASE)
@@ -471,10 +473,13 @@ class SystemTest(object):
                     continue
 
                 elif opt.startswith('P'):
-                    match =  re.match('P([0-9]+)', opt)
+                    match1 =  re.match('P([0-9]+)', opt)
+                    match2 =  re.match('P([0-9]+)x([0-9]+)', opt)
+                    match3 =  re.match('P[SMLX][12]?', opt)
+
                     opti_tasks = None
-                    if match:
-                        opti_tasks = match.group(1)
+                    if match1:
+                        opti_tasks = match1.group(1)
                         for component_class in component_classes:
                             if component_class == "DRV":
                                 component_class = "CPL"
@@ -485,24 +490,27 @@ class SystemTest(object):
                             string = "ROOTPE_" + component_class
                             envtest.set_test_parameter(string, str(0))
                         opti_thrds = 1
-                    else:
-                        match =  re.match('P([0-9]+)x([0-9]+)', opt)
-                        if match:
-                            opti_tasks = match.group(1)
-                            opti_thrds = match.group(2)
-                            for component_class in component_classes:
-                                if component_class == "DRV":
-                                    component_class = "CPL"
-                                string = "NTASKS_" + component_class
-                                envtest.set_test_parameter(string, opti_tasks)
-                                string = "NTHRDS_" + component_class
-                                envtest.set_test_parameter(string, opti_thrds)
-                                string = "ROOTPE_" + component_class
-                                envtest.set_test_parameter(string, str(0))
-                    expect(opti_tasks is not None, "No match found for PE option %s"%opt)
-                    logger.debug (" NTASKS_xxx set to %s" %opti_tasks)
-                    logger.debug (" NTHRDS_xxx set to %s" %opti_thrds)
-                    logger.debug (" ROOTPE_xxx set to %s 0")
+                    elif match2:
+                        opti_tasks = match2.group(1)
+                        opti_thrds = match2.group(2)
+                        for component_class in component_classes:
+                            if component_class == "DRV":
+                                component_class = "CPL"
+                            string = "NTASKS_" + component_class
+                            envtest.set_test_parameter(string, opti_tasks)
+                            string = "NTHRDS_" + component_class
+                            envtest.set_test_parameter(string, opti_thrds)
+                            string = "ROOTPE_" + component_class
+                            envtest.set_test_parameter(string, str(0))
+                    elif match3:
+
+                        # handled by create_newcase
+                        continue
+                    if not match3:
+                        expect(opti_tasks is not None, "No match found for PE option %s"%opt)
+                        logger.debug (" NTASKS_xxx set to %s" %opti_tasks)
+                        logger.debug (" NTHRDS_xxx set to %s" %opti_thrds)
+                        logger.debug (" ROOTPE_xxx set to %s 0")
 
                 elif opt.startswith('N'):
                     # handled in create_newcase
@@ -621,11 +629,6 @@ class SystemTest(object):
     def _run_phase(self, test):
     ###########################################################################
         test_dir = self._get_test_dir(test)
-        # wallclock is an optional field in the version 2.0 testlist.xml file
-        # setting wallclock time close to the expected test time will help queue throughput
-        if test in self._test_xml and "wallclock" in self._test_xml[test]:
-            run_cmd("./xmlchange JOB_WALLCLOCK_TIME=%s" %
-                    self._test_xml[test]["wallclock"], from_dir=test_dir)
         if self._no_batch:
             cmd = "./case.submit --no-batch"
         else:
@@ -891,6 +894,6 @@ class SystemTest(object):
 
             logger.info( "    Case dir: %s" % self._get_test_dir(test))
 
-        logger.warn( "system_test took %s seconds"% (time.time() - start_time))
+        logger.info( "system_test took %s seconds"% (time.time() - start_time))
 
         return rv

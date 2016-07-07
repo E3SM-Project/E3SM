@@ -21,7 +21,7 @@ class Component(EntryID):
 
         EntryID.__init__(self,infile)
 
-    def get_value(self, name, attribute={}, resolved=False, subgroup=None):
+    def get_value(self, name, attribute=None, resolved=False, subgroup=None):
         expect(subgroup is None, "This class does not support subgroups")
         return EntryID.get_value(self, name, attribute, resolved)
 
@@ -36,7 +36,7 @@ class Component(EntryID):
         components = comps.split(',')
         return components
 
-    def _get_value_match(self, node, attributes={}):
+    def _get_value_match(self, node, attributes=None):
         match_value = None
         match_max = 0
         match_count = 0
@@ -45,12 +45,17 @@ class Component(EntryID):
         values = self.get_optional_node("values", root=node)
         if values is None:
             return
+        # use the default_value if present
+        val_node = self.get_optional_node("default_value", root=node)
+        value = val_node.text
+        if value is not None and len(value) > 0 and value != "UNSET":
+            match_values.append(value)
         for valnode in self.get_nodes("value", root=node):
             # loop through all the keys in valnode (value nodes) attributes
             for key,value in valnode.attrib.iteritems():
                 # determine if key is in attributes dictionary
                 match_count = 0
-                if key in attributes:
+                if attributes is not None and key in attributes:
                     if re.search(value, attributes[key]):
                         logger.debug("Value %s and key %s match with value %s"%(value, key, attributes[key]))
                         match_count += 1
@@ -58,30 +63,27 @@ class Component(EntryID):
                         match_count = 0
                         break
             if match_count > 0:
-                if len(match_values) == 0:
-                    # start with the default_value if present
-                    val_node = self.get_optional_node("default_value", root=node)
-                    value = val_node.text
-                    if value is not None and len(value) > 0 and value != "UNSET":
-                        match_values.append(value)
                 # append the current result
                 if values.get("modifier") == "additive":
                     match_values.append(valnode.text)
+
                 # replace the current result if it already contains the new value
                 # otherwise append the current result
                 elif values.get("modifier") == "merge":
                     if valnode.text in match_values:
                         del match_values[:]
                     match_values.append(valnode.text)
+
                 # take the *last* best match
                 elif match_count >= match_max:
                     del match_values[:]
                     match_max = match_count
                     match_value = valnode.text
+
         if len(match_values) > 0:
             match_value = " ".join(match_values)
-        return match_value
 
+        return match_value
 
     def print_values(self):
         """

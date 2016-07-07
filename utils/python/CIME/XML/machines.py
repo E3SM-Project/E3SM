@@ -4,7 +4,7 @@ Interface to the config_machines.xml file.  This class inherits from GenericXML.
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
-from CIME.utils import expect
+from CIME.utils import expect, transform_vars
 
 import socket
 
@@ -91,7 +91,7 @@ class Machines(GenericXML):
         in the NODENAME_REGEX field in the file.   First match wins.
         """
         machine = None
-        nametomatch = socket.gethostname().split(".")[0]
+        nametomatch = socket.getfqdn()
         nodes = self.get_nodes("machine")
 
         for node in nodes:
@@ -182,12 +182,11 @@ class Machines(GenericXML):
 
         if reqval is None or reqval == "UNSET":
             return supported_values[0]
+
         for val in supported_values:
             if val == reqval:
                 return reqval
-
-        expect(False, "%s value %s not supported for machine %s" %
-               (listname, reqval, self.machine))
+        return None
 
     def get_default_compiler(self):
         """
@@ -211,13 +210,9 @@ class Machines(GenericXML):
         >>> machobj.is_valid_compiler("cray")
         True
         >>> machobj.is_valid_compiler("nag")
-        Traceback (most recent call last):
-        ...
-        SystemExit: ERROR: COMPILERS value nag not supported for machine edison
+        False
         """
-        if self.get_field_from_list("COMPILERS", reqval=compiler) is not None:
-            return True
-        return False
+        return self.get_field_from_list("COMPILERS", reqval=compiler) is not None
 
     def is_valid_MPIlib(self, mpilib, attributes=None):
         """
@@ -226,10 +221,10 @@ class Machines(GenericXML):
         >>> machobj = Machines(machine="edison")
         >>> machobj.is_valid_MPIlib("mpi-serial")
         True
+        >>> machobj.is_valid_MPIlib("fake-mpi")
+        False
         """
-        if mpilib == "mpi-serial" or self.get_field_from_list("MPILIBS", reqval=mpilib, attributes=attributes) is not None:
-            return True
-        return False
+        return mpilib == "mpi-serial" or self.get_field_from_list("MPILIBS", reqval=mpilib, attributes=attributes) is not None
 
     def has_batch_system(self):
         """
@@ -244,75 +239,11 @@ class Machines(GenericXML):
         False
         """
         result = False
-        batch_system = self.get_optional_node("batch_system", root=self.machine_node)
+        batch_system = self.get_optional_node("BATCH_SYSTEM", root=self.machine_node)
         if batch_system is not None:
-            result = (batch_system.get("type") != "none")
+            result = (batch_system.text is not None and batch_system.text != "none")
         logger.debug("Machine %s has batch: %s" % (self.machine, result))
         return result
-
-    def get_batch_system_type(self):
-        """
-        Return the batch system used on this machine
-
-        >>> machobj = Machines(machine="edison")
-        >>> machobj.get_batch_system_type()
-        'slurm'
-        """
-        batch_system = self.get_node("batch_system", root=self.machine_node)
-        return batch_system.get("type")
-
-    def get_module_system_type(self):
-        """
-        Return the module system used on this machine
-
-        >>> machobj = Machines()
-        >>> name = machobj.set_machine("edison")
-        >>> machobj.get_module_system_type()
-        'module'
-        """
-        module_system = self.get_node("module_system", root=self.machine_node)
-        return module_system.get("type")
-
-    def get_module_system_init_path(self, lang):
-        init_nodes = self.get_node("init_path", attributes={"lang":lang}, root=self.machine_node)
-        return init_nodes.text
-
-    def get_module_system_cmd_path(self, lang):
-        cmd_nodes = self.get_node("cmd_path", attributes={"lang":lang}, root=self.machine_node)
-        return cmd_nodes.text
-
-    def get_default_queue(self):
-        return self.get_optional_node("queue", attributes={"default" : "true"}, root=self.machine_node)
-
-    def get_all_queues(self):
-        return self.get_nodes("queue", root=self.machine_node)
-
-    def select_best_queue(self, num_pes):
-        # Make sure to check default queue first.
-        all_queues = []
-        all_queues.append( self.get_default_queue())
-        all_queues = all_queues + self.get_all_queues()
-        for queue in all_queues:
-            if queue is not None:
-                jobmin = queue.get("jobmin")
-                jobmax = queue.get("jobmax")
-                # if the fullsum is between the min and max # jobs, then use this queue.
-                if jobmin is not None and jobmax is not None and num_pes >= int(jobmin) and num_pes <= int(jobmax):
-                    return queue.text
-        return None
-
-    def get_max_walltime(self, queue):
-        walltime = None
-        for queue_node in self.get_all_queues():
-            if queue_node.text == queue:
-                walltime = queue_node.get("walltimemax")
-        return walltime
-
-    def get_walltimes(self):
-        return self.get_nodes("walltime", root=self.machine_node)
-
-    def get_default_walltime(self):
-        return self.get_optional_node("walltime", attributes={"default" : "true"}, root=self.machine_node)
 
     def get_suffix(self, suffix_type):
         node = self.get_optional_node("default_run_suffix")
@@ -323,7 +254,7 @@ class Machines(GenericXML):
 
         return None
 
-    def get_mpirun(self, attribs, batch_maker):
+    def get_mpirun(self, attribs, check_members, case, job):
         """
         Find best match, return (executable, {arg_name : text})
         """
@@ -359,12 +290,6 @@ class Machines(GenericXML):
                 expect(key in attribs, "Unhandled MPI property '%s'" % key)
 
             if all_match:
-                arg_node = self.get_optional_node("arguments", root=mpirun_node)
-                if arg_node is not None:
-                    arg_nodes = self.get_nodes("arg", root=arg_node)
-                    for arg_node in arg_nodes:
-                        arg_value = batch_maker.transform_vars(arg_node.text, arg_node.get("default"))
-                        args[arg_node.get("name")] = arg_value
                 if is_default:
                     if matches > best_num_matched_default:
                         default_match = mpirun_node
@@ -379,10 +304,41 @@ class Machines(GenericXML):
 
         the_match = best_match if best_match is not None else default_match
 
+        # Now that we know the best match, compute the arguments
+        arg_node = self.get_optional_node("arguments", root=the_match)
+        if arg_node is not None:
+            arg_nodes = self.get_nodes("arg", root=arg_node)
+            for arg_node in arg_nodes:
+                arg_value = transform_vars(arg_node.text,
+                                           case=case,
+                                           subgroup=job,
+                                           check_members=check_members,
+                                           default=arg_node.get("default"))
+                args[arg_node.get("name")] = arg_value
 
         executable = self.get_node("executable", root=the_match)
 
         return executable.text, args
+
+    def get_full_mpirun(self, check_members, case, job):
+        default_run_exe = self.get_suffix("default_run_exe")
+        expect(default_run_exe is not None, "no default run exe defined!")
+        default_run_misc_suffix = self.get_suffix("default_run_misc_suffix")
+        default_run_misc_suffix = "" if default_run_misc_suffix is None else default_run_misc_suffix
+        default_run_suffix = default_run_exe + default_run_misc_suffix
+
+        # Things that will have to be matched against mpirun element attributes
+        mpi_attribs = {
+            "compiler" : case.get_value("COMPILER"),
+            "mpilib"   : case.get_value("MPILIB"),
+            "threaded" : case.get_value("BUILD_THREADED")
+            }
+
+        executable, args = self.get_mpirun(mpi_attribs, check_members, case, job)
+
+        mpi_arg_string = " ".join(args.values())
+
+        return "%s %s %s" % (executable if executable is not None else "", mpi_arg_string, default_run_suffix)
 
     def print_values(self):
         # write out machines

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 from Tools.standard_script_setup import *
 from shutil import copyfile
@@ -95,6 +95,10 @@ def parse_command_line(args, cimeroot):
                         help="Used to indicate that create_newcase was called from create_test"
                         "- do not use otherwise")
 
+    parser.add_argument("--walltime", default=os.getenv("CIME_GLOBAL_WALLTIME"),
+                        help="Set the wallclock limit for this case. "
+                        "Can use env var CIME_GLOBAL_WALLTIME to set this.")
+
     args = parser.parse_args()
 
     CIME.utils.handle_standard_logging_options(args)
@@ -123,7 +127,8 @@ def parse_command_line(args, cimeroot):
     return args.case, args.compset, args.res, args.mach, args.compiler,\
         args.mpilib, args.project, args.pecount, \
         args.mach_dir, args.user_mods_dir, args.user_compset, args.pesfile, \
-        args.user_grid, args.gridfile, args.srcroot, args.test, args.ninst
+        args.user_grid, args.gridfile, args.srcroot, args.test, args.ninst, \
+        args.walltime
 
 ###############################################################################
 def _main_func():
@@ -133,7 +138,7 @@ def _main_func():
     case, compset, grid, machine, compiler, \
         mpilib, project, pecount,  \
         machine_dir, user_mods_dir, user_compset, pesfile, \
-        user_grid, gridfile, srcroot, test, ninst \
+        user_grid, gridfile, srcroot, test, ninst, walltime \
         = parse_command_line(sys.argv, cimeroot)
 
     caseroot = os.path.abspath(case)
@@ -156,7 +161,8 @@ def _main_func():
     caseobj.configure(compset, grid, machine_name=machine, project=project,
                       pecount=pecount, compiler=compiler, mpilib=mpilib,
                       user_compset=user_compset, pesfile=pesfile,
-                      user_grid=user_grid, gridfile=gridfile, ninst=ninst)
+                      user_grid=user_grid, gridfile=gridfile, ninst=ninst, test=test,
+                      walltime=walltime)
 
     caseobj.create_caseroot()
 

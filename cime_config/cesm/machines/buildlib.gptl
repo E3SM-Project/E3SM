@@ -20,6 +20,6 @@ echo "Copying source to CESM EXEROOT..."
 
 cd $GPTL_LIBDIR
 
-$GMAKE  -f $GPTL_DIR/Makefile install  MACFILE=$CASEROOT/Macros || exit 1
+$GMAKE  -f $GPTL_DIR/Makefile install  MACFILE=$CASEROOT/Macros MODEL=gptl || exit 1
 
 exit 0

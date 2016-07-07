@@ -96,20 +96,39 @@ def set_model(model):
 def get_model():
     """
     Get the currently configured model value
+    The CIME_MODEL env variable may or may not be set
 
+    >>> os.environ["CIME_MODEL"] = "garbage"
+    >>> del os.environ["CIME_MODEL"]
     >>> set_model('rocky')
-    >>> print get_model()
-    rocky
+    >>> get_model()
+    'rocky'
     """
     model = os.environ.get("CIME_MODEL")
     if (model is not None):
+        logger.debug("Setting CIME_MODEL=%s from environment"%model)
+    else:
+        cime_config = get_cime_config()
+        if (cime_config.has_option('main','CIME_MODEL')):
+            model = cime_config.get('main','CIME_MODEL')
+            if model is not None:
+                logger.debug("Setting CIME_MODEL=%s from ~/.cime/config"%model)
+
+    # One last try
+    if (model is None):
+        srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
+        if os.path.isfile(os.path.join(srcroot, "SVN_EXTERNAL_DIRECTORIES")):
+            model = 'cesm'
+        else:
+            model = 'acme'
+        logger.info("Guessing CIME_MODEL=%s, set environment variable if this is incorrect"%model)
+
+
+    if model is not None:
         set_model(model)
         return model
 
-    cime_config = get_cime_config()
-    if (cime_config.has_option('main','CIME_MODEL')):
-        model = cime_config.get('main','CIME_MODEL')
-        return model
+
 
     modelroot = os.path.join(get_cime_root(), "cime_config")
     models = os.listdir(modelroot)
@@ -401,8 +420,7 @@ def stop_buffering_output():
     """
     All stdout, stderr will not be buffered after this is called.
     """
-    sys.stdout.flush()
-    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+    os.environ['PYTHONUNBUFFERED'] = '1'
 
 def start_buffering_output():
     """
@@ -476,97 +494,101 @@ def get_utc_timestamp(timestamp_format="%Y%m%d_%H%M%S"):
     utc_time_tuple = time.gmtime()
     return time.strftime(timestamp_format, utc_time_tuple)
 
-def get_project():
+def get_project(machobj=None):
     """
     Hierarchy for choosing PROJECT:
     1. Environment variable PROJECT
     2  Environment variable ACCOUNT  (this is for backward compatibility)
     3. File $HOME/.cime/config       (this is new)
     4  File $HOME/.cesm_proj         (this is for backward compatibility)
-    5  config_machines.xml
+    5  config_machines.xml (if machobj provided)
     """
     project = os.environ.get("PROJECT")
     if (project is not None):
-        logger.info("Using project from env PROJECT "+project)
+        logger.info("Using project from env PROJECT: " + project)
         return project
     project = os.environ.get("ACCOUNT")
     if (project is not None):
-        logger.info("Using project from env ACCOUNT "+project)
+        logger.info("Using project from env ACCOUNT: " + project)
         return project
 
     cime_config = get_cime_config()
     if (cime_config.has_option('main','PROJECT')):
         project = cime_config.get('main','PROJECT')
         if (project is not None):
-            logger.info("Using project from .cime/config "+project)
+            logger.info("Using project from .cime/config: " + project)
             return project
 
-    projectfile = os.path.abspath(os.path.join(os.path.expanduser("~"),
-                                                   ".cesm_proj"))
+    projectfile = os.path.abspath(os.path.join(os.path.expanduser("~"), ".cesm_proj"))
     if (os.path.isfile(projectfile)):
         with open(projectfile,'r') as myfile:
             project = myfile.read().rstrip()
-            logger.info("Using project from .cesm_proj %s"%project)
+            logger.info("Using project from .cesm_proj: " + project)
             cime_config.set('main','PROJECT',project)
+            return project
 
-    return project
+    if machobj is not None:
+        project = machobj.get_value("PROJECT")
+        if project is not None:
+            logger.info("Using project from config_machines.xml: " + project)
+            return project
+
+    logger.info("No project info available")
+    return None
 
 def setup_standard_logging_options(parser):
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Print extra information")
     parser.add_argument("-d", "--debug", action="store_true",
                         help="Print debug information (very verbose)")
     parser.add_argument("-s", "--silent", action="store_true",
                         help="Print only warnings and error messages")
 
+class _LessThanFilter(logging.Filter):
+    def __init__(self, exclusive_maximum, name=""):
+        super(_LessThanFilter, self).__init__(name)
+        self.max_level = exclusive_maximum
+
+    def filter(self, record):
+        #non-zero return means we log this message
+        return 1 if record.levelno < self.max_level else 0
+
 def handle_standard_logging_options(args):
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'propagate': True,
-        'formatters': {
-            'verbose': {
-                'format': '%(name)-12s %(levelname)-8s %(message)s',
-                },
-            'debug': {
-                'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                },
-            'default':{
-                'format': '%(message)s',
-                },
-            },
-        'handlers': {
-            'console1': {
-                'class': 'logging.StreamHandler',
-                'formatter': 'default',
-                'level' : logging.INFO,
-                },
-            },
-        'root': {
-            'handlers': ['console1'],
-            }
-        }
-    root_logger=logging.getLogger()
-    # DEBUG trumps INFO trumps Silent (WARN)
-    if (args.debug == True):
-        file1 = {
-                'class': 'logging.FileHandler',
-                'mode':'w',
-                'formatter':'debug',
-                'filename' : '%s.log'%os.path.basename(sys.argv[0]),
-                'level' : logging.DEBUG,
-                }
-        LOGGING['handlers']['file1'] = file1
-        LOGGING['root']['handlers'].append('file1')
-        LOGGING['handlers']['console1']['formatter'] = 'debug'
+    """
+    Guide to logging in CIME.
+
+    logger.debug -> Verbose/detailed output, use for debugging, off by default. Goes to a .log file
+    logger.info -> Goes to stdout (and log if --debug). Use for normal program output
+    logger.warning -> Goes to stderr (and log if --debug). Use for minor problems
+    logger.error -> Goes to stderr (and log if --debug)
+    """
+    root_logger = logging.getLogger()
+
+    # Change info to go to stdout. This handle applies to INFO exclusively
+    stdout_stream_handler = logging.StreamHandler(stream=sys.stdout)
+    stdout_stream_handler.setLevel(logging.INFO)
+    stdout_stream_handler.addFilter(_LessThanFilter(logging.WARNING))
+    root_logger.addHandler(stdout_stream_handler)
+
+    # Change warnings and above to go to stderr
+    stderr_stream_handler = logging.StreamHandler(stream=sys.stderr)
+    stderr_stream_handler.setLevel(logging.WARNING)
+    root_logger.addHandler(stderr_stream_handler)
+
+    if args.debug:
+        # Set up log file to catch ALL logging records
+        log_file = "%s.log" % os.path.basename(sys.argv[0])
+
+        debug_log_handler = logging.FileHandler(log_file, mode='w')
+        debug_formatter   = logging.Formatter(fmt='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                                              datefmt='%m-%d %H:%M')
+        debug_log_handler.setFormatter(debug_formatter)
+        debug_log_handler.setLevel(logging.DEBUG)
+        root_logger.addHandler(debug_log_handler)
+
         root_logger.setLevel(logging.DEBUG)
-        logger.warn("Log level set to DEBUG")
-    elif (args.verbose == True):
-        LOGGING['handlers']['console1']['formatter'] = 'verbose'
-        logger.warn("Log level set to VERBOSE")
-    elif (args.silent == True):
+    elif args.silent:
         root_logger.setLevel(logging.WARN)
-    logging.config.dictConfig(LOGGING)
+    else:
+        root_logger.setLevel(logging.INFO)
 
 def get_logging_options():
     """
@@ -575,9 +597,7 @@ def get_logging_options():
     """
     root_logger = logging.getLogger()
 
-    if (root_logger.level == logging.INFO):
-        return "--verbose"
-    elif (root_logger.level == logging.DEBUG):
+    if (root_logger.level == logging.DEBUG):
         return "--debug"
     elif (root_logger.level == logging.WARN):
         return "--silent"
@@ -732,3 +752,64 @@ def does_file_have_string(filepath, text):
     Does the text string appear in the filepath file
     """
     return os.path.isfile(filepath) and text in open(filepath).read()
+
+def transform_vars(text, case=None, subgroup=None, check_members=None, default=None):
+    """
+    Do the variable substitution for any variables that need transforms
+    recursively.
+
+    >>> transform_vars("{{ cesm_stdout }}", default="cesm.stdout")
+    'cesm.stdout'
+    >>> member_store = lambda : None
+    >>> member_store.foo = "hi"
+    >>> transform_vars("I say {{ foo }}", check_members=member_store)
+    'I say hi'
+    """
+    directive_re = re.compile(r"{{ (\w+) }}", flags=re.M)
+    # loop through directive text, replacing each string enclosed with
+    # template characters with the necessary values.
+    while directive_re.search(text):
+        m = directive_re.search(text)
+        variable = m.groups()[0]
+        whole_match = m.group()
+        if check_members is not None and hasattr(check_members, variable.lower()) and getattr(check_members, variable.lower()) is not None:
+            repl = getattr(check_members, variable.lower())
+            logger.debug("from check_members: in %s, replacing %s with %s" % (text, whole_match, str(repl)))
+            text = text.replace(whole_match, str(repl))
+        elif case is not None and case.get_value(variable.upper(), subgroup=subgroup) is not None:
+            repl = case.get_value(variable.upper(), subgroup=subgroup)
+            logger.debug("from case: in %s, replacing %s with %s" % (text, whole_match, str(repl)))
+            text = text.replace(whole_match, str(repl))
+        elif default is not None:
+            logger.debug("from default: in %s, replacing %s with %s" % (text, whole_match, str(default)))
+            text = text.replace(whole_match, default)
+        else:
+            # If no queue exists, then the directive '-q' by itself will cause an error
+            if "-q {{ queue }}" in text:
+                text = ""
+            else:
+                logger.warn("Could not replace variable '%s'" % variable)
+                text = text.replace(whole_match, "")
+
+    return text
+
+def get_my_queued_jobs():
+    # TODO
+    return []
+
+def wait_for_unlocked(filepath):
+    locked = True
+    file_object = None
+    while locked:
+        try:
+            buffer_size = 8
+            # Opening file in append mode and read the first 8 characters.
+            file_object = open(filepath, 'a', buffer_size)
+            if file_object:
+                locked = False
+        except IOError, message:
+            locked = True
+            time.sleep(1)
+        finally:
+            if file_object:
+                file_object.close()

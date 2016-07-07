@@ -1,7 +1,11 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
+
 """
-template to create a case short term archiving script
+template to create a case longterm term archiving script. This should only ever be called
+by case.submit when on batch system. This script only exists as a way of providing
+batch directives. Use case.submit from the command line to run your case.
 """
+
 import sys
 import os
 _CIMEROOT = os.environ.get("CIMEROOT")
@@ -11,11 +15,9 @@ if _CIMEROOT is None:
 _LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
 sys.path.append(_LIBDIR)
 
-import time
 from standard_script_setup          import *
-from CIME.XML.standard_module_setup import *
 from CIME.case                      import Case
-from CIME.utils                     import expect, get_model, run_cmd, does_file_have_string, append_status
+from CIME.case_lt_archive           import case_lt_archive
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +25,25 @@ logger = logging.getLogger(__name__)
 {{ batchdirectives }}
 
 ###############################################################################
-def parse_command_line(args):
+def parse_command_line(args, description):
 ###############################################################################
 
-    CIME.utils.get_model()
+    parser = argparse.ArgumentParser(
+        usage="""\n%s [--verbose]
+OR
+%s --help
+OR
+%s --test
 
-    parser = argparse.ArgumentParser()
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# case.run SMS\033[0m
+    > %s
+""" % ((os.path.basename(args[0]), ) * 4),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
 
     CIME.utils.setup_standard_logging_options(parser)
 
@@ -42,48 +57,22 @@ def parse_command_line(args):
     if args.caseroot is not None:
         os.chdir(args.caseroot)
 
+    return args.caseroot
+
 ###############################################################################
-def _main_func():
+def _main_func(description):
 ###############################################################################
+    if ("--test" in sys.argv):
+        test_results = doctest.testmod(verbose=True)
+        sys.exit(1 if test_results.failed > 0 else 0)
 
-    parse_command_line(sys.argv)
+    caseroot = parse_command_line(sys.argv, description)
+    case = Case(caseroot)
+    success = case_lt_archive(case)
 
-    case = Case()
-
-    caseroot = case.get_value("CASEROOT")
-
-    # max number of threads needed by scripts
-    os.environ["maxthrds"] = 1
-
-    # document start
-    append_status("lt_archive starting",caseroot=caseroot,sfile="CaseStatus")
-
-    # determine status of run and short term archiving
-    runComplete = does_file_have_string(os.path.join(caseroot, "CaseStatus"),
-                                        "run SUCCESSFUL")
-    staComplete = does_file_have_string(os.path.join(caseroot, "stArchiveStatus"),
-                                        "st_archive_complete")
-
-    # set up envrionment vars and call the lt_archive.sh script
-    if runComplete and staComplete:
-        os.environ["DOUT_S_ROOT"] = case.get_value("DOUT_S_ROOT")
-        os.environ["DOUT_L_MSROOT"] = case.get_value("DOUT_L_MSROOT")
-	os.environ["DOUT_L_HPSS_ACCNT"] = case.get_value("DOUT_L_HPSS_ACCNT")
-
-	lid = time.strftime("%y%m%d-%H%M%S")
-        lt_archive_args = {{ lt_archive_args }}
-        cmd = os.path.join(caseroot, "Tools/lt_archive.sh") \
-            + lt_archive_args + "ltArchiveStatus." + lid + " 2>&1"
-        run_cmd(cmd, from_dir=caseroot)
-    else:
-        expect(False,
-               "lt_archive: run or st_archive is not yet complete or was not successful."
-               "Unable to perform long term archive...")
-
-    # document completion
-    append_status("lt_archive completed" ,caseroot=caseroot, sfile="CaseStatus")
+    sys.exit(0 if success else 1)
 
 ###############################################################################
 
 if __name__ == "__main__":
-    _main_func()
+    _main_func(__doc__)

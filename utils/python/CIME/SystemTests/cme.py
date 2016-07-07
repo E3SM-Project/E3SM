@@ -8,11 +8,12 @@ import CIME.utils
 from system_tests_common import SystemTestsCommon
 
 class CME(SystemTestsCommon):
-    def __init__(self, caseroot, case):
+
+    def __init__(self, case):
         """
         initialize an object interface to the CME test
         """
-        SystemTestsCommon.__init__(self, caseroot, case)
+        SystemTestsCommon.__init__(self, case)
         self._testname = "CME"
 
     def build(self, sharedlib_only=False, model_only=False):
@@ -24,6 +25,7 @@ class CME(SystemTestsCommon):
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
         for CPL in ['MCT','ESMF']:
+            self._case.set_value('USE_ESMF_LIB',CPL=='ESMF')
             self._case.set_value('COMP_INTERFACE',CPL)
             self._case.flush()
             self.clean_build()

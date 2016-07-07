@@ -9,15 +9,18 @@ import CIME.utils
 from system_tests_common import SystemTestsCommon
 
 class PEA(SystemTestsCommon):
-    def __init__(self, caseroot, case):
+
+    def __init__(self, case):
         """
         initialize a test object
         """
-        SystemTestsCommon.__init__(self, caseroot, case)
+        SystemTestsCommon.__init__(self, case)
 
     def build(self, sharedlib_only=False, model_only=False):
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
+
+        # first set all component mpi tasks to 1
         for comp in ['ATM','CPL','OCN','WAV','GLC','ICE','ROF','LND']:
             self._case.set_value("NTASKS_%s"%comp, 1)
 
@@ -30,7 +33,7 @@ class PEA(SystemTestsCommon):
             logging.warn("Starting bld for %s"%mpilib)
             self._case.set_value("MPILIB",mpilib)
             self._case.flush()
-            case_setup(self._caseroot, reset=True)
+            case_setup(self._case, reset=True)
             self.clean_build()
             SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
             if (not sharedlib_only):

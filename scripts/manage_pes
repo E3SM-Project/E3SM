@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 """
 Manage pes layouts -- Adds or queries pes with the xml pe-layout
 files for a pes file set by the argument "-pes_setby"

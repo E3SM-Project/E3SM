@@ -6,7 +6,7 @@ can be defined by providing a batch_system MACH="mach" block.
 """
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
-from CIME.utils import expect, get_cime_root, get_model
+from CIME.utils import expect, get_cime_root, get_model, transform_vars
 
 logger = logging.getLogger(__name__)
 
@@ -56,12 +56,16 @@ class Batch(GenericXML):
         """
         machine = machine if machine is not None else self.machine
         if self.batch_system != batch_system or self.batch_system_node is None:
-            self.batch_system_node = self.get_optional_node("batch_system", {"type" : batch_system})
-            expect(self.batch_system_node is not None, "No batch system '%s' found" % batch_system)
+            nodes = self.get_nodes("batch_system",{"type" : batch_system})
+            for node in nodes:
+                mach = node.get("MACH")
+                if mach is None:
+                    self.batch_system_node = node
+                elif mach == machine:
+                    self.machine = machine
+                    self.machine_node = node
 
-            if machine is not None:
-                self.machine_node = self.get_optional_node("batch_system", {"MACH" : machine})
-                self.machine = machine
+            expect(self.batch_system_node is not None, "No batch system '%s' found" % batch_system)
 
         return batch_system
 
@@ -89,34 +93,6 @@ class Batch(GenericXML):
 
         return value
 
-    def get_batch_directives(self, batch_maker=None):
-        """
-        """
-        result = []
-        directive_prefix = self.get_node("batch_directive", root=self.batch_system_node).text
-        directive_prefix = "" if directive_prefix is None else directive_prefix
-
-        roots = [self.machine_node, self.batch_system_node]
-        for root in roots:
-            if root is not None:
-                nodes = self.get_nodes("directive", root=root)
-                for node in nodes:
-                    directive = self.get_resolved_value("" if node.text is None else node.text)
-                    if batch_maker is None:
-                        default = node.get("default")
-                        if default is not None:
-                            directive_re = re.compile(r"{{ (\w+) }}", flags=re.M)
-                            m = directive_re.search(directive)
-                            if m is not None:
-                                whole_match = m.group()
-                                directive = directive.replace(whole_match, default)
-                    else:
-                        directive = batch_maker.transform_vars(directive, default=node.get("default"))
-
-                    result.append("%s %s" % (directive_prefix, directive))
-
-        return result
-
     def get_batch_jobs(self):
         """
         Return a list of jobs with the first element the name of the case script
@@ -134,22 +110,3 @@ class Batch(GenericXML):
             jobs.append((name, jdict))
 
         return jobs
-
-    def get_submit_args(self):
-        '''
-        return a list of touples (flag, name)
-        '''
-        arg_nodes = self.get_nodes("arg", root=self.batch_system_node)
-        if self.machine_node is not None:
-            arg_nodes.extend(self.get_nodes("arg", root=self.machine_node))
-
-        values = []
-        bs_nodes = self.get_nodes("batch_system",{"type":self.batch_system})
-        if self.machine is not None:
-            bs_nodes += self.get_nodes("batch_system",{"MACH":self.machine})
-        submit_arg_nodes = []
-        for node in bs_nodes:
-            submit_arg_nodes += self.get_nodes("arg",root=node)
-        for arg in submit_arg_nodes:
-            values.append((arg.get("flag"),arg.get("name")))
-        return values

@@ -4,13 +4,13 @@ CIME ICP test  This class inherits from SystemTestsCommon
 from CIME.XML.standard_module_setup import *
 from system_tests_common import SystemTestsCommon
 
-
 class ICP(SystemTestsCommon):
-    def __init__(self, caseroot, case):
+
+    def __init__(self, case):
         """
         initialize an object interface to file env_test.xml in the case directory
         """
-        SystemTestsCommon.__init__(self, caseroot, case)
+        SystemTestsCommon.__init__(self, case)
 
     def build(self, sharedlib_only=False, model_only=False):
         self._case.set_value("CICE_AUTO_DECOMP","false")
