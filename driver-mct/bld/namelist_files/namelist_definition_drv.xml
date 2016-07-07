@@ -107,6 +107,14 @@ If CCSM_BGC is set to 'CO2_DMSA', then flds_co2_dmsa will be set to .true.
 </entry>
 
 <entry 
+id="flds_wiso"
+type="logical" 
+category="seq_flds" 
+group="seq_cplflds_inparm" >
+Pass water isotopes between components
+</entry>
+
+<entry 
 id="glc_nec"
 type="integer" 
 category="seq_flds" 
