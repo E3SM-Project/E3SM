@@ -1,5 +1,9 @@
 """
 Implementation of the CIME NCK test.  This class inherits from SystemTestsCommon
+
+Build two exectuables for this test, the first is a default build the
+second halves the number of tasks and runs two instances for each component
+Lay all of the components out sequentially
 """
 import shutil
 from CIME.XML.standard_module_setup import *
@@ -26,9 +30,9 @@ class NCK(SystemTestsCommon):
         if ( os.path.isfile(machpes1) ):
             shutil.copy(machpes1,"env_mach_pes.xml")
 
-        # Build two exectuables for this test, the first is a default build
-        # the second halves the number of tasks and runs two instances
-        # for each component
+        # Build two exectuables for this test, the first is a default build, the
+        # second halves the number of tasks and runs two instances for each component
+        # Lay all of the components out sequentially
         for bld in range(1,3):
             logging.warn("Starting bld %s"%bld)
             machpes = os.path.join("LockedFiles","env_mach_pes.NCK%s.xml"%bld)
@@ -52,11 +56,8 @@ class NCK(SystemTestsCommon):
             shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build.NCK%s.xml"%bld))
             shutil.copy("env_mach_pes.xml", machpes)
 
-        #
         # Because mira/cetus interprets its run script differently than
-        # other systems we need to copy the original env_mach_pes.xml
-        # back
-        #
+        # other systems we need to copy the original env_mach_pes.xml back
         shutil.copy(machpes1,"env_mach_pes.xml")
         shutil.copy("env_mach_pes.xml",
                     os.path.join("LockedFiles","env_mach_pes.xml"))
@@ -71,20 +72,13 @@ class NCK(SystemTestsCommon):
         expect(os.path.exists("LockedFiles/env_mach_pes.NCK1.xml"),
                "ERROR: LockedFiles/env_mach_pes.NCK1.xml does not exist\n"
                "   this would been produced in the build - must run case.test_build")
+
         shutil.copy("LockedFiles/env_mach_pes.NCK1.xml", "env_mach_pes.xml")
         shutil.copy("env_mach_pes.xml", "LockedFiles/env_mach_pes.xml")
         shutil.copy("%s/%s.exe.NCK1" % (exeroot, cime_model),
                     "%s/%s.exe" % (exeroot, cime_model))
         shutil.copy("LockedFiles/env_build.NCK1.xml", "env_build.xml")
         shutil.copy("env_build.xml", "LockedFiles/env_build.xml")
-
-        # note - if you change the env_mach_pes.xml file - should always
-        # rerun the following two case.setup commands to ensure that the right
-        # settings are in the run script
-        # note that the following two commands will eliminate all the batch files except
-        # for the test file and copy the env_mach_pes.xml to the LockedFiles directory
-        case_setup(self._case, clean=True, test_mode=True)
-        case_setup(self._case)
 
         stop_n      = self._case.get_value("STOP_N")
         stop_option = self._case.get_value("STOP_OPTION")
@@ -112,9 +106,6 @@ class NCK(SystemTestsCommon):
                         "%s/%s.exe" % (exeroot, cime_model))
             shutil.copy("LockedFiles/env_build.NCK2.xml", "env_build.xml")
             shutil.copy("env_build.xml", "LockedFiles/env_build.xml")
-
-            case_setup(self._case, clean=True, test_mode=True)
-            case_setup(self._case)
 
             logger.info("default: doing a %s %s with NINST2" % (stop_n, stop_option))
             success = SystemTestsCommon._run(self, "multiinst")

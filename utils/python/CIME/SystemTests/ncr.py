@@ -1,5 +1,9 @@
 """
 Implementation of the CIME NCR test.  This class inherits from SystemTestsCommon
+
+Build two exectuables for this test, the first is a default build the
+second halves the number of tasks and runs two instances for each component
+Lay all of the components out concurrently
 """
 import shutil
 from CIME.XML.standard_module_setup import *
@@ -24,12 +28,10 @@ class NCR(SystemTestsCommon):
         if ( os.path.isfile(machpes1) ):
             shutil.copy(machpes1,"env_mach_pes.xml")
 
+        # Build two exectuables for this test, the first is a default build, the
+        # second halves the number of tasks and runs two instances for each component
+        # Lay all of the components out concurrently
         for bld in range(1,3):
-            """
-            Build two exectuables for this test, the first is a default build
-            the second halves the number of tasks and runs two instances
-            for each component
-            """
             logging.warn("Starting bld %s"%bld)
             machpes = os.path.join("LockedFiles","env_mach_pes.NCR%s.xml"%bld)
             ntasks_sum = 0
@@ -53,18 +55,66 @@ class NCR(SystemTestsCommon):
                         "%s/%s.exe.NCR%s"%(exeroot,cime_model,bld))
             shutil.copy("env_build.xml",os.path.join("LockedFiles","env_build.NCR%s.xml"%bld))
             shutil.copy("env_mach_pes.xml", machpes)
-#
-# Because mira/cetus interprets its run script differently than
-# other systems we need to copy the original env_mach_pes.xml
-# back
-#
 
+        # Because mira/cetus interprets its run script differently than
+        # other systems we need to copy the original env_mach_pes.xml back
         shutil.copy(machpes1,"env_mach_pes.xml")
         shutil.copy("env_mach_pes.xml",
                     os.path.join("LockedFiles","env_mach_pes.xml"))
 
     def run(self):
-        SystemTestsCommon.run(self)
+        os.chdir(self._caseroot)
+
+        exeroot = self._case.get_value("EXEROOT")
+        cime_model = CIME.utils.get_model()
+
+        # Reset beginning test settings
+        expect(os.path.exists("LockedFiles/env_mach_pes.NCR1.xml"),
+               "ERROR: LockedFiles/env_mach_pes.NCR1.xml does not exist\n"
+               "   this would been produced in the build - must run case.test_build")
+
+        shutil.copy("LockedFiles/env_mach_pes.NCR1.xml", "env_mach_pes.xml")
+        shutil.copy("env_mach_pes.xml", "LockedFiles/env_mach_pes.xml")
+        shutil.copy("%s/%s.exe.NCR1" % (exeroot, cime_model),
+                    "%s/%s.exe" % (exeroot, cime_model))
+        shutil.copy("LockedFiles/env_build.NCR1.xml", "env_build.xml")
+        shutil.copy("env_build.xml", "LockedFiles/env_build.xml")
+
+        stop_n      = self._case.get_value("STOP_N")
+        stop_option = self._case.get_value("STOP_OPTION")
+
+        self._case.set_value("HIST_N", stop_n)
+        self._case.set_value("HIST_OPTION", stop_option)
+        self._case.set_value("CONTINUE_RUN", False)
+        self._case.set_value("REST_OPTION", "none")
+        self._case.flush()
+
+        #======================================================================
+        # do an initial run test with NINST 1
+        #======================================================================
+        logger.info("default: doing a %s %s with NINST1" % (stop_n, stop_option))
+        success = SystemTestsCommon.run(self)
+
+        #======================================================================
+        # do an initial run test with NINST 2
+        # want to run on same pe counts per instance and same cpl pe count
+        #======================================================================
+
+        if success:
+            os.remove("%s/%s.exe" % (exeroot, cime_model))
+            shutil.copy("%s/%s.exe.NCR2" % (exeroot, cime_model),
+                        "%s/%s.exe" % (exeroot, cime_model))
+            shutil.copy("LockedFiles/env_build.NCR2.xml", "env_build.xml")
+            shutil.copy("env_build.xml", "LockedFiles/env_build.xml")
+
+            logger.info("default: doing a %s %s with NINST2" % (stop_n, stop_option))
+            success = SystemTestsCommon._run(self, "multiinst")
+
+        # Compare
+        if success:
+            return self._component_compare_test("base", "multiinst")
+        else:
+            return False
 
     def report(self):
         SystemTestsCommon.report(self)
