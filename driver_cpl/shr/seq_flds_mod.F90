@@ -1369,6 +1369,33 @@ module seq_flds_mod
      attname  = 'Faxa_salt'
      call metadata_set(attname, longname, stdname, units)
 
+     ! Black Carbon hydrophilic deposition  
+     call seq_flds_add(i2x_fluxes,"Fioi_bcphi" )
+     call seq_flds_add(x2o_fluxes,"Fioi_bcphi"   )
+     longname = 'Hydrophylic black carbon deposition flux'
+     stdname  = 'deposition_flux_of_hydrophylic_black_carbon'
+     units    = 'kg m-2 s-1'
+     attname  = 'Fioi_bcphi'
+     call metadata_set(attname, longname, stdname, units)
+
+     ! Black Carbon hydrophobic deposition  
+     call seq_flds_add(i2x_fluxes,"Fioi_bcpho" )
+     call seq_flds_add(x2o_fluxes,"Fioi_bcpho"   )
+     longname = 'Hydrophobic black carbon deposition flux'
+     stdname  = 'deposition_flux_of_hydrophobic_black_carbon'
+     units    = 'kg m-2 s-1'
+     attname  = 'Fioi_bcpho'
+     call metadata_set(attname, longname, stdname, units)
+
+     ! Dust flux
+     call seq_flds_add(i2x_fluxes,"Fioi_flxdst")
+     call seq_flds_add(x2o_fluxes,"Fioi_flxdst")
+     longname = 'Dust flux'
+     stdname  = 'dust_flux'
+     units    = 'kg m-2 s-1'
+     attname  = 'Fioi_flxdst'
+     call metadata_set(attname, longname, stdname, units)
+
      ! Sea surface temperature
      call seq_flds_add(o2x_states,"So_t")
      call seq_flds_add(x2i_states,"So_t")    
