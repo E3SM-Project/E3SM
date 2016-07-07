@@ -10,6 +10,8 @@ from CIME.XML.env_base import EnvBase
 from CIME.utils import convert_to_string, transform_vars, get_cime_root
 from copy import deepcopy
 
+import re
+
 logger = logging.getLogger(__name__)
 
 class EnvBatch(EnvBase):
@@ -84,10 +86,12 @@ class EnvBatch(EnvBase):
 
         nodes   = [] # List of identified xml elements
         results = [] # List of identified parameters
-
+             
+        
         # Find all nodes with attribute name and attribute value item
         # xpath .//*[name='item']
         # for job in self.get_nodes("job") :
+        
         groups = self.get_nodes("group")
 
         for group in groups :
@@ -101,36 +105,39 @@ class EnvBatch(EnvBase):
             else :
                 roots = [group]
 
-            for r in roots :
+            for root in roots :
 
                 if item :
-                    nodes = self.get_nodes("entry",{"id" : item} , root=r )
+                    nodes = self.get_nodes("entry",{"id" : item} , root=root )
                 else :
                     # Return all nodes
-                    nodes = self.get_nodes("entry" , root=r)
+                    nodes = self.get_nodes("entry" , root=root)
 
                 # seach in all entry nodes
                 for node in nodes:
 
-                    # Init and construct attribute path
-                    attr      = None
-                    if (r.tag == "job") :
-                        # make job part of attribute path
-                        attr = r.get('name') + "/" + node.get('id')
-                    else:
-                        attr = node.get('id')
-
+                    
                     # Build return structure
-                    g       = group.get('id')
-                    val     = node.get('value')
-                    t       = self._get_type(node)
-                    desc    = self._get_description(node)
-                    default = super(EnvBatch , self)._get_default(node)
-                    filename= self.filename
+                    attr          = node.get('id')
+                    group_name     = None
+                    
+                    # determine group
+                    if (root.tag == "job") :
+                        group_name = root.get('name') 
+                    else:
+                        group_name = root.get('id')
 
-                    v = { 'group' : g , 'attribute' : attr , 'value' : val , 'type' : t , 'description' : desc , 'default' : default , 'file' : filename}
-                    logger.debug("Found node with value for %s = %s" , item , v )
-                    results.append(v)
+                    val             = node.get('value')
+                    attribute_type  = self._get_type(node)
+                    desc            = self._get_description(node)
+                    default         = super(EnvBatch , self)._get_default(node)
+                    filename        = self.filename
+
+                    tmp = { 'group' : group_name , 'attribute' : attr , 'value' : val , 'type' : attribute_type , 'description' : desc , 'default' : default , 'file' : filename}
+                    logger.debug("Found node with value for %s = %s" , item , tmp )
+                    
+                    # add single result to list
+                    results.append(tmp) 
 
         logger.debug("(get_values) Return value:  %s" , results )
 

@@ -916,6 +916,89 @@ class TestSingleSubmit(TestCreateTestCommon):
                          msg="COMMAND SHOULD HAVE WORKED\nwait_for_tests output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
 ###############################################################################
+class TestXMLQuery(unittest.TestCase):
+# Testing command line scripts
+###############################################################################
+
+    def setUp(self):
+        # Create case directory
+        self._testroot = MACHINE.get_value("CESMSCRATCHROOT")  # "/tmp/"
+        self._testdirs = []
+        self._do_teardown = []
+
+        testdir = os.path.join(self._testroot, 'scripts_regression_tests.testscripts')
+        machine = 'melvin'
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        self._testdirs.append(testdir)
+        cmd = "%s/create_newcase --case %s --compset X --res f19_g16 --mach %s " % (SCRIPT_DIR, testdir, machine)
+        stat, output, errput = run_cmd(cmd, ok_to_fail=True, from_dir=SCRIPT_DIR)
+        self.assertEqual(stat, 0, msg="COMMAND '%s' SHOULD HAVE WORKED\noutput:\n%s\n\nerrput:\n%s" % (cmd, output, errput))
+
+        self._do_teardown.append(testdir)
+
+    def tearDown(self):
+        do_teardown = len(self._do_teardown) > 0 and sys.exc_info() == (None, None, None)
+
+        for tfile in self._testdirs:
+            if tfile not in self._do_teardown:
+                print "Detected failed test or user request no teardown"
+                print "Leaving case directory : %s"%tfile
+            elif do_teardown:
+                shutil.rmtree(tfile)
+
+    def test_xmlquery(self):
+        # Set script and script path
+        xmlquery = "./xmlquery"
+        testdir  = self._testdirs[0]
+
+
+        # Check for environment
+        self.assertTrue(os.path.isdir(SCRIPT_DIR))
+        self.assertTrue(os.path.isdir(TOOLS_DIR))
+        self.assertTrue(os.path.isfile(testdir + "/" + xmlquery) )
+
+        # Test command line options
+
+        options = [
+            '' ,
+            '--listall' ,
+            '--listall --valonly' ,
+            "-caseroot " + testdir +" -valonly -subgroup case.run -value JOB_QUEUE" ,
+        ]
+
+        for opt in options :
+
+            cmd = xmlquery + ' ' + opt # .join(opt)
+            output = run_cmd(cmd, from_dir=testdir)
+            self.assertTrue(len(output) , msg="no output for: " + cmd )
+
+    def test_subgroup(self):
+        # Set script and script path
+        xmlquery = "./xmlquery"
+        testdir  = self._testdirs[0]
+
+        options = [
+            '-caseroot ' + testdir + ' -valonly -value JOB_QUEUE'  ,
+            '-caseroot ' + testdir + ' -valonly -subgroup case.run -value JOB_QUEUE' ,
+         ]
+
+        # Get value and group information
+        base_out = ''
+        cmd     = xmlquery + " " + options[0]
+        base_out = run_cmd(cmd, from_dir=testdir)
+
+        group_out = ''
+        cmd      = xmlquery + " " + options[1]
+        group_out = run_cmd(cmd, from_dir=testdir)
+
+        searchObj = re.search( r'(.*)(case.run:JOB_QUEUE)\t*(.*)', base_out)
+
+        # Test group option
+        self.assertTrue(len(base_out) , msg="no output for " + cmd)
+        self.assertEqual(searchObj.group() , group_out)
+
+###############################################################################
 
 # Machinery for Macros generation tests.
 
