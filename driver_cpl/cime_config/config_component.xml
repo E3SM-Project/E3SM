@@ -3250,6 +3250,8 @@
       <!-- Override values based on CAM (WACCM) chemistry -->
       <value compset="CAM[45]%W"				>0.000001</value>
       <value compset="CAM[45]%SSOA"				>0.000001</value>
+      <!-- Mariana's fix to allow isotopes to get the proper CO2 value -->
+      <value compset="CAM[45]%WISOall"				>284.7</value>
       <value compset="^2000.+CAM[45]%WCSC"			>368.9</value>
       <value compset="^2000.+CAM[45]%MOZM"			>0.000001</value>
       <value compset="^2000.+CAM[45]%MMOS"			>0.000001</value>
@@ -3262,6 +3264,19 @@
     <file>env_run.xml</file>
     <desc>This set the namelist values of CO2 ppmv for CAM and CLM. This variables is
       introduced to coordinate this value among multiple components.</desc>
+  </entry>
+
+  <entry id="FLDS_WISO">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values>
+      <value compset="%WISO"    >TRUE</value>
+      <value compset="%ISO"     >TRUE</value>
+    </values>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Turn on the passing of water isotope fields through the coupler</desc>
   </entry>
 
   <entry id="DRV_THREADING">

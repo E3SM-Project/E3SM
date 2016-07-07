@@ -1,5 +1,18 @@
 ======================================================================
 
+Originator: cacraigucar
+Date: June 30, 2016
+Tag: cime4.5.21
+Answer Changes: None
+Tests: Ran with CAM tag geotrace3_cac_n59_cam5_4_57
+Dependencies: None
+
+Brief Summary:
+   Incorporating water isotopes
+
+User interface changes: none
+======================================================================
+
 Originator: fischer-ncar, Brain Kauffman 
 Date: 6 July 2016
 Tag: cime4.5.20
