@@ -250,4 +250,11 @@
       </test>
     </grid>
   </compset>
+  <compset name="Bi1850C5CN">
+    <grid name="f19_g16">
+      <test name="ERS">
+        <machine compiler="intel" testtype="aux_isotope" testmods="allactive/default">yellowstone</machine>
+      </test>
+    </grid>
+  </compset>
 </testlist>

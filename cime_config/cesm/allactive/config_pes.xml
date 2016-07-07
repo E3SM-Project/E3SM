@@ -960,6 +960,43 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%1.9x2.5_l%1.9x2.5_oi%gx1" >
+    <mach name="edison|eos">
+      <pes pesize="any" compset="CAM.+WISO.+CLM.+CICE.+POP">
+	<comment>none</comment>
+	<ntasks>
+	  <ntasks_atm>640</ntasks_atm> 
+	  <ntasks_lnd>96</ntasks_lnd> 
+	  <ntasks_rof>96</ntasks_rof> 
+	  <ntasks_ice>544</ntasks_ice> 
+	  <ntasks_ocn>96</ntasks_ocn> 
+	  <ntasks_glc>180</ntasks_glc> 
+	  <ntasks_wav>180</ntasks_wav> 
+	  <ntasks_cpl>640</ntasks_cpl> 
+	</ntasks>
+	<nthrds>
+	  <nthrds_atm>2</nthrds_atm> 
+	  <nthrds_lnd>1</nthrds_lnd> 
+	  <nthrds_rof>1</nthrds_rof> 
+	  <nthrds_ice>2</nthrds_ice> 
+	  <nthrds_ocn>1</nthrds_ocn> 
+	  <nthrds_glc>2</nthrds_glc> 
+	  <nthrds_wav>2</nthrds_wav> 
+	  <nthrds_cpl>2</nthrds_cpl> 
+	</nthrds>
+	<rootpe>
+	  <rootpe_atm>0</rootpe_atm>
+	  <rootpe_lnd>544</rootpe_lnd>
+	  <rootpe_rof>544</rootpe_rof>
+	  <rootpe_ice>0</rootpe_ice>
+	  <rootpe_ocn>640</rootpe_ocn>
+	  <rootpe_glc>0</rootpe_glc>
+	  <rootpe_wav>0</rootpe_wav>
+	  <rootpe_cpl>0</rootpe_cpl>
+	</rootpe>
+      </pes>
+    </mach>
+  </grid>
   <grid name="a%1.9x2.5.+l%1.9x2.5.+oi%gx1" >
     <mach name="edison|eos">
       <pes pesize="any" compset="CAM.+CLM.+CICE_DOCN%SOM">

@@ -61,6 +61,16 @@ MODULE shr_const_mod
    real(R8),parameter :: SHR_CONST_SPVAL_TOLMIN = 0.99_R8 * SHR_CONST_SPVAL  ! min spval tolerance
    real(R8),parameter :: SHR_CONST_SPVAL_TOLMAX = 1.01_R8 * SHR_CONST_SPVAL  ! max spval tolerance
 
+   !Water Isotope Ratios in Vienna Standard Mean Ocean Water (VSMOW):
+   real(R8),parameter :: SHR_CONST_VSMOW_18O   = 2005.2e-6_R8   ! 18O/16O in VMSOW
+   real(R8),parameter :: SHR_CONST_VSMOW_17O   = 379.e-6_R8   ! 18O/16O in VMSOW
+   real(R8),parameter :: SHR_CONST_VSMOW_16O   = 0.997628_R8    ! 16O/Tot in VMSOW 
+   real(R8),parameter :: SHR_CONST_VSMOW_D   = 155.76e-6_R8   ! 2H/1H in VMSOW 
+   real(R8),parameter :: SHR_CONST_VSMOW_T   = 1.85e-6_R8  ! 3H/1H in VMSOW 
+   real(R8),parameter :: SHR_CONST_VSMOW_H   = 0.99984426_R8  ! 1H/Tot in VMSOW 
+   ! For best numerics in CAM5
+   real(R8),parameter :: SHR_CONST_RSTD_H2ODEV   = 1.0_R8      ! Rstd Dev Use 
+
 contains
 
 !-----------------------------------------------------------------------------
