@@ -148,7 +148,7 @@ def _archive_history_files(case, archive, archive_entry,
             if ninst_string:
                 newsuffix = compname + ".*" + ninst_string[i] + suffix
             else:
-                newsuffix = compname + ".*"  + suffix
+                newsuffix = compname + ".*" + suffix
             logger.debug("short term archiving suffix is %s " %newsuffix)
             pfile = re.compile(newsuffix)
             histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
@@ -178,7 +178,8 @@ def get_histfiles_for_restarts(case, archive, archive_entry, restfile):
         rundir = case.get_value("RUNDIR")
         cmd = "ncdump -v %s %s " %(rest_hist_varname, os.path.join(rundir, restfile))
         rc, out, error = run_cmd(cmd, ok_to_fail=True)
-        expect(rc == 0, "Command %s failed rc=%d\nout=%s\nerr=%s" %(cmd, rc, out, error))
+        if rc != 0:
+            logger.warn(" WARNING: %s failed rc=%d\nout=%s\nerr=%s" %(cmd, rc, out, error))
 
         searchname = "%s =" %rest_hist_varname
         if searchname in out:
@@ -223,12 +224,14 @@ def _archive_restarts(case, archive, archive_entry,
     for suffix in archive.get_rest_file_extensions(archive_entry):
         for i in range(ninst):
             restfiles = ""
-            pattern = compname
+            pattern = "\." + compname + "\d*" + ".*"
             if pattern != "dart":
                 pfile = re.compile(pattern)
                 files = [f for f in os.listdir(rundir) if pfile.search(f)]
                 if ninst_strings:
                     pattern = ninst_strings[i] + suffix + datename
+                    pfile = re.compile(pattern)
+                    restfiles = [f for f in files if pfile.search(f)]
                 else:
                     pattern = suffix + datename
                     pfile = re.compile(pattern)

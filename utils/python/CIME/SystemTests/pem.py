@@ -26,6 +26,9 @@ class PEM(SystemTestsCommon):
         machpes1 = os.path.join("LockedFiles","env_mach_pes.PEM1.xml")
         if ( os.path.isfile(machpes1) ):
             shutil.copy(machpes1,"env_mach_pes.xml")
+        else:
+            logging.warn("Copying env_mach_pes.xml to %s"%(machpes1))
+            shutil.copy("env_mach_pes.xml", machpes1)
 
         for bld in range(1,3):
             logging.warn("Starting bld %s"%bld)

@@ -176,7 +176,7 @@ EOF
 EOF
 
 # The Build::NamelistDefinition module provides utilities to validate that the output
-# namelists are consistent with the namelist definition file
+# namelists are consistent with the namelist definition files
 (-f "$perl5lib_dir/Build/NamelistDefinition.pm")  or  die <<"EOF";
 ** $ProgName - Cannot find perl module \"Build/NamelistDefinition.pm\" in directory \"$perl5lib_dir\" **
 EOF
@@ -192,18 +192,24 @@ EOF
 (-f "$perl5lib_dir/Build/Namelist.pm")  or  die <<"EOF";
 ** $ProgName - Cannot find perl module \"Build/Namelist.pm\" in directory \"$perl5lib_dir\" **
 EOF
-my $nl_definition_file;
-if (-f "${CASEROOT}/SourceMods/src.drv/namelist_definition_drv.xml") {
-    $nl_definition_file = "${CASEROOT}/SourceMods/src.drv/namelist_definition_drv.xml";
-}
-if (! defined $nl_definition_file) {
-    # default location of namelist definition file
-    $nl_definition_file = "$cfgdir/namelist_files/namelist_definition_drv.xml";
-    (-f "$nl_definition_file")  or  die <<"EOF";
-    ** $ProgName - ERROR: Cannot find namelist definition file \"$nl_definition_file\" **
+my @nl_definition_filenames = ( "namelist_definition_drv.xml", 
+                                "namelist_definition_drv_flds.xml",
+                                "namelist_definition_modio.xml" );
+my @nl_definition_paths;
+foreach my $nl_definition_file ( @nl_definition_filenames ) {
+   my $path = undef;
+   if (-f "${CASEROOT}/SourceMods/src.drv/$nl_definition_file") {
+      $path = "${CASEROOT}/SourceMods/src.drv/$nl_definition_file";
+   } else {
+       # default location of namelist definition file
+       $path = "$cfgdir/namelist_files/$nl_definition_file";
+       (-f "$path")  or  die <<"EOF";
+    ** $ProgName - ERROR: Cannot find namelist definition file \"$path\" **
 EOF
+   }
+   push( @nl_definition_paths, $path );
+   if ($print>=2) { print "Using namelist definition file $path$eol"; }
 }
-if ($print>=2) { print "Using namelist definition file $nl_definition_file$eol"; }
 
 # The namelist defaults file contains default values for all required namelist variables.
 my $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_drv.xml";
@@ -211,12 +217,6 @@ my $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_drv.xml";
 ** $ProgName - Cannot find namelist defaults file \"$nl_defaults_file\" **
 EOF
 if ($print>=2) { print "Using namelist defaults file $nl_defaults_file$eol"; }
-
-my $nl_modio_definition_file = "$cfgdir/namelist_files/namelist_definition_modio.xml";
-(-f "$nl_modio_definition_file")  or  die <<"EOF";
-** $ProgName - Cannot find namelist modio definition file \"$nl_modio_definition_file\" **
-EOF
-if ($print>=2) { print "Using namelist modio definition file $nl_modio_definition_file$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Add $perl5lib_dir to the list of paths that Perl searches for modules
@@ -235,7 +235,10 @@ my $cfg = Build::Config->new("$CASEROOT/Buildconf/cplconf/config_cache.xml");
 # Create a namelist definition object.  This object provides a method for verifying that the
 # output namelist variables are in the definition file, and are output in the correct
 # namelist groups.
-my $definition = Build::NamelistDefinition->new($nl_definition_file);
+my $definition = Build::NamelistDefinition->new( shift(@nl_definition_paths) );
+foreach my $nl_defin_file ( @nl_definition_paths ) {
+  $definition->add( "$nl_defin_file" );
+}
 
 # Create a namelist defaults object.  This object provides default values for variables
 # contained in the input defaults file.  The configuration object provides attribute
@@ -297,7 +300,33 @@ foreach my $attr (keys %xmlvars) {
 }
 
 #-----------------------------------------------------------------------------------------------
-# Determine drv namelist
+# Read in versions fo the drv_flds_in file from different components and merge them together
+# Abort if there is a conflict
+#-----------------------------------------------------------------------------------------------
+add_default($nl, 'drv_flds_in_files' );
+my $drvfldsinlist = $nl->get_value('drv_flds_in_files');
+   $drvfldsinlist =~ s/[\'\"]//g;
+my @fldsinfiles   = split( ",", $drvfldsinlist );
+foreach my $fldsin ( @fldsinfiles ) {
+    if ( -f "$CASEROOT/$fldsin" ) {
+       # Parse namelist input from one of the drv_flds_in files from the components that create them
+       my $nl_infile = Build::Namelist->new("$CASEROOT/$fldsin");
+       print " Read fldsin file: $CASEROOT/$fldsin\n";
+
+       # Validate input namelist -- trap exceptions
+       my $nl_infile_valid;
+       eval { $nl_infile_valid = $definition->validate($nl_infile); };
+       if ($@) {
+          die "$ProgName - ERROR: Invalid namelist variable in '-infile' $opts{'infile'}.\n $@";
+       }
+   
+       # Merge input values into namelist.  Die if a conflict is found.
+       $nl->merge_nl($nl_infile_valid, die_on_conflict=>1);
+   }
+}
+
+#-----------------------------------------------------------------------------------------------
+# Determine drv namelist 
 #-----------------------------------------------------------------------------------------------
 
 #############################################
@@ -752,13 +781,6 @@ my $fh = new IO::File;
 $fh->open(">seq_maps.rc") or die "** can't open file: seq_maps.rc\n";
 print $fh <<"EOF";
 ##################################################################
-#
-# seq_maps.rc
-#
-# This is a resource file which lists the names of mapping
-# weight files to use in a sequential CCSM run (mapname).
-# You can also set when data is rearranged in the mapping (maptype).
-#
 # This file is read during the map_model2model_init calls.
 #
 # For maptype:  X = Rearrange the input so that the output
@@ -843,6 +865,62 @@ add_default($nl, 'atm2ice_vmaptype', 'val'=>"$atm2ice_vmaptype");
 add_default($nl, 'ice2atm_fmaptype', 'val'=>"$ice2atm_fmaptype");
 add_default($nl, 'ice2atm_smaptype', 'val'=>"$ice2atm_smaptype");
 
+# Validate that the namelist is correct
+$definition->validate($nl);
+#-----------------------------------------------------------------------------------------------
+# (1) Write output namelist files (drv_in, and drv_flds_in)
+#-----------------------------------------------------------------------------------------------
+
+# Write out drv_in namelist groups 
+my @groups = qw(seq_cplflds_inparm
+		seq_cplflds_userspec
+		seq_infodata_inparm
+		seq_timemgr_inparm
+ 		ccsm_pes
+		prof_inparm
+                papi_inparm
+                pio_default_inparm);
+
+my $outfile = "./drv_in";
+$nl->write($outfile, 'groups'=>\@groups);
+if ($print>=2) { print "Writing driver namelist to $outfile $eol"; }
+
+# Drydep, fire-emission or MEGAN namelist for driver
+@groups = qw(drydep_inparm megan_emis_nl fire_emis_nl carma_inparm);
+my $outfile = "./drv_flds_in";
+$nl->write($outfile, 'groups'=>\@groups);
+if ($print>=2) { print "Writing driver fields namelist to $outfile $eol"; }
+               
+#-----------------------------------------------------------------------------------------------
+# (2) Write out seq_map.rc file
+#-----------------------------------------------------------------------------------------------
+
+my $fh = new IO::File;
+$fh->open(">seq_maps.rc") or die "** can't open file: seq_maps.rc\n";
+print $fh <<"EOF";
+##################################################################
+#
+# seq_maps.rc
+#
+# This is a resource file which lists the names of mapping
+# weight files to use in a sequential CCSM run (mapname).
+# You can also set when data is rearranged in the mapping (maptype).
+#
+# This file is read during the map_model2model_init calls.
+#
+# For maptype:  X = Rearrange the input so that the output
+#                   is on the correct processor.
+#               Y = Rearrange the output and sum partial outputs
+#                   if necessary
+#
+# NOTE:  For bfb on different processor counts, set all maptypes to "X".
+################################################################## 
+EOF
+$fh->close();
+
+
+
+my @mapgroup = qw(seq_maps);
 $nl->write_rc('./seq_maps.rc', 'groups'=>\@mapgroup, 'append'=>"1");
 if ($print>=2) { print "Writing map namelist to seq_maps.rc $eol"; }
 
@@ -855,8 +933,6 @@ check_input_files($nl, $DIN_LOC_ROOT, "../cpl.input_data_list");
 #-----------------------------------------------------------------------------------------------
 # (4) Write out model_modelio.nml files
 #-----------------------------------------------------------------------------------------------
-
-$definition = Build::NamelistDefinition->new($nl_modio_definition_file);
 
 foreach my $model (qw(cpl atm lnd ice ocn glc rof wav esp)) {
 

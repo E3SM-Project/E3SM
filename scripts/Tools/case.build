@@ -5,7 +5,6 @@ Script to build a case.
 """
 
 from standard_script_setup import *
-from CIME.SystemTests.cme import CME
 from CIME.SystemTests.eri import ERI
 from CIME.SystemTests.erp import ERP
 from CIME.SystemTests.err import ERR

@@ -24,6 +24,7 @@ class ERP(SystemTestsCommon):
         """
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
+
         machpes1 = os.path.join("LockedFiles","env_mach_pes.ERP1.xml")
         if ( os.path.isfile(machpes1) ):
             shutil.copy(machpes1,"env_mach_pes.xml")

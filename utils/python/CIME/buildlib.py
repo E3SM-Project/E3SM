@@ -116,7 +116,7 @@ def run_gmake(case, compclass, libroot, libname="", user_cppdefs=""):
     macfile  = os.path.join(caseroot, "Macros.%s" % mach)
 
     if user_cppdefs:
-        cmd = "%s complib -j %d MODEL=%s COMPLIB=%s -f %s MACFILE=%s USER_CPPDEFS=%s" \
+        cmd = "%s complib -j %d MODEL=%s COMPLIB=%s -f %s MACFILE=%s USER_CPPDEFS='%s'" \
             % (gmake, gmake_j, compclass, complib, makefile, macfile, user_cppdefs )
     else:
         cmd = "%s complib -j %d MODEL=%s COMPLIB=%s -f %s MACFILE=%s " \

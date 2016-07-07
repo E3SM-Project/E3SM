@@ -4,7 +4,7 @@ Interface to the config_machines.xml file.  This class inherits from GenericXML.
 from CIME.XML.standard_module_setup import *
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.files import Files
-from CIME.utils import expect, transform_vars
+from CIME.utils import expect, transform_vars, get_build_threaded
 
 import socket
 
@@ -331,7 +331,7 @@ class Machines(GenericXML):
         mpi_attribs = {
             "compiler" : case.get_value("COMPILER"),
             "mpilib"   : case.get_value("MPILIB"),
-            "threaded" : case.get_value("BUILD_THREADED")
+            "threaded" : get_build_threaded(case)
             }
 
         executable, args = self.get_mpirun(mpi_attribs, check_members, case, job)

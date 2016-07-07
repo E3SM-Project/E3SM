@@ -93,6 +93,7 @@ class ERI(SystemTestsCommon):
         clone1.set_value("REST_OPTION", stop_option)
         clone1.set_value("REST_N", rest_n1)
         clone1.set_value("HIST_OPTION", "never")
+        clone1.flush()
 
         dout_sr1 = clone1.get_value("DOUT_S_ROOT")
 
@@ -140,6 +141,7 @@ class ERI(SystemTestsCommon):
         clone2.set_value("REST_N",        rest_n2)
         clone2.set_value("HIST_OPTION",   stop_option)
         clone2.set_value("HIST_N",        hist_n)
+        clone2.flush()
 
         rundir = clone2.get_value("RUNDIR")
         dout_sr2 = clone2.get_value("DOUT_S_ROOT")
@@ -174,7 +176,7 @@ class ERI(SystemTestsCommon):
         logger.info("  short term archiving is off")
 
         self._case.set_value("RUN_TYPE"      , "branch")
-        self._case.set_value("RUN_REFCASE"   , "%s.ref1" % self._case.get_value("CASE"))
+        self._case.set_value("RUN_REFCASE"   , "%s.ref2" % self._case.get_value("CASE"))
         self._case.set_value("RUN_REFDATE"   , refdate_3)
         self._case.set_value("RUN_REFTOD"    , ref_to_d3)
         self._case.set_value("GET_REFCASE"   , False)
@@ -185,6 +187,7 @@ class ERI(SystemTestsCommon):
         self._case.set_value("HIST_OPTION"   , stop_option)
         self._case.set_value("HIST_N"        , stop_n2)
         self._case.set_value("DOUT_S"        , False)
+        self._case.flush()
 
         rundir = self._case.get_value("RUNDIR")
         if not os.path.exists(rundir):
@@ -194,7 +197,8 @@ class ERI(SystemTestsCommon):
 
         # the following lines creates the initial component history files for the restart test
         for item in glob.glob("%s/*/hist/*nc" % dout_sr2):
-            newfile = "%s:t" % item.replace(".ref2", "")
+            newfile = "%s" % item.replace(".ref2", "")
+            newfile = os.path.basename(newfile)
             os.symlink(item, os.path.join(rundir, newfile))
 
         self._component_compare_move("hybrid")
@@ -203,7 +207,6 @@ class ERI(SystemTestsCommon):
         success = self._run()
         if not success:
             return False
-
         #
         # (3b) Test run:
         # do a restart continue from (3a) (short term archiving off)
@@ -217,6 +220,7 @@ class ERI(SystemTestsCommon):
         self._case.set_value("DOUT_S",        False)
         self._case.set_value("HIST_OPTION",   stop_option)
         self._case.set_value("HIST_N",        hist_n)
+        self._case.flush()
 
         # do the restart run (short term archiving is off)
         success = self._run(suffix="rest")

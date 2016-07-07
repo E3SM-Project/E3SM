@@ -1,7 +1,8 @@
 <components>
 
   <comp_archive_spec compname="cam" compclass="atm">
-    <rest_file_extension>\.[ri].*</rest_file_extension>
+    <rest_file_extension>\.[ri]\..*</rest_file_extension>
+    <rest_file_extension>\.r[sh]\.*</rest_file_extension>
     <hist_file_extension>\.h.*</hist_file_extension>
     <rest_history_varname>nhfil</rest_history_varname>
     <rpointer>
@@ -11,7 +12,7 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="datm" compclass="atm">
-    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_file_extension>\.r\..*</rest_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer$NINST_STRING.atm</rpointer_file>
@@ -20,7 +21,8 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="clm" compclass="lnd">
-    <rest_file_extension>\.[ri].*</rest_file_extension>
+    <rest_file_extension>\.[ri]\..*</rest_file_extension>
+    <rest_file_extension>\.rh.*</rest_file_extension>
     <hist_file_extension>\.h.*</hist_file_extension>
     <rest_history_varname>locfnh</rest_history_varname>
     <rpointer>
@@ -110,7 +112,7 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="cism" compclass="glc">
-    <rest_file_extension>\.[ri].*</rest_file_extension>
+    <rest_file_extension>\.[ri]\..*</rest_file_extension>
     <hist_file_extension>\.h.*</hist_file_extension>      
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
@@ -120,8 +122,8 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="ww3" compclass="wav">
-    <rest_file_extension>\.[ri].*</rest_file_extension>
-    <hist_file_extension>\.h.*</hist_file_extension>      
+    <rest_file_extension>\.\..*</rest_file_extension>
+    <hist_file_extension>\.hi.*</hist_file_extension>      
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer$NINST_STRING.wav</rpointer_file>
@@ -152,7 +154,7 @@
   </comp_archive_spec>
 
   <comp_archive_spec compname="cpl" compclass="cpl"> 
-    <rest_file_extension>\.r.*</rest_file_extension>
+    <rest_file_extension>\.r\..*</rest_file_extension>
     <hist_file_extension>\.h.*</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer_file>rpointer.cpl</rpointer_file>

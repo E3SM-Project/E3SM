@@ -883,26 +883,6 @@ for mct, etc.
  <!-- <ADD_LDFLAGS compile_threaded="true"> -L/home/santos/lib/fake_omp -lfake_omp -Wl,-Wl,,rpath=/home/santos/lib/fake_omp  -->
 </compiler>
 
-<compiler MACH="logan">
- <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
- <LAPACK_LIBDIR> /usr/lib64 </LAPACK_LIBDIR>
- <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
-</compiler>
-
-<compiler COMPILER="intel" MACH="logan">
- <ADD_LDFLAGS> -Wl,-rpath,$(NETCDF_PATH)/lib </ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-rpath,$(COMPILER_PATH)/lib/intel64 </ADD_LDFLAGS>
-</compiler>
-
-<compiler COMPILER="pgi" MACH="logan">
- <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
- <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
- <ADD_LDFLAGS> -lgomp </ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-R$(NETCDF_PATH)/lib</ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-R$(COMPILER_PATH)/lib</ADD_LDFLAGS>
- <ADD_LDFLAGS> -Wl,-R$(COMPILER_PATH)/libso</ADD_LDFLAGS>
-</compiler>
-
 <compiler COMPILER="nag" MACH="goldbach">
  <NETCDF_PATH> /usr/local/netcdf-gcc-nag</NETCDF_PATH>
  <MPI_PATH MPILIB="openmpi"> /usr/local/openmpi-gcc-nag</MPI_PATH>
