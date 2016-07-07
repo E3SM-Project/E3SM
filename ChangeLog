@@ -1,16 +1,39 @@
 ======================================================================
 
-Originator: cacraigucar
-Date: June 30, 2016
+Originator: cacraigucar, fischer-ncar
+Date: July 7, 2016
 Tag: cime4.5.21
-Answer Changes: None
+Answer Changes: Possible answer changes only on corip1
 Tests: Ran with CAM tag geotrace3_cac_n59_cam5_4_57
 Dependencies: None
 
 Brief Summary:
    Incorporating water isotopes
+   Update modules for corip1
 
 User interface changes: none
+
+Modified files: git diff --name-status
+M       ChangeLog
+M       cime_config/cesm/allactive/config_compsets.xml
+M       cime_config/cesm/allactive/config_pes.xml
+M       cime_config/cesm/allactive/testlist_allactive.xml
+M       cime_config/cesm/machines/config_machines.xml
+M       driver_cpl/bld/build-namelist
+M       driver_cpl/bld/namelist_files/namelist_definition_drv.xml
+M       driver_cpl/cime_config/config_component.xml
+A       driver_cpl/driver/mrg_mod.F90
+M       driver_cpl/driver/prep_ice_mod.F90
+M       driver_cpl/driver/prep_ocn_mod.F90
+M       driver_cpl/driver/prep_rof_mod.F90
+M       driver_cpl/driver/seq_diag_mct.F90
+M       driver_cpl/driver/seq_flux_mct.F90
+M       driver_cpl/shr/seq_flds_mod.F90
+M       share/csm_share/shr/shr_const_mod.F90
+M       share/csm_share/shr/shr_flux_mod.F90
+A       share/csm_share/shr/water_isotopes.F90
+A       share/csm_share/shr/water_types.F90
+
 ======================================================================
 
 Originator: fischer-ncar, Brain Kauffman 
