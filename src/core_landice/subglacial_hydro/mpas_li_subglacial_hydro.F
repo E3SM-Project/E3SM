@@ -450,6 +450,7 @@ module li_subglacial_hydro
    subroutine calc_edge_quantities(block, err)
 
       use mpas_vector_operations, only: mpas_tangential_vector_1d
+      use mpas_vector_reconstruction
 
       !-----------------------------------------------------------------
       ! input variables
@@ -487,11 +488,16 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: waterVelocity
       real (kind=RKIND), dimension(:), pointer :: waterFlux
+      real (kind=RKIND), dimension(:), pointer :: waterVelocityCellX
+      real (kind=RKIND), dimension(:), pointer :: waterVelocityCellY
+      integer, dimension(:), pointer :: cellMask
+      real (kind=RKIND), dimension(:), allocatable :: cellJunk
       integer, dimension(:,:), pointer :: cellsOnEdge
       real (kind=RKIND), pointer :: alpha, beta
       real (kind=RKIND), pointer :: conduc_coeff
       character (len=StrKIND), pointer :: config_SGH_tangent_slope_calculation
       integer, pointer :: nEdgesSolve
+      integer, pointer :: nCells
       integer :: iEdge, cell1, cell2
       real (kind=RKIND) :: velSign
       integer :: err_tmp
@@ -506,6 +512,7 @@ module li_subglacial_hydro
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       call mpas_pool_get_config(liConfigs, 'config_SGH_alpha', alpha)
       call mpas_pool_get_config(liConfigs, 'config_SGH_beta', beta)
@@ -521,6 +528,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeNormal', hydropotentialBaseSlopeNormal)
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeTangent', hydropotentialBaseSlopeTangent)
       call mpas_pool_get_array(hydroPool, 'gradMagPhiEdge', gradMagPhiEdge)
@@ -528,6 +536,8 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'diffusivity', diffusivity)
       call mpas_pool_get_array(hydroPool, 'waterVelocity', waterVelocity)
       call mpas_pool_get_array(hydroPool, 'waterFlux', waterFlux)
+      call mpas_pool_get_array(hydroPool, 'waterVelocityCellX', waterVelocityCellX)
+      call mpas_pool_get_array(hydroPool, 'waterVelocityCellY', waterVelocityCellY)
 
 
       ! This is the hydropotential without the water thickness piece
@@ -582,6 +592,14 @@ module li_subglacial_hydro
                      velSign * (-1.0_RKIND) * waterThickness(cell2))
          waterFlux(iEdge) = waterVelocity(iEdge) * dvEdge(iEdge) * waterThicknessEdgeUpwind(iEdge)
       end do
+
+      ! Calculate reconstructed velocities on cell centers for viz
+      allocate(cellJunk(nCells+1))
+      call mpas_reconstruct(meshPool, waterVelocity, waterVelocityCellX, waterVelocityCellY, &
+              cellJunk, cellJunk, cellJunk)
+      deallocate(cellJunk)
+      waterVelocityCellX = waterVelocityCellX * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations
+      waterVelocityCellY = waterVelocityCellY * li_mask_is_grounded_ice_int(cellMask)  ! zero in non-grounded locations
 
    !--------------------------------------------------------------------
    end subroutine calc_edge_quantities
