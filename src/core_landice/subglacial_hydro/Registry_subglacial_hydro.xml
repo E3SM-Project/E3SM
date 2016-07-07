@@ -128,11 +128,11 @@
 		     description="rate of creep closure" />
                 <var name="zeroOrderSum" type="real" dimensions="nCells Time" units="m s^-1"
 		     description="sum of zero order terms" />
-                <var name="deltatACFL" type="real" dimensions="Time" units="s"
+                <var name="deltatSGHadvec" type="real" dimensions="Time" units="s"
 		     description="advective CFL limited time step length" />
-                <var name="deltatDCFL" type="real" dimensions="Time" units="s"
+                <var name="deltatSGHdiffu" type="real" dimensions="Time" units="s"
 		     description="diffusive CFL limited time step length" />
-                <var name="deltatPE" type="real" dimensions="Time" units="s"
+                <var name="deltatSGHpressure" type="real" dimensions="Time" units="s"
 		     description="time step length limited by pressure equation scheme" />
                 <var name="deltatSGH" type="real" dimensions="Time" units="s"
                      description="time step used for subglacial hydro" />
