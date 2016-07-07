@@ -1,5 +1,23 @@
 ======================================================================
 
+Originator: fischer-ncar 
+Date: July 7, 2016 
+Tag: cime4.5.22
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary:  Fix broken compset names
+
+User interface changes: 
+
+Modified files: git diff --name-status
+
+M       cime_config/cesm/allactive/config_compsets.xml
+M       cime_config/cesm/allactive/testlist_allactive.xml
+
+======================================================================
+
 Originator: cacraigucar, fischer-ncar
 Date: July 7, 2016
 Tag: cime4.5.21

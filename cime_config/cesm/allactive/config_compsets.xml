@@ -233,6 +233,11 @@
   <!-- BG compsets -->
 
   <compset>
+    <alias>BC5L45BGCRG</alias>
+    <lname>2000_CAM5_CLM45%BGC_CICE_POP2_RTM_CISM1_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>BC5L45BGCR</alias>
     <lname>2000_CAM5_CLM45%BGC_CICE_POP2_RTM_SGLC_SWAV</lname>
   </compset>

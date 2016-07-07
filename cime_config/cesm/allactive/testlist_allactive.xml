@@ -73,28 +73,28 @@
       </test>
     </grid>
   </compset>
-  <compset name="B1850C4L45BGCRBPRPWs">
+  <compset name="B1850C4L45BGCRBPRP">
     <grid name="f19_g16">
       <test name="ERS">
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">bluewaters</machine>
       </test>
     </grid>
   </compset>
-  <compset name="B1850C4RCO2L40CNRWs">
+  <compset name="B1850C4RCO2L40CNR">
     <grid name="f19_g16">
       <test name="ERS_Ld7">
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">bluewaters</machine>
       </test>
     </grid>
   </compset>
-  <compset name="B1850C5L40SPRWs">
+  <compset name="B1850C5L40SPR">
     <grid name="f19_g16">
       <test name="PET_PT">
         <machine compiler="pgi" testtype="prebeta" testmods="allactive/defaultio">bluewaters</machine>
       </test>
     </grid>
   </compset>
-  <compset name="B1850C5L45BGCRWs">
+  <compset name="B1850C5L45BGCR">
     <grid name="T31_g37">
       <test name="ERS_Ld5">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/cism/test_coupling">yellowstone</machine>
@@ -106,7 +106,7 @@
       </test>
     </grid>
   </compset>
-  <compset name="B1850C5L45BGCRG2Ws">
+  <compset name="B1850C5L45BGCRG2">
     <grid name="T31_g37_gl20">
       <test name="SMS_Ld5">
         <machine compiler="intel" testtype="prealpha" testmods="allactive/cism/test_coupling">yellowstone</machine>
@@ -114,7 +114,7 @@
       </test>
     </grid>
   </compset>
-  <compset name="B1850C5WCCML45CNRWs">
+  <compset name="B1850C5WCCML45CNR">
     <grid name="f19_g16">
       <test name="ERS_Ld7">
         <machine compiler="intel" testtype="prebeta" testmods="allactive/defaultio">yellowstone</machine>
