@@ -1,5 +1,6 @@
 import unittest, sys, os, shutil 
 import logging
+import re
 import subprocess
 from subprocess import call
 
@@ -75,15 +76,12 @@ class XMLQUERY(unittest.TestCase):
         
     def test_XMLQUERY(self):
      
-        print(SCRIPT_DIR)
-        logger.warning(SCRIPT_DIR)
-        
+        # Set script and script path    
         TOOLS_DIR = SCRIPT_DIR + "/Tools"
         xmlquery = TOOLS_DIR + "/xmlquery"
         testdir  = self._testdirs[0]
         
-        #call(["ls", "-l"])
-        #c=subprocess.check_call([xmlquery])
+        logger.debug( "Testing %s" , xmlquery )
         
         # Check for environment 
         self.assertTrue(os.path.isdir(SCRIPT_DIR))
@@ -103,6 +101,8 @@ class XMLQUERY(unittest.TestCase):
             # '-subgroup' , 'case.run' , '-value' ,  'JOB_QUEUE' ] ,
             ['-caseroot' , testdir , '-valonly' ,
              '-subgroup' , 'case.run' , '-value' ,  'JOB_QUEUE' ] ,
+            ['-caseroot' , testdir , '-valonly' ,
+             '-subgroup' , 'case.run' , '-subgroup' , 'case.run' , '-value' ,  'JOB_QUEUE' ] ,
         ]
         
         for opt in options :
@@ -110,18 +110,48 @@ class XMLQUERY(unittest.TestCase):
             out = ''
             call = [xmlquery] + opt
             out = subprocess.check_output(call)
-            logger.warning( "Testing %s %s" , xmlquery , " ".join(opt))
+        
             logger.debug("Output for %s : %s" , " ".join(opt) , out)
             
             self.assertTrue(len(out) , msg="output exists for:\n " + xmlquery + " " + " ".join(opt) + '\n' + out + 'END' )
             
-        # self.assertTrue(0 , msg='check output')
         
-        #self.assertFalse(os.path.isdir(SCRIPT_DIR))
+    def test_subgroup(self):
         
+        # Set script and script path    
+        TOOLS_DIR = SCRIPT_DIR + "/Tools"
+        xmlquery = TOOLS_DIR + "/xmlquery"
+        testdir  = self._testdirs[0]
+    
+        logger.debug( "Testing subgroup %s" , xmlquery )
+        
+        options = [
+            ['-caseroot' , testdir , '-valonly' ,
+             '-value' ,  'JOB_QUEUE' ] ,
+            ['-caseroot' , testdir , '-valonly' ,
+             '-subgroup' , 'case.run' , '-value' ,  'JOB_QUEUE' ] ,
+         ]
+        
+        # Get value and group information
+        base_out = ''
+        call     = [xmlquery] + options[0]
+        base_out = subprocess.check_output(call)
+        
+        group_out = ''
+        call      = [xmlquery] + options[1]
+        group_out = subprocess.check_output(call)
+        
+        searchObj = re.search( r'(.*)(case.run:JOB_QUEUE)\t*(.*)', base_out)
+        
+        if not searchObj:
+           logger.debug("No match for regexp: %s" , base_out )     
+           
+    
+        # Test group option     
+        self.assertTrue(len(base_out))
+        self.assertEqual(searchObj.group() , group_out)
         
                  
-
 
 
 
@@ -129,5 +159,5 @@ if __name__ == '__main__':
    
     
     #print(fun(10))
-    #debug_test()
+    debug_test()
     unittest.main()        
