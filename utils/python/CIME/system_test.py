@@ -649,10 +649,10 @@ class SystemTest(object):
         for phase in self._phases[0:made_it_to_phase_idx+1]:
             str_to_write += "%s %s %s\n" % (self._get_test_status(test, phase), test, phase)
 
-#        if not self._no_run and not self._is_broken(test) and made_it_to_phase == MODEL_BUILD_PHASE:
+        if not self._no_run and not self._is_broken(test) and made_it_to_phase == MODEL_BUILD_PHASE:
             # Ensure PEND state always gets added to TestStatus file if we are
             # about to run test
-#            str_to_write += "%s %s %s\n" % (TEST_PENDING_STATUS, test, RUN_PHASE)
+            str_to_write += "%s %s %s\n" % (TEST_PENDING_STATUS, test, RUN_PHASE)
 
         test_status_file = os.path.join(self._get_test_dir(test), TEST_STATUS_FILENAME)
         with open(test_status_file, "w") as fd:

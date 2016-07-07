@@ -65,9 +65,6 @@ class SystemTestsCommon(object):
         self._caseroot = case.get_value("CASEROOT")
 
     def _run(self, suffix="base", coupler_log_path=None, st_archive=False):
-        test_status = os.path.join(self._orig_caseroot, "TestStatus")
-        with open(test_status, 'a') as f:
-            f.write("PEND %s RUN\n"%self._case.get_value("CASEBASEID"))
         try:
             success = case_run(self._case)
             if success and st_archive:
