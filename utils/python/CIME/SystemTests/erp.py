@@ -140,8 +140,7 @@ class ERP(SystemTestsCommon):
         self._case.set_value("REST_OPTION","never")
         self._case.flush()
 
-        logger.info("doing an %s %s restart test"
-                    %(str(stop_n), stop_option))
+        logger.info("doing an %s %s restart test" %(str(stop_new), stop_option))
         success = SystemTestsCommon._run(self, "rest")
 
         # Compare restart file
