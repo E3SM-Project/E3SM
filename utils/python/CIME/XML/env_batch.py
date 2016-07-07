@@ -33,7 +33,13 @@ class EnvBatch(EnvBase):
             # than this we may need to generalize this further
             walltime_format = self.get_value("walltime_format", subgroup=None)
             if walltime_format is not None and walltime_format.count(":") != value.count(":"):
-                t = time.strptime(value,"%H:%M:%S")
+                if value.count(":") == 1:
+                    t = time.strptime(value,"%H:%M")
+                elif value.count(":") == 2:
+                    t = time.strptime(value,"%H:%M:%S")
+                else:
+                    expect(False, "could not interpret format for wallclock time %s"%value)
+
                 value = time.strftime(walltime_format, t)
 
         # allow the user to set all instances of item if subgroup is not provided

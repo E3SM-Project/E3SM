@@ -197,7 +197,7 @@ OR
 
     if args.single_submit:
         expect(not args.no_run, "Doesn't make sense to request single-submit if no-run is on")
-        args.no_build = True
+        args.no_build = False
         args.no_run   = True
         args.no_batch = True
 
