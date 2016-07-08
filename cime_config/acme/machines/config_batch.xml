@@ -134,7 +134,7 @@
    </batch_system>
 
     <!-- blues is PBS -->
-    <batch_system MACH="blues" version="x.y">
+    <batch_system MACH="blues" type="pbs" version="x.y">
       <directives>
         <directive>-A {{ PROJECT }}</directive>
         <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
@@ -143,7 +143,7 @@
 	<queue>shared</queue>
       </queues>
       <walltimes>
-	<walltime default="true">15:00</walltime>
+	<walltime default="true">00:15:00</walltime>
       </walltimes>
     </batch_system>
 
