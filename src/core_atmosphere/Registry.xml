@@ -1200,29 +1200,29 @@
 
                 <!-- coefficients for the vertical tridiagonal solve -->
                 <!-- Note:  these could be local but...              -->
-                <var name="cofrz" type="real" dimensions="nVertLevels Time" units="-"
-                     description="???"/>
+                <var name="cofrz" type="real" dimensions="nVertLevels Time" units="s m^{-1}"
+                     description="coefficient for implicit contribution of Omega to density update"/>
 
-                <var name="cofwr" type="real" dimensions="nVertLevels nCells Time" units="-"
-                     description="???"/>
+                <var name="cofwr" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+                     description="coefficient for implicit contribution of density to the vertical velocity update"/>
 
-                <var name="cofwz" type="real" dimensions="nVertLevels nCells Time" units="-"
-                     description="???"/>
+                <var name="cofwz" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} K^{-1}"
+                     description="coefficient for implicit contribution of density to the vertical velocity update"/>
 
-                <var name="coftz" type="real" dimensions="nVertLevelsP1 nCells Time" units="-"
-                     description="???"/>
+                <var name="coftz" type="real" dimensions="nVertLevelsP1 nCells Time" units="s K"
+                     description="coefficient for implicit contribution of omega vertical derivative to the theta_m update"/>
 
-                <var name="cofwt" type="real" dimensions="nVertLevels nCells Time" units="-"
-                     description="???"/>
+                <var name="cofwt" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} K^{-1}"
+                     description="coefficient for implicit contribution of density to the vertical velocity update"/>
 
-                <var name="a_tri" type="real" dimensions="nVertLevels nCells Time" units="-"
-                     description="???"/>
+                <var name="a_tri" type="real" dimensions="nVertLevels nCells Time" units="unitless"
+                     description="implicit tridiagonal solve coefficients"/>
 
-                <var name="alpha_tri" type="real" dimensions="nVertLevels nCells Time" units="-"
-                     description="???"/>
+                <var name="alpha_tri" type="real" dimensions="nVertLevels nCells Time" units="unitless"
+                     description="implicit tridiagonal solve coefficients"/>
 
-                <var name="gamma_tri" type="real" dimensions="nVertLevels nCells Time" units="-"
-                     description="???"/>
+                <var name="gamma_tri" type="real" dimensions="nVertLevels nCells Time" units="unitless"
+                     description="implicit tridiagonal solve coefficients"/>
 
                 <!-- state variables diagnosed from prognostic state -->
                 <var name="pressure_p" type="real" dimensions="nVertLevels nCells Time" units="Pa"
@@ -1245,25 +1245,25 @@
                      description="Horizontal tangential velocity at edges"/>
 
                 <var name="divergence" type="real" dimensions="nVertLevels nCells Time" units="s^{-1}"
-                     description="Horizontal divergence at cells"/>
+                     description="Horizontal velocity divergence at cell center"/>
 
                 <var name="vorticity" type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
                      description="Relative vorticity at vertices"/>
 
-                <var name="pv_edge" type="real" dimensions="nVertLevels nEdges Time" units="???"
-                     description="???"/>
+                <var name="pv_edge" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1} kg^{-1} m^3"
+                     description="absolute vorticity/rho_zz averaged to the cell edge from the vertices"/>
 
                 <var name="rho_edge" type="real" dimensions="nVertLevels nEdges Time" units="kg m^{-3}"
-                     description="???"/>
+                     description="rho_zz averaged from cell centers to the cell edge"/>
 
-                <var name="ke" type="real" dimensions="nVertLevels nCells Time" units="???"
-                     description="Kinetic energy"/>
+                <var name="ke" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
+                     description="Kinetic energy at a cell center"/>
 
-                <var name="pv_vertex" type="real" dimensions="nVertLevels nVertices Time" units="???"
-                     description="???"/>
+                <var name="pv_vertex" type="real" dimensions="nVertLevels nVertices Time" units="s^{-1} kg^{-1} m^3"
+                     description="absolute vorticity/rho_zz at a vertex"/>
 
-                <var name="pv_cell" type="real" dimensions="nVertLevels nCells Time" units="???"
-                     description="???"/>
+                <var name="pv_cell" type="real" dimensions="nVertLevels nCells Time" units="s^{-1} kg^{-1} m^3"
+                     description="absolute vorticity/rho_zz averaged to the cell center from the vertices"/>
 
                 <!-- reconstructed horizontal velocity vectors at cell centers -->
                 <var name="uReconstructX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
@@ -1303,8 +1303,8 @@
                 <var name="exner_base" type="real" dimensions="nVertLevels nCells Time" units="unitless"
                      description="Base-state Exner function"/>
 
-                <var name="rtheta_base" type="real" dimensions="nVertLevels nCells Time" units="???"
-                     description="???"/>
+                <var name="rtheta_base" type="real" dimensions="nVertLevels nCells Time" units="kg K m^{-3}"
+                     description="reference state rho*theta/zz"/>
 
                 <var name="pressure" type="real" dimensions="nVertLevels nCells Time" units="Pa"
                      description="Pressure"/>
@@ -1318,69 +1318,69 @@
                 <var name="theta_base" type="real" dimensions="nVertLevels nCells Time" units="K"
                      description="Base state potential temperature"/>
 
-                <var name="rho_zz_old_split" type="real" dimensions="nVertLevels nCells Time" units="???"
-                     description="???"/>
+                <var name="rho_zz_old_split" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
+                     description="rho/zz"/>
 
-                <var name="ruAvg" type="real" dimensions="nVertLevels nEdges Time" units="???"
-                     description="???"/>
+                <var name="ruAvg" type="real" dimensions="nVertLevels nEdges Time" units="kg m^{-2} s^{-1}"
+                     description="time-averaged rho*u/zz used in scalar transport"/>
 
-                <var name="wwAvg" type="real" dimensions="nVertLevelsP1 nCells Time" units="???"
-                     description="???"/>
+                <var name="wwAvg" type="real" dimensions="nVertLevelsP1 nCells Time" units="kg m^{-2} s^{-1}"
+                     description="time-averaged rho*omega/zz used in scalar transport"/>
 
-                <var name="ruAvg_split" type="real" dimensions="nVertLevels nEdges Time" units="???"
-                     description="???"/>
+                <var name="ruAvg_split" type="real" dimensions="nVertLevels nEdges Time" units="kg m^{-2} s^{-1}"
+                     description="time-averaged rho*u/zz used in scalar transport"/>
 
-                <var name="wwAvg_split" type="real" dimensions="nVertLevelsP1 nCells Time" units="???"
-                     description="???"/>
+                <var name="wwAvg_split" type="real" dimensions="nVertLevelsP1 nCells Time" units="kg m^{-2} s^{-1}"
+                     description="time-averaged rho*omega/zz used in scalar transport"/>
 
-                <var name="cqu" type="real" dimensions="nVertLevels nEdges Time" units="???"
-                     description="???"/>
+                <var name="cqu" type="real" dimensions="nVertLevels nEdges Time" units="unitless"
+                     description="rho_d/rho_m at cell edge (u points)"/>
 
-                <var name="cqw" type="real" dimensions="nVertLevels nCells Time" units="???"
-                     description="???"/>
+                <var name="cqw" type="real" dimensions="nVertLevels nCells Time" units="unitless"
+                     description="rho_d/rho_m at w points"/>
 
                 <!-- coupled variables needed by solver, but not output -->
-                <var name="ru" type="real" dimensions="nVertLevels nEdges Time" units="???"
-                     description="???"/>
+                <var name="ru" type="real" dimensions="nVertLevels nEdges Time" units="kg m^{-2} s^{-1}"
+                     description="horizontal momentum at cell edge (rho*u/zz)"/>
 
-                <var name="ru_p" type="real" dimensions="nVertLevels nEdges Time" units="???"
-                     description="???"/>
+                <var name="ru_p" type="real" dimensions="nVertLevels nEdges Time" units="kg m^{-2} s^{-1}"
+                     description="acoustic perturbation horizontal momentum at cell edge  (rho*u/zz)"/>
 
-                <var name="ru_save" type="real" dimensions="nVertLevels nEdges Time" units="???"
-                     description="???"/>
+                <var name="ru_save" type="real" dimensions="nVertLevels nEdges Time" units="kg m^{-2} s^{-1}"
+                     description="predicted value of horizontal momentum, saved before acoustic steps"/>
 
-                <var name="rw" type="real" dimensions="nVertLevelsP1 nCells Time" units="???"
-                     description="???"/>
+                <var name="rw" type="real" dimensions="nVertLevelsP1 nCells Time" units="kg m^{-2} s^{-1}"
+                     description="rho*omega/zz carried at w points"/>
 
-                <var name="rw_p" type="real" dimensions="nVertLevelsP1 nCells Time" units="???"
-                     description="???"/>
+                <var name="rw_p" type="real" dimensions="nVertLevelsP1 nCells Time" units="kg m^{-2} s^{-1}"
+                     description="acoustic perturbation rho*omega/zz carried at w points"/>
 
-                <var name="rw_save" type="real" dimensions="nVertLevelsP1 nCells Time" units="???"
-                     description="???"/>
+                <var name="rw_save" type="real" dimensions="nVertLevelsP1 nCells Time" units="kg m^{-2} s^{-1}"
+                     description="predicted value of rho*omega/zz, saved before acoustic steps"/>
 
-                <var name="rtheta_p" type="real" dimensions="nVertLevels nCells Time" units="???"
-                     description="???"/>
+                <var name="rtheta_p" type="real" dimensions="nVertLevels nCells Time" units="kg K m^{-3}"
+                     description="rho*theta_m/zz perturbation from the reference state value"/>
 
-                <var name="rtheta_pp" type="real" dimensions="nVertLevels nCells Time" units="???"
-                     description="???"/>
+                <var name="rtheta_pp" type="real" dimensions="nVertLevels nCells Time" units="kg K m^{-3}"
+                     description="rho*theta_m/zz perturbation from rtheta_p"/>
 
-                <var name="rtheta_p_save" type="real" dimensions="nVertLevels nCells Time" units="???"
-                     description="???"/>
+                <var name="rtheta_p_save" type="real" dimensions="nVertLevels nCells Time" units="kg K m^{-3}"
+                     description="predicted value rtheta_p, saved before acoustic steps"/>
 
-                <var name="rtheta_pp_old" type="real" dimensions="nVertLevels nCells Time" units="???"
-                     description="???"/>
+                <var name="rtheta_pp_old" type="real" dimensions="nVertLevels nCells Time" units="kg K m^{-3}"
+                     description="predicted value rtheta_pp, saved during acoustic steps for divergence damping calculation"/>
 
-                <var name="rho_p" type="real" dimensions="nVertLevels nCells Time" units="???"
-                     description="???"/>
+                <var name="rho_p" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
+                     description="rho/zz perturbation from the reference state value, advanced over acoustic steps"/>
 
-                <var name="rho_pp" type="real" dimensions="nVertLevels nCells Time" units="???"
-                     description="???"/>
+                <var name="rho_pp" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
+                     description="rho/zz perturbation from rho_pp, advanced over acoustic steps"/>
 
-                <var name="rho_p_save" type="real" dimensions="nVertLevels nCells Time" units="???"
-                     description="???"/>
+                <var name="rho_p_save" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
+                     description="predicted value rho_p, saved before acoustic steps"/>
 
-                <var name="kdiff" type="real" dimensions="nVertLevels nCells Time" units="???"
-                     description="???"/>
+                <var name="kdiff" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-1}"
+                     description="Smagorinsky horizontal eddy viscosity"/>
 
                 <var name="surface_pressure" type="real" dimensions="nCells Time" units="Pa"
                      description="Diagnosed surface pressure"/>
