@@ -20,10 +20,12 @@ class SEQ(SystemTestsCommon):
         """
         Build two cases.
         """
+        # Build the default configuration
         SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
         if sharedlib_only:
             return
 
+        # Build the model with all components with different rootpes
         exeroot = self._case.get_value("EXEROOT")
         cime_model = self._case.get_value("MODEL")
         shutil.move("%s/%s.exe"%(exeroot,cime_model),
