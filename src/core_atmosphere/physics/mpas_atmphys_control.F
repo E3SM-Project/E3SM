@@ -86,7 +86,7 @@
                                   config_sfclayer_scheme
 
 !-----------------------------------------------------------------------------------------------------------------
-
+ write(0,*)
  write(0,*) '--- enter subroutine physics_namelist_check:'
 
  call mpas_pool_get_config(configs,'config_physics_suite'    ,config_physics_suite    )
@@ -282,7 +282,6 @@
     config_radt_sw_scheme    .eq. 'off' .and. &
     config_sfclayer_scheme   .eq. 'off') moist_physics = .false.
 
- write(0,*) ' '
  write(0,*) '    config_microp_scheme       = ', trim(config_microp_scheme)
  write(0,*) '    config_convection_scheme   = ', trim(config_convection_scheme)
  write(0,*) '    config_lsm_scheme          = ', trim(config_lsm_scheme)

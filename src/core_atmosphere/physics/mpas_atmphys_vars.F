@@ -50,6 +50,11 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-04-14.
 ! * added the logical ua_phys needed in the call to subroutine sfcdiags. ua_phys is set to false.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-05-13.
+! * added the integers has_reqc,has_reqi,and has_reqs. when initialized to zero, the effective radii for cloud
+!   water,cloud ice,and snow are calculated using the subroutines relcalc and ricalc in subroutines rrtmg_lwrad
+!   and rrtmg_swrad. when initialized to 1, the effective radii are calculated in the Thompson cloud microphysics
+!   scheme instead. has_reqc,has_reqi,and has_reqs are initialized depending on the logical config_microp_re.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
 
 
 !=================================================================================================================
@@ -205,9 +210,10 @@
     sr_p
 
 !... added for the thompson cloud microphysics with or without aerosols:
- integer,parameter:: has_reqc = 1
- integer,parameter:: has_reqi = 1
- integer,parameter:: has_reqs = 1
+ integer:: & 
+    has_reqc,         &!
+    has_reqi,         &!
+    has_reqs
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
     nwfa2d_p,         &!

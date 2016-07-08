@@ -1713,6 +1713,11 @@
                      description="logical for configuration of input ozone data in RRMTG long- and short-wave radiation"
                      possible_values=".true. for using monthly-varying ozone data; .false. for using fixed vertical profile"/>
 
+                <nml_option name="config_microp_re" type="logical" default_value="false" in_defaults="false"
+                     units="-"
+                     description="logical for calculation of the effective radii for cloud water, cloud ice, and snow"
+                     possible_values=".true. for calculating effective radii; .false. for using defaults in RRTMG radiation"/>
+
                 <nml_option name="config_n_microp" type="integer" default_value="1" in_defaults="false"
                      units="-"
                      description="number of microphysics time-steps per physics time-steps"
@@ -1825,6 +1830,9 @@
                 <nml_option name="config_gfconv_closure_shallow" type="integer" default_value="8" in_defaults="false"
                      units="-"
                      description="closure option for shallow convection in Grell-Freitas convection scheme"/>
+=======
+
+
         </nml_record>
 
         <var_struct name="diag_physics" time_levs="1">
