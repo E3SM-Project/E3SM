@@ -1126,11 +1126,11 @@
                 <var name="w" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
                      description="Vertical velocity at vertical cell faces"/>
 
-                <var name="rho_zz" type="real" dimensions="nVertLevels nCells Time" units="?"
-                     description="Dry density divided by d(zeta)/dz"/>
+                <var name="rho_zz" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
+                     description="Dry air density divided by d(zeta)/dz"/>
 
                 <var name="theta_m" type="real" dimensions="nVertLevels nCells Time" units="K"
-                     description="Moist potential temperature"/>
+                     description="Moist potential temperature: theta*(1+q_v*R_v/R_d)"/>
 
                 <var name="m_ps" type="real" dimensions="nCells Time" units="Pa"
                      description="Surface pressure from match on MPAS grid"/>
