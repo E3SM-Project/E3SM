@@ -78,6 +78,8 @@
 !>    * added the cloud radii for cloud water, cloud ice, and snow calculated in the Thompson cloud microphysics
 !>      scheme in the call to subroutine rrtmg_lwrad.
 !>      Laura D. Fowler (laura@ucar.edu) / 2016-07-07.
+!>    * added diagnostics of the effective radii for cloud water, cloud ice, and snow used in rrtmg_lwrad.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
 
 
  contains
@@ -122,6 +124,12 @@
        if(.not.allocated(recloud_p)    ) allocate(recloud_p(ims:ime,kms:kme,jms:jme)       )
        if(.not.allocated(reice_p)      ) allocate(reice_p(ims:ime,kms:kme,jms:jme)         )
        if(.not.allocated(resnow_p)     ) allocate(resnow_p(ims:ime,kms:kme,jms:jme)        )
+       if(.not.allocated(rrecloud_p)   ) allocate(rrecloud_p(ims:ime,kms:kme,jms:jme)      )
+       if(.not.allocated(rreice_p)     ) allocate(rreice_p(ims:ime,kms:kme,jms:jme)        )
+       if(.not.allocated(rresnow_p)    ) allocate(rresnow_p(ims:ime,kms:kme,jms:jme)       )
+
+       if(.not.allocated(lwdnflx_p)    ) allocate(lwdnflx_p(ims:ime,kms:kme+1,jms:jme)     )
+       if(.not.allocated(lwdnflxc_p)   ) allocate(lwdnflxc_p(ims:ime,kms:kme+1,jms:jme)    )
 
        if(.not.allocated(lwdnflx_p)    ) allocate(lwdnflx_p(ims:ime,kms:kme+1,jms:jme)     )
        if(.not.allocated(lwdnflxc_p)   ) allocate(lwdnflxc_p(ims:ime,kms:kme+1,jms:jme)    )
@@ -210,6 +218,9 @@
        if(allocated(recloud_p)    ) deallocate(recloud_p    )
        if(allocated(reice_p)      ) deallocate(reice_p      )
        if(allocated(resnow_p)     ) deallocate(resnow_p     )
+       if(allocated(rrecloud_p)   ) deallocate(rrecloud_p   )
+       if(allocated(rreice_p)     ) deallocate(rreice_p     )
+       if(allocated(rresnow_p)    ) deallocate(rresnow_p    )
 
        if(allocated(lwdnflx_p)    ) deallocate(lwdnflx_p    )
        if(allocated(lwdnflxc_p)   ) deallocate(lwdnflxc_p   )
@@ -372,9 +383,12 @@
        do j = jts,jte
        do k = kts,kte
        do i = its,ite
-          recloud_p(i,k,j) = re_cloud(k,i)
-          reice_p(i,k,j)   = re_ice(k,i)
-          resnow_p(i,k,j)  = re_snow(k,i)
+          recloud_p(i,k,j)  = re_cloud(k,i)
+          reice_p(i,k,j)    = re_ice(k,i)
+          resnow_p(i,k,j)   = re_snow(k,i)
+          rrecloud_p(i,k,j) = 0._RKIND
+          rreice_p(i,k,j)   = 0._RKIND
+          rresnow_p(i,k,j)  = 0._RKIND
        enddo
        enddo
        enddo
@@ -551,6 +565,7 @@
  real(kind=RKIND),dimension(:),pointer :: glw,lwcf,lwdnb,lwdnbc,lwdnt,lwdntc,lwupb,lwupbc, &
                                           lwupt,lwuptc,olrtoa
  real(kind=RKIND),dimension(:,:),pointer:: rthratenlw
+ real(kind=RKIND),dimension(:,:),pointer:: rre_cloud,rre_ice,rre_snow
 
 !local variables and arrays:
  integer:: nlay,pcols
@@ -593,6 +608,27 @@
  enddo
  enddo
  enddo
+
+ radiation_lw_select: select case (trim(radt_lw_scheme))
+
+    case("rrtmg_lw")
+       call mpas_pool_get_array(diag_physics,'rre_cloud',rre_cloud)
+       call mpas_pool_get_array(diag_physics,'rre_ice'  ,rre_ice  )
+       call mpas_pool_get_array(diag_physics,'rre_snow' ,rre_snow )
+
+       do j = jts,jte
+       do k = kts,kte
+       do i = its,ite
+          rre_cloud(k,i) = rrecloud_p(i,k,j)
+          rre_ice(k,i)   = rreice_p(i,k,j)
+          rre_snow(k,i)  = rresnow_p(i,k,j)
+       enddo
+       enddo
+       enddo
+
+    case default
+
+ end select radiation_lw_select
 
  end subroutine radiation_lw_to_MPAS
 
@@ -735,6 +771,7 @@
             olr        = olrtoa_p     , lwcf       = lwcf_p        , rthratenlw = rthratenlw_p  , &
             has_reqc   = has_reqc     , has_reqi   = has_reqi      , has_reqs   = has_reqs      , &
             re_cloud   = recloud_p    , re_ice     = reice_p       , re_snow    = resnow_p      , &
+            rre_cloud  = rrecloud_p   , rre_ice    = rreice_p      , rre_snow   = rresnow_p     , &
             lwupt      = lwupt_p      , lwuptc     = lwuptc_p      , lwdnt      = lwdnt_p       , &
             lwdntc     = lwdntc_p     , lwupb      = lwupb_p       , lwupbc     = lwupbc_p      , &
             lwdnb      = lwdnb_p      , lwdnbc     = lwdnbc_p      ,                              &

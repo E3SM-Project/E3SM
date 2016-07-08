@@ -11412,6 +11412,9 @@ use mpas_atmphys_o3climatology,only: vinterp_ozn
 !>      microphysics scheme as inputs to the subroutine rrtmg_lwrad. revised the initialization of arrays rel,
 !>      rei, and res, accordingly.
 !>      Laura D. Fowler (laura@ucar.edu) / 2016-07-07.
+!>    * added diagnostics of the effective radii for cloud water, cloud ice, and snow used in rrtmg_lwrad.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
+
 !MPAS specific end.
 
 #else
@@ -11463,7 +11466,7 @@ CONTAINS
                        xland,xice,snow,icloud,o3input,noznlevels, &
                        pin,o3clim,glw,olr,lwcf,rthratenlw,        &
                        has_reqc,has_reqi,has_reqs,re_cloud,       &
-                       re_ice,re_snow,                            &
+                       re_ice,re_snow,rre_cloud,rre_ice,rre_snow, &
                        lwupt,lwuptc,lwdnt,lwdntc,                 &
                        lwupb,lwupbc,lwdnb,lwdnbc,                 &
                        lwupflx, lwupflxc, lwdnflx, lwdnflxc,      &
@@ -11504,6 +11507,8 @@ CONTAINS
  real,intent(inout),dimension(ims:ime,kms:kme,jms:jme):: rthratenlw
  
 !--- output arguments:
+  real,intent(out),dimension(ims:ime,kms:kme,jms:jme),optional:: &
+     rre_cloud,rre_ice,rre_snow
   real,intent(out),dimension(ims:ime,kms:kme+2,jms:jme ),optional:: &
      lwupflx,lwupflxc,lwdnflx,lwdnflxc
 
@@ -12084,11 +12089,22 @@ CONTAINS
           enddo
        endif
 
-       !--- output heating rate tendency; convert heating rate from K/d to K/s
-       do k=kts,kte
+       !--- output heating rate tendency. convert heating rate from K per day to K per second:
+       do k = kts, kte
           tten1d(k) = hr(ncol,k)/86400.
           rthratenlw(i,k,j) = tten1d(k)/pi3d(i,k,j)
        enddo
+
+       !--- output the effective radii for cloud water, cloud ice, and snow:
+       if(icloud.gt.0 .and. present(rre_cloud) .and. present(rre_ice) .and. present(rre_snow)) then
+          do k = kts, kte
+             if(cldfra3d(i,k,j) .gt. 0.) then
+                rre_cloud(i,k,j) = rel(ncol,k)
+                rre_ice(i,k,j)   = rei(ncol,k)
+                rre_snow(i,k,j)  = res(ncol,k)
+             endif
+          enddo
+       endif
 
        !--- deallocate local column arrays:
        if(allocated(o3mmr)   ) deallocate(o3mmr   )

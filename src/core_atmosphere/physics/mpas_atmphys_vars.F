@@ -55,6 +55,8 @@
 !   and rrtmg_swrad. when initialized to 1, the effective radii are calculated in the Thompson cloud microphysics
 !   scheme instead. has_reqc,has_reqi,and has_reqs are initialized depending on the logical config_microp_re.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
+! * added diagnostics of the effective radii for cloud water, cloud ice, and snow used in rrtmg_lwrad.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
 
 
 !=================================================================================================================
@@ -519,7 +521,10 @@
     lwupflxc_p         !
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    rthratenlw_p       !uncoupled theta tendency due to longwave radiation                  [K s-1]
+    rthratenlw_p,     &!uncoupled theta tendency due to longwave radiation                  [K s-1]
+    rrecloud_p,       &!effective radius for cloud water calculated in rrtmg_lwrad             [mu]
+    rreice_p,         &!effective radius for cloud ice calculated in rrmtg_lwrad               [mu]
+    rresnow_p         !effective radius for snow calculated in rrtmg_lwrad                    [mu]
 
 !=================================================================================================================
 !... variables and arrays related to parameterization of long- and short-wave radiation needed

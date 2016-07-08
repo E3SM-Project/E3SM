@@ -2615,6 +2615,10 @@
                 <!-- var name="lwupflx"       type="real"     dimensions="nVertLevelsP2 nCells Time" -->
                 <!-- var name="lwupflxc"      type="real"     dimensions="nVertLevelsP2 nCells Time" -->
 
+                <var name="rre_cloud"     type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rre_ice"       type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rre_snow"      type="real"     dimensions="nVertLevels nCells Time"/>
+
 
                 <!-- ================================================================================================== -->
                 <!-- ... ADDITIONAL "RADIATION" ARRAYS NEEDED ONLY IN THE "CAM" LW AND SW RADIATION CODES:              -->
