@@ -157,11 +157,11 @@ ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 </finidat>
 
 <!-- Initial condition file with CLM45SP -->
-<finidat hgrid="ne30np4"   maxpft="17"  mask="gx1v6" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
+<finidat hgrid="ne30np4"   maxpft="17"  mask="gx1v6" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
 ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne30_g16.e61c667.clm2.r.0021-01-01-00000.nc
 </finidat>
 
-<finidat hgrid="ne30np4"   maxpft="17"  mask="oEC60to30" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
+<finidat hgrid="ne30np4"   maxpft="17"  mask="oEC60to30" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
 ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne30_oEC.e61c667.clm2.r.0021-01-01-00000.nc
 </finidat>
 
@@ -176,7 +176,7 @@ ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.I1850CLM45.ne120_g16.c7cfd71.clm2.r.0021-01-01-00000.nc
 </finidat>
 
-<finidat hgrid="ne120np4"   maxpft="17"  mask="gx1v6" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
+<finidat hgrid="ne120np4"   maxpft="17"  mask="gx1v6" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
 ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne120_g16.ee1ee60.clm2.r.0021-01-01-00000.nc
 </finidat>
 
