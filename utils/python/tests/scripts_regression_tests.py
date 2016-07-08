@@ -1107,15 +1107,22 @@ class MockMachines(object):
 
     """A mock version of the Machines object to simplify testing."""
 
-    def __init__(self, name):
+    def __init__(self, name, os_):
         """Store the name."""
         self.name = name
+        self.os = os_
 
     def get_machine_name(self):
         """Return the name we were given."""
         return self.name
 
-    def is_valid_compiler(self, _):
+    def get_value(self, var_name):
+        """Allow the operating system to be queried."""
+        assert var_name == "OS", "MacrosMaker asked for a value not " \
+            "implemented in the testing infrastructure."
+        return self.os
+
+    def is_valid_compiler(self, _): # pylint:disable=no-self-use
         """Assume all compilers are valid."""
         return True
 
@@ -1351,19 +1358,19 @@ class G_TestMacrosBasic(unittest.TestCase):
     def test_script_is_callable(self):
         """The test script can be called on valid output without dying."""
         # This is really more a smoke test of this script than anything else.
-        maker = MacroMaker("SomeOS", MockMachines("mymachine"))
+        maker = MacroMaker(MockMachines("mymachine", "SomeOS"))
         test_xml = _wrap_config_build_xml("<compiler><SUPPORTS_CXX>FALSE</SUPPORTS_CXX></compiler>")
         get_macros(maker, test_xml, "Makefile")
 
     def test_script_rejects_bad_xml(self):
         """The macro writer rejects input that's not valid XML."""
-        maker = MacroMaker("SomeOS", MockMachines("mymachine"))
+        maker = MacroMaker(MockMachines("mymachine", "SomeOS"))
         with self.assertRaises(ParseError):
             get_macros(maker, "This is not valid XML.", "Makefile")
 
     def test_script_rejects_bad_build_system(self):
         """The macro writer rejects a bad build system string."""
-        maker = MacroMaker("SomeOS", MockMachines("mymachine"))
+        maker = MacroMaker(MockMachines("mymachine", "SomeOS"))
         bad_string = "argle-bargle."
         with self.assertRaisesRegexp(
                 SystemExit,
@@ -1387,7 +1394,7 @@ class H_TestMakeMacros(unittest.TestCase):
     test_machine = "mymachine"
 
     def setUp(self):
-        self._maker = MacroMaker(self.test_os, MockMachines(self.test_machine))
+        self._maker = MacroMaker(MockMachines(self.test_machine, self.test_os))
 
     def xml_to_tester(self, xml_string):
         """Helper that directly converts an XML string to a MakefileTester."""

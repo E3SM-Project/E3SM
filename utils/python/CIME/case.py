@@ -715,12 +715,12 @@ class Case(object):
         # Create Macros file.
         machine = self.get_value("MACH")
         if os.getenv("CIME_USE_CONFIG_BUILD") == "TRUE":
-            os_ = self.get_value("OS")
             files = Files()
             build_file = files.get_value("BUILD_SPEC_FILE")
             machobj = Machines(machine=machine, files=files)
-            macro_maker = MacroMaker(os_, machobj)
-            with open(os.path.join(self._caseroot, "Macros"), "w") as macros_file:
+            macro_maker = MacroMaker(machobj)
+            macros_path = os.path.join(self._caseroot, "Macros")
+            with open(macros_path, "w") as macros_file:
                 macro_maker.write_macros('Makefile', build_file, macros_file)
 
         # Copy any system or compiler Depends files to the case.

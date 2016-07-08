@@ -623,14 +623,11 @@ class CompilerBlock(object):
             else:
                 self._add_elem_to_lists(elem.tag, elem, value_lists)
 
-    def matches_machine(self, os_):
+    def matches_machine(self):
         """Check whether this block matches a machine/os.
 
         This also sets the specificity of the block, so this must be called
         before add_settings_to_lists if machine-specific output is needed.
-
-        Arguments:
-        os_ - Operating system to match.
         """
         self._specificity = 0
         if "MACH" in self._compiler_elem.keys():
@@ -640,7 +637,7 @@ class CompilerBlock(object):
             else:
                 return False
         if "OS" in self._compiler_elem.keys():
-            if os_ == self._compiler_elem.get("OS"):
+            if self._machobj.get_value("OS") == self._compiler_elem.get("OS"):
                 self._specificity += 1
             else:
                 return False
@@ -665,23 +662,21 @@ class MacroMaker(object):
     write_macros
     """
 
-    def __init__(self, os_, machobj, schema_path=None):
+    def __init__(self, machobj, schema_path=None):
         """Construct a MacroMaker given machine-specific information.
 
         In the process some information about possible variables is read in
         from the schema file.
 
         Arguments:
-        os_ - Name of a machine's operating system.
         machobj - A Machines object for this machine.
         schema_path (optional) - Path to config_build.xsd within CIME.
 
-        >>> "CFLAGS" in MacroMaker('FakeOS', 'MyMach').flag_vars
+        >>> "CFLAGS" in MacroMaker('MyMach').flag_vars
         True
-        >>> "MPICC" in MacroMaker('FakeOS', 'MyMach').flag_vars
+        >>> "MPICC" in MacroMaker('MyMach').flag_vars
         False
         """
-        self.os = os_
         self.machobj = machobj
 
         # The schema is used to figure out which variables contain
@@ -724,7 +719,7 @@ class MacroMaker(object):
         for compiler_elem in ET.parse(xml_file).findall("compiler"):
             block = CompilerBlock(writer, compiler_elem, self.machobj)
             # If this block matches machine settings, use it.
-            if block.matches_machine(self.os):
+            if block.matches_machine():
                 block.add_settings_to_lists(self.flag_vars, value_lists)
 
         # Now that we've scanned through the input, output the variable
