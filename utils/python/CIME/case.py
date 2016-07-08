@@ -623,11 +623,9 @@ class Case(object):
                     os.path.join(toolsdir, "case.build"),
                     os.path.join(toolsdir, "case.submit"),
                     os.path.join(toolsdir, "preview_namelists"),
-                    os.path.join(toolsdir, "testcase.setup"),
                     os.path.join(toolsdir, "check_input_data"),
                     os.path.join(toolsdir, "check_case"),
                     os.path.join(toolsdir, "archive_metadata.sh"),
-                    os.path.join(toolsdir, "create_production_test"),
                     os.path.join(toolsdir, "xmlchange"),
                     os.path.join(toolsdir, "xmlquery"))
         try:

@@ -61,7 +61,6 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
                                    %(case_source_mods,caseroot))
 
         # create xmlchange_cmnds and shell_commands in caseroot
-        case_shell_commands = None
         shell_command_files = glob.glob(os.path.join(include_dir,"shell_commands")) +\
                               glob.glob(os.path.join(include_dir,"xmlchange_cmnds"))
         for shell_commands_file in shell_command_files:
@@ -70,9 +69,13 @@ def apply_user_mods(caseroot, user_mods_path, ninst=None):
                 new_shell_commands = fd.read().replace("xmlchange","xmlchange --force")
             with open(case_shell_commands, "a") as fd:
                 fd.write(new_shell_commands)
-    if case_shell_commands is not None:
-        os.chmod(case_shell_commands, 0777)
-        run_cmd(case_shell_commands)
+
+    shell_command_files = [os.path.join(caseroot,"shell_commands"), 
+                           os.path.join(caseroot,"xmlchange_cmnds")]
+    for shell_command_file in shell_command_files:
+        if os.path.isfile(shell_command_file):
+            os.chmod(shell_command_file, 0777)
+            run_cmd(shell_command_file)
 
 def build_include_dirs_list(user_mods_path, include_dirs=None):
     '''

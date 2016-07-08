@@ -42,8 +42,69 @@ class PEA(SystemTestsCommon):
             shutil.copy("env_build.xml",os.path.join("LockedFiles",
                                                      "env_build_PEA_%s.xml"%mpilib))
 
+    def _pea_first_phase(self):
+
+        exeroot = self._case.get_value("EXEROOT")
+        cime_model = CIME.utils.get_model()
+        exefile  = "%s/%s.exe"%(exeroot,cime_model)
+        exefile1 = "%s/%s.exe.PEA1"%(exeroot,cime_model)
+        if (os.path.isfile(exefile)):
+            os.remove(exefile)
+        shutil.copy(exefile1, exefile)
+
+        self._case.set_value("CONTINUE_RUN",False)
+        self._case.set_value("REST_OPTION","none")
+        self._case.set_value("HIST_OPTION","$STOP_OPTION")
+        self._case.set_value("HIST_N","$STOP_N")
+        self._case.flush()
+
+        stop_n = self._case.get_value("STOP_N")
+        stop_option = self._case.get_value("STOP_OPTION")
+        logger.info("doing an %d %s initial test with 1pe and mpi, no restarts written" 
+                    % (stop_n, stop_option))
+
+        return SystemTestsCommon._run(self)
+
+    def _pea_second_phase(self):
+
+        expect(os.path.isfile("env_mach_pes.xml.2"),
+               "ERROR: env_mach_pes.xml.2 does not exist, run case.build" )
+      
+
+        exeroot = self._case.get_value("EXEROOT")
+        cime_model = CIME.utils.get_model()
+        exefile  = "%s/%s.exe"%(exeroot,cime_model)
+        exefile2 = "%s/%s.exe.PEA2"%(exeroot,cime_model)
+        if (os.path.isfile(exefile)):
+            os.remove(exefile)
+        shutil.copy(exefile2, exefile)
+
+        self._case.set_value("CONTINUE_RUN",False)
+        self._case.set_value("REST_OPTION","none")
+        self._case.set_value("HIST_OPTION","$STOP_OPTION")
+        self._case.set_value("HIST_N","$STOP_N")
+        self._case.flush()
+
+        stop_n = self._case.get_value("STOP_N")
+        stop_option = self._case.get_value("STOP_OPTION")
+        logger.info("doing an %d %s initial test with 1pe and serial mpi, no restarts written" 
+                    % (stop_n, stop_option))
+
+        return SystemTestsCommon._run(self, "mpiserial")
+
+        # Compare restart file
+        if success:
+            return self._component_compare_test("base", "mpiserial")
+        else:
+            return False
+
     def run(self):
-        SystemTestsCommon.run(self)
+        success = self._pea_first_phase()
+
+        if success:
+            return self._pea_second_phase()
+        else:
+            return False
 
     def report(self):
         SystemTestsCommon.report(self)
