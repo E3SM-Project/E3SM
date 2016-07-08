@@ -341,7 +341,6 @@
 			<var name="relhum"/>
 			<var name="uReconstructZonal"/>
 			<var name="uReconstructMeridional"/>
-			<var name="rv"/>
 			<var name="circulation"/>
 			<var name="exner"/>
 			<var name="exner_base"/>
@@ -1000,7 +999,6 @@
                 <var name="uReconstructMeridional"  type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <!-- Other diagnostic variables -->
-                <var name="rv"                      type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="circulation"             type="real"     dimensions="nVertLevels nVertices Time"/>
                 <var name="gradPVt"                 type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="gradPVn"                 type="real"     dimensions="nVertLevels nEdges Time"/>

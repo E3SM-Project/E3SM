@@ -4550,7 +4550,7 @@ MPAS_GPTL_STOP('mono_exch_2')
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels, vertexDegree
       real (kind=RKIND), dimension(:), pointer :: fVertex, fEdge, invAreaTriangle, invAreaCell
       real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, invDvEdge, invDcEdge
-      real (kind=RKIND), dimension(:,:), pointer :: vh, weightsOnEdge, kiteAreasOnVertex, h_edge, h, u, v, &
+      real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge, kiteAreasOnVertex, h_edge, h, u, v, &
                                                     vorticity, ke, pv_edge, pv_vertex, pv_cell, gradPVn, gradPVt, &
                                                     divergence
       integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnVertex, verticesOnEdge, edgesOnCell, edgesOnEdge, edgesOnVertex, &
@@ -4567,7 +4567,6 @@ MPAS_GPTL_STOP('mono_exch_2')
       call mpas_pool_get_array(state, 'u', u, time_lev)
 
       call mpas_pool_get_array(diag, 'v', v)
-      call mpas_pool_get_array(diag, 'rv', vh)
       call mpas_pool_get_array(diag, 'rho_edge', h_edge)
       call mpas_pool_get_array(diag, 'vorticity', vorticity)
       call mpas_pool_get_array(diag, 'divergence', divergence)
@@ -4610,7 +4609,7 @@ MPAS_GPTL_STOP('mono_exch_2')
       call atm_compute_solve_diagnostics_work(nCells, nEdges, nVertices, &
                vertexDegree, dt, config_apvm_upwinding, &
                fVertex, fEdge, invAreaTriangle, invAreaCell, dvEdge, dcEdge, invDvEdge, invDcEdge, &
-               vh, weightsOnEdge, kiteAreasOnVertex, h_edge, h, u, v, vorticity, ke, pv_edge, pv_vertex, pv_cell, &
+               weightsOnEdge, kiteAreasOnVertex, h_edge, h, u, v, vorticity, ke, pv_edge, pv_vertex, pv_cell, &
                gradPVn, gradPVt, divergence, cellsOnEdge, cellsOnVertex, verticesOnEdge, edgesOnCell, edgesOnEdge, &
                edgesOnVertex, kiteForCell, verticesOnCell, edgesOnVertex_sign, edgesOnCell_sign, nEdgesOnCell, nEdgesOnEdge, &
                cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -4622,7 +4621,7 @@ MPAS_GPTL_STOP('mono_exch_2')
    subroutine atm_compute_solve_diagnostics_work(nCells, nEdges, nVertices, &
             vertexDegree, dt, config_apvm_upwinding, &
             fVertex, fEdge, invAreaTriangle, invAreaCell, dvEdge, dcEdge, invDvEdge, invDcEdge, &
-            vh, weightsOnEdge, kiteAreasOnVertex, h_edge, h, u, v, vorticity, ke, pv_edge, pv_vertex, pv_cell, &
+            weightsOnEdge, kiteAreasOnVertex, h_edge, h, u, v, vorticity, ke, pv_edge, pv_vertex, pv_cell, &
             gradPVn, gradPVt, divergence, cellsOnEdge, cellsOnVertex, verticesOnEdge, edgesOnCell, edgesOnEdge, &
             edgesOnVertex, kiteForCell, verticesOnCell, edgesOnVertex_sign, edgesOnCell_sign, nEdgesOnCell, nEdgesOnEdge, &
             cellStart, cellEnd, vertexStart, vertexEnd, edgeStart, edgeEnd, &
@@ -4645,7 +4644,6 @@ MPAS_GPTL_STOP('mono_exch_2')
       real (kind=RKIND), dimension(nEdges+1) :: dcEdge
       real (kind=RKIND), dimension(nEdges+1) :: invDvEdge
       real (kind=RKIND), dimension(nEdges+1) :: invDcEdge
-      real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: vh
       real (kind=RKIND), dimension(maxEdges2,nEdges+1) :: weightsOnEdge
       real (kind=RKIND), dimension(3,nVertices+1) :: kiteAreasOnVertex
       real (kind=RKIND), dimension(nVertLevels,nEdges+1) :: h_edge
