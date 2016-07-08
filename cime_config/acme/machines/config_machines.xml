@@ -201,9 +201,11 @@
     </mpirun>
     <module_system type="module">
       <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
+      <init_path lang="python">/opt/modules/default/init/python.py</init_path>
       <init_path lang="sh">/opt/modules/default/init/sh</init_path>
       <init_path lang="csh">/opt/modules/default/init/csh</init_path>
       <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/opt/modules/default/bin/modulecmd python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
@@ -225,37 +227,46 @@
 	<command name="rm">craype-ivybridge</command>
 	<command name="rm">craype</command>
       </modules>
+
       <modules compiler="intel">
 	<command name="load">PrgEnv-intel</command>
-	<command name="switch">intel intel/2016.0.109</command>
+	<command name="switch">intel intel/17.0.0.042</command>
 	<command name="rm">cray-libsci</command>
+	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/cori</command>
       </modules>
+      <modules compiler="intel" mpilib="!mpi-serial" >
+	<command name="load">esmf/6.3.0rp1-defio-intel2016-mpi-O</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" >
+        <command name="load">esmf/6.3.0rp1-defio-intel2016-mpiuni-O</command>
+      </modules>
+
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
-	<command name="switch">cce cce/8.4.0</command>
+	<command name="switch">cce cce/8.5.0</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">PrgEnv-gnu</command>
-	<command name="switch">gcc gcc/5.1.0</command>
+	<command name="switch">gcc gcc/5.3.0</command>
       </modules>
       <modules>
-	<command name="load">papi/5.4.1.2</command>
-	<command name="swap">craype craype/2.4.2</command>
+	<command name="load">papi/5.4.3.2</command>
+	<command name="swap">craype craype/2.5.5</command>
       </modules>
       <modules compiler="!intel">
-	<command name="switch">cray-libsci/13.2.0</command>
+	<command name="switch">cray-libsci/16.06.1</command>
       </modules>
       <modules>
-	<command name="load">cray-mpich/7.2.5</command>
+	<command name="load">cray-mpich/7.4.0</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">cray-hdf5/1.8.14</command>
-	<command name="load">cray-netcdf/4.3.3.1</command>
+	<command name="load">cray-hdf5/1.8.16</command>
+	<command name="load">cray-netcdf/4.4.0</command>
       </modules>
       <modules mpilib="!mpi-serial">
-	<command name="load">cray-netcdf-hdf5parallel/4.3.3.1</command>
-	<command name="load">cray-hdf5-parallel/1.8.14</command>
-	<command name="load">cray-parallel-netcdf/1.6.1</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.4.0</command>
+	<command name="load">cray-hdf5-parallel/1.8.16</command>
+	<command name="load">cray-parallel-netcdf/1.7.0</command>
       </modules>
       <modules>
 	<command name="load">cmake/3.3.2</command>
@@ -447,10 +458,11 @@
   <PROJECT>fy150001</PROJECT>
 
   <mpirun mpilib="default">
-    <executable>mpirun</executable>
+    <executable>mpiexec</executable>
     <arguments>
-      <arg name="num_tasks"> -np {{ num_tasks }}</arg>
-      <arg name="tasks_per_node"> -npernode {{ tasks_per_node }}</arg>
+      <arg name="bind"> --bind-to-core</arg>
+      <arg name="num_tasks"> --n {{ num_tasks }}</arg>
+      <arg name="tasks_per_node"> --npernode {{ tasks_per_node }}</arg>
     </arguments>
   </mpirun>
   <mpirun mpilib="mpi-serial">
@@ -634,6 +646,24 @@
                <arg name="colon">:</arg>
              </arguments>
          </mpirun>
+    <module_system type="soft">
+      <init_path lang="csh">/etc/profile.d/00softenv.csh</init_path>
+      <cmd_path lang="csh">soft</cmd_path>
+      <init_path lang="sh">/etc/profile.d/00softenv.sh</init_path>
+      <cmd_path lang="sh">soft</cmd_path>
+      <modules>
+        <command name="add">+mpiwrapper-xl</command>
+        <command name="add">@ibm-compilers-2015-02</command>
+        <command name="add">+cmake</command>
+        <command name="add">+python</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="MPI_TYPE_MAX">10000</env>
+      <env name="OMP_DYNAMIC">FALSE</env>
+      <env name="OMP_STACKSIZE">64M</env>
+      <env name="HDF5">/soft/libraries/hdf5/1.8.14/cnk-xl/current</env>
+    </environment_variables>
 </machine>
 
 <machine MACH="penn">
@@ -724,7 +754,7 @@
 	 <PROJECT>HiRes_EarthSys</PROJECT>
          <PIO_CONFIG_OPTS> -D PIO_BUILD_TIMING:BOOL=ON </PIO_CONFIG_OPTS>
          <mpirun mpilib="default">
-           <executable>runjob</executable>
+           <executable>/usr/bin/runjob</executable>
              <arguments>
                <arg name="label"> --label short</arg>
                <!-- Ranks per node!! -->
@@ -738,6 +768,24 @@
                <arg name="colon">:</arg>
              </arguments>
          </mpirun>
+    <module_system type="soft">
+      <init_path lang="csh">/etc/profile.d/00softenv.csh</init_path>
+      <cmd_path lang="csh">soft</cmd_path>
+      <init_path lang="sh">/etc/profile.d/00softenv.sh</init_path>
+      <cmd_path lang="sh">soft</cmd_path>
+      <modules>
+        <command name="add">+mpiwrapper-xl</command>
+        <command name="add">@ibm-compilers-2015-02</command>
+        <command name="add">+cmake</command>
+        <command name="add">+python</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="MPI_TYPE_MAX">10000</env>
+      <env name="OMP_DYNAMIC">FALSE</env>
+      <env name="OMP_STACKSIZE">64M</env>
+      <env name="HDF5">/soft/libraries/hdf5/1.8.14/cnk-xl/current</env>
+    </environment_variables>
 </machine>
 
 <machine MACH="sooty">

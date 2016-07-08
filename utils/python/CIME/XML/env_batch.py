@@ -2,12 +2,15 @@
 Interface to the env_batch.xml file.  This class inherits from EnvBase
 """
 import stat
+import time
 from CIME.XML.standard_module_setup import *
 from CIME.task_maker import TaskMaker
 from CIME.utils import convert_to_type
 from CIME.XML.env_base import EnvBase
 from CIME.utils import convert_to_string, transform_vars, get_cime_root
 from copy import deepcopy
+
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +26,22 @@ class EnvBatch(EnvBase):
 
     def set_value(self, item, value, subgroup=None, ignore_type=False):
         val = None
+        if item == "JOB_WALLCLOCK_TIME":
+            # Most systems use %H:%M:%S format for wallclock but LSF
+            # uses %H:%M this code corrects the value passed in to be
+            # the correct format - if we find we have more exceptions
+            # than this we may need to generalize this further
+            walltime_format = self.get_value("walltime_format", subgroup=None)
+            if walltime_format is not None and walltime_format.count(":") != value.count(":"):
+                if value.count(":") == 1:
+                    t = time.strptime(value,"%H:%M")
+                elif value.count(":") == 2:
+                    t = time.strptime(value,"%H:%M:%S")
+                else:
+                    expect(False, "could not interpret format for wallclock time %s"%value)
+
+                value = time.strftime(walltime_format, t)
+
         # allow the user to set all instances of item if subgroup is not provided
         if subgroup is None:
             nodes = self.get_nodes("entry", {"id":item})
@@ -73,10 +92,12 @@ class EnvBatch(EnvBase):
 
         nodes   = [] # List of identified xml elements
         results = [] # List of identified parameters
-
+             
+        
         # Find all nodes with attribute name and attribute value item
         # xpath .//*[name='item']
         # for job in self.get_nodes("job") :
+        
         groups = self.get_nodes("group")
 
         for group in groups :
@@ -90,36 +111,39 @@ class EnvBatch(EnvBase):
             else :
                 roots = [group]
 
-            for r in roots :
+            for root in roots :
 
                 if item :
-                    nodes = self.get_nodes("entry",{"id" : item} , root=r )
+                    nodes = self.get_nodes("entry",{"id" : item} , root=root )
                 else :
                     # Return all nodes
-                    nodes = self.get_nodes("entry" , root=r)
+                    nodes = self.get_nodes("entry" , root=root)
 
                 # seach in all entry nodes
                 for node in nodes:
 
-                    # Init and construct attribute path
-                    attr      = None
-                    if (r.tag == "job") :
-                        # make job part of attribute path
-                        attr = r.get('name') + "/" + node.get('id')
-                    else:
-                        attr = node.get('id')
-
+                    
                     # Build return structure
-                    g       = group.get('id')
-                    val     = node.get('value')
-                    t       = self._get_type(node)
-                    desc    = self._get_description(node)
-                    default = super(EnvBatch , self)._get_default(node)
-                    filename= self.filename
+                    attr          = node.get('id')
+                    group_name     = None
+                    
+                    # determine group
+                    if (root.tag == "job") :
+                        group_name = root.get('name') 
+                    else:
+                        group_name = root.get('id')
 
-                    v = { 'group' : g , 'attribute' : attr , 'value' : val , 'type' : t , 'description' : desc , 'default' : default , 'file' : filename}
-                    logger.debug("Found node with value for %s = %s" , item , v )
-                    results.append(v)
+                    val             = node.get('value')
+                    attribute_type  = self._get_type(node)
+                    desc            = self._get_description(node)
+                    default         = super(EnvBatch , self)._get_default(node)
+                    filename        = self.filename
+
+                    tmp = { 'group' : group_name , 'attribute' : attr , 'value' : val , 'type' : attribute_type , 'description' : desc , 'default' : default , 'file' : filename}
+                    logger.debug("Found node with value for %s = %s" , item , tmp )
+                    
+                    # add single result to list
+                    results.append(tmp) 
 
         logger.debug("(get_values) Return value:  %s" , results )
 
@@ -250,14 +274,12 @@ class EnvBatch(EnvBase):
             queue = self.select_best_queue(task_count)
             self.set_value("JOB_QUEUE", queue, subgroup=job)
             walltime = self.get_max_walltime(queue) if walltime is None else walltime
-            # JGF: Shouldn't walltime involve ccsm_estcost?
-            # Fall back to default if None
             if walltime is None:
                 walltime = self.get_default_walltime()
             self.set_value( "JOB_WALLCLOCK_TIME", walltime , subgroup=job)
             logger.info("Job %s queue %s walltime %s"%(job, queue, walltime))
 
-    def get_batch_directives(self, case, job):
+    def get_batch_directives(self, case, job, raw=False):
         """
         """
         result = []
@@ -271,7 +293,10 @@ class EnvBatch(EnvBase):
                 for node in nodes:
                     directive = self.get_resolved_value("" if node.text is None else node.text)
                     default = node.get("default")
-                    directive = transform_vars(directive, case=case, subgroup=job, default=default, check_members=self)
+                    if not raw:
+                        directive = transform_vars(directive, case=case, subgroup=job, default=default, check_members=self)
+                    elif default is not None:
+                        directive = transform_vars(directive, default=default)
                     result.append("%s %s" % (directive_prefix, directive))
 
         return "\n".join(result)
@@ -294,13 +319,19 @@ class EnvBatch(EnvBase):
                 val = case.get_value(name,subgroup=job)
                 if val is None:
                     val = case.get_resolved_value(name)
-
+                        
                 if val is not None and len(val) > 0 and val != "None":
+                    # Try to evaluate val 
+                    try:
+                        rval = eval(val)
+                    except:
+                        rval = val
+
                     if flag.rfind("=", len(flag)-1, len(flag)) >= 0 or\
                        flag.rfind(":", len(flag)-1, len(flag)) >= 0:
-                        submitargs+=" %s%s"%(flag,str(val).strip())
+                        submitargs+=" %s%s"%(flag,str(rval).strip())
                     else:
-                        submitargs+=" %s %s"%(flag,str(val).strip())
+                        submitargs+=" %s %s"%(flag,str(rval).strip())
 
         return submitargs
 
@@ -408,7 +439,6 @@ class EnvBatch(EnvBase):
 
     def set_batch_system_type(self, batchtype):
         self.batchtype = batchtype
-
 
     def get_job_id(self, output):
         jobid_pattern = self.get_value("jobid_pattern", subgroup=None)

@@ -39,6 +39,7 @@
      <batch_directive></batch_directive>
      <jobid_pattern>(\d+)</jobid_pattern>
      <depend_string> --dependencies</depend_string>
+    <walltime_format>%H:%M:%S</walltime_format>
      <submit_args>
        <arg flag="--cwd" name="$CASEROOT"/>
        <arg flag="-A" name="$PROJECT"/>
@@ -57,6 +58,7 @@
     <jobid_pattern>&lt;(\d+)&gt;</jobid_pattern>
     <depend_pattern>^\#BSUB\s+-w.+\((\d+)\)</depend_pattern>
     <depend_string> -w "done(jobid)"</depend_string>
+    <walltime_format>%H:%M</walltime_format>
     <directives>
       <directive                       > -n {{ totaltasks }} </directive>
       <directive                       > -R "span[ptile={{ ptile }}]"</directive>
@@ -78,6 +80,7 @@
     <batch_directive>#PBS</batch_directive>
     <jobid_pattern>^(\d+)\.</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
+    <walltime_format>%H:%M:%S</walltime_format>
     <submit_args>
       <arg flag="-q" name="JOB_QUEUE"/>
       <arg flag="-l walltime=" name="JOB_WALLCLOCK_TIME"/>
@@ -99,6 +102,7 @@
     <batch_directive>#MSUB</batch_directive>
     <jobid_pattern>(\d+)$</jobid_pattern>
     <depend_string> -W depend=afterok:jobid</depend_string>
+    <walltime_format>%H:%M:%S</walltime_format>
     <directives>
       <directive> -N {{ job_id }}</directive>
       <directive> -l walltime={{ job_wallclock_time }}</directive>
@@ -116,6 +120,7 @@
      <batch_directive>#SBATCH</batch_directive>
      <jobid_pattern>(\d+)$</jobid_pattern>
      <depend_string> --dependency=afterok:jobid</depend_string>
+    <walltime_format>%H:%M:%S</walltime_format>
      <directives>
        <directive> --job-name={{ job_id }}</directive>
        <directive> --nodes={{ num_nodes }}</directive>
@@ -129,7 +134,7 @@
    </batch_system>
 
     <!-- blues is PBS -->
-    <batch_system MACH="blues" version="x.y">
+    <batch_system MACH="blues" type="pbs" version="x.y">
       <directives>
         <directive>-A {{ PROJECT }}</directive>
         <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
@@ -138,7 +143,7 @@
 	<queue>shared</queue>
       </queues>
       <walltimes>
-	<walltime default="true">15:00</walltime>
+	<walltime default="true">00:15:00</walltime>
       </walltimes>
     </batch_system>
 

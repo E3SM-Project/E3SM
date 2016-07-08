@@ -12,7 +12,7 @@ import wait_for_tests
 from CIME.utils import expect
 from CIME.XML.machines import Machines
 
-import argparse, sys, os, shutil, glob, doctest, signal
+import argparse, sys, os, shutil, glob, doctest, signal, time
 
 SENTINEL_FILE = "ONGOING_TEST"
 
@@ -248,13 +248,13 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
             cdash_build_name = None
 
         tests_passed = wait_for_tests.wait_for_tests(glob.glob("%s/*%s*/TestStatus" % (test_root, test_id)),
-                                                     not use_batch, # wait if using queue
-                                                     False, # don't check throughput
-                                                     False, # don't check memory
-                                                     False, # don't ignore namelist diffs
-                                                     cdash_build_name,
-                                                     cdash_project,
-                                                     cdash_build_group)
+                                                     no_wait=not use_batch, # wait if using queue
+                                                     check_throughput=False, # don't check throughput
+                                                     check_memory=False, # don't check memory
+                                                     ignore_namelists=False, # don't ignore namelist diffs
+                                                     cdash_build_name=cdash_build_name,
+                                                     cdash_project=cdash_project,
+                                                     cdash_build_group=cdash_build_group)
         if (not tests_passed and use_batch and wait_for_tests.SIGNAL_RECEIVED):
             # Cleanup
             cleanup_queue(our_jobs)
