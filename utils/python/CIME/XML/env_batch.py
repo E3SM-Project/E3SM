@@ -319,13 +319,19 @@ class EnvBatch(EnvBase):
                 val = case.get_value(name,subgroup=job)
                 if val is None:
                     val = case.get_resolved_value(name)
-
+                        
                 if val is not None and len(val) > 0 and val != "None":
+                    # Try to evaluate val 
+                    try:
+                        rval = eval(val)
+                    except:
+                        rval = val
+
                     if flag.rfind("=", len(flag)-1, len(flag)) >= 0 or\
                        flag.rfind(":", len(flag)-1, len(flag)) >= 0:
-                        submitargs+=" %s%s"%(flag,str(val).strip())
+                        submitargs+=" %s%s"%(flag,str(rval).strip())
                     else:
-                        submitargs+=" %s %s"%(flag,str(val).strip())
+                        submitargs+=" %s %s"%(flag,str(rval).strip())
 
         return submitargs
 

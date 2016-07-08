@@ -57,7 +57,7 @@
 
    <batch_system type="cobalt" version="x.y">
      <batch_query>qstat</batch_query>
-     <batch_submit>bash</batch_submit>
+     <batch_submit>qsub</batch_submit>
      <batch_directive></batch_directive>
      <jobid_pattern>(\d+)</jobid_pattern>
      <depend_string> --dependencies</depend_string>
