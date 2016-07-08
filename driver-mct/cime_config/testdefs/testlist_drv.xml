@@ -63,6 +63,25 @@
       </machine>
     </machines>
   </test>
+  <test name="SMS" grid="f19_g16" compset="X">
+    <machines>
+      <machine name="yellowstone" compiler="intel" category="jim">
+	<options>
+	  <option name="wallclock">00:10</option>
+	</options>
+      </machine>
+      <machine name="yellowstone" compiler="gnu" category="jim">
+	<options>
+	  <option name="wallclock">00:10</option>
+	</options>
+      </machine>
+      <machine name="yellowstone" compiler="pgi" category="jim">
+	<options>
+	  <option name="wallclock">00:10</option>
+	</options>
+      </machine>
+    </machines>
+  </test>
   <test name="ERR" grid="f45_g37_rx1" compset="A">
     <machines>
       <machine name="yellowstone" compiler="intel" category="prealpha">
