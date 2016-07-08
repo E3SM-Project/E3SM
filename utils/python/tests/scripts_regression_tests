@@ -908,7 +908,7 @@ class TestSingleSubmit(TestCreateTestCommon):
             self.skipTest("Skipping single submit. ACME experimental feature")
 
         # Keep small enough for now that we don't have to worry about load balancing
-        stat, output, errput = run_cmd("unset CIME_GLOBAL_WALLTIME && %s/create_test SMS_Ln9_P4.f45_g37_rx1.A SMS_Ln9_P4.f19_g16.X  -t %s --single-submit" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True)
+        stat, output, errput = run_cmd("unset CIME_GLOBAL_WALLTIME && %s/create_test SMS_Ln9_P8.f45_g37_rx1.A SMS_Ln9_P8.f19_g16_rx1.A  -t %s --single-submit" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True)
         self.assertEqual(stat, 0,
                          msg="COMMAND SHOULD HAVE WORKED\ncreate_test output:\n%s\n\nerrput:\n%s\n\ncode: %d" % (output, errput, stat))
 
