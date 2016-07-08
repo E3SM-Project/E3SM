@@ -1044,17 +1044,17 @@
                 <var name="fzp" type="real" dimensions="nVertLevels" units="unitless"
                      description="Weight for linear interpolation to w(k) point for u(k-1) level variable"/>
 
-                <var name="zx" type="real" dimensions="nVertLevelsP1 nEdges" units="m"
-                     description="dz/dx"/>
+                <var name="zx" type="real" dimensions="nVertLevelsP1 nEdges" units="unitless"
+                     description="dz/dx on horizontal coordinate surfaces"/>
 
-                <var name="zz" type="real" dimensions="nVertLevelsP1 nCells" units="m^{-1}"
-                     description="d(zeta)/dz"/>
+                <var name="zz" type="real" dimensions="nVertLevelsP1 nCells" units="unitless"
+                     description="d(zeta)/dz, vertical metric term"/>
 
                 <var name="zb" type="real" dimensions="nVertLevelsP1 TWO nEdges" units="unitless"
-                     description="Coefficients for contribution from u to w diagnosis"/>
+                     description="Coefficients for contribution from u to omega diagnosis"/>
 
                 <var name="zb3" type="real" dimensions="nVertLevelsP1 TWO nEdges" units="unitless"
-                     description="Coefficients for 3rd-order contribution from u to w diagnosis"/>
+                     description="Coefficients for 3rd-order correction to contribution from u to omega diagnosis"/>
 
                 <var name="pzm" type="real" dimensions="nVertLevels nCells" units="-"
                      description="Used by newpx formulation"/>
