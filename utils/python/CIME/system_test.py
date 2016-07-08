@@ -111,6 +111,7 @@ class SystemTest(object):
                                                            xml_compiler, xml_testlist,
                                                            machine_name, compiler)
             test_names = [item["name"] for item in test_data]
+            logger.info("Testnames: %s"%test_names)
             for test_datum in test_data:
                 self._test_xml[test_datum["name"]] = test_datum
         else:
@@ -348,9 +349,6 @@ class SystemTest(object):
 
         _, case_opts, grid, compset,\
             machine, compiler, test_mods = CIME.utils.parse_test_name(test)
-        if compiler != self._compiler:
-            raise StandardError("Test '%s' has compiler that does"
-                                " not match instance compliler '%s'" % (test, self._compiler))
 
         create_newcase_cmd = "%s --case %s --res %s --mach %s --compiler %s --compset %s"\
                                " --project %s --test"%\
@@ -384,6 +382,8 @@ class SystemTest(object):
 
         if self._walltime is not None:
             create_newcase_cmd += " --walltime %s" % self._walltime
+        elif test in self._test_xml and "wallclock" in self._test_xml[test]:
+            create_newcase_cmd += " --walltime %s" % self._test_xml[test]['wallclock']
 
         logger.debug("Calling create_newcase: " + create_newcase_cmd)
         return self._shell_cmd_for_phase(test, create_newcase_cmd, CREATE_NEWCASE_PHASE)

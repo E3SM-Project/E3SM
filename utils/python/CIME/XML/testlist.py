@@ -64,26 +64,27 @@ class Testlist(GenericXML):
 
         for tnode in testnodes:
             machnodes = self.get_nodes("machine",machatts,root=tnode)
-            thistest = {}
-
             if machnodes:
+                this_test_node = {}
                 for key, value in tnode.items():
                     if key == "name":
-                        thistest["testname"] = value
+                        this_test_node["testname"] = value
                     else:
-                        thistest[key] = value
+                        this_test_node[key] = value
 
                 for mach in machnodes:
+                    # this_test_node can include multiple tests
+                    this_test = dict(this_test_node)
                     for key, value in mach.items():
                         if key == "name":
-                            thistest["machine"] = value
+                            this_test["machine"] = value
                         else:
-                            thistest[key] = value
+                            this_test[key] = value
 
                     optionnodes = self.get_nodes("option", root=mach)
                     for onode in optionnodes:
-                        thistest[onode.get('name')] = onode.text
-                    tests.append(thistest)
+                        this_test[onode.get('name')] = onode.text
+                    tests.append(this_test)
 
         return tests
 
