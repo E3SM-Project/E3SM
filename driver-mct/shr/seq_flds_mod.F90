@@ -332,14 +332,12 @@ module seq_flds_mod
      logical :: flds_co2c
      logical :: flds_co2_dmsa
      logical :: flds_bgc
+     logical :: flds_wiso
      integer :: glc_nec
 
      namelist /seq_cplflds_inparm/  &
-          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, glc_nec, &
+          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, glc_nec, &
           ice_ncat, seq_flds_i2o_per_cat, flds_bgc
-! =======
-!          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_bgc, glc_nec
-! >>>>>>> acme_master
 
      ! user specified new fields
      integer,  parameter :: nfldmax = 200
@@ -367,6 +365,7 @@ module seq_flds_mod
         flds_co2c = .false.
         flds_co2_dmsa = .false.
         flds_bgc  = .false.
+        flds_wiso = .false.
         glc_nec   = 0
         ice_ncat  = 1
         seq_flds_i2o_per_cat = .false.
@@ -391,6 +390,7 @@ module seq_flds_mod
      call shr_mpi_bcast(flds_co2c    , mpicom)
      call shr_mpi_bcast(flds_co2_dmsa, mpicom)
      call shr_mpi_bcast(flds_bgc     , mpicom)
+     call shr_mpi_bcast(flds_wiso    , mpicom)
      call shr_mpi_bcast(glc_nec      , mpicom)
      call shr_mpi_bcast(ice_ncat     , mpicom)
      call shr_mpi_bcast(seq_flds_i2o_per_cat, mpicom)
@@ -614,7 +614,7 @@ module seq_flds_mod
      attname  = 'Sa_ptem'
      call metadata_set(attname, longname, stdname, units)
 
-     ! ppecific humidity at the lowest model level (kg/kg)
+     ! specific humidity at the lowest model level (kg/kg)
      call seq_flds_add(a2x_states,"Sa_shum")
      call seq_flds_add(x2l_states,"Sa_shum")
      call seq_flds_add(x2i_states,"Sa_shum")
@@ -1093,6 +1093,7 @@ module seq_flds_mod
      attname  = 'Sl_snowh'
      call metadata_set(attname, longname, stdname, units)
 
+
      ! Surface snow depth (ice/atm only)
      call seq_flds_add(i2x_states,"Si_snowh")
      call seq_flds_add(x2a_states,"Si_snowh")
@@ -1397,6 +1398,33 @@ module seq_flds_mod
      stdname  = 'virtual_salt_flux_into_sea_water'
      units    = 'kg m-2 s-1'
      attname  = 'Fioi_salt'
+     call metadata_set(attname, longname, stdname, units)
+
+     ! Black Carbon hydrophilic deposition  
+     call seq_flds_add(i2x_fluxes,"Fioi_bcphi" )
+     call seq_flds_add(x2o_fluxes,"Fioi_bcphi"   )
+     longname = 'Hydrophylic black carbon deposition flux'
+     stdname  = 'deposition_flux_of_hydrophylic_black_carbon'
+     units    = 'kg m-2 s-1'
+     attname  = 'Fioi_bcphi'
+     call metadata_set(attname, longname, stdname, units)
+
+     ! Black Carbon hydrophobic deposition  
+     call seq_flds_add(i2x_fluxes,"Fioi_bcpho" )
+     call seq_flds_add(x2o_fluxes,"Fioi_bcpho"   )
+     longname = 'Hydrophobic black carbon deposition flux'
+     stdname  = 'deposition_flux_of_hydrophobic_black_carbon'
+     units    = 'kg m-2 s-1'
+     attname  = 'Fioi_bcpho'
+     call metadata_set(attname, longname, stdname, units)
+
+     ! Dust flux
+     call seq_flds_add(i2x_fluxes,"Fioi_flxdst")
+     call seq_flds_add(x2o_fluxes,"Fioi_flxdst")
+     longname = 'Dust flux'
+     stdname  = 'dust_flux'
+     units    = 'kg m-2 s-1'
+     attname  = 'Fioi_flxdst'
      call metadata_set(attname, longname, stdname, units)
 
      ! Sea surface temperature
@@ -2422,6 +2450,520 @@ module seq_flds_mod
         call metadata_set(attname, longname, stdname, units)
 
      endif
+
+     if (flds_wiso) then
+        call seq_flds_add(o2x_states, "So_roce_16O")
+        call seq_flds_add(x2i_states, "So_roce_16O")
+        longname = 'Ratio of ocean surface level abund. H2_16O/H2O/Rstd'
+        stdname  = ''
+        units    = ' '
+        attname  = 'So_roce_16O'
+        call metadata_set(attname, longname, stdname, units)
+
+        call seq_flds_add(o2x_states, "So_roce_18O")
+        call seq_flds_add(x2i_states, "So_roce_18O")
+        longname = 'Ratio of ocean surface level abund. H2_18O/H2O/Rstd'
+        attname  = 'So_roce_18O'
+        call metadata_set(attname, longname, stdname, units)
+
+        call seq_flds_add(o2x_states, "So_roce_HDO")
+        call seq_flds_add(x2i_states, "So_roce_HDO")
+        longname = 'Ratio of ocean surface level abund. HDO/H2O/Rstd'
+        attname  = 'So_roce_HDO'
+        call metadata_set(attname, longname, stdname, units)
+ 
+        !--------------------------------------------
+        !Atmospheric specific humidty at lowest level: 
+        !--------------------------------------------       
+
+      ! specific humidity of H216O at the lowest model level (kg/kg)
+        call seq_flds_add(a2x_states,"Sa_shum_16O")
+        call seq_flds_add(x2l_states,"Sa_shum_16O")
+        call seq_flds_add(x2i_states,"Sa_shum_16O")
+        longname = 'Specific humidty of H216O at the lowest model level'
+        stdname  = 'H216OV'
+        units    = 'kg kg-1'
+        attname  = 'Sa_shum_16O'
+        call metadata_set(attname, longname, stdname, units)
+
+       ! specific humidity of HD16O at the lowest model level (kg/kg)
+        call seq_flds_add(a2x_states,"Sa_shum_HDO")
+        call seq_flds_add(x2l_states,"Sa_shum_HDO")
+        call seq_flds_add(x2i_states,"Sa_shum_HDO")
+        longname = 'Specific humidty of HD16O at the lowest model level'
+        stdname  = 'HD16OV'
+        attname  = 'Sa_shum_HDO'
+        call metadata_set(attname, longname, stdname, units)
+
+       ! specific humidity of H218O at the lowest model level (kg/kg)
+        call seq_flds_add(a2x_states,"Sa_shum_18O")
+        call seq_flds_add(x2l_states,"Sa_shum_18O")
+        call seq_flds_add(x2i_states,"Sa_shum_18O")
+        longname = 'Specific humidty of H218O at the lowest model level'
+        stdname  = 'H218OV'
+        attname  = 'Sa_shum_18O'
+        call metadata_set(attname, longname, stdname, units)
+
+       ! Surface snow water equivalent (land/atm only) 
+        call seq_flds_add(l2x_states,"Sl_snowh_16O")
+        call seq_flds_add(l2x_states,"Sl_snowh_18O")
+        call seq_flds_add(l2x_states,"Sl_snowh_HDO")
+        call seq_flds_add(x2a_states,"Sl_snowh_16O")
+        call seq_flds_add(x2a_states,"Sl_snowh_18O")
+        call seq_flds_add(x2a_states,"Sl_snowh_HDO")
+        longname = 'Isotopic surface snow water equivalent'
+        stdname  = 'surface_snow_water_equivalent'
+        units    = 'm'
+        attname  = 'Sl_snowh_16O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Sl_snowh_18O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Sl_snowh_HDO'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Sl_snowh_16O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Sl_snowh_18O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Sl_snowh_HDO'
+        call metadata_set(attname, longname, stdname, units)
+
+        !--------------
+        !Isotopic Rain:
+        !-------------- 
+
+       !Isotopic Precipitation Fluxes:
+        units    = 'kg m-2 s-1'
+        call seq_flds_add(a2x_fluxes,"Faxa_rainc_16O")
+        call seq_flds_add(a2x_fluxes,"Faxa_rainl_16O")
+        call seq_flds_add(x2o_fluxes, "Faxa_rain_16O")
+        call seq_flds_add(x2l_fluxes,"Faxa_rainc_16O")
+        call seq_flds_add(x2l_fluxes,"Faxa_rainl_16O")
+        call seq_flds_add(x2i_fluxes, "Faxa_rain_16O")
+        longname = 'Water flux due to H216O rain' !equiv. to bulk
+        stdname  = 'H2_16O_rainfall_flux'
+        attname  = 'Faxa_rain_16O' 
+        call metadata_set(attname, longname, stdname, units)
+        longname = 'H216O Convective precipitation rate'
+        stdname  = 'H2_16O_convective_precipitation_flux'
+        attname  = 'Faxa_rainc_16O' 
+        call metadata_set(attname, longname, stdname, units)
+        longname = 'H216O Large-scale (stable) precipitation rate'
+        stdname  = 'H2_16O_large_scale_precipitation_flux'
+        attname  = 'Faxa_rainl_16O' 
+        call metadata_set(attname, longname, stdname, units)
+
+        call seq_flds_add(a2x_fluxes,"Faxa_rainc_18O")
+        call seq_flds_add(a2x_fluxes,"Faxa_rainl_18O")
+        call seq_flds_add(x2o_fluxes, "Faxa_rain_18O")
+        call seq_flds_add(x2l_fluxes,"Faxa_rainc_18O")
+        call seq_flds_add(x2l_fluxes,"Faxa_rainl_18O")
+        call seq_flds_add(x2i_fluxes, "Faxa_rain_18O")
+        longname = 'Water flux due to H218O rain'
+        stdname  = 'h2_18o_rainfall_flux'
+        attname  = 'Faxa_rain_18O' 
+        call metadata_set(attname, longname, stdname, units)
+        longname = 'H218O Convective precipitation rate'
+        stdname  = 'H2_18O_convective_precipitation_flux'
+        attname  = 'Faxa_rainc_18O' 
+        call metadata_set(attname, longname, stdname, units)
+        longname = 'H218O Large-scale (stable) precipitation rate'
+        stdname  = 'H2_18O_large_scale_precipitation_flux'
+        attname  = 'Faxa_rainl_18O' 
+        call metadata_set(attname, longname, stdname, units)
+
+        call seq_flds_add(a2x_fluxes,"Faxa_rainc_HDO")
+        call seq_flds_add(a2x_fluxes,"Faxa_rainl_HDO")
+        call seq_flds_add(x2o_fluxes, "Faxa_rain_HDO")
+        call seq_flds_add(x2l_fluxes,"Faxa_rainc_HDO")
+        call seq_flds_add(x2l_fluxes,"Faxa_rainl_HDO")
+        call seq_flds_add(x2i_fluxes, "Faxa_rain_HDO")
+        longname = 'Water flux due to HDO rain'
+        stdname  = 'hdo_rainfall_flux'
+        attname  = 'Faxa_rain_HDO' 
+        call metadata_set(attname, longname, stdname, units)
+        longname = 'HDO Convective precipitation rate'
+        stdname  = 'HDO_convective_precipitation_flux'
+        attname  = 'Faxa_rainc_HDO' 
+        call metadata_set(attname, longname, stdname, units)
+        longname = 'HDO Large-scale (stable) precipitation rate'
+        stdname  = 'HDO_large_scale_precipitation_flux'
+        attname  = 'Faxa_rainl_HDO' 
+        call metadata_set(attname, longname, stdname, units)
+
+        !-------------
+        !Isotopic snow:
+        !------------- 
+
+        call seq_flds_add(a2x_fluxes,"Faxa_snowc_16O")
+        call seq_flds_add(a2x_fluxes,"Faxa_snowl_16O")
+        call seq_flds_add(x2o_fluxes, "Faxa_snow_16O")
+        call seq_flds_add(x2l_fluxes,"Faxa_snowc_16O")
+        call seq_flds_add(x2l_fluxes,"Faxa_snowl_16O")
+        call seq_flds_add(x2i_fluxes, "Faxa_snow_16O")
+        longname = 'Water equiv. H216O snow flux'
+        stdname  = 'h2_16o_snowfall_flux'
+        attname  = 'Faxa_snow_16O' 
+        call metadata_set(attname, longname, stdname, units)
+        longname = 'H2_16O Convective snow rate (water equivalent)'
+        stdname  = 'H2_16O_convective_snowfall_flux'
+        attname  = 'Faxa_snowc_16O'
+        call metadata_set(attname, longname, stdname, units)
+        longname = 'H2_16O Large-scale (stable) snow rate (water equivalent)'
+        stdname  = 'H2_16O_large_scale_snowfall_flux'
+        attname  = 'Faxa_snowl_16O' 
+        call metadata_set(attname, longname, stdname, units)
+        
+        call seq_flds_add(a2x_fluxes,"Faxa_snowc_18O")
+        call seq_flds_add(a2x_fluxes,"Faxa_snowl_18O")
+        call seq_flds_add(x2o_fluxes, "Faxa_snow_18O")
+        call seq_flds_add(x2l_fluxes,"Faxa_snowc_18O")
+        call seq_flds_add(x2l_fluxes,"Faxa_snowl_18O")
+        call seq_flds_add(x2i_fluxes, "Faxa_snow_18O")
+        longname = 'Isotopic water equiv. snow flux of H218O'
+        stdname  = 'h2_18o_snowfall_flux'
+        attname  = 'Faxa_snow_18O' 
+        call metadata_set(attname, longname, stdname, units)
+        longname = 'H2_18O Convective snow rate (water equivalent)'
+        stdname  = 'H2_18O_convective_snowfall_flux'
+        attname  = 'Faxa_snowc_18O'
+        call metadata_set(attname, longname, stdname, units)
+        longname = 'H2_18O Large-scale (stable) snow rate (water equivalent)'
+        stdname  = 'H2_18O_large_scale_snowfall_flux'
+        attname  = 'Faxa_snowl_18O' 
+        call metadata_set(attname, longname, stdname, units)
+        
+        call seq_flds_add(a2x_fluxes,"Faxa_snowc_HDO")
+        call seq_flds_add(a2x_fluxes,"Faxa_snowl_HDO")
+        call seq_flds_add(x2o_fluxes, "Faxa_snow_HDO")
+        call seq_flds_add(x2l_fluxes,"Faxa_snowc_HDO")
+        call seq_flds_add(x2l_fluxes,"Faxa_snowl_HDO")
+        call seq_flds_add(x2i_fluxes, "Faxa_snow_HDO")
+        longname = 'Isotopic water equiv. snow flux of HDO'
+        stdname  = 'hdo_snowfall_flux'
+        attname  = 'Faxa_snow_HDO' 
+        call metadata_set(attname, longname, stdname, units)
+        longname = 'HDO Convective snow rate (water equivalent)'
+        stdname  = 'HDO_convective_snowfall_flux'
+        attname  = 'Faxa_snowc_HDO'
+        call metadata_set(attname, longname, stdname, units)
+        longname = 'HDO Large-scale (stable) snow rate (water equivalent)'
+        stdname  = 'HDO_large_scale_snowfall_flux'
+        attname  = 'Faxa_snowl_HDO' 
+        call metadata_set(attname, longname, stdname, units)
+
+        !----------------------------------
+        !Isotopic precipitation (rain+snow):
+        !----------------------------------  
+
+        call seq_flds_add(x2o_fluxes,"Faxa_prec_16O")  ! derived rain+snow
+        longname = 'Isotopic Water flux (rain+snow) for H2_16O'
+        stdname  = 'h2_18o_precipitation_flux'
+        attname  = 'Faxa_prec_16O'
+        call metadata_set(attname, longname, stdname, units)
+
+        call seq_flds_add(x2o_fluxes,"Faxa_prec_18O")  ! derived rain+snow
+        longname = 'Isotopic Water flux (rain+snow) for H2_18O'
+        stdname  = 'h2_18o_precipitation_flux'
+        units    = 'kg m-2 s-1'
+        attname  = 'Faxa_prec_18O'
+        call metadata_set(attname, longname, stdname, units)
+
+        call seq_flds_add(x2o_fluxes,"Faxa_prec_HDO")  ! derived rain+snow
+        longname = 'Isotopic Water flux (rain+snow) for HD_O'
+        stdname  = 'hdo_precipitation_flux'
+        units    = 'kg m-2 s-1'
+        attname  = 'Faxa_prec_HDO'
+        call metadata_set(attname, longname, stdname, units)
+
+        !-------------------------------------
+        !Isotopic two meter reference humidity:
+        !-------------------------------------
+
+        ! H216O Reference specific humidity at 2 meters
+        call seq_flds_add(l2x_states,"Sl_qref_16O")
+        call seq_flds_add(i2x_states,"Si_qref_16O")
+        call seq_flds_add(xao_states,"So_qref_16O")
+        call seq_flds_add(x2a_states,"Sx_qref_16O")
+        longname = 'Reference H216O specific humidity at 2 meters'
+        stdname  = 'H216O_specific_humidity'
+        units    = 'kg kg-1'
+        attname  = 'Si_qref_16O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Sl_qref_16O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'So_qref_16O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Sx_qref_16O'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! HD16O Reference specific humidity at 2 meters
+        call seq_flds_add(l2x_states,"Sl_qref_HDO")
+        call seq_flds_add(i2x_states,"Si_qref_HDO")
+        call seq_flds_add(xao_states,"So_qref_HDO")
+        call seq_flds_add(x2a_states,"Sx_qref_HDO")
+        longname = 'Reference HD16O specific humidity at 2 meters'
+        stdname  = 'HD16O_specific_humidity'
+        units    = 'kg kg-1'
+        attname  = 'Si_qref_HDO'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Sl_qref_HDO'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'So_qref_HDO'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Sx_qref_HDO'
+        call metadata_set(attname, longname, stdname, units)
+
+        ! H218O Reference specific humidity at 2 meters
+        call seq_flds_add(l2x_states,"Sl_qref_18O")
+        call seq_flds_add(i2x_states,"Si_qref_18O")
+        call seq_flds_add(xao_states,"So_qref_18O")
+        call seq_flds_add(x2a_states,"Sx_qref_18O")
+        longname = 'Reference H218O specific humidity at 2 meters'
+        stdname  = 'H218O_specific_humidity'
+        units    = 'kg kg-1'
+        attname  = 'Si_qref_18O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Sl_qref_18O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'So_qref_18O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Sx_qref_18O'
+        call metadata_set(attname, longname, stdname, units)
+
+        !-------------------------
+        !Isotopic Evaporation flux:
+        !-------------------------
+
+       ! H216O Evaporation water flux
+        call seq_flds_add(l2x_fluxes,"Fall_evap_16O")
+        call seq_flds_add(i2x_fluxes,"Faii_evap_16O") 
+        call seq_flds_add(xao_fluxes,"Faox_evap_16O")
+        call seq_flds_add(x2a_fluxes,"Faxx_evap_16O")
+        call seq_flds_add(x2o_fluxes,"Foxx_evap_16O")
+        longname = 'Evaporation H216O flux'
+        stdname  = 'H216O_evaporation_flux'
+        units    = 'kg m-2 s-1'
+        attname  = 'Fall_evap_16O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Faii_evap_16O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Faox_evap_16O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Faxx_evap_16O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Foxx_evap_16O'
+        call metadata_set(attname, longname, stdname, units)
+
+      ! HD16O Evaporation water flux
+        call seq_flds_add(l2x_fluxes,"Fall_evap_HDO")
+        call seq_flds_add(i2x_fluxes,"Faii_evap_HDO") 
+        call seq_flds_add(xao_fluxes,"Faox_evap_HDO")
+        call seq_flds_add(x2a_fluxes,"Faxx_evap_HDO")
+        call seq_flds_add(x2o_fluxes,"Foxx_evap_HDO")
+        longname = 'Evaporation HD16O flux'
+        stdname  = 'HD16O_evaporation_flux'
+        units    = 'kg m-2 s-1'
+        attname  = 'Fall_evap_HDO'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Faii_evap_HDO'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Faox_evap_HDO'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Foxx_evap_HDO'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Faxx_evap_HDO'
+        call metadata_set(attname, longname, stdname, units)  
+
+      ! H218O Evaporation water flux
+        call seq_flds_add(l2x_fluxes,"Fall_evap_18O")
+        call seq_flds_add(i2x_fluxes,"Faii_evap_18O")
+        call seq_flds_add(xao_fluxes,"Faox_evap_18O")
+        call seq_flds_add(x2a_fluxes,"Faxx_evap_18O")
+        call seq_flds_add(x2o_fluxes,"Foxx_evap_18O")
+        longname = 'Evaporation H218O flux'
+        stdname  = 'H218O_evaporation_flux'
+        units    = 'kg m-2 s-1'
+        attname  = 'Fall_evap_18O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Faii_evap_18O' 
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Faox_evap_18O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Faxx_evap_18O'
+        call metadata_set(attname, longname, stdname, units)
+        attname  = 'Foxx_evap_18O'
+        call metadata_set(attname, longname, stdname, units)
+
+       !-----------------------------
+       !Isotopic sea ice melting flux: 
+       !-----------------------------
+
+       ! H216O Water flux from melting
+       units    = 'kg m-2 s-1'
+       call seq_flds_add(i2x_fluxes,"Fioi_meltw_16O")
+       call seq_flds_add(x2o_fluxes,"Fioi_meltw_16O")
+       longname = 'H2_16O flux due to melting'
+       stdname  = 'h2_16o_surface_snow_melt_flux'
+       attname  = 'Fioi_meltw_16O'
+       call metadata_set(attname, longname, stdname, units)
+
+       ! H218O Water flux from melting
+       call seq_flds_add(i2x_fluxes,"Fioi_meltw_18O")
+       call seq_flds_add(x2o_fluxes,"Fioi_meltw_18O")
+       longname = 'H2_18O flux due to melting'
+       stdname  = 'h2_18o_surface_snow_melt_flux'
+       attname  = 'Fioi_meltw_18O'
+       call metadata_set(attname, longname, stdname, units)
+
+       ! HDO Water flux from melting
+       units    = 'kg m-2 s-1'
+       call seq_flds_add(i2x_fluxes,"Fioi_meltw_HDO")
+       call seq_flds_add(x2o_fluxes,"Fioi_meltw_HDO")
+       longname = 'HDO flux due to melting'
+       stdname  = 'hdo_surface_snow_melt_flux'
+       attname  = 'Fioi_meltw_HDO'
+       call metadata_set(attname, longname, stdname, units)
+
+       !Iso-Runoff
+       ! l2x, x2r
+       units    = 'kg m-2 s-1'
+       call seq_flds_add(l2x_fluxes,'Flrl_rofi_16O')
+       call seq_flds_add(x2r_fluxes,'Flrl_rofi_16O')
+       longname = 'H2_16O Water flux from land (frozen)'
+       stdname  = 'H2_16O_frozen_water_flux_into_runoff'
+       attname  = 'Flrl_rofi_16O'
+       call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(l2x_fluxes,'Flrl_rofi_18O')
+       call seq_flds_add(x2r_fluxes,'Flrl_rofi_18O')
+       longname = 'H2_18O Water flux from land (frozen)'
+       stdname  = 'H2_18O_frozen_water_flux_into_runoff'
+       attname  = 'Flrl_rofi_18O'
+       call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(l2x_fluxes,'Flrl_rofi_HDO')
+       call seq_flds_add(x2r_fluxes,'Flrl_rofi_HDO')
+       longname = 'HDO Water flux from land (frozen)'
+       stdname  = 'HDO_frozen_water_flux_into_runoff'
+       attname  = 'Flrl_rofi_HDO'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(l2x_fluxes,'Flrl_rofl_16O')
+       call seq_flds_add(x2r_fluxes,'Flrl_rofl_16O')
+       longname = 'H2_16O Water flux from land (liquid)'
+       stdname  = 'H2_16O_liquid_water_flux_into_runoff'
+       attname  = 'Flrl_rofl_16O'
+       call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(l2x_fluxes,'Flrl_rofl_18O')
+       call seq_flds_add(x2r_fluxes,'Flrl_rofl_18O')
+       longname = 'H2_18O Water flux from land (liquid)'
+       stdname  = 'H2_18O_liquid_water_flux_into_runoff'
+       attname  = 'Flrl_rofl_18O'
+       call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(l2x_fluxes,'Flrl_rofl_HDO')
+       call seq_flds_add(x2r_fluxes,'Flrl_rofl_HDO')
+       longname = 'HDO Water flux from land (liquid)'
+       stdname  = 'HDO_liquid_water_flux_into_runoff'
+       attname  = 'Flrl_rofl_HDO'
+       call metadata_set(attname, longname, stdname, units)
+
+       ! r2x, x2o
+       call seq_flds_add(r2x_fluxes,'Forr_rofl_16O')
+       call seq_flds_add(x2o_fluxes,'Foxx_rofl_16O')
+       longname = 'H2_16O Water flux due to liq runoff '
+       stdname  = 'H2_16O_water_flux_into_sea_water'
+       attname  = 'Forr_rofl_16O'
+       call metadata_set(attname, longname, stdname, units)
+       attname  = 'Foxx_rofl_16O'
+       call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(r2x_fluxes,'Forr_rofl_18O')
+       call seq_flds_add(x2o_fluxes,'Foxx_rofl_18O')
+       longname = 'H2_18O Water flux due to liq runoff '
+       stdname  = 'H2_18O_water_flux_into_sea_water'
+       attname  = 'Forr_rofl_18O'
+       call metadata_set(attname, longname, stdname, units)
+       attname  = 'Foxx_rofl_18O'
+       call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(r2x_fluxes,'Forr_rofl_HDO')
+       call seq_flds_add(x2o_fluxes,'Foxx_rofl_HDO')
+       longname = 'HDO Water flux due to liq runoff '
+       stdname  = 'HDO_water_flux_into_sea_water'
+       attname  = 'Forr_rofl_HDO'
+       call metadata_set(attname, longname, stdname, units)
+       attname  = 'Foxx_rofl_HDO'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(r2x_fluxes,'Forr_rofi_16O')
+       call seq_flds_add(x2o_fluxes,'Foxx_rofi_16O')
+       longname = 'H2_16O Water flux due to ice runoff '
+       stdname  = 'H2_16O_water_flux_into_sea_water'
+       attname  = 'Forr_rofi_16O'
+       call metadata_set(attname, longname, stdname, units)
+       attname  = 'Foxx_rofi_16O'
+       call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(r2x_fluxes,'Forr_rofi_18O')
+       call seq_flds_add(x2o_fluxes,'Foxx_rofi_18O')
+       longname = 'H2_18O Water flux due to ice runoff '
+       stdname  = 'H2_18O_water_flux_into_sea_water'
+       attname  = 'Forr_rofi_18O'
+       call metadata_set(attname, longname, stdname, units)
+       attname  = 'Foxx_rofi_18O'
+       call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(r2x_fluxes,'Forr_rofi_HDO')
+       call seq_flds_add(x2o_fluxes,'Foxx_rofi_HDO')
+       longname = 'HDO Water flux due to ice runoff '
+       stdname  = 'HDO_water_flux_into_sea_water'
+       attname  = 'Forr_rofi_HDO'
+       call metadata_set(attname, longname, stdname, units)
+
+       ! r2x, x2l
+       call seq_flds_add(r2x_fluxes,'Flrr_flood_16O')
+       call seq_flds_add(x2l_fluxes,'Flrr_flood_16O')
+       longname = 'H2_16O waterrflux due to flooding'
+       stdname  = 'H2_16O_flodding_water_flux_back_to_land'
+       attname  = 'Flrr_flood_16O'
+       call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(r2x_fluxes,'Flrr_flood_18O')
+       call seq_flds_add(x2l_fluxes,'Flrr_flood_18O')
+       longname = 'H2_18O waterrflux due to flooding'
+       stdname  = 'H2_18O_flodding_water_flux_back_to_land'
+       attname  = 'Flrr_flood_18O'
+       call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(r2x_fluxes,'Flrr_flood_HDO')
+       call seq_flds_add(x2l_fluxes,'Flrr_flood_HDO')
+       longname = 'HDO Waterrflux due to flooding'
+       stdname  = 'HDO_flodding_water_flux_back_to_land'
+       attname  = 'Flrr_flood_HDO'
+       call metadata_set(attname, longname, stdname, units)
+
+       units    = 'm3'
+       call seq_flds_add(r2x_states,'Flrr_volr_16O')
+       call seq_flds_add(x2l_states,'Flrr_volr_16O')
+       longname = 'H2_16O river channel water volume '
+       stdname  = 'H2_16O_rtm_volr'
+       attname  = 'Flrr_volr_16O'
+       call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(r2x_states,'Flrr_volr_18O')
+       call seq_flds_add(x2l_states,'Flrr_volr_18O')
+       longname = 'H2_18O river channel water volume '
+       stdname  = 'H2_18O_rtm_volr'
+       attname  = 'Flrr_volr_18O'
+       call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(r2x_states,'Flrr_volr_HDO')
+       call seq_flds_add(x2l_states,'Flrr_volr_HDO')
+       longname = 'HDO river channel water volume '
+       stdname  = 'HDO_rtm_volr'
+       attname  = 'Flrr_volr_HDO'
+       call metadata_set(attname, longname, stdname, units)
+
+       ! call seq_flds_add(r2x_fluxes,'Flrr_flood_HDO')
+       ! call seq_flds_add(x2l_fluxes,'Flrr_flood_HDO')
+       ! longname = 'H2_18O Waterrflux due to flooding'
+       ! stdname  = 'H2_18O_flodding_water_flux_back_to_land'
+       ! attname  = 'Flrr_flood_18O'
+       ! call metadata_set(attname, longname, stdname, units)
+ 
+       !-----------------------------
+
+     endif !Water isotopes
 
      !-----------------------------------------------------------------------------
      ! optional per thickness category fields
