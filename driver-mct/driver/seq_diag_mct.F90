@@ -1823,12 +1823,12 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
       do if = f_h, f_h_end
          write(logunit,FA1)    fname(if),dataGpr(if,ica,ip),dataGpr(if,icl,ip), &
                    dataGpr(if,icn,ip),dataGpr(if,ics,ip),dataGpr(if,ico,ip), &
-                                         dataGpr(if,ica,ip)+dataGpr(if,icl,ip)+ &
+                                      dataGpr(if,ica,ip)+dataGpr(if,icl,ip)+ &
                    dataGpr(if,icn,ip)+dataGpr(if,ics,ip)+dataGpr(if,ico,ip) 
       enddo
-      write(logunit,FA1)    '   *SUM*',sum(dataGpr(f_h:f_h_end,ica,ip)),sum(dataGpr(f_h:f_h_end,icl,ip)), &
+      write(logunit,FA1)    '   *SUM*'   ,sum(dataGpr(f_h:f_h_end,ica,ip)),sum(dataGpr(f_h:f_h_end,icl,ip)), &
          sum(dataGpr(f_h:f_h_end,icn,ip)),sum(dataGpr(f_h:f_h_end,ics,ip)),sum(dataGpr(f_h:f_h_end,ico,ip)), &
-                                       sum(dataGpr(f_h:f_h_end,ica,ip))+sum(dataGpr(f_h:f_h_end,icl,ip))+ &
+                                          sum(dataGpr(f_h:f_h_end,ica,ip))+sum(dataGpr(f_h:f_h_end,icl,ip))+ &
          sum(dataGpr(f_h:f_h_end,icn,ip))+sum(dataGpr(f_h:f_h_end,ics,ip))+sum(dataGpr(f_h:f_h_end,ico,ip)) 
 
       write(logunit,*) ' '
@@ -1840,9 +1840,9 @@ SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
                                          dataGpr(if,ica,ip)+dataGpr(if,icl,ip)+ &
                    dataGpr(if,icn,ip)+dataGpr(if,ics,ip)+dataGpr(if,ico,ip) 
       enddo
-      write(logunit,FA1)    '   *SUM*',sum(dataGpr(f_w:f_w_end,ica,ip)),sum(dataGpr(f_w:f_w_end,icl,ip)), &
+      write(logunit,FA1)    '   *SUM*'   ,sum(dataGpr(f_w:f_w_end,ica,ip)),sum(dataGpr(f_w:f_w_end,icl,ip)), &
          sum(dataGpr(f_w:f_w_end,icn,ip)),sum(dataGpr(f_w:f_w_end,ics,ip)),sum(dataGpr(f_w:f_w_end,ico,ip)), &
-                                       sum(dataGpr(f_w:f_w_end,ica,ip))+sum(dataGpr(f_w:f_w_end,icl,ip))+ &
+                                          sum(dataGpr(f_w:f_w_end,ica,ip))+sum(dataGpr(f_w:f_w_end,icl,ip))+ &
          sum(dataGpr(f_w:f_w_end,icn,ip))+sum(dataGpr(f_w:f_w_end,ics,ip))+sum(dataGpr(f_w:f_w_end,ico,ip)) 
 
 
