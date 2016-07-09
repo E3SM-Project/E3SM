@@ -79,6 +79,9 @@
 !>    * removed qr_p, and qg_p in the call to rrtmg_swrad since not used in the calculation of the cloud optical
 !>      properties.
 !>      Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
+!>    * in the call to rrtmg_swrad, substituted the variables qv_p, qc_p, qi_p, and qs_p with qvrad_p, qcrad_p,
+!>      qirad_p, and qsrad_p initialized in subroutine cloudiness_from_MPAS.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-07-09.
 
 
  contains
@@ -702,8 +705,10 @@
        call rrtmg_swrad( &
               p3d        = pres_hyd_p   , p8w        = pres2_hyd_p   , pi3d     = pi_p     , &
               t3d        = t_p          , t8w        = t2_p          , dz8w     = dz_p     , &
-              qv3d       = qv_p         , qc3d       = qc_p          , qi3d     = qi_p     , &
-              qs3d       = qs_p         , cldfra3d   = cldfrac_p     , tsk      = tsk_p    , &
+!             qv3d       = qv_p         , qc3d       = qc_p          , qi3d     = qi_p     , &
+!             qs3d       = qs_p         , cldfra3d   = cldfrac_p     , tsk      = tsk_p    , &
+              qv3d       = qvrad_p      , qc3d       = qcrad_p       , qi3d     = qirad_p  , &
+              qs3d       = qsrad_p      , cldfra3d   = cldfrac_p     , tsk      = tsk_p    , &
               albedo     = sfc_albedo_p , xland      = xland_p       , xice     = xice_p   , &
               snow       = snow_p       , coszr      = coszr_p       , xtime    = xtime_m  , &
               gmt        = gmt          , julday     = julday        , radt     = radt     , &

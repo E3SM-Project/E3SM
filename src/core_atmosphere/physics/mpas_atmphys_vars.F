@@ -57,6 +57,9 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
 ! * added diagnostics of the effective radii for cloud water, cloud ice, and snow used in rrtmg_lwrad.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
+! * added the variables qvrad_p,qcrad_p,qirad_p, and qsrad_p which are the water vapor,cloud water,cloud ice,
+!   and snow mixing ratios local to the calculation of the cloud fraction, and used in the radiation codes.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
 
 
 !=================================================================================================================
@@ -571,7 +574,11 @@
     icloud= 1          !used in WRF only.
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    cldfrac_p          !cloud fraction                                                                         [-]
+    cldfrac_p,        &!cloud fraction                                                                         [-]
+    qvrad_p,          &!water vapor mixing ratio local to cloudiness and radiation                         [kg/kg]
+    qcrad_p,          &!cloud liquid water mixing ratio local to cloudiness and radiation                  [kg/kg]
+    qirad_p,          &!cloud ice mixing ratio local to cloudiness and radiation                           [kg/kg]
+    qsrad_p            !snow mixing ratio local to cloudiness and radiation                                [kg/kg]
 
 !=================================================================================================================
 !.. variables and arrays related to land-surface parameterization:

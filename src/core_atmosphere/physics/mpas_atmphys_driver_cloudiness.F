@@ -44,6 +44,11 @@
 ! * added subroutine cal_cldfra3 which contains the calculation of the radiative cloud fraction in conjunction
 !   with the Thompson cloud microphysics.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-06-04.
+! * initialize the local "radiation" water vapor, cloud water, cloud ice, and snow mixing ratios. When using the
+!   option "cld_fraction_thompson", the "radiative" cloud water and ice paths are updated in conjunction with
+!   cloud formation, but changes to the cloud water and cloud ice mixing ratios only affect the long wave and
+!   short wave radiation codes.
+!   Laura D. Fowler (laura@ucar.edu) / 2016-07-05.
 
 
  contains
@@ -56,6 +61,10 @@
  if(.not.allocated(dx_p)     ) allocate(dx_p(ims:ime,jms:jme)             ) 
  if(.not.allocated(xland_p)  ) allocate(xland_p(ims:ime,jms:jme)          )
  if(.not.allocated(cldfrac_p)) allocate(cldfrac_p(ims:ime,kms:kme,jms:jme))
+ if(.not.allocated(qvrad_p)  ) allocate(qvrad_p(ims:ime,kms:kme,jms:jme)  )
+ if(.not.allocated(qcrad_p)  ) allocate(qcrad_p(ims:ime,kms:kme,jms:jme)  )
+ if(.not.allocated(qirad_p)  ) allocate(qirad_p(ims:ime,kms:kme,jms:jme)  )
+ if(.not.allocated(qsrad_p)  ) allocate(qsrad_p(ims:ime,kms:kme,jms:jme)  )
 
  end subroutine allocate_cloudiness
 
@@ -66,6 +75,10 @@
  if(allocated(dx_p)     ) deallocate(dx_p     )
  if(allocated(xland_p)  ) deallocate(xland_p  )
  if(allocated(cldfrac_p)) deallocate(cldfrac_p)
+ if(allocated(qvrad_p)  ) deallocate(qvrad_p  )
+ if(allocated(qcrad_p)  ) deallocate(qcrad_p  )
+ if(allocated(qirad_p)  ) deallocate(qirad_p  )
+ if(allocated(qsrad_p)  ) deallocate(qsrad_p  )
 
  end subroutine deallocate_cloudiness
 
@@ -101,8 +114,14 @@
        xland_p(i,j) = xland(i)
     enddo
 
+    !--- initialize the radiative cloud fraction and water vapor, cloud water, cloud ice,
+    !    and snow mixing ratios:
     do k = kts,kte
     do i = its,ite
+       qvrad_p(i,k,j)   = qv_p(i,k,j)
+       qcrad_p(i,k,j)   = qc_p(i,k,j)
+       qirad_p(i,k,j)   = qi_p(i,k,j)
+       qsrad_p(i,k,j)   = qs_p(i,k,j)
        cldfrac_p(i,k,j) = 0._RKIND
     enddo
     enddo
@@ -160,22 +179,23 @@
     case("cld_incidence")
       !calculate the incidence of clouds:
 !     write(0,*) '--- enter subroutine calc_cldincidence:'
-      call calc_cldincidence(cldfrac_p,qc_p,qi_p,f_qc,f_qi)
+      call calc_cldincidence(cldfrac_p,qcrad_p,qirad_p,f_qc,f_qi)
 !     write(0,*) '--- exit subroutine calc_cldincidence'
 
     case("cld_fraction")
       !calculate the cloud fraction based on the relative humidity:
 !     write(0,*) '--- enter subroutine calc_cldfraction:'
-      call calc_cldfraction(cldfrac_p,t_p,pres_p,qv_p,qc_p,qi_p,qs_p)
+      call calc_cldfraction(cldfrac_p,t_p,pres_p,qvrad_p,qcrad_p,qirad_p,qs_p)
 !     write(0,*) '--- exit subroutine calc_cldfraction'
 
     case("cld_fraction_thompson")
       call cal_cldfra3( &
-           cldfra = cldfrac_p  , qv = qv_p , qc  = qc_p  , qi    = qi_p    , qs     = qs_p , &
-           p      = pres_hyd_p , t  = t_p  , rho = rho_p , xland = xland_p , gridkm = dx_p , &                                       
-           ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,           &
-           ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme ,           &
-           its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte             &
+           cldfra = cldfrac_p , qv     = qvrad_p    , qc = qcrad_p , qi  = qirad_p , &
+           qs     = qsrad_p   , p      = pres_hyd_p , t  = t_p     , rho = rho_p   , &
+           xland  = xland_p   , gridkm = dx_p       ,                                &
+           ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,   &
+           ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme ,   &
+           its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte     &
                       )
 
     case default

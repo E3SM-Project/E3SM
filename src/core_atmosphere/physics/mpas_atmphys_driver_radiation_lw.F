@@ -83,6 +83,9 @@
 !>    * removed qr_p, and qg_p in the call to rrtmg_lwrad since not used in the calculation of the cloud optical
 !>      properties.
 !>      Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
+!>    * in the call to rrtmg_lwrad, substituted the variables qv_p, qc_p, qi_p, and qs_p with qvrad_p, qcrad_p,
+!>      qirad_p, and qsrad_p initialized in subroutine cloudiness_from_MPAS.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-07-09.
 
 
  contains
@@ -758,15 +761,29 @@
  radiation_lw_select: select case (trim(radt_lw_scheme))
 
     case ("rrtmg_lw")
-!      write(0,*) '--- enter subroutine rrtmg_lwrad:'
+       write(0,*) '--- enter subroutine rrtmg_lwrad:'
        o3input = 0
        if(config_o3climatology) o3input = 2
+!      201 format(2i7,10(1x,e15.8))
+!      do j = jts,jte
+!      do i = its,ite
+!      do k = kts,kte
+!         if(cldfrac_p(i,k,j) .gt. 0._RKIND) then
+!            write(0,201) i,k,cldfrac_p(i,k,j),qc_p(i,k,j),qcrad_p(i,k,j),qi_p(i,k,j),qirad_p(i,k,j), &
+!                         qs_p(i,k,j),qsrad_p(i,k,j)
+!         endif
+!      enddo
+!      enddo
+!      enddo
+!      stop
 
        call rrtmg_lwrad( &
             p3d        = pres_hyd_p    , p8w       = pres2_hyd_p , pi3d     = pi_p     , &
             t3d        = t_p           , t8w       = t2_p        , dz8w     = dz_p     , &
-            qv3d       = qv_p          , qc3d      = qc_p        , qi3d     = qi_p     , &
-            qs3d       = qs_p          , cldfra3d  = cldfrac_p   , tsk      = tsk_p    , &
+!           qv3d       = qv_p          , qc3d      = qc_p        , qi3d     = qi_p     , &
+!           qs3d       = qs_p          , cldfra3d  = cldfrac_p   , tsk      = tsk_p    , &
+            qv3d       = qvrad_p       , qc3d      = qcrad_p     , qi3d     = qirad_p  , &
+            qs3d       = qsrad_p       , cldfra3d  = cldfrac_p   , tsk      = tsk_p    , &
             emiss      = sfc_emiss_p   , xland     = xland_p     , xice     = xice_p   , &
             snow       = snow_p        , icloud    = icloud      , o3input  = o3input  , &
             noznlevels = num_oznlevels , pin       = pin_p       , o3clim   = o3clim_p , &
