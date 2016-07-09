@@ -76,6 +76,9 @@
 !>    * added the cloud radii for cloud water, cloud ice, and snow calculated in the Thompson cloud microphysics
 !>      scheme in the call to subroutine rrtmg_swrad.
 !>      Laura D. Fowler (laura@ucar.edu) / 2016-07-07.
+!>    * removed qr_p, and qg_p in the call to rrtmg_swrad since not used in the calculation of the cloud optical
+!>      properties.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
 
 
  contains
@@ -697,26 +700,25 @@
        if(config_o3climatology) o3input = 2
 
        call rrtmg_swrad( &
-              p3d        = pres_hyd_p    , p8w      = pres2_hyd_p , pi3d       = pi_p         , &
-              t3d        = t_p           , t8w      = t2_p        , dz8w       = dz_p         , &
-              qv3d       = qv_p          , qc3d     = qc_p        , qr3d       = qr_p         , &
-              qi3d       = qi_p          , qs3d     = qs_p        , qg3d       = qg_p         , &
-              cldfra3d   = cldfrac_p     , tsk      = tsk_p       , albedo     = sfc_albedo_p , &
-              xland      = xland_p       , xice     = xice_p      , snow       = snow_p       , &
-              coszr      = coszr_p       , xtime    = xtime_m     , gmt        = gmt          , &
-              julday     = julday        , radt     = radt        , degrad     = degrad       , &
-              declin     = declin        , solcon   = solcon      , xlat       = xlat_p       , &
-              xlong      = xlon_p        , icloud   = icloud      , o3input    = o3input      , &
-              noznlevels = num_oznlevels , pin      = pin_p       , o3clim     = o3clim_p     , &
-              gsw        = gsw_p         , swcf     = swcf_p      , rthratensw = rthratensw_p , &
-              has_reqc   = has_reqc      , has_reqi = has_reqi    , has_reqs   = has_reqs     , &
-              re_cloud   = recloud_p     , re_ice   = reice_p     , re_snow    = resnow_p     , &
-              swupt      = swupt_p       , swuptc   = swuptc_p    , swdnt      = swdnt_p      , &
-              swdntc     = swdntc_p      , swupb    = swupb_p     , swupbc     = swupbc_p     , &
-              swdnb      = swdnb_p       , swdnbc   = swdnbc_p    ,                             &
-              ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,           &
-              ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,           &
-              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte             &
+              p3d        = pres_hyd_p   , p8w        = pres2_hyd_p   , pi3d     = pi_p     , &
+              t3d        = t_p          , t8w        = t2_p          , dz8w     = dz_p     , &
+              qv3d       = qv_p         , qc3d       = qc_p          , qi3d     = qi_p     , &
+              qs3d       = qs_p         , cldfra3d   = cldfrac_p     , tsk      = tsk_p    , &
+              albedo     = sfc_albedo_p , xland      = xland_p       , xice     = xice_p   , &
+              snow       = snow_p       , coszr      = coszr_p       , xtime    = xtime_m  , &
+              gmt        = gmt          , julday     = julday        , radt     = radt     , &
+              degrad     = degrad       , declin     = declin        , solcon   = solcon   , &
+              xlat       = xlat_p       , xlong      = xlon_p        , icloud   = icloud   , &
+              o3input    = o3input      , noznlevels = num_oznlevels , pin      = pin_p    , &
+              o3clim     = o3clim_p     , gsw        = gsw_p         , swcf     = swcf_p   , &
+              rthratensw = rthratensw_p , has_reqc   = has_reqc      , has_reqi = has_reqi , &
+              has_reqs   = has_reqs     , re_cloud   = recloud_p     , re_ice   = reice_p  , &
+              re_snow    = resnow_p     , swupt      = swupt_p       , swuptc   = swuptc_p , &
+              swdnt      = swdnt_p      , swdntc     = swdntc_p      , swupb    = swupb_p  , &
+              swupbc     = swupbc_p     , swdnb      = swdnb_p       , swdnbc   = swdnbc_p , &
+              ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,        &
+              ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,        &
+              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte          &
                        )
 
     case ("cam_sw")

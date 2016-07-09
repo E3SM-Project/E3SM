@@ -80,6 +80,9 @@
 !>      Laura D. Fowler (laura@ucar.edu) / 2016-07-07.
 !>    * added diagnostics of the effective radii for cloud water, cloud ice, and snow used in rrtmg_lwrad.
 !>      Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
+!>    * removed qr_p, and qg_p in the call to rrtmg_lwrad since not used in the calculation of the cloud optical
+!>      properties.
+!>      Laura D. Fowler (laura@ucar.edu) / 2016-07-08.
 
 
  contains
@@ -760,26 +763,24 @@
        if(config_o3climatology) o3input = 2
 
        call rrtmg_lwrad( &
-            p3d        = pres_hyd_p   , p8w        = pres2_hyd_p   , pi3d       = pi_p          , &
-            t3d        = t_p          , t8w        = t2_p          , dz8w       = dz_p          , &
-            qv3d       = qv_p         , qc3d       = qc_p          , qr3d       = qr_p          , &
-            qi3d       = qi_p         , qs3d       = qs_p          , qg3d       = qg_p          , &
-            cldfra3d   = cldfrac_p    , tsk        = tsk_p         , emiss      = sfc_emiss_p   , &
-            xland      = xland_p      , xice       = xice_p        , snow       = snow_p        , &
-            icloud     = icloud       , o3input    = o3input       , noznlevels = num_oznlevels , &
-            pin        = pin_p        , o3clim     = o3clim_p      , glw        = glw_p         , &
-            olr        = olrtoa_p     , lwcf       = lwcf_p        , rthratenlw = rthratenlw_p  , &
-            has_reqc   = has_reqc     , has_reqi   = has_reqi      , has_reqs   = has_reqs      , &
-            re_cloud   = recloud_p    , re_ice     = reice_p       , re_snow    = resnow_p      , &
-            rre_cloud  = rrecloud_p   , rre_ice    = rreice_p      , rre_snow   = rresnow_p     , &
-            lwupt      = lwupt_p      , lwuptc     = lwuptc_p      , lwdnt      = lwdnt_p       , &
-            lwdntc     = lwdntc_p     , lwupb      = lwupb_p       , lwupbc     = lwupbc_p      , &
-            lwdnb      = lwdnb_p      , lwdnbc     = lwdnbc_p      ,                              &
-            ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,               &
-            ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,               &
-            its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte                 &
+            p3d        = pres_hyd_p    , p8w       = pres2_hyd_p , pi3d     = pi_p     , &
+            t3d        = t_p           , t8w       = t2_p        , dz8w     = dz_p     , &
+            qv3d       = qv_p          , qc3d      = qc_p        , qi3d     = qi_p     , &
+            qs3d       = qs_p          , cldfra3d  = cldfrac_p   , tsk      = tsk_p    , &
+            emiss      = sfc_emiss_p   , xland     = xland_p     , xice     = xice_p   , &
+            snow       = snow_p        , icloud    = icloud      , o3input  = o3input  , &
+            noznlevels = num_oznlevels , pin       = pin_p       , o3clim   = o3clim_p , &
+            glw        = glw_p         , olr       = olrtoa_p    , lwcf     = lwcf_p   , &
+            rthratenlw = rthratenlw_p  , has_reqc  = has_reqc    , has_reqi = has_reqi , &
+            has_reqs   = has_reqs      , re_cloud  = recloud_p   , re_ice   = reice_p  , &
+            re_snow    = resnow_p      , rre_cloud = rrecloud_p  , rre_ice  = rreice_p , &
+            rre_snow   = rresnow_p     , lwupt     = lwupt_p     , lwuptc   = lwuptc_p , &
+            lwdnt      = lwdnt_p       , lwdntc    = lwdntc_p    , lwupb    = lwupb_p  , &
+            lwupbc     = lwupbc_p      , lwdnb     = lwdnb_p     , lwdnbc   = lwdnbc_p , &
+            ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,      &
+            ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,      &
+            its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
                        )
-
     case ("cam_lw")
        xtime_m = xtime_s/60.
 
