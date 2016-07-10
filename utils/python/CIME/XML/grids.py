@@ -25,6 +25,12 @@ class Grids(GenericXML):
         """
         Find the matching grid node
         """
+        node = self.get_node("grids")
+        version = None
+        if "version" in node.attrib:
+            version = node.get("version")
+            
+
         nodes = self.get_nodes("grid")
         gridinfo = {}
         atmnlev = None
@@ -40,11 +46,14 @@ class Grids(GenericXML):
             lndnlev = levmatch.group(3)
             name = levmatch.group(1)+levmatch.group(2)+levmatch.group(4)
 
-
-        # first search for all grids that have a compset match - if one is found then return
-        for node in nodes:
-            if "compset" in node.attrib:
-                attrib = node.get("compset")
+        #--------------------------------------------------------------------
+        # version 1.0 schema (did not have a version in grids)
+        #--------------------------------------------------------------------
+        if version is None:
+            # first search for all grids that have a compset match - if one is found then return
+            for node in nodes:
+                if "compset" in node.attrib:
+                    attrib = node.get("compset")
                 compset_match = re.search(attrib,compset)
                 if compset_match is not None:
                     alias = self.get_value("alias", root=node)
@@ -60,21 +69,96 @@ class Grids(GenericXML):
                         gridinfo["GRID"] = lname
                         return gridinfo
 
-        # if no matches were found for a possible compset match, then search for just a grid match with no
-        # compset attribute
-        for node in nodes:
-            if "compset" not in node.attrib:
+            # if no matches were found for a possible compset match, then search for just a grid match with no
+            # compset attribute
+            for node in nodes:
+                if "compset" not in node.attrib:
+                    sname = self.get_value("sname", root=node)
+                    alias = self.get_value("alias", root=node)
+                    lname = self.get_value("lname", root=node)
+                    if alias == name or lname == name or sname == name:
+                        logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname))
+                        component_grids = self._get_component_grids(lname)
+                        gridinfo.update(self._get_domains(component_grids))
+                        gridinfo.update(self._get_gridmaps(component_grids, atmnlev, lndnlev))
+                        gridinfo["GRID"] = lname
+                        return gridinfo
+
+        #--------------------------------------------------------------------
+        # version 2.0 schema
+        #--------------------------------------------------------------------
+
+        if version is not None and version == "2.0":
+            print "DEBUG: name is ",name
+            for node in nodes:
                 sname = self.get_value("sname", root=node)
                 alias = self.get_value("alias", root=node)
-                lname = self.get_value("lname", root=node)
-                if alias == name or lname == name or sname == name:
-                    logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname))
-                    component_grids = self._get_component_grids(lname)
-                    gridinfo.update(self._get_domains(component_grids))
-                    gridinfo.update(self._get_gridmaps(component_grids, atmnlev, lndnlev))
-                    gridinfo["GRID"] = lname
-                    return gridinfo
+                # if alias or sname match the input name then find the appropriate lname
+                if alias == name or sname == name:
+                    lname_nodes = self.get_nodes("lname", root=node)
 
+                    # first search for all lname nodes that have a compset match - if one is found then return
+                    for lname_node in lname_nodes:
+                        lname = lname_node.text
+                        if "compset" in lname_node.attrib:
+                            attrib = lname_node.get("compset")
+                            compset_match = re.search(attrib, compset)
+                            print "DEBUG: lname is lname"
+                            print "DEBUG: attrib is ",attrib
+                            if compset_match is not None:
+                                print "DEBUG: Found node compset match: %s and lname: %s" % (attrib, lname)
+                                logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname))
+                                component_grids = self._get_component_grids(lname)
+                                domains  = self._get_domains(component_grids)
+                                gridmaps = self._get_gridmaps(component_grids, atmnlev, lndnlev)
+                                gridinfo.update(domains)
+                                gridinfo.update(gridmaps)
+                                gridinfo["GRID"] = lname
+                                return gridinfo
+
+                    # if no matches were found for a possible compset
+                    # match, then search for just an lname match with no compset attribute
+                    for lname_node in lname_nodes:
+                        if "compset" not in lname_node.attrib:
+                            lname = self.get_value("lname", root=lname_node)
+                            logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname))
+                            component_grids = self._get_component_grids(lname)
+                            gridinfo.update(self._get_domains(component_grids))
+                            gridinfo.update(self._get_gridmaps(component_grids, atmnlev, lndnlev))
+                            gridinfo["GRID"] = lname
+                            return gridinfo
+                
+            # There is no consistency check of a grid longname is provided
+            # TODO: search for all lnames and find a match with either the compset or no compset
+            lname_nodes = self.get_nodes("lname")
+            for lname_node in lname_nodes:
+                lname = self.get_value("lname", root=lname_node)
+                if lname == name:
+                    if "compset" in lname_node.attrib:
+                        attrib = lname_node.get("compset")
+                        compset_match = re.search(attrib, compset)
+                        if compset_match is not None:
+                            logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname))
+                            component_grids = self._get_component_grids(lname)
+                            domains  = self._get_domains(component_grids)
+                            gridmaps = self._get_gridmaps(component_grids, atmnlev, lndnlev)
+                            gridinfo.update(domains)
+                            gridinfo.update(gridmaps)
+                            gridinfo["GRID"] = lname
+                            return gridinfo
+
+                    # if no matches were found for a possible compset
+                    # match, then search for just an lname match with no compset attribute
+                    for lname_node in lname_nodes:
+                        if "compset" not in lname_node.attrib:
+                            lname = self.get_value("lname", root=lname_node)
+                            logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname))
+                            component_grids = self._get_component_grids(lname)
+                            gridinfo.update(self._get_domains(component_grids))
+                            gridinfo.update(self._get_gridmaps(component_grids, atmnlev, lndnlev))
+                            gridinfo["GRID"] = lname
+                            return gridinfo
+                    
         expect (False,
                 "grid '%s'  is not supported, use manage_case to determine supported grids " %name)
 

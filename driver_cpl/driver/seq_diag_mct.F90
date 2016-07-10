@@ -1274,7 +1274,7 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, do_o2x, do_x2o, do_xao)
    real(r8)                 :: da,di,do,dl  ! area of a grid cell
    logical,save             :: first_time    = .true.
    logical,save             :: flds_wiso_ocn = .false.
-   logical,save             :: model       ! valid values are 'acme' or 'cesm'
+   character(len=4), save   :: model       ! valid values are 'acme' or 'cesm'
 
    !----- formats -----
    character(*),parameter :: subName = '(seq_diag_ocn_mct) '
@@ -1528,7 +1528,7 @@ subroutine seq_diag_ice_mct( ice, frac_i, do_i2x, do_x2i)
    logical,save             :: first_time        = .true.
    logical,save             :: flds_wiso_ice     = .false.
    logical,save             :: flds_wiso_ice_x2i = .false.
-   logical,save             :: model       ! valid values are 'acme' or 'cesm'
+   character(len=4),save    :: model       ! valid values are 'acme' or 'cesm'
 
    !----- formats -----
    character(*),parameter :: subName = '(seq_diag_ice_mct) '
@@ -1621,11 +1621,11 @@ subroutine seq_diag_ice_mct( ice, frac_i, do_i2x, do_x2i)
          index_x2i_Faxa_lwdn   = mct_aVect_indexRA(x2i_i,'Faxa_lwdn')
          index_x2i_Faxa_rain   = mct_aVect_indexRA(x2i_i,'Faxa_rain')
          index_x2i_Faxa_snow   = mct_aVect_indexRA(x2i_i,'Faxa_snow')
-         index_x2i_Fioo_frazil = mct_aVect_indexRA(x2i_i,'Fioo_frazil')
-         index_o2x_Fioo_q      = mct_aVect_indexRA(o2x_o,'Fioo_q')      !cesm
-         if (index_o2x_Fioo_frazil /= 0) then
+         index_x2i_Fioo_frazil = mct_aVect_indexRA(x2i_i,'Fioo_frazil') !acme
+         index_x2i_Fioo_q      = mct_aVect_indexRA(x2i_i,'Fioo_q')      !cesm
+         if (index_x2i_Fioo_frazil /= 0) then
             model = 'acme'
-         else if (index_o2x_Fioo_q /= 0) then
+         else if (index_x2i_Fioo_q /= 0) then
             model = 'cesm'
          end if
          index_x2i_Fixx_rofi   = mct_aVect_indexRA(x2i_i,'Fixx_rofi')
