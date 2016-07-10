@@ -507,6 +507,7 @@ class Case(object):
             nodes = machobj.get_first_child_nodes(item)
             for node in nodes:
                 env_mach_specific_obj.add_child(node)
+        self._env_files_that_need_rewrite.add(env_mach_specific_obj)
 
         #--------------------------------------------
         # pe payout

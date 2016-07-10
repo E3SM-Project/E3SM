@@ -904,6 +904,8 @@ class TestSingleSubmit(TestCreateTestCommon):
         # Skip unless on a batch system and users did not select no-batch
         if (not self._hasbatch):
             self.skipTest("Skipping single submit. Not valid without batch")
+        if CIME.utils.get_model() != "acme":
+            self.skipTest("Skipping single submit. ACME experimental feature")
 
         # Keep small enough for now that we don't have to worry about load balancing
         stat, output, errput = run_cmd("unset CIME_GLOBAL_WALLTIME && %s/create_test SMS_Ln9_P8.f45_g37_rx1.A SMS_Ln9_P8.f19_g16_rx1.A  -t %s --single-submit" % (SCRIPT_DIR, self._baseline_name), ok_to_fail=True)

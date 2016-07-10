@@ -46,9 +46,16 @@
       <value>pnetcdf</value>
       <value mach="userdefined">netcdf</value>
       <value mach="eastwind">netcdf</value>
+      <value mach="constance">netcdf</value>
       <value mach="pleiades.*">netcdf</value>
       <value mach="hobart" compiler="pgi">netcdf</value>
       <value mpilib="mpi-serial">netcdf</value>
+    </values>
+  </entry>
+
+  <entry id="PIO_REARRANGER">
+    <values>
+      <value>$PIO_VERSION</value>
     </values>
   </entry>
 
@@ -107,6 +114,13 @@
     </values>
   </entry>
   -->
+  <entry id="LND_PIO_REARRANGER">
+    <values>
+      <value compset="_CLM40" >2</value>
+      <value compset="_CLM45" >1</value>
+      <value compset="_CLM50" >1</value>
+    </values>
+  </entry>
 
   <!--- uncomment and fill in relevant sections
   <entry id="LND_PIO_STRIDE">
@@ -228,13 +242,13 @@
   </entry>
   -->
 
-  <!--- uncomment and fill in relevant sections
+
   <entry id="ATM_PIO_TYPENAME">
     <values>
-      <value></value>
+      <value compset="DATM">netcdf</value>
     </values>
   </entry>
-  -->
+
 
   <!--- uncomment and fill in relevant sections
   <entry id="CPL_PIO_STRIDE">
