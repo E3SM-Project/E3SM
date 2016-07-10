@@ -748,7 +748,6 @@ contains
     end do
     
   end subroutine component_final
-#endif
 
   !===============================================================================
 

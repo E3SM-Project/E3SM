@@ -1283,19 +1283,19 @@
 
     <grid compset="(_DROF.*_SGLC.*_DWAV|_DROF.*_SGLC.*_WW3)">
       <sname>T31_gx3v7_rx1_ww3a</sname>
-      <alias>T31_g37_rx1_ww3></alias>
+      <alias>T31_g37_rx1_ww3</alias>
       <lname>a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%null_w%ww3a</lname>
     </grid>
 
     <grid compset="(_DROF.*_CISM1.*_DWAV|_DROF.*_CISM1.*_WW3)">
       <sname>T31_gx3v7_rx1_ww3a</sname>
-      <alias>T31_g37_rx1_ww3></alias>
+      <alias>T31_g37_rx1_ww3</alias>
       <lname>a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%gland5UM_w%ww3a</lname>
     </grid>
 
     <grid compset="(_DROF.*_CISM2.*_DWAV|_DROF.*_CISM2.*_WW3)">
       <sname>T31_gx3v7_rx1_ww3a</sname>
-      <alias>T31_g37_rx1_ww3></alias>
+      <alias>T31_g37_rx1_ww3</alias>
       <lname>a%T31_l%T31_oi%gx3v7_r%rx1_m%gx3v7_g%gland4_w%ww3a</lname>
     </grid>
 
