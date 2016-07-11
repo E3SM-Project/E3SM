@@ -89,7 +89,6 @@ class Grids(GenericXML):
         #--------------------------------------------------------------------
 
         if version is not None and version == "2.0":
-            print "DEBUG: name is ",name
             for node in nodes:
                 sname = self.get_value("sname", root=node)
                 alias = self.get_value("alias", root=node)
@@ -99,14 +98,12 @@ class Grids(GenericXML):
 
                     # first search for all lname nodes that have a compset match - if one is found then return
                     for lname_node in lname_nodes:
+                        #FIXME - the following returns None if lname = self.get_value("lname", root=lname_node) is used
                         lname = lname_node.text
                         if "compset" in lname_node.attrib:
                             attrib = lname_node.get("compset")
                             compset_match = re.search(attrib, compset)
-                            print "DEBUG: lname is lname"
-                            print "DEBUG: attrib is ",attrib
                             if compset_match is not None:
-                                print "DEBUG: Found node compset match: %s and lname: %s" % (attrib, lname)
                                 logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname))
                                 component_grids = self._get_component_grids(lname)
                                 domains  = self._get_domains(component_grids)
@@ -119,8 +116,8 @@ class Grids(GenericXML):
                     # if no matches were found for a possible compset
                     # match, then search for just an lname match with no compset attribute
                     for lname_node in lname_nodes:
+                        lname = lname_node.text
                         if "compset" not in lname_node.attrib:
-                            lname = self.get_value("lname", root=lname_node)
                             logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname))
                             component_grids = self._get_component_grids(lname)
                             gridinfo.update(self._get_domains(component_grids))
@@ -132,7 +129,7 @@ class Grids(GenericXML):
             # TODO: search for all lnames and find a match with either the compset or no compset
             lname_nodes = self.get_nodes("lname")
             for lname_node in lname_nodes:
-                lname = self.get_value("lname", root=lname_node)
+                lname = lname_node.text
                 if lname == name:
                     if "compset" in lname_node.attrib:
                         attrib = lname_node.get("compset")
@@ -151,7 +148,6 @@ class Grids(GenericXML):
                     # match, then search for just an lname match with no compset attribute
                     for lname_node in lname_nodes:
                         if "compset" not in lname_node.attrib:
-                            lname = self.get_value("lname", root=lname_node)
                             logger.debug("Found node compset match: %s and lname: %s" % (attrib, lname))
                             component_grids = self._get_component_grids(lname)
                             gridinfo.update(self._get_domains(component_grids))
