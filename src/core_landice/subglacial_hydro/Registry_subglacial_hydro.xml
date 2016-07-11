@@ -8,6 +8,14 @@
 		            description="activate subglacial hydrology model"
 		            possible_values=".true. or .false."
 		/>
+		<nml_option name="config_SGH_adaptive_timestep" type="logical" default_value=".false." units="unitless"
+		            description="Use adaptive timestepping for subglacial hydrology model"
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_SGH_adaptive_timestep_fraction" type="real" default_value="1.0" units="unitless"
+		            description="fraction of limiting timestep to use"
+		            possible_values="positive real number"
+		/>
 		<nml_option name="config_SGH_tangent_slope_calculation" type="character" default_value="from_normal_slope" units="unitless"
 		            description="Selection of the method for calculating the tangent component of surface slope at edges needed by the SIA velocity solver.
 'from_vertex_barycentric' interpolates upperSurface values from cell centers to vertices using the barycentric interpolation routine in operators (mpas_cells_to_points_using_baryweights) and then calculates the slope between vertices.  It works for obtuse triangles, but will not work correctly across the edges of periodic meshes.
@@ -106,8 +114,6 @@
 		     description="subglacial water velocity reconstructed on cell centers, x-component" />
                 <var name="waterVelocityCellY" type="real" dimensions="nCells Time" units="m s^-1"
 		     description="subglacial water velocity reconstructed on cell centers, y-component" />
-                <var name="effectiveConduc" type="real" dimensions="nCells Time" units="?"
-		     description="effective Darcy hydraulic conductivity" />
                 <var name="effectiveConducEdge" type="real" dimensions="nEdges Time" units="?"
 		     description="effective Darcy hydraulic conductivity on edges" />
                 <var name="waterThicknessEdge" type="real" dimensions="nEdges Time" units="m"
