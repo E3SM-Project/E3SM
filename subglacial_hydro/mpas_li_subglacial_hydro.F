@@ -93,6 +93,8 @@ module li_subglacial_hydro
       !-----------------------------------------------------------------
       ! Pools pointers
       logical, pointer :: config_SGH
+      logical, pointer :: config_SGH_adaptive_timestep
+      logical, pointer :: config_adaptive_timestep
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: hydroPool
@@ -110,7 +112,15 @@ module li_subglacial_hydro
       endif
 
       write(stdoutUnit,*) 'Beginning subglacial hydro init.'
-!      call mpas_pool_get_config(liConfigs, 'config_time_integration', config_time_integration)
+
+      call mpas_pool_get_config(liConfigs, 'config_SGH_adaptive_timestep', config_SGH_adaptive_timestep)
+      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
+      if (config_adaptive_timestep .and. config_SGH_adaptive_timestep) then
+         write (stdErrUnit,*) "ERROR: Subglacial hydrology cannot use its own adaptive time stepper if primary time stepper is adaptive.  This may be relaxed in the future."
+         err = ior(err, 1)
+      endif
+
+
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -118,8 +128,12 @@ module li_subglacial_hydro
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
          call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
 
-         ! For now, force hydro dt to be master dt
-         deltatSGH = deltat
+         if (config_SGH_adaptive_timestep) then
+            deltatSGH = 1.0_RKIND  ! Until init is done properly, make this tiny
+         else
+            ! Fr now, force hydro dt to be master dt
+            deltatSGH = deltat
+         endif
 
          block => block % next
       end do
@@ -651,18 +665,24 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: deltatSGHpressure
       real (kind=RKIND), pointer :: porosity
       type (block_type), pointer :: block
+      real (kind=RKIND), pointer :: deltat
       integer, pointer :: nEdgesSolve
+      logical, pointer :: config_SGH_adaptive_timestep
       real (kind=RKIND) :: dtSGHadvecBlock, dtSGHadvecProc
       real (kind=RKIND) :: dtSGHdiffuBlock, dtSGHdiffuProc
       real (kind=RKIND) :: dtSGHpressureBlock, dtSGHpressureProc
       integer :: err_tmp
-      real(kind=RKIND) :: bigNumber
-      parameter (bigNumber = 1.0e36_RKIND)
+      real(kind=RKIND), parameter :: bigNumber = 1.0e36_RKIND
+      real(kind=RKIND), pointer :: CFLfraction
+      real(kind=RKIND) :: proposedDt
+      real(kind=RKIND) :: masterDt
+
 
       err = 0
       err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_SGH_englacial_porosity', porosity)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_adaptive_timestep', config_SGH_adaptive_timestep)
 
       dtSGHadvecProc = bigNumber
       dtSGHdiffuProc = bigNumber
@@ -698,12 +718,45 @@ module li_subglacial_hydro
                    / (2.0_RKIND * diffusivity(1:nEdgesSolve) + 1.0e-12_RKIND))
          dtSGHpressureProc = min(dtSGHpressureProc, dtSGHpressureBlock)
 
+         ! Master deltat is needed below, so grab it in this block loop
+         call mpas_pool_get_array(meshPool, 'deltat', deltat)
+
          block => block % next
       end do
 
+      ! reduce across procs
       call mpas_dmpar_min_real(domain % dminfo, dtSGHadvecProc, deltatSGHadvec)
       call mpas_dmpar_min_real(domain % dminfo, dtSGHdiffuProc, deltatSGHdiffu)
       call mpas_dmpar_min_real(domain % dminfo, dtSGHpressureProc, deltatSGHpressure)
+
+
+      ! Set time step
+      if (config_SGH_adaptive_timestep) then
+         call mpas_pool_get_config(liConfigs, 'config_SGH_adaptive_timestep_fraction', CFLfraction)
+
+         ! Find smallest of 3 limiting time steps
+         proposedDt = min(deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure)
+         proposedDt = proposedDt * CFLfraction
+
+         ! Don't let SGH time step exceed master time step - technically need to check the interval til completion, because we might already be partway through the deltat
+         proposedDt = min(proposedDt, deltat)
+
+         write(stdOutUnit,*) '  Setting SGH time step (seconds) to:', proposedDt
+      else ! not SGH adaptive
+         ! master dt could change if using master adaptive time stepper, so update it in case
+         proposedDt = deltat
+      endif
+
+      ! Assign new time step to all blocks
+      block => domain % blocklist
+      do while (associated(block))
+
+         call mpas_pool_get_array(hydroPool, 'deltatSGH', deltatSGH)
+         deltatSGH = proposedDt
+
+         block => block % next
+      end do
+
 
       ! optional: always write out for debugging
       write(stdErrUnit,*) "deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure:", deltatSGH, deltatSGHadvec, deltatSGHdiffu, deltatSGHpressure
@@ -718,6 +771,8 @@ module li_subglacial_hydro
       if (deltatSGH > deltatSGHpressure) then
          write(stdErrUnit,*) "WARNING: deltatSGH > deltatSGHpressure  ", deltatSGH, deltatSGHpressure
       endif
+
+
 
 
    !--------------------------------------------------------------------
@@ -765,6 +820,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: waterPressureOld
       real (kind=RKIND), dimension(:), pointer :: waterThickness
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
+      real (kind=RKIND), dimension(:), pointer :: hydropotential
       real (kind=RKIND), dimension(:), pointer :: zeroOrderSum
       real (kind=RKIND), dimension(:), pointer :: closingRate
       real (kind=RKIND), dimension(:), pointer :: openingRate
@@ -803,6 +859,7 @@ module li_subglacial_hydro
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
+      call mpas_pool_get_array(hydroPool, 'hydropotential', hydropotential)
       call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
       call mpas_pool_get_array(hydroPool, 'waterPressureOld', waterPressureOld)
       call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
@@ -824,6 +881,7 @@ module li_subglacial_hydro
       openingRate = max(0.0_RKIND, openingRate)
 
       closingRate(:) = creepCoeff * flowParamA(nVertLevels, :) * effectivePressure(:)**3 * waterThickness(:)
+      !closingRate(:) = waterThickness(:) * effectivePressure(:) / 1.0e13_RKIND  ! Hewitt 2011 creep closure form.  Denominator is ice viscosity
 
       zeroOrderSum = closingRate - openingRate + meltInput / rho_water - (Wtill - WtillOld) / deltatSGH
 
@@ -840,6 +898,7 @@ module li_subglacial_hydro
       waterPressure = min(waterPressure, rhoi * gravity * thickness)
 
       effectivePressure = rhoi * gravity * thickness - waterPressure
+      hydropotential = rho_water * gravity * bedTopography + waterPressure + waterThickness
 
    !--------------------------------------------------------------------
    end subroutine calc_pressure
