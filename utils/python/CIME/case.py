@@ -525,13 +525,9 @@ class Case(object):
         machdir = machobj.get_machines_dir()
         self.set_value("MACHDIR", machdir)
 
-        # the following go into the env_mach_specific file
-        items = ("module_system", "environment_variables", "mpirun")
+        # Create env_mach_specific settings from machine info.
         env_mach_specific_obj = self.get_env("mach_specific")
-        for item in items:
-            nodes = machobj.get_first_child_nodes(item)
-            for node in nodes:
-                env_mach_specific_obj.add_child(node)
+        env_mach_specific_obj.populate(machobj)
         self.schedule_rewrite(env_mach_specific_obj)
 
         #--------------------------------------------
