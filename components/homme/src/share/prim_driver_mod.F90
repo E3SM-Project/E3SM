@@ -1516,16 +1516,16 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     call t_startf("prim_run_subcyle_diags")
     do ie=nets,nete
+       !dir$ simd
        elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
 #if (defined COLUMN_OPENMP)
        !$omp parallel do default(shared), private(k,q,dp_np1)
 #endif
        do k=1,nlev    !  Loop inversion (AAM)
-          !if (k == 1) then
-           !write(*,*) "In prim run there are ", omp_get_num_threads(), " in the current team in parallel region"
-          !endif
+          !dir$ simd
           dp_np1(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%np1)
+          !dir$ simd
           do q=1,qsize
              elem(ie)%state%Q(:,:,k,q)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/dp_np1(:,:)
           enddo

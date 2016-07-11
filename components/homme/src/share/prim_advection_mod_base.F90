@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include "omp_config.h"
 #define NEWEULER_B4B 1
 #define OVERLAP 1
 
@@ -1551,9 +1552,7 @@ end subroutine ALE_parametric_coords
   integer :: rhs_viss
 
 !  call t_barrierf('sync_euler_step', hybrid%par%comm)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
+OMP_SIMD
   do k = 1 , nlev
     dp0(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
@@ -1596,14 +1595,12 @@ end subroutine ALE_parametric_coords
     ! initialize dp, and compute Q from Qdp (and store Q in Qtens_biharmonic)
     do ie = nets , nete
       ! add hyperviscosity to RHS.  apply to Q at timelevel n0, Qdp(n0)/dp
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k)
-#endif
+OMP_SIMD
       do k = 1 , nlev    !  Loop index added with implicit inversion (AAM)
         dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - rhs_multiplier*dt*elem(ie)%derived%divdp_proj(:,:,k)
       enddo
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k)
+!$omp parallel do private(q,k) collapse(2)
 #endif
       do q = 1 , qsize
         do k=1,nlev
@@ -1641,7 +1638,7 @@ end subroutine ALE_parametric_coords
         do ie = nets , nete
 #ifdef NEWEULER_B4B
 #if (defined COLUMN_OPENMP)
-       !$omp parallel do private(k, q)
+       !$omp parallel do private(k, q) collapse(2)
 #endif
           do k = 1 , nlev
             do q = 1 , qsize
@@ -1659,7 +1656,7 @@ end subroutine ALE_parametric_coords
             dpdissk(:,:,k) = elem(ie)%derived%dpdiss_ave(:,:,k)/dp0(k)
           enddo
 #if (defined COLUMN_OPENMP)
-        !$omp parallel do private(q,k)
+        !$omp parallel do private(q,k) collapse(2)
 #endif
           do q = 1 , qsize
             do k = 1 , nlev
@@ -1702,7 +1699,7 @@ end subroutine ALE_parametric_coords
 
       do ie = nets , nete
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(k, q)
+!$omp parallel do private(k, q) collapse(2)
 #endif
         do q = 1 , qsize
           do k = 1 , nlev    !  Loop inversion (AAM)
@@ -1813,9 +1810,7 @@ end subroutine ALE_parametric_coords
     if ( DSSopt == DSSdiv_vdp_ave ) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
 
     call edgeVunpack( edgeAdvp1 , DSSvar(:,:,1:nlev) , nlev , qsize*nlev , ie )
-#if (defined COLUMN_OPENMP)
- !$omp parallel do private(k)
-#endif
+OMP_SIMD
     do k = 1 , nlev
       DSSvar(:,:,k) = DSSvar(:,:,k) * elem(ie)%rspheremp(:,:)
     enddo
@@ -1949,7 +1944,7 @@ end subroutine ALE_parametric_coords
 
       if (nu_p>0) then
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k)
+!$omp parallel do private(q,k) collapse(2)
 #endif
         do q = 1 , qsize
           do k = 1 , nlev
@@ -1961,7 +1956,7 @@ end subroutine ALE_parametric_coords
 
       else
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k,dp0)
+!$omp parallel do private(q,k,dp0) collapse(2)
 #endif
         do q = 1 , qsize
           do k = 1 , nlev
@@ -2009,7 +2004,7 @@ end subroutine ALE_parametric_coords
     do ie = nets , nete
       call edgeVunpack( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , ie )
 #if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k)
+!$omp parallel do private(q,k) collapse(2)
 #endif
       do q = 1 , qsize
         ! apply inverse mass matrix
@@ -2150,18 +2145,16 @@ end subroutine ALE_parametric_coords
         call t_startf('vertical_remap1_2')
         call remap1(ttmp,np,2,dp_star,dp)
         call t_stopf('vertical_remap1_2')
-!        call remap1_nofilter(ttmp,np,2,dp_star,dp)
 
-        if ( .not. se_prescribed_wind_2d ) &
+        if ( .not. se_prescribed_wind_2d ) then
              elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
-        if ( .not. se_prescribed_wind_2d ) &
              elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
+        endif
 #ifdef REMAP_TE
         ! back out T from TE
         elem(ie)%state%t(:,:,:,np1) = &
              ( elem(ie)%state%t(:,:,:,np1) - ( (elem(ie)%state%v(:,:,1,:,np1)**2 + &
              elem(ie)%state%v(:,:,2,:,np1)**2)/2))/cp
-
 #endif
      endif
 
@@ -2171,10 +2164,13 @@ end subroutine ALE_parametric_coords
            ! Peter Lauritzen et al, "The terminator 'toy'-chemistry test: A simple tool to assess errors in transport schemes",
            !   submitted to Geosci Model Dev, Oct 2014
            ! -- code to let dp evolve without vertical transport of tracers (consistent mass tracer coupling)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(q,k,i,j,ttmp) collapse(4)
+#endif
            do q=1,qsize
-              do i=1,np
-                 do j=1,np
-                    do k=1,nlev
+              do k=1,nlev
+                 do i=1,np
+                    do j=1,np
                        !elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp) * dp(i,j,k)/dp_star(i,j,k)
                        ttmp(i,j,k,1)= elem(ie)%state%Qdp(i,j,k,q,np1_qdp) / dp_star(i,j,k) ! This is the actual q
                        elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = ttmp(i,j,k,1) * dp(i,j,k)
@@ -2182,7 +2178,6 @@ end subroutine ALE_parametric_coords
                  enddo
               enddo
            enddo
-
         else
            call t_startf('vertical_remap1_3')
            call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
