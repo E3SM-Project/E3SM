@@ -1,6 +1,6 @@
 <template>
         <namelist>
-                <option name="config_dt">'0000-00-00_01:00:00'</option>
+                <option name="config_dt">'0000-00-01_00:00:00'</option>
                 <option name="config_stop_time">'0002-01-01_00:00:00'</option>
                 <option name="config_block_decomp_file_prefix">'graph.info.part.'</option>
                 <option name="config_velocity_solver">'none'</option>
@@ -8,14 +8,16 @@
                 <option name="config_ice_density">917.0</option>
 
                 <option name="config_SGH">.true.</option>
-                <option name="config_SGH_alpha">1.25</option>
-                <option name="config_SGH_beta">1.5</option>
+                <option name="config_SGH_adaptive_timestep">.true.</option>
+                <option name="config_SGH_adaptive_timestep_fraction">0.5</option>
+                <option name="config_SGH_alpha">3.0</option>
+                <option name="config_SGH_beta">2.0</option>
                 <option name="config_SGH_conduc_coeff">0.001</option>
                 <option name="config_SGH_till_drainage">0.0</option>
                 <option name="config_SGH_till_max">0.0</option>
                 <option name="config_SGH_bed_roughness_max">1.0</option>
                 <option name="config_SGH_bed_roughness">0.5</option>
-                <option name="config_SGH_englacial_porosity">0.01</option>
+                <option name="config_SGH_englacial_porosity">1.0</option>
                 <option name="config_SGH_creep_coefficient">0.04</option>
         </namelist>
 
