@@ -27,9 +27,11 @@
 <horiz_grid dyn="fv"    hgrid="10x15"      nlat="19"   nlon="24"   />
 
 <horiz_grid dyn="se"    hgrid="ne2np4"     ncol=""         csne="2"    csnp="4"  />
+<horiz_grid dyn="se"    hgrid="ne4np4"     ncol="866"      csne="4"    csnp="4"  />
 <horiz_grid dyn="se"    hgrid="ne5np8"     ncol=""         csne="5"    csnp="8"  />
 <horiz_grid dyn="se"    hgrid="ne7np8"     ncol=""         csne="7"    csnp="8"  />
 <horiz_grid dyn="se"    hgrid="ne10np4"    ncol=""         csne="10"   csnp="4"  />
+<horiz_grid dyn="se"    hgrid="ne11np4"    ncol="6536"     csne="11"   csnp="4"  />
 <horiz_grid dyn="se"    hgrid="ne16np4"    ncol="13826"    csne="16"   csnp="4"  />
 <horiz_grid dyn="se"    hgrid="ne16np8"    ncol=""         csne="16"   csnp="8"  />
 <horiz_grid dyn="se"    hgrid="ne21np4"    ncol=""         csne="21"   csnp="4"  />

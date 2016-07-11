@@ -137,6 +137,8 @@
 <ncdata           hgrid="8x16"      nlev="30"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_8x16_L30_c090102.nc</ncdata>
 
 
+<ncdata dyn="se" hgrid="ne4np4"   nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L72_c160614.nc</ncdata>
+<ncdata dyn="se" hgrid="ne11np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne11np4_L72_c160622.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne16np4_L26_c120525.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-ne16np4_L30_c090306.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne16np4_L72_c160614.nc</ncdata>
@@ -203,6 +205,8 @@
 <bnd_topo hgrid="4x5"       >atm/cam/topo/USGS-gtopo30_4x5_remap_c050520.nc</bnd_topo>
 <bnd_topo hgrid="10x15"     >atm/cam/topo/USGS-gtopo30_10x15_remap_c050520.nc</bnd_topo>
 
+<bnd_topo hgrid="ne4np4"    >atm/cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc</bnd_topo>
+<bnd_topo hgrid="ne11np4"   >atm/cam/topo/USGS-gtopo30_ne11np4_16xconsistentSGH.c20160612.nc</bnd_topo>
 <bnd_topo hgrid="ne16np4"   >atm/cam/topo/USGS-gtopo30_ne16np4_16xconsistentSGH.c20160612.nc</bnd_topo>
 <bnd_topo hgrid="ne30np4"   >atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
 <bnd_topo hgrid="ne60np4"   >atm/cam/topo/USGS-gtopo30_ne60np4_16xconsistentSGH.c20140517.nc</bnd_topo>
@@ -690,6 +694,8 @@
 <drydep_method chem="waccm_mozart_mam3">xactive_atm</drydep_method>
 
 <!-- Dry Dep surface data file needed by prognostic MAM on unstructured grid only. -->
+<drydep_srf_file hgrid="ne4np4"  >atm/cam/chem/trop_mam/atmsrf_ne4np4_c151204.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne11np4" >atm/cam/chem/trop_mam/atmsrf_ne11np4_c151204.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne16np4" >atm/cam/chem/trop_mam/atmsrf_ne16np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne30np4" >atm/cam/chem/trop_mam/atmsrf_ne30np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne60np4" >atm/cam/chem/trop_mam/atmsrf_ne60np4_110920.nc</drydep_srf_file>
