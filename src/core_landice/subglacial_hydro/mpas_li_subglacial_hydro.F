@@ -563,6 +563,10 @@ module li_subglacial_hydro
          cell2 = cellsOnEdge(2, iEdge)
 
          waterThicknessEdge(iEdge) = 0.5_RKIND * ( waterThickness(cell1) + waterThickness(cell2) )
+         ! This version ignores the thickness where there is no ice
+         !waterThicknessEdge(iEdge) =  ( li_mask_is_grounded_ice_int(cellMask(cell1)) * waterThickness(cell1) + &
+         !      li_mask_is_grounded_ice_int(cellMask(cell2)) + waterThickness(cell2) ) / &
+         !      (li_mask_is_grounded_ice_int(cellMask(cell1)) + li_mask_is_grounded_ice_int(cellMask(cell2)) + 1.0e-10_RKIND)
 
          hydropotentialBaseSlopeNormal(iEdge) = (hydropotentialBase(cell1) - hydropotentialBase(cell2)) / dcEdge(iEdge)
       end do
@@ -878,6 +882,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
       openingRate(:) = bedRough * basalSpeed(:) * (bedRoughMax - waterThickness(:))
+      !openingRate(:) = bedRough * basalSpeed(:) + meltInput(:) / rhoi  ! Hewitt 2011 opening
       openingRate = max(0.0_RKIND, openingRate)
 
       closingRate(:) = creepCoeff * flowParamA(nVertLevels, :) * effectivePressure(:)**3 * waterThickness(:)
