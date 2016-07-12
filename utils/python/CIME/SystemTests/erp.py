@@ -25,81 +25,93 @@ class ERP(SystemTestsCommon):
         initialize a test object
         """
         SystemTestsCommon.__init__(self, case)
-        
+
     def build(self, sharedlib_only=False, model_only=False):
         """
         Build two cases.  Case one uses defaults, case2 uses half the number of threads
         and tasks. This test will fail for components (e.g. pop) that do not reproduce exactly
         with different numbers of mpi tasks.
         """
+        if sharedlib_only:
+            SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
+            return
+
         exeroot = self._case.get_value("EXEROOT")
         cime_model = CIME.utils.get_model()
 
-        #---------------------------------------------
-        # reset all previous env_mach_pes settings
-        #---------------------------------------------
-        if os.path.isfile("env_mach_pes.ERP1.xml"):
-            shutil.copy("env_mach_pes.ERP1.xml", "env_mach_pes.xml")
+        # Make backup copies of the ORIGINAL env_mach_pes.xml and
+        # env_build.xml in LockedFiles if they are not there. If there
+        # are already copies there then simply copy them back to
+        # have the starting env_mach_pes.xml and env_build.xml
+        machpes1 = os.path.join("LockedFiles","env_mach_pes.ERP1.xml")
+        envbuild1 = os.path.join("LockedFiles","env_build.ERP1.xml")
+        if ( os.path.isfile(machpes1) ):
+            shutil.copy(machpes1,"env_mach_pes.xml")
         else:
             shutil.copy("env_mach_pes.xml","env_mach_pes.ERP1.xml")
 
-        if os.path.isfile("env_build.ERP1.xml"):
-            shutil.copy("env_build.ERP1.xml", "env_build.xml")
-        else:
-            shutil.copy("env_build.xml","env_build.ERP1.xml")
+        if ( os.path.isfile(envbuild1) ):
+            shutil.copy(envbuild1,"env_build.xml")
 
-        #---------------------------------------------
-        # build with default PE layout
-        #---------------------------------------------
+        # Build two executables, one using the original tasks and threads (ERP1) and
+        # one using the modified tasks and threads (ERP2)
+        # The reason we currently need two executables that CESM-CICE has a compile time decomposition
+        # For cases where ERP works, changing this decomposition will not effect answers, but it will
+        # effect the executable that is used
         self._case.set_value("SMP_BUILD","0")
-        self._case.flush()
+        for bld in range(1,3):
+            logging.warn("Starting bld %s"%bld)
 
-        case_setup(self._case, test_mode=True, reset=True)
-        SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
-        if (not sharedlib_only):
+            if (bld == 2):
+                # halve the number of tasks and threads
+                for comp in ['ATM','CPL','OCN','WAV','GLC','ICE','ROF','LND']:
+                    ntasks    = self._case.get_value("NTASKS_%s"%comp)
+                    nthreads  = self._case.get_value("NTHRDS_%s"%comp)
+                    rootpe    = self._case.get_value("ROOTPE_%s"%comp)
+                    if ( nthreads > 1 ):
+                        self._case.set_value("BUILD_THREADED", True)
+                        self._case.set_value("NTHRDS_%s"%comp, nthreads/2)
+                    if ( ntasks > 1 ):
+                        self._case.set_value("NTASKS_%s"%comp, ntasks/2)
+                        self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
+
+            self._case.flush()
+
+            # Note, some components, like CESM-CICE, have
+            # decomposition information in env_build.xml
+            # case_setup(self._case, test_mode=True, reset=True)that
+            # needs to be regenerated for the above new tasks and thread counts
+            case_setup(self._case, test_mode=True, reset=True)
+
+            # Now rebuild the system, given updated information in env_build.xml
+            self.clean_build()
+            SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
             shutil.move("%s/%s.exe"%(exeroot,cime_model),
-                        "%s/%s.ERP1.exe"%(exeroot,cime_model))
+                        "%s/%s.ERP%s.exe"%(exeroot,cime_model,bld))
 
-        shutil.copy("env_build.xml", "env_build.ERP1.xml")
+            # Make copies of the new env_mach_pes.xml and the new
+            # env_build.xml to be used in the run phase
+            shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles","env_mach_pes.ERP%s.xml"%bld ))
+            shutil.copy("env_build.xml", os.path.join("LockedFiles","env_build.ERP%s.xml"%bld ))
 
-        #---------------------------------------------
-        # build with half the number of tasks and threads
-        #---------------------------------------------
-        for comp in ['ATM','CPL','OCN','WAV','GLC','ICE','ROF','LND']:
-            ntasks    = self._case.get_value("NTASKS_%s"%comp)
-            nthreads  = self._case.get_value("NTHRDS_%s"%comp)
-            rootpe    = self._case.get_value("ROOTPE_%s"%comp)
-            if ( nthreads > 1 ):
-                self._case.set_value("BUILD_THREADED", True)
-                self._case.set_value("NTHRDS_%s"%comp, nthreads/2)
-                if ( ntasks > 1 ):
-                    self._case.set_value("NTASKS_%s"%comp, ntasks/2)
-                    self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
-
-        self._case.set_value("SMP_BUILD","0")
-        self._case.flush()
-
-        case_setup(self._case, test_mode=True, reset=True)
-        SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
-        if (not sharedlib_only):
-            shutil.move("%s/%s.exe"%(exeroot,cime_model),"%s/%s.ERP2.exe"%(exeroot,cime_model))
-
-        shutil.copy("env_build.xml", "env_build.ERP2.xml")
-        shutil.copy("env_mach_pes.xml","env_mach_pes.ERP2.xml")
-
-        # Because mira/cetus interprets its run script differently than
-        # other systems we need to copy the original env_mach_pes.xml back 
-        shutil.copy("env_mach_pes.ERP1.xml", "env_mach_pes.xml")
-        shutil.copy("env_mach_pes.xml",  "LockedFiles/env_mach_pes.xml")
-
+        #
+        #
 
     def _erp_first_phase(self):
 
+        # Reset beginning test settings
+        expect(os.path.isfile(os.path.join("LockedFiles","env_mach_pes.ERP1.xml")),
+               "ERROR: LockedFiles/env_mach_pes.ERP1.xml does not exist, run case.build" )
+
         # Use the first env_mach_pes.xml and env_build.xml files
-        shutil.copy("env_mach_pes.ERP1.xml", "env_mach_pes.xml")
-        shutil.copy("env_mach_pes.ERP1.xml", "LockedFiles/env_mach_pes.xml")
-        shutil.copy("env_build.ERP1.xml", "env_build.xml")
-        shutil.copy("env_build.ERP1.xml", "LockedFiles/env_build.xml")
+        shutil.copy(os.path.join("LockedFiles","env_mach_pes.ERP1.xml"), "env_mach_pes.xml")
+        shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles","env_mach_pes.xml"))
+        shutil.copy(os.path.join("LockedFiles","env_build.ERP1.xml"), "env_build.xml")
+        shutil.copy("env_build.xml", os.path.join("LockedFiles","env_build.xml"))
+
+        # update the case to the new values
+        self._case = None
+        self._case = Case(self._caseroot)
 
         # Use the first executable that was created
         exeroot = self._case.get_value("EXEROOT")
@@ -133,11 +145,18 @@ class ERP(SystemTestsCommon):
 
     def _erp_second_phase(self):
 
+        expect(os.path.isfile(os.path.join("LockedFiles","env_mach_pes.ERP2.xml")),
+               "ERROR: LockedFiles/env_mach_pes.ERP2.xml does not exist, run case.build" )
+
         # Use the second env_mach_pes.xml and env_build.xml files
-        shutil.copy("env_mach_pes.ERP2.xml", "env_mach_pes.xml")
-        shutil.copy("env_mach_pes.ERP2.xml", "LockedFiles/env_mach_pes.xml")
-        shutil.copy("env_build.ERP2.xml", "env_build.xml")
-        shutil.copy("env_build.ERP2.xml", "LockedFiles/env_build.xml")
+        shutil.copy(os.path.join("LockedFiles","env_mach_pes.ERP2.xml"), "env_mach_pes.xml")
+        shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles","env_mach_pes.xml"))
+        shutil.copy(os.path.join("LockedFiles","env_build.ERP2.xml"), "env_build.xml")
+        shutil.copy("env_build.xml", os.path.join("LockedFiles","env_build.xml"))
+
+        # update the case to use the new values
+        self._case = None
+        self._case = Case(self._caseroot)
 
         # Use the second executable that was created
         exeroot = self._case.get_value("EXEROOT")
