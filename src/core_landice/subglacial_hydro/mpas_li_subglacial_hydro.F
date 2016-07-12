@@ -608,10 +608,17 @@ module li_subglacial_hydro
          waterThicknessEdgeUpwind(iEdge) = max(velSign * waterThickness(cell1),   &
                      velSign * (-1.0_RKIND) * waterThickness(cell2))
 
+         ! advective flux
          waterFluxAdvec(iEdge) = waterVelocity(iEdge) * waterThicknessEdgeUpwind(iEdge)
 
-         waterFluxDiffu(iEdge) = diffusivity(iEdge) * &
+         ! diffusive flux
+         numGroundedCells = li_mask_is_grounded_ice_int(cellMask(cell1)) + li_mask_is_grounded_ice_int(cellMask(cell2))
+         if (numGroundedCells < 2) then
+            waterFluxDiffu(iEdge) = 0.0_RKIND
+         else
+            waterFluxDiffu(iEdge) = diffusivity(iEdge) * &
                  (waterThickness(cell1) - waterThickness(cell2)) / dcEdge(iEdge)
+         endif
       end do
       waterFlux(:) = waterFluxAdvec(:) + waterFluxDiffu(:)
 
