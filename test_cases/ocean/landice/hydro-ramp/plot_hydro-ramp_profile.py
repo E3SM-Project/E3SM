@@ -86,10 +86,18 @@ plt.ylabel('effective pressure (MPa)')
 
 # plot how close to SS we are
 fig = plt.figure(2, facecolor='w')
+ax1 = fig.add_subplot(211)
 for i in ind:
     plt.plot(days/365.0, f.variables['waterThickness'][:,i])
 plt.xlabel('Years since start')
 plt.ylabel('water thickness (m)')
+
+ax = fig.add_subplot(212, sharex=ax1)
+for i in ind:
+    plt.plot(days/365.0, f.variables['effectivePressure'][:,i]/1.0e6)
+plt.xlabel('Years since start')
+plt.ylabel('effective pressure (MPa)')
+
 
 
 print "plotting complete"
