@@ -76,7 +76,7 @@ def _build_usernl_files(case, model, comp):
                     shutil.copy(model_nl, nlfile)
 
 ###############################################################################
-def  (case, clean=False, test_mode=False, reset=False):
+def case_setup(case, clean=False, test_mode=False, reset=False):
 ###############################################################################
     caseroot = case.get_value("CASEROOT")
     os.chdir(caseroot)
