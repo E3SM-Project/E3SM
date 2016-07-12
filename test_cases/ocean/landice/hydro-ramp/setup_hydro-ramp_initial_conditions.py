@@ -45,8 +45,9 @@ thickness[0,:] = (1000000.0-np.absolute(xCell[:])) * 0.001 + 0.0  # 0.0111 = 100
 #thickness[0, thickness[0,:]<0.0 ]=0.0
 thickness[0, np.absolute(xCell[:])>1000000.0]=0.0  # make a margin
 
-# flat bed
-bedTopography[:] = 0.0
+# flat bed - make last cell floating in order to get N=0 lateral BC required
+minH = np.unique(thickness[0,:])[1]  # 0.0 will the the smallset - get the next smallest
+bedTopography[:] = -900.0/1000.0 * minH - 1.0  # subtract one extra meter to make sure we float here
 
 # Setup layerThicknessFractions
 layerThicknessFractions[:] = 1.0 / nVertLevels

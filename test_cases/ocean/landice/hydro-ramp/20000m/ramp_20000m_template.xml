@@ -6,6 +6,7 @@
                 <option name="config_velocity_solver">'none'</option>
                 <option name="config_thickness_advection">'none'</option>
                 <option name="config_ice_density">900.0</option>
+                <option name="config_ocean_density">1000.0</option>
 
                 <option name="config_SGH">.true.</option>
                 <option name="config_SGH_adaptive_timestep">.true.</option>
