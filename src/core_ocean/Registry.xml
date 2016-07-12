@@ -1654,6 +1654,11 @@
 			 packages="frazilIce"
 		/>
 
+		<var name="accumulatedFrazilIceSalinity" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			 description="Salinity associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
+			 packages="frazilIce"
+		/>
+
 		<!-- FIELDS FOR SPLIT EXPLICIT TIME INTEGRATOR -->
 		<var name="normalBarotropicVelocity" type="real" dimensions="nEdges Time" units="m s^{-1}"
 			 description="barotropic velocity, used in split-explicit time-stepping"

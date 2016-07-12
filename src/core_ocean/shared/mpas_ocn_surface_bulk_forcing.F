@@ -72,7 +72,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_surface_bulk_forcing_tracers(meshPool, groupName, forcingPool, tracerGroup,   &
-      tracersSurfaceFlux, tracersSurfaceFluxRunoff, err)!{{{
+      tracersSurfaceFlux, tracersSurfaceFluxRunoff, tracersSurfaceFluxRemoved, dt, layerThickness, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -92,6 +92,10 @@ contains
       real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFlux !< Input/Output: Surface flux for tracer group
       real (kind=RKIND), dimension(:,:), intent(inout) ::   &
          tracersSurfaceFluxRunoff !< Input/Output: Surface flux for tracer group due to river runoff
+      real (kind=RKIND), dimension(:,:), intent(inout) ::   &
+         tracersSurfaceFluxRemoved !< Input/Output: Accumulator for ignored Surface flux for tracer group
+      real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness
+      real (kind=RKIND), intent(in) :: dt
 
       !-----------------------------------------------------------------
       !
@@ -111,7 +115,7 @@ contains
 
       if ( trim(groupName) == 'activeTracers' ) then
          call ocn_surface_bulk_forcing_active_tracers(meshPool, forcingPool, tracerGroup,  &
-            tracersSurfaceFlux, tracersSurfaceFluxRunoff, err)
+            tracersSurfaceFlux, tracersSurfaceFluxRunoff, tracersSurfaceFluxRemoved, layerThickness, dt, err)
       end if
 
    end subroutine ocn_surface_bulk_forcing_tracers!}}}
@@ -333,7 +337,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_surface_bulk_forcing_active_tracers(meshPool, forcingPool, tracerGroup,  &
-      tracersSurfaceFlux, tracersSurfaceFluxRunoff, err)!{{{
+      tracersSurfaceFlux, tracersSurfaceFluxRunoff, tracersSurfaceFluxRemoved, layerThickness, dt, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -350,7 +354,10 @@ contains
       type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
       real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFlux
       real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFluxRunoff
+      real (kind=RKIND), dimension(:,:), intent(inout) :: tracersSurfaceFluxRemoved
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tracerGroup
+      real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness
+      real (kind=RKIND), intent(in) :: dt
 
       !-----------------------------------------------------------------
       !
@@ -377,6 +384,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, seaIceSalinityFlux, iceRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux, penetrativeTemperatureFlux
       real (kind=RKIND), dimension(:), pointer :: snowFlux, rainFlux
+      real (kind=RKIND) :: requiredSalt, allowedSalt
 
       err = 0
 
@@ -404,7 +412,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
 
       ! Build surface fluxes at cell centers
-      !$omp do schedule(runtime)
+      !$omp do schedule(runtime) private(allowedSalt, requiredSalt)
       do iCell = 1, nCells
         tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
                                                            + (latentHeatFlux(iCell) + sensibleHeatFlux(iCell) &
@@ -412,8 +420,23 @@ contains
                                                            + seaIceHeatFlux(iCell) - (snowFlux(iCell) + iceRunoffFlux(iCell)) &
                                                            * latent_heat_fusion_mks) * hflux_factor
 
-        tracersSurfaceFlux(index_salinity_flux, iCell) = tracersSurfaceFlux(index_salinity_flux, iCell)  &
-                                                        + seaIceSalinityFlux(iCell) * sflux_factor
+        ! Negative seaIceSalinityFlux is an extraction of salt from the ocean
+        ! So, we negate seaIceSalinityFlux when determining how much salt this flux needs.
+        requiredSalt = - seaIceSalinityFlux(iCell) * sflux_factor * dt / layerThickness(1, iCell)
+        allowedSalt = min( 4.0_RKIND, tracerGroup(index_salinity_flux, 1, iCell) )
+
+        if ( allowedSalt < requiredSalt ) then
+           tracersSurfaceFluxRemoved(index_salinity_flux, iCell) = tracersSurfaceFluxRemoved(index_salinity_flux, iCell)  &
+                                                                 + ( 1 - allowedSalt / requiredSalt ) * seaIceSalinityFlux(iCell) &
+                                                                 * sflux_factor
+
+           tracersSurfaceFlux(index_salinity_flux, iCell) = tracersSurfaceFlux(index_salinity_flux, iCell)  &
+                                                          + ( allowedSalt / requiredSalt ) * seaIceSalinityFlux(iCell) &
+                                                          * sflux_factor
+        else
+           tracersSurfaceFlux(index_salinity_flux, iCell) = tracersSurfaceFlux(index_salinity_flux, iCell)  &
+                                                          + seaIceSalinityFlux(iCell) * sflux_factor
+        end if
       end do
       !$omp end do
       ! assume that snow comes in at 0 C
@@ -428,11 +451,11 @@ contains
          do iCell = 1, nCells
 
            ! Accumulate fluxes that use the surface temperature
-            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
+           tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
                       + (rainFlux(iCell) + evaporationFlux(iCell)) * tracerGroup(index_temperature_flux,1,iCell) / rho_sw
 
-            ! Runoff can only have a minimum temperature of 0.0C, since it is fresh water.
-            tracersSurfaceFluxRunoff(index_temperature_flux,iCell) = riverRunoffFlux(iCell) &
+           ! Runoff can only have a minimum temperature of 0.0C, since it is fresh water.
+           tracersSurfaceFluxRunoff(index_temperature_flux,iCell) = riverRunoffFlux(iCell) &
                       * max(tracerGroup(index_temperature_flux,1,iCell), 0.0_RKIND) / rho_sw
 
            ! Accumulate fluxes that use the freezing point
