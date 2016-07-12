@@ -506,6 +506,7 @@ module li_subglacial_hydro
       integer, pointer :: nCells
       integer :: iEdge, cell1, cell2
       real (kind=RKIND) :: velSign
+      integer :: numGroundedCells
       integer :: err_tmp
 
       err = 0
@@ -555,11 +556,15 @@ module li_subglacial_hydro
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
 
-         waterThicknessEdge(iEdge) = 0.5_RKIND * ( waterThickness(cell1) + waterThickness(cell2) )
-         ! This version ignores the thickness where there is no ice
-         !waterThicknessEdge(iEdge) =  ( li_mask_is_grounded_ice_int(cellMask(cell1)) * waterThickness(cell1) + &
-         !      li_mask_is_grounded_ice_int(cellMask(cell2)) + waterThickness(cell2) ) / &
-         !      (li_mask_is_grounded_ice_int(cellMask(cell1)) + li_mask_is_grounded_ice_int(cellMask(cell2)) + 1.0e-10_RKIND)
+         !waterThicknessEdge(iEdge) = 0.5_RKIND * ( waterThickness(cell1) + waterThickness(cell2) )
+         ! This version ignores the thickness where there is no grounded ice (one-sided average at margin)
+         numGroundedCells = li_mask_is_grounded_ice_int(cellMask(cell1)) + li_mask_is_grounded_ice_int(cellMask(cell2))
+         if (numGroundedCells > 0) then
+            ! Assuming here that waterThickness has been zeroed in non-grounded locations
+            waterThicknessEdge(iEdge) = ( waterThickness(cell1) + waterThickness(cell2) ) / real(numGroundedCells)
+         else
+            waterThicknessEdge(iEdge) = 0.0_RKIND
+         endif
 
          hydropotentialBaseSlopeNormal(iEdge) = (hydropotentialBase(cell1) - hydropotentialBase(cell2)) / dcEdge(iEdge)
       end do
