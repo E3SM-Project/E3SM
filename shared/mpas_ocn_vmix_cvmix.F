@@ -670,7 +670,7 @@ contains
       logical, pointer ::  config_use_cvmix_convection
       real (kind=RKIND), pointer :: config_cvmix_convective_diffusion, config_cvmix_convective_viscosity, &
                                     config_cvmix_convective_triggerBVF
-      logical, pointer :: config_cvmix_convective_basedOnBVF
+      logical, pointer :: config_cvmix_convective_basedOnBVF, config_cvmix_kpp_use_enhanced_diff
 
       ! Tidal mixing
       logical, pointer :: config_use_cvmix_tidal_mixing
@@ -720,7 +720,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_prandtl_number', config_cvmix_prandtl_number)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_convective_diffusion', config_cvmix_convective_diffusion)
       call mpas_pool_get_config(ocnConfigs, 'config_cvmix_convective_viscosity', config_cvmix_convective_viscosity)
-
+      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_use_enhanced_diff', config_cvmix_kpp_use_enhanced_diff)
       cvmixOn = config_use_cvmix
       cvmixBackgroundOn = config_use_cvmix_background
       backgroundVisc = config_cvmix_background_viscosity
@@ -836,7 +836,8 @@ contains
                lEkman = config_cvmix_kpp_EkmanOBL, &
                lMonOb = config_cvmix_kpp_MonObOBL, &
                MatchTechnique = config_cvmix_kpp_matching, &
-               surf_layer_ext = config_cvmix_kpp_surface_layer_extent)
+               surf_layer_ext = config_cvmix_kpp_surface_layer_extent, &
+               lenhanced_diff = config_cvmix_kpp_use_enhanced_diff)
       endif
 
 
