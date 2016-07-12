@@ -381,6 +381,58 @@
     </environment_variables>
 </machine>
 
+<machine MACH="sandia-srn-sems">
+    <DESC>Linux workstation at Sandia on SRN with SEMS TPL modules</DESC>
+    <NODENAME_REGEX>s999964</NODENAME_REGEX>
+    <PROXY>wwwproxy.sandia.gov:80</PROXY>
+    <TESTS>acme_developer</TESTS>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>openmpi,mpi-serial</MPILIBS>
+    <CESMSCRATCHROOT>$ENV{HOME}/acme/scratch</CESMSCRATCHROOT>
+    <RUNDIR>$CESMSCRATCHROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CESMSCRATCHROOT/$CASE/bld</EXEROOT>
+    <DIN_LOC_ROOT>/sems-data-store/ACME/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/sems-data-store/ACME/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CESMSCRATCHROOT/archive/$CASE</DOUT_S_ROOT>
+    <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
+    <CCSM_BASELINE>/sems-data-store/ACME/baselines</CCSM_BASELINE>
+    <CCSM_CPRNC>/sems-data-store/ACME/cprnc/build/cprnc</CCSM_CPRNC>
+    <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
+<!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
+    <GMAKE_J>32</GMAKE_J>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <PES_PER_NODE>64</PES_PER_NODE>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np {{ num_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+      <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
+      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <modules>
+	<command name="purge"/>
+	<command name="load">python/2.7.9</command>
+	<command name="load">gcc/5.1.0/openmpi/1.8.7</command>
+	<command name="load">cmake/2.8.12</command>
+	<command name="load">netcdf/4.3.2/gcc/5.1.0/openmpi/1.8.7</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="NETCDFROOT">$SEMS_NETCDF_ROOT</env>
+      <env name="PNETCDFROOT">$SEMS_NETCDF_ROOT</env>
+    </environment_variables>
+</machine>
+
 <machine MACH="anlworkstation">
     <DESC>Linux workstation for ANL</DESC>
     <NODENAME_REGEX>compute.*mcs.anl.gov</NODENAME_REGEX>
