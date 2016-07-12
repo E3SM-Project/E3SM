@@ -842,6 +842,7 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: creepCoeff
       real (kind=RKIND), pointer :: porosity
       integer, pointer :: nVertLevels
+      character (len=StrKIND), pointer :: config_SGH_pressure_calc
       integer :: err_tmp
 
       err = 0
@@ -859,6 +860,7 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_bed_roughness_max', bedRoughMax)
       call mpas_pool_get_config(liConfigs, 'config_SGH_creep_coefficient', creepCoeff)
       call mpas_pool_get_config(liConfigs, 'config_SGH_englacial_porosity', porosity)
+      call mpas_pool_get_config(liConfigs, 'config_SGH_pressure_calc', config_SGH_pressure_calc)
 
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
@@ -892,13 +894,31 @@ module li_subglacial_hydro
 
       waterPressureOld = waterPressure
 
-      where (li_mask_is_floating_ice(cellMask))
-         waterPressure = rhoi * gravity * thickness
-      elsewhere (.not. li_mask_is_ice(cellMask))
-         waterPressure = 0.0_RKIND
-      elsewhere
-         waterPressure = (zeroOrderSum - divergence) * rho_water * gravity * deltatSGH / porosity + waterPressureOld
-      end where
+      select case (trim(config_SGH_pressure_calc))
+      case ('cavity')
+
+         where (li_mask_is_floating_ice(cellMask))
+            waterPressure = rhoi * gravity * thickness
+         elsewhere (.not. li_mask_is_ice(cellMask))
+            waterPressure = 0.0_RKIND
+         elsewhere
+            waterPressure = (zeroOrderSum - divergence) * rho_water * gravity * deltatSGH / porosity + waterPressureOld
+         end where
+
+      case ('overburden')
+         where (li_mask_is_floating_ice(cellMask))
+            waterPressure = rhoi * gravity * thickness
+         elsewhere (.not. li_mask_is_ice(cellMask))
+            waterPressure = 0.0_RKIND
+         elsewhere
+            waterPressure = rhoi * gravity * thickness
+         end where
+
+      case default
+         write(stdErrUnit,*) "ERROR: Invalid option specified for config_SGH_pressure_calc:", config_SGH_pressure_calc
+         err = ior(err, 1)
+      end select
+
       waterPressure = max(0.0_RKIND, waterPressure)
       waterPressure = min(waterPressure, rhoi * gravity * thickness)
 

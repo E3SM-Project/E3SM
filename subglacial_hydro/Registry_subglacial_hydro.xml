@@ -23,6 +23,12 @@
 'from_normal_slope' uses the vector operator mpas_tangential_vector_1d to calculate the tangent slopes from the normal slopes on the edges of the adjacent cells.  It will work for any mesh configuration, but is the least accurate method."
 		            possible_values="'from_vertex_barycentric', 'from_vertex_barycentric_kiteareas', 'from_normal_slope'"
 		/>
+		<nml_option name="config_SGH_pressure_calc" type="character" default_value="cavity" units="unitless"
+		            description="Selection of the method for calculating water pressure.
+'cavity' closes they hydrology equations by assuming cavities are always completely full.
+'overburden' assumes water pressure is always equal to ice overburden pressure."
+		            possible_values="'cavity', 'overburden'"
+                />
 		<nml_option name="config_SGH_alpha" type="real" default_value="1.25" units="unitless"
 		            description="power in flux formula"
 		            possible_values="positive real number"
