@@ -648,7 +648,7 @@ end subroutine ice_deposition_sublimation
 ! minimum qc of 1 x 10^-8 prevents floating point error
 
 elemental subroutine kk2000_liq_autoconversion(microp_uniform, qcic, &
-     ncic, rho, relvar, prc, nprc, nprc1)
+     ncic, rho, relvar,prc_coef1,prc_exp,prc_exp1, prc, nprc, nprc1)
 
   logical, intent(in) :: microp_uniform
 
@@ -657,6 +657,9 @@ elemental subroutine kk2000_liq_autoconversion(microp_uniform, qcic, &
   real(r8), intent(in) :: rho
 
   real(r8), intent(in) :: relvar
+  real(r8), intent(in) :: prc_coef1
+  real(r8), intent(in) :: prc_exp
+  real(r8), intent(in) :: prc_exp1
 
   real(r8), intent(out) :: prc
   real(r8), intent(out) :: nprc
@@ -681,7 +684,7 @@ elemental subroutine kk2000_liq_autoconversion(microp_uniform, qcic, &
      ! switch for sub-columns, don't include sub-grid qc
 
      prc = prc_coef * &
-          1350._r8 * qcic**2.47_r8 * (ncic*1.e-6_r8*rho)**(-1.79_r8)
+          prc_coef1 * qcic**prc_exp * (ncic*1.e-6_r8*rho)**(prc_exp1) !BALLI
      nprc = prc * (1._r8/droplet_mass_25um)
      nprc1 = prc*ncic/qcic
 

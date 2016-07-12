@@ -2175,6 +2175,25 @@ Accretion enhancement factor from namelist
 Default: 1.0_r8
 </entry>
 
+<entry id="prc_coef1" type="real" category="microphysics"
+group="phys_ctl_nl" valid_values="" >
+Tunable coefficient for autoconversion
+Default: 1350.0_r8
+</entry>
+
+<entry id="prc_exp" type="real" category="microphysics"
+group="phys_ctl_nl" valid_values="" >
+Tunable exponent coefficient for autoconversion 
+Default: 2.47_r8
+</entry>
+
+<entry id="prc_exp1" type="real" category="microphysics"
+group="phys_ctl_nl" valid_values="" >
+Tunable exponent coefficient for autoconversion
+Default: -1.79_r8
+</entry>
+
+
 
 <!-- micro_aero -->
 <entry id="microp_aero_bulk_scale" type="real" category="microphysics"
@@ -3824,6 +3843,12 @@ to make this functionality default
 Default: FALSE
 </entry>
 
+<entry id="raytau0" type="real"  category="physc_test"
+       group="cam_inparm" valid_values="" >
+Approximate value of decay time at model top (days);
+#if 0., no rayleigh friction is applied
+Default: 0.0D0
+</entry>
 
 <entry id="mode_defs" type="char*256(100)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >

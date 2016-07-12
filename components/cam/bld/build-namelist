@@ -787,6 +787,10 @@ add_default($nl, 'ncdata', %atts);
 #This flag is kept to test b4b with the default code(this must be REMOVED when we decide to make it default)
 add_default($nl,'use_rad_dt_cosz','val'=>'.false.');
 
+#Approximate value of decay time at model top (days);
+#if 0., no rayleigh friction is applied
+add_default($nl, 'raytau0');
+
 
 #
 # Simulated years: sim_year and sim_year_start
@@ -3395,6 +3399,9 @@ if ($cfg->get('microphys') =~ /^mg/) {
     add_default($nl, 'micro_mg_dcs');
     add_default($nl, 'ice_sed_ai');
     add_default($nl, 'micro_mg_accre_enhan_fac');
+    add_default($nl, 'prc_coef1');
+    add_default($nl, 'prc_exp');
+    add_default($nl, 'prc_exp1');
 }
 
 # Sub-column switches for physics packages
