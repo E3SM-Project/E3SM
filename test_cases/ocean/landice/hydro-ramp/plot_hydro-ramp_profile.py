@@ -34,7 +34,6 @@ else:
         time_slice = int(options.time)
 
 
-fig = plt.figure(1, facecolor='w')
 
 f = netCDF4.Dataset(options.filename,'r')
 
@@ -46,7 +45,15 @@ yCell = f.variables['yCell'][:]
 h = f.variables['waterThickness'][time_slice,:]
 u = f.variables['waterVelocityCellX'][time_slice,:]
 N = f.variables['effectivePressure'][time_slice,:]
+days = f.variables['daysSinceStart'][:]
+melt = f.variables['meltInput'][time_slice,:]
+xtime= f.variables['xtime']
 
+print "Using time level ", time_slice, ", which is xtime=", xtime[time_slice,:]
+
+
+totalMelt = (melt * (h>0.0)).sum() / 2.0 * 10000.0 * 100000.0
+print "Total melt volume rate for half the domain (m^3/s)=", totalMelt
 
 # Find center row  - currently files are set up to have central row at y=0
 unique_ys=np.unique(yCell[:])
@@ -57,22 +64,33 @@ x = xCell[ind]/1000.0
 
 print "start plotting."
 
-ax = fig.add_subplot(311)
+fig = plt.figure(1, facecolor='w')
+ax1 = fig.add_subplot(311)
 plt.plot(x, h[ind] * u[ind] * 10000.0, '.-')
 plt.xlabel('X-position (km)')
 plt.ylabel('water flux (m^3/s)')
 
 
-ax = fig.add_subplot(312)
+ax = fig.add_subplot(312, sharex=ax1)
 plt.plot(x, h[ind]*10000.0, '.-')
 plt.xlabel('X-position (km)')
 plt.ylabel('xsect area (m^2)')
 plt.yscale('log')
 
-ax = fig.add_subplot(313)
-plt.plot(x, N[ind], '.-')
+ax = fig.add_subplot(313, sharex=ax1)
+plt.plot(x, N[ind]/1.0e6, '.-')
 plt.xlabel('X-position (km)')
-plt.ylabel('effective pressure (Pa)')
+plt.ylabel('effective pressure (MPa)')
+
+
+
+# plot how close to SS we are
+fig = plt.figure(2, facecolor='w')
+for i in ind:
+    plt.plot(days/365.0, f.variables['waterThickness'][:,i])
+plt.xlabel('Years since start')
+plt.ylabel('water thickness (m)')
+
 
 print "plotting complete"
 

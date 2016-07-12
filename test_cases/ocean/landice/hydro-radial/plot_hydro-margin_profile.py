@@ -73,7 +73,7 @@ ax = fig.add_subplot(212)
 plt.plot(x, H[ind]*917.0*9.81, '.-')
 plt.plot(x, P[ind], '.--')
 plt.xlabel('X-position (km)')
-plt.ylabel('effective pressure (Pa)')
+plt.ylabel('water pressure (Pa)')
 
 print "plotting complete"
 

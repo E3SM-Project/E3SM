@@ -33,19 +33,17 @@ SMB = gridfile.variables['sfcMassBal']
 
 unique_xs=np.array(sorted(list(set(xCell[:]))))
 if min(unique_xs) >= 0.0:
-   shiftx = unique_xs[-5]  # put margin at 0, a few cells from the right edge
+   shiftx = unique_xs[len(unique_xs)/2]  # put origin in middle.
    xCell[:] = xCell[:] - shiftx
    xEdge[:] = xEdge[:] - shiftx
    xVertex[:] = xVertex[:] - shiftx
 
 
-ind=xCell[:]<-1000000.0  # locations west of area of interest
 
 # thickness is a ramp
-thickness[0,:] = -1.0 * xCell[:] * 0.001 + 0.0  # 0.0111 = 100 Pa/m
-thickness[0,thickness[0,:]<0.0]=0.0
-thickness[0,ind] = 1000000.0 * 0.001  # make flat
-thickness[0,xCell[:]<-1040000.0]=0.0  # make a margin
+thickness[0,:] = (1000000.0-np.absolute(xCell[:])) * 0.001 + 0.0  # 0.0111 = 100 Pa/m
+#thickness[0, thickness[0,:]<0.0 ]=0.0
+thickness[0, np.absolute(xCell[:])>1000000.0]=0.0  # make a margin
 
 # flat bed
 bedTopography[:] = 0.0
@@ -54,18 +52,14 @@ bedTopography[:] = 0.0
 layerThicknessFractions[:] = 1.0 / nVertLevels
 
 # melt
-#gridfile.variables['meltInput'][:] = 2.0e-9  + 0.06/3.0e5 + (1.0e-7 * 10.0**5)   # From Ian Hewitt email
-gridfile.variables['meltInput'][:] = 2.0e-7
-gridfile.variables['meltInput'][0,ind] = 0.0  # remove input to left of area of interest
+gridfile.variables['meltInput'][:] = 4.0e-10 * 1000.0  # From Ian's email, 9/21/12
 
 # velocity
-gridfile.variables['uReconstructX'][:] = 1.0e-7
-gridfile.variables['uReconstructX'][0,ind,:] = 0.0
-gridfile.variables['uReconstructX'][0,thickness[0,:]==0.0,:] = 0.0
+gridfile.variables['uReconstructX'][:] = 1.0e-7  # doesn't matter because no sliding opening in the test case
 
 # IC on thickness
-gridfile.variables['waterThickness'][0,:] = (1000000.0 + xCell[:]) * 0.4 / 1000000.0
-gridfile.variables['waterThickness'][0,gridfile.variables['waterThickness'][0,:]<0.0] = 0.0
+gridfile.variables['waterThickness'][0,:] = (1000000.0 - np.absolute(xCell[:])) * 0.0 / 1000000.0
+#gridfile.variables['waterThickness'][0,gridfile.variables['waterThickness'][0,:]<0.0] = 0.0
 
 gridfile.close()
 
