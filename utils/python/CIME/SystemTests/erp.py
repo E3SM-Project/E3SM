@@ -75,7 +75,7 @@ class ERP(SystemTestsCommon):
                         self._case.set_value("NTASKS_%s"%comp, ntasks/2)
                         self._case.set_value("ROOTPE_%s"%comp, rootpe/2)
 
-            self._case.flush()
+#            self._case.flush()
 
             # Note, some components, like CESM-CICE, have
             # decomposition information in env_build.xml
@@ -84,8 +84,8 @@ class ERP(SystemTestsCommon):
             case_setup(self._case, test_mode=True, reset=True)
 
             # update the case to the new values
-            self._case = None
-            self._case = Case(self._caseroot)
+#            self._case = None
+#            self._case = Case(self._caseroot)
 
             # Now rebuild the system, given updated information in env_build.xml
 
@@ -100,108 +100,58 @@ class ERP(SystemTestsCommon):
         #
         #
 
-    def _erp_first_phase(self):
-
-        # Reset beginning test settings
-        expect(os.path.isfile(os.path.join("LockedFiles","env_mach_pes.ERP1.xml")),
-               "ERROR: LockedFiles/env_mach_pes.ERP1.xml does not exist, run case.build" )
-
-        # Use the first env_mach_pes.xml and env_build.xml files
-        shutil.copy(os.path.join("LockedFiles","env_mach_pes.ERP1.xml"), "env_mach_pes.xml")
-        shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles","env_mach_pes.xml"))
-        shutil.copy(os.path.join("LockedFiles","env_build.ERP1.xml"), "env_build.xml")
-        shutil.copy("env_build.xml", os.path.join("LockedFiles","env_build.xml"))
-
-        # update the case to the new values
-        self._case = None
-        self._case = Case(self._caseroot)
-
-        # Use the first executable that was created
-        exeroot = self._case.get_value("EXEROOT")
-        cime_model = CIME.utils.get_model()
-        exefile  = "%s/%s.exe"%(exeroot,cime_model)
-        exefile1 = "%s/%s.ERP1.exe"%(exeroot,cime_model)
-        if (os.path.isfile(exefile)):
-            os.remove(exefile)
-        shutil.copy(exefile1, exefile)
-
-        case_setup(self._case, test_mode=True, reset=True)
-
-        stop_n      = self._case.get_value("STOP_N")
-        stop_option = self._case.get_value("STOP_OPTION")
-        expect(stop_n > 0, "Bad STOP_N: %d" % stop_n)
-
-        rest_n = stop_n/2 + 1
-        self._case.set_value("REST_N", rest_n)
-        self._case.set_value("REST_OPTION", stop_option)
-        self._case.set_value("HIST_N", stop_n)
-        self._case.set_value("HIST_OPTION", stop_option)
-        self._case.set_value("CONTINUE_RUN", False)
-        self._case.flush()
-
-        expect(stop_n > 2, "ERROR: stop_n value %d too short"%stop_n)
-
-        # Run the test
-        logger.info("doing an %s %s initial test with restart file at %s %s"
-                    %(str(stop_n), stop_option, str(rest_n), stop_option))
-        return SystemTestsCommon.run(self)
-
-    def _erp_second_phase(self):
-
-        expect(os.path.isfile(os.path.join("LockedFiles","env_mach_pes.ERP2.xml")),
-               "ERROR: LockedFiles/env_mach_pes.ERP2.xml does not exist, run case.build" )
-
-        # Use the second env_mach_pes.xml and env_build.xml files
-        shutil.copy(os.path.join("LockedFiles","env_mach_pes.ERP2.xml"), "env_mach_pes.xml")
-        shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles","env_mach_pes.xml"))
-        shutil.copy(os.path.join("LockedFiles","env_build.ERP2.xml"), "env_build.xml")
-        shutil.copy("env_build.xml", os.path.join("LockedFiles","env_build.xml"))
-
-        # update the case to use the new values
-        self._case = None
-        self._case = Case(self._caseroot)
-
-        # Use the second executable that was created
-        exeroot = self._case.get_value("EXEROOT")
-        cime_model = CIME.utils.get_model()
-        exefile  = "%s/%s.exe"%(exeroot,cime_model)
-        exefile2 = "%s/%s.ERP2.exe"%(exeroot,cime_model)
-        if (os.path.isfile(exefile)):
-            os.remove(exefile)
-        shutil.copy(exefile2, exefile)
-
-        case_setup(self._case, test_mode=True, reset=True)
-
-        # Determine stop time and retart time
-        stop_n      = self._case.get_value("STOP_N")
-        stop_option = self._case.get_value("STOP_OPTION")
-
-        rest_n = stop_n/2 + 1
-        stop_new = stop_n - rest_n
-        expect(stop_new > 0, "ERROR: stop_n value %d too short %d %d"%(stop_new,stop_n,rest_n))
-
-        self._case.set_value("STOP_N", stop_new)
-        self._case.set_value("CONTINUE_RUN", True)
-        self._case.set_value("REST_OPTION","never")
-        self._case.flush()
-
-        # Run the test
-        logger.info("doing an %s %s restart test" %(str(stop_new), stop_option))
-        success = SystemTestsCommon._run(self, "rest")
-
-        # Compare restart file
-        if success:
-            return self._component_compare_test("base", "rest")
-        else:
-            return False
-
     def run(self):
-        success = self._erp_first_phase()
+        # run will have values 1,2
+        for run in range(1,3):
+            
+            expect(os.path.isfile(os.path.join("LockedFiles","env_mach_pes.ERP%d.xml"%run)),
+                   "ERROR: LockedFiles/env_mach_pes.ERP%d.xml does not exist, run case.build"%run )
 
-        if success:
-            return self._erp_second_phase()
-        else:
-            return False
+            # Use the second env_mach_pes.xml and env_build.xml files
+            shutil.copy(os.path.join("LockedFiles","env_mach_pes.ERP%d.xml"%run), "env_mach_pes.xml")
+            shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles","env_mach_pes.xml"))
+            shutil.copy(os.path.join("LockedFiles","env_build.ERP%d.xml")%run, "env_build.xml")
+            shutil.copy("env_build.xml", os.path.join("LockedFiles","env_build.xml"))
+
+            # update the case to use the new values
+            self._case.read_xml(self._caseroot)
+
+            # Use the second executable that was created
+            exeroot = self._case.get_value("EXEROOT")
+            cime_model = CIME.utils.get_model()
+            exefile  = os.path.join(exeroot,"%s.exe"%(cime_model))
+            exefile2 = os.path.join(exeroot,"%s.ERP%d.exe"%(cime_model,run))
+            if (os.path.isfile(exefile)):
+                os.remove(exefile)
+            shutil.copy(exefile2, exefile)
+
+            case_setup(self._case, test_mode=True, reset=True)
+            stop_n      = self._case.get_value("STOP_N")
+            stop_option = self._case.get_value("STOP_OPTION")
+
+            if run == 1:
+                expect(stop_n > 2, "ERROR: stop_n value %d too short"%stop_n)
+                rest_n = stop_n/2 + 1
+                self._case.set_value("REST_N", rest_n)
+                self._case.set_value("REST_OPTION", stop_option)
+                self._case.set_value("HIST_N", stop_n)
+                self._case.set_value("HIST_OPTION", stop_option)
+                self._case.set_value("CONTINUE_RUN", False) 
+                suffix = "base"
+            else:
+                rest_n = stop_n/2 + 1
+                stop_new = stop_n - rest_n
+                expect(stop_new > 0, "ERROR: stop_n value %d too short %d %d"%(stop_new,stop_n,rest_n))
+                self._case.set_value("STOP_N", stop_new)
+                self._case.set_value("CONTINUE_RUN", True)
+                self._case.set_value("REST_OPTION","never")
+                suffix = "rest"
+            success = SystemTestsCommon._run(self, suffix=suffix)
+            if not success:
+                break
+
+        return success
+
 
     def report(self):
         SystemTestsCommon.report(self)

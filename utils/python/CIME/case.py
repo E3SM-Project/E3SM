@@ -71,19 +71,7 @@ class Case(object):
         self._env_files_that_need_rewrite = set()
 
         logger.debug("Initializing Case.")
-
-        self._env_entryid_files = []
-        self._env_entryid_files.append(EnvRun(case_root))
-        self._env_entryid_files.append(EnvBuild(case_root))
-        self._env_entryid_files.append(EnvMachPes(case_root))
-        self._env_entryid_files.append(EnvCase(case_root))
-        self._env_entryid_files.append(EnvBatch(case_root))
-        if os.path.isfile(os.path.join(case_root,"env_test.xml")):
-            self._env_entryid_files.append(EnvTest(case_root))
-        self._env_generic_files = []
-        self._env_generic_files.append(EnvMachSpecific(case_root))
-        self._env_generic_files.append(EnvArchive(case_root))
-        self._files = self._env_entryid_files + self._env_generic_files
+        self.read_xml(case_root)
 
         # Hold arbitary values. In create_newcase we may set values
         # for xml files that haven't been created yet. We need a place
@@ -102,6 +90,20 @@ class Case(object):
         self._components = []
         self._component_config_files = []
         self._component_classes = []
+
+    def read_xml(self, case_root):
+        self._env_entryid_files = []
+        self._env_entryid_files.append(EnvRun(case_root))
+        self._env_entryid_files.append(EnvBuild(case_root))
+        self._env_entryid_files.append(EnvMachPes(case_root))
+        self._env_entryid_files.append(EnvCase(case_root))
+        self._env_entryid_files.append(EnvBatch(case_root))
+        if os.path.isfile(os.path.join(case_root,"env_test.xml")):
+            self._env_entryid_files.append(EnvTest(case_root))
+        self._env_generic_files = []
+        self._env_generic_files.append(EnvMachSpecific(case_root))
+        self._env_generic_files.append(EnvArchive(case_root))
+        self._files = self._env_entryid_files + self._env_generic_files
 
     def __del__(self):
         self.flush()
