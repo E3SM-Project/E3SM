@@ -258,8 +258,8 @@ module seq_diag_mct
    integer :: index_x2r_Flrl_rofdto
    integer :: index_x2r_Flrl_rofi
 
-   integer :: index_o2x_Fioo_frazil !acme
-   integer :: index_o2x_Fioo_q      !cesm
+   integer :: index_o2x_Fioo_frazil ! currently used by acme
+   integer :: index_o2x_Fioo_q      ! currently used by cesm
 
    integer :: index_xao_Faox_lwup
    integer :: index_xao_Faox_lat
@@ -291,8 +291,8 @@ module seq_diag_mct
    integer :: index_x2i_Faxa_lwdn
    integer :: index_x2i_Faxa_rain
    integer :: index_x2i_Faxa_snow
-   integer :: index_x2i_Fioo_frazil !acme
-   integer :: index_x2i_Fioo_q      !cesm
+   integer :: index_x2i_Fioo_frazil !currently used by acme
+   integer :: index_x2i_Fioo_q      !currently used by cesm
    integer :: index_x2i_Fixx_rofi
 
    integer :: index_g2x_Fogg_rofl
@@ -1274,7 +1274,6 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, do_o2x, do_x2o, do_xao)
    real(r8)                 :: da,di,do,dl  ! area of a grid cell
    logical,save             :: first_time    = .true.
    logical,save             :: flds_wiso_ocn = .false.
-   character(len=4), save   :: model       ! valid values are 'acme' or 'cesm'
 
    !----- formats -----
    character(*),parameter :: subName = '(seq_diag_ocn_mct) '
@@ -1307,12 +1306,6 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, do_o2x, do_x2o, do_xao)
       if (first_time) then
          index_o2x_Fioo_frazil = mct_aVect_indexRA(o2x_o,'Fioo_frazil') !acme
          index_o2x_Fioo_q      = mct_aVect_indexRA(o2x_o,'Fioo_q')      !cesm
-         if (index_o2x_Fioo_frazil /= 0) then
-            model = 'acme'
-         else if (index_o2x_Fioo_q /= 0) then
-            model = 'cesm'
-         end if
-         !TODO - make sure you have either acme or cesm and not both or none
       end if
 
       lSize = mct_avect_lSize(o2x_o)
@@ -1321,15 +1314,15 @@ subroutine seq_diag_ocn_mct( ocn, xao_o, frac_o, do_o2x, do_x2o, do_xao)
          do =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ko,n)
          di =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
          if = f_area; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + do
-         if (model == 'acme') then
+         if (index_o2x_Fioo_frazil /= 0) then
             if = f_hfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazil,n))
-         else if (model == 'cesm') then
+         else if (index_o2x_Fioo_q /= 0) then
             if = f_hfrz; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + (do+di)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_q,n))
          end if
       end do
-      if (model == 'acme') then
+      if (index_o2x_Fioo_frazil /= 0) then
          budg_dataL(f_wfrz,ic,ip) = budg_dataL(f_hfrz,ic,ip) * HFLXtoWFLX * shr_const_rhoice * shr_const_latice
-      else if (model == 'cesm') then
+      else if (index_o2x_Fioo_q /= 0) then
          budg_dataL(f_wfrz,ic,ip) = budg_dataL(f_hfrz,ic,ip) * HFLXtoWFLX
       end if
    end if
@@ -1528,7 +1521,6 @@ subroutine seq_diag_ice_mct( ice, frac_i, do_i2x, do_x2i)
    logical,save             :: first_time        = .true.
    logical,save             :: flds_wiso_ice     = .false.
    logical,save             :: flds_wiso_ice_x2i = .false.
-   character(len=4),save    :: model       ! valid values are 'acme' or 'cesm'
 
    !----- formats -----
    character(*),parameter :: subName = '(seq_diag_ice_mct) '
@@ -1553,25 +1545,25 @@ subroutine seq_diag_ice_mct( ice, frac_i, do_i2x, do_x2i)
    ko    = mct_aVect_indexRA(frac_i,ofracname)
 
    if (present(do_i2x)) then
-         index_i2x_Fioi_melth  = mct_aVect_indexRA(i2x_i,'Fioi_melth')
-         index_i2x_Fioi_meltw  = mct_aVect_indexRA(i2x_i,'Fioi_meltw')
-         index_i2x_Fioi_swpen  = mct_aVect_indexRA(i2x_i,'Fioi_swpen')
-         index_i2x_Faii_swnet  = mct_aVect_indexRA(i2x_i,'Faii_swnet')
-         index_i2x_Faii_lwup   = mct_aVect_indexRA(i2x_i,'Faii_lwup')
-         index_i2x_Faii_lat    = mct_aVect_indexRA(i2x_i,'Faii_lat')
-         index_i2x_Faii_sen    = mct_aVect_indexRA(i2x_i,'Faii_sen')
-         index_i2x_Faii_evap   = mct_aVect_indexRA(i2x_i,'Faii_evap')
+      index_i2x_Fioi_melth  = mct_aVect_indexRA(i2x_i,'Fioi_melth')
+      index_i2x_Fioi_meltw  = mct_aVect_indexRA(i2x_i,'Fioi_meltw')
+      index_i2x_Fioi_swpen  = mct_aVect_indexRA(i2x_i,'Fioi_swpen')
+      index_i2x_Faii_swnet  = mct_aVect_indexRA(i2x_i,'Faii_swnet')
+      index_i2x_Faii_lwup   = mct_aVect_indexRA(i2x_i,'Faii_lwup')
+      index_i2x_Faii_lat    = mct_aVect_indexRA(i2x_i,'Faii_lat')
+      index_i2x_Faii_sen    = mct_aVect_indexRA(i2x_i,'Faii_sen')
+      index_i2x_Faii_evap   = mct_aVect_indexRA(i2x_i,'Faii_evap')
 
-         index_i2x_Fioi_meltw_16O   = mct_aVect_indexRA(i2x_i,'Fioi_meltw_16O',perrWith='quiet')
-         if ( index_i2x_Fioi_meltw_16O /= 0 ) flds_wiso_ice = .true.
-         if ( flds_wiso_ice )then
-            flds_wiso = .true.
-            index_i2x_Fioi_meltw_18O   = mct_aVect_indexRA(i2x_i,'Fioi_meltw_18O')
-            index_i2x_Fioi_meltw_HDO   = mct_aVect_indexRA(i2x_i,'Fioi_meltw_HDO')
-            index_i2x_Faii_evap_16O    = mct_aVect_indexRA(i2x_i,'Faii_evap_16O')
-            index_i2x_Faii_evap_18O    = mct_aVect_indexRA(i2x_i,'Faii_evap_18O')
-            index_i2x_Faii_evap_HDO    = mct_aVect_indexRA(i2x_i,'Faii_evap_HDO')
-         end if
+      index_i2x_Fioi_meltw_16O   = mct_aVect_indexRA(i2x_i,'Fioi_meltw_16O',perrWith='quiet')
+      if ( index_i2x_Fioi_meltw_16O /= 0 ) flds_wiso_ice = .true.
+      if ( flds_wiso_ice )then
+         flds_wiso = .true.
+         index_i2x_Fioi_meltw_18O   = mct_aVect_indexRA(i2x_i,'Fioi_meltw_18O')
+         index_i2x_Fioi_meltw_HDO   = mct_aVect_indexRA(i2x_i,'Fioi_meltw_HDO')
+         index_i2x_Faii_evap_16O    = mct_aVect_indexRA(i2x_i,'Faii_evap_16O')
+         index_i2x_Faii_evap_18O    = mct_aVect_indexRA(i2x_i,'Faii_evap_18O')
+         index_i2x_Faii_evap_HDO    = mct_aVect_indexRA(i2x_i,'Faii_evap_HDO')
+      end if
 
       lSize = mct_avect_lSize(i2x_i)
       do n=1,lSize
@@ -1623,11 +1615,6 @@ subroutine seq_diag_ice_mct( ice, frac_i, do_i2x, do_x2i)
          index_x2i_Faxa_snow   = mct_aVect_indexRA(x2i_i,'Faxa_snow')
          index_x2i_Fioo_frazil = mct_aVect_indexRA(x2i_i,'Fioo_frazil') !acme
          index_x2i_Fioo_q      = mct_aVect_indexRA(x2i_i,'Fioo_q')      !cesm
-         if (index_x2i_Fioo_frazil /= 0) then
-            model = 'acme'
-         else if (index_x2i_Fioo_q /= 0) then
-            model = 'cesm'
-         end if
          index_x2i_Fixx_rofi   = mct_aVect_indexRA(x2i_i,'Fixx_rofi')
 
          index_x2i_Faxa_rain_16O   = mct_aVect_indexRA(x2i_i,'Faxa_rain_16O', perrWith='quiet')
@@ -1657,9 +1644,9 @@ subroutine seq_diag_ice_mct( ice, frac_i, do_i2x, do_x2i)
          if = f_wsnow; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Faxa_snow,n)
          if = f_wioff; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) + di*x2i_i%rAttr(index_x2i_Fixx_rofi,n)
 
-         if (model == 'acme') then
+         if (index_o2x_Fioo_frazil /= 0) then
             if = f_hfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
-         else if (model == 'cesm') then
+         else if (index_o2x_Fioo_q /= 0) then
             if = f_hfrz ; budg_dataL(if,ic,ip) = budg_dataL(if,ic,ip) - (do+di)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_q,n))
          end if
          if ( flds_wiso_ice_x2i )then
@@ -1687,18 +1674,18 @@ subroutine seq_diag_ice_mct( ice, frac_i, do_i2x, do_x2i)
       ic = c_inh_is
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
-      if (model == 'acme') then
+      if (index_o2x_Fioo_frazil /= 0) then
          budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX *  shr_const_rhoice * shr_const_latice
-      else if (model == 'cesm') then
+      else if (index_o2x_Fioo_q /= 0) then
          budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX
       end if
 
       ic = c_ish_is
       budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
-      if (model == 'acme') then
+      if (index_o2x_Fioo_frazil /= 0) then
          budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX *  shr_const_rhoice * shr_const_latice
-      else if (model == 'cesm') then
+      else if (index_o2x_Fioo_q /= 0) then
          budg_dataL(f_wfrz ,ic,ip) =  budg_dataL(f_hfrz ,ic,ip)*HFLXtoWFLX
       end if
    end if
