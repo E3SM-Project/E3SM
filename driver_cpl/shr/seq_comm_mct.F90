@@ -2,7 +2,7 @@ module seq_comm_mct
 
 !---------------------------------------------------------------------
 !
-! Purpose: MCT utitlity functions used in sequential CCSM.
+! Purpose: Set up necessary communications
 !          Note that if no MPI, will call MCTs fake version
 !          (including mpif.h) will be utilized
 !
@@ -20,9 +20,6 @@ module seq_comm_mct
   use shr_sys_mod , only : shr_sys_abort, shr_sys_flush
   use shr_mpi_mod , only : shr_mpi_chkerr, shr_mpi_bcast, shr_mpi_max
   use shr_file_mod, only : shr_file_getUnit, shr_file_freeUnit
-#ifdef USE_ESMF_LIB
-  use esmf
-#endif
 
   implicit none
 
@@ -53,10 +50,6 @@ module seq_comm_mct
   public seq_comm_getnthreads
   public seq_comm_printcomms
   public seq_comm_get_ncomps
-#ifdef USE_ESMF_LIB
-  public seq_comm_getcompstates
-  public seq_comm_setcompstates
-#endif
 
 !--------------------------------------------------------------------------
 ! Public data
@@ -172,12 +165,6 @@ module seq_comm_mct
     logical :: set             ! has this datatype been set
     integer, pointer    :: petlist(:)  ! esmf pet list
     logical :: petlist_allocated ! whether the petlist pointer variable was allocated
-#ifdef USE_ESMF_LIB
-    type(ESMF_GridComp) :: esmf_comp   ! esmf gridded component
-                                       ! The following state members are not needed in 520r.
-    type(ESMF_State)    :: imp_state   ! esmf import state for the gridded component
-    type(ESMF_State)    :: exp_state   ! esmf export state for the gridded component
-#endif
   end type seq_comm_type
 
   type(seq_comm_type) :: seq_comms(ncomps)
@@ -1655,45 +1642,6 @@ contains
 
   end subroutine seq_comm_petlist
 !---------------------------------------------------------
-#ifdef USE_ESMF_LIB
-  subroutine seq_comm_getcompstates(ID,comp,imp_state,exp_state)
-
-    implicit none
-    integer,                       intent(in)  :: ID
-    type(ESMF_GridComp), optional, intent(out) :: comp
-    type(ESMF_State),    optional, intent(out) :: imp_state, exp_state
-    character(*),parameter :: subName =   '(seq_comm_getcompstates) '
-
-    if ((ID > 0) .and. (ID <= ncomps)) then
-       if(present(comp))      comp      = seq_comms(ID)%esmf_comp
-       if(present(imp_state)) imp_state = seq_comms(ID)%imp_state
-       if(present(imp_state)) exp_state = seq_comms(ID)%exp_state
-    else
-       write(logunit,*) subname,' ID out of range, ',ID
-       call shr_sys_abort(subname//' ERROR: ID out of range')
-    end if
-
-  end subroutine seq_comm_getcompstates
-!---------------------------------------------------------
-  subroutine seq_comm_setcompstates(ID,comp,imp_state,exp_state)
-
-    implicit none
-    integer,                       intent(in) :: ID
-    type(ESMF_GridComp), optional, intent(in) :: comp
-    type(ESMF_State)   , optional, intent(in) :: imp_state, exp_state
-    character(*),parameter :: subName =   '(seq_comm_setcompstates) '
-
-    if ((ID > 0) .and. (ID <= ncomps)) then
-       if(present(comp))      seq_comms(ID)%esmf_comp = comp
-       if(present(imp_state)) seq_comms(ID)%imp_state = imp_state
-       if(present(imp_state)) seq_comms(ID)%exp_state = exp_state
-    else
-       write(logunit,*) subname,' ID out of range, ',ID
-       call shr_sys_abort(subname//' ERROR: ID out of range')
-    end if
-
-  end subroutine seq_comm_setcompstates
-#endif
 !---------------------------------------------------------
   integer function seq_comm_inst(ID)
 

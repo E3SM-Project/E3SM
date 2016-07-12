@@ -1,5 +1,39 @@
 ======================================================================
 
+Originator: mvertens
+Date: July 9, 2016
+Tag: cime4.5.23
+Answer Changes: None
+Tests: Ran prealph intel tests and compared to cesm1_5_alpha07e
+Dependencies: None
+
+Brief Summary:  Removed all code related to using the ESMF interfaces
+
+Modified files: git diff --name-status
+
+M       cime_config/cesm/config_grids.xml
+M       driver_cpl/cime_config/config_component.xml
+M       driver_cpl/driver/cesm_comp_mod.F90
+M       driver_cpl/driver/cesm_driver.F90
+M       driver_cpl/driver/component_mod.F90
+M       driver_cpl/driver/component_type_mod.F90
+M       driver_cpl/driver/seq_diag_mct.F90
+M       driver_cpl/driver/seq_map_mod.F90
+M       driver_cpl/driver/seq_map_type_mod.F90
+M       driver_cpl/shr/seq_comm_mct.F90
+
+Deleted files:
+
+D       driver_cpl/driver/cpl_comp_esmf.F90
+D       driver_cpl/driver/seq_map_esmf.F90
+D       driver_cpl/shr_esmf/esmf2mct_mod.F90
+D       driver_cpl/shr_esmf/esmfshr_attribute_mod.F90
+D       driver_cpl/shr_esmf/esmfshr_infodata_mod.F90
+D       driver_cpl/shr_esmf/esmfshr_mod.F90
+D       driver_cpl/shr_esmf/esmfshr_util_mod.F90
+D       driver_cpl/shr_esmf/mct2esmf_mod.F90
+======================================================================
+
 Originator: fischer-ncar 
 Date: July 7, 2016 
 Tag: cime4.5.22
