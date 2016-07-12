@@ -112,8 +112,12 @@
 		     description="effective ice pressure in subglacial system" />
                 <var name="hydropotential" type="real" dimensions="nCells Time" units="Pa"
 		     description="subglacial hydropotential" />
-                <var name="waterFlux" type="real" dimensions="nEdges Time" units="?"
+                <var name="waterFlux" type="real" dimensions="nEdges Time" units="m^2/s"
+		     description="total subglacial water flux" />
+                <var name="waterFluxAdvec" type="real" dimensions="nEdges Time" units="m^2/s"
 		     description="advective subglacial water flux" />
+                <var name="waterFluxDiffu" type="real" dimensions="nEdges Time" units="m^2/s"
+		     description="diffusive subglacial water flux" />
                 <var name="waterVelocity" type="real" dimensions="nEdges Time" units="m s^-1"
 		     description="subglacial water velocity" />
                 <var name="waterVelocityCellX" type="real" dimensions="nCells Time" units="m s^-1"

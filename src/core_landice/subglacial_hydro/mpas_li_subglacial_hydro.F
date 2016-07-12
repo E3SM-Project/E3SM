@@ -187,11 +187,9 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: Wtill, WtillOld
       real (kind=RKIND), dimension(:), pointer :: meltInput
       real (kind=RKIND), dimension(:), pointer :: divergence
-      real (kind=RKIND), dimension(:), pointer :: diffusivity
       real (kind=RKIND), dimension(:), pointer :: waterFlux
       real (kind=RKIND), dimension(:), pointer :: waterThickness
       real (kind=RKIND), dimension(:), pointer :: waterThicknessOld
-      real (kind=RKIND), dimension(:), pointer :: dcEdge
       real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: areaCell
       integer, dimension(:), pointer :: nEdgesOnCell
@@ -261,7 +259,6 @@ module li_subglacial_hydro
       end do
       ! Update halos on edge quantities
       call mpas_timer_start("halo updates")
-      call mpas_dmpar_field_halo_exch(domain, 'diffusivity')
       call mpas_dmpar_field_halo_exch(domain, 'waterFlux')
       ! intermediate fields will be out of date, but will be correct in output files
       call mpas_timer_stop("halo updates")
@@ -277,19 +274,14 @@ module li_subglacial_hydro
       ! =============
       ! Compute flux divergence
       ! =============
-      !call calc_flux_div(divergence, waterFlux, diffusivity, dcEdge)
-
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'hydro', hydroPool)
          call mpas_pool_get_array(hydroPool, 'divergence', divergence)
-         call mpas_pool_get_array(hydroPool, 'diffusivity', diffusivity)
          call mpas_pool_get_array(hydroPool, 'waterFlux', waterFlux)
-         call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
          call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
@@ -304,15 +296,12 @@ module li_subglacial_hydro
                iEdge = edgesOnCell(iEdgeOnCell, iCell)
                cell1 = cellsOnEdge(1, iEdge)
                cell2 = cellsOnEdge(2, iEdge)
-               ! add on advective flux
-               divergence(iCell) = divergence(iCell) - waterFlux(iEdge) * edgeSignOnCell(iEdgeOnCell, iCell)
-               ! add on diffusive flux
-               divergence(iCell) = divergence(iCell) - diffusivity(iEdge) * &
-                 (waterThickness(cell1) * edgeSignOnCell(iEdgeOnCell, iCell) - &
-                  waterThickness(cell2) * edgeSignOnCell(iEdgeOnCell, iCell)) / dcEdge(iEdge) * dvEdge(iEdge)
+               ! add on advective & diffusive fluxes
+               divergence(iCell) = divergence(iCell) - waterFlux(iEdge) * dvEdge(iEdge) * edgeSignOnCell(iEdgeOnCell, iCell)
             end do ! edges
          end do ! cells
          divergence(1:nCellsSolve) = divergence(1:nCellsSolve) / areaCell(1:nCellsSolve)
+
          block => block % next
       end do
 
@@ -500,11 +489,13 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: effectiveConducEdge
       real (kind=RKIND), dimension(:), pointer :: diffusivity
       real (kind=RKIND), dimension(:), pointer :: dcEdge
-      real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: waterVelocity
       real (kind=RKIND), dimension(:), pointer :: waterFlux
+      real (kind=RKIND), dimension(:), pointer :: waterFluxAdvec
+      real (kind=RKIND), dimension(:), pointer :: waterFluxDiffu
       real (kind=RKIND), dimension(:), pointer :: waterVelocityCellX
       real (kind=RKIND), dimension(:), pointer :: waterVelocityCellY
+      integer, dimension(:,:), pointer :: edgeSignOnCell
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), dimension(:), allocatable :: cellJunk
       integer, dimension(:,:), pointer :: cellsOnEdge
@@ -542,15 +533,17 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'waterThicknessEdgeUpwind', waterThicknessEdgeUpwind)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeNormal', hydropotentialBaseSlopeNormal)
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeTangent', hydropotentialBaseSlopeTangent)
       call mpas_pool_get_array(hydroPool, 'gradMagPhiEdge', gradMagPhiEdge)
       call mpas_pool_get_array(hydroPool, 'effectiveConducEdge', effectiveConducEdge)
       call mpas_pool_get_array(hydroPool, 'diffusivity', diffusivity)
       call mpas_pool_get_array(hydroPool, 'waterVelocity', waterVelocity)
       call mpas_pool_get_array(hydroPool, 'waterFlux', waterFlux)
+      call mpas_pool_get_array(hydroPool, 'waterFluxAdvec', waterFluxAdvec)
+      call mpas_pool_get_array(hydroPool, 'waterFluxDiffu', waterFluxDiffu)
       call mpas_pool_get_array(hydroPool, 'waterVelocityCellX', waterVelocityCellX)
       call mpas_pool_get_array(hydroPool, 'waterVelocityCellY', waterVelocityCellY)
 
@@ -604,13 +597,19 @@ module li_subglacial_hydro
       do iEdge = 1, nEdgesSolve
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
-         waterVelocity(iEdge) = 1.0_RKIND / dcEdge(iEdge) * effectiveConducEdge(iEdge) * &
-             (hydropotentialBase(cell1) - hydropotentialBase(cell2))
+         waterVelocity(iEdge) = effectiveConducEdge(iEdge) * &
+             (hydropotentialBase(cell1) - hydropotentialBase(cell2)) / dcEdge(iEdge)
          velSign = sign(1.0_RKIND, waterVelocity(iEdge))
          waterThicknessEdgeUpwind(iEdge) = max(velSign * waterThickness(cell1),   &
                      velSign * (-1.0_RKIND) * waterThickness(cell2))
-         waterFlux(iEdge) = waterVelocity(iEdge) * dvEdge(iEdge) * waterThicknessEdgeUpwind(iEdge)
+
+         waterFluxAdvec(iEdge) = waterVelocity(iEdge) * waterThicknessEdgeUpwind(iEdge)
+
+         waterFluxDiffu(iEdge) = diffusivity(iEdge) * &
+                 (waterThickness(cell1) - waterThickness(cell2)) / dcEdge(iEdge)
       end do
+      waterFlux(:) = waterFluxAdvec(:) + waterFluxDiffu(:)
+
 
       ! Calculate reconstructed velocities on cell centers for viz
       allocate(cellJunk(nCells+1))
