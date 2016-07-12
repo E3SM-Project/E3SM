@@ -166,7 +166,7 @@ def case_setup(case, clean=False, test_mode=False, reset=False):
                 if ntasks == 1:
                     case.set_value("NTASKS_%s" % comp, ninst)
                 else:
-                    expect(False, "%s NINST value %d greater than %s NTASKS %d" % (comp, ninst, comp, ntasks))
+                    expect(False, "NINST_%s value %d greater than NTASKS_%s %d" % (comp, ninst, comp, ntasks))
 
         expect(not (case.get_value("BUILD_THREADED") and case.get_value("COMPILER") == "nag"),
                "it is not possible to run with OpenMP if using the NAG Fortran compiler")
