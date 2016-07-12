@@ -83,8 +83,12 @@ class ERP(SystemTestsCommon):
             # needs to be regenerated for the above new tasks and thread counts
             case_setup(self._case, test_mode=True, reset=True)
 
+            # update the case to the new values
+            self._case = None
+            self._case = Case(self._caseroot)
+
             # Now rebuild the system, given updated information in env_build.xml
-            self.clean_build()
+
             SystemTestsCommon.build(self, sharedlib_only=sharedlib_only, model_only=model_only)
             shutil.move("%s/%s.exe"%(exeroot,cime_model),
                         "%s/%s.ERP%s.exe"%(exeroot,cime_model,bld))
@@ -93,7 +97,6 @@ class ERP(SystemTestsCommon):
             # env_build.xml to be used in the run phase
             shutil.copy("env_mach_pes.xml", os.path.join("LockedFiles","env_mach_pes.ERP%s.xml"%bld ))
             shutil.copy("env_build.xml", os.path.join("LockedFiles","env_build.ERP%s.xml"%bld ))
-
         #
         #
 
