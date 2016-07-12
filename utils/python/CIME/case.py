@@ -92,6 +92,7 @@ class Case(object):
         self._component_classes = []
 
     def read_xml(self, case_root):
+        expect(len(self._env_files_that_need_rewrite)==0,"Case object has modifications that would be overwritten by read_xml")
         self._env_entryid_files = []
         self._env_entryid_files.append(EnvRun(case_root))
         self._env_entryid_files.append(EnvBuild(case_root))
