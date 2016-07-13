@@ -94,6 +94,8 @@
 		     description="water layer thickness in subglacial system" />
 		<var name="waterThicknessOld" type="real" dimensions="nCells Time" units="m"
 		     description="water layer thickness in subglacial system from previous time step" />
+                <var name="waterThicknessTendency" type="real" dimensions="nCells Time" units="m/s"
+		     description="rate of change in water layer thickness in subglacial system" />
 		<var name="tillWaterThickness" type="real" dimensions="nCells Time" units="m"
 		     description="water layer thickness in subglacial till" />
 		<var name="tillWaterThicknessOld" type="real" dimensions="nCells Time" units="m"
