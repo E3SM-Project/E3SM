@@ -605,8 +605,7 @@ module li_subglacial_hydro
       do iEdge = 1, nEdgesSolve
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
-         waterVelocity(iEdge) = effectiveConducEdge(iEdge) * &
-             (hydropotentialBase(cell1) - hydropotentialBase(cell2)) / dcEdge(iEdge)
+         waterVelocity(iEdge) = effectiveConducEdge(iEdge) * hydropotentialBaseSlopeNormal(iEdge)
          velSign = sign(1.0_RKIND, waterVelocity(iEdge))
          waterThicknessEdgeUpwind(iEdge) = max(velSign * waterThickness(cell1),   &
                      velSign * (-1.0_RKIND) * waterThickness(cell2))
