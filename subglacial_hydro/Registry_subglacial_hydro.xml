@@ -104,6 +104,8 @@
 		     description="pressure in subglacial system" />
 		<var name="waterPressureOld" type="real" dimensions="nCells Time" units="Pa"
 		     description="pressure in subglacial system from previous time step" />
+                <var name="waterPressureTendency" type="real" dimensions="nCells Time" units="Pa/s"
+		     description="tendency in pressure in subglacial system" />
                 <!-- inputs -->
 		<var name="basalMeltInput" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
 		     description="basal meltwater input" />

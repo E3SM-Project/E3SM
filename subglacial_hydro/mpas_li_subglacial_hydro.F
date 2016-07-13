@@ -838,6 +838,7 @@ module li_subglacial_hydro
 !      real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: waterPressure
       real (kind=RKIND), dimension(:), pointer :: waterPressureOld
+      real (kind=RKIND), dimension(:), pointer :: waterPressureTendency
       real (kind=RKIND), dimension(:), pointer :: waterThickness
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
       real (kind=RKIND), dimension(:), pointer :: hydropotential
@@ -885,6 +886,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'hydropotential', hydropotential)
       call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
       call mpas_pool_get_array(hydroPool, 'waterPressureOld', waterPressureOld)
+      call mpas_pool_get_array(hydroPool, 'waterPressureTendency', waterPressureTendency)
       call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
       call mpas_pool_get_array(hydroPool, 'zeroOrderSum', zeroOrderSum)
       call mpas_pool_get_array(hydroPool, 'closingRate', closingRate)
@@ -902,7 +904,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
       openingRate(:) = bedRough * basalSpeed(:) * (bedRoughMax - waterThickness(:))
-      !openingRate(:) = bedRough * basalSpeed(:) + basalMeltInput(:) / rhoi  ! Hewitt 2011 opening
+      !openingRate(:) = bedRough * basalSpeed(:) * (bedRoughMax - waterThickness(:)) + basalMeltInput(:) / rhoi  ! Hewitt 2011 opening
       openingRate = max(0.0_RKIND, openingRate)
 
       closingRate(:) = creepCoeff * flowParamA(nVertLevels, :) * effectivePressure(:)**3 * waterThickness(:)
@@ -939,6 +941,7 @@ module li_subglacial_hydro
 
       waterPressure = max(0.0_RKIND, waterPressure)
       waterPressure = min(waterPressure, rhoi * gravity * thickness)
+      waterPressureTendency = (waterPressure - waterPressureOld) / deltatSGH
 
       effectivePressure = rhoi * gravity * thickness - waterPressure
       hydropotential = rho_water * gravity * bedTopography + waterPressure + waterThickness
